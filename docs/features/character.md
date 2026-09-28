@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-09-29 — `mezo-mobji` (no character change).** The 1.1.0 changelog gained three train-owned `exercise` columns (`replaces_exercise_id`, `added_in_workout_id`, `saved_to_plan`, [`train.md` §4](train.md)); `CharacterSignalReads` resolves exercise names by id and keeps working for the new instance-scoped rows.
 
 > **2026-09-28 — S8 chat memory (`mezo-d6ivw.12`).** The csapatfal reply's "Megjegyeztem" chip (`ReplyAfterlife`) now renders through the shared `MemoryChip` (`surface="csapatfal"`, [`insights.md`](insights.md)) with no visible change; `teamChatHooks.ts` only had a comment updated. The 1.1.0 changelog gained `ai_message.forgotten_memories` + `extraction_blocked` (companion-owned, [`companion.md`](companion.md)); nothing in the character feature reads them.
 

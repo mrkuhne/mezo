@@ -777,6 +777,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Swap or add an exercise in an active workout (mezo-mobji)
+         * @description Creates an instance-scoped exercise row for the running workout (scope TODAY), and for scope MESO additionally writes the mesocycle's template day id-stably (one insert, the replaced row soft-deleted) so the change applies from the next session. Returns the refreshed today payload.
+         */
+        post: operations["changeWorkoutExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add working sets to an exercise's mesocycle plan without re-creating the day (mezo-mobji) */
+        post: operations["addPlanWorkingSets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/exercises/{exerciseId}/note": {
         parameters: {
             query?: never;
@@ -6169,6 +6206,17 @@ export interface components {
             rationale?: string | null;
             /** @description RIR-aware overload recommendation; null on first session / switch off. */
             progression?: components["schemas"]["ProgressionSignal"] | null;
+            /**
+             * @description Set on an exercise swapped/added during the open workout (mezo-mobji).
+             * @enum {string|null}
+             */
+            changeScope?: "TODAY" | "MESO" | null;
+            /** @description Name of the exercise this one replaced in the open workout. */
+            replacesName?: string | null;
+            /** @description On a swapped-out exercise that keeps its logged sets — the replacement's name. */
+            replacedByName?: string | null;
+            /** @description Whether a "Mezociklusra is" change may target this exercise (false for rows added only for this workout and for the fixed closing block). */
+            planSlot?: boolean;
         };
         PrescribedSet: {
             /** @enum {string} */
@@ -6395,6 +6443,37 @@ export interface components {
             rir?: number | null;
             side?: string;
             note?: string;
+        };
+        WorkoutExerciseChangeRequest: {
+            /** Format: uuid */
+            catalogId?: string | null;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
+            targetRIR: number;
+            /** @enum {string} */
+            scope: "TODAY" | "MESO";
+            /**
+             * Format: uuid
+             * @description Swap target; absent for an add.
+             */
+            replacesExerciseId?: string | null;
+        };
+        WorkoutExerciseChangeResponse: {
+            /**
+             * Format: uuid
+             * @description The new instance-scoped exercise row.
+             */
+            exerciseId: string;
+            today: components["schemas"]["WorkoutTodayResponse"];
+        };
+        PlanSetsRequest: {
+            delta: number;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */
@@ -14890,6 +14969,129 @@ export interface operations {
                 };
             };
             /** @description Workout already completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    changeWorkoutExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutExerciseChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Change applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutExerciseChangeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout not active, or the replaced exercise has no plan slot (MESO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPlanWorkingSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanSetsRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The exercise has no plan slot */
             409: {
                 headers: {
                     [name: string]: unknown;

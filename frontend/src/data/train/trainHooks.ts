@@ -26,6 +26,7 @@ import {
   type SportSessionResponse,
   type SportSlotSkipResponse,
   type WorkoutFeedbackInput,
+  type WorkoutExerciseChangeRequest,
   type WorkoutInstanceResponse,
   type WorkoutTodayResponse,
 } from '@/data/train/trainApi'
@@ -42,12 +43,14 @@ import {
   MOCK_FIXTURE_WEIGHT_KG,
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
+import { applyMockEdits, mockExerciseFor, type MockWorkoutEdit } from '@/data/train/mockWorkoutEdits'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
   GymScheduleSlot,
+  LoggedWorkoutExercise,
   Mesocycle,
   MusclePriorities,
   Sport,
@@ -87,6 +90,10 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
       videoUrl: e.videoUrl ?? null,
       imageStartUrl: e.imageStartUrl ?? null,
       imageEndUrl: e.imageEndUrl ?? null,
+      changeScope: e.changeScope ?? null,
+      replacesName: e.replacesName ?? null,
+      replacedByName: e.replacedByName ?? null,
+      planSlot: e.planSlot ?? true,
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
         : null,
@@ -233,6 +240,8 @@ export function sportSlotSkipsQueryKey(): readonly [string, string, string] {
  *  `['train','workoutToday', workoutDay]`) via react-query's default prefix matching, the same
  *  `['train','workoutToday']` prefix this file's own mutations already invalidate on write. */
 export const WORKOUT_TODAY_QUERY_KEY = ['train', 'workoutToday'] as const
+/** Mock mode's mid-workout swap/add edits (mezo-mobji), replayed over the static plan. */
+const MOCK_WORKOUT_EDITS_KEY = ['train', 'mockWorkoutEdits'] as const
 
 export function mergeEventsIntoSchedule(
   base: SportSchedule | null,
@@ -475,6 +484,16 @@ type TrainData = {
   /** Soft-delete one logged set; the server renumbers the exercise's remaining setIndexes. */
   deleteSet: (workoutId: string, setId: string) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
+  /** Swap or add an exercise mid-workout (mezo-mobji). `onSuccess` gets the new exercise as the
+   *  refreshed plan shows it; `loggedOnReplaced` feeds mock mode's keep-vs-drop (real mode's
+   *  server knows its own sets). */
+  changeExercise: (
+    workoutId: string,
+    req: WorkoutExerciseChangeRequest,
+    opts?: { loggedOnReplaced?: number; onSuccess?: (created: LoggedWorkoutExercise) => void; onError?: (err: unknown) => void },
+  ) => void
+  /** „Szett hozzáadása → Minden hétre” (mezo-mobji): one plan row +1 set, ids untouched. */
+  addPlanWorkingSets: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string, opts?: FinishOpts) => void
@@ -699,6 +718,15 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     queryFn: mock ? async () => null : () => trainApi.workoutToday(workoutDay ?? undefined),
     initialData: mock ? null : undefined,
   })
+  // Mock mode's mid-workout swaps/adds (mezo-mobji) — a client-owned cache replayed over the
+  // static plan (see mockWorkoutEdits). Pinned fresh so a refetch never drops the edits.
+  const { data: mockEdits } = useQuery({
+    queryKey: MOCK_WORKOUT_EDITS_KEY,
+    queryFn: async () => qc.getQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY) ?? [],
+    initialData: mock ? ([] as MockWorkoutEdit[]) : undefined,
+    staleTime: Infinity,
+    enabled: mock,
+  })
 
   // Write mutations: mock mode no-ops (Phase-1 local behavior stays untouched);
   // real mode persists then refetches the meso list (Slice A invalidate idiom).
@@ -817,6 +845,37 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? async (_args: { workoutId: string; setId: string }) => undefined
       : (args: { workoutId: string; setId: string }) => trainApi.deleteSet(args.workoutId, args.setId),
     onSuccess: invalidateToday,
+  })
+  // Mid-workout swap/add (mezo-mobji): real mode writes the server's refreshed today payload
+  // straight into every today key (the session then renders the new card in the same commit)
+  // and refetches; mock appends to the client-owned edit list.
+  const changeExerciseMutation = useMutation({
+    mutationFn: async (args: { workoutId: string; req: WorkoutExerciseChangeRequest; loggedOnReplaced: number }) => {
+      if (mock) {
+        const edit: MockWorkoutEdit = { id: `mock-${crypto.randomUUID()}`, req: args.req, loggedOnReplaced: args.loggedOnReplaced }
+        const replaced = args.req.replacesExerciseId
+          ? applyMockEdits(trainWorkout, qc.getQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY) ?? [])
+              .exercises.find((e) => e.id === args.req.replacesExerciseId) ?? null
+          : null
+        qc.setQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY, (prev) => [...(prev ?? []), edit])
+        return mockExerciseFor(edit, replaced?.name ?? null)
+      }
+      const res = await trainApi.changeExercise(args.workoutId, args.req)
+      qc.setQueriesData({ queryKey: WORKOUT_TODAY_QUERY_KEY }, res.today)
+      const created = toWorkoutPlan(res.today)?.exercises.find((e) => e.id === res.exerciseId)
+      if (!created) throw new Error('changeExercise: the new exercise is missing from today')
+      return created
+    },
+    onSuccess: invalidateToday,
+  })
+  const planSetsMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { workoutId: string; exerciseId: string }) => undefined
+      : (args: { workoutId: string; exerciseId: string }) => trainApi.addPlanWorkingSets(args.workoutId, args.exerciseId),
+    onSuccess: () => {
+      invalidateToday()
+      invalidate()
+    },
   })
   const skipMutation = useMutation({
     mutationFn: mock
@@ -994,6 +1053,22 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     (workoutId: string, exerciseId: string) => skipMutation.mutate({ workoutId, exerciseId }),
     [skipMutation],
   )
+  const changeExercise = useCallback(
+    (
+      workoutId: string,
+      req: WorkoutExerciseChangeRequest,
+      opts?: { loggedOnReplaced?: number; onSuccess?: (created: LoggedWorkoutExercise) => void; onError?: (err: unknown) => void },
+    ) =>
+      changeExerciseMutation.mutate(
+        { workoutId, req, loggedOnReplaced: opts?.loggedOnReplaced ?? 0 },
+        { onSuccess: (created) => opts?.onSuccess?.(created), onError: (err) => opts?.onError?.(err) },
+      ),
+    [changeExerciseMutation],
+  )
+  const addPlanWorkingSets = useCallback(
+    (workoutId: string, exerciseId: string) => planSetsMutation.mutate({ workoutId, exerciseId }),
+    [planSetsMutation],
+  )
   const saveExerciseNote = useCallback(
     (exerciseId: string, note: string) => noteMutation.mutate({ exerciseId, note }),
     [noteMutation],
@@ -1050,7 +1125,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mesocycles: mesos,
     // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
     activeMeso: realActiveMeso ?? (mock ? activeMeso : null),
-    workout: mock ? trainWorkout : toWorkoutPlan(todayData),
+    workout: mock ? applyMockEdits(trainWorkout, mockEdits ?? []) : toWorkoutPlan(todayData),
     // Mock serves the full static weekly schedule (Phase-1 parity); real derives
     // the meso's gym days (WHAT) joined with the standalone gym slots (WHEN).
     gymSchedule: mock ? { ...trainGymSchedule, weeklyTimes: trainGymSchedule.weeklyTimes.map((day, index) => ({ ...day, time: gymSlots.find(slot => slot.dayOfWeek === index)?.time ?? null })) } : deriveGymSchedule(realActiveMeso, gymSlots),
@@ -1096,6 +1171,8 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     updateSet,
     deleteSet,
     skipExercise,
+    changeExercise,
+    addPlanWorkingSets,
     saveExerciseNote,
     saveWorkoutFeedback,
     finishWorkout,

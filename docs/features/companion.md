@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-09-28 — fact-text sentence split (`mezo-d6ivw.12` fix).** `FactTextComposer` no longer ends a sentence at a Hungarian abbreviation: a `.`/`!`/`?`/`…` + space is a boundary only when the next token starts uppercase (or an opening quote + uppercase) and the word before it is not in its `ABBREVIATIONS` set (`pl`, `kb`, `stb`, `ill`, `ún`, …). Before, „pl.” cut the composed fact text mid-parenthesis. (Doc note added with `mezo-mobji`, which found the doc stale.)
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One shared renderer, `CheckInText` (biometrics), now prints every answered check-in item for the chat snapshot (latest row + a „ma korábban" line of today's other slots), the daily summary, the `get_recovery` tool (`scope=checkins`) and the meal coach; `PersonalRecordSource` exposes the new `check_in` columns. Flags: four new rules (`persistent_pain`, `poor_restedness`, `craving_streak`, `motivation_slump`) and two widened (`acute_bad_day` + mood/pain, `recovery_needed` + rested/soreness arm). Patterns: ten new `MetricKey`s and fifteen new pairs. `DayScoreService` counts a check-in as filled only when legacy / quick exit / core answered; `MeWeekService` adds the mood average. Details: §5.5 „Check-in 2.0 feeds", §4 flag table, the pattern-catalog block „Check-in 2.0 extended the catalog". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
 
