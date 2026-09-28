@@ -19,11 +19,13 @@ export interface MemoryItem {
 export interface TurnLearned { id: string; personId: string; who: string; kind: string; text: string }
 /** `kept` = accepted/refined, its knowledge fact still live (undo forgets that fact). */
 export interface TurnProposed { id: string; text: string; state: 'ask' | 'kept'; promotedFactId: string | null }
-export interface TurnMemory { learned: TurnLearned[]; proposed: TurnProposed[]; forgotten: MemoryItem[] }
+/** `forgetRequest` = this message IS a forget request (backend ForgetIntent) — its `forgotten` list
+ *  may be empty (owner ruling 2026-09-28: nothing learned from the preceding message). */
+export interface TurnMemory { learned: TurnLearned[]; proposed: TurnProposed[]; forgotten: MemoryItem[]; forgetRequest: boolean }
 /** The user message a turn's chips hang on — `id` is the persisted row id, or `mock-turn-<i>`. */
 export interface TurnAnchor { id: string; ordinal: number; text: string }
 
-export const EMPTY_TURN_MEMORY: TurnMemory = { learned: [], proposed: [], forgotten: [] }
+export const EMPTY_TURN_MEMORY: TurnMemory = { learned: [], proposed: [], forgotten: [], forgetRequest: false }
 
 export const toMemoryItem = (m: MemoryItemResponse): MemoryItem => ({
   kind: m.kind, refId: m.refId, personId: m.personId ?? null, who: m.who ?? null,
@@ -40,6 +42,7 @@ export function toTurnMemory(r: TurnMemoryResponse): TurnMemory {
       promotedFactId: c.promotedFactId ?? null,
     })),
     forgotten: r.forgotten.map(toMemoryItem),
+    forgetRequest: r.forgetRequest === true,
   }
 }
 

@@ -8331,6 +8331,8 @@ export interface components {
             createdAt: string;
         };
         TurnMemoryResponse: {
+            /** @description True when this user message is itself a forget request (ForgetIntent) - its forgotten list may be empty when the preceding message learned nothing, and it never gains learned or proposed items. */
+            forgetRequest: boolean;
             learned: components["schemas"]["TurnPersonFactResponse"][];
             proposed: components["schemas"]["FactCandidateResponse"][];
             forgotten: components["schemas"]["MemoryItemResponse"][];

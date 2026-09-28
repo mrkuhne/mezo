@@ -51,7 +51,7 @@ describe('TurnMemoryChips (real mode)', () => {
   test('a forget turn with nothing to forget shows the empty state and still offers the widen', async () => {
     server.use(
       http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
-        HttpResponse.json({ learned: [], proposed: [], forgotten: [] })),
+        HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: true })),
       http.get(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () =>
         HttpResponse.json([{ kind: 'person_fact', refId: 'pf-1', personId: 'p-1', who: 'Dóri', text: 'szereti a teát',
           createdAt: '2026-09-26T20:05:00Z', pending: false }])),
@@ -64,7 +64,7 @@ describe('TurnMemoryChips (real mode)', () => {
 
   test('an ordinary turn with nothing learned yet shows the listening status, not the empty forget state', async () => {
     server.use(http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
-      HttpResponse.json({ learned: [], proposed: [], forgotten: [] })))
+      HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })))
     renderChips('Jó volt a mai edzés.', 0, new Set(), 'u-1')
     expect(await screen.findByText('még figyelek…')).toBeInTheDocument()
     expect(screen.queryByText(/Nem volt mit elfelejteni/)).not.toBeInTheDocument()

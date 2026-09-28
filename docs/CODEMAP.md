@@ -818,13 +818,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `usePatternPairDetail`, `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
   - **modules:** categoryLabel.ts, chat.ts, chatApi.ts, chatHooks.ts, coachingCardHooks.ts, coachingCardMock.ts,
     coachingTraceApi.ts, coachingTraceHooks.ts, coachingTraceMock.ts, diagnosisApi.ts, diagnosisHooks.ts,
-    diagnosisMock.ts, experimentsApi.ts, experimentsHooks.ts, forgetIntent.ts, graph.ts, graphApi.ts, graphHooks.ts,
-    insights.ts, knowledge.ts, knowledgeApi.ts, knowledgeHooks.ts, knowledgeHub.ts, knowledgeHubApi.ts,
-    knowledgeHubHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts,
-    memoryFeedbackHooks.ts, memoryHooks.ts, monitorApi.ts, monitorHooks.ts, observations.ts, observationsApi.ts,
-    observationsHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
-    patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, turnMemory.ts, turnMemoryApi.ts, turnMemoryHooks.ts,
-    weeklyHooks.ts, weeklySuggestionApi.ts
+    diagnosisMock.ts, experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts,
+    knowledge.ts, knowledgeApi.ts, knowledgeHooks.ts, knowledgeHub.ts, knowledgeHubApi.ts, knowledgeHubHooks.ts,
+    memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts, memoryFeedbackHooks.ts,
+    memoryHooks.ts, monitorApi.ts, monitorHooks.ts, observations.ts, observationsApi.ts, observationsHooks.ts,
+    patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts, patternsHooks.ts,
+    predictionsApi.ts, predictionsHooks.ts, turnMemory.ts, turnMemoryApi.ts, turnMemoryHooks.ts, weeklyHooks.ts,
+    weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
   - **pages:** BoopAboutPage.tsx, BoopMemoriesPage.tsx, BoopMenuPage.tsx, CharacterRoomPage.tsx, ChatPage.tsx,
     CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx, DiagnosisDetailPage.tsx,

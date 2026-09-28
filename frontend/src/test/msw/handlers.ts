@@ -1584,7 +1584,7 @@ export const handlers = [
   ),
   // S8 (mezo-d6ivw.12): turn memory + the widen flow; the people-fact GET/DELETE that were missing.
   http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
-    HttpResponse.json({ learned: [], proposed: [], forgotten: [] })),
+    HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })),
   http.get(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json({ forgotten: [] })),
   http.get(`${API_BASE}/api/people/facts`, () => HttpResponse.json([])),

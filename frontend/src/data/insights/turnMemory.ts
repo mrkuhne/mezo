@@ -1,5 +1,4 @@
 import type { ChatRecalledMemory } from '@/data/types'
-import { isForgetRequest } from '@/data/insights/forgetIntent'
 import type { MemoryItem, TurnLearned, TurnMemory, TurnProposed } from '@/data/insights/turnMemoryApi'
 
 /** S8 (mezo-d6ivw.12) demo seed — all four chip variants (lesson 16: mock anchors are
@@ -21,11 +20,11 @@ const asItem = (f: TurnLearned, createdAt: string): MemoryItem => ({
 })
 
 export const MOCK_TURN_MEMORY: TurnMemory[] = [
-  { learned: [DORI], proposed: [SELF], forgotten: [] },
-  { learned: [ANNA, BENCE], proposed: [], forgotten: [] },
+  { learned: [DORI], proposed: [SELF], forgotten: [], forgetRequest: false },
+  { learned: [ANNA, BENCE], proposed: [], forgotten: [], forgetRequest: false },
 ]
 export const MOCK_FORGOTTEN_TURN: TurnMemory = {
-  learned: [], proposed: [], forgotten: [asItem(ANNA, AT_22_07), asItem(BENCE, AT_22_07)],
+  learned: [], proposed: [], forgotten: [asItem(ANNA, AT_22_07), asItem(BENCE, AT_22_07)], forgetRequest: true,
 }
 export const MOCK_FORGET_ALL_PREVIEW: MemoryItem[] = [
   asItem(DORI, AT_22_05),
@@ -36,6 +35,14 @@ export const MOCK_PERSON_RECALL: ChatRecalledMemory[] = [
   { kind: 'person', label: 'Bence', gist: 'az egyetem óta ismeritek\nő szervezi a szombati edzéseket', similarity: 1 },
 ]
 
+/** Mock-only demo router: the mock has no server to set `forgetRequest`, so the seed picks its
+ *  forget turn by a loose phrase check. Real mode never uses this — the flag comes from the
+ *  backend ForgetIntent (the one matcher). */
+const looksLikeForget = (text: string) => {
+  const f = text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
+  return !/ne felejtsd el/.test(f) && /ne jegyezd meg|felejtsd el|ne mentsd|ne tarold/.test(f)
+}
+
 export function mockTurnMemory(ordinal: number, text: string): TurnMemory {
-  return isForgetRequest(text) ? MOCK_FORGOTTEN_TURN : MOCK_TURN_MEMORY[ordinal % MOCK_TURN_MEMORY.length]
+  return looksLikeForget(text) ? MOCK_FORGOTTEN_TURN : MOCK_TURN_MEMORY[ordinal % MOCK_TURN_MEMORY.length]
 }

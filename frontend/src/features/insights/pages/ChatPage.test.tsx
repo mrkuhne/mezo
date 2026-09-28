@@ -1,6 +1,6 @@
 import { render, screen, act, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -318,10 +318,42 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByText('ő szervezi a szombati edzéseket')).toBeInTheDocument()
   })
 
-  test('S8: opening a conversation shows no turn chips — only this session\'s turns get them', () => {
+  test('S8: opening a conversation shows no turn chips — only this session\'s turns get them', async () => {
     renderPage()
+    expect(await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)) })
     expect(screen.queryByText('Megjegyeztem:')).not.toBeInTheDocument()
     expect(screen.queryByText('Megjegyezném:')).not.toBeInTheDocument()
+  })
+
+  test('S8: moving to another conversation by URL (and back) disarms the chips (mezo-d6ivw.12)', async () => {
+    function UrlNav() {
+      const navigate = useNavigate()
+      return (
+        <>
+          <button type="button" onClick={() => navigate('/mezo/chat?c=other-conversation')}>url-other</button>
+          <button type="button" onClick={() => navigate(-1)}>url-back</button>
+        </>
+      )
+    }
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={['/mezo/chat']}>
+          <ChatPage />
+          <UrlNav />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Dórival nyertünk!' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(await screen.findByText('Megjegyezném:', {}, { timeout: 4000 })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'url-other' }))
+    await userEvent.click(screen.getByRole('button', { name: 'url-back' }))
+    // the sent turn is still in the thread — but it is no longer this session's armed conversation
+    expect(await screen.findByText('Dórival nyertünk!')).toBeInTheDocument()
+    expect(screen.queryByText('Megjegyezném:')).not.toBeInTheDocument()
+    expect(screen.queryByText('Megjegyeztem:')).not.toBeInTheDocument()
   })
 })
 
@@ -329,13 +361,26 @@ describe('ChatPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
+  test('S8: opening a conversation makes no turn-memory request (mezo-d6ivw.12)', async () => {
+    let asked = 0
+    server.use(http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () => {
+      asked++
+      return HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })
+    }))
+    renderPage()
+    expect(await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
+    await act(async () => { await new Promise((r) => setTimeout(r, 100)) })
+    expect(asked).toBe(0)
+    expect(screen.queryByText('még figyelek…')).not.toBeInTheDocument()
+  })
+
   test('S8: the chips anchor on the done event\'s turnUserMessageId (mezo-d6ivw.12)', async () => {
     const asked: string[] = []
     server.use(http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, ({ request }) => {
       asked.push(new URL(request.url).searchParams.get('messageId') ?? '')
       return HttpResponse.json({
         learned: [{ id: 'pf-1', personId: 'p-1', personName: 'Dóri', kind: 'preference', text: 'szereti a teát', createdAt: '2026-09-26T20:05:00Z' }],
-        proposed: [], forgotten: [],
+        proposed: [], forgotten: [], forgetRequest: false,
       })
     }))
     renderPage()

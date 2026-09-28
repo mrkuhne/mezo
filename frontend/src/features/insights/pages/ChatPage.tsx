@@ -116,26 +116,33 @@ export function ChatPage() {
   const feedback = useFeedback('chat_message', assistantIds)
 
   // S8 (mezo-d6ivw.12): every turn SENT in this session carries its memory chips; opening an old
-  // conversation fetches nothing (the S3 rule). `armedFrom` = index of this session's first user
-  // message; picking another conversation re-arms. Mock user bubbles have no id → `mock-turn-<i>`
-  // (lesson 16); real ones carry the done event's `turnUserMessageId`.
-  const [armedFrom, setArmedFrom] = useState<number | null>(null)
-  useEffect(() => {
-    if (turn && armedFrom === null) setArmedFrom(messages.length)
-  }, [turn, armedFrom, messages.length])
+  // conversation fetches nothing (the S3 rule). `armed` = which conversation was armed, and the
+  // index of this session's first user message in it. ANY move to another conversation (picker,
+  // `?c=` link, back/forward) disarms — except the draft thread's own NEW_CHAT → created-id step,
+  // which happens while the first turn is in flight. Mock user bubbles have no id →
+  // `mock-turn-<i>` (lesson 16); real ones carry the done event's `turnUserMessageId`.
+  const conversationId = isNew ? null : (selection ?? data.conversationId ?? null)
+  const [armed, setArmed] = useState<{ conversationId: string | null; index: number } | null>(null)
   const [forgottenRefs, setForgottenRefs] = useState<ReadonlySet<string>>(new Set())
+  useEffect(() => {
+    if (turn && armed === null) setArmed({ conversationId, index: messages.length })
+  }, [turn, armed, conversationId, messages.length])
+  useEffect(() => {
+    if (!armed || armed.conversationId === conversationId) return
+    if (armed.conversationId === null && conversationId !== null && turn) {
+      setArmed({ ...armed, conversationId })
+      return
+    }
+    setArmed(null)
+    setForgottenRefs(new Set())
+  }, [armed, conversationId, turn])
+  const armedFrom = armed && armed.conversationId === conversationId ? armed.index : null
   const addForgotten = useCallback((ids: string[]) => setForgottenRefs((prev) => {
     if (ids.every((id) => prev.has(id))) return prev
     const next = new Set(prev)
     ids.forEach((id) => next.add(id))
     return next
   }), [])
-  const pickConversation = (id: string | null) => {
-    setArmedFrom(null)
-    setForgottenRefs(new Set())
-    selectConversation(id)
-  }
-  const conversationId = isNew ? null : (selection ?? data.conversationId ?? null)
   const anchorFor = (assistantIndex: number): TurnAnchor | null => {
     const userIndex = assistantIndex - 1
     const user = messages[userIndex]
@@ -237,7 +244,7 @@ export function ChatPage() {
         <button
           type="button"
           className="mzc-hdisc is-new glass is-round"
-          onClick={() => pickConversation(NEW_CHAT)}
+          onClick={() => selectConversation(NEW_CHAT)}
           disabled={degraded || isNew}
           aria-label="Új beszélgetés"
         >
@@ -269,8 +276,8 @@ export function ChatPage() {
         <ConversationPickerSheet
           conversations={conversations}
           activeId={isNew ? null : (selection ?? data.conversationId)}
-          onSelect={(id) => { pickConversation(id); setPickerOpen(false) }}
-          onNew={() => { pickConversation(NEW_CHAT); setPickerOpen(false) }}
+          onSelect={(id) => { selectConversation(id); setPickerOpen(false) }}
+          onNew={() => { selectConversation(NEW_CHAT); setPickerOpen(false) }}
           onClose={() => setPickerOpen(false)}
           onActions={(c) => { setPickerOpen(false); setActionsFor(c) }}
         />
@@ -284,7 +291,7 @@ export function ChatPage() {
             // Deleting the on-screen conversation moves the URL off the dead id — the newest
             // remaining thread takes over (or the empty state when none is left).
             const currentId = isNew ? null : (selection ?? data.conversationId)
-            if (actionsFor.id === currentId) pickConversation(null)
+            if (actionsFor.id === currentId) selectConversation(null)
           }}
         />
       )}

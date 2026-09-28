@@ -20873,7 +20873,15 @@ components:
         - learned
         - proposed
         - forgotten
+        - forgetRequest
       properties:
+        forgetRequest:
+          type: boolean
+          description: >-
+            True when this user message is itself a forget request
+            (ForgetIntent) - its forgotten list may be empty when the preceding
+            message learned nothing, and it never gains learned or proposed
+            items.
         learned:
           type: array
           items:

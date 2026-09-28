@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { MemoryChip } from '@/features/insights/components/memory/MemoryChip'
 import { ForgetAllSheet } from '@/features/insights/sheets/ForgetAllSheet'
 import { useForgetAllPreview, useTurnMemory, useTurnMemoryActions } from '@/data/insights/turnMemoryHooks'
-import { EMPTY_TURN_MEMORY, type TurnAnchor } from '@/data/insights/turnMemoryApi'
-import { isForgetRequest } from '@/data/insights/forgetIntent'
+import type { TurnAnchor } from '@/data/insights/turnMemoryApi'
 import { useToast } from '@/shared/ui/ToastProvider'
 
 /**
@@ -14,9 +13,9 @@ import { useToast } from '@/shared/ui/ToastProvider'
  * still running and nothing is back, the S3 "még figyelek…" status shows; nothing at all → nothing.
  *
  * Owner ruling 2026-09-28: a forget request forgets only the preceding message; when that learned
- * nothing the forgotten list comes back EMPTY. The wire has no "forget turn" flag, so the request
- * text is read with the backend's own phrase set (`isForgetRequest`) — a loaded, empty forget turn
- * renders the forgotten chip's empty state (with the widen offer), never nothing.
+ * nothing the forgotten list comes back EMPTY; the backend flags the turn (`forgetRequest`, from
+ * its ForgetIntent), so a loaded, empty forget turn renders the forgotten chip's empty state (with
+ * the widen offer), never nothing.
  */
 export function TurnMemoryChips({ conversationId, anchor, forgottenRefs, onForgotten }: {
   conversationId: string | null
@@ -24,14 +23,12 @@ export function TurnMemoryChips({ conversationId, anchor, forgottenRefs, onForgo
   forgottenRefs: ReadonlySet<string>
   onForgotten: (refIds: string[]) => void
 }) {
-  const { memory, pending } = useTurnMemory(conversationId, anchor)
+  const { memory, pending, loaded } = useTurnMemory(conversationId, anchor)
   const actions = useTurnMemoryActions(conversationId, anchor)
   const toast = useToast()
   const [widened, setWidened] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
-  // `useTurnMemory` falls back to the EMPTY_TURN_MEMORY constant itself until the first answer lands.
-  const loaded = memory !== EMPTY_TURN_MEMORY
-  const emptyForget = loaded && memory.forgotten.length === 0 && isForgetRequest(anchor.text)
+  const emptyForget = loaded && memory.forgetRequest && memory.forgotten.length === 0
   const showForgotten = memory.forgotten.length > 0 || emptyForget
   const preview = useForgetAllPreview(conversationId, showForgotten && !widened)
   const forgottenIds = memory.forgotten.map((f) => f.refId).join(',')

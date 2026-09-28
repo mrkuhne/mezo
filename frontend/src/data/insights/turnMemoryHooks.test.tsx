@@ -39,7 +39,7 @@ describe('useTurnMemory (real mode)', () => {
       calls++
       return HttpResponse.json({
         learned: calls === 1 ? [] : [{ id: 'pf-1', personId: 'p-1', personName: 'Dóri', kind: 'preference', text: 'szereti a teát', createdAt: '2026-09-26T20:05:00Z' }],
-        proposed: [], forgotten: [],
+        proposed: [], forgotten: [], forgetRequest: false,
       })
     }))
     const { result } = renderHook(() => useTurnMemory('c-1', { id: 'u-1', ordinal: 0, text: 'x' }), { wrapper: makeHookWrapper() })
@@ -49,7 +49,7 @@ describe('useTurnMemory (real mode)', () => {
 
   test('without an anchor nothing is fetched', () => {
     const { result } = renderHook(() => useTurnMemory('c-1', null), { wrapper: makeHookWrapper() })
-    expect(result.current).toEqual({ memory: { learned: [], proposed: [], forgotten: [] }, pending: false })
+    expect(result.current).toEqual({ memory: { learned: [], proposed: [], forgotten: [], forgetRequest: false }, pending: false, loaded: false })
   })
 
   // Fix round 1 (mezo-d6ivw.12): the ladder must be 2000ms → 3000ms → 5000ms, then stop —
@@ -60,7 +60,7 @@ describe('useTurnMemory (real mode)', () => {
       const callTimes: number[] = []
       server.use(http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () => {
         callTimes.push(Date.now())
-        return HttpResponse.json({ learned: [], proposed: [], forgotten: [] })
+        return HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })
       }))
       renderHook(() => useTurnMemory('c-1', { id: 'u-1', ordinal: 0, text: 'x' }), { wrapper: makeHookWrapper() })
 
@@ -78,6 +78,27 @@ describe('useTurnMemory (real mode)', () => {
 
       await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
       expect(callTimes).toHaveLength(4) // ladder exhausted — no further polls
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  // Fix round (mezo-d6ivw.12): a forget request's row is extraction-blocked — one answer is final.
+  test('a forget request is fetched once: no poll, not pending, loaded', async () => {
+    vi.useFakeTimers()
+    try {
+      let calls = 0
+      server.use(http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () => {
+        calls++
+        return HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: true })
+      }))
+      const { result } = renderHook(() => useTurnMemory('c-1', { id: 'u-9', ordinal: 0, text: 'x' }), { wrapper: makeHookWrapper() })
+      await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+      await act(async () => { await vi.advanceTimersByTimeAsync(20_000) })
+      expect(calls).toBe(1)
+      expect(result.current.loaded).toBe(true)
+      expect(result.current.pending).toBe(false)
+      expect(result.current.memory.forgetRequest).toBe(true)
     } finally {
       vi.useRealTimers()
     }

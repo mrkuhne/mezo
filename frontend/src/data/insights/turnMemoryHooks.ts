@@ -24,7 +24,9 @@ const isEmpty = (m: TurnMemory) => m.learned.length + m.proposed.length + m.forg
  * `GET …/turn-memory` on the 2s/3s/5s ladder; mock mode serves the inline seed through the SAME
  * query cache, so the actions below patch one place in both modes.
  */
-export function useTurnMemory(conversationId: string | null, anchor: TurnAnchor | null): { memory: TurnMemory; pending: boolean } {
+export function useTurnMemory(conversationId: string | null, anchor: TurnAnchor | null): {
+  memory: TurnMemory; pending: boolean; loaded: boolean
+} {
   const mock = isMockMode()
   const attempts = useRef(0)
   const lastId = useRef<string | null>(null)
@@ -32,7 +34,7 @@ export function useTurnMemory(conversationId: string | null, anchor: TurnAnchor 
     lastId.current = anchor?.id ?? null
     attempts.current = 0
   }
-  const { data } = useQuery<TurnMemory>({
+  const { data, isFetched } = useQuery<TurnMemory>({
     queryKey: turnMemoryKey(conversationId, anchor?.id ?? ''),
     enabled: !!anchor && (mock || !!conversationId),
     queryFn: async () => {
@@ -42,7 +44,9 @@ export function useTurnMemory(conversationId: string | null, anchor: TurnAnchor 
     },
     refetchInterval: (query) => {
       if (mock) return false
-      if ((query.state.data?.forgotten.length ?? 0) > 0) return false
+      // a forget turn's list is synchronous with the reply, and its row is extraction-blocked —
+      // it can never gain content, so one answer is final
+      if (query.state.data?.forgetRequest || (query.state.data?.forgotten.length ?? 0) > 0) return false
       // attempts.current counts COMPLETED fetches (incremented before the await in queryFn), so
       // the delay for the NEXT poll is indexed one behind it — fix round 1 (mezo-d6ivw.12): the
       // un-shifted index skipped delays[0] entirely, running 3s/5s instead of 2s/3s/5s.
@@ -55,8 +59,9 @@ export function useTurnMemory(conversationId: string | null, anchor: TurnAnchor 
   const memory = data ?? EMPTY_TURN_MEMORY
   // Symmetric with the refetchInterval stop condition above: attempts.current counts completed
   // fetches, and the ladder still has a poll queued up through (and including) the 3rd follow-up.
-  const pending = !mock && !!anchor && isEmpty(memory) && attempts.current <= TURN_MEMORY_POLL_DELAYS.length
-  return { memory, pending }
+  const pending = !mock && !!anchor && !memory.forgetRequest && isEmpty(memory)
+    && attempts.current <= TURN_MEMORY_POLL_DELAYS.length
+  return { memory, pending, loaded: isFetched }
 }
 
 /** The four chip actions of one turn, each a promise the chip turns into busy/error/done. */

@@ -54,6 +54,7 @@ public class TurnMemoryService {
         Map<UUID, String> names = facts == null ? Map.of()
                 : facts.personNames(userId, personFacts.stream().map(PersonFactEntity::getPersonId).toList());
         return TurnMemoryResponse.builder()
+                .forgetRequest(ForgetIntent.matches(message.getContent()))
                 .learned(personFacts.stream()
                         .map(f -> mapper.toTurnPersonFactResponse(f, names.getOrDefault(f.getPersonId(), "")))
                         .toList())

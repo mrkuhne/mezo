@@ -59,6 +59,19 @@ class TurnMemoryServiceIT extends AbstractIntegrationTest {
         assertThat(memory.getProposed()).extracting(c -> c.getCandidateText())
                 .containsExactly("Nagy közös élmény után nehéz az egyedüllét.");
         assertThat(memory.getForgotten()).isEmpty();
+        assertThat(memory.getForgetRequest()).isFalse();
+    }
+
+    @Test
+    void testTurnMemory_shouldFlagAForgetRequest_evenWhenNothingWasForgotten() {
+        UUID userId = databasePopulator.populateUser("s8-turnmem-forget@test.local");
+        AiConversationEntity conversation = conversations.conversation(userId);
+        AiMessageEntity forget = messages.message(conversation, AiMessageEntity.ROLE_USER, "Az Annásat inkább ne jegyezd meg.");
+
+        TurnMemoryResponse memory = turnMemoryService.turnMemory(userId, conversation.getId(), forget.getId());
+
+        assertThat(memory.getForgetRequest()).isTrue();
+        assertThat(memory.getForgotten()).isEmpty();
     }
 
     @Test
