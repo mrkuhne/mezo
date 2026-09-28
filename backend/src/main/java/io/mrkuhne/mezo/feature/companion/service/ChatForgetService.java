@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.entity.ChatMemoryItem;
 import io.mrkuhne.mezo.feature.companion.entity.ForgottenMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.people.service.MentionDetectionService;
 import io.mrkuhne.mezo.feature.people.service.PersonFactService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class ChatForgetService {
     private final FactCandidateService factCandidateService;
     private final ForgetService forgetService;
     private final ObjectProvider<PersonFactService> personFactService;
+    private final ObjectProvider<MentionDetectionService> mentionDetectionService;
 
     /** Forgets what the IMMEDIATELY PRECEDING user message of the conversation learned (owner
      *  ruling 2026-09-28: never walks back to an older turn — "ezt" means the last thing said).
@@ -53,6 +55,7 @@ public class ChatForgetService {
         }
         UUID preceding = rows.getLast();
         block(preceding);
+        forgetMentions(userId, List.of(preceding));
         // read AFTER the row lock: an extraction that committed meanwhile is included
         return forgetItems(userId, turnMemoryService.liveItemsOf(userId, List.of(preceding)));
     }
@@ -72,6 +75,7 @@ public class ChatForgetService {
         AiMessageEntity trigger = turnMemoryService.ownedUserMessage(userId, conversationId, triggerMessageId);
         List<UUID> rows = turnMemoryService.userMessageIds(userId, conversationId);
         rows.forEach(this::block);
+        forgetMentions(userId, rows);
         List<ChatMemoryItem> forgotten = forgetItems(userId, turnMemoryService.liveItemsOf(userId, rows));
         AiMessageEntity fresh = messageRepository.findById(trigger.getId()).orElseThrow();
         fresh.setForgottenMemories(ForgottenMemoriesEnvelope.append(fresh.getForgottenMemories(), forgotten));
@@ -85,6 +89,17 @@ public class ChatForgetService {
             m.setExtractionBlocked(true);
             messageRepository.saveAndFlush(m); // the UPDATE takes the row lock the gate waits on
         });
+    }
+
+    /** mezo-tdabt: the people mentions written from the forgotten user messages go too (the daily
+     *  summary and the person page quote their excerpts). Runs AFTER {@link #block}: a mention the
+     *  async listener committed meanwhile is read here; one still in flight sees the block through
+     *  the gate and is never written. Skipped when the people bean is absent. */
+    private void forgetMentions(UUID userId, List<UUID> userMessageIds) {
+        MentionDetectionService mentions = mentionDetectionService.getIfAvailable();
+        if (mentions != null) {
+            mentions.forgetBySourceRefs(userId, ChatMentionListener.SOURCE_REF_KIND, userMessageIds);
+        }
     }
 
     private List<ChatMemoryItem> forgetItems(UUID userId, List<ChatMemoryItem> items) {

@@ -1723,6 +1723,27 @@ the widen-to-conversation step. Published to the Mezo artifact URL; owner OK bef
   - "ezt ne jegyezd meg" shows "Elfelejtettem";
   - a prod DB check that the veto rows and the forgotten envelope exist.
 
+## S8b delta — forget really forgets (2026-09-28, owner delegated the decision, mezo-tdabt)
+
+**Owner decision (delegated: "rád bízom, vidd végig"):** the chip promises *"többé nem
+használom"*, so a chat turn whose **user** message is `extraction_blocked` (the forgotten
+message, every message on forget-all, and the forget request itself) is gone from every memory
+channel, not only from extraction:
+
+- **Recall:** `MemorySourceVisibilitySql`'s `chat_turn` clause hides an item whose paired user
+  message (the same pairing `MemorySourceRepairQuery` projects: the latest live user row of the
+  conversation at or before the assistant row) is blocked; the repair sweep treats the pair as
+  not-live, so the projected `memory_item` is retired, not just filtered. The legacy ANN path and
+  `TurnEmbeddingListener` follow the same rule.
+- **Mentions:** a blocked turn creates no `mention`, and a forget soft-deletes the mentions
+  already made from the blocked messages (people-owned port, companion → people). The daily
+  summary and the person timeline therefore stop quoting it.
+- **Raw-record reads** (personal-record tool, reflection evidence) skip blocked user rows and the assistant reply paired with one.
+
+**Out of scope:** the running conversation's own history (the user can delete the
+conversation); rewriting daily summaries already written before the forget; `mezo-vruhq`,
+`mezo-gwh0y`.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)

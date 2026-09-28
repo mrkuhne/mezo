@@ -33,6 +33,9 @@ public class TurnEmbeddingListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onChatTurnCompleted(ChatTurnCompleted event) {
+        if (event.extractionBlocked()) {
+            return; // mezo-tdabt: a forget request's turn is never remembered (the writer re-checks too)
+        }
         try {
             LlmActorContext.runAsCaptured(event.userId(), () ->
                     memoryEmbeddingWriter.embedTurnByMessageId(event.assistantMessageId()));

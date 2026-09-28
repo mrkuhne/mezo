@@ -29,4 +29,19 @@ public class MentionPopulator {
         m.setFlagged(false);
         return mentionRepository.saveAndFlush(m);
     }
+
+    /** A chat-sourced mention, as {@code ChatMentionListener} writes it (ref = the USER message). */
+    public MentionEntity createChatMention(UUID owner, UUID personId, Instant ts, String excerpt,
+                                           UUID userMessageId) {
+        MentionEntity m = new MentionEntity();
+        m.setCreatedBy(owner);
+        m.setPersonId(personId);
+        m.setTs(ts);
+        m.setSource("chat");
+        m.setExcerpt(excerpt);
+        m.setSourceRefKind("chat_turn");
+        m.setSourceRefId(userMessageId);
+        m.setFlagged(false);
+        return mentionRepository.saveAndFlush(m);
+    }
 }
