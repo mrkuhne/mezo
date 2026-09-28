@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.PlannedSkipKind;
+import io.mrkuhne.mezo.api.dto.PlannedSkipReason;
 import io.mrkuhne.mezo.api.dto.PlannedSkipRequest;
 import io.mrkuhne.mezo.api.dto.PlannedSkipResponse;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -90,14 +93,23 @@ public class PlannedSkipService {
     @Transactional
     public void undo(UUID user, UUID id) {
         lock.lock(user);
-        boolean removed = repository.findByIdAndCreatedByAndDeletedFalse(id, user)
+        var found = repository.findByIdAndCreatedByAndDeletedFalse(id, user);
+        boolean removed = found
             .map(e -> {
                 repository.delete(e);
                 repository.flush();
                 return true;
             })
             .orElse(false);
-        if (!removed && !sportSlotSkipService.deleteOwned(user, id)) {
+        if (removed) {
+            // "Visszavonom" on a USER SPORT skip must really put the session back — also drop the
+            // ADVICE sport_slot_skip twin for the same occurrence, if one exists (controller
+            // ruling, Kihagyás S1, mezo-q4xt2.1).
+            PlannedSkipEntity e = found.orElseThrow();
+            if (e.getKind() == Kind.SPORT) {
+                sportSlotSkipService.deleteMatchingAdviceTwin(user, e.getDayOfWeek(), e.getTime(), e.getDate());
+            }
+        } else if (!sportSlotSkipService.deleteOwned(user, id)) {
             throw new SystemRuntimeErrorException(SystemMessage.error("TRAIN_SKIP_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
         }
     }
@@ -118,20 +130,39 @@ public class PlannedSkipService {
         LocalDate weekFrom = from.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate weekTo = to.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
+        List<PlannedSkipEntity> userRows = repository.findByCreatedByAndDateBetweenAndDeletedFalse(user, weekFrom, weekTo);
         List<Row> rows = new ArrayList<>();
-        for (PlannedSkipEntity e : repository.findByCreatedByAndDateBetweenAndDeletedFalse(user, weekFrom, weekTo)) {
+        for (PlannedSkipEntity e : userRows) {
             rows.add(new Row(e.getId(), e.getDate(), e.getKind(), e.getDayOfWeek(), e.getTime(), e.getSessionKey(),
                 e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt()));
         }
+
+        // A USER SPORT skip is authoritative over an ADVICE twin on the same occurrence (same
+        // date + dayOfWeek + time) — controller ruling, Kihagyás S1 (mezo-q4xt2.1). Drop the
+        // ADVICE row before judging so only one row per occurrence ever reaches the policy.
+        Set<SlotIdentity> userSportSlots = userRows.stream()
+            .filter(e -> e.getKind() == Kind.SPORT)
+            .map(e -> new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))
+            .collect(Collectors.toSet());
         for (SportSlotSkipEntity e : sportSlotSkipService.rowsBetween(user, weekFrom, weekTo)) {
+            if (userSportSlots.contains(new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))) {
+                continue;
+            }
             rows.add(new Row(e.getId(), e.getDate(), Kind.SPORT, e.getDayOfWeek(), e.getTime(), null,
                 Reason.NONE, null, Source.ADVICE, e.getCreatedAt()));
         }
 
         return PlannedSkipPolicy.judge(rows).stream()
             .filter(v -> !v.row().date().isBefore(from) && !v.row().date().isAfter(to))
-            .sorted(Comparator.comparing((Verdict v) -> v.row().date()).thenComparing(v -> v.row().createdAt()))
+            .sorted(Comparator.comparing((Verdict v) -> v.row().date())
+                .thenComparing(v -> v.row().createdAt())
+                .thenComparing(v -> v.row().id()))
             .toList();
+    }
+
+    /** Identity of one SPORT occurrence — date + weekday + clock time — used to drop an ADVICE
+     *  row when a USER row covers the same slot (Kihagyás S1 controller ruling). */
+    private record SlotIdentity(LocalDate date, Integer dayOfWeek, String time) {
     }
 
     /** Dates in [from, to] where a skip of this kind was excused (does not count as missed). */
@@ -198,11 +229,11 @@ public class PlannedSkipService {
         return new PlannedSkipResponse()
             .id(r.id())
             .date(r.date())
-            .kind(io.mrkuhne.mezo.api.dto.PlannedSkipKind.valueOf(r.kind().name()))
+            .kind(PlannedSkipKind.valueOf(r.kind().name()))
             .dayOfWeek(r.dayOfWeek())
             .time(r.time())
             .sessionKey(r.sessionKey())
-            .reasonCategory(io.mrkuhne.mezo.api.dto.PlannedSkipReason.valueOf(r.reason().name()))
+            .reasonCategory(PlannedSkipReason.valueOf(r.reason().name()))
             .reasonText(r.reasonText())
             .source(PlannedSkipResponse.SourceEnum.valueOf(r.source().name()))
             .serious(v.serious())
