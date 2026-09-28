@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-26
+updated: 2026-09-28
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -104,6 +104,7 @@ Backend: `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`, `RecipeMapperTe
 
 - **Backend:** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe/{entity/RecipeEntity,entity/RecipeIngredientEntity,repository/RecipeRepository,repository/RecipeIngredientRepository,mapper/RecipeMapper,service/RecipeService,service/RecipeBreakdownService,service/RecipeBreakdownProseService,service/RecipeWorkshopService,service/RecipeWorkshopValidator,controller/RecipeController,controller/RecipeWorkshopController}.java`
 - **Contract:** `api/feature/recipe/recipe.yml`
+- **Design source:** the editor's header comment points at its approved pre-üveg mock, now archived at `docs/archive/design-v1/recipes-editor.html` (moved by `mezo-iwmsw`); the living look is the Üveg one (2026-09-23 note above).
 - **FE data:** `frontend/src/data/fuel/{recipeApi,recipeHooks,recipeMacros,pantryImpact,queryKeys}.ts`
 - **FE views/sheets/components:** `frontend/src/features/fuel/pages/{FuelRecipesPage,RecipeDetailPage,RecipeEditorPage,RecipeWorkshopPage}.tsx`, `RecipeCard`, `RecipeFitBadge`, `RecipeIngredientList`/`Row`, `RecipeLogsList`, `RecipeOverrideRow`, `IngredientPickerSheet` (the score opens on `FuelRecipeScorePage` → `FuelScoreSurface`; `RecipeScoreSheet` was deleted in `mezo-8slef`)
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe/*.java`
