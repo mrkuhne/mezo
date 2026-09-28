@@ -67,6 +67,7 @@ import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import {
   useDietSettings, useFuelDay, useFuelTimeline, useWaterActions,
 } from '@/data/hooks'
+import { useExpenditureWeeklyCard } from '@/data/fuel/expenditureHooks'
 import { buildKeretHero, asPastDayHero, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, asPastDayLane, tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { trainingSpan } from '@/features/fuel/logic/mealWindow'
@@ -101,6 +102,8 @@ export function FuelMaiPage() {
   // settings instead of the static FIBER_TARGET_G default.
   const { settings: dietSettings } = useDietSettings()
   const { logWater } = useWaterActions(date)
+  // mezo-3n2so: the weekly learning summary — `null` unless there is something worth saying.
+  const { card: weeklyCard } = useExpenditureWeeklyCard()
 
   const [waterOpen, setWaterOpen] = useState(false)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
@@ -167,6 +170,7 @@ export function FuelMaiPage() {
               // A15: the shared sheet, opened at its first section — not the hero's local box.
               onOpenEnergy={() => setEnergyOpen('base')}
               onWater={() => setWaterOpen(true)}
+              weeklyCard={past ? null : weeklyCard}
             />
           </div>
         )}

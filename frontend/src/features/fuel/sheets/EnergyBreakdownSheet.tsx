@@ -3,6 +3,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { LearnedBaseExplainer } from '@/features/fuel/sheets/LearnedBaseExplainer'
+import { CONFIDENCE_WORD } from '@/features/fuel/sheets/learnedBaseFormat'
 
 // Shared, presentational explanation of a composed daily-energy number (base + movement ± deficit).
 // Opened from the Fuel "Mai cél" chips and the Profile Alap-TDEE card; both build the `EnergyBreakdown`
@@ -52,8 +53,6 @@ const PART_TILE: Record<EnergyPart['key'], { icon: Icon3DName; sub: string }> = 
 }
 const SEG_COLOR = { sage: 'var(--dv-sage)', amber: 'var(--dv-amber)', coral: 'var(--dv-coral)' } as const
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
-// Learned-base confidence words (mezo-zz91i), verbatim per the spec.
-const CONFIDENCE_WORD = { low: 'Még tanulok', medium: 'Közepesen biztos', high: 'Biztos' } as const
 
 // The app renders plain rounded kcal (no thousands grouping — see the screenshots / BiometricCard).
 const nf = (n: number) => String(Math.round(n))

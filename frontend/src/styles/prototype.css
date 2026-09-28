@@ -29862,3 +29862,65 @@ main.settings-page {
 .pmx-confirm-q { font-size: 13px; line-height: 1.45; color: var(--text-secondary); margin: 0 0 10px; }
 .pmx-confirm-q b { color: var(--text-primary); font-weight: 600; }
 /* ── /uveg minta ujramesele ── */
+
+/* ── heti tanulás (mezo-3n2so, learned expenditure part 2, spec §5.1) ──
+   Build target: docs/design_2.0/prototypes/elo/fuel.html `.wdot` / `.node.wl` / `SH.weekly`
+   (`.wc-*`, `.qbtn`, `.st-*`), 1:1 values in house tokens. The dot is a SIGNAL only (no pointer
+   events, no pulse); the Alap row around it is the tap target. Sage, amber when the week held. */
+.fmx-tapchip { min-height: 44px; }
+.fwl-dot {
+  --c: var(--dv-sage);
+  display: inline-block; flex: 0 0 auto; width: 8px; height: 8px; margin: 0 3px 1px 7px;
+  border-radius: 50%; vertical-align: middle; background: var(--c); pointer-events: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 22%, transparent), 0 0 9px var(--c);
+}
+.fwl-dot.is-hold { --c: var(--dv-amber); }
+/* The highlighted Alap row: one full-width button. It bleeds 10px past the flow on both sides so
+   its icon stays on the equation spine while the tinted fill + ring get their inner padding. */
+.fmx-node.is-weekly {
+  --c: var(--dv-sage); --node-color: var(--c);
+  width: calc(100% + 20px); min-height: 52px; margin: 0 -10px; padding: 9px 10px;
+  border: 0; border-radius: 14px; font: inherit; color: inherit; cursor: pointer;
+  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.035));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent), 0 0 14px -6px var(--c);
+}
+.fmx-node.is-weekly.is-hold { --c: var(--dv-amber); }
+/* The box's scroll layer clips horizontally (overflow-y: auto): give it the bleed's 10px back out
+   of the box's 21px padding, only while the weekly row is present. */
+.fmx-glass-scroll:has(.fmx-node.is-weekly) { margin-inline: -10px; padding-inline: 10px; }
+.fmx-node.is-weekly .fmx-node-copy small { color: color-mix(in srgb, var(--c) 70%, var(--text-secondary)); }
+.fmx-node.is-weekly:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+/* the „Heti tanulás” sheet */
+.sheet.glass.uv-sheet.uvl-fuel.fwl-sheet.is-hold { --c: var(--dv-amber); }
+.fwl-sheet .fwl-head { margin-bottom: 12px; }
+.fwl-sub { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.fwl-step { margin-top: 10px; font-size: 14px; color: var(--text-secondary); }
+.fwl-step b { margin-right: 4px; font-size: 24px; font-weight: 600; letter-spacing: -0.8px;
+  color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
+.fwl-why { margin: 10px 0 0; font: italic 400 14px/1.4 var(--ff-serif); color: var(--text-secondary); }
+.fwl-why b { font-family: var(--ff-body); font-style: normal; font-weight: 600; color: var(--text-primary); }
+.fwl-days { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.fwl-day { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px;
+  background: rgba(245, 239, 230, 0.04); }
+.fwl-grow { flex: 1; min-width: 0; }
+.fwl-day strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.fwl-day small { font-size: 11.5px; color: var(--text-secondary); }
+.fwl-st { font-style: normal; }
+.fwl-st.st-ok { color: var(--dv-sage); }
+.fwl-st.st-sus { color: var(--dv-rose); }
+.fwl-st.st-mc { color: #BFE3C9; }
+.fwl-st.st-mi { color: var(--dv-amber); }
+.fwl-st.st-none { color: var(--text-disabled); }
+.fwl-fine { margin: 4px 0 0; font-size: 10.5px; line-height: 1.4; color: var(--text-disabled); }
+.fwl-msg { display: flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 8px 10px; border-radius: 12px;
+  font-size: 13px; font-weight: 600; color: var(--text-primary);
+  background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 3px 0 0 var(--c); }
+.fwl-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.fwl-qbtn { flex: 0 0 auto; padding: 7px 12px; border: 0; border-radius: 999px; white-space: nowrap;
+  font: 600 12.5px/1.2 var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fwl-qbtn.is-on { color: #141210; background: var(--dv-sage);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sage) 50%, transparent); }
+.fwl-qbtn.is-ghost { background: none; box-shadow: none; color: var(--text-disabled); }
+.fwl-qbtn:disabled { opacity: 0.6; }
+/* ── /heti tanulás ── */
