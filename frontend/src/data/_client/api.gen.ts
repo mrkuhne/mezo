@@ -2093,7 +2093,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent.
+         * Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives it and vetoes its text (S8). One decision per candidate; confirm is an explicit L2 action, never silent.
          * @description The promoted fact inherits the candidate's `source`: a chat-extracted candidate becomes a `chat` fact, a weekly-review candidate a `weekly_review` one (mezo-d20.7.6) — promotion never re-labels where the insight came from.
          */
         post: operations["decideFactCandidate"];
@@ -8286,8 +8286,11 @@ export interface components {
             createdAt: string;
         };
         FactDecisionRequest: {
-            /** @description snooze = „Most ne”: hidden for 14 days, then re-offered; stays undecided */
-            decision: string;
+            /**
+             * @description snooze = Most ne: hidden for 14 days, then re-offered, stays undecided. reject is permanent since S8 (mezo-d6ivw.12): the candidate text is vetoed and never proposed again.
+             * @enum {string}
+             */
+            decision: "accept" | "reject" | "refine" | "snooze";
             /** @description Required when decision is refine — the corrected fact wording. */
             refinedText?: string | null;
         };

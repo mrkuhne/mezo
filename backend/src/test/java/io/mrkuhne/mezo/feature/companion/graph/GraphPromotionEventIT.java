@@ -76,7 +76,7 @@ class GraphPromotionEventIT extends ApiIntegrationTest {
         LearnedFactEntity candidate = learnedFactPopulator.candidate(owner, "Laktózérzékeny vagyok.", null);
 
         postForBody("/api/companion/fact/candidate/" + candidate.getId() + "/decision",
-            FactDecisionRequest.builder().decision("accept").build(),
+            FactDecisionRequest.builder().decision(FactDecisionRequest.DecisionEnum.ACCEPT).build(),
             ownerAuthHeaders(), HttpStatus.OK, Object.class);
 
         await().atMost(10, SECONDS).untilAsserted(() -> {

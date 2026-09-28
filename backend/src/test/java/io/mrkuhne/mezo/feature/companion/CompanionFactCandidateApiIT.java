@@ -10,7 +10,9 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,7 +33,9 @@ class CompanionFactCandidateApiIT extends ApiIntegrationTest {
     }
 
     private FactDecisionRequest decision(String decision, String refinedText) {
-        return FactDecisionRequest.builder().decision(decision).refinedText(refinedText).build();
+        return FactDecisionRequest.builder()
+                .decision(FactDecisionRequest.DecisionEnum.fromValue(decision))
+                .refinedText(refinedText).build();
     }
 
     @Test
@@ -109,5 +113,29 @@ class CompanionFactCandidateApiIT extends ApiIntegrationTest {
                 decision("accept", null), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    /**
+     * An unknown {@code decision} value is rejected — never silently accepted or promoted. The
+     * status is currently 500, not 400: enum deserialization failure on a REQUEST BODY field
+     * throws {@code HttpMessageNotReadableException}, which {@code GlobalExceptionHandler} does not
+     * map yet (the same pre-existing, out-of-scope gap {@code MedicationApiIT} documents for a
+     * zone-less date body). Fixing that mapping is a separate, cross-cutting change; this test only
+     * proves the enum now rejects the value at all, instead of a pattern-validated string ever
+     * reaching {@code FactCandidateService} as a valid decision.
+     */
+    @Test
+    void testDecideFactCandidate_shouldRejectAndNotPersist_whenDecisionIsNotInTheEnum() {
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(ownerId(), "Enum-próba", "life", null);
+
+        ResponseEntity<String> res = exchangeForResponse(HttpMethod.POST,
+                "/api/companion/fact/candidate/" + candidate.getId() + "/decision",
+                java.util.Map.of("decision", "maybe"), ownerAuthHeaders());
+
+        assertThat(res.getStatusCode().is2xxSuccessful()).isFalse();
+        assertThat(res.getStatusCode().value()).isGreaterThanOrEqualTo(400);
+        List<FactCandidateResponse> pending =
+                getForList(CANDIDATES, ownerAuthHeaders(), HttpStatus.OK, FactCandidateResponse.class);
+        assertThat(pending).extracting(FactCandidateResponse::getId).contains(candidate.getId());
     }
 }

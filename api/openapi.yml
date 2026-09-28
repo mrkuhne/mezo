@@ -5467,8 +5467,8 @@ paths:
       operationId: decideFactCandidate
       summary: >-
         Decide a candidate (V1.2) — accept/refine promote it into a knowledge
-        fact, reject archives it. One decision per candidate; confirm is an
-        explicit L2 action, never silent.
+        fact, reject archives it and vetoes its text (S8). One decision per
+        candidate; confirm is an explicit L2 action, never silent.
       description: >-
         The promoted fact inherits the candidate's `source`: a chat-extracted
         candidate becomes a `chat` fact, a weekly-review candidate a
@@ -20736,10 +20736,15 @@ components:
       properties:
         decision:
           type: string
-          pattern: ^(accept|reject|refine|snooze)$
+          enum:
+            - accept
+            - reject
+            - refine
+            - snooze
           description: >-
-            snooze = „Most ne”: hidden for 14 days, then re-offered; stays
-            undecided
+            snooze = Most ne: hidden for 14 days, then re-offered, stays
+            undecided. reject is permanent since S8 (mezo-d6ivw.12): the
+            candidate text is vetoed and never proposed again.
         refinedText:
           type: string
           minLength: 1
