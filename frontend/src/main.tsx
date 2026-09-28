@@ -7,9 +7,13 @@ import { QueryProvider } from '@/app/providers/QueryProvider'
 import { routes } from '@/app/router'
 import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
+import { installAutoGrow } from '@/shared/lib/autoGrow'
 import '@/index.css'
 
 const router = createBrowserRouter(routes)
+
+// Every textarea grows with its text instead of trapping it in a tiny scroll box.
+installAutoGrow()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
