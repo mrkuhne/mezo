@@ -75,6 +75,18 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     Optional<AiMessageEntity> findByIdAndConversationIdAndCreatedByAndDeletedFalse(
             UUID id, UUID conversationId, UUID createdBy);
 
+    /** S8: the conversation's USER message ids, oldest first — ids only, the prompt path runs this
+     *  every turn and needs no entity (turn-memory, forget, [Ebben a beszélgetésben]). */
+    @Query("""
+        select m.id from AiMessageEntity m
+         where m.conversation.id = :conversationId
+           and m.createdBy = :createdBy
+           and m.role = 'user'
+           and m.deleted = false
+         order by m.createdAt asc
+        """)
+    List<UUID> findUserMessageIds(@Param("conversationId") UUID conversationId, @Param("createdBy") UUID createdBy);
+
     /** S8: FOR SHARE waits for an uncommitted forget's row lock — see MessageExtractionGate. */
     @Query(value = "select extraction_blocked from ai_message where id = :id for share", nativeQuery = true)
     Optional<Boolean> lockExtractionBlocked(@Param("id") UUID id);

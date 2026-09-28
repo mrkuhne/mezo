@@ -195,8 +195,11 @@ public class PersonFactService {
             .toList();
     }
 
-    /** S8 (mezo-d6ivw.12): {@link #bySourceRef} for several sources at once — the turn-memory read. */
-    @Transactional(readOnly = true)
+    /** S8 (mezo-d6ivw.12): {@link #bySourceRef} for several sources at once — the turn-memory read.
+     *  Deliberately NOT {@code @Transactional}, like {@link #personNames}: the chat turn's memory
+     *  block calls it inside the turn's transaction and must stay fail-open — a throwing
+     *  participating transactional method would mark the turn rollback-only past the caller's
+     *  catch ({@code PeopleService#chatContextFor} lesson). Reads join the caller's transaction. */
     public List<PersonFactEntity> bySourceRefs(UUID userId, String sourceRefKind, Collection<String> sourceRefIds) {
         if (sourceRefIds.isEmpty()) {
             return List.of();
@@ -206,8 +209,8 @@ public class PersonFactService {
                 userId, sourceRefKind, sourceRefIds);
     }
 
-    /** S8: display names for fact chips — any non-deleted person, whatever its status. */
-    @Transactional(readOnly = true)
+    /** S8: display names for fact chips — any non-deleted person, whatever its status. Not
+     *  {@code @Transactional} — see {@link #bySourceRefs}. */
     public Map<UUID, String> personNames(UUID userId, Collection<UUID> personIds) {
         if (personIds.isEmpty()) {
             return Map.of();

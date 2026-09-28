@@ -16,8 +16,11 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -65,25 +68,26 @@ public class TurnMemoryService {
                 .build();
     }
 
-    /** The conversation's USER message ids, oldest first. */
-    @Transactional(readOnly = true)
+    /*
+     * The reads below are deliberately NOT @Transactional (S8 final review): every caller already
+     * runs inside a transaction (ChatForgetService, the chat turn), and the chat turn's
+     * [Ebben a beszélgetésben] block must stay fail-open — a throw through a PARTICIPATING
+     * transactional method would mark the turn rollback-only past ChatMemoryBlocks' catch
+     * (the PeopleService#chatContextFor lesson). Reads join the caller's transaction.
+     */
+
+    /** The conversation's USER message ids, oldest first (an id-only query). */
     public List<UUID> userMessageIds(UUID userId, UUID conversationId) {
-        return messageRepository
-                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversationId, userId).stream()
-                .filter(m -> AiMessageEntity.ROLE_USER.equals(m.getRole()))
-                .map(AiMessageEntity::getId)
-                .toList();
+        return messageRepository.findUserMessageIds(conversationId, userId);
     }
 
     /** Every still-live memory item of the conversation — forget-all preview + [Ebben a beszélgetésben]. */
-    @Transactional(readOnly = true)
     public List<ChatMemoryItem> liveItems(UUID userId, UUID conversationId) {
         return liveItemsOf(userId, userMessageIds(userId, conversationId));
     }
 
     /** Live items of the given user messages, newest first: active chat person facts, undecided
      *  candidates (pending), accepted/refined candidates as their live knowledge fact. */
-    @Transactional(readOnly = true)
     public List<ChatMemoryItem> liveItemsOf(UUID userId, Collection<UUID> messageIds) {
         if (messageIds.isEmpty()) {
             return List.of();
@@ -116,12 +120,15 @@ public class TurnMemoryService {
         if (messageIds.isEmpty()) {
             return List.of();
         }
-        return learnedFactRepository
-                .findByCreatedByAndDerivedFromMessageIdInAndDeletedFalseOrderByCreatedAtAsc(userId, messageIds)
-                .stream()
+        List<LearnedFactEntity> candidates = learnedFactRepository
+                .findByCreatedByAndDerivedFromMessageIdInAndDeletedFalseOrderByCreatedAtAsc(userId, messageIds);
+        List<UUID> promoted = candidates.stream().map(LearnedFactEntity::getPromotedFactId)
+                .filter(Objects::nonNull).toList();
+        Set<UUID> live = promoted.isEmpty() ? Set.of()
+                : new HashSet<>(knowledgeFactRepository.findLiveIds(promoted, userId));
+        return candidates.stream()
                 .filter(c -> c.getUserDecision() == null
-                        || (c.getPromotedFactId() != null && knowledgeFactRepository
-                                .findByIdAndCreatedByAndDeletedFalse(c.getPromotedFactId(), userId).isPresent()))
+                        || (c.getPromotedFactId() != null && live.contains(c.getPromotedFactId())))
                 .toList();
     }
 

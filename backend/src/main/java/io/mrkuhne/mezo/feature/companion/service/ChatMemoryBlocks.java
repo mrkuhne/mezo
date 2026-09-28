@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
  * {@code [Ebben a beszélgetésben]} — what this conversation learned or proposed, the only
  * items the model may call "megjegyeztem".
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -31,9 +33,20 @@ public class ChatMemoryBlocks {
     private final PromptPersona promptPersona;
 
     /** What this conversation learned or proposed (the turn-memory source), newest first, capped.
-     *  "" when nothing — an absent block means there is nothing the model may claim. */
+     *  "" when nothing — an absent block means there is nothing the model may claim. Fail-open: the
+     *  block is optional, the turn is not — any failure logs and yields "". That only holds because
+     *  nothing on this read path is a participating {@code @Transactional} method (a throw through
+     *  one would mark the turn rollback-only past this catch — the PeopleRecall lesson). */
     public String conversationBlock(UUID userId, UUID conversationId) {
-        List<ChatMemoryItem> items = turnMemoryService.liveItems(userId, conversationId);
+        try {
+            return renderConversationBlock(userId, turnMemoryService.liveItems(userId, conversationId));
+        } catch (RuntimeException e) {
+            log.warn("Conversation memory block skipped for conversation {}: {}", conversationId, e.toString());
+            return "";
+        }
+    }
+
+    private String renderConversationBlock(UUID userId, List<ChatMemoryItem> items) {
         if (items.isEmpty()) {
             return "";
         }
@@ -71,7 +84,8 @@ public class ChatMemoryBlocks {
 
     static String line(ChatMemoryItem item) {
         String text = CONTROL.matcher(item.text()).replaceAll(" ").strip();
-        String who = item.who() == null ? "" : CONTROL.matcher(item.who()).replaceAll(" ").strip() + ": ";
+        String name = item.who() == null ? "" : CONTROL.matcher(item.who()).replaceAll(" ").strip();
+        String who = name.isEmpty() ? "" : name + ": ";
         String full = who + text;
         return full.length() > LINE_MAX_CHARS ? full.substring(0, LINE_MAX_CHARS) + "…" : full;
     }
