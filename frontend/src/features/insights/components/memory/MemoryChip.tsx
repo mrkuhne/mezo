@@ -44,7 +44,7 @@ const delayStyle = (delay?: number) => ({ ['--d' as string]: `${delay ?? 0}s` })
 export type MemoryChipProps =
   | { variant: 'remembered'; surface?: 'chat' | 'csapatfal'; item: MemoryLine; sub?: string; sensitive?: boolean
       done?: boolean; undoneText?: string; forgotten?: boolean; delay?: number; onUndo: () => Promise<void> }
-  | { variant: 'proposed'; item: MemoryLine; forgotten?: boolean; delay?: number
+  | { variant: 'proposed'; item: MemoryLine; forgotten?: boolean; rejected?: boolean; delay?: number
       onAccept: () => Promise<void>; onReject: () => Promise<void> }
   | { variant: 'recalled'; names: string[]; onOpen: () => void }
   | { variant: 'forgotten'; items: MemoryLine[]; canWiden: boolean; delay?: number; onWiden: () => void }
@@ -108,10 +108,10 @@ function Remembered({ surface = 'chat', item, sub, sensitive, done, undoneText =
   )
 }
 
-function Proposed({ item, forgotten, delay, onAccept, onReject }: Extract<MemoryChipProps, { variant: 'proposed' }>) {
+function Proposed({ item, forgotten, rejected, delay, onAccept, onReject }: Extract<MemoryChipProps, { variant: 'proposed' }>) {
   const { phase, outcome, run } = useChipAction()
   if (forgotten) return <ForgottenLine item={item} />
-  if (phase === 'done' && outcome === 'rejected') {
+  if (rejected || (phase === 'done' && outcome === 'rejected')) {
     return <p className="mzc-memdone"><Icon3D name="t-bulb" size={16} />Rendben, nem jegyzem meg — és nem is javaslom újra.</p>
   }
   // accepted: the parent swaps this chip for the "Megjegyeztem" one once the kept state lands

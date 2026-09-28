@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
@@ -68,5 +68,61 @@ describe('TurnMemoryChips (real mode)', () => {
     renderChips('Jó volt a mai edzés.', 0, new Set(), 'u-1')
     expect(await screen.findByText('még figyelek…')).toBeInTheDocument()
     expect(screen.queryByText(/Nem volt mit elfelejteni/)).not.toBeInTheDocument()
+  })
+
+  // Final review (mezo-d6ivw.12): the backend lists only LIVE items — a later poll must not
+  // unmount a chip whose action the owner just took, or its confirmation vanishes.
+  describe('confirmations survive the next poll', () => {
+    const proposedWire = { id: 'lf-1', candidateText: 'Reggel edzel a legszívesebben', category: 'preference', userDecision: null,
+      refinedText: null, promotedFactId: null, createdAt: '2026-09-26T20:05:00Z' }
+    const flush = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms) })
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    test('Ne → "nem is javaslom újra" stays after the next polls', async () => {
+      let decided = false
+      server.use(
+        http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
+          HttpResponse.json({ learned: [], proposed: decided ? [] : [proposedWire], forgotten: [], forgetRequest: false })),
+        http.post(`${API_BASE}/api/companion/fact/candidate/:id/decision`, () => {
+          decided = true
+          return HttpResponse.json({ ...proposedWire, userDecision: 'reject' })
+        }),
+      )
+      renderChips('Reggel szeretek edzeni.', 0, new Set(), 'u-1')
+      await flush(0)
+      fireEvent.click(screen.getByRole('button', { name: 'Ne' }))
+      await flush(0)
+      expect(screen.getByText('Rendben, nem jegyzem meg — és nem is javaslom újra.')).toBeInTheDocument()
+      await flush(20_000)
+      expect(screen.getByText('Rendben, nem jegyzem meg — és nem is javaslom újra.')).toBeInTheDocument()
+    })
+
+    test('Igen → the kept chip with its Visszavonom; Visszavonom → "Visszavonva" stays after the next polls', async () => {
+      let state: 'ask' | 'kept' | 'gone' = 'ask'
+      server.use(
+        http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
+          HttpResponse.json({ learned: [], forgotten: [], forgetRequest: false, proposed: state === 'gone' ? []
+            : [{ ...proposedWire, userDecision: state === 'kept' ? 'accept' : null, promotedFactId: state === 'kept' ? 'kf-1' : null }] })),
+        http.post(`${API_BASE}/api/companion/fact/candidate/:id/decision`, () => {
+          state = 'kept'
+          return HttpResponse.json({ ...proposedWire, userDecision: 'accept', promotedFactId: 'kf-1' })
+        }),
+        http.delete(`${API_BASE}/api/companion/fact/:id`, () => {
+          state = 'gone'
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+      renderChips('Reggel szeretek edzeni.', 0, new Set(), 'u-1')
+      await flush(0)
+      fireEvent.click(screen.getByRole('button', { name: 'Igen' }))
+      await flush(0)
+      expect(screen.getByText('a Tudástár Rólad részében látod')).toBeInTheDocument()
+      fireEvent.click(screen.getByRole('button', { name: 'Visszavonom' }))
+      await flush(0)
+      expect(screen.getByText('Visszavonva — nem jegyeztem meg.')).toBeInTheDocument()
+      await flush(20_000)
+      expect(screen.getByText('Visszavonva — nem jegyeztem meg.')).toBeInTheDocument()
+    })
   })
 })

@@ -103,4 +103,127 @@ describe('useTurnMemory (real mode)', () => {
       vi.useRealTimers()
     }
   })
+
+  // Final review (mezo-d6ivw.12): the backend returns only LIVE items, so a chip action must not
+  // let a later poll (or an invalidation) drop the acted-on item — its confirmation would vanish.
+  describe('a chip action survives the next poll', () => {
+    const TURN = '/api/companion/conversation/:id/turn-memory'
+    const learnedWire = { id: 'pf-1', personId: 'p-1', personName: 'Dóri', kind: 'preference', text: 'szereti a teát', createdAt: '2026-09-26T20:05:00Z' }
+    const proposedWire = { id: 'lf-1', candidateText: 'Reggel edzel a legszívesebben', category: 'preference', userDecision: null,
+      refinedText: null, promotedFactId: null, createdAt: '2026-09-26T20:05:00Z' }
+    const anchor = { id: 'u-1', ordinal: 0, text: 'x' }
+    const flush = (ms: number) => act(async () => { await vi.advanceTimersByTimeAsync(ms) })
+
+    beforeEach(() => vi.useFakeTimers())
+    afterEach(() => vi.useRealTimers())
+
+    test('reject → a later poll → the proposal stays, marked rejected, and polling stops', async () => {
+      let calls = 0
+      let decided = false
+      server.use(
+        http.get(`${API_BASE}${TURN}`, () => {
+          calls++
+          return HttpResponse.json({ learned: [], proposed: decided ? [] : [proposedWire], forgotten: [], forgetRequest: false })
+        }),
+        http.post(`${API_BASE}/api/companion/fact/candidate/:id/decision`, () => {
+          decided = true
+          return HttpResponse.json({ ...proposedWire, userDecision: 'reject' })
+        }),
+      )
+      const { result } = renderHook(() => ({ m: useTurnMemory('c-1', anchor), a: useTurnMemoryActions('c-1', anchor) }),
+        { wrapper: makeHookWrapper() })
+      await flush(0)
+      expect(result.current.m.memory.proposed).toHaveLength(1)
+
+      await act(() => result.current.a.reject('lf-1'))
+      const callsAfterAction = calls
+      await flush(20_000)
+
+      expect(result.current.m.memory.proposed).toEqual([expect.objectContaining({ id: 'lf-1', rejected: true })])
+      expect(calls).toBe(callsAfterAction)
+    })
+
+    test('undo → a later poll → the learned fact stays, marked undone', async () => {
+      let undone = false
+      server.use(
+        http.get(`${API_BASE}${TURN}`, () =>
+          HttpResponse.json({ learned: undone ? [] : [learnedWire], proposed: [], forgotten: [], forgetRequest: false })),
+        http.delete(`${API_BASE}/api/people/:personId/facts/:factId`, () => {
+          undone = true
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+      const { result } = renderHook(() => ({ m: useTurnMemory('c-1', anchor), a: useTurnMemoryActions('c-1', anchor) }),
+        { wrapper: makeHookWrapper() })
+      await flush(0)
+      expect(result.current.m.memory.learned).toHaveLength(1)
+
+      await act(() => result.current.a.undoLearned('p-1', 'pf-1'))
+      await flush(20_000)
+
+      expect(result.current.m.memory.learned).toEqual([expect.objectContaining({ id: 'pf-1', undone: true })])
+    })
+
+    test('accept → kept with the promoted fact from the decision (no refetch); its undo then survives a poll', async () => {
+      let calls = 0
+      let state: 'ask' | 'kept' | 'gone' = 'ask'
+      server.use(
+        http.get(`${API_BASE}${TURN}`, () => {
+          calls++
+          const proposed = state === 'gone' ? []
+            : [{ ...proposedWire, userDecision: state === 'kept' ? 'accept' : null, promotedFactId: state === 'kept' ? 'kf-1' : null }]
+          return HttpResponse.json({ learned: [], proposed, forgotten: [], forgetRequest: false })
+        }),
+        http.post(`${API_BASE}/api/companion/fact/candidate/:id/decision`, () => {
+          state = 'kept'
+          return HttpResponse.json({ ...proposedWire, userDecision: 'accept', promotedFactId: 'kf-1' })
+        }),
+        http.delete(`${API_BASE}/api/companion/fact/:id`, () => {
+          state = 'gone'
+          return new HttpResponse(null, { status: 204 })
+        }),
+      )
+      const { result } = renderHook(() => ({ m: useTurnMemory('c-1', anchor), a: useTurnMemoryActions('c-1', anchor) }),
+        { wrapper: makeHookWrapper() })
+      await flush(0)
+
+      const callsBeforeAccept = calls
+      await act(() => result.current.a.accept('lf-1'))
+      await flush(0) // the query cache notifies subscribers on a (faked) timer tick
+      expect(result.current.m.memory.proposed[0]).toEqual(expect.objectContaining({ id: 'lf-1', state: 'kept', promotedFactId: 'kf-1' }))
+      expect(calls).toBe(callsBeforeAccept)
+
+      await act(() => result.current.a.forgetKept('kf-1'))
+      await flush(20_000)
+      expect(result.current.m.memory.proposed).toEqual([expect.objectContaining({ id: 'lf-1', state: 'kept', undone: true })])
+    })
+
+    test('forget-all settles the other turns of the conversation too', async () => {
+      let calls = 0
+      let forgotten = false
+      server.use(
+        http.get(`${API_BASE}${TURN}`, ({ request }) => {
+          if (new URL(request.url).searchParams.get('messageId') === 'u-0') calls++
+          return HttpResponse.json({ learned: forgotten ? [] : [learnedWire], proposed: [], forgotten: [], forgetRequest: false })
+        }),
+        http.post(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => {
+          forgotten = true
+          return HttpResponse.json({ forgotten: [{ kind: 'person_fact', refId: 'pf-1', personId: 'p-1', who: 'Dóri',
+            text: 'szereti a teát', createdAt: '2026-09-26T20:05:00Z', pending: false }] })
+        }),
+      )
+      const wrapper = makeHookWrapper()
+      const earlier = renderHook(() => useTurnMemory('c-1', { id: 'u-0', ordinal: 0, text: 'x' }), { wrapper })
+      const forgetTurn = renderHook(() => useTurnMemoryActions('c-1', { id: 'u-2', ordinal: 1, text: 'Ezt ne jegyezd meg.' }), { wrapper })
+      await flush(0)
+      expect(earlier.result.current.memory.learned).toHaveLength(1)
+
+      await act(async () => { await forgetTurn.result.current.forgetAll() })
+      const callsAfter = calls
+      await flush(20_000)
+
+      expect(earlier.result.current.memory.learned).toHaveLength(1) // still there → "Elfelejtve · …"
+      expect(calls).toBe(callsAfter)
+    })
+  })
 })

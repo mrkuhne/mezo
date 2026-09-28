@@ -16,6 +16,9 @@ import { useToast } from '@/shared/ui/ToastProvider'
  * nothing the forgotten list comes back EMPTY; the backend flags the turn (`forgetRequest`, from
  * its ForgetIntent), so a loaded, empty forget turn renders the forgotten chip's empty state (with
  * the widen offer), never nothing.
+ *
+ * Final review: an action's done state lives in the turn's cache too (`undone` / `rejected`, see
+ * useTurnMemoryActions), so a confirmation survives a remount or a late refetch.
  */
 export function TurnMemoryChips({ conversationId, anchor, forgottenRefs, onForgotten }: {
   conversationId: string | null
@@ -51,17 +54,18 @@ export function TurnMemoryChips({ conversationId, anchor, forgottenRefs, onForgo
     <div className="mzc-memturn">
       {memory.learned.map((f) => (
         <MemoryChip key={f.id} variant="remembered" item={{ who: f.who, text: f.text }} sensitive={f.kind === 'sensitivity'}
-          forgotten={forgottenRefs.has(f.id)} delay={next()} onUndo={() => actions.undoLearned(f.personId, f.id)} />
+          forgotten={forgottenRefs.has(f.id)} done={f.undone} delay={next()} onUndo={() => actions.undoLearned(f.personId, f.id)} />
       ))}
       {memory.proposed.map((c) => (c.state === 'kept' ? (
         <MemoryChip key={`${c.id}-kept`} variant="remembered" item={{ text: c.text }} sub="a Tudástár Rólad részében látod"
           forgotten={forgottenRefs.has(c.id) || (c.promotedFactId != null && forgottenRefs.has(c.promotedFactId))}
-          delay={next()}
+          done={c.undone} delay={next()}
           onUndo={() => (c.promotedFactId
             ? actions.forgetKept(c.promotedFactId)
             : Promise.reject(new Error('kept proposal without a promoted fact')))} />
       ) : (
-        <MemoryChip key={c.id} variant="proposed" item={{ text: c.text }} forgotten={forgottenRefs.has(c.id)} delay={next()}
+        <MemoryChip key={c.id} variant="proposed" item={{ text: c.text }} forgotten={forgottenRefs.has(c.id)}
+          rejected={c.rejected} delay={next()}
           onAccept={async () => {
             await actions.accept(c.id)
             toast.show({ kind: 'success', text: 'Elmentve — a Tudástárban bármikor elhallgattathatod.' })

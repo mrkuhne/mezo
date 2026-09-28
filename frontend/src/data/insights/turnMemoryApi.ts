@@ -16,12 +16,22 @@ export interface MemoryItem {
   createdAt: string
   pending: boolean
 }
-export interface TurnLearned { id: string; personId: string; who: string; kind: string; text: string }
-/** `kept` = accepted/refined, its knowledge fact still live (undo forgets that fact). */
-export interface TurnProposed { id: string; text: string; state: 'ask' | 'kept'; promotedFactId: string | null }
+/** `undone` (client-only) = the owner tapped Visszavonom here; the backend no longer lists it. */
+export interface TurnLearned { id: string; personId: string; who: string; kind: string; text: string; undone?: boolean }
+/** `kept` = accepted/refined, its knowledge fact still live (undo forgets that fact). Client-only
+ *  marks: `rejected` = the owner tapped Ne, `undone` = Visszavonom on the kept fact. */
+export interface TurnProposed {
+  id: string; text: string; state: 'ask' | 'kept'; promotedFactId: string | null
+  rejected?: boolean; undone?: boolean
+}
 /** `forgetRequest` = this message IS a forget request (backend ForgetIntent) — its `forgotten` list
- *  may be empty (owner ruling 2026-09-28: nothing learned from the preceding message). */
-export interface TurnMemory { learned: TurnLearned[]; proposed: TurnProposed[]; forgotten: MemoryItem[]; forgetRequest: boolean }
+ *  may be empty (owner ruling 2026-09-28: nothing learned from the preceding message). `settled`
+ *  (client-only) = a chip action ran on this turn (or a forget-all on its conversation): the turn
+ *  stops polling, its cache is the truth from here on. */
+export interface TurnMemory {
+  learned: TurnLearned[]; proposed: TurnProposed[]; forgotten: MemoryItem[]; forgetRequest: boolean
+  settled?: boolean
+}
 /** The user message a turn's chips hang on — `id` is the persisted row id, or `mock-turn-<i>`. */
 export interface TurnAnchor { id: string; ordinal: number; text: string }
 
