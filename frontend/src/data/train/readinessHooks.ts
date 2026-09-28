@@ -4,9 +4,14 @@ import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import { readinessApi, type ReadinessChoice, type ReadinessTodayResponse } from '@/data/train/readinessApi'
 import { readinessEmpty, readinessMock } from '@/data/train/readinessMock'
-import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/trainHooks'
+import { WORKOUT_TODAY_QUERY_KEY, READINESS_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
 
-export const READINESS_TODAY_QUERY_KEY = ['train', 'readiness', 'today'] as const
+// Re-exported so every existing `import { READINESS_TODAY_QUERY_KEY } from
+// '@/data/train/readinessHooks'` keeps compiling — the constant itself now lives in
+// `queryKeys.ts` (a dependency-free leaf), alongside `WORKOUT_TODAY_QUERY_KEY`, so `skipHooks.ts`
+// can invalidate both without importing `trainHooks.ts`/`readinessHooks.ts` directly (Kihagyás S1,
+// mezo-q4xt2.1 — see `queryKeys.ts` for the full "why").
+export { READINESS_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
 
 type Action = { kind: 'choose'; choice: ReadinessChoice } | { kind: 'undo' }
 

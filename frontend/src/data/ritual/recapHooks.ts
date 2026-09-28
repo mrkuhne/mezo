@@ -91,7 +91,7 @@ export function useDayRecap(date: string): DayRecap {
   }
   const plannedSport = train.sport.schedule?.volleyball.sessions.find(
     (s) => s.today
-      && !isSportSlotSkipped(train.sportSlotSkips, todayIdx(), s.time, date)
+      && !isSportSlotSkipped(train.plannedSkips, todayIdx(), s.time, date)
       && !loggedSport.some((l) => sportOf(l as { sport?: SportKind }) === sportOf(s)),
   )
   if (plannedSport) {

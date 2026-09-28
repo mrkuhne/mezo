@@ -1226,6 +1226,17 @@ export const handlers = [
   ),
   // One-off sport events (mezo-e1sp) — default empty; tests override when they need one.
   http.get(`${API_BASE}/api/train/sport-events`, () => HttpResponse.json([])),
+  // Planned skips (Kihagyás S1, mezo-q4xt2.1) — default empty; tests override when they need one.
+  http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([])),
+  http.put(`${API_BASE}/api/train/skips`, async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    return HttpResponse.json({
+      id: 'skip-1', serious: false, freePass: false, excused: false,
+      dayOfWeek: null, time: null, sessionKey: null, reasonText: null,
+      ...body,
+    })
+  }),
+  http.delete(`${API_BASE}/api/train/skips/:id`, () => new HttpResponse(null, { status: 204 })),
   // Weekly gym slots fixture — Csü (index 3) carries a time so deriveGymSchedule
   // can fill the meso fixture's only gym day. Lean shape: id + dayOfWeek + time.
   http.get(`${API_BASE}/api/train/gym-schedule`, () =>

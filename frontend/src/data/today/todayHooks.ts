@@ -133,7 +133,7 @@ export function useToday(): TodayData {
   // agenda — only entries actually flagged `today` can match (a future weekday's session has no
   // ISO date to compare here), matched on today's weekday index + the slot's own time.
   const volleyballSessionsReal = (train.sport.schedule?.volleyball.sessions ?? []).filter(
-    (s) => !(s.today && isSportSlotSkipped(train.sportSlotSkips, todayIdx(now), s.time, todayIso)),
+    (s) => !(s.today && isSportSlotSkipped(train.plannedSkips, todayIdx(now), s.time, todayIso)),
   )
   return {
     today: {

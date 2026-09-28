@@ -30,7 +30,7 @@ import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
 import { useTrain } from '@/data/train/trainHooks'
 import { useMedication } from '@/data/fuel/medicationHooks'
 import { DAY_ORDER } from '@/data/train/train'
-import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
+import { isSportSlotSkipped, type PlannedSkipKey } from '@/features/train/logic/weekAgenda'
 import type {
   GymScheduleDay,
   MedicationCycleCell,
@@ -104,7 +104,7 @@ export function withDefaultDuration(d: GymScheduleDay): GymScheduleDay {
  *  `start` + weekday, so both cases are handled the same way weekAgenda's own filter does. */
 export function filterSkippedSessions(
   sessions: VolleyballSession[],
-  skips: SportSlotSkip[],
+  skips: PlannedSkipKey[],
   start: string,
 ): VolleyballSession[] {
   return sessions.filter((s) => {
@@ -178,7 +178,7 @@ export function useFuelWeekRollup(start: string): FuelWeekRollupView {
  *  Only Trendek's week switch passes one; every other caller keeps the current week verbatim. */
 export function useFuelWeek(startIso?: string): FuelWeekView {
   const mock = isMockMode()
-  const { gymSchedule: trainGym, sport, sportSlotSkips } = useTrain()
+  const { gymSchedule: trainGym, sport, plannedSkips } = useTrain()
   const { cycle } = useMedication()
   const start = startIso ?? mondayIso()
   const rollup = useFuelWeekRollup(start)
@@ -208,7 +208,7 @@ export function useFuelWeek(startIso?: string): FuelWeekView {
     weeklySupplements: [],
     patterns: [],
     weeklyStats: deriveWeeklyStats(rollup.weekDays),
-    volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], sportSlotSkips, start),
+    volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], plannedSkips, start),
     weeklyNote: null,
     start,
     weekDays: rollup.weekDays,

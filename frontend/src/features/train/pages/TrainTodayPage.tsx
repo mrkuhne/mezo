@@ -77,7 +77,7 @@ const SPORT_ART: Record<SportKind, Icon3DName> = {
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayPage() {
-  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout, gymSlots, saveGymSchedule, sportSlotSkips } = useTrain()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout, gymSlots, saveGymSchedule, plannedSkips } = useTrain()
   const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
   // Completed workout summaries for this Mon–Sun week — maps each done day's ISO
   // date to its instance id so a weekly gym row can open the review (real mode).
@@ -174,7 +174,7 @@ export function TrainTodayPage() {
     sportSlots: sport.schedule?.volleyball.sessions ?? [],
     runningBlock: activeRunningBlock,
     weekWorkouts,
-    skips: sportSlotSkips,
+    skips: plannedSkips,
   })
 
   // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks

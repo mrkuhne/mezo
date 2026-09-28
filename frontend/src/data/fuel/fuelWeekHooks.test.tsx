@@ -149,13 +149,19 @@ describe('useFuelWeek (real mode)', () => {
     expect(result.current.weightAvgKg).toBeNull()
   })
 
-  // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
-  // slot; the week grid used to keep rendering it regardless. The default sport-schedule fixture's
-  // first entry (dayOfWeek 0 = Hét, 18:15) lands on this week's Monday — `mondayIso()` itself.
+  // mezo-cq06 / mezo-q4xt2.1 — a skip_sport_slot advice action (now a SPORT planned skip) hides
+  // one dated occurrence of a recurring sport slot; the week grid used to keep rendering it
+  // regardless. The default sport-schedule fixture's first entry (dayOfWeek 0 = Hét, 18:15) lands
+  // on this week's Monday — `mondayIso()` itself.
+  const skipRow = (dayOfWeek: number, time: string, date: string) => ({
+    id: 's1', date, kind: 'SPORT', dayOfWeek, time, sessionKey: null,
+    reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+  })
+
   it('drops a recurring sport-slot occurrence this week\'s grid honours as skipped', async () => {
     server.use(
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: 0, time: '18:15', date: mondayIso() }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([skipRow(0, '18:15', mondayIso())]),
       ),
     )
     const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
@@ -166,8 +172,8 @@ describe('useFuelWeek (real mode)', () => {
 
   it('keeps a recurring sport-slot occurrence whose skip targets a different date', async () => {
     server.use(
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: 0, time: '18:15', date: '1999-01-01' }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([skipRow(0, '18:15', '1999-01-01')]),
       ),
     )
     const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })

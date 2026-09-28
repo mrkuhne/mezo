@@ -55,7 +55,7 @@ export function useDayOrbFill(): DayOrbState {
   const sportSessions = train.sport.sessions
   const gymWeeklyTimes = train.gymSchedule?.weeklyTimes
   const sportScheduleSessions = train.sport.schedule?.volleyball.sessions
-  const sportSlotSkips = train.sportSlotSkips
+  const plannedSkips = train.plannedSkips
 
   return useMemo(() => {
     // A `lastNight` mező a teljes napló utolsó eleme, NEM tegnap éjszakáé — ezért a
@@ -86,7 +86,7 @@ export function useDayOrbFill(): DayOrbState {
     const plan: DayOrbPlan = {
       gymPlanned: Boolean(gymWeeklyTimes?.some((d) => d.today && d.active)),
       sportPlanned: Boolean(sportScheduleSessions?.some(
-        (s) => s.today && !isSportSlotSkipped(sportSlotSkips, todayIdx(), s.time, todayIso),
+        (s) => s.today && !isSportSlotSkipped(plannedSkips, todayIdx(), s.time, todayIso),
       )),
     }
 
@@ -103,6 +103,6 @@ export function useDayOrbFill(): DayOrbState {
   }, [
     todayIso, yesterdayIso, sleepLog, weightLog, fuel.meals, checkins, journalToday,
     gymDoneDates, completedTodayWorkout, sportSessions, runSessions,
-    gymWeeklyTimes, sportScheduleSessions, sportSlotSkips, evaluationData,
+    gymWeeklyTimes, sportScheduleSessions, plannedSkips, evaluationData,
   ])
 }

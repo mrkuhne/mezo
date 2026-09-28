@@ -2,7 +2,7 @@ import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { DAY_ORDER } from '@/data/train/train'
 import { sportOf, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
-import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
+import { isSportSlotSkipped, type PlannedSkipKey } from '@/features/train/logic/weekAgenda'
 import { localDateString } from '@/shared/lib/dates'
 import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
@@ -45,7 +45,7 @@ export function deriveBlocks(
   // action hides one dated occurrence; without this, the fuel protocol kept anchoring the
   // pre-workout meal / calorie budget on a sport block the backend already treats as absent.
   // Empty default keeps every caller that hasn't threaded skips through yet byte-identical.
-  skips: SportSlotSkip[] = [],
+  skips: PlannedSkipKey[] = [],
   // The day's LOGGED sport sessions (mezo-rilew). A session the user played but never planned
   // produced no block at all, so its burnt energy never reached the day's `eat` term and the Fuel
   // calorie target stayed put — the owner-visible bug. Sessions are matched against the planned
@@ -162,7 +162,7 @@ export function deriveProtocolAnchors(
   activeRunningBlock: RunningBlockResponse | null,
   wake: string,
   bedtime: string,
-  skips: SportSlotSkip[] = [],
+  skips: PlannedSkipKey[] = [],
 ): ProtocolAnchors {
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, skips)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null

@@ -153,8 +153,11 @@ test('useToday (real) drops today\'s sport session once its dated occurrence is 
   vi.setSystemTime(new Date('2026-06-16T08:00:00')) // Tuesday
   try {
     server.use(
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-16' }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([{
+          id: 's1', date: '2026-06-16', kind: 'SPORT', dayOfWeek: 1, time: '17:00', sessionKey: null,
+          reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+        }]),
       ),
     )
     const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
@@ -171,8 +174,11 @@ test('useToday (real) keeps today\'s sport session when the skip targets a diffe
   vi.setSystemTime(new Date('2026-06-16T08:00:00')) // Tuesday
   try {
     server.use(
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-23' }]), // next Tuesday, not today
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([{
+          id: 's1', date: '2026-06-23', kind: 'SPORT', dayOfWeek: 1, time: '17:00', sessionKey: null,
+          reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+        }]), // next Tuesday, not today
       ),
     )
     const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })

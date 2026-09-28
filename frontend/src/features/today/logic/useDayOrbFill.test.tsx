@@ -150,8 +150,11 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours
       http.get(`${API_BASE}/api/train/sport-schedule`, () =>
         HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
       ),
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: dow, time: '17:00', date: todayIso }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([{
+          id: 's1', date: todayIso, kind: 'SPORT', dayOfWeek: dow, time: '17:00', sessionKey: null,
+          reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+        }]),
       ),
     )
     const { Wrapper, qc } = wrapperWithClient()
@@ -167,8 +170,11 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours
       http.get(`${API_BASE}/api/train/sport-schedule`, () =>
         HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
       ),
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: dow, time: '17:00', date: '1999-01-01' }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([{
+          id: 's1', date: '1999-01-01', kind: 'SPORT', dayOfWeek: dow, time: '17:00', sessionKey: null,
+          reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+        }]),
       ),
     )
     const { Wrapper, qc } = wrapperWithClient()

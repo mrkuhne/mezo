@@ -24,7 +24,6 @@ import {
   type SportScheduleSlotResponse,
   type SportSessionCreateRequest,
   type SportSessionResponse,
-  type SportSlotSkipResponse,
   type WorkoutFeedbackInput,
   type WorkoutInstanceResponse,
   type WorkoutTodayResponse,
@@ -42,6 +41,8 @@ import {
   MOCK_FIXTURE_WEIGHT_KG,
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
+import { usePlannedSkips, PLANNED_SKIPS_QUERY_KEY } from '@/data/train/skipHooks'
+import type { PlannedSkipKey } from '@/features/train/logic/plannedSkips'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
@@ -214,25 +215,18 @@ export function currentWeekRange(): { mondayIso: string; sundayIso: string } {
   return { mondayIso, sundayIso: addDays(mondayIso, 6) }
 }
 
-/** Query-key PREFIX for `sportSlotSkips` — exported (not just the full key below) so a
- *  successful skip_sport_slot apply (`adviceHooks.ts`) can invalidate every cached week's skips
- *  via react-query's own default prefix matching, without importing `currentWeekRange` itself or
- *  re-deriving "this week" a second time. */
-export const SPORT_SLOT_SKIPS_QUERY_KEY = ['train', 'sportSlotSkips'] as const
+/** Query-key PREFIX for planned skips — kept under the OLD `sportSlotSkips` name so
+ *  `adviceHooks.ts`'s `skip_sport_slot` invalidation (a prefix match) keeps working unchanged;
+ *  the real key is `PLANNED_SKIPS_QUERY_KEY` (`skipHooks.ts`), which this aliases (Kihagyás S1,
+ *  mezo-q4xt2.1 — the sport-only skip flow was folded into the combined gym/sport/run one). */
+export const SPORT_SLOT_SKIPS_QUERY_KEY = PLANNED_SKIPS_QUERY_KEY
 
-/** The `sportSlotSkips` query's own key — the Monday ISO date is IN the key (not just resolved
- *  inside the queryFn) so a session left open across a week boundary invalidates into a fresh
- *  fetch instead of serving last week's cached skips forever. */
-export function sportSlotSkipsQueryKey(): readonly [string, string, string] {
-  return [...SPORT_SLOT_SKIPS_QUERY_KEY, currentWeekRange().mondayIso]
-}
-
-/** Query-key PREFIX for `workoutToday` (the Train/Today plan endpoint, `trainApi.workoutToday`)
- *  — exported so a successful `lighten_tomorrow` apply (`adviceHooks.ts`) can invalidate every
- *  cached day's plan (the plain today context and any pinned-day session,
- *  `['train','workoutToday', workoutDay]`) via react-query's default prefix matching, the same
- *  `['train','workoutToday']` prefix this file's own mutations already invalidate on write. */
-export const WORKOUT_TODAY_QUERY_KEY = ['train', 'workoutToday'] as const
+/** Re-exported from `queryKeys.ts` (a dependency-free leaf) so every existing
+ *  `import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/trainHooks'` keeps compiling — the
+ *  constant moved out from under here to break the `trainHooks → skipHooks → trainHooks` cycle
+ *  `usePlannedSkips()` (below) introduced (Kihagyás S1, mezo-q4xt2.1). See `queryKeys.ts` for the
+ *  full "why". */
+export { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
 
 export function mergeEventsIntoSchedule(
   base: SportSchedule | null,
@@ -484,9 +478,12 @@ type TrainData = {
   sportEvents: SportEventResponse[]
   addSportEvent: (req: SportEventCreateRequest, opts?: { onSuccess?: () => void; onSettled?: () => void }) => void
   deleteSportEvent: (id: string, opts?: MutateOpts) => void
-  /** This week's skipped recurring sport-slot occurrences (mezo-d58h.5) — feed straight into
-   *  `buildWeekAgenda`'s `skips` param. Empty in mock mode (no apply flow there yet). */
-  sportSlotSkips: SportSlotSkipResponse[]
+  /** This window's planned skips (Kihagyás S1, mezo-q4xt2.1; supersedes the sport-only
+   *  `sportSlotSkips` — a `skip_sport_slot` advice apply still lands here, as a SPORT/NONE/
+   *  source=ADVICE row) — feed straight into `buildWeekAgenda`'s `skips` param or match one
+   *  directly via `isSkipped`/`findSkip` (`plannedSkips.ts`). Sourced from the SAME
+   *  `usePlannedSkips()` fetch the skip UI itself uses — one query, not two. */
+  plannedSkips: PlannedSkipKey[]
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
   createCatalogExercise: (req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
   updateCatalogExercise: (id: string, req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
@@ -652,20 +649,12 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     initialData: mock ? ([] as SportEventResponse[]) : undefined,
     staleTime: mock ? Infinity : undefined,
   })
-  // Sport-slot skips (mezo-d58h.5) — this week's dated occurrences a skip_sport_slot advice
-  // action hid, fed into buildWeekAgenda's own filter (weekAgenda.ts). Mock has no advice-card
-  // apply flow yet, so mock mode always answers the empty list — the FE has never had a skip to
-  // show there; the real fetch scopes to the same Mon–Sun window `mergeEventsIntoSchedule` uses.
-  const { data: sportSlotSkipsData } = useQuery({
-    queryKey: sportSlotSkipsQueryKey(),
-    queryFn: mock
-      ? async () => [] as SportSlotSkipResponse[]
-      : () => {
-          const { mondayIso, sundayIso } = currentWeekRange()
-          return trainApi.sportSlotSkips(mondayIso, sundayIso)
-        },
-    initialData: mock ? ([] as SportSlotSkipResponse[]) : undefined,
-  })
+  // Planned skips (Kihagyás S1, mezo-q4xt2.1) — one-tap skips of a planned gym/sport/run
+  // occurrence, superseding the old sport-only `sport_slot_skip` advice flow (which still writes
+  // into the SAME list server-side, as SPORT/NONE/source=ADVICE rows). `usePlannedSkips()` is the
+  // single fetch of the skip window; every reader that used to destructure `sportSlotSkips` off
+  // `useTrain()` now reads `plannedSkips` off it — one query, not two.
+  const { skips: plannedSkipsData } = usePlannedSkips()
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
   const { data: gymSlotsData, isPending: gymSchedulePending, isError: gymScheduleError } = useQuery({
@@ -1084,7 +1073,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? { ...sport, schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), sessions: sportData?.sessions ?? [] }
       : { schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
     sportEvents: eventsData ?? [],
-    sportSlotSkips: sportSlotSkipsData ?? [],
+    plannedSkips: plannedSkipsData,
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     exerciseRecords: recordsData ?? [],
     activateMesocycle,

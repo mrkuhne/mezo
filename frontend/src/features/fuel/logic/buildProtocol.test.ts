@@ -49,13 +49,13 @@ describe('deriveBlocks — sport-slot skip', () => {
 
   test('a skip matching today\'s weekday + time + date removes the sport block', () => {
     const todayIso = localDateString(new Date())
-    const skips = [{ dayOfWeek: todayIdx(), time: '18:00', date: todayIso }]
+    const skips = [{ kind: 'SPORT' as const, dayOfWeek: todayIdx(), time: '18:00', date: todayIso }]
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null, skips)
     expect(blocks.find((b) => b.kind === 'sport')).toBeUndefined()
   })
 
   test('a skip for a different date leaves today\'s sport block present', () => {
-    const skips = [{ dayOfWeek: todayIdx(), time: '18:00', date: '1999-01-01' }]
+    const skips = [{ kind: 'SPORT' as const, dayOfWeek: todayIdx(), time: '18:00', date: '1999-01-01' }]
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null, skips)
     expect(blocks.find((b) => b.kind === 'sport')?.time).toBe('18:00')
   })
@@ -216,7 +216,7 @@ describe('deriveBlocks — date param drives which day\'s training is used', () 
       day: 'Csü', time: '20:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés', today: false,
     }
     // 2026-09-24 is a Thursday -> weekday index 3.
-    const skips = [{ dayOfWeek: 3, time: '20:00', date: '2026-09-24' }]
+    const skips = [{ kind: 'SPORT' as const, dayOfWeek: 3, time: '20:00', date: '2026-09-24' }]
     const blocks = deriveBlocks(
       null, { schedule: { volleyball: { team: '', sessions: [session], season: '', weeklyHours: 0 } } },
       null, skips, [], '2026-09-24',

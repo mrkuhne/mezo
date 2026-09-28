@@ -180,8 +180,11 @@ describe('useDayRecap (real mode)', () => {
       vi.setSystemTime(new Date(`${REST_DAY}T08:00:00`))
       server.use(
         restDay(), sportScheduleFixture(),
-        http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-          HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: REST_DAY }]),
+        http.get(`${API_BASE}/api/train/skips`, () =>
+          HttpResponse.json([{
+            id: 's1', date: REST_DAY, kind: 'SPORT', dayOfWeek: 1, time: '17:00', sessionKey: null,
+            reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+          }]),
         ),
       )
       const { result } = renderHook(() => useDayRecap(REST_DAY), { wrapper: makeHookWrapper() })
@@ -195,8 +198,11 @@ describe('useDayRecap (real mode)', () => {
       vi.setSystemTime(new Date(`${REST_DAY}T08:00:00`))
       server.use(
         restDay(), sportScheduleFixture(),
-        http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-          HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-23' }]), // next Tuesday
+        http.get(`${API_BASE}/api/train/skips`, () =>
+          HttpResponse.json([{
+            id: 's1', date: '2026-06-23', kind: 'SPORT', dayOfWeek: 1, time: '17:00', sessionKey: null, // next Tuesday
+            reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+          }]),
         ),
       )
       const { result } = renderHook(() => useDayRecap(REST_DAY), { wrapper: makeHookWrapper() })
