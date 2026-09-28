@@ -21,6 +21,11 @@
 // Adherence-neutral by contract: an overshoot day flips the numeral's sign (Unicode minus)
 // and the label reads „A keret felett" — never a word that grades the user. Honest-null: a
 // missing equation component renders „—", never a fabricated 0.
+//
+// Weekly learning (mezo-3n2so, spec §5.1, elo/fuel.html `eqDot`/`openEq`): on TODAY, with a
+// weekly-summary card worth showing, a glowing dot sits on the chip; inside the box the Alap row
+// is highlighted (tinted fill + accent ring + dot + „· heti tanulás ›”) and becomes ONE full-width
+// button that swaps the box for the „Heti tanulás” sheet. Without a card nothing changes.
 // ============================================================
 import { useId, useState } from 'react'
 import { pct } from '@/shared/lib/pct'
@@ -29,6 +34,10 @@ import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/cla
 import { heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FuelMacroRings, useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
+import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
+import { WeeklyLearningSheet } from '@/features/fuel/sheets/WeeklyLearningSheet'
+import { signed } from '@/features/fuel/sheets/learnedBaseFormat'
+import type { ExpenditureWeeklyCard } from '@/data/fuel/expenditureApi'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain' | null
 
@@ -82,10 +91,21 @@ function nodeValue(line: EquationLine): string {
   return `${line.sign} ${huInt(Math.abs(line.value))}`
 }
 
-function EquationBox({ vm, past, trajectory, onClose, onFull }: {
+/** The weekly card in a few words — the Alap row's accessible name (elo/fuel.html `weeklyWord`). */
+function weeklyWord(card: ExpenditureWeeklyCard): string {
+  if (card.status === 'holding') return 'ezen a héten vártam'
+  if (card.stepKcal !== 0) return `${signed(card.stepKcal)} kcal`
+  const n = card.excludedDays.length
+  return n ? `${n} nap kimaradt` : 'a keret nem változott'
+}
+
+function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }: {
   vm: KeretHeroVM; past: boolean; trajectory: Trajectory; onClose: () => void
   /** A15: a MEGLÉVŐ, Énnel közös energia-magyarázat — a doboz csendes ajtaja. */
   onFull?: () => void
+  /** mezo-3n2so: the weekly card when the Alap row should open it (today only). */
+  weekly?: ExpenditureWeeklyCard | null
+  onWeekly?: () => void
 }) {
   const titleId = useId()
   const lines = heroEquationLines(vm, trajectory)
@@ -111,17 +131,34 @@ function EquationBox({ vm, past, trajectory, onClose, onFull }: {
         <span className="fmx-gb-right">még szabad</span>
       </div>
       <div className="fmx-flow">
-        {lines.map(line => (
-          <div key={line.key} className={`fmx-node${line.key === 'remaining' ? ' is-total' : ''}`}
-            style={{ '--node-color': NODE[line.key].color } as React.CSSProperties}>
-            <span className="fmx-node-art"><ContentIcon name={NODE[line.key].icon} size={24} /></span>
-            <span className="fmx-node-copy">
-              <strong>{line.label}</strong>
-              <small>{nodeSub(line, vm, trajectory)}</small>
-            </span>
-            <b>{nodeValue(line)}{line.key === 'remaining' && <i>kcal</i>}</b>
-          </div>
-        ))}
+        {lines.map(line => {
+          if (line.key === 'base' && weekly && onWeekly) {
+            const hold = weekly.status === 'holding'
+            return (
+              <button key={line.key} type="button" className={`fmx-node is-weekly${hold ? ' is-hold' : ''}`}
+                aria-label={`Alap ${nodeValue(line)} kcal — heti tanulás: ${weeklyWord(weekly)}, megnyitás`}
+                onClick={onWeekly}>
+                <span className="fmx-node-art"><ContentIcon name={NODE.base.icon} size={24} /></span>
+                <span className="fmx-node-copy">
+                  <strong>{line.label}<WeeklyLearningDot hold={hold} /></strong>
+                  <small>{nodeSub(line, vm, trajectory)} · heti tanulás ›</small>
+                </span>
+                <b>{nodeValue(line)}</b>
+              </button>
+            )
+          }
+          return (
+            <div key={line.key} className={`fmx-node${line.key === 'remaining' ? ' is-total' : ''}`}
+              style={{ '--node-color': NODE[line.key].color } as React.CSSProperties}>
+              <span className="fmx-node-art"><ContentIcon name={NODE[line.key].icon} size={24} /></span>
+              <span className="fmx-node-copy">
+                <strong>{line.label}</strong>
+                <small>{nodeSub(line, vm, trajectory)}</small>
+              </span>
+              <b>{nodeValue(line)}{line.key === 'remaining' && <i>kcal</i>}</b>
+            </div>
+          )
+        })}
       </div>
       <p className="fmx-glass-note">
         A keretet az alapigényed, a súlycélod és a mozgásod együtt adja — a számítás minden nap
@@ -139,7 +176,7 @@ function EquationBox({ vm, past, trajectory, onClose, onFull }: {
   )
 }
 
-export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEnergy, onWater }: {
+export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEnergy, onWater, weeklyCard = null }: {
   vm: KeretHeroVM
   /** A13: egy MÚLTBELI napot nézünk — a „ma” szó ilyenkor hazugság lenne. */
   past?: boolean
@@ -150,8 +187,15 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
   onOpenEnergy?: () => void
   /** Keeps the víz ring a live water-logging door (see FuelMacroRings). */
   onWater?: () => void
+  /** mezo-3n2so: the weekly learning summary worth showing (null = nothing to say). Only today's
+   *  hero signals it — a past day never shows the dot or the highlighted Alap row. */
+  weeklyCard?: ExpenditureWeeklyCard | null
 }) {
   const [boxOpen, setBoxOpen] = useState(false)
+  // The card is snapshot when the sheet opens: a dismiss (or a mark's refetch) may null the live
+  // card while the sheet is still sliding out.
+  const [weeklyShown, setWeeklyShown] = useState<ExpenditureWeeklyCard | null>(null)
+  const weekly = past ? null : weeklyCard
   const remaining = useFuelCountUp(vm.remainingKcal)
   const eaten = useFuelCountUp(vm.consumedKcal)
   const over = vm.remainingKcal < 0
@@ -192,14 +236,17 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
         style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}
         onClick={() => setBoxOpen(true)}>
         <span>Miből jön össze?</span>
+        {weekly && <WeeklyLearningDot hold={weekly.status === 'holding'} />}
         <b aria-hidden="true">›</b>
         <u className="fmx-chip-sheen" aria-hidden="true" />
       </button>
       <FuelMacroRings rings={vm.rings} onWater={onWater} />
       {boxOpen && (
         <EquationBox vm={vm} past={past} trajectory={trajectory} onClose={() => setBoxOpen(false)}
-          onFull={onOpenEnergy ? () => { setBoxOpen(false); onOpenEnergy() } : undefined} />
+          onFull={onOpenEnergy ? () => { setBoxOpen(false); onOpenEnergy() } : undefined}
+          weekly={weekly} onWeekly={() => { setBoxOpen(false); setWeeklyShown(weekly) }} />
       )}
+      {weeklyShown && <WeeklyLearningSheet card={weeklyShown} onClose={() => setWeeklyShown(null)} />}
     </div>
   )
 }

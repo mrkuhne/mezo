@@ -1019,6 +1019,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/expenditure/weeks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's last N reviewed weeks, oldest first, plus the learning switch (mezo-3n2so, spec §6.3) */
+        get: operations["getExpenditureHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/expenditure/weekly-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The current weekly-summary card, when there is one to show (mezo-3n2so, spec §5.1) */
+        get: operations["getExpenditureWeeklyCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/expenditure/weekly-card/{weekStart}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss the weekly-summary card for one reviewed week — cross-device, per week (mezo-3n2so) */
+        post: operations["dismissExpenditureWeeklyCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/expenditure/days": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live per-day statuses for a range — never past today (mezo-3n2so, spec §6.3) */
+        get: operations["getIntakeDays"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/expenditure/days/{date}/mark": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark a logged, non-future day complete/incomplete — re-chains the learned base from that week on (mezo-3n2so, spec §7) */
+        put: operations["setIntakeDayMark"];
+        post?: never;
+        /** Remove a day's mark — the classifier's rule decides again; a no-op when unmarked (mezo-3n2so) */
+        delete: operations["clearIntakeDayMark"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}": {
         parameters: {
             query?: never;
@@ -6645,6 +6731,74 @@ export interface components {
             /** @description From the filter trace; absent before the first weigh-in */
             tissueKg?: number | null;
         };
+        /** @description One reviewed week's row on the history chart (mezo-3n2so, spec §6.3). */
+        ExpenditureWeek: {
+            /** Format: date */
+            weekStart: string;
+            /** @enum {string} */
+            status: "learning" | "updated" | "stable" | "holding";
+            /** @enum {string} */
+            confidence: "low" | "medium" | "high";
+            formulaBaseKcal: number;
+            posteriorBaseKcal: number;
+            posteriorSdKcal: number;
+            /** @description The base actually served as "Alap" this week */
+            appliedBaseKcal: number;
+            stepKcal: number;
+            usableDays: number;
+            weighInDays: number;
+        };
+        ExpenditureHistoryResponse: {
+            learningEnabled: boolean;
+            weeks: components["schemas"]["ExpenditureWeek"][];
+        };
+        /** @description The current weekly-summary card (mezo-3n2so, spec §5.1) — shown only when it says something. */
+        ExpenditureWeeklyCardResponse: {
+            /** Format: date */
+            weekStart: string;
+            /** Format: date */
+            weekEnd: string;
+            /** @enum {string} */
+            status: "learning" | "updated" | "stable" | "holding";
+            /** @enum {string} */
+            confidence: "low" | "medium" | "high";
+            appliedBaseKcal: number;
+            posteriorSdKcal: number;
+            stepKcal: number;
+            usableDays: number;
+            weighInDays: number;
+            /** @description Below this, the week HOLDs (config) */
+            minUsableDays: number;
+            /** @description Below this, the week HOLDs (config) */
+            minWeighInDays: number;
+            excludedDays: components["schemas"]["ExpenditureExcludedDay"][];
+        };
+        /** @description One day's live classification for the calendar (mezo-3n2so, spec §6.3/§7). */
+        IntakeDayStatus: {
+            /** Format: date */
+            date: string;
+            /** @description Logged total; absent when unlogged */
+            kcal?: number | null;
+            /** @enum {string} */
+            status: "usable" | "suspicious" | "marked_incomplete" | "confirmed_complete" | "unlogged";
+            /**
+             * @description The owner's explicit mark, if any
+             * @enum {string|null}
+             */
+            mark?: "complete" | "incomplete" | null;
+        };
+        IntakeDayMarkRequest: {
+            /** @enum {string} */
+            status: "complete" | "incomplete";
+        };
+        /** @description The outcome of setting/clearing a day's mark — the re-chain's served base, before/after (mezo-3n2so). */
+        IntakeDayMarkResult: {
+            day: components["schemas"]["IntakeDayStatus"];
+            /** @description Absent when the caller has never been learned (no row yet) */
+            appliedBaseBeforeKcal?: number | null;
+            appliedBaseAfterKcal?: number | null;
+            recomputed: boolean;
+        };
         GoalOverviewResponse: {
             /** Format: uuid */
             goalId: string;
@@ -6687,7 +6841,7 @@ export interface components {
             carbsG?: number | null;
             fatG?: number | null;
             /** @enum {string} */
-            basis: "formula" | "adaptive" | "unavailable";
+            basis: "formula" | "adaptive" | "learned" | "unavailable";
             explanationCode: string;
         };
         GoalOverviewSegment: {
@@ -6783,7 +6937,7 @@ export interface components {
             /** Format: date-time */
             generatedAt: string;
             /** @enum {string} */
-            basis: "formula" | "adaptive";
+            basis: "formula" | "adaptive" | "learned";
             segments: components["schemas"]["GoalPrescriptionSegment"][];
             guardStatus: components["schemas"]["GoalGuardStatus"];
             feasibility: components["schemas"]["GoalFeasibility"];
@@ -9777,6 +9931,8 @@ export interface components {
             fiberG: number;
             /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
             dayTypeShiftKcal: number;
+            /** @description The learned-expenditure learning switch (mezo-3n2so) — on by default */
+            learningEnabled: boolean;
         };
         DietSettingsPreviewResponse: {
             /** @description Projected kcal for today under the draft (day-type adjusted, as the Fuel day serves it) */
@@ -9805,6 +9961,8 @@ export interface components {
             fiberG: number;
             /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
             dayTypeShiftKcal: number;
+            /** @description The learned-expenditure learning switch (mezo-3n2so) — absent keeps the stored/resolved value */
+            learningEnabled?: boolean;
         };
         TutorialProgressEntry: {
             /** @description The registry version of the guide that was seen — a bump re-arms the auto-show */
@@ -15338,6 +15496,245 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExpenditureHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description History */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenditureHistoryResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExpenditureWeeklyCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A card worth showing */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpenditureWeeklyCardResponse"];
+                };
+            };
+            /** @description Nothing to show — switch off, no reviewed row, not worth saying, or already dismissed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    dismissExpenditureWeeklyCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                weekStart: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dismissed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No reviewed week of the caller's starting on weekStart */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getIntakeDays: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Days of the range */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeDayStatus"][];
+                };
+            };
+            /** @description Range too long, or to is after today */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setIntakeDayMark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntakeDayMarkRequest"];
+            };
+        };
+        responses: {
+            /** @description Marked — the recomputed applied base, before/after */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeDayMarkResult"];
+                };
+            };
+            /** @description Future day */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No logged intake on that day, or a concurrent mark on the same day */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    clearIntakeDayMark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared (or already unmarked) — the applied base, before/after */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeDayMarkResult"];
+                };
+            };
+            /** @description Future day */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

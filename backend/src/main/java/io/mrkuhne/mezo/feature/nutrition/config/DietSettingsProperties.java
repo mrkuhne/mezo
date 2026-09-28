@@ -29,5 +29,8 @@ public record DietSettingsProperties(
 
     /** Day-type kcal shift ghost — 0 = uniform days until the user opts in. */
     @Min(0) @Max(500)
-    int defaultDayTypeShiftKcal
+    int defaultDayTypeShiftKcal,
+
+    /** Learning-switch ghost served before the user saves (mezo-3n2so) — on by default. */
+    boolean defaultLearningEnabled
 ) {}

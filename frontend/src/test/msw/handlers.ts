@@ -1435,6 +1435,9 @@ export const handlers = [
 
   // „Hogy tanultam?” (mezo-y72o3) — the prototype fixture; tests override with a 204 for the no-data path.
   http.get(`${API_BASE}/api/goals/expenditure/explanation`, () => HttpResponse.json(expenditureExplanationSeed)),
+  // Weekly learning summary (mezo-3n2so) — nothing worth showing by default (204); the Fuel Mai
+  // page reads it on every mount, so real-mode page tests must not hit the network for it.
+  http.get(`${API_BASE}/api/goals/expenditure/weekly-card`, () => new HttpResponse(null, { status: 204 })),
   // Meal + fuel-day (mezo-arb) — defaults; tests override with server.use() for payload capture.
   http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
     HttpResponse.json({ ...fuelDayFixture, date: String(params.date) }),

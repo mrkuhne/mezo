@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
 import io.mrkuhne.mezo.feature.goal.service.GoalInvariantValidator;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -50,6 +51,8 @@ public class GoalEngineService {
     private final GoalInvariantValidator goalInvariantValidator;
     private final GoalPrescriptionCalculator calculator;
     private final GoalSuggestionTriggerService triggerService;
+    // GoalSuggestionService takes this façade @Lazy, which breaks the constructor cycle.
+    private final GoalSuggestionService suggestionService;
 
     /**
      * Evaluate a goal: assemble + persist its segmented prescription (and TDEE bootstrap).
@@ -121,6 +124,22 @@ public class GoalEngineService {
             return;
         }
         evaluate(userId, active.get(0).getId());
+    }
+
+    /**
+     * Retire the ACTIVE goal's open {@code weekly_correction} (superseded, no owner decision) — the
+     * owner turned the learning switch back on (mezo-3n2so): that proposal is a weight-only balance
+     * tweak computed while the formula served, and the learned path ignores balance adjustments, so
+     * accepting it would write a dead number. Graceful no-op when no goal is active or none is open.
+     */
+    @Transactional
+    public void retireWeeklyCorrection(UUID userId) {
+        List<GoalEntity> active =
+            goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE);
+        if (active.isEmpty()) {
+            return;
+        }
+        suggestionService.supersedeOpen(active.get(0).getId(), GoalSuggestionService.KIND_WEEKLY_CORRECTION);
     }
 
 }

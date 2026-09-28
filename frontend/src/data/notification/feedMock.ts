@@ -25,4 +25,6 @@ export const notificationFeedSeed: AppNotificationView[] = [
   { id: 'nf-11', kind: 'konzilium_verdict', title: 'Új fejezet nyílt rólad', body: '„A visszatérés” — és 4 változás a dossziédban.', deeplink: '/mezo/karakter/konzilium', occurredAt: at(2, '20:40'), readAt: at(2, '21:00') },
   { id: 'nf-10', kind: 'character_portrait', title: 'Új portré készült rólad', body: 'A havi mélyolvasás átírta a Kitartás dimenziót — a konzílium négy állítást fogadott el.', deeplink: '/mezo/karakter', occurredAt: at(3, '20:30'), readAt: at(3, '21:00') },
   { id: 'nf-6', kind: 'memoir_ready', title: 'Elkészült a heti memoár', body: 'A 33. hét története megírva — két minta és egy kísérlet köré épült.', deeplink: '/insights/memoir', occurredAt: at(2, '19:15'), readAt: at(2, '20:00') },
+  // mezo-3n2so — a heti tanulás (a súlyból és az evésből tanult energiaigény) feed-only pusha.
+  { id: 'nf-12', kind: 'expenditure_week', title: 'Heti tanulás: +60 kcal', body: 'Nézd meg, mit tanultam a múlt hétből.', deeplink: '/fuel/tanulas', occurredAt: at(0, '06:00'), readAt: null },
 ]

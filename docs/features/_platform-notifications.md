@@ -908,6 +908,7 @@ either adding a new one or going `null` — see the table row below and §3b.
 | `weekly_review_ready` | **null** | `/me/week` | `mezo-p2tr` — `WeeklyReviewGenerator` |
 | `life_goal_plan` | **null** | `/me/goals/{goalId}` | `mezo-iizd.7` — `LifeGoalTriggerService` |
 | `goal_suggestion` | **null** | `/me/goals/weight/suggestions/{suggestionId}` | `mezo-ricj.4` — `GoalSuggestionNotificationListener`, after a committed `GoalSuggestionProposedEvent` |
+| `expenditure_week` | **null** | `/fuel/tanulas` | `mezo-3n2so` — `ExpenditureWeekNotificationListener`, after `AdaptiveReviewJob` publishes an `ExpenditureWeekLearnedEvent` for a worth-saying week with learning on (dedup `expenditure_week:<weekStart>`; never from the rollout runner or a day mark). FE: kind meta sage / `t-lens`, category „cel” |
 | `person_candidate` | **null** | `/me/people/jeloltek` | `mezo-0cbh` — `PersonExtractionService` (the nightly `GraphMaintenanceJob` 4th phase), ONE row per night's whole crop |
 | `graph_candidate` | **null** | `/mezo/rolad` | `mezo-0cbh` — **two producers, one kind** (the `challenge_event` shape): `LifeEventExtractionService` (nightly LIFE_EVENT) and `QuarterlyReviewService` (quarterly SEASON), different dedup keys and different words |
 | `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |

@@ -649,29 +649,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useSlotTemplateActions`, `useSlotTemplateEvaluation`,
     `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`, `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, expenditureApi.ts,
-    expenditureExplanation.ts, expenditureHooks.ts, fuel.ts, fuelApi.ts, fuelConfig.ts, fuelHooks.ts,
-    fuelHorizonHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts, mealApi.ts,
-    medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts, pantryImpact.ts,
-    pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts, slotTemplateApi.ts,
-    slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts, workshopApi.ts,
-    workshopHooks.ts, workshopMock.ts, workshopState.ts
+    expenditureExplanation.ts, expenditureHooks.ts, expenditureLearningSeed.ts, fuel.ts, fuelApi.ts, fuelConfig.ts,
+    fuelHooks.ts, fuelHorizonHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts, fuelWeekHooks.ts,
+    mealApi.ts, medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts, pantryHooks.ts,
+    pantryImpact.ts, pantryPickables.ts, queryKeys.ts, recipeApi.ts, recipeHooks.ts, recipeMacros.ts,
+    slotTemplateApi.ts, slotTemplateHooks.ts, stackDayHooks.ts, stackHooks.ts, stackZones.ts, timelineHooks.ts,
+    workshopApi.ts, workshopHooks.ts, workshopMock.ts, workshopState.ts
 - **FE ui** `frontend/src/features/fuel`
   - **pages:** FuelKamraPage.tsx, FuelKonyhaPage.tsx, FuelLogNewPage.tsx, FuelMaiPage.tsx, FuelMealDetailPage.tsx,
     FuelMealScorePage.tsx, FuelMedicationPage.tsx, FuelRecipeScorePage.tsx, FuelRecipesPage.tsx, FuelSettingsPage.tsx,
     FuelSlotsPage.tsx, FuelStackAddPage.tsx, FuelStackPage.tsx, FuelStackProtocolPage.tsx, FuelTrendekPage.tsx,
-    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
-    RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
+    KamraItemDetailPage.tsx, KamraSkeleton.tsx, LearningPage.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx,
+    RecipeEditorPage.tsx, RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
   - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, KamraSheetHead.tsx, LearnedBaseChart.tsx,
     LearnedBaseExplainer.tsx, LogDoseSheet.tsx, MedicationFormSheet.tsx, ReceptPickSheet.tsx, StackItemSheet.tsx,
-    WaterLogSheet.tsx, learnedBaseFormat.ts
-  - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, FuelEnergyHero.tsx, FuelHorizon.tsx, FuelLogModes.tsx,
-    FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelMealCeremony.tsx, FuelQualityBlocks.tsx, FuelScoreSurface.tsx,
-    FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx,
-    MacroCells.tsx, MacroPanel.tsx, MealClock.tsx, MealClockBox.tsx, MealComposer.tsx, MealTimingStrip.tsx,
-    MedicationCycleBar.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx,
-    RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ServingToggle.tsx,
-    SourceBadge.tsx, StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx, SuggestionCard.tsx,
+    WaterLogSheet.tsx, WeeklyLearningSheet.tsx, learnedBaseFormat.ts
+  - **components:** ContextPanel.tsx, DayLearningMark.tsx, DietSuggestionBanner.tsx, FuelEnergyHero.tsx,
+    FuelHorizon.tsx, FuelLogModes.tsx, FuelMacroRings.tsx, FuelMealBlocks.tsx, FuelMealCeremony.tsx,
+    FuelQualityBlocks.tsx, FuelScoreSurface.tsx, FuelStackItemGlass.tsx, FuelWaterModule.tsx, FuelWeekDayGlass.tsx,
+    GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx, LearningDaysList.tsx, LearningHistoryChart.tsx, MacroCells.tsx,
+    MacroPanel.tsx, MealClock.tsx, MealClockBox.tsx, MealComposer.tsx, MealTimingStrip.tsx, MedicationCycleBar.tsx,
+    MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx,
+    RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx, ServingToggle.tsx, SourceBadge.tsx,
+    StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx, SuggestionCard.tsx, WeeklyLearningDot.tsx,
     WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, mealClockWindow.ts
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
@@ -722,41 +723,47 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
   - **entities→tables:** `ExpenditureEstimateEntity`→`expenditure_estimate`, `GoalEntity`→`goal`,
-    `GoalPlanLinkEntity`→`goal_plan_link`, `GoalSuggestionEntity`→`goal_suggestion`
+    `GoalPlanLinkEntity`→`goal_plan_link`, `GoalSuggestionEntity`→`goal_suggestion`,
+    `IntakeDayMarkEntity`→`intake_day_mark`
   - **repositories:** `ExpenditureEstimateRepository`, `GoalPlanLinkRepository`, `GoalRepository`,
-    `GoalSuggestionRepository`
+    `GoalSuggestionRepository`, `IntakeDayMarkRepository`
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
     `DietPreferences`, `DietPreferencesPort`, `ExpenditureExplainer`, `ExpenditureExplanationService`,
-    `ExpenditureFilter`, `ExpenditureLearningService`, `ExpenditureStepPolicy`, `GoalDeletedEvent`,
-    `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`,
-    `GoalOverviewCourseService`, `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`,
-    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`,
-    `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`,
-    `GoalSuggestionProposedEvent`, `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`,
-    `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`, `IntakeDayClassifier`,
-    `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+    `ExpenditureFilter`, `ExpenditureInsightService`, `ExpenditureLearningService`, `ExpenditureStepPolicy`,
+    `ExpenditureWeekLearnedEvent`, `ExpenditureWeekNotificationListener`, `GoalDeletedEvent`, `GoalEngineService`,
+    `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`,
+    `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`,
+    `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`,
+    `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`,
+    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
+    `GuardEvaluationService`, `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`,
+    `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
   - **controllers→contract:** `GoalController`→`GoalApi`
-  - **mappers:** `ExpenditureExplanationMapper`, `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
+  - **mappers:** `ExpenditureExplanationMapper`, `ExpenditureInsightMapper`, `GoalMapper`, `GoalPlanLinkMapper`,
+    `GoalSuggestionMapper`
   - **other:** `ActivityModelMigrationRunner`, `DailyIntakePort`, `ExcludedIntakeDayJson`,
     `ExpenditureExplanationJson`, `ExpenditureRolloutRunner`, `GoalEngineProperties`, `GoalPrescriptionJson`,
     `GoalReevaluateRunner`, `GoalSeedData`, `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`,
     `IntakeAdherencePort`, `SleepAdequacyPort`, `TdeeBootstrapJson`
-- **Contract** `api/feature/goal/goal.yml` — 18 operations
+- **Contract** `api/feature/goal/goal.yml` — 24 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview ·
-    GET /api/goals/expenditure/explanation · GET /api/goals/{id} · PUT /api/goals/{id} · DELETE /api/goals/{id} ·
-    GET /api/goals/{id}/overview · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
-    GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
-    DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
+    GET /api/goals/expenditure/explanation · GET /api/goals/expenditure/weeks · GET /api/goals/expenditure/weekly-card ·
+    POST /api/goals/expenditure/weekly-card/{weekStart}/dismiss · GET /api/goals/expenditure/days ·
+    PUT /api/goals/expenditure/days/{date}/mark · DELETE /api/goals/expenditure/days/{date}/mark · GET /api/goals/{id} ·
+    PUT /api/goals/{id} · DELETE /api/goals/{id} · GET /api/goals/{id}/overview · POST /api/goals/{id}/activate ·
+    POST /api/goals/{id}/archive · GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate ·
+    POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 23 IT + 14 unit
-  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewServiceIT`, `ExpenditureEstimateRepositoryIT`,
-    `ExpenditureExplanationControllerIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`,
-    `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`,
-    `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`,
-    `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`,
-    `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`,
-    `GuardEvaluationServiceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 28 IT + 17 unit
+  - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewJobNotificationIT`, `AdaptiveReviewServiceIT`,
+    `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`,
+    `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`,
+    `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`,
+    `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`,
+    `GoalSuggestionNotificationIT`, `GoalSuggestionPreviewApiIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`,
+    `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`, `IntakeDayMarkRepositoryIT`,
+    `IntakeDayMarkServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `MealPopulator`, `RunningPopulator`, `TrainPopulator`, `UserPopulator`,
     `WeightLogPopulator`
@@ -1150,7 +1157,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
-  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`
 
 ### pantry
 

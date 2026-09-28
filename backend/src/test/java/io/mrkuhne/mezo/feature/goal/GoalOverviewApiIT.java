@@ -8,19 +8,26 @@ import io.mrkuhne.mezo.api.dto.GoalOverviewDiet;
 import io.mrkuhne.mezo.api.dto.GoalOverviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalOverviewResponse.CourseStatusEnum;
 import io.mrkuhne.mezo.api.dto.GoalOverviewResponse.DataSufficiencyEnum;
+import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
+import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
+import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,6 +44,50 @@ class GoalOverviewApiIT extends ApiIntegrationTest {
     @Autowired private GoalSuggestionPopulator suggestionPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
+    @Autowired private BiometricProfilePopulator profilePopulator;
+    @Autowired private ExpenditureEstimateRepository expenditureEstimateRepository;
+    @Autowired private GoalRepository goalRepository;
+    @Autowired private GoalService goalService;
+
+    /**
+     * mezo-3n2so final review: a learner with the switch on gets basis="learned" written by the
+     * engine — both goal reads must serialize it (the contract enum once lacked it → 500).
+     */
+    @Test
+    void testGoalReads_shouldReturnLearnedBasis_whenLearnerHasTheSwitchOn() {
+        UUID owner = ownerId();
+        profilePopulator.create(owner);
+        ExpenditureEstimateEntity row = new ExpenditureEstimateEntity();
+        row.setCreatedBy(owner);
+        row.setWeekStart(LocalDate.now().minusWeeks(2).with(DayOfWeek.MONDAY));
+        row.setStatus("STABLE");
+        row.setFormulaBaseKcal(2200);
+        row.setPosteriorBaseKcal(1700);
+        row.setPosteriorSdKcal(80);
+        row.setAppliedBaseKcal(1700);
+        row.setStepKcal(-50);
+        row.setDirection(-1);
+        row.setConfidence("HIGH");
+        row.setUsableDays(6);
+        row.setWeighInDays(4);
+        row.setExcludedDays(List.of());
+        expenditureEstimateRepository.saveAndFlush(row);
+        GoalEntity goal = goalPopulator.createGoal(owner, "cut", "planned");
+        goal.setStartDate(LocalDate.now().minusWeeks(1));
+        goal.setTargetDate(LocalDate.now().plusWeeks(7));
+        goalRepository.saveAndFlush(goal);
+        goalService.activateGoal(owner, goal.getId()); // switch defaults on → learned base served
+        assertThat(goalRepository.findById(goal.getId()).orElseThrow().getPrescription().basis())
+            .isEqualTo("learned");
+
+        GoalResponse[] goals = getForBody("/api/goals", ownerAuthHeaders(), HttpStatus.OK, GoalResponse[].class);
+        GoalOverviewResponse overview = getForBody("/api/goals/" + goal.getId() + "/overview",
+            ownerAuthHeaders(), HttpStatus.OK, GoalOverviewResponse.class);
+
+        assertThat(goals).singleElement()
+            .satisfies(g -> assertThat(g.getPrescription().getBasis().getValue()).isEqualTo("learned"));
+        assertThat(overview.getDiet().getBasis().getValue()).isEqualTo("learned");
+    }
 
     @Test
     void testGetGoalOverview_shouldReturn401_whenUnauthenticated() {
