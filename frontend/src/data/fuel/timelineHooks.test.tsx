@@ -140,6 +140,9 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('useFuelTimeline / us
       // Learned-base provenance passthrough (mezo-zz91i) — the mock fixture serves a learned base.
       source: fuelDayEnergy.baseSource, formulaBase: fuelDayEnergy.formulaBaseKcal,
       sd: fuelDayEnergy.baseSdKcal, confidence: fuelDayEnergy.baseConfidence,
+      // mezo-tb3s2: the still-unlogged planned movement passes through as `pending` (0 when the
+      // mock fixture serves no `pendingMovementKcal`).
+      pending: fuelDayEnergy.pendingMovementKcal ?? 0,
     })
     expect(e.base + e.planned + e.extra + e.balance).toBe(e.target)
     expect(result.current.budget.kcal).toBe(e.target) // targets.kcal IS the served target
@@ -318,7 +321,7 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
       await waitFor(() => expect(result.current.plan.energy.base).toBe(energy.baseKcal))
       expect(result.current.plan.energy).toEqual({
         base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal,
-        balance: energy.balanceKcal, target: energy.targetKcal,
+        balance: energy.balanceKcal, target: energy.targetKcal, pending: 0,
       })
       expect(result.current.budget.kcal).toBe(energy.targetKcal)
       expect(result.current.staticEnergy).toBe(false)
@@ -340,7 +343,7 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
       await waitFor(() => expect(result.current.budget.kcal).toBe(2150))
       expect(result.current.staticEnergy).toBe(true)
       expect(result.current.energyBreakdown).toBeNull()
-      expect(result.current.plan.energy).toEqual({ base: 2150, planned: 0, extra: 0, balance: 0, target: 2150 })
+      expect(result.current.plan.energy).toEqual({ base: 2150, planned: 0, extra: 0, balance: 0, target: 2150, pending: 0 })
     })
   })
 

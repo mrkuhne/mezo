@@ -142,6 +142,11 @@ export interface DayBudget extends Macro4 {
     formulaBase?: number | null
     sd?: number | null
     confidence?: 'low' | 'medium' | 'high' | null
+    /** The still-unlogged planned sessions' kcal (mezo-tb3s2, `FuelDayEnergy.pendingMovementKcal`)
+     *  — a preview of what the Mozgás row would grow to if today's remaining planned sessions get
+     *  logged. Optional so DayBudget literals built outside `servedBudget` need no touch; every
+     *  reader defaults it to 0 (absent → nothing pending), never fabricates a number. */
+    pending?: number
   }
 }
 
@@ -156,8 +161,9 @@ export function servedBudget(targets: MacroSet, energy: FuelDayEnergy | null | u
     ? {
         base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal, balance: energy.balanceKcal, target: energy.targetKcal,
         source: energy.baseSource, formulaBase: energy.formulaBaseKcal, sd: energy.baseSdKcal, confidence: energy.baseConfidence,
+        pending: energy.pendingMovementKcal ?? 0,
       }
-    : { base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal }
+    : { base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal, pending: 0 }
   return { kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f, energy: e }
 }
 
