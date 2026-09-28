@@ -90,12 +90,24 @@ public class CheckInPlanService {
         return wanted;
     }
 
-    /** Deterministic across JVMs: UUID, epoch day and String hashes are all specified. */
+    /**
+     * Deterministic across JVMs: UUID, epoch day and String hashes are all specified. The combined
+     * hash goes through the SplitMix64 finalizer because {@link Random}'s first output is nearly
+     * linear in its seed: a raw {@code 31 * h + epochDay} seed moved the first draw by ~0.003 per
+     * day, so the random-vs-need draw was the same for weeks in a row (mezo-x6t01).
+     */
     static long seed(UUID userId, LocalDate date, String slotTime) {
         long seed = userId.getMostSignificantBits();
         seed = 31 * seed + userId.getLeastSignificantBits();
         seed = 31 * seed + date.toEpochDay();
-        return 31 * seed + slotTime.hashCode();
+        return mix64(31 * seed + slotTime.hashCode());
+    }
+
+    /** SplitMix64 finalizer (Steele, Lea &amp; Flood 2014): every input bit avalanches into every output bit. */
+    private static long mix64(long z) {
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
+        return z ^ (z >>> 31);
     }
 
     static CheckInPlanItem toPlanItem(CheckInItem item) {
