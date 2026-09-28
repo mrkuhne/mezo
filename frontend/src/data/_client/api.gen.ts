@@ -2047,6 +2047,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/conversation/{conversationId}/forget-learned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S8 (mezo-d6ivw.12) — what Mindent ebből a beszélgetésből? would forget: every still-live memory item this conversation produced (person facts, undecided proposals, accepted facts). */
+        get: operations["previewForgetLearned"];
+        put?: never;
+        /** S8 — forget everything this conversation taught, permanently (veto, never re-learned from the same text). The forgotten items are appended to the triggering message forget list. */
+        post: operations["forgetLearned"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/fact": {
         parameters: {
             query?: never;
@@ -8344,6 +8362,16 @@ export interface components {
             createdAt: string;
             /** @description True for an undecided proposal. */
             pending: boolean;
+        };
+        ForgetLearnedRequest: {
+            /**
+             * Format: uuid
+             * @description The USER message whose Elfelejtettem chip offered the widen.
+             */
+            triggerMessageId: string;
+        };
+        ForgetLearnedResponse: {
+            forgotten: components["schemas"]["MemoryItemResponse"][];
         };
         FactDecisionRequest: {
             /**
@@ -18515,6 +18543,90 @@ export interface operations {
                 };
             };
             /** @description Conversation or user message not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    previewForgetLearned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Live items, newest first (may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryItemResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    forgetLearned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgetLearnedRequest"];
+            };
+        };
+        responses: {
+            /** @description What was forgotten */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgetLearnedResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation or trigger message not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

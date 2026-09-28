@@ -5354,6 +5354,83 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/conversation/{conversationId}/forget-learned':
+    get:
+      tags:
+        - Companion
+      operationId: previewForgetLearned
+      summary: >-
+        S8 (mezo-d6ivw.12) — what Mindent ebből a beszélgetésből? would forget:
+        every still-live memory item this conversation produced (person facts,
+        undecided proposals, accepted facts).
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 'Live items, newest first (may be empty)'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemoryItemResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Companion
+      operationId: forgetLearned
+      summary: >-
+        S8 — forget everything this conversation taught, permanently (veto,
+        never re-learned from the same text). The forgotten items are appended
+        to the triggering message forget list.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgetLearnedRequest'
+      responses:
+        '200':
+          description: What was forgotten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgetLearnedResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation or trigger message not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/fact:
     get:
       tags:
@@ -20878,6 +20955,24 @@ components:
         pending:
           type: boolean
           description: True for an undecided proposal.
+    ForgetLearnedRequest:
+      type: object
+      required:
+        - triggerMessageId
+      properties:
+        triggerMessageId:
+          type: string
+          format: uuid
+          description: The USER message whose Elfelejtettem chip offered the widen.
+    ForgetLearnedResponse:
+      type: object
+      required:
+        - forgotten
+      properties:
+        forgotten:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryItemResponse'
     FactDecisionRequest:
       type: object
       required:

@@ -20,4 +20,17 @@ class CompanionTurnMemoryApiIT extends ApiIntegrationTest {
     void getTurnMemory_shouldReturn404_forUnknownConversation() {
         getForBody(url(UUID.randomUUID(), UUID.randomUUID()), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
     }
+
+    @Test
+    void forgetLearned_shouldReturn404_forUnknownConversation() {
+        postForBody("/api/companion/conversation/" + UUID.randomUUID() + "/forget-learned",
+                java.util.Map.of("triggerMessageId", UUID.randomUUID().toString()),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    }
+
+    @Test
+    void previewForgetLearned_shouldReturn401_withoutToken() {
+        getForBody("/api/companion/conversation/" + UUID.randomUUID() + "/forget-learned", null,
+                HttpStatus.UNAUTHORIZED, String.class);
+    }
 }

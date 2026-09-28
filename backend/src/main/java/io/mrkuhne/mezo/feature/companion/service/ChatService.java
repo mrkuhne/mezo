@@ -12,6 +12,8 @@ import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ChatMemoryItem;
+import io.mrkuhne.mezo.feature.companion.entity.ForgottenMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
@@ -211,6 +213,10 @@ public class ChatService {
     private final io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
     private final ConversationHistory conversationHistory;
     private final PersonalContextAssembler personalContextAssembler;
+    /** S8 (mezo-d6ivw.12) — "ezt ne jegyezd meg": the forget pre-screen's writer. */
+    private final ChatForgetService chatForgetService;
+    /** S8 (mezo-d6ivw.12) — the memory-honesty blocks of the volatile half. */
+    private final ChatMemoryBlocks chatMemoryBlocks;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
 
@@ -240,9 +246,10 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         LocalDate today = LocalDate.now();
         List<Turn> history = historyFor(userId, conversationId);
-        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
-        AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
-                request.getContent(), null, null, null, false, null);
+        List<ChatMemoryItem> forgotten = forgetIfAsked(userId, conversationId, request.getContent());
+        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today, forgotten);
+        AiMessageEntity userRow = markForgetRow(persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
+                request.getContent(), null, null, null, false, null), forgotten);
         recordSeedReply(userId, conversation, request.getContent());
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
@@ -286,14 +293,15 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = historyFor(userId, conversationId);
-        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
+        List<ChatMemoryItem> forgotten = forgetIfAsked(userId, conversationId, request.getContent());
+        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today, forgotten);
         TurnGear gear = routed.gear();
         ChatMemoryPayload memory = routed.memory();
         String systemPrompt = routed.systemPrompt();
         String turnCtx = routed.turnContext();
 
-        AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
-                request.getContent(), null, null, null, false, null);
+        AiMessageEntity userRow = markForgetRow(persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
+                request.getContent(), null, null, null, false, null), forgotten);
         recordSeedReply(userId, conversation, request.getContent());
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
@@ -413,9 +421,9 @@ public class ChatService {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
             String systemPrompt = stableSystemPrompt(userId);
             String turnCtx = conversationProperties.enabled()
-                    ? conversationContext(userId, conversation, LocalDate.now())
+                    ? conversationContext(userId, conversation, LocalDate.now(), "")
                     : turnContext(userId, LocalDate.now(),
-                    knowledgeFactService.renderPromptBlock(userId), "", "",
+                    knowledgeFactService.renderPromptBlock(userId), "", "", "",
                     conversation.getContextKind(), conversation.getContextDate());
             // mezo-ozri.8: tagged like every other LLM entry point. Without this the turn books as
             // feature='unknown' in the cost reports AND — since mezo-ozri.6 — it is the one chat
@@ -488,10 +496,11 @@ public class ChatService {
      * embedding call and a graph traversal that a tool-free, data-free turn has no use for.
      */
     private RoutedContext routeAndAssemble(UUID userId, AiConversationEntity conversation,
-            String userContent, List<Turn> history, LocalDate today) {
+            String userContent, List<Turn> history, LocalDate today, List<ChatMemoryItem> forgotten) {
+        String blocks = memoryBlocks(userId, conversation, forgotten);
         if (conversationProperties.enabled()) {
             return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId),
-                    conversationContext(userId, conversation, today));
+                    conversationContext(userId, conversation, today, blocks));
         }
         TurnGear gear = turnGearRouter.route(userContent);
         ChatMemoryPayload memory = gear == TurnGear.CHAT
@@ -499,14 +508,15 @@ public class ChatService {
                 : chatMemoryContextAdapter.resolve(
                         userId, conversation.getId(), userContent, history, today);
         String turnContext = gear == TurnGear.CHAT
-                ? chatGearContext(userId, today)
+                ? chatGearContext(userId, today, blocks)
                 : turnContext(userId, today, memory.factsBlock(),
-                        memory.memoriesBlock(), memory.graphBlock(),
+                        memory.memoriesBlock(), memory.graphBlock(), blocks,
                         conversation.getContextKind(), conversation.getContextDate());
         return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
     }
 
-    private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today) {
+    private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today,
+            String memoryBlocks) {
         return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
                 + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
                 + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()))
@@ -514,7 +524,31 @@ public class ChatService {
                 // facts-always (mezo-d6ivw.8): confirmed facts are identity, not data lookup —
                 // they join date/preferences as initial background (ADR 0043 amendment); the
                 // model uses them passively (preamble in FACTS_HEADER), tools stay for the rest
-                + knowledgeFactService.renderPromptBlock(userId);
+                + knowledgeFactService.renderPromptBlock(userId)
+                // S8 (mezo-d6ivw.12): per-turn memory honesty — "" on an ordinary turn
+                + memoryBlocks;
+    }
+
+    /** S8 (mezo-d6ivw.12): the deterministic forget pre-screen — null when the message is not a
+     *  forget request, the forgotten items (possibly empty) when it is. Runs BEFORE the user row
+     *  is persisted, so "the latest turn" is always an earlier one. */
+    private List<ChatMemoryItem> forgetIfAsked(UUID userId, UUID conversationId, String content) {
+        return ForgetIntent.matches(content) ? chatForgetService.forgetLatest(userId, conversationId) : null;
+    }
+
+    /** S8: every memory-honesty block of the volatile half, in one place. */
+    private String memoryBlocks(UUID userId, AiConversationEntity conversation, List<ChatMemoryItem> forgotten) {
+        return chatMemoryBlocks.forgetBlock(userId, forgotten);
+    }
+
+    /** S8: the forget request's own row — never extracted, and it remembers what it forgot. */
+    private AiMessageEntity markForgetRow(AiMessageEntity userRow, List<ChatMemoryItem> forgotten) {
+        if (forgotten == null) {
+            return userRow;
+        }
+        userRow.setExtractionBlocked(true);
+        userRow.setForgottenMemories(ForgottenMemoriesEnvelope.ofOrNull(forgotten));
+        return messageRepository.saveAndFlush(userRow);
     }
 
     /**
@@ -774,6 +808,7 @@ public class ChatService {
             String factsBlock,
             String memoriesBlock,
             String graphBlock,
+            String memoryBlocks,
             String contextKind,
             LocalDate contextDate) {
         return promptPersona.render(userId, contextSnapshotAssembler.render(userId, today)
@@ -785,6 +820,7 @@ public class ChatService {
                 + personalContextAssembler.render(userId, today)
                 + promptPersona.render(userId, memoriesBlock
                 + graphBlock
+                + memoryBlocks
                 + TONE_REMINDER);
     }
 
@@ -793,8 +829,8 @@ public class ChatService {
      * only. No snapshot digest, no week, no facts, no reflection, no character, no memories, no
      * graph — a turn that needs none of the user's data should not pay to carry all of it.
      */
-    private String chatGearContext(UUID userId, LocalDate today) {
-        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + TONE_REMINDER)
+    private String chatGearContext(UUID userId, LocalDate today, String memoryBlocks) {
+        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + memoryBlocks + TONE_REMINDER)
                 + personalContextAssembler.render(userId, today);
     }
 

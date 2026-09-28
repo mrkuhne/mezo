@@ -7,7 +7,10 @@ import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
+import io.mrkuhne.mezo.api.dto.ForgetLearnedRequest;
+import io.mrkuhne.mezo.api.dto.ForgetLearnedResponse;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
+import io.mrkuhne.mezo.api.dto.MemoryItemResponse;
 import io.mrkuhne.mezo.api.dto.MemoryLlmUsageResponse;
 import io.mrkuhne.mezo.api.dto.MemoryOverviewResponse;
 import io.mrkuhne.mezo.api.dto.MemorySummaryListResponse;
@@ -20,6 +23,8 @@ import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.api.dto.TurnMemoryResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
+import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.service.ChatForgetService;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
@@ -55,6 +60,8 @@ public class CompanionController implements CompanionApi {
     private final PatternPairDetailService patternPairDetailService;
     private final MemoryObservatoryService memoryObservatoryService;
     private final TurnMemoryService turnMemoryService;
+    private final ChatForgetService chatForgetService;
+    private final CompanionMapper mapper;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -160,5 +167,19 @@ public class CompanionController implements CompanionApi {
     @Override
     public TurnMemoryResponse getTurnMemory(UUID conversationId, UUID messageId) {
         return turnMemoryService.turnMemory(currentUserId.get(), conversationId, messageId);
+    }
+
+    @Override
+    public List<MemoryItemResponse> previewForgetLearned(UUID conversationId) {
+        return chatForgetService.preview(currentUserId.get(), conversationId).stream()
+                .map(mapper::toMemoryItemResponse).toList();
+    }
+
+    @Override
+    public ForgetLearnedResponse forgetLearned(UUID conversationId, ForgetLearnedRequest request) {
+        return ForgetLearnedResponse.builder()
+                .forgotten(chatForgetService.forgetAll(currentUserId.get(), conversationId, request.getTriggerMessageId())
+                        .stream().map(mapper::toMemoryItemResponse).toList())
+                .build();
     }
 }

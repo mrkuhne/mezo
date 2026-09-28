@@ -59,6 +59,8 @@ class ChatServiceCapToRemainingBudgetTest {
         mock(io.mrkuhne.mezo.feature.companion.config.ConversationProperties.class),
         mock(ConversationHistory.class),
         mock(PersonalContextAssembler.class),
+        mock(ChatForgetService.class),
+        mock(ChatMemoryBlocks.class),
         new ObjectMapper());
 
     private static TurnPlan.PlanStep step(String tool, String why) {

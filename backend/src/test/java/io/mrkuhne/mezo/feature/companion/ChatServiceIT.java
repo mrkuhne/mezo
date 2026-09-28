@@ -509,6 +509,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         UUID userId = databasePopulator.populateUser("s8-turn-anchor@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
+        // gear-audited: only the turn anchor is asserted, never the prompt — the gear is irrelevant
         MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("Szia"));
 
         AiMessageEntity userRow = messageRepository
