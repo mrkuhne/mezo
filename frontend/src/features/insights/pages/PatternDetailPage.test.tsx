@@ -74,9 +74,19 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(answer()).toHaveTextContent('Még gyűjtöm')
     expect(screen.getByText('FIGYELT PÁR')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: '6 nap a 8-ból' })).toBeInTheDocument()
+    // the six counted days are plotted too (mezo-bip2w) — never „6 közös nap" over an empty chart
+    expect(screen.getByRole('group', { name: /^6 nap:/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Figyeljük|Elvetem|Megerősítem/ })).not.toBeInTheDocument()
     expect(document.querySelector('.pmx-dec')).toBeNull()
     expect(screen.queryByText('Mit kezd ezzel az app')).not.toBeInTheDocument()
+  })
+
+  test('an empty history fold says „még semmi", never „0 esemény"', () => {
+    renderAt(`/mezo/patterns/${GATHERING_KEY}`)
+    const fold = screen.getByText('Ami eddig történt').closest('details') as HTMLDetailsElement
+    expect(within(fold).getByText('még semmi')).toBeInTheDocument()
+    expect(fold).not.toHaveTextContent('0 esemény')
+    expect(within(fold).getByText(/Még nincs jelentős esemény/)).toBeInTheDocument()
   })
 
   test('the weekend pair says why it still collects: the group balance', () => {
@@ -182,6 +192,14 @@ describe('PatternDetailPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
+  // the decide endpoint answers with the updated row (wire `PatternResponse`) — a real 200, so the
+  // run logs no mutation error
+  const DECIDED: Record<string, string> = { confirm: 'confirmed', monitor: 'monitoring', reject: 'rejected' }
+  const decidedPattern = (id: string, body: { decision: string }) => ({
+    id, kind: 'statistical', category: 'physiology', categoryLabel: 'Fiziológia', title: 'Minta',
+    mechanism: '', evidence: [], status: DECIDED[body.decision],
+  })
+
   const wirePair = {
     key: SHOWCASE_KEY,
     title: 'Alvásminőség ↔ másnapi edzés-RPE',
@@ -218,6 +236,45 @@ describe('PatternDetailPage (real mode)', () => {
     )
     renderAt('/mezo/patterns/pending-key')
     expect(await screen.findByText('A minta betöltése…')).toBeInTheDocument()
+  })
+
+  test('a plan-less row without a gate count waits for the monitor\'s minimum instead of guessing 8', async () => {
+    // 6 frozen days: under the last-resort 8 they would read „Még alig mért", under the monitor's 5
+    // they already hold — so rendering before the monitor arrives would flip the answer on screen
+    let releaseMonitor: () => void = () => {}
+    const monitorGate = new Promise<void>((resolve) => { releaseMonitor = resolve })
+    let detailServed = false
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/monitor`, async () => {
+        await monitorGate
+        return HttpResponse.json({
+          windowFrom: '2026-06-13', windowTo: '2026-08-10', lookbackDays: 60, minN: 5,
+          cron: '0 40 2 * * *', lastRunAt: null, pairs: [], metrics: [],
+        })
+      }),
+      http.get(`${API_BASE}/api/companion/pattern/pair/${SHOWCASE_KEY}`, () => {
+        detailServed = true
+        return HttpResponse.json({
+          pair: wirePair,
+          pattern: {
+            id: 'w-pattern-3', kind: 'statistical', pairKey: SHOWCASE_KEY, category: 'physiology',
+            categoryLabel: 'Fiziológia', title: 'Alvásminőség ↔ másnapi edzés-RPE',
+            mechanism: '', evidence: [], status: 'confirmed',
+          },
+          events: [],
+          days: [[5, 9], [6, 8.1], [7, 7.2], [8, 5.9], [9, 5.1], [10, 4]]
+            .map(([a, b], i) => ({ date: `2026-08-${10 + i}`, a, b })),
+          impact: { fact: null, predictions: [], experiments: [], challenges: [] },
+        })
+      }),
+    )
+    renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
+    await vi.waitFor(() => expect(detailServed).toBe(true))
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(screen.getByText('A minta betöltése…')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    releaseMonitor()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tartja magát' })).toBeInTheDocument()
   })
 
   test('renders a retryable error state when loading fails', async () => {
@@ -379,8 +436,9 @@ describe('PatternDetailPage (real mode)', () => {
       ),
       http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([pairless])),
       http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
-        posted.push({ id: params.id, body: await request.json() })
-        return HttpResponse.json({ code: 'UNEXPECTED' }, { status: 500 })
+        const body = (await request.json()) as { decision: string }
+        posted.push({ id: params.id, body })
+        return HttpResponse.json(decidedPattern(String(params.id), body))
       }),
     )
     renderAt(`/mezo/patterns/${pairless.pairKey}`)
@@ -413,8 +471,9 @@ describe('PatternDetailPage (real mode)', () => {
         }),
       ),
       http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
-        posted.push({ id: params.id, body: await request.json() })
-        return HttpResponse.json({ code: 'UNEXPECTED' }, { status: 500 })
+        const body = (await request.json()) as { decision: string }
+        posted.push({ id: params.id, body })
+        return HttpResponse.json(decidedPattern(String(params.id), body))
       }),
     )
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
@@ -441,8 +500,9 @@ describe('PatternDetailPage (real mode)', () => {
     const posted: unknown[] = []
     server.use(
       http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
-        posted.push({ id: params.id, body: await request.json() })
-        return HttpResponse.json({ code: 'UNEXPECTED' }, { status: 500 })
+        const body = (await request.json()) as { decision: string }
+        posted.push({ id: params.id, body })
+        return HttpResponse.json(decidedPattern(String(params.id), body))
       }),
     )
     renderAt('/mezo/patterns/ref-anna-sleep')

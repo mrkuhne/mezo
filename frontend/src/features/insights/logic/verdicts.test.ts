@@ -1,5 +1,5 @@
 import type { PatternMonitorPair } from '@/data/types'
-import { groupBalanceSentence, verdictSentence } from '@/features/insights/logic/verdicts'
+import { verdictSentence } from '@/features/insights/logic/verdicts'
 
 const pair: PatternMonitorPair = {
   key: 'weekend~late-meal-hour',
@@ -35,12 +35,6 @@ const pair: PatternMonitorPair = {
 
 test('turns the smaller binary group into a concrete next-data sentence', () => {
   expect(verdictSentence(pair, null)).toBe('Még 2 hétvégi nap kell.')
-})
-
-test('explains why one weekend cannot establish a direction', () => {
-  expect(groupBalanceSentence(pair)).toBe(
-    '8 hétköznapi nap mellett még csak 1 hétvégi nap van. Egyetlen hétvégi napból még nem mondunk irányt.',
-  )
 })
 
 test('does not invent a count when the boundary fields are absent', () => {

@@ -54,13 +54,3 @@ function groupBalance(pair: PatternMonitorPair): GroupBalance | null {
     missing: Math.max(0, pair.requiredPerGroup - deficient.count),
   }
 }
-
-/** Explains why a binary comparison remains a question instead of claiming a direction. */
-export function groupBalanceSentence(pair: PatternMonitorPair): string {
-  const state = groupBalance(pair)
-  if (state == null) return 'Mindkét oldalról több nap kell, mielőtt irányt mondanánk.'
-  const evidence = state.deficient.count === 1
-    ? `Egyetlen ${state.deficient.day} napból még nem mondunk irányt.`
-    : `Ebből a ${state.deficient.count} ${state.deficient.day} napból még nem mondunk irányt.`
-  return `${state.abundant.count} ${state.abundant.day} nap mellett még csak ${state.deficient.count} ${state.deficient.day} nap van. ${evidence}`
-}

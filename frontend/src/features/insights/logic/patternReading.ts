@@ -4,10 +4,12 @@
 // helyzete. A mérő sávja 90%-os Fisher-z intervallum, a feltevés SAJÁT irányába fordítva:
 // jobbra mindig az „igaz rád". Tiszta függvények: az oldal minden szava és színe innen jön.
 // ============================================================
-import type { AlignedDay, Pattern, PatternEvent, PatternMonitorPair, PatternTestPlan } from '@/data/types'
+import type {
+  AlignedDay, Pattern, PatternEvent, PatternMetricValueKind, PatternMonitorPair, PatternTestPlan,
+} from '@/data/types'
 import type { DetailTone } from '@/features/insights/components/DetailHero'
 import type { Icon3DName } from '@/shared/ui/clay'
-import { binaryGroupLabels, formatMetricValue } from '@/features/insights/logic/metricFormat'
+import { binaryGroupLabels } from '@/features/insights/logic/metricFormat'
 import { bottleneckLabel } from '@/features/insights/logic/verdicts'
 
 export type ReadingState =
@@ -161,6 +163,11 @@ export function leanSide(state: ReadingState): 0 | 1 | 2 {
   return 1
 }
 
+/** Egy önálló `Lean` oldala (pl. a megerősítéskori állás) — ugyanazzal az osztályozással, mint az olvasat. */
+export function leanSideOf(l: Lean): 0 | 1 | 2 {
+  return leanSide(classify(l))
+}
+
 export function answerLook(reading: Reading, status: Pattern['status'] | null): AnswerLook {
   if (status === 'confirmed') {
     switch (reading.state) {
@@ -243,11 +250,20 @@ export function decisionPlan(reading: Reading, status: Pattern['status'] | null)
   }
 }
 
+/** A két zóna. Számos A-nál a vágás mindig két KÜLÖNBÖZŐ A-érték közé esik (egyforma napok sosem
+ *  kerülnek két zónába): a lehetséges vágások közül a felezőhöz legközelebbi, döntetlennél az alsó.
+ *  Ha minden A egyforma, a második zóna üres. */
 export function patternZones(days: AlignedDay[], binary: boolean): [AlignedDay[], AlignedDay[]] {
   if (binary) return [days.filter((d) => d.a < 0.5), days.filter((d) => d.a >= 0.5)]
   const sorted = [...days].sort((x, y) => x.a - y.a)
-  const k = Math.ceil(sorted.length / 2)
-  return [sorted.slice(0, k), sorted.slice(k)]
+  const half = sorted.length / 2
+  let cut = -1
+  for (let k = 1; k < sorted.length; k++) {
+    if (sorted[k - 1].a === sorted[k].a) continue
+    if (cut < 0 || Math.abs(k - half) < Math.abs(cut - half)) cut = k
+  }
+  if (cut < 0) return [sorted, []]
+  return [sorted.slice(0, cut), sorted.slice(cut)]
 }
 
 const CLOCK_STEPS = [0.5, 1, 2, 3, 4, 6]
@@ -272,12 +288,22 @@ export function niceTicks(lo: number, hi: number, clock: boolean, count = 3): nu
 export const mean = (days: AlignedDay[]) => days.reduce((s, d) => s + d.b, 0) / (days.length || 1)
 export const az = (word: string): 'a' | 'az' => (/^[aáeéiíoóöőuúüű]/i.test(word) ? 'az' : 'a')
 export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
-const hu1 = (v: number) => (Math.round(v * 10) / 10).toFixed(1).replace('.', ',')
-
-/** `formatMetricValue` magyar tizedesvesszővel: a sima számokon „7,4", az óra („15:41") és az
- *  igen/nem változatlan. A grafikon tooltipje, pötty-címkéi és tengelye ezt használja. */
-export function huMetricValue(metricKey: string, value: number): string {
-  return formatMetricValue(metricKey, value).replace(/^(-?\d+)\.(\d+)$/, '$1,$2')
+/** A minta-részlet EGYETLEN érték-formázója — a drót értékfajtája (`valueKind`) dönt, nem egy
+ *  kulcslista, így a katalóguson kívüli (pl. reflexiós) óra-széria is „01:30"-at mond.
+ *  `clock_hour` ⇒ ÓÓ:PP (percre kerekítve, 24-gyel visszahajtva, mint a `formatMetricValue`),
+ *  `binary` ⇒ igen/nem, egyébként egy tizedes vesszővel („7,4", egész szám tizedes nélkül);
+ *  `fixed` = mindig egy tizedes („6,0") — a zóna-átlagok így olvasnak átlagnak. Zóna-átlag,
+ *  tengely, tooltip, pötty-címke és a napok táblája mind ezt használja. */
+export function formatSeriesValue(kind: PatternMetricValueKind, value: number, fixed = false): string {
+  if (kind === 'clock_hour') {
+    const totalMin = Math.round(value * 60)
+    const h = Math.floor(totalMin / 60) % 24
+    const m = totalMin % 60
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  if (kind === 'binary') return value >= 0.5 ? 'igen' : 'nem'
+  const r = Math.round(value * 10) / 10
+  return (fixed ? r.toFixed(1) : String(r)).replace('.', ',')
 }
 
 /** A csoport-egyensúly mondata, a napok számából — a befagyott soron is működik (ott a kapu nem
@@ -304,9 +330,9 @@ function flatLabel(pair: PatternMonitorPair, days: AlignedDay[]): string {
   return pair.metricBLabel
 }
 
-/** Zóna-átlag kiírva: óra-metrikán „20:39", egyébként egy tizedes vesszővel. */
+/** Zóna-átlag kiírva: óra-metrikán „20:39", egyébként mindig egy tizedes vesszővel. */
 export function zoneValue(pair: PatternMonitorPair, value: number): string {
-  return pair.metricBValueKind === 'clock_hour' ? formatMetricValue(pair.metricBKey, value) : hu1(value)
+  return formatSeriesValue(pair.metricBValueKind, value, true)
 }
 
 export function saySentence(reading: Reading, pair: PatternMonitorPair, days: AlignedDay[],

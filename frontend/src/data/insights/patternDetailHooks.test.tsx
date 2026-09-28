@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { usePatternPairDetail } from '@/data/insights/patternDetailHooks'
-import { patternMonitor as mockMonitor } from '@/data/insights/insights'
+import { mockPatternPairDetail, patternMonitor as mockMonitor } from '@/data/insights/insights'
 import { API_BASE } from '@/data/_client/api'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -39,7 +39,7 @@ describe('usePatternPairDetail (mock mode)', () => {
     expect(detail.impact.challenges[0].status).toBe('completed')
   })
 
-  test('synthesizes a minimal detail (pattern: null, empty history/impact) for a gathering catalog pair', () => {
+  test('synthesizes a minimal detail (pattern: null, empty history/impact, plausible days) for a catalog pair', () => {
     const { result } = renderHook(() => usePatternPairDetail(CATALOG_ONLY_KEY), { wrapper: makeHookWrapper() })
 
     expect(result.current.notFound).toBe(false)
@@ -48,8 +48,41 @@ describe('usePatternPairDetail (mock mode)', () => {
     expect(detail.pair).toEqual(mockMonitor.pairs.find((p) => p.key === CATALOG_ONLY_KEY))
     expect(detail.pattern).toBeNull()
     expect(detail.events).toEqual([])
-    expect(detail.days).toEqual([])
+    // the page says „34 közös nap" — the chart must carry exactly those days, not an empty plot
+    expect(detail.days).toHaveLength(34)
     expect(detail.impact).toEqual({ fact: null, predictions: [], experiments: [], challenges: [] })
+  })
+
+  test('the synthesized catalog days are deterministic, dated to the window end and shaped by value kind', () => {
+    const stress = mockPatternPairDetail(CATALOG_ONLY_KEY)!
+    expect(mockPatternPairDetail(CATALOG_ONLY_KEY)!.days).toEqual(stress.days)
+    expect(stress.days.at(-1)!.date).toBe(mockMonitor.windowTo)
+    expect(stress.days[0].date).toBe('2026-07-08')
+    for (const d of stress.days) {
+      expect(d.a).toBeGreaterThanOrEqual(3)
+      expect(d.a).toBeLessThanOrEqual(8)
+      expect(d.b).toBeGreaterThanOrEqual(3)
+      expect(d.b).toBeLessThanOrEqual(8)
+    }
+    // the plotted days lean the way the monitor's r does (r = -0.61)
+    const n = stress.days.length
+    const ma = stress.days.reduce((t, d) => t + d.a, 0) / n
+    const mb = stress.days.reduce((t, d) => t + d.b, 0) / n
+    expect(stress.days.reduce((t, d) => t + (d.a - ma) * (d.b - mb), 0)).toBeLessThan(0)
+
+    // clock-hour A (late meal): evening hours
+    const late = mockPatternPairDetail('late-meal~next-sleep-quality')!
+    expect(late.days).toHaveLength(14)
+    expect(late.days.every((d) => d.a >= 22 && d.a <= 24)).toBe(true)
+
+    // degenerate pair: the bottleneck metric really does not move
+    const water = mockPatternPairDetail('daily-water~checkin-energy')!
+    expect(water.days).toHaveLength(19)
+    expect(new Set(water.days.map((d) => d.a)).size).toBe(1)
+    expect(new Set(water.days.map((d) => d.b)).size).toBeGreaterThan(1)
+
+    // no aligned days → still no days
+    expect(mockPatternPairDetail('sport-load~next-day-gym-volume')!.days).toEqual([])
   })
 
   test('an unknown catalog key renders the honest not-found state', () => {

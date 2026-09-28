@@ -1,5 +1,6 @@
 import {
-  answerLook, decisionPlan, lean, niceTicks, patternZones, pearson, readPattern, ruleSentence, saySentence,
+  answerLook, decisionPlan, formatSeriesValue, lean, leanSideOf, niceTicks, patternZones, pearson, readPattern,
+  ruleSentence, saySentence, zoneValue,
 } from '@/features/insights/logic/patternReading'
 import type { AlignedDay, Pattern, PatternEvent, PatternMonitorPair } from '@/data/types'
 
@@ -212,13 +213,52 @@ describe('answerLook + decisionPlan', () => {
 })
 
 describe('zones, ticks and sentences', () => {
-  test('numeric zones split at the median of A, binary zones by group', () => {
+  test('numeric zones split nearest the middle of A (odd n: the lower cut), binary zones by group', () => {
     const [lo, hi] = patternZones(LINE, false)
-    expect(lo.map((d) => d.a)).toEqual([1, 2, 3, 4, 5])
-    expect(hi.map((d) => d.a)).toEqual([6, 7, 8, 9])
+    expect(lo.map((d) => d.a)).toEqual([1, 2, 3, 4])
+    expect(hi.map((d) => d.a)).toEqual([5, 6, 7, 8, 9])
     const [zero, one] = patternZones(days([[0, 1], [1, 2], [0, 3]]), true)
     expect(zero).toHaveLength(2)
     expect(one).toHaveLength(1)
+  })
+  test('equal A values never land in both zones: the cut sits between two different values', () => {
+    const d = days([[7, 1], [6.5, 2], [7, 3], [7.5, 4], [6.5, 5], [7, 6]])
+    const [lo, hi] = patternZones(d, false)
+    // the old ceil(n/2) = 3 cut would split the three 7s; the honest cuts are k=2 (6.5|7) and k=5 (7|7.5)
+    expect(lo.map((x) => x.a)).toEqual([6.5, 6.5])
+    expect(hi.map((x) => x.a)).toEqual([7, 7, 7, 7.5])
+    const [lo2, hi2] = patternZones(days([[5, 1], [6, 1], [6, 1], [6, 1], [7, 1]]), false)
+    // cuts at k=1 (5|6) and k=4 (6|7) are both 1.5 away from n/2 = 2.5 → the lower k wins
+    expect(lo2.map((x) => x.a)).toEqual([5])
+    expect(hi2.map((x) => x.a)).toEqual([6, 6, 6, 7])
+    for (const [a, b] of [[lo, hi], [lo2, hi2]]) {
+      const top = Math.max(...a.map((x) => x.a))
+      expect(b.every((x) => x.a > top)).toBe(true)
+    }
+  })
+  test('all-equal A values give one zone and an empty second one', () => {
+    const d = days([[7, 1], [7, 2], [7, 3]])
+    const [lo, hi] = patternZones(d, false)
+    expect(lo).toHaveLength(3)
+    expect(hi).toEqual([])
+    const reading = readPattern({ pair: pair({ r: 0.5, n: 20 }), pattern: null, days: d, events: [] }, 8)
+    expect(saySentence(reading, pair(), d, null)).toMatch(/^A kétféle nap átlaga között kicsi a különbség/)
+  })
+  test('every pattern-detail value goes through one kind-aware formatter', () => {
+    // a reflection series is not in the hour catalog, the wire value kind still says clock
+    expect(formatSeriesValue('clock_hour', 25.5)).toBe('01:30')
+    expect(formatSeriesValue('clock_hour', 23.999)).toBe('00:00')
+    expect(formatSeriesValue('binary', 1)).toBe('igen')
+    expect(formatSeriesValue('binary', 0)).toBe('nem')
+    expect(formatSeriesValue('number', 7.44)).toBe('7,4')
+    expect(formatSeriesValue('number', 6)).toBe('6')
+    expect(zoneValue(pair({ metricBKey: 'reflection:lefekves', metricBValueKind: 'clock_hour' }), 25.5)).toBe('01:30')
+    expect(zoneValue(pair(), 6)).toBe('6,0')
+  })
+  test('a lean\'s own side uses the same classification as the reading', () => {
+    expect(leanSideOf(lean(0.545, 30, 1))).toBe(2)
+    expect(leanSideOf(lean(-0.6, 30, 1))).toBe(0)
+    expect(leanSideOf(lean(0.05, 9, 1))).toBe(1)
   })
   test('nice ticks', () => {
     expect(niceTicks(3.8, 6.4, false)).toEqual([4, 5, 6])
@@ -235,8 +275,8 @@ describe('zones, ticks and sentences', () => {
     const reading = readPattern({ pair: pair(), pattern: pattern(), days: d, events: [] }, 8)
     const s = saySentence(reading, pair(), d, 'proposed')
     expect(s).toContain('Amikor az ébredés ideje később volt')
-    expect(s).toContain('**4,5**')
-    expect(s).toContain('**5,6**')
+    expect(s).toContain('**4,6**')
+    expect(s).toContain('**5,8**')
     expect(s).toContain('9 napból még a véletlen is kihozhatja')
   })
   test('the rule sentence', () => {
