@@ -89,7 +89,7 @@ export function WeekDiscoveriesPage() {
             <>
               <div className="wkl-head rise" style={{ '--d': '0ms' } as React.CSSProperties}>
                 Amit a Mezo a héten <b>magától</b> tett a memóriába — ezek nem javaslatok, hanem
-                megtörtént nyomok. Koppints, és a Mezo tabon nyílnak ki.
+                megtörtént nyomok.
               </div>
               <WeekDiscoveries digest={digest} weekStart={start} />
             </>

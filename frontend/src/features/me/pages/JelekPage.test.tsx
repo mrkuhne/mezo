@@ -17,8 +17,8 @@ describe('JelekPage', () => {
   it('a hero az élő források arányát mondja', async () => {
     renderWithProviders(<JelekPage />)
     expect(await screen.findByText('Jelek')).toBeInTheDocument()
-    // 10 élő a 28-ból (MOCK_LIVENESS) — a hero számpárja.
-    expect(await screen.findByLabelText('10 élő forrás a 28-ból')).toBeInTheDocument()
+    // 10 élő a 32-ból (MOCK_LIVENESS; +4 check-in 2.0 jel, mezo-ck2) — a hero számpárja.
+    expect(await screen.findByLabelText('10 élő forrás a 32-ból')).toBeInTheDocument()
   })
 
   it('az élő forrást a napszámával és a tápált pillérek chipjeivel mutatja', async () => {

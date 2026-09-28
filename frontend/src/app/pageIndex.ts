@@ -68,7 +68,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/nap/uzenetek', label: 'Beszélgetés', hint: 'Boop üzenetei és a válaszaid egy szálon.' },
   { route: '/nap/rutin', label: 'Rutin', hint: 'A mai szokásaid: mit pipáltál ki, mi maradt.' },
   { route: '/nap/kuldetesek', label: 'Napi küldetések', hint: 'A mai apró feladatok és a jutalmuk.' },
-  { route: '/nap/checkin', label: 'Check-in', hint: 'Hogy vagy most — négy lépés, fél perc.' },
+  { route: '/nap/checkin', label: 'Check-in', hint: 'Hogy vagy most — pár koppintás, fél perc.' },
   { route: '/nap/gyors', label: 'Gyors logolás', hint: 'Egy mozdulattal rögzíthető dolgok rácsa.' },
   { route: '/nap/eletjel', label: 'Életjel', hint: 'A mai alapjeleid egy helyen.' },
   { route: '/ritual', label: 'Napzárás', hint: 'Az esti zárókör: mit hoztál ma, mi jön holnap.', group: 'Napzárás' },
@@ -110,6 +110,7 @@ export const PAGE_INDEX: IndexedPage[] = [
 
   // ── Mezo ─────────────────────────────────────────────────────────────────
   { route: '/mezo/rolad', label: 'Rólad', hint: 'a közös kép rólad — itt döntesz a javaslatokról.' },
+  { route: '/mezo/rolad/eletesemenyek', label: 'Életesemények', hint: 'a nagy fordulatok idővonala, amikhez a csapat igazodik.' },
   { route: '/mezo', label: 'Üzenőfal', hint: 'Az öt karakter posztjai: mit vettek észre, és mit kérdeznek tőled.' },
   { route: '/mezo/csapat', label: 'A csapat', hint: 'Az öt karakter szobája: mit figyelnek most, és mennyit tudnak rólad.' },
   { route: '/mezo/elo', label: 'A csapat beszél', hint: 'A csapat élő beszélgetése: ma ki szólt, mi vár rád, és mi rendeződött.' },

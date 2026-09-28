@@ -26,7 +26,13 @@ public final class TeamChatCast {
             Map.entry(FlagKey.SUSTAINED_STRESS, TeamCharacter.DERU),
             Map.entry(FlagKey.RECOVERY_NEEDED, TeamCharacter.DERU),
             Map.entry(FlagKey.MOMENTUM_AT_RISK, TeamCharacter.MEZO),
-            Map.entry(FlagKey.LOGGING_GAP, TeamCharacter.MEZO));
+            Map.entry(FlagKey.LOGGING_GAP, TeamCharacter.MEZO),
+            // Check-in 2.0 (mezo-ck2): pain is the doctor's (Derű, prototype elo/nap.html), the
+            // morning is Szunya's, craving is Falat's, a low mood is Derű's (közérzet).
+            Map.entry(FlagKey.PERSISTENT_PAIN, TeamCharacter.DERU),
+            Map.entry(FlagKey.POOR_RESTEDNESS, TeamCharacter.SZUNYA),
+            Map.entry(FlagKey.CRAVING_STREAK, TeamCharacter.FALAT),
+            Map.entry(FlagKey.MOTIVATION_SLUMP, TeamCharacter.DERU));
 
     private static final Map<String, TeamCharacter> GUEST = Map.ofEntries(
             Map.entry(FlagKey.LATE_EATING, TeamCharacter.SZUNYA),
@@ -34,7 +40,10 @@ public final class TeamChatCast {
             Map.entry(FlagKey.ENERGY_DIP_MEAL_TIMING, TeamCharacter.DERU),
             Map.entry(FlagKey.RAPID_WEIGHT_LOSS, TeamCharacter.FALAT),
             Map.entry(FlagKey.RECOVERY_NEEDED, TeamCharacter.SZUNYA),
-            Map.entry(FlagKey.MOMENTUM_AT_RISK, TeamCharacter.MOCOR));
+            Map.entry(FlagKey.MOMENTUM_AT_RISK, TeamCharacter.MOCOR),
+            Map.entry(FlagKey.PERSISTENT_PAIN, TeamCharacter.MOCOR),
+            Map.entry(FlagKey.CRAVING_STREAK, TeamCharacter.DERU),
+            Map.entry(FlagKey.MOTIVATION_SLUMP, TeamCharacter.MEZO));
 
     private TeamChatCast() {
     }

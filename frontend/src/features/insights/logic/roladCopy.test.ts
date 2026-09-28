@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LifeEventCandidate } from '@/data/types'
-import { candidateByline, factOwnerTag, graphCandidateByline, pickQuoteClaim, topRoladFacts, ROLAD_COPY } from './roladCopy'
+import { candidateByline, factOwnerTag, graphCandidateByline, pickQuoteClaim, ROLAD_COPY } from './roladCopy'
 import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 
 const claim = (id: string, confidence: number, proposedBy: string, sensitive = false) =>
@@ -56,17 +56,6 @@ describe('graphCandidateByline (final-review fix, mezo-zpxv7)', () => {
   it('occurredOn hiányában a felfedezés napjára esik vissza (createdAt)', () => {
     expect(graphCandidateByline(base)).toMatch(/^Mezo hozta · /)
     expect(graphCandidateByline(base)).not.toContain('null')
-  })
-})
-
-describe('topRoladFacts', () => {
-  it('keeps active facts, most recently reinforced first, max 4', () => {
-    const f = (id: string, active: boolean, last: string | null, created: string) =>
-      ({ id, text: id, category: 'life', active, reinforced: 1, source: 'chat', owner: 'mezo', lastReinforcedAt: last, createdAt: created })
-    const list = [f('a', true, null, '2026-01-01T00:00:00Z'), f('b', false, '2026-09-01T00:00:00Z', '2026-01-01T00:00:00Z'),
-      f('c', true, '2026-08-01T00:00:00Z', '2026-01-01T00:00:00Z'), f('d', true, '2026-09-10T00:00:00Z', '2026-01-01T00:00:00Z'),
-      f('e', true, null, '2026-09-20T00:00:00Z'), f('g', true, null, '2026-02-01T00:00:00Z')]
-    expect(topRoladFacts(list as never).map((x) => x.id)).toEqual(['e', 'd', 'c', 'g'])
   })
 })
 

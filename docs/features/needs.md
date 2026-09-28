@@ -2,10 +2,11 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-28
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
+  - frontend/src/features/today/logic/needsInputs.ts
   - frontend/src/features/today/pages/EletjelPage.tsx
   - frontend/src/data/needs
   - api/feature/needs/needs.yml
@@ -14,6 +15,8 @@ related: [today, ritual, _platform-data-layer, growth]
 ---
 
 # Needs — Életjel-ringek (Sims-style Needs)
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The Lélek („Kapcsolat") ring no longer refills a flat `+20` for every done check-in: a check-in that answered the evening **„Kapcsolódás"** item refills `connection × NEEDS_TUNING.refill.connectionPerPoint` (10 per point, the engine clamps at 100); a check-in without it (quick exit, morning slot) keeps the flat `+20` so the ring does not starve. `needsInputs.ts` + `needs.ts` (`connectionPerPoint`), tests `needsInputs.test.ts`. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.8b.
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Életjelek page and strip wear glass (six need-hue tiles, segmented hero ring, 3D need icons). The unused `emoji` field was dropped from `NEED_META` / `NeedState` (mezo-z5lov). The needs engine is unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
@@ -236,7 +239,8 @@ tuning changes (§7).
   never actually affects `pct`, only the displayed `lastFill` label can look stale). Fixing it
   cleanly needs Train to expose session dates pre-filtered or the adapter to accept a date
   cutoff — filed as a future cleanup, not blocking.
-- **← Today/Check-in, Intention, Ritual** — a `done` check-in slot adds `+20` to Lélek; setting a
+- **← Today/Check-in, Intention, Ritual** — a `done` check-in slot adds to Lélek: since Check-in 2.0
+  (`mezo-ck2`) `connection × 10` when the slot answered „Kapcsolódás", else the flat `+20`; setting a
   morning focus adds `+15`; the evening reflection adds `+25`; **yesterday's** ritual close (if
   `closed && closedAt`) also adds `+25` to Lélek at that instant (`lelekEvents`,
   `needsInputs.ts:151-170`) — the spec's "close × 0.4 carries into tomorrow" rule is realized

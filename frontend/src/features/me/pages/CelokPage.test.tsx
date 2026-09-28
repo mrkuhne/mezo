@@ -43,7 +43,7 @@ test('tile tap opens the goal page; ＋ Új cél opens the wizard', () => {
 test('a Jelek sor az élő/alvó forrásarányt mondja és a jel-oldalra visz', async () => {
   renderHub()
   const row = await screen.findByRole('button', { name: /Jelek/ })
-  expect(row).toHaveTextContent('28 forrás · 10 él · 18 alszik')
+  expect(row).toHaveTextContent('32 forrás · 10 él · 22 alszik')
   fireEvent.click(row)
   expect(screen.getByText('SIGNALS PAGE')).toBeInTheDocument()
 })

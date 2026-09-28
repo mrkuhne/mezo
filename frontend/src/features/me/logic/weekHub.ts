@@ -110,35 +110,27 @@ export function analysisSnippet(review: WeeklyReview | null, phase: WeekPhase): 
 
 // ── discoveries tile ───────────────────────────────────────────────────────
 
-export type DiscoveryDot = 'pattern' | 'fact' | 'life' | 'memoir' | 'prediction'
-export interface DiscoverySummary { count: number; parts: string[]; dots: DiscoveryDot[] }
+export type DiscoveryKind = 'pattern' | 'fact' | 'life' | 'memoir' | 'prediction'
+/** One slice of the tile's proportion bar + its legend entry (mezo-p87ok). A bar, not one dot per
+ *  trace: 72 dots filled the row and crushed the text to a word per line. */
+export interface DiscoverySegment { kind: DiscoveryKind; count: number; label: string }
+export interface DiscoverySummary { count: number; segments: DiscoverySegment[] }
 
 export function discoverySummary(digest: WeeklyReviewDigest | null): DiscoverySummary {
-  const patterns = digest?.patterns ?? []
-  const facts = digest?.newFacts ?? []
-  const life = digest?.lifeEvents ?? []
-  const predictions = digest?.predictions ?? []
-  const memoir = digest?.memoir === true
-
-  const parts: string[] = []
-  if (patterns.length) parts.push(`${patterns.length} minta`)
-  if (facts.length) parts.push(`${facts.length} új tudás`)
-  if (life.length) parts.push(`${life.length} életesemény`)
-  if (memoir) parts.push('memoár')
-  if (predictions.length) parts.push(`${predictions.length} előrejelzés`)
-
-  const dots: DiscoveryDot[] = [
-    ...patterns.map((): DiscoveryDot => 'pattern'),
-    ...facts.map((): DiscoveryDot => 'fact'),
-    ...life.map((): DiscoveryDot => 'life'),
-    ...(memoir ? (['memoir'] as DiscoveryDot[]) : []),
-    ...predictions.map((): DiscoveryDot => 'prediction'),
+  const all: DiscoverySegment[] = [
+    { kind: 'pattern', count: digest?.patterns.length ?? 0, label: 'minta' },
+    { kind: 'fact', count: digest?.newFacts.length ?? 0, label: 'új tudás' },
+    { kind: 'life', count: digest?.lifeEvents.length ?? 0, label: 'életesemény' },
+    { kind: 'memoir', count: digest?.memoir === true ? 1 : 0, label: 'emlékkönyv' },
+    { kind: 'prediction', count: digest?.predictions.length ?? 0, label: 'előrejelzés' },
   ]
-
-  return { count: dots.length, parts, dots }
+  const segments = all
+    .filter((s) => s.count > 0)
+    .map((s) => ({ ...s, label: `${s.count} ${s.label}` }))
+  return { count: segments.reduce((n, s) => n + s.count, 0), segments }
 }
 
-// ── the eight mini-cells ───────────────────────────────────────────────────
+// ── the nine mini-cells ───────────────────────────────────────────────────
 
 export type WeekCellTone = 'lav' | 'sage' | 'sky' | 'coral' | 'amber' | 'rose'
 export interface WeekStatCell { label: string; value: string; unit: string | null; tone: WeekCellTone }
@@ -149,9 +141,10 @@ function sleepHm(min: number | null | undefined): string {
 }
 
 /**
- * The eight cells, in the prototype's order and tone palette. `avgCheckinEnergy`
- * (Energia) and `latestWeightKg` (Súly) are the two the backend has always returned
- * and the old UI threw away. Missing data is `—` and NEVER a zero.
+ * The nine cells (three rows of three), in the prototype's order and tone palette.
+ * `avgCheckinEnergy` (Energia) and `latestWeightKg` (Súly) are the two the backend has always
+ * returned and the old UI threw away; Hangulat (`avgCheckinMood`, Check-in 2.0, mezo-ck2) sits
+ * right next to Energia. Missing data is `—` and NEVER a zero.
  */
 export function weekStatCells(weekly: MeWeekAggregates): WeekStatCell[] {
   return [
@@ -164,6 +157,8 @@ export function weekStatCells(weekly: MeWeekAggregates): WeekStatCell[] {
       unit: weekly.checkinRatio != null ? '%' : null, tone: 'coral' },
     { label: 'Energia', value: weekly.avgCheckinEnergy != null ? huDec(weekly.avgCheckinEnergy) : '—',
       unit: weekly.avgCheckinEnergy != null ? '/ 10' : null, tone: 'amber' },
+    { label: 'Hangulat', value: weekly.avgCheckinMood != null ? huDec(weekly.avgCheckinMood) : '—',
+      unit: weekly.avgCheckinMood != null ? '/ 10' : null, tone: 'lav' },
     { label: 'Súly', value: weekly.latestWeightKg != null ? huDec(weekly.latestWeightKg) : '—',
       unit: weekly.latestWeightKg != null ? 'kg' : null, tone: 'sky' },
     { label: 'Súly-trend', value: weekly.weightWeeklyRateKg != null ? huDec(weekly.weightWeeklyRateKg, 2) : '—',

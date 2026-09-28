@@ -3,8 +3,8 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
-import { useCheckins } from '@/data/hooks'
-import { buildDaySlots } from '@/data/today/checkinHooks'
+import { useCheckInPlan, useCheckins } from '@/data/hooks'
+import { buildDaySlots, toSaveBody } from '@/data/today/checkinHooks'
 import type { CheckInResponse } from '@/data/me/biometricsApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -185,4 +185,100 @@ test('exposes a failed day read and supports retry without claiming empty succes
   act(() => result.current.refetch())
   await waitFor(() => expect(result.current.isError).toBe(false))
   expect(result.current.isPending).toBe(false)
+})
+
+// ── Check-in 2.0 (mezo-ck2) ──────────────────────────────────────────────────────────────────
+
+test('buildDaySlots keeps a 2.0 row\'s asked items (asked + null = skipped) and its flags', () => {
+  const rows: CheckInResponse[] = [{
+    id: 'c1', date: '2026-07-04', slotTime: '06:30', state: 'done', savedAt: '2026-07-04T06:31:00Z',
+    energy: 7, mood: 8, stress: 3, body: 6, pain: true, painRegions: ['TERD'], painIntensity: 4,
+    askedItems: ['energy', 'mood', 'stress', 'body', 'mental', 'pain'],
+    adaptiveItem: 'hunger', adaptiveReason: 'NEED', quickExit: true,
+  }]
+  const [slot] = buildDaySlots(rows, new Date(2026, 6, 4, 9, 0))
+  expect(slot.values).toEqual({
+    energy: 7, mood: 8, stress: 3, body: 6, mental: null, pain: { regions: ['TERD'], intensity: 4 },
+  })
+  expect(slot).toMatchObject({ quickExit: true, adaptiveItem: 'hunger', adaptiveReason: 'NEED' })
+})
+
+test('buildDaySlots shows a partial legacy row (any answered item, not all four)', () => {
+  const rows: CheckInResponse[] = [{
+    id: 'c1', date: '2026-07-04', slotTime: '10:00', state: 'done', savedAt: '2026-07-04T10:01:00Z', energy: 5,
+  }]
+  expect(buildDaySlots(rows, new Date(2026, 6, 4, 11, 0))[1].values).toEqual({ energy: 5 })
+  const empty: CheckInResponse[] = [{ id: 'c2', date: '2026-07-04', slotTime: '10:00', state: 'done', savedAt: 'x' }]
+  expect(buildDaySlots(empty, new Date(2026, 6, 4, 11, 0))[1].values).toBeNull()
+})
+
+test('toSaveBody posts every answer, the asked items, the question of the day and quick exit; skipped = omitted', () => {
+  const body = toSaveBody('2026-07-04', {
+    time: '20:00', state: 'done', note: null,
+    values: {
+      energy: 6, mood: null, stress: 4, body: 7, mental: 7, soreness: 3, pain: false,
+      craving: { value: 6, kinds: ['EDES'] }, digestion: 8, connection: 9, day: 7,
+    },
+    askedItems: ['energy', 'mood', 'stress', 'body', 'mental', 'soreness', 'pain', 'craving', 'digestion', 'connection', 'day'],
+    adaptiveItem: 'motivation', adaptiveReason: 'NEED', quickExit: false,
+  })
+  expect(body).toMatchObject({
+    date: '2026-07-04', slotTime: '20:00', energy: 6, stress: 4, soreness: 3, pain: false,
+    craving: 6, cravingKinds: ['EDES'], digestion: 8, connection: 9, dayRating: 7,
+    adaptiveItem: 'motivation', adaptiveReason: 'NEED', quickExit: false,
+  })
+  expect(body.mood).toBeUndefined()
+  expect(body.painRegions).toBeUndefined()
+  expect(body.askedItems).toHaveLength(11)
+  const yes = toSaveBody('2026-07-04', {
+    time: '06:30', state: 'done', note: null,
+    values: { pain: { regions: ['DEREK', 'EGYEB'], intensity: 5 }, craving: { value: 2, kinds: ['SOS'] } },
+  })
+  expect(yes).toMatchObject({ pain: true, painRegions: ['DEREK', 'EGYEB'], painIntensity: 5, craving: 2 })
+  // kinds only travel from 4 up
+  expect(yes.cravingKinds).toBeUndefined()
+})
+
+test('useCheckins (real mode) posts the full Check-in 2.0 answer set', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let lastBody: Record<string, unknown> | null = null
+  server.use(
+    http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
+      lastBody = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ id: 'c1', ...lastBody, savedAt: '2026-06-01T09:00:00Z' }, { status: 200 })
+    }),
+  )
+  const { result } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
+  await act(async () => {
+    await result.current.saveCheckIn(2, {
+      state: 'done', note: null,
+      values: { energy: 6, mood: 7, stress: null, body: 5, mental: 6 },
+      askedItems: ['energy', 'mood', 'stress', 'body', 'mental'],
+      adaptiveItem: 'motivation', adaptiveReason: 'NEED', quickExit: true,
+    })
+  })
+  expect(lastBody).toMatchObject({
+    slotTime: '14:00', energy: 6, mood: 7, body: 5, mental: 6,
+    askedItems: ['energy', 'mood', 'stress', 'body', 'mental'], adaptiveItem: 'motivation', quickExit: true,
+  })
+  expect(lastBody).not.toHaveProperty('stress')
+})
+
+test('useCheckInPlan serves the slot plan in both modes (real: the server response)', async () => {
+  const { result } = renderHook(() => useCheckInPlan('2026-07-04', '14:00'), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.plan).not.toBeNull())
+  expect(result.current.plan!.items.map((i) => i.id)).toEqual(
+    ['energy', 'mood', 'stress', 'body', 'mental', 'hunger', 'craving', 'digestion'])
+  expect(result.current.plan!.adaptive).toMatchObject({ id: 'motivation', reason: 'NEED' })
+})
+
+test('useCheckInPlan (real mode) is null while loading — never the mock plan', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/biometrics/checkin/plan`, async () => {
+    await new Promise((r) => setTimeout(r, 50))
+    return HttpResponse.json({ items: [{ id: 'energy', label: 'Energia', question: 'Q?', kind: 'SCALE' }] })
+  }))
+  const { result } = renderHook(() => useCheckInPlan('2026-07-04', '14:00'), { wrapper: makeHookWrapper() })
+  expect(result.current.plan).toBeNull()
+  await waitFor(() => expect(result.current.plan?.items).toHaveLength(1))
 })

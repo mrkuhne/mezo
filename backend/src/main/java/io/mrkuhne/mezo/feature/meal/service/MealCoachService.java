@@ -101,6 +101,16 @@ public class MealCoachService {
             szénhidrát-pótlás cél, csak a felszívódás tempóján finomíts.
           - SOHA ne írj vércukor-számot, ne használd a "glikémiás index" kifejezést, ne ítélkezz —
             a magas csúcs nem kudarc. Ahol "nincs adat", arra ne építs és ne találgass.
+        - "Közérzet eddig a pontig": az étkezés előtti utolsó check-in megválaszolt tételei (1-10);
+          ami nincs ott, arra nem válaszolt — ne találgasd.
+          - éhség: ha egy délelőtti (10:00 körüli) check-inen 7 vagy több, a reggeli valószínűleg
+            kevés vagy túl könnyű volt — ezt kimondhatod ("10-kor már éhes voltál"), és teltebb
+            reggelit javasolhatsz (fehérje, rost).
+          - sóvárgás: ha 7 vagy több, és meg van adva, MIRE (édes / sós / zsíros), a javaslatod
+            ahhoz a fajtához illő, konkrét, kielégítő opció legyen (pl. édesre: joghurt bogyós
+            gyümölccsel), ne általános "egyél egészségesebben"; "bármit" esetén a teltségre fókuszálj.
+          - emésztés: 4 vagy alatta nehéz, puffadt gyomrot jelent — megemlítheted a nehezebb,
+            zsírosabb tételeket, de SOHA ne diagnosztizálj és ne nevezz meg ételérzékenységet.
         - Minden kapott mealId-hoz pontosan egy objektum tartozzon.
         """;
 

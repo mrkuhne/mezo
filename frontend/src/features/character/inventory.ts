@@ -25,7 +25,7 @@
 // items are gone (Szezonalitás and Memoár moved to `INVENTORY_LATER` with their reasons), its
 // seven data sources are the last seven `reads` rows, and its eight detectors bring
 // `DetektorokPage.tsx`'s catalog to 40. `rounds` is now empty. Do not treat this module as
-// authoritative for "what is actually wired today" — `DetektorokPage.tsx` (the 40 real,
+// authoritative for "what is actually wired today" — `DetektorokPage.tsx` (the 47 real,
 // `DetectorRegistry`-discovered detectors) and the backend detector catalog are that runtime
 // truth; this file is the plan, not the state of the world.
 // ============================================================

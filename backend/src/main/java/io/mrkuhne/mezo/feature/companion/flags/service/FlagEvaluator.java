@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AcuteBadDayRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AllHealthyRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.CravingStreakRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.EnergyDipMealTimingRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.IgnoredNudgeRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.JointOveruseRule;
@@ -12,6 +13,9 @@ import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MealRhythmDriftRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MomentumAtRiskRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.MotivationSlumpRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.PersistentPainRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.PoorRestednessRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.ProtocolLapseRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.RapidWeightLossRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.RecoveryNeededRule;
@@ -63,8 +67,13 @@ public class FlagEvaluator {
     private final LoggingGapRule loggingGapRule;
     private final MissedWorkoutsRule missedWorkoutsRule;
     private final AllHealthyRule allHealthyRule;
+    /** Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2). */
+    private final PersistentPainRule persistentPainRule;
+    private final PoorRestednessRule poorRestednessRule;
+    private final CravingStreakRule cravingStreakRule;
+    private final MotivationSlumpRule motivationSlumpRule;
 
-    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 16 entries,
+    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 20 entries,
      *  one per rule, in AdvicePriority order. */
     @Transactional(readOnly = true)
     public List<FlagVerdict> evaluate(UUID userId) {
@@ -74,16 +83,20 @@ public class FlagEvaluator {
         verdicts.add(loadFuelMismatchRule.evaluate(userId, today));
         verdicts.add(rapidWeightLossRule.evaluate(userId, today));
         verdicts.add(jointOveruseRule.evaluate(userId, today));
+        verdicts.add(persistentPainRule.evaluate(userId, today));
         verdicts.add(missedWorkoutsRule.evaluate(userId, today));
         verdicts.add(sleepDebtRule.evaluate(userId, today));
+        verdicts.add(poorRestednessRule.evaluate(userId, today));
         verdicts.add(loggingGapRule.evaluate(userId, today));
         verdicts.add(ignoredNudgeRule.evaluate(userId, today));
         verdicts.add(lateEatingRule.evaluate(userId, today));
         verdicts.add(protocolLapseRule.evaluate(userId, today));
         verdicts.add(mealRhythmDriftRule.evaluate(userId, today));
         verdicts.add(energyDipMealTimingRule.evaluate(userId, today));
+        verdicts.add(cravingStreakRule.evaluate(userId, today));
         verdicts.add(recoveryNeededRule.evaluate(userId, today));
         verdicts.add(sustainedStressRule.evaluate(userId, today));
+        verdicts.add(motivationSlumpRule.evaluate(userId, today));
         verdicts.add(momentumAtRiskRule.evaluate(userId, today));
 
         boolean anyRaised = verdicts.stream().anyMatch(v -> v.outcome() == FlagOutcome.RAISED);

@@ -60,6 +60,12 @@ export function RoladInbox({ inbox, delay = 0 }: { inbox: RoladInboxState; delay
   const open = candidates.length + lifeEvents.length
   const hint = isPending || isError ? null : open > 0 ? `${open} JELÖLT` : settled.length > 0 ? 'MIND ELDÖNTVE' : null
 
+  // S6c (mezo-2dfy2, prototype rolad6): the short distributor shows at most 2 open cards; the
+  // rest live behind a fold row. Everything in `settled` was decided during THIS mount (the hook's
+  // state starts empty), so a decision's afterlife line always stays visible in place.
+  const [expanded, setExpanded] = useState(false)
+  const hiddenOpen = Math.max(0, open - 2)
+
   const cardFor = (id: string, i: number) => {
     const style = riseStyle(delay + i * 45)
     const c = candidates.find((x) => x.id === id)
@@ -97,8 +103,27 @@ export function RoladInbox({ inbox, delay = 0 }: { inbox: RoladInboxState; delay
   if (isPending) body = <GhostState message="A javaslatok betöltése…" />
   else if (isError) body = <GhostState message="Nem sikerült betölteni a javaslatokat." ctaLabel="Újra" onCta={refetch} />
   else {
-    const items = [...order, ...unseen].filter((id, i, all) => all.indexOf(id) === i)
+    let items = [...order, ...unseen].filter((id, i, all) => all.indexOf(id) === i)
+    if (!expanded) {
+      const openSet = new Set(openIds)
+      let shownOpen = 0
+      items = items.filter((id) => (openSet.has(id) ? ++shownOpen <= 2 : true))
+    }
     const cards = items.map(cardFor).filter(Boolean)
+    const fold = (hiddenOpen > 0 || expanded) && (
+      <button
+        type="button" className="glass tf-rowg tf-c-gold rise" data-inbox-fold
+        aria-expanded={expanded} style={riseStyle(delay + cards.length * 45)}
+        onClick={() => setExpanded((e) => !e)}
+      >
+        <Icon3D name="t-bell" size={40} />
+        <span className="tf-rowtxt">
+          <span className="tf-rowname">{expanded ? ROLAD_COPY.foldLess : ROLAD_COPY.foldMore(hiddenOpen)}</span>
+          <span className="tf-rowsub">{expanded ? ROLAD_COPY.foldLessSub : ROLAD_COPY.foldMoreSub}</span>
+        </span>
+        <span className="tf-rowbadge" aria-hidden="true">{expanded ? '⌃' : '›'}</span>
+      </button>
+    )
     body = (
       <>
         {degraded && (
@@ -107,7 +132,7 @@ export function RoladInbox({ inbox, delay = 0 }: { inbox: RoladInboxState; delay
             <span>A társ jelenleg nincs bekapcsolva — a tényjavaslatok most nem elérhetők.</span>
           </div>
         )}
-        {cards.length > 0 && <div className="tf-rows">{cards}</div>}
+        {cards.length > 0 && <div className="tf-rows">{cards}{fold}</div>}
         {cards.length === 0 && !degraded && <p className="kr9-quiet">Nincs döntésre váró javaslat.</p>}
         {/* mezo-plbev item 2: the life-event/season candidates are a SEPARATE honest layer (own
             404 semantics) — their failure never wipes the section, just adds a quiet retry line

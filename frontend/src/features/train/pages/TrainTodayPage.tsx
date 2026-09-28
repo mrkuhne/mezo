@@ -32,6 +32,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile, useGoal } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { MorningTrainingCard } from '@/features/train/components/MorningTrainingCard'
+import { TodayReadiness } from '@/features/train/components/ReadinessCard'
 import {
   isSnoozed,
   morningWindow,
@@ -481,8 +482,9 @@ export function TrainTodayPage() {
               : estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
             const heroState = completedTodayWorkout ? 'done' : gymInProgress ? 'live' : 'plan'
             return (
-              // The hero is FRAMELESS (bible §3.4 rank 1): a coral halo, no card. Only the CTA
-              // row below wears glass — one loud object per hero.
+              <>
+              {/* The hero is FRAMELESS (bible §3.4 rank 1): a coral halo, no card. Only the CTA
+                  row below wears glass — one loud object per hero. */}
               <section
                 key="hero-gym"
                 className={cn('trm-hero', heroState === 'done' ? 'is-done' : heroState === 'live' && 'is-live')}
@@ -547,6 +549,10 @@ export function TrainTodayPage() {
                   </button>
                 )}
               </section>
+              {/* Check-in 2.0 (mezo-ck2): „Mai állapot" right below the hero, as the prototype's
+                  readyCard() follows thero(); hidden once today's workout is done. */}
+              <TodayReadiness done={Boolean(completedTodayWorkout)} />
+              </>
             )
           }
 

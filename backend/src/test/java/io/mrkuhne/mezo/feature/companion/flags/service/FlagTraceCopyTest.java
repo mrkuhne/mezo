@@ -17,7 +17,8 @@ class FlagTraceCopyTest {
         "weight_trend_pct_wk", "trajectory", "shoulder_strain_avg", "tomorrow_muscle",
         "nudge_run_nights", "late_meal_days", "stale_domains", "longest_missed_run",
         "habits_recent_avg", "missed_gym_days", "signals_matched", "quiet_days",
-        "other_flags_raised");
+        "other_flags_raised", "pain_region_days", "low_rested_run", "craving_kind_days",
+        "low_motivation_days");
 
     @Test
     void every_clear_metric_renders_a_hungarian_sentence_not_the_raw_key() {

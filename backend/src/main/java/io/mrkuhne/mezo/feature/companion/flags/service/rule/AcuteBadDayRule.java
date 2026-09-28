@@ -19,15 +19,17 @@ import org.springframework.stereotype.Component;
 
 /**
  * The most urgent card in the whole system (spec 2026-09-03 §4 row 6, rank 1): same-day ≥
- * {@code minCheckIns} check-ins with body or energy at or below {@code bodyOrEnergyAtMost}.
+ * {@code minCheckIns} check-ins with body or energy at or below {@code bodyOrEnergyAtMost} — or,
+ * since Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2), a mood at or below {@code moodAtMost} or a
+ * pain intensity at or above {@code painIntensityAtLeast}.
  *
  * <p>Deliberately does NOT read {@code MetricSeriesService}/{@code MetricKey.CHECKIN_BODY}
  * or {@code CHECKIN_ENERGY} — those are day-AVERAGED, and averaging is exactly what would
  * destroy this signal (two 3s and a 7 average to a healthy-looking 4.3). Instead this rule
  * reads today's raw {@code check_in} rows directly.
  *
- * <p>{@code body}/{@code energy} are nullable 1–10 scores: a null is an unanswered question,
- * never a low score, so it never counts as qualifying.
+ * <p>{@code body}/{@code energy}/{@code mood}/{@code pain_intensity} are nullable 1–10 scores: a
+ * null is an unanswered question, never a low (or high) score, so it never counts as qualifying.
  */
 @Component
 @RequiredArgsConstructor
@@ -52,9 +54,12 @@ public class AcuteBadDayRule implements FlagRule {
         List<FlagPayloadEnvelope.QualifyingCheckIn> qualifying = new ArrayList<>();
         for (CheckInEntity checkIn : checkIns) {
             if (qualifies(checkIn.getBody(), cfg.bodyOrEnergyAtMost())
-                || qualifies(checkIn.getEnergy(), cfg.bodyOrEnergyAtMost())) {
+                || qualifies(checkIn.getEnergy(), cfg.bodyOrEnergyAtMost())
+                || qualifies(checkIn.getMood(), cfg.moodAtMost())
+                || atLeast(checkIn.getPainIntensity(), cfg.painIntensityAtLeast())) {
                 qualifying.add(new FlagPayloadEnvelope.QualifyingCheckIn(
-                    checkIn.getSlotTime(), checkIn.getBody(), checkIn.getEnergy()));
+                    checkIn.getSlotTime(), checkIn.getBody(), checkIn.getEnergy(),
+                    checkIn.getMood(), checkIn.getPainIntensity()));
             }
         }
 
@@ -66,11 +71,16 @@ public class AcuteBadDayRule implements FlagRule {
         return FlagVerdict.raised(FlagKey.ACUTE_BAD_DAY,
             FlagPayloadEnvelope.acuteBadDay(new FlagPayloadEnvelope.AcuteBadDay(
                 cfg.minCheckIns(), cfg.bodyOrEnergyAtMost(), qualifying.size(),
-                List.copyOf(qualifying))));
+                List.copyOf(qualifying), cfg.moodAtMost(), cfg.painIntensityAtLeast())));
     }
 
     /** A null score is an unanswered question, never a low one. */
     private static boolean qualifies(Integer score, int atMost) {
         return score != null && score <= atMost;
+    }
+
+    /** Pain intensity runs the other way (10 = worst); a null is still "not answered". */
+    private static boolean atLeast(Integer score, int atLeast) {
+        return score != null && score >= atLeast;
     }
 }

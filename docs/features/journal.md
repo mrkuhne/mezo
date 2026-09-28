@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-09-25
+updated: 2026-09-28
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -111,7 +111,7 @@ floating `QuickLogFab`, not from a tab-bar centre button.
 One free-text `<textarea>` (no length cap, placeholder „Írd le, mi jár a fejedben…", autofocus) plus
 an optional `<input type="date">` defaulting to today, plus a mic button reusing the shared
 `useVoiceInput` hook (`features/insights/logic/useVoiceInput`, the `ChatPage` composer idiom — the
-transcript is **appended** to whatever's already typed, not overwritten). Header eyebrow „Napló",
+transcript is **appended** to whatever's already typed, not overwritten). While the mic listens or transcribes, the shared `VoiceBubble` (`shared/ui/voice/VoiceBubble`, `domain="me"`) shows the listening / transcribing Boop bubble — the same one every voice input uses since `mezo-zyyox` (Hallgató Boop). Header eyebrow „Napló",
 title „Mi jár a fejedben?" in create mode / „Bejegyzés szerkesztése" in edit mode (`entry` prop
 set). CTAs „Mégse" / „Mentem" — save calls `addNote` (create) or `updateNote` (edit) then closes.
 **Edit mode only** additionally offers **„Törlés" behind a two-step confirm („Törlés" →

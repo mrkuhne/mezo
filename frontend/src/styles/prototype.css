@@ -6436,7 +6436,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .wkd-tile.wide { grid-column: 1 / -1; }
 .wkd-tile.lav  { background: var(--mz-wash-lav);  --wkd-glow: var(--mz-wkd-glow-lav); }
 .wkd-tile.gold { background: var(--mz-wash-gold); --wkd-glow: var(--mz-wkd-glow-gold); }
-.wkd-tile.sky  { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
+.wkd-tile.life { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
 .wkd-tile.rose { background: var(--mz-wash-rose); --wkd-glow: var(--mz-wkd-glow-rose); }
 .wkd-tile.pred { background: var(--mz-qdone-bg);  --wkd-glow: var(--mz-wkd-glow-sage); }
 .wkd-row { display: flex; align-items: center; gap: 9px; }
@@ -6453,7 +6453,7 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 .wkd-eb.lav  { color: var(--mz-cell-lav-ink); }
 .wkd-eb.gold { color: var(--mz-stch-prop-ink); }
-.wkd-eb.sky  { color: var(--mz-wkd-life-ink); }
+.wkd-eb.life { color: var(--mz-wkd-life-ink); }
 .wkd-eb.rose { color: var(--mz-cell-rose-ink); }
 .wkd-eb.pred { color: var(--mz-stch-ok-ink); }
 .wkd-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
@@ -16151,6 +16151,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: block; font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 1; color: var(--text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+/* Check-in 2.0 (mezo-ck2, prototype `.mcells.n` / `.mcell b.t` / `.cktag` / `.ckhint`): as many
+   cells as the slot answered, auto-filling the row; a text answer („Térd 4") shrinks to fit. */
+.nck-page .nck-cells.mz-mcells.is-n { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); }
+.nck-page .nck-cells.mz-mcells b.is-t { overflow: hidden; padding: 0 3px; font-size: 11.5px; white-space: nowrap; text-overflow: ellipsis; }
+.nck-page .nck-tag { display: inline-flex; margin-top: 6px; padding: 4px 9px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.nck-page .nck-hint { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
 
 /* ── Életjel: the six-arc ring hero, six need glasses ── */
 .ej-page .ej-hero { padding-top: 4px; min-height: 40px; }
@@ -16530,6 +16538,61 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .capture-sum > b { display: block; margin: 2px 0 6px; font: 600 20px/1.1 var(--ff-display); font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
 .capture-sum .uv-bar { height: 4px; }
+
+/* ─ Check-in 2.0 (mezo-ck2, prototypes/elo/nap.html `/* ── Check-in 2.0` block): segment per
+     step + summary (the core five a shade lighter), the question line, nothing pre-selected
+     („–" in the faint ink), the question-of-the-day callout, „Most csak ennyi", the pain gate +
+     figure + chips, the craving kinds, the summary cells. Flat inside the one glass sheet. ─ */
+.ck-prog { display: grid; gap: 4px; margin: 0 0 14px; }
+.ck-prog i { height: 5px; border-radius: 3px; background: rgba(245, 239, 230, 0.08); }
+.ck-prog i.core { background: rgba(245, 239, 230, 0.14); }
+.ck-prog i.on { background: var(--c); box-shadow: 0 0 8px var(--c); }
+.ck-q { margin: 6px 0 0; font: 600 17px/1.35 var(--ff-display); letter-spacing: -0.3px; color: var(--text-primary); }
+.capture-check-value.ck-none { color: var(--text-muted); text-shadow: none; }
+.ck-loading { margin: 8px 0 4px; font-size: 13px; color: var(--text-secondary); }
+.ck-callout { padding: 12px 14px; border-radius: 18px;
+  background: color-mix(in srgb, var(--c) 8%, transparent); box-shadow: inset 3px 0 0 var(--c); }
+.ck-callout-eb { display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.ck-callout p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.ck-ad { margin: 10px 0 0; }
+.ck-inl.t-ico { width: 14px; height: 14px; vertical-align: -2px; }
+.ck-stepnav { align-items: center; gap: 8px; }
+.capture-stepnav .ck-quick { min-height: 36px; padding: 8px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  color: var(--text-primary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider); }
+.ck-coremsg { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.ck-coremsg .t-ico { width: 18px; height: 18px; }
+.ck-yn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.ck-yn button { padding: 16px 10px; border: 0; border-radius: 16px; cursor: pointer; text-align: center;
+  font: 600 15px/1.2 var(--ff-body); color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.ck-yn button.on { color: var(--page, #191614); background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); }
+.ck-yn button:focus-visible, .ck-chips .chip:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
+.ck-fig { display: flex; justify-content: center; gap: 18px; margin-top: 12px; }
+.ck-fig figure { margin: 0; text-align: center; }
+.ck-fig figcaption { margin-top: 2px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.ck-fig svg { width: 104px; height: 196px; overflow: visible; }
+.ck-fig .ck-sil { fill: rgba(245, 239, 230, 0.06); stroke: rgba(245, 239, 230, 0.28); stroke-width: 1.2; }
+.ck-fig .ck-dot { fill: rgba(245, 239, 230, 0.18); stroke: rgba(245, 239, 230, 0.45); stroke-width: 1; cursor: pointer; }
+.ck-fig .ck-dot.on { fill: var(--dv-rose); stroke: #ffe0e6; filter: drop-shadow(0 0 6px var(--dv-rose)); }
+.ck-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.capture-sheet .ck-chips .chip { min-height: 34px; padding: 7px 12px; font-size: 12px; }
+.ck-mini { display: block; margin-top: 14px; font: 700 10.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.capture-sheet .ck-next { margin-top: 14px; }
+.ck-sumn { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.ck-sum { --c: var(--dv-coral); display: flex; align-items: center; gap: 8px; min-width: 0; padding: 9px 10px; border: 0; border-radius: 14px;
+  cursor: pointer; text-align: left; font-family: inherit;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.ck-sum .t-ico { flex: 0 0 auto; width: 26px; height: 26px; }
+.ck-sum > span { min-width: 0; }
+.ck-sum small { display: block; font-size: 10.5px; color: var(--text-muted); }
+.ck-sum b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font: 600 15px/1.25 var(--ff-body); color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.ck-sum b.is-none { font-weight: 500; color: var(--text-muted); }
+.ck-sum.is-ad { grid-column: 1 / -1; }
+.ck-sum:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
+.ck-qbanner { margin: 0 0 12px; }
+@media (prefers-reduced-motion: reduce) { .ck-fig .ck-dot.on, .ck-yn button.on { filter: none; } }
 
 /* ─ activity (`SH.activity`): the quest callout, the skill chips, the done phase ─ */
 .capture-quest { --c: var(--dv-amber); display: flex; align-items: flex-start; gap: 10px; margin: 0 0 12px; padding: 12px 14px;
@@ -17050,6 +17113,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* act 3 — prose in a lavender glass box, gratitude in an amber one; inputs + chips flat */
 .rz-reflect-title { margin-top: 6px; font: 600 26px/1.18 var(--ff-display); letter-spacing: -1px; }
+/* the evening check-in's day verdict, read-only (Check-in 2.0, mezo-ck2; prototype `.rzday`) */
+.rz-day { display: flex; align-items: center; gap: 10px; margin: 16px 0 -6px; padding: 10px 12px; border-radius: 16px;
+  text-align: left; font-size: 13px; line-height: 1.4; color: var(--text-secondary);
+  background: rgba(255, 190, 96, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 190, 96, 0.28); }
+.rz-day .t-ico { flex: 0 0 auto; width: 26px; height: 26px; }
+.rz-day b { color: #FFD99A; }
 .rz-reflect-box.glass, .rz-reflect-gratitude.glass { margin-top: 16px; padding: 14px; text-align: left; }
 .rz-reflect-box.glass { --c: var(--dv-lav); }
 .rz-reflect-gratitude.glass { --c: var(--dv-amber); display: flex; flex-direction: column; gap: 8px; }
@@ -17448,6 +17517,40 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   padding: 9px 14px; border: 0; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
   color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
 }
+
+/* ── Check-in 2.0 · „Mai állapot" (mezo-ck2, elo/edzes.html `.ready`): one glass card under the
+   hero — lavender offer, sage once lightened. Chips, the care row and the ghost pill are FLAT
+   cells inside it (never glass in glass). ── */
+.trm .trd.glass { display: block; margin: 14px 0 0; padding: 16px; border: 0; border-radius: 24px; text-align: left; }
+.trm .trd-eb { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
+.trm .trd-title { margin: 2px 0 0; font-size: 18px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.trm .trd-why { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.trm .trd-chip {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+  font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.trm .trd-chip .t-ico { width: 18px; height: 18px; filter: none; }
+.trm .trd-care {
+  display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px; border-radius: 16px;
+  background: color-mix(in srgb, var(--dv-rose) 10%, rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-rose) 35%, transparent);
+}
+.trm .trd-care .t-ico { width: 28px; height: 28px; flex: 0 0 auto; }
+.trm .trd-care span { min-width: 0; font-size: 13px; line-height: 1.4; color: var(--text-secondary); overflow-wrap: anywhere; }
+.trm .trd-care b { font-weight: 600; color: var(--text-primary); }
+.trm .trd-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.trm .trd-pill {
+  display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 8px 14px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  color: #191614; background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.trm .trd-pill.is-ghost { font-weight: 600; color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.trm .trd-pill:disabled { opacity: 0.45; cursor: default; }
+.trm .trd-pill:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.trm .trd-note { margin: 10px 0 0; font-size: 11.5px; color: var(--text-muted); }
+.trm .trd-ok { display: flex; align-items: flex-start; gap: 8px; margin-top: 10px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.trm .trd-ok .t-ico { width: 20px; height: 20px; flex: 0 0 auto; }
 
 /* ── the loading skeleton: same rail, same geometry ── */
 .trm-sk .trm-sk-hero { display: grid; justify-items: center; gap: 8px; padding: 14px 4px 18px; }
@@ -18123,6 +18226,73 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @media (prefers-reduced-motion: reduce) {
   .wos .wos-pbar span b { transition: none; }
 }
+/* ── Eligazítás (mezo-mgu2r): the 'brief' phase — prototypes/elo/edzes.html `#indulas`. The hero is a
+   frameless halo, the challenge card the ONE glass (gold), the exercise rows flat; the Indulás
+   foot sticks to the bottom of the scroller. ── */
+.wos.wbr { padding-bottom: 24px; }
+.wos .wbr-top .tt .t1 { flex: 1; }
+.wos .wbr-hero { position: relative; isolation: isolate; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 12px 14px; }
+.wos .wbr-hero::before {
+  content: ''; position: absolute; left: 50%; top: 46%; width: 340px; max-width: 100%; height: 260px; transform: translate(-50%, -50%); z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, color-mix(in srgb, var(--dv-coral) 26%, transparent), color-mix(in srgb, var(--dv-amber) 10%, transparent) 40%, transparent 68%);
+}
+.wos .wbr-hero-art { filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--dv-coral) 42%, transparent)); }
+.wos .wbr-eyebrow { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: color-mix(in srgb, var(--dv-coral) 70%, var(--text-primary)); }
+.wos .wbr-hero .wbr-eyebrow { margin-top: 6px; }
+.wos .wbr-num { margin-top: 4px; font-size: 58px; font-weight: 600; letter-spacing: -2px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.wos .wbr-num small { margin-left: 2px; font-size: 20px; font-weight: 500; letter-spacing: -1px; color: var(--text-muted); }
+.wos .wbr-num-pending { color: var(--text-muted); }
+.wos .wbr-sub { margin: 4px 0 0; font-size: 12.5px; color: var(--text-secondary); }
+.wos .wbr-pills { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 10px; }
+.wos .wbr-pills .uv-flat { padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.wos .wbr-quests.glass { --c: var(--dv-amber); margin: 0 4px 12px; padding: 14px; border-radius: 22px; }
+.wos .wbr-qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.wos .wbr-qhead .wbr-eyebrow { color: color-mix(in srgb, var(--dv-amber) 75%, var(--text-primary)); }
+.wos .wbr-qhead h3 { margin: 2px 0 0; font-size: 17px; font-weight: 600; letter-spacing: -0.4px; color: var(--text-primary); }
+.wos .wbr-chlist { display: grid; gap: 10px; }
+.wos .wbr-chlist .wos-qc-conf { margin-top: 6px; }
+.wos .wbr-qnote { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+.wos .wbr-qempty { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
+.wos .wbr-qempty p { margin: 0 0 8px; }
+.wos .wbr-ovl { padding: 0 4px; }
+.wos .wbr-eyeb { padding: 14px 6px 10px; }
+.wos .wbr-eyeb .wbr-eyebrow { color: var(--text-muted); }
+.wos .wbr-eyeb h2 { margin: 2px 0 0; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; color: var(--text-primary); }
+.wos .wbr-list { display: grid; gap: 10px; margin: 0; padding: 0 4px; list-style: none; }
+.wos .wbr-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wos .wbr-row-copy { flex: 1; min-width: 0; }
+.wos .wbr-row-copy strong { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wos .wbr-row-copy small { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.wos .wbr-row-quest { flex: 0 0 auto; display: grid; place-items: center; }
+.wbr-foot { position: absolute; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 40; max-width: 408px; margin: 0 auto; }
+.wbr-start {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px 16px; border: 0; border-radius: 18px; cursor: pointer;
+  font: 700 15px/1.2 var(--ff-body); color: #191614; background: var(--dv-coral);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 18px color-mix(in srgb, var(--dv-coral) 45%, transparent);
+}
+.wbr-start .t-ico { filter: none; }
+/* the card head's "vs last week" chip (it replaced the Múlt hét / Ma a cél cells) — also on the briefing rows */
+.wos .wo-delta {
+  display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.1px; white-space: nowrap;
+  color: #FFD08A; background: color-mix(in srgb, var(--dv-amber) 12%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
+}
+.wos .wo-delta.is-up { color: #FFB39C; background: color-mix(in srgb, var(--dv-coral) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
+.wos .wo-card-copy .wo-delta { justify-self: start; width: max-content; margin-top: 4px; }
+/* the active-phase challenge badge (tap → release / take back); released = dimmed, target struck */
+.wos .wos-pills button.wos-pill-quest { cursor: pointer; font: inherit; }
+.wos .wos-pills .wos-pill-quest.is-released { opacity: 0.6; }
+.wos .wos-pills .wos-pill-quest.is-released s { opacity: 0.8; }
+
+/* the challenge detail glass (card badge → release / take back) */
+.gl-card .wos-gb-qd .wos-qd-target { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+.gl-card .wos-gb-qd .wos-qd-target b { font-size: 24px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.gl-card .wos-gb-qd .wos-qd-why { margin: 10px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.gl-card .wos-gb-qd .wos-pill.is-block { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+.gl-card .wos-gb-qd .wos-qd-note { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+
 /* ── /uveg edzes session ── */
 
 /* ── uveg edzes zaras (mezo-me75u.4) ── the closing ceremony (WorkoutCeremony, 2 steps) + /train/review/:id (WorkoutSummary, ExerciseReview) ── */
@@ -19865,6 +20035,23 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .napom-page .napom-lead .uv-eyebrow { color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
 .napom-page .napom-lead strong { display: block; margin-top: 3px; font: 600 15px/1.3 var(--ff-body); letter-spacing: -0.3px; color: var(--text-primary); }
 .napom-page .napom-lead small { display: block; margin-top: 3px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+/* „Te: X/10" (Check-in 2.0, mezo-ck2; prototype `.dayc` / `.duo` / `.gapl`): the app's score and
+   the evening verdict side by side — flat halves in one gold glass, „szerinted" lit gold. */
+.napom-page .napom-dayc.glass { margin: 16px 16px 0; padding: 16px; border: 0; border-radius: 26px; }
+.napom-page .napom-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.napom-page .napom-duo > div { min-width: 0; padding: 12px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.napom-page .napom-duo > div.is-me {
+  background: radial-gradient(90% 120% at 50% 0%, color-mix(in srgb, var(--dv-amber) 22%, transparent), rgba(245, 239, 230, 0.03));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 45%, transparent); }
+.napom-page .napom-duo small { display: block; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; color: var(--text-muted); }
+.napom-page .napom-duo b { display: block; margin-top: 4px; font: 200 44px/1.1 var(--ff-display); letter-spacing: -2px;
+  font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.napom-page .napom-duo b small { display: inline; font: 500 15px/1 var(--ff-body); letter-spacing: 0; color: var(--text-secondary); }
+.napom-page .napom-duo .is-me b { color: #FFD99A; text-shadow: 0 0 18px rgba(255, 190, 96, 0.45); }
+.napom-page .napom-duo em { display: block; font-style: normal; font-size: 12.5px; color: var(--text-secondary); }
+.napom-page .napom-gapl { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13.5px; color: var(--text-primary); }
+.napom-page .napom-gapl .t-ico { flex: 0 0 auto; width: 22px; height: 22px; }
 .napom-page .napom-go {
   flex: 0 0 auto; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 999px; cursor: pointer;
   font: 600 12px/1.2 var(--ff-body); color: color-mix(in srgb, var(--c) 60%, var(--text-primary));
@@ -22371,10 +22558,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   outline: 2px solid var(--c); outline-offset: 2px;
 }
 
-/* ── the lit flat mini-cells (prototype `.mcell`): hub (8, two rows of 4) + napok (3) ── */
+/* ── the lit flat mini-cells (prototype `.mcell`): hub (9, three rows of 3 — Check-in 2.0 put
+   Hangulat next to Energia, mezo-ck2) + napok (3) ── */
 .wkh-page .wkh-cellstack { gap: 6px; }
 .wkh-page .wkh-cells.mz-mcells, .wkd-page .wkd-cells.mz-mcells {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;
 }
 .wkd-page .wkd-cells.mz-mcells { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
 .wkh-page .mz-mcells .mz-c-lav, .wkd-page .mz-mcells .mz-c-lav { --c: var(--dv-lav); }
@@ -22504,15 +22692,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkh-page .wkh-open { font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary)); }
 .wkh-page .wkh-disceb { color: color-mix(in srgb, var(--dv-sky) 75%, var(--text-primary)); }
 .wkh-page .wkh-disctitle { margin-top: 2px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
-.wkh-page .wkh-discparts { min-width: 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
 .wkh-page .wkh-discempty { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
-.wkh-page .wkh-dots { gap: 5px; flex: none; }
-.wkh-page .wkh-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 6px var(--dc); }
-.wkh-page .wkh-dots i.pattern { --dc: var(--dv-lav); }
-.wkh-page .wkh-dots i.fact { --dc: var(--dv-amber); }
-.wkh-page .wkh-dots i.life { --dc: var(--dv-sky); }
-.wkh-page .wkh-dots i.memoir { --dc: var(--dv-rose); }
-.wkh-page .wkh-dots i.prediction { --dc: var(--dv-coral); }
+/* mezo-p87ok: the discoveries mix as ONE weighted bar + a wrapping legend. One dot per trace
+   (flex:none) filled the row at 72 and crushed the text to a word per line. A 7px floor keeps a
+   single memoir or prediction visible; the legend carries the numbers. */
+.wkh-page .wkh-discbar { display: flex; gap: 3px; width: 100%; height: 7px; margin-top: 10px; }
+.wkh-page .wkh-discbar i {
+  flex-basis: 0; min-width: 7px; border-radius: 999px; background: var(--dc);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dc) 60%, transparent);
+}
+.wkh-page .wkh-disclegend {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 9px;
+  font-size: 11.5px; line-height: 1.4; color: var(--text-secondary);
+}
+.wkh-page .wkh-disclegend > span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.wkh-page .wkh-disclegend i { width: 7px; height: 7px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 5px var(--dc); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .pattern { --dc: var(--dv-lav); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .fact { --dc: var(--dv-amber); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .life { --dc: var(--dv-sky); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .memoir { --dc: var(--dv-rose); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .prediction { --dc: var(--dv-coral); }
 
 /* „Készítsd el most": the lit lavender CTA with the t-score icon (every colour restated, rule 36) */
 .wkh-page .wkh-genbtn {
@@ -22737,7 +22936,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--canvas); background: var(--dv-sage); box-shadow: 0 0 14px color-mix(in srgb, var(--dv-sage) 55%, transparent);
 }
 @media (max-width: 360px) {
-  .wkh-page .wkh-cells.mz-mcells { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .wkd-page .wkd-chip { font-size: 9.5px; }
 }
 
@@ -22755,7 +22953,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .wkf-page .wkd-tile.wide.glass { min-height: 0; }
 .wkf-page .wkd-tile.gold.glass { --c: var(--dv-amber); }
-.wkf-page .wkd-tile.sky.glass { --c: var(--dv-sky); }
+.wkf-page .wkd-tile.life.glass { --c: var(--dv-sky); }
 .wkf-page .wkd-tile.rose.glass { --c: var(--dv-rose); }
 .wkf-page .wkd-tile.pred.glass { --c: var(--dv-coral); }
 .wkf-page .wkd-row { flex-wrap: wrap; gap: 10px; }
@@ -22778,6 +22976,37 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkf-page .wkd-stch.warn { --sc: var(--dv-amber); }
 .wkf-page .wkd-stch.mut { --sc: var(--text-muted); }
 .wkf-page .wkd-stch .t-ico { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+/* mezo-p87ok — section eyebrows + the two bulk drawers (Minták / Új tudás). The drawer is the
+   glass; its rows are flat hairline rows (never glass inside glass). */
+.wkf-page .wkd-sec { margin: 16px 4px 8px; }
+.wkf-page .wkd-sec:first-child { margin-top: 2px; }
+.wkf-page .wkd-drawer.glass { --c: var(--dv-lav); display: block; padding: 13px 14px 6px; border-radius: 22px; }
+.wkf-page .wkd-drawer.gold.glass { --c: var(--dv-amber); }
+.wkf-page .wkd-drawer + .wkd-drawer { margin-top: 12px; }
+.wkf-page .wkd-drhead { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
+.wkf-page .wkd-drhead .wkd-grow { flex: 1 1 auto; min-width: 0; }
+.wkf-page .wkd-drtitle { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.wkf-page .wkd-drsub { margin-top: 2px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.wkf-page .wkd-drcount {
+  font-size: 28px; font-weight: 300; letter-spacing: -1px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  text-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.wkf-page .wkd-drows { display: flex; flex-direction: column; }
+.wkf-page .wkd-drow {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 13.5px; line-height: 1.35; color: var(--text-primary); text-decoration: none;
+}
+.wkf-page .wkd-drow .wkd-grow { flex: 1 1 auto; min-width: 0; }
+.wkf-page .wkd-drow .wkd-stch { flex: none; }
+.wkf-page .wkd-drmore {
+  display: block; width: 100%; min-height: 44px; padding: 0; border: 0;
+  border-top: 1px solid var(--divider); background: none;
+  font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.wkf-page .wkd-drmore:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; border-radius: 8px; }
 .wkf-page .wkl-ghost.uv-empty {
   --c: var(--dv-sky); margin-bottom: 12px; padding: 14px 16px; border-radius: 20px;
   background: rgba(245, 239, 230, 0.025); box-shadow: none;
@@ -26972,6 +27201,9 @@ main.settings-page {
 .kr9-rolad .kr9-gone b { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.35; color: var(--text-secondary); overflow-wrap: anywhere; }
 .kr9-rolad .kr9-gone small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
 .kr9-rolad .kr9-quiet { margin: 0; padding: 2px 18px 0; font-size: 11.5px; line-height: 1.45; color: var(--text-muted); }
+/* S6c (mezo-2dfy2): the kirakat reuses the hub's `.tud9 .th-tiles` grid on the Rólad page — the
+   `.tud9` scope wrapper must not bring the hub PAGE's bottom padding along. */
+.kr9-rolad .kr9-kirakat.tud9 { padding-bottom: 0; }
 /* mezo-plbev fix round 1: `.kr9-page .kr9-link` never matches inside `.kr9-rolad` (no `.kr9-page`
    ancestor here) — this page-owned rule mirrors its declaration for the inbox's quiet retry. */
 .kr9-rolad .kr9-retry {

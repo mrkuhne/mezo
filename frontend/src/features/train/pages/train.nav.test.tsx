@@ -62,9 +62,10 @@ test('the full Mai day view lives at /train/mai and /train?day= forwards to it',
 test('the active workout session is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/session')
   expect(container.querySelector('.np-pills')).toBeNull()
-  // The route opens DIRECTLY in the Titanium card list (mezo-e1ii9) — no prep screen.
-  expect(container.querySelector('.wo-list')).not.toBeNull()
-  expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
+  // A fresh start opens the Eligazítás (mezo-mgu2r) — full-screen too, Pull Day's briefing.
+  expect(container.querySelector('.wbr')).not.toBeNull()
+  expect(screen.getByText('Eligazítás')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Indulás/ })).toBeInTheDocument()
 })
 
 // „Sablonjaid" stays reachable on its own route — the library landing's doorway links

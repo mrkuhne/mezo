@@ -42,7 +42,8 @@ public class CompanionFlagTraceEntity extends OwnedEntity {
     @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy"
         + "|logging_gap|missed_workouts|acute_bad_day|load_fuel_mismatch|rapid_weight_loss"
         + "|joint_overuse|ignored_nudge|late_eating|protocol_lapse|meal_rhythm_drift"
-        + "|energy_dip_meal_timing")
+        + "|energy_dip_meal_timing|persistent_pain|poor_restedness|craving_streak"
+        + "|motivation_slump")
     @Column(name = "flag_key", nullable = false, length = 24)
     private String flagKey;
 

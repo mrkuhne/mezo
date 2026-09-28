@@ -44,6 +44,25 @@ public class CheckInService {
         e.setBody(req.getBody());
         e.setMental(req.getMental());
         e.setNote(req.getNote());
+        // Check-in 2.0 (mezo-ck2): stored exactly as received — NULL stays NULL (not answered),
+        // nothing is defaulted. quickExit is a flag, not an answer: absent = false.
+        e.setMood(req.getMood());
+        e.setRested(req.getRested());
+        e.setSoreness(req.getSoreness());
+        e.setPain(req.getPain());
+        e.setPainRegions(mapper.toPainRegions(req.getPainRegions()));
+        e.setPainIntensity(req.getPainIntensity());
+        e.setMotivation(req.getMotivation());
+        e.setHunger(req.getHunger());
+        e.setCraving(req.getCraving());
+        e.setCravingKinds(mapper.toCravingKinds(req.getCravingKinds()));
+        e.setDigestion(req.getDigestion());
+        e.setConnection(req.getConnection());
+        e.setDayRating(req.getDayRating());
+        e.setAskedItems(mapper.toItemIds(req.getAskedItems()));
+        e.setAdaptiveItem(req.getAdaptiveItem() == null ? null : req.getAdaptiveItem().getValue());
+        e.setAdaptiveReason(req.getAdaptiveReason() == null ? null : req.getAdaptiveReason().getValue());
+        e.setQuickExit(Boolean.TRUE.equals(req.getQuickExit()));
         e.setSavedAt(Instant.now());
         CheckInResponse response = mapper.toResponse(repository.save(e));
         // W5.1 (mezo-b3pp.18): the companion's flag evaluator reacts AFTER_COMMIT; a failure there

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useGratitudeActions, useGratitudeEntries, useRitualActions, useRitualDay } from '@/data/hooks'
+import { useCheckins, useGratitudeActions, useGratitudeEntries, useRitualActions, useRitualDay } from '@/data/hooks'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
 import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
@@ -58,6 +58,10 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
   // Same append-to-what's-typed idiom as JournalSheet/ChatPage's composer (useVoiceInput.ts).
   const voice = useVoiceInput((t) => setText((d) => (d ? `${d} ${t}` : t)))
   const recording = voice.state === 'recording'
+  // Check-in 2.0 (mezo-ck2, spec §3.10): the evening check-in already asked „Milyen volt a napod
+  // összességében?" — show that verdict read-only, so this act asks only for the words.
+  const { checkins } = useCheckins()
+  const dayRating = [...checkins].reverse().map((c) => c.values?.day).find((d): d is number => typeof d === 'number') ?? null
 
   // Today's already-saved gratitude lines. The read is what keeps a RE-ENTERED ritual (✕ then
   // back in — the flow always replays act 3 from act 1) from silently duplicating the evening's
@@ -96,6 +100,12 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
     <div className="rz-act rz-reflect">
       <div className="rz-story-eyebrow">Ma milyen volt</div>
       <h2 className="rz-reflect-title">Milyen volt a napod valójában?</h2>
+      {dayRating != null && (
+        <div className="rz-day">
+          <Icon3D name="t-day" size={26} />
+          <span>Az esti check-inben <b>{dayRating}/10</b>-re értékelted a napot. Ide már csak a szavaid kellenek.</span>
+        </div>
+      )}
       <div className="rz-reflect-box glass">
         <textarea
           className="rz-reflect-input"

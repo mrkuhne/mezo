@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInText;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
@@ -238,17 +239,13 @@ public class DailySummaryService {
     private void addCheckIns(List<String> blocks, UUID userId, LocalDate date) {
         for (CheckInEntity c : checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, date)) {
             String note = cap(c.getNote());
-            // mezo-b6zt sibling, and the worst shape of it: energy and stress are 1..10
-            // (api/feature/checkin/checkin.yml), and rendering them "/5" HERE while
-            // ContextSnapshotAssembler#checkInValues rendered the very same two fields "/10" put two
-            // prompts feeding one model in direct contradiction. This digest is PERSISTED as the
-            // day's narrative and read back as history by later prompts, so the wrong figure
-            // outlives the message that produced it. One referenced ceiling, no literals.
-            String energy = ToolText.rating(c.getEnergy());
-            String stress = ToolText.rating(c.getStress());
+            // mezo-b6zt sibling: this digest is PERSISTED as the day's narrative and read back as
+            // history by later prompts, so a wrong figure outlives the message that produced it.
+            // Check-in 2.0 (mezo-ck2): every answered item goes through the shared CheckInText —
+            // the exact line ContextSnapshotAssembler renders for the same row; NULL = omitted.
+            String values = CheckInText.render(c);
             blocks.add("Check-in" + (c.getSlotTime() != null ? " (" + c.getSlotTime() + ")" : "") + ":"
-                    + (energy != null ? " energia " + energy : "")
-                    + (stress != null ? ", stressz " + stress : "")
+                    + (values.isEmpty() ? "" : " " + values)
                     + (note.isBlank() ? "" : " — \"" + note + "\""));
         }
     }

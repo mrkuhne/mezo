@@ -7,6 +7,7 @@ import type { KnowledgeObservation } from '@/data/insights/knowledgeHubApi'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 import { mockPatternPairDetail, patterns as patternSeed, REFLECTION_KEY } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { mockCheckInPlan } from '@/data/today/checkinPlan'
 import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
 import {
   ADMIN_ALERTS_MOCK,
@@ -671,6 +672,9 @@ export const handlers = [
   }),
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
+  // Check-in 2.0 (mezo-ck2): the slot's question plan — the mirrored server config.
+  http.get(`${API_BASE}/api/biometrics/checkin/plan`, ({ request }) =>
+    HttpResponse.json(mockCheckInPlan(new URL(request.url).searchParams.get('slotTime') ?? ''))),
 
   // Unified companion-message feed (companion-feed, mezo-gst9) — default: honest empty array
   // (never a 404 — a list endpoint, the P1 precedent). Tests override with server.use(...).
@@ -1162,6 +1166,20 @@ export const handlers = [
     }),
   ),
   http.get(`${API_BASE}/api/train/workouts`, () => HttpResponse.json([])),
+  // Check-in 2.0 readiness (mezo-ck2): default = nothing to show, so pages that do not test the
+  // card stay unchanged; readiness tests override with an OFFER body via server.use.
+  http.get(`${API_BASE}/api/train/readiness/today`, () =>
+    HttpResponse.json({ suggest: false, state: 'NONE', reasons: [], care: [] }),
+  ),
+  http.post(`${API_BASE}/api/train/readiness/today`, async ({ request }) => {
+    const body = (await request.json()) as { choice: 'LIGHTEN' | 'KEEP' }
+    return HttpResponse.json({
+      suggest: true, state: body.choice === 'LIGHTEN' ? 'LIGHTENED' : 'KEPT', reasons: [], care: [],
+    })
+  }),
+  http.delete(`${API_BASE}/api/train/readiness/today`, () =>
+    HttpResponse.json({ suggest: false, state: 'NONE', reasons: [], care: [] }),
+  ),
   http.post(`${API_BASE}/api/train/workouts`, () =>
     HttpResponse.json(
       {
@@ -1908,7 +1926,7 @@ export const handlers = [
       date: addDays(start, offset), score: null,
       subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: null },
       kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
-      weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
+      weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null, checkinMoodAvg: null,
       workoutCount: 0, xp: null,
     })
     return HttpResponse.json({
@@ -1919,13 +1937,13 @@ export const handlers = [
         { date: start, score: 65,
           subscores: { nutrition: 70, quality: 66, training: 68, sleep: 60, logging: 62, rhythm: 64 },
           kcal: 2800, proteinG: 190, carbsG: 300, fatG: 80, kcalTarget: 3000, proteinTargetG: 200,
-          weightKg: 82.5, sleepMin: 410, sleepQuality: 6, checkinCount: 3, checkinEnergyAvg: 6,
+          weightKg: 82.5, sleepMin: 410, sleepQuality: 6, checkinCount: 3, checkinEnergyAvg: 6, checkinMoodAvg: 7,
           workoutCount: 1, xp: 90 },
         empty(1), empty(2), empty(3), empty(4), empty(5), empty(6),
       ],
       weekly: {
         score: 65, prevWeekScore: 60, avgKcal: 2800, avgProteinG: 190, avgSleepMin: 410,
-        avgCheckinEnergy: 6, checkinRatio: 0.5, latestWeightKg: 82.5, weightWeeklyRateKg: -0.2,
+        avgCheckinEnergy: 6, avgCheckinMood: 7, checkinRatio: 0.5, latestWeightKg: 82.5, weightWeeklyRateKg: -0.2,
         totalXp: 90,
       },
     })

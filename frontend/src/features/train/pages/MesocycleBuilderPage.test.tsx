@@ -71,7 +71,7 @@ test('the two status tiles are there — the week one navigates, the rollover fo
 // a rest or sport day, because it never became a card.
 test('the week shows training days as cards — a Rest or sport day is not tappable', () => {
   setup()
-  expect(screen.getByRole('button', { name: 'Hétfő · Push' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Hétfő · Push/ })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^Csütörtök · Pull/ })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Vasárnap/ })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Szombat/ })).not.toBeInTheDocument()
@@ -80,7 +80,7 @@ test('the week shows training days as cards — a Rest or sport day is not tappa
 
 test('tapping a day card opens that day on its own route, with the token URL-encoded', async () => {
   const router = setup()
-  await userEvent.click(screen.getByRole('button', { name: 'Hétfő · Push' }))
+  await userEvent.click(screen.getByRole('button', { name: /^Hétfő · Push/ }))
   await waitFor(() =>
     expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/days/H%C3%A9t'),
   )

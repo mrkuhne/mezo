@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-27
+updated: 2026-09-28
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,6 +13,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** `AdvicePriority` ranks the four new check-in flags next to their siblings — `persistent_pain` right after `joint_overuse` (above the missed-workout nudge), `poor_restedness` right after `sleep_debt`, `craving_streak` right after `energy_dip_meal_timing`, `motivation_slump` right after `sustained_stress` — and the intervention library gained their cards (`persistent_pain_check`, `poor_restedness_evening`, `craving_streak_plan`, `motivation_small_steps`; cooldowns 72/60/96/84 h matching the flag cooldowns). `persistent_pain` has no apply-action yet. Rules and thresholds: [`companion.md`](companion.md) §4 flag table.
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Mezo messages page (`/nap/uzenetek`: Üzenetek, Életjelek, Észrevételek) wears glass: Boop halo hero, flat segmented tabs, lavender glass message and observation cards with 3D art, 3D tally marks instead of ✓/✕. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
@@ -577,7 +579,8 @@ evaluator**. Design of record:
   an in-progress/not-started instance today is left `accepted`.
 - **The write path (L2)** — `GET /api/proactive/challenge?templateSessionId=&date=` (lazy generate +
   lazy resolve; `200 []` = honest, never 404) + `POST /api/proactive/challenge/{id}/decision
-  {decision: accept|dismiss}` (fetch-owned-or-404 → **proposed-state guard 409
+  {decision: accept|dismiss|undo}` (undo: accepted → proposed, `mezo-oy91i`; the Eligazítás sends accept/undo at
+  Indulás and the card badge sends undo/accept mid-workout, `mezo-mgu2r`) (fetch-owned-or-404 → **proposed-state guard 409
   `PROACTIVE_CHALLENGE_NOT_PROPOSED`** → mutate). **No `propose` endpoint** (unlike experiments —
   challenges are generated implicitly by the prep-read). `ChallengeResponse` carries the structured
   targets on the wire — `targetWeightKg?`/`targetReps?`/`targetSets?`/`targetRir?` (additive nullable,
@@ -696,8 +699,14 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   same `stale` probe against the fresh row's `generatedAt` (never hardcoded `false` — a log landing
   mid-generation still surfaces honestly) — `409 WEEKLY_REVIEW_WEEK_NOT_COMPLETE` while `weekStart +
   7 days` is still in the future, `404` if the fresh run still yields nothing (empty week). `GET
-  …/digest` maps the SAME week-window reads the generator's gather draws candidates from straight
-  to DTOs (patterns/newFacts/lifeEvents/memoir boolean/predictions) — `400` on a non-Monday
+  …/digest` maps the SAME week-window reads the generator's gather draws candidates from
+  to DTOs (patterns/newFacts/lifeEvents/memoir boolean/predictions), **folded to one trace per
+  discovery** (`mezo-p87ok`, 2026-09-28): the window returns one row per `pattern_event`, so a pair
+  confirmed then promoted in one week arrived twice and its promotion fact a third time (week
+  2026-09-21: 72 rows over 23 pairs). The digest keeps one ref per pattern with the week's biggest
+  kind (promoted > reinforced > confirmed, newest `occurredAt` first within a kind) and drops every
+  fact that is a folded pattern's `promotedFactId`; facts are newest first. The generator's gather
+  keeps the raw events — `400` on a non-Monday
   `start`, otherwise always `200`, empty lists the honest empty state, independent of whether the
   review row itself exists (`/me/week`'s `WeekDiscoveries` card's source).
 - **„A hét tanulságai" — the round's knowledge candidates (`mezo-d20.7.6`)** — until this slice the
@@ -1840,7 +1849,7 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `POST /api/proactive/experiment/{id}/decision` | `ExperimentResponse` | 200 · 400 · 401 · 404 · 409 | **L2 accept/dismiss** (`{decision: accept\|dismiss}`). `accept` ⇒ active + start_date=today; `dismiss` ⇒ dismissed. 404 = not-found/foreign; **409 `PROACTIVE_EXPERIMENT_NOT_PROPOSED`** = already decided; 400 = invalid decision value. |
 | `POST /api/proactive/experiment/propose` | `ExperimentResponse[]` | 200 · 401 | On-demand proposal (the "+ Új kísérlet javasol Mezo" button). Up to the open-cap; `[]` when the cap is met / no confirmed patterns. |
 | `GET /api/proactive/challenge?templateSessionId=&date=` | `ChallengeResponse[]` | 200 · 401 | HBWI. A planned session's live challenges for `date` (dismissed excluded), oldest first. **Lazily generates** when none exist AND `date == today`; **lazily resolves** accepted ones when the instance is done. **`200 []` = honest empty, never 404.** Owner-scoped. |
-| `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
+| `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss/undo** (`{decision: accept\|dismiss\|undo}`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`; `undo` ⇒ back to `proposed` (only from `accepted`, `mezo-oy91i`). 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
 Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt, facts?,
 suggestions?, actions?, applied?, flagKey?}`

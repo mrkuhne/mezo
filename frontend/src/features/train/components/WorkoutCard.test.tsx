@@ -107,14 +107,41 @@ test('a first-ever exercise (no lastWeek) renders the rationale as the .wo-cue s
   expect(container.querySelector('.wo-cue p')).toHaveTextContent('A múlt heti RIR alapján tartjuk a súlyt.')
 })
 
-test('an accepted challenge on this exercise renders its target as a chip (mezo-88iwa.7)', () => {
-  const { container } = renderCard({ challenge: { label: 'PR kísérlet', target: '85 kg × 8' } })
-  expect(container.querySelector('.wo-note')).toHaveTextContent('85 kg × 8')
+test('a challenge taken on at Indulás renders as a tappable badge that opens its glass (mezo-mgu2r)', async () => {
+  const user = userEvent.setup()
+  const onOpenChallenge = vi.fn()
+  renderCard({ challenges: [{ id: 'c1', label: 'PR-kísérlet', target: '85 kg × 8', state: 'accepted' }], onOpenChallenge })
+  const badge = screen.getByRole('button', { name: 'PR-kísérlet küldetés · vállalva' })
+  expect(badge).toHaveTextContent('PR-kísérlet · 85 kg × 8')
+  await user.click(badge)
+  expect(onOpenChallenge).toHaveBeenCalledWith('c1')
 })
 
-test('with no accepted challenge, no challenge chip renders', () => {
+test('a released challenge stays on the card, dimmed and struck through', () => {
+  const { container } = renderCard({ challenges: [{ id: 'c1', label: 'PR-kísérlet', target: '85 kg × 8', state: 'released' }] })
+  const badge = screen.getByRole('button', { name: 'PR-kísérlet küldetés · elengedve' })
+  expect(badge).toHaveClass('is-released')
+  expect(container.querySelector('.wos-pill-quest s')).toHaveTextContent('85 kg × 8')
+})
+
+test('the head carries the vs-last-week chip instead of the Múlt hét / Ma a cél cells (mezo-mgu2r)', () => {
+  const { container } = renderCard({ exercise: makeExercise({
+    progression: { lever: 'weight', deltaKg: 2.5, deltaReps: null, targetWeightKg: 105, targetReps: 8, rationale: 'x' },
+  }) })
+  expect(container.querySelector('.wo-card-head .wo-delta')).toHaveTextContent('↑ +2,5 kg')
+  expect(container.querySelector('.pobanner')).toBeNull()
+  expect(screen.queryByText('Múlt hét')).toBeNull()
+  expect(screen.queryByText('Ma a cél')).toBeNull()
+})
+
+test('no progression signal → no chip', () => {
   const { container } = renderCard()
-  expect(container.querySelector('[aria-label^="Elfogadott kihívás"]')).toBeNull()
+  expect(container.querySelector('.wo-delta')).toBeNull()
+})
+
+test('with no challenge, no badge renders', () => {
+  renderCard()
+  expect(screen.queryByRole('button', { name: /küldetés ·/ })).toBeNull()
 })
 
 test('only the NEXT pending row has enabled inputs — later slots are inert', () => {

@@ -14,6 +14,10 @@ import org.springframework.stereotype.Component;
  * the energy scale against the previous night's sleep quality, and the body scale against the
  * day's worst joint pain (inverted, so higher is better on both sides).
  *
+ * <p>Check-in 2.0 (mezo-ck2, spec §3.6) adds a third pair: the morning {@code rested} answer
+ * against the logged quality of the night leading into that day, with the Whoop guard (≥ 5 days
+ * on each side of the median).
+ *
  * <p>The mental and stress scales are DELIBERATELY excluded: nothing in the system measures them
  * objectively, and inventing a composite index to compare them against would put an arbitrary
  * number into a sensitive claim (spec §4.3). The detector says so in its own summary.
@@ -45,6 +49,8 @@ public class SelfCalibrationDetector implements CharacterDetector {
 
     private static final int MIN_PAIRED_DAYS = 8;
     private static final int MIN_DAYS_PER_GROUP = 3;
+    /** Whoop guard (Check-in 2.0 spec §6): {@code rested} is a rotating morning item. */
+    private static final int MIN_RESTED_DAYS_PER_GROUP = 5;
     private static final double MIN_SEPARATION = 1.0;
     private static final int MAX_NOTES = 2;
     private static final int PAIN_SCALE_TOP = 11;
@@ -93,6 +99,7 @@ public class SelfCalibrationDetector implements CharacterDetector {
     private static State state(DetectorInput in, LocalDate asOf) {
         String energia = verdict(energyPairs(in, asOf));
         String testi = verdict(bodyPairs(in, asOf));
+        String pihent = verdict(restedPairs(in, asOf), MIN_RESTED_DAYS_PER_GROUP);
         List<String> keyParts = new ArrayList<>();
         List<String> phrases = new ArrayList<>();
         if (energia != null) {
@@ -111,6 +118,14 @@ public class SelfCalibrationDetector implements CharacterDetector {
                 default -> "a testi értékelés és az aznapi ízületi terheltség között az edzésnapokon nem látszik irány";
             });
         }
+        if (pihent != null) {
+            keyParts.add("kipihentseg:" + pihent);
+            phrases.add(switch (pihent) {
+                case EGYEZIK -> "a reggeli kipihentség-érzés együtt mozog az éjszaka rögzített alvásminőségével";
+                case FORDITOTT -> "a reggeli kipihentség-érzés az éjszaka rögzített alvásminőségével ellentétesen mozog";
+                default -> "a reggeli kipihentség-érzés és az éjszaka rögzített alvásminősége között nem látszik irány";
+            });
+        }
         if (keyParts.isEmpty()) {
             return null;
         }
@@ -127,6 +142,24 @@ public class SelfCalibrationDetector implements CharacterDetector {
             for (DetectorInput.SleepPoint s : in.trend().sleepEightWeeks()) {
                 if (s.date().equals(c.date()) && s.quality() != null) {
                     pairs.add(new Pair(c.date(), c.energy().doubleValue(), s.quality()));
+                    break;
+                }
+            }
+        }
+        return pairs;
+    }
+
+    /** Check-in 2.0: the morning {@code rested} answer vs the logged quality of the night leading
+     *  into the same day. A day without a rested answer is not paired (absent, never "közepes"). */
+    private static List<Pair> restedPairs(DetectorInput in, LocalDate asOf) {
+        List<Pair> pairs = new ArrayList<>();
+        for (DetectorInput.CheckinDayPoint c : in.trend().checkinDays()) {
+            if (!TrailingWindow.inWindow(c.date(), asOf) || c.rested() == null) {
+                continue;
+            }
+            for (DetectorInput.SleepPoint s : in.trend().sleepEightWeeks()) {
+                if (s.date().equals(c.date()) && s.quality() != null) {
+                    pairs.add(new Pair(c.date(), c.rested().doubleValue(), s.quality()));
                     break;
                 }
             }
@@ -166,13 +199,17 @@ public class SelfCalibrationDetector implements CharacterDetector {
 
     /** null when the pair is not evaluable at all — an unevaluable pair is omitted, not guessed. */
     private static String verdict(List<Pair> pairs) {
+        return verdict(pairs, MIN_DAYS_PER_GROUP);
+    }
+
+    private static String verdict(List<Pair> pairs, int minPerGroup) {
         if (pairs.size() < MIN_PAIRED_DAYS) {
             return null;
         }
         double median = median(pairs.stream().map(Pair::self).sorted().toList());
         List<Double> high = pairs.stream().filter(p -> p.self() > median).map(Pair::objective).toList();
         List<Double> low = pairs.stream().filter(p -> p.self() < median).map(Pair::objective).toList();
-        if (high.size() < MIN_DAYS_PER_GROUP || low.size() < MIN_DAYS_PER_GROUP) {
+        if (high.size() < minPerGroup || low.size() < minPerGroup) {
             return null;
         }
         double diff = mean(high) - mean(low);

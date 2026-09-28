@@ -1,9 +1,10 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
-import io.mrkuhne.mezo.api.dto.CheckInResponse;
 import io.mrkuhne.mezo.api.dto.SleepGoalResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
-import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInService;
+import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
+import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInText;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
@@ -60,7 +61,7 @@ public class BiometricsTools {
      *  (the ContextSnapshotAssembler habit/intention/ritual precedent) so a disabled sleep-goal feature
      *  degrades scope=sleep-goal to "nincs adat" rather than failing Spring context startup. */
     private final ObjectProvider<SleepGoalService> sleepGoalService;
-    private final CheckInService checkInService;
+    private final CheckInRepository checkInRepository;
     private final CompanionProperties properties;
 
     // mezo-a64t: figures the model QUOTES BACK to the user go through ToolText.huWeight/huRate/
@@ -172,9 +173,11 @@ public class BiometricsTools {
             + "a kért napok teljes adatai: lefekvés/ébredés időpont, alvási idő, ágyban/ébren/könnyű/REM/"
             + "mély percek, minőség, ébredések, forrás (minőséggel), hypnogram, megjegyzés. scope=sleep-goal "
             + "— az alvási cél: cél alvásidő (óra/perc), ébredés/lefekvés időpontja, szabályossági sáv "
-            + "(± perc). scope=checkins — bejelentkezések az elmúlt napokra: energia/stressz/testi/mentális "
-            + "állapot (1-10) minden rögzített időpontra. Használd, amikor a user alvásról, alvás-céljáról/"
-            + "ritmusáról, vagy közérzetéről (energia/stressz) kérdez — vagy amikor a user konkrét nap "
+            + "(± perc). scope=checkins — bejelentkezések az elmúlt napokra, minden rögzített időpontra a "
+            + "megválaszolt tételek (1-10): energia, hangulat, stressz, testi érzés, fejtisztaság, kipihentség, "
+            + "izomláz, fájdalom (hol + mennyire), motiváció, éhség, sóvárgás (mire), emésztés, kapcsolódás, "
+            + "a nap mérlege, plusz a jegyzet. Használd, amikor a user alvásról, alvás-céljáról/"
+            + "ritmusáról, vagy közérzetéről (energia, hangulat, stressz, fájdalom, éhség) kérdez — vagy amikor a user konkrét nap "
             + "alvási adatait / fázisait kérdezi (akkor a date vagy from/to paraméterrel). "
             + "scope: sleep (alapértelmezés), sleep-goal, checkins. Régebbi és teljes adatok: "
             + "read_personal_records(source=sleep_log|sleep_goal|check_in, from, to).")
@@ -429,33 +432,28 @@ public class BiometricsTools {
         return b.toString();
     }
 
-    /** scope=checkins (mezo-xixu) — energy/stress/body/mental readings across the day-window, over
-     *  {@link CheckInService#listForDay} (one call per day — no since-date finder exists on this
-     *  aggregate), newest day first; null-guarded per field (a skipped/pending slot with no readings
-     *  still renders honestly, never a fabricated number). */
+    /** scope=checkins (mezo-xixu; every Check-in 2.0 item since mezo-ck2) — each row's answered
+     *  items across the day-window, one owner-scoped day read per day, newest day first; an
+     *  unanswered item is omitted (a slot with no answers renders "nincs adat", never a
+     *  fabricated number). */
     private String renderCheckIns(UUID userId, Integer days, ToolContext toolContext) {
         int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
         LocalDate today = LocalDate.now();
-        List<CheckInResponse> rows = new ArrayList<>();
+        List<CheckInEntity> rows = new ArrayList<>();
         for (int i = 0; i < d; i++) {
-            rows.addAll(checkInService.listForDay(userId, today.minusDays(i)));
+            rows.addAll(checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, today.minusDays(i)));
         }
         String header = "Bejelentkezések (utolsó " + d + " nap):";
         if (rows.isEmpty()) {
             return header + " " + ToolText.NO_DATA;
         }
         StringBuilder b = new StringBuilder(header);
-        for (CheckInResponse c : rows) {
+        for (CheckInEntity c : rows) {
             b.append('\n').append(c.getDate()).append(' ').append(c.getSlotTime()).append(": ");
-            // mezo-b6zt siblings: all four sliders are 1..10 (api/feature/checkin/checkin.yml) and
-            // were already correct — but as four separate literals. Referenced once now, so this
-            // renderer cannot drift from the day narrative the way the sleep denominator did.
-            List<String> parts = new ArrayList<>();
-            addRating(parts, "energia", c.getEnergy());
-            addRating(parts, "stressz", c.getStress());
-            addRating(parts, "testi", c.getBody());
-            addRating(parts, "mentális", c.getMental());
-            b.append(parts.isEmpty() ? ToolText.NO_DATA : String.join(", ", parts));
+            // Check-in 2.0 (mezo-ck2): every answered item through the shared CheckInText — the
+            // same line the snapshot and the daily summary print; NULL = omitted, never defaulted.
+            String values = CheckInText.render(c);
+            b.append(values.isEmpty() ? ToolText.NO_DATA : values);
             if (c.getNote() != null && !c.getNote().isBlank()) {
                 b.append("; jegyzet: ").append(c.getNote());
             }
@@ -463,14 +461,5 @@ public class BiometricsTools {
         rows.stream().limit(5).forEach(c ->
                 ToolContexts.audit(toolContext).addRef("CheckIn", c.getDate().toString()));
         return b.toString();
-    }
-
-    /** One "{label} {n}/10" slider reading, or nothing at all when the slot was left unanswered —
-     *  a fabricated default (or the literal "null/10") in a tool payload is worse than silence. */
-    private static void addRating(List<String> parts, String label, Integer value) {
-        String rendered = ToolText.rating(value);
-        if (rendered != null) {
-            parts.add(label + " " + rendered);
-        }
     }
 }

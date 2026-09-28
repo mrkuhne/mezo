@@ -1353,6 +1353,10 @@ mezo:
         sleep-floor-hours: 6.0
         rpe-threshold: 7.0
         stress-threshold: 6.0
+        # Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): a low morning "kipihentség" or strong
+        # "izomláz" (raw check-in rows in the same window) is an alternative to the sleep-hours arm.
+        rested-at-most: 4
+        soreness-at-least: 7
       all-healthy:
         # Nothing else raised for a week ⇒ record the quiet state (W5.2 may celebrate it).
         quiet-days: 7
@@ -1385,6 +1389,10 @@ mezo:
         min-check-ins: 2
         # body/energy 1-10 scale; nullable — a null is "not answered", not a low score.
         body-or-energy-at-most: 3
+        # Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): a slot also qualifies on a low mood or a
+        # strong pain. Same null rule — an unanswered item never qualifies.
+        mood-at-most: 3
+        pain-intensity-at-least: 7
       load-fuel-mismatch:
         # Spec §4 row 2 (rank 2). See FlagProperties.LoadFuelMismatch javadoc for the
         # load-threshold derivation from the spec §0 evidence week.
@@ -1463,6 +1471,30 @@ mezo:
         # Anti-degeneracy: if the two lunch groups' own medians sit closer than this, lunch times
         # "don't vary" in the spec's sense and the breakfast-presence fallback takes over.
         min-lunch-split-separation-minutes: 45
+      # Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2): four rules over the new check-in items. Every
+      # window ends TODAY; a NULL answer is "not answered" and never counts either way. Each rule
+      # stays UNAVAILABLE while fewer answered days exist than it needs to raise at all.
+      persistent-pain:
+        # The same pain region reported ("Fáj valami? Igen" + region) on 3 of the last 5 days.
+        window-days: 5
+        min-days: 3
+      poor-restedness:
+        # "Kipihentség" <= 4 on 2 consecutive mornings inside the last 3 days. The morning value is
+        # the 06:30 slot's answer, else the day's first check-in's.
+        window-days: 3
+        consecutive-mornings: 2
+        rested-at-most: 4
+        morning-slot: "06:30"
+      craving-streak:
+        # Craving >= 7 of the SAME kind (édes / sós / zsíros / bármit) on 3 of the last 5 days.
+        window-days: 5
+        min-days: 3
+        craving-at-least: 7
+      motivation-slump:
+        # The day-mean motivation <= 3 on 3 of the last 4 days.
+        window-days: 4
+        min-days: 3
+        motivation-at-most: 3.0
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
@@ -1515,6 +1547,14 @@ mezo:
         # protocol_lapse review lesson: InterventionService.deliverForFlag applies the LIBRARY
         # entry's cooldown, so a mismatch silently overrides this value).
         energy-dip-meal-timing: 720
+        # Check-in 2.0 (mezo-ck2). Each MUST match its library entry's own cooldown-hours below
+        # (InterventionService.deliverForFlag applies the LIBRARY entry's cooldown). Deliberately
+        # unequal (the mezo-d58h.6 starvation lesson): pain and restedness can co-fire with
+        # recovery_needed / acute_bad_day from the same rough morning.
+        persistent-pain: 72
+        poor-restedness: 60
+        craving-streak: 96
+        motivation-slump: 84
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
@@ -1674,6 +1714,34 @@ mezo:
         channel: feed
         text-hu: "Végignéztem az elmúlt hetek délutáni bejelentkezéseit, és van egy együttjárás: az egyik fajta napodon jellemzően magasabb délutáni energiát rögzítettél, mint a másikon. Ez nem magyarázat, csak egy mintázat a saját naplódban — lehet mögötte az étkezés időzítése, de lehet, hogy mindkettő ugyanannak a napnak a következménye. Ha érdekel, figyeld meg pár napig tudatosan."
         cooldown-hours: 720
+        quiet-hours-exempt: false
+      # Check-in 2.0 (mezo-ck2, spec 2026-09-27 §3.2). The card's first fact line carries the
+      # prototype copy templated with the real region / kind / daypart (FlagFactRenderer); these
+      # texts are the grounding and the fallback prose. Never a diagnosis, never blame. Each
+      # cooldown-hours == its cooldown-hours.<flag> above.
+      - key: persistent_pain_check
+        flag: persistent_pain
+        channel: both
+        text-hu: "Pár napja visszatérően ugyanott fáj. Érdemes ránézni: figyeld meg, mitől erősödik, és ha nem múlik, kérdezz meg egy szakembert. Ha a következő edzés ezt a részt terheli, vidd könnyebbre."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      - key: poor_restedness_evening
+        flag: poor_restedness
+        channel: both
+        text-hu: "Egymás után több reggel sem pihented ki magad. Ma este told előre egy kicsit a lefekvést, és a képernyőt tedd le fél órával előtte — egy jobb éjszaka többet ad holnapra, mint bármi más."
+        cooldown-hours: 60
+        quiet-hours-exempt: false
+      - key: craving_streak_plan
+        flag: craving_streak
+        channel: feed
+        text-hu: "Mostanában sokszor kívánsz ugyanarra. Ez nem gyengeség, hanem jelzés: tervezz be arra a napszakra egy laktató, ahhoz illő falatot, így nem a sóvárgás dönt helyetted."
+        cooldown-hours: 96
+        quiet-hours-exempt: false
+      - key: motivation_small_steps
+        flag: motivation_slump
+        channel: feed
+        text-hu: "Pár napja alacsony a kedved. Kisebb lépések? Válassz mára egyetlen apró dolgot, amit biztosan meg tudsz csinálni — a lendület a kis győzelmekből jön vissza."
+        cooldown-hours: 84
         quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
@@ -2062,6 +2130,190 @@ mezo:
           when-negative-hu: "hétvégén {erősség} korábban ettél utoljára"
           metric-a: weekend
           metric-b: late-meal-hour
+          lag-days: 0
+        # --- Check-in 2.0 (mezo-ck2, spec §3.8/§3.8b) — az új check-in tételek 15 párja ---
+        # day-score~checkin-day kimarad: a napi pontszám nem MetricKey-sorozat.
+        # meal-processing~checkin-digestion helyett meal-score~checkin-digestion: nincs külön
+        # feldolgozottság/NOVA-arány metrika; a legközelebbi a NOVA-dimenziót is súlyozó étkezés-pontszám.
+        - key: sleep-duration~checkin-rested
+          category: physiology
+          label: Fiziológia
+          title: "Alváshossz ↔ kipihentség"
+          mechanism: "A hosszabb éjszaka után kipihentebbnek érezheted magad reggel."
+          question: "Kipihentebb vagy, ha tovább alszol?"
+          expected-direction: positive
+          when-positive-hu: "a hosszabb éjszakák után {erősség} kipihentebbnek érezted magad"
+          when-negative-hu: "a hosszabb éjszakák után {erősség} kevésbé érezted magad kipihentnek"
+          metric-a: sleep-duration-h
+          metric-b: checkin-rested
+          lag-days: 0
+        - key: sleep-quality~checkin-rested
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ kipihentség"
+          mechanism: "A jobb minőségű alvás után kipihentebbnek érezheted magad — azt is mutatja, mennyire egyezik az érzeted a naplóddal."
+          question: "Kipihentebb vagy, ha jobban aludtál?"
+          expected-direction: positive
+          when-positive-hu: "a jobb alvás után {erősség} kipihentebbnek érezted magad"
+          when-negative-hu: "a jobb alvás után {erősség} kevésbé érezted magad kipihentnek"
+          metric-a: sleep-quality
+          metric-b: checkin-rested
+          lag-days: 0
+        - key: sleep-duration~next-day-checkin-craving
+          category: physiology
+          label: Fiziológia
+          title: "Alváshossz ↔ másnapi sóvárgás"
+          mechanism: "A rövid alvás felhangolhatja az étvágyat — másnap erősebb sóvárgás jöhet."
+          question: "Többet kívánsz valamit a rövid éjszakák után?"
+          expected-direction: negative
+          when-positive-hu: "a hosszabb éjszakák után {erősség} erősebb volt a sóvárgás"
+          when-negative-hu: "a hosszabb éjszakák után {erősség} gyengébb volt a sóvárgás"
+          metric-a: sleep-duration-h
+          metric-b: checkin-craving
+          lag-days: 1
+        - key: checkin-stress~checkin-craving
+          category: trigger
+          label: Kiváltó ok
+          title: "Stressz ↔ sóvárgás"
+          mechanism: "A feszültség gyakran vált ki evési kedvet — édes, sós vagy bármi."
+          question: "Jobban kívánsz valamit, ha feszült vagy?"
+          expected-direction: positive
+          when-positive-hu: "a feszültebb napokon {erősség} erősebb volt a sóvárgás"
+          when-negative-hu: "a feszültebb napokon {erősség} gyengébb volt a sóvárgás"
+          metric-a: checkin-stress
+          metric-b: checkin-craving
+          lag-days: 0
+        - key: daily-protein~checkin-hunger
+          category: physiology
+          label: Fiziológia
+          title: "Napi fehérje ↔ éhség"
+          mechanism: "A fehérje jól laktat — a fehérjedúsabb napokon kisebb lehet az éhség."
+          question: "Kevésbé vagy éhes a fehérjedús napokon?"
+          expected-direction: negative
+          when-positive-hu: "a fehérjedúsabb napokon {erősség} éhesebb voltál"
+          when-negative-hu: "a fehérjedúsabb napokon {erősség} kevésbé voltál éhes"
+          metric-a: daily-protein-g
+          metric-b: checkin-hunger
+          lag-days: 0
+        - key: meal-score~checkin-craving
+          category: physiology
+          label: Fiziológia
+          title: "Étkezés-pontszám ↔ sóvárgás"
+          mechanism: "A kiegyensúlyozott étkezés kisimíthatja a vércukrot — kevesebb sóvárgás jöhet."
+          question: "Kevesebbet kívánsz, ha jól eszel?"
+          expected-direction: negative
+          when-positive-hu: "a jobb étkezés-pontszámú napokon {erősség} erősebb volt a sóvárgás"
+          when-negative-hu: "a jobb étkezés-pontszámú napokon {erősség} gyengébb volt a sóvárgás"
+          metric-a: meal-score
+          metric-b: checkin-craving
+          lag-days: 0
+        - key: gym-workload~next-day-checkin-soreness
+          category: physiology
+          label: Fiziológia
+          title: "Gym-terhelésérzet ↔ másnapi izomláz"
+          mechanism: "A megterhelő edzés másnapra izomlázat hozhat — ez a klasszikus késleltetett izomfájdalom."
+          question: "Nagyobb az izomláz a kemény edzések után?"
+          expected-direction: positive
+          when-positive-hu: "a keményebb edzések után {erősség} erősebb volt az izomláz"
+          when-negative-hu: "a keményebb edzések után {erősség} gyengébb volt az izomláz"
+          metric-a: gym-workload
+          metric-b: checkin-soreness
+          lag-days: 1
+        - key: training-monotony~checkin-motivation
+          category: response
+          label: Reakció
+          title: "Edzés-monotónia ↔ motiváció"
+          mechanism: "Az egyhangú terhelés kiolthatja a kedvet — a változatosság frissen tart."
+          question: "Csökken a kedved az egyhangú edzésterheléstől?"
+          expected-direction: negative
+          when-positive-hu: "az egyhangúbb terhelésű időszakokban {erősség} több kedved volt a dolgaidhoz"
+          when-negative-hu: "az egyhangúbb terhelésű időszakokban {erősség} kevesebb kedved volt a dolgaidhoz"
+          metric-a: training-monotony
+          metric-b: checkin-motivation
+          lag-days: 0
+        - key: sleep-quality~checkin-motivation
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ motiváció"
+          mechanism: "A jó alvás a lendületben is érződhet — több kedv a napi dolgokhoz."
+          question: "Több kedved van a dolgaidhoz, ha jól aludtál?"
+          expected-direction: positive
+          when-positive-hu: "a jobb alvás után {erősség} több kedved volt a dolgaidhoz"
+          when-negative-hu: "a jobb alvás után {erősség} kevesebb kedved volt a dolgaidhoz"
+          metric-a: sleep-quality
+          metric-b: checkin-motivation
+          lag-days: 0
+        - key: social-mentions~checkin-mood
+          category: response
+          label: Reakció
+          title: "Társas említések ↔ hangulat"
+          mechanism: "A társas nap jobb hangulattal járhat."
+          question: "Jobb a hangulatod a társas napokon?"
+          expected-direction: positive
+          when-positive-hu: "a társas, több említéses napokon {erősség} jobb volt a hangulatod"
+          when-negative-hu: "a társas, több említéses napokon {erősség} rosszabb volt a hangulatod"
+          metric-a: social-mentions
+          metric-b: checkin-mood
+          lag-days: 0
+        - key: habits-done~checkin-mood
+          category: response
+          label: Reakció
+          title: "Kész szokások ↔ hangulat"
+          mechanism: "A kipipált szokások jobb hangulattal járhatnak."
+          question: "Jobb a hangulatod, ha kipipálod a szokásaid?"
+          expected-direction: positive
+          when-positive-hu: "a több kész szokással záruló napokon {erősség} jobb volt a hangulatod"
+          when-negative-hu: "a több kész szokással záruló napokon {erősség} rosszabb volt a hangulatod"
+          metric-a: habits-done
+          metric-b: checkin-mood
+          lag-days: 0
+        - key: daily-xp~checkin-mood
+          category: response
+          label: Reakció
+          title: "Napi XP ↔ hangulat"
+          mechanism: "Az aktív, pontszerző nap jobb hangulattal járhat."
+          question: "Jobb a hangulatod az aktív, pontszerző napokon?"
+          expected-direction: positive
+          when-positive-hu: "a több XP-t hozó napokon {erősség} jobb volt a hangulatod"
+          when-negative-hu: "a több XP-t hozó napokon {erősség} rosszabb volt a hangulatod"
+          metric-a: daily-xp
+          metric-b: checkin-mood
+          lag-days: 0
+        - key: checkin-mood~checkin-day
+          category: response
+          label: Reakció
+          title: "Hangulat ↔ a nap mérlege"
+          mechanism: "A pillanatnyi hangulat előre jelezheti, milyennek látod este az egész napot."
+          question: "Jobbnak látod a napot, ha közben jó a hangulatod?"
+          expected-direction: positive
+          when-positive-hu: "a jobb hangulatú napokat {erősség} jobbnak értékelted este"
+          when-negative-hu: "a jobb hangulatú napokat {erősség} rosszabbnak értékelted este"
+          metric-a: checkin-mood
+          metric-b: checkin-day
+          lag-days: 0
+        - key: meal-score~checkin-digestion
+          category: physiology
+          label: Fiziológia
+          title: "Étkezés-pontszám ↔ emésztés"
+          mechanism: "A kevésbé feldolgozott, kiegyensúlyozott étkezés (a pontszám NOVA-része) könnyebb gyomorral járhat."
+          question: "Könnyebb a gyomrod, ha jól eszel?"
+          expected-direction: positive
+          when-positive-hu: "a jobb étkezés-pontszámú napokon {erősség} könnyebb volt a gyomrod"
+          when-negative-hu: "a jobb étkezés-pontszámú napokon {erősség} nehezebb volt a gyomrod"
+          metric-a: meal-score
+          metric-b: checkin-digestion
+          lag-days: 0
+        - key: social-mentions~checkin-connection
+          category: response
+          label: Reakció
+          title: "Társas említések ↔ kapcsolódás"
+          mechanism: "Ahol több ember szerepel a napodban, ott kapcsolódottabbnak érezheted magad."
+          question: "Kapcsolódottabbnak érzed magad a társas napokon?"
+          expected-direction: positive
+          when-positive-hu: "a társas, több említéses napokon {erősség} kapcsolódottabbnak érezted magad"
+          when-negative-hu: "a társas, több említéses napokon {erősség} kevésbé érezted magad kapcsolódva"
+          metric-a: social-mentions
+          metric-b: checkin-connection
           lag-days: 0
     advisors:
       # V1.3 post-response advisor chain. S9.8 (mezo-rj214.7, mezo-rj214.5) dropped the LLM
@@ -2662,6 +2914,37 @@ mezo:
     quest-coins: 10
     all3-coins: 20
     milestone-coins: { 7: 50, 30: 150, 100: 500 }
+  # Check-in 2.0 question plan (mezo-ck2, spec §2.2–2.3). Binds onto CheckInPlanProperties and is
+  # served by GET /api/biometrics/checkin/plan — trimming a question is a config change + deploy,
+  # no frontend release. Item ids: energy mood stress body mental (the core five, always first)
+  # rested soreness pain motivation hunger craving digestion connection day.
+  checkin:
+    plan:
+      # Slot time → items asked in that slot, in ask order. Keys are bracketed so the ":" survives
+      # Spring's map-key binding. The four slot times are the app's fixed ones.
+      slots:
+        "[06:30]":
+          items: [energy, mood, stress, body, mental, rested, soreness, pain, motivation]
+        "[10:00]":
+          items: [energy, mood, stress, body, mental, motivation, hunger]
+        "[14:00]":
+          items: [energy, mood, stress, body, mental, hunger, craving, digestion]
+        "[20:00]":
+          items: [energy, mood, stress, body, mental, soreness, pain, craving, digestion, connection, day]
+      # The question of the day: one extra non-core item per check-in, not already in the slot.
+      adaptive:
+        # Share drawn uniformly at random (planned-missingness guard, so rotating series stay
+        # unbiased); the rest goes to the thinnest series some consumer is waiting on.
+        random-share: 0.2
+        # Days of history (ending the day before the check-in) counted for "thinnest series".
+        need-window-days: 14
+        # Items meaningful in one slot only: item → the only slot time it may be offered in.
+        only-in-slot:
+          rested: "06:30"
+          day: "20:00"
+        # Hungarian "why" line under "A NAP KÉRDÉSE"; {item} = the item's phrase ("az éhséged").
+        why-need: "Most azt figyeljük, hogyan alakul {item} — erről van a legkevesebb válaszod."
+        why-random: "Ma ez a véletlen kérdés — így marad kiegyensúlyozott, amit rólad tanulunk."
   # Sleep goal defaults (mezo-dbsr): the config-default "ghost" served before the user saves a goal,
   # plus the regularity band default. Binds onto SleepGoalProperties.
   sleep:
@@ -2769,6 +3052,14 @@ mezo:
       seed-set-cycle-isolation: 125
       seed-transition: 240
       seed-lead-in: 480
+    # Check-in 2.0 training readiness (mezo-ck2, spec 2026-09-27 §3.3) — binds onto
+    # ReadinessProperties. This morning's check-in suggests a lighter gym day when ANY threshold
+    # fires (scales 1..10, soreness 10 = worse). Never automatic: the user taps „Könnyítsük".
+    readiness:
+      rested-max: 4          # rested <= 4 → lighter day
+      soreness-min: 7        # soreness >= 7 → lighter day
+      motivation-max: 3      # motivation <= 3 → lighter day
+      morning-slot: "06:30"  # preferred source slot; else the day's first check-in that answered
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).

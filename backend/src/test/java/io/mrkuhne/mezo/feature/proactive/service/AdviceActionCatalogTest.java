@@ -85,6 +85,14 @@ class AdviceActionCatalogTest {
     }
 
     @Test
+    void testForCard_shouldOfferLightenTomorrow_whenPersistentPain() {
+        List<Action> actions = catalog.forCard(UUID.randomUUID(), FlagKey.PERSISTENT_PAIN);
+
+        assertThat(actions).extracting(Action::key).containsExactly(AdviceActionKey.LIGHTEN_TOMORROW);
+        assertThat(actions.get(0).params()).containsEntry("delta", -1);
+    }
+
+    @Test
     void testForCard_shouldOfferNothing_whenJointOveruseAndLightenTomorrowPortIsNotRegistered() {
         UUID user = UUID.randomUUID();
         AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, List.of());

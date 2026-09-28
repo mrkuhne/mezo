@@ -120,7 +120,7 @@ describe('the analysis tile', () => {
 })
 
 describe('discoverySummary', () => {
-  test('counts every kind, memoir included, and orders the dots as the prototype does', () => {
+  test('counts every kind, memoir included, one segment per present kind in prototype order', () => {
     const s = discoverySummary({
       patterns: [{ pairKey: 'p', title: 'P', event: 'confirmed' }],
       newFacts: [{ id: 'f', text: 'F' }],
@@ -129,46 +129,60 @@ describe('discoverySummary', () => {
       predictions: [{ id: 'x', title: 'X', status: 'pending' }],
     })
     expect(s.count).toBe(5)
-    expect(s.parts).toEqual(['1 minta', '1 új tudás', '1 életesemény', 'memoár', '1 előrejelzés'])
-    expect(s.dots).toEqual(['pattern', 'fact', 'life', 'memoir', 'prediction'])
+    expect(s.segments.map((x) => x.kind)).toEqual(['pattern', 'fact', 'life', 'memoir', 'prediction'])
+    expect(s.segments.map((x) => x.label)).toEqual(['1 minta', '1 új tudás', '1 életesemény', '1 emlékkönyv', '1 előrejelzés'])
+  })
+
+  test('a big week is a few weighted segments, never one mark per trace (mezo-p87ok)', () => {
+    const s = discoverySummary({
+      patterns: Array.from({ length: 23 }, (_, i) => ({ pairKey: `p${i}`, title: `P${i}`, event: 'confirmed' })),
+      newFacts: Array.from({ length: 6 }, (_, i) => ({ id: `f${i}`, text: `F${i}` })),
+      lifeEvents: [], memoir: false, predictions: [],
+    })
+    expect(s.count).toBe(29)
+    expect(s.segments).toEqual([
+      { kind: 'pattern', count: 23, label: '23 minta' },
+      { kind: 'fact', count: 6, label: '6 új tudás' },
+    ])
   })
 
   test('an empty (or absent) digest is a quiet week, not a zero', () => {
     expect(discoverySummary(null).count).toBe(0)
-    expect(discoverySummary(null).parts).toEqual([])
+    expect(discoverySummary(null).segments).toEqual([])
   })
 })
 
-describe('the eight mini-cells', () => {
+describe('the nine mini-cells', () => {
   const full: MeWeekAggregates = {
     score: 78, prevWeekScore: 74, avgKcal: 3004, avgProteinG: 212, avgSleepMin: 439,
-    avgCheckinEnergy: 7, checkinRatio: 0.75, latestWeightKg: 83.9, weightWeeklyRateKg: -0.3, totalXp: 585,
+    avgCheckinEnergy: 7, avgCheckinMood: 6.5, checkinRatio: 0.75, latestWeightKg: 83.9, weightWeeklyRateKg: -0.3, totalXp: 585,
   }
 
   test('render the prototype order, including the two the old UI threw away', () => {
     const cells = weekStatCells(full)
     expect(cells.map((c) => c.label)).toEqual(
-      ['Kcal átlag', 'Fehérje', 'Alvás', 'Check-in', 'Energia', 'Súly', 'Súly-trend', 'XP'],
+      ['Kcal átlag', 'Fehérje', 'Alvás', 'Check-in', 'Energia', 'Hangulat', 'Súly', 'Súly-trend', 'XP'],
     )
     expect(cells.map((c) => c.value)).toEqual(
-      ['3 004', '212', '7ó 19p', '75', '7,0', '83,9', '−0,30', '585'],
+      ['3 004', '212', '7ó 19p', '75', '7,0', '6,5', '83,9', '−0,30', '585'],
     )
     expect(cells[4].unit).toBe('/ 10')
-    expect(cells[6].unit).toBe('kg/hét')
+    expect(cells[5].unit).toBe('/ 10') // Hangulat — Check-in 2.0 (mezo-ck2), right next to Energia
+    expect(cells[7].unit).toBe('kg/hét')
   })
 
   test('missing data is „—" and NEVER a 0 — for every cell', () => {
     const empty: MeWeekAggregates = {
       score: null, prevWeekScore: null, avgKcal: null, avgProteinG: null, avgSleepMin: null,
-      avgCheckinEnergy: null, checkinRatio: null, latestWeightKg: null, weightWeeklyRateKg: null, totalXp: null,
+      avgCheckinEnergy: null, avgCheckinMood: null, checkinRatio: null, latestWeightKg: null, weightWeeklyRateKg: null, totalXp: null,
     }
     const cells = weekStatCells(empty)
-    expect(cells.map((c) => c.value)).toEqual(['—', '—', '—', '—', '—', '—', '—', '—'])
+    expect(cells.map((c) => c.value)).toEqual(['—', '—', '—', '—', '—', '—', '—', '—', '—'])
     expect(cells.every((c) => c.unit === null)).toBe(true)
   })
 
   test('a real zero is still shown as a zero (— means unknown, not empty)', () => {
-    expect(weekStatCells({ ...full, totalXp: 0 })[7].value).toBe('0')
+    expect(weekStatCells({ ...full, totalXp: 0 })[8].value).toBe('0')
   })
 
   test('huDec keeps the trailing decimal and uses the Unicode minus', () => {

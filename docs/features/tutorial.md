@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-26
+updated: 2026-09-28
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -15,6 +15,10 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 ---
 
 # Mezo-kalauz — In-App Page Guides
+
+> **2026-09-28 — Eligazítás (`mezo-mgu2r`).** The `train-session` guide (`registry/train.ts`) speaks of the new briefing: the intro card is „Előbb egy eligazítás.” (time + challenges before Indulás, then the card list), and the „Szettről szettre” card says the taken-on challenge sits on its own exercise (tap to release) instead of under the header ⋯. The `session-start` anchor lives on the briefing's top bar. Version unchanged.
+
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The Nap check-in guide's voice line (`registry/nap.ts`) now reads „Napi négy pillanatkép arról, hogy vagy: energia, hangulat, stressz, test és fej, napszaktól függően pár kérdéssel még — egy-egy gyors skálán." Nothing else changed.
 
 > One-line: per-route onboarding tutorials ("kalauz"), a five-card sheet auto-shown once per route
 > tier and reachable any time from the header "?" button, plus a first-launch welcome pager on

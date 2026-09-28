@@ -1,5 +1,6 @@
 // ============================================================
-// Mezo · NapCheckinPage — Check-in day overview (mezo-d20.2.5)
+// Mezo · NapCheckinPage — Check-in day overview (mezo-d20.2.5; Check-in 2.0 mezo-ck2:
+// answered cells, quick-exit tag, "N koppintás" hint — prototypes/elo/nap.html `checkin()`)
 // Source of truth: docs/design_2.0/prototypes/src/nap-body.html
 // #page-check (p-rose tone, px ×1.18). The day's four slots as rows
 // in ONE card: done slots carry their measured values as tinted
@@ -12,26 +13,58 @@
 // lapos sorai. A kész sor megvilágított pipája a 3D t-tick, a soron következő sor a kártyán
 // BELÜL világít (nem üveg az üvegben), a jövőbeli sor szaggatott körrel halványul.
 // ============================================================
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCheckins } from '@/data/hooks'
+import { useCheckInPlan, useCheckins } from '@/data/hooks'
+import { planSteps } from '@/data/today/checkinPlan'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
+import { CHECKIN_LOOK, answerText, answeredItems } from '@/features/today/logic/checkinItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageBody, MCells } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import type { CheckinSlot, CheckinValues } from '@/data/types'
+import { localDateString } from '@/shared/lib/dates'
+import type { CheckinSlot } from '@/data/types'
 
 /** The four canonical slots' daypart names (prototype #page-check rows). */
 const SLOT_NAMES = ['Reggel', 'Délelőtt', 'Délután', 'Este'] as const
 
-function valueCells(v: CheckinValues) {
-  return [
-    { label: 'Energia', value: v.energy, tone: 'coral' as const },
-    { label: 'Stressz', value: v.stress, tone: 'amber' as const },
-    { label: 'Testi', value: v.body, tone: 'rose' as const },
-    { label: 'Mentális', value: v.mental, tone: 'sky' as const },
-  ]
+/** Check-in 2.0 (mezo-ck2): every ANSWERED item of a done slot as a tinted mini-cell, in ask
+ *  order, the row auto-filling (prototype `cells()` / `.mcells.n`). Skipped items show nothing. */
+function AnswerCells({ slot }: { slot: CheckinSlot }) {
+  const values = slot.values
+  if (!values) return null
+  const ids = answeredItems(values, slot.askedItems)
+  if (ids.length === 0) return null
+  return (
+    <div className="mz-mcells nck-cells is-n">
+      {ids.map((id) => {
+        const d = answerText(id, values, true) ?? ''
+        return (
+          <span key={id} style={{ '--c': CHECKIN_LOOK[id].color } as CSSProperties}>
+            <b className={d.length > 3 ? 'is-t' : undefined}>{d}</b>
+            <small>{CHECKIN_LOOK[id].short}</small>
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+/** How many taps the slot's plan asks (its items + the question of the day); null until known. */
+function usePlanCount(slotTime: string): number | null {
+  const { plan } = useCheckInPlan(localDateString(), slotTime)
+  return plan ? planSteps(plan).length : null
+}
+
+function HotHint({ slotTime }: { slotTime: string }) {
+  const n = usePlanCount(slotTime)
+  return <span className="nck-hint">{n != null ? `${n} koppintás · kb. fél perc` : 'kb. fél perc'}</span>
+}
+
+function LaterSub({ slotTime }: { slotTime: string }) {
+  const n = usePlanCount(slotTime)
+  return <div className="nck-sub">később esedékes{n != null ? ` · ${n} kérdés` : ''}</div>
 }
 
 export function NapCheckinPage() {
@@ -51,7 +84,8 @@ export function NapCheckinPage() {
           <div className="nck-grow">
             <div className="nck-t">{name} · {slot.time}</div>
             {slot.note && <div className="nck-sub">{slot.note}</div>}
-            {slot.values && <MCells className="nck-cells" cells={valueCells(slot.values)} />}
+            {slot.quickExit && <span className="nck-tag">Most csak ennyi · az alap megvan</span>}
+            <AnswerCells slot={slot} />
           </div>
         </div>
       )
@@ -64,7 +98,8 @@ export function NapCheckinPage() {
             <div className="nck-t nck-rose">
               {slot.state === 'now' ? `${name} · most esedékes` : `${name} · ${slot.time}`}
             </div>
-            <div className="nck-sub">hogy vagy energiával?</div>
+            <div className="nck-sub">hogy vagy most?</div>
+            <HotHint slotTime={slot.time} />
           </div>
           <button type="button" className="nck-fill" onClick={() => setFillIdx(i)}>
             Kitöltöm
@@ -78,7 +113,7 @@ export function NapCheckinPage() {
         <span className="nck-tick is-dash" aria-hidden="true" />
         <div className="nck-grow">
           <div className="nck-t">{name} · {slot.time} körül</div>
-          <div className="nck-sub">később esedékes</div>
+          <LaterSub slotTime={slot.time} />
         </div>
       </div>
     )

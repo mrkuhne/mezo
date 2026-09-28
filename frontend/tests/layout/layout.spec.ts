@@ -672,6 +672,58 @@ for (const [name, path] of NAPOM_ROUTES) {
   })
 }
 
+// ── Check-in 2.0 (mezo-ck2): the page's answered cells and the sheet's steps at 320px ─────────
+// The mock day: a full morning (10 cells, one of them text — „Térd 4"), a quick-exit late
+// morning, the afternoon due now. The sheet walks the afternoon plan: the craving kinds row, then
+// the summary's two-column cells. Invariant: nothing forces a horizontal scroll, and the cells stay
+// inside their card / sheet.
+test('Check-in 2.0 · the page cells and the sheet stay contained @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.clock.setFixedTime(new Date('2026-05-21T14:10:00'))
+  await page.goto('/nap/checkin')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
+
+  await expect(page.locator('.nck-cells').first()).toBeVisible()
+  expect(await fits()).toBe(true)
+  const cellsInside = await page.evaluate(() => Array.from(document.querySelectorAll('.nck-cells')).every((row) => {
+    const card = row.closest('.nck-card')!.getBoundingClientRect()
+    return Array.from(row.children).every((c) => {
+      const r = c.getBoundingClientRect()
+      return r.left >= card.left - 0.5 && r.right <= card.right + 0.5
+    })
+  }))
+  expect(cellsInside).toBe(true)
+  await expect(page.getByText('Most csak ennyi · az alap megvan')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Kitöltöm' }).click()
+  await expect(page.getByText('01 / 09 · ENERGIA · ALAP')).toBeVisible()
+  for (let i = 0; i < 6; i++) {
+    const label = await page.locator('.capture-stepl').textContent()
+    await page.getByRole('button', { name: '5', exact: true }).click()
+    await expect(page.locator('.capture-stepl')).not.toHaveText(label ?? '')
+  }
+  await page.getByRole('button', { name: '6', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Bármit' })).toBeVisible()
+  expect(await fits()).toBe(true)
+  const sheetInside = async (selector: string) => page.evaluate((sel) => {
+    const sheet = document.querySelector('.capture-sheet')!.getBoundingClientRect()
+    return Array.from(document.querySelectorAll(sel)).every((el) => {
+      const r = el.getBoundingClientRect()
+      return r.left >= sheet.left - 0.5 && r.right <= sheet.right + 0.5
+    })
+  }, selector)
+  expect(await sheetInside('.ck-chips .chip, .capture-scale-cell, .capture-stepnav button')).toBe(true)
+  await page.getByRole('button', { name: /Tovább/ }).click()
+  while (!(await page.getByText(/Mentés · 14:00/).isVisible())) {
+    await page.getByRole('button', { name: /Kihagyom/ }).click()
+  }
+  await expect(page.locator('.ck-sum')).toHaveCount(9)
+  expect(await sheetInside('.ck-sum')).toBe(true)
+  expect(await fits()).toBe(true)
+})
+
 // ── Shell header tail (mezo-rqa9s): the dark chrome made `.app-head-bg` an OPAQUE canvas
 // slab and dropped the fade mask (mezo-x4r3c), but kept the light-mode 18px fade tail
 // (`height: calc(100% + 18px)`). Unmasked and opaque, the tail is a solid bar that
@@ -720,4 +772,66 @@ test('the dark shell header background does not overpaint the page top at rest',
     ).toBeLessThanOrEqual(probe.contentTop)
   }
   expect(clearAtRest || probe.bgBottom <= probe.contentTop).toBe(true)
+})
+
+// ── Check-in 2.0 · „Mai állapot" on Edzés · Mai (mezo-ck2), at 320px ────────────────────────────
+// The readiness card sits right under the gym hero: its reason chips, the care row and both
+// pills must wrap inside the card at the narrowest phone, never push the page sideways.
+test('Edzés Mai · the readiness card stays contained and its taps are reachable @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.clock.setFixedTime(new Date('2026-05-21T08:42:00')) // a Thursday — the mock Pull day
+  await page.goto('/train/mai')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  const card = page.locator('.trd')
+  await card.scrollIntoViewIfNeeded()
+  await expect(card).toBeVisible()
+  const box = await page.evaluate(() => {
+    const el = document.querySelector('.trd') as HTMLElement
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const r = el.getBoundingClientRect()
+    const children = Array.from(el.querySelectorAll('.trd-chip, .trd-care, .trd-pill')) as HTMLElement[]
+    return {
+      cardOverflow: el.scrollWidth - el.clientWidth,
+      pageOverflow: sc.scrollWidth - sc.clientWidth,
+      right: r.right,
+      viewport: window.innerWidth,
+      childrenOutside: children.filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length,
+    }
+  })
+  expect(box.cardOverflow).toBeLessThanOrEqual(1)
+  expect(box.pageOverflow).toBeLessThanOrEqual(1)
+  expect(box.right).toBeLessThanOrEqual(box.viewport)
+  expect(box.childrenOutside).toBe(0)
+  await expect(page.getByRole('button', { name: 'Könnyítsük' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Maradjon a terv' })).toBeVisible()
+})
+
+// Eligazítás (mezo-mgu2r): the briefing and the list after Indulás stay horizontally contained at
+// the narrowest phone, and the floating Indulás foot sits at the bottom of the frame, not above
+// the scroller's tab-bar padding (the first build's sticky foot floated ~130px up).
+test('train · the Eligazítás and the list after Indulás stay contained at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/train/session')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  const start = page.getByRole('button', { name: /^Indulás/ })
+  await expect(start).toBeVisible()
+
+  const brief = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const foot = document.querySelector('.wbr-foot') as HTMLElement
+    return { scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth, footGap: Math.round(innerHeight - foot.getBoundingClientRect().bottom) }
+  })
+  expect(brief.scrollWidth).toBeLessThanOrEqual(brief.clientWidth + 1)
+  expect(brief.footGap).toBeLessThanOrEqual(40)
+
+  await start.click()
+  await expect(page.locator('.wo-list')).toBeVisible()
+  const list = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    return { scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth }
+  })
+  expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth + 1)
 })

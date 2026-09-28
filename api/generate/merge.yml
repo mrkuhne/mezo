@@ -8,6 +8,7 @@ inputs:
   - inputFile: ../feature/sleep/sleep.yml
   - inputFile: ../feature/checkin/checkin.yml
   - inputFile: ../feature/train/train.yml
+  - inputFile: ../feature/train/train-readiness.yml
   - inputFile: ../feature/goal/goal.yml
   - inputFile: ../feature/biometrics-profile/biometrics-profile.yml
   - inputFile: ../feature/pantry/pantry.yml

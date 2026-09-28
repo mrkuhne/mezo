@@ -144,6 +144,10 @@ public class MeWeekService {
                 .checkinCount(checkins.size())
                 .checkinEnergyAvg(average(checkins.stream()
                         .map(CheckInEntity::getEnergy).filter(java.util.Objects::nonNull).toList()))
+                // Check-in 2.0 (mezo-ck2, spec §3.11): a hangulat az energia mellett — csak a
+                // MEGVÁLASZOLT tételek átlaga; a kihagyott slot nem 0, hanem nem számít.
+                .checkinMoodAvg(average(checkins.stream()
+                        .map(CheckInEntity::getMood).filter(java.util.Objects::nonNull).toList()))
                 .workoutCount((int) workoutCount)
                 .xp(xp != null ? (int) Math.round(xp) : null)
                 .build();
@@ -172,6 +176,7 @@ public class MeWeekService {
         List<MeWeekDay> fuelDays = days.stream().filter(d -> d.getKcal() != null).toList();
         List<MeWeekDay> sleepDays = days.stream().filter(d -> d.getSleepMin() != null).toList();
         List<MeWeekDay> checkinEnergyDays = days.stream().filter(d -> d.getCheckinEnergyAvg() != null).toList();
+        List<MeWeekDay> checkinMoodDays = days.stream().filter(d -> d.getCheckinMoodAvg() != null).toList();
 
         int elapsedDays = elapsedDays(start, end);
         int filledSlots = days.stream().mapToInt(MeWeekDay::getCheckinCount).sum();
@@ -195,6 +200,8 @@ public class MeWeekService {
                         .map(d -> BigDecimal.valueOf(d.getSleepMin())).toList()))
                 .avgCheckinEnergy(averageDecimal(checkinEnergyDays.stream()
                         .map(MeWeekDay::getCheckinEnergyAvg).toList()))
+                .avgCheckinMood(averageDecimal(checkinMoodDays.stream()
+                        .map(MeWeekDay::getCheckinMoodAvg).toList()))
                 .checkinRatio(elapsedDays > 0
                         ? BigDecimal.valueOf(filledSlots)
                             .divide(BigDecimal.valueOf((long) CANONICAL_CHECKIN_SLOTS * elapsedDays), 4, RoundingMode.HALF_UP)

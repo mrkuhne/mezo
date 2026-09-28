@@ -135,7 +135,7 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         assertThat(day.rules().get(ruleCount - 1).flagKey()).isEqualTo(FlagKey.ALL_HEALTHY);
         assertThat(day.rules().stream()
             .filter(r -> r.flagKey().equals(FlagKey.LATE_EATING)).findFirst().orElseThrow().rank())
-            .isEqualTo(9);
+            .isEqualTo(expectedRank(FlagKey.LATE_EATING));
     }
 
     @Test
@@ -189,7 +189,7 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         assertThat(day.winner()).isNotNull();
         assertThat(day.winner().flagKey()).isEqualTo(FlagKey.SLEEP_DEBT);
         assertThat(day.winner().cardId()).isEqualTo(cardId);
-        assertThat(day.winner().rank()).isEqualTo(6);
+        assertThat(day.winner().rank()).isEqualTo(expectedRank(FlagKey.SLEEP_DEBT));
         Map<String, FlagTraceReadService.RuleState> byKey = day.rules().stream()
             .collect(java.util.stream.Collectors.toMap(
                 FlagTraceReadService.RuleState::flagKey, r -> r));
@@ -402,5 +402,14 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         assertThat(byKey.get(FlagKey.SLEEP_DEBT).cardOutcome()).isEqualTo("won");
         assertThat(byKey.get(FlagKey.LATE_EATING).outcome()).isEqualTo("raised");
         assertThat(byKey.get(FlagKey.LATE_EATING).cardOutcome()).isNull();
+    }
+
+    /** 1-based position among the catalog's rules in AdvicePriority order — derived, so a new
+     *  rule (check-in 2.0 added four) does not shift a hard-coded rank. */
+    private static int expectedRank(String flagKey) {
+        java.util.List<String> ordered = new java.util.ArrayList<>(FlagCatalog.KEYS);
+        ordered.sort(java.util.Comparator.comparingInt(
+            io.mrkuhne.mezo.feature.proactive.service.AdvicePriority::rankOf));
+        return ordered.indexOf(flagKey) + 1;
     }
 }
