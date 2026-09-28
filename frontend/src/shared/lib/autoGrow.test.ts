@@ -45,4 +45,13 @@ describe('autoGrow', () => {
     el.dispatchEvent(new Event('input', { bubbles: true }))
     expect(el.style.height).toBe('120px')
   })
+
+  it('resizes when code writes the value (dictation, prefill) — no typing needed', async () => {
+    installAutoGrow()
+    const el = field(40, 150)
+    el.value = 'hosszú diktált szöveg'
+    expect(el.value).toBe('hosszú diktált szöveg')
+    await new Promise(r => requestAnimationFrame(() => r(null)))
+    expect(el.style.height).toBe('150px')
+  })
 })

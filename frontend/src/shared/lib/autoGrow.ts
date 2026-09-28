@@ -44,7 +44,27 @@ export function autoGrow(el: HTMLTextAreaElement): void {
 
 let installed = false
 
-/** Installs the app-wide listener once: typing, pasting or focusing a textarea resizes it. */
+const pending = new Set<HTMLTextAreaElement>()
+let flushQueued = false
+
+function queue(el: HTMLTextAreaElement): void {
+  pending.add(el)
+  if (flushQueued) return
+  flushQueued = true
+  requestAnimationFrame(() => {
+    flushQueued = false
+    const els = [...pending]
+    pending.clear()
+    els.forEach(autoGrow)
+  })
+}
+
+/**
+ * Installs the app-wide behaviour once. Typing, pasting or focusing a textarea resizes it, and
+ * so does any value written by code (dictation, a prefilled draft, a cleared field after send):
+ * React writes a controlled textarea through the native `value` setter, which is wrapped here to
+ * queue a resize for the next frame — no screen has to remember to call anything.
+ */
 export function installAutoGrow(): void {
   if (installed || typeof document === 'undefined') return
   installed = true
@@ -53,4 +73,18 @@ export function installAutoGrow(): void {
   }
   document.addEventListener('input', onEvent, true)
   document.addEventListener('focusin', onEvent, true)
+
+  const proto = HTMLTextAreaElement.prototype
+  const desc = Object.getOwnPropertyDescriptor(proto, 'value')
+  if (desc?.set && desc.get && desc.configurable) {
+    const { get, set } = desc
+    Object.defineProperty(proto, 'value', {
+      ...desc,
+      get,
+      set(this: HTMLTextAreaElement, v: string) {
+        set.call(this, v)
+        queue(this)
+      },
+    })
+  }
 }
