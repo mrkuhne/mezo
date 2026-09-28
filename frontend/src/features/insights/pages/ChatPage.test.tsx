@@ -305,11 +305,47 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByText('demo beszélgetés')).toBeInTheDocument()
     expect(document.querySelector('.mzc-hstat')).toHaveAttribute('data-st', 'demo')
   })
+
+  test('S8: a sent turn shows its memory chips and the answer its Emlékszem line (mezo-d6ivw.12)', async () => {
+    renderPage()
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Dórival és Bencével nyertünk!' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(await screen.findByText('Megjegyezném:', {}, { timeout: 4000 })).toBeInTheDocument()
+    expect(screen.getByText('Megjegyeztem:')).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Mit vettem elő róluk' }).at(-1)!)
+    expect(await screen.findByText('Ezt vettem elő a válaszhoz')).toBeInTheDocument()
+    expect(screen.getByText('ő szervezi a szombati edzéseket')).toBeInTheDocument()
+  })
+
+  test('S8: opening a conversation shows no turn chips — only this session\'s turns get them', () => {
+    renderPage()
+    expect(screen.queryByText('Megjegyeztem:')).not.toBeInTheDocument()
+    expect(screen.queryByText('Megjegyezném:')).not.toBeInTheDocument()
+  })
 })
 
 describe('ChatPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
+
+  test('S8: the chips anchor on the done event\'s turnUserMessageId (mezo-d6ivw.12)', async () => {
+    const asked: string[] = []
+    server.use(http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, ({ request }) => {
+      asked.push(new URL(request.url).searchParams.get('messageId') ?? '')
+      return HttpResponse.json({
+        learned: [{ id: 'pf-1', personId: 'p-1', personName: 'Dóri', kind: 'preference', text: 'szereti a teát', createdAt: '2026-09-26T20:05:00Z' }],
+        proposed: [], forgotten: [],
+      })
+    }))
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Dórival voltam' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    expect(await screen.findByText(/szereti a teát/, {}, { timeout: 4000 })).toBeInTheDocument()
+    expect(asked[0]).toBe('msg-user-done')
+  })
 
   test('loads the history from the backend', async () => {
     renderPage()

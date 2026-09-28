@@ -1,4 +1,5 @@
 import type { ChatRecalledMemory } from '@/data/types'
+import { isForgetRequest } from '@/data/insights/forgetIntent'
 import type { MemoryItem, TurnLearned, TurnMemory, TurnProposed } from '@/data/insights/turnMemoryApi'
 
 /** S8 (mezo-d6ivw.12) demo seed — all four chip variants (lesson 16: mock anchors are
@@ -35,12 +36,6 @@ export const MOCK_PERSON_RECALL: ChatRecalledMemory[] = [
   { kind: 'person', label: 'Bence', gist: 'az egyetem óta ismeritek\nő szervezi a szombati edzéseket', similarity: 1 },
 ]
 
-/** Mock-only echo of the backend ForgetIntent — just enough to route the demo. */
-export function looksLikeForget(text: string): boolean {
-  const f = text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
-  return !/ne felejtsd el/.test(f) && /ne jegyezd meg|felejtsd el|ne mentsd|ne tarold/.test(f)
-}
-
 export function mockTurnMemory(ordinal: number, text: string): TurnMemory {
-  return looksLikeForget(text) ? MOCK_FORGOTTEN_TURN : MOCK_TURN_MEMORY[ordinal % MOCK_TURN_MEMORY.length]
+  return isForgetRequest(text) ? MOCK_FORGOTTEN_TURN : MOCK_TURN_MEMORY[ordinal % MOCK_TURN_MEMORY.length]
 }
