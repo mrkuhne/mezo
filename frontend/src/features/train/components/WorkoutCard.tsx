@@ -44,7 +44,7 @@ import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MedalChip } from '@/features/train/components/MedalChip'
-import { progressionChip } from '@/features/train/logic/progressionChip'
+import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
 import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import { Icon3D } from '@/shared/ui/clay'
 import {
@@ -133,9 +133,11 @@ export function WorkoutCard({
   // FIRST-EVER exercise (no lastWeek to compare — the banner's left cell is an em dash):
   // there the rationale explains the starting choice, so it keeps that one slot. The real
   // coaching cue arrives with its own field (mezo-b516k's cue work).
+  // mezo-bk7sn: a target past the range top (reps before a too-big weight jump) carries its
+  // reason in the same slot — "13" in a 10–12 range is not self-explaining.
   const cue = exercise.lastWeek == null
     ? (exercise.rationale ?? exercise.progression?.rationale ?? null)
-    : null
+    : overflowWhy(exercise.repMax, exercise.progression)
 
   // The draft for the ONE editable row (the cursor slot). Reset whenever the cursor
   // moves or the slot count changes — a removeSet splices the prescription, so the

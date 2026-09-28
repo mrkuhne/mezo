@@ -852,7 +852,7 @@ export const workout: WorkoutPlan = {
   title: 'Pull Day',
   tag: 'Week 3 · MAV',
   durationEst: 78,
-  overloadSummary: { weightUp: 2, weightDown: 1, repUp: 1, hold: 0 },
+  overloadSummary: { weightUp: 2, weightDown: 0, repUp: 2, hold: 0 },
   exercises: [
     {
       id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
@@ -906,15 +906,16 @@ export const workout: WorkoutPlan = {
       sets: 4,
       imageStartUrl: '/exercises/hammer-curl-a.jpg',
       imageEndUrl: '/exercises/hammer-curl-b.jpg',
-      rationale: 'Múlt hét 11 × 18 kg → cél 12 ism.',
+      rationale: 'A 17,5 kg +17% ugrás lenne → előbb 13 ismétlés 15 kg-mal',
       prescribedSets: [
-        { kind: 'warmup', targetWeightKg: 12.5, targetReps: 4, targetRIR: null },
-        { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
-        { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
-        { kind: 'working', targetWeightKg: 18, targetReps: 12, targetRIR: 1 },
+        { kind: 'warmup', targetWeightKg: 10, targetReps: 4, targetRIR: null },
+        { kind: 'working', targetWeightKg: 15, targetReps: 13, targetRIR: 1 },
+        { kind: 'working', targetWeightKg: 15, targetReps: 13, targetRIR: 1 },
+        { kind: 'working', targetWeightKg: 15, targetReps: 13, targetRIR: 1 },
       ],
-      lastWeek: { weight: 18, reps: 11, rir: 1 },
-      progression: { lever: 'weight', deltaKg: -2.5, deltaReps: null, targetWeightKg: 15.5, targetReps: 10, rationale: 'Múlt hét 11 × 18 kg grind volt, visszavesszük: −2,5 kg' },
+      lastWeek: { weight: 15, reps: 12, rir: 1 },
+      // mezo-bk7sn: the next real dumbbell (17,5) is +17 % — reps past the range top come first
+      progression: { lever: 'rep', deltaKg: null, deltaReps: 1, targetWeightKg: 15, targetReps: 13, rationale: 'A 17,5 kg +17% ugrás lenne → előbb 13 ismétlés 15 kg-mal' },
     },
     {
       id: 'ex5', name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation',

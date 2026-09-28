@@ -26,6 +26,18 @@ function renderBriefing(over: Partial<WorkoutBriefingProps> = {}) {
 }
 
 describe('WorkoutBriefing', () => {
+  it('explains a target past the range top, and only there (mezo-bk7sn)', () => {
+    renderBriefing({
+      exercises: [
+        { id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 9', chip: { text: '↑ +2,5 kg', tone: 'up' }, why: null },
+        { id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', sets: 3, goal: '15 × 13', chip: { text: '↑ +1 ism.', tone: 'up' },
+          why: 'A 17,5 kg +17% ugrás lenne → előbb 13 ismétlés 15 kg-mal' },
+      ],
+    })
+    expect(screen.getByText('A 17,5 kg +17% ugrás lenne → előbb 13 ismétlés 15 kg-mal')).toBeInTheDocument()
+    expect(document.querySelectorAll('.wbr-row-why')).toHaveLength(1)
+  })
+
   it('shows the duration band and the counts', () => {
     renderBriefing()
     expect(screen.getByLabelText(/várható időtartam/)).toHaveTextContent('70–85perc')

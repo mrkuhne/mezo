@@ -35,7 +35,7 @@ import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/
 import { ChallengeDetailGlass, WorkoutMenuGlass, WorkoutVideoGlass, type ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import { WorkoutBriefing } from '@/features/train/components/WorkoutBriefing'
 import { briefingDecisions, durationRange, preTicked } from '@/features/train/logic/briefing'
-import { progressionChip } from '@/features/train/logic/progressionChip'
+import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
 import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
 import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
 import { recordFor } from '@/features/train/logic/recordFor'
@@ -904,6 +904,7 @@ function ActiveWorkoutSession({
           sets: effectiveSetCount(session, e.id),
           goal: goalOf(e),
           chip: e.progression ? progressionChip(e.progression) : null,
+          why: overflowWhy(e.repMax, e.progression),
         }))}
         onBack={onExit}
         onStart={handleStart}

@@ -74,29 +74,30 @@ class WorkoutWeightGapIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetToday_shouldMoveAWeightBumpOffAKnownGap_withEquivalentReps() {
+    void testGetToday_shouldStepOverAKnownGap_withEquivalentReps() {
         UUID owner = ownerId();
         var meso = train.createActiveMeso(owner);
         String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
         var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
         var last = train.createWorkoutInstance(owner, day, LocalDate.now().minusDays(7), "completed");
-        train.createLoggedSet(owner, ex.getId(), last.getId(), 0, "60", 8, 0); // top of 6–8 → +5 → 65
-        gap(owner, ex, "65");
+        train.createLoggedSet(owner, ex.getId(), last.getId(), 0, "60", 8, 0); // top of 6–8 → 62.5 wanted
+        gap(owner, ex, "62.5");
 
         WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         var te = res.getExercises().get(0);
-        // 65 × 6 @ RIR 0 → e1RM 78 → 7 reps at 62.5 (inside 6–8); 60 is the reference, never a target.
+        // 62.5 is missing on the machine → the next real weight 65 (+8 %, inside the cap);
+        // 60 × 8 @ RIR 0 → e1RM 76 → 5 equal-effort reps at 65, clamped up to repMin 6.
         assertThat(te.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.WEIGHT);
-        assertThat(te.getProgression().getTargetWeightKg()).isEqualByComparingTo("62.5");
-        assertThat(te.getProgression().getTargetReps()).isEqualTo(7);
-        assertThat(te.getProgression().getDeltaKg()).isEqualByComparingTo("2.5");
-        assertThat(te.getRationale()).contains("65 kg nincs a gépen → 62.5 kg");
+        assertThat(te.getProgression().getTargetWeightKg()).isEqualByComparingTo("65");
+        assertThat(te.getProgression().getTargetReps()).isEqualTo(6);
+        assertThat(te.getProgression().getDeltaKg()).isEqualByComparingTo("5");
+        assertThat(te.getRationale()).contains("+5 kg (+8%)");
         assertThat(te.getPrescribedSets()).filteredOn(s -> s.getKind() == PrescribedSet.KindEnum.WORKING)
             .allSatisfy(s -> {
-                assertThat(s.getTargetWeightKg()).isEqualByComparingTo("62.5");
-                assertThat(s.getTargetReps()).isEqualTo(7);
+                assertThat(s.getTargetWeightKg()).isEqualByComparingTo("65");
+                assertThat(s.getTargetReps()).isEqualTo(6);
             });
         assertThat(res.getOverloadSummary().getWeightUp()).isEqualTo(1);
     }
