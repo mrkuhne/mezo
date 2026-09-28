@@ -195,16 +195,20 @@ Brainstorm 2026-09-28 (recon: researcher + investigator). Owner answers in bold.
    "Kihagyom" (past: "Kihagytam"); the Heti agenda shows skipped rows muted. The Nap timeline,
    day orb, notifications and Fuel week keep **hiding** a skipped occurrence (they plan the
    day; unchanged behaviour, now for gym too).
-10. **Two new sprite icons:** `t-ill` (thermometer) for ILLNESS, `t-travel` (suitcase) for
+10. **Running sessions are in S1 too** (owner, 2026-09-28, after the prototype: "igen"): a
+    prescribed run of the active running block gets the same "Kihagyom / Kihagytam" and
+    counting rule; kind `RUN`, keyed by `(date, session_key)`.
+11. **Prototype + icons approved** (owner, 2026-09-28: "tetszik"). **Two new sprite icons:** `t-ill` (thermometer) for ILLNESS, `t-travel` (suitcase) for
     TRAVEL; the rest reuse `t-digestion, t-pain, t-rested, t-clock, t-mood, t-other`, the
     button uses `t-skip`.
 
 ### 8.2 Architecture
 - **One table `planned_skip`** (Liquibase, `1.1.0`): `id, created_by, is_deleted, created_at,
-  updated_at, date, kind (GYM|SPORT), day_of_week smallint null (0=Hét..6=Vas, SPORT only),
-  time varchar(5) null (SPORT only), reason_category varchar + CHECK, reason_text text null`;
-  partial unique index `(created_by, kind, date, coalesce(day_of_week,-1), coalesce(time,''))
-  where is_deleted = false`, plus `source varchar (USER|ADVICE)`. A data changeset copies the
+  updated_at, date, kind (GYM|SPORT|RUN), day_of_week smallint null (0=Hét..6=Vas, SPORT only),
+  time varchar(5) null (SPORT only), session_key varchar(64) null (RUN only), reason_category varchar + CHECK, reason_text text null`;
+  partial unique index `(created_by, kind, date, coalesce(day_of_week,-1), coalesce(time,''),
+  coalesce(session_key,''))`
+  `where is_deleted = false`, plus `source varchar (USER|ADVICE)`. A data changeset copies the
   live `sport_slot_skip` rows in as `SPORT / NONE / source=ADVICE`. Advice skips are always
   excused (the coach proposed them). After the copy `SportSlotSkipService` becomes a facade
   over `PlannedSkipService` (signatures kept, so the advice writer and the 5 backend readers
@@ -214,7 +218,7 @@ Brainstorm 2026-09-28 (recon: researcher + investigator). Owner answers in bold.
   `excusedDates…` via `PlannedSkipPolicy`. Every consumer in §6 + the recon list goes through
   it; S2's kímélő range extends this same service ("protected" dates), S3 adds `MEAL`.
 - **API** (fragment `api/feature/train/train-skip.yml`): `GET /api/train/skips?from&to`,
-  `PUT /api/train/skips` (upsert `{date, kind, dayOfWeek?, time?, reasonCategory, reasonText?}`
+  `PUT /api/train/skips` (upsert `{date, kind, dayOfWeek?, time?, sessionKey?, reasonCategory, reasonText?}`
   → skip DTO incl. `excused`, `freePass`), `DELETE /api/train/skips/{id}` (undo). The old
   `GET /api/train/sport-slot-skips` stays (facade) until its FE readers migrate in this slice.
 - **Gym "planned" callers** get a skip-aware path (`findPlannedTemplateForDate` itself stays

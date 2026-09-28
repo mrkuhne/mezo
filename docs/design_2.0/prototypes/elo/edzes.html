@@ -3088,7 +3088,7 @@ function readyCard(){
 
 /* ── Kihagyás S1 · kihagyás gomb + „Miért?” ablak ───────── */
 const CATS=[['ILLNESS','ill','Beteg vagyok',1],['STOMACH','digestion','Gyomorrontás',1],['INJURY','pain','Sérülés / fájdalom',1],['TRAVEL','travel','Úton vagyok',1],['TIRED','rested','Fáradt vagyok',0],['NO_TIME','clock','Nincs időm',0],['NO_MOOD','motivation','Nincs kedvem',0],['OTHER','other','Egyéb',0]];
-const SKT={gym:['Pull Day','MA 07:30 · GYM'],volley:['Röpi edzés · BVSC','MA 18:00 · RÖPI'],sze:['Leg Day','SZEPT 23. · GYM']};
+const SKT={gym:['Pull Day','MA 07:30 · GYM'],volley:['Röpi edzés · BVSC','MA 18:00 · RÖPI'],sze:['Leg Day','SZEPT 23. · GYM'],run:['Sprint-intervallum','TEGNAP 18:00 · FUTÁS']};
 const CARE={ILLNESS:'Jobbulást!',STOMACH:'Jobbulást!',INJURY:'Kíméld magad.',TRAVEL:'Jó utat!'};
 let SK={},SKORD=[],WHYK=null;
 const catOf=k=>CATS.find(c=>c[0]===SK[k].cat);
@@ -3146,9 +3146,9 @@ function mai(v){
     <article class="sess glass rise ${SK.volley?'is-skip':''}" style="--c:var(--rose);--i:2"><div class="sess-top"><span class="well" style="--c:var(--rose)">${I('volley')}</span><span class="grow"><span class="tagl">RÖPI<em>18:00</em><span class="st ${SK.volley?'skip':''}">${SK.volley?'KIHAGYVA':'TERVEZETT'}</span></span><strong>Röpi edzés · BVSC</strong></span></div>
       <div class="facts"><span class="flat">90 perc</span><span class="flat">feladó</span><span class="flat">BVSC csarnok</span></div>
       ${SK.volley?skBlock('volley',true):`<div class="cta"><button class="pillx rghost" data-skip="volley">${I('skip')}Kihagyom</button><button class="pillx" data-sheet="sportlog">Logold a session-t ›</button></div>`}</article>
-    <article class="sess glass rise" style="--c:var(--sky);--i:3"><div class="sess-top"><span class="well" style="--c:var(--sky)">${I('run')}</span><span class="grow"><span class="tagl">FUTÁS<em>tegnap · 18:00</em><span class="st">ELMARADT</span></span><strong>Sprint-intervallum</strong></span></div>
+    <article class="sess glass rise ${SK.run?'is-skip':''}" style="--c:var(--sky);--i:3"><div class="sess-top"><span class="well" style="--c:var(--sky)">${I('run')}</span><span class="grow"><span class="tagl">FUTÁS<em>tegnap · 18:00</em><span class="st ${SK.run?'skip':'miss'}">${SK.run?'KIHAGYVA':'ELMARADT'}</span></span><strong>Sprint-intervallum</strong></span></div>
       <div class="facts"><span class="flat">RPE 9–10</span><span class="flat">6 kör</span></div>
-      <div class="cta"><button class="pillx" style="--c:var(--sky)" data-sheet="runlog">Pótold ›</button></div></article>
+      ${SK.run?skBlock('run',true):`<div class="cta"><button class="pillx rghost" data-skip="run">${I('skip')}Kihagytam</button><button class="pillx" style="--c:var(--sky)" data-sheet="runlog">Pótold ›</button></div>`}</article>
   </section>
   <div class="gap"></div>
   <section class="p16"><article class="energy glass rise" style="--i:4"><div class="chead">${I('flame')}<span><span class="eb">A MAI KERETEDHEZ</span><h3>Amit a mozgásod hozzáad</h3></span></div>
