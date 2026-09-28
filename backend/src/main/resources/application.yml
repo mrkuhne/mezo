@@ -918,6 +918,11 @@ mezo:
       # V3.3: pattern-facts promoted within this many days get an in-chat acknowledgment
       # block ("ezt megtanultam rólad"); 0 = off
       pattern-ack-days: 3
+    # S8 (mezo-d6ivw.12): one-shot rewrite of title-only pattern facts into full sentences.
+    # "off" | dry-run | apply — QUOTED: a bare off is YAML boolean false. Prod flips it for one
+    # deploy via MEZO_COMPANION_FACTTEXTBACKFILL_MODE; apply only after the owner's OK.
+    fact-text-backfill:
+      mode: "off"
     # Spec 2026-09-16 (mezo-rj214.7): a turn's gear decides how much thinking it earns.
     # The gear never decides WHICH MODEL plans — the smart tier always does.
     turn:
