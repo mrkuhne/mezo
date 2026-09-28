@@ -10,7 +10,7 @@ the same link. The rules are in [`CLAUDE.md`](../../../../CLAUDE.md) §Frontend 
 |---|---|---|---|
 | Nap | `nap.html` | — (not seeded yet) | — |
 | Edzés | `edzes.html` | — (not seeded yet) | — |
-| Fuel | `fuel.html` | https://claude.ai/artifact/EpY5UcqEy9F8sTsboqw43x | 2026-09-27 |
+| Fuel | `fuel.html` | https://claude.ai/artifact/EpY5UcqEy9F8sTsboqw43x | 2026-09-28 |
 | Mezo | `mezo.html` | — (not seeded yet) | — |
 | Én | `en.html` | — (not seeded yet) | — |
 

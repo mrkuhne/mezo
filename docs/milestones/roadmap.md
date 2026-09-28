@@ -59,6 +59,22 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-28 — Tanuló energiaigény 2. rész: heti összegző, „Hogy tanultam?" oldal, napi
+  jelölés, kapcsoló (`mezo-3n2so`, `mezo-zz91i` folytatása).** Az 1. részben csendben tanuló
+  napi energiaigény mostantól látható és javítható. Heti egyszer, csak ha van mit mondani, egy
+  finom pont jelenik meg a Fuel Mai oldalon, amely egy lap mögött megmutatja mi változott és
+  miért; bármelyik nap egy koppintással megjelölhető teljesnek/hiányosnak — a hét és minden
+  utána következő hét azonnal újraszámol; egy kapcsoló a Finomhangolásban kiveheti a tanulást a
+  napi keretből; egy önálló oldal (`/fuel/tanulas`) heti bontásban mutatja a teljes tanulási
+  történetet. Backend: `intake_day_mark` tábla + azonnali újraláncolás, `diet_settings.
+  learning_enabled` kapcsoló, öt új végpont, heti értesítés a hétfői futásból. Frontend: a heti
+  pont + lap, a tanulási oldal (történeti grafikon, utolsó 14 nap kapcsolókkal), a napi jelölés
+  sor a naplóban, a beállítás-kapcsoló. Élő prototípus szinkronban: [`fuel.html`](../design_2.0/prototypes/elo/fuel.html).
+  Elmaradt: a Profil TDEE-kártya továbbra is a képlet szerinti alapot mutatja tanulónál is
+  (`mezo-qnsl9`, külön követve — ArchUnit-tár regenerálást igényel). Spec:
+  [`2026-09-27-learned-expenditure-part2-design`](../superpowers/specs/2026-09-27-learned-expenditure-part2-design.md).
+  Dokumentáció: [`goal-engine.md`](../features/goal-engine.md) §3 · [`fuel.md`](../features/fuel.md) §2.
+
 - **2026-09-27 — Indítókép: töltődés + keringés (`mezo-1dxhp`).** A 3 másodperces indítókép
   üveggömbje élő lett: a lila folyadék végig töltődik ~70%-ig (a kivezetésre áll meg), közben öt
   Titán-ikon (nap, súlyzó, tál, vízcsepp, hold) egyesével felvillan körülötte és körben kering, a

@@ -3149,7 +3149,7 @@ SH.weekly=['var(--sage)',()=>{
     ${LS.card==='lepett'?`<p class="wc-why">A súlyod lassabban nőtt, mint amit a felírt evés alapján vártam.</p>`:''}
     ${hold?`<p class="wc-why">Kevés adat volt: <b>3 teljes nap, 1 mérlegelés</b> — legalább 4 és 2 kell. A keret nem változott.</p>`:''}
     <div class="wc-days"><span class="eb">KIHAGYOTT NAPOK</span>${days.map(d=>{const [st,cls]=STATUS(d);return `<div class="wc-day">${I(isOn(d)?'tick':'shield')}<span class="grow"><strong>${huWD(d.iso)}</strong><small>${kc(d.kcal)} kcal · <em class="st-${cls}">${st}</em></small></span>
-      ${d.mark?`<button class="qbtn" data-unmark="${d.iso}">Visszavonom</button>`:`<button class="qbtn on" data-mark="${d.iso}|1">Teljes volt</button>`}</div>`}).join('')}
+      ${d.mark?`<button class="qbtn" data-unmark="${d.iso}">Visszavonom</button>`:d.rule==='usable'?`<button class="qbtn" data-mark="${d.iso}|0">Hiányos volt</button>`:`<button class="qbtn on" data-mark="${d.iso}|1">Teljes volt</button>`}</div>`}).join('')}
       <p class="wc-fine">Ha nem nyúlsz hozzá, ezeket a napokat kihagyva hagyom.</p></div>
     ${LS.msg?`<p class="wc-msg">${I('ring')}${LS.msg}</p>`:''}
     <div class="wc-foot"><button class="qbtn" data-go="#tanulas">Részletek ›</button><button class="qbtn ghost" data-wc-close>Bezárom</button></div>`}];
@@ -3189,7 +3189,7 @@ const WK=[ /* [hét kezdete, képlet, tanult, ±, keret alapja, teljes nap, mér
 const wkRow=i=>{const w=WK[i];if(!w)return null;const [s,f,p,sd,a,u,wi,h]=w;const last=i===WK.length-1;
   const hold=last?LS.card==='kevesadat':!!h, app=last?E.learned:a;
   return {s,f,p,sd,a:app,u:last&&hold?3:u,wi:last&&hold?1:wi,hold}};
-const wkRange=s=>{const e=addDays(s,6),a=dp(s),b=dp(e);return a.m===b.m?`${HU_M[a.m]} ${a.d}–${b.d}.`:`${HU_M[a.m]} ${a.d} – ${HU_M[b.m]} ${b.d}.`};
+const wkRange=s=>{const e=addDays(s,6),a=dp(s),b=dp(e);return a.m===b.m?`${HU_M[a.m]} ${a.d}–${b.d}.`:`${HU_M[a.m]} ${a.d}–${HU_M[b.m]} ${b.d}.`};
 function weekChart(){
   const W=320,H=176,L=34,R=8,T=12,B=26,n=WK.length,x=i=>L+(W-L-R)*(i+.5)/n,lo=2050,hi=2780,y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
   const rows=WK.map((_,i)=>wkRow(i));
