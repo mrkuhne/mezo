@@ -32,6 +32,10 @@ export interface PlannedSkip extends PlannedSkipKey {
   freePass: boolean
   excused: boolean
   createdAt?: string
+  /** Mock mode only: a USER row that replaced a coach (ADVICE) skip on the same occurrence — the
+   *  user's reason for the coach's skip. Judged like the advice: always excused, never the free
+   *  pass, never consumes it (mirrors `PlannedSkipPolicy.Row.adviceBacked`, review I3). */
+  adviceBacked?: boolean
 }
 
 /** Reasons that can never be excused via the weekly free pass — always excused on their own,
@@ -86,11 +90,13 @@ function isoWeekKey(dateIso: string): number {
  * server's own verdicts on every `PlannedSkipResponse`, never recomputes them client-side.
  * Rules: serious reasons are always excused but never take the free pass; one soft (non-serious)
  * USER row per ISO week (of the skip's OWN date), earliest by `createdAt` then `id`, gets the
- * pass; ADVICE rows are always excused but never consume a pass. Output order matches input order.
+ * pass; ADVICE rows (and advice-backed USER rows) are always excused but never consume a pass. Output order matches input order.
  */
 export function judge(skips: PlannedSkip[]): PlannedSkip[] {
   const passByWeek = new Map<number, string>()
-  const softUser = skips.filter((s) => s.source === 'USER' && !SERIOUS.has(s.reasonCategory))
+  const softUser = skips.filter(
+    (s) => s.source === 'USER' && !s.adviceBacked && !SERIOUS.has(s.reasonCategory),
+  )
   const sorted = [...softUser].sort((a, b) => {
     const ca = a.createdAt ?? ''
     const cb = b.createdAt ?? ''
@@ -103,8 +109,9 @@ export function judge(skips: PlannedSkip[]): PlannedSkip[] {
   }
   return skips.map((s) => {
     const serious = SERIOUS.has(s.reasonCategory)
-    const freePass = s.source === 'USER' && !serious && passByWeek.get(isoWeekKey(s.date)) === s.id
-    const excused = serious || freePass || s.source === 'ADVICE'
+    const freePass =
+      s.source === 'USER' && !s.adviceBacked && !serious && passByWeek.get(isoWeekKey(s.date)) === s.id
+    const excused = serious || freePass || s.source === 'ADVICE' || !!s.adviceBacked
     return { ...s, serious, freePass, excused }
   })
 }

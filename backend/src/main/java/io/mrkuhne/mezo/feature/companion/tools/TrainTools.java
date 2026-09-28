@@ -24,6 +24,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
@@ -79,6 +80,9 @@ public class TrainTools {
     // through it, exactly like ContextSnapshotAssembler#dayLine, or the two read paths drift and
     // the AI contradicts the "skip tonight" card the user just tapped.
     private final SportSlotSkipService sportSlotSkipService;
+    // Kihagyás S1 (mezo-q4xt2.1, review I2): the central RUN skip read — dayContentLine drops a
+    // skipped prescribed run exactly like ContextSnapshotAssembler#dayLine does.
+    private final PlannedSkipService plannedSkipService;
     // Read-only compute-on-read aggregation over working sets (ExerciseRecordService#list) —
     // NEVER a write-transactional method; there is none on this service.
     private final ExerciseRecordService exerciseRecordService;
@@ -391,7 +395,9 @@ public class TrainTools {
                 s.getSport(), s.getTime(), s.getKind() == null ? null : s.getKind().getValue(),
                 s.getDurationMin())));
         activeBlocks.stream().findFirst()
-                .flatMap(block -> runSessionLabel(block, date))
+                .flatMap(block -> runSession(block, date))
+                .filter(sess -> !plannedSkipService.isRunSkipped(userId, date, sess.getKey()))
+                .map(RunPrescribedSession::getLabel)
                 .ifPresent(label -> line.append("; futás: ").append(label));
         return line.toString();
     }
@@ -465,7 +471,7 @@ public class TrainTools {
      * .tomorrowRunPart} idiom), not the stored currentWeek, so it resolves correctly for ANY date in
      * the block's span (renderWeek walks 7 distinct dates, not just "today").
      */
-    private static Optional<String> runSessionLabel(RunningBlockResponse block, LocalDate date) {
+    private static Optional<RunPrescribedSession> runSession(RunningBlockResponse block, LocalDate date) {
         if (block.getStructure() == null || block.getStructure().getWeeks() == null
                 || block.getWeeks() == null || block.getWeeks() <= 0 || block.getStartDate() == null) {
             return Optional.empty();
@@ -477,8 +483,7 @@ public class TrainTools {
                 .findFirst()
                 .flatMap(w -> w.getSessions().stream()
                         .filter(sess -> sess.getDayOfWeek() != null && sess.getDayOfWeek() == dow)
-                        .findFirst())
-                .map(RunPrescribedSession::getLabel);
+                        .findFirst());
     }
 
     @Tool(name = "get_exercise_records", description = "Egyéni csúcsok (PR) és becsült 1RM (e1RM, Epley) "

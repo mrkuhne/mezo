@@ -107,6 +107,16 @@ test('judge: an ADVICE row is always excused and never consumes the pass', () =>
   expect(soft.freePass).toBe(true)
 })
 
+test('judge: an advice-backed USER row stays excused and leaves the pass for another soft skip', () => {
+  const [backed, soft] = judge([
+    row({ id: '1', date: '2026-09-28', reasonCategory: 'TIRED', source: 'USER', adviceBacked: true, createdAt: '2026-09-28T10:00:00Z' }),
+    row({ id: '2', date: '2026-09-29', reasonCategory: 'TIRED', source: 'USER', createdAt: '2026-09-29T11:00:00Z' }),
+  ])
+  expect(backed.excused).toBe(true)
+  expect(backed.freePass).toBe(false)
+  expect(soft.freePass).toBe(true)
+})
+
 test('skipWindow: today-7 .. Sunday of this ISO week', () => {
   expect(skipWindow(new Date(2026, 8, 28))).toEqual({ fromIso: '2026-09-21', toIso: '2026-10-04' })
 })

@@ -26,7 +26,12 @@ public final class PlannedSkipPolicy {
         ADVICE
     }
 
-    /** One skip as the policy sees it (either table). */
+    /**
+     * One skip as the policy sees it (either table). {@code adviceBacked} marks a USER row that
+     * has an ADVICE twin on the same occurrence (the coach's "skip tonight" the user then gave a
+     * reason for): it stays excused like the advice it answers and never takes part in the
+     * weekly free-pass race (Kihagyás S1, mezo-q4xt2.1, review I3).
+     */
     public record Row(
         UUID id,
         LocalDate date,
@@ -37,8 +42,16 @@ public final class PlannedSkipPolicy {
         PlannedSkipEntity.Reason reason,
         String reasonText,
         Source source,
-        Instant createdAt
-    ) {}
+        Instant createdAt,
+        boolean adviceBacked
+    ) {
+        /** A row with no advice twin — the common case. */
+        public Row(UUID id, LocalDate date, PlannedSkipEntity.Kind kind, Integer dayOfWeek, String time,
+                String sessionKey, PlannedSkipEntity.Reason reason, String reasonText, Source source,
+                Instant createdAt) {
+            this(id, date, kind, dayOfWeek, time, sessionKey, reason, reasonText, source, createdAt, false);
+        }
+    }
 
     /** A row plus its read-time verdict. */
     public record Verdict(
@@ -75,6 +88,8 @@ public final class PlannedSkipPolicy {
      *   <li>Serious reasons are always excused but never get a free pass.</li>
      *   <li>USER source soft rows (non-serious) get one free pass per ISO week, sorted by createdAt then id.</li>
      *   <li>ADVICE source rows are always excused but do not consume a free pass.</li>
+     *   <li>An advice-backed USER row ({@link Row#adviceBacked}) is judged like its ADVICE twin:
+     *       always excused, never a free pass, and it does not consume the week's pass.</li>
      *   <li>Output order matches input order.</li>
      * </ul>
      *
@@ -85,15 +100,17 @@ public final class PlannedSkipPolicy {
         // Build a map of one soft USER row per ISO week, sorted by createdAt then id
         Map<Long, UUID> passByWeek = new HashMap<>();
         rows.stream()
-            .filter(r -> r.source() == Source.USER && !isSerious(r.reason()))
+            .filter(r -> r.source() == Source.USER && !r.adviceBacked() && !isSerious(r.reason()))
             .sorted(Comparator.comparing(Row::createdAt).thenComparing(Row::id))
             .forEach(r -> passByWeek.putIfAbsent(isoWeekKey(r.date()), r.id()));
 
         // Map each row to its verdict
         return rows.stream().map(r -> {
             boolean serious = isSerious(r.reason());
-            boolean pass = r.source() == Source.USER && !serious && r.id().equals(passByWeek.get(isoWeekKey(r.date())));
-            return new Verdict(r, serious, pass, serious || pass || r.source() == Source.ADVICE);
+            boolean pass = r.source() == Source.USER && !r.adviceBacked() && !serious
+                && r.id().equals(passByWeek.get(isoWeekKey(r.date())));
+            return new Verdict(r, serious, pass,
+                serious || pass || r.source() == Source.ADVICE || r.adviceBacked());
         }).toList();
     }
 }

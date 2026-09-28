@@ -56,6 +56,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -112,6 +113,9 @@ public class ContextSnapshotAssembler {
     // it, exactly like TrainTools#sportSlotsOn, or the two read paths drift and the AI contradicts
     // the "skip tonight" card the user just tapped.
     private final SportSlotSkipService sportSlotSkipService;
+    // Kihagyás S1 (mezo-q4xt2.1, review I2): the central RUN skip read — runPart drops a skipped
+    // prescribed run, the same filter TrainTools#dayContentLine applies.
+    private final PlannedSkipService plannedSkipService;
     private final WorkoutService workoutService;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
@@ -421,13 +425,14 @@ public class ContextSnapshotAssembler {
                 .forEach(s -> parts.add(ToolText.sportLine(s.getSport(), s.getTime(),
                         s.getKind() == null ? null : s.getKind().getValue(), s.getDurationMin())));
         runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst()
-                .flatMap(block -> runPart(block, today, dow))
+                .flatMap(block -> runPart(userId, block, today, date, dow))
                 .ifPresent(parts::add);
         return String.join(", ", parts);
     }
 
     /** The active running block's prescribed session for weekday {@code dow}, if the plan has one. */
-    private Optional<String> runPart(RunningBlockEntity block, LocalDate today, int dow) {
+    private Optional<String> runPart(UUID userId, RunningBlockEntity block, LocalDate today, LocalDate date,
+            int dow) {
         if (block.getStructure() == null || block.getWeeks() == null || block.getWeeks() <= 0
                 || block.getStartDate() == null) {
             return Optional.empty();
@@ -442,6 +447,7 @@ public class ContextSnapshotAssembler {
                 .flatMap(w -> w.sessions().stream()
                         .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == dow)
                         .findFirst())
+                .filter(s -> !plannedSkipService.isRunSkipped(userId, date, s.key()))
                 .map(s -> "futás: " + s.label());
     }
 

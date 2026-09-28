@@ -131,10 +131,19 @@ public class PlannedSkipService {
         LocalDate weekTo = to.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
 
         List<PlannedSkipEntity> userRows = repository.findByCreatedByAndDateBetweenAndDeletedFalse(user, weekFrom, weekTo);
+        List<SportSlotSkipEntity> adviceRows = sportSlotSkipService.rowsBetween(user, weekFrom, weekTo);
+        // A USER SPORT row with an ADVICE twin is the user's reason for the coach's skip — it stays
+        // excused and out of the free-pass race (review I3); the USER row is the one returned
+        // because it carries the reason.
+        Set<SlotIdentity> adviceSlots = adviceRows.stream()
+            .map(e -> new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))
+            .collect(Collectors.toSet());
         List<Row> rows = new ArrayList<>();
         for (PlannedSkipEntity e : userRows) {
+            boolean adviceBacked = e.getKind() == Kind.SPORT
+                && adviceSlots.contains(new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()));
             rows.add(new Row(e.getId(), e.getDate(), e.getKind(), e.getDayOfWeek(), e.getTime(), e.getSessionKey(),
-                e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt()));
+                e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt(), adviceBacked));
         }
 
         // A USER SPORT skip is authoritative over an ADVICE twin on the same occurrence (same
@@ -144,7 +153,7 @@ public class PlannedSkipService {
             .filter(e -> e.getKind() == Kind.SPORT)
             .map(e -> new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))
             .collect(Collectors.toSet());
-        for (SportSlotSkipEntity e : sportSlotSkipService.rowsBetween(user, weekFrom, weekTo)) {
+        for (SportSlotSkipEntity e : adviceRows) {
             if (userSportSlots.contains(new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))) {
                 continue;
             }
@@ -187,6 +196,35 @@ public class PlannedSkipService {
             }
         }
         return dates;
+    }
+
+    /** One skipped RUN occurrence — the date plus the prescribed session's {@code key}. */
+    public record RunSkipKey(LocalDate date, String sessionKey) {
+    }
+
+    /** Every skipped prescribed run in [from, to] (any verdict) — the ONE central read the run
+     *  planning surfaces (workout windows, the companion's day lines) filter through
+     *  (Kihagyás S1, mezo-q4xt2.1 review I2). */
+    @Transactional(readOnly = true)
+    public Set<RunSkipKey> skippedRuns(UUID user, LocalDate from, LocalDate to) {
+        return runSkipsOf(verdictsBetween(user, from, to));
+    }
+
+    /** {@link #skippedRuns} from an already-fetched verdict list (callers that also need the
+     *  gym dates read {@link #verdictsBetween} once and derive both). */
+    public static Set<RunSkipKey> runSkipsOf(List<Verdict> verdicts) {
+        Set<RunSkipKey> keys = new HashSet<>();
+        for (Verdict v : verdicts) {
+            if (v.row().kind() == Kind.RUN && v.row().sessionKey() != null) {
+                keys.add(new RunSkipKey(v.row().date(), v.row().sessionKey()));
+            }
+        }
+        return keys;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isRunSkipped(UUID user, LocalDate date, String sessionKey) {
+        return sessionKey != null && skippedRuns(user, date, date).contains(new RunSkipKey(date, sessionKey));
     }
 
     @Transactional(readOnly = true)

@@ -64,6 +64,8 @@ function mockUpsert(prev: PlannedSkip[], vars: UpsertVars): PlannedSkip[] {
     freePass: false,
     excused: false,
     createdAt: existing?.createdAt ?? new Date().toISOString(),
+    // Giving a reason to a coach (ADVICE) skip keeps it excused (review I3, mirrors the server).
+    ...(existing && (existing.source === 'ADVICE' || existing.adviceBacked) ? { adviceBacked: true } : {}),
   }
   const next = existing ? prev.map((s) => (s === existing ? row : s)) : [...prev, row]
   return judge(next)

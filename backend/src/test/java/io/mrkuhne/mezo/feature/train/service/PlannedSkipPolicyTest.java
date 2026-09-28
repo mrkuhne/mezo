@@ -190,6 +190,23 @@ class PlannedSkipPolicyTest {
     }
 
     @Test
+    void testAdviceBackedUserRow_shouldBeExcusedWithoutPass_andLeaveThePassForTheNextSoftSkip() {
+        PlannedSkipPolicy.Row backed = new PlannedSkipPolicy.Row(ID_1, LocalDate.of(2026, 9, 28),
+            PlannedSkipEntity.Kind.SPORT, 0, "18:00", null, PlannedSkipEntity.Reason.TIRED, null,
+            PlannedSkipPolicy.Source.USER, Instant.parse("2026-09-28T10:00:00Z"), true);
+        PlannedSkipPolicy.Row soft = new PlannedSkipPolicy.Row(ID_2, LocalDate.of(2026, 9, 29),
+            PlannedSkipEntity.Kind.GYM, null, null, null, PlannedSkipEntity.Reason.TIRED, null,
+            PlannedSkipPolicy.Source.USER, Instant.parse("2026-09-29T10:00:00Z"));
+
+        List<PlannedSkipPolicy.Verdict> verdicts = PlannedSkipPolicy.judge(List.of(backed, soft));
+
+        assertThat(verdicts.get(0).excused()).isTrue();
+        assertThat(verdicts.get(0).freePass()).isFalse();
+        assertThat(verdicts.get(1).freePass()).isTrue();
+        assertThat(verdicts.get(1).excused()).isTrue();
+    }
+
+    @Test
     void testAdviceRow_shouldBeExcused_doesNotConsumesPass() {
         PlannedSkipPolicy.Row advice = new PlannedSkipPolicy.Row(
             ID_1,

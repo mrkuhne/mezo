@@ -206,7 +206,8 @@ public class MesocycleReportService {
      * minus the excused GYM dates inside the run's window that fall on one of those non-empty
      * planned weekdays (Kihagyás S1, mezo-q4xt2.1): a serious reason, a free pass or an advice skip
      * leaves the planned count, but a skip on a rest day or an empty template day never had a
-     * planned session to remove. Never negative; {@code completionPct} is capped at 100.
+     * planned session to remove. Never negative; {@code completionPct} is NOT capped — an over-achieving run legitimately
+     * reads above 100, and the planned-day guard above is what keeps skips from inflating it.
      */
     private MesoReportJson.Adherence adherence(UUID createdBy, MesocycleEntity run,
             int weeksElapsed, List<WorkoutSessionEntity> instances, LocalDate windowEnd) {
@@ -226,7 +227,7 @@ public class MesocycleReportService {
             .distinct().count();
         int completionPct = plannedSessions == 0
             ? 0
-            : (int) Math.min(100, Math.round(100.0 * completedSessions / plannedSessions));
+            : (int) Math.round(100.0 * completedSessions / plannedSessions);
         return new MesoReportJson.Adherence(
             plannedSessions, completedSessions, run.getWeeks(), completedWeeks, completionPct);
     }

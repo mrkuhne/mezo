@@ -416,7 +416,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         // 2 non-empty days × 2 weeks = 4, minus the one excused planned Monday = 3
         MesocycleReportResponse report = reportService.getReport(owner, run.getId());
         assertThat(report.getAdherence().getPlannedSessions()).isEqualTo(3);
-        assertThat(report.getAdherence().getCompletionPct()).isLessThanOrEqualTo(100);
+        assertThat(report.getAdherence().getCompletionPct()).isEqualTo(100); // 3 done / 3 planned — uncapped, exact
     }
 
     @Test

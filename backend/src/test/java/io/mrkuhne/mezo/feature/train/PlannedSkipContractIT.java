@@ -233,6 +233,33 @@ class PlannedSkipContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testUpsert_shouldStayExcusedWithoutPass_whenReasonGivenToAnAdviceSkip() {
+        // Kihagyás S1 (mezo-q4xt2.1, review I3): giving a soft reason to the coach's skip must not
+        // turn it into a counted miss, and must not burn the week's free pass either.
+        LocalDate today = today();
+        int todayDow = todayDow(today);
+        RegisteredUser owner = registerUser("Skip Advice Reason Owner");
+        sportSlotSkipPopulator.createSkip(owner.id(), todayDow, "18:00", today);
+
+        PlannedSkipResponse reasoned = putForBody("/api/train/skips", new PlannedSkipRequest()
+            .date(today).kind(PlannedSkipKind.SPORT).dayOfWeek(todayDow).time("18:00")
+            .reasonCategory(PlannedSkipReason.TIRED),
+            owner.headers(), HttpStatus.OK, PlannedSkipResponse.class);
+
+        assertThat(reasoned.getSource()).isEqualTo(PlannedSkipResponse.SourceEnum.USER);
+        assertThat(reasoned.getReasonCategory()).isEqualTo(PlannedSkipReason.TIRED);
+        assertThat(reasoned.getExcused()).isTrue();
+        assertThat(reasoned.getFreePass()).isFalse();
+
+        PlannedSkipResponse gym = putForBody("/api/train/skips", new PlannedSkipRequest()
+            .date(today).kind(PlannedSkipKind.GYM).reasonCategory(PlannedSkipReason.TIRED),
+            owner.headers(), HttpStatus.OK, PlannedSkipResponse.class);
+
+        assertThat(gym.getFreePass()).as("the week's pass is still available for another soft skip").isTrue();
+        assertThat(gym.getExcused()).isTrue();
+    }
+
+    @Test
     void testUndo_shouldRestoreSlot_whenUserSkipHadAnAdviceTwin() {
         LocalDate today = today();
         int todayDow = todayDow(today);
