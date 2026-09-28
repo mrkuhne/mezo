@@ -3063,7 +3063,8 @@ function mai(v){
     <section class="pagehero rise" style="--c:var(--lav);--c2:var(--sky);--i:1">${I('moon','art')}<span class="eb">MA PIHENŐNAP</span><h1>Ma a pihenés dolgozik</h1><p>Nincs tervezett edzés mára — a heti rended a Heti fülön találod.</p></section>
     <button class="dashadd rise" style="--i:2" data-sheet="custom">+ Saját edzés</button>
     <div class="gap"></div><section class="list"><button class="lrow rise" data-toast="Mezociklus (5. szelet)">${I('peak')}<span>${MESO.name} · MAV · W3/6</span><b class="chev">›</b></button></section>`;
-  const E=dayState==='done'?[860,860]:dayState==='run'?[860,210]:[860,0];
+  /* mezo-tb3s2: [ma logolt = a keretben, még jön ha megcsinálod] — a félbe lévő edzés a befejezéskor kerül be */
+  const E=dayState==='done'?[190,460]:[0,650];
   return `${topbar()}${dstrip()}${thero()}${readyCard()}
   ${eyeb('TOVÁBBI MA','Ma még jön')}
   <section class="list">
@@ -3076,8 +3077,9 @@ function mai(v){
   </section>
   <div class="gap"></div>
   <section class="p16"><article class="energy glass rise" style="--i:4"><div class="chead">${I('flame')}<span><span class="eb">A MAI KERETEDHEZ</span><h3>Amit a mozgásod hozzáad</h3></span></div>
-    <div class="num">+${E[0]}<small>kcal</small></div><div class="esplit"><b style="width:${E[1]/E[0]*100}%"></b><i style="flex:1"></i></div>
-    <div class="elegend"><span><b>${E[1]} kcal</b> már megszolgálva</span><span><b>${E[0]-E[1]} kcal</b> a tervben</span></div><p class="fnote">Becslés, nem mérés.</p></article></section>
+    <div class="num">+${E[0]}<small>kcal</small></div><div class="esplit"><b style="width:${E[0]/(E[0]+E[1])*100}%"></b><i style="flex:1"></i></div>
+    <div class="elegend"><span><b>${E[0]} kcal</b> már a keretedben</span>${E[1]?`<span><b>+${E[1]} kcal</b> még jön, ha megcsinálod</span>`:''}</div>
+    <p class="fnote">${dayState==='run'?'A folyamatban lévő edzés a befejezéskor kerül a keretedbe. ':''}Ugyanez a szám áll a Fuel keretében. Becslés, nem mérés.</p></article></section>
   <div class="gap"></div>
   <section class="p16"><article class="mus glass rise" style="--i:5"><div class="chead">${I('muscle')}<span><span class="eb">HATÁS AZ IZOMZATODRA</span><h3>Mit terhel a mai mozgásod</h3></span></div>
     ${MUS.map(([k,l,p,d,w])=>`<div class="musrow" style="--c:${muscleColor(k)}">${mchp(k,'sm')}<span>${l.split(' ')[0]}</span><span class="dtrack"><i style="width:${p/6*100}%"></i><b style="width:${d/6*100}%"></b></span><em>${w}</em></div>`).join('')}
