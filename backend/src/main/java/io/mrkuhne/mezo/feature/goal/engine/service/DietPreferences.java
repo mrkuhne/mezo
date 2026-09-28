@@ -9,6 +9,8 @@ public record DietPreferences(
     String proteinTier,
     int waterMl,
     int fiberG,
+    // accepted and ignored since mezo-tb3s2 (M4): the day-type split it drove is retired; column
+    // drop is a follow-up.
     int dayTypeShiftKcal,
     boolean learningEnabled
 ) {}

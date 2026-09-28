@@ -79,8 +79,7 @@ public class GoalPrescriptionCalculator {
         // Resolved first so a draft with the learning switch flipped projects what the save would serve.
         TdeeBootstrapJson bootstrap = learnedBase.apply(userId,
             bootstrapService.compute(profile, currentWeightKg, weeklyEat), preferences.learningEnabled());
-        List<ProjectionSegment> segments = projectionService.project(
-            goal, userId, bootstrap, trend, preferences.dayTypeShiftKcal());
+        List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend);
         BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
         GoalPrescriptionJson prescription = evaluationService.assemble(
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,

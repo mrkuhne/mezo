@@ -23,10 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -36,6 +33,16 @@ import org.springframework.stereotype.Service;
  * load set per week, collapses contiguous identical loads into {@link ProjectionSegment}s, and per
  * segment computes the TDEE estimate, the daily kcal target, and the projected weekly rate for the
  * goal's trajectory — reconciled against the live EWMA weight trend.
+ *
+ * <p><b>The segment's kcal target is a planning number, not the day the owner is served (spec §2,
+ * mezo-tb3s2 M4).</b> {@code tdeeEstimate}/{@code targetKcal} stay {@code base + expected weekly
+ * movement ± the goal's balance} — the same uniform number for every day of the segment, training
+ * or rest. The retired day-type split (which used to move kcal from rest days onto training days
+ * so the WEEKLY sum matched) is gone: {@link ProjectionSegment#trainingDayKcal()} and
+ * {@link ProjectionSegment#restDayKcal()} are always {@code null} now. The day the owner actually
+ * sees is served elsewhere ({@code DayTargetProjector}): the segment's uniform target plus THAT
+ * day's logged movement (plus/minus the day's running-vs-planned balance) — see the rationale
+ * strings below, which name this explicitly.
  *
  * <h2>Segment maintenance policy (spec §6.3)</h2>
  * A segment's maintenance TDEE is the athlete's NEAT baseline plus the weekly scheduled training
@@ -104,6 +111,10 @@ public class GoalProjectionService {
      * is the human-facing list of what moves this stretch's boundaries ({@code run}); gym + volleyball
      * count via the constant weekly schedule (no longer ambient), so they never split a segment and are
      * not listed here.
+     *
+     * <p>{@code trainingDayKcal}/{@code restDayKcal} are always {@code null} — the day-type split they
+     * used to carry is retired (mezo-tb3s2, M4): the day's actual budget now follows the day's logged
+     * movement, not a fixed weekly-invariant split baked into the segment.
      */
     public record ProjectionSegment(
         int fromWeek,
@@ -127,19 +138,14 @@ public class GoalProjectionService {
      * @param userId    the owner — every plan read is ownership-checked
      * @param bootstrap        the formula-TDEE bootstrap (Task 5)
      * @param trend            the EWMA weight trend (Task 4) — the reconciliation spine
-     * @param dayTypeShiftKcal the user's day-type shift setting (kcal off each rest day, Task 2/4) —
-     *                         0 disables the split (every segment's day-type fields stay null)
      */
     public List<ProjectionSegment> project(
-        GoalEntity goal, UUID userId, TdeeBootstrapJson bootstrap, WeightTrendResponse trend,
-        int dayTypeShiftKcal) {
+        GoalEntity goal, UUID userId, TdeeBootstrapJson bootstrap, WeightTrendResponse trend) {
 
         int weeks = (int) ChronoUnit.WEEKS.between(goal.getStartDate(), goal.getTargetDate());
         if (weeks <= 0) {
             return List.of();
         }
-
-        Set<Integer> scheduledDays = weeklyActivity.scheduledTrainingDayOfWeeks(userId);
 
         List<GoalPlanLinkEntity> links =
             linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goal.getId(), userId);
@@ -175,8 +181,7 @@ public class GoalProjectionService {
             boolean last = w == weeks;
             if (last || !load[w].sameLoadAs(load[w + 1])) {
                 segments.add(
-                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend,
-                        links, runs, scheduledDays, dayTypeShiftKcal));
+                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend));
                 start = w + 1;
             }
         }
@@ -279,9 +284,7 @@ public class GoalProjectionService {
     // ── per-segment numbers ─────────────────────────────────────────────────────────────────────
 
     private ProjectionSegment buildSegment(int from, int to, WeekLoad ld, UUID userId, BigDecimal weightKg,
-        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend,
-        List<GoalPlanLinkEntity> links, Map<UUID, RunningBlockEntity> runs, Set<Integer> scheduledDays,
-        int dayTypeShiftKcal) {
+        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend) {
 
         // Segment maintenance = neat baseline + scheduled gym+sport EAT + this segment's running EAT.
         // (Gym+sport are weekly-recurring, segment-independent; running is goal-linked, per-segment.)
@@ -292,8 +295,7 @@ public class GoalProjectionService {
             : BigDecimal.ZERO;
         BigDecimal tdee = bootstrap.neatBaselineKcal().add(scheduled).add(runEat);
         // An accepted deload/segment override substitutes the formula balance for THIS segment's
-        // window — target (and therefore the day-type split below, which reads the overridden
-        // kcalInt) reflects the override, not the goal's formula deficit/surplus (spec §6.5).
+        // window — target reflects the override, not the goal's formula deficit/surplus (spec §6.5).
         BigDecimal effectiveBalance = ld.overrideBalanceKcal() != null
             ? BigDecimal.valueOf(ld.overrideBalanceKcal())
             : balance;
@@ -305,16 +307,6 @@ public class GoalProjectionService {
         if (ld.runActive()) {
             systems.add(SYSTEM_RUN);
         }
-
-        // Slice 3: training days for THIS segment = recurring gym/sport weekdays ∪ the active run
-        // block's session weekdays in the segment's first week (the sessionsPerWeek fallback idiom).
-        Set<Integer> trainingDays = new TreeSet<>(scheduledDays);
-        if (ld.runActive()) {
-            trainingDays.addAll(runDayOfWeeks(links, runs, from));
-        }
-        int kcalInt = target.setScale(0, RoundingMode.HALF_UP).intValueExact();
-        DayTypeShiftCalculator.DayTypeKcal dayType =
-            DayTypeShiftCalculator.split(kcalInt, dayTypeShiftKcal, trainingDays.size(), bootstrap.bmr());
 
         boolean deloadOverride = ld.overrideBalanceKcal() != null && ld.overrideBalanceKcal() == 0;
         String segmentLabel = deloadOverride ? label(from, to, ld) + " · deload — tartás" : label(from, to, ld);
@@ -329,38 +321,9 @@ public class GoalProjectionService {
             scaled(tdee), scaled(target),
             projectedRate.setScale(RATE_SCALE, RoundingMode.HALF_UP),
             effectiveBalance.setScale(0, RoundingMode.HALF_UP).intValueExact(),
-            dayType.trainingDayKcal(), dayType.restDayKcal(),
+            null, null,
             systems,
             segmentRationale);
-    }
-
-    /** The run-session weekdays (0=Mon..6=Sun) prescribed in goal-week {@code w}'s block week —
-     *  first structure week as fallback, mirroring {@link #sessionsPerWeek}. */
-    private Set<Integer> runDayOfWeeks(
-        List<GoalPlanLinkEntity> links, Map<UUID, RunningBlockEntity> runs, int w) {
-        for (GoalPlanLinkEntity l : links) {
-            if (!PLAN_RUNNING_BLOCK.equals(l.getPlanType()) || !covers(l, w)) {
-                continue;
-            }
-            RunningBlockEntity b = runs.get(l.getPlanId());
-            if (b == null || b.getStructure() == null || b.getStructure().weeks() == null
-                || b.getStructure().weeks().isEmpty()) {
-                return Set.of();
-            }
-            int weekInBlock = w - l.getStartWeek() + 1;
-            List<RunWeek> weeks = b.getStructure().weeks();
-            RunWeek match = weeks.stream()
-                .filter(rw -> rw.weekNumber() != null && rw.weekNumber() == weekInBlock)
-                .findFirst().orElse(weeks.get(0));
-            if (match.sessions() == null) {
-                return Set.of();
-            }
-            return match.sessions().stream()
-                .map(s -> s.dayOfWeek())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        }
-        return Set.of();
     }
 
     /**
@@ -439,10 +402,10 @@ public class GoalProjectionService {
 
     private String rationale(WeekLoad ld, BigDecimal runEat) {
         if (ld.runActive()) {
-            return "Futóblokk aktív → +" + runEat.stripTrailingZeros().toPlainString()
-                + " kcal/nap becsült mozgás alapján (gym + röplabda a heti ütemtervből).";
+            return "Futóblokk aktív → a napi keret az Alapod + az aznapi mozgásod (amit logolsz, a futást is) "
+                + "+ a célod.";
         }
-        return "Nincs futóblokk → a napi keret az Alapod + a heti edzésterved (gym + röplabda) becsült mozgása.";
+        return "Nincs futóblokk → a napi keret az Alapod + az aznapi mozgásod (amit logolsz) + a célod.";
     }
 
     private static BigDecimal scaled(BigDecimal v) {
