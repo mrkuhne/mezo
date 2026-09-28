@@ -61,6 +61,17 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-29 — Kihagyás S1 shipped (`mezo-q4xt2.1`).** Egy koppintással kihagyható egy tervezett
+  edzésnap, egy sport-alkalom vagy egy futás, opcionális okkal — soha nem hazug „megvan”, soha nem
+  néma „elmaradt”. Az Edzés Mai fülön „Kihagyom” (kihagyás után azonnal a „Miért?” lap: 8 ok-gomb +
+  Egyéb szöveg/mikrofon, „Most nem mondom”), a kihagyott kártya tompítva marad, „Kihagyva · ‹ok›” +
+  állandó „Visszavonom”. Komoly ok (betegség, gyomorrontás, sérülés, utazás) sosem számít
+  mulasztásnak; puha oknál (fáradt, nincs idő, nincs kedv, egyéb) a hét első ilyen kihagyását egy
+  heti szabadjegy fedezi, a sorozat nem szakad meg. A tervező felületek (Nap napló, nap-gömb, Fuel,
+  értesítések) a kihagyott edzést/sportot/futást ugyanúgy elrejtik, mint eddig a sportot. Backend:
+  új `planned_skip` tábla + `PlannedSkipService` központi olvasás (egyesítve a meglévő coach-oldali
+  kihagyás-táblával) + `/api/train/skips`. Két új ikon: `t-ill`, `t-travel`. Dokumentáció:
+  [`train.md`](../features/train.md) "Kihagyás (S1)". Élő prototípus: [`edzes.html`](../design_2.0/prototypes/elo/edzes.html).
 - **2026-09-28 — Tanuló energiaigény 2. rész: heti összegző, „Hogy tanultam?" oldal, napi
   jelölés, kapcsoló (`mezo-3n2so`, `mezo-zz91i` folytatása).** Az 1. részben csendben tanuló
   napi energiaigény mostantól látható és javítható. Heti egyszer, csak ha van mit mondani, egy

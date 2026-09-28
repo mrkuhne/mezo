@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -16,6 +16,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 ---
 > **2026-09-27 — Üveg U11 (`mezo-me75u.11`) — the epic closes.** An app-wide audit of all 126 routes drove the last fixes (legible copy — live text never uses `--text-disabled`; the last clay art in content → 3D, incl. `InfoButton`'s default `t-info` and the chat reference icons in `insights/logic/toolDomains.ts`; tick glyphs → `t-tick`; dark ink on lit coral). The dead pre-üveg CSS went (~5300 lines incl. dead emoji modules), the kit's `<Sheet glass>` field rule is zero-specificity (`:where()`), and `.uv-tgl` (glass Toggle) lives once in the uveg kit. Blocks `── uveg lezaras edzes|egyeb (`, pinned as `U11_BLOCKS`. Canon order: `docs/design_2.0/README.md`.
 
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** Two new sprite icons, `t-ill` (thermometer) and `t-travel` (suitcase), for the skip reason sheet's ILLNESS/TRAVEL chips; the sheet, the muted `SkippedBlock` and the day-strip `t-skip` mark ride the existing glass sheet/pill/card primitives — no new primitive. `prototype.css` gained the skip-state rules (`.trm-hero.is-skip`, `.trm-sess.is-skip`, `.trm-stpill.is-skip`, `.dday i.sk`, `.skwhen`) inline with the existing `trm-*`/`sheet.glass` families — no new block. See [`train.md`](train.md) "Kihagyás (S1)".
+>
 > **2026-09-28 — Eligazítás (`mezo-mgu2r`).** `prototype.css`'s `uveg edzes session` block gained the briefing family (`.wbr-*`: frameless hero halo, the gold glass challenge card reusing the variant-B `.wos-qc` rows, flat exercise rows, the portalled `.wbr-foot` Indulás that floats over `.phone-screen` like the dock), the card-head vs-last-week chip `.wo-delta` (`is-up` coral / hold-down amber), the tappable released badge (`.wos-pill-quest.is-released`) and the challenge detail glass body (`.wos-gb-qd`). No new primitive, no new sprite symbol.
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** Nine owner-approved sprite symbols for the new check-in items — `t-mood`, `t-rested`, `t-soreness`, `t-pain`, `t-motivation`, `t-hunger`, `t-craving`, `t-day`, `t-digestion` (connection reuses `t-people`) — added to `docs/design_2.0/assets/titanium-custom.svg` and regenerated into both sprite copies (`Icon3D.test.tsx` pins the ids). `prototype.css` gained the check-in sheet (`.ck-*`), the answered-cell rows (`.nck-*`), the Napom duo (`.napom-dayc`/`.napom-duo`), the ritual day hint (`.rz-day`) and the Edzés readiness card (`.trd-*`) families; `app/pageIndex.ts`'s check-in hint reads „pár koppintás, fél perc". No new primitive.

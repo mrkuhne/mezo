@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -14,6 +14,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
 
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `ProactiveMemoryBlock`/`ProactiveChallengeService`/`JointOveruseRule` read `findPlannedTemplateForDateUnlessSkipped` instead of the skip-blind lookup, so a skipped gym day never drives a workout-day-shaped advice/challenge/joint-overuse read; the Nap feed's `deriveBlocks` (Fuel, via `frontend/src/data/today`) drops a skipped GYM/RUN block from the day's plan the same way it already dropped a skipped sport slot. See [`train.md`](train.md) "Kihagyás (S1)".
+>
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** `AdvicePriority` ranks the four new check-in flags next to their siblings — `persistent_pain` right after `joint_overuse` (above the missed-workout nudge), `poor_restedness` right after `sleep_debt`, `craving_streak` right after `energy_dip_meal_timing`, `motivation_slump` right after `sustained_stress` — and the intervention library gained their cards (`persistent_pain_check`, `poor_restedness_evening`, `craving_streak_plan`, `motivation_small_steps`; cooldowns 72/60/96/84 h matching the flag cooldowns). `persistent_pain` has no apply-action yet. Rules and thresholds: [`companion.md`](companion.md) §4 flag table.
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Mezo messages page (`/nap/uzenetek`: Üzenetek, Életjelek, Észrevételek) wears glass: Boop halo hero, flat segmented tabs, lavender glass message and observation cards with 3D art, 3D tally marks instead of ✓/✕. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).

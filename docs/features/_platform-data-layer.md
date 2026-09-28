@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -17,6 +17,8 @@ related: [_platform-api-backend, _platform-auth-security, _platform-notification
 ---
 
 # Platform · Data Layer & Dual-Mode — Feature Documentation
+
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `data/train/trainHooks.ts` gained no new hook shape — `usePlannedSkips` lives in its own `data/train/skipHooks.ts` (dual-mode, the same readiness pattern), and `trainHooks.ts` itself only threads the skip-aware reads through to the views that already called it. See [`train.md`](train.md) "Kihagyás (S1)".
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** `hooks.ts` re-exports three new dual-mode hooks: `useCheckInPlan(date, slotTime)` + `useCheckinDayRating(date)` (`data/today/checkinHooks.ts`; the plan's mock is `mockCheckInPlan`, a mirror of the server config, and real mode returns `null` until the plan lands — never the mock) and `useTodayReadiness()` (`data/train/readinessHooks.ts`, mock `readinessMock`, real-empty `readinessEmpty`). Owners: [`today.md`](today.md), [`train.md`](train.md).
 
