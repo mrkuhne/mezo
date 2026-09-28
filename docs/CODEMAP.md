@@ -1583,8 +1583,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekDays.tsx, MesoWeekEditor.tsx,
     MiniStat.tsx, MorningTrainingCard.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx,
     ProgressionBanner.tsx, ReadinessCard.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx,
-    RunWeekStrip.tsx, SetStepper.tsx, SportCeremony.tsx, SportSessionCard.tsx, StrengthCurve.tsx,
-    StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx, WeekdayGrid.tsx,
+    RunWeekStrip.tsx, SetStepper.tsx, SkipReasonSheet.tsx, SkippedBlock.tsx, SportCeremony.tsx, SportSessionCard.tsx,
+    StrengthCurve.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx, WeekdayGrid.tsx,
     WeeklyBandsCard.tsx, WorkoutBriefing.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx,
     WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, briefing.ts, cerScore.ts,
@@ -1593,9 +1593,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, mesoWeekDone.ts, morningWindow.ts,
     muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, plannedSkips.ts,
     progressionChip.ts, recordFor.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts,
-    sessionState.ts, setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts, structureLint.ts,
-    summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
-    weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
+    sessionState.ts, setBudget.ts, skipCopy.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts,
+    structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts,
+    warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts,
+    workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 85 IT + 20 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
