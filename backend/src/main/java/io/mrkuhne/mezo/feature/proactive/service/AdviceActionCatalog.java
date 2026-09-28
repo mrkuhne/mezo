@@ -1,9 +1,16 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
+import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope.Action;
+import io.mrkuhne.mezo.feature.train.service.PainRegionMap;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,6 +44,8 @@ public class AdviceActionCatalog {
     private static final String LIGHTEN_TOMORROW_LABEL = "Holnap könnyebb legyen";
 
     private final SleepGoalRepository sleepGoalRepository;
+    private final CompanionFlagLogRepository flagLogRepository;
+    private final WorkoutService workoutService;
 
     /** Every {@link AdviceMutationPort} Spring actually registered, keyed by {@link
      *  AdviceMutationPort#actionKey()} (mezo-d58h.5 review fix). {@link SleepAnchorShiftAdapter}
@@ -51,8 +60,11 @@ public class AdviceActionCatalog {
      *  port can actually apply. */
     private final Set<String> registeredActionKeys;
 
-    public AdviceActionCatalog(SleepGoalRepository sleepGoalRepository, List<AdviceMutationPort> mutationPorts) {
+    public AdviceActionCatalog(SleepGoalRepository sleepGoalRepository, CompanionFlagLogRepository flagLogRepository,
+                               WorkoutService workoutService, List<AdviceMutationPort> mutationPorts) {
         this.sleepGoalRepository = sleepGoalRepository;
+        this.flagLogRepository = flagLogRepository;
+        this.workoutService = workoutService;
         this.registeredActionKeys = mutationPorts.stream()
                 .map(AdviceMutationPort::actionKey)
                 .collect(Collectors.toUnmodifiableSet());
@@ -64,10 +76,11 @@ public class AdviceActionCatalog {
         if (FlagKey.SLEEP_DEBT.equals(adviceKey) || FlagKey.IGNORED_NUDGE.equals(adviceKey)) {
             return shiftSleepAnchorOffer(userId);
         }
-        // persistent_pain (check-in 2.0, mezo-ck2) offers the same one-step lightening: a region
-        // that hurts three days running is exactly the joint_overuse situation, self-reported.
-        if (FlagKey.JOINT_OVERUSE.equals(adviceKey) || FlagKey.PERSISTENT_PAIN.equals(adviceKey)) {
+        if (FlagKey.JOINT_OVERUSE.equals(adviceKey)) {
             return lightenTomorrowOffer();
+        }
+        if (FlagKey.PERSISTENT_PAIN.equals(adviceKey)) {
+            return tomorrowLoadsPainfulRegion(userId) ? lightenTomorrowOffer() : List.of();
         }
         return List.of();
     }
@@ -91,6 +104,28 @@ public class AdviceActionCatalog {
         }
         return List.of(new Action(AdviceActionKey.SHIFT_SLEEP_ANCHOR, SHIFT_SLEEP_ANCHOR_LABEL,
             Map.of("minutes", -30)));
+    }
+
+    /**
+     * persistent_pain (Check-in 2.0 follow-up C): the one-step lightening is offered only when
+     * tomorrow's planned session actually loads the painful region — the region frozen on the
+     * user's latest {@code persistent_pain} flag row, mapped through {@link PainRegionMap} and
+     * compared with {@link WorkoutService#plannedMuscleGroups} (a pure read, never
+     * {@code getToday}). No flag row, an unmapped region (FEJ, NYAK, HAS, EGYEB) or no overlap ⇒
+     * nothing to lighten, so no button.
+     */
+    private boolean tomorrowLoadsPainfulRegion(UUID userId) {
+        String region = flagLogRepository
+            .findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(userId, FlagKey.PERSISTENT_PAIN)
+            .map(CompanionFlagLogEntity::getPayload)
+            .map(FlagPayloadEnvelope::persistentPain)
+            .map(FlagPayloadEnvelope.PersistentPain::region)
+            .orElse(null);
+        if (PainRegionMap.groups(region).isEmpty()) {
+            return false;
+        }
+        return !Collections.disjoint(PainRegionMap.groups(region),
+            workoutService.plannedMuscleGroups(userId, LocalDate.now().plusDays(1)));
     }
 
     /** {@code joint_overuse}'s round-2 offer (S6, mezo-d58h.6, spec §6 item 1). */

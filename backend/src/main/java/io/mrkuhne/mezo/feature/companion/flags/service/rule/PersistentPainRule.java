@@ -33,10 +33,9 @@ import org.springframework.stereotype.Component;
  * day. Honest gate: fewer days with ANY pain answer (Nem or Igen) than {@code minDays} ⇒ the rule
  * could never raise, so it is UNAVAILABLE rather than a clear.
  *
- * <p>The card's "lighten tomorrow" action is NOT offered yet: deciding whether tomorrow's planned
- * exercises load the region needs the region → muscle-group map the training-readiness slice
- * introduces ({@code PainRegionMap}, Check-in 2.0 Task 7). The payload already freezes the region,
- * so that wiring is additive.
+ * <p>The card's "lighten tomorrow" action is offered only when tomorrow's planned session loads
+ * the frozen region ({@code AdviceActionCatalog} reads this payload's {@code region} and maps it
+ * through {@code PainRegionMap}; Check-in 2.0 follow-up C).
  */
 @Component
 @RequiredArgsConstructor

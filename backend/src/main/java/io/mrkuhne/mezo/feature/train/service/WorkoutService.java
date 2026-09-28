@@ -371,6 +371,25 @@ public class WorkoutService {
     }
 
     /**
+     * The coarse muscle groups ({@link MuscleGroup#of}) the planned template for {@code date}
+     * loads — the session's own muscle plus every planned exercise's. A pure READ over
+     * {@link #findPlannedTemplateForDate} (never {@code getToday}, which writes); empty when no
+     * session is planned that day. Check-in 2.0 follow-up C: the persistent-pain card offers
+     * "lighten tomorrow" only when this overlaps the painful region's groups.
+     */
+    public Set<String> plannedMuscleGroups(UUID createdBy, LocalDate date) {
+        return findPlannedTemplateForDate(createdBy, date)
+            .map(session -> java.util.stream.Stream.concat(
+                    java.util.stream.Stream.of(session.getMuscle()),
+                    exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                        createdBy, List.of(session.getId())).stream().map(ExerciseEntity::getMuscle))
+                .map(MuscleGroup::of)
+                .filter(group -> group != null && !group.isBlank())
+                .collect(Collectors.toUnmodifiableSet()))
+            .orElse(Set.of());
+    }
+
+    /**
      * The active mesocycle's planned session rows, unbounded — the fetch {@link
      * #findPlannedTemplateForDate(UUID, LocalDate)} performs per date, extracted so a RANGE caller
      * (mezo-jcpt.6: {@code WorkoutWindowQueryService}'s ranged {@code windowsFor}) can fetch it ONCE
