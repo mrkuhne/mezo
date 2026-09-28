@@ -15,6 +15,8 @@ related: [_platform-data-layer, _platform-design-system, today, fuel, me, compan
 
 # Train — Feature Documentation
 
+> **2026-09-28 — Eligazítás (`mezo-mgu2r`).** A fresh `/train/session` start opens a **briefing phase** again (owner reversal of `mezo-e1ii9`'s no-prep rule, with a new single screen — the old mosaic stays retired): the duration as a band (`logic/briefing.ts` `durationRange`, ±10 % in 5-minute steps over `estimateSessionMinutes`), the exercise/set counts, the niggle, the day's challenges pre-ticked by the owner-approved rule (`preTicked`: already accepted · the overload one · low-risk ≥ 70 %), the overload line, the exercise list and a floating **Indulás**. Indulás sends the decisions (`briefingDecisions`: accept new ticks, undo unticked accepted ones, never dismiss) and the start POST; a resumed instance skips the briefing. The card list lost the quest row, the niggle banner, the overload line and the menu's Küldetések row; a taken-on challenge is a **tappable badge on its own card** (`ChallengeDetailGlass`: Elengedem → `undo`, Visszaveszem → `accept`; released stays visible, dimmed). The card head's Múlt hét / Ma a cél cells became a **vs-last-week chip** (`logic/progressionChip.ts`). Spec [`2026-09-28-workout-briefing-design.md`](../superpowers/specs/2026-09-28-workout-briefing-design.md); prototype `prototypes/elo/edzes.html#indulas`.
+
 > **2026-09-28 — Check-in 2.0 training readiness (`mezo-ck2`).** The Mai page shows a **„Mai állapot"** card under the today hero on a planned gym day when this morning's check-in says so (`rested <= 4`, `soreness >= 7` or `motivation <= 3`) or a reported pain region loads a planned exercise. One tap „Könnyítsük" caps every prescription at HOLD (no more weight or reps than last week) and cuts the pain-loaded („care") exercises to one lighter working set; „Visszaállítom a tervet" undoes it; „Maradjon a terv" hides the card for the day. Never automatic. New `readiness_choice` table and `GET/POST/DELETE /api/train/readiness/today`. §2 „Mai állapot", §4 „Training readiness". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.3; build target [`elo/edzes.html`](../design_2.0/prototypes/elo/edzes.html) `#mai`.
 
 > **2026-09-24 — Üveg U5 (`mezo-me75u.5`).** The Train area's second half wears the dark glass: the **Terv** tab (the plan landing, the run's own page, a day and its editor, the weekly muscle review and one muscle's story), the **plan library** (Edzéstervek, Lezárt futamaid, the frozen report, the two-run compare), the **sablonok** (list, the template's read-first page, its day-plan editor), the **plan wizard**, the **saját edzés** composer, and the three **Terhelés sub-pages** (izomtérkép, minden izomjel, minden mozgásod — the Terhelés landing itself was already U4).
@@ -281,7 +283,18 @@ Full-screen takeover, **three phases** (`mezo-cd8s` replaced the old prep→acti
 - **Mozaik face**: the report gained a page tone (`.mz-p-coral` closing / `.mz-p-sage` closed) it never had, the `.mz-statstrip` floating cells in place of its own divider-seam grid, a clay `s-medal` disc instead of 🏅, and an `EntranceGroup` stagger — it was squarely in the F9 audit's "no entrance choreography at all" class. The challenge glyphs `✓ ◯ ⊘ ◌` stay: they are the designed geometric language, not leftover emoji.
 
 
-**RETIRED — the workout opens in the card list (`mezo-e1ii9`, Train parity P1 Task 1).** There is no
+**The Eligazítás — the `brief` phase (`mezo-mgu2r`, 2026-09-28).** `Phase` is `'brief' | 'active' | 'summary'`,
+chosen once at mount: `open ? 'active' : 'brief'`. `components/WorkoutBriefing.tsx` is presentational; the page
+owns the tick draft (`tickDraft ?? preTicked(challenges, acceptedMap)`, so a late challenge fetch still arrives
+pre-ticked), `handleStart` (once-per-mount `startedRef`; mock → the page-local `acceptedChallenges`, live →
+`decide(accept|undo)` per `briefingDecisions`, never blocking the start; then `runStart` unless an instance is
+open) and `startedChallengeIds` — the set whose badges stay on their cards even once released. The Indulás foot is
+portalled into `.phone-screen` like the dock (a sticky child of the scroller sat above its tab-bar padding). The
+kalauz anchor `session-start` sits on the briefing's top bar. **Everything below about the card list's head
+(quest row, niggle banner, overload line, the ⋯ menu's Küldetések glass) and the progression banner on the card is
+superseded by this**; the failed-start strip and the rest of the card list are unchanged.
+
+**RETIRED — the workout opens in the card list (`mezo-e1ii9`, Train parity P1 Task 1; superseded by the Eligazítás above).** There is no
 `prep` phase any more: `/train/session` renders the Titanium `.wo-list` on its FIRST frame, exactly like
 the approved prototype's `openSession()` (`docs/design_2.0/prototypes/companion-titanium/session.js`) —
 Mai's `Kezdjük el` CTA opens the card list directly. `Phase` is `'active' | 'summary'`, and the old

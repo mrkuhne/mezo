@@ -60,6 +60,14 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-28 — Eligazítás (`mezo-mgu2r`).** Az edzés indítása előtt újra van egy felkészítő
+  képernyő, de egyetlen, új formában: várható idő sávban, gyakorlat- és szettszám, fájdalom-jelzés,
+  a napi küldetések előre bepipálva (a túlterhelés és az alacsony kockázatú, legalább 70%-ban biztos
+  ajánlatok), a túlterhelés-sor, a gyakorlatlista és egy mindig látható Indulás gomb. Félbehagyott
+  edzés folytatásakor nem jön elő. Az edzés közbeni lista letisztult: a küldetés a saját gyakorlatán
+  ül jelvényként (koppintásra elengedhető, visszavehető), a kártyafejen a „Múlt hét / Ma a cél”
+  dobozok helyett egy „↑ +2,5 kg” típusú címke. Spec: [`workout-briefing-design`](../superpowers/specs/2026-09-28-workout-briefing-design.md).
+  See [train.md](../features/train.md).
 - **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** A check-in négy fix kérdésből tizennégy tételes,
   napszakhoz igazodó kérdéssorrá nőtt: az öt alap (energia, hangulat, stressz, testi érzés,
   fejtisztaság) után reggel kipihentség, izomláz, fájdalom (testrész-ábrával) és motiváció,

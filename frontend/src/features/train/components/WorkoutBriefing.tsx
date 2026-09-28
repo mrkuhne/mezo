@@ -10,6 +10,7 @@
 // ============================================================
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { Challenge, NiggleWarning, OverloadSummary } from '@/data/types'
 import { ChallengeGenerationLoader } from '@/features/train/components/ChallengeGenerationLoader'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
@@ -176,12 +177,17 @@ export function WorkoutBriefing({
         ))}
       </ul>
 
-      <div className="wbr-foot">
-        <button type="button" className="wbr-start np-press" onClick={onStart}>
-          <Icon3D name="t-play" size={26} />
-          {tickedCount > 0 ? `Indulás · ${tickedCount} küldetéssel` : 'Indulás küldetés nélkül'}
-        </button>
-      </div>
+      {/* The Indulás foot floats over the phone frame like the workout dock (portalled into
+          `.phone-screen`): a sticky child of the scroller would sit above its tab-bar padding. */}
+      {createPortal(
+        <div className="wbr-foot">
+          <button type="button" className="wbr-start np-press" onClick={onStart}>
+            <Icon3D name="t-play" size={26} />
+            {tickedCount > 0 ? `Indulás · ${tickedCount} küldetéssel` : 'Indulás küldetés nélkül'}
+          </button>
+        </div>,
+        document.querySelector('.phone-screen') ?? document.body,
+      )}
     </div>
   )
 }

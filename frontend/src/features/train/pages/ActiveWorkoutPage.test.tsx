@@ -1291,6 +1291,9 @@ test('real mode: an open instance resumes mid-workout with seeded sets', async (
   setup()
   // a resumed instance seeds straight to set 2 (and re-POSTs no start)
   await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  // …and never shows the Eligazítás (mezo-mgu2r D2: resume skips the briefing)
+  expect(screen.queryByText('Eligazítás')).toBeNull()
+  expect(screen.queryByRole('button', { name: /^Indulás/ })).toBeNull()
   expect(calls).not.toContain('start:d-1')
   expect(rowsOf(EX1)).toHaveLength(2)
   expect(doneRowsOf(EX1)).toHaveLength(1) // the persisted set is a done row

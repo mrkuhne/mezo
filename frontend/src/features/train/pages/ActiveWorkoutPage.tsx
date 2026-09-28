@@ -1254,7 +1254,7 @@ function ActiveWorkoutSession({
                 logBlocked={logBlocked}
                 challenges={challenges
                   .filter((c) => c.exerciseId === id && (acceptedMap[c.id] || startedChallengeIds.has(c.id)))
-                  .map((c) => ({ id: c.id, label: challengeTypeLabel(c.typeLabel), target: c.target, state: badgeState(c) }))}
+                  .map((c) => ({ id: c.id, label: challengeTypeLabel(c.typeLabel), target: c.target.replace(/(\d)\.(\d)/g, '$1,$2'), state: badgeState(c) }))}
                 onOpenChallenge={(cid) => setGlass({ kind: 'challenge', id: cid })}
                 onLogSet={(input) => handleLogSet(e, input)}
                 onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
