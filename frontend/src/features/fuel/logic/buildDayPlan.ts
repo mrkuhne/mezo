@@ -55,6 +55,12 @@ export interface PlannerBlock {
   label: string
   /** Sport id of a `sport` block (e.g. 'volleyball') — picks its row in the net activity-energy model (mezo-32m82). */
   sport?: string
+  /** A `sport` block was matched to an actually-logged `SportSession` (mezo-tb3s2, `resolveSportBlocks`)
+   *  rather than being a leftover unconsumed planned occurrence. Absent/false on every OTHER caller
+   *  (gym/run blocks, or a sport block from the schedule-only `deriveBlocks(..., [])` call) — those
+   *  kinds carry no logged-provenance of their own here and must be checked against their own logged
+   *  data source (gym: `gymDoneDates`/`completedTodayWorkout`; run: `runSessions`) by the caller. */
+  logged?: boolean
 }
 export interface DayPlanInput {
   wake: string

@@ -134,9 +134,13 @@ function resolveSportBlocks(planned: PlannerBlock[], sessions: SportSession[], t
       time: s.time,
       durationMin: s.duration ?? plan?.durationMin ?? null,
       label: SPORT_TITLES[sportOf({ sport: s.sport as SportKind })],
+      // Matched to a real logged session (mezo-tb3s2) — never derived from clock time.
+      logged: true,
     })
   }
-  return [...blocks, ...unmatched]
+  // Leftover planned occurrences carry no logged session — explicitly false, not merely absent, so
+  // a caller can tell "known not logged" apart from "this block kind has no logged-provenance here".
+  return [...blocks, ...unmatched.map(b => ({ ...b, logged: false }))]
 }
 
 /** The planned sport block closest in time to a logged session — the backend's `nearestPlan`. */

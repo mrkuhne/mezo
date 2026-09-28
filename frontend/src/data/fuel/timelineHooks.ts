@@ -78,8 +78,11 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { occurrences } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
-  const { gymSchedule, sport, sportSlotSkips } = useTrain()
-  const { activeRunningBlock } = useRunning()
+  // `gymDoneDates`/`completedTodayWorkout` (mezo-tb3s2): real logged-gym provenance for the energy
+  // sheet's `done` flag — the same pair `useDayOrbFill` reads for the day-orb gym fill.
+  const { gymSchedule, sport, sportSlotSkips, gymDoneDates, completedTodayWorkout } = useTrain()
+  // `runSessions` (mezo-tb3s2): real logged-run provenance, same source `useDayOrbFill`/`useNeeds` use.
+  const { activeRunningBlock, runSessions } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
   const { templates } = useSlotTemplates() // Per-day-type meal-slot templates (mezo-7102)
@@ -147,19 +150,24 @@ export function useFuelTimeline(date: string = localDateString()) {
   // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
   // served energy + today's blocks (reconciled with what was actually logged, per-block previews) +
   // the current segment + the NEAT band. Null on the static path.
-  // `done` per block (mezo-tb3s2): the SAME done-state the Fuel timeline itself already derives for
-  // its training-block slots (`plan.slots`, built off this same `blocks` list) — a block's window
-  // (start + duration) has elapsed. Matched by time+label since `blockSlots` is a 1:1, same-shape map
-  // of `blocks`.
-  const blockDoneByKey = new Map(
-    plan.slots
-      .filter(s => s.kind === 'workout' || s.kind === 'sport')
-      .map(s => [`${s.time}|${s.label}`, s.state === 'done']),
-  )
+  // `done` per block (mezo-tb3s2, fix round 1) — NEVER derived from clock time (a scheduled-but-
+  // unlogged session must stay pending even once its window has passed): each kind reads its own
+  // real logged-data source.
+  //   gym  — `gymDoneDates` (this week's ISO dates with a logged gym workout) or, for real-mode
+  //          today specifically, `completedTodayWorkout` — the same check `useDayOrbFill` uses for
+  //          the day-orb gym fill.
+  //   sport — `b.logged`, set by `resolveSportBlocks` at block-construction time: true only for a
+  //          block matched to an actual `SportSession`, false for a leftover unconsumed plan.
+  //   run  — `runSessions` (the day's logged runs), the same check `useDayOrbFill`/`useNeeds` use.
+  const isBlockDone = (b: (typeof blocks)[number]): boolean => {
+    if (b.kind === 'gym') return gymDoneDates.includes(date) || completedTodayWorkout?.date === date
+    if (b.kind === 'run') return runSessions.some(r => r.date === date)
+    return Boolean(b.logged)
+  }
   const tb = goalResponse?.tdeeBootstrap
   const energyBreakdown = staticEnergy ? null : buildEnergyBreakdown({
     energy: budget.energy,
-    blocks: blocks.map(b => ({ ...b, done: blockDoneByKey.get(`${b.time}|${b.label}`) ?? false })),
+    blocks: blocks.map(b => ({ ...b, done: isBlockDone(b) })),
     weightKg,
     tdeeBootstrap: tb ? { bmr: tb.bmr, neat: tb.neat, formula: tb.formula } : null,
     segment,
