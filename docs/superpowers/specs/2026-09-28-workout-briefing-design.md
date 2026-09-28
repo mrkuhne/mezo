@@ -27,6 +27,7 @@ bd mezo-n6yqh (P0, "remove the prep mosaic") is stale and is closed with a point
 | D1 | The briefing is shown **on every fresh start** (option A). Suggested challenges are pre-ticked, so "Indulás" alone is enough. |
 | D2 | **Resume skips it**: an already-open workout instance (resume FAB, "Folytassuk", reload mid-session) lands straight on the card list. |
 | D3 | Mid-workout, the challenge badge on the exercise card is **tappable**: release (elengedés) or take back (visszavétel), no penalty (option A). |
+| D5 | The card's **"Múlt hét / Ma a cél" cells go** — the pre-filled set rows already carry the recommendation. The progression delta survives as a small chip beside the set count in the card head ("↑ +2,5 kg" / "↑ +1 ism." / "tartjuk" / "↓ −2,5 kg"). The fixed-step progression logic itself is a separate follow-up (mezo-bk7sn). |
 | D4 | Briefing content: challenge picker, expected duration, exercise+set counts, overload summary, niggle warning, exercise list. **Not** the per-muscle load ladder (it lives on Mai). |
 
 ## 4. Design
@@ -87,6 +88,11 @@ Kept / extended: the card badge `.wos-pill-quest`. It becomes a **button**:
 - Tap → small glass sheet: challenge label, target, why (1–2 lines), one button
   "Elengedem" (→ `undo`) or "Visszaveszem" (→ `accept`). Resolved (hit/miss) challenges:
   badge shows the outcome, sheet has no action.
+
+Card head (D5): `ProgressionBanner` (`components/ProgressionBanner.tsx`, mounted at
+`WorkoutCard.tsx:235`) is no longer rendered on the card; the head's set-count line gains a
+`progressionDeltaLabel`-based chip (up = coral, hold/down/deload = amber). The first-ever
+exercise cue line (`WorkoutCard.tsx:131-135`) is unchanged.
 
 Ceremony and review unchanged (they already show accepted challenges only).
 
