@@ -68,11 +68,11 @@ An in-progress gym session does not count until it is finished.
 - **Classifier reference.** The fallback reference (`prevApplied + planEat + balance`, `:224` and `:289`) becomes `prevApplied + movement(d) + balance(d)`.
 - **Explanation label.** `ExpenditureExplainer.avgMovementKcal` keeps its name. Its meaning is now the "logged movement, daily average". The FE label in `LearnedBaseExplainer` reads „logolt mozgás, napi átlag”.
 - **Why this is better.** Today a skipped planned session charges 426 kcal of energy that was never spent to the learned base, so it biases the base low. An extra-hard day inflates it. With identical movement on both sides, the base is the pure non-exercise need. A systematic model over-estimate is absorbed into the base (M3), so the weekly total stays right.
-- **Rollout.** An idempotent prod runner, `MovementModelMigrationRunner`, follows the `ActivityModelMigrationRunner` precedent: a version marker in `tdee_bootstrap` (`movementModel: 1`), a per-user try/catch, and logged counts. For each learning user it does two things:
-  1. Re-runs `reviewWeek` for every stored `expenditure_estimate` week, oldest first, so each row is re-fitted under the new movement input. Upsert semantics are already in place.
-  2. Recomputes the active goal, which drops the day-type split and refreshes the rationale.
+- **Rollout.** Bump `ActivityEnergyModel.VERSION` 2 → 3 and extend the existing idempotent prod runner `ActivityModelMigrationRunner` (the marker is `tdee_bootstrap.activityModel`). For every stale goal it does two things, in order, each isolated in a per-goal try/catch with logged counts:
+  1. `ExpenditureLearningService.rechainFrom(owner, earliestEstimateWeek)`. This replays every stored `expenditure_estimate` week before the current one, oldest first, under the new movement input. The upsert semantics are already in place.
+  2. `GoalEngineService.evaluate(owner, goalId)`. This drops the day-type split, refreshes the rationale and writes marker v3.
 
-  The plan must verify that `reviewWeek` over an existing row reproduces the same row when the inputs are unchanged. This is the idempotency test.
+  The plan's tests verify that a second boot is a no-op.
 
 ## 4. What the owner sees (prototype targets)
 
@@ -141,7 +141,7 @@ An in-progress gym session does not count until it is finished.
   - `ExpenditureLearningServiceIT` / `Test`: movement input equals the served movement.
   - A skipped session no longer lowers the base.
   - Replay is idempotent.
-- `MovementModelMigrationRunnerIT`: marker set, re-fit once, per-user failure isolated.
+- `ActivityModelMigrationRunnerIT`: v3 marker set, learning re-chained once, per-goal failure isolated, second run is a no-op.
 - `GoalProjectionServiceIT`: no split, new rationale.
 - `DietSettingsDayTypeShiftIT`: the field is accepted and ignored.
 
