@@ -131,4 +131,33 @@ class PersonFactExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(persisted).isZero();
     }
+
+    /** S8 eval fixture — the 09-26 shape, PARAPHRASED (never real text): an emotional retelling
+     *  that still states stable relationship facts. The fake returns what a working extractor
+     *  should; the IT pins resolution (TextFold: "Dori" → Dóri) and that ≥ 1 fact lands. The prompt
+     *  loosening itself is checked by the manual prod call after deploy (Task 16). */
+    @Test
+    void testExtractFromTurn_shouldKeepStableFactsFromAnEmotionalRetelling_andFoldNames() {
+        UUID userId = databasePopulator.populateUser("pfx-s8-eval@test.local");
+        PersonEntity dori = personPopulator.createPerson(userId, "Dóri");
+        personPopulator.createPerson(userId, "Bence");
+        String retelling = """
+                Megnyertük ma a strandröpi-tornát Dórival és Bencével, tavasz óta Dóri a párom a
+                pályán. Aztán mindenki hazament, én meg itt ülök egyedül, furcsa ez a csend.
+                Bence mondta, hogy jövőre szívesen játszana velünk.
+                [fake-person-facts:[{"name":"Dori","kind":"relationship_state","fact":"tavasz óta a strandröpi-párod","confidence":"high"},{"name":"BENCE","kind":"shared_activity","fact":"jövőre is együtt játszanátok","confidence":"medium"}]]""";
+
+        int persisted = extractionService.extractFromTurn(userId, UUID.randomUUID(), retelling, "Gratulálok!");
+
+        assertThat(persisted).isGreaterThanOrEqualTo(1);
+        assertThat(factsOf(userId, dori.getId())).extracting(PersonFactEntity::getFactText)
+                .containsExactly("tavasz óta a strandröpi-párod");
+    }
+
+    @Test
+    void testExtractionPrompt_shouldCountStableStatesAndRecurringPatterns_insideEmotionalTalk() {
+        String prompt = PersonFactExtractionService.EXTRACTION_PROMPT;
+        assertThat(prompt).contains("ismétlődő minta").contains("érzelmes")
+                .doesNotContain("bizonytalan egyezésnél hagyd ki");
+    }
 }

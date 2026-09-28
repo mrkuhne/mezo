@@ -123,19 +123,24 @@ class PersonFactServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testCapture_shouldCapPerSource() {
+    void testCapture_shouldCapPerPersonPerSource_andAtFifteenOverall() {
         UUID userId = databasePopulator.populateUser("pf-cap@test.local");
-        PersonEntity anna = personPopulator.createPerson(userId, "Anna");
+        List<PersonFactService.PersonFactCapture> proposals = new java.util.ArrayList<>();
+        PersonEntity first = null;
+        for (int p = 1; p <= 6; p++) {
+            PersonEntity person = personPopulator.createPerson(userId, "Személy" + p);
+            if (first == null) first = person;
+            for (int f = 1; f <= 4; f++) {
+                proposals.add(cap(person.getId(), PersonFactEntity.KIND_PREFERENCE, "tény " + p + "-" + f));
+            }
+        }
 
         List<PersonFactEntity> saved = personFactService.capture(userId,
-            PersonFactEntity.SOURCE_NIGHTLY_DAY, "2026-09-25",
-            List.of(
-                cap(anna.getId(), PersonFactEntity.KIND_PREFERENCE, "Egy"),
-                cap(anna.getId(), PersonFactEntity.KIND_PREFERENCE, "Kettő"),
-                cap(anna.getId(), PersonFactEntity.KIND_PREFERENCE, "Három"),
-                cap(anna.getId(), PersonFactEntity.KIND_PREFERENCE, "Négy")));
+            PersonFactEntity.SOURCE_NIGHTLY_DAY, "2026-09-27", proposals);
 
-        assertThat(saved).hasSize(3);
+        assertThat(saved).hasSize(15);
+        UUID firstId = first.getId();
+        assertThat(saved).filteredOn(f -> f.getPersonId().equals(firstId)).hasSize(3);
     }
 
     @Test
