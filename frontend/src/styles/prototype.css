@@ -6434,7 +6434,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .wkd-tile.wide { grid-column: 1 / -1; }
 .wkd-tile.lav  { background: var(--mz-wash-lav);  --wkd-glow: var(--mz-wkd-glow-lav); }
 .wkd-tile.gold { background: var(--mz-wash-gold); --wkd-glow: var(--mz-wkd-glow-gold); }
-.wkd-tile.sky  { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
+.wkd-tile.life { background: var(--mz-wash-sky);  --wkd-glow: var(--mz-wkd-glow-sky); }
 .wkd-tile.rose { background: var(--mz-wash-rose); --wkd-glow: var(--mz-wkd-glow-rose); }
 .wkd-tile.pred { background: var(--mz-qdone-bg);  --wkd-glow: var(--mz-wkd-glow-sage); }
 .wkd-row { display: flex; align-items: center; gap: 9px; }
@@ -6451,7 +6451,7 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 .wkd-eb.lav  { color: var(--mz-cell-lav-ink); }
 .wkd-eb.gold { color: var(--mz-stch-prop-ink); }
-.wkd-eb.sky  { color: var(--mz-wkd-life-ink); }
+.wkd-eb.life { color: var(--mz-wkd-life-ink); }
 .wkd-eb.rose { color: var(--mz-cell-rose-ink); }
 .wkd-eb.pred { color: var(--mz-stch-ok-ink); }
 .wkd-chev { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
@@ -22603,15 +22603,26 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkh-page .wkh-open { font-size: 11px; font-weight: 600; color: color-mix(in srgb, var(--dv-lav) 80%, var(--text-primary)); }
 .wkh-page .wkh-disceb { color: color-mix(in srgb, var(--dv-sky) 75%, var(--text-primary)); }
 .wkh-page .wkh-disctitle { margin-top: 2px; font-size: 15px; font-weight: 600; letter-spacing: -0.3px; color: var(--text-primary); }
-.wkh-page .wkh-discparts { min-width: 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
 .wkh-page .wkh-discempty { margin-top: 8px; font-size: 12px; color: var(--text-secondary); }
-.wkh-page .wkh-dots { gap: 5px; flex: none; }
-.wkh-page .wkh-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 6px var(--dc); }
-.wkh-page .wkh-dots i.pattern { --dc: var(--dv-lav); }
-.wkh-page .wkh-dots i.fact { --dc: var(--dv-amber); }
-.wkh-page .wkh-dots i.life { --dc: var(--dv-sky); }
-.wkh-page .wkh-dots i.memoir { --dc: var(--dv-rose); }
-.wkh-page .wkh-dots i.prediction { --dc: var(--dv-coral); }
+/* mezo-p87ok: the discoveries mix as ONE weighted bar + a wrapping legend. One dot per trace
+   (flex:none) filled the row at 72 and crushed the text to a word per line. A 7px floor keeps a
+   single memoir or prediction visible; the legend carries the numbers. */
+.wkh-page .wkh-discbar { display: flex; gap: 3px; width: 100%; height: 7px; margin-top: 10px; }
+.wkh-page .wkh-discbar i {
+  flex-basis: 0; min-width: 7px; border-radius: 999px; background: var(--dc);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dc) 60%, transparent);
+}
+.wkh-page .wkh-disclegend {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 9px;
+  font-size: 11.5px; line-height: 1.4; color: var(--text-secondary);
+}
+.wkh-page .wkh-disclegend > span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.wkh-page .wkh-disclegend i { width: 7px; height: 7px; border-radius: 50%; background: var(--dc); box-shadow: 0 0 5px var(--dc); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .pattern { --dc: var(--dv-lav); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .fact { --dc: var(--dv-amber); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .life { --dc: var(--dv-sky); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .memoir { --dc: var(--dv-rose); }
+.wkh-page :is(.wkh-discbar, .wkh-disclegend) .prediction { --dc: var(--dv-coral); }
 
 /* „Készítsd el most": the lit lavender CTA with the t-score icon (every colour restated, rule 36) */
 .wkh-page .wkh-genbtn {
@@ -22853,7 +22864,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .wkf-page .wkd-tile.wide.glass { min-height: 0; }
 .wkf-page .wkd-tile.gold.glass { --c: var(--dv-amber); }
-.wkf-page .wkd-tile.sky.glass { --c: var(--dv-sky); }
+.wkf-page .wkd-tile.life.glass { --c: var(--dv-sky); }
 .wkf-page .wkd-tile.rose.glass { --c: var(--dv-rose); }
 .wkf-page .wkd-tile.pred.glass { --c: var(--dv-coral); }
 .wkf-page .wkd-row { flex-wrap: wrap; gap: 10px; }
@@ -22876,6 +22887,37 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkf-page .wkd-stch.warn { --sc: var(--dv-amber); }
 .wkf-page .wkd-stch.mut { --sc: var(--text-muted); }
 .wkf-page .wkd-stch .t-ico { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45)); }
+/* mezo-p87ok — section eyebrows + the two bulk drawers (Minták / Új tudás). The drawer is the
+   glass; its rows are flat hairline rows (never glass inside glass). */
+.wkf-page .wkd-sec { margin: 16px 4px 8px; }
+.wkf-page .wkd-sec:first-child { margin-top: 2px; }
+.wkf-page .wkd-drawer.glass { --c: var(--dv-lav); display: block; padding: 13px 14px 6px; border-radius: 22px; }
+.wkf-page .wkd-drawer.gold.glass { --c: var(--dv-amber); }
+.wkf-page .wkd-drawer + .wkd-drawer { margin-top: 12px; }
+.wkf-page .wkd-drhead { display: flex; align-items: center; gap: 10px; padding-bottom: 6px; }
+.wkf-page .wkd-drhead .wkd-grow { flex: 1 1 auto; min-width: 0; }
+.wkf-page .wkd-drtitle { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.wkf-page .wkd-drsub { margin-top: 2px; font-size: 11.5px; line-height: 1.35; color: var(--text-secondary); }
+.wkf-page .wkd-drcount {
+  font-size: 28px; font-weight: 300; letter-spacing: -1px; font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+  text-shadow: 0 0 14px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.wkf-page .wkd-drows { display: flex; flex-direction: column; }
+.wkf-page .wkd-drow {
+  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 9px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 13.5px; line-height: 1.35; color: var(--text-primary); text-decoration: none;
+}
+.wkf-page .wkd-drow .wkd-grow { flex: 1 1 auto; min-width: 0; }
+.wkf-page .wkd-drow .wkd-stch { flex: none; }
+.wkf-page .wkd-drmore {
+  display: block; width: 100%; min-height: 44px; padding: 0; border: 0;
+  border-top: 1px solid var(--divider); background: none;
+  font: inherit; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer;
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+}
+.wkf-page .wkd-drmore:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; border-radius: 8px; }
 .wkf-page .wkl-ghost.uv-empty {
   --c: var(--dv-sky); margin-bottom: 12px; padding: 14px 16px; border-radius: 20px;
   background: rgba(245, 239, 230, 0.025); box-shadow: none;

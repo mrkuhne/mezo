@@ -885,6 +885,12 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 
 ## 9. Decisions, gotchas & deferred
 
+- **A bare `.sky` class is taken (`mezo-p87ok`, 2026-09-28).** The daypart sky band's dark-theme
+  rules are global: `:root[data-theme="dark"] .sky { opacity: .5 }` and
+  `:root[data-theme="dark"] .phone-screen .sky { display: none }`. Any component that uses `sky` as a
+  tone modifier class (`className="… sky …"`) is silently hidden in the app's only theme. The weekly
+  discoveries life-event tile hit this and shipped invisible; its tone is now `life`. Name tone
+  modifiers after the content (`life`, `pred`), or scope them (`.wkd-tile.life`), never bare `sky`.
 - **Startup (`mezo-qducz`; visszaöltöztetve `mezo-ju4j6.3`):** `main.tsx` wraps the router in
   `StartupSplash` once per document. The existing `PhoneFrame` contains the theme-token startup
   canvas, so desktop demos show it inside the same phone bezel as the app; real mobile/PWA stays

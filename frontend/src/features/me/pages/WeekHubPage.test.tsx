@@ -176,7 +176,12 @@ describe('Heti hub (mock mode)', () => {
   test('the discoveries tile counts the digest, quiet weeks included', () => {
     renderPage(`/me/week?start=${mockMeWeekStart}`)
     expect(screen.getByText('5 új nyom a memóriában')).toBeInTheDocument()
-    expect(screen.getByText('1 minta · 1 új tudás · 1 életesemény · memoár · 1 előrejelzés')).toBeInTheDocument()
+    for (const label of ['1 minta', '1 új tudás', '1 életesemény', '1 emlékkönyv', '1 előrejelzés']) {
+      expect(screen.getByText(label)).toBeInTheDocument()
+    }
+    // mezo-p87ok: a weighted bar with one slice per kind — never one mark per trace
+    expect(document.querySelectorAll('.wkh-discbar i')).toHaveLength(5)
+    expect(document.querySelector('.wkh-dots')).toBeNull()
   })
 
   test('week stepping: next is disabled on the current week, prev steps the title back', () => {

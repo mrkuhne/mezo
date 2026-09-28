@@ -698,8 +698,14 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   same `stale` probe against the fresh row's `generatedAt` (never hardcoded `false` — a log landing
   mid-generation still surfaces honestly) — `409 WEEKLY_REVIEW_WEEK_NOT_COMPLETE` while `weekStart +
   7 days` is still in the future, `404` if the fresh run still yields nothing (empty week). `GET
-  …/digest` maps the SAME week-window reads the generator's gather draws candidates from straight
-  to DTOs (patterns/newFacts/lifeEvents/memoir boolean/predictions) — `400` on a non-Monday
+  …/digest` maps the SAME week-window reads the generator's gather draws candidates from
+  to DTOs (patterns/newFacts/lifeEvents/memoir boolean/predictions), **folded to one trace per
+  discovery** (`mezo-p87ok`, 2026-09-28): the window returns one row per `pattern_event`, so a pair
+  confirmed then promoted in one week arrived twice and its promotion fact a third time (week
+  2026-09-21: 72 rows over 23 pairs). The digest keeps one ref per pattern with the week's biggest
+  kind (promoted > reinforced > confirmed, newest `occurredAt` first within a kind) and drops every
+  fact that is a folded pattern's `promotedFactId`; facts are newest first. The generator's gather
+  keeps the raw events — `400` on a non-Monday
   `start`, otherwise always `200`, empty lists the honest empty state, independent of whether the
   review row itself exists (`/me/week`'s `WeekDiscoveries` card's source).
 - **„A hét tanulságai" — the round's knowledge candidates (`mezo-d20.7.6`)** — until this slice the
