@@ -37,14 +37,15 @@ public class ChatDaySignalService {
     private final AiMessageRepository aiMessageRepository;
     private final TextSignalService textSignalService;
 
-    /** Empty when the day holds no user turn — a silent day is simply not a source. */
+    /** Empty when the day holds no user turn — a silent day is simply not a source. A message the
+     *  owner made Mezo forget ("ezt ne jegyezd meg", S8 mezo-d6ivw.12) is not a source either. */
     @Transactional
     public Optional<TextSignalEntity> extractDay(UUID userId, LocalDate day) {
         ZoneId zone = ZoneId.systemDefault();
         Instant dayStart = day.atStartOfDay(zone).toInstant();
         Instant dayEnd = day.plusDays(1).atStartOfDay(zone).toInstant();
         String joined = aiMessageRepository
-                .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                .findByCreatedByAndRoleAndDeletedFalseAndExtractionBlockedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
                         userId, AiMessageEntity.ROLE_USER, dayStart, dayEnd)
                 .stream()
                 .map(AiMessageEntity::getContent)

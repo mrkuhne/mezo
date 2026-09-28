@@ -487,8 +487,11 @@ public class PersonExtractionService {
                 : sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, day)) {
             append(sb, "SPORT-JEGYZET", sport.getNotes());
         }
+        // S8 (mezo-d6ivw.12): a message "ezt ne jegyezd meg" blocked stays out — otherwise the night
+        // re-reads what the owner forgot and saves it again in other words (capture only drops
+        // exact matches).
         for (AiMessageEntity message : aiMessageRepository
-                .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                .findByCreatedByAndRoleAndDeletedFalseAndExtractionBlockedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
                     userId, AiMessageEntity.ROLE_USER,
                     day.atStartOfDay(ZoneOffset.UTC).toInstant(),
                     day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())) {

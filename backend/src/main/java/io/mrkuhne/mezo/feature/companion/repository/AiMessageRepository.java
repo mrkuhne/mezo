@@ -32,6 +32,12 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
             UUID createdBy, String role, Instant from, Instant toExclusive);
 
+    /** S8 (mezo-d6ivw.12): the owner's chat rows in a window MINUS the ones "ezt ne jegyezd meg"
+     *  blocked — the input of every day-level learning pass (nightly people extraction, the chat-day
+     *  text signal). A forgotten message must not be re-read and re-learned in other words. */
+    List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndExtractionBlockedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+            UUID createdBy, String role, Instant from, Instant toExclusive);
+
     /**
      * V2.2 turn-embedding catch-up: the user half of a turn = the closest not-later user row
      * (≤, not < — the two rows of a turn can share a flush timestamp; role disambiguates).
