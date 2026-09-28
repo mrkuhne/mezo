@@ -204,12 +204,11 @@ Brainstorm 2026-09-28 (recon: researcher + investigator). Owner answers in bold.
   updated_at, date, kind (GYM|SPORT), day_of_week smallint null (0=Hét..6=Vas, SPORT only),
   time varchar(5) null (SPORT only), reason_category varchar + CHECK, reason_text text null`;
   partial unique index `(created_by, kind, date, coalesce(day_of_week,-1), coalesce(time,''))
-  where is_deleted = false`. A data changeset copies live `sport_slot_skip` rows in as
-  `SPORT/NONE`… **but as already-excused history they keep their advice semantics**; after the
-  copy `SportSlotSkipService` becomes a facade over `PlannedSkipService` (signatures kept, so
-  the advice writer and the 5 backend readers compile unchanged), and `sport_slot_skip` is no
-  longer written. Advice-created skips carry category `NONE` + `source='ADVICE'` and are
-  always excused (the coach proposed them).
+  where is_deleted = false`, plus `source varchar (USER|ADVICE)`. A data changeset copies the
+  live `sport_slot_skip` rows in as `SPORT / NONE / source=ADVICE`. Advice skips are always
+  excused (the coach proposed them). After the copy `SportSlotSkipService` becomes a facade
+  over `PlannedSkipService` (signatures kept, so the advice writer and the 5 backend readers
+  compile unchanged) and `sport_slot_skip` is no longer written.
 - **Central read** in train: `PlannedSkipService` — `skipsBetween(user, from, to)`,
   `isGymSkipped(user, date)`, `isSportSkipped(user, date, dow, time)`,
   `excusedDates…` via `PlannedSkipPolicy`. Every consumer in §6 + the recon list goes through
