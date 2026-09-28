@@ -485,7 +485,9 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
 
             assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isEqualTo(480);   // mezo-tb3s2: logged planned kcal is credited
             assertThat(m.extraKcal()).isZero();
+            assertThat(m.pendingKcal()).isZero();          // a past date never previews
         }
 
         // (b) A Saturday with no slots and a logged volleyball session with kcal 573 →
@@ -515,7 +517,9 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
 
             assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isEqualTo(480);
             assertThat(m.extraKcal()).isEqualTo(300);
+            assertThat(m.movementKcal()).isEqualTo(780);
         }
 
         // (d) A Monday with a gym slot, a completed meso instance and a completed custom instance
@@ -547,6 +551,9 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
             assertThat(m.plannedDone()).isTrue();
             assertThat(m.extraKcal()).isEqualTo(expectedExtra);
+            // mezo-tb3s2: the planned meso instance (no start/finish/active time → the 60′ default)
+            // credits the same moderate-gym net kcal into plannedKcal.
+            assertThat(m.plannedKcal()).isEqualTo(expectedExtra);
         }
 
         // (e) A skipped slot (sport-slot skip on that date) plus a logged session → extra.
@@ -603,8 +610,8 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             }
             assertThat(ranged.get(monday).plannedDone()).isFalse();
             assertThat(ranged.get(monday).extraKcal()).isPositive();
-            assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 0));
-            assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, satKcal));
+            assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 480, 0, 0));
+            assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, 0, satKcal, 0));
             assertThat(ranged.get(monday.plusDays(1))).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
         }
 
@@ -637,6 +644,79 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
             assertThat(m.plannedDone()).isFalse();
             assertThat(m.extraKcal()).isZero();
+        }
+
+        // ── mezo-tb3s2 (spec §2): logged PLANNED kcal is credited; pending previews today's plan ──
+
+        /** round((MET_moderate − 1) × bmr/24 × minutes/60) — independent of ActivityEnergyModel. */
+        private int moderateNet(BigDecimal bmr, String met, int minutes) {
+            return new BigDecimal(met).subtract(BigDecimal.ONE).multiply(bmr)
+                .multiply(BigDecimal.valueOf(minutes))
+                .divide(BigDecimal.valueOf(24 * 60), MathContext.DECIMAL64)
+                .setScale(0, RoundingMode.HALF_UP).intValueExact();
+        }
+
+        @Test
+        void testMovementOn_shouldCreditPlannedGymKcal_whenMesoInstanceDone() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            BiometricProfileEntity profile = seedBody(owner, "80.00");
+            train.createGymSlot(owner, 2, "09:00");
+            UUID mesoId = train.createActiveMeso(owner).getId();
+            train.createWorkoutInstance(owner, train.createTemplateDay(owner, mesoId, "Sze"), wed,
+                "completed", 3600);
+            int expectedGymNet60 = moderateNet(
+                tdeeBootstrapService.bmr(profile, new BigDecimal("80.00")), "3.5", 60);
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isEqualTo(expectedGymNet60);
+            assertThat(m.extraKcal()).isZero();
+            assertThat(m.movementKcal()).isEqualTo(m.plannedKcal() + m.extraKcal());
+        }
+
+        @Test
+        void testMovementOn_shouldCreditPlannedSportPersistedKcal() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");   // recurring volleyball slot
+            train.withKcal(train.createSportSession(owner, wed), 490);
+
+            assertThat(service.movementOn(owner, wed).plannedKcal()).isEqualTo(490);
+        }
+
+        @Test
+        void testMovementOn_shouldReportPendingOnlyForTodayOrLater() {
+            UUID owner = owner();
+            LocalDate today = LocalDate.now();                  // pending keys on the real clock
+            int dow = today.getDayOfWeek().getValue() - 1;
+            BiometricProfileEntity profile = seedBody(owner, "80.00");
+            BigDecimal bmr = tdeeBootstrapService.bmr(profile, new BigDecimal("80.00"));
+            train.createGymSlot(owner, dow, "07:00");
+            train.createScheduleSlot(owner, dow, "18:00", 120, "training");  // volleyball, 120′
+            int gymDefaultNet = moderateNet(bmr, "3.5", 60);    // gym-default-minutes = 60
+            int volleyball120Net = moderateNet(bmr, "4.0", 120);
+
+            WorkoutWindowQueryService.DayMovement now = service.movementOn(owner, today);
+
+            assertThat(now.plannedKcal()).isZero();
+            assertThat(now.extraKcal()).isZero();
+            assertThat(now.pendingKcal()).isEqualTo(gymDefaultNet + volleyball120Net);
+            assertThat(service.movementOn(owner, today.minusWeeks(1)).pendingKcal()).isZero();
+        }
+
+        @Test
+        void testMovementOn_shouldCountNullKcalSportAsZero() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");
+            train.createSportSession(owner, wed);               // matches the slot; kcal null (unknown body)
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isZero();
         }
     }
 }

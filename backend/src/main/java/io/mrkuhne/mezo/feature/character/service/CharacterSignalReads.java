@@ -831,8 +831,8 @@ public class CharacterSignalReads {
 
     /**
      * The date's SERVED kcal target, projected through the same {@link DayTargetProjector}
-     * {@code FuelDayService} uses (mezo-32m82) — goal-week segment, day-type pick on planned
-     * training done, unplanned extra movement, BMR floor — so the adherence detectors judge a day
+     * {@code FuelDayService} uses (mezo-32m82, mezo-tb3s2) — goal-week segment, base + logged
+     * planned + extra movement + balance, BMR floor — so the adherence detectors judge a day
      * against exactly the number the Fuel hero showed. No goal → the config kcal. {@code movement}
      * is the window's batched {@link WorkoutWindowQueryService#movementBetween} read.
      */

@@ -19805,11 +19805,12 @@ components:
       type: object
       nullable: true
       description: >-
-        The served target's equation (mezo-32m82): baseKcal (BMR × NEAT) +
-        plannedMovementKcal (the weekly plan's share for the day, incl. the
-        day-type shift) + extraMovementKcal (unplanned logged movement, net) +
-        balanceKcal (goal deficit/surplus; also absorbs the BMR floor) =
-        targetKcal. Null on the static path (no goal or no biometric snapshot).
+        The served target's equation (mezo-32m82, mezo-tb3s2): baseKcal (BMR ×
+        NEAT) + plannedMovementKcal (the LOGGED planned sessions' net kcal) +
+        extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal
+        deficit/surplus; also absorbs the BMR floor) = targetKcal.
+        pendingMovementKcal is display only and never part of the sum. Null on
+        the static path (no goal or no biometric snapshot).
       required:
         - baseKcal
         - plannedMovementKcal
@@ -19827,6 +19828,12 @@ components:
           type: integer
         targetKcal:
           type: integer
+        pendingMovementKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Today's planned but not yet logged sessions at the moderate band
+            (mezo-tb3s2) — display only, never in targetKcal.
         baseSource:
           type: string
           enum:

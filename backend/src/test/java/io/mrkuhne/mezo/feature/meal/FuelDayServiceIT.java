@@ -105,9 +105,10 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     }
 
     /**
-     * mezo-32m82 D3: an UNPLANNED logged session (no sport slot / event that weekday) is credited
-     * at its persisted net kcal on top of the (uniform) segment kcal, the delta lands in carbs, and
-     * the served equation rides along on both the day and the week rollup.
+     * mezo-32m82 D3 / mezo-tb3s2: an UNPLANNED logged session (no sport slot / event that weekday) is
+     * credited at its persisted net kcal on top of base + balance (mezo-tb3s2: no longer on top of the
+     * segment kcal), the delta vs. the segment kcal lands in carbs, and the served equation rides along
+     * on both the day and the week rollup.
      */
     @Test
     void testGetDay_shouldCreditUnplannedSessionKcalAndCarryEnergy_whenSaturdayVolleyballWasNotPlanned() {
@@ -140,10 +141,11 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
 
         FuelDayResponse day = fuelDayService.getDay(owner, saturday);
 
-        int expectedKcal = segKcal + sessionKcal;
+        // mezo-tb3s2: target = base + logged movement + balance = 2356 + 573 − 327 = 2602
+        int expectedKcal = neatBaseline.intValueExact() + sessionKcal + balanceKcal;
         assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(expectedKcal));
         assertThat(day.getTargets().getC())
-            .isEqualByComparingTo(BigDecimal.valueOf(segCarbsG + Math.round(sessionKcal / 4f)));
+            .isEqualByComparingTo(BigDecimal.valueOf(segCarbsG + Math.round((expectedKcal - segKcal) / 4f)));
         FuelDayEnergy e = day.getEnergy();
         assertThat(e).isNotNull();
         assertThat(e.getExtraMovementKcal()).isEqualTo(sessionKcal);
@@ -187,8 +189,9 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(e.getFormulaBaseKcal()).isEqualTo(2473);
         assertThat(e.getBaseSdKcal()).isEqualTo(140);
         assertThat(e.getBaseConfidence()).isEqualTo(FuelDayEnergy.BaseConfidenceEnum.MEDIUM);
+        // mezo-tb3s2: nothing logged → base + balance = 2356 − 327 (no longer the segment kcal)
         assertThat(e.getBaseKcal() + e.getPlannedMovementKcal() + e.getExtraMovementKcal() + e.getBalanceKcal())
-            .isEqualTo(e.getTargetKcal()).isEqualTo(segKcal);
+            .isEqualTo(e.getTargetKcal()).isEqualTo(2356 - 327);
     }
 
     @Test

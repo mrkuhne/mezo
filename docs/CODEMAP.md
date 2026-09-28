@@ -1066,15 +1066,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 26 IT + 8 unit
-  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`,
+  - **ITs:** `FuelDayMovementIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`,
     `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`,
     `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachStoreIT`,
     `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`,
     `MealOverridesServiceIT`, `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`,
     `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`,
     `WaterLogApiIT`
-  - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryCatalogPopulator`,
-    `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
+    `PantryCatalogPopulator`, `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`,
+    `WeightLogPopulator`
 
 ### medication
 
