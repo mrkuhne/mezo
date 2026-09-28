@@ -203,40 +203,49 @@ public class MesocycleReportService {
      * exercises (an empty day is not a session anyone could have done) times {@code weeksElapsed} —
      * {@code MesoWeeks.weekOf} against the close window's end, which at close time IS
      * {@code clampWeek(startDate, weeks)} and stays stable if the report is regenerated later —
-     * minus the excused GYM dates inside the run's window (Kihagyás S1, mezo-q4xt2.1): a serious
-     * reason, a free pass or an advice skip is not a session anyone could have done either, so it
-     * leaves the planned count exactly like an empty template day does. Never negative.
+     * minus the excused GYM dates inside the run's window that fall on one of those non-empty
+     * planned weekdays (Kihagyás S1, mezo-q4xt2.1): a serious reason, a free pass or an advice skip
+     * leaves the planned count, but a skip on a rest day or an empty template day never had a
+     * planned session to remove. Never negative; {@code completionPct} is capped at 100.
      */
     private MesoReportJson.Adherence adherence(UUID createdBy, MesocycleEntity run,
             int weeksElapsed, List<WorkoutSessionEntity> instances, LocalDate windowEnd) {
-        int excusedCount = plannedSkipService
-            .excusedDates(createdBy, PlannedSkipEntity.Kind.GYM, run.getStartDate(), windowEnd).size();
-        int plannedSessions = Math.max(0,
-            countNonEmptyTemplateDays(createdBy, run.getId()) * weeksElapsed - excusedCount);
+        List<WorkoutSessionEntity> nonEmptyDays = nonEmptyTemplateDays(createdBy, run.getId());
+        Set<String> plannedLabels = nonEmptyDays.stream()
+            .map(WorkoutSessionEntity::getDayLabel)
+            .collect(Collectors.toSet());
+        int excusedCount = (int) plannedSkipService
+            .excusedDates(createdBy, PlannedSkipEntity.Kind.GYM, run.getStartDate(), windowEnd).stream()
+            .filter(d -> plannedLabels.contains(
+                WorkoutService.HU_DAY_LABELS.get(d.getDayOfWeek().getValue() - 1)))
+            .count();
+        int plannedSessions = Math.max(0, nonEmptyDays.size() * weeksElapsed - excusedCount);
         int completedSessions = instances.size();
         int completedWeeks = (int) instances.stream()
             .map(i -> MesoWeeks.weekOf(run.getStartDate(), i.getDate(), run.getWeeks()))
             .distinct().count();
         int completionPct = plannedSessions == 0
             ? 0
-            : (int) Math.round(100.0 * completedSessions / plannedSessions);
+            : (int) Math.min(100, Math.round(100.0 * completedSessions / plannedSessions));
         return new MesoReportJson.Adherence(
             plannedSessions, completedSessions, run.getWeeks(), completedWeeks, completionPct);
     }
 
-    private int countNonEmptyTemplateDays(UUID createdBy, UUID mesoId) {
-        List<UUID> dayIds = workoutSessionRepository
+    /** The run's template days that carry at least one exercise. */
+    private List<WorkoutSessionEntity> nonEmptyTemplateDays(UUID createdBy, UUID mesoId) {
+        List<WorkoutSessionEntity> days = workoutSessionRepository
             .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)).stream()
             .filter(s -> s.getTemplateSessionId() == null)
-            .map(WorkoutSessionEntity::getId)
             .toList();
-        if (dayIds.isEmpty()) {
-            return 0;
+        if (days.isEmpty()) {
+            return List.of();
         }
-        return (int) exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, dayIds).stream()
+        Set<UUID> withExercises = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                createdBy, days.stream().map(WorkoutSessionEntity::getId).toList()).stream()
             .map(e -> e.getWorkoutSessionId())
-            .distinct().count();
+            .collect(Collectors.toSet());
+        return days.stream().filter(d -> withExercises.contains(d.getId())).toList();
     }
 
     /**

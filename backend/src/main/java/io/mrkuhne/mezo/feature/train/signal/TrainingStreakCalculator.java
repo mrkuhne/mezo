@@ -43,9 +43,9 @@ public class TrainingStreakCalculator implements RobustnessSource {
         runSessionLogRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy)
             .forEach(r -> trainingWeeks.add(weekKey(r.getDate())));
 
-        Set<Long> bridged = plannedSkipService.bridgedWeeks(
-            createdBy, LocalDate.now(TZ).minusYears(1), LocalDate.now(TZ));
-        long week = weekKey(LocalDate.now(TZ));
+        LocalDate today = LocalDate.now(TZ);
+        Set<Long> bridged = plannedSkipService.bridgedWeeks(createdBy, today.minusYears(1), today);
+        long week = weekKey(today);
         int streak = 0;
         // A bridged week (≥1 excused skip, no session) neither breaks nor extends the streak
         // (spec §8.1.6) — it is skipped over rather than counted or stopped at.

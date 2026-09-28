@@ -85,7 +85,8 @@ public class MissedWorkoutsRule implements FlagRule {
         Set<LocalDate> trained =
             Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
         // Kihagyás S1 (mezo-q4xt2.1): an excused GYM day is not a violation of the schedule —
-        // it neither extends nor resets the miss-streak run, so it is skipped over entirely.
+        // it neither extends nor resets the miss-streak run, so it is skipped over entirely (unless
+        // it was trained anyway — then it resets the run like any trained day).
         Set<LocalDate> excused = plannedSkipService.excusedDates(userId, Kind.GYM, from, to);
 
         List<String> plannedDays = new ArrayList<>();
@@ -98,14 +99,16 @@ public class MissedWorkoutsRule implements FlagRule {
             if (!plannedDows.contains(dow)) {
                 continue;
             }
+            if (trained.contains(day)) {
+                // A trained day resets the run even if it also carries a skip — training wins.
+                plannedDays.add(day.toString());
+                run = 0;
+                continue;
+            }
             if (excused.contains(day)) {
                 continue;
             }
             plannedDays.add(day.toString());
-            if (trained.contains(day)) {
-                run = 0;
-                continue;
-            }
             missedDays.add(day.toString());
             run++;
             longestRun = Math.max(longestRun, run);
