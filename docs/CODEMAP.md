@@ -1018,8 +1018,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx,
     WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx,
     goalSettingsEditor.css
-  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, effectCopy.ts, goalLabels.ts,
-    goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
+  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, discoveryDrawers.ts, effectCopy.ts,
+    goalLabels.ts, goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
     gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts,
     habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
     nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
