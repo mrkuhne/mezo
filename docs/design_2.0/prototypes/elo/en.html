@@ -2753,7 +2753,7 @@ svg{overflow:visible}
       <li>Naplózás: <a href="#" data-sheet="weight">súly mérése</a> · <a href="#" data-sheet="sleep">alvás rögzítése</a> · <a href="#" data-sheet="stats">„miért számít”</a></li>
       <li>Éjszaka: <a href="#ejszaka/idle">felébredtél?</a> · <a href="#ejszaka/wait">figyelem az időt</a> · <a href="#ejszaka/legzes">légzés</a> · <a href="#ejszaka/getup">ideje felkelni</a></li>
       <li>Hét: <a href="#" data-st="het:run">a mostani hét</a> · <a href="#" data-st="het:closed">lezárt hét</a></li>
-      <li>Felfedezések: <a href="#" data-st="disc:sok">sok (72)</a> · <a href="#" data-st="disc:keves">kevés (5)</a> · <a href="#" data-st="disc:csend">csendes hét</a></li>
+      <li>Felfedezések: <a href="#" data-st="disc:sok">sok (34)</a> · <a href="#" data-st="disc:keves">kevés (5)</a> · <a href="#" data-st="disc:csend">csendes hét</a></li>
     </ul>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
@@ -3250,13 +3250,18 @@ const PAT_HEAD=[['A késői lefekvés a másnapi napstruktúrát is gyengítheti
   ['A hirtelen mérlegemelkedés fokozhatja az aznapi stresszt','reinforced'],['Vízbevitel és napi energia','reinforced']];
 const SIG=['Fehérjebevitel','Alvásminőség','Lépésszám','Koffein','Hangulat','Esti képernyőidő','Edzésnap','Stressz','Reggeli check-in','Hála-napló'];
 const SIG2=['másnapi energia','fókusz','étvágy','pihentség','edzésteljesítmény','türelem'];
-const PATS=[...PAT_HEAD,...Array.from({length:36},(_,i)=>[`${SIG[i%SIG.length]} és ${SIG2[(i*7)%SIG2.length]}`,'confirmed'])];
+/* Egy minta = egy nyom (mezo-p87ok): a hét több eseménye ugyanarról a mintáról egyetlen sor,
+   a legnagyobb hírrel (előléptetve > erősödött > megerősítve). 23 minta, mint egy valódi héten. */
+const PATS=[['A késői lefekvés a másnapi napstruktúrát is gyengítheti','promoted'],
+  ...Array.from({length:13},(_,i)=>[`${SIG[i%SIG.length]} és ${SIG2[i%SIG2.length]}`,'promoted']),
+  ...PAT_HEAD.slice(1,5),
+  ...Array.from({length:5},(_,i)=>[`${SIG[(i+13)%SIG.length]} és ${SIG2[(i+13)%SIG2.length]}`,'confirmed'])];
 const FACTS=['A fehérjecél tartása javítja a check-in energiát','Hétköznap 23:00 után fekszel le a legtöbbször','A kedd a legsűrűbb munkanapod','Futás után jobb a hangulatod','A hétvégi reggeli rendszerint kimarad',
   'A délutáni kávé után később alszol el','Az edzések 70%-a reggel van','Hosszú meeting után ritkábban logolsz','Vasárnap este tervezed a hetet','A séták főleg ebédszünetben vannak',
   'A vacsora a napi kalória 40%-a','Stresszes napokon több a nassolás','Pénteken a legjobb a hangulatod','A hála-naplót este írod','Utazós napokon kimarad az edzés',
   'A 7 óránál rövidebb alvás után gyengébb a fókusz','A húst a hét elején eszed','A szombat a legaktívabb napod','Kevesebb víz megy le munkanapokon','A reggeli check-in 8 előtt van',
   'Hétvégén 1 órával többet alszol','A lábnapok után fáradtabb vagy','A barátokkal töltött este jót tesz','A zöldségbevitel a hét végére csökken','Az esti olvasás segít elaludni','Hétfőn a legnagyobb a lendületed'];
-const DSET={sok:{p:PATS,f:FACTS,l:[['Nyaralás kezdete','szept. 23.'],['Új munkahelyi projekt','szept. 22.'],['Költözés előkészítése','szept. 26.']],m:1,r:[['A súly csökkenő trendje folytatódik fehérjecél mellett','pending']]},
+const DSET={sok:{p:PATS,f:FACTS.slice(0,6),l:[['Nyaralás kezdete','szept. 23.'],['Új munkahelyi projekt','szept. 22.'],['Költözés előkészítése','szept. 26.']],m:1,r:[['A súly csökkenő trendje folytatódik fehérjecél mellett','pending']]},
   keves:{p:PATS.slice(1,2),f:FACTS.slice(0,1),l:[['Nyaralás kezdete','szept. 23.']],m:1,r:[['A súly csökkenő trendje folytatódik fehérjecél mellett','pending']]},
   csend:{p:[],f:[],l:[],m:0,r:[]}};
 const PRED={pending:['Folyamatban','var(--lav)','clock'],validated:['Bevált','var(--sage)','tick'],missed:['Nem jött be','var(--gold)','skip']};
