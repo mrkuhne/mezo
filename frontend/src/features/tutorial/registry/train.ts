@@ -357,7 +357,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-lang', orb: 's-orb-figyel', anchor: 'session-start',
         title: 'Szettről szettre.',
-        voice: 'Minden kártya egy gyakorlat: beírod a súlyt és az ismétlést, köztük pihenő-időzítő jár. A vállalt küldetés a gyakorlatán ül — koppints rá, ha elengednéd. A ⋯ alatt a jegyzet és a szett-igazítás; kilépni bármikor lehet.',
+        voice: 'Minden kártya egy gyakorlat: beírod a súlyt és az ismétlést, köztük pihenő-időzítő jár. A vállalt küldetés a gyakorlatán ül (koppints rá, ha elengednéd), a ⋯ alatt a jegyzet és a szett-igazítás lakik.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
