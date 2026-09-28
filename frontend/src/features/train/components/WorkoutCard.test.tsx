@@ -107,6 +107,15 @@ test('a first-ever exercise (no lastWeek) renders the rationale as the .wo-cue s
   expect(container.querySelector('.wo-cue p')).toHaveTextContent('A múlt heti RIR alapján tartjuk a súlyt.')
 })
 
+test('a target past the range top carries the engine\'s reason in the cue slot (mezo-bk7sn)', () => {
+  const why = 'A 105 kg +2% ugrás lenne → előbb 11 ismétlés 102,5 kg-mal'
+  const { container } = renderCard({ exercise: makeExercise({
+    progression: { lever: 'rep', deltaKg: null, deltaReps: 1, targetWeightKg: 102.5, targetReps: 11, rationale: why },
+  }) })
+  expect(container.querySelectorAll('.wo-cue')).toHaveLength(1)
+  expect(container.querySelector('.wo-cue p')).toHaveTextContent(why)
+})
+
 test('a challenge taken on at Indulás renders as a tappable badge that opens its glass (mezo-mgu2r)', async () => {
   const user = userEvent.setup()
   const onOpenChallenge = vi.fn()

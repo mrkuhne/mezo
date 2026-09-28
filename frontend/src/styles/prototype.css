@@ -18281,6 +18281,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .wos .wo-delta.is-up { color: #FFB39C; background: color-mix(in srgb, var(--dv-coral) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
 .wos .wo-card-copy .wo-delta { justify-self: start; width: max-content; margin-top: 4px; }
+/* why a briefing row's target sits past the range top (reps before a too-big jump, mezo-bk7sn) */
+.wos .wbr-row-why { display: block; margin-top: 2px; font-style: normal; font-size: 11px; line-height: 1.35; color: #FFD08A; }
 /* the active-phase challenge badge (tap → release / take back); released = dimmed, target struck */
 .wos .wos-pills button.wos-pill-quest { cursor: pointer; font: inherit; }
 .wos .wos-pills .wos-pill-quest.is-released { opacity: 0.6; }
