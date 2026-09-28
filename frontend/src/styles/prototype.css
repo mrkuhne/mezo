@@ -30171,7 +30171,9 @@ main.settings-page {
   font-size: 13px; font-weight: 600; color: var(--text-primary);
   background: color-mix(in srgb, var(--c) 12%, transparent); box-shadow: inset 3px 0 0 var(--c); }
 .fwl-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
-.fwl-qbtn { flex: 0 0 auto; padding: 7px 12px; border: 0; border-radius: 999px; white-space: nowrap;
+/* A felirat tördelhet, a gomb zsugorodhat: egy hosszú felirat se tolja szét a sort (layout.spec „hosszú nevek”). */
+.fwl-qbtn { flex: 0 1 auto; max-width: 50%; padding: 7px 12px; border: 0; border-radius: 999px;
+  white-space: normal; overflow-wrap: anywhere; text-align: center;
   font: 600 12.5px/1.2 var(--ff-body); color: var(--text-secondary);
   background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
 .fwl-qbtn.is-on { color: #141210; background: var(--dv-sage);
