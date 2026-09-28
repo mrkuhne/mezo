@@ -1945,3 +1945,11 @@ conversation); rewriting daily summaries already written before the forget; `mez
     across consecutive days: the first `nextDouble()` moves almost linearly with the seed
     (the check-in "nap kérdése" drew the same branch for weeks; `mezo-x6t01`). Mix the seed
     (SplitMix64) before seeding.
+51. **(S8b)** A "forget" is only honest when EVERY channel that re-reads the source honours the
+    marker: extraction, recall (lexical, dense, legacy ANN), the projection repair and embed
+    catch-up (else the nightly sweep re-projects it), derived rows (mentions → daily summary,
+    person page) and raw-record tools. Grep every reader of the source table before promising
+    "többé nem használom" in the UI.
+52. **(S8b)** Java text blocks strip trailing spaces: concatenating `"… and not " + fragment`
+    across a `"""` boundary produced `notcoalesce`. Pad and parenthesise SQL fragments that are
+    spliced into text blocks.
