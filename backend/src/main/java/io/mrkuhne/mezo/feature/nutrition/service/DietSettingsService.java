@@ -52,6 +52,7 @@ public class DietSettingsService {
     @Transactional
     public DietSettingsResponse setSettings(UUID userId, SetDietSettingsRequest req) {
         validateCustomSplit(req);
+        boolean wasLearning = resolver.resolve(userId).learningEnabled();
         DietSettingsEntity row = repository.findByCreatedByAndDeletedFalse(userId)
             .orElseGet(() -> {
                 DietSettingsEntity e = new DietSettingsEntity();
@@ -69,6 +70,12 @@ public class DietSettingsService {
         row.setDayTypeShiftKcal(req.getDayTypeShiftKcal());
         row.setLearningEnabled(req.getLearningEnabled() != null ? req.getLearningEnabled() : row.getLearningEnabled());
         repository.save(row);
+        if (!wasLearning && Boolean.TRUE.equals(row.getLearningEnabled())) {
+            // Switch flipped back ON (mezo-3n2so): an open weekly_correction proposed while the
+            // formula served would, once accepted, write a balance adjustment the learned path
+            // ignores — retire it before the recompute serves the learned base again.
+            goalEngineService.retireWeeklyCorrection(userId);
+        }
         // The split moved (Diet Plan slice 1 — the 7th recompute trigger): re-prescribe the owner's
         // ACTIVE goal so segments carry the new carbsG/fatG. No active goal → skip gracefully.
         goalEngineService.recomputeActiveGoal(userId);

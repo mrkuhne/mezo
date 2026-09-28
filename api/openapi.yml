@@ -2862,7 +2862,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: No logged intake on that day
+          description: 'No logged intake on that day, or a concurrent mark on the same day'
           content:
             application/json:
               schema:
@@ -16287,6 +16287,7 @@ components:
           enum:
             - formula
             - adaptive
+            - learned
             - unavailable
         explanationCode:
           type: string
@@ -16542,6 +16543,7 @@ components:
           enum:
             - formula
             - adaptive
+            - learned
         segments:
           type: array
           items:

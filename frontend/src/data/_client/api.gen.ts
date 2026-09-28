@@ -6653,7 +6653,7 @@ export interface components {
             carbsG?: number | null;
             fatG?: number | null;
             /** @enum {string} */
-            basis: "formula" | "adaptive" | "unavailable";
+            basis: "formula" | "adaptive" | "learned" | "unavailable";
             explanationCode: string;
         };
         GoalOverviewSegment: {
@@ -6749,7 +6749,7 @@ export interface components {
             /** Format: date-time */
             generatedAt: string;
             /** @enum {string} */
-            basis: "formula" | "adaptive";
+            basis: "formula" | "adaptive" | "learned";
             segments: components["schemas"]["GoalPrescriptionSegment"][];
             guardStatus: components["schemas"]["GoalGuardStatus"];
             feasibility: components["schemas"]["GoalFeasibility"];
@@ -15362,7 +15362,7 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
-            /** @description No logged intake on that day */
+            /** @description No logged intake on that day, or a concurrent mark on the same day */
             409: {
                 headers: {
                     [name: string]: unknown;

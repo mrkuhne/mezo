@@ -119,7 +119,7 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/IntakeDayMarkResult' } } }
         '400': { description: Future day, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '409': { description: No logged intake on that day, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'No logged intake on that day, or a concurrent mark on the same day', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     delete:
       tags: [Goal]
       operationId: clearIntakeDayMark
@@ -454,7 +454,7 @@ components:
         proteinG: { type: integer, nullable: true }
         carbsG: { type: integer, nullable: true }
         fatG: { type: integer, nullable: true }
-        basis: { type: string, enum: [formula, adaptive, unavailable] }
+        basis: { type: string, enum: [formula, adaptive, learned, unavailable] }
         explanationCode: { type: string }
     GoalOverviewSegment:
       type: object
@@ -539,7 +539,7 @@ components:
       required: [generatedAt, basis, segments, guardStatus, feasibility]
       properties:
         generatedAt: { type: string, format: date-time }
-        basis: { type: string, enum: [formula, adaptive] }
+        basis: { type: string, enum: [formula, adaptive, learned] }
         segments: { type: array, items: { $ref: '#/components/schemas/GoalPrescriptionSegment' } }
         guardStatus: { $ref: '#/components/schemas/GoalGuardStatus' }
         feasibility: { $ref: '#/components/schemas/GoalFeasibility' }

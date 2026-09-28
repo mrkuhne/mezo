@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-09-27
+updated: 2026-09-28
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -189,7 +189,7 @@ The long-term goal surface is now a compact **status hub**, not a vertically sta
 
 `GoalsPage` gets the active id from `useGoal()` and the display read model from `useGoalOverview(goalId)`. `useGoal()` now selects **only** `status === 'active'`; a planned-only response is the same no-active-goal state as an empty list. Loading renders the matching hero/tile skeleton. `courseStatus=invalid` is a fail-safe coral state: it hides calorie values and exposes `Cél javítása` → settings instead of presenting stale prescription output. The biometric creation gate and `/me/goals/weight/new` wizard remain unchanged. The previous inline `GoalRecept`, `GoalTimeline`, `GoalPlanSlots`, edit/manage sheet, and accept/dismiss actions are no longer mounted on the hub; their information/actions live behind the stable detail routes:
 
-- **`/diet` (`GoalDietPage`, sage):** today kcal + day type, P/C/F cells, a single aligned training/rest/week-average comparison and formula/adaptive provenance. `unavailable` or an invalid goal hides all stale kcal.
+- **`/diet` (`GoalDietPage`, sage):** today kcal + day type, P/C/F cells, a single aligned training/rest/week-average comparison and the frame's provenance — „Formula-alap” / „Adaptív terv” / „Tanult alap” (`basis="learned"`, the learned-expenditure base, `mezo-3n2so`). `unavailable` or an invalid goal hides all stale kcal.
 - **`/segment` (`GoalSegmentPage`, gold):** current segment/week range and next change on `GoalSegmentRail`; its explanation explicitly says phases may alter strategy/guards but do not invent a second exercise-calorie estimate.
 - **`/plans` (`GoalPlansPage`, sky):** `GoalConnectionTimeline` renders mesocycle/running lanes, coverage gaps and the actual `sportSchedule` sport/training-or-match/location/day/time/duration supplied by the overview — no static club or “végig” copy. A clipped link carries the visible „A cél végéig” chip. The page explicitly explains that mesocycle phase/guard changes do not themselves add kcal; recurring gym/sport and running sessions supply EAT. The two attach buttons open `AttachPlanSheet` preselected by type; archived and already-linked plans are absent. Attach rejects duplicate/same-type-overlap/out-of-window plans server-side; detach invalidates `['goal-overview', goalId]` and the legacy timeline query.
 - **`/guards` (`GoalGuardsPage`, lavender):** healthy/total shield summary, top issue and typed strength/muscle cards. Notes only explain; `active`, `breached`, below-maintenance muscle list and rate-cap fields decide visual state, so an inactive guard never looks alarming.

@@ -163,8 +163,11 @@ class IntakeDayMarkServiceIT extends AbstractIntegrationTest {
     @Test
     void futureDayBadRequest() {
         seedLearner(true);
+        // Anchored to the service's own clock, +2 days: the fixture's `today` may already be
+        // "yesterday" when the run crosses midnight, so today.plusDays(1) could be a valid day.
+        LocalDate future = LocalDate.now().plusDays(2);
 
-        assertThatThrownBy(() -> service.mark(userId, today.plusDays(1), "COMPLETE"))
+        assertThatThrownBy(() -> service.mark(userId, future, "COMPLETE"))
             .isInstanceOfSatisfying(ResponseStatusException.class,
                 ex -> assertThat(ex.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
     }

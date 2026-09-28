@@ -10,6 +10,7 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,7 +58,13 @@ public class IntakeDayMarkService {
             return m;
         });
         mark.setStatus(status);
-        marks.saveAndFlush(mark);
+        try {
+            marks.saveAndFlush(mark);
+        } catch (DataIntegrityViolationException raced) {
+            // A concurrent mark on the same day won the (created_by, day) unique index — a
+            // conflict for the caller to retry, never a 500. The transaction rolls back.
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "concurrent mark on " + day, raced);
+        }
         return rechain(userId, day);
     }
 

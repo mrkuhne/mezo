@@ -14,6 +14,8 @@ const DAY_COPY = {
   uniform: 'Ma is az egységes napi keret érvényes; nincs külön edzés- és pihenőnapi elosztás.',
   unavailable: 'A napi keret jelenleg nem számolható.',
 } as const
+/** Where the kcal frame comes from — `learned` is the learned-expenditure base (mezo-3n2so). */
+const BASIS_LABEL: Record<string, string> = { adaptive: 'Adaptív terv', learned: 'Tanult alap' }
 
 export function GoalDietPage() {
   const navigate = useNavigate()
@@ -50,7 +52,7 @@ export function GoalDietPage() {
         ]} />
         <div className="goal-detail-section-head rise"><span>Heti ritmus</span></div>
         <GoalDietWeekCard trainingDayKcal={overview.diet.trainingDayKcal} restDayKcal={overview.diet.restDayKcal} weekAverageKcal={overview.diet.weekAverageKcal} />
-        <section className="goal-provenance rise"><span>{overview.diet.basis === 'adaptive' ? 'Adaptív terv' : 'Formula-alap'}</span><p>{dietExplanation(overview.diet.explanationCode)}</p></section>
+        <section className="goal-provenance rise"><span>{BASIS_LABEL[overview.diet.basis] ?? 'Formula-alap'}</span><p>{dietExplanation(overview.diet.explanationCode)}</p></section>
       </PageBody>
     </EntranceGroup>}
   </MozaikPage>
