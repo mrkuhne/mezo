@@ -114,6 +114,10 @@ spec:
             # docs/research/comparisons/companion-chat-model-rebaseline-2026-09.md.
             - name: MEZO_COMPANION_LLM_PROVIDER
               value: "openai"
+            # S8 (mezo-d6ivw.12): one-shot fact-text backfill — dry-run logs the before/after list,
+            # writes nothing. Remove this entry after the apply run.
+            - name: MEZO_COMPANION_FACTTEXTBACKFILL_MODE
+              value: "dry-run"
             # mezo-i7x5v: PRODUCTION chat now retrieves memory from the unified platform instead of
             # the legacy pgvector path. Same explicit-env precedent as the provider above —
             # application.yml keeps its SHADOW default, so local dev, CI and every test are
