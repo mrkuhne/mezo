@@ -1145,7 +1145,8 @@ holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the 
   `GratitudeEntrySaved/Deleted`) the embedding seam already uses. It reads the rows through the
   journal **repositories**, not a journal service, deliberately staying inside the dependency
   envelope `companion/embedding` established. The third source is **`chat_day`**: the day's own
-  `role=user` turns joined into one text by `ChatDaySignalService`, keyed by a stable
+  `role=user` turns joined into one text by `ChatDaySignalService` (since S8, `mezo-d6ivw.12`, minus
+  the `extraction_blocked` turns a forget request covered), keyed by a stable
   `UUID.nameUUIDFromBytes(userId + ":" + day)` so a day that gains turns re-versions instead of
   duplicating.
 - **The four new metrics.** `MetricKey.TEXT_MOOD` / `TEXT_ENERGY` / `TEXT_STRESS` (NUMBER) and
@@ -1967,8 +1968,11 @@ companion surface since V0.4, dual-mode:
   learned nothing) renders its own honest state: "Nem volt mit elfelejteni — az előző üzenetedből
   semmit nem jegyeztem meg." plus the same widen offer, never nothing (owner ruling 2026-09-28). The
   chips poll `GET .../turn-memory` on a 2s/3s/5s backoff ladder that stops as soon as the backend
-  flags `forgetRequest` or a non-empty `forgotten` list lands; they disarm (drop their pending
-  poll) on any conversation change. A reject or a forget is permanent — its chip becomes a flat
+  flags `forgetRequest` or a non-empty `forgotten` list lands, or a chip action runs on the turn;
+  they disarm (drop their pending poll) on any conversation change. Every chip action PATCHES the
+  turn's query cache and settles it (no refetch — the backend lists only live items, so a refetch
+  after "Ne"/"Visszavonom" dropped the item and its confirmation with it); "Igen" takes the promoted
+  fact id from the decision response, and a forget-all settles every turn of the conversation. A reject or a forget is permanent — its chip becomes a flat
   "Elfelejtve · <struck-through text>" line, never an active control again.
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
@@ -4177,6 +4181,20 @@ around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.
   `forgotten` = the triggering message's forget envelope, and `forgetRequest` = `ForgetIntent.matches`
   re-evaluated on that same message — the field the FE polls to distinguish "still extracting" from
   "this was a forget turn that legitimately found nothing" (§4, §9).
+- **`ChatMemoryBlocks.conversationBlock`** — the per-turn `[Ebben a beszélgetésben]` block (what this
+  conversation learned or proposed; the only items the model may call "megjegyeztem") — is
+  fail-open the same way (S8 final review): any exception logs and yields "". Its read path
+  (`TurnMemoryService.userMessageIds`/`liveItems`/`liveItemsOf`, `PersonFactService.bySourceRefs`/
+  `personNames`) is deliberately NOT `@Transactional` — reads join the turn's transaction — pinned by
+  `ChatMemoryBlocksFailOpenIT`. It is also cheap: the conversation's user message ids come from an
+  id-only query (`AiMessageRepository.findUserMessageIds`), and accepted candidates' promoted facts
+  are checked in ONE batched query (`KnowledgeFactRepository.findLiveIds`), not one per candidate.
+- **Forgotten stays forgotten at night too** (S8 final review): the nightly
+  `PersonExtractionService` narrative and the `chat_day` text signal read the day's chat through
+  `findByCreatedByAndRoleAndDeletedFalseAndExtractionBlockedFalse…`, so an `extraction_blocked`
+  message is never re-read and re-saved in other words (`PersonFactService.capture` only drops exact
+  normalized repeats). The other day-level readers were checked: weekly review lessons and life-event
+  extraction never read chat; character signals read chat timestamps only.
 
 ## 4. Data model & API
 
@@ -6211,7 +6229,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/memory/similar-days` | `SimilarDaysResponse` | 200 · 400 · 401 · 404 | `mezo-al1i` — reuses `MemoryRecallService` (V2.3) verbatim; `q` required (1..∞ chars), `k` 1..5 (default 3); below-floor matches never returned (the same honest empty-list rule as the tool). |
 | `GET /api/companion/memory/llm-usage` | `LlmUsageResponse` | 200 · 401 · 404 | `mezo-al1i` — daily rollup over `llm_log_history` (`days` 1..90, default 30); `enabled:false` + empty `perDay` + zeroed `totals` when the `mezo.feature.llm-log.enabled` switch is off — the query never runs. |
 | `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
-| `GET /api/companion/conversation/{id}/turn-memory` | `TurnMemoryResponse` | 200 · 401 · 404 | **S8 (`mezo-d6ivw.12`)** — `TurnMemoryService.turnMemory`; required query `messageId` (the turn's USER message id). `learned`/`proposed`/`forgotten` may each be empty; `forgetRequest` is `ForgetIntent.matches` re-run on that message. The chat chips poll this on a 2s/3s/5s ladder, stopping on `forgetRequest` or a non-empty `forgotten`. 404 for a missing/foreign conversation OR a `messageId` that is not that conversation's own USER row. |
+| `GET /api/companion/conversation/{id}/turn-memory` | `TurnMemoryResponse` | 200 · 401 · 404 | **S8 (`mezo-d6ivw.12`)** — `TurnMemoryService.turnMemory`; required query `messageId` (the turn's USER message id). `learned`/`proposed`/`forgotten` may each be empty; `forgetRequest` is `ForgetIntent.matches` re-run on that message. The chat chips poll this on a 2s/3s/5s ladder, stopping on `forgetRequest`, a non-empty `forgotten`, or a chip action (the client patches its cache from then on). 404 for a missing/foreign conversation OR a `messageId` that is not that conversation's own USER row. |
 | `GET /api/companion/conversation/{id}/forget-learned` | `MemoryItemResponse[]` | 200 · 401 · 404 | **S8** — `ChatForgetService.preview`; every still-live memory item the conversation ever produced, newest first (the „Mindent ebből a beszélgetésből?" sheet's list). |
 | `POST /api/companion/conversation/{id}/forget-learned` | `ForgetLearnedResponse` | 200 · 401 · 404 | **S8** — `ChatForgetService.forgetAll`; body `ForgetLearnedRequest {triggerMessageId}` (the message whose Elfelejtettem chip offered the widen). Forgets every still-live item permanently and appends the result onto the trigger message's `forgotten_memories`. 404 for a missing/foreign conversation or trigger message. |
 

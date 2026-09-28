@@ -581,7 +581,13 @@ undecided owner-fact candidate, "Megjegyezném: … Igen/Ne"), **recalled** (the
 button opening `sheets/ForgetAllSheet.tsx`). While extraction is still running and nothing is back
 yet, a quiet "még figyelek…" status shows (a short 2s/3s/5s poll ladder, stopping as soon as
 `forgetRequest` or a non-empty `forgotten` list lands); the chips **disarm** — drop any pending poll
-— on every conversation change (`TurnMemoryChips` fix round 1). **Owner ruling 2026-09-28:** a
+— on every conversation change (`TurnMemoryChips` fix round 1). **A chip action settles its turn**
+(final review): `useTurnMemoryActions` patches the turn's cache (`undone` / `rejected` / kept with
+the decision response's `promotedFactId`) instead of refetching, the settled turn stops polling, and
+`useTurnMemory`'s `queryFn` merges any late answer over the cache (`mergeTurnMemory`) — the backend
+lists only live items, so otherwise "Visszavonva — nem jegyeztem meg." / "Rendben, nem jegyzem meg —
+és nem is javaslom újra." vanished on the next poll. A forget-all settles every turn of the
+conversation, so an earlier turn's "Elfelejtve · …" line stays too. **Owner ruling 2026-09-28:** a
 forget request forgets ONLY the immediately-preceding user message, never walking further back; if
 that message learned nothing, the forgotten list comes back genuinely empty and `MemoryChip`'s
 `forgotten` variant renders its own honest empty state ("Nem volt mit elfelejteni — az előző
