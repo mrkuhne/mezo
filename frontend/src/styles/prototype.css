@@ -18264,6 +18264,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wos .wos-pills .wos-pill-quest.is-released { opacity: 0.6; }
 .wos .wos-pills .wos-pill-quest.is-released s { opacity: 0.8; }
 
+/* the challenge detail glass (card badge → release / take back) */
+.gl-card .wos-gb-qd .wos-qd-target { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+.gl-card .wos-gb-qd .wos-qd-target b { font-size: 24px; font-weight: 600; letter-spacing: -0.6px; color: var(--text-primary); }
+.gl-card .wos-gb-qd .wos-qd-why { margin: 10px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
+.gl-card .wos-gb-qd .wos-pill.is-block { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+.gl-card .wos-gb-qd .wos-qd-note { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
+
 /* ── /uveg edzes session ── */
 
 /* ── uveg edzes zaras (mezo-me75u.4) ── the closing ceremony (WorkoutCeremony, 2 steps) + /train/review/:id (WorkoutSummary, ExerciseReview) ── */
