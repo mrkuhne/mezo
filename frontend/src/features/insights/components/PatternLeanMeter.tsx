@@ -5,7 +5,7 @@
 // napokat világítják ki a szükséges napszámból.
 // ============================================================
 import type { CSSProperties } from 'react'
-import type { Lean } from '@/features/insights/logic/patternReading'
+import { leanSideOf, type Lean } from '@/features/insights/logic/patternReading'
 
 const pos = (s: number) => `${(50 + 50 * Math.max(-1, Math.min(1, s))).toFixed(1)}%`
 const SIDE = ['Épp fordítva', 'Nincs hatás', 'Igaz rád'] as const
@@ -13,8 +13,11 @@ const SIDE = ['Épp fordítva', 'Nincs hatás', 'Igaz rád'] as const
 /** `side` az olvasat állapotából jön (`leanSide`), nem egy saját küszöbből — így a kiemelt
  *  felirat sosem mond mást, mint a válasz-szó. */
 export function PatternLeanMeter({ now, then, side }: { now: Lean; then: Lean | null; side: 0 | 1 | 2 }) {
+  // a képolvasó a szellem-pöttyöt is hallja: a döntéskori oldal ugyanabból az osztályozásból jön
+  const label = `Merre húz az adat: ${SIDE[side].toLowerCase()}`
+    + (then ? `. Amikor megerősítetted: ${SIDE[leanSideOf(then)].toLowerCase()}.` : '')
   return (
-    <div className={`pmx-meter${then ? ' has-ghost' : ''}`} role="img" aria-label={`Merre húz az adat: ${SIDE[side].toLowerCase()}`}>
+    <div className={`pmx-meter${then ? ' has-ghost' : ''}`} role="img" aria-label={label}>
       <div className="pmx-trk">
         <i className="pmx-mid" />
         <i className="pmx-band" style={{ '--lo': pos(now.lo), '--hi': pos(now.hi) } as CSSProperties} />
