@@ -1,5 +1,5 @@
 // Formatting helpers for the „Hogy tanultam?” explainer (mezo-y72o3).
-import type { IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
+import type { ExpenditureHistory, IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
 
 const HU_MONTHS_SHORT = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.']
 
@@ -45,6 +45,26 @@ export function markChangeLine(r: Pick<IntakeDayMarkResult, 'appliedBaseBeforeKc
   const after = r.appliedBaseAfterKcal
   const delta = before != null && after != null ? Math.round(after - before) : 0
   return delta ? `A keret ${signed(delta)} kcal-lal változott` : 'A keret nem változott'
+}
+
+/** Whether a day mark can move the served frame: `learning` (switch on, a learned week exists),
+ *  `off` (the owner's switch is off — the formula serves), `empty` (no learned week yet). An
+ *  unresolved history reads as `learning`, like the „Hogy tanultam?” page. */
+export type LearningMode = 'learning' | 'off' | 'empty'
+export function learningModeOf(history: ExpenditureHistory | null): LearningMode {
+  if (history && history.weeks.length === 0) return 'empty'
+  return history?.learningEnabled === false ? 'off' : 'learning'
+}
+
+/** When the frame cannot move, the mark is only saved — never claim a kcal change (mezo-3n2so). */
+export const SAVED_ONLY: Record<Exclude<LearningMode, 'learning'>, string> = {
+  off: 'Elmentettem — a tanult érték frissült, a keretet most a képlet adja.',
+  empty: 'Elmentettem — amint elég adatom lesz, beleszámolom.',
+}
+
+/** The toast after a day mark, honest per mode — shared by the day log and the day list. */
+export function markToastLine(mode: LearningMode, r: Pick<IntakeDayMarkResult, 'appliedBaseBeforeKcal' | 'appliedBaseAfterKcal'>): string {
+  return mode === 'learning' ? markChangeLine(r) : SAVED_ONLY[mode]
 }
 
 /** A day's status chip: copy + tone (elo/fuel.html `STATUS`; tones map to `.fwl-st.st-*`). */

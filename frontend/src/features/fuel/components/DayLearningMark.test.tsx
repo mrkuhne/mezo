@@ -8,7 +8,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
+import type { ExpenditureHistory, IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
 import { onToast } from '@/shared/lib/toastBus'
 
 const hooks = vi.hoisted(() => ({
@@ -17,6 +17,7 @@ const hooks = vi.hoisted(() => ({
   range: [] as string[],
   setMark: vi.fn(),
   clearMark: vi.fn(),
+  history: null as ExpenditureHistory | null,
 }))
 
 vi.mock('@/data/fuel/expenditureHooks', () => ({
@@ -25,6 +26,7 @@ vi.mock('@/data/fuel/expenditureHooks', () => ({
     return { days: hooks.day ? [hooks.day] : [], isPending: hooks.isPending }
   },
   useIntakeDayMark: () => ({ setMark: hooks.setMark, clearMark: hooks.clearMark, pending: false }),
+  useExpenditureHistory: () => ({ data: hooks.history, isPending: false, isError: false }),
 }))
 
 import { DayLearningMark } from '@/features/fuel/components/DayLearningMark'
@@ -57,6 +59,7 @@ function renderMark(date = '2026-09-27', today = false) {
 beforeEach(() => {
   hooks.day = null
   hooks.isPending = false
+  hooks.history = null
   hooks.setMark.mockReset()
   hooks.clearMark.mockReset()
   toasts = []
@@ -137,6 +140,27 @@ describe('DayLearningMark', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Hiányos volt' }))
     expect(hooks.setMark).toHaveBeenCalledWith('2026-09-27', 'incomplete')
     expect(toasts).toContain('A keret −50 kcal-lal változott')
+  })
+
+  // Final review (mezo-3n2so): with the switch off the served frame stays on the formula, so a
+  // „−40 kcal” toast would be false — the day log says what LearningDaysList says.
+  it('with the learning switch off, toasts the saved-only line — never a kcal change', async () => {
+    hooks.history = { learningEnabled: false, weeks: [{ weekStart: '2026-09-14' } as ExpenditureHistory['weeks'][number]] }
+    hooks.day = day('suspicious')
+    hooks.setMark.mockResolvedValue(result('confirmed_complete', 2150, 2110))
+    renderMark()
+    await userEvent.click(screen.getByRole('button', { name: 'Teljes volt' }))
+    expect(toasts).toContain('Elmentettem — a tanult érték frissült, a keretet most a képlet adja.')
+    expect(toasts.some(t => t.includes('kcal-lal változott'))).toBe(false)
+  })
+
+  it('with nothing learned yet, toasts the saved-only „empty” line', async () => {
+    hooks.history = { learningEnabled: true, weeks: [] }
+    hooks.day = day('usable')
+    hooks.setMark.mockResolvedValue(result('marked_incomplete', 2200, 2200))
+    renderMark()
+    await userEvent.click(screen.getByRole('button', { name: 'Hiányos volt' }))
+    expect(toasts).toContain('Elmentettem — amint elég adatom lesz, beleszámolom.')
   })
 
   it('marking complete calls setMark with complete', async () => {

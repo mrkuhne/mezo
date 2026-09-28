@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useIntakeDayMark, useIntakeDays } from '@/data/fuel/expenditureHooks'
+import { useExpenditureHistory, useIntakeDayMark, useIntakeDays } from '@/data/fuel/expenditureHooks'
 import type { IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { ContentIcon } from '@/shared/ui/clay'
-import { dayCounts, markChangeLine } from '@/features/fuel/sheets/learnedBaseFormat'
+import { dayCounts, learningModeOf, markToastLine } from '@/features/fuel/sheets/learnedBaseFormat'
 
 // ============================================================
 // Mezo · DayLearningMark — the day-log mark line (mezo-3n2so, learned expenditure part 2, task 11).
@@ -27,6 +27,8 @@ const COPY: Record<IntakeDayStatus['status'], string> = {
 export function DayLearningMark({ date, today }: { date: string; today: boolean }) {
   const { days, isPending } = useIntakeDays(date, date)
   const { setMark, clearMark } = useIntakeDayMark()
+  // With the switch off (or nothing learned yet) the served frame cannot move — say so honestly.
+  const { data: history } = useExpenditureHistory()
   const { show } = useToast()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
@@ -41,7 +43,7 @@ export function DayLearningMark({ date, today }: { date: string; today: boolean 
     setBusy(true)
     try {
       const r = await run()
-      show({ kind: 'success', text: markChangeLine(r) })
+      show({ kind: 'success', text: markToastLine(learningModeOf(history), r) })
     } catch {
       show({ kind: 'error', text: 'Nem sikerült menteni, próbáld újra' })
     } finally {

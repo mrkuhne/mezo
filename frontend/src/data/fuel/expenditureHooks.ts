@@ -7,6 +7,7 @@ import {
   type IntakeDayMarkResult, type IntakeDayStatus,
 } from '@/data/fuel/expenditureApi'
 import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
+import { EXPENDITURE_WEEKLY_CARD_KEY, INTAKE_DAYS_ROOT } from '@/data/fuel/queryKeys'
 import {
   applyMockDayMark, dismissMockWeeklyCard, expenditureHistorySeed, expenditureWeeklyCardSeed,
   intakeDaysSeed, type MockIntakeDayMarkAction,
@@ -14,8 +15,8 @@ import {
 
 export const EXPENDITURE_EXPLANATION_KEY = ['expenditureExplanation'] as const
 export const EXPENDITURE_HISTORY_KEY = ['expenditureHistory'] as const
-export const EXPENDITURE_WEEKLY_CARD_KEY = ['expenditureWeeklyCard'] as const
-const INTAKE_DAYS_PREFIX = ['intakeDays'] as const
+export { EXPENDITURE_WEEKLY_CARD_KEY }
+const INTAKE_DAYS_PREFIX = INTAKE_DAYS_ROOT
 const intakeDaysKey = (from: string, to: string) => [...INTAKE_DAYS_PREFIX, from, to] as const
 const EMPTY_DAYS: IntakeDayStatus[] = []
 
@@ -32,7 +33,7 @@ export function useExpenditureExplanation(enabled: boolean): {
   const { data, isPending, isError } = useDualQuery<ExpenditureExplanation | null>({
     queryKey: EXPENDITURE_EXPLANATION_KEY,
     mockData: expenditureExplanationSeed,
-    realFetch: expenditureApi.explanation,
+    realFetch: () => expenditureApi.explanation(),
     realEmpty: null,
     enabled,
   })
@@ -52,7 +53,8 @@ export function useExpenditureHistory(): {
   const { data, isPending, isError } = useDualQuery<ExpenditureHistory | null>({
     queryKey: EXPENDITURE_HISTORY_KEY,
     mockData: expenditureHistorySeed(),
-    realFetch: expenditureApi.history,
+    // Wrapped: TanStack passes its QueryFunctionContext, which `history(limit?)` would take as limit.
+    realFetch: () => expenditureApi.history(),
     realEmpty: null,
   })
   return { data, isPending: data === null && isPending, isError }
@@ -75,7 +77,7 @@ export function useExpenditureWeeklyCard(): { card: ExpenditureWeeklyCard | null
   const mock = isMockMode()
   const q = useQuery({
     queryKey: EXPENDITURE_WEEKLY_CARD_KEY,
-    queryFn: mock ? async () => expenditureWeeklyCardSeed() : expenditureApi.weeklyCard,
+    queryFn: mock ? async () => expenditureWeeklyCardSeed() : () => expenditureApi.weeklyCard(),
     initialData: mock ? expenditureWeeklyCardSeed() : undefined,
     staleTime: mock ? Infinity : DEFAULT_QUERY_STALE_TIME_MS,
   })

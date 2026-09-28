@@ -155,6 +155,19 @@ describe('learned-expenditure hooks (real mode)', () => {
     await waitFor(() => expect(result.current.data?.weeks).toHaveLength(1))
   })
 
+  // Final review (mezo-3n2so): TanStack calls queryFn WITH its QueryFunctionContext — a bare
+  // `realFetch: expenditureApi.history` took it as `limit` → `?limit=[object Object]` → 400.
+  it('the history read sends no bogus limit query', async () => {
+    let search: string | null = null
+    server.use(http.get(`${API_BASE}/api/goals/expenditure/weeks`, ({ request }) => {
+      search = new URL(request.url).search
+      return HttpResponse.json({ learningEnabled: true, weeks: [] })
+    }))
+    const { result } = renderHook(() => useExpenditureHistory(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.data).not.toBeNull())
+    expect(search).toBe('')
+  })
+
   it('setMark PUTs /api/goals/expenditure/days/{date}/mark with the status body', async () => {
     let putPath = ''
     let putBody: unknown

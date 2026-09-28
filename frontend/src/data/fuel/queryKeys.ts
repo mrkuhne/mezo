@@ -16,6 +16,11 @@ export const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as c
 export const FUEL_DAY_ROOT = ['fuelDay'] as const
 export const FUEL_WEEK_ROOT = ['fuelWeek'] as const
 
+/** Learned-expenditure reads a food log moves (mezo-3n2so): the per-day statuses
+ *  (`['intakeDays', from, to]` — the day-log mark line) and the weekly-summary card. */
+export const INTAKE_DAYS_ROOT = ['intakeDays'] as const
+export const EXPENDITURE_WEEKLY_CARD_KEY = ['expenditureWeeklyCard'] as const
+
 /**
  * A logged session (sport, run, finished workout) moves the served Fuel target (mezo-32m82):
  * planned-done flips the day-type pick, an unplanned one adds extra kcal — so the Fuel day + week

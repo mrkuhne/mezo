@@ -5,7 +5,7 @@ import { huInt } from '@/shared/lib/huNum'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { Toggle } from '@/shared/ui/Toggle'
 import { useToast } from '@/shared/ui/ToastProvider'
-import { DAY_STATUS, dayCounts, huWeekdayDate, markChangeLine } from '@/features/fuel/sheets/learnedBaseFormat'
+import { DAY_STATUS, dayCounts, huWeekdayDate, markToastLine, type LearningMode } from '@/features/fuel/sheets/learnedBaseFormat'
 
 // ============================================================
 // Mezo · LearningDaysList — „Az utolsó 14 nap” (mezo-3n2so, learned expenditure part 2, spec §5.4).
@@ -18,12 +18,7 @@ import { DAY_STATUS, dayCounts, huWeekdayDate, markChangeLine } from '@/features
 // ============================================================
 
 type DayState = IntakeDayStatus['status']
-export type LearningMode = 'learning' | 'off' | 'empty'
-
-const SAVED_ONLY: Record<Exclude<LearningMode, 'learning'>, string> = {
-  off: 'Elmentettem — a tanult érték frissült, a keretet most a képlet adja.',
-  empty: 'Elmentettem — amint elég adatom lesz, beleszámolom.',
-}
+export type { LearningMode }
 
 export function LearningDaysList({ mode }: { mode: LearningMode }) {
   const [today] = useState(() => localDateString())
@@ -54,7 +49,7 @@ export function LearningDaysList({ mode }: { mode: LearningMode }) {
         r = await setMark(d.date, want ? 'complete' : 'incomplete')
       }
       setLive(s => ({ ...s, [d.date]: r.day.status }))
-      show({ kind: 'success', text: mode === 'learning' ? markChangeLine(r) : SAVED_ONLY[mode] })
+      show({ kind: 'success', text: markToastLine(mode, r) })
     } catch {
       show({ kind: 'error', text: 'Nem sikerült menteni, próbáld újra' })
     } finally {

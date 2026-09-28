@@ -10,7 +10,7 @@ import { LearningDaysList, type LearningMode } from '@/features/fuel/components/
 import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
 import { LearnedBaseExplainer } from '@/features/fuel/sheets/LearnedBaseExplainer'
 import { WeeklyLearningSheet } from '@/features/fuel/sheets/WeeklyLearningSheet'
-import { CONFIDENCE_WORD, huWeekRange, nf, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
+import { CONFIDENCE_WORD, huWeekRange, learningModeOf, nf, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
 
 // ============================================================
 // Mezo · LearningPage — „Hogy tanultam?” at /fuel/tanulas (mezo-3n2so, learned expenditure part 2,
@@ -37,7 +37,7 @@ export function LearningPage() {
   const weeks = history?.weeks ?? []
   const last = weeks.length > 0 ? weeks[weeks.length - 1] : null
   const on = history?.learningEnabled !== false
-  const mode: LearningMode = history && !last ? 'empty' : on ? 'learning' : 'off'
+  const mode: LearningMode = learningModeOf(history)
   const certainty = last ? `Tanult alap · ${CONFIDENCE_WORD[last.confidence]} · ±${round10(last.posteriorSdKcal)} kcal` : ''
   const hold = card?.status === 'holding'
 
