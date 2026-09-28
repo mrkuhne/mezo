@@ -116,7 +116,9 @@ class CheckInPlanServiceIT extends AbstractIntegrationTest {
         var adaptive = planService.plan(user, DAY, "06:30").getAdaptive();
         assertThat(adaptive.getId()).isEqualTo(CheckInItemId.CONNECTION);
         assertThat(adaptive.getReason()).isEqualTo(AdaptiveReason.NEED);
-        assertThat(adaptive.getWhy()).contains("kapcsolódás");
+        // The stored pick re-reads its specific "why": the social-mentions~checkin-connection pair.
+        assertThat(adaptive.getWhy())
+            .isEqualTo("Most azt figyeljük: kapcsolódottabbnak érzed magad a társas napokon?");
     }
 
     @Test
@@ -136,7 +138,9 @@ class CheckInPlanServiceIT extends AbstractIntegrationTest {
             if (adaptive.getReason() == AdaptiveReason.NEED) {
                 needDraws++;
                 assertThat(adaptive.getId()).isEqualTo(CheckInItemId.MOTIVATION);
-                assertThat(adaptive.getWhy()).contains("motiváció");
+                // The first catalog pair waiting on motivation names what is being investigated.
+                assertThat(adaptive.getWhy())
+                    .isEqualTo("Most azt figyeljük: csökken a kedved az egyhangú edzésterheléstől?");
             }
         }
         assertThat(needDraws).isPositive();

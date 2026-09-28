@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInItem;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,6 +43,11 @@ public class SorenessRecoveryDetector implements CharacterDetector {
     @Override
     public String key() {
         return "soreness-recovery";
+    }
+
+    @Override
+    public Map<CheckInItem, String> checkInNeeds() {
+        return Map.of(CheckInItem.SORENESS, "Most azt figyeljük, hány nap alatt múlik el az izomlázad egy edzés után.");
     }
 
     @Override
