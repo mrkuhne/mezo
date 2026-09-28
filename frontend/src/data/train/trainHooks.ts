@@ -723,7 +723,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const { data: mockEdits } = useQuery({
     queryKey: MOCK_WORKOUT_EDITS_KEY,
     queryFn: async () => qc.getQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY) ?? [],
-    initialData: [] as MockWorkoutEdit[],
+    initialData: mock ? ([] as MockWorkoutEdit[]) : undefined,
     staleTime: Infinity,
     enabled: mock,
   })

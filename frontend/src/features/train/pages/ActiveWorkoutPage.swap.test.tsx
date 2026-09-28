@@ -54,7 +54,7 @@ test('swap before any set: the picker suggests the same muscle, Csak ma puts the
   await enterList()
   await openSwap(user, EX1)
 
-  const similar = await screen.findByRole('generic', { name: 'Hasonló gyakorlatok' })
+  const similar = await screen.findByRole('group', { name: 'Hasonló gyakorlatok' })
   expect(within(similar).getByText('T-Bar Row')).toBeInTheDocument()
   // what the session already holds is not on offer
   expect(within(similar).queryByText(EX1)).toBeNull()
@@ -78,7 +78,7 @@ test('swap mid-exercise: the logged set stays on the old card, the new card foll
   await enterList()
   await user.click(within(card(EX1)!).getByRole('button', { name: /szett mentése$/ }))
   await openSwap(user, EX1)
-  await user.click(within(await screen.findByRole('generic', { name: 'Hasonló gyakorlatok' })).getByText('T-Bar Row'))
+  await user.click(within(await screen.findByRole('group', { name: 'Hasonló gyakorlatok' })).getByText('T-Bar Row'))
   expect(await screen.findByText(/A 1 kész szett a Chest Supported Row-nál marad/)).toBeInTheDocument()
   await user.click(screen.getByText('Mezociklusra is'))
 

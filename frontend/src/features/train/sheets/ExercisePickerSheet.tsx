@@ -115,7 +115,7 @@ export function ExercisePickerSheet({
           {similar.length > 0 && (
             <>
               <span className="uvl-subh">Hasonló gyakorlatok</span>
-              <div className="uvl-exlist is-similar" aria-label="Hasonló gyakorlatok">
+              <div className="uvl-exlist is-similar" role="group" aria-label="Hasonló gyakorlatok">
                 {similar.map((e) => (
                   <button key={e.id} type="button" className="uvl-exrow" onClick={() => { onPick(e); close() }}>
                     <ExerciseImage start={e.imageStartUrl} end={e.imageEndUrl} name={e.name} muscle={e.muscle} variant="thumb" />
