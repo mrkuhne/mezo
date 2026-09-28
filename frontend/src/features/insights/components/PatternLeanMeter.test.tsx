@@ -14,6 +14,14 @@ test('a confirmed row shows where it stood at the decision', () => {
   expect(screen.getByTestId('lean-then')).toBeInTheDocument()
   expect(screen.getByText('amikor megerősítetted')).toBeInTheDocument()
 })
+test('the screen-reader label also says where it stood at the decision', () => {
+  const { rerender } = render(<PatternLeanMeter now={lean(0.05, 16, 1)} then={lean(0.6, 30, 1)} side={1} />)
+  expect(screen.getByRole('img', { name: /^Merre húz/ }))
+    .toHaveAccessibleName('Merre húz az adat: nincs hatás. Amikor megerősítetted: igaz rád.')
+  rerender(<PatternLeanMeter now={lean(-0.6, 30, 1)} then={lean(0.05, 12, 1)} side={0} />)
+  expect(screen.getByRole('img', { name: /^Merre húz/ }))
+    .toHaveAccessibleName('Merre húz az adat: épp fordítva. Amikor megerősítetted: nincs hatás.')
+})
 test('the lit side follows the reading state, not a fixed threshold', () => {
   // support 0.12 sits under the old ±0.15 cut, but a `halvany` reading still leans „igaz rád"
   render(<PatternLeanMeter now={lean(0.12, 40, 1)} then={null} side={2} />)

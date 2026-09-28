@@ -6,8 +6,8 @@
 import { useState, type KeyboardEvent } from 'react'
 import type { AlignedDay, PatternMonitorPair } from '@/data/types'
 import { toneClass, type DetailTone } from '@/features/insights/components/DetailHero'
-import { binaryGroupLabels, formatMetricValue } from '@/features/insights/logic/metricFormat'
-import { huMetricValue, mean, niceTicks, patternZones, zoneValue } from '@/features/insights/logic/patternReading'
+import { binaryGroupLabels } from '@/features/insights/logic/metricFormat'
+import { formatSeriesValue, mean, niceTicks, patternZones, zoneValue } from '@/features/insights/logic/patternReading'
 import { cn } from '@/shared/lib/cn'
 import { huMonthDay } from '@/shared/lib/dates'
 
@@ -19,10 +19,9 @@ const BT = 184
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** Az y-tengely felirata: óra-metrikán a szokásos óraformátum, egyébként egész vagy egy tizedes. */
+/** Az y-tengely felirata: a B értékfajtája szerint (óra „23:30", egyébként egész vagy egy tizedes). */
 function tickLabel(pair: PatternMonitorPair, v: number): string {
-  if (pair.metricBValueKind === 'clock_hour') return formatMetricValue(pair.metricBKey, v)
-  return Number.isInteger(v) ? String(v) : v.toFixed(1).replace('.', ',')
+  return formatSeriesValue(pair.metricBValueKind, v)
 }
 
 export function PatternZoneChart({ days, pair, showAverages, tone }: {
@@ -65,9 +64,12 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
     return (day.a >= 0.5 ? (R + 183) / 2 : (L + 177) / 2) + jitter
   }
 
+  // ha minden A egyforma, a második zóna üres (`patternZones`): az egy zóna a teljes szélességet kapja
   const split = binary
     ? 180
-    : (zone0.length && zone1.length ? (xOf(zone0[zone0.length - 1], 0) + xOf(zone1[0], 0)) / 2 : (L + R) / 2)
+    : zone0.length && zone1.length
+      ? (xOf(zone0[zone0.length - 1], 0) + xOf(zone1[0], 0)) / 2
+      : zone0.length ? R : (L + R) / 2
 
   const zeroLabel = binaryGroupLabels(pair.metricAKey).zero.axis
   const oneLabel = binaryGroupLabels(pair.metricAKey).one.axis
@@ -95,8 +97,8 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
 
   const aValueOf = (day: AlignedDay) => binary
     ? (day.a >= 0.5 ? oneLabel : zeroLabel)
-    : huMetricValue(pair.metricAKey, day.a)
-  const bValueOf = (day: AlignedDay) => huMetricValue(pair.metricBKey, day.b)
+    : formatSeriesValue(pair.metricAValueKind, day.a)
+  const bValueOf = (day: AlignedDay) => formatSeriesValue(pair.metricBValueKind, day.b)
 
   const toggle = (i: number) => setSelected((s) => (s === i ? null : i))
   const onKeyDown = (i: number) => (e: KeyboardEvent<SVGCircleElement>) => {
@@ -154,7 +156,7 @@ export function PatternZoneChart({ days, pair, showAverages, tone }: {
               <g key={`x-${v}`}>
                 <line className="pmx-xt" x1={xOfValue(v)} x2={xOfValue(v)} y1={BT + 4} y2={BT + 8} />
                 <text className="pmx-tk" x={xOfValue(v)} y={BT + 20} textAnchor="middle">
-                  {huMetricValue(pair.metricAKey, v)}
+                  {formatSeriesValue(pair.metricAValueKind, v)}
                 </text>
               </g>
             ))}

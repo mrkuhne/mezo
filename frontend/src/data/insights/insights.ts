@@ -1,8 +1,12 @@
+import { addDays } from '@/shared/lib/dates'
 import type {
+  AlignedDay,
   Pattern,
   PatternCategory,
   PatternImpact,
+  PatternMetricValueKind,
   PatternMonitor,
+  PatternMonitorPair,
   PatternPairDetail,
   PatternTestPlan,
   Prediction,
@@ -710,6 +714,39 @@ const rejectedReflectionDetail: PatternPairDetail = {
  *  + a katalógus minden MÁS párjára minimál-detail (pair a patternMonitor-ból, pattern: null,
  *  üres history/days/impact — gyűjtögető pár, még nem ment át a kapun). Ismeretlen kulcsra
  *  `null` (a hook ezt a real-mode 404-gyel egyenértékű "nincs ilyen minta" állapotra képezi). */
+/** Egy metrika szokásos tartománya a mock-napokhoz az értékfajta szerint: óra ⇒ ébredés 6–8,
+ *  egyébként esti 22–24; sima szám ⇒ 3–8. (A bináris oldal 0/1, külön kezelve.) */
+function mockRange(key: string, kind: PatternMetricValueKind): [number, number] {
+  if (kind === 'clock_hour') return key.includes('wake') ? [6, 8] : [22, 24]
+  return [3, 8]
+}
+
+/** A katalógus-pár `alignedDays` darab hihető, DETERMINISZTIKUS napja (mezo-bip2w) — hogy a mock
+ *  oldal „6 közös nap" mondata alatt ne üres grafikon álljon. A napok a monitor-ablak végéig
+ *  érnek; az A-érték aranymetszés-sorozattal szóródik, a B követi a pár r-jének (ennek híján a
+ *  várt iránynak) előjelét egy kis rögzített zajjal. Bináris A: 0/1 váltakozva (mindkettő van).
+ *  Degenerált párnál a szűk keresztmetszet oldala tényleg nem mozdul. */
+function mockCatalogDays(pair: PatternMonitorPair, windowTo: string): AlignedDay[] {
+  const n = pair.alignedDays
+  if (n <= 0) return []
+  const sign = pair.r != null && pair.r !== 0 ? Math.sign(pair.r) : pair.expectedDirection === 'negative' ? -1 : 1
+  const flat = (key: string) => pair.verdict === 'degenerate' && pair.bottleneckMetricKey === key
+  const at = ([lo, hi]: [number, number], t: number) => Math.round((lo + t * (hi - lo)) * 100) / 100
+  const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
+  return Array.from({ length: n }, (_, i) => {
+    const binaryA = pair.metricAValueKind === 'binary'
+    const t = binaryA ? i % 2 : (i * 0.618034) % 1
+    const wiggle = (((i * 37) % 11) - 5) / 5
+    const tb = clamp01(0.5 + sign * (t - 0.5) * 0.7 + wiggle * 0.12)
+    const aRange = mockRange(pair.metricAKey, pair.metricAValueKind)
+    const bRange = mockRange(pair.metricBKey, pair.metricBValueKind)
+    const a = binaryA ? t : flat(pair.metricAKey) ? at(aRange, 0.5) : at(aRange, t)
+    const b = pair.metricBValueKind === 'binary' ? (tb >= 0.5 ? 1 : 0)
+      : flat(pair.metricBKey) ? at(bRange, 0.5) : at(bRange, tb)
+    return { date: addDays(windowTo, i - (n - 1)), a, b }
+  })
+}
+
 export function mockPatternPairDetail(pairKey: string): PatternPairDetail | null {
   if (pairKey === SHOWCASE_PAIR_KEY) return showcaseDetail
   if (pairKey === 'weekend~late-meal-hour') return weekendDetail
@@ -718,5 +755,5 @@ export function mockPatternPairDetail(pairKey: string): PatternPairDetail | null
   if (pairKey === REJECTED_REFLECTION_KEY) return rejectedReflectionDetail
   const pair = patternMonitor.pairs.find((p) => p.key === pairKey)
   if (!pair) return null
-  return { pair, pattern: null, events: [], days: [], impact: EMPTY_IMPACT }
+  return { pair, pattern: null, events: [], days: mockCatalogDays(pair, patternMonitor.windowTo), impact: EMPTY_IMPACT }
 }

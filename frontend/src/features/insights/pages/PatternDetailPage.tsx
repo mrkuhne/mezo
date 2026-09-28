@@ -68,7 +68,7 @@ function HistoryFold({ events, pair, plan }: {
   const count = logCount || entries.length
   return (
     <details className="pdt-fold rise">
-      <summary><Icon3D name="t-history" size={30} /><span><b>Ami eddig történt</b><small>{count} esemény</small></span></summary>
+      <summary><Icon3D name="t-history" size={30} /><span><b>Ami eddig történt</b><small>{count > 0 ? `${count} esemény` : 'még semmi'}</small></span></summary>
       <div className="pdt-fold-body">
         {logCount > 0
           ? <EvidenceLog events={events} />
@@ -125,7 +125,7 @@ export function PatternDetailPage() {
   const { detail, notFound, isPending, isError, refetch } = usePatternPairDetail(pairKey)
   const { patterns, isPending: patternsPending } = usePatterns()
   const { decide } = usePatternActions()
-  const { monitor } = usePatternMonitor()
+  const { monitor, isPending: monitorPending } = usePatternMonitor()
   const artifact = patterns.find((pattern) => pattern.pairKey === pairKey) ?? null
 
   if (isPending || patternsPending) {
@@ -157,6 +157,11 @@ export function PatternDetailPage() {
   }
 
   const { pair, pattern, events, days, impact } = detail
+  // terv és kapu-szám nélkül a napminimumot csak a monitor tudja: amíg az úton van, várunk — egy
+  // tippelt 8-cal számolt olvasat a monitor megérkeztekor átfordulhatna a képernyőn
+  if (pattern?.testPlan == null && pair.missingDays == null && monitorPending) {
+    return <PatternFrame><DetailState art="t-clock" kind="loading" role="status">A minta betöltése…</DetailState></PatternFrame>
+  }
   const reading = readPattern({ pair, pattern, days, events }, monitor?.minN ?? null)
   const look = answerLook(reading, pattern?.status ?? null)
   const plan = pattern?.testPlan ?? null
