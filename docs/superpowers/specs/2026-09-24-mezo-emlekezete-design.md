@@ -1615,8 +1615,11 @@ The chat and the hub now speak the same verbs.
      (ezt / amit mondtam)*, *ezt ne mentsd / ne tárold*. The plan fixes the exact list and its
      negative cases, e.g. "felejtsd el a tervet" must NOT trigger.
    - On a match:
-     - (a) The target is the most recent **earlier** user message in this conversation that has
-       active person facts or undecided/accepted-from-chat candidates.
+     - (a) The target is the **immediately preceding** user message of this conversation, and
+       only that one (owner ruling 2026-09-28: no walking back to older turns; forget is
+       permanent). If it learned nothing, the result is empty: the model says there was
+       nothing to forget and the FE "Elfelejtettem" chip offers "Mindent ebből a
+       beszélgetésből?" instead of a list.
      - (b) The target is forgotten: person facts → `PersonFactService.undo`; undecided
        candidates → reject + veto; candidates already accepted in this conversation → forget
        their promoted fact through `ForgetService.forgetFact`.
