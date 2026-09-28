@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.api.dto.PatternPairDetailResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
+import io.mrkuhne.mezo.api.dto.TurnMemoryResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
@@ -28,6 +29,7 @@ import io.mrkuhne.mezo.feature.companion.service.MemoryObservatoryService;
 import io.mrkuhne.mezo.feature.companion.service.PatternMonitorService;
 import io.mrkuhne.mezo.feature.companion.service.PatternPairDetailService;
 import io.mrkuhne.mezo.feature.companion.service.PatternService;
+import io.mrkuhne.mezo.feature.companion.service.TurnMemoryService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,7 @@ public class CompanionController implements CompanionApi {
     private final PatternMonitorService patternMonitorService;
     private final PatternPairDetailService patternPairDetailService;
     private final MemoryObservatoryService memoryObservatoryService;
+    private final TurnMemoryService turnMemoryService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -152,5 +155,10 @@ public class CompanionController implements CompanionApi {
     @Override
     public FactCandidateResponse decideFactCandidate(UUID candidateId, FactDecisionRequest request) {
         return factCandidateService.decide(currentUserId.get(), candidateId, request);
+    }
+
+    @Override
+    public TurnMemoryResponse getTurnMemory(UUID conversationId, UUID messageId) {
+        return turnMemoryService.turnMemory(currentUserId.get(), conversationId, messageId);
     }
 }

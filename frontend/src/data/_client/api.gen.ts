@@ -2030,6 +2030,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/conversation/{conversationId}/turn-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S8 (mezo-d6ivw.12) — what one chat turn did to memory. learned = the person facts it saved (active only), proposed = the owner-fact candidates it raised (undecided, or accepted with a still-live fact), forgotten = what a forget request on this turn forgot. The chat chips poll this after a turn (2s/3s/5s ladder). */
+        get: operations["getTurnMemory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/fact": {
         parameters: {
             query?: never;
@@ -8129,6 +8146,11 @@ export interface components {
             refs: components["schemas"]["MessageRef"][];
             /** @description The memory context injected into this answer's prompt, in prompt order. OLD/SHADOW rows disclose the legacy [Emlékek] recall; NEW rows disclose selected shared-platform context with optional audit identities. Empty on user rows, on pre-W3.1 rows, and when the serving path supplied no recalled context (retrieval failure never degrades a turn). */
             recalled: components["schemas"]["RecalledMemory"][];
+            /**
+             * Format: uuid
+             * @description S8 (mezo-d6ivw.12) — only on the answer a send returns (sync response and the stream done event): the id of the USER row of the same turn, so the client anchors the turn-memory chips without a refetch. Absent on listed history rows.
+             */
+            turnUserMessageId?: string | null;
         };
         RecalledMemory: {
             /**
@@ -8289,6 +8311,39 @@ export interface components {
             derivedFromMessageId?: string | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        TurnMemoryResponse: {
+            learned: components["schemas"]["TurnPersonFactResponse"][];
+            proposed: components["schemas"]["FactCandidateResponse"][];
+            forgotten: components["schemas"]["MemoryItemResponse"][];
+        };
+        TurnPersonFactResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            personName: string;
+            /** @enum {string} */
+            kind: "preference" | "relationship_state" | "shared_activity" | "important_date" | "sensitivity";
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @description S8 — one memory item a chat turn produced, as the forget flow lists it. kind person_fact refId = the person fact, fact_candidate = the undecided candidate, knowledge_fact = the promoted fact of an accepted candidate. */
+        MemoryItemResponse: {
+            /** @enum {string} */
+            kind: "person_fact" | "fact_candidate" | "knowledge_fact";
+            /** Format: uuid */
+            refId: string;
+            /** Format: uuid */
+            personId?: string | null;
+            /** @description The person name for a person fact; null for the owner. */
+            who?: string | null;
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description True for an undecided proposal. */
+            pending: boolean;
         };
         FactDecisionRequest: {
             /**
@@ -18417,6 +18472,49 @@ export interface operations {
                 };
             };
             /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTurnMemory: {
+        parameters: {
+            query: {
+                /** @description The USER message id of the turn. */
+                messageId: string;
+            };
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The turn memory (every list may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnMemoryResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation or user message not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

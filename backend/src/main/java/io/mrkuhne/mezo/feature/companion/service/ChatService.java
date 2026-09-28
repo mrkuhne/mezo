@@ -272,7 +272,7 @@ public class ChatService {
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
                 assistant.getId(), answer));
-        return mapper.toMessageResponse(assistant);
+        return mapper.toMessageResponse(assistant, userMessageId);
     }
 
     @Transactional
@@ -393,7 +393,7 @@ public class ChatService {
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
                 assistant.getId(), answer));
-        return mapper.toMessageResponse(assistant);
+        return mapper.toMessageResponse(assistant, userRow.getId());
     }
 
     /**

@@ -11,8 +11,10 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -182,6 +184,29 @@ public class PersonFactService {
             .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(userId, personId).stream()
             .filter(PersonFactEntity::isActive)
             .toList();
+    }
+
+    /** S8 (mezo-d6ivw.12): {@link #bySourceRef} for several sources at once — the turn-memory read. */
+    @Transactional(readOnly = true)
+    public List<PersonFactEntity> bySourceRefs(UUID userId, String sourceRefKind, Collection<String> sourceRefIds) {
+        if (sourceRefIds.isEmpty()) {
+            return List.of();
+        }
+        return personFactRepository
+            .findByCreatedByAndSourceRefKindAndSourceRefIdInAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(
+                userId, sourceRefKind, sourceRefIds);
+    }
+
+    /** S8: display names for fact chips — any non-deleted person, whatever its status. */
+    @Transactional(readOnly = true)
+    public Map<UUID, String> personNames(UUID userId, Collection<UUID> personIds) {
+        if (personIds.isEmpty()) {
+            return Map.of();
+        }
+        Set<UUID> wanted = Set.copyOf(personIds);
+        return personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId).stream()
+            .filter(p -> wanted.contains(p.getId()))
+            .collect(Collectors.toMap(PersonEntity::getId, PersonEntity::getName));
     }
 
     private PersonFactEntity requireOwnedFact(UUID userId, UUID personId, UUID factId) {

@@ -503,4 +503,18 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(answer.getContent()).doesNotContain("[Emlékek]");
         assertThat(answer.getRefs()).isEmpty();
     }
+
+    @Test
+    void testSendMessage_shouldReturnTheTurnUserMessageId_onTheAnswer() {
+        UUID userId = databasePopulator.populateUser("s8-turn-anchor@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("Szia"));
+
+        AiMessageEntity userRow = messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId)
+                .getFirst();
+        assertThat(userRow.getRole()).isEqualTo(AiMessageEntity.ROLE_USER);
+        assertThat(answer.getTurnUserMessageId()).isEqualTo(userRow.getId());
+    }
 }

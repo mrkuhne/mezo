@@ -283,6 +283,41 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/conversation/{conversationId}/turn-memory:
+    get:
+      tags: [Companion]
+      operationId: getTurnMemory
+      summary: >-
+        S8 (mezo-d6ivw.12) — what one chat turn did to memory. learned = the person facts it
+        saved (active only), proposed = the owner-fact candidates it raised (undecided, or
+        accepted with a still-live fact), forgotten = what a forget request on this turn forgot.
+        The chat chips poll this after a turn (2s/3s/5s ladder).
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: messageId
+          in: query
+          required: true
+          description: The USER message id of the turn.
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The turn memory (every list may be empty)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TurnMemoryResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation or user message not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/companion/fact:
     get:
       tags: [Companion]
@@ -1156,6 +1191,14 @@ components:
             context with optional audit identities. Empty on user rows, on pre-W3.1 rows, and when
             the serving path supplied no recalled context (retrieval failure never degrades a turn).
           items: { $ref: '#/components/schemas/RecalledMemory' }
+        turnUserMessageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            S8 (mezo-d6ivw.12) — only on the answer a send returns (sync response and the stream
+            done event): the id of the USER row of the same turn, so the client anchors the
+            turn-memory chips without a refetch. Absent on listed history rows.
     RecalledMemory:
       type: object
       required: [kind, label, gist, similarity]
@@ -1293,6 +1336,44 @@ components:
             S8 (mezo-d6ivw.12) — the chat USER message the candidate was extracted from; null for a
             weekly-review candidate. The chat anchors its Megjegyezném chip on it.
         createdAt: { type: string, format: date-time }
+    TurnMemoryResponse:
+      type: object
+      required: [learned, proposed, forgotten]
+      properties:
+        learned:
+          type: array
+          items: { $ref: '#/components/schemas/TurnPersonFactResponse' }
+        proposed:
+          type: array
+          items: { $ref: '#/components/schemas/FactCandidateResponse' }
+        forgotten:
+          type: array
+          items: { $ref: '#/components/schemas/MemoryItemResponse' }
+    TurnPersonFactResponse:
+      type: object
+      required: [id, personId, personName, kind, text, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        personId: { type: string, format: uuid }
+        personName: { type: string }
+        kind: { type: string, enum: [preference, relationship_state, shared_activity, important_date, sensitivity] }
+        text: { type: string }
+        createdAt: { type: string, format: date-time }
+    MemoryItemResponse:
+      type: object
+      description: >-
+        S8 — one memory item a chat turn produced, as the forget flow lists it. kind person_fact
+        refId = the person fact, fact_candidate = the undecided candidate, knowledge_fact = the
+        promoted fact of an accepted candidate.
+      required: [kind, refId, text, createdAt, pending]
+      properties:
+        kind: { type: string, enum: [person_fact, fact_candidate, knowledge_fact] }
+        refId: { type: string, format: uuid }
+        personId: { type: string, format: uuid, nullable: true }
+        who: { type: string, nullable: true, description: 'The person name for a person fact; null for the owner.' }
+        text: { type: string }
+        createdAt: { type: string, format: date-time }
+        pending: { type: boolean, description: 'True for an undecided proposal.' }
     FactDecisionRequest:
       type: object
       required: [decision]

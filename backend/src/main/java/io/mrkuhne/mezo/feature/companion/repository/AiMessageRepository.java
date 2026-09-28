@@ -64,4 +64,8 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
            and m.toolOutcomes is not null
         """)
     int scrubToolOutcomesOlderThan(@Param("cutoff") Instant cutoff);
+
+    /** S8 (mezo-d6ivw.12): one owned, live message of one conversation (turn-memory / forget-learned). */
+    Optional<AiMessageEntity> findByIdAndConversationIdAndCreatedByAndDeletedFalse(
+            UUID id, UUID conversationId, UUID createdBy);
 }
