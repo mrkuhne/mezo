@@ -15,8 +15,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Streak-only robustness (v1): consecutive ISO weeks (Europe/Budapest) ending at the current week,
- * each with ≥1 logged session of any family (gym instance / sport / run). A week with no session
- * breaks the streak. The set of training dates is gathered from the three session families.
+ * each with ≥1 session of any family (a COMPLETED gym instance / a logged sport / run session). A
+ * week with no session breaks the streak; a skipped or still-open gym instance does not count
+ * (mezo-iz4kt). The set of training dates is gathered from the three session families.
  */
 @Component
 @RequiredArgsConstructor
@@ -31,7 +32,7 @@ public class TrainingStreakCalculator implements RobustnessSource {
     /** Consecutive training weeks ending this week (0 if the current week has no logged session). */
     public int streakWeeks(UUID createdBy) {
         Set<Long> trainingWeeks = new HashSet<>();
-        workoutSessionRepository.findInstanceDates(createdBy).forEach(d -> trainingWeeks.add(weekKey(d)));
+        workoutSessionRepository.findCompletedInstanceDates(createdBy).forEach(d -> trainingWeeks.add(weekKey(d)));
         sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy)
             .forEach(s -> trainingWeeks.add(weekKey(s.getDate())));
         runSessionLogRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy)

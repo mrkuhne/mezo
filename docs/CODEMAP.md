@@ -1584,7 +1584,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
     weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 81 IT + 19 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 82 IT + 19 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1598,8 +1598,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`,
     `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`, `SportSlotSkipContractIT`,
     `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
-    `TrainServiceIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeBaselineSeedIT`,
-    `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`,
+    `TrainServiceIT`, `TrainingStreakCalculatorIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`,
+    `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`,
     `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
     `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WorkoutAutoCloseIT`,
     `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`,
