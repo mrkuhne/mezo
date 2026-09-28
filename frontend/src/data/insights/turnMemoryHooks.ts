@@ -43,14 +43,19 @@ export function useTurnMemory(conversationId: string | null, anchor: TurnAnchor 
     refetchInterval: (query) => {
       if (mock) return false
       if ((query.state.data?.forgotten.length ?? 0) > 0) return false
-      if (attempts.current >= TURN_MEMORY_POLL_DELAYS.length) return false
-      return TURN_MEMORY_POLL_DELAYS[Math.min(attempts.current, TURN_MEMORY_POLL_DELAYS.length - 1)]
+      // attempts.current counts COMPLETED fetches (incremented before the await in queryFn), so
+      // the delay for the NEXT poll is indexed one behind it — fix round 1 (mezo-d6ivw.12): the
+      // un-shifted index skipped delays[0] entirely, running 3s/5s instead of 2s/3s/5s.
+      if (attempts.current > TURN_MEMORY_POLL_DELAYS.length) return false
+      return TURN_MEMORY_POLL_DELAYS[Math.max(0, Math.min(attempts.current - 1, TURN_MEMORY_POLL_DELAYS.length - 1))]
     },
     staleTime: Infinity,
     gcTime: 5 * 60_000,
   })
   const memory = data ?? EMPTY_TURN_MEMORY
-  const pending = !mock && !!anchor && isEmpty(memory) && attempts.current < TURN_MEMORY_POLL_DELAYS.length
+  // Symmetric with the refetchInterval stop condition above: attempts.current counts completed
+  // fetches, and the ladder still has a poll queued up through (and including) the 3rd follow-up.
+  const pending = !mock && !!anchor && isEmpty(memory) && attempts.current <= TURN_MEMORY_POLL_DELAYS.length
   return { memory, pending }
 }
 
