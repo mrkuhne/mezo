@@ -4133,6 +4133,7 @@ body:not(.still) .u8 .typing i:nth-child(3){animation-delay:.3s}
       <a href="#megfigyelo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-eye"/></svg>Megfigyelő</a>
       <a href="#kartya" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-card"/></svg>A napi kártya</a>
       <a href="#chat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés</a>
+      <a href="#chat/ures" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-eraser"/></svg>Beszélgetés · üres felejtés (S8)</a>
       <span class="ov" style="margin:14px 0 2px">A CSAPAT</span>
       <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-people"/></svg>A csapat + 5 szoba (csapatfal)</a>
       <a href="#tud/szunya" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-journal"/></svg>Amit rólad tud (egy szoba mélye)</a>
@@ -4175,7 +4176,7 @@ body:not(.still) .u8 .typing i:nth-child(3){animation-delay:.3s}
       <li>Tudástár: <a href="#" data-st="tud:full">rendes</a> · <a href="#" data-st="tud:degraded">kikapcsolva</a> · a négy szakasz a <a href="../uveg-tudastar-hub.html#tudastar">hub-oldalon</a></li>
       <li>Minták: <a href="#" data-st="bucket:decide">döntésre vár</a> · <a href="#" data-st="bucket:confirmed">megerősítve</a> · <a href="#" data-st="bucket:monitoring">megfigyelés</a> · <a href="#" data-st="bucket:gathering">még gyűlik</a> · <a href="#" data-st="bucket:noRel">nincs kapcsolat</a> · <a href="#" data-msheet9="filter">szűrés</a></li>
       <li>Előrejelzések: <a href="#" data-st="pred:all">mind</a> · <a href="#" data-st="pred:pending">folyamatban</a> · <a href="#" data-st="pred:closed">lezárt</a> · <a href="#" data-st="pred:empty">még nincs</a></li>
-      <li><b>Chat-memória (S8, új):</b> <a href="#" data-s8="reset">a teljes beszélgetés</a> · négy jelzés: Megjegyeztem · Megjegyezném · Emlékszem · Elfelejtettem — új ikon nincs, mind a meglévő készletből (spark, bulb, people, eraser)</li>
+      <li><b>Chat-memória (S8, új):</b> <a href="#" data-s8="reset">a teljes beszélgetés</a> · négy jelzés: Megjegyeztem · Megjegyezném · Emlékszem · Elfelejtettem — új ikon nincs, mind a meglévő készletből (spark, bulb, people, eraser) · <a href="#chat/ures">üres felejtés</a>: a felejtés a közvetlenül előző üzenetet érinti, ha az nem tanult semmit, becsületes üres állapot + bővítő ajánlat (owner döntés 2026-09-28)</li>
       <li>Beszélgetés: <a href="#" data-st="ch:full">beszélgetés</a> · <a href="#" data-st="ch:typing">Mezo dolgozik</a> · <a href="#" data-st="ch:err">hiba</a> · <a href="#" data-st="ch:empty">új</a> · <a href="#" data-st="ch:off">nem elérhető</a></li>
       <li>Napi kártya: <a href="#" data-st="card:open">még nem léptél</a> · <a href="#" data-st="card:done">alkalmaztad</a> · <a href="#" data-st="card:none">ma nincs</a></li>
       <li>Kísérletek: <a href="#" data-st="ex:mind">mind</a> · <a href="#" data-st="ex:aktiv">aktív</a> · <a href="#" data-st="ex:ures">üres</a> · Memória: <a href="#" data-st="mem:retegek">rétegek</a> · <a href="#" data-st="mem:naplo">napló</a> · <a href="#" data-st="mem:kereso">kereső</a> · <a href="#" data-st="mem:audit">audit</a></li>
@@ -5993,7 +5994,31 @@ function s8chat(){
   return chatHead()+`<div class="thread">${u1}${a1}${s8turn(['dori','self'],.3)}${u2}${a2}${s8turn(['anna','bence'],.3)}${u3}${a3}${s8gone()}</div>`;
 }
 
-const _s8chat=U8V.chat; U8V.chat=id=>ST.ch==='mem'?s8chat():_s8chat(id);
+/* S8 · üres felejtés (2026-09-28): a harmadik user-üzenetet megelőző forduló nem tanult semmit —
+   a t-eraser chip a becsületes üres állapotot mutatja, a bővítő ajánlat mégis ott marad, mert a
+   beszélgetés korábbi fordulója (a strandröpi-poszt) még mindig él. Ugyanez a szál adja a
+   SH.s8all 3-elemes „Ezt a {n} dolgot" szövegét is (lásd lent). */
+const S8U_REST=[
+  {w:'Dóri',t:'a strandröpi-párod, ma is nyertetek',k:'rem'},
+  {w:'',t:'Egy nagy közös élmény után nehezen viselem az egyedül töltött estét.',k:'prop'},
+  {w:'Bence',t:'jövőre hármasban játszana veled és Annával',k:'rem'}
+];
+function s8ureschat(){
+  const meta=(t)=>`<div class="msg-meta">${I('chat')}<b>Mezo</b>${t}</div>`;
+  const u1=`<div class="msg-u rise" style="--i:1">Dórival ma is strandröpiztünk, megint nyertünk!<small>19:40</small></div>`;
+  const a1=`<div class="msg-a glass rise" style="--i:2">${meta('19:40')}<p>Szuper, gratulálok — Dórival megint összejött.</p></div>
+    <div class="s8turn"><div class="s8chip" style="--d:.3s">${I('spark')}<span class="s8tx"><b>Megjegyeztem:</b> <b>Dóri</b> — a strandröpi-párod, ma is nyertetek</span>
+      <span class="s8acts"><button class="s8btn ghost" data-toast="Visszavonva — nem jegyeztem meg.">Visszavonom</button></span></div></div>`;
+  const u2=`<div class="msg-u rise" style="--i:4">Milyen lesz az idő holnap az edzéshez?<small>19:42</small></div>`;
+  const a2=`<div class="msg-a glass rise" style="--i:5">${meta('19:42')}<p>Holnap napos, enyhe szél — jó nap a szabadtéri edzéshez.</p></div>`;
+  const u3=`<div class="msg-u rise" style="--i:7">Ezt ne jegyezd meg.<small>19:43</small></div>`;
+  const a3=`<div class="msg-a glass rise" style="--i:8">${meta('19:43')}<p>Rendben. Lent látod, mit találtam — vagy inkább mennyit.</p></div>
+    <div class="s8turn"><div class="s8chip gone" style="--d:.3s">${I('eraser')}<span class="s8tx">Nem volt mit elfelejteni — az előző üzenetedből semmit nem jegyeztem meg.
+      <button class="s8btn" data-s8="allask">Mindent ebből a beszélgetésből?</button></span></div></div>`;
+  return chatHead()+`<div class="thread">${u1}${a1}${u2}${a2}${u3}${a3}</div>`;
+}
+
+const _s8chat=U8V.chat; U8V.chat=id=>{ST.ch2=id==='ures'?'ures':'';return id==='ures'?s8ureschat():ST.ch==='mem'?s8chat():_s8chat(id)};
 STATUS.mem=['élő · Gemini',''];
 
 SH.s8rec=['var(--lav)',()=>{const k=ST.s8rk,names=k==='1'?['dori','bence']:['bence'];
@@ -6001,11 +6026,18 @@ SH.s8rec=['var(--lav)',()=>{const k=ST.s8rk,names=k==='1'?['dori','bence']:['ben
   <div class="s8who">${names.map(n=>`<div class="pp"><strong>${I('person')}${n==='dori'?'Dóri':'Bence'}</strong><ul style="margin:0;padding:0">${S8R[n].map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
   <p class="s8foot">Csak azt veszem elő, amit a Tudástárban is látsz. Ha valamelyiket nem szeretnéd, ott elhallgattathatod vagy elfelejtheted.</p>
   <div class="s8row"><button class="s8btn" style="--c:var(--lav)" data-toast="Tudástár · Emberek">Emberek a Tudástárban ›</button></div>`}];
-SH.s8all=['var(--rose)',()=>{const rest=['dori','self'].filter(id=>ST.s8[id]!=='undone'&&ST.s8[id]!=='no'&&ST.s8[id]!=='gone');
-  return `<div class="shh">${I('eraser')}<div class="grow"><span class="eb">MINDENT EBBŐL A BESZÉLGETÉSBŐL</span><h3>${rest.length===1?'Ezt az egyet':'Ezt a kettőt'} is elfelejtem</h3></div>${x}</div>
-  <ul class="s8list">${rest.map(id=>`<li>${S8F[id].w?`<b>${S8F[id].w}</b> — `:''}${S8F[id].t}<small>${S8F[id].k==='prop'?'javaslat, még nem döntöttél róla':'22:05-kor jegyeztem meg'}</small></li>`).join('')}</ul>
+/* {n}-es szöveg — az FE forgetAllTitle/forgetAllCta tükre (ForgetAllSheet.tsx): 1/2 saját
+   szöveg, 3+ általános „Ezt a {n} dolgot… / Elfelejtem mindet" forma. */
+const s8allTitle=n=>n===1?'Ezt az egyet':n===2?'Ezt a kettőt':`Ezt a ${n} dolgot`;
+const s8allCta=n=>n===1?'Elfelejtem':n===2?'Elfelejtem mind a kettőt':'Elfelejtem mindet';
+SH.s8all=['var(--rose)',()=>{
+  const rest=ST.ch2==='ures'?S8U_REST
+    :['dori','self'].filter(id=>ST.s8[id]!=='undone'&&ST.s8[id]!=='no'&&ST.s8[id]!=='gone').map(id=>S8F[id]);
+  const n=rest.length;
+  return `<div class="shh">${I('eraser')}<div class="grow"><span class="eb">MINDENT EBBŐL A BESZÉLGETÉSBŐL</span><h3>${s8allTitle(n)} is elfelejtem</h3></div>${x}</div>
+  <ul class="s8list">${rest.map(f=>`<li>${f.w?`<b>${f.w}</b> — `:''}${f.t}<small>${f.k==='prop'?'javaslat, még nem döntöttél róla':'22:05-kor jegyeztem meg'}</small></li>`).join('')}</ul>
   <p class="s8foot">Végleges: nem használom többé, és ugyanebből nem tanulom meg újra. Amit máskor, máshol mondasz, azt továbbra is megjegyezhetem.</p>
-  <div class="s8row"><button class="s8btn" style="--c:var(--rose)" data-s8="allgo">${rest.length===1?'Elfelejtem':'Elfelejtem mind a kettőt'}</button><button class="s8btn ghost" data-closesheet>Mégse</button></div>`}];
+  <div class="s8row"><button class="s8btn" style="--c:var(--rose)" data-s8="allgo">${s8allCta(n)}</button><button class="s8btn ghost" data-closesheet>Mégse</button></div>`}];
 
 document.addEventListener('click',e=>{const b=e.target.closest('[data-s8]');if(!b)return;e.preventDefault();e.stopPropagation();
   const [a,id]=b.dataset.s8.split(':');const S=ST.s8;
@@ -6014,7 +6046,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-s8]');if(!
   if(a==='undo'){S[id]='undone';soft();return}
   if(a==='rec'){ST.s8rk=id;openSheet('s8rec');return}
   if(a==='allask'){openSheet('s8all');return}
-  if(a==='allgo'){['dori','self'].forEach(k=>{if(S[k]!=='undone'&&S[k]!=='no')S[k]='gone'});S.all=true;closeSheet();soft();toast('Elfelejtve — ebből a beszélgetésből semmit nem tartok meg.');return}
+  if(a==='allgo'){if(ST.ch2!=='ures'){['dori','self'].forEach(k=>{if(S[k]!=='undone'&&S[k]!=='no')S[k]='gone'});S.all=true}closeSheet();soft();toast('Elfelejtve — ebből a beszélgetésből semmit nem tartok meg.');return}
   if(a==='reset'){ST.s8=s8init();ST.ch='mem';location.hash==='#chat'?soft():(location.hash='#chat');return}
 },true);
 if(route()[0]==='chat')soft();

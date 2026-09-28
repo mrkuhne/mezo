@@ -37,7 +37,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-gb1s` — **Mezo-kalauz (in-app tutorial)** | ◐ 6/10 (60%) | Per-page guided tour for beta onboarding. [`tutorial.md`](../features/tutorial.md). |
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
 | `mezo-06o0` / `mezo-88jw` | 🔄 open | Emberek section build-out; the daily-rhythm IA direction spec. |
-| `mezo-d6ivw` — **Mezo emlékezete** | 🔄 open | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. |
+| `mezo-d6ivw` — **Mezo emlékezete** | ◐ 8/12 (66%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28. |
 | `mezo-rj214` — **Companion teljes adat-hozzáférés** | 🔄 open | A társ kérésre mindent lásson és elérjen ami az adatbázisban van (grammra pontos makrók/mikrók, összetevők, alvás, súly, naplózás, checkinek), és szabadabban tudjon beszélgetni. |
 | `mezo-ozri` — **OpenAI migráció** | 🔄 open | Provider-semleges LLM-varrat Geminiről OpenAI-ra (gpt-5.6-luna/-terra), config-vezérelt model-router, prompt-caching-optimalizált sorrend, per-user rolling USD cap. S2 (OpenAI adapter) shipped 2026-09-07; router/eval-rebaseline/prompt-caching még nyitva. |
 | `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | Az app és a companion-persona átnevezése Mezoról Boopra — amit a user olvas, az Boop; amit tárolunk, az marad `mezo`. |
@@ -60,6 +60,21 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-28 — A chat memóriája legyen látható és őszinte (S8, `mezo-d6ivw.12`).** A beszélgetés
+  ezentúl elárulja, mit tanult, mit javasol, kire emlékszik és mit felejtett el — egy megjegyezett
+  személy-tényhez „Megjegyeztem: … Visszavonom" chip jár, egy owner-tény javaslathoz „Megjegyezném:
+  … Igen/Ne", a névvel említett emberekhez egy „Emlékszem: <nevek> ›" sor (nyitható lista, mit
+  vett elő róluk), és az „ezt ne jegyezd meg" mondatra „Elfelejtettem: …" + egy „Mindent ebből a
+  beszélgetésből?" bővítő ajánlat — üres esetben is: „Nem volt mit elfelejteni…", sosem néma
+  válasz. Owner döntés 2026-09-28: a felejtés kizárólag a KÖZVETLENÜL ELŐZŐ üzenetedet érinti, nem
+  keres visszafelé; minden felejtés végleges. Az emberek-előszedés mostantól determinisztikus (nem
+  az LLM dönt, kit hoz elő), és a chat rendszeruzenete egy `[Emberek]` blokkot kap a névvel
+  említett, aktív személyekről. Backend: három új végpont
+  (`GET .../turn-memory`, `GET`/`POST .../forget-learned`), két új `ai_message` oszlop, a
+  személyenkénti tény-sapka 3-ról 3/személy + 15/forrás-ra bővült. Élő prototípus szinkronban:
+  [`mezo.html`](../design_2.0/prototypes/elo/mezo.html). Dokumentáció:
+  [`companion.md`](../features/companion.md) §2–§4 · [`insights.md`](../features/insights.md) §2.5
+  · [`me.md`](../features/me.md) §5.4.
 - **2026-09-28 — Tanuló energiaigény 2. rész: heti összegző, „Hogy tanultam?" oldal, napi
   jelölés, kapcsoló (`mezo-3n2so`, `mezo-zz91i` folytatása).** Az 1. részben csendben tanuló
   napi energiaigény mostantól látható és javítható. Heti egyszer, csak ha van mit mondani, egy
