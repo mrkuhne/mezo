@@ -2521,7 +2521,7 @@ function topbar(){return `<header class="topbar"><span class="wordmark">boop</sp
   <button class="rbtn glass" data-toast="Beállítások">${C('beallitas')}</button>
   <button class="rbtn glass" style="--c:var(--lav)" data-go="#uzenetek" aria-label="Mezo üzenetei">${C('level')}<b class="badge">2</b></button>
   <button class="rbtn glass ${ntfOpen?'is-open':''}" style="--c:var(--sky)" data-ntf aria-label="Értesítések">${C('ertesites')}<b class="badge">3</b></button>
-  <button class="orb glass" aria-label="A mai napod · 4 a 7 jelből megvan" data-toast="A mai nap oldala (Én · Hét — a 6. szeletben kap üveget)"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 17 Q2 14 8 17 T20 17 T32 17 T44 17 T56 17 V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
+  <button class="orb glass" aria-label="A mai napod · 4 a 7 jelből megvan" data-go="#nap/2026-09-24"><svg viewBox="0 0 40 40"><defs><clipPath id="orbc"><circle cx="20" cy="20" r="16"/></clipPath><linearGradient id="orbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC3A8"/><stop offset=".5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C8431F"/></linearGradient></defs><circle class="orb-glass" cx="20" cy="20" r="16"/><g clip-path="url(#orbc)"><g class="wave"><path class="orb-liquid" fill="url(#orbg)" d="M-4 17 Q2 14 8 17 T20 17 T32 17 T44 17 T56 17 V44 H-4Z"/></g></g><path class="orb-hi" d="M11 12 A11 11 0 0 1 17 8.5"/></svg></button>
 </header>`}
 const back=(to='#mai',l='Ma')=>`<div class="backrow rise"><button class="backbtn glass" data-go="${to}"><b>‹</b>${l}</button></div>`;
 const hero=(art,num,h,p,c,c2)=>`<section class="nhero rise" style="--c:${c};--c2:${c2||'var(--lav)'};--i:1">${I(art,'art')}${num!==''?`<div class="num">${num}</div>`:''}<h1>${h}</h1>${p?`<p>${p}</p>`:''}</section>`;
@@ -2958,7 +2958,7 @@ function ndCloseCard(){
     <div class="zhalo"></div>
     <div class="ztop">${I('moon','zart')}<span><span class="eb">ESTE · NAPZÁRÁS</span><strong>Tegyük le a napot.</strong><small>Amit megőriznél, és amit elengednél. Kb. 3 perc.</small></span></div>
     <div class="zchips"><span class="flat">${I('bowl')}${ndHu(T.kcal)} kcal</span><span class="flat">${I('dumbbell')}edzés ${T.work}/${T.workG}</span><span class="flat">${I('checkin')}check-in ${T.ck}/${T.ckG}</span><span class="flat">${ndDoneCount(d)}/6 terület kész</span></div>
-    <button class="zgo" data-ndritual>${I('moon')}Napzárás indítása<b>›</b></button>
+    <button class="zgo" data-ndritual data-go="#napzaras">${I('moon')}Napzárás indítása<b>›</b></button>
   </section></div>`;
 }
 const maieste=()=>{const h=mai(),k=h.indexOf('</h1></div>')+'</h1></div>'.length;return h.slice(0,k)+ndCloseCard()+h.slice(k)};
@@ -2981,14 +2981,14 @@ const ndLogSheet=()=>`<div class="nd ndsheet"><h3>Mit írsz be?</h3><p class="su
 document.addEventListener('click',e=>{
   const t=e.target;
   const dm=t.closest('[data-nddim]');if(dm){e.stopPropagation();const k=dm.dataset.nddim;ND.open.has(k)?ND.open.delete(k):ND.open.add(k);soft();return}
-  if(t.closest('[data-ndritual]')){e.stopPropagation();ND.ritual=true;soft();toast('Napzárás kész · a szertartás maga változatlan');return}
+  if(t.closest('[data-ndritual]')){e.stopPropagation();ND.ritual=true;const g=t.closest('[data-ndritual]').dataset.go;if(g){location.hash=g;return}soft();toast('Napzárás kész · a szertartás maga változatlan');return}
   if(t.closest('[data-ndadj]')){e.stopPropagation();ND.adj=!ND.adj;soft();return}
   const lg=t.closest('[data-ndlog]');if(lg){e.stopPropagation();if(!lg.disabled)ndLog(lg.dataset.ndlog);return}
 },true);
 SH.ndlog=['var(--lav)',ndLogSheet];
 
 /* ── router ─────────────────────────────────────────────── */
-const TAB={mai:'Mai',checkin:'Mai',hatasok:'Mai',napom:'Mai',eletjel:'Mai',kuldetesek:'Mai',gyors:'Mai',uzenetek:'Beszélgetés',rutin:'Rutin',napzaras:'Napzárás',ikonok:'Mai',nap:'Mai',maieste:'Mai'};
+const TAB={mai:'Mai',checkin:'Mai',hatasok:'Mai',napom:'A napom',eletjel:'Mai',kuldetesek:'Mai',gyors:'Mai',uzenetek:'Beszélgetés',rutin:'Rutin',napzaras:'Mai',ikonok:'Mai',nap:'A napom',maieste:'Mai'};
 function render(){
   const h=location.hash||'#mai', [r,id]=h.slice(1).split('/');
   if(r==='rutin'&&id)face=id;
@@ -3040,7 +3040,7 @@ addEventListener('hashchange',render);
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
 
 function tabbar(active){
-  const tabs=[['Mai','nap','#mai'],['Beszélgetés','mezo','#uzenetek'],['Rutin','rend','#rutin'],['Napzárás','hold','#napzaras']];
+  const tabs=[['Mai','nap','#mai'],['A napom','heti','#nap/2026-09-24'],['Beszélgetés','mezo','#uzenetek'],['Rutin','rend','#rutin']]; // navModel.ts: az „A napom” fül váltotta a Napzárást
   $('#tabbar').innerHTML=`<button class="tb-boop" data-switch aria-label="Területváltó: Nap">${B('nap')}</button>`+
     tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" data-go="${go}">${C(ic)}<span>${l}</span></button>`).join('');
 }
