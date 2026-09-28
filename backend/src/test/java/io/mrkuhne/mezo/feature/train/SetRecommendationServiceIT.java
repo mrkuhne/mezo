@@ -298,6 +298,24 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testPrescribe_shouldProgressReps_whenLastTopSetWasZeroKgAtRepMax() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Hiperextenzió", "back", "isolation");
+        // 0 kg logged = bodyweight; at the range top the proportional step divided by it (mezo-xbhrm)
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.ZERO, ex.getRepMax(), 2);
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.REP);
+        assertThat(p.rationale()).contains("Testsúlyos");
+        var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
+        assertThat(work.get(0).getTargetWeightKg()).isNull();
+    }
+
+    @Test
     void testPrescribe_shouldRegress_whenDeloadWeek() {
         UUID owner = ownerId();
         var meso = train.createActiveMeso(owner);
