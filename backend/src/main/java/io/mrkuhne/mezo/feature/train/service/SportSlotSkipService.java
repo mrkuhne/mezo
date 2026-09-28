@@ -100,6 +100,28 @@ public class SportSlotSkipService {
             .toList();
     }
 
+    /** Raw rows in [from, to] (Kihagyás S1, mezo-q4xt2.1) — the union read's ADVICE side; unlike
+     *  {@link #skipsBetween}, which collapses to identity keys, this keeps id + createdAt so
+     *  {@code PlannedSkipPolicy} can judge them alongside {@code planned_skip} rows. */
+    @Transactional(readOnly = true)
+    public List<SportSlotSkipEntity> rowsBetween(UUID userId, LocalDate from, LocalDate to) {
+        return repository.findByCreatedByAndDateBetweenAndDeletedFalse(userId, from, to);
+    }
+
+    /** Undo of a coach (advice) skip through the Kihagyás API (mezo-q4xt2.1) — soft delete; false
+     *  when no live row with this id belongs to the caller. */
+    @Transactional
+    public boolean deleteOwned(UUID userId, UUID id) {
+        return repository.findById(id)
+            .filter(e -> e.getCreatedBy().equals(userId) && !e.isDeleted())
+            .map(e -> {
+                repository.delete(e);
+                repository.flush();
+                return true;
+            })
+            .orElse(false);
+    }
+
     /** One skipped slot occurrence — weekday (0=Hét..6=Vas) + clock time + the skipped date. */
     public record SkipKey(int dayOfWeek, String time, LocalDate date) {
     }

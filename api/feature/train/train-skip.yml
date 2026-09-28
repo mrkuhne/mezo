@@ -1,0 +1,98 @@
+openapi: 3.0.3
+info: { title: mezo train-skip fragment, version: 1.0.0 }
+tags:
+  - name: TrainSkip
+    description: >-
+      Kihagyás S1 (mezo-q4xt2.1, spec 2026-09-28 §8) — the user skips one planned occurrence (a gym
+      day, a recurring sport slot occurrence, a prescribed run) with an optional reason. Whether a
+      skip counts as missed is decided at read time: serious reasons never count, the first soft
+      skip of the ISO week is covered by the free pass, coach (advice) skips never count.
+paths:
+  /api/train/skips:
+    get:
+      tags: [TrainSkip]
+      operationId: listPlannedSkips
+      summary: Every skip in [from, to] with its read-time verdict (user skips + coach advice skips)
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Skips, date then created ascending
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/PlannedSkipResponse' } }
+        '400':
+          description: from after to (TRAIN_INVALID_DATE_RANGE)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+    put:
+      tags: [TrainSkip]
+      operationId: upsertPlannedSkip
+      summary: Skip one occurrence, or change the reason of an existing skip (idempotent per target)
+      description: >-
+        Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in
+        [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PlannedSkipRequest' } } }
+      responses:
+        '200':
+          description: The stored skip with its verdict
+          content: { application/json: { schema: { $ref: '#/components/schemas/PlannedSkipResponse' } } }
+        '400':
+          description: Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+  /api/train/skips/{id}:
+    delete:
+      tags: [TrainSkip]
+      operationId: undoPlannedSkip
+      summary: Undo a skip ("Visszavonom") — the occurrence is planned again
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Undone }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '404':
+          description: No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+components:
+  schemas:
+    PlannedSkipKind: { type: string, enum: [GYM, SPORT, RUN] }
+    PlannedSkipReason:
+      type: string
+      enum: [ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, OTHER, NONE]
+    PlannedSkipRequest:
+      type: object
+      required: [date, kind, reasonCategory]
+      properties:
+        date: { type: string, format: date }
+        kind: { $ref: '#/components/schemas/PlannedSkipKind' }
+        dayOfWeek: { type: integer, minimum: 0, maximum: 6, nullable: true, description: 'SPORT only, 0=Hét..6=Vas' }
+        time: { type: string, pattern: '^\d{2}:\d{2}$', nullable: true, description: SPORT only }
+        sessionKey: { type: string, maxLength: 64, nullable: true, description: RUN only }
+        reasonCategory: { $ref: '#/components/schemas/PlannedSkipReason' }
+        reasonText: { type: string, maxLength: 500, nullable: true, description: Kept only for OTHER }
+    PlannedSkipResponse:
+      type: object
+      required: [id, date, kind, reasonCategory, source, serious, freePass, excused]
+      properties:
+        id: { type: string, format: uuid }
+        date: { type: string, format: date }
+        kind: { $ref: '#/components/schemas/PlannedSkipKind' }
+        dayOfWeek: { type: integer, nullable: true }
+        time: { type: string, nullable: true }
+        sessionKey: { type: string, nullable: true }
+        reasonCategory: { $ref: '#/components/schemas/PlannedSkipReason' }
+        reasonText: { type: string, nullable: true }
+        source: { type: string, enum: [USER, ADVICE] }
+        serious: { type: boolean }
+        freePass: { type: boolean, description: The weekly free pass covers this skip }
+        excused: { type: boolean, description: Does not count as missed }
