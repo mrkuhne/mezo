@@ -5516,6 +5516,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/conversation/{conversationId}/turn-memory':
+    get:
+      tags:
+        - Companion
+      operationId: getTurnMemory
+      summary: >-
+        S8 (mezo-d6ivw.12) — what one chat turn did to memory. learned = the
+        person facts it saved (active only), proposed = the owner-fact
+        candidates it raised (undecided, or accepted with a still-live fact),
+        forgotten = what a forget request on this turn forgot. The chat chips
+        poll this after a turn (2s/3s/5s ladder).
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: query
+          required: true
+          description: The USER message id of the turn.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The turn memory (every list may be empty)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnMemoryResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation or user message not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/conversation/{conversationId}/forget-learned':
+    get:
+      tags:
+        - Companion
+      operationId: previewForgetLearned
+      summary: >-
+        S8 (mezo-d6ivw.12) — what Mindent ebből a beszélgetésből? would forget:
+        every still-live memory item this conversation produced (person facts,
+        undecided proposals, accepted facts).
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 'Live items, newest first (may be empty)'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemoryItemResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Companion
+      operationId: forgetLearned
+      summary: >-
+        S8 — forget everything this conversation taught, permanently (veto,
+        never re-learned from the same text). The forgotten items are appended
+        to the triggering message forget list.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgetLearnedRequest'
+      responses:
+        '200':
+          description: What was forgotten
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForgetLearnedResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation or trigger message not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/fact:
     get:
       tags:
@@ -5673,8 +5794,8 @@ paths:
       operationId: decideFactCandidate
       summary: >-
         Decide a candidate (V1.2) — accept/refine promote it into a knowledge
-        fact, reject archives it. One decision per candidate; confirm is an
-        explicit L2 action, never silent.
+        fact, reject archives it and vetoes its text (S8). One decision per
+        candidate; confirm is an explicit L2 action, never silent.
       description: >-
         The promoted fact inherits the candidate's `source`: a chat-extracted
         candidate becomes a `chat` fact, a weekly-review candidate a
@@ -20777,6 +20898,15 @@ components:
             degrades a turn).
           items:
             $ref: '#/components/schemas/RecalledMemory'
+        turnUserMessageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            S8 (mezo-d6ivw.12) — only on the answer a send returns (sync
+            response and the stream done event): the id of the USER row of the
+            same turn, so the client anchors the turn-memory chips without a
+            refetch. Absent on listed history rows.
     RecalledMemory:
       type: object
       required:
@@ -21117,9 +21247,131 @@ components:
           format: uuid
           nullable: true
           description: The knowledge fact this candidate was promoted into (accept/refine).
+        derivedFromMessageId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            S8 (mezo-d6ivw.12) — the chat USER message the candidate was
+            extracted from; null for a weekly-review candidate. The chat anchors
+            its Megjegyezném chip on it.
         createdAt:
           type: string
           format: date-time
+    TurnMemoryResponse:
+      type: object
+      required:
+        - learned
+        - proposed
+        - forgotten
+        - forgetRequest
+      properties:
+        forgetRequest:
+          type: boolean
+          description: >-
+            True when this user message is itself a forget request
+            (ForgetIntent) - its forgotten list may be empty when the preceding
+            message learned nothing, and it never gains learned or proposed
+            items.
+        learned:
+          type: array
+          items:
+            $ref: '#/components/schemas/TurnPersonFactResponse'
+        proposed:
+          type: array
+          items:
+            $ref: '#/components/schemas/FactCandidateResponse'
+        forgotten:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryItemResponse'
+    TurnPersonFactResponse:
+      type: object
+      required:
+        - id
+        - personId
+        - personName
+        - kind
+        - text
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        personName:
+          type: string
+        kind:
+          type: string
+          enum:
+            - preference
+            - relationship_state
+            - shared_activity
+            - important_date
+            - sensitivity
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    MemoryItemResponse:
+      type: object
+      description: >-
+        S8 — one memory item a chat turn produced, as the forget flow lists it.
+        kind person_fact refId = the person fact, fact_candidate = the undecided
+        candidate, knowledge_fact = the promoted fact of an accepted candidate.
+      required:
+        - kind
+        - refId
+        - text
+        - createdAt
+        - pending
+      properties:
+        kind:
+          type: string
+          enum:
+            - person_fact
+            - fact_candidate
+            - knowledge_fact
+        refId:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+          nullable: true
+        who:
+          type: string
+          nullable: true
+          description: The person name for a person fact; null for the owner.
+        text:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        pending:
+          type: boolean
+          description: True for an undecided proposal.
+    ForgetLearnedRequest:
+      type: object
+      required:
+        - triggerMessageId
+      properties:
+        triggerMessageId:
+          type: string
+          format: uuid
+          description: The USER message whose Elfelejtettem chip offered the widen.
+    ForgetLearnedResponse:
+      type: object
+      required:
+        - forgotten
+      properties:
+        forgotten:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoryItemResponse'
     FactDecisionRequest:
       type: object
       required:
@@ -21127,10 +21379,15 @@ components:
       properties:
         decision:
           type: string
-          pattern: ^(accept|reject|refine|snooze)$
+          enum:
+            - accept
+            - reject
+            - refine
+            - snooze
           description: >-
-            snooze = „Most ne”: hidden for 14 days, then re-offered; stays
-            undecided
+            snooze = Most ne: hidden for 14 days, then re-offered, stays
+            undecided. reject is permanent since S8 (mezo-d6ivw.12): the
+            candidate text is vetoed and never proposed again.
         refinedText:
           type: string
           minLength: 1

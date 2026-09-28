@@ -111,19 +111,23 @@ public class CheckInPlanService {
     }
 
     /**
-     * Deterministic across JVMs: UUID, epoch day and String hashes are all specified. The raw
-     * polynomial is passed through the SplitMix64 finaliser: {@link Random}'s first draw from
-     * seeds that differ by a small step (31 per day) is nearly identical, so without the mix about
-     * one user in eight got the random pick every day and never a need pick (mezo-ck2 follow-up).
+     * Deterministic across JVMs: UUID, epoch day and String hashes are all specified. The combined
+     * hash goes through the SplitMix64 finalizer because {@link Random}'s first output is nearly
+     * linear in its seed: a raw {@code 31 * h + epochDay} seed moved the first draw by ~0.003 per
+     * day, so the random-vs-need draw was the same for weeks in a row (mezo-x6t01).
      */
     static long seed(UUID userId, LocalDate date, String slotTime) {
         long seed = userId.getMostSignificantBits();
         seed = 31 * seed + userId.getLeastSignificantBits();
         seed = 31 * seed + date.toEpochDay();
-        seed = 31 * seed + slotTime.hashCode();
-        seed = (seed ^ (seed >>> 30)) * 0xbf58476d1ce4e5b9L;
-        seed = (seed ^ (seed >>> 27)) * 0x94d049bb133111ebL;
-        return seed ^ (seed >>> 31);
+        return mix64(31 * seed + slotTime.hashCode());
+    }
+
+    /** SplitMix64 finalizer (Steele, Lea &amp; Flood 2014): every input bit avalanches into every output bit. */
+    private static long mix64(long z) {
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
+        return z ^ (z >>> 31);
     }
 
     static CheckInPlanItem toPlanItem(CheckInItem item) {

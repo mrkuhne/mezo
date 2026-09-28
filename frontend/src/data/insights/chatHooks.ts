@@ -5,6 +5,7 @@ import { isMockMode } from '@/data/_client/mode'
 import { ApiError } from '@/data/_client/api'
 import { chatApi, toChatMessage, type ConversationResponse } from '@/data/insights/chatApi'
 import { initialChat, cannedReply } from '@/data/insights/chat'
+import { MOCK_PERSON_RECALL } from '@/data/insights/turnMemory'
 import type { ChatMessage } from '@/data/types'
 import type { Tool } from '@/shared/ui/ToolChip'
 
@@ -291,6 +292,7 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
               refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
               recalled: [
                 { occurredOn: '2026-05-19', kind: 'chat_turn', label: 'korábbi beszélgetés', gist: 'Daniel: fáradt vagyok ma', similarity: 0.66 },
+                ...MOCK_PERSON_RECALL,
               ],
             },
           ])
@@ -316,7 +318,9 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
           (tool) => setTurn((t) => (t ? { ...t, tools: [...t.tools, tool], thinking: false } : t)),
           (phase) => setTurn((t) => (t ? { ...t, phase } : t)),
         )
-        append(conversationId, [{ role: 'user', ts: nowTs(), text }, toChatMessage(done)])
+        // S8: the done answer names its own user row — the chips anchor on the real id
+        // without a refetch (before S8 the id-less bubble made the chips poll the PREVIOUS turn).
+        append(conversationId, [{ id: done.turnUserMessageId ?? undefined, role: 'user', ts: nowTs(), text }, toChatMessage(done)])
         refreshConversations()
       } catch (err) {
         // mezo-8z79: the backend now REFUSES to persist a blank answer, so this is a real outcome

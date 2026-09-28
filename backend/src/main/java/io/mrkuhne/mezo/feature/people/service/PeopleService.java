@@ -22,11 +22,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -150,7 +153,26 @@ public class PeopleService {
 
     @Transactional(readOnly = true)
     public List<PersonChatContext> chatContext(UUID userId, LocalDate today) {
-        List<PersonEntity> persons = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId);
+        return chatContext(userId, today, p -> true);
+    }
+
+    /**
+     * S8 (mezo-d6ivw.12): the same rows for the persons a message names. Deliberately NOT
+     * {@code @Transactional} (fix round 1): the chat turn's people recall calls it inside the
+     * turn's transaction and must stay fail-open — a throwing participating transactional method
+     * would mark the turn rollback-only past the caller's catch. Reads join the caller's transaction.
+     */
+    public List<PersonChatContext> chatContextFor(UUID userId, LocalDate today, Collection<UUID> personIds) {
+        if (personIds.isEmpty()) {
+            return List.of();
+        }
+        Set<UUID> wanted = Set.copyOf(personIds);
+        return chatContext(userId, today, p -> wanted.contains(p.getId()));
+    }
+
+    private List<PersonChatContext> chatContext(UUID userId, LocalDate today, Predicate<PersonEntity> include) {
+        List<PersonEntity> persons = personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId)
+            .stream().filter(include).toList();
         if (persons.isEmpty()) {
             return List.of();
         }

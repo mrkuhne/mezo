@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper } from '@/test/queryWrapper'
-import { usePeople, useTurnFacts } from '@/data/me/peopleHooks'
+import { usePeople } from '@/data/me/peopleHooks'
 import { mentionDayLabel } from '@/data/me/peopleApi'
 import { people as personSeed, mentions as mentionSeed } from '@/data/me/people'
 import type { MentionResponse, PeopleResponse, PersonResponse } from '@/data/me/peopleApi'
@@ -144,14 +144,6 @@ describe('usePeople (mock mode)', () => {
       expect(after.facts.every(f => f.seen)).toBe(true)
     })
   })
-
-  it('useTurnFacts returns the demo fact immediately in mock mode', () => {
-    const { result } = renderHook(() => useTurnFacts('msg-1'), { wrapper: makeHookWrapper() })
-    expect(result.current.pending).toBe(false)
-    expect(result.current.facts.length).toBeGreaterThan(0)
-    const empty = renderHook(() => useTurnFacts(null), { wrapper: makeHookWrapper() })
-    expect(empty.result.current.facts).toEqual([])
-  })
 })
 
 describe('usePeople (real mode)', () => {
@@ -260,26 +252,6 @@ describe('usePeople (real mode)', () => {
     act(() => result.current.undoFact(WIRE_PERSON.id, 'fact-1'))
     await waitFor(() => expect(deleted).toEqual({ personId: WIRE_PERSON.id, factId: 'fact-1' }))
     await waitFor(() => expect(gets).toBeGreaterThan(getsBefore))
-  })
-
-  it('useTurnFacts polls the source-fetch endpoint until facts arrive (real mode)', async () => {
-    let calls = 0
-    server.use(http.get(`${API_BASE}/api/people/facts`, ({ request }) => {
-      const url = new URL(request.url)
-      expect(url.searchParams.get('sourceRefKind')).toBe('chat_turn')
-      expect(url.searchParams.get('sourceRefId')).toBe('msg-9')
-      calls++
-      return HttpResponse.json([{
-        id: 'pf-1', personId: WIRE_PERSON.id, kind: 'preference', factText: 'Szereti a teát',
-        confidence: 'high', sourceRefKind: 'chat_turn', active: true, includeInPrompt: true,
-        seen: false, createdAt: '2026-07-03T20:20:00Z',
-      }])
-    }))
-    const { result } = renderHook(() => useTurnFacts('msg-9'), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.facts).toHaveLength(1))
-    expect(result.current.facts[0]).toMatchObject({ text: 'Szereti a teát', sourceKind: 'chat_turn' })
-    expect(result.current.pending).toBe(false)
-    expect(calls).toBe(1) // találat után nincs további poll
   })
 
   it('savePerson creates then refetches (real mode)', async () => {

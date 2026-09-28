@@ -220,11 +220,17 @@ public class PatternService {
         eventPublisher.publishEvent(new KnowledgeFactPromotedEvent(userId, pattern.getPromotedFactId()));
     }
 
-    /** v1 category heuristic: physiology/trigger → health, response → train (documented). */
+    /**
+     * v1 category heuristic: physiology/trigger → health, response → train (documented).
+     *
+     * <p>S8: the fact text is the mechanism sentence (FactTextComposer); the veto key follows the
+     * new text automatically (ForgetService keys on fact_text), the pattern-id veto still guards
+     * re-minting.
+     */
     private UUID promote(UUID userId, PatternEntity pattern, String source) {
         KnowledgeFactEntity fact = new KnowledgeFactEntity();
         fact.setCreatedBy(userId);
-        fact.setFactText(pattern.getTitle());
+        fact.setFactText(FactTextComposer.compose(pattern.getKind(), pattern.getTitle(), pattern.getMechanism()));
         fact.setCategory("response".equals(pattern.getCategory()) ? "train" : "health");
         fact.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
         fact.setProvenance(MemoryProvenanceEnvelope.patternPromotion(pattern.getId(), source));

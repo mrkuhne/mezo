@@ -12,6 +12,8 @@ import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ChatMemoryItem;
+import io.mrkuhne.mezo.feature.companion.entity.ForgottenMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
@@ -97,9 +99,16 @@ public class ChatService {
             Konkrét számot, dátumot vagy múltbeli adatot viszont CSAK akkor mondj, ha a kontextusból, \
             egy eszközhívásból vagy {{NÉV}} üzenetéből származik. Adatot kitalálni akkor is tilos, ha megjelölöd.
             Ha valamit nem tudsz, mondd ki őszintén, hogy nem tudod.
-            Naplózni, menteni, módosítani vagy bármit elvégezni {{NÉV}} helyett nem tudsz — csak \
+            Naplózni, módosítani vagy bármit elvégezni {{NÉV}} helyett nem tudsz — csak \
             beszélgetni és lekérdezni. Ha ilyet kérnek, mondd meg őszintén, és mondd el, hol tudja \
             ő maga megtenni. Soha ne állítsd, hogy elvégeztél valamit.
+            Emlékezni viszont tudsz: a beszélgetés után az app a háttérben megjegyzi, ami tartós. \
+            Amit {{NÉV}} az ismerőseiről mond, azt elmenti (itt visszavonhatja); amit magáról, azt \
+            előbb javaslatként itt megkérdezi. Mindez a Tudástárban is látszik. Soha ne mondd, hogy \
+            nem tudsz emlékezni. Konkrét dologról csak akkor mondd, hogy megjegyezted, ha szerepel \
+            az [Ebben a beszélgetésben] blokkban („megjegyeztem", ne úgy, mintha te magad mentetted \
+            volna el). Ha azt kéri, hogy valamit felejts el, az [Elfelejtve] blokk alapján erősítsd \
+            meg, mit felejtettél el.
             Az [Emberek] sorai {{NÉV}} emberi köre: ha egy nevet említ, onnan tudod, ki ő (kapcsolat) \
             és hogyan áll most (e heti említés, hangulat-irány). Ennyit mondhatsz róluk, mást nem: \
             harmadik félről eseményt, tulajdonságot, véleményt nem találsz ki. Magadtól ne hozd szóba \
@@ -211,6 +220,12 @@ public class ChatService {
     private final io.mrkuhne.mezo.feature.companion.config.ConversationProperties conversationProperties;
     private final ConversationHistory conversationHistory;
     private final PersonalContextAssembler personalContextAssembler;
+    /** S8 (mezo-d6ivw.12) — "ezt ne jegyezd meg": the forget pre-screen's writer. */
+    private final ChatForgetService chatForgetService;
+    /** S8 (mezo-d6ivw.12) — the memory-honesty blocks of the volatile half. */
+    private final ChatMemoryBlocks chatMemoryBlocks;
+    /** S8 (mezo-d6ivw.12) — deterministic people recall; absent unless the people-recall switch is on. */
+    private final ObjectProvider<PeopleRecall> peopleRecall;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
 
@@ -240,14 +255,17 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         LocalDate today = LocalDate.now();
         List<Turn> history = historyFor(userId, conversationId);
-        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
-        AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
-                request.getContent(), null, null, null, false, null);
+        List<ChatMemoryItem> forgotten = forgetIfAsked(userId, conversationId, request.getContent());
+        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today, forgotten);
+        AiMessageEntity userRow = markForgetRow(persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
+                request.getContent(), null, null, null, false, null), forgotten);
         recordSeedReply(userId, conversation, request.getContent());
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
                 routed.turnContext(), history, request.getContent(),
-                routed.memory().refs(), routed.memory().recalled(), routed.gear(), today);
+                routed.memory().refs(),
+                RecalledMemoriesEnvelope.withExtra(routed.memory().recalled(), routed.people().items()),
+                routed.gear(), today);
     }
 
     /**
@@ -267,12 +285,16 @@ public class ChatService {
         // plan-truth/ran-truth distinction to make.
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, toolCalls, toolOutcomes, audit.toRefsEnvelope(), degraded,
-                audit.recalled() == null ? recalled : audit.recalled());
+                // S8: a tool recall no longer drops the people disclosure the prepared turn carried
+                RecalledMemoriesEnvelope.withExtra(audit.recalled() == null ? recalled : audit.recalled(),
+                        RecalledMemoriesEnvelope.personItems(recalled)));
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
+        // S8 (mezo-d6ivw.12): a forget request is never learned from — the listeners skip it
+        boolean blocked = messageRepository.findById(userMessageId).map(AiMessageEntity::isExtractionBlocked).orElse(false);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
-                assistant.getId(), answer));
-        return mapper.toMessageResponse(assistant);
+                assistant.getId(), answer, blocked));
+        return mapper.toMessageResponse(assistant, userMessageId);
     }
 
     @Transactional
@@ -284,14 +306,15 @@ public class ChatService {
         LocalDate today = LocalDate.now();
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = historyFor(userId, conversationId);
-        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today);
+        List<ChatMemoryItem> forgotten = forgetIfAsked(userId, conversationId, request.getContent());
+        RoutedContext routed = routeAndAssemble(userId, conversation, request.getContent(), history, today, forgotten);
         TurnGear gear = routed.gear();
         ChatMemoryPayload memory = routed.memory();
         String systemPrompt = routed.systemPrompt();
         String turnCtx = routed.turnContext();
 
-        AiMessageEntity userRow = persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
-                request.getContent(), null, null, null, false, null);
+        AiMessageEntity userRow = markForgetRow(persistMessage(conversation, userId, AiMessageEntity.ROLE_USER,
+                request.getContent(), null, null, null, false, null), forgotten);
         recordSeedReply(userId, conversation, request.getContent());
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
@@ -387,13 +410,14 @@ public class ChatService {
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, provenance.ask(), provenance.result(), audit.toRefsEnvelope(), degraded,
-                audit.recalled() == null ? memory.recalled() : audit.recalled());
+                RecalledMemoriesEnvelope.withExtra(audit.recalled() == null ? memory.recalled() : audit.recalled(),
+                        routed.people().items()));
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
-                assistant.getId(), answer));
-        return mapper.toMessageResponse(assistant);
+                assistant.getId(), answer, userRow.isExtractionBlocked()));
+        return mapper.toMessageResponse(assistant, userRow.getId());
     }
 
     /**
@@ -411,9 +435,9 @@ public class ChatService {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
             String systemPrompt = stableSystemPrompt(userId);
             String turnCtx = conversationProperties.enabled()
-                    ? conversationContext(userId, conversation, LocalDate.now())
+                    ? conversationContext(userId, conversation, LocalDate.now(), "")
                     : turnContext(userId, LocalDate.now(),
-                    knowledgeFactService.renderPromptBlock(userId), "", "",
+                    knowledgeFactService.renderPromptBlock(userId), "", "", "",
                     conversation.getContextKind(), conversation.getContextDate());
             // mezo-ozri.8: tagged like every other LLM entry point. Without this the turn books as
             // feature='unknown' in the cost reports AND — since mezo-ozri.6 — it is the one chat
@@ -471,7 +495,7 @@ public class ChatService {
      * @param turnContext the VOLATILE half: lightened on CHAT, the full snapshot otherwise
      */
     private record RoutedContext(TurnGear gear, ChatMemoryPayload memory, String systemPrompt,
-                                 String turnContext) {}
+                                 String turnContext, PeopleRecall.Result people) {}
 
     /**
      * Route the turn, then assemble exactly the context that gear earns (spec 2026-09-16 §6.5).
@@ -486,10 +510,12 @@ public class ChatService {
      * embedding call and a graph traversal that a tool-free, data-free turn has no use for.
      */
     private RoutedContext routeAndAssemble(UUID userId, AiConversationEntity conversation,
-            String userContent, List<Turn> history, LocalDate today) {
+            String userContent, List<Turn> history, LocalDate today, List<ChatMemoryItem> forgotten) {
+        PeopleRecall.Result people = recallPeople(userId, userContent, today);
+        String blocks = memoryBlocks(userId, conversation, forgotten, people.block());
         if (conversationProperties.enabled()) {
             return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId),
-                    conversationContext(userId, conversation, today));
+                    conversationContext(userId, conversation, today, blocks), people);
         }
         TurnGear gear = turnGearRouter.route(userContent);
         ChatMemoryPayload memory = gear == TurnGear.CHAT
@@ -497,14 +523,15 @@ public class ChatService {
                 : chatMemoryContextAdapter.resolve(
                         userId, conversation.getId(), userContent, history, today);
         String turnContext = gear == TurnGear.CHAT
-                ? chatGearContext(userId, today)
+                ? chatGearContext(userId, today, blocks)
                 : turnContext(userId, today, memory.factsBlock(),
-                        memory.memoriesBlock(), memory.graphBlock(),
+                        memory.memoriesBlock(), memory.graphBlock(), blocks,
                         conversation.getContextKind(), conversation.getContextDate());
-        return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
+        return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext, people);
     }
 
-    private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today) {
+    private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today,
+            String memoryBlocks) {
         return promptPersona.render(userId, "\n\n[Beszélgetés]\nMa: " + today + "\n"
                 + "A beszélgetési előzmény korlátozott ablak; régebbi részlet kérésre lekérhető.\n"
                 + anchoredBlock(userId, conversation.getContextKind(), conversation.getContextDate()))
@@ -512,7 +539,39 @@ public class ChatService {
                 // facts-always (mezo-d6ivw.8): confirmed facts are identity, not data lookup —
                 // they join date/preferences as initial background (ADR 0043 amendment); the
                 // model uses them passively (preamble in FACTS_HEADER), tools stay for the rest
-                + knowledgeFactService.renderPromptBlock(userId);
+                + knowledgeFactService.renderPromptBlock(userId)
+                // S8 (mezo-d6ivw.12): per-turn memory honesty — "" on an ordinary turn
+                + memoryBlocks;
+    }
+
+    /** S8 (mezo-d6ivw.12): the deterministic forget pre-screen — null when the message is not a
+     *  forget request, the forgotten items (possibly empty) when it is. Runs BEFORE the user row
+     *  is persisted, so "the latest turn" is always an earlier one. */
+    private List<ChatMemoryItem> forgetIfAsked(UUID userId, UUID conversationId, String content) {
+        return ForgetIntent.matches(content) ? chatForgetService.forgetLatest(userId, conversationId) : null;
+    }
+
+    /** S8: every memory-honesty block of the volatile half, in one place. */
+    private String memoryBlocks(UUID userId, AiConversationEntity conversation, List<ChatMemoryItem> forgotten,
+            String peopleBlock) {
+        return peopleBlock + chatMemoryBlocks.conversationBlock(userId, conversation.getId())
+                + chatMemoryBlocks.forgetBlock(userId, forgotten);
+    }
+
+    /** S8: deterministic people recall — EMPTY when the switch is off (bean absent). */
+    private PeopleRecall.Result recallPeople(UUID userId, String content, LocalDate today) {
+        PeopleRecall recall = peopleRecall.getIfAvailable();
+        return recall == null ? PeopleRecall.Result.EMPTY : recall.recall(userId, content, today);
+    }
+
+    /** S8: the forget request's own row — never extracted, and it remembers what it forgot. */
+    private AiMessageEntity markForgetRow(AiMessageEntity userRow, List<ChatMemoryItem> forgotten) {
+        if (forgotten == null) {
+            return userRow;
+        }
+        userRow.setExtractionBlocked(true);
+        userRow.setForgottenMemories(ForgottenMemoriesEnvelope.ofOrNull(forgotten));
+        return messageRepository.saveAndFlush(userRow);
     }
 
     /**
@@ -772,6 +831,7 @@ public class ChatService {
             String factsBlock,
             String memoriesBlock,
             String graphBlock,
+            String memoryBlocks,
             String contextKind,
             LocalDate contextDate) {
         return promptPersona.render(userId, contextSnapshotAssembler.render(userId, today)
@@ -783,6 +843,7 @@ public class ChatService {
                 + personalContextAssembler.render(userId, today)
                 + promptPersona.render(userId, memoriesBlock
                 + graphBlock
+                + memoryBlocks
                 + TONE_REMINDER);
     }
 
@@ -791,8 +852,8 @@ public class ChatService {
      * only. No snapshot digest, no week, no facts, no reflection, no character, no memories, no
      * graph — a turn that needs none of the user's data should not pay to carry all of it.
      */
-    private String chatGearContext(UUID userId, LocalDate today) {
-        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + TONE_REMINDER)
+    private String chatGearContext(UUID userId, LocalDate today, String memoryBlocks) {
+        return promptPersona.render(userId, "\n\nMa: " + today + "\n" + memoryBlocks + TONE_REMINDER)
                 + personalContextAssembler.render(userId, today);
     }
 

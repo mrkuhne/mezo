@@ -28,7 +28,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:2.371.0
+          image: ghcr.io/mrkuhne/mezo-backend:2.372.3
           ports:
             - name: http
               containerPort: 8090
@@ -114,6 +114,10 @@ spec:
             # docs/research/comparisons/companion-chat-model-rebaseline-2026-09.md.
             - name: MEZO_COMPANION_LLM_PROVIDER
               value: "openai"
+            # S8 (mezo-d6ivw.12): one-shot fact-text backfill — APPLY, owner OK 2026-09-28 (10 of 11;
+            # item 7 is restored to its title by hand afterwards). Remove this entry after the run.
+            - name: MEZO_COMPANION_FACTTEXTBACKFILL_MODE
+              value: "apply"
             # mezo-i7x5v: PRODUCTION chat now retrieves memory from the unified platform instead of
             # the legacy pgvector path. Same explicit-env precedent as the provider above —
             # application.yml keeps its SHADOW default, so local dev, CI and every test are

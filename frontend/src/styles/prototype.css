@@ -4383,6 +4383,72 @@ button.mz-tile:active { transform: scale(0.96); }
   font-size: 10.5px; font-weight: 700; color: var(--lav-deep, #7b61c9); padding: 4px 6px;
 }
 
+/* ══ S8 · a chat memóriája (mezo-d6ivw.12) — négy jelzés egy közös chip-alakon ══
+   Paritás-forrás: docs/design_2.0/prototypes/elo/mezo.html „S8 ·" (.s8chip/.s8btn/.s8done/.s8rec/
+   .s8who/.s8list/.s8foot). Lapos pirula a válasz-kártyán KÍVÜL — nincs üveg az üvegben; csak sötét.
+   A csapatfal (surface="csapatfal") továbbra is az S3/S7 `.mzc-remchip` alakot kapja. */
+.mzc-memturn { display: grid; gap: 6px; justify-items: start; margin-top: -6px; }
+.mzc-memchip {
+  --c: var(--dv-lav);
+  display: flex; align-items: center; gap: 8px; max-width: 92%; padding: 7px 8px 7px 9px; border-radius: 14px;
+  background: linear-gradient(150deg, rgba(245, 239, 230, 0.035), color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.02)));
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--c) 38%, transparent), 0 0 16px color-mix(in srgb, var(--c) 12%, transparent);
+  animation: mzc-memin 0.45s cubic-bezier(0.3, 0.8, 0.4, 1) both; animation-delay: var(--d, 0s);
+}
+@keyframes mzc-memin { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.mzc-memchip > :first-child { flex: none; }
+.mzc-memtx { flex: 1; min-width: 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.mzc-memtx b { color: var(--text-primary); font-weight: 650; }
+.mzc-memtx small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--text-muted); }
+.mzc-memacts { display: flex; gap: 4px; flex: none; align-self: center; }
+.mzc-mbtn {
+  --c: var(--dv-lav);
+  min-height: 30px; padding: 5px 10px; border: none; border-radius: 999px; font: inherit; font-size: 11.5px; font-weight: 650;
+  cursor: pointer; color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent);
+}
+.mzc-mbtn.is-ghost { background: none; box-shadow: none; color: var(--text-secondary); }
+.mzc-mbtn:disabled { opacity: 0.55; cursor: default; }
+.mzc-mbtn:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, white); outline-offset: 2px; }
+.mzc-memchip.is-proposed, .mzc-memchip.is-proposed .mzc-mbtn { --c: var(--dv-amber); }
+.mzc-memchip.is-forgotten, .mzc-memchip.is-forgotten .mzc-mbtn { --c: var(--dv-rose); }
+.mzc-memchip.is-forgotten { align-items: flex-start; }
+.mzc-memchip.is-forgotten > :first-child { margin-top: 1px; }
+.mzc-memchip.is-forgotten .mzc-mbtn { margin-top: 8px; }
+.mzc-memchip.is-forgotten ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.mzc-memchip.is-forgotten li { position: relative; padding-left: 11px; color: var(--text-secondary); }
+.mzc-memchip.is-forgotten li::before {
+  content: ""; position: absolute; left: 1px; top: 0.62em; width: 5px; height: 1.5px; border-radius: 1px;
+  background: color-mix(in srgb, var(--dv-rose) 70%, white);
+}
+.mzc-memdone { display: flex; align-items: center; gap: 7px; margin: 0; padding: 2px 4px; font-size: 11.5px; color: var(--text-muted); animation: mzc-memin 0.35s both; }
+.mzc-memdone > :first-child { opacity: 0.75; flex: none; }
+.mzc-memdone s { text-decoration-color: color-mix(in srgb, var(--dv-rose) 60%, transparent); }
+.mzc-memerr { margin: 0; padding: 0 4px; font-size: 11px; color: var(--dv-rose); }
+.mzc-memrec {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 7px; margin-top: 10px; padding: 5px 10px 5px 6px;
+  border: none; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08);
+}
+.mzc-memrec b { color: color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary)); font-weight: 650; }
+.mzc-memrec em { font-style: normal; color: var(--text-muted); margin-left: 2px; }
+.mzc-memwho { display: grid; gap: 10px; margin-top: 6px; }
+.mzc-memwho-p { padding: 12px 14px; border-radius: 16px; background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08); }
+.mzc-memwho-p strong { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
+.mzc-memwho-p ul { margin: 0; padding: 0; list-style: none; }
+.mzc-memwho-p li { position: relative; margin-top: 5px; padding-left: 12px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.mzc-memwho-p li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 5px; height: 5px; border-radius: 50%; background: var(--dv-lav); opacity: 0.7; }
+.mzc-memfoot { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+.mzc-memlist { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.mzc-memlist li {
+  padding: 9px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08);
+}
+.mzc-memlist li small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.mzc-memrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+@media (prefers-reduced-motion: reduce) { .mzc-memchip, .mzc-memdone { animation: none; } }
+
 /* typing bubble */
 .mzc-typing {
   display: flex; gap: 5px; padding: 12px 14px; width: 64px; border-radius: 5px 19px 19px 19px;

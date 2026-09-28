@@ -97,7 +97,7 @@ function useAwaiting(qc: QueryClient): ReadonlySet<string> {
 
 /** The csapatfal's own answer backoff (S7 final review): the server answers after a ~1.5s
  *  debounce plus a full JSON LLM call with its context build — often 5–15s, sometimes more — so
- *  the people hook's 10s `TURN_FACT_POLL_DELAYS` gave up (and dropped the typing dots) before a
+ *  a chat-style 2s/3s/5s (~10s) ladder would give up (and drop the typing dots) before a
  *  realistic answer arrived. ~30s total. */
 export const TEAM_CHAT_ANSWER_POLL_DELAYS = [2000, 3000, 5000, 10_000, 10_000] as const
 

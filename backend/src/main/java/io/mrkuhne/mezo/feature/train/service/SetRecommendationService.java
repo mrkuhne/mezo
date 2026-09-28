@@ -59,7 +59,9 @@ public class SetRecommendationService {
         String rationale;
         ProgressionSignal progression;
 
-        if (ref != null && ref.getWeightKg() != null) {
+        // A 0 kg reference is bodyweight: the proportional step is a fraction of the load, so it
+        // takes the weightless rep path (mezo-xbhrm — it divided by zero and 500'd the today view).
+        if (ref != null && ref.getWeightKg() != null && ref.getWeightKg().signum() > 0) {
             RefSet refSet = new RefSet(ref.getWeightKg(), ref.getReps(), ref.getRir());
             // Proportional step (mezo-bk7sn): candidates are the real weights — ever logged ∪ the
             // plate grid, minus the machine's known gaps (mezo-bk7l2).

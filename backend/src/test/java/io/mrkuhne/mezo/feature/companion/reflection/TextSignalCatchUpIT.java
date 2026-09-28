@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.service.ChatDaySignalService;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalCatchUpService;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
@@ -54,6 +55,7 @@ class TextSignalCatchUpIT extends AbstractIntegrationTest {
     @Autowired private MemoryItemRepository memoryItemRepository;
     @Autowired private AiConversationPopulator aiConversationPopulator;
     @Autowired private AiMessagePopulator aiMessagePopulator;
+    @Autowired private AiMessageRepository aiMessageRepository;
     @Autowired private CreatedAtBackdater createdAtBackdater;
     @Autowired private UserPopulator userPopulator;
 
@@ -135,6 +137,21 @@ class TextSignalCatchUpIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testChatDaySignal_shouldIgnoreAnExtractionBlockedTurn() {
+        // S8 (mezo-d6ivw.12): "ezt ne jegyezd meg" blocked the second turn — the night must not
+        // learn from it (its scripted mood 5 would win over the default 4 if it were read).
+        UUID owner = userPopulator.createUser().getId();
+        AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
+        userTurn(conversation, "Annával sétáltunk, jó nap volt.");
+        AiMessageEntity blocked = userTurn(conversation, "Ezt ne tudd meg." + SIGNAL_MOOD_5);
+        blocked.setExtractionBlocked(true);
+        aiMessageRepository.saveAndFlush(blocked);
+
+        assertThat(catchUpService.catchUp(owner, TODAY)).isEqualTo(1);
+        assertThat(newestChatDaySignal(owner).getMood()).isEqualTo(4);
+    }
+
+    @Test
     void testFailingSource_shouldNotAbortTheRemainingSources() {
         UUID owner = userPopulator.createUser().getId();
         journalPopulator.createEntry(owner, YESTERDAY, "Nehéz nap. " + FakeCompanionLlm.SIGNAL_FAIL,
@@ -149,10 +166,11 @@ class TextSignalCatchUpIT extends AbstractIntegrationTest {
                 .containsExactly(TextSignalEntity.SOURCE_GRATITUDE);
     }
 
-    private void userTurn(AiConversationEntity conversation, String content) {
+    private AiMessageEntity userTurn(AiConversationEntity conversation, String content) {
         AiMessageEntity message = aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, content);
         Instant noon = YESTERDAY.atTime(12, 0).atZone(ZoneId.systemDefault()).toInstant();
         createdAtBackdater.backdate("ai_message", message.getId(), noon);
+        return aiMessageRepository.findById(message.getId()).orElseThrow();
     }
 
     private TextSignalEntity newestJournalSignal(UUID owner, UUID sourceId) {

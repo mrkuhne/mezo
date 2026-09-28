@@ -7,6 +7,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
@@ -23,6 +26,8 @@ import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
@@ -63,6 +68,9 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
     @Autowired private GraphService graphService;
     @Autowired private GraphPromotionService promotionService;
+    @Autowired private AiConversationPopulator conversationPopulator;
+    @Autowired private AiMessagePopulator messagePopulator;
+    @Autowired private AiMessageRepository aiMessageRepository;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -504,5 +512,52 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
         assertThat(personFactRepository
             .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(owner, anna.getId()))
             .hasSize(1);
+    }
+
+    // ---- S8 (mezo-d6ivw.12): a message the owner made Mezo forget never re-enters the night ----
+
+    /** A chat user message, optionally already extraction-blocked by "ezt ne jegyezd meg". */
+    private AiMessageEntity chatMessage(AiConversationEntity conversation, String content, boolean blocked) {
+        AiMessageEntity message = messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, content);
+        if (blocked) {
+            message.setExtractionBlocked(true);
+            message = aiMessageRepository.saveAndFlush(message);
+        }
+        return message;
+    }
+
+    @Test
+    void testExtractFor_shouldLeaveExtractionBlockedChatOutOfTheNarrative() {
+        UUID owner = ownerId();
+        personPopulator.createPerson(owner, "Anna");
+        AiConversationEntity conversation = conversationPopulator.conversation(owner);
+        AiMessageEntity live = chatMessage(conversation, "Anna ma futni ment velem.", false);
+        chatMessage(conversation, "Anna titokban munkahelyet vált.", true);
+        // anchored to the rows' own timestamp, never a separate now() (midnight-safe)
+        LocalDate day = live.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate();
+
+        extractionService.extractFor(owner, day);
+
+        assertThat(fakeCompanionLlm.lastUserMessage())
+            .contains("CHAT: Anna ma futni ment velem.")
+            .doesNotContain("titokban munkahelyet vált");
+    }
+
+    @Test
+    void testExtractFor_shouldNotRelearnAFact_fromAnExtractionBlockedChatMessage() {
+        UUID owner = ownerId();
+        PersonEntity anna = personPopulator.createPerson(owner, "Anna");
+        AiConversationEntity conversation = conversationPopulator.conversation(owner);
+        AiMessageEntity blocked = chatMessage(conversation, "Anna titokban munkahelyet vált. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[],"
+            + "\"facts\":[{\"person\":\"Anna\",\"kind\":\"preference\","
+            + "\"fact\":\"Nem szereti a meglepetéseket\",\"confidence\":\"high\"}]}]", true);
+        LocalDate day = blocked.getCreatedAt().atZone(ZoneOffset.UTC).toLocalDate();
+
+        extractionService.extractFor(owner, day);
+
+        assertThat(personFactRepository
+            .findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(owner, anna.getId()))
+            .isEmpty();
     }
 }

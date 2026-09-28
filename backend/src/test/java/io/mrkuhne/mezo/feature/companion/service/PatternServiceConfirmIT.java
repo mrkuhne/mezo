@@ -109,4 +109,32 @@ class PatternServiceConfirmIT extends AbstractIntegrationTest {
                 .extracting(PatternEventEntity::getKind)
                 .containsExactly(PatternEventEntity.KIND_CONFIRMED, PatternEventEntity.KIND_PROMOTED);
     }
+
+    /** S8 (mezo-d6ivw.12): the fact text is the mechanism sentence, not the title. */
+    @Test
+    void testApplyUserConfirm_shouldWriteTheMechanismSentence_notTheTitle() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_MONITORING);
+
+        patternService.applyUserConfirm(owner, row);
+        patternRepository.saveAndFlush(row);
+
+        KnowledgeFactEntity fact = knowledgeFactRepository
+                .findById(patternRepository.findById(row.getId()).orElseThrow().getPromotedFactId()).orElseThrow();
+        assertThat(fact.getFactText()).isEqualTo("Reflexió S2 teszt, terv nélkül.");
+    }
+
+    /** S8 (mezo-d6ivw.12): a statistical row's mechanism is boilerplate, so it keeps the title. */
+    @Test
+    void testApplyUserConfirm_shouldKeepTheTitle_forAStatisticalRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.createPattern(owner, "pair-stat-" + UUID.randomUUID(), "Statisztikai cím");
+
+        patternService.applyUserConfirm(owner, row);
+        patternRepository.saveAndFlush(row);
+
+        KnowledgeFactEntity fact = knowledgeFactRepository
+                .findById(patternRepository.findById(row.getId()).orElseThrow().getPromotedFactId()).orElseThrow();
+        assertThat(fact.getFactText()).isEqualTo("Statisztikai cím");
+    }
 }

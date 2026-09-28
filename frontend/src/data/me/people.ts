@@ -1,4 +1,4 @@
-import type { PersonEntry, Mention, Affect, PersonFact, PersonEffect } from '@/data/types'
+import type { PersonEntry, Mention, Affect, PersonEffect } from '@/data/types'
 
 export const people: PersonEntry[] = [
   {
@@ -377,18 +377,3 @@ export const MOCK_PERSON_EFFECTS: Record<string, PersonEffect[]> = {
   ],
 }
 
-/** S3 mock: a „Megjegyeztem" chip demó-ténye — mock módban minden elküldött kör után ez jön. */
-export const MOCK_TURN_FACTS: PersonFact[] = [
-  {
-    id: 'pf-turn-demo',
-    personId: 'pp-petra',
-    kind: 'preference',
-    text: 'Petra nem szereti a meglepetés-programokat',
-    confidence: 'high',
-    sourceKind: 'chat_turn',
-    sourceRefId: 'mock-turn-1',
-    includeInPrompt: true,
-    seen: true,
-    createdAt: '2026-05-24T10:00:00Z',
-  },
-]

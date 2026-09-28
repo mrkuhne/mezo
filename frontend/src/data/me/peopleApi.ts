@@ -132,9 +132,6 @@ export const peopleApi = {
   deleteMention: (personId: string, mentionId: string) =>
     apiFetch<void>(`${PEOPLE}/${personId}/mentions/${mentionId}`, { method: 'DELETE' }),
   // --- S3 person facts ---
-  getFactsBySource: (sourceRefKind: 'chat_turn' | 'nightly_day', sourceRefId: string) =>
-    apiFetch<PersonFactResponse[]>(
-      `${PEOPLE}/facts?sourceRefKind=${sourceRefKind}&sourceRefId=${encodeURIComponent(sourceRefId)}`),
   undoFact: (personId: string, factId: string) =>
     apiFetch<void>(`${PEOPLE}/${personId}/facts/${factId}`, { method: 'DELETE' }),
   toggleFact: (personId: string, factId: string, includeInPrompt: boolean) =>

@@ -32,6 +32,12 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
     List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
             UUID createdBy, String role, Instant from, Instant toExclusive);
 
+    /** S8 (mezo-d6ivw.12): the owner's chat rows in a window MINUS the ones "ezt ne jegyezd meg"
+     *  blocked — the input of every day-level learning pass (nightly people extraction, the chat-day
+     *  text signal). A forgotten message must not be re-read and re-learned in other words. */
+    List<AiMessageEntity> findByCreatedByAndRoleAndDeletedFalseAndExtractionBlockedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+            UUID createdBy, String role, Instant from, Instant toExclusive);
+
     /**
      * V2.2 turn-embedding catch-up: the user half of a turn = the closest not-later user row
      * (≤, not < — the two rows of a turn can share a flush timestamp; role disambiguates).
@@ -64,4 +70,24 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
            and m.toolOutcomes is not null
         """)
     int scrubToolOutcomesOlderThan(@Param("cutoff") Instant cutoff);
+
+    /** S8 (mezo-d6ivw.12): one owned, live message of one conversation (turn-memory / forget-learned). */
+    Optional<AiMessageEntity> findByIdAndConversationIdAndCreatedByAndDeletedFalse(
+            UUID id, UUID conversationId, UUID createdBy);
+
+    /** S8: the conversation's USER message ids, oldest first — ids only, the prompt path runs this
+     *  every turn and needs no entity (turn-memory, forget, [Ebben a beszélgetésben]). */
+    @Query("""
+        select m.id from AiMessageEntity m
+         where m.conversation.id = :conversationId
+           and m.createdBy = :createdBy
+           and m.role = 'user'
+           and m.deleted = false
+         order by m.createdAt asc
+        """)
+    List<UUID> findUserMessageIds(@Param("conversationId") UUID conversationId, @Param("createdBy") UUID createdBy);
+
+    /** S8: FOR SHARE waits for an uncommitted forget's row lock — see MessageExtractionGate. */
+    @Query(value = "select extraction_blocked from ai_message where id = :id for share", nativeQuery = true)
+    Optional<Boolean> lockExtractionBlocked(@Param("id") UUID id);
 }

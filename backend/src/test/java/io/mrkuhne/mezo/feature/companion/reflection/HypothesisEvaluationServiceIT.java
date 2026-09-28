@@ -103,7 +103,11 @@ class HypothesisEvaluationServiceIT extends AbstractIntegrationTest {
 
         KnowledgeFactEntity fact = knowledgeFactRepository.findById(after.getPromotedFactId()).orElseThrow();
         assertThat(fact.getSource()).isEqualTo(KnowledgeFactEntity.SOURCE_PATTERN);
-        assertThat(fact.getFactText()).isEqualTo(after.getTitle());
+        // S8 (mezo-d6ivw.12): promote() composes the fact text from the mechanism sentence
+        // (FactTextComposer), not the title, for a non-statistical row with a mechanism — the
+        // fixture's mechanism ("Reflexió S2 teszt-terv.") is a single sentence, so it round-trips
+        // unchanged.
+        assertThat(fact.getFactText()).isEqualTo(after.getMechanism());
         // S2 delta (final-review adjudications 2026-09-25): the ENGINE's own confirm — through
         // the same PatternService.applyConfirm body the user's confirm uses — must record itself
         // as the source, not silently inherit the user's.

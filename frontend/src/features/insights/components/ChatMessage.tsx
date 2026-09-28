@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Markdown } from '@/shared/lib/markdown'
 import { Icon3D } from '@/shared/ui/clay'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { RefChips } from '@/features/insights/components/RefChips'
+import { MemoryChip } from '@/features/insights/components/memory/MemoryChip'
+import { RecallSheet } from '@/features/insights/sheets/RecallSheet'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 import type { MemoryRetrievalFeedbackHandle } from '@/data/hooks'
@@ -30,6 +33,7 @@ export function ChatMessage({
   feedback?: ChatMessageFeedback
   memoryFeedback?: MemoryRetrievalFeedbackHandle
 }) {
+  const [recallOpen, setRecallOpen] = useState(false)
   if (m.role === 'user') {
     return (
       <div className="mzc-msg-u">
@@ -46,6 +50,10 @@ export function ChatMessage({
   // they always agree — but the find_similar_past_days tool (MemoryTools) adds refs that are never
   // in `recalled`. Filtering by kind alone would hide the very day a tool-driven answer was built
   // from, which is information loss rather than dedupe.
+  // S8 (mezo-d6ivw.12): people the answer recalled get their own "Emlékszem" line; every other
+  // recalled item keeps the W3.1b "Emlékek · N" disclosure (parity).
+  const personRecall = (m.recalled ?? []).filter((r) => r.kind === 'person')
+  const otherRecall = (m.recalled ?? []).filter((r) => r.kind !== 'person')
   const recalledDays = new Set((m.recalled ?? []).map((x) => x.occurredOn))
   const visibleRefs = (m.refs ?? []).filter((r) => r.kind !== 'Memory' || !recalledDays.has(r.id))
   return (
@@ -83,7 +91,11 @@ export function ChatMessage({
         {visibleRefs.length > 0 && <RefChips refs={visibleRefs} eyebrow="Amire épült" />}
       </div>
       {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
-      {m.recalled && <RecalledMemoriesRow items={m.recalled} feedback={memoryFeedback} />}
+      {personRecall.length > 0 && (
+        <MemoryChip variant="recalled" names={personRecall.map((r) => r.label)} onOpen={() => setRecallOpen(true)} />
+      )}
+      {recallOpen && <RecallSheet items={personRecall} onClose={() => setRecallOpen(false)} />}
+      {otherRecall.length > 0 && <RecalledMemoriesRow items={otherRecall} feedback={memoryFeedback} />}
       {/* Under the card, assistant rows only — and only once the answer is persisted, i.e. has
           an artifactId to vote on. The parent keys this row by that id, so React never reuses
           one FeedbackChips instance (whose reason-row state is session-local) across two

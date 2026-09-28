@@ -26,6 +26,11 @@ public class FeaturesConfiguration {
     /** V1.2 post-turn fact extraction — sub-switch of companion; gates ONLY the async listener. */
     public static final String COMPANION_EXTRACTION_SWITCH = "mezo.companion.extraction.enabled";
 
+    /** S8 (mezo-d6ivw.12) — deterministic people recall in the chat: names in the user message →
+     *  an [Emberek] block of just those people + an "Emlékszem" disclosure. Off ⇒ the PeopleRecall
+     *  bean is absent and the turn assembles exactly as before (fail-open either way). */
+    public static final String COMPANION_PEOPLE_RECALL_SWITCH = "mezo.companion.people-recall.enabled";
+
     /** V1.3 advisor chain (clinical + verdict + retry/degraded) — sub-switch of companion. */
     public static final String COMPANION_ADVISORS_SWITCH = "mezo.companion.advisors.enabled";
 

@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ChatMemoryItem;
+import io.mrkuhne.mezo.feature.companion.entity.ForgottenMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
@@ -20,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -61,6 +64,30 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
         assertThat(jdbcTemplate.queryForObject(
                 "select jsonb_typeof(tool_calls) from ai_message where id = ?", String.class, id))
                 .isEqualTo("object");
+    }
+
+    @Test
+    void testPersist_shouldRoundTripForgottenMemories_andTheNoExtractMarker() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-forgotten@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        Instant at = Instant.parse("2026-09-27T18:04:05.123456Z");
+        ChatMemoryItem item = new ChatMemoryItem(ChatMemoryItem.KIND_PERSON_FACT, UUID.randomUUID(),
+                UUID.randomUUID(), "Anna", "régi csapattársad", at, false, UUID.randomUUID());
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_USER);
+        message.setContent("ezt ne jegyezd meg");
+        message.setForgottenMemories(ForgottenMemoriesEnvelope.ofOrNull(List.of(item)));
+        message.setExtractionBlocked(true);
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getForgottenMemories().items()).containsExactly(item);
+        assertThat(reloaded.isExtractionBlocked()).isTrue();
+        assertThat(messageRepository.lockExtractionBlocked(id)).contains(true);
     }
 
     @Test
