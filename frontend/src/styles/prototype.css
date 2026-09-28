@@ -17514,7 +17514,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .trm .trm-energy-split i.done { background: var(--dv-amber); box-shadow: 0 0 6px var(--dv-amber); }
 .trm .trm-energy-split i.plan { background: color-mix(in srgb, var(--dv-amber) 30%, transparent); }
 .trm .trm-energy-split b { font-weight: 600; color: var(--text-primary); }
-.trm .trm-energy-empty { margin: 10px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
 .trm .trm-energy-note, .trm .trm-mus-note { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
 
 /* ── muscle impact: coral glass, rows in the region hue ── */

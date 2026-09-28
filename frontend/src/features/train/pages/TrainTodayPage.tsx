@@ -29,7 +29,7 @@ import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useQueryClient } from '@tanstack/react-query'
-import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile, useGoal } from '@/data/hooks'
+import { useTrain, useRunning, useWeekWorkouts, useSleepGoal, useTimingProfile, useFuelDay } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { MorningTrainingCard } from '@/features/train/components/MorningTrainingCard'
 import { TodayReadiness } from '@/features/train/components/ReadinessCard'
@@ -56,8 +56,6 @@ import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { daySessions } from '@/features/train/logic/agenda'
 import { dayImpact, regionRepresentativeToken, type DayImpactRow } from '@/features/train/logic/dayImpact'
-import { trainDayEnergy, type Block } from '@/features/train/logic/trainDayEnergy'
-import { DEFAULT_RUN_MIN, restKcalPerHour } from '@/data/train/activityEnergy'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
 import type { RegionKey } from '@/features/train/logic/muscleColors'
 import { dayStripItems } from '@/features/train/logic/dayStripItems'
@@ -91,9 +89,10 @@ export function TrainTodayPage() {
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
-  // Same weight source the Fuel timeline (`useFuelTimeline`) reads for its rest energy — Mai's
-  // energy card must never drift from the number Fuel already shows for the day (Task 5, mezo-88iwa.6).
-  const { goal, goalResponse } = useGoal()
+  // Task 8 (mezo-tb3s2): the energy card mirrors the SAME served Fuel energy Fuel's own
+  // Mai page reads (`useFuelDay()`) — never a client-side weight/MET estimate, so the
+  // two surfaces can never drift apart.
+  const { fuel: fuelToday, isPending: fuelDayPending } = useFuelDay()
   const qc = useQueryClient()
   // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
   const mtrWindow = morningWindow(sleepGoal.wakeTime)
@@ -300,48 +299,13 @@ export function TrainTodayPage() {
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
 
-  // ── Task 5 (mezo-88iwa.6): the energy + muscle-impact cards, today-only ──
-  // Weight source: the SAME hook the Fuel timeline (`useFuelTimeline`) reads — `useGoal()`,
-  // read above. Falling
-  // back to 0 (not a static default) keeps the "no weight on file" honest state identical
-  // to Fuel's own fallback chain.
-  const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
-  // A run block carries no plan-level duration (`RunPrescribedSession` has none) — the
-  // shared activity-energy default (`DEFAULT_RUN_MIN`, activityEnergy mirror, mezo-32m82),
-  // the same stand-in Fuel's planned previews use, so the two surfaces never quote different run burns.
-  // Rest energy for the net model: BMR/24 when the TDEE engine has run, else 1 kcal/kg/h.
-  const restPerHour = restKcalPerHour(goalResponse?.tdeeBootstrap?.bmr, weightKg || null)
-  // Held at 0 while the timing profile is still pending — same "never a numeric
-  // flash-then-swap" rule the poster's own `workoutMinutes` follows above.
-  const gymMinutesToday = gymPosterShown && workout && !timingProfilePending
-    ? estimateSessionMinutes(workout.exercises, timingProfile ?? undefined)
-    : 0
-  // Today's training blocks, in the exact shape `trainDayEnergy` wants — built from
-  // the SAME ordered-today list the hero cards above already render, so the energy
-  // card can never disagree with what's on-screen just above it.
-  const energyBlocks: Block[] = isTodayShown
-    ? orderedToday.reduce<Block[]>((acc, item) => {
-        if (item.kind === 'gym') {
-          if (gymPosterShown) acc.push({ kind: 'gym', minutes: gymMinutesToday, done: Boolean(completedTodayWorkout) })
-        } else if (item.kind === 'sport') {
-          // A done slot shows the LOGGED session's persisted kcal, never the estimate (mezo-32m82).
-          const k = sportOf(item.sport)
-          const logged = shownIso ? loggedSportOn(shownIso, k) : null
-          acc.push({ kind: 'sport', sport: k, minutes: item.sport.duration, done: sportDoneOn(shownIso, k), loggedKcal: logged?.kcal ?? null })
-        } else if (item.kind === 'running') {
-          const log = runLoggedFor(item.running.key)
-          acc.push({ kind: 'run', minutes: DEFAULT_RUN_MIN, done: Boolean(log), loggedKcal: log?.kcal ?? null })
-        }
-        return acc
-      }, [])
-    : []
-  const dayEnergy = trainDayEnergy(energyBlocks, restPerHour)
-  // Fix round 1 (finding 1, ship-blocking): a day whose blocks include gym must hold the
-  // WHOLE card while the timing profile is pending — not just the gym block's own minutes.
-  // `gymMinutesToday` above is already held at 0 while pending, but the card doesn't gate
-  // on that, so real mode's first paint (no timing profile fetched yet) briefly rendered
-  // "+0 kcal" from the still-empty gym block instead of the poster's own no-flash rule.
-  const energyCardPendingGym = gymPosterShown && timingProfilePending
+  // ── Task 8 (mezo-tb3s2): the energy card, today-only — reads the SERVED Fuel energy ──
+  // (never a client-side weight/MET estimate; the old `trainDayEnergy` path is gone from
+  // this page). `earned` mirrors the exact equation Fuel's own budget hero shows for the
+  // day's logged movement; `pending` previews today's still-unlogged planned sessions.
+  const served = isTodayShown ? fuelToday.energy : null
+  const earned = served ? served.plannedMovementKcal + served.extraMovementKcal : 0
+  const pending = served?.pendingMovementKcal ?? 0
 
   // The muscle-impact rows: a gym day reads `dayImpact` off today's plan (Task 1) +
   // today's logged working sets (`doneByMuscle`, joined by exercise id — see below); a
@@ -707,13 +671,13 @@ export function TrainTodayPage() {
         )
       })}
 
-      {/* Energy card (Task 5, mezo-88iwa.6): today's movement kcal, split honestly into
-          already-earned vs. still-in-the-plan. Absent whenever today carries no
-          training block at all — an empty rest day gets no "add your weight" pitch
-          for movement that does not exist. */}
-      {isTodayShown && !energyCardPendingGym && energyBlocks.length > 0 && (
+      {/* Energy card (Task 8, mezo-tb3s2): the SERVED Fuel energy for today's logged movement
+          (planned + extra), plus today's still-pending planned sessions as a preview — never a
+          client-side estimate, and never a numeric flash-then-swap while `useFuelDay` is still
+          pending. Absent whenever there is nothing to show (no logged movement, nothing pending). */}
+      {isTodayShown && !fuelDayPending && served && (earned > 0 || pending > 0) && (
         <div className="rise trm-sec" style={{ '--d': '220ms' } as CSSProperties}>
-          <section className="trm-energy glass" style={{ '--c': 'var(--dv-amber)', '--i': 1 } as CSSProperties}>
+          <section className="trm-energy glass" aria-label="Amit a mozgásod hozzáad" style={{ '--c': 'var(--dv-amber)', '--i': 1 } as CSSProperties}>
             <div className="trm-chead">
               <Icon3D name="t-flame" size={40} />
               <span>
@@ -721,25 +685,22 @@ export function TrainTodayPage() {
                 <h3>Amit a mozgásod hozzáad</h3>
               </span>
             </div>
-            {dayEnergy.known ? (
-              <>
-                <div className="trm-energy-main">
-                  <b>+</b><strong>{dayEnergy.plannedKcal}</strong><small>kcal</small>
-                </div>
-                {/* The split bar: the lit part is already earned, the faint rest still planned. */}
-                <div className="trm-esplit" aria-hidden="true">
-                  <b style={{ width: `${dayEnergy.plannedKcal > 0 ? (dayEnergy.earnedKcal / dayEnergy.plannedKcal) * 100 : 0}%` }} />
-                  <i />
-                </div>
-                <div className="trm-energy-split">
-                  <span><i className="done" /><b>{dayEnergy.earnedKcal} kcal</b> már megszolgálva</span>
-                  <span><i className="plan" /><b>{dayEnergy.plannedKcal - dayEnergy.earnedKcal} kcal</b> a tervben</span>
-                </div>
-              </>
-            ) : (
-              <p className="trm-energy-empty">Ha megadod a súlyod, kiszámoljuk, mennyit ad a mai mozgásod a keretedhez.</p>
-            )}
-            <p className="trm-energy-note">Becslés, nem mérés.</p>
+            <div className="trm-energy-main">
+              <b>+</b><strong>{earned}</strong><small>kcal</small>
+            </div>
+            {/* The split bar: the lit part is already earned, the faint rest still pending. */}
+            <div className="trm-esplit" aria-hidden="true">
+              <b style={{ width: `${earned + pending > 0 ? (earned / (earned + pending)) * 100 : 0}%` }} />
+              <i />
+            </div>
+            <div className="trm-energy-split">
+              <span><i className="done" /><b>{earned} kcal</b> már a keretedben</span>
+              {pending > 0 && <span><i className="plan" /><b>+{pending} kcal</b> még jön, ha megcsinálod</span>}
+            </div>
+            <p className="trm-energy-note">
+              {todaySession?.openWorkout ? 'A folyamatban lévő edzés a befejezéskor kerül a keretedbe. ' : ''}
+              Ugyanez a szám áll a Fuel keretében. Becslés, nem mérés.
+            </p>
           </section>
         </div>
       )}
