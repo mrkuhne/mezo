@@ -51,13 +51,17 @@ class ChatForgetServiceIT extends AbstractIntegrationTest {
                            AiMessageEntity turn2, AiMessageEntity turn3, PersonEntity anna) {}
 
     /** turn1: Dóri fact + an owner proposal later ACCEPTED; turn2: Anna fact + an undecided
-     *  proposal; turn3: nothing learned (the "most recent" row is not the target). */
+     *  proposal; turn3 (only when {@code trailingTurn}): nothing learned — then the immediately
+     *  preceding message learned nothing, and forgetLatest must NOT walk back to turn2. */
     private Fixture fixture(String email) {
+        return fixture(email, true);
+    }
+
+    private Fixture fixture(String email, boolean trailingTurn) {
         UUID userId = databasePopulator.populateUser(email);
         AiConversationEntity conversation = conversations.conversation(userId);
         AiMessageEntity turn1 = messages.message(conversation, AiMessageEntity.ROLE_USER, "Dórival nyertünk");
         AiMessageEntity turn2 = messages.message(conversation, AiMessageEntity.ROLE_USER, "Annával rég beszéltem");
-        AiMessageEntity turn3 = messages.message(conversation, AiMessageEntity.ROLE_USER, "és most?");
         PersonEntity dori = persons.createPerson(userId, "Dóri");
         PersonEntity anna = persons.createPerson(userId, "Anna");
         personFactService.capture(userId, PersonFactEntity.SOURCE_CHAT_TURN, turn1.getId().toString(), List.of(
@@ -70,12 +74,14 @@ class ChatForgetServiceIT extends AbstractIntegrationTest {
                 new PersonFactService.PersonFactCapture(anna.getId(), PersonFactEntity.KIND_PREFERENCE,
                         "régi csapattársad", "medium")));
         candidates.candidate(userId, "Szeretnék újra csapatban játszani.", "life", turn2.getId());
+        AiMessageEntity turn3 = trailingTurn
+                ? messages.message(conversation, AiMessageEntity.ROLE_USER, "és most?") : null;
         return new Fixture(userId, conversation, turn1, turn2, turn3, anna);
     }
 
     @Test
-    void testForgetLatest_shouldForgetOnlyTheMostRecentLearningTurn_andVetoIt() {
-        Fixture f = fixture("s8-forget-latest@test.local");
+    void testForgetLatest_shouldForgetExactlyThePrecedingMessage_andVetoIt_olderTurnUntouched() {
+        Fixture f = fixture("s8-forget-latest@test.local", false);
 
         List<ChatMemoryItem> forgotten = chatForgetService.forgetLatest(f.userId(), f.conversation().getId());
 
@@ -89,9 +95,30 @@ class ChatForgetServiceIT extends AbstractIntegrationTest {
         // turn1 untouched: its person fact and its accepted fact are still live
         assertThat(chatForgetService.preview(f.userId(), f.conversation().getId())).extracting(ChatMemoryItem::text)
                 .containsExactlyInAnyOrder("a strandröpi-párod", "Egy nagy nap után nehéz egyedül.");
-        // race marker: the target AND the immediately preceding user row are blocked
+        // race marker: only the preceding (target) row is blocked
         assertThat(messageRepository.findById(f.turn2().getId()).orElseThrow().isExtractionBlocked()).isTrue();
+        assertThat(messageRepository.findById(f.turn1().getId()).orElseThrow().isExtractionBlocked()).isFalse();
+    }
+
+    @Test
+    void testForgetLatest_shouldReturnEmpty_andNotWalkBack_whenThePrecedingMessageLearnedNothing() {
+        Fixture f = fixture("s8-forget-no-walkback@test.local");
+
+        List<ChatMemoryItem> forgotten = chatForgetService.forgetLatest(f.userId(), f.conversation().getId());
+
+        assertThat(forgotten).isEmpty();
+        // owner ruling 2026-09-28: the older learning turns stay fully live
+        assertThat(chatForgetService.preview(f.userId(), f.conversation().getId())).extracting(ChatMemoryItem::text)
+                .containsExactlyInAnyOrder("a strandröpi-párod", "Egy nagy nap után nehéz egyedül.",
+                        "régi csapattársad", "Szeretnék újra csapatban játszani.");
+        assertThat(personFactRepository.findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(
+                f.userId(), f.anna().getId())).allMatch(PersonFactEntity::isActive);
+        assertThat(vetoRepository.existsByCreatedByAndDomainAndVetoKeyAndDeletedFalse(f.userId(),
+                MemoryForgetVetoEntity.DOMAIN_FACT_TEXT,
+                MemoryForgetVetoEntity.factTextVetoKey("Szeretnék újra csapatban játszani."))).isFalse();
+        // the preceding row is still blocked (its extraction may be in flight); older rows are not
         assertThat(messageRepository.findById(f.turn3().getId()).orElseThrow().isExtractionBlocked()).isTrue();
+        assertThat(messageRepository.findById(f.turn2().getId()).orElseThrow().isExtractionBlocked()).isFalse();
         assertThat(messageRepository.findById(f.turn1().getId()).orElseThrow().isExtractionBlocked()).isFalse();
     }
 

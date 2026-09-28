@@ -94,7 +94,7 @@ public class TurnMemoryService {
                     messageIds.stream().map(UUID::toString).toList());
             Map<UUID, String> names = facts.personNames(userId, rows.stream().map(PersonFactEntity::getPersonId).toList());
             rows.forEach(f -> items.add(new ChatMemoryItem(ChatMemoryItem.KIND_PERSON_FACT, f.getId(), f.getPersonId(),
-                    names.get(f.getPersonId()), f.getFactText(), f.getCreatedAt(), false,
+                    names.getOrDefault(f.getPersonId(), ""), f.getFactText(), f.getCreatedAt(), false,
                     UUID.fromString(f.getSourceRefId()))));
         }
         for (LearnedFactEntity c : liveCandidates(userId, messageIds)) {

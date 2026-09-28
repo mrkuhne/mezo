@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -27,14 +26,10 @@ import org.springframework.transaction.annotation.Transactional;
  * is no restore. The extraction race is closed by {@code extraction_blocked} (see {@link
  * MessageExtractionGate}): every row this service targets is marked BEFORE its items are read.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class ChatForgetService {
-
-    /** How far back "the latest learning turn" is looked for. */
-    static final int LATEST_SCAN_LIMIT = 20;
 
     private final ConversationService conversationService;
     private final AiMessageRepository messageRepository;
@@ -44,25 +39,22 @@ public class ChatForgetService {
     private final ForgetService forgetService;
     private final ObjectProvider<PersonFactService> personFactService;
 
-    /** Forgets what the most recent EARLIER user message with live memory learned. Called by the
-     *  chat turn BEFORE its own user row is persisted, so every row read here is earlier. The
-     *  immediately preceding user row is always marked no-extract (its extraction may still be in
-     *  flight). Empty list = nothing to forget. */
+    /** Forgets what the IMMEDIATELY PRECEDING user message of the conversation learned (owner
+     *  ruling 2026-09-28: never walks back to an older turn — "ezt" means the last thing said).
+     *  Called by the chat turn BEFORE its own user row is persisted, so the newest user row read
+     *  here is the one before the forget request. That row is marked no-extract first (its
+     *  extraction may still be in flight), then its live items are read and forgotten. Empty list
+     *  = that message learned nothing (the widen-to-conversation offer is handled by the caller). */
     @Transactional
     public List<ChatMemoryItem> forgetLatest(UUID userId, UUID conversationId) {
-        List<UUID> rows = turnMemoryService.userMessageIds(userId, conversationId).reversed();
+        List<UUID> rows = turnMemoryService.userMessageIds(userId, conversationId);
         if (rows.isEmpty()) {
             return List.of();
         }
-        block(rows.getFirst());
-        for (UUID rowId : rows.stream().limit(LATEST_SCAN_LIMIT).toList()) {
-            if (!turnMemoryService.liveItemsOf(userId, List.of(rowId)).isEmpty()) {
-                block(rowId);
-                // re-read AFTER the row lock: an extraction that committed meanwhile is included
-                return forgetItems(userId, turnMemoryService.liveItemsOf(userId, List.of(rowId)));
-            }
-        }
-        return List.of();
+        UUID preceding = rows.getLast();
+        block(preceding);
+        // read AFTER the row lock: an extraction that committed meanwhile is included
+        return forgetItems(userId, turnMemoryService.liveItemsOf(userId, List.of(preceding)));
     }
 
     /** What "Mindent ebből a beszélgetésből?" would forget — every still-live item. */

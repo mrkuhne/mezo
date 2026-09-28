@@ -2,12 +2,17 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonFactEntity;
 import io.mrkuhne.mezo.feature.people.repository.PersonFactRepository;
 import io.mrkuhne.mezo.feature.companion.service.PersonFactExtractionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +32,9 @@ class PersonFactExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private PersonFactRepository personFactRepository;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private AiConversationPopulator conversationPopulator;
+    @Autowired private AiMessagePopulator messagePopulator;
+    @Autowired private AiMessageRepository messageRepository;
 
     private List<PersonFactEntity> factsOf(UUID userId, UUID personId) {
         return personFactRepository
@@ -50,6 +58,24 @@ class PersonFactExtractionServiceIT extends AbstractIntegrationTest {
         assertThat(facts.getFirst().getConfidence()).isEqualTo("high");
         assertThat(facts.getFirst().getSourceRefKind()).isEqualTo("chat_turn");
         assertThat(facts.getFirst().getSourceRefId()).isEqualTo(messageId.toString());
+    }
+
+    @Test
+    void testExtractFromTurn_shouldSaveNothing_whenTheMessageIsExtractionBlocked() {
+        // S8 (mezo-d6ivw.12): the turn was forgotten while the LLM call ran — the gate drops it
+        UUID userId = databasePopulator.populateUser("pfx-blocked@test.local");
+        PersonEntity anna = personPopulator.createPerson(userId, "Anna");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        AiMessageEntity message = messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "Annáról");
+        message.setExtractionBlocked(true);
+        messageRepository.saveAndFlush(message);
+        String content = "[fake-person-facts:["
+                + "{\"name\":\"Anna\",\"kind\":\"preference\",\"fact\":\"Késve érkező tény\",\"confidence\":\"high\"}]]";
+
+        int persisted = extractionService.extractFromTurn(userId, message.getId(), content, "értem");
+
+        assertThat(persisted).isZero();
+        assertThat(factsOf(userId, anna.getId())).isEmpty();
     }
 
     @Test
