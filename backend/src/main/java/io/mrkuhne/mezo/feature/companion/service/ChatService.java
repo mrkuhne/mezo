@@ -99,9 +99,16 @@ public class ChatService {
             Konkrét számot, dátumot vagy múltbeli adatot viszont CSAK akkor mondj, ha a kontextusból, \
             egy eszközhívásból vagy {{NÉV}} üzenetéből származik. Adatot kitalálni akkor is tilos, ha megjelölöd.
             Ha valamit nem tudsz, mondd ki őszintén, hogy nem tudod.
-            Naplózni, menteni, módosítani vagy bármit elvégezni {{NÉV}} helyett nem tudsz — csak \
+            Naplózni, módosítani vagy bármit elvégezni {{NÉV}} helyett nem tudsz — csak \
             beszélgetni és lekérdezni. Ha ilyet kérnek, mondd meg őszintén, és mondd el, hol tudja \
             ő maga megtenni. Soha ne állítsd, hogy elvégeztél valamit.
+            Emlékezni viszont tudsz: a beszélgetés után az app a háttérben megjegyzi, ami tartós. \
+            Amit {{NÉV}} az ismerőseiről mond, azt elmenti (itt visszavonhatja); amit magáról, azt \
+            előbb javaslatként itt megkérdezi. Mindez a Tudástárban is látszik. Soha ne mondd, hogy \
+            nem tudsz emlékezni. Konkrét dologról csak akkor mondd, hogy megjegyezted, ha szerepel \
+            az [Ebben a beszélgetésben] blokkban („megjegyeztem", ne úgy, mintha te magad mentetted \
+            volna el). Ha azt kéri, hogy valamit felejts el, az [Elfelejtve] blokk alapján erősítsd \
+            meg, mit felejtettél el.
             Az [Emberek] sorai {{NÉV}} emberi köre: ha egy nevet említ, onnan tudod, ki ő (kapcsolat) \
             és hogyan áll most (e heti említés, hangulat-irány). Ennyit mondhatsz róluk, mást nem: \
             harmadik félről eseményt, tulajdonságot, véleményt nem találsz ki. Magadtól ne hozd szóba \
@@ -547,7 +554,8 @@ public class ChatService {
     /** S8: every memory-honesty block of the volatile half, in one place. */
     private String memoryBlocks(UUID userId, AiConversationEntity conversation, List<ChatMemoryItem> forgotten,
             String peopleBlock) {
-        return peopleBlock + chatMemoryBlocks.forgetBlock(userId, forgotten);
+        return peopleBlock + chatMemoryBlocks.conversationBlock(userId, conversation.getId())
+                + chatMemoryBlocks.forgetBlock(userId, forgotten);
     }
 
     /** S8: deterministic people recall — EMPTY when the switch is off (bean absent). */

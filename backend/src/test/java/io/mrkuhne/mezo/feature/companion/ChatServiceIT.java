@@ -464,8 +464,12 @@ class ChatServiceIT extends AbstractIntegrationTest {
                 + "ha a kontextusból, egy eszközhívásból vagy chat-honest-voice@test.local üzenetéből "
                 + "származik. Adatot kitalálni akkor is tilos, ha megjelölöd.");
         // The action rule (mezo-rj214.3) now lands in the rollback prompt too.
-        assertThat(echoed).contains("Naplózni, menteni, módosítani vagy bármit elvégezni")
-                .contains("Soha ne állítsd, hogy elvégeztél valamit.");
+        // S8 (mezo-d6ivw.12): the action rule survives, the memory is described honestly.
+        assertThat(echoed).contains("Naplózni, módosítani vagy bármit elvégezni")
+                .contains("Soha ne állítsd, hogy elvégeztél valamit.")
+                .contains("Emlékezni viszont tudsz")
+                .contains("[Ebben a beszélgetésben]")
+                .doesNotContain("Naplózni, menteni");
     }
 
     @Test

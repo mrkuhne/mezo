@@ -79,7 +79,10 @@ class ChatForgetTurnIT extends AbstractIntegrationTest {
         MessageResponse answer = chatService.sendMessage(userId, conversation.getId(),
                 request("Felejtsd el a tervet, csináljunk újat."));
 
-        assertThat(answer.getContent()).doesNotContain("[Elfelejtve]");
+        // S8 (mezo-d6ivw.12) Task 8: the stable voice now mentions [Elfelejtve] by name as an
+        // instruction — anchor on the block's own "\n\n" prefix (ChatMemoryBlocks.forgetBlock) to
+        // tell that mention apart from the actual (absent) block.
+        assertThat(answer.getContent()).doesNotContain("\n\n[Elfelejtve]");
         assertThat(messageRepository.findById(answer.getTurnUserMessageId()).orElseThrow().isExtractionBlocked()).isFalse();
     }
 }

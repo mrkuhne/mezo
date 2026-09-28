@@ -84,8 +84,10 @@ class ConversationFirstIT extends AbstractIntegrationTest {
         UUID user = users.populateUser("free-honesty@test.local");
         var conversation = conversations.conversation(user);
         var turn = chatService.prepareTurn(user, conversation.getId(), request("Szia"));
-        assertThat(turn.systemPrompt()).contains("Nem tudsz naplózni, menteni, módosítani vagy bármit elvégezni",
-                "Soha ne állítsd, hogy elvégeztél valamit");
+        assertThat(turn.systemPrompt()).contains("Nem tudsz naplózni, módosítani vagy bármit elvégezni",
+                "Soha ne állítsd, hogy elvégeztél valamit", "Emlékezni viszont tudsz",
+                "Soha ne mondd, hogy nem tudsz emlékezni");
+        assertThat(turn.systemPrompt()).doesNotContain("naplózni, menteni");
     }
 
     @Test
