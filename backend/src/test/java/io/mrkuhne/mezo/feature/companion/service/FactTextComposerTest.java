@@ -44,4 +44,23 @@ class FactTextComposerTest {
         assertThat(composed).hasSizeLessThanOrEqualTo(500).endsWith("…").doesNotContain("  ");
         assertThat(composed.substring(0, composed.length() - 1)).endsWith("szó");
     }
+
+    @Test
+    void compose_shouldNotSplitAtAnAbbreviation_plRövidítés() {
+        String mechanism = "Az étkezési rutin szorosan kötődik az edzőtermi napokhoz. Amikor ez a rutin "
+                + "megszakad (pl. pihenőnap, hétvégi verseny), a bevitel drasztikusan csökken.";
+        assertThat(FactTextComposer.compose(PatternEntity.KIND_REFLECTION, TITLE, mechanism)).isEqualTo(mechanism);
+    }
+
+    @Test
+    void compose_shouldNotSplitAtAnAbbreviation_kbRövidítés() {
+        String mechanism = "Első mondat kb. két órával később. Második mondat.";
+        assertThat(FactTextComposer.compose(PatternEntity.KIND_REFLECTION, TITLE, mechanism)).isEqualTo(mechanism);
+    }
+
+    @Test
+    void compose_shouldFallBackToTitle_whenComposedTextLeavesAnUnbalancedOpenParenthesis() {
+        String mechanism = "Kezdés (nyitva marad. Zárás nélkül folytatódik.";
+        assertThat(FactTextComposer.compose(PatternEntity.KIND_REFLECTION, TITLE, mechanism)).isEqualTo(TITLE);
+    }
 }
