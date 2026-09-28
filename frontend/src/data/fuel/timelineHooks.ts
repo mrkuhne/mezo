@@ -145,12 +145,21 @@ export function useFuelTimeline(date: string = localDateString()) {
   })
 
   // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
-  // served energy + today's planned blocks (per-block previews) + the current segment + the NEAT
-  // band. Null on the static path.
+  // served energy + today's blocks (reconciled with what was actually logged, per-block previews) +
+  // the current segment + the NEAT band. Null on the static path.
+  // `done` per block (mezo-tb3s2): the SAME done-state the Fuel timeline itself already derives for
+  // its training-block slots (`plan.slots`, built off this same `blocks` list) — a block's window
+  // (start + duration) has elapsed. Matched by time+label since `blockSlots` is a 1:1, same-shape map
+  // of `blocks`.
+  const blockDoneByKey = new Map(
+    plan.slots
+      .filter(s => s.kind === 'workout' || s.kind === 'sport')
+      .map(s => [`${s.time}|${s.label}`, s.state === 'done']),
+  )
   const tb = goalResponse?.tdeeBootstrap
   const energyBreakdown = staticEnergy ? null : buildEnergyBreakdown({
     energy: budget.energy,
-    blocks: plannedBlocks,
+    blocks: blocks.map(b => ({ ...b, done: blockDoneByKey.get(`${b.time}|${b.label}`) ?? false })),
     weightKg,
     tdeeBootstrap: tb ? { bmr: tb.bmr, neat: tb.neat, formula: tb.formula } : null,
     segment,

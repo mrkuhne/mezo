@@ -9,14 +9,15 @@ const fuelBreakdown: EnergyBreakdown = {
   base: { kcal: 2272, bmr: 1893, neat: 1.2, neatLabel: 'Ülő', formula: 'KATCH' },
   movement: {
     kcal: 1290,
-    isWeeklyAvg: true,
+    isWeeklyAvg: false,
+    pending: 460,
     parts: [
-      { key: 'planned', label: 'A heti terved mai része', kcal: 900 },
+      { key: 'planned', label: 'Tervezett edzés · logolva', kcal: 900 },
       { key: 'extra', label: 'Terven kívüli mozgás', kcal: 390 },
     ],
     blocks: [
-      { label: 'Gym', kind: 'gym', min: 60, kcal: 430 },
-      { label: 'Röplabda', kind: 'sport', min: 90, kcal: 860 },
+      { label: 'Gym', kind: 'gym', min: 60, kcal: 430, done: true },
+      { label: 'Röplabda', kind: 'sport', min: 90, kcal: 860, done: false },
     ],
   },
   deficit: { kcal: -869, rateKgPerWk: 0.79, goalLabel: 'Nyári cut' },
@@ -41,9 +42,9 @@ describe('EnergyBreakdownSheet', () => {
   it('renders all three sections and per-activity pills when deficit + blocks present', () => {
     render(<EnergyBreakdownSheet breakdown={fuelBreakdown} initial="movement" onClose={vi.fn()} />, { wrapper: Router })
     expect(screen.getByText('Alaphő · NEAT')).toBeInTheDocument()
-    expect([...document.body.querySelectorAll('.flp-estit')].map(e => e.textContent)).toContain('Mozgás')
+    expect([...document.body.querySelectorAll('.flp-estit')].map(e => e.textContent)).toContain('Mozgás · ma logolva')
     expect(screen.getByText(/Deficit · Nyári cut/)).toBeInTheDocument()
-    // per-activity tiles (organized: name + duration + kcal)
+    // per-activity tiles (organized: name + duration + kcal) — Gym is done, Röplabda still pending
     expect(screen.getByText('Gym')).toBeInTheDocument()
     expect(screen.getByText('Röplabda')).toBeInTheDocument()
     expect(screen.getByText('60 perc')).toBeInTheDocument()
@@ -57,11 +58,34 @@ describe('EnergyBreakdownSheet', () => {
     const summands = [...sum.querySelectorAll('.flp-etile:not(.is-result) .flp-etile-val')].map(v => Number.parseInt(v.textContent!, 10))
     expect(summands).toEqual(fuelBreakdown.movement.parts!.map(p => p.kcal))
     expect(summands.reduce((a, n) => a + n, 0)).toBe(fuelBreakdown.movement.kcal)
-    const info = document.body.querySelector('.flp-etiles.is-info')!
-    expect(info.querySelectorAll('.flp-etile')).toHaveLength(fuelBreakdown.movement.blocks!.length)
-    expect(info.querySelector('.op')).toBeNull()
+    const infoGroups = [...document.body.querySelectorAll('.flp-etiles.is-info')]
+    const infoTileCount = infoGroups.reduce((n, g) => n + g.querySelectorAll('.flp-etile').length, 0)
+    expect(infoTileCount).toBe(fuelBreakdown.movement.blocks!.length)
+    expect(infoGroups.every(g => g.querySelector('.op') === null)).toBe(true)
     expect(screen.queryByText(/pihenőnapon 0/)).not.toBeInTheDocument()
-    expect(screen.getByText(/egyenletesen oszlik el/)).toBeInTheDocument()
+    expect(screen.getByText(/akkor nő, amikor rögzíted/)).toBeInTheDocument()
+  })
+
+  it('the lead reads the fixed „ma logolt mozgásod” sentence on the Fuel (non-weekly) path', () => {
+    render(<EnergyBreakdownSheet breakdown={fuelBreakdown} initial="movement" onClose={vi.fn()} />, { wrapper: Router })
+    expect(
+      screen.getByText('A napi cél nem statikus — az alapigényedből, a ma logolt mozgásodból és a célodból áll össze.'),
+    ).toBeInTheDocument()
+  })
+
+  it('previews the not-yet-logged planned sessions under „Még jön” when pending > 0', () => {
+    render(<EnergyBreakdownSheet breakdown={fuelBreakdown} initial="movement" onClose={vi.fn()} />, { wrapper: Router })
+    expect(screen.getByText('Még jön, ha megcsinálod · a keretben még nincs benne')).toBeInTheDocument()
+    const pendingTile = screen.getByText('Röplabda').closest('.flp-etile')!
+    expect(pendingTile).toHaveClass('is-pending')
+    expect(pendingTile.textContent).toContain('tervezett · 90 perc')
+    expect(pendingTile.textContent).toContain('+860')
+  })
+
+  it('hides the „Még jön” group when nothing is pending', () => {
+    const noPending: EnergyBreakdown = { ...fuelBreakdown, movement: { ...fuelBreakdown.movement, pending: 0 } }
+    render(<EnergyBreakdownSheet breakdown={noPending} initial="movement" onClose={vi.fn()} />, { wrapper: Router })
+    expect(screen.queryByText(/Még jön/)).not.toBeInTheDocument()
   })
 
   it('omits the deficit section and shows a weekly-avg movement (no pills) when deficit absent', () => {
