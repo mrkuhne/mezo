@@ -31,7 +31,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   { id: 'joslat', label: 'Jóslatok', icon: 'i-kristaly',
     kinds: ['prediction_new', 'prediction_outcome'] },
   { id: 'cel', label: 'Célok', icon: 'i-cel',
-    kinds: ['life_goal_plan', 'goal_suggestion'] },
+    // mezo-3n2so: a heti tanulás a napi energiaigény CÉLJÁT korrigálja — ugyanaz a mozdulat,
+    // mint egy céljavaslat, csak a mérleg és az evés tanulja, nem a felhasználó dönt.
+    kinds: ['life_goal_plan', 'goal_suggestion', 'expenditure_week'] },
   { id: 'osszegzes', label: 'Összegzés', icon: 'i-memoar',
     kinds: ['memoir_ready', 'weekly_review_ready'] },
   /* mezo-0cbh. A két jelölt-fajta EGY kategóriában: mindkettő ugyanaz a mozdulat — egy sor,

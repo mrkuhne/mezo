@@ -14,3 +14,7 @@ test('MINDEN ismert wire-kind pontosan egy kategóriába esik', () => {
 test('ismeretlen fajta kategória nélkül marad, nem esik rossz kategóriába', () => {
   expect(notificationCategory('valami_uj_2027')).toBeNull()
 })
+
+test('a heti tanulás a Célok kategóriába esik', () => {
+  expect(notificationCategory('expenditure_week')).toBe('cel')
+})
