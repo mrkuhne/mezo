@@ -17,6 +17,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
+> **2026-09-28 — S8 chat memory (`mezo-d6ivw.12`).** The csapatfal reply's "Megjegyeztem" chip (`ReplyAfterlife`) now renders through the shared `MemoryChip` (`surface="csapatfal"`, [`insights.md`](insights.md)) with no visible change; `teamChatHooks.ts` only had a comment updated. The 1.1.0 changelog gained `ai_message.forgotten_memories` + `extraction_blocked` (companion-owned, [`companion.md`](companion.md)); nothing in the character feature reads them.
+
 > **2026-09-28 — Check-in 2.0 detectors (`mezo-ck2`).** Seven new detectors over the new check-in items — `pain-map` (doki), `sleep-need` (szomnologus), `craving-trigger` and `food-digestion` (taplalkozo), `mood-text-calibration` (pszichologus), `motivation-follow-through` (drill), `soreness-recovery` (edzo) — and three changed ones: `people-mood-link` (reads `mood`, falls back to `mental`; new `connection` arm), `comfort-eating` (low mood = `mood <= 4 OR stress >= 7`, `mental` only as fallback; new direct craving arm), `self-calibration` (new rested × sleep-quality pair). The catalog is now **47** detectors (`DetektorokPage`). `DetectorInput.CheckinDayPoint` carries the new day means + `painRegions`; `CharacterSignalReads` fills them. §1 „Check-in 2.0 round". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.4b–§3.7.
 
 > One-line: a synthesis layer over everything mezo already remembers — a persisted,
