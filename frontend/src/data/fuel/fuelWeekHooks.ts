@@ -31,6 +31,7 @@ import { useTrain } from '@/data/train/trainHooks'
 import { useMedication } from '@/data/fuel/medicationHooks'
 import { DAY_ORDER } from '@/data/train/train'
 import { isSportSlotSkipped, type PlannedSkipKey } from '@/features/train/logic/weekAgenda'
+import { isSkipped } from '@/features/train/logic/plannedSkips'
 import type {
   GymScheduleDay,
   MedicationCycleCell,
@@ -111,6 +112,16 @@ export function filterSkippedSessions(
     const dayOfWeek = DAY_ORDER.indexOf(s.day as (typeof DAY_ORDER)[number])
     const date = s.date ?? addDays(start, dayOfWeek)
     return !isSportSlotSkipped(skips, dayOfWeek, s.time, date)
+  })
+}
+
+/** Turns off the gym day whose own date (`start` + weekday index) the user skipped (Kihagyás S1,
+ *  mezo-q4xt2.1) — the week grid then reads that day as gym-free, the same way `filterSkippedSessions`
+ *  drops a skipped sport occurrence. */
+export function dropSkippedGymDays(days: GymScheduleDay[], skips: PlannedSkipKey[], start: string): GymScheduleDay[] {
+  return days.map((d) => {
+    const date = addDays(start, DAY_ORDER.indexOf(d.day as (typeof DAY_ORDER)[number]))
+    return d.active && isSkipped(skips, { kind: 'GYM', date }) ? { ...d, active: false } : d
   })
 }
 
@@ -204,7 +215,7 @@ export function useFuelWeek(startIso?: string): FuelWeekView {
   return {
     title: deriveWeekTitle(start),
     medCycleWeek: toMedCycleCells(cycle.week),
-    gymSchedule: (trainGym?.weeklyTimes ?? []).map(withDefaultDuration),
+    gymSchedule: dropSkippedGymDays(trainGym?.weeklyTimes ?? [], plannedSkips, start).map(withDefaultDuration),
     weeklySupplements: [],
     patterns: [],
     weeklyStats: deriveWeeklyStats(rollup.weekDays),

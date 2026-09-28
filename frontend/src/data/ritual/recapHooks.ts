@@ -12,6 +12,7 @@ import { useRunning } from '@/data/train/runningHooks'
 import { useDayWorkouts } from '@/data/train/workoutDetailHooks'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { isSportSlotSkipped } from '@/features/train/logic/weekAgenda'
+import { isSkipped } from '@/features/train/logic/plannedSkips'
 import { SPORT_TITLES, sportOf, type SportKind } from '@/features/train/logic/sportKinds'
 
 // The story's own sport names: volleyball keeps the ritual's long-standing „Röplabda”.
@@ -80,7 +81,9 @@ export function useDayRecap(date: string): DayRecap {
   const completed = mock ? null : train.completedTodayWorkout
   if (completed?.date === date && train.workout && !performed.some((w) => w.id === completed.id)) {
     events.push({ icon: 'i-edzes', label: train.workout.title, meta: '✓', done: true })
-  } else if (performed.length === 0 && train.workout && !completed) {
+  } else if (performed.length === 0 && train.workout && !completed
+    // A skipped gym day (Kihagyás S1, mezo-q4xt2.1) is not an unfinished plan — no not-done row.
+    && !isSkipped(train.plannedSkips, { kind: 'GYM', date })) {
     events.push({ icon: 'i-edzes', label: train.workout.title, meta: '✓', done: false })
   }
 

@@ -26,6 +26,7 @@ import { dayOrbFill, type DayOrbPlan, type DayOrbSignals } from '@/features/toda
 import { provisionalDayScore } from '@/features/today/logic/dayOrbTone'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { isSportSlotSkipped } from '@/features/train/logic/weekAgenda'
+import { isSkipped } from '@/features/train/logic/plannedSkips'
 
 export interface DayOrbState {
   pct: number
@@ -84,7 +85,10 @@ export function useDayOrbFill(): DayOrbState {
     // the week agenda already hides it — a "planned" sport signal must not stay lit for a slot
     // the user has explicitly skipped for today.
     const plan: DayOrbPlan = {
-      gymPlanned: Boolean(gymWeeklyTimes?.some((d) => d.today && d.active)),
+      // A user-skipped gym day (Kihagyás S1, mezo-q4xt2.1) leaves the plan the same way; a gym
+      // session actually trained still lights the signal (`conditionalApplies` — done wins).
+      gymPlanned: Boolean(gymWeeklyTimes?.some((d) => d.today && d.active))
+        && !isSkipped(plannedSkips, { kind: 'GYM', date: todayIso }),
       sportPlanned: Boolean(sportScheduleSessions?.some(
         (s) => s.today && !isSportSlotSkipped(plannedSkips, todayIdx(), s.time, todayIso),
       )),

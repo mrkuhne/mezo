@@ -104,6 +104,24 @@ describe('useDayRecap (real mode)', () => {
     expect(training).toEqual({ icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: false })
   })
 
+  // Kihagyás S1 (mezo-q4xt2.1) — a skipped gym day is not an unfinished plan: no not-done row.
+  test('a GYM skip on the day drops the not-done training row', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let served = false
+    server.use(http.get(`${API_BASE}/api/train/skips`, () => {
+      served = true
+      return HttpResponse.json([{
+        id: 'g1', date: DATE, kind: 'GYM', dayOfWeek: null, time: null, sessionKey: null,
+        reasonCategory: 'ILLNESS', reasonText: null, source: 'USER', serious: true, freePass: false, excused: true,
+      }])
+    }))
+    const { result } = renderHook(() => useDayRecap(DATE), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-fuel')).toBe(true))
+    await waitFor(() => expect(served).toBe(true))
+    await new Promise((r) => setTimeout(r, 50))
+    expect(result.current.events.some((e) => e.icon === 'i-edzes')).toBe(false)
+  })
+
   test('closingNote is non-null ONLY when the feed carries an "evening" kind message', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(

@@ -208,3 +208,26 @@ test('useToday (real) reports today\'s logged sport kinds', async () => {
   expect(result.current.loggedSportKinds).toEqual(expect.arrayContaining(['volleyball', 'trx']))
   expect(result.current.loggedSportKinds).not.toContain('cross')
 })
+
+// Kihagyás S1 (mezo-q4xt2.1) — a gym day the user skipped is no longer "today's workout": the
+// Today teaser stands down exactly as on a rest day (null workout), instead of offering „Indítsuk".
+const gymSkipRow = (date: string) => ({
+  id: 'g1', date, kind: 'GYM', dayOfWeek: null, time: null, sessionKey: null,
+  reasonCategory: 'TIRED', reasonText: null, source: 'USER', serious: false, freePass: true, excused: true,
+})
+
+test('useToday (real) hides today\'s workout once today\'s gym is skipped', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([gymSkipRow(localDateString(new Date()))])))
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.today.mesoPhase).toBe('MAV'))
+  await waitFor(() => expect(result.current.workout).toBeNull())
+  expect(result.current.workoutTime).toBeNull()
+})
+
+test('useToday (real) keeps today\'s workout when the gym skip is for another day', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([gymSkipRow('1999-01-01')])))
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.workout?.title).toBe('Pull Day'))
+})
