@@ -61,6 +61,15 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-29 — Edzés közben gyakorlat csere és hozzáadás (`mezo-mobji`).** Edzés közben a
+  gyakorlat ⋮ menüjéből lecserélhető egy gyakorlat (felül a hasonló izomra ható javaslatokkal), a
+  lista alján pedig új gyakorlat adható hozzá; mindkettőnél egy koppintással dönthető el, hogy
+  „Csak ma” vagy „Mezociklusra is” (a mezociklus hátralévő heteire, a mentett sablon nélkül). Ha
+  a gyakorlatból már van kész szett, az a régin marad, a hátralévők az újé. A változás a szerveren
+  él (újratöltés után is megvan, az összesítőben is látszik); a „Mezociklusra is” úgy írja a
+  tervet, hogy a futó edzés gyakorlatainak azonosítója nem változik — ugyanerre az útra került át
+  a „Szett hozzáadása → Minden hétre” is, amely korábban az egész napot újraírta. Két új 3D ikon
+  (csere, hozzáadás). Spec: `docs/superpowers/specs/2026-09-28-workout-exercise-swap-add-design.md`.
 - **2026-09-28 — A chat memóriája legyen látható és őszinte (S8, `mezo-d6ivw.12`).** A beszélgetés
   ezentúl elárulja, mit tanult, mit javasol, kire emlékszik és mit felejtett el — egy megjegyezett
   személy-tényhez „Megjegyeztem: … Visszavonom" chip jár, egy owner-tény javaslathoz „Megjegyezném:

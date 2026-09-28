@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -19,6 +19,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 > **2026-09-28 — Eligazítás (`mezo-mgu2r`).** `prototype.css`'s `uveg edzes session` block gained the briefing family (`.wbr-*`: frameless hero halo, the gold glass challenge card reusing the variant-B `.wos-qc` rows, flat exercise rows, the portalled `.wbr-foot` Indulás that floats over `.phone-screen` like the dock), the card-head vs-last-week chip `.wo-delta` (`is-up` coral / hold-down amber), the tappable released badge (`.wos-pill-quest.is-released`) and the challenge detail glass body (`.wos-gb-qd`). No new primitive, no new sprite symbol.
 
 > **2026-09-28 — Arányos lépcső (`mezo-bk7sn`).** One more briefing-row line: `.wbr-row-why` (11px amber, the `.wo-delta` hold tone) carries the engine's reason when a target sits past the range top. The workout card reuses its existing `.wo-cue` slot for the same sentence. No new primitive.
+
+> **2026-09-29 — Gyakorlat csere / hozzáadás (`mezo-mobji`).** Two owner-approved sprite symbols, `t-swap` (two arrows, blue + coral) and `t-addex` (the dumbbell with a lime plus badge), in `titanium-custom.svg` → both sprite copies, `Icon3DName` extended. `prototype.css` gained the swap/add family: `.wos-sheet.is-sky`, the scope sheet's `.wos-scope-ex` / `.wos-scope-opt(.is-lit)`, the picker's `.uvl-subh` + `.uvl-exlist.is-similar`, the list's dashed `.wo-add`, the faded `.wo-card.is-swapped`, the `.wo-change(.is-today/.is-meso)` pills and `.wo-change-err`. No new primitive.
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** Nine owner-approved sprite symbols for the new check-in items — `t-mood`, `t-rested`, `t-soreness`, `t-pain`, `t-motivation`, `t-hunger`, `t-craving`, `t-day`, `t-digestion` (connection reuses `t-people`) — added to `docs/design_2.0/assets/titanium-custom.svg` and regenerated into both sprite copies (`Icon3D.test.tsx` pins the ids). `prototype.css` gained the check-in sheet (`.ck-*`), the answered-cell rows (`.nck-*`), the Napom duo (`.napom-dayc`/`.napom-duo`), the ritual day hint (`.rz-day`) and the Edzés readiness card (`.trd-*`) families; `app/pageIndex.ts`'s check-in hint reads „pár koppintás, fél perc". No new primitive.
 
