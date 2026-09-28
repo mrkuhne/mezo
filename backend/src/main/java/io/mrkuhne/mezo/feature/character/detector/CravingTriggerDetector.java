@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInItem;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -55,6 +56,11 @@ public class CravingTriggerDetector implements CharacterDetector {
     @Override
     public String key() {
         return "craving-trigger";
+    }
+
+    @Override
+    public Map<CheckInItem, String> checkInNeeds() {
+        return Map.of(CheckInItem.CRAVING, "Most azt figyeljük, mi előzi meg az erős sóvárgásos napjaidat.");
     }
 
     @Override

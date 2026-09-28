@@ -710,6 +710,8 @@ A **standalone** owner-scoped weekly schedule answering only *when* the user tra
 
 This is the highest-value section: Train both consumes and exposes a number of seams. The contract (the type/shape that crosses) is named at each.
 
+**→ Proactive — the persistent-pain card's lightening (Check-in 2.0 follow-up C).** `WorkoutService.plannedMuscleGroups(user, date)` returns the coarse groups (`MuscleGroup.of`) the planned template for `date` loads — the session's own muscle plus every planned exercise's — as a pure read over `findPlannedTemplateForDate` (never `getToday`); empty on a rest day. `AdviceActionCatalog` intersects it with `PainRegionMap.groups(region)` to decide whether `persistent_pain` offers `lighten_tomorrow` ([`proactive.md`](proactive.md), `WorkoutPlannedMuscleGroupsIT`).
+
 **← Check-in (biometrics) — training readiness (Check-in 2.0, `mezo-ck2`).** Train owns the `DayCheckInPort` (`DayCheckIn {slotTime, rested, soreness, motivation, pain, painRegions, painIntensity}`), biometrics implements it (`TrainDayCheckInAdapter`), so train never imports check-in entities. Pain regions cross as their stored `PainRegion` names and are mapped here by `PainRegionMap` ([`me.md` §4](me.md)). The soreness answers also feed the `gym-workload~next-day-checkin-soreness` pattern pair ([`companion.md`](companion.md)) and the Edző `soreness-recovery` detector ([`character.md`](character.md)).
 
 | Seam | Direction | Where | Type crossing |

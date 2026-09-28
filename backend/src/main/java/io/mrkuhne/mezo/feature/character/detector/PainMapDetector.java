@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.PainRegion;
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInItem;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,6 +43,11 @@ public class PainMapDetector implements CharacterDetector {
     @Override
     public String key() {
         return "pain-map";
+    }
+
+    @Override
+    public Map<CheckInItem, String> checkInNeeds() {
+        return Map.of(CheckInItem.PAIN, "Most azt figyeljük, visszatér-e ugyanott a fájdalom.");
     }
 
     @Override

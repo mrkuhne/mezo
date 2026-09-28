@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.config.CheckInPlanProperties;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -23,6 +24,8 @@ import org.springframework.stereotype.Component;
  *   <li><b>Choice:</b> with probability {@code random-share} a uniform random pool item
  *       ({@link Reason#RANDOM}); otherwise the wanted pool item with the fewest non-null answers
  *       ({@link Reason#NEED}, ties broken by the RNG). No wanted item in the pool → random.</li>
+ *   <li><b>Why:</b> a need pick carries the source's specific sentence when it has one
+ *       ({@link CheckInNeedSource.Need#why()}), else the generic {@code why-need}.</li>
  * </ul>
  */
 @Component
@@ -32,8 +35,17 @@ public class AdaptiveItemChooser {
     /** Why an item was chosen (mirrors the contract's {@code AdaptiveReason}). */
     public enum Reason { NEED, RANDOM }
 
-    /** The chosen item and why. */
-    public record Choice(CheckInItem item, Reason reason) {}
+    /**
+     * The chosen item and why.
+     *
+     * @param why the source's specific Hungarian sentence for a {@link Reason#NEED} pick; null =
+     *            the generic sentence
+     */
+    public record Choice(CheckInItem item, Reason reason, String why) {
+        public Choice(CheckInItem item, Reason reason) {
+            this(item, reason, null);
+        }
+    }
 
     private final CheckInPlanProperties properties;
 
@@ -41,12 +53,13 @@ public class AdaptiveItemChooser {
      * @param slotTime     the slot ("06:30")
      * @param slotItems    the slot's configured plan
      * @param answerCounts non-null answers per item in the need window (missing = 0)
-     * @param wanted       items some consumer waits on ({@link CheckInNeedSource} union)
+     * @param wanted       items some consumer waits on → their specific "why" sentence (a null
+     *                     value = generic sentence); the merged {@link CheckInNeedSource} answer
      * @param rng          seeded per (user, date, slot) by the caller
      * @return the pick, or empty when the pool is empty
      */
     public Optional<Choice> choose(String slotTime, Collection<CheckInItem> slotItems,
-                                   Map<CheckInItem, Long> answerCounts, Set<CheckInItem> wanted,
+                                   Map<CheckInItem, Long> answerCounts, Map<CheckInItem, String> wanted,
                                    Random rng) {
         List<CheckInItem> pool = pool(slotTime, slotItems);
         if (pool.isEmpty()) {
@@ -54,7 +67,7 @@ public class AdaptiveItemChooser {
         }
         // Always draw first so the RNG stream (and thus the pick) does not depend on the branch.
         boolean randomDraw = rng.nextDouble() < properties.adaptive().randomShare();
-        List<CheckInItem> needPool = pool.stream().filter(wanted::contains).toList();
+        List<CheckInItem> needPool = pool.stream().filter(wanted::containsKey).toList();
         if (randomDraw || needPool.isEmpty()) {
             return Optional.of(new Choice(pool.get(rng.nextInt(pool.size())), Reason.RANDOM));
         }
@@ -62,7 +75,17 @@ public class AdaptiveItemChooser {
         List<CheckInItem> thinnest = needPool.stream()
             .filter(i -> answerCounts.getOrDefault(i, 0L) == min)
             .toList();
-        return Optional.of(new Choice(thinnest.get(rng.nextInt(thinnest.size())), Reason.NEED));
+        CheckInItem pick = thinnest.get(rng.nextInt(thinnest.size()));
+        return Optional.of(new Choice(pick, Reason.NEED, wanted.get(pick)));
+    }
+
+    /** Convenience: every wanted item with the generic "why". */
+    public Optional<Choice> choose(String slotTime, Collection<CheckInItem> slotItems,
+                                   Map<CheckInItem, Long> answerCounts, Set<CheckInItem> wanted,
+                                   Random rng) {
+        Map<CheckInItem, String> generic = new EnumMap<>(CheckInItem.class);
+        wanted.forEach(item -> generic.put(item, null));
+        return choose(slotTime, slotItems, answerCounts, generic, rng);
     }
 
     /** Candidate items for {@code slotTime}, in declaration order (deterministic). */
@@ -78,8 +101,11 @@ public class AdaptiveItemChooser {
 
     /** The one-line Hungarian "why" shown under "A NAP KÉRDÉSE". */
     public String why(Choice choice) {
-        return choice.reason() == Reason.NEED
-            ? properties.adaptive().whyNeed().replace("{item}", choice.item().whyPhrase())
-            : properties.adaptive().whyRandom();
+        if (choice.reason() == Reason.RANDOM) {
+            return properties.adaptive().whyRandom();
+        }
+        return choice.why() != null
+            ? choice.why()
+            : properties.adaptive().whyNeed().replace("{item}", choice.item().whyPhrase());
     }
 }

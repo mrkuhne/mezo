@@ -435,7 +435,7 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 **techcore (the reusable spine)**
 - `techcore/persistence/OwnedEntity.java`, `OwnedRepository.java` — owned-entity superclass + `findAllOwned`
 - `techcore/security/SecurityConfig.java`, `CurrentUserId.java`, `CorsProperties.java` — stateless JWT + ownership resolution + CORS
-- `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract
+- `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract (an unreadable request body — unknown enum constant, wrong JSON type, broken JSON — is a 400 `VALIDATION_INVALID_VALUE` naming the JSON path since Check-in 2.0 follow-up C; [`_platform-auth-security.md`](_platform-auth-security.md), [`error_handling.md`](../references/error_handling.md))
 - `backend/src/main/resources/messages.properties` — message codes (Hungarian; newest: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
 
 **Reference feature (weight — smallest full slice)**

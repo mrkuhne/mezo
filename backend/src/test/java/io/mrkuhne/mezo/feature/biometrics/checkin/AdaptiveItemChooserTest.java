@@ -120,6 +120,30 @@ class AdaptiveItemChooserTest {
             .isEqualTo("Ma ez a véletlen kérdés — így marad kiegyensúlyozott, amit rólad tanulunk.");
     }
 
+    @Test
+    void testChoose_shouldCarrySourceWhy_whenNeedPickHasSpecificReason() {
+        Map<CheckInItem, String> wanted = new java.util.EnumMap<>(CheckInItem.class);
+        wanted.put(PAIN, "Most azt figyeljük, visszatér-e ugyanott a fájdalom.");
+        wanted.put(SORENESS, null);
+        Map<CheckInItem, Long> counts = Map.of(SORENESS, 5L, PAIN, 0L);
+        Random rng = new Random(11);
+        int needDraws = 0;
+        for (int i = 0; i < 200; i++) {
+            Choice c = chooser.choose("14:00", PLAN.get("14:00"), counts, wanted, rng).orElseThrow();
+            if (c.reason() != Reason.NEED) {
+                assertThat(chooser.why(c)).startsWith("Ma ez a véletlen kérdés");
+                continue;
+            }
+            needDraws++;
+            assertThat(c.item()).isEqualTo(PAIN);
+            assertThat(chooser.why(c)).isEqualTo("Most azt figyeljük, visszatér-e ugyanott a fájdalom.");
+        }
+        assertThat(needDraws).isPositive();
+        // A wanted item without a specific sentence keeps the generic one.
+        assertThat(chooser.why(new Choice(SORENESS, Reason.NEED, wanted.get(SORENESS))))
+            .isEqualTo("Most azt figyeljük, hogyan alakul az izomlázad — erről van a legkevesebb válaszod.");
+    }
+
     private static List<CheckInItem> concat(List<CheckInItem> a, List<CheckInItem> b) {
         return java.util.stream.Stream.concat(a.stream(), b.stream()).toList();
     }
