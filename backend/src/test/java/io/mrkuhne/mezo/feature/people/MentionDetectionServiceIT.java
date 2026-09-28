@@ -176,7 +176,7 @@ class MentionDetectionServiceIT extends ApiIntegrationTest {
         UUID userId = databasePopulator.populateUser("s8-match@test.local");
         PersonEntity bence = personPopulator.createPerson(userId, "Bence");
         PersonEntity dori = personPopulator.createPerson(userId, "Dóri");
-        personPopulator.createCandidate(userId, "Jelölt Juli", "jegyzet");
+        personPopulator.createCandidate(userId, "Juli", "jegyzet"); // named in the text — excluded as a candidate
         long before = mentionRepository.count();
 
         List<MatchedPerson> matched = mentionDetectionService.matchActivePersons(userId,

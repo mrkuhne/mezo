@@ -46,7 +46,8 @@ class PeopleRecallIT extends AbstractIntegrationTest {
                 SendMessageRequest.builder().content("Dórival és Bencével nyertünk ma!").build());
 
         assertThat(answer.getContent()).contains("[Emberek] (az üzenetben említettek)")
-                .contains("Dóri").contains("Bence").contains("tavasz óta a strandröpi-párod");
+                // the rendered block rows ("Név — kapcsolat · …"), not the echoed user message
+                .contains("Dóri — ").contains("Bence — ").contains("tavasz óta a strandröpi-párod");
         // Bence has no fact → in the block, NOT in the disclosure
         assertThat(answer.getRecalled()).filteredOn(r -> "person".equals(r.getKind()))
                 .singleElement().satisfies(r -> {

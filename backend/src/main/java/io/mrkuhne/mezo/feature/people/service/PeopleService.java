@@ -156,8 +156,12 @@ public class PeopleService {
         return chatContext(userId, today, p -> true);
     }
 
-    /** S8 (mezo-d6ivw.12): the same rows for the persons a message names. */
-    @Transactional(readOnly = true)
+    /**
+     * S8 (mezo-d6ivw.12): the same rows for the persons a message names. Deliberately NOT
+     * {@code @Transactional} (fix round 1): the chat turn's people recall calls it inside the
+     * turn's transaction and must stay fail-open — a throwing participating transactional method
+     * would mark the turn rollback-only past the caller's catch. Reads join the caller's transaction.
+     */
     public List<PersonChatContext> chatContextFor(UUID userId, LocalDate today, Collection<UUID> personIds) {
         if (personIds.isEmpty()) {
             return List.of();

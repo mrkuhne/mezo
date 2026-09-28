@@ -91,8 +91,12 @@ public class MentionDetectionService {
      * S8 (mezo-d6ivw.12): the SAME name/alias rule as {@link #detect}, read-only — nothing is
      * persisted (the async ChatMentionListener still writes the mention). Active persons only,
      * ordered by where they are first named, capped at {@code max}.
+     *
+     * <p>Deliberately NOT {@code @Transactional}: the chat turn calls it inside its own transaction,
+     * and a participating transactional method that throws marks that transaction rollback-only —
+     * the caller's fail-open catch could not undo it (S8 fix round 1). The single repository read
+     * runs in the caller's transaction, or its own when there is none.
      */
-    @Transactional(readOnly = true)
     public List<MatchedPerson> matchActivePersons(UUID userId, String text, int max) {
         if (text == null || text.isBlank() || max <= 0) {
             return List.of();

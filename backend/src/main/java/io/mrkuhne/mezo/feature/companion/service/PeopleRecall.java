@@ -25,8 +25,12 @@ import org.springframework.stereotype.Service;
  * get an {@code [Emberek]} block in the VOLATILE half (the same rows the planner tool would fetch),
  * and those with prompt-enabled facts are disclosed as {@code kind=person} recalled items — the
  * chat's "Emlékszem" line. Fail-open: any failure = no block, no disclosure, the turn proceeds.
- * (A DataAccessException still poisons the surrounding turn transaction — the IDENT-3 caveat of
- * {@link PeopleSnapshotBlock} applies unchanged.)
+ * The recall path's own entry points ({@code matchActivePersons}, {@code chatContextFor}) are
+ * therefore NOT transactional, so a RuntimeException from their code never marks the turn's
+ * transaction rollback-only (pinned by {@code PeopleRecallFailOpenIT}). The remaining exception:
+ * any exception escaping a participating {@code @Transactional} callee — in practice a
+ * repository's DataAccessException, which Postgres would abort the transaction for anyway —
+ * still poisons the surrounding turn (the IDENT-3 caveat of {@link PeopleSnapshotBlock}).
  */
 @Slf4j
 @Service
