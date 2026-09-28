@@ -238,7 +238,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-28, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-29, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-27, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -362,8 +362,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-28, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-28, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-28, mixed) ·
+  [docs/features/character.md](features/character.md) (updated 2026-09-29, shipped) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-29, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-28, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-28, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-28, mixed) ·
@@ -630,8 +630,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-28, done) ·
   [docs/features/pantry.md](features/pantry.md) (updated 2026-09-23, done) ·
   [docs/features/recipe.md](features/recipe.md) (updated 2026-09-28, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-28, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-28, done)
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-29, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-29, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -703,7 +703,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### gamification
 
 *BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-26, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-28, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-29, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
   - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
@@ -813,7 +813,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-28, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-29, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-27, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -957,7 +957,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-28, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-28, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-29, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -996,7 +996,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-28, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-28, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-28, mixed) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-28, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-29, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-28, mixed)
 
 - **FE data** `frontend/src/data/me`
@@ -1493,8 +1493,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-28, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-28, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-09-28, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-28, done)
+  [docs/features/train.md](features/train.md) (updated 2026-09-29, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-29, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `signal`
@@ -1519,11 +1519,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MesoPlanFiller`, `MesoPlanGeneratorService`, `MesoPlanLlm`, `MesoPlanMerger`, `MesoPlanSkeleton`,
     `MesoTemplateDays`, `MesoTemplateService`, `MesoWeeks`, `MesocycleReportService`, `MuscleGroup`, `OneRepMax`,
     `PainRegionMap`, `Prescription`, `PriorityTier`, `ProgressionDecider`, `ReadinessAssessor`, `ReadinessService`,
-    `RunningService`, `SessionTimingCalculator`, `SetRecommendationService`, `SportService`, `SportSessionLoggedEvent`,
-    `SportSlotSkipService`, `TimingObservation`, `TimingObservationExtractor`, `TimingProfileListener`,
-    `TimingProfileService`, `TrainService`, `VolumeArcService`, `VolumeDecider`, `VolumeProgressionService`,
-    `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`, `WorkoutAutoCloseService`,
-    `WorkoutFinishedEvent`, `WorkoutService`, `WorkoutWindowQueryService`
+    `RunningService`, `SessionExerciseAssembler`, `SessionTimingCalculator`, `SetRecommendationService`,
+    `SportService`, `SportSessionLoggedEvent`, `SportSlotSkipService`, `TimingObservation`,
+    `TimingObservationExtractor`, `TimingProfileListener`, `TimingProfileService`, `TrainService`, `VolumeArcService`,
+    `VolumeDecider`, `VolumeProgressionService`, `WeeklyScheduledActivityService`, `WeightGapService`, `WeightSnapper`,
+    `WorkoutAutoCloseService`, `WorkoutExerciseChangeService`, `WorkoutFinishedEvent`, `WorkoutService`,
+    `WorkoutWindowQueryService`
   - **controllers→contract:** `ReadinessController`→`TrainReadinessApi`, `TrainController`→`TrainApi`
   - **mappers:** `MesoReportMapper`, `RunningMapper`, `TrainMapper`
   - **config:** `ClosingBlockProperties`, `HypertrophyProperties`, `MesoPlanProperties`, `ReadinessProperties`,
@@ -1537,7 +1538,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/train/train-readiness.yml` — 3 operations
   - **endpoints:** GET /api/train/readiness/today · POST /api/train/readiness/today ·
     DELETE /api/train/readiness/today
-- **Contract** `api/feature/train/train.yml` — 58 operations
+- **Contract** `api/feature/train/train.yml` — 60 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · PUT /api/train/mesocycles/{id}/muscle-priorities ·
     GET /api/train/mesocycles/{id}/report · POST /api/train/mesocycles/{id}/report/regenerate ·
@@ -1555,7 +1556,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/train/workouts · POST /api/train/workouts · GET /api/train/workouts/{id} ·
     POST /api/train/workouts/{id}/sets · PUT /api/train/workouts/{id}/sets/{setId} ·
     DELETE /api/train/workouts/{id}/sets/{setId} · POST /api/train/workouts/{id}/feedback ·
-    POST /api/train/workouts/{id}/skip · PUT /api/train/exercises/{exerciseId}/note ·
+    POST /api/train/workouts/{id}/skip · POST /api/train/workouts/{id}/exercises ·
+    POST /api/train/workouts/{id}/exercises/{exerciseId}/plan-sets · PUT /api/train/exercises/{exerciseId}/note ·
     PUT /api/train/workouts/{id}/note · POST /api/train/workouts/{id}/finish · GET /api/train/running-blocks ·
     POST /api/train/running-blocks · PUT /api/train/running-blocks/{id} · DELETE /api/train/running-blocks/{id} ·
     POST /api/train/running-blocks/{id}/activate · POST /api/train/running-blocks/{id}/close ·
@@ -1568,9 +1570,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useWorkoutDetail`, `useWorkoutNote`
   - **modules:** activityEnergy.ts, challengeApi.ts, challengeHooks.ts, customWorkoutHooks.ts, medalApi.ts,
     medalEvaluator.ts, medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoPlanHooks.ts, mesoPlanMock.ts,
-    mesoReportHooks.ts, mesoTemplateHooks.ts, readinessApi.ts, readinessHooks.ts, readinessMock.ts, running.ts,
-    runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts, timingProfileApi.ts, timingProfileHooks.ts,
-    train.ts, trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts, workoutDetailHooks.ts, workoutNoteHooks.ts
+    mesoReportHooks.ts, mesoTemplateHooks.ts, mockWorkoutEdits.ts, readinessApi.ts, readinessHooks.ts,
+    readinessMock.ts, running.ts, runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts,
+    timingProfileApi.ts, timingProfileHooks.ts, train.ts, trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts,
+    workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExerciseStoryPage.tsx, ExercisesPage.tsx,
     ExercisesSkeleton.tsx, GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayEditPage.tsx, MesoDayPage.tsx,
@@ -1580,8 +1583,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MesocycleSkeleton.tsx, RunningBlockBuilderPage.tsx, RunningPage.tsx, SportLogPage.tsx, SportPage.tsx,
     SportSkeleton.tsx, TrainTodayPage.tsx, TrainTodaySkeleton.tsx, TrainWeekJelekPage.tsx, TrainWeekMapPage.tsx,
     TrainWeekMozgasPage.tsx, TrainWeekPage.tsx, TrainWeekSkeleton.tsx, WorkoutReviewPage.tsx
-  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, FeedbackModal.tsx,
-    GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
+  - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, ExerciseScopeSheet.tsx,
+    FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
     SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
   - **components:** BodyMap.tsx, ChallengeGenerationLoader.tsx, CompactStepper.tsx, CrossLoadRow.tsx,
     DayBreakdownCard.tsx, DayLoadPanel.tsx, DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx, DoneBar.tsx,
@@ -1604,7 +1607,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts,
     weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 83 IT + 19 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 84 IT + 20 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1623,9 +1626,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
     `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WorkoutAutoCloseIT`,
     `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`,
-    `WorkoutDoneSemanticsIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
-    `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
-    `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWeightGapIT`, `WorkoutWindowQueryServiceIT`
+    `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`,
+    `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`,
+    `WorkoutTimingIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWeightGapIT`,
+    `WorkoutWindowQueryServiceIT`
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
     `MesoTemplatePopulator`, `ReadinessChoicePopulator`, `RunningPopulator`, `SleepLogPopulator`,
     `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
