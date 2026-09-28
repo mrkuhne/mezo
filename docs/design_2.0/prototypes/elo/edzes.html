@@ -3097,7 +3097,7 @@ function session(v){
   return `<header class="wtop"><button class="rb" data-go="#mai" aria-label="Vissza">‹</button><strong>Pull Day</strong><span class="cnt"><b>${fresh?0:DONE}</b>/${TOTAL} szett</span><button class="rb" data-toast="Kalauz az edzéshez">?</button><button class="rb" data-gbox="menu" aria-label="Menü">⋯</button></header>
   <div class="pbar">${seg}</div>
   ${EX.map((e,i)=>{const qs=exChal(e.n);return `<article class="wcard glass rise" style="--c:${muscleColor(e.k)};--i:${i+1}">
-    <div class="wc-head">${mchp(e.k)}<span class="grow"><strong>${e.n}</strong><small>${e.sets.length} szett${dchip(e.chg)}</small></span><button class="rb" data-gbox="recs" aria-label="Rekordok">${I('journal')}</button><button class="rb" data-gbox="menu" aria-label="Gyakorlat menü">⋮</button></div>
+    <div class="wc-head">${mchp(e.k)}<span class="grow"><strong>${e.n}</strong><small>${dchip(e.chg)}</small></span><button class="rb" data-gbox="recs" aria-label="Rekordok">${I('journal')}</button><button class="rb" data-gbox="menu" aria-label="Gyakorlat menü">⋮</button></div>
     ${qs.length||e.note||e.cue?`<div class="wpills">${qs.map(i=>qpill(i)).join('')}${e.note?`<span class="flat">${I('note')}${e.note}</span>`:''}${e.cue?`<span class="flat">${I('info')}${e.cue}</span>`:''}</div>`:''}
     <div class="sets"><div class="wset h"><span>#</span><span>KG</span><span>ISM</span><span>RIR</span><span></span><span></span></div>${(fresh?freshSets(e):e.sets).map((s,j)=>wset(s,j)).join('')}</div>
   </article>`}).join('')}
@@ -3106,7 +3106,7 @@ function session(v){
 }
 /* a gyakorlat küldetés-jelvénye: a vállalt ÉS az edzés közben elengedett is látszik */
 /* a múlt héthez mért lépés: kis címke a gyakorlat neve alatt (a Múlt hét / Ma a cél dobozok helyett) */
-const dchip=c=>{const k=c.startsWith('+')?'up':c.startsWith('−')?'down':'hold';return ` · <span class="dchip ${k}" title="A múlt héthez képest">${k==='up'?'↑ ':k==='down'?'↓ ':''}${c}</span>`};
+const dchip=c=>{const k=c.startsWith('+')?'up':c.startsWith('−')?'down':'hold';return `<span class="dchip ${k}" title="A múlt héthez képest">${k==='up'?'↑ ':k==='down'?'↓ ':''}${c}</span>`};
 const exChal=n=>CHAL.map((c,i)=>i).filter(i=>CHAL[i].ex===n&&(CHAL[i].acc||CHAL[i].rel));
 const qpill=i=>{const c=CHAL[i];return `<button class="flat qpill ${c.acc?'':'rel'}" style="--c:var(--gold)" data-gbox="qb" data-g="${i}" aria-label="${c.type} küldetés · ${c.acc?'vállalva':'elengedve'}">${I('quest')}${c.acc?`${c.type} · ${c.target}`:`elengedve · <s>${c.target}</s>`}</button>`};
 
