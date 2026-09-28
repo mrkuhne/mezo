@@ -17,7 +17,7 @@ import {
   useExpenditureHistory, useExpenditureWeeklyCard, useIntakeDays, useIntakeDayMark,
   useDismissWeeklyCard,
 } from '@/data/fuel/expenditureHooks'
-import { intakeDaysSeed, todayIso } from '@/data/fuel/expenditureLearningSeed'
+import { intakeDaysSeed, resetMockLearningState, todayIso } from '@/data/fuel/expenditureLearningSeed'
 import type { IntakeDayMarkResult } from '@/data/fuel/expenditureApi'
 import { addDays } from '@/shared/lib/dates'
 
@@ -25,6 +25,10 @@ afterEach(() => vi.unstubAllEnvs())
 
 describe('learned-expenditure hooks (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  // The mock mark/dismiss state lives at module scope (see expenditureLearningSeed.ts) so it
+  // stays consistent across every mounted range/QueryClient — which means it ALSO outlives a
+  // single test unless reset here.
+  afterEach(() => resetMockLearningState())
 
   it('serves the 12-week history with the learning switch on', () => {
     const { result } = renderHook(() => useExpenditureHistory(), { wrapper: makeHookWrapper() })
@@ -86,6 +90,44 @@ describe('learned-expenditure hooks (mock mode)', () => {
     await act(() => result.current.dismiss.dismiss(result.current.card.card!.weekStart))
     await waitFor(() => expect(result.current.card.card).toBeNull())
   })
+
+  // Fix round 1 (mezo-3n2so): the day-log (Task 11) reads a single day
+  // (`useIntakeDays(date, date)`), the learning page (Task 10) reads the last 14 — a mark made
+  // through one must show up in a range that mounts AFTER it, not just the one it was marked
+  // through.
+  it('a mark made via a 14-day range shows up in a freshly-mounted single-day range', async () => {
+    const suspicious = intakeDaysSeed().find((d) => d.status === 'suspicious' && d.date !== todayIso())
+    if (!suspicious) throw new Error('seed must carry an unmarked suspicious day before today')
+    const fourteenDayWrapper = makeHookWrapper()
+    const { result: wide } = renderHook(
+      () => ({ days: useIntakeDays(intakeDaysSeed()[0].date, todayIso()), mark: useIntakeDayMark() }),
+      { wrapper: fourteenDayWrapper },
+    )
+    await waitFor(() => expect(wide.current.days.days.length).toBeGreaterThan(0))
+    await act(async () => { await wide.current.mark.setMark(suspicious.date, 'complete') })
+
+    // A DIFFERENT QueryClient, mounted AFTER the mark, asking for just that one day — nothing in
+    // its own cache could know about the mark above unless the seed itself is canonical.
+    const { result: single } = renderHook(
+      () => useIntakeDays(suspicious.date, suspicious.date), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(single.current.days).toHaveLength(1))
+    expect(single.current.days[0].status).toBe('confirmed_complete')
+  })
+
+  it('a dismissed card stays dismissed across a remount (fresh QueryClient)', async () => {
+    const { result: first } = renderHook(() => ({
+      card: useExpenditureWeeklyCard(), dismiss: useDismissWeeklyCard(),
+    }), { wrapper: makeHookWrapper() })
+    expect(first.current.card.card).not.toBeNull()
+    await act(() => first.current.dismiss.dismiss(first.current.card.card!.weekStart))
+    await waitFor(() => expect(first.current.card.card).toBeNull())
+
+    // Remount with a brand-new QueryClient — only the canonical mock state (not the old
+    // client's cache) can carry the dismissal forward.
+    const { result: second } = renderHook(() => useExpenditureWeeklyCard(), { wrapper: makeHookWrapper() })
+    expect(second.current.card).toBeNull()
+    expect(second.current.isPending).toBe(false)
+  })
 })
 
 describe('learned-expenditure hooks (real mode)', () => {
@@ -132,5 +174,35 @@ describe('learned-expenditure hooks (real mode)', () => {
     expect(putPath).toBe('/api/goals/expenditure/days/2026-09-23/mark')
     expect(putBody).toEqual({ status: 'complete' })
     expect(outcome).toMatchObject({ appliedBaseAfterKcal: 2440, recomputed: true })
+  })
+
+  // Fix round 1 (mezo-3n2so): dismiss must invalidate the SAME set as mark/clear — a dismissed
+  // card is read through the same surfaces a re-chain is (fuelDay/goals/every expenditure read).
+  it('dismissWeeklyCard invalidates fuelDay, goals, and every expenditure/intake key', async () => {
+    server.use(http.post(
+      `${API_BASE}/api/goals/expenditure/weekly-card/2026-09-21/dismiss`,
+      () => new HttpResponse(null, { status: 204 }),
+    ))
+    const wrapper = makeHookWrapper()
+    const { result } = renderHook(() => useDismissWeeklyCard(), { wrapper })
+    const { QueryClient } = await import('@tanstack/react-query')
+    const keys: unknown[] = []
+    const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+      .mockImplementation(function (this: InstanceType<typeof QueryClient>, filters) {
+        keys.push(filters?.queryKey)
+        return Promise.resolve()
+      })
+    try {
+      await act(() => result.current.dismiss('2026-09-21'))
+    } finally {
+      spy.mockRestore()
+    }
+    const flat = keys.map((k) => JSON.stringify(k))
+    expect(flat).toContain(JSON.stringify(['fuelDay']))
+    expect(flat).toContain(JSON.stringify(['goals']))
+    expect(flat).toContain(JSON.stringify(['expenditureExplanation']))
+    expect(flat).toContain(JSON.stringify(['expenditureHistory']))
+    expect(flat).toContain(JSON.stringify(['expenditureWeeklyCard']))
+    expect(flat).toContain(JSON.stringify(['intakeDays']))
   })
 })
