@@ -101,6 +101,8 @@ export interface DietSettings {
   waterMl: number
   fiberG: number
   dayTypeShiftKcal: number
+  /** Weekly learned-expenditure switch (mezo-3n2so, spec §5.5) — off keeps the day's target formula-derived. */
+  learningEnabled: boolean
 }
 /** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
 export interface TutorialProgressEntry {

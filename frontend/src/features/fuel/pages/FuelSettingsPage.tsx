@@ -118,7 +118,10 @@ export function FuelSettingsPage() {
     carbsPctX10: splitPreset === 'custom' ? Math.round(cPct * 10) : null,
     fatPctX10: splitPreset === 'custom' ? Math.round(fPct * 10) : null,
     proteinTier, waterMl, fiberG, dayTypeShiftKcal,
-  }), [splitPreset, pPct, cPct, fPct, proteinTier, waterMl, fiberG, dayTypeShiftKcal])
+    // No UI toggle on this page yet (mezo-3n2so's learning switch lands on its own slice) —
+    // carry the saved value through unchanged so this save can't silently flip it.
+    learningEnabled: diet.learningEnabled,
+  }), [splitPreset, pPct, cPct, fPct, proteinTier, waterMl, fiberG, dayTypeShiftKcal, diet.learningEnabled])
   const projectable = useMemo(
     () => (customSumOk ? draft : { ...draft, splitPreset: diet.splitPreset, fatPctX10: diet.fatPctX10 }),
     [customSumOk, draft, diet.splitPreset, diet.fatPctX10])

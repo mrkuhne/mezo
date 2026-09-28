@@ -113,7 +113,7 @@ describe('FuelSettingsPage', () => {
     expect(client.getQueryData(['fuelSettings'])).toEqual({ mealsPerDay: 5, caffeineCutoff: '13:00' })
     expect(client.getQueryData(['dietSettings'])).toEqual({
       splitPreset: 'low_carb', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-      proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 50,
+      proteinTier: 'high', waterMl: 3200, fiberG: 35, dayTypeShiftKcal: 50, learningEnabled: true,
     })
   })
 

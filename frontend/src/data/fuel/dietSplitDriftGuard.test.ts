@@ -10,7 +10,7 @@ const BACKEND_FAT_SHARES = { balanced: 0.275, low_fat: 0.2, low_carb: 0.4, high_
 const BACKEND_PROTEIN_TIERS = { low: 1.6, moderate: 2.0, high: 2.2 }
 const BACKEND_GHOST = {
   splitPreset: 'balanced', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-  proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0,
+  proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0, learningEnabled: true,
 }
 
 describe('diet split FE↔backend drift-guard', () => {

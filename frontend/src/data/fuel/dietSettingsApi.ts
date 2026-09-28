@@ -18,6 +18,7 @@ const toWire = (settings: DietSettings): SetDietSettingsRequest => ({
   waterMl: settings.waterMl,
   fiberG: settings.fiberG,
   dayTypeShiftKcal: settings.dayTypeShiftKcal,
+  learningEnabled: settings.learningEnabled,
 })
 
 const fromWire = (r: DietSettingsResponse): DietSettings => ({
@@ -29,6 +30,7 @@ const fromWire = (r: DietSettingsResponse): DietSettings => ({
   waterMl: r.waterMl,
   fiberG: r.fiberG,
   dayTypeShiftKcal: r.dayTypeShiftKcal,
+  learningEnabled: r.learningEnabled,
 })
 
 export const dietSettingsApi = {
