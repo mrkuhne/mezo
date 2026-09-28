@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
+import io.mrkuhne.mezo.feature.people.service.MatchedPerson;
 import io.mrkuhne.mezo.feature.people.service.MentionDetectionService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
@@ -168,5 +169,20 @@ class MentionDetectionServiceIT extends ApiIntegrationTest {
         assertThat(blank).isZero();
         assertThat(unknown).isZero();
         assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner)).isEmpty();
+    }
+
+    @Test
+    void testMatchActivePersons_shouldFoldAndOrderByFirstMention_andPersistNothing() {
+        UUID userId = databasePopulator.populateUser("s8-match@test.local");
+        PersonEntity bence = personPopulator.createPerson(userId, "Bence");
+        PersonEntity dori = personPopulator.createPerson(userId, "Dóri");
+        personPopulator.createCandidate(userId, "Jelölt Juli", "jegyzet");
+        long before = mentionRepository.count();
+
+        List<MatchedPerson> matched = mentionDetectionService.matchActivePersons(userId,
+                "Dorival és Bencével nyertünk, Juli is ott volt", 5);
+
+        assertThat(matched).extracting(MatchedPerson::id).containsExactly(dori.getId(), bence.getId());
+        assertThat(mentionRepository.count()).isEqualTo(before);
     }
 }

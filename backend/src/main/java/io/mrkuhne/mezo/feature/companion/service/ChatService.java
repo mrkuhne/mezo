@@ -217,6 +217,8 @@ public class ChatService {
     private final ChatForgetService chatForgetService;
     /** S8 (mezo-d6ivw.12) — the memory-honesty blocks of the volatile half. */
     private final ChatMemoryBlocks chatMemoryBlocks;
+    /** S8 (mezo-d6ivw.12) — deterministic people recall; absent unless the people-recall switch is on. */
+    private final ObjectProvider<PeopleRecall> peopleRecall;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
 
@@ -254,7 +256,9 @@ public class ChatService {
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), routed.systemPrompt(),
                 routed.turnContext(), history, request.getContent(),
-                routed.memory().refs(), routed.memory().recalled(), routed.gear(), today);
+                routed.memory().refs(),
+                RecalledMemoriesEnvelope.withExtra(routed.memory().recalled(), routed.people().items()),
+                routed.gear(), today);
     }
 
     /**
@@ -274,7 +278,9 @@ public class ChatService {
         // plan-truth/ran-truth distinction to make.
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, toolCalls, toolOutcomes, audit.toRefsEnvelope(), degraded,
-                audit.recalled() == null ? recalled : audit.recalled());
+                // S8: a tool recall no longer drops the people disclosure the prepared turn carried
+                RecalledMemoriesEnvelope.withExtra(audit.recalled() == null ? recalled : audit.recalled(),
+                        RecalledMemoriesEnvelope.personItems(recalled)));
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         // S8 (mezo-d6ivw.12): a forget request is never learned from — the listeners skip it
@@ -397,7 +403,8 @@ public class ChatService {
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, provenance.ask(), provenance.result(), audit.toRefsEnvelope(), degraded,
-                audit.recalled() == null ? memory.recalled() : audit.recalled());
+                RecalledMemoriesEnvelope.withExtra(audit.recalled() == null ? memory.recalled() : audit.recalled(),
+                        routed.people().items()));
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
@@ -481,7 +488,7 @@ public class ChatService {
      * @param turnContext the VOLATILE half: lightened on CHAT, the full snapshot otherwise
      */
     private record RoutedContext(TurnGear gear, ChatMemoryPayload memory, String systemPrompt,
-                                 String turnContext) {}
+                                 String turnContext, PeopleRecall.Result people) {}
 
     /**
      * Route the turn, then assemble exactly the context that gear earns (spec 2026-09-16 §6.5).
@@ -497,10 +504,11 @@ public class ChatService {
      */
     private RoutedContext routeAndAssemble(UUID userId, AiConversationEntity conversation,
             String userContent, List<Turn> history, LocalDate today, List<ChatMemoryItem> forgotten) {
-        String blocks = memoryBlocks(userId, conversation, forgotten);
+        PeopleRecall.Result people = recallPeople(userId, userContent, today);
+        String blocks = memoryBlocks(userId, conversation, forgotten, people.block());
         if (conversationProperties.enabled()) {
             return new RoutedContext(TurnGear.CHAT, ChatMemoryPayload.empty(), stableSystemPrompt(userId),
-                    conversationContext(userId, conversation, today, blocks));
+                    conversationContext(userId, conversation, today, blocks), people);
         }
         TurnGear gear = turnGearRouter.route(userContent);
         ChatMemoryPayload memory = gear == TurnGear.CHAT
@@ -512,7 +520,7 @@ public class ChatService {
                 : turnContext(userId, today, memory.factsBlock(),
                         memory.memoriesBlock(), memory.graphBlock(), blocks,
                         conversation.getContextKind(), conversation.getContextDate());
-        return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext);
+        return new RoutedContext(gear, memory, stableSystemPrompt(userId), turnContext, people);
     }
 
     private String conversationContext(UUID userId, AiConversationEntity conversation, LocalDate today,
@@ -537,8 +545,15 @@ public class ChatService {
     }
 
     /** S8: every memory-honesty block of the volatile half, in one place. */
-    private String memoryBlocks(UUID userId, AiConversationEntity conversation, List<ChatMemoryItem> forgotten) {
-        return chatMemoryBlocks.forgetBlock(userId, forgotten);
+    private String memoryBlocks(UUID userId, AiConversationEntity conversation, List<ChatMemoryItem> forgotten,
+            String peopleBlock) {
+        return peopleBlock + chatMemoryBlocks.forgetBlock(userId, forgotten);
+    }
+
+    /** S8: deterministic people recall — EMPTY when the switch is off (bean absent). */
+    private PeopleRecall.Result recallPeople(UUID userId, String content, LocalDate today) {
+        PeopleRecall recall = peopleRecall.getIfAvailable();
+        return recall == null ? PeopleRecall.Result.EMPTY : recall.recall(userId, content, today);
     }
 
     /** S8: the forget request's own row — never extracted, and it remembers what it forgot. */

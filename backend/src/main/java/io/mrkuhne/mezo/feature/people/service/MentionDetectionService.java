@@ -7,7 +7,9 @@ import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +85,35 @@ public class MentionDetectionService {
             }
         }
         return written;
+    }
+
+    /**
+     * S8 (mezo-d6ivw.12): the SAME name/alias rule as {@link #detect}, read-only — nothing is
+     * persisted (the async ChatMentionListener still writes the mention). Active persons only,
+     * ordered by where they are first named, capped at {@code max}.
+     */
+    @Transactional(readOnly = true)
+    public List<MatchedPerson> matchActivePersons(UUID userId, String text, int max) {
+        if (text == null || text.isBlank() || max <= 0) {
+            return List.of();
+        }
+        String folded = TextFold.fold(text);
+        Map<PersonEntity, Integer> firstIndex = new LinkedHashMap<>();
+        for (PersonEntity person : personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
+            if (!"active".equals(person.getStatus())) {
+                continue;
+            }
+            PersonNeedles.of(person).stream()
+                    .mapToInt(needle -> PersonNeedles.indexAtWordStart(folded, needle))
+                    .filter(i -> i >= 0)
+                    .min()
+                    .ifPresent(i -> firstIndex.put(person, i));
+        }
+        return firstIndex.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .limit(max)
+                .map(e -> new MatchedPerson(e.getKey().getId(), e.getKey().getName()))
+                .toList();
     }
 
     /** Mondathatár: záró írásjel vagy sortörés után vágunk; a delimiter a mondatnál marad. */

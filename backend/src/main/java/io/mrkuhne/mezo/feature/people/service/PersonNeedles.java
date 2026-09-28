@@ -35,13 +35,18 @@ final class PersonNeedles {
      * „rekanak") a szóvégi határ-őrzés a valódi találatok zömét dobná el.
      */
     static boolean containsAtWordStart(String foldedHaystack, String foldedNeedle) {
+        return indexAtWordStart(foldedHaystack, foldedNeedle) >= 0;
+    }
+
+    /** The first word-start index of the needle, or -1 (S8: recall orders by first mention). */
+    static int indexAtWordStart(String foldedHaystack, String foldedNeedle) {
         int i = -1;
         while ((i = foldedHaystack.indexOf(foldedNeedle, i + 1)) >= 0) {
             if (i == 0 || !Character.isLetterOrDigit(foldedHaystack.charAt(i - 1))) {
-                return true;
+                return i;
             }
         }
-        return false;
+        return -1;
     }
 
     private static void add(List<String> needles, String raw) {
