@@ -99,6 +99,8 @@ export type Icon3DName =
   // Check-in 2.0 (mezo-ck2) — owner OK 2026-09-27 on prototypes/elo/nap.html#ikonok
   | 't-mood' | 't-rested' | 't-soreness' | 't-pain' | 't-motivation' | 't-hunger' | 't-craving'
   | 't-day' | 't-digestion'
+  // Edzés csere / hozzáadás (mezo-mobji) — owner OK 2026-09-28 on prototypes/elo/edzes.html#ikonok
+  | 't-swap' | 't-addex'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

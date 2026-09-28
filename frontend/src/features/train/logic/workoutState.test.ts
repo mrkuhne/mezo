@@ -20,6 +20,8 @@ import {
   warmupSlotCount,
   slotIndex,
   prescribedAt,
+  swapExercise,
+  addExercise,
   type SessionExerciseInput,
 } from '@/features/train/logic/workoutState'
 
@@ -396,5 +398,64 @@ describe('set edit + slot removal (mezo-l3on)', () => {
       expect(pendingByExercise(s).find((r) => r.id === 'a')).toBeUndefined()
       expect(pendingSetCount(s)).toBe(5) // b:3 + c:2, a contributes 0 (not -1)
     })
+  })
+})
+
+// ── Mid-workout swap / add (mezo-mobji) ─────────────────────────────────────
+describe('swapExercise / addExercise (mezo-mobji)', () => {
+  const W3 = [ex('a', 0, 3), ex('b', 0, 3)]
+  const set = { weight: 100, reps: 9, rir: 1 }
+
+  test('a swap before any set takes the slot and forgets the old exercise', () => {
+    let s = makeSession(W3)
+    s = addExtraSet(s, 'a')
+    const next = swapExercise(s, 'a', ex('x', 0, 4))
+    expect(next.order).toEqual(['x', 'b'])
+    expect(effectiveSetCount(next, 'x')).toBe(4)
+    expect('a' in next.planned).toBe(false)
+    expect(currentExerciseId(next)).toBe('x')
+  })
+
+  test('a swap mid-exercise keeps the logged sets and puts the new one right after', () => {
+    let s = makeSession(W3)
+    s = completeSet(completeSet(s, 'a', set), 'a', set)
+    const next = swapExercise(s, 'a', ex('x', 0, 1))
+    expect(next.order).toEqual(['a', 'x', 'b'])
+    expect(effectiveSetCount(next, 'a')).toBe(2)
+    expect(next.logged.a).toHaveLength(2)
+    expect(currentExerciseId(next)).toBe('x')
+    expect(pendingSetCount(next)).toBe(1 + 3)
+  })
+
+  test('the kept exercise drops its extra and removed slots too', () => {
+    let s = makeSession(W3)
+    s = addExtraSet(completeSet(s, 'a', set), 'a')
+    const next = swapExercise(s, 'a', ex('x', 0, 3))
+    expect(effectiveSetCount(next, 'a')).toBe(1)
+    expect(next.extra.a ?? 0).toBe(0)
+  })
+
+  test('a swap is identity-stable when the old id is unknown', () => {
+    const s = makeSession(W3)
+    expect(swapExercise(s, 'zzz', ex('x', 0, 3))).toBe(s)
+  })
+
+  test('an add goes last, or before the given id', () => {
+    const s = makeSession(W3)
+    expect(addExercise(s, ex('y', 0, 3)).order).toEqual(['a', 'b', 'y'])
+    expect(addExercise(s, ex('y', 0, 3), 'b').order).toEqual(['a', 'y', 'b'])
+    expect(effectiveSetCount(addExercise(s, ex('y', 0, 3)), 'y')).toBe(3)
+  })
+
+  test('an id the refreshed plan already merged is moved, never duplicated', () => {
+    const merged = mergePlan(completeSet(makeSession(W3), 'a', set), [ex('a', 0, 3), ex('b', 0, 3), ex('x', 0, 2)])
+    expect(merged.order).toEqual(['a', 'b', 'x'])
+    expect(swapExercise(merged, 'a', ex('x', 0, 2)).order).toEqual(['a', 'x', 'b'])
+    expect(addExercise(mergePlan(makeSession(W3), [ex('y', 0, 3)]), ex('y', 0, 3), 'b').order).toEqual(['a', 'y', 'b'])
+  })
+
+  test('mergePlan leaves a swapped-in exercise where the swap put it', () => {
+    const s = swapExercise(completeSet(makeSession(W3), 'a', set), 'a', ex('x', 0, 2))
+    expect(mergePlan(s, [ex('a', 0, 1), ex('x', 0, 2), ex('b', 0, 3)])).toBe(s)
   })
 })

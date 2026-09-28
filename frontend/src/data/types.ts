@@ -1541,6 +1541,15 @@ export interface LoggedWorkoutExercise {
   // Demo stills (catalog-resolved, mezo-8xdl). imageStartUrl is the presence flag.
   imageStartUrl?: string | null
   imageEndUrl?: string | null
+  /** Mid-workout swap/add (mezo-mobji): set on an exercise changed in the open workout —
+   *  TODAY („Csak ma”) or MESO („Mezociklusra is”). */
+  changeScope?: 'TODAY' | 'MESO' | null
+  /** The exercise this one replaced in the open workout. */
+  replacesName?: string | null
+  /** On a swapped-out exercise that keeps its logged sets — the replacement's name. */
+  replacedByName?: string | null
+  /** Whether a „Mezociklusra is” change may target it (false: added today / closing block). */
+  planSlot?: boolean
 }
 export interface ChallengeRef { kind: string; label: string }
 export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo' | 'overload'

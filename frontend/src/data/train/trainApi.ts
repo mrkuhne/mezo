@@ -21,6 +21,8 @@ export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
 export type SetUpdateRequest = components['schemas']['SetUpdateRequest']
 export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
+export type WorkoutExerciseChangeRequest = components['schemas']['WorkoutExerciseChangeRequest']
+export type WorkoutExerciseChangeResponse = components['schemas']['WorkoutExerciseChangeResponse']
 export type WorkoutNoteRequest = components['schemas']['WorkoutNoteRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
 export type PrescribedSet = components['schemas']['PrescribedSet']
@@ -150,6 +152,18 @@ export const trainApi = {
     apiFetch<void>(`/api/train/workouts/${workoutId}/skip`, {
       method: 'POST',
       body: JSON.stringify({ exerciseId } satisfies WorkoutSkipRequest),
+    }),
+  /** Swap or add an exercise mid-workout (mezo-mobji) — returns the refreshed today payload. */
+  changeExercise: (workoutId: string, body: WorkoutExerciseChangeRequest): Promise<WorkoutExerciseChangeResponse> =>
+    apiFetch<WorkoutExerciseChangeResponse>(`/api/train/workouts/${workoutId}/exercises`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  /** "Szett hozzáadása → Minden hétre" (mezo-mobji): bumps ONE plan row, no day re-create. */
+  addPlanWorkingSets: (workoutId: string, exerciseId: string, delta = 1): Promise<void> =>
+    apiFetch<void>(`/api/train/workouts/${workoutId}/exercises/${exerciseId}/plan-sets`, {
+      method: 'POST',
+      body: JSON.stringify({ delta }),
     }),
   saveWorkoutFeedback: (workoutId: string, body: WorkoutFeedbackInput[]): Promise<void> =>
     apiFetch<void>(`/api/train/workouts/${workoutId}/feedback`, {
