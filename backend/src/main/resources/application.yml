@@ -918,6 +918,11 @@ mezo:
       # V3.3: pattern-facts promoted within this many days get an in-chat acknowledgment
       # block ("ezt megtanultam rólad"); 0 = off
       pattern-ack-days: 3
+    # S8 (mezo-d6ivw.12): one-shot rewrite of title-only pattern facts into full sentences.
+    # "off" | dry-run | apply — QUOTED: a bare off is YAML boolean false. Prod flips it for one
+    # deploy via MEZO_COMPANION_FACTTEXTBACKFILL_MODE; apply only after the owner's OK.
+    fact-text-backfill:
+      mode: "off"
     # Spec 2026-09-16 (mezo-rj214.7): a turn's gear decides how much thinking it earns.
     # The gear never decides WHICH MODEL plans — the smart tier always does.
     turn:
@@ -959,6 +964,11 @@ mezo:
       # Max learned_fact candidates persisted per chat turn (dedupe against confirmed facts
       # + pending candidates runs first)
       max-candidates-per-turn: 3
+    # S8 (mezo-d6ivw.12): the chat recalls the people a message names — deterministically (the
+    # MentionDetectionService TextFold/word-start rule), before routing. Off ⇒ no block, no
+    # "Emlékszem" disclosure; the planner can still fetch people through get_personal_context.
+    people-recall:
+      enabled: true
     embedding:
       # V2.1 memory vectors (L1 episodic recall) — embedding model behind the EmbeddingPort.
       # The 768 dimension is structural (memory_embedding vector(768) + EmbeddingPort.DIMENSIONS), not config.
@@ -2132,9 +2142,9 @@ mezo:
           metric-b: late-meal-hour
           lag-days: 0
         # --- Check-in 2.0 (mezo-ck2, spec §3.8/§3.8b) — az új check-in tételek 15 párja ---
-        # day-score~checkin-day kimarad: a napi pontszám nem MetricKey-sorozat.
-        # meal-processing~checkin-digestion helyett meal-score~checkin-digestion: nincs külön
-        # feldolgozottság/NOVA-arány metrika; a legközelebbi a NOVA-dimenziót is súlyozó étkezés-pontszám.
+        # Follow-up B: day-score~checkin-day (DAY_SCORE) és nova4-kcal~checkin-digestion (NOVA4_KCAL_PCT)
+        # pótolja a korábban kihagyott / helyettesített két párt; a meal-score~checkin-digestion helyettesítő
+        # kiesett (a NOVA-arány pontosan azt méri, amire a pontszám csak közelítés volt).
         - key: sleep-duration~checkin-rested
           category: physiology
           label: Fiziológia
@@ -2159,18 +2169,20 @@ mezo:
           metric-a: sleep-quality
           metric-b: checkin-rested
           lag-days: 0
-        - key: sleep-duration~next-day-checkin-craving
+        # sleep_log.date az ÉBREDÉS reggele, így lag 0 = az éjszaka UTÁNI nap (follow-up B javítás;
+        # a korábbi sleep-duration~next-day-checkin-craving lag 1 két nappal a lefekvés utánra mért).
+        - key: sleep-duration~checkin-craving
           category: physiology
           label: Fiziológia
-          title: "Alváshossz ↔ másnapi sóvárgás"
-          mechanism: "A rövid alvás felhangolhatja az étvágyat — másnap erősebb sóvárgás jöhet."
+          title: "Alváshossz ↔ sóvárgás az éjszaka utáni napon"
+          mechanism: "A rövid alvás felhangolhatja az étvágyat — az utána következő napon erősebb sóvárgás jöhet."
           question: "Többet kívánsz valamit a rövid éjszakák után?"
           expected-direction: negative
           when-positive-hu: "a hosszabb éjszakák után {erősség} erősebb volt a sóvárgás"
           when-negative-hu: "a hosszabb éjszakák után {erősség} gyengébb volt a sóvárgás"
           metric-a: sleep-duration-h
           metric-b: checkin-craving
-          lag-days: 1
+          lag-days: 0
         - key: checkin-stress~checkin-craving
           category: trigger
           label: Kiváltó ok
@@ -2291,17 +2303,29 @@ mezo:
           metric-a: checkin-mood
           metric-b: checkin-day
           lag-days: 0
-        - key: meal-score~checkin-digestion
+        - key: nova4-kcal~checkin-digestion
           category: physiology
           label: Fiziológia
-          title: "Étkezés-pontszám ↔ emésztés"
-          mechanism: "A kevésbé feldolgozott, kiegyensúlyozott étkezés (a pontszám NOVA-része) könnyebb gyomorral járhat."
-          question: "Könnyebb a gyomrod, ha jól eszel?"
-          expected-direction: positive
-          when-positive-hu: "a jobb étkezés-pontszámú napokon {erősség} könnyebb volt a gyomrod"
-          when-negative-hu: "a jobb étkezés-pontszámú napokon {erősség} nehezebb volt a gyomrod"
-          metric-a: meal-score
+          title: "Ultrafeldolgozott arány ↔ emésztés"
+          mechanism: "Az ultrafeldolgozott (NOVA 4) ételekben gazdag napokon nehezebb, puffadtabb lehet a gyomor."
+          question: "Nehezebb a gyomrod a sok feldolgozott étel után?"
+          expected-direction: negative
+          when-positive-hu: "a feldolgozottabb étrendű napokon {erősség} könnyebb volt a gyomrod"
+          when-negative-hu: "a feldolgozottabb étrendű napokon {erősség} nehezebb volt a gyomrod"
+          metric-a: nova4-kcal-pct
           metric-b: checkin-digestion
+          lag-days: 0
+        - key: day-score~checkin-day
+          category: response
+          label: Reakció
+          title: "Az app napi pontszáma ↔ a nap mérlege"
+          mechanism: "Az app a naplóidból pontozza a napot, te este a saját érzésed szerint — kiderül, mennyire egyezik a kettő."
+          question: "Egyezik az app pontszáma azzal, ahogy te értékeled a napot?"
+          expected-direction: positive
+          when-positive-hu: "a magasabb app-pontszámú napokat {erősség} te is jobbnak értékelted"
+          when-negative-hu: "a magasabb app-pontszámú napokat {erősség} te rosszabbnak értékelted"
+          metric-a: day-score
+          metric-b: checkin-day
           lag-days: 0
         - key: social-mentions~checkin-connection
           category: response
@@ -2972,10 +2996,24 @@ mezo:
     default-learning-enabled: true
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
-    default-increment: 2.5    # fallback load step when a type has no explicit increment
+    # Per-type load increment — since mezo-bk7sn ONLY the weight memory's near-swap threshold
+    # (gap-near-fraction below); the progression step itself is step-percent.
+    default-increment: 2.5
     increment:
-      compound: 5.0           # compound lifts progress in 5 kg jumps
-      isolation: 2.5          # isolation lifts in 2.5 kg jumps
+      compound: 5.0
+      isolation: 2.5
+    # Proportional progression step (mezo-bk7sn): at the range top the next REAL weight nearest to
+    # load × (1 + step-percent) is prescribed if the jump is ≤ max-jump (≤ max-jump-reserve one
+    # step further when RIR ≥ target + reserve-slack); a bigger jump first builds up to
+    # rep-overflow reps past the range top (reps before load), then is forced.
+    step-percent:
+      compound: 0.025
+      isolation: 0.05
+    default-step-percent: 0.05
+    max-jump: 0.10
+    max-jump-reserve: 0.15
+    reserve-slack: 2
+    rep-overflow: 3
     default-warmup-sets: 2
     # Per-machine weight memory (mezo-bk7l2): a swap within max(increment, 10% of the prescribed
     # kg) is evidence the prescribed weight is missing on that machine; a bigger one is a choice.

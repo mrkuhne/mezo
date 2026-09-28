@@ -44,7 +44,7 @@ import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { MedalChip } from '@/features/train/components/MedalChip'
-import { progressionChip } from '@/features/train/logic/progressionChip'
+import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
 import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import { Icon3D } from '@/shared/ui/clay'
 import {
@@ -133,9 +133,11 @@ export function WorkoutCard({
   // FIRST-EVER exercise (no lastWeek to compare — the banner's left cell is an em dash):
   // there the rationale explains the starting choice, so it keeps that one slot. The real
   // coaching cue arrives with its own field (mezo-b516k's cue work).
+  // mezo-bk7sn: a target past the range top (reps before a too-big weight jump) carries its
+  // reason in the same slot — "13" in a 10–12 range is not self-explaining.
   const cue = exercise.lastWeek == null
     ? (exercise.rationale ?? exercise.progression?.rationale ?? null)
-    : null
+    : overflowWhy(exercise.repMax, exercise.progression)
 
   // The draft for the ONE editable row (the cursor slot). Reset whenever the cursor
   // moves or the slot count changes — a removeSet splices the prescription, so the
@@ -169,8 +171,20 @@ export function WorkoutCard({
   }, [id, cursor, count])
 
   // Skipped = the dashed free state (bible §3 rank 4), everything else ONE glass card.
-  const cardClass = 'wo-card' + (skipped ? ' is-skipped uv-empty' : ' glass' + (complete ? ' is-complete' : ''))
-  const hasPills = challenges.length > 0 || !!note || (!skipped && !!cue)
+  // Mid-workout swap/add (mezo-mobji): a swapped-out exercise stays with only its logged sets,
+  // faded and without a menu; a swapped-in / added one says so, and a never-done one says who
+  // picks the first weight.
+  const swappedOut = !!exercise.replacedByName
+  const change = !skipped && exercise.changeScope
+    ? exercise.replacesName
+      ? { icon: exercise.changeScope === 'MESO' ? 't-peak' as const : 't-swap' as const,
+          text: `${exercise.changeScope === 'MESO' ? 'Mezociklusban' : 'Csak ma'} · a ${exercise.replacesName} helyett` }
+      : { icon: exercise.changeScope === 'MESO' ? 't-peak' as const : 't-addex' as const,
+          text: exercise.changeScope === 'MESO' ? 'Mezociklusba felvéve' : 'Ma hozzáadva' }
+    : null
+  const firstTime = !skipped && !!exercise.changeScope && exercise.lastWeek == null && !cue
+  const cardClass = 'wo-card' + (skipped ? ' is-skipped uv-empty' : ' glass' + (complete ? ' is-complete' : '')) + (swappedOut ? ' is-swapped' : '')
+  const hasPills = challenges.length > 0 || !!note || (!skipped && !!cue) || swappedOut || !!change || firstTime
 
   return (
     <section
@@ -188,7 +202,7 @@ export function WorkoutCard({
           {skipped && <small className="is-skip">KIHAGYVA</small>}
           {/* The one-glance vs-last-week chip (mezo-mgu2r) — it replaced the Múlt hét / Ma a cél
               cells: the pre-filled rows already carry today's target. */}
-          {!skipped && exercise.progression && (() => {
+          {!skipped && !swappedOut && exercise.progression && (() => {
             const chip = progressionChip(exercise.progression)
             return <span className={`wo-delta is-${chip.tone}`} title="A múlt héthez képest">{chip.text}</span>
           })()}
@@ -201,19 +215,39 @@ export function WorkoutCard({
         >
           <Icon3D name="t-journal" size={22} />
         </button>
-        <button
-          type="button"
-          className="wo-card-menu"
-          aria-haspopup="dialog"
-          aria-label={`${exercise.name} · további műveletek`}
-          onClick={onOpenMenu}
-        >
-          ⋮
-        </button>
+        {!swappedOut && (
+          <button
+            type="button"
+            className="wo-card-menu"
+            aria-haspopup="dialog"
+            aria-label={`${exercise.name} · további műveletek`}
+            onClick={onOpenMenu}
+          >
+            ⋮
+          </button>
+        )}
       </header>
 
       {hasPills && (
         <div className="wos-pills">
+          {swappedOut && (
+            <span className="wo-change">
+              <Icon3D name="t-swap" size={18} />
+              Lecserélve → {exercise.replacedByName} · {logged.length} szett kész
+            </span>
+          )}
+          {change && (
+            <span className={`wo-change is-${exercise.changeScope === 'MESO' ? 'meso' : 'today'}`}>
+              <Icon3D name={change.icon} size={18} />
+              {change.text}
+            </span>
+          )}
+          {firstTime && (
+            <div className="wo-cue">
+              <Icon3D name="t-info" size={18} />
+              <p>Első alkalom — a súlyt te adod meg, innentől jön a javaslat</p>
+            </div>
+          )}
           {challenges.map((c) => (
             <button
               key={c.id}

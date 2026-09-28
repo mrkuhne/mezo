@@ -67,6 +67,7 @@ public class FactExtractionService {
     private final LlmCallContextHolder llmCallContextHolder;
     private final AppNotificationEmitter appNotificationEmitter;
     private final PromptPersona promptPersona;
+    private final MessageExtractionGate extractionGate;
 
     /** One extracted item as the LLM returns it. */
     record ExtractedFact(String fact, String category, String owner) {}
@@ -90,6 +91,11 @@ public class FactExtractionService {
                 .filter(f -> CATEGORIES.contains(f.category()))
                 .toList();
         if (extracted.isEmpty()) {
+            return 0;
+        }
+        // S8 (mezo-d6ivw.12): the turn was forgotten while the LLM call ran — drop everything.
+        if (extractionGate.isBlocked(userMessageId)) {
+            log.info("Fact extraction for message {} dropped — the turn was forgotten", userMessageId);
             return 0;
         }
 

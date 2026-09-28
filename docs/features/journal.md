@@ -57,6 +57,8 @@ Three things ship together (the first two from W1.1, the third added by W1.4):
   `memory_embedding` in sync through the **existing single write path**,
   `MemoryEmbeddingWriter` (companion.md §"Embed pipeline" / §4). Journal never touches
   `memory_embedding` or `EmbeddingPort` itself — the memory write is entirely companion's.
+  (The same writer's chat-turn unit skips a turn the user asked to forget — `mezo-tdabt`,
+  companion.md §3 "Forget really forgets"; journal units are unaffected.)
 - **The `decision_entry` aggregate** (`feature/journal`, same package, `DecisionService`) — create
   (server-captures the context snapshot + defaults `reviewDue`), list (newest-first, no params),
   review (stamps the outcome, re-runnable). Own `DecisionEntrySavedEvent` → `DecisionEmbeddingListener`

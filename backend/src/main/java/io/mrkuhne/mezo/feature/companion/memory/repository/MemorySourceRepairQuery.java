@@ -16,6 +16,8 @@ public class MemorySourceRepairQuery {
     private final NamedParameterJdbcTemplate jdbc;
 
     // Deliberate source projection, not arbitrary table access. Ownership/soft deletion apply at every branch.
+    // mezo-tdabt: a forgotten chat turn (paired user row extraction_blocked) is not a live source, so
+    // orphaned() hands its projected item to the repair's suppress and changed() never re-projects it.
     private static final String SOURCES = """
         with sources as (
           select 'journal_entry' as kind, id, text as content, occurred_on as day
@@ -43,6 +45,7 @@ public class MemorySourceRepairQuery {
             cast(a.created_at as date)
             from ai_message a where a.created_by=:owner and not a.is_deleted and a.role='assistant'
               and exists (select 1 from ai_conversation c where c.id=a.conversation_id and c.created_by=:owner and not c.is_deleted)
+              and not """ + MemorySourceVisibilitySql.forgottenTurn("a", "owner") + """
         ), live_sources as (select * from sources where content is not null and content !~ '^[[:space:]]*$')
         """;
 

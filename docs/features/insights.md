@@ -233,7 +233,8 @@ renders inside `PatternFrame` → the shared **`DetailFrame`** (`components/Deta
 `#minta/*`, `#elore/*`, `#kiserlet-oldal/*`, owner OK 2026-09-24).** The pattern, prediction and
 experiment detail pages still share the outer shell from `components/DetailHero.tsx`: `DetailFrame`
 (the kit's glass back pill `PageHead glass` + a quiet right-aligned eyebrow „Minta részletei" /
-„Előrejelzés" / „Kísérlet", an `EntranceGroup` body with 64px end padding so the last card clears
+„Előrejelzés" / „Kísérlet" — or, instead of it, an `aside` node; the props type requires exactly one
+of `eyebrow` / `aside`, `mezo-bip2w` — an `EntranceGroup` body with 64px end padding so the last card clears
 the glass bar and FAB), `SectionHead`, and `DetailState` (dashed empty / error / loading). **Since
 the `mezo-rstt7` rewrite the pattern page no longer uses `DetailHero`/`StatePill`/`DayRing`/
 `DecisionRow`/`DecisionNote`** — those stay `DetailHero.tsx` exports used only by the prediction and
@@ -302,10 +303,17 @@ below (or absorbed into `readPattern` itself, which needed no visual counterpart
    catalogue pair with no persisted row (`pattern == null`).
 2. **„Mit mutat az adat" → `PatternZoneChart`** — the page's one glass card, a two-zone SVG: binary
    A metrics split into two fixed columns (jittered points, no false continuous axis), continuous A
-   metrics split at the median into a lo/hi zone; both draw a zone-average label only once
+   metrics split near the middle into a lo/hi zone (`patternZones`, `mezo-bip2w`: the cut always
+   falls between two DIFFERENT A values — the one nearest `n/2`, a tie going to the lower cut — so
+   equal days never straddle zones; all-equal A ⇒ one zone spans the chart and the second stays
+   empty, no average); both draw a zone-average label only once
    `reading.dayCount >= reading.minN`, no group is short, and the state is not `gyulik`/`allo`/
    `kerdes` (an average from too few days would overclaim; the note under the chart says when it
-   will appear). Dot labels, tooltip and table use the human date and a decimal comma.
+   will appear). Dot labels, tooltip and table use the human date and a decimal comma. Every value
+   on the page (zone averages, both axes' ticks, tooltip, dot labels, the days table, the answer
+   sentence) goes through ONE formatter, `formatSeriesValue(kind, value)` in `patternReading.ts`,
+   keyed on the wire `metricA/BValueKind` — not on `metricFormat.ts`'s hour-key list — so an
+   uncatalogued (e.g. reflection) `clock_hour` series still reads „01:30" (`mezo-bip2w`).
    Every dot is a `role="button"`, tappable (or Enter/Space) to open a small tooltip with that day's
    two values. **Selection is the chart's OWN `useState`**, not page or router state: a tap never
    re-runs the page's entrance animation and never moves scroll (see the style-bible lesson below).
@@ -317,7 +325,8 @@ below (or absorbed into `readPattern` itself, which needed no visual counterpart
    „aznap" / „másnap" / „N nappal később") and the window (`windowDays` nap).
 4. **„Ami eddig történt" (`HistoryFold`)** — a `<details>` fold: a plan-driven (reflection) row
    shows `EvidenceLog`; everything else shows the catalogue's `PatternJournal`; both empty ⇒ one
-   honest „Még nincs jelentős esemény" line. Unchanged from before this rewrite.
+   honest „Még nincs jelentős esemény" line, and the fold's summary reads „még semmi" instead of
+   „0 esemény" (`mezo-bip2w`).
 5. **`PatternImpactCard`** — unchanged: renders only for a persisted pattern or actual impact
    (fact/predictions/experiments/challenges).
 6. **„Számok, ha érdekel" (`Diagnostics`)** — unchanged fold: window, paired days, group ratio,
@@ -361,6 +370,13 @@ then reads the band: `lo > 0` → `eros`, `hi < 0` → `fordit`, `|support| < 0.
 else `halvany`/`halvanyFordit` by the sign of `support`. `PatternLeanMeter` draws `support` as a dot
 and `[lo, hi]` as the shaded band on a fixed −1..+1 track (labelled „Épp fordítva" / „Nincs hatás" /
 „Igaz rád"); a `then` reading (see below), when present, draws as a lavender ghost dot alongside it.
+Its `role="img"` label names both: „Merre húz az adat: … . Amikor megerősítetted: … ." — the `then`
+side comes from `leanSideOf(then)` (= `leanSide(classify(then))`, the same classification).
+
+**`minN` waits for the monitor (`mezo-bip2w`).** A row with no `testPlan` whose gate gives no
+`missingDays` can only learn its day minimum from the monitor (`monitor.minN`); while that query is
+still pending the page renders its loading state instead of reading with the last-resort 8, so the
+answer never flips on screen when the monitor lands.
 
 **Revoke ≠ delete.** The confirmed hero's only action is the quiet „Mégsem igaz rám —
 visszavonom" link. It calls the exact same `usePatternActions().decide(pattern.id, 'reject')` any
@@ -564,7 +580,36 @@ independent of the companion switch, unaffected by S6.
 
 
 ### 2.5 Chat (`pages/ChatPage.tsx`) — ✅ REAL since companion V0.4 (chips real since V0.5)
-At `/mezo/chat`. **Not a tile — the hub's composer-shaped opener is its door** (§2.0), which is the point: the chat is the companion, so it sits above the directory rather than in it. The page renders its own „Mezo · társ" header (a `ClaySpot` orb since Design 2.0); since `mezo-oq8z` this is the route's **only** header — `AppLayout` suppresses the generic shell `AppHeader` here, and `.mzc-chathead` sticks directly at `top: 0`, eliminating the former double-header stack without removing any conversation controls. The companion conversation is **dual-mode** over `useChat(selection)` + `useChatActions(selection, onCreated)` + `useConversations()` (from `@/data/hooks`; backend + hook details in [`companion.md`](companion.md) §3/§5.1). Header: "Mezo · társ" + an **honest mode subtitle** (`demo beszélgetés` / `Gemini · élő` / `új beszélgetés` / `a társ most nem elérhető`) — the Phase-1 fake "`23 facts active`" string and "L4 aktív" chip are gone — plus two chip actions: **Beszélgetések** (opens `sheets/ConversationPickerSheet.tsx`) and **Új beszélgetés**. **Real mode:** bootstraps the selected conversation + history, `send()` renders the optimistic user bubble + thinking-dots, then the answer **streams in** (SSE deltas into a draft bubble) and the persisted pair lands in the `['chat', <selection>]` cache; stream failure → inline error bubble + history refetch; companion switch off (404) → degraded banner (`A társ jelenleg nincs bekapcsolva…`) + disabled composer, no dead-end (IDENT-3). **Mock mode:** the Phase-1 demo — `initialChat` seed + the 1.2s `cannedReply` (branches on `"fáradt"`, fabricated `tools`/`refs`). Only the seeded `mock-conversation` carries that transcript: a conversation started during the session opens EMPTY and gets its own auto-title from the first message, exactly as it would against the backend (`mockThread()` in `chatHooks.ts` — returning the seed for every id made new mock threads inherit the demo's messages). **„Emlékek · N" — the recalled-memory disclosure row (`components/RecalledMemoriesRow.tsx`, `mezo-6dii.7`).** An answer assembled from the shared memory platform ([`companion.md`](companion.md) §4) carries its retrieved items as a collapsed row under the bubble; opening it lists each item with its kind label and a door to the source. In **NEW serving mode** each card that carries a stable audit id also gets a feedback group (`role="group"`, „Visszajelzés erről az emlékről"): **hasznos / nem releváns**, and — only for candidates that have a canonical `memory_item` — a **two-tap suppression** (the second tap reads „Biztosan ne használd többé?"). Suppression flips the canonical item to `suppressed` so every later retriever skips it; **nothing is deleted** — neither the source record nor its audit history. Fact and graph candidates have no canonical item, so they keep useful/irrelevant and are never offered suppression (the API rejects such a request too). The page batch-loads the feedback state for the newest 100 visible result ids in ONE request (`data/insights/memoryFeedbackHooks.ts`) and writes optimistically with rollback on failure; a pre-rollout card with no retrieval id stays **display-only** rather than rendering a dead control.
+At `/mezo/chat`. **Not a tile — the hub's composer-shaped opener is its door** (§2.0), which is the point: the chat is the companion, so it sits above the directory rather than in it. The page renders its own „Mezo · társ" header (a `ClaySpot` orb since Design 2.0); since `mezo-oq8z` this is the route's **only** header — `AppLayout` suppresses the generic shell `AppHeader` here, and `.mzc-chathead` sticks directly at `top: 0`, eliminating the former double-header stack without removing any conversation controls. The companion conversation is **dual-mode** over `useChat(selection)` + `useChatActions(selection, onCreated)` + `useConversations()` (from `@/data/hooks`; backend + hook details in [`companion.md`](companion.md) §3/§5.1). Header: "Mezo · társ" + an **honest mode subtitle** (`demo beszélgetés` / `Gemini · élő` / `új beszélgetés` / `a társ most nem elérhető`) — the Phase-1 fake "`23 facts active`" string and "L4 aktív" chip are gone — plus two chip actions: **Beszélgetések** (opens `sheets/ConversationPickerSheet.tsx`) and **Új beszélgetés**. **Real mode:** bootstraps the selected conversation + history, `send()` renders the optimistic user bubble + thinking-dots, then the answer **streams in** (SSE deltas into a draft bubble) and the persisted pair lands in the `['chat', <selection>]` cache; stream failure → inline error bubble + history refetch; companion switch off (404) → degraded banner (`A társ jelenleg nincs bekapcsolva…`) + disabled composer, no dead-end (IDENT-3). **Mock mode:** the Phase-1 demo — `initialChat` seed + the 1.2s `cannedReply` (branches on `"fáradt"`, fabricated `tools`/`refs`). Only the seeded `mock-conversation` carries that transcript: a conversation started during the session opens EMPTY and gets its own auto-title from the first message, exactly as it would against the backend (`mockThread()` in `chatHooks.ts` — returning the seed for every id made new mock threads inherit the demo's messages). **„Emlékek · N" — the recalled-memory disclosure row (`components/RecalledMemoriesRow.tsx`, `mezo-6dii.7`).** An answer assembled from the shared memory platform ([`companion.md`](companion.md) §4) carries its retrieved items as a collapsed row under the bubble; opening it lists each item with its kind label and a door to the source. In **NEW serving mode** each card that carries a stable audit id also gets a feedback group (`role="group"`, „Visszajelzés erről az emlékről"): **hasznos / nem releváns**, and — only for candidates that have a canonical `memory_item` — a **two-tap suppression** (the second tap reads „Biztosan ne használd többé?"). Suppression flips the canonical item to `suppressed` so every later retriever skips it; **nothing is deleted** — neither the source record nor its audit history. Fact and graph candidates have no canonical item, so they keep useful/irrelevant and are never offered suppression (the API rejects such a request too). The page batch-loads the feedback state for the newest 100 visible result ids in ONE request (`data/insights/memoryFeedbackHooks.ts`) and writes optimistically with rollback on failure; a pre-rollout card with no retrieval id stays **display-only** rather than rendering a dead control. **Since S8 (`mezo-d6ivw.12`) `RecalledMemoriesRow` shows only NON-PERSON recalled items** — `ChatMessage.tsx` splits `m.recalled` by `kind`: `kind === 'person'` items feed the new **"Emlékszem: <names> ›"** line instead (below), and everything else (`journal_entry`, `daily_summary`, `knowledge_fact`, …) keeps rendering here exactly as before — no item is shown in both places, none is dropped.
+
+**Turn-memory chips — what a turn learned, proposed, recalled and forgot (S8, `mezo-d6ivw.12`).**
+Under an assistant bubble, `TurnMemoryChips` (`components/memory/TurnMemoryChips.tsx`) reads
+`GET /api/companion/conversation/{id}/turn-memory?messageId=<the turn's user message id>`
+(`data/insights/turnMemoryHooks.ts`'s `useTurnMemory`, anchored on `MessageResponse
+.turnUserMessageId` — the field that fixed a pre-S8 bug where the real-mode optimistic user bubble
+had no id and the chips silently anchored on the WRONG turn) and renders one shared `MemoryChip`
+per signal: **remembered** (a saved person fact, "Megjegyeztem: … Visszavonom"), **proposed** (an
+undecided owner-fact candidate, "Megjegyezném: … Igen/Ne"), **recalled** (the "Emlékszem: <names>
+›" line, opening `sheets/RecallSheet.tsx` — a per-person fact list sourced from the SAME
+`kind=person` recalled items `RecalledMemoriesRow` now excludes, with a door to
+`/mezo/knowledge?view=emberek`), and **forgotten** (only on a turn `TurnMemoryResponse
+.forgetRequest` flags — "Elfelejtettem: <list>" with a "Mindent ebből a beszélgetésből?" widen
+button opening `sheets/ForgetAllSheet.tsx`). While extraction is still running and nothing is back
+yet, a quiet "még figyelek…" status shows (a short 2s/3s/5s poll ladder, stopping as soon as
+`forgetRequest` or a non-empty `forgotten` list lands); the chips **disarm** — drop any pending poll
+— on every conversation change (`TurnMemoryChips` fix round 1). **A chip action settles its turn**
+(final review): `useTurnMemoryActions` patches the turn's cache (`undone` / `rejected` / kept with
+the decision response's `promotedFactId`) instead of refetching, the settled turn stops polling, and
+`useTurnMemory`'s `queryFn` merges any late answer over the cache (`mergeTurnMemory`) — the backend
+lists only live items, so otherwise "Visszavonva — nem jegyeztem meg." / "Rendben, nem jegyzem meg —
+és nem is javaslom újra." vanished on the next poll. A forget-all settles every turn of the
+conversation, so an earlier turn's "Elfelejtve · …" line stays too. **Owner ruling 2026-09-28:** a
+forget request forgets ONLY the immediately-preceding user message, never walking further back; if
+that message learned nothing, the forgotten list comes back genuinely empty and `MemoryChip`'s
+`forgotten` variant renders its own honest empty state ("Nem volt mit elfelejteni — az előző
+üzenetedből semmit nem jegyeztem meg.") plus the same widen offer, rather than showing nothing. A
+reject or a forget is **permanent** — the chip becomes a flat "Elfelejtve · <struck text>" line and
+never offers an action again. Full backend flow: [`companion.md`](companion.md) §2/§3/§4.
 
 **Conversation actions + the error bubble's hands (F7.5, `mezo-d20.8.5.1`).** The header grew a third disc — **⋯ „A beszélgetés műveletei"** (disabled on a draft thread / degraded) — and every picker row a **kebab** (`onActions` prop): both open `sheets/ConversationActionsSheet.tsx` for that conversation. **Átnevezés** = inline input (prefilled, Enter/Mentés, NO confirm — reversible) → `useConversationActions().rename` (`PATCH /api/companion/conversation/{id}`; mock leg rewrites `CONVERSATIONS_KEY` in place). **Törlés** = two-step warm confirm („…a belőlük tanult emlékeket ez nem érinti." — ADR 0010, a decision not a mistake) → `remove` (`DELETE`, soft server-side; invalidates the list + BOTH `['chat','newest']` and the id-keyed thread cache), and deleting the on-screen conversation moves `?c=` off the dead id. The **error bubble** (amber `.mzc-bub-err`, a hiccup not a scolding) now keeps the failed turn: `useChatActions` retains `failedText` past the `finally`, and the bubble renders **Újra** (`retry()` — re-sends the same text, *replace don't append*: no duplicated user bubble) + **Szerkesztés** (`editFailed()` → the text lands back in the composer). The AI-SDK regenerate state model, adopted per the F7.5 recon.
 
@@ -1005,8 +1050,13 @@ figyelj rá” is not an undo — the server drops that exception from `remember
 one. A live `OPEN` thread carrying an `offer` renders `OfferButtons` above the trio
 instead: an `EXCUSE` offer is one tap („Igen, {tag} volt” → `answer('EXCUSED')`); a `REVIEW` offer
 (the ≥4-hits-in-30-days cap, once per window) is two taps („Rendben van” → `answer('KEEP')` /
-„Nem, figyelj rá” → `answer('STOP')`). All three components are distinct from the older, unrelated
-`RememberedChips.tsx` (plural — an S3 chat-turn fact-extraction chip). The data layer
+„Nem, figyelj rá” → `answer('STOP')`). All three components render through the SAME shared `MemoryChip`
+(`surface="csapatfal"`, §2.5 below) the chat turn-memory chips use since S8 (`mezo-d6ivw.12`) —
+extracted from what used to be `ReplyAfterlife.tsx`'s own `RememberedChip`; `surface="csapatfal"`
+renders the identical DOM (`mzc-remchip`/`tf-remgone`) so this room's reply chip is visually
+unchanged. `RememberedChips.tsx` (plural — the earlier, S3-era chat-turn fact-extraction chip) and
+its `useTurnFacts` polling hook are **deleted** with S8; the chat now uses `TurnMemoryChips` (§2.5,
+§3 below). The data layer
 (`frontend/src/data/character/teamChatHooks.ts`) tracks awaiting threads in a plain
 `Map<threadId, joinedAtMs>` kept outside the query cache (to dodge invalidation), backs off through
 a handful of real-mode polls (`TEAM_CHAT_ANSWER_POLL_DELAYS` 2s/3s/5s/10s/10s, ~30s per thread —
@@ -1145,7 +1195,12 @@ dual-read; any 404 → one honest `notFound`, unlike the monitor's `degraded` �
 „showcase" pair (`sleep-quality~next-day-training-rpe`) with a full 9-event history + 24 aligned
 days + a promoted fact/2 predictions/1 experiment/1 challenge, and a minimal synthesized detail
 (`pattern: null`, empty history/impact, `pair` straight off `patternMonitor.pairs`) for every other
-catalog pair — a still-gathering pair with no persisted row yet. The explicit weekend fixture is
+catalog pair — a still-gathering pair with no persisted row yet. Its `days` are `alignedDays`
+deterministic plausible days (`mockCatalogDays`, `mezo-bip2w`): dated back from the monitor's
+`windowTo`, values in each metric's usual range by value kind (clock 22–24, or 6–8 for a wake-up
+key; binary A alternating 0/1; plain numbers 3–8), B leaning with the pair's `r` sign (else its
+expected direction), and a degenerate pair's bottleneck side held flat — so the mock page never says
+„6 közös nap" over an empty chart. The explicit weekend fixture is
 8 weekdays + 1 weekend and therefore `imbalanced_groups`; the confirmed showcase detail uses a
 coherent frozen 32-day decision snapshot rather than the dashboard monitor's live 21-day row.
 
@@ -1404,6 +1459,23 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   `PatternDecisionCard.test.tsx` is unchanged by the new optional
   `titleSize` prop (default `17`, unused by its existing assertions).
 
+- **Turn memory — the chat's own memory, honestly (S8, `mezo-d6ivw.12`):**
+  `components/memory/MemoryChip.test.tsx` (all four variants' busy/error/done states, the
+  `forgotten`-prop struck-through line, `surface="csapatfal"` rendering the S7 DOM unchanged, the
+  empty-forget-turn copy); `components/memory/TurnMemoryChips.test.tsx` (learned/proposed/forgotten
+  composition, the "még figyelek…" pending status, the widen sheet flow, chips disarming on a
+  conversation change); `sheets/RecallSheet.test.tsx` (per-person fact list, the gist's `\n`-joined
+  lines split back into separate `<li>`s, the door to `/mezo/knowledge?view=emberek`);
+  `sheets/ForgetAllSheet.test.tsx` (1/2/N-item title+CTA copy — `forgetAllTitle`/`forgetAllCta`,
+  3+ using the `{n}` form — the permanence footnote, busy/error states);
+  `data/insights/turnMemoryHooks.test.tsx` (the 2s/3s/5s poll ladder stopping on `forgetRequest`
+  or a non-empty `forgotten`, mock vs real branching); `pages/ChatPage.test.tsx` gained the
+  `turnUserMessageId` anchor assertion (the real-mode bug that fix closed, §3/§9) and the
+  person/non-person recalled-item split. `tests/layout/chat-memory.spec.ts` (Playwright) — 320px, no
+  horizontal overflow, the reduced-motion branch drops the chip animation; `tests/layout/
+  team-chat-reply.spec.ts` re-verified the shared `MemoryChip` extraction kept the csapatfal reply
+  chip's layout unchanged. Full backend-side coverage: [`companion.md`](companion.md) §8.
+
 **Commands** (run from `frontend/`):
 ```bash
 pnpm test                         # vitest run (REAL mode default)
@@ -1468,12 +1540,13 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `frontend/src/shared/ui/mozaik/{index.tsx,motion.tsx}` + `frontend/src/shared/ui/clay/index.tsx` — the primitives the re-faced pages compose (`Tile`/`Mosaic`/`PageHero`; `EntranceGroup`/`useCountUp`; `ClayIcon`/`ClaySpot`). **Not Insights-owned** — [`_platform-design-system.md`](_platform-design-system.md)
 - `pages/PatternsPage.tsx` — lifecycle catalogue (§2.1): hero + clickable 3×2 status selector + one active bucket + `PatternFilterSheet` + five-item pager + „Adat-egészség" coverage strip; owns selection/filter/sort/page state, while `patternCatalog.ts` owns pure derivations
 - `pages/PatternDetailPage.tsx` — dual-source detail leaf (§2.1b, `/mezo/patterns/:pairKey`): rich pair-backed evidence/history flow when `usePatternPairDetail` succeeds; `PatternArtifactDetail` when only `usePatterns` resolves the key; honest retry/not-found states otherwise
-- `components/DetailHero.tsx` — **`mezo-me75u.13`**, the shared üveg anatomy of the three „Miből látszik?" detail pages (§2.1b): `DetailFrame`, `DetailHero`, `StatePill`, `DayRing`, `DecisionRow` + `patternDecisionButtons` + `DecisionNote`, `SectionHead`, `DetailState`
+- `components/DetailHero.tsx` (+ test) — **`mezo-me75u.13`**, the shared üveg anatomy of the three „Miből látszik?" detail pages (§2.1b): `DetailFrame`, `DetailHero`, `StatePill`, `DayRing`, `DecisionRow` + `patternDecisionButtons` + `DecisionNote`, `SectionHead`, `DetailState`
 - `pages/PredictionDetailPage.tsx` · `pages/ExperimentDetailPage.tsx` — the prediction / experiment detail leaves on the same anatomy (§2.1b Üveg): prediction hero = expectation + confidence ring while pending, „Ezt vártam / Ez történt" once resolved, then flat „Mennyire biztos…", „Miből következik?", „Mi történt?", „Hasznos volt?" (`FeedbackChips glyph3d`); experiment hero = „Hol tartunk?" day ring + day cells (active), the question + Elfogadom/Elvetem (proposed, live mode only) or the result; status words from `PREDICTION_STATE` / `experimentStateOf` (the lists keep `PREDICTION_STATUS` / `experimentChipOf`)
 - `components/PatternArtifactDetail.tsx` — pairless persisted-pattern fallback: proposed rows get their own glass decision hero (the list's `PatternDecisionCard` is not reused); judged rows show a read-only status hero, saved mechanism/evidence and no fabricated graph/statistics
 - `components/PatternFilterSheet.tsx` + `PatternDomainMark.tsx` — house `Sheet` filter/sort controls and the shared Clay domain mark; no emoji domain controls
 - `logic/patternCatalog.ts` — initial bucket, pairless `other` domain, filter/sort and five-item clamped pagination; pure and unit-tested
 - `pages/MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the other 5 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
+- **Turn memory — the chat's own memory (S8, `mezo-d6ivw.12`):** `components/memory/{MemoryChip,TurnMemoryChips}.tsx` — the one shared four-variant chip (also consumed by `components/teamchat/ReplyAfterlife.tsx`, `surface="csapatfal"`) and the per-turn composer under `ChatPage`'s answer bubbles; `sheets/{RecallSheet,ForgetAllSheet}.tsx` — the "Emlékszem" per-person fact sheet and the "Mindent ebből a beszélgetésből?" widen confirm; `data/insights/{turnMemoryApi,turnMemoryHooks,turnMemory}.ts` — the `GET .../turn-memory` + `GET`/`POST .../forget-learned` dual-mode reads/actions (`useTurnMemory`'s 2s/3s/5s poll ladder), the mock seed. `components/ChatMessage.tsx` — the `kind==='person'` vs. non-person `recalled` split feeding `RecalledMemoriesRow` vs. the "Emlékszem" line. `tests/layout/chat-memory.spec.ts`. Backend: [`companion.md`](companion.md) §2/§3/§4/§10.
 - **`KnowledgeListPage.tsx`'s view components (`components/{KnowledgeBaseView,KategoriakView,HowItWorksView}.tsx`, §2.4):** `KnowledgeBaseView` = the S6 hub base view — hero + four `HubTiles` + quiet links (RETIRED the pre-S6 approval-inbox/3-tile mosaic shape); `KategoriakView` = the `?view=kategoriak` grid⇄drill switch, thin over the moved `KindTileGrid`/`KindNodeList` below (`mezo-ms9a`, unchanged by S6); `HowItWorksView` = the `?view=hogyan` six Q&A cards (`mezo-ms9a`, unchanged by S6). **`components/FactsView.tsx`/`KnowledgeFactRow.tsx` are RETIRED (S6)** — their `?view=tenyek` behavior lives on as `components/hub/TenyekSection.tsx` over the shared `HubRow`. `components/ProfileView.tsx` is orphaned dead code left over from the `?view=profil` redirect (the communication editor moved to central settings, § above) — no current route renders it.
 - **The S6 Tudástár hub (`mezo-d6ivw.6`, §2.4):** `components/hub/{TenyekSection,EmberekSection,EszrevetelekSection,HatasokSection}.tsx` — the four sections, one per hub tile; `components/hub/{HubTiles,HubFold,HubRow,HubSearch,ForgetUndoBar}.tsx` — the shared tile grid, collapsible topic fold, per-row card (icon/text/status/why/verbs), search field + no-hits state, and the undo countdown bar; `logic/{hubCopy,hubCounts,hubSearch,hubTopics}.ts` — all hub Hungarian copy (incl. the verb contract, `VERB`/`TOAST`/`stripNote`), the hero/tile/observation-status counting rules (`hubCounts`/`obsState`), the flat search+highlight helpers, and the six-topic observation grouper; `hooks/useForgetUndo.ts` — the 5 s undo window (`UNDO_MS`), unmount-commits-outstanding-forget policy; `data/insights/knowledgeHub{Api,Hooks}.ts` — the four hub reads/writes (`knowledgeHubApi`, `useKnowledgeObservations`/`useEffectSubjects`/`useFactEvidence`/`useKnowledgeHubActions`) and `groupEffectSubjects` (flat wire → per-subject cards). Backend: [`companion.md`](companion.md) "Elfelejtem/Elhallgattatom" (§3/§4/§10).
 - **Moved from `features/me/` (`mezo-ms9a`, was the `KnowledgePage.tsx` overview-first Tudásgráf chain, `mezo-2243` originally — full behavioral history in the pre-merge [`me.md`](me.md) git blame):** `components/{KindTileGrid,KindNodeList,CategoryHeader,ProfileNodeCard}.tsx` + `sheets/NodeDetailSheet.tsx`. Unchanged by the move except their consumer: `KnowledgeListPage`'s `selectedId` state now owns the sheet (was `KnowledgePage`'s), and `KategoriakView`/`ProfileView` above call them instead of the deleted page rendering them directly.
@@ -1490,7 +1563,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `components/PatternDecisionCard.tsx` — **`mezo-tk88.4`**, the dashboard decision-inbox card (§2.1 step 2): category/confidence chips, the deterministic `findingSentence` block (never raw `r/p/n`), optional decision explainer, Confirm/Monitor/Reject and the detail link. Since `mezo-0469` the pair-backed detail page no longer reuses this inbox-shaped card, and since `mezo-me75u.13` neither does the pairless fallback.
 - `components/LifecycleSection.tsx` — **`mezo-tk88.4`**, dashboard-only `LifecycleSection` (collapsible title+count card) + `LifecycleMiniRow` (title + one-line sub + detail link) for the five buckets and „Adat-egészség”. The detail page's former mismatched diagnostics reuse ended in `mezo-0469`.
 - **`components/{HypothesisStateCard,PatternDetailHero,TestPlanTiles,PatternEvidenceChart,PatternStrengthChart}.tsx` (+ tests) are DELETED (`mezo-rstt7`, 2026-09-27)** — the catalog-hero/laborfüzet-hero split, the plan-tile pair, the value-kind-adaptive evidence chart and the strength-over-time chart are all superseded by the one-reading rewrite (§2.1b): `PatternAnswerHero` + `PatternZoneChart` + `PatternRuleCard` below now cover every row, plan or no plan. `PatternScatter.tsx` had already been deleted with `PatternEvidenceChart`'s introduction (`mezo-0469`).
-- `logic/patternReading.ts` (+ test) — **`mezo-rstt7`**, the ONE pure reading module (§2.1b): `pearson`/`lean`/`classify` → `readPattern` (state), `answerLook` (word/tone/icon), `decisionPlan` (buttons/note/settled/revoke), `saySentence`/`ruleSentence`/`lagWord` (deterministic prose), `patternZones`/`niceTicks`/`mean`/`zoneValue` (chart math) — every word and color on the page traces back to this file.
+- `logic/patternReading.ts` (+ test) — **`mezo-rstt7`**, the ONE pure reading module (§2.1b): `pearson`/`lean`/`classify` → `readPattern` (state), `answerLook` (word/tone/icon), `decisionPlan` (buttons/note/settled/revoke), `saySentence`/`ruleSentence`/`lagWord` (deterministic prose), `patternZones`/`niceTicks`/`mean`/`zoneValue` (chart math), `formatSeriesValue` (the page's one value-kind formatter) and `leanSideOf` — every word and color on the page traces back to this file.
 - `components/PatternAnswerHero.tsx` (+ test) — **`mezo-rstt7`**, the page's one frameless answer hero (§2.1b step 1): domain-chip pair row, question, the big answer word/icon/tone, `saySentence`, the pre-answer Mezo quote, `PatternLeanMeter`/`PatternDayPips`, and the `decisionPlan`-driven decision block (buttons / settled line / revoke link). Exports `Bold` (the `**…**` → `<b>` inline renderer `PatternRuleCard` reuses).
 - `components/PatternLeanMeter.tsx` (+ test) — **`mezo-rstt7`**, the „merre húz” band-and-dot meter (`PatternLeanMeter`, `now`/`then` ghost dot) and the day-tally pips (`PatternDayPips`, `count`/`of`) — both pure props over a `Lean`.
 - `components/PatternZoneChart.tsx` (+ test) — **`mezo-rstt7`**, the „Mit mutat az adat” two-zone SVG (§2.1b step 2): binary/continuous zone split, conditional zone-average labels, tappable/keyboard-operable day dots with an OWN `useState` selection (never page state) and a small tooltip, `Napok listája ›` details table. Replaces `PatternEvidenceChart`.

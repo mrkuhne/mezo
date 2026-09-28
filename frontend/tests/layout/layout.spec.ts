@@ -835,3 +835,34 @@ test('train · the Eligazítás and the list after Indulás stay contained at 32
   })
   expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth + 1)
 })
+
+// Mid-workout swap / add (mezo-mobji): the picker, the „Csak ma / Mezociklusra is" sheet and the
+// list's add button stay inside the narrowest phone, and every option row is reachable.
+test('train · the exercise swap picker and scope sheet stay contained at 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/train/session')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  await page.getByRole('button', { name: /^Indulás/ }).click()
+  await expect(page.locator('.wo-list')).toBeVisible()
+  const addBtn = page.getByRole('button', { name: 'Gyakorlat hozzáadása' })
+  await addBtn.scrollIntoViewIfNeeded()
+  const add = await addBtn.boundingBox()
+  expect(add && add.x >= 0 && add.x + add.width <= 320).toBe(true)
+
+  await page.getByRole('button', { name: 'Chest Supported Row · további műveletek' }).click()
+  await page.getByText('Gyakorlat cseréje').click()
+  await expect(page.getByText('Mire cseréled?')).toBeVisible()
+  const sheetFits = () => page.evaluate(() => {
+    const sh = [...document.querySelectorAll('.sheet')].pop() as HTMLElement
+    const r = sh.getBoundingClientRect()
+    return r.left >= 0 && r.right <= innerWidth + 1 && sh.scrollWidth <= sh.clientWidth + 1
+  })
+  expect(await sheetFits()).toBe(true)
+
+  await page.getByRole('group', { name: 'Hasonló gyakorlatok' }).getByText('T-Bar Row').click()
+  await expect(page.getByText('Mezociklusra is')).toBeVisible()
+  expect(await sheetFits()).toBe(true)
+  await expect(page.getByRole('button', { name: /^Csak ma/ })).toBeInViewport()
+  await expect(page.getByRole('button', { name: /^Mezociklusra is/ })).toBeInViewport()
+})

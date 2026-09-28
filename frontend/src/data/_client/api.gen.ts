@@ -777,6 +777,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Swap or add an exercise in an active workout (mezo-mobji)
+         * @description Creates an instance-scoped exercise row for the running workout (scope TODAY), and for scope MESO additionally writes the mesocycle's template day id-stably (one insert, the replaced row soft-deleted) so the change applies from the next session. Returns the refreshed today payload.
+         */
+        post: operations["changeWorkoutExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add working sets to an exercise's mesocycle plan without re-creating the day (mezo-mobji) */
+        post: operations["addPlanWorkingSets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/exercises/{exerciseId}/note": {
         parameters: {
             query?: never;
@@ -2154,6 +2191,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/conversation/{conversationId}/turn-memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S8 (mezo-d6ivw.12) — what one chat turn did to memory. learned = the person facts it saved (active only), proposed = the owner-fact candidates it raised (undecided, or accepted with a still-live fact), forgotten = what a forget request on this turn forgot. The chat chips poll this after a turn (2s/3s/5s ladder). */
+        get: operations["getTurnMemory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/conversation/{conversationId}/forget-learned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** S8 (mezo-d6ivw.12) — what Mindent ebből a beszélgetésből? would forget: every still-live memory item this conversation produced (person facts, undecided proposals, accepted facts). */
+        get: operations["previewForgetLearned"];
+        put?: never;
+        /** S8 — forget everything this conversation taught, permanently (veto, never re-learned from the same text). The forgotten items are appended to the triggering message forget list. */
+        post: operations["forgetLearned"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/fact": {
         parameters: {
             query?: never;
@@ -2217,7 +2289,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent.
+         * Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives it and vetoes its text (S8). One decision per candidate; confirm is an explicit L2 action, never silent.
          * @description The promoted fact inherits the candidate's `source`: a chat-extracted candidate becomes a `chat` fact, a weekly-review candidate a `weekly_review` one (mezo-d20.7.6) — promotion never re-labels where the insight came from.
          */
         post: operations["decideFactCandidate"];
@@ -6172,6 +6244,17 @@ export interface components {
             rationale?: string | null;
             /** @description RIR-aware overload recommendation; null on first session / switch off. */
             progression?: components["schemas"]["ProgressionSignal"] | null;
+            /**
+             * @description Set on an exercise swapped/added during the open workout (mezo-mobji).
+             * @enum {string|null}
+             */
+            changeScope?: "TODAY" | "MESO" | null;
+            /** @description Name of the exercise this one replaced in the open workout. */
+            replacesName?: string | null;
+            /** @description On a swapped-out exercise that keeps its logged sets — the replacement's name. */
+            replacedByName?: string | null;
+            /** @description Whether a "Mezociklusra is" change may target this exercise (false for rows added only for this workout and for the fixed closing block). */
+            planSlot?: boolean;
         };
         PrescribedSet: {
             /** @enum {string} */
@@ -6398,6 +6481,37 @@ export interface components {
             rir?: number | null;
             side?: string;
             note?: string;
+        };
+        WorkoutExerciseChangeRequest: {
+            /** Format: uuid */
+            catalogId?: string | null;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
+            targetRIR: number;
+            /** @enum {string} */
+            scope: "TODAY" | "MESO";
+            /**
+             * Format: uuid
+             * @description Swap target; absent for an add.
+             */
+            replacesExerciseId?: string | null;
+        };
+        WorkoutExerciseChangeResponse: {
+            /**
+             * Format: uuid
+             * @description The new instance-scoped exercise row.
+             */
+            exerciseId: string;
+            today: components["schemas"]["WorkoutTodayResponse"];
+        };
+        PlanSetsRequest: {
+            delta: number;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */
@@ -8358,6 +8472,11 @@ export interface components {
             refs: components["schemas"]["MessageRef"][];
             /** @description The memory context injected into this answer's prompt, in prompt order. OLD/SHADOW rows disclose the legacy [Emlékek] recall; NEW rows disclose selected shared-platform context with optional audit identities. Empty on user rows, on pre-W3.1 rows, and when the serving path supplied no recalled context (retrieval failure never degrades a turn). */
             recalled: components["schemas"]["RecalledMemory"][];
+            /**
+             * Format: uuid
+             * @description S8 (mezo-d6ivw.12) — only on the answer a send returns (sync response and the stream done event): the id of the USER row of the same turn, so the client anchors the turn-memory chips without a refetch. Absent on listed history rows.
+             */
+            turnUserMessageId?: string | null;
         };
         RecalledMemory: {
             /**
@@ -8511,12 +8630,65 @@ export interface components {
              * @description The knowledge fact this candidate was promoted into (accept/refine).
              */
             promotedFactId?: string | null;
+            /**
+             * Format: uuid
+             * @description S8 (mezo-d6ivw.12) — the chat USER message the candidate was extracted from; null for a weekly-review candidate. The chat anchors its Megjegyezném chip on it.
+             */
+            derivedFromMessageId?: string | null;
             /** Format: date-time */
             createdAt: string;
         };
+        TurnMemoryResponse: {
+            /** @description True when this user message is itself a forget request (ForgetIntent) - its forgotten list may be empty when the preceding message learned nothing, and it never gains learned or proposed items. */
+            forgetRequest: boolean;
+            learned: components["schemas"]["TurnPersonFactResponse"][];
+            proposed: components["schemas"]["FactCandidateResponse"][];
+            forgotten: components["schemas"]["MemoryItemResponse"][];
+        };
+        TurnPersonFactResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            personId: string;
+            personName: string;
+            /** @enum {string} */
+            kind: "preference" | "relationship_state" | "shared_activity" | "important_date" | "sensitivity";
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @description S8 — one memory item a chat turn produced, as the forget flow lists it. kind person_fact refId = the person fact, fact_candidate = the undecided candidate, knowledge_fact = the promoted fact of an accepted candidate. */
+        MemoryItemResponse: {
+            /** @enum {string} */
+            kind: "person_fact" | "fact_candidate" | "knowledge_fact";
+            /** Format: uuid */
+            refId: string;
+            /** Format: uuid */
+            personId?: string | null;
+            /** @description The person name for a person fact; null for the owner. */
+            who?: string | null;
+            text: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description True for an undecided proposal. */
+            pending: boolean;
+        };
+        ForgetLearnedRequest: {
+            /**
+             * Format: uuid
+             * @description The USER message whose Elfelejtettem chip offered the widen.
+             */
+            triggerMessageId: string;
+        };
+        ForgetLearnedResponse: {
+            forgotten: components["schemas"]["MemoryItemResponse"][];
+        };
         FactDecisionRequest: {
-            /** @description snooze = „Most ne”: hidden for 14 days, then re-offered; stays undecided */
-            decision: string;
+            /**
+             * @description snooze = Most ne: hidden for 14 days, then re-offered, stays undecided. reject is permanent since S8 (mezo-d6ivw.12): the candidate text is vetoed and never proposed again.
+             * @enum {string}
+             */
+            decision: "accept" | "reject" | "refine" | "snooze";
             /** @description Required when decision is refine — the corrected fact wording. */
             refinedText?: string | null;
         };
@@ -14882,6 +15054,129 @@ export interface operations {
             };
         };
     };
+    changeWorkoutExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutExerciseChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Change applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutExerciseChangeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout not active, or the replaced exercise has no plan slot (MESO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPlanWorkingSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanSetsRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The exercise has no plan slot */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     saveExerciseNote: {
         parameters: {
             query?: never;
@@ -19002,6 +19297,133 @@ export interface operations {
                 };
             };
             /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTurnMemory: {
+        parameters: {
+            query: {
+                /** @description The USER message id of the turn. */
+                messageId: string;
+            };
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The turn memory (every list may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TurnMemoryResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation or user message not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    previewForgetLearned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Live items, newest first (may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryItemResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    forgetLearned: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgetLearnedRequest"];
+            };
+        };
+        responses: {
+            /** @description What was forgotten */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForgetLearnedResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation or trigger message not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,4 +62,8 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
     List<LearnedFactEntity> findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(UUID createdBy);
 
     Optional<LearnedFactEntity> findFirstByCreatedByAndPromotedFactIdAndDeletedFalse(UUID createdBy, UUID promotedFactId);
+
+    /** S8 (mezo-d6ivw.12): the candidates one or more chat turns produced — turn-memory + forget. */
+    List<LearnedFactEntity> findByCreatedByAndDerivedFromMessageIdInAndDeletedFalseOrderByCreatedAtAsc(
+            UUID createdBy, Collection<UUID> messageIds);
 }

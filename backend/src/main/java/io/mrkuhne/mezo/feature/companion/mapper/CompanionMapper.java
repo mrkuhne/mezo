@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactProvenance;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
+import io.mrkuhne.mezo.api.dto.MemoryItemResponse;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.MessageTool;
@@ -12,8 +13,10 @@ import io.mrkuhne.mezo.api.dto.PatternEventResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.api.dto.PatternTestPlan;
 import io.mrkuhne.mezo.api.dto.RecalledMemory;
+import io.mrkuhne.mezo.api.dto.TurnPersonFactResponse;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.ChatMemoryItem;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
@@ -24,6 +27,7 @@ import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolOutcomesEnvelope;
+import io.mrkuhne.mezo.feature.people.entity.PersonFactEntity;
 import org.mapstruct.Mapper;
 
 import java.time.Instant;
@@ -46,6 +50,11 @@ public interface CompanionMapper {
     }
 
     default MessageResponse toMessageResponse(AiMessageEntity entity) {
+        return toMessageResponse(entity, null);
+    }
+
+    /** S8: {@code turnUserMessageId} is set only on the answer a send returns (the chip anchor). */
+    default MessageResponse toMessageResponse(AiMessageEntity entity, UUID turnUserMessageId) {
         return MessageResponse.builder()
                 .id(entity.getId())
                 .role(entity.getRole())
@@ -55,6 +64,18 @@ public interface CompanionMapper {
                 .refs(toRefs(entity.getRefs()))
                 .recalled(toRecalled(entity.getRecalledMemories()))
                 .degraded(entity.isDegraded())
+                .turnUserMessageId(turnUserMessageId)
+                .build();
+    }
+
+    default TurnPersonFactResponse toTurnPersonFactResponse(PersonFactEntity fact, String personName) {
+        return TurnPersonFactResponse.builder()
+                .id(fact.getId())
+                .personId(fact.getPersonId())
+                .personName(personName)
+                .kind(TurnPersonFactResponse.KindEnum.fromValue(fact.getKind()))
+                .text(fact.getFactText())
+                .createdAt(toOffset(fact.getCreatedAt()))
                 .build();
     }
 
@@ -187,6 +208,7 @@ public interface CompanionMapper {
                 .userDecision(entity.getUserDecision())
                 .refinedText(entity.getRefinedText())
                 .promotedFactId(entity.getPromotedFactId())
+                .derivedFromMessageId(entity.getDerivedFromMessageId())
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .build();
     }
@@ -245,6 +267,19 @@ public interface CompanionMapper {
                         .indicator(item.indicator())
                         .build())
                 .toList();
+    }
+
+    /** S8 (mezo-d6ivw.12): one chat memory item (turn-memory forgotten list, forget-all preview). */
+    default MemoryItemResponse toMemoryItemResponse(ChatMemoryItem item) {
+        return MemoryItemResponse.builder()
+                .kind(MemoryItemResponse.KindEnum.fromValue(item.kind()))
+                .refId(item.refId())
+                .personId(item.personId())
+                .who(item.who())
+                .text(item.text())
+                .createdAt(toOffset(item.createdAt()))
+                .pending(item.pending())
+                .build();
     }
 
     default OffsetDateTime toOffset(Instant instant) {

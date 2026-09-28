@@ -44,6 +44,11 @@ class DriftSupersessionIT extends AbstractIntegrationTest {
         PatternEntity drift = patternPopulator.reflectionNoPlan(owner, PatternEntity.STATUS_PROPOSED);
         drift.setPairKey(PatternEntity.PAIR_KEY_DRIFT_PREFIX + originalId);
         drift.setTitle("Mostanában a randis napok estéje is feltölt.");
+        // S8 (mezo-d6ivw.12): promote() now composes the fact text from the mechanism
+        // (FactTextComposer) when one is present; reflectionNoPlan()'s fixture mechanism is
+        // populator boilerplate, not this test's narrative — null it so the composer falls back
+        // to the title this test actually asserts on.
+        drift.setMechanism(null);
         return patternPopulator.save(drift);
     }
 

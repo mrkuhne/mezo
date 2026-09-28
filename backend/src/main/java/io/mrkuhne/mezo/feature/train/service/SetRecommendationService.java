@@ -59,11 +59,16 @@ public class SetRecommendationService {
         String rationale;
         ProgressionSignal progression;
 
-        if (ref != null && ref.getWeightKg() != null) {
-            BigDecimal inc = props.increment().getOrDefault(ex.getType(), props.defaultIncrement());
+        // A 0 kg reference is bodyweight: the proportional step is a fraction of the load, so it
+        // takes the weightless rep path (mezo-xbhrm — it divided by zero and 500'd the today view).
+        if (ref != null && ref.getWeightKg() != null && ref.getWeightKg().signum() > 0) {
             RefSet refSet = new RefSet(ref.getWeightKg(), ref.getReps(), ref.getRir());
+            // Proportional step (mezo-bk7sn): candidates are the real weights — ever logged ∪ the
+            // plate grid, minus the machine's known gaps (mezo-bk7l2).
+            Set<BigDecimal> gaps = weightGapService.gaps(createdBy, ex);
             Decision d = ProgressionDecider.decide(
-                refSet, ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), inc, props.plateStep(), deloadWeek);
+                refSet, ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), stepPolicy(ex.getType()),
+                historyResolver.workingWeightsEverLogged(createdBy, ex), gaps, deloadWeek);
             if (holdOnly) {
                 d = ProgressionDecider.capAtHold(d, refSet, ex.getRepMin(), ex.getRepMax());
             }
@@ -72,9 +77,9 @@ public class SetRecommendationService {
             rationale = d.rationale();
             BigDecimal deltaKg = d.deltaKg();
             // Per-machine weight memory (mezo-bk7l2): only a WEIGHT/DELOAD move computes a new kg —
-            // REP/HOLD reuse the logged weight, which logging itself proved to exist.
+            // REP/HOLD reuse the logged weight, which logging itself proved to exist. WEIGHT already
+            // picks around known gaps, so in practice this reactive snap serves the deload.
             if (d.lever() == ProgressionDecider.Lever.WEIGHT || d.lever() == ProgressionDecider.Lever.DELOAD) {
-                Set<BigDecimal> gaps = weightGapService.gaps(createdBy, ex);
                 if (gaps.contains(WeightSnapper.norm(base))) {
                     Optional<WeightSnapper.Snap> snap = WeightSnapper.snap(
                         base, workingReps, ex.getTargetRir(), ex.getRepMin(), ex.getRepMax(), ref.getWeightKg(),
@@ -152,6 +157,12 @@ public class SetRecommendationService {
                 .build());
         }
         return new Prescription(sets, rationale, progression);
+    }
+
+    private ProgressionDecider.StepPolicy stepPolicy(String type) {
+        return new ProgressionDecider.StepPolicy(
+            props.stepPercent().getOrDefault(type, props.defaultStepPercent()), props.maxJump(),
+            props.maxJumpReserve(), props.reserveSlack(), props.repOverflow(), props.plateStep());
     }
 
     /**

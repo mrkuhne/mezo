@@ -1,10 +1,9 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
-import { useRef } from 'react'
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useDualQuery } from '@/data/useDualQuery'
 import { isMockMode } from '@/data/_client/mode'
-import { peopleApi, toMention, toPersonEntry, toPersonFact } from '@/data/me/peopleApi'
+import { peopleApi, toMention, toPersonEntry } from '@/data/me/peopleApi'
 import {
-  people as personSeed, mentions as mentionSeed, mezoNote as mezoNoteSeed, MOCK_TURN_FACTS,
+  people as personSeed, mentions as mentionSeed, mezoNote as mezoNoteSeed,
 } from '@/data/me/people'
 import type { Mention, MentionLogInput, PersonEntry, PersonFact, PersonSaveInput } from '@/data/types'
 
@@ -151,47 +150,6 @@ export function usePeople() {
     isError,
     refetch,
   }
-}
-
-/** S3: a „Megjegyeztem" chip visszalépő lekérdezés-ütemezése (ms) — utána néma feladás. */
-const TURN_FACT_POLL_DELAYS = [2000, 3000, 5000]
-
-/**
- * S3 (mezo-d6ivw.3): egy elküldött chat-forduló utólag befutó személy-tényei. A kinyerés a
- * válasz UTÁN, a háttérben fut, ezért a FE rövid visszalépő ütemezéssel kérdez rá
- * (~2s/5s/10s összesen), aztán némán feladja. Mock módban egy demó-tény jön azonnal.
- */
-export function useTurnFacts(userMessageId: string | null): { facts: PersonFact[]; pending: boolean } {
-  const mock = isMockMode()
-  const attempts = useRef(0)
-  const lastId = useRef<string | null>(null)
-  if (lastId.current !== userMessageId) {
-    lastId.current = userMessageId
-    attempts.current = 0
-  }
-  const { data } = useQuery<PersonFact[]>({
-    queryKey: ['turn-facts', userMessageId],
-    enabled: !mock && !!userMessageId,
-    queryFn: async () => {
-      attempts.current += 1
-      const res = await peopleApi.getFactsBySource('chat_turn', userMessageId!)
-      return res.map(toPersonFact)
-    },
-    refetchInterval: (query) => {
-      const found = (query.state.data?.length ?? 0) > 0
-      if (found || attempts.current >= TURN_FACT_POLL_DELAYS.length) return false
-      return TURN_FACT_POLL_DELAYS[Math.min(attempts.current, TURN_FACT_POLL_DELAYS.length - 1)]
-    },
-    staleTime: Infinity,
-    gcTime: 5 * 60_000,
-  })
-  if (mock) {
-    return { facts: userMessageId ? MOCK_TURN_FACTS : [], pending: false }
-  }
-  const facts = data ?? []
-  const pending = !!userMessageId && facts.length === 0
-    && attempts.current < TURN_FACT_POLL_DELAYS.length
-  return { facts, pending }
 }
 
 function mapPersonFacts(qc: QueryClient, personId: string, fn: (facts: PersonFact[]) => PersonFact[]) {

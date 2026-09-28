@@ -330,7 +330,7 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         assertThat(generator.generate(user, WEEK_START)).isNotNull();
         LearnedFactEntity offered = learnedFactRepository.findByCreatedByAndDeletedFalse(user).get(0);
         factCandidateService.decide(user, offered.getId(),
-                FactDecisionRequest.builder().decision(LearnedFactEntity.DECISION_REJECT).build());
+                FactDecisionRequest.builder().decision(FactDecisionRequest.DecisionEnum.REJECT).build());
 
         // the NEXT week proposes the very same lesson — "amit elvetsz, nem kérdezi újra"
         LocalDate nextWeek = WEEK_START.plusWeeks(1);
@@ -420,7 +420,7 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         LearnedFactEntity candidate = learnedFactRepository.findByCreatedByAndDeletedFalse(user).get(0);
 
         factCandidateService.decide(user, candidate.getId(),
-                FactDecisionRequest.builder().decision(LearnedFactEntity.DECISION_ACCEPT).build());
+                FactDecisionRequest.builder().decision(FactDecisionRequest.DecisionEnum.ACCEPT).build());
 
         UUID promotedId = learnedFactRepository.findById(candidate.getId()).orElseThrow().getPromotedFactId();
         assertThat(promotedId).isNotNull();

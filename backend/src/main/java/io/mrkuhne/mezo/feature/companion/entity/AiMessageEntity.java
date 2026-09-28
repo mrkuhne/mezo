@@ -67,6 +67,15 @@ public class AiMessageEntity extends OwnedEntity {
     @Column(name = "recalled_memories", columnDefinition = "jsonb")
     private RecalledMemoriesEnvelope recalledMemories;
 
+    /** S8: what a forget request on THIS user message forgot — null when nothing. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "forgotten_memories", columnDefinition = "jsonb")
+    private ForgottenMemoriesEnvelope forgottenMemories;
+
+    /** S8: the per-message no-extract marker (forget request, forget target, widened forget). */
+    @Column(name = "extraction_blocked", nullable = false)
+    private boolean extractionBlocked;
+
     /** S9.7: what each planned read returned — NULLed by the retention scrub after 90 days,
      *  while {@link #toolCalls} (the ask) is kept forever. */
     @JdbcTypeCode(SqlTypes.JSON)

@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import type { TeamChatThread } from '@/data/character/teamChatApi'
 import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
 import { Icon3D } from '@/shared/ui/clay'
 import { closedByAnswer, STOP_CLOSE_NOTE } from '@/features/insights/logic/teamChat'
+import { MemoryChip } from '@/features/insights/components/memory/MemoryChip'
 
 /**
  * S7 (mezo-d6ivw.7, Task 9) — the csapatfal's answer afterlife: while the character is
@@ -40,55 +40,27 @@ export function CloseTag({ thread }: { thread: TeamChatThread }) {
   )
 }
 
-/** The "Megjegyeztem: …" standing-exception chip — visible only while `remembered.active`.
- *  After a successful undo (either locally just-tapped, or the thread coming back with
- *  `remembered.active === false`) shows the single muted "Visszavonva — …" line instead: with
- *  the reopen clause only while the ügy is actually OPEN again (an undo while a newer ügy of the
- *  rule is open leaves this one closed). Rendered whatever the thread status — a successful
- *  undo reopens the ügy, and the confirmation must survive that. A failed undo keeps the chip
- *  and shows a short error (the chip itself is the retry point). A REVIEW "Nem, figyelj rá"
- *  never lands here as an undo: the server drops a STOP-withdrawn exception from `remembered`. */
+/** The "Megjegyeztem: …" standing-exception chip — S8 (mezo-d6ivw.12): now the shared
+ *  `MemoryChip` on its csapatfal surface (same DOM/classes as before, no visible change). Done
+ *  after a local undo or when the thread comes back with `remembered.active === false`; the
+ *  reopen clause only while the ügy is actually OPEN again. A STOP-withdrawn exception never
+ *  lands here (the server drops it from `remembered`). */
 export function RememberedChip({ thread, onUndo }: {
   thread: TeamChatThread
   onUndo: (threadId: string) => Promise<void>
 }) {
-  const [undone, setUndone] = useState(false)
-  const [error, setError] = useState(false)
-  const [busy, setBusy] = useState(false)
   const remembered = thread.remembered
   if (remembered == null || thread.closeNote === STOP_CLOSE_NOTE) return null
-
-  if (undone || !remembered.active) {
-    return (
-      <p className="tf-remgone">
-        {thread.status === 'OPEN'
-          ? 'Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.'
-          : 'Visszavonva — nem jegyeztem meg.'}
-      </p>
-    )
-  }
-
-  const undo = async () => {
-    setError(false)
-    setBusy(true)
-    try {
-      await onUndo(thread.id)
-      setUndone(true)
-    } catch {
-      setError(true)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
-    <div className="mzc-remwrap col gap-xs">
-      <div className="mzc-remchip row gap-xs">
-        <Icon3D name="t-spark" size={18} />
-        <span className="mzc-remtx"><b>Megjegyeztem:</b> {remembered.text}</span>
-        <button type="button" className="mzc-remundo" disabled={busy} onClick={() => void undo()}>Visszavonom</button>
-      </div>
-      {error && <p className="tf-error" role="alert">Nem sikerült visszavonni — próbáld újra.</p>}
-    </div>
+    <MemoryChip
+      variant="remembered"
+      surface="csapatfal"
+      item={{ text: remembered.text }}
+      done={!remembered.active}
+      undoneText={thread.status === 'OPEN'
+        ? 'Visszavonva — nem jegyeztem meg, és az ügy újra nyitott.'
+        : 'Visszavonva — nem jegyeztem meg.'}
+      onUndo={() => onUndo(thread.id)}
+    />
   )
 }

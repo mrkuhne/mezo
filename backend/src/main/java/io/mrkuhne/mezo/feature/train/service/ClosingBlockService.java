@@ -88,6 +88,14 @@ public class ClosingBlockService {
         }
     }
 
+    /**
+     * Catalog ids of the configured closing exercises (mezo-mobji): these rows have no plan slot
+     * a mid-workout "Mezociklusra is" change could take — the block is re-appended every day.
+     */
+    public Set<UUID> closingCatalogIds() {
+        return resolveConfigured().stream().map(r -> r.catalog().getId()).collect(Collectors.toSet());
+    }
+
     /** Config slugs → catalog rows; a missing slug is a content/config drift: warn + skip, never 500. */
     private List<Resolved> resolveConfigured() {
         List<Resolved> resolved = new ArrayList<>();

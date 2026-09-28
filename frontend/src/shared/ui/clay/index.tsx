@@ -101,6 +101,8 @@ export type Icon3DName =
   | 't-day' | 't-digestion'
   // Kihagyás S1 (mezo-q4xt2.1) — owner OK on prototypes/elo/edzes.html (the skip-reason chips)
   | 't-ill' | 't-travel'
+  // Edzés csere / hozzáadás (mezo-mobji) — owner OK 2026-09-28 on prototypes/elo/edzes.html#ikonok
+  | 't-swap' | 't-addex'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

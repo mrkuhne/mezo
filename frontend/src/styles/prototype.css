@@ -4383,6 +4383,72 @@ button.mz-tile:active { transform: scale(0.96); }
   font-size: 10.5px; font-weight: 700; color: var(--lav-deep, #7b61c9); padding: 4px 6px;
 }
 
+/* ══ S8 · a chat memóriája (mezo-d6ivw.12) — négy jelzés egy közös chip-alakon ══
+   Paritás-forrás: docs/design_2.0/prototypes/elo/mezo.html „S8 ·" (.s8chip/.s8btn/.s8done/.s8rec/
+   .s8who/.s8list/.s8foot). Lapos pirula a válasz-kártyán KÍVÜL — nincs üveg az üvegben; csak sötét.
+   A csapatfal (surface="csapatfal") továbbra is az S3/S7 `.mzc-remchip` alakot kapja. */
+.mzc-memturn { display: grid; gap: 6px; justify-items: start; margin-top: -6px; }
+.mzc-memchip {
+  --c: var(--dv-lav);
+  display: flex; align-items: center; gap: 8px; max-width: 92%; padding: 7px 8px 7px 9px; border-radius: 14px;
+  background: linear-gradient(150deg, rgba(245, 239, 230, 0.035), color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.02)));
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--c) 38%, transparent), 0 0 16px color-mix(in srgb, var(--c) 12%, transparent);
+  animation: mzc-memin 0.45s cubic-bezier(0.3, 0.8, 0.4, 1) both; animation-delay: var(--d, 0s);
+}
+@keyframes mzc-memin { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.mzc-memchip > :first-child { flex: none; }
+.mzc-memtx { flex: 1; min-width: 0; font-size: 12px; line-height: 1.4; color: var(--text-secondary); }
+.mzc-memtx b { color: var(--text-primary); font-weight: 650; }
+.mzc-memtx small { display: block; margin-top: 2px; font-size: 10.5px; color: var(--text-muted); }
+.mzc-memacts { display: flex; gap: 4px; flex: none; align-self: center; }
+.mzc-mbtn {
+  --c: var(--dv-lav);
+  min-height: 30px; padding: 5px 10px; border: none; border-radius: 999px; font: inherit; font-size: 11.5px; font-weight: 650;
+  cursor: pointer; color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 34%, transparent);
+}
+.mzc-mbtn.is-ghost { background: none; box-shadow: none; color: var(--text-secondary); }
+.mzc-mbtn:disabled { opacity: 0.55; cursor: default; }
+.mzc-mbtn:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, white); outline-offset: 2px; }
+.mzc-memchip.is-proposed, .mzc-memchip.is-proposed .mzc-mbtn { --c: var(--dv-amber); }
+.mzc-memchip.is-forgotten, .mzc-memchip.is-forgotten .mzc-mbtn { --c: var(--dv-rose); }
+.mzc-memchip.is-forgotten { align-items: flex-start; }
+.mzc-memchip.is-forgotten > :first-child { margin-top: 1px; }
+.mzc-memchip.is-forgotten .mzc-mbtn { margin-top: 8px; }
+.mzc-memchip.is-forgotten ul { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.mzc-memchip.is-forgotten li { position: relative; padding-left: 11px; color: var(--text-secondary); }
+.mzc-memchip.is-forgotten li::before {
+  content: ""; position: absolute; left: 1px; top: 0.62em; width: 5px; height: 1.5px; border-radius: 1px;
+  background: color-mix(in srgb, var(--dv-rose) 70%, white);
+}
+.mzc-memdone { display: flex; align-items: center; gap: 7px; margin: 0; padding: 2px 4px; font-size: 11.5px; color: var(--text-muted); animation: mzc-memin 0.35s both; }
+.mzc-memdone > :first-child { opacity: 0.75; flex: none; }
+.mzc-memdone s { text-decoration-color: color-mix(in srgb, var(--dv-rose) 60%, transparent); }
+.mzc-memerr { margin: 0; padding: 0 4px; font-size: 11px; color: var(--dv-rose); }
+.mzc-memrec {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 7px; margin-top: 10px; padding: 5px 10px 5px 6px;
+  border: none; border-radius: 999px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08);
+}
+.mzc-memrec b { color: color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary)); font-weight: 650; }
+.mzc-memrec em { font-style: normal; color: var(--text-muted); margin-left: 2px; }
+.mzc-memwho { display: grid; gap: 10px; margin-top: 6px; }
+.mzc-memwho-p { padding: 12px 14px; border-radius: 16px; background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08); }
+.mzc-memwho-p strong { display: flex; align-items: center; gap: 8px; font-size: 14.5px; }
+.mzc-memwho-p ul { margin: 0; padding: 0; list-style: none; }
+.mzc-memwho-p li { position: relative; margin-top: 5px; padding-left: 12px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.mzc-memwho-p li::before { content: ""; position: absolute; left: 0; top: 0.6em; width: 5px; height: 5px; border-radius: 50%; background: var(--dv-lav); opacity: 0.7; }
+.mzc-memfoot { margin: 12px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+.mzc-memlist { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.mzc-memlist li {
+  padding: 9px 12px; border-radius: 12px; font-size: 13.5px; line-height: 1.45; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.08);
+}
+.mzc-memlist li small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-muted); }
+.mzc-memrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+@media (prefers-reduced-motion: reduce) { .mzc-memchip, .mzc-memdone { animation: none; } }
+
 /* typing bubble */
 .mzc-typing {
   display: flex; gap: 5px; padding: 12px 14px; width: 64px; border-radius: 5px 19px 19px 19px;
@@ -18372,6 +18438,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .wos .wo-delta.is-up { color: #FFB39C; background: color-mix(in srgb, var(--dv-coral) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-coral) 35%, transparent); }
 .wos .wo-card-copy .wo-delta { justify-self: start; width: max-content; margin-top: 4px; }
+/* why a briefing row's target sits past the range top (reps before a too-big jump, mezo-bk7sn) */
+.wos .wbr-row-why { display: block; margin-top: 2px; font-style: normal; font-size: 11px; line-height: 1.35; color: #FFD08A; }
 /* the active-phase challenge badge (tap → release / take back); released = dimmed, target struck */
 .wos .wos-pills button.wos-pill-quest { cursor: pointer; font: inherit; }
 .wos .wos-pills .wos-pill-quest.is-released { opacity: 0.6; }
@@ -30367,3 +30435,47 @@ main.settings-page {
   .fln-day { gap: 6px; }
 }
 /* ── /„Hogy tanultam?” oldal ── */
+
+/* ── edzés közbeni csere / hozzáadás (mezo-mobji) — prototypes/elo/edzes.html `scope`, `pick`, `woadd` ── */
+.sheet.glass.wos-sheet.is-sky { --c: var(--dv-sky); }
+.wos-sheet .wos-scope-ex {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 12px; border-radius: 16px; text-align: left;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wos-sheet .wos-scope-ex > span { min-width: 0; }
+.wos-sheet .wos-scope-ex strong { display: block; font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
+.wos-sheet .wos-scope-ex small { display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.wos-sheet .wos-scope-opts { display: grid; gap: 8px; }
+.wos-sheet .wos-scope-opt {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 12px 12px 10px; border: 0; border-radius: 18px;
+  text-align: left; cursor: pointer; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wos-sheet .wos-scope-opt > span { flex: 1; min-width: 0; }
+.wos-sheet .wos-scope-opt strong { display: block; font-size: 15px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.wos-sheet .wos-scope-opt small { display: block; margin-top: 2px; font-size: 11.5px; line-height: 1.4; color: var(--text-secondary); }
+.wos-sheet .wos-scope-opt > b { flex: 0 0 auto; font-size: 20px; font-weight: 400; color: var(--text-muted); }
+.wos-sheet .wos-scope-opt.is-lit {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 26%, transparent), color-mix(in srgb, var(--c) 10%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 55%, transparent), 0 0 18px -6px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.wos-sheet .wos-scope-opt.is-lit strong { color: color-mix(in srgb, var(--c) 30%, #fff); }
+.wos-sheet .wos-scope-opt:focus-visible { outline: none; box-shadow: inset 0 0 0 1.5px var(--c); }
+.uvl-subh { display: block; margin: 14px 0 6px; font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px; text-transform: uppercase; color: var(--text-muted); }
+.uvl-exlist.is-similar .uvl-exrow { border-top: 1px solid var(--divider); border-radius: 0; }
+.uvl-exlist.is-similar .uvl-exrow:first-child { border-top: 0; }
+.wos .wo-add {
+  --c: var(--dv-sky); display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin: 4px 0 10px; padding: 12px; border: 1px dashed color-mix(in srgb, var(--c) 40%, transparent); border-radius: 18px;
+  font: 600 14px/1.2 var(--ff-body); color: var(--text-secondary); background: transparent; cursor: pointer;
+}
+.wos .wo-add:disabled { opacity: 0.45; cursor: default; }
+.wos .wo-card.is-swapped { opacity: 0.62; }
+.wos .wo-change {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.wos .wo-change.is-today { color: #bfe9f5; box-shadow: inset 0 0 0 1px rgba(127, 178, 222, 0.4); }
+.wos .wo-change.is-meso { color: #ddd0ff; box-shadow: inset 0 0 0 1px rgba(188, 166, 241, 0.45); }
+.wos .wo-change-err { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 10px 12px; border-radius: 14px;
+  font-size: 12.5px; color: #FFB39C; background: rgba(255, 126, 92, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.3); }
+.wos .wo-change-err button { margin-left: auto; border: 0; background: none; color: inherit; font-weight: 700; cursor: pointer; }

@@ -7,7 +7,10 @@ import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +86,58 @@ public class MentionDetectionService {
             }
         }
         return written;
+    }
+
+    /**
+     * mezo-tdabt ("ezt ne jegyezd meg" really forgets): soft-deletes every live mention written from
+     * the given source refs — the chat forget passes the forgotten USER message ids with
+     * {@code chat_turn}. The ✕ idiom ({@code @SQLDelete}), so {@link #detect}'s including-deleted
+     * dedup never resurrects them; the daily summary and the person page read live rows only.
+     * Participates in the caller's transaction: the forget is all-or-nothing.
+     */
+    @Transactional
+    public int forgetBySourceRefs(UUID userId, String sourceRefKind, Collection<UUID> sourceRefIds) {
+        if (sourceRefIds == null || sourceRefIds.isEmpty()) {
+            return 0;
+        }
+        List<MentionEntity> rows = mentionRepository
+                .findByCreatedByAndSourceRefKindAndSourceRefIdInAndDeletedFalse(userId, sourceRefKind, sourceRefIds);
+        mentionRepository.deleteAll(rows);
+        mentionRepository.flush();
+        return rows.size();
+    }
+
+    /**
+     * S8 (mezo-d6ivw.12): the SAME name/alias rule as {@link #detect}, read-only — nothing is
+     * persisted (the async ChatMentionListener still writes the mention). Active persons only,
+     * ordered by where they are first named, capped at {@code max}.
+     *
+     * <p>Deliberately NOT {@code @Transactional}: the chat turn calls it inside its own transaction,
+     * and a participating transactional method that throws marks that transaction rollback-only —
+     * the caller's fail-open catch could not undo it (S8 fix round 1). The single repository read
+     * runs in the caller's transaction, or its own when there is none.
+     */
+    public List<MatchedPerson> matchActivePersons(UUID userId, String text, int max) {
+        if (text == null || text.isBlank() || max <= 0) {
+            return List.of();
+        }
+        String folded = TextFold.fold(text);
+        Map<PersonEntity, Integer> firstIndex = new LinkedHashMap<>();
+        for (PersonEntity person : personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
+            if (!"active".equals(person.getStatus())) {
+                continue;
+            }
+            PersonNeedles.of(person).stream()
+                    .mapToInt(needle -> PersonNeedles.indexAtWordStart(folded, needle))
+                    .filter(i -> i >= 0)
+                    .min()
+                    .ifPresent(i -> firstIndex.put(person, i));
+        }
+        return firstIndex.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue())
+                .limit(max)
+                .map(e -> new MatchedPerson(e.getKey().getId(), e.getKey().getName()))
+                .toList();
     }
 
     /** Mondathatár: záró írásjel vagy sortörés után vágunk; a delimiter a mondatnál marad. */

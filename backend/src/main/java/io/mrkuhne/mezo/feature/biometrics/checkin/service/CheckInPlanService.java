@@ -19,12 +19,10 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,7 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>The adaptive pick is stable for (user, date, slot) — reopening the sheet never reshuffles:
  * a row already saved with an adaptive item returns that item; otherwise the RNG is seeded by
  * (user, date, slot) and the need window ends the day BEFORE {@code date}, so answers saved today
- * cannot change today's picks.
+ * cannot change today's picks. A stored need pick re-reads its specific "why" from the current
+ * need sources (the row keeps only item + reason).
  */
 @Service
 @RequiredArgsConstructor
@@ -55,9 +54,10 @@ public class CheckInPlanService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "slotTime").build());
         }
-        Optional<Choice> choice = storedChoice(userId, date, slotTime)
+        Map<CheckInItem, String> wanted = wanted(userId);
+        Optional<Choice> choice = storedChoice(userId, date, slotTime, wanted)
             .or(() -> chooser.choose(slotTime, slot.items(), answerCounts(userId, date),
-                wanted(userId), new Random(seed(userId, date, slotTime))));
+                wanted, new Random(seed(userId, date, slotTime))));
         return CheckInPlanResponse.builder()
             .items(slot.items().stream().map(CheckInPlanService::toPlanItem).toList())
             .adaptive(choice.map(this::toAdaptiveItem).orElse(null))
@@ -65,11 +65,15 @@ public class CheckInPlanService {
     }
 
     /** The adaptive item a saved row already recorded, when it is a known item/reason pair. */
-    private Optional<Choice> storedChoice(UUID userId, LocalDate date, String slotTime) {
+    private Optional<Choice> storedChoice(UUID userId, LocalDate date, String slotTime,
+                                          Map<CheckInItem, String> wanted) {
         return repository.findByCreatedByAndDateAndSlotTime(userId, date, slotTime)
             .filter(row -> row.getAdaptiveItem() != null && row.getAdaptiveReason() != null)
             .flatMap(row -> CheckInItem.byId(row.getAdaptiveItem())
-                .map(item -> new Choice(item, Reason.valueOf(row.getAdaptiveReason()))));
+                .map(item -> {
+                    Reason reason = Reason.valueOf(row.getAdaptiveReason());
+                    return new Choice(item, reason, reason == Reason.NEED ? wanted.get(item) : null);
+                }));
     }
 
     /** Non-null answers per item over the {@code need-window-days} days before {@code date}. */
@@ -84,18 +88,46 @@ public class CheckInPlanService {
         return counts;
     }
 
-    private Set<CheckInItem> wanted(UUID userId) {
-        Set<CheckInItem> wanted = EnumSet.noneOf(CheckInItem.class);
-        needSources.forEach(source -> wanted.addAll(source.wantedItems(userId)));
+    /**
+     * Wanted item → its specific "why" (null = generic): the specific sources merged in bean order
+     * (the first sentence for an item wins); only when they are all empty, the fallback sources.
+     */
+    private Map<CheckInItem, String> wanted(UUID userId) {
+        Map<CheckInItem, String> wanted = merge(userId, false);
+        return wanted.isEmpty() ? merge(userId, true) : wanted;
+    }
+
+    private Map<CheckInItem, String> merge(UUID userId, boolean fallback) {
+        Map<CheckInItem, String> wanted = new EnumMap<>(CheckInItem.class);
+        needSources.stream()
+            .filter(source -> source.fallback() == fallback)
+            .flatMap(source -> source.needs(userId).stream())
+            .forEach(need -> {
+                if (!wanted.containsKey(need.item()) || wanted.get(need.item()) == null) {
+                    wanted.put(need.item(), need.why());
+                }
+            });
         return wanted;
     }
 
-    /** Deterministic across JVMs: UUID, epoch day and String hashes are all specified. */
+    /**
+     * Deterministic across JVMs: UUID, epoch day and String hashes are all specified. The combined
+     * hash goes through the SplitMix64 finalizer because {@link Random}'s first output is nearly
+     * linear in its seed: a raw {@code 31 * h + epochDay} seed moved the first draw by ~0.003 per
+     * day, so the random-vs-need draw was the same for weeks in a row (mezo-x6t01).
+     */
     static long seed(UUID userId, LocalDate date, String slotTime) {
         long seed = userId.getMostSignificantBits();
         seed = 31 * seed + userId.getLeastSignificantBits();
         seed = 31 * seed + date.toEpochDay();
-        return 31 * seed + slotTime.hashCode();
+        return mix64(31 * seed + slotTime.hashCode());
+    }
+
+    /** SplitMix64 finalizer (Steele, Lea &amp; Flood 2014): every input bit avalanches into every output bit. */
+    private static long mix64(long z) {
+        z = (z ^ (z >>> 30)) * 0xbf58476d1ce4e5b9L;
+        z = (z ^ (z >>> 27)) * 0x94d049bb133111ebL;
+        return z ^ (z >>> 31);
     }
 
     static CheckInPlanItem toPlanItem(CheckInItem item) {

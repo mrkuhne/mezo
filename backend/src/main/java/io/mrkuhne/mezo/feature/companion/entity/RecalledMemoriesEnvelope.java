@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.entity;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +28,22 @@ public record RecalledMemoriesEnvelope(List<Item> items) {
         public Item(String kind, UUID refId, LocalDate occurredOn, String label, String gist, double similarity) {
             this(kind, refId, occurredOn, label, gist, similarity, null, null, null, null);
         }
+    }
+
+    /** S8 (mezo-d6ivw.12): the deterministic people recall's item kind ("Emlékszem"). */
+    public static final String KIND_PERSON = "person";
+
+    /** {@code base} plus {@code extra} items not already in it — null when both are empty. */
+    public static RecalledMemoriesEnvelope withExtra(RecalledMemoriesEnvelope base, List<Item> extra) {
+        List<Item> all = new ArrayList<>(base == null ? List.of() : base.items());
+        extra.stream().filter(item -> !all.contains(item)).forEach(all::add);
+        return ofOrNull(all);
+    }
+
+    /** S8: the {@code kind=person} items of an envelope — empty when none (or no envelope). */
+    public static List<Item> personItems(RecalledMemoriesEnvelope envelope) {
+        return envelope == null ? List.of()
+                : envelope.items().stream().filter(item -> KIND_PERSON.equals(item.kind())).toList();
     }
 
     /** Null (not an empty envelope) when nothing was recalled — a jsonb column is either a

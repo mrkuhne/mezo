@@ -20,6 +20,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** New fragment `api/feature/train/train-skip.yml` (tag `TrainSkip`, `GET/PUT/DELETE /api/train/skips`) merges into `api/openapi.yml` like any other feature fragment — no new pattern. `TRAIN_SKIP_DATE_OUT_OF_WINDOW`/`TRAIN_SKIP_TARGET_INVALID`/`TRAIN_SKIP_NOT_FOUND` join `messages.properties`. See [`train.md`](train.md) "Kihagyás (S1)".
 
+> **2026-09-29 — Gyakorlat csere / hozzáadás (`mezo-mobji`).** `train.yml` gained `POST /api/train/workouts/{id}/exercises` (`WorkoutExerciseChangeRequest` → `WorkoutExerciseChangeResponse {exerciseId, today}`) and `POST …/exercises/{exerciseId}/plan-sets` (`PlanSetsRequest`); `TodayExercise` gained `changeScope`/`replacesName`/`replacedByName`/`planSlot`. `messages.properties` gained `TRAIN_EXERCISE_NO_PLAN_SLOT` (409). Details: [`train.md` §4](train.md).
+
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One new contract fragment, `api/feature/train/train-readiness.yml` (tag `TrainReadiness`), registered in `api/generate/merge.yml`; `api/feature/checkin/checkin.yml` gained `GET /api/biometrics/checkin/plan` and the new check-in fields (enums `CheckInItemId`, `CheckInItemKind`, `PainRegion`, `CravingKind`, `AdaptiveReason` as `enum:`). Two features gained ports to stay cycle-free: train's `DayCheckInPort` (implemented in biometrics) and biometrics' `CheckInNeedSource`. Details: [`me.md` §4](me.md), [`train.md` §4](train.md).
 
 > One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/data/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · Fuel (all sub-slices) · People · companion; the durable backbone every backed feature flows through — **Phase 2 closed 2026-07-05**. Not a route/tab — it underlies all of them.
@@ -437,7 +439,7 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 **techcore (the reusable spine)**
 - `techcore/persistence/OwnedEntity.java`, `OwnedRepository.java` — owned-entity superclass + `findAllOwned`
 - `techcore/security/SecurityConfig.java`, `CurrentUserId.java`, `CorsProperties.java` — stateless JWT + ownership resolution + CORS
-- `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract
+- `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract (an unreadable request body — unknown enum constant, wrong JSON type, broken JSON — is a 400 `VALIDATION_INVALID_VALUE` naming the JSON path since Check-in 2.0 follow-up C; [`_platform-auth-security.md`](_platform-auth-security.md), [`error_handling.md`](../references/error_handling.md))
 - `backend/src/main/resources/messages.properties` — message codes (Hungarian; newest: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
 
 **Reference feature (weight — smallest full slice)**

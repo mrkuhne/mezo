@@ -1,14 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback, useMemoryRetrievalFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
-import { RememberedChips } from '@/features/insights/components/RememberedChips'
+import { TurnMemoryChips } from '@/features/insights/components/memory/TurnMemoryChips'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
 import { ConversationActionsSheet } from '@/features/insights/sheets/ConversationActionsSheet'
 import type { ConversationResponse } from '@/data/insights/chatApi'
+import type { TurnAnchor } from '@/data/insights/turnMemoryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
 import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
@@ -111,18 +112,42 @@ export function ChatPage() {
   )
   const feedback = useFeedback('chat_message', assistantIds)
 
-  // S3 (mezo-d6ivw.3): a „Megjegyeztem" chip csak az EBBEN a munkamenetben küldött körök után
-  // fut — régi beszélgetés megnyitása nem indít utólagos tény-lekérdezést. A turn lezárultával
-  // (refetch után) az utolsó user-üzenet perzisztált id-ja a forrás-hivatkozás.
-  const armedRef = useRef(false)
-  if (turn) armedRef.current = true
-  const lastUserMsgId = useMemo(() => {
-    if (turn || !armedRef.current) return null
-    const last = [...messages].reverse().find((m) => m.role === 'user' && m.id)
-    // Mock módban a user-buborék nem kap perzisztált id-t — szintetikus horgony kell, hogy a
-    // demó-chip (useTurnFacts mock ága) megjelenhessen; valós módban id nélkül nincs chip.
-    return last?.id ?? (isMockMode() ? `mock-turn-${messages.length}` : null)
-  }, [messages, turn])
+  // S8 (mezo-d6ivw.12): every turn SENT in this session carries its memory chips; opening an old
+  // conversation fetches nothing (the S3 rule). `armed` = which conversation was armed, and the
+  // index of this session's first user message in it. ANY move to another conversation (picker,
+  // `?c=` link, back/forward) disarms — except the draft thread's own NEW_CHAT → created-id step,
+  // which happens while the first turn is in flight. Mock user bubbles have no id →
+  // `mock-turn-<i>` (lesson 16); real ones carry the done event's `turnUserMessageId`.
+  const conversationId = isNew ? null : (selection ?? data.conversationId ?? null)
+  const [armed, setArmed] = useState<{ conversationId: string | null; index: number } | null>(null)
+  const [forgottenRefs, setForgottenRefs] = useState<ReadonlySet<string>>(new Set())
+  useEffect(() => {
+    if (turn && armed === null) setArmed({ conversationId, index: messages.length })
+  }, [turn, armed, conversationId, messages.length])
+  useEffect(() => {
+    if (!armed || armed.conversationId === conversationId) return
+    if (armed.conversationId === null && conversationId !== null && turn) {
+      setArmed({ ...armed, conversationId })
+      return
+    }
+    setArmed(null)
+    setForgottenRefs(new Set())
+  }, [armed, conversationId, turn])
+  const armedFrom = armed && armed.conversationId === conversationId ? armed.index : null
+  const addForgotten = useCallback((ids: string[]) => setForgottenRefs((prev) => {
+    if (ids.every((id) => prev.has(id))) return prev
+    const next = new Set(prev)
+    ids.forEach((id) => next.add(id))
+    return next
+  }), [])
+  const anchorFor = (assistantIndex: number): TurnAnchor | null => {
+    const userIndex = assistantIndex - 1
+    const user = messages[userIndex]
+    if (armedFrom === null || userIndex < armedFrom || user?.role !== 'user') return null
+    const id = user.id ?? (isMockMode() ? `mock-turn-${userIndex}` : null)
+    if (!id) return null
+    return { id, ordinal: messages.slice(armedFrom, userIndex).filter((x) => x.role === 'user').length, text: user.text }
+  }
 
   const recalledResultIds = useMemo(
     () => messages.flatMap((m) => (m.recalled ?? []).flatMap((r) => r.retrievalResultId ? [r.retrievalResultId] : [])),
@@ -306,22 +331,26 @@ export function ChatPage() {
             FeedbackChips instance — and its session-local reason-row state — for a different
             answer. Unpersisted rows (mock user bubbles) keep the positional fallback — they
             render no chips and only ever get appended to the end. */}
-        {messages.map((m, i) => (
-          <ChatMessage
-            key={m.id ?? `idx-${i}`}
-            m={m}
-            memoryFeedback={memoryFeedback}
-            feedback={
-              m.role === 'assistant' && m.id
-                ? {
-                    value: feedback.get(m.id),
-                    onVote: (verdict, reason) => feedback.vote(m.id!, verdict, reason),
-                  }
-                : undefined
-            }
-          />
-        ))}
-        {!turn && <RememberedChips userMessageId={lastUserMsgId} />}
+        {messages.map((m, i) => {
+          const anchor = m.role === 'assistant' ? anchorFor(i) : null
+          return (
+            <Fragment key={m.id ?? `idx-${i}`}>
+              <ChatMessage
+                m={m}
+                memoryFeedback={memoryFeedback}
+                feedback={
+                  m.role === 'assistant' && m.id
+                    ? { value: feedback.get(m.id), onVote: (verdict, reason) => feedback.vote(m.id!, verdict, reason) }
+                    : undefined
+                }
+              />
+              {anchor && (
+                <TurnMemoryChips conversationId={conversationId} anchor={anchor}
+                  forgottenRefs={forgottenRefs} onForgotten={addForgotten} />
+              )}
+            </Fragment>
+          )
+        })}
         {turn && <ChatMessage m={{ role: 'user', ts: 'most', text: turn.userText }} />}
         {/* mezo-280 (Finding 3): thinking flips false the moment a 'tool' event lands, well before
             the first 'delta' — gating on turn.draft instead keeps the dots visible next to the

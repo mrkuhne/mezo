@@ -85,6 +85,26 @@ public class PeopleSnapshotBlock {
         }
     }
 
+    static final String MENTIONED_HEADER = HEADER_PREFIX + " (az üzenetben említettek)";
+
+    /** S8 (mezo-d6ivw.12): the SAME rows for just the people this message names — "" when none. */
+    public String renderMentioned(UUID userId, LocalDate today, List<UUID> personIds) {
+        if (personIds.isEmpty()) {
+            return "";
+        }
+        PeopleService service = peopleService.getIfAvailable();
+        if (service == null) {
+            return "";
+        }
+        List<PersonChatContext> rows = service.chatContextFor(userId, today, personIds);
+        if (rows.isEmpty()) {
+            return "";
+        }
+        StringBuilder b = new StringBuilder(MENTIONED_HEADER);
+        rows.forEach(p -> b.append('\n').append(line(p)));
+        return b.toString();
+    }
+
     /** Newline/control chars, then length, {@code api/feature/people/people.yml:409,417}'s maxLength. */
     private static final int FIELD_MAX_CHARS = 120;
     private static final Pattern CONTROL_OR_VERTICAL_WS = Pattern.compile("[\\r\\n\\t\\x0B\\f\\p{Cc}]+");

@@ -8,7 +8,7 @@ import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
 import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, Mosaic, PageBody, PageHead, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { hu1 } from '@/shared/lib/huNum'
+import { hu1, huArticle, huFrom } from '@/shared/lib/huNum'
 
 const DAY_TYPE = {
   training: 'Edzésnap',
@@ -106,7 +106,7 @@ export function GoalsPage() {
             />
             <Tile
               wash="lav" art="t-shield" className="glass" iconSize={40} eyebrow="Védőkorlátok" delayMs={260}
-              aria-label={`Védőkorlátok, ${overview.guards.healthyCount} a ${overview.guards.totalCount}-ből rendben`}
+              aria-label={`Védőkorlátok, ${overview.guards.healthyCount} ${huArticle(overview.guards.totalCount)} ${huFrom(overview.guards.totalCount)} rendben`}
               onClick={() => navigate('/me/goals/weight/guards')}
               line={<TileLine value={`${overview.guards.healthyCount}/${overview.guards.totalCount}`} meta={overview.guards.topIssueCode ? 'Van egy figyelendő jel' : 'Minden aktív védelem rendben'} />}
             />

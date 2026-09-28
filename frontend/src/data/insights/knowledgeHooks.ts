@@ -77,9 +77,11 @@ export function useKnowledgeActions() {
     mutationFn: async (input: DecideInput) => {
       if (mock) {
         mockDecide(qc, input)
-        return
+        return undefined
       }
-      await knowledgeApi.decide(input.id, input.decision, input.refinedText)
+      // S8 (mezo-d6ivw.12): the decided candidate (incl. its promoted fact id) is returned, so the
+      // chat's turn-memory can patch its cache instead of refetching a list that drops it
+      return knowledgeApi.decide(input.id, input.decision, input.refinedText)
     },
     onSuccess: mock ? undefined : invalidate,
   })
@@ -87,7 +89,8 @@ export function useKnowledgeActions() {
   return {
     toggle: (id: string, active: boolean) => toggleM.mutate({ id, active }),
     /** Returns the mutation promise (rejects on failure) so a caller like `useRoladInbox` can
-     *  roll back its own optimistic state — the MutationCache still toasts the error either way. */
+     *  roll back its own optimistic state — the MutationCache still toasts the error either way.
+     *  Real mode resolves to the decided candidate; mock mode to undefined. */
     decide: (id: string, decision: FactDecision, refinedText?: string) =>
       decideM.mutateAsync({ id, decision, refinedText }),
     pending: toggleM.isPending || decideM.isPending,

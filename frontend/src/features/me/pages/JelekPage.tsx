@@ -5,6 +5,7 @@ import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useSignalCatalog } from '@/data/hooks'
+import { huArticle, huFrom } from '@/shared/lib/huNum'
 import type { SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 
 // A prototípus celok.html #page-jelek (docs/design_2.0/prototypes/src/celok-body.html:480) a
@@ -60,7 +61,7 @@ export default function JelekPage() {
             accent="var(--dv-sage)"
             name="Jelek"
             big={(
-              <span aria-label={`${live.length} élő forrás a ${entries.length}-ból`}>
+              <span aria-label={`${live.length} élő forrás ${huArticle(entries.length)} ${huFrom(entries.length)}`}>
                 {live.length}<small> / {entries.length}</small>
               </span>
             )}

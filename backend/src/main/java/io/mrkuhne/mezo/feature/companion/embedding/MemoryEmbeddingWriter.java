@@ -98,11 +98,17 @@ public class MemoryEmbeddingWriter {
         }
         Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
                 MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId());
-        String userContent = aiMessageRepository
+        Optional<AiMessageEntity> user = aiMessageRepository
                 .findFirstByConversationIdAndRoleAndDeletedFalseAndCreatedAtLessThanEqualOrderByCreatedAtDesc(
                         assistant.getConversation().getId(), AiMessageEntity.ROLE_USER,
-                        assistant.getCreatedAt())
-                .map(AiMessageEntity::getContent).orElse("");
+                        assistant.getCreatedAt());
+        // mezo-tdabt: a forgotten turn ("ezt ne jegyezd meg" → the user row is extraction_blocked)
+        // is never embedded — on the live listener path nor on the nightly catch-up. A vector
+        // written before the forget is hidden by the recall queries (MemoryEmbeddingAnnQuery).
+        if (user.map(AiMessageEntity::isExtractionBlocked).orElse(false)) {
+            return;
+        }
+        String userContent = user.map(AiMessageEntity::getContent).orElse("");
         String fullContent = PromptPersona.USER_TURN_LABEL + userContent + "\nMezo: " + assistant.getContent();
         if (existing.isPresent()) {
             publishProjection(existing.get(), fullContent);

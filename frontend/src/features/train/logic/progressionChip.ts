@@ -16,3 +16,13 @@ export function progressionChip(p: ProgressionSignal): { text: string; tone: 'up
   if (p.lever === 'rep' && p.deltaReps != null && p.deltaReps > 0) return { text: `↑ +${p.deltaReps} ism.`, tone: 'up' }
   return { text: 'tartjuk', tone: 'hold' }
 }
+
+/**
+ * The engine's sentence, shown ONLY when it asks for reps past the recipe's range top
+ * (mezo-bk7sn: the next real weight would be too big a jump, so reps come first). A "13" in a
+ * 10–12 range needs its reason on screen; every other lever is plain from the numbers and chip.
+ */
+export function overflowWhy(repMax: number, p: ProgressionSignal | null | undefined): string | null {
+  if (!p || p.lever !== 'rep' || p.targetReps == null || p.targetReps <= repMax) return null
+  return p.rationale || null
+}

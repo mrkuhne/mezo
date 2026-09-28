@@ -24,4 +24,8 @@ public interface PersonFactRepository extends JpaRepository<PersonFactEntity, UU
 
     Optional<PersonFactEntity> findByIdAndCreatedByAndPersonIdAndDeletedFalse(
         UUID id, UUID createdBy, UUID personId);
+
+    /** S8 (mezo-d6ivw.12): the active facts several chat turns produced (turn-memory / forget). */
+    List<PersonFactEntity> findByCreatedByAndSourceRefKindAndSourceRefIdInAndActiveTrueAndDeletedFalseOrderByCreatedAtAsc(
+            UUID createdBy, String sourceRefKind, Collection<String> sourceRefIds);
 }
