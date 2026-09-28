@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -37,7 +37,12 @@ describe('WeekDiscoveriesPage (mock mode)', () => {
     // 1 pattern + 1 fact + 1 life event + memoir + 1 prediction
     expect(container.querySelector('.mz-bignum')?.textContent).toBe('5')
     expect(screen.getByText('új nyom a memóriában')).toBeInTheDocument()
-    expect(container.querySelectorAll('.wkd-tile')).toHaveLength(5)
+    // mezo-p87ok: the rare kinds are tiles; patterns and facts are drawer rows
+    expect(container.querySelectorAll('.wkd-tile')).toHaveLength(3)
+    expect(container.querySelectorAll('.wkd-drawer .wkd-drow')).toHaveLength(2)
+    // never the bare `sky` class — a global dark-theme `.sky` rule hides it (display:none)
+    expect(container.querySelector('.wkd-tile.sky')).toBeNull()
+    expect(container.querySelector('.wkd-tile.life')).not.toBeNull()
 
     expect(screen.getByText('Megerősítve')).toBeInTheDocument()   // pattern `event`
     expect(screen.getByText('Folyamatban')).toBeInTheDocument()   // prediction `status`
@@ -86,6 +91,7 @@ describe('WeekDiscoveriesPage (real mode)', () => {
     expect(container.querySelector('.mz-bignum')?.textContent).toBe('—')
     expect(screen.getByText('csendes hét volt')).toBeInTheDocument()
     expect(container.querySelector('.wkd-tile')).toBeNull()
+    expect(container.querySelector('.wkd-drawer')).toBeNull()
   })
 
   test('CONTRACT — a skeleton covers the cold-load window instead of a fabricated quiet week', () => {
@@ -137,5 +143,43 @@ describe('WeekDiscoveriesPage (real mode)', () => {
     expect(missed).toHaveClass('warn')
     expect(container.textContent).not.toMatch(/[✓▲★◐✗]/)
     expect(container.querySelector('.mz-bignum')?.textContent).toBe('4')
+  })
+
+  test('mezo-p87ok — a big week: rare traces whole on top, bulk kinds in drawers that expand in place', async () => {
+    const patterns = [
+      ...Array.from({ length: 14 }, (_, i) => ({ pairKey: `pr_${i}`, title: `Előléptetett ${i}`, event: 'promoted' })),
+      ...Array.from({ length: 4 }, (_, i) => ({ pairKey: `re_${i}`, title: `Erősödött ${i}`, event: 'reinforced' })),
+      ...Array.from({ length: 5 }, (_, i) => ({ pairKey: `co_${i}`, title: `Megerősített ${i}`, event: 'confirmed' })),
+    ]
+    const newFacts = Array.from({ length: 6 }, (_, i) => ({ id: `0000000${i}-90ab-4cde-8f01-234567890abc`, text: `Tény ${i}` }))
+    server.use(http.get(DIGEST, () => HttpResponse.json({
+      patterns, newFacts, memoir: true,
+      lifeEvents: [{ id: '32345678-90ab-4cde-8f01-234567890abc', title: 'Költözés', occurredOn: '2026-09-23' }],
+      predictions: [{ id: '42345678-90ab-4cde-8f01-234567890abc', title: 'Súlytrend', status: 'pending' }],
+    })))
+    const { container } = renderPage()
+    await waitFor(() => expect(screen.getByText('Minták')).toBeInTheDocument())
+    expect(container.querySelector('.mz-bignum')?.textContent).toBe('32')
+    expect(screen.getByText('A hét kiemelt nyomai')).toBeInTheDocument()
+    expect(container.querySelectorAll('.wkd-tile')).toHaveLength(3)
+    expect(screen.getByText('14 előléptetve · 4 erősödött · 5 megerősítve')).toBeInTheDocument()
+
+    const [patternDrawer, factDrawer] = [...container.querySelectorAll('.wkd-drawer')]
+    expect(patternDrawer.querySelectorAll('.wkd-drow')).toHaveLength(3)
+    expect(factDrawer.querySelectorAll('.wkd-drow')).toHaveLength(3)
+    // the preview is the head of the backend's ranked list
+    expect(patternDrawer.querySelector('.wkd-drow')?.textContent).toContain('Előléptetett 0')
+
+    const more = screen.getByRole('button', { name: 'Mind a 23 minta ›' })
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(more)
+    expect(patternDrawer.querySelectorAll('.wkd-drow')).toHaveLength(23)
+    const less = screen.getByRole('button', { name: 'Kevesebb ‹' })
+    expect(less).toHaveAttribute('aria-expanded', 'true')
+    fireEvent.click(less)
+    expect(patternDrawer.querySelectorAll('.wkd-drow')).toHaveLength(3)
+    expect(screen.getByRole('button', { name: 'Mind a 6 új tudás ›' })).toBeInTheDocument()
+    // the rows keep the tiles' links
+    expect(screen.getByText('Előléptetett 0').closest('a')).toHaveAttribute('href', '/mezo/patterns/pr_0')
   })
 })
