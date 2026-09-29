@@ -22,7 +22,7 @@ import type { DayStripItem } from '@/features/train/logic/dayStripItems'
 /** Spoken done-state of a chip — the visual tick / dots / `pihenő` marker in words. */
 function doneLabel(it: DayStripItem): string {
   if (it.sessionCount === 0) return 'pihenő'
-  const skipped = it.skipCount ? ` · ${it.skipCount} kihagyva` : ''
+  const skipped = it.protectedDay ? ' · kímélő mód' : it.skipCount ? ` · ${it.skipCount} kihagyva` : ''
   if (it.doneCount === 0) return `nincs naplózva${skipped}`
   return `${it.doneCount}/${it.sessionCount} kész${skipped}`
 }
@@ -86,6 +86,8 @@ export function DayStrip({
                     {Array.from({ length: it.skipCount ?? 0 }, (_, i) => (
                       <Icon3D key={`s${i}`} name="t-skip" size={14} className="trm-day-sk" />
                     ))}
+                    {/* Kímélő mód S2 (mezo-q4xt2.2, prototype `dstrip()` `km`): one t-kimelo on a protected day. */}
+                    {it.protectedDay && <Icon3D name="t-kimelo" size={14} className="trm-day-km" />}
                   </>
                 )}
             </span>

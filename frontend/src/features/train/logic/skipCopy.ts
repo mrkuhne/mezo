@@ -68,3 +68,46 @@ export function sheetNote(s: PlannedSkip | undefined): string {
 export function skipDoneToast(s: PlannedSkip, text?: string | null): string {
   return `Megjegyeztem · ${skipLabel(text != null ? { ...s, reasonText: text } : s)}`
 }
+
+// ── Kímélő mód S2 (mezo-q4xt2.2) — prototype elo/edzes.html `kmHero` / `kmInner` / `whySheet` /
+// `thero` (kmrel) / `cbBlock` / `udvSheet` / `dayCard` (kmday) and the click-handler toasts. ──
+
+/** Every fixed kímélő-mód string on the Edzés page, verbatim from the prototype. */
+export const KIMELO = {
+  durationEyebrow: 'MEDDIG TARTHAT?',
+  onLead: 'Kímélő mód bekapcsolva',
+  onRest: ' · amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.',
+  heroSub: 'Az edzés ma magától kimarad. Nem számít mulasztásnak, a sorozatod marad.',
+  ask: 'A becsült idő letelt — hogy vagy?',
+  innerTitle: 'Kímélő mód',
+  innerSub: 'Magától kimarad · nem számít mulasztásnak.',
+  chip: 'KÍMÉLŐ MÓD',
+  released: 'Kímélő mód közben edzel · csak ma, könnyítve: kevesebb sorozat, kb. 10%-kal kisebb súly',
+  releasedFull: 'Kímélő mód közben edzel · csak ma',
+  runRampTitle: 'Visszatérő futás',
+  runRamp: 'Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.',
+  welcomeRun: 'Az első futás kb. fele olyan hosszú, laza tempóban.',
+  toastOn: 'Kímélő mód bekapcsolva',
+  toastEnded: 'Kímélő mód befejezve',
+  toastReleased: 'Rendben — ma edzel, holnaptól újra kímélő mód',
+  toastUnreleased: 'Visszaállítva · ma pihensz',
+  toastWelcome: 'Üdv újra! · könnyített visszatérés',
+  toastStay: 'Rendben — marad a kímélő mód',
+  toastWaived: 'Könnyítés kikapcsolva · teljes edzés',
+  toastUndone: 'Visszaállítva · marad a kímélő mód',
+} as const
+
+/** „Rendben — holnap újra rákérdezek. {care}" — the „Még nem" toast. */
+export function notYetToast(cat: SkipReason): string {
+  return `Rendben — holnap újra rákérdezek. ${CARE[cat] ?? ''}`.trim()
+}
+
+/** The period's category icon (the reason chip's 3D art), or the kímélő shield without one. */
+export function recoveryIcon(cat: SkipReason | null | undefined): Icon3DName {
+  return (cat && REASONS.find((r) => r.id === cat)?.icon) || 't-kimelo'
+}
+
+/** A protected day's week-list line (prototype `dayCard` kmday): „Kímélő mód · {session} kimarad". */
+export function kimeloAgendaParts(session: string): { bold: string; rest: string } {
+  return { bold: KIMELO.innerTitle, rest: ` · ${session} kimarad` }
+}

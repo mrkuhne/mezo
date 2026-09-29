@@ -116,3 +116,19 @@ test('a day with a skipped session carries the t-skip mark and says so', () => {
   expect(ck.querySelector('.trm-day-sk use')?.getAttribute('href')).toBe('#t-skip')
   expect(screen.getByRole('tab', { name: /1 kihagyva/ })).toBeInTheDocument()
 })
+
+// Kímélő mód S2 (mezo-q4xt2.2): a protected day wears one t-kimelo (prototype `dstrip()` `km`).
+test('a protected day carries the t-kimelo mark and says kímélő mód', () => {
+  stubReduced()
+  const { container } = render(
+    <DayStrip
+      items={[{ day: 'Csü', dayNumber: 1, isToday: true, dots: ['gym'], doneCount: 0, sessionCount: 1, skipCount: 0, protectedDay: true }]}
+      selected="Csü"
+      onSelect={() => {}}
+    />,
+  )
+  const ck = container.querySelector('.trm-day-ck')!
+  expect(ck.querySelector('.trm-day-km use')?.getAttribute('href')).toBe('#t-kimelo')
+  expect(ck.querySelector('.trm-day-sk')).toBeNull()
+  expect(screen.getByRole('tab', { name: /kímélő mód/ })).toBeInTheDocument()
+})

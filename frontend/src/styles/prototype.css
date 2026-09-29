@@ -17586,6 +17586,60 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .trm-micb:disabled { opacity: 0.45; cursor: default; }
 .sheet.glass.uv-sheet .trm-micb .t-ico { width: 26px; height: 26px; filter: none; }
 
+/* ── Kímélő mód S2 (mezo-q4xt2.2) — prototype elo/edzes.html `.kmdur` `.kmq` `.kmlink` `.kmrel` `.cbnote` `.udvl` `.kmday` ── */
+/* „Meddig tarthat?" in the reason sheet (portals out of `.trm`, so unscoped) */
+.trm-kmdur-eb { display: block; margin-bottom: 8px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-secondary); }
+.trm-kmdc { display: flex; flex-wrap: wrap; gap: 6px; }
+.trm-kmdc > button {
+  padding: 7px 12px; border: 0; border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.trm-kmdc > button.on { color: #191614; background: var(--dv-lav); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 45%, transparent); }
+.trm-kmdc > button:disabled { cursor: default; }
+.trm-kmdc > button:disabled:not(.on) { opacity: 0.55; }
+.trm-kmdc > button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.trm-whynote.is-km {
+  color: var(--text-primary); background: rgba(171, 159, 210, 0.08);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+/* the protected hero: the question line, the lit „Jobban vagyok", the quiet links */
+.trm .trm-skipd .trm-kmq { display: block; margin-top: 6px; font-style: normal; font-size: 12.5px; font-weight: 600; color: #C9BDF0; }
+.trm .trm-skacts .trm-pill .t-ico { width: 18px; height: 18px; filter: none; }
+.trm :is(.trm-skact, .trm-pill, .trm-kmlink):disabled { opacity: 0.55; cursor: default; }
+.trm .trm-kmlink {
+  display: inline-block; margin: 10px 6px 0; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--divider);
+}
+.trm .trm-kmlink:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; border-radius: 4px; }
+.trm .trm-kmrel { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.trm .trm-kmrel .t-ico { width: 18px; height: 18px; filter: none; }
+.trm .trm-kmrel .trm-kmlink { margin: 0; }
+/* the comeback ramp: the sage status pill and the note above the CTA */
+.trm .trm-stpill.is-cbk { color: #BFE0A8; background: rgba(143, 180, 154, 0.12); box-shadow: inset 0 0 0 1px rgba(143, 180, 154, 0.45); }
+.trm .trm-stpill.is-cbk i { background: var(--dv-sage); box-shadow: 0 0 8px var(--dv-sage); }
+.trm .trm-cbnote {
+  width: 100%; max-width: 330px; margin: 14px auto 0; padding: 12px 14px; border-radius: 18px; text-align: left;
+  background: rgba(143, 180, 154, 0.07); box-shadow: inset 0 0 0 1px rgba(143, 180, 154, 0.3);
+}
+.trm .trm-cbnote-hd { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text-primary); }
+.trm .trm-cbnote-hd .t-ico { width: 28px; height: 28px; flex: 0 0 auto; filter: none; }
+.trm .trm-cbsets { display: grid; gap: 4px; margin-top: 10px; }
+.trm .trm-cbsets > div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-secondary); }
+.trm .trm-cbsets span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trm .trm-cbsets b { flex: 0 0 auto; font-weight: 600; color: var(--text-primary); }
+.trm .trm-cbacts { text-align: center; margin-bottom: 4px; }
+.trm .trm-cbnote + .trm-cbacts + .trm-start { margin-top: 8px; }
+/* „Üdv újra!" — the sage sheet, three note rows */
+.sheet.glass.uv-sheet.trm-udvsheet { --c: var(--dv-sage); }
+.trm-udvl { display: grid; gap: 8px; }
+/* „Mégsem vagyok jól" is the long label of the pair — it may wrap at 320px instead of overflowing its pill */
+.trm-udvsheet .uvl-foot .uvl-ghost { white-space: normal; text-align: center; line-height: 1.2; padding-inline: 12px; }
+/* the day strip's protected mark, and the Terv week's protected row */
+.trm .trm-day-ck .trm-day-km { opacity: 0.8; }
+.tv-dayrest.is-km { background: rgba(171, 159, 210, 0.06); box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.3); }
+.tv-dayrest.is-km em b { font-weight: 600; color: #C9BDF0; }
+
 /* ── energy: amber glass, t-flame, the big lit numeral, the split bar ── */
 .trm .trm-energy.glass, .trm .trm-mus.glass { padding: 15px 16px; border-radius: 22px; }
 .trm .trm-chead { display: flex; align-items: center; gap: 10px; }

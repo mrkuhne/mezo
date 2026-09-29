@@ -5,7 +5,9 @@ import type {
   RecoveryReturnRule,
   RecoveryState,
   RecoveryUpsertRequest,
+  TodayComeback,
 } from '@/data/train/recoveryApi'
+import type { WorkoutPlan } from '@/data/types'
 
 // ============================================================
 // Mezo · kímélő mód mock server (Kihagyás S2, mezo-q4xt2.2) — pure `RecoveryState → RecoveryState`
@@ -185,4 +187,30 @@ export function mockUnrelease(prev: RecoveryState, date: string, today = localDa
 export function mockWaiveComeback(prev: RecoveryState, today = localDateString()): RecoveryState {
   if (!prev.period?.endedOn || !prev.comeback) throw new Error('TRAIN_RECOVERY_NOT_FOUND')
   return build(prev.period, today, { ...prev.comeback, total: 0, waived: true })
+}
+
+/** „Harmadával kevesebb sorozat" — the prototype's `cbSets` (4→3, 3→2, never below 1). */
+export const rampSets = (n: number): number => Math.max(1, n - Math.round(n / 3))
+
+/** The comeback ramp as `/today` would serve it: the next lightened session while the ramp of
+ *  the latest ended period is neither waived nor used up. */
+export function mockTodayComeback(state: RecoveryState | null | undefined): TodayComeback | null {
+  const cb = state?.comeback
+  if (!state?.period?.endedOn || !cb || cb.waived || cb.done >= cb.total) return null
+  return { index: cb.done + 1, total: cb.total, mode: 'RAMP' }
+}
+
+/** Mock parity for `/today`'s comeback: the plan gets `comeback` and its working sets reduced by
+ *  a third, exactly what the backend serves (weights are left alone — the mock has no engine). */
+export function withMockComeback(plan: WorkoutPlan, state: RecoveryState | null | undefined): WorkoutPlan {
+  const comeback = mockTodayComeback(state)
+  if (!comeback) return plan
+  return {
+    ...plan,
+    comeback,
+    exercises: plan.exercises.map((e) => {
+      const workingSets = rampSets(e.workingSets)
+      return { ...e, workingSets, sets: e.warmupSets + workingSets }
+    }),
+  }
 }

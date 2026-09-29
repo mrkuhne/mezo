@@ -44,6 +44,7 @@ import {
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { usePlannedSkips, PLANNED_SKIPS_QUERY_KEY } from '@/data/train/skipHooks'
 import { useRecovery } from '@/data/train/recoveryHooks'
+import { withMockComeback } from '@/data/train/recoveryMock'
 import { protectedDayRows } from '@/features/train/logic/recovery'
 import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
 import type { PlannedSkipKey } from '@/features/train/logic/plannedSkips'
@@ -113,6 +114,7 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
         : null,
     })),
     challenges: [],
+    ...(r.comeback ? { comeback: r.comeback } : {}),
     overloadSummary: r.overloadSummary
       ? {
           weightUp: r.overloadSummary.weightUp,
@@ -1128,7 +1130,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mesocycles: mesos,
     // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
     activeMeso: realActiveMeso ?? (mock ? activeMeso : null),
-    workout: mock ? applyMockEdits(trainWorkout, mockEdits ?? []) : toWorkoutPlan(todayData),
+    workout: mock ? withMockComeback(applyMockEdits(trainWorkout, mockEdits ?? []), recovery) : toWorkoutPlan(todayData),
     // Mock serves the full static weekly schedule (Phase-1 parity); real derives
     // the meso's gym days (WHAT) joined with the standalone gym slots (WHEN).
     gymSchedule: mock ? { ...trainGymSchedule, weeklyTimes: trainGymSchedule.weeklyTimes.map((day, index) => ({ ...day, time: gymSlots.find(slot => slot.dayOfWeek === index)?.time ?? null })) } : deriveGymSchedule(realActiveMeso, gymSlots),
