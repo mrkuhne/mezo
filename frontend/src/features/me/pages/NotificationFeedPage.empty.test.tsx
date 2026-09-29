@@ -6,7 +6,7 @@ import { useNotificationFeed } from '@/data/notification/feedHooks'
 
 vi.mock('@/data/notification/feedHooks', () => ({
   useNotificationFeed: vi.fn(),
-  useNotificationFeedActions: () => ({ markAllRead: vi.fn() }),
+  useNotificationFeedActions: () => ({ markAllRead: vi.fn(), markItemRead: vi.fn() }),
 }))
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

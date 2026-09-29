@@ -25298,10 +25298,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 14px 0 0; padding: 22px 16px; border-radius: 18px; text-align: center;
   font-size: 13.5px; color: var(--text-secondary);
 }
-.nf-page .nf-note {
-  margin: 22px 10px 0; font-size: 12px; line-height: 1.55; text-align: center; color: var(--text-muted);
-}
-
 /* ── settings (/settings/notifications) ── */
 .ntf-page .eyebrow {
   display: block; padding: 18px 4px 8px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;

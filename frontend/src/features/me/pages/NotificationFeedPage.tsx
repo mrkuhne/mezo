@@ -1,15 +1,12 @@
 // ============================================================
 // Mezo · NotificationFeedPage — az „Összes értesítés" saját teljes oldala (mezo-nol0).
-// A fejléc csengője 3 sort mutat, a lábléce ide vezet. Ez az oldal EGYBEN a hiányzó
-// `markAllRead` hívó: előtte a fában nem volt elérhető útvonal, ami olvasottá tett volna
-// egy értesítést, tehát a badge minden képernyőn véglegesen égett (mezo-61w0).
-// A kiemelés a NYITÁSKORI pillanatképből jön, nem az élő `readAt`-ból: a badge azonnal
-// nullázódik, de amíg itt vagy, látod, mi volt új — a törölt NotificationBell szemantikája.
+// A fejléc csengőjének paneljéből érhető el. Egy sor kattintása csak azt a sort
+// jelöli olvasottnak; a többi olvasatlan marad.
 // ============================================================
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { notificationKindMeta } from '@/data/types'
-import { useNotificationFeed, useNotificationFeedActions } from '@/data/notification/feedHooks'
+import { useNotificationFeed, useNotificationFeedActions } from '@/data/hooks'
 import { groupByDay } from '@/features/notification/logic/groupByDay'
 import { timeLabel } from '@/features/notification/logic/stamp'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
@@ -20,49 +17,20 @@ import { Skeleton } from '@/shared/ui/Skeleton'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 
-// Stable fallback identity for `wasUnread` before the snapshot is captured — a fresh `new Set()`
-// on every render would change the `useEffect` dependency each time and re-run its (no-op) body
-// throughout the real-mode loading window (fix round 1, item 2).
-const EMPTY: ReadonlySet<string> = new Set()
-
 export function NotificationFeedPage() {
   const navigate = useNavigate()
   const { items, isPending } = useNotificationFeed()
-  const { markAllRead } = useNotificationFeedActions()
-
-  // Nyitáskori pillanatkép: a lista ebből rajzolja a kiemelést, nem az élő `readAt`-ból —
-  // különben a `markAllRead` a szemünk előtt tüntetné el, mi volt új.
-  const snapshot = useRef<ReadonlySet<string> | null>(null)
-  if (snapshot.current === null && items.length > 0) {
-    snapshot.current = new Set(items.filter((n) => n.readAt === null).map((n) => n.id))
-  }
-  const wasUnread = snapshot.current ?? EMPTY
-
-  const marked = useRef(false)
-  useEffect(() => {
-    if (marked.current || wasUnread.size === 0) return
-    marked.current = true
-    // A repó fire-and-forget idiómája (JournalPage.tsx, ReflectionStep.tsx): a `.catch(() => {})`
-    // KIÍRVA. A `markAllRead` egy `mutateAsync(...).then(...)`, ami real-módban elszálló POST-nál
-    // elutasít; a `void` csak a lintet hallgattatná el, a rejectiont nem. A visszagörgetést az
-    // `onError` már elvégezte, tehát a rejection nem hordoz információt — csak uncaught error lenne.
-    void markAllRead().catch(() => {})
-  }, [wasUnread, markAllRead])
+  const { markItemRead } = useNotificationFeedActions()
+  const unreadCount = items.filter((n) => n.readAt === null).length
 
   const groups = useMemo(() => groupByDay(items, localDateString()), [items])
 
   return (
     <MozaikPage tone="sky" className="nf-page">
       <PageHead glass onBack={() => navigate('/me')} label="Én" />
-      {/* A `big`/`sub` az ÉLŐ `items`-ből olvasna 0-t a real-módú hideg-fetch alatt, ami a
-          „nincs értesítésed" hazugságot ismételné a fejlécben is — pending alatt egyiket sem
-          mutatjuk, ahelyett hogy egy még-be-nem-töltött 0-t állítanánk (fix round 1, item 1).
-          A `|| undefined` pedig a nulla olvasatlant tünteti el: a `big` NYITÁSKORI pillanatkép,
-          a `sub` élő, tehát minden későbbi látogatáson egy nagy `0` állna a „6 értesítés" fölött.
-          A `PageHero` `undefined`-ra kapuz, így bignum nélkül rajzol — ugyanaz az elv, amit a
-          beállítások oldal mond ki magára („egy szám olyan értesítésekről, amik nem történhetnek"). */}
+      {/* Hideg fetch alatt a valódi darabszám még nem ismert. */}
       <PageHero art="t-bell" accent="var(--dv-sky)" name="Értesítések"
-        big={isPending ? undefined : wasUnread.size || undefined}
+        big={isPending ? undefined : unreadCount || undefined}
         sub={isPending ? undefined : `${items.length} értesítés`} />
       <PageBody>
         {isPending ? (
@@ -92,11 +60,14 @@ export function NotificationFeedPage() {
                   const meta = notificationKindMeta(n.kind)
                   return (
                     <button key={n.id} type="button"
-                      className={cn('nf-row', wasUnread.has(n.id) && 'unread')}
+                      className={cn('nf-row', n.readAt === null && 'unread')}
                       // Védőőr, mint a fejléc peekjében (`AppHeader.tsx`): a backend oszlop non-null,
                       // de két felület, ami ugyanazt a mezőt olvassa, ne mondjon két különbözőt.
-                      onClick={() => { if (n.deeplink) navigate(n.deeplink) }}>
-                      {wasUnread.has(n.id) && <>
+                      onClick={() => {
+                        if (n.readAt === null) void markItemRead(n.id).catch(() => {})
+                        if (n.deeplink) navigate(n.deeplink)
+                      }}>
+                      {n.readAt === null && <>
                         <span className="nf-dot" aria-hidden="true" />
                         {/* Az olvasatlanság eddig CSAK látó felhasználónak létezett (osztály + egy
                             aria-hidden pötty). A repó `sr-only` helperje viszi hangba is. */}
@@ -117,7 +88,6 @@ export function NotificationFeedPage() {
                 })}
               </div>
             ))}
-            <p className="nf-note">Az oldal megnyitásakor minden olvasottá válik.</p>
           </EntranceGroup>
         )}
       </PageBody>
