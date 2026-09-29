@@ -14,9 +14,12 @@ import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.people.service.MentionDetectionService;
+import io.mrkuhne.mezo.feature.people.service.PersonFactService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +38,9 @@ import java.util.stream.Collectors;
  * V1.2 post-turn fact extraction: one cheap-tier LLM call over the turn transcript (via the
  * {@link CompanionLlm} port), strict-JSON answer parsed defensively, string-level dedupe against
  * the user's confirmed facts AND pending candidates, per-turn cap — survivors persist as
- * undecided {@code learned_fact} rows for the L2 confirm inbox. Never throws domain data
+ * undecided {@code learned_fact} rows for the L2 confirm inbox. A candidate naming a known person
+ * is dropped while the person memory is on (mezo-d6ivw.13 — that memory saves it itself, and the
+ * chat's „Rólam is" copies it here on request). Never throws domain data
  * problems outward: a broken answer means zero candidates, not a broken turn.
  */
 @Slf4j
@@ -51,6 +56,8 @@ public class FactExtractionService {
             TÉNYKINYERÉS. A következő beszélgetés-fordulóból gyűjtsd ki a felhasználóra ({{NÉV}}) vonatkozó ÚJ, tartós tényeket
             (preferencia, szokás, egészségi jellemző, cél) — kizárólag azt, amit {{NÉV}} maga állított vagy megerősített.
             Ne vegyél fel egyszeri eseményt, kérdést, feltételezést, sem a Mezo saját javaslatait.
+            Ne vegyél fel olyan tényt, ami egy néven nevezett másik emberről szól — azt a személy-emlékezet külön megjegyzi.
+            Minden tényt {{NÉV}} saját, egyes szám első személyű mondataként írj ("Szeretek…", "Nekem…", "Reggel edzek…"), soha ne harmadik személyben.
             Az owner a csapat azon tagja, akihez a tény tartozik: szunya = alvás, mocor = mozgás/edzés, falat = étkezés, deru = közérzet és test, mezo = élet és minden más.
             Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat nélkül, pontosan ebben a formában:
             [{"fact":"...","category":"train|fuel|health|life","owner":"szunya|mocor|falat|deru|mezo"}]
@@ -68,6 +75,9 @@ public class FactExtractionService {
     private final AppNotificationEmitter appNotificationEmitter;
     private final PromptPersona promptPersona;
     private final MessageExtractionGate extractionGate;
+    private final MentionDetectionService mentionDetection;
+    /** Present only with PEOPLE_SWITCH on — the person memory that owns named-person facts. */
+    private final ObjectProvider<PersonFactService> personFactService;
 
     /** One extracted item as the LLM returns it. */
     record ExtractedFact(String fact, String category, String owner) {}
@@ -108,6 +118,7 @@ public class FactExtractionService {
         // through the ONE shared key helper (the stored key is width-capped), and a hit is
         // silent — no candidate, no reinforcement.
         Set<String> vetoed = vetoedFactTextKeys(userId);
+        boolean personMemory = personFactService.getIfAvailable() != null;
         int persisted = 0;
         for (ExtractedFact fact : extracted) {
             if (persisted >= properties.extraction().maxCandidatesPerTurn()) {
@@ -132,6 +143,9 @@ public class FactExtractionService {
             if (vetoed.contains(MemoryForgetVetoEntity.factTextVetoKey(fact.fact()))) {
                 continue; // the user made Mezo forget this text
             }
+            if (personMemory && namesAKnownPerson(userId, fact.fact())) {
+                continue; // mezo-d6ivw.13 person first: the person memory owns it (no duplicate chip)
+            }
             LearnedFactEntity candidate = new LearnedFactEntity();
             candidate.setCreatedBy(userId);
             candidate.setCandidateText(fact.fact().trim());
@@ -148,6 +162,12 @@ public class FactExtractionService {
                     "fact_candidate:" + candidate.getId());
         }
         return persisted;
+    }
+
+    /** mezo-d6ivw.13: the SAME name/alias rule the chat's people recall uses (fold + word start,
+     *  so "Barbival" names Barbi) — code decides, not the prompt. Active persons only. */
+    private boolean namesAKnownPerson(UUID userId, String text) {
+        return !mentionDetection.matchActivePersons(userId, text, 1).isEmpty();
     }
 
     private Set<String> vetoedFactTextKeys(UUID userId) {
