@@ -1668,13 +1668,42 @@ describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
     expect(screen.getByText(/MAI ÁLLAPOT/)).toBeInTheDocument()
   })
 
-  it('the energy card leaves a skipped gym block out', async () => {
+  // mezo-tb3s2 × Kihagyás S1: the energy card mirrors the SERVED Fuel energy, and the backend's
+  // pending preview excludes a skipped occurrence — so a skip refetches the Fuel day and the
+  // card's „még jön" line follows it. Nothing logged changes: the credited number stays put.
+  it('the energy card drops a skipped gym from its served pending preview (real mode)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let skipped = false
+    server.use(
+      http.put(`${API_BASE}/api/train/skips`, async ({ request }) => {
+        skipped = true
+        const body = await request.json() as Record<string, unknown>
+        return HttpResponse.json({
+          id: 'skip-1', source: 'USER', serious: false, freePass: true, excused: true,
+          dayOfWeek: null, time: null, sessionKey: null, reasonText: null, ...body,
+        })
+      }),
+      http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+        HttpResponse.json({
+          date: String(params.date),
+          targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
+          consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+          meals: [],
+          energy: {
+            baseKcal: 2450, plannedMovementKcal: 190, extraMovementKcal: 0,
+            balanceKcal: 0, targetKcal: 2640, pendingMovementKcal: skipped ? 0 : 460,
+          },
+        }),
+      ),
+    )
     const { container } = renderSkips()
-    const before = container.querySelector('.trm-energy-main strong')?.textContent ?? null
-    expect(before).not.toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Kihagyom' }))
-    await screen.findByText('Miért marad ki?')
-    await waitFor(() => expect(container.querySelector('.trm-energy-main strong')?.textContent ?? null).not.toBe(before))
+    const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
+    await waitFor(() => expect(card.querySelectorAll('.trm-energy-split span')[1]?.textContent)
+      .toBe('+460 kcal még jön, ha megcsinálod'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Kihagyom' }))
+    await waitFor(() => expect(skipped).toBe(true))
+    await waitFor(() => expect(container.querySelectorAll('.trm-energy-split span')).toHaveLength(1))
+    expect(container.querySelector('.trm-energy-main strong')!.textContent).toBe('190')
   })
 
   it('a planned sport card offers Kihagyom; skipping it swaps the CTA row for the skipped block', async () => {
