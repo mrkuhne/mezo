@@ -3631,15 +3631,15 @@ const kmInner=()=>`<div class="skipd in">${I('kimelo')}<span><b>Kímélő mód</
 const cbSets=n=>Math.max(1,n-Math.round(n/3)); /* „harmadával kevesebb”: 4→3, 3→2 (spec §9.1.6 ceil-je 4→2-t adna — tisztázandó) */
 const CBT=()=>EX.reduce((a,e)=>a+cbSets(e.sets.length),0);
 function cbBlock(){
-  return `<div class="cbnote"><div class="hd">${I('sprout')}<span>Könnyített: harmadával kevesebb sorozat, a súly nem nő</span></div>
+  return `<div class="cbnote"><div class="hd">${I('sprout')}<span>Könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly</span></div>
     <div class="cbsets">${EX.map(e=>`<div><span>${e.n}</span><b><s>${e.sets.length}</s>${cbSets(e.sets.length)} szett</b></div>`).join('')}</div></div>
     <div class="cbacts"><button class="kmlink" data-cbwaive>Kikapcsolom a könnyítést</button><button class="kmlink" data-cbundo>Mégsem vagyok jól</button></div>`;
 }
 /* „Üdv újra!” — a három programszabály előnézete (d ≤ 2 · 3–9 · ≥ 10 nap kiesés) */
 const UDVX=[
-  ['1–2 nap',d=>`${d>=1&&d<=2?d:2} nap kiesés`,'a program megy tovább a naptár szerint.','Az első edzés könnyített: harmadával kevesebb sorozat, a súly nem nő.'],
-  ['kb. egy hét',()=>'3 nap kiesés','onnan folytatod, ahol abbahagytad: a 3. hét ismétlődik, a program vége egy héttel később lesz (okt. 18. → okt. 25.).','Az első 2 edzés könnyített: harmadával kevesebb sorozat, a súly nem nő.'],
-  ['több mint egy hét',()=>'11 nap kiesés','egy hetet visszalépünk: a 2. héttel folytatod, a program vége 2 héttel később lesz (okt. 18. → nov. 1.).','Az első 2 edzés könnyített: harmadával kevesebb sorozat, a súly nem nő.']];
+  ['1–2 nap',d=>`${d>=1&&d<=2?d:2} nap kiesés`,'a program megy tovább a naptár szerint.','Az első edzés könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.'],
+  ['kb. egy hét',()=>'3 nap kiesés','onnan folytatod, ahol abbahagytad: a 3. hét ismétlődik, a program vége egy héttel később lesz (okt. 18. → okt. 25.).','Az első 2 edzés könnyített: harmadával kevesebb sorozat; az elsőn kb. 10%-kal kisebb súly, a másodikon a régi.'],
+  ['több mint egy hét',()=>'11 nap kiesés','egy hetet visszalépünk: a 2. héttel folytatod, a program vége 2 héttel később lesz (okt. 18. → nov. 1.).','Az első 2 edzés könnyített: harmadával kevesebb sorozat; az elsőn kb. 10%-kal kisebb súly, a másodikon a régi.']];
 function udvSheet(){
   const [,h,l1,l2]=UDVX[UDV];
   return `${capH('KÍMÉLŐ MÓD VÉGE','Üdv újra!','Így folytatjuk — a terv magától igazodik.',I('sprout'))}
@@ -3669,7 +3669,7 @@ function thero(){
     <span class="eb">MA 07:30 · ${MESO.phase} · GYM</span><h1>Pull Day</h1><p>${MESO.name} · ${MESO.week}. hét / ${MESO.of}</p>
     <div class="mchips">${['back-wide','back-mid','shoulder-rear','biceps-brachialis','traps'].map(k=>mchp(k,'sm')).join('')}</div>
     <div class="pills"><span class="flat">5 gyakorlat</span>${cb?`<span class="flat"><s>16</s>${CBT()} szett</span><span class="flat">~${Math.round(78*CBT()/16/5)*5} perc</span>`:'<span class="flat">16 szett</span><span class="flat">~78 perc</span>'}<span class="flat">Húzás</span></div>
-    ${km?kmHero():sk?skBlock('gym'):`${cb?cbBlock():''}<button class="start glass lift ${dayState==='done'?'res':''}" data-go="${cta[3]}">${I(cta[0])}<span class="grow"><strong>${cta[1]}</strong><small>${cta[2]}</small></span><em>${cta[4]}</em></button>${rel?`<div class="kmrel">${I('kimelo')}<span>Kímélő mód közben edzel · csak ma</span><button class="kmlink" data-kmrel="0">Mégse</button></div>`:dayState==='plan'?`<button class="skipbtn" data-skip="gym">${I('skip')}Kihagyom</button>`:''}`}</section>`;
+    ${km?kmHero():sk?skBlock('gym'):`${cb?cbBlock():''}<button class="start glass lift ${dayState==='done'?'res':''}" data-go="${cta[3]}">${I(cta[0])}<span class="grow"><strong>${cta[1]}</strong><small>${cta[2]}</small></span><em>${cta[4]}</em></button>${rel?`<div class="kmrel">${I('kimelo')}<span>Kímélő mód közben edzel · csak ma, könnyítve: kevesebb sorozat, kb. 10%-kal kisebb súly</span><button class="kmlink" data-kmrel="0">Mégse</button></div>`:dayState==='plan'?`<button class="skipbtn" data-skip="gym">${I('skip')}Kihagyom</button>`:''}`}</section>`;
 }
 function mai(v){
   if(v==='ures') return `${topbar()}<div class="qlhead rise"><span class="eb">EDZÉS</span><h1>Mai nap</h1></div>

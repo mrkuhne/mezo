@@ -3076,7 +3076,7 @@ function kmWelcome(){
   const d=Math.max(1,KM.day-1),few=d<=2;
   const prog=few?`<b>${d} nap kiesés</b> · a programod nem csúszik, onnan folytatod, ahol abbahagytad.`
     :`<b>${d} nap kiesés</b> · onnan folytatod, ahol abbahagytad: a 3. hét ismétlődik, a program vége egy héttel később lesz.`;
-  const ramp=few?'<b>Az első edzés könnyített:</b> harmadával kevesebb sorozat, a súly nem nő.':'<b>Az első 2 edzés könnyített:</b> harmadával kevesebb sorozat, a súly nem nő.';
+  const ramp=few?'<b>Az első edzés könnyített:</b> harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.':'<b>Az első 2 edzés könnyített:</b> harmadával kevesebb sorozat; az elsőn kb. 10%-kal kisebb súly.';
   return `${capH('var(--sage)','KÍMÉLŐ MÓD VÉGE','Üdv újra!','Jó, hogy jobban vagy. Így folytatjuk:','sun')}
     <div class="whynote">${I('calendar')}<span>${prog}</span></div>
     <div class="whynote">${I('dumbbell')}<span>${ramp}</span></div>
