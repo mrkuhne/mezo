@@ -120,7 +120,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Detected patterns (pattern dashboard + decision inbox) | `/mezo/patterns` (owned by Üzenőfal tab) | [`insights.md`](insights.md) §2.1 |
 | Memoir / predictions / experiments | `/mezo/memoir` (Emlékek tab) · `/mezo/predictions`, `/mezo/experiments` (Üzenőfal tab) | [`insights.md`](insights.md) §2.3–§2.7 |
 | Weekly review (score bars, AI summary) | `/me/week` | [`me.md`](me.md) §1 (retired from Insights, `/mezo/weekly` redirects) |
-| Companion chat (real, Spring AI 2 / Gemini) | `/mezo/chat` | [`insights.md`](insights.md) §1 · [`companion.md`](companion.md) §3–§4 |
+| Companion chat (real, Spring AI 2 / Gemini) — incl. turn-memory chips and „Rólam is" (`mezo-d6ivw.13`) | `/mezo/chat` | [`insights.md`](insights.md) §1, §2.5 · [`companion.md`](companion.md) §3–§4 |
 | Knowledge facts / knowledge graph ("Tudástár") | `/mezo/knowledge` (owned by Rólad tab) | [`insights.md`](insights.md) §2.4 · [`me.md`](me.md) §1 |
 | Memória (RAG memory observatory) | `/mezo/memoria` (owned by A csapat tab) | [`insights.md`](insights.md) §2.9 |
 | Karakter dossier (7 experts + Szkeptikus, chaired by Mezo) | `/mezo/karakter/*` | [`character.md`](character.md) §2 |

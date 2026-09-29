@@ -44,6 +44,9 @@ public class KnowledgeFactEntity extends OwnedEntity {
     /** A csapatfal REPLY that closed an ügy with a concrete explanation (S7, mezo-d6ivw.7) —
      *  captured as a durable {@code TeamChatExceptionEntity}, mirrored here for the Tudástár. */
     public static final String SOURCE_TEAM_CHAT = "team_chat";
+    /** „Rólam is" (mezo-d6ivw.13): a chat person fact the user also claimed as their own — a copy
+     *  linked back through {@link #sourcePersonFactId}; it goes when the person fact goes. */
+    public static final String SOURCE_PERSON_FACT = "person_fact";
 
     /** S6 (mezo-d6ivw.6): why a fact is muted — mirrors ck_knowledge_fact_muted_reason. */
     public static final String MUTED_USER = "user";
@@ -69,10 +72,10 @@ public class KnowledgeFactEntity extends OwnedEntity {
     /** Mirrors ck_knowledge_fact_source — V1.1 creates only 'manual'; 'chat' = V1.2 extraction,
      *  'pattern' = V3.3 promotion, 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6),
      *  'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal
-     *  REPLY exception (S7, mezo-d6ivw.7). */
+     *  REPLY exception (S7, mezo-d6ivw.7), 'person_fact' = a „Rólam is" copy (mezo-d6ivw.13). */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "chat|pattern|manual|weekly_review|question|team_chat")
+    @Pattern(regexp = "chat|pattern|manual|weekly_review|question|team_chat|person_fact")
     @Column(nullable = false, length = 16)
     private String source;
 
@@ -122,6 +125,11 @@ public class KnowledgeFactEntity extends OwnedEntity {
     @Pattern(regexp = "user|refuted|superseded")
     @Column(name = "muted_reason", length = 16)
     private String mutedReason;
+
+    /** mezo-d6ivw.13: the person_fact this row copies (source = person_fact only); at most one live
+     *  copy per person fact (uq_knowledge_fact_source_person_fact). */
+    @Column(name = "source_person_fact_id", columnDefinition = "uuid")
+    private UUID sourcePersonFactId;
 
     /** S6: when it was muted; null when active or when a pre-S6 mute was backfilled. */
     @Column(name = "muted_at")

@@ -17,6 +17,9 @@ import { useToast } from '@/shared/ui/ToastProvider'
  * its ForgetIntent), so a loaded, empty forget turn renders the forgotten chip's empty state (with
  * the widen offer), never nothing.
  *
+ * mezo-d6ivw.13: a learned person fact carries „Rólam is" — the owner can claim it as their own
+ * too (a copy in the Tudástár Rólad section); the sub-line says where it shows.
+ *
  * Final review: an action's done state lives in the turn's cache too (`undone` / `rejected`, see
  * useTurnMemoryActions), so a confirmation survives a remount or a late refetch.
  */
@@ -54,7 +57,16 @@ export function TurnMemoryChips({ conversationId, anchor, forgottenRefs, onForgo
     <div className="mzc-memturn">
       {memory.learned.map((f) => (
         <MemoryChip key={f.id} variant="remembered" item={{ who: f.who, text: f.text }} sensitive={f.kind === 'sensitivity'}
-          forgotten={forgottenRefs.has(f.id)} done={f.undone} delay={next()} onUndo={() => actions.undoLearned(f.personId, f.id)} />
+          sub={f.aboutMeFactId ? `${f.who} lapján és a Tudástár Rólad részében is látod` : `${f.who} lapján látod`}
+          forgotten={forgottenRefs.has(f.id)} done={f.undone} delay={next()} onUndo={() => actions.undoLearned(f.personId, f.id)}
+          aboutMe={{
+            on: f.aboutMeFactId != null,
+            onToggle: async () => {
+              const on = f.aboutMeFactId == null
+              await actions.toggleAboutMe(f.id, on)
+              toast.show({ kind: 'success', text: on ? 'Rólad is megjegyeztem.' : `Csak ${f.who} lapján marad.` })
+            },
+          }} />
       ))}
       {memory.proposed.map((c) => (c.state === 'kept' ? (
         <MemoryChip key={`${c.id}-kept`} variant="remembered" item={{ text: c.text }} sub="a Tudástár Rólad részében látod"

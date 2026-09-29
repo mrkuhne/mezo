@@ -61,6 +61,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 
 > **2026-09-25 — Üveg U9 (`mezo-me75u.9`).** Four owner-approved sprite symbols join `Icon3DName`: `t-council` (Konzílium), `t-radar` (Detektor), `t-graph` (Kapcsolatok), `t-grid` (Összes funkció). The Mezo II surfaces wear the csapatfal material — the `tf-*` kit in `features/insights/boop-world.css` — with each page's own prefix in five `prototype.css` blocks (`── uveg mezo2 karakter|konzilium|gepterem|tudastar|mintak`), guarded by `U9_BLOCKS` in `prototypeCssStructure.test.ts` (which also checks that motion lives only in the no-preference branch). One clickable reference for the whole Mezo section: [`uveg-mezo-teljes.html`](../design_2.0/prototypes/uveg-mezo-teljes.html), assembled by `prototypes/src/splice-mezo-teljes.py` from the csapatfal world + U8 (scoped `.u8` by `scope-css.py`) + U9.
 
+> **2026-09-29 — „Rólam is" chip (`mezo-d6ivw.13`, no new sprite symbol).** `prototype.css` gains the two-action variant of the S8 memory chip: `.mzc-memchip.is-two` (wraps its `.mzc-memacts` button row below the text — prototype `.s8chip.two`) and the toggle button `.mzc-mbtn.is-me` / `.is-me.is-on` (outline off, tinted fill on — `.s8btn.me` / `.me.on`). Chat surface only; the csapatfal `.mzc-remchip` is untouched. Consumer: `MemoryChip` `aboutMe` ([insights.md §2.5](insights.md)).
+
 > **2026-09-26 — U9b Rólad content redesign (`mezo-zpxv7`, no new sprite symbols — content only).**
 > The rebuilt Rólad page ([`insights.md` §2.0b](insights.md)) reuses the `.kr9-rolad` root the
 > U9 `karakter` block already owned (its own quote/inbox/afterlife/timeline rules —

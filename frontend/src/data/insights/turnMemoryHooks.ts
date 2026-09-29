@@ -16,6 +16,8 @@ const TURN_MEMORY_POLL_DELAYS = [2000, 3000, 5000]
 export const turnMemoryKey = (conversationId: string | null, anchorId: string) =>
   ['turn-memory', conversationId, anchorId] as const
 const previewKey = (conversationId: string | null) => ['forget-all-preview', conversationId] as const
+/** The Tudástár facts list (knowledgeHooks / knowledgeHubHooks) — a „Rólam is" copy lands there. */
+const KNOWLEDGE_KEY = ['knowledge'] as const
 
 const isEmpty = (m: TurnMemory) => m.learned.length + m.proposed.length + m.forgotten.length === 0
 
@@ -119,6 +121,8 @@ export function useTurnMemoryActions(conversationId: string | null, anchor: Turn
     undoLearned: async (personId: string, factId: string) => {
       await undoFactAsync(personId, factId)
       settle((m) => ({ ...m, learned: m.learned.map((f) => (f.id === factId ? { ...f, undone: true } : f)) }))
+      // mezo-d6ivw.13: the undo takes its „Rólam is" copy with it (server-side cascade)
+      if (!mock) void qc.invalidateQueries({ queryKey: KNOWLEDGE_KEY })
     },
     accept: async (candidateId: string) => {
       const decided = await decide(candidateId, 'accept')
@@ -132,6 +136,13 @@ export function useTurnMemoryActions(conversationId: string | null, anchor: Turn
     forgetKept: async (factId: string) => {
       await forgetFact(factId)
       patchProposed((c) => c.promotedFactId === factId, (c) => ({ ...c, undone: true }))
+    },
+    /** mezo-d6ivw.13 „Rólam is": copy the person fact into the owner's own facts (on) or take the
+     *  copy back (off, no veto). Mock mode mints a stand-in id; real mode refreshes the Tudástár. */
+    toggleAboutMe: async (factId: string, on: boolean) => {
+      const aboutMeFactId = mock ? (on ? `mock-aboutme-${factId}` : null) : await turnMemoryApi.setAboutMe(factId, on)
+      settle((m) => ({ ...m, learned: m.learned.map((f) => (f.id === factId ? { ...f, aboutMeFactId } : f)) }))
+      if (!mock) void qc.invalidateQueries({ queryKey: KNOWLEDGE_KEY })
     },
     forgetAll: async (): Promise<MemoryItem[]> => {
       const items = mock ? MOCK_FORGET_ALL_PREVIEW : await turnMemoryApi.forgetAll(conversationId!, anchor!.id)

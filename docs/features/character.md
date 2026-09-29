@@ -547,7 +547,9 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `normalizedTag`, `factText`, `keywords`, `active=true`, linked to the source thread/line), writes
     a `knowledge_fact` (`source=team_chat`, `owner`=the character key, `provenance` = a structured
     team-chat envelope carrying the line/thread id, `createdBy`=the user —
-    `KnowledgeFactService.captureFromTeamChat`), and records one `team_chat_exception_hit`
+    `KnowledgeFactService.captureFromTeamChat`; the `ck_knowledge_fact_source` CHECK it needs was last
+    re-cut by `202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql`, which keeps `team_chat`
+    and adds the chat's „Rólam is" `person_fact` source), and records one `team_chat_exception_hit`
     (`source=REPLY`). An **inactive** exception on the same tag is a durable veto — undone once via
     `.../remembered` (below), it is never re-captured, and a later reply on that tag always answers
     `ANSWER_ONLY`. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's

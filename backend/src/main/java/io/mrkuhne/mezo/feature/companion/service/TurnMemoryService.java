@@ -46,6 +46,7 @@ public class TurnMemoryService {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionMapper mapper;
     private final ObjectProvider<PersonFactService> personFactService;
+    private final AboutMeService aboutMeService;
 
     @Transactional(readOnly = true)
     public TurnMemoryResponse turnMemory(UUID userId, UUID conversationId, UUID messageId) {
@@ -56,10 +57,14 @@ public class TurnMemoryService {
                 : facts.bySourceRefs(userId, PersonFactEntity.SOURCE_CHAT_TURN, List.of(message.getId().toString()));
         Map<UUID, String> names = facts == null ? Map.of()
                 : facts.personNames(userId, personFacts.stream().map(PersonFactEntity::getPersonId).toList());
+        // mezo-d6ivw.13: the „Rólam is" state of every chip — one batched read
+        Map<UUID, UUID> aboutMe = aboutMeService.aboutMeFactIds(userId,
+                personFacts.stream().map(PersonFactEntity::getId).toList());
         return TurnMemoryResponse.builder()
                 .forgetRequest(ForgetIntent.matches(message.getContent()))
                 .learned(personFacts.stream()
-                        .map(f -> mapper.toTurnPersonFactResponse(f, names.getOrDefault(f.getPersonId(), "")))
+                        .map(f -> mapper.toTurnPersonFactResponse(f, names.getOrDefault(f.getPersonId(), ""),
+                                aboutMe.get(f.getId())))
                         .toList())
                 .proposed(liveCandidates(userId, List.of(message.getId())).stream()
                         .map(mapper::toFactCandidateResponse).toList())

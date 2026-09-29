@@ -18,6 +18,43 @@ describe('MemoryChip', () => {
     expect(screen.queryByRole('button', { name: 'Visszavonom' })).not.toBeInTheDocument()
   })
 
+  test('remembered (chat) + aboutMe: Rólam is ⇄ Rólad is · kész, two-action layout, locked while busy', async () => {
+    let release!: () => void
+    const onToggle = vi.fn(() => new Promise<void>((r) => { release = r }))
+    const { container, rerender } = render(<MemoryChip variant="remembered" item={{ who: 'Dóri', text: 'mellette önmagam vagyok' }}
+      sub="Dóri lapján látod" onUndo={vi.fn()} aboutMe={{ on: false, onToggle }} />)
+    expect(container.querySelector('.mzc-memchip.is-remembered.is-two')).not.toBeNull()
+    expect(screen.getByText('Dóri lapján látod')).toBeInTheDocument()
+    const me = screen.getByRole('button', { name: 'Rólam is' })
+    expect(me).toHaveAttribute('aria-pressed', 'false')
+    expect(me).toHaveClass('mzc-mbtn', 'is-me')
+    await userEvent.click(me)
+    expect(onToggle).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Visszavonom' })).toBeDisabled()
+    release()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Visszavonom' })).toBeEnabled())
+    rerender(<MemoryChip variant="remembered" item={{ who: 'Dóri', text: 'mellette önmagam vagyok' }}
+      sub="Dóri lapján és a Tudástár Rólad részében is látod" onUndo={vi.fn()} aboutMe={{ on: true, onToggle }} />)
+    const on = screen.getByRole('button', { name: 'Rólad is · kész' })
+    expect(on).toHaveAttribute('aria-pressed', 'true')
+    expect(on).toHaveClass('is-on')
+    expect(screen.getByText('Dóri lapján és a Tudástár Rólad részében is látod')).toBeInTheDocument()
+  })
+
+  test('remembered + aboutMe: a failed toggle keeps the chip and says so', async () => {
+    const onToggle = vi.fn(async () => { throw new Error('x') })
+    render(<MemoryChip variant="remembered" item={{ who: 'Dóri', text: 'x' }} onUndo={vi.fn()} aboutMe={{ on: false, onToggle }} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Rólam is' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Nem sikerült — próbáld újra.')
+    expect(screen.getByRole('button', { name: 'Rólam is' })).toBeEnabled()
+  })
+
+  test('remembered without aboutMe keeps the one-action layout', () => {
+    const { container } = render(<MemoryChip variant="remembered" item={{ text: 'x' }} onUndo={vi.fn()} />)
+    expect(container.querySelector('.is-two')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Rólam is' })).not.toBeInTheDocument()
+  })
+
   test('remembered: the sensitivity pill and the kept sub-line', () => {
     render(<MemoryChip variant="remembered" item={{ text: 'x' }} sensitive sub="a Tudástár Rólad részében látod" onUndo={vi.fn()} />)
     expect(screen.getByText('érzékeny')).toBeInTheDocument()
@@ -70,6 +107,12 @@ describe('MemoryChip', () => {
     rerender(<MemoryChip variant="forgotten" items={[]} canWiden={false} onWiden={vi.fn()} />)
     expect(screen.getByText('Nem volt mit elfelejteni — az előző üzenetedből semmit nem jegyeztem meg.')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Mindent ebből a beszélgetésből?' })).not.toBeInTheDocument()
+  })
+
+  test('csapatfal surface never shows Rólam is', () => {
+    render(<MemoryChip variant="remembered" surface="csapatfal" item={{ text: 'meccsnap' }} onUndo={vi.fn()}
+      aboutMe={{ on: false, onToggle: vi.fn() }} />)
+    expect(screen.queryByRole('button', { name: 'Rólam is' })).not.toBeInTheDocument()
   })
 
   test('csapatfal surface keeps the S7 DOM: link-style undo, tf-remgone done line', async () => {

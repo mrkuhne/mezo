@@ -56,4 +56,9 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
      *  chat exception follows its fact (a deleted or muted fact silences the exception). */
     List<KnowledgeFactEntity> findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(
             Collection<UUID> ids, UUID createdBy);
+
+    /** mezo-d6ivw.13 („Rólam is"): the live copies of these person facts (one per fact at most —
+     *  uq_knowledge_fact_source_person_fact). */
+    List<KnowledgeFactEntity> findByCreatedByAndSourcePersonFactIdInAndDeletedFalse(
+            UUID createdBy, Collection<UUID> sourcePersonFactIds);
 }

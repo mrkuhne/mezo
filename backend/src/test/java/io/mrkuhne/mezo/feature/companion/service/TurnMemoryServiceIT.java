@@ -29,6 +29,7 @@ class TurnMemoryServiceIT extends AbstractIntegrationTest {
 
     @Autowired private TurnMemoryService turnMemoryService;
     @Autowired private PersonFactService personFactService;
+    @Autowired private AboutMeService aboutMeService;
     @Autowired private AiConversationPopulator conversations;
     @Autowired private AiMessagePopulator messages;
     @Autowired private LearnedFactPopulator candidates;
@@ -60,6 +61,29 @@ class TurnMemoryServiceIT extends AbstractIntegrationTest {
                 .containsExactly("Nagy közös élmény után nehéz az egyedüllét.");
         assertThat(memory.getForgotten()).isEmpty();
         assertThat(memory.getForgetRequest()).isFalse();
+    }
+
+    @Test
+    void testTurnMemory_shouldCarryTheAboutMeCopy_onlyOnTheClaimedPersonFact() {
+        UUID userId = databasePopulator.populateUser("s8-turnmem-aboutme@test.local");
+        AiConversationEntity conversation = conversations.conversation(userId);
+        AiMessageEntity turn = messages.message(conversation, AiMessageEntity.ROLE_USER, "Dórival jól vagyunk");
+        PersonEntity dori = persons.createPerson(userId, "Dóri");
+        List<PersonFactEntity> saved = personFactService.capture(userId, PersonFactEntity.SOURCE_CHAT_TURN,
+                turn.getId().toString(), List.of(
+                        new PersonFactService.PersonFactCapture(dori.getId(), PersonFactEntity.KIND_RELATIONSHIP_STATE,
+                                "Dórival egyre komfortosabbak vagyunk.", "high"),
+                        new PersonFactService.PersonFactCapture(dori.getId(), PersonFactEntity.KIND_PREFERENCE,
+                                "Dóri mellett nem kell megjátszanom magam.", "high")));
+        UUID copy = aboutMeService.add(userId, saved.getFirst().getId());
+
+        TurnMemoryResponse memory = turnMemoryService.turnMemory(userId, conversation.getId(), turn.getId());
+
+        assertThat(memory.getLearned()).hasSize(2);
+        assertThat(memory.getLearned()).filteredOn(f -> f.getId().equals(saved.getFirst().getId()))
+                .singleElement().satisfies(f -> assertThat(f.getAboutMeFactId()).isEqualTo(copy));
+        assertThat(memory.getLearned()).filteredOn(f -> f.getId().equals(saved.get(1).getId()))
+                .singleElement().satisfies(f -> assertThat(f.getAboutMeFactId()).isNull());
     }
 
     @Test

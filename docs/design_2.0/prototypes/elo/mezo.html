@@ -4134,6 +4134,7 @@ body:not(.still) .u8 .typing i:nth-child(3){animation-delay:.3s}
       <a href="#kartya" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-card"/></svg>A napi kártya</a>
       <a href="#chat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés</a>
       <a href="#chat/ures" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-eraser"/></svg>Beszélgetés · üres felejtés (S8)</a>
+      <a href="#chat/rolamis" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-spark"/></svg>Beszélgetés · „Rólam is” (új)</a>
       <span class="ov" style="margin:14px 0 2px">A CSAPAT</span>
       <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-people"/></svg>A csapat + 5 szoba (csapatfal)</a>
       <a href="#tud/szunya" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-journal"/></svg>Amit rólad tud (egy szoba mélye)</a>
@@ -5176,6 +5177,13 @@ render();
 .u8 .s8btn.ghost{background:none;box-shadow:none;color:var(--sub)}
 .u8 .s8btn:focus-visible{outline:2px solid color-mix(in srgb,var(--c) 70%,white);outline-offset:2px}
 .u8 .s8chip.prop{--c:var(--gold)}
+/* mezo-d6ivw.13 · „Rólam is": két gomb egy emberről szóló chipen — a gombsor a szöveg alá tör */
+.u8 .s8chip.two{flex-wrap:wrap;align-items:flex-start}
+.u8 .s8chip.two>.icon{margin-top:1px}
+.u8 .s8chip.two .s8tx{flex:1 1 calc(100% - 30px)}
+.u8 .s8chip.two .s8acts{flex-basis:100%;justify-content:flex-end;margin-top:2px}
+.u8 .s8btn.me{color:var(--sub);background:none;box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--c) 45%,transparent)}
+.u8 .s8btn.me.on{color:color-mix(in srgb,var(--c) 80%,var(--ink));background:color-mix(in srgb,var(--c) 16%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--c) 60%,transparent)}
 .u8 .s8chip.gone{--c:var(--rose)}
 .u8 .s8chip.gone ul{margin:4px 0 0;padding:0;list-style:none;display:grid;gap:3px}
 .u8 .s8chip.gone li{position:relative;padding-left:11px;color:var(--sub)}
@@ -6018,10 +6026,33 @@ function s8ureschat(){
   return chatHead()+`<div class="thread">${u1}${a1}${u2}${a2}${u3}${a3}</div>`;
 }
 
-const _s8chat=U8V.chat; U8V.chat=id=>{ST.ch2=id==='ures'?'ures':'';return id==='ures'?s8ureschat():ST.ch==='mem'?s8chat():_s8chat(id)};
+/* mezo-d6ivw.13 (owner 2026-09-29, „második lehetőség"): ami egy néven nevezett emberről szól,
+   azt CSAK az ő lapjára mentem (Megjegyeztem) — nincs mellé dupla „Megjegyezném". A chipen a
+   „Rólam is" gomb egy koppintással a rólad szóló tudásba is beteszi (a te beleegyezéseddel);
+   újra koppintva visszaveszi. Ami csak rólad szól, az továbbra is Megjegyezném-kérdés. */
+const S8M={
+  a:{w:'Dóri',t:'Dórival egyre komfortosabbak vagyunk egymással, az ölelés is természetes már köztünk.'},
+  b:{w:'Dóri',t:'Dóri mellett nem kell megjátszanom magam.'}
+};
+Object.assign(ST,{s8m:{a:'on',b:'on'}});
+function s8mchip(id,d){const f=S8M[id],s=ST.s8m[id];
+  if(s==='undone')return `<p class="s8done">${I('spark')}Visszavonva — nem jegyeztem meg.</p>`;
+  const me=s==='me';
+  return `<div class="s8chip two" style="--d:${d}s">${I('spark')}<span class="s8tx"><b>Megjegyeztem: ${f.w}</b> — ${f.t}<small>${me?'Dóri lapján és a Tudástár Rólad részében is látod':'Dóri lapján látod'}</small></span>
+    <span class="s8acts"><button class="s8btn me${me?' on':''}" aria-pressed="${me}" data-s8="me:${id}">${me?'Rólad is · kész':'Rólam is'}</button><button class="s8btn ghost" data-s8="mundo:${id}">Visszavonom</button></span></div>`}
+function s8rolamis(){
+  const meta=(t)=>`<div class="msg-meta">${I('chat')}<b>Mezo</b>${t}</div>`;
+  const u1=`<div class="msg-u rise" style="--i:1">Dórival egyre jobban vagyunk, már az ölelés is természetes köztünk. Mellette nem kell megjátszanom magam, ez nagyon jó érzés.<small>09:04</small></div>`;
+  const a1=`<div class="msg-a glass rise" style="--i:2">${meta('09:04')}
+    <p>Ez nagyon szép. Amikor valaki mellett nem kell szerepet játszanod, az nem egy programhoz vagy teljesítményhez kötődik, hanem hozzád.</p>
+    <p>És hogy az érintés is egyre természetesebb, az azt jelzi, hogy épül a bizalom. Nem kell siettetni semmit.</p>
+    ${s8rec(['Dóri'],'3')}</div>`;
+  return chatHead()+`<div class="thread">${u1}${a1}<div class="s8turn">${s8mchip('a',.3)}${s8mchip('b',.42)}</div></div>`;
+}
+const _s8chat=U8V.chat; U8V.chat=id=>{ST.ch2=id==='ures'?'ures':'';return id==='ures'?s8ureschat():id==='rolamis'?s8rolamis():ST.ch==='mem'?s8chat():_s8chat(id)};
 STATUS.mem=['élő · Gemini',''];
 
-SH.s8rec=['var(--lav)',()=>{const k=ST.s8rk,names=k==='1'?['dori','bence']:['bence'];
+SH.s8rec=['var(--lav)',()=>{const k=ST.s8rk,names=k==='1'?['dori','bence']:k==='3'?['dori']:['bence'];
   return `<div class="shh">${I('people')}<div class="grow"><span class="eb">EMLÉKSZEM</span><h3>Ezt vettem elő a válaszhoz</h3></div>${x}</div>
   <div class="s8who">${names.map(n=>`<div class="pp"><strong>${I('person')}${n==='dori'?'Dóri':'Bence'}</strong><ul style="margin:0;padding:0">${S8R[n].map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
   <p class="s8foot">Csak azt veszem elő, amit a Tudástárban is látsz. Ha valamelyiket nem szeretnéd, ott elhallgattathatod vagy elfelejtheted.</p>
@@ -6045,6 +6076,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-s8]');if(!
   if(a==='no'){S[id]='no';soft();return}
   if(a==='undo'){S[id]='undone';soft();return}
   if(a==='rec'){ST.s8rk=id;openSheet('s8rec');return}
+  if(a==='me'){const M=ST.s8m,on=M[id]==='me';M[id]=on?'on':'me';soft();toast(on?'Csak Dóri lapján marad.':'Rólad is megjegyeztem.');return}
+  if(a==='mundo'){ST.s8m[id]='undone';soft();return}
   if(a==='allask'){openSheet('s8all');return}
   if(a==='allgo'){if(ST.ch2!=='ures'){['dori','self'].forEach(k=>{if(S[k]!=='undone'&&S[k]!=='no')S[k]='gone'});S.all=true}closeSheet();soft();toast('Elfelejtve — ebből a beszélgetésből semmit nem tartok meg.');return}
   if(a==='reset'){ST.s8=s8init();ST.ch='mem';location.hash==='#chat'?soft():(location.hash='#chat');return}

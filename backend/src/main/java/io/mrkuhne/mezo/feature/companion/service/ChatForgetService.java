@@ -21,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * S8 (mezo-d6ivw.12, folds S6b mezo-d6ivw.9): "ezt ne jegyezd meg" in the chat. The chat and the
  * Tudástár speak the same verbs through the same writers: a person fact → {@link
- * PersonFactService#undo} (the inactive row is its own veto); an undecided owner proposal → a
+ * PersonFactService#undo} (the inactive row is its own veto; its „Rólam is" copy goes too,
+ * mezo-d6ivw.13); an undecided owner proposal → a
  * reject, which since S8 vetoes its text ({@link FactCandidateService#decide}); a proposal the
  * user already accepted in this conversation → {@link ForgetService#forgetFact}. Permanent — there
  * is no restore. The extraction race is closed by {@code extraction_blocked} (see {@link
@@ -38,6 +39,7 @@ public class ChatForgetService {
     private final TurnMemoryService turnMemoryService;
     private final FactCandidateService factCandidateService;
     private final ForgetService forgetService;
+    private final AboutMeService aboutMeService;
     private final ObjectProvider<PersonFactService> personFactService;
     private final ObjectProvider<MentionDetectionService> mentionDetectionService;
 
@@ -110,6 +112,9 @@ public class ChatForgetService {
                 case ChatMemoryItem.KIND_PERSON_FACT -> {
                     if (facts == null) yield false;
                     facts.undo(userId, item.personId(), item.refId());
+                    // mezo-d6ivw.13: its „Rólam is" copy goes in the same transaction (the undo
+                    // event's async listener would find nothing left — idempotent)
+                    aboutMeService.remove(userId, item.refId());
                     yield true;
                 }
                 case ChatMemoryItem.KIND_FACT_CANDIDATE -> {
