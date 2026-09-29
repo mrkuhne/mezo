@@ -4135,6 +4135,8 @@ body:not(.still) .u8 .typing i:nth-child(3){animation-delay:.3s}
       <a href="#chat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés</a>
       <a href="#chat/ures" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-eraser"/></svg>Beszélgetés · üres felejtés (S8)</a>
       <a href="#chat/rolamis" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-spark"/></svg>Beszélgetés · „Rólam is” (új)</a>
+      <a href="#rolad" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-layers"/></svg>Rólad · „Összevonnám” javaslat (S9, új)</a>
+      <a href="#tenyek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-layers"/></svg>Tények · heti rendrakás, összevontak (S9, új)</a>
       <span class="ov" style="margin:14px 0 2px">A CSAPAT</span>
       <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-people"/></svg>A csapat + 5 szoba (csapatfal)</a>
       <a href="#tud/szunya" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-journal"/></svg>Amit rólad tud (egy szoba mélye)</a>
@@ -6083,6 +6085,56 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-s8]');if(!
   if(a==='reset'){ST.s8=s8init();ST.ch='mem';location.hash==='#chat'?soft():(location.hash='#chat');return}
 },true);
 if(route()[0]==='chat')soft();
+
+/* ═════════ S9 · heti rendrakás (mezo-d6ivw.10): a hasonló tények összevonása ═════════
+   Vegyes modell: a szó szerinti ismétlést Mezo magától összevonja (a megmaradó tény szövege
+   nem változik, a beolvadt a Tények „Összevontam” fiókjában visszakapcsolható); ahol új mondat
+   születne, ott csak javasol a Rólad oldalon — Összevonom · Átírom · Később · Maradjon külön. */
+INB.unshift({id:'m1',kind:'ÖSSZEVONÁSI JAVASLAT',who:'mezo',when:'hétfő',ic:'layers',merge:1,
+  src:['Késő esti evés után nehezebben alszol el.','Ha 21 óra után vacsorázol, rosszabbul alszol.'],
+  b:'Késő esti evés után nálad gyakran nehezebb az elalvás.',
+  sm:'A heti rendrakásnál feltűnt, hogy ez a kettő ugyanarról szól. Ha összevonom, a két régi mondat nem vész el: a Tényeknél visszakapcsolhatod.',
+  txt:{keep:'Összevontam — a két régi mondat a Tényeknél visszakapcsolható',snooze:'Jövő hétfőn újra megkérdezem',no:'Külön maradnak — ezt a kettőt nem hozom fel újra'}});
+const _s9card=inboxCard;
+inboxCard=function(x,i){
+  if(!x.merge)return _s9card(x,i);
+  const d=ST.rinb[x.id],cur=ST['rt_'+x.id]||x.b;
+  if(d==='keep')return `<div class="case glass rise" style="--c:var(--sage);--s:var(--sage);--i:${i}"><span class="crow"><span class="st">${x.kind}</span><em>Mezo hozta · ${x.when}</em></span><span class="cmain">${I(x.ic)}<span class="ctxt"><b>„${cur}”</b></span></span><span class="after big" style="margin-top:10px">${I('tick')}${x.txt.keep}</span></div>`;
+  if(d==='snooze'||d==='no')return `<div class="m9-gone rise" style="--i:${i}">${I(d==='snooze'?'clock':'skip')}<span><b>${x.src.join(' · ')}</b><small>${x.txt[d]}</small></span></div>`;
+  const edit=ST.redit===x.id;
+  return `<div class="case glass rise" style="--c:var(--gold);--s:var(--gold);--i:${i}"><span class="crow"><span class="st">${x.kind}</span><em>Mezo hozta · ${x.when}</em></span>
+    <div class="s9src">${x.src.map(t=>`<span>${I('note')}„${t}”</span>`).join('')}</div>
+    <div class="s9arrow">EGY MONDATBAN</div>
+    <span class="cmain">${I(x.ic)}<span class="ctxt"><b>„${cur}”</b><small>${x.sm}</small></span></span>
+    ${edit?`<div class="m9-edit"><textarea rows="2" aria-label="Az összevont mondat">${cur}</textarea><span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-s9save="${x.id}">${I('tick')}Így vond össze</button><button class="chip glass" style="--c:#8E86A3" data-redit="">Mégse</button></span></div>`:
+    `<span class="inboxa"><button class="chip glass main" style="--c:var(--sage)" data-rdec="${x.id}:keep">${I('layers')}Összevonom</button><button class="chip glass" style="--c:var(--gold)" data-redit="${x.id}">${I('pencil')}Átírom</button><button class="chip glass" style="--c:var(--lav)" data-rdec="${x.id}:snooze">${I('clock')}Később</button><button class="m9-no" data-rdec="${x.id}:no">Maradjon külön</button></span>`}
+  </div>`};
+Object.assign(ST,{s9open:false,s9back:{}});
+const S9M=[{id:'g1',cat:'fuel',t:'Az edzés előtti étkezés 2-3 órával előtte esik neked a legjobban.',into:'Edzés előtt 2-3 órával eszel a legszívesebben.',d:'szept. 29.'},
+  {id:'g2',cat:'train',t:'A röplabda után másnap fáradtabbnak érzed a lábad.',into:'Hosszú röplabda után a következő napon gyakran nehezebb a lábad.',d:'szept. 29.'}];
+const s9row=m=>{const back=ST.s9back[m.id];const [l,ic]=CAT[m.cat];
+  return `<div class="trow ${back?'':'off'}">${I(back?ic:'layers')}<span class="ttx"><b style="font-weight:500">${m.t}</b><small>${l.toLowerCase()} · beszélgetésből</small>${back?`<small style="color:var(--sage);font-weight:600">Újra külön — mindkettőt használom</small>`:`<small class="s9why">${I('layers')}összevontam ezzel: „${m.into}”, ${m.d}</small>`}
+  <button class="th9" data-s9back="${m.id}">${I(back?'layers':'repeat')}${back?'Mégis maradjon összevonva':'Visszakapcsolom'}</button></span></div>`};
+const _s9ten=U9V.tenyek;
+U9V.tenyek=()=>{const html=_s9ten();const n=S9M.filter(m=>!ST.s9back[m.id]).length;
+  const strip=`<div class="strip glass rise" style="--c:var(--sage)">${I('layers')}<span><b>Hétfői rendrakás:</b> ${n?`${n} ismétlést összevontam`:'mindent visszakapcsoltál'}, 1 javaslat vár rád a Rólad oldalon.</span><em role="button" data-go="#rolad">Megnézem ›</em></div>`;
+  const fold=`<div style="padding:0 16px"><button class="m9-fold" data-s9fold><span>Összevontam · ${S9M.length}</span>${ST.s9open?'⌃':'⌄'}</button></div>${ST.s9open?`<div class="tlist" style="margin-top:8px">${S9M.map(s9row).join('')}</div><p class="m9-fn">Ezek ugyanazt mondták, mint egy másik tény, ezért a másikba olvasztottam őket — a szövegük nem változott, és semmi nem veszett el. Ha mégis külön kellenek, kapcsold vissza.</p>`:''}`;
+  const i=html.indexOf('<button class="search');return html.slice(0,i)+strip+html.slice(i)+fold};
+document.addEventListener('click',e=>{const t=e.target;
+  if(t.closest('[data-s9fold]')){e.preventDefault();e.stopPropagation();ST.s9open=!ST.s9open;soft();return}
+  const b=t.closest('[data-s9back]');if(b){e.preventDefault();e.stopPropagation();const id=b.dataset.s9back;ST.s9back[id]=!ST.s9back[id];soft();toast(ST.s9back[id]?'Visszakapcsoltam — újra külön használom':'Újra összevonva');return}
+  const sv=t.closest('[data-s9save]');if(sv){e.preventDefault();e.stopPropagation();const id=sv.dataset.s9save,ta=sv.closest('.m9-edit').querySelector('textarea');ST['rt_'+id]=ta.value.trim()||ST['rt_'+id];ST.rinb[id]='keep';ST.redit='';soft();toast('Összevontam a te szövegeddel');return}
+},true);
+(()=>{const st=document.createElement('style');st.textContent=`
+.m9 .s9src{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px}
+.m9 .s9src span{display:flex;gap:8px;align-items:flex-start;font-size:13px;line-height:1.35;color:var(--dim,#b9b3c7);padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}
+.m9 .s9src .icon{width:18px;height:18px;flex:none;opacity:.8}
+.m9 .s9arrow{font-size:10.5px;letter-spacing:.12em;font-weight:700;color:var(--gold);margin:8px 0 2px 2px}
+.m9 .s9why{display:flex;gap:6px;align-items:flex-start;color:var(--faint);font-weight:600}
+.m9 .s9why .icon{width:14px;height:14px;flex:none}
+.m9 .th9{display:inline-flex;gap:6px;align-items:center;margin-top:8px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit;font:inherit;font-size:12.5px;cursor:pointer;min-height:32px}
+.m9 .th9 .icon{width:16px;height:16px}`;document.head.appendChild(st)})();
+if(['rolad','tenyek'].includes(route()[0]))soft();
 </script>
 </body>
 </html>
