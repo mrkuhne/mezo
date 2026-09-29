@@ -109,11 +109,9 @@ function renderAtSharedClient(entry: string) {
   }
 }
 
-/** Egy kamra-tétel felvétele a composerbe. S1c.2 (mezo-33k6): a kézi pickerek a GÉPELÉS úton
- *  élnek — a lap a kamerán nyit, ezért a kézi út EGY koppintással kezdődik. */
+/** A Kamra közvetlenül a felső forrás-sorból nyílik. */
 async function addPantryLine(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
-  await user.click(await screen.findByRole('button', { name: 'Kamra · hozzáadás' }))
+  await user.click(await screen.findByRole('button', { name: 'Kamra' }))
   const addBtn = (await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0]
   await user.click(addBtn)
   await user.click(screen.getByRole('button', { name: 'Bezárás' }))
@@ -229,24 +227,33 @@ test('a kamerás nézet nem mutat második AI bejáratot és üres tétel-listá
   expect(screen.queryByRole('button', { name: /Logolás · \+10 XP/ })).not.toBeInTheDocument()
 })
 
-test('a gépelés fülön előjönnek a kézi források', async () => {
+test('a Kamra és a Recept a felső sorból közvetlenül elérhető', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   const user = userEvent.setup()
   renderAt('/fuel/log/uj')
-  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
-  expect(screen.getByRole('button', { name: 'Kamra · hozzáadás' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Recept · hozzáadás' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Kamra' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Recept' })).toBeInTheDocument()
+  expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
   // …és innen valóban FEL IS lehet venni egy sort: a picker nem dísz.
   await addPantryLine(user)
   expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeEnabled()
 })
 
-test('a gépelés fülön sem jön vissza a második AI kártya — egy AI bejárat van', async () => {
+test('a Recept közvetlenül a receptválasztó lapot nyitja', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   const user = userEvent.setup()
   renderAt('/fuel/log/uj')
-  await user.click(await screen.findByRole('tab', { name: /Gépelés/ }))
+  await user.click(await screen.findByRole('button', { name: 'Recept' }))
+  expect(await screen.findByText('Válassz receptet')).toBeInTheDocument()
+  await user.click((await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0])
+  expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeEnabled()
+})
+
+test('a kameránál nincs második AI kártya, a szövegmező alapból látható', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  renderAt('/fuel/log/uj')
   expect(screen.queryByRole('button', { name: /AI · fotó vagy szöveg/ })).not.toBeInTheDocument()
   // Az EGYETLEN AI-bejárat a héj nyitotta szövegmező.
   expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()

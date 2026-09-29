@@ -61,6 +61,11 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-29 — Egységes étkezésbevitel (`mezo-qe90y`).** A logoló négy közvetlen bejárata
+  Fotó · Kamra · Recept · Szokásosak; a szöveg és a mellette lévő mikrofon végig elérhető.
+  A kiválasztott fotó nagy előnézetben látszik, cserélhető vagy eltávolítható, és csak az
+  Elemzés gombra indul az AI. A meglévő tételek, forráslapok és mentés egy piszkozatban
+  maradnak. [ADR 0056](../decisions/0056-unified-meal-entry.md).
 - **2026-09-29 — Hangdiktálás mindenhol (`mezo-xojq8`).** Minden szabad szöveges mező (Check-in
   gondolatok, napi szándék, tevékenység, edzés utáni és gyakorlat-jegyzet, sport/futás napló,
   blokkzárás, edzésterv-interjú, gyógyszer-jegyzet, recept-műhely, alvás/súly/ember jegyzet,
