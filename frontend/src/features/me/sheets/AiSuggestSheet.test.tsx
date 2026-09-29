@@ -15,6 +15,8 @@ const { suggest, navigate, useHabitAiSuggest, useHabitCatalog } = vi.hoisted(() 
 // file with "does not provide an export", which a `not.toHaveBeenCalled()` on an unreachable mock
 // never could.
 vi.mock('@/data/hooks', () => ({
+  // the shared voice fields (mezo-xojq8) transcribe through this hook
+  useTranscribe: () => ({ transcribe: vi.fn() }),
   useHabitAiSuggest: () => useHabitAiSuggest(),
   useHabitCatalog: () => useHabitCatalog(),
 }))

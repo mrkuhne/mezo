@@ -5,6 +5,8 @@ import { Icon } from '@/shared/ui/Icon'
 import { Icon3D } from '@/shared/ui/clay'
 import type { WeightLogInput } from '@/data/types'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 export function WeightLogSheet({
   onClose,
@@ -47,9 +49,11 @@ export function WeightLogSheet({
           <div className="col gap-sm capture-section">
             <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
             <div className="card" style={{ padding: 10 }}>
-              <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
-                placeholder='pl. "vasárnap reggel · folyadékvesztés" · "sok só tegnap"'
-                style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
+              <VoiceField domain="me" size="sm" onTranscript={t => setNote(appendDictation(note, t, 200))}>
+                <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
+                  placeholder='pl. "vasárnap reggel · folyadékvesztés" · "sok só tegnap"'
+                  style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
+              </VoiceField>
             </div>
           </div>
           <div className="capture-actions">

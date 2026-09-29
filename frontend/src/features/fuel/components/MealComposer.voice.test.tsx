@@ -20,7 +20,8 @@ const voice = vi.hoisted(() => ({
   error: null as string | null,
   toggle: vi.fn(),
 }))
-vi.mock('@/features/insights/logic/useVoiceInput', () => ({
+vi.mock('@/shared/lib/voice/useVoiceInput', async (orig) => ({
+  ...(await orig<typeof import('@/shared/lib/voice/useVoiceInput')>()),
   useVoiceInput: (onTranscript: (t: string) => void) => {
     voice.onTranscript = onTranscript
     return { state: voice.state, error: voice.error, toggle: voice.toggle }
@@ -62,27 +63,33 @@ test('a második mondat a meglévő szöveg MÖGÉ kerül, nem írja felül', ()
   expect(screen.getByLabelText('Mit ettél?')).toHaveValue('Egy joghurt. És egy banán.')
 })
 
-test('a mikrofon koppintása a hang-hookot indítja, nem ment semmit', async () => {
+test('a mikrofon a mező saját csempéje: koppintásra a hang-hookot indítja, nem ment semmit', async () => {
   renderComposer()
   const { default: userEvent } = await import('@testing-library/user-event')
-  await userEvent.setup().click(screen.getByRole('button', { name: /hang/i }))
+  await userEvent.setup().click(screen.getByRole('button', { name: 'Diktálás' }))
   expect(voice.toggle).toHaveBeenCalledTimes(1)
 })
 
-test('felvétel közben a gomb ezt mondja, és leiratozás közben tiltott', () => {
+test('nincs külön „Hang" chip az Elemzés mellett (mezo-xojq8)', () => {
+  renderComposer()
+  expect(screen.queryByRole('button', { name: /^hang/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /elemzés/i })).toBeInTheDocument()
+})
+
+test('felvétel közben a csempe leállít, leiratozás közben tiltott', () => {
   const { unmount } = renderComposer({ voiceState: 'recording' })
-  expect(screen.getByRole('button', { name: /hallgatlak/i })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getAllByRole('button', { name: 'Felvétel leállítása' })[0]).toHaveAttribute('aria-pressed', 'true')
   unmount()
 
   voice.state = 'transcribing'
   renderComposer()
-  expect(screen.getByRole('button', { name: /leiratozom/i })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Diktálás' })).toBeDisabled()
 })
 
 // Nem támogatott böngészőn a gomb nem hazudik: nem jelenik meg működőként.
 test('hangfelismerés nélkül a mikrofon tiltott', () => {
   renderComposer({ voiceState: 'unsupported' })
-  expect(screen.getByRole('button', { name: /hang/i })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Diktálás' })).toBeDisabled()
 })
 
 test('a hangfelismerés hibája a felhasználónak is látszik', () => {

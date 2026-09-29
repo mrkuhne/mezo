@@ -20,6 +20,8 @@ import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 export type SummaryExercise = SummaryExerciseInput
 
@@ -300,14 +302,16 @@ export function WorkoutSummary({
       {onDraftNote && (mode === 'closing' || noteEditing) ? (
         <div className="wsum-note">
           <span className="wsum-note-q">Hogy ment?</span>
-          <textarea
-            className="wsum-note-ta"
-            maxLength={1000}
-            value={draftNote}
-            aria-label="Hogy ment?"
-            placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…"
-            onChange={(e) => onDraftNote(e.target.value)}
-          />
+          <VoiceField domain="train" onTranscript={(t) => onDraftNote(appendDictation(draftNote, t, 1000))}>
+            <textarea
+              className="wsum-note-ta"
+              maxLength={1000}
+              value={draftNote}
+              aria-label="Hogy ment?"
+              placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…"
+              onChange={(e) => onDraftNote(e.target.value)}
+            />
+          </VoiceField>
           {noteEditing ? (
             <div className="wsum-note-ed">
               <button type="button" className="save" onClick={onNoteSave}>Mentés</button>

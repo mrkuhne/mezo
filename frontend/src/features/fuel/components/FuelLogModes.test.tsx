@@ -17,7 +17,8 @@ const voice = vi.hoisted(() => ({
   error: null as string | null,
   toggle: vi.fn(),
 }))
-vi.mock('@/features/insights/logic/useVoiceInput', () => ({
+vi.mock('@/shared/lib/voice/useVoiceInput', async (orig) => ({
+  ...(await orig<typeof import('@/shared/lib/voice/useVoiceInput')>()),
   useVoiceInput: (onTranscript: (t: string) => void) => {
     voice.onTranscript = onTranscript
     return { state: voice.state, error: voice.error, toggle: voice.toggle }

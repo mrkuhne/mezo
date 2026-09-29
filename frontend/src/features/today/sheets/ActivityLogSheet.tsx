@@ -9,6 +9,8 @@ import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import type { ActivityEntry, DailyQuest, LifeSkillKey } from '@/data/types'
 import type { ActivityWriteResult } from '@/data/activity/activityApi'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 interface ActivityLogSheetProps {
   onClose: () => void
@@ -83,10 +85,12 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
             <>
               <div className="col gap-sm">
                 <div className="card" style={{ padding: 10 }}>
-                  <textarea value={text} maxLength={500} onChange={e => setText(e.target.value.slice(0, 500))}
-                    aria-labelledby="activity-log-title"
-                    placeholder="pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…"
-                    style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 16, lineHeight: 1.45 }} />
+                  <VoiceField domain="nap" onTranscript={t => setText(d => appendDictation(d, t, 500))}>
+                    <textarea value={text} maxLength={500} onChange={e => setText(e.target.value.slice(0, 500))}
+                      aria-labelledby="activity-log-title"
+                      placeholder="pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…"
+                      style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 16, lineHeight: 1.45 }} />
+                  </VoiceField>
                 </div>
                 <p className="text-tertiary" style={{ fontSize: 12, lineHeight: 1.5 }}>Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</p>
               </div>

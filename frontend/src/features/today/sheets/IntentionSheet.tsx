@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 // DS re-dress (mezo-setx.5.5): h2 role title (it IS the field's visible question, Rule 17 —
 // wired via aria-labelledby), the creed quote in the Fraunces meta voice (.shcreed),
@@ -19,9 +21,11 @@ export function IntentionSheet({ creed, onSave, onClose }:
               „{creed}"
             </div>
           )}
-          <textarea className="shta" value={text} onChange={(e) => setText(e.target.value)}
-            maxLength={200} rows={2} autoFocus aria-labelledby="focus-title"
-            placeholder="Ma arra figyelek, hogy…" />
+          <VoiceField domain="nap" onTranscript={(t) => setText((d) => appendDictation(d, t, 200))}>
+            <textarea className="shta" value={text} onChange={(e) => setText(e.target.value)}
+              maxLength={200} rows={2} autoFocus aria-labelledby="focus-title"
+              placeholder="Ma arra figyelek, hogy…" />
+          </VoiceField>
           <button className="cta-primary" disabled={!text.trim()}
             onClick={() => { onSave(text.trim()); close() }}>Hozzáadom</button>
         </div>
