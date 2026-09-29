@@ -48,4 +48,12 @@ public record MemoryProvenanceEnvelope(
     public static MemoryProvenanceEnvelope teamChat(UUID lineId, UUID threadId) {
         return new MemoryProvenanceEnvelope("team_chat_line", null, null, threadId, null, lineId, null);
     }
+
+    /** „Rólam is" (mezo-d6ivw.13): a knowledge fact copied from a chat person fact at the user's
+     *  tap. The envelope only names the origin table and the act ({@code confirmSource} =
+     *  "about_me"); the link itself is {@code knowledge_fact.source_person_fact_id}, a real column
+     *  so the one-live-copy rule can be a unique index. */
+    public static MemoryProvenanceEnvelope personFact() {
+        return new MemoryProvenanceEnvelope("person_fact", null, null, null, null, null, "about_me");
+    }
 }
