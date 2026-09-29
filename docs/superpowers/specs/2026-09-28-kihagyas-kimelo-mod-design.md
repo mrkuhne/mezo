@@ -263,6 +263,180 @@ undo.
   `ReadinessService:77/94`, `train-readiness.yml`, `data/train/readinessHooks.ts`); its
   double-tap race (no lock → 500) must not be copied.
 
+## 9. Spec delta — S2 (2026-09-29, `mezo-q4xt2.2`)
+
+Brainstorm 2026-09-29 (recon: researcher + investigator). Owner answers in bold.
+
+### 9.1 Decisions
+1. **Entry points: the skip sheet + a "Nem vagyok jól" entry on the Nap hub** (owner: "B").
+   - Skip sheet: picking a serious chip (`ILLNESS, STOMACH, INJURY, TRAVEL`) reveals one more
+     row, *Csak ma · 2–3 nap · Kb. egy hét · Nem tudom*. Tapping one opens the period.
+     Leaving it untapped keeps S1 behaviour (a plain excused skip, no period).
+   - Nap hub: a quiet "Nem vagyok jól" entry opens a glass sheet with the 4 serious chips plus
+     the duration row. This works on a rest day with nothing to skip.
+   - A retro serious skip (`date < today`) may open a period too; its start = the skip date.
+2. **Duration → `expected_end`:** Csak ma = start; 2–3 nap = start+2; Kb. egy hét = start+6;
+   Nem tudom = null. The estimate only drives copy. The period never ends on its own (§2.4).
+3. **While a period is active** (start ≤ date, not ended), every planned gym day, sport slot
+   occurrence and prescribed run on a date inside it reads as **skipped, source `RECOVERY`,
+   excused** (never missed, outside the free-pass race, streak-bridged). It is
+   open-ended forward: dates up to today and the rest of the visible window are covered
+   until the period ends.
+4. **"Ma mégis edzek"** (owner: "A") on a recovery-skipped occurrence **releases that one
+   date** (gym + sport + run of that day) without ending the period. It is undoable.
+5. **Daily card "Hogy vagy?"** on the Nap hub, next to `NapzarasCard`, while a period is active:
+   *Jobban / Még nem*.
+   - "Még nem" hides the card for today (stored as `last_check_date`).
+   - Once `expected_end < today`, the copy changes ("A becsült idő letelt — hogy vagy?"),
+     with the same buttons.
+   - The card also carries the entry to end the period by mistake ("Tévedés volt").
+6. **"Jobban" ends the period** with `ended_on = today` (the first day back). Days out
+   `d = ended_on − start_date`.
+   - **Programme rule (code, pure `RecoveryReturnPolicy`):**
+     - `d ≤ 2` → CONTINUE (no calendar change).
+     - `3 ≤ d ≤ 9` → RESUME: shift the active meso's `startDate`/`endDate` forward by whole
+       weeks so that `weekOf(today) == weekOf(start_date)` (the interrupted week is replayed).
+     - `d ≥ 10` → STEP_BACK: the same shift so that `weekOf(today) == max(1, weekOf(start_date) − 1)`.
+       Each muscle's `currentSets` reverts to its value for that week (from the volume log's
+       rollover provenance), and `volumeRecompute.lastRun` is reset to that week. If the history
+       is missing, sets stay and the comeback ramp carries it.
+     - Whole-week shifts keep the weekday template aligned with `MesoWeeks` buckets. The
+       applied shift (days, previous start/end, previous sets) is stored on the period row, so
+       undo is exact.
+     - Running blocks keep their calendar (out of scope). No active meso → no programme change.
+   - **Comeback ramp** (owner: "A", automatic): the first **1** (`d ≤ 2`) or **2** (`d ≥ 3`)
+     gym sessions *completed after* `ended_on` are lightened, i.e. the ramp is counted by
+     sessions, not dates. Lightened = per exercise `sets − ceil(sets/3)` (min 1), `holdOnly`
+     (no load increase), RIR target never below 3. The first prescribed run after `ended_on`
+     shows half duration at an easy effort (display-level note on the run card). The ramp is
+     computed at read time in `getToday` from the period row. It writes no
+     `workout_day_adjustment` rows, so it never collides with the advice "lighten tomorrow".
+   - **"Kikapcsolom a könnyítést"** sets `comeback_waived`. The hero shows a
+     "Visszatérő edzés · 1/2" pill with that action.
+7. **Undo:**
+   - "Jobban" can be withdrawn the same day ("Mégsem vagyok jól"): the period reopens and the
+     programme shift is reverted.
+   - "Tévedés volt" soft-deletes the whole period, reverting any shift. Occurrences return to
+     their S1 state (their own `planned_skip` rows stay).
+   - One active period at a time: a new serious reason while active only updates the category
+     and the estimate.
+8. **Coach tone:**
+   - `ContextSnapshotAssembler.trainBlock` gets a line "Kímélő mód aktív: <kategória>, <n>. nap,
+     becslés: …" (or "Visszatérés: <k>/<N> könnyített edzés"). Never in the cached
+     `stableSystemPrompt`.
+   - `FlagEvaluator` silences the training-pressure rules while active (MissedWorkouts,
+     MomentumAtRisk, JointOveruse, IgnoredNudge) with a new `UnavailableReason.RECOVERY_MODE`.
+   - **S1 gap fixed here:** `MomentumAtRiskRule.missedPlannedGymDays` becomes skip-aware
+     (excused dates are not missed).
+9. **Surfaces:**
+   - Edzés Mai: the gym hero shows a `SkippedBlock` variant "Kímélő mód · <n>. nap" with
+     *Ma mégis edzek*, *Jobban vagyok*. Sport/run cards are muted "Kímélő mód".
+   - Heti: period days muted with the recovery mark.
+   - Nap hub: the Hogy vagy? card + the entry.
+   - The Nap timeline, orb, notifications and Fuel week keep hiding skipped occurrences (S1 rule).
+   - **Meals are untouched (S3).**
+10. **Icons:** reuse `t-ill`, `t-digestion`, `t-pain`, `t-travel` for the categories and `t-skip`.
+    A "kímélő" mark (a sheltering leaf/shield) is decided at the prototype. If it is new, it goes
+    on the "Új ikonok" sheet.
+
+### 9.2 Architecture
+- **Table `recovery_period`** (train, Liquibase `1.1.0`):
+  - columns: `id, created_by, is_deleted, created_at, updated_at, category (CHECK serious 4),
+    start_date, expected_end null, ended_on null, last_check_date null, comeback_waived bool,
+    shift_days int default 0, prev_start/prev_end date null, prev_sets jsonb null, shift_meso_id uuid null`;
+  - partial unique index `idx_recovery_period_one_open` on `(created_by) where is_deleted = false
+    and ended_on is null`.
+- **Table `recovery_day_release`** `(id, created_by, is_deleted, …, period_id, date)`, unique
+  per `(period_id, date) where not deleted`: the "Ma mégis edzek" rows.
+- **`RecoveryPeriodService`** (train/service, depends only on its repositories, so both
+  `PlannedSkipService` and `SportSlotSkipService` can inject it without a cycle):
+  - `protectedDates(user, from, to)`: period days minus released days;
+  - `active(user)`, `open`, `update`, `checkIn(NOT_YET)`, `better`, `undoBetter`, `discard`,
+    `release(date)`, `unrelease(date)`, `waiveComeback`;
+  - writes take `PlannedSkipLock`.
+- **Central read extended, not duplicated (S1 lesson 1):**
+  - `PlannedSkipService.verdictsBetween` adds virtual RECOVERY verdicts for protected dates.
+    GYM: one per protected date with a planned template. SPORT/RUN: the `isSportSkipped` /
+    `runSkipsOf` / `isGymSkipped` helpers also answer `true` on protected dates.
+  - `SportSlotSkipService.isSkipped/skipsBetween` consult `protectedDates`. The exact-key
+    `contains(SkipKey)` sites in `WorkoutWindowQueryService` switch to a date-aware predicate
+    so a whole protected date matches.
+  - `bridgedWeeks` covers weeks whose planned sessions were all protected.
+- **Programme shift + ramp:**
+  - `RecoveryReturnPolicy` (pure, unit-tested) decides CONTINUE/RESUME/STEP_BACK plus the
+    ramp size.
+  - `RecoveryReturnService` applies/reverts the meso shift (the only writer of meso dates
+    outside `stampRun`).
+  - `WorkoutService.getToday` applies the ramp (sets, `holdOnly`, RIR floor) when today's gym
+    is within the ramp.
+- **API** (fragment `api/feature/train/train-recovery.yml`):
+  - `GET /api/train/recovery` (active or last-ended-today period + ramp state);
+  - `PUT /api/train/recovery` (open/update `{category, estimate, startDate?}`);
+  - `POST /api/train/recovery/check-in` `{answer: BETTER|NOT_YET}`;
+  - `POST /api/train/recovery/undo-better`;
+  - `DELETE /api/train/recovery` (Tévedés volt);
+  - `PUT|DELETE /api/train/recovery/releases/{date}`;
+  - `POST /api/train/recovery/waive-comeback`.
+  - `PlannedSkipResponse.source` gains `RECOVERY`. Virtual rows carry no id, so the FE never
+    calls `DELETE /skips/{id}` for them.
+- **FE:**
+  - `data/train/recoveryHooks.ts` (dual-mode, `useDualQuery`, mock cache; invalidations copy
+    `skipHooks.invalidateAfterWrite` + the meso/today queries);
+  - `plannedSkips.ts` learns protected dates; `skipWindow` extends to the period;
+  - `SkipReasonSheet` gets the duration row;
+  - `features/today/components/KimeloCard.tsx` + `NemVagyokJolSheet`;
+  - `SkippedBlock` gets the recovery variant.
+- Not switch-gated (plain CRUD like S1). No LLM.
+
+### 9.3 Out of S2
+Meals and kcal guidance (S3); the Egyéb classifier, the fever/chest safety question, memory
+episodes and the "nincs kedvem" nudge (S4); running-block calendar shift; asking the comeback
+pace (automatic by owner decision).
+
+### 9.4 Prior art (S2-specific, researcher 2026-09-29)
+- **Oura Rest Mode:** https://support.ouraring.com/hc/en-us/articles/360057065433-Rest-Mode
+  - *Adopted:* the day view is kept, with the mode shown on it; a daily "still apply?" card;
+    manual end only; goals ramp back gradually.
+  - *Not adopted:* ramp length = mode length (capped 7 days), replaced by a session count.
+- **Runna "Not feeling 100%":** https://support.runna.com/en/articles/12809806-feeling-unwell-how-to-adapt-your-training-plan
+  - *Adopted:* when the window ends it asks and never snaps back.
+  - *Rejected (owner, 9.1.6):* choosing a comeback pace.
+- **Runna plan realignment:** https://support.runna.com/en/articles/10026375-how-to-use-the-plan-realignment-feature
+  - *Adopted:* extend the end date when there is no fixed deadline; it is ours by default,
+    because a meso has no race.
+  - *Rejected:* their "can't be undone" warning; ours is reversible.
+- **RP sick/return guidance:** https://rpstrength.com/blogs/articles/gym-return-guide
+  - *Adopted:* ≈⅓ fewer sets and a higher RIR for the lightened sessions; step back or restart
+    after mid-meso illness.
+- **Runna return after illness:** https://support.runna.com/en/articles/6846127-returning-to-running-after-illness
+  - *Adopted:* the first run is about half duration at an easy effort.
+  - *Rejected:* the full 4-stage ladder, too long for 1–2 sessions.
+- Not found: Whoop, TrainerRoad and Apple UI details (only marketing copy).
+
+### 9.5 Codebase terrain (investigator 2026-09-29)
+- Central read: `PlannedSkipService.verdictsBetween:126`, `PlannedSkipPolicy.judge:99`
+  (`Row.adviceBacked` = precedent for an always-excused source), helpers `excusedDates:179`,
+  `isGymSkipped:231`, `runSkipsOf:215`, `bridgedWeeks:238` (already used by the streak, so the
+  train.md "unused" note is stale).
+- **Bypass:** `SportSlotSkipService.isSkipped:52/skipsBetween:66` read the repository directly
+  (cycle), and feed `AnchorResolver:205`, `PlanFeasibilityCalculator:134`, `TrainTools:416`,
+  `ContextSnapshotAssembler:424`, `WorkoutWindowQueryService:239`. The exact-key matching at
+  `WorkoutWindowQueryService:239,453,523` needs a date-aware predicate.
+- Meso calendar: weekday-keyed template (`WorkoutService:458`) plus `MesoWeeks.weekOf`
+  (`(days/7)+1`, clamped). Dates are written only in `TrainService.stampRun:222`; no
+  pause/shift concept exists. Volume rollover `VolumeProgressionService.rolloverIfDue:123` is
+  idempotent on `lastRun`. `ContextSnapshotAssembler:303` duplicates the week math.
+- `workout_day_adjustment` has only `set_delta −3..0`, no API, and its only writer is the
+  advice `LightenTomorrowAdapter` (a collision risk), so the ramp is computed at read time
+  instead. Load lever: `SetRecommendationService.prescribe(..., holdOnly)`.
+- Tone: `ContextSnapshotAssembler.render:153`/`trainBlock:294`, not `ChatService.stableSystemPrompt:486`
+  (cached). Flags: `FlagEvaluator:79-103`. **`MomentumAtRiskRule:90-108` is not skip-aware**
+  (an S1 gap).
+- Nap host: `NapHubPage.tsx:62` (`NapzarasCard` slot). Precedent: readiness GET/POST/DELETE,
+  but use `PlannedSkipLock` (readiness has a double-tap 500).
+- Traps: ArchUnit (the period lives in train); `ResetDatabase:50-52`; `idx_` index prefix;
+  contract regen widens `PlannedSkip.source`; the FE `skipWindow` must stretch to the period.
+
 ## Slice lessons
 
 (appended by each slice session)
