@@ -105,3 +105,20 @@ A felhasználó a chat tetején látja, miről indult a beszélgetés, és lenyi
 a kapcsolódó forrásokat. A prototípus kizárólag fiktív kontextussal demonstrálja
 ezt; nincs adatbázis- vagy AI-integrációja. A végleges API és adatmodell a
 prototípus jóváhagyása utáni terv feladata.
+
+## Gyűjteményoldalak vizuális korrekciója
+
+A tulajdonos a négy gyűjtemény (minták, személyes észrevételek, kísérletek,
+előrejelzések) egyszerű soros megjelenését is gazdagabbá kérte tenni. A
+felülvizsgált prototípus mindegyiknek a meglévő Üveg mintakészletből ad
+saját megjelenést: nagy Titanium típusikon, rövid összesítés és állapotok;
+egy sorba rendezett kereső; karakterrel és forráshoz vezető gombbal ellátott
+kártyák. A gyűjteménybejáratok és a húszas lapozás változatlanok.
+
+A mintakártya a két vizsgált tényezőt kapcsolja össze, mellé teszi az
+adatidőszakot és a bizonytalanságot. A személyes észrevétel saját naplórészletet
+és közvetlen chatindítást mutat. A kísérlet a vállalást, a napok állását és a
+várható értékelést emeli ki. Az előrejelzés a várakozást és a megfigyelt
+kimenetet egymás mellett mutatja. A lezárt kártya visszafogottabb anyagú,
+de továbbra is teljesen megnyitható. A mintaadatok fiktívek; a valódi felület
+csak a ténylegesen rendelkezésre álló adatokat jelenítheti meg.
