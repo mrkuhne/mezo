@@ -306,7 +306,7 @@ Brainstorm 2026-09-29 (recon: researcher + investigator). Owner answers in bold.
      - Running blocks keep their calendar (out of scope). No active meso → no programme change.
    - **Comeback ramp** (owner: "A", automatic): the first **1** (`d ≤ 2`) or **2** (`d ≥ 3`)
      gym sessions *completed after* `ended_on` are lightened, i.e. the ramp is counted by
-     sessions, not dates. Lightened = per exercise `sets − ceil(sets/3)` (min 1), `holdOnly`
+     sessions, not dates. Lightened = per exercise `sets − max(1, round(sets/3))` (min 1; 4→3, 3→2, 5→3), `holdOnly`
      (no load increase), RIR target never below 3. The first prescribed run after `ended_on`
      shows half duration at an easy effort (display-level note on the run card). The ramp is
      computed at read time in `getToday` from the period row. It writes no
