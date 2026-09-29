@@ -381,8 +381,9 @@ Brainstorm 2026-09-29 (recon: researcher + investigator). Owner answers in bold.
   - `DELETE /api/train/recovery` (Tévedés volt);
   - `PUT|DELETE /api/train/recovery/releases/{date}`;
   - `POST /api/train/recovery/waive-comeback`.
-  - `PlannedSkipResponse.source` gains `RECOVERY`. Virtual rows carry no id, so the FE never
-    calls `DELETE /skips/{id}` for them.
+  - Virtual RECOVERY verdicts stay internal: `GET /skips` filters them out and the FE derives
+    protection from `GET /recovery` (`protectedDates`) as synthetic `DAY` rows, so it never
+    calls `DELETE /skips/{id}` for them (plan 2026-09-29).
 - **FE:**
   - `data/train/recoveryHooks.ts` (dual-mode, `useDualQuery`, mock cache; invalidations copy
     `skipHooks.invalidateAfterWrite` + the meso/today queries);
