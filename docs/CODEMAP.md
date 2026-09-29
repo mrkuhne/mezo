@@ -154,10 +154,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `NotificationFeedController`→`NotificationFeedApi`
   - **config:** `NotificationFeedProperties`
   - **other:** `AppNotificationKind`
-- **Contract** `api/feature/notification/notification.yml` — 8 operations
+- **Contract** `api/feature/notification/notification.yml` — 9 operations
   - **endpoints:** POST /api/notification/subscription · DELETE /api/notification/subscription ·
     POST /api/notification/test · GET /api/notification/pref · PUT /api/notification/pref · GET /api/notification/feed ·
-    POST /api/notification/feed/read-all · PUT /api/notification/schedule
+    POST /api/notification/feed/read-all · POST /api/notification/feed/{id}/read · PUT /api/notification/schedule
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/appnotification` — 4 IT + 1 unit
   - **ITs:** `AppNotificationRepositoryIT`, `AppNotificationServiceIT`, `NotificationFeedApiIT`, `PatternEmitIT`
   - **populators:** `AppNotificationPopulator`, `CheckInPopulator`, `SleepLogPopulator`, `UserPopulator`
@@ -1137,10 +1137,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `NotificationController`→`NotificationApi`
   - **config:** `NotificationProperties`
   - **other:** `AnchorSet`, `CategoryPref`, `DueItem`, `NotificationCategory`, `ScheduleEntry`
-- **Contract** `api/feature/notification/notification.yml` — 8 operations
+- **Contract** `api/feature/notification/notification.yml` — 9 operations
   - **endpoints:** POST /api/notification/subscription · DELETE /api/notification/subscription ·
     POST /api/notification/test · GET /api/notification/pref · PUT /api/notification/pref · GET /api/notification/feed ·
-    POST /api/notification/feed/read-all · PUT /api/notification/schedule
+    POST /api/notification/feed/read-all · POST /api/notification/feed/{id}/read · PUT /api/notification/schedule
 - **FE data** `frontend/src/data/notification`
   - **hooks (via `@/data/hooks`):** `useNotificationFeed`, `useNotificationFeedActions`, `useNotificationPrefs`,
     `usePushSubscription`, `useScheduleSnapshotWriter`

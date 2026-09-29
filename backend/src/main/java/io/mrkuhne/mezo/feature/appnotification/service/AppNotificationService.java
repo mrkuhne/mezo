@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import java.time.Instant;
 import java.util.List;
@@ -14,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +70,18 @@ public class AppNotificationService {
         return repository.findByCreatedByAndDeletedFalseOrderByOccurredAtDesc(owner, PageRequest.of(0, capped));
     }
 
-    /** Panel-open semantics: every unread row gets stamped. Returns how many were stamped. */
+    /** Only the selected owner's unread row changes; repeat reads are idempotent. */
+    @Transactional
+    public void markItemRead(UUID owner, UUID id) {
+        AppNotificationEntity row = repository.findByIdAndCreatedByAndDeletedFalse(id, owner)
+                .orElseThrow(() -> new SystemRuntimeErrorException(
+                        SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        if (row.getReadAt() == null) {
+            row.setReadAt(Instant.now());
+        }
+    }
+
+    /** Explicit bulk action: every unread row gets stamped. Returns how many were stamped. */
     @Transactional
     public int markAllRead(UUID owner) {
         List<AppNotificationEntity> unread = repository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner);

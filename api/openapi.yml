@@ -9445,6 +9445,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/notification/feed/{id}/read':
+    post:
+      tags:
+        - NotificationFeed
+      operationId: markNotificationFeedItemRead
+      summary: Mark one owned feed row read (NotificationFeed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Stamped; an already-read row is unchanged
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Row not found or belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/notification/schedule:
     put:
       tags:

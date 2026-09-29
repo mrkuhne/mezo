@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +35,11 @@ public class NotificationFeedController implements NotificationFeedApi {
     @Override
     public void markNotificationFeedRead() {
         appNotificationService.markAllRead(currentUserId.get());
+    }
+
+    @Override
+    public void markNotificationFeedItemRead(UUID id) {
+        appNotificationService.markItemRead(currentUserId.get(), id);
     }
 
     private static NotificationFeedItem toDto(AppNotificationEntity e) {

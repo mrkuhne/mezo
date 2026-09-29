@@ -30,17 +30,19 @@ const row = (
 // Szándékosan ÖSSZEKEVERT érkezési sorrend: a peek rendezése látszódjon, ne a `slice` szerencséje.
 const hoisted = vi.hoisted(() => ({ items: [] as unknown[] }))
 const markAllRead = vi.fn(() => Promise.resolve())
+const markItemRead = vi.fn(() => Promise.resolve())
 vi.mock('@/data/notification/feedHooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/notification/feedHooks')>()
   return {
     ...actual,
     useNotificationFeed: () => ({ items: hoisted.items, isPending: false }),
-    useNotificationFeedActions: () => ({ markAllRead }),
+    useNotificationFeedActions: () => ({ markAllRead, markItemRead }),
   }
 })
 
 beforeEach(() => {
   markAllRead.mockClear()
+  markItemRead.mockClear()
   vi.stubEnv('VITE_USE_MOCK', 'true')
   localStorage.clear()
   seedAllKalauzSeen()
@@ -188,6 +190,14 @@ test('a „Mind olvasott" a feed markAllRead-jét hívja', async () => {
   await openPeek()
   await user.click(screen.getByRole('button', { name: 'Mind olvasott' }))
   expect(markAllRead).toHaveBeenCalledTimes(1)
+})
+
+test('a panel sorára kattintva csak az adott értesítés lesz olvasott', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  await openPeek()
+  await user.click(rows()[0])
+  expect(markItemRead).toHaveBeenCalledExactlyOnceWith('ma')
+  expect(markAllRead).not.toHaveBeenCalled()
 })
 
 test('csupa olvasott feedben nincs Olvasatlan chip és nincs „Mind olvasott" gomb', async () => {

@@ -12,7 +12,10 @@ import type { AppNotificationKindKey, AppNotificationView } from '@/data/types'
 // ismeretlen fajta sem viheti el az oldalt.
 vi.mock('@/data/notification/feedHooks', () => ({
   useNotificationFeed: vi.fn(),
-  useNotificationFeedActions: () => ({ markAllRead: vi.fn(() => Promise.resolve()) }),
+  useNotificationFeedActions: () => ({
+    markAllRead: vi.fn(() => Promise.resolve()),
+    markItemRead: vi.fn(() => Promise.resolve()),
+  }),
 }))
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
