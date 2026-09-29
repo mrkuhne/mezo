@@ -1791,6 +1791,8 @@ mezo:
       load-gym-kg-per-min: 100
       # The metric-pair catalog: key is the pattern's stable identity (never rename a live key);
       # metric-b is read lag-days AFTER metric-a's day (0 = same day)
+      # sleep_log.date is the WAKE-UP morning: sleep-* ~ X at lag 0 = the day after the night;
+      # X ~ sleep-* at lag 1 = the night after day X (mezo-ck2.9 re-lag, keys kept stable).
       pairs:
         - key: sleep-quality~next-day-training-rpe
           category: physiology
@@ -1803,7 +1805,7 @@ mezo:
           when-negative-hu: "a jobb alvás után {erősség} könnyebbnek érződött az edzés"
           metric-a: sleep-quality
           metric-b: training-rpe
-          lag-days: 1
+          lag-days: 0
         - key: sleep-duration~next-day-training-rpe
           category: physiology
           label: Fiziológia
@@ -1815,7 +1817,7 @@ mezo:
           when-negative-hu: "a hosszabb alvás után {erősség} könnyebbnek érződött az edzés"
           metric-a: sleep-duration-h
           metric-b: training-rpe
-          lag-days: 1
+          lag-days: 0
         - key: late-meal~next-sleep-quality
           category: trigger
           label: Kiváltó ok
@@ -1867,15 +1869,15 @@ mezo:
         - key: checkin-stress~sleep-quality
           category: trigger
           label: Kiváltó ok
-          title: "Stressz-szint ↔ aznapi alvásminőség"
-          mechanism: "A stresszes nap ronthatja az aznapi alvásminőséget."
+          title: "Stressz-szint ↔ az utána következő éjszaka"
+          mechanism: "A stresszes nap ronthatja az utána következő éjszaka minőségét."
           question: "Elrontja az alvásod a stresszes nap?"
           expected-direction: negative
-          when-positive-hu: "a stresszesebb napokon {erősség} jobban aludtál"
-          when-negative-hu: "a stresszesebb napokon {erősség} rosszabbul aludtál"
+          when-positive-hu: "a stresszesebb napok után {erősség} jobban aludtál"
+          when-negative-hu: "a stresszesebb napok után {erősség} rosszabbul aludtál"
           metric-a: checkin-stress
           metric-b: sleep-quality
-          lag-days: 0
+          lag-days: 1
         - key: daily-water~checkin-energy
           category: physiology
           label: Fiziológia
@@ -1900,7 +1902,7 @@ mezo:
           when-negative-hu: "a jobb alvás után {erősség} könnyebbnek érződtek a szettek"
           metric-a: sleep-quality
           metric-b: gym-workload
-          lag-days: 1
+          lag-days: 0
         - key: gym-volume~next-day-joint-pain
           category: response
           label: Reakció
@@ -2080,7 +2082,7 @@ mezo:
           when-negative-hu: "a jobb alvás után {erősség} gyorsabban nyugodott meg a pulzusod"
           metric-a: sleep-quality
           metric-b: run-hr-recovery-s
-          lag-days: 1
+          lag-days: 0
         - key: social-mentions~checkin-mental
           category: response
           label: Reakció

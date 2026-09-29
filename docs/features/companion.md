@@ -9089,10 +9089,20 @@ with the day AFTER it, and lag 1 reaches two days past bedtime. The new
 history). The same reading says the pre-existing `sleep-quality~next-day-training-rpe` and
 `sleep-duration~next-day-training-rpe` (lag 1) measure the training two days after bedtime, and
 `checkin-stress~sleep-quality` (lag 0, „aznapi alvás") pairs a day's stress with the night BEFORE
-it. They were deliberately **not** changed here: they are live keys (never renamed) that may carry
-user-judged rows, so re-lagging them changes what a confirmed pattern means — that needs its own
-decision (flagged as a follow-up). `late-meal~next-sleep-quality` (lag 1) and
-`sleep-*~checkin-rested` (lag 0) are correct as they stand.
+it. **Re-lagged 2026-09-29 (`mezo-ck2.9`, owner decision „javítsuk"), keys kept stable:**
+`sleep-quality~next-day-training-rpe`, `sleep-duration~next-day-training-rpe`,
+`sleep-quality~next-day-gym-workload` and `sleep-quality~next-day-hr-recovery` went lag 1 → **0**
+(the sweep found the last two with the same slip); `checkin-stress~sleep-quality` went lag 0 → **1**
+and its copy now says „az utána következő éjszaka". The keys were **not** renamed: the stress pair
+carries a user-CONFIRMED row with a promoted fact, and a new key would have orphaned both. The
+confirmed verdict stays — the question the owner confirmed („Elrontja az alvásod a stresszes
+nap?") is exactly what lag 1 measures; the nightly run refreshes the row's title/mechanism and
+stats, and if the corrected data no longer carries the claim, the knowledge recheck raises the
+normal drift card (S6 supersession). The promoted fact's own text still reads „aznapi" until then
+(changing it is a production data write). The FE renders the new lags as „aznap"/„másnap"
+(`lagWord`), matching `sleep-duration~checkin-craving`. `late-meal~next-sleep-quality` (lag 1),
+`bedtime-hour~sleep-quality` / `wakeup-hour~checkin-energy` / `sleep-*~checkin-*` (lag 0) and the
+`*~next-sleep-*` pairs (lag 1) are correct as they stand.
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
 
