@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +65,7 @@ public class PersonFactService {
 
     private final PersonFactRepository personFactRepository;
     private final PersonRepository personRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** Egy kinyert tény-javaslat, ahogy a companion-oldali írók átadják. */
     public record PersonFactCapture(UUID personId, String kind, String text, String confidence) {}
@@ -124,12 +126,24 @@ public class PersonFactService {
         return saved;
     }
 
-    /** Visszavonás/nyugdíjazás: {@code active=false} — a sor megmarad vétónak. */
+    /** Visszavonás/nyugdíjazás: {@code active=false} — a sor megmarad vétónak. A
+     *  {@link PersonFactUndoneEvent} viszi a kaszkádot (mezo-d6ivw.13: a „Rólam is" másolat is megy). */
     @Transactional
     public void undo(UUID userId, UUID personId, UUID factId) {
         PersonFactEntity fact = requireOwnedFact(userId, personId, factId);
         fact.setActive(false);
         personFactRepository.save(fact);
+        eventPublisher.publishEvent(new PersonFactUndoneEvent(userId, personId, factId));
+    }
+
+    /** mezo-d6ivw.13 („Rólam is"): the user's own ACTIVE person fact by id alone — foreign,
+     *  deleted or undone ⇒ 404. The companion copies it into the user's knowledge facts. */
+    @Transactional(readOnly = true)
+    public PersonFactEntity ownedActiveFact(UUID userId, UUID factId) {
+        return personFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+            .filter(PersonFactEntity::isActive)
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
     }
 
     /** S6 (mezo-d6ivw.6): partial update — prompt toggle and/or the user's own text fix. */

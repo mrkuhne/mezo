@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 class ChatForgetServiceIT extends AbstractIntegrationTest {
 
     @Autowired private ChatForgetService chatForgetService;
+    @Autowired private AboutMeService aboutMeService;
     @Autowired private FactCandidateService factCandidateService;
     @Autowired private PersonFactService personFactService;
     @Autowired private PersonFactRepository personFactRepository;
@@ -155,5 +156,18 @@ class ChatForgetServiceIT extends AbstractIntegrationTest {
                 "[fake-facts:[{\"fact\":\"késve érkező tény\",\"category\":\"life\",\"owner\":\"mezo\"}]]", "ok");
 
         assertThat(persisted).isZero();
+    }
+
+    @Test
+    void testForgetLatest_shouldAlsoRemoveTheAboutMeCopy_ofAForgottenPersonFact() {
+        Fixture f = fixture("s8-forget-aboutme@test.local", false);
+        PersonFactEntity annaFact = personFactRepository.findByCreatedByAndPersonIdAndDeletedFalseOrderByCreatedAtDesc(
+                f.userId(), f.anna().getId()).getFirst();
+        UUID copy = aboutMeService.add(f.userId(), annaFact.getId());
+
+        chatForgetService.forgetLatest(f.userId(), f.conversation().getId());
+
+        // mezo-d6ivw.13 (owner 2026-09-29): the chat forget takes the „Rólam is" copy with it
+        assertThat(knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(copy, f.userId())).isEmpty();
     }
 }
