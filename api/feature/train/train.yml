@@ -3099,6 +3099,29 @@ components:
             - $ref: '#/components/schemas/OverloadSummary'
           nullable: true
           description: Day-level overload summary; null when hypertrophy-drive is off.
+        comeback:
+          allOf:
+            - $ref: '#/components/schemas/TodayComeback'
+          nullable: true
+          description: >-
+            Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened — a comeback
+            ramp session after a recovery period, or a released protected day. Null otherwise.
+    TodayComeback:
+      type: object
+      required: [index, total, mode]
+      properties:
+        index:
+          type: integer
+          description: 1-based position of today's session in the lightened run (1 or 2)
+        total:
+          type: integer
+          description: Lightened sessions in the run (1 or 2; 1 for a released day)
+        mode:
+          type: string
+          enum: [RAMP, RELEASED]
+          description: >-
+            RAMP — the Nth gym session after the return; RELEASED — "Ma mégis edzek" on a
+            protected day with lightening kept.
     TodayExercise:
       type: object
       required:

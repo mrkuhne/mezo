@@ -6305,6 +6305,19 @@ export interface components {
             weekDoneDates?: string[];
             /** @description Day-level overload summary; null when hypertrophy-drive is off. */
             overloadSummary?: components["schemas"]["OverloadSummary"] | null;
+            /** @description Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened — a comeback ramp session after a recovery period, or a released protected day. Null otherwise. */
+            comeback?: components["schemas"]["TodayComeback"] | null;
+        };
+        TodayComeback: {
+            /** @description 1-based position of today's session in the lightened run (1 or 2) */
+            index: number;
+            /** @description Lightened sessions in the run (1 or 2; 1 for a released day) */
+            total: number;
+            /**
+             * @description RAMP — the Nth gym session after the return; RELEASED — "Ma mégis edzek" on a protected day with lightening kept.
+             * @enum {string}
+             */
+            mode: "RAMP" | "RELEASED";
         };
         TodayExercise: {
             /** Format: uuid */

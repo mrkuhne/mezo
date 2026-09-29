@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.train.entity.RecoveryDayReleaseEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryDayReleaseRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryPeriodRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -21,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Read side of kímélő mód (Kihagyás S2, mezo-q4xt2.2, spec 2026-09-28 §9): which dates a recovery
  * period protects, the open period, the latest ended one and a date's release row.
  *
- * <p>Depends ONLY on the two recovery repositories on purpose — {@code PlannedSkipService} and
+ * <p>Depends ONLY on repositories (the two recovery ones + the workout-session one for the
+ * comeback count) on purpose — {@code PlannedSkipService} and
  * {@code SportSlotSkipService} inject it for their read-time overlay, so it must never reach back
  * into them (no cycle). Every write lives in {@link RecoveryReturnService}.
  */
@@ -31,6 +33,7 @@ public class RecoveryPeriodService {
 
     private final RecoveryPeriodRepository periods;
     private final RecoveryDayReleaseRepository releases;
+    private final WorkoutSessionRepository workoutSessions;
 
     /**
      * Dates in [from, to] protected by any of the user's periods: a period covers
@@ -97,6 +100,20 @@ public class RecoveryPeriodService {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * Comeback progress after {@code p} ended: the number of completed gym instances dated
+     * {@code endedOn … to} (0 when {@code to} is before {@code endedOn}). The one count both the
+     * recovery read model ({@code done}) and {@code getToday}'s ramp index use (spec §9.1.6: the
+     * ramp is counted by sessions completed after the return, not by dates).
+     */
+    @Transactional(readOnly = true)
+    public int comebackSessionsDone(RecoveryPeriodEntity p, LocalDate to) {
+        if (p.getEndedOn() == null || to.isBefore(p.getEndedOn())) {
+            return 0;
+        }
+        return workoutSessions.findDoneInstancesBetween(p.getCreatedBy(), p.getEndedOn(), to).size();
     }
 
     /** Periods overlapping [from, to]: started by {@code to}, and not ended by {@code from}. */

@@ -21,7 +21,6 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryDayReleaseRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryPeriodRepository;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.RecoveryReturnPolicy.Decision;
 import io.mrkuhne.mezo.feature.train.service.RecoveryReturnPolicy.Rule;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -61,7 +60,6 @@ public class RecoveryReturnService {
     private final RecoveryPeriodService periodService;
     private final MesocycleRepository mesos;
     private final MuscleGroupVolumeLogRepository volumeLogs;
-    private final WorkoutSessionRepository workoutSessions;
     private final VolumeProperties volumeProps;
     private final PlannedSkipLock lock;
 
@@ -327,8 +325,7 @@ public class RecoveryReturnService {
     /** The ramp after the latest return — null once its sessions are done. {@code total} is 0 when waived. */
     private RecoveryComeback comeback(RecoveryPeriodEntity p, LocalDate today) {
         Decision d = RecoveryReturnPolicy.decide(p.getStartDate(), p.getEndedOn());
-        int done = today.isBefore(p.getEndedOn())
-            ? 0 : workoutSessions.findDoneInstancesBetween(p.getCreatedBy(), p.getEndedOn(), today).size();
+        int done = periodService.comebackSessionsDone(p, today);
         if (done >= d.rampSessions()) {
             return null;
         }

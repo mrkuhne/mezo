@@ -1,8 +1,10 @@
 package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryDayReleaseEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate;
+import io.mrkuhne.mezo.feature.train.repository.RecoveryDayReleaseRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryPeriodRepository;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -20,6 +22,7 @@ import org.springframework.boot.test.context.TestComponent;
 public class RecoveryPeriodPopulator {
 
     private final RecoveryPeriodRepository repository;
+    private final RecoveryDayReleaseRepository releases;
 
     public RecoveryPeriodEntity open(UUID createdBy, Reason category, LocalDate start, Estimate estimate) {
         RecoveryPeriodEntity p = new RecoveryPeriodEntity();
@@ -38,6 +41,16 @@ public class RecoveryPeriodPopulator {
         p.setStartDate(start);
         p.setEndedOn(endedOn);
         return repository.saveAndFlush(p);
+    }
+
+    /** "Ma mégis edzek" on {@code date} of {@code period} ({@code lighten} = keep the lightening). */
+    public RecoveryDayReleaseEntity release(RecoveryPeriodEntity period, LocalDate date, boolean lighten) {
+        RecoveryDayReleaseEntity r = new RecoveryDayReleaseEntity();
+        r.setCreatedBy(period.getCreatedBy());
+        r.setPeriodId(period.getId());
+        r.setDate(date);
+        r.setLighten(lighten);
+        return releases.saveAndFlush(r);
     }
 
     /** Persist a hand-built (e.g. deliberately invalid) row — DB CHECK/unique index violation tests. */
