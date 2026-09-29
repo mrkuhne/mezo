@@ -277,6 +277,13 @@ The sections below describe its current behavior and the supporting components.
   `learned_fact` rows. A broken answer means zero candidates, never a broken turn. **Since U9b**
   the extraction prompt's JSON also asks for `"owner":"szunya|mocor|falat|deru|mezo"` alongside
   category (a one-line team-role gloss in the prompt), resolved the same way at persist time.
+  **Person first (`mezo-d6ivw.13`, owner 2026-09-29):** a candidate whose text names an active known
+  person (`MentionDetectionService.matchActivePersons` — the same fold + word-start rule the recall
+  uses, so "Barbival" names Barbi) is silently dropped while the `PersonFactService` bean exists
+  (PEOPLE on) — the person memory saves it itself, so the chat no longer shows a "Megjegyeztem" AND a
+  "Megjegyezném" for the same sentence; PEOPLE off keeps the candidate (nothing else would own it).
+  The prompt also says: skip facts about a named person, and write every candidate in the user's
+  first person ("Szeretek…", "Nekem…").
   **S3 (`mezo-d6ivw.3`) added the person-directed sibling on the same event:**
   `PersonFactExtractionListener` → `PersonFactExtractionService` (slug
   `companion_person_fact_extract`, marker `SZEMÉLYTÉNY`) extracts durable facts about
@@ -285,9 +292,9 @@ The sections below describe its current behavior and the supporting components.
   (`ObjectProvider`, PEOPLE_SWITCH). The nightly `PersonExtractionService` emits the same
   fact shape as a third task of its single LLM call (`facts` array), persisted after
   `persistNight` in its own TX so a fact failure never sinks the night. Auto-save, no queue:
-  the chat reply grows a post-hoc "Megjegyeztem" chip with undo (FE polls
-  `GET /api/people/facts?sourceRefKind=chat_turn&sourceRefId={userMessageId}` on a short
-  backoff). Details + consumption ([Emberek] `tudás:` line, sensitivity kind's proactive
+  the chat reply grows a post-hoc "Megjegyeztem" chip with undo (since S8 the chips read the
+  turn's `GET .../turn-memory` — below — and since `mezo-d6ivw.13` the person-fact chip also
+  carries „Rólam is"). Details + consumption ([Emberek] `tudás:` line, sensitivity kind's proactive
   exclusion) in [me.md](me.md) §5.4.
 - **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first,
   `snoozed_until > now()` excluded) + `POST .../candidate/{id}/decision` (`accept|reject|refine`
@@ -1997,6 +2004,15 @@ companion surface since V0.4, dual-mode:
   after "Ne"/"Visszavonom" dropped the item and its confirmation with it); "Igen" takes the promoted
   fact id from the decision response, and a forget-all settles every turn of the conversation. A reject or a forget is permanent — its chip becomes a flat
   "Elfelejtve · <struck-through text>" line, never an active control again.
+- **„Rólam is" (`mezo-d6ivw.13`) — a person fact the owner claims as their own too.** The learned
+  person-fact chip carries a second, toggling action (`MemoryChip` `aboutMe`, chat surface only —
+  the csapatfal chip is unchanged): „Rólam is" → `POST /api/companion/turn-memory/person-fact/{id}/about-me`
+  copies it into the owner's facts (Tudástár Rólad), the button turns „Rólad is · kész"
+  (`aria-pressed`), the sub-line says „<Név> lapján és a Tudástár Rólad részében is látod"; tapping
+  again (`DELETE …/about-me`) takes the copy back („Csak <Név> lapján marad."). With two actions the
+  chip wraps its button row below the text (`.mzc-memchip.is-two`). The state rides the turn memory
+  (`TurnPersonFactResponse.aboutMeFactId`) and the action patches + settles the turn cache like the
+  others (`useTurnMemoryActions.toggleAboutMe`).
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
   removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
@@ -4203,7 +4219,21 @@ around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.
   the turn's owner-fact candidates (undecided, or accepted with a still-live promoted fact),
   `forgotten` = the triggering message's forget envelope, and `forgetRequest` = `ForgetIntent.matches`
   re-evaluated on that same message — the field the FE polls to distinguish "still extracting" from
-  "this was a forget turn that legitimately found nothing" (§4, §9).
+  "this was a forget turn that legitimately found nothing" (§4, §9). Each learned item carries
+  `aboutMeFactId` (`mezo-d6ivw.13`) from ONE batched `AboutMeService.aboutMeFactIds` read
+  (non-transactional, like the rest of this read path).
+- **„Rólam is" (`AboutMeService`, `mezo-d6ivw.13`)** — `add` copies an ACTIVE own person fact
+  (`PersonFactService.ownedActiveFact`, 404 for foreign/undone/PEOPLE off) into `knowledge_fact`
+  with `source=person_fact`, `owner=mezo`, `category=life`, `source_person_fact_id` = the person fact,
+  `provenance = MemoryProvenanceEnvelope.personFact()`; the text is the person fact's, prefixed
+  `"<Név>: "` only when it does not already name the person (fold, any inflection). Idempotent — one
+  live copy per person fact (`uq_knowledge_fact_source_person_fact`). `remove` soft-deletes the copy
+  **without a forget veto** (the user changed their mind; `ForgetService.forgetFact` would veto the
+  text), so a re-tap re-creates it. Both publish `KnowledgeFactChangedEvent` (graph sync). **The copy
+  goes with its person fact:** `PersonFactService.undo` publishes the people-owned
+  `PersonFactUndoneEvent` → `AboutMeUndoListener` (AFTER_COMMIT + `@Async`, swallow-and-log;
+  people never imports companion), and `ChatForgetService` removes it directly, in the forget's own
+  transaction, right after the undo.
 - **`ChatMemoryBlocks.conversationBlock`** — the per-turn `[Ebben a beszélgetésben]` block (what this
   conversation learned or proposed; the only items the model may call "megjegyeztem") — is
   fail-open the same way (S8 final review): any exception logs and yields "". Its read path
@@ -4313,7 +4343,11 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   (chat,pattern,manual)`, later widened with `weekly_review` by
   `202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql`, with `question` by
   `202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql`, and with `team_chat` by S7's
-  `202609271000_mezo-d6ivw.7_team_chat_reply.sql`), `reinforcement_count int default 0`, `include_in_prompt boolean
+  `202609271000_mezo-d6ivw.7_team_chat_reply.sql`, and with `person_fact` by
+  `202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql`, which also adds the nullable
+  `source_person_fact_id uuid` (`fk_…→person_fact`) + the partial unique index
+  `uq_knowledge_fact_source_person_fact (created_by, source_person_fact_id) where not is_deleted` — the
+  „Rólam is" copy link), `reinforcement_count int default 0`, `include_in_prompt boolean
   default true`, `last_reinforced_at timestamptz`; index
   `idx_knowledge_fact_created_by_include_reinforcement (created_by, include_in_prompt,
   reinforcement_count desc)` — the injection query's key. **`source=team_chat`**
@@ -6272,6 +6306,8 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/memory/llm-usage` | `LlmUsageResponse` | 200 · 401 · 404 | `mezo-al1i` — daily rollup over `llm_log_history` (`days` 1..90, default 30); `enabled:false` + empty `perDay` + zeroed `totals` when the `mezo.feature.llm-log.enabled` switch is off — the query never runs. |
 | `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
 | `GET /api/companion/conversation/{id}/turn-memory` | `TurnMemoryResponse` | 200 · 401 · 404 | **S8 (`mezo-d6ivw.12`)** — `TurnMemoryService.turnMemory`; required query `messageId` (the turn's USER message id). `learned`/`proposed`/`forgotten` may each be empty; `forgetRequest` is `ForgetIntent.matches` re-run on that message. The chat chips poll this on a 2s/3s/5s ladder, stopping on `forgetRequest`, a non-empty `forgotten`, or a chip action (the client patches its cache from then on). 404 for a missing/foreign conversation OR a `messageId` that is not that conversation's own USER row. |
+| `POST /api/companion/turn-memory/person-fact/{personFactId}/about-me` | `AboutMeResponse` | 200 · 401 · 404 | **`mezo-d6ivw.13` „Rólam is"** — `AboutMeService.add`: copies the owner's active chat person fact into `knowledge_fact` (`source=person_fact`), idempotent; returns `{personFactId, aboutMeFactId}`. 404 for a foreign/undone/deleted person fact or PEOPLE off. |
+| `DELETE /api/companion/turn-memory/person-fact/{personFactId}/about-me` | `AboutMeResponse` | 200 · 401 | **`mezo-d6ivw.13`** — `AboutMeService.remove`: soft-deletes the live copy, no forget veto; nothing to remove is a no-op (`aboutMeFactId: null`). |
 | `GET /api/companion/conversation/{id}/forget-learned` | `MemoryItemResponse[]` | 200 · 401 · 404 | **S8** — `ChatForgetService.preview`; every still-live memory item the conversation ever produced, newest first (the „Mindent ebből a beszélgetésből?" sheet's list). |
 | `POST /api/companion/conversation/{id}/forget-learned` | `ForgetLearnedResponse` | 200 · 401 · 404 | **S8** — `ChatForgetService.forgetAll`; body `ForgetLearnedRequest {triggerMessageId}` (the message whose Elfelejtettem chip offered the widen). Forgets every still-live item permanently and appends the result onto the trigger message's `forgotten_memories`. 404 for a missing/foreign conversation or trigger message. |
 
@@ -6322,7 +6358,7 @@ includeInPrompt, lastReinforcedAt?, createdAt, patternTitle?, citedWeeks?, muted
 supersededBy?, provenance}` (V1.1; `owner`/`patternTitle` U9b/`mezo-tk88`; `citedWeeks`
 `mezo-d20.7.7`; **`mutedReason`/`mutedAt`/`supersededBy`/`provenance` are S6 (`mezo-d6ivw.6`)** —
 `mutedReason` is `user\|refuted\|superseded\|null` (§3 above), `provenance` is
-`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat,
+`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat\|person_fact,
 patternId?, sourceMessageId?}`, the structured "honnan jön" the lazy `GET
 /api/companion/fact/{factId}/evidence` (below) expands into evidence items). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +

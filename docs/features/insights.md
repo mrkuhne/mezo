@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-27
+updated: 2026-09-29
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -609,7 +609,16 @@ that message learned nothing, the forgotten list comes back genuinely empty and 
 `forgotten` variant renders its own honest empty state ("Nem volt mit elfelejteni — az előző
 üzenetedből semmit nem jegyeztem meg.") plus the same widen offer, rather than showing nothing. A
 reject or a forget is **permanent** — the chip becomes a flat "Elfelejtve · <struck text>" line and
-never offers an action again. Full backend flow: [`companion.md`](companion.md) §2/§3/§4.
+never offers an action again. **„Rólam is" (`mezo-d6ivw.13`):** a learned person-fact chip (chat
+surface only) carries a second, toggling action — „Rólam is" copies the fact into the Tudástár Rólad
+section (`useTurnMemoryActions.toggleAboutMe` → `POST/DELETE /api/companion/turn-memory/person-fact/{id}/about-me`,
+cache patched + settled, `['knowledge']` invalidated), the button becomes „Rólad is · kész"
+(`aria-pressed`), the sub-line „<Név> lapján látod" / „<Név> lapján és a Tudástár Rólad részében is
+látod", toasts „Rólad is megjegyeztem." / „Csak <Név> lapján marad."; with two actions the chip is
+`is-two` and its button row wraps below the text (`chat-memory.spec.ts` pins it at 320px). A
+`person_fact`-sourced fact shows in the Tudástár with origin „Egy ismerősödről szóló beszélgetésből —
+te tetted ide…" and chip „ismerős lapjáról" (owner tag MEZO — not user-authored).
+Full backend flow: [`companion.md`](companion.md) §2/§3/§4.
 
 **Conversation actions + the error bubble's hands (F7.5, `mezo-d20.8.5.1`).** The header grew a third disc — **⋯ „A beszélgetés műveletei"** (disabled on a draft thread / degraded) — and every picker row a **kebab** (`onActions` prop): both open `sheets/ConversationActionsSheet.tsx` for that conversation. **Átnevezés** = inline input (prefilled, Enter/Mentés, NO confirm — reversible) → `useConversationActions().rename` (`PATCH /api/companion/conversation/{id}`; mock leg rewrites `CONVERSATIONS_KEY` in place). **Törlés** = two-step warm confirm („…a belőlük tanult emlékeket ez nem érinti." — ADR 0010, a decision not a mistake) → `remove` (`DELETE`, soft server-side; invalidates the list + BOTH `['chat','newest']` and the id-keyed thread cache), and deleting the on-screen conversation moves `?c=` off the dead id. The **error bubble** (amber `.mzc-bub-err`, a hiccup not a scolding) now keeps the failed turn: `useChatActions` retains `failedText` past the `finally`, and the bubble renders **Újra** (`retry()` — re-sends the same text, *replace don't append*: no duplicated user bubble) + **Szerkesztés** (`editFailed()` → the text lands back in the composer). The AI-SDK regenerate state model, adopted per the F7.5 recon.
 
