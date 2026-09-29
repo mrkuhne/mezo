@@ -249,8 +249,9 @@ public class FactMergeService {
             parts.add("%d javaslat vár rád".formatted(proposed));
         }
         String body = String.join(", ", parts);
-        appNotificationEmitter.emit(userId, AppNotificationKind.FACT_CANDIDATE, "Rendet raktam", body,
-                AppNotificationKind.FACT_CANDIDATE.deeplink(), null,
+        AppNotificationKind kind = proposed > 0
+                ? AppNotificationKind.FACT_CANDIDATE : AppNotificationKind.FACT_REINFORCED;
+        appNotificationEmitter.emit(userId, kind, "Rendet raktam", body, kind.deeplink(), null,
                 "fact_merge:" + userId + ":" + LocalDate.now());
     }
 }

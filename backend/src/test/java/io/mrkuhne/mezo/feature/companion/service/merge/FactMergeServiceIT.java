@@ -94,7 +94,10 @@ class FactMergeServiceIT extends AbstractIntegrationTest {
 
         List<AppNotificationEntity> sent = notifications(owner);
         assertThat(sent).hasSize(1);
-        assertThat(sent.get(0).getKind()).isEqualTo(AppNotificationKind.FACT_CANDIDATE.key());
+        // a merge-only run (no proposal) rides FACT_REINFORCED, not FACT_CANDIDATE — nothing is
+        // waiting for a decision, so the inbox deeplink would be misleading.
+        assertThat(sent.get(0).getKind()).isEqualTo(AppNotificationKind.FACT_REINFORCED.key());
+        assertThat(sent.get(0).getDeeplink()).isEqualTo(AppNotificationKind.FACT_REINFORCED.deeplink());
         assertThat(sent.get(0).getTitle()).isEqualTo("Rendet raktam");
         assertThat(sent.get(0).getBody()).isEqualTo("1 ismétlést összevontam");
 
@@ -103,6 +106,29 @@ class FactMergeServiceIT extends AbstractIntegrationTest {
         assertThat(second2).isEqualTo(new Outcome(0, 0));
         assertThat(ledgerRepository.findByCreatedByAndDeletedFalse(owner)).hasSize(1);
         assertThat(notifications(owner)).hasSize(1);
+    }
+
+    @Test
+    void testRunFor_shouldRepointAcceptedCandidate_fromLoserOntoSurvivor() {
+        UUID owner = userPopulator.createUser().getId();
+        KnowledgeFactEntity survivor = fact(owner, "Hétvégén később kezdődik az első étkezés.",
+                KnowledgeFactEntity.SOURCE_CHAT, 2, null);
+        KnowledgeFactEntity loser = fact(owner, "hétvégén később kezdődik az első étkezés",
+                KnowledgeFactEntity.SOURCE_CHAT, 0, null);
+        LearnedFactEntity accepted = new LearnedFactEntity();
+        accepted.setCreatedBy(owner);
+        accepted.setCandidateText(loser.getFactText());
+        accepted.setCategory(CATEGORY);
+        accepted.setSource(LearnedFactEntity.SOURCE_CHAT);
+        accepted.setUserDecision(LearnedFactEntity.DECISION_ACCEPT);
+        accepted.setPromotedFactId(loser.getId());
+        accepted = learnedFactRepository.saveAndFlush(accepted);
+
+        Outcome outcome = factMergeService.runFor(owner);
+
+        assertThat(outcome).isEqualTo(new Outcome(1, 0));
+        LearnedFactEntity reread = learnedFactRepository.findById(accepted.getId()).orElseThrow();
+        assertThat(reread.getPromotedFactId()).isEqualTo(survivor.getId());
     }
 
     @Test
@@ -142,6 +168,9 @@ class FactMergeServiceIT extends AbstractIntegrationTest {
 
         List<AppNotificationEntity> sent = notifications(owner);
         assertThat(sent).hasSize(1);
+        // a run with a proposal rides FACT_CANDIDATE — something is now waiting for a decision.
+        assertThat(sent.get(0).getKind()).isEqualTo(AppNotificationKind.FACT_CANDIDATE.key());
+        assertThat(sent.get(0).getDeeplink()).isEqualTo(AppNotificationKind.FACT_CANDIDATE.deeplink());
         assertThat(sent.get(0).getBody()).isEqualTo("1 javaslat vár rád");
     }
 
@@ -179,6 +208,8 @@ class FactMergeServiceIT extends AbstractIntegrationTest {
         assertThat(outcome).isEqualTo(new Outcome(1, 1));
         List<AppNotificationEntity> sent = notifications(owner);
         assertThat(sent).hasSize(1);
+        // any proposal at all tips the kind to FACT_CANDIDATE, even alongside a merge.
+        assertThat(sent.get(0).getKind()).isEqualTo(AppNotificationKind.FACT_CANDIDATE.key());
         assertThat(sent.get(0).getTitle()).isEqualTo("Rendet raktam");
         assertThat(sent.get(0).getBody()).isEqualTo("1 ismétlést összevontam, 1 javaslat vár rád");
 
