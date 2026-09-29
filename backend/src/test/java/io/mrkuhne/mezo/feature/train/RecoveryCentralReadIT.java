@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Source;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Verdict;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
@@ -21,8 +22,10 @@ import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -90,6 +93,8 @@ class RecoveryCentralReadIT extends AbstractIntegrationTest {
         assertThat(sportSlotSkipService.isSkipped(user, dow, "18:00", today)).isTrue();
         assertThat(sportSlotSkipService.skipsBetween(user, today, today).contains(dow, "18:00", today)).isTrue();
         assertThat(plannedSkipService.isRunSkipped(user, today, "w2-long")).isTrue();
+        assertThat(plannedSkipService.isRunSkipped(user, today, null))
+            .as("consistent with RunSkips.contains: a protected date covers any run").isTrue();
         assertThat(plannedSkipService.skippedRuns(user, today, today).contains(today, "w1-sprint")).isTrue();
         assertThat(windows.windowsFor(user, today))
             .as("no gym / sport / run window on a protected day — Fuel must not score around them")
@@ -101,6 +106,7 @@ class RecoveryCentralReadIT extends AbstractIntegrationTest {
     @Test
     void testCentralRead_shouldJudgeTheVirtualRowAsExcusedRecovery_withoutAFreePass() {
         UUID user = user();
+        train.createGymSlot(user, dow, "07:00");
         RecoveryPeriodEntity period = illnessSinceYesterday(user);
 
         List<Verdict> verdicts = plannedSkipService.verdictsBetween(user, today, today);
@@ -121,6 +127,7 @@ class RecoveryCentralReadIT extends AbstractIntegrationTest {
     void testCentralRead_shouldReadNormally_whenTheProtectedDateIsReleased() {
         UUID user = user();
         plannedDay(user);
+        train.createGymSlot(user, today.minusDays(1).getDayOfWeek().getValue() - 1, "07:00");
         RecoveryPeriodEntity period = illnessSinceYesterday(user);
         release(user, period, today);
 
@@ -160,5 +167,53 @@ class RecoveryCentralReadIT extends AbstractIntegrationTest {
         assertThat(todays.getFirst().row().source()).isEqualTo(Source.USER);
         assertThat(todays.getFirst().freePass()).as("RECOVERY rows stay out of the pass race").isTrue();
         assertThat(todays.getFirst().excused()).isTrue();
+    }
+
+    @Test
+    void testCentralRead_shouldAddNoGymVerdictNorBridge_whenTheProtectedDayIsARestDay() {
+        UUID user = user();                       // no gym slot, no meso: today is a rest day
+        train.createScheduleSlot(user, dow, "18:00", 90, "training");
+        illnessSinceYesterday(user);
+
+        assertThat(plannedSkipService.verdictsBetween(user, today, today)).isEmpty();
+        assertThat(plannedSkipService.isGymSkipped(user, today)).isFalse();
+        assertThat(plannedSkipService.bridgedWeeks(user, today, today))
+            .as("a protected rest day never bridges a week on its own").isEmpty();
+        assertThat(sportSlotSkipService.isSkipped(user, dow, "18:00", today))
+            .as("sport protection stays date-wide").isTrue();
+    }
+
+    @Test
+    void testCentralRead_shouldExcuseAndBridge_whenTheProtectedDayIsAMesoTemplateDay() {
+        UUID user = user();                       // planned via the active meso's template label only
+        var meso = train.createActiveMeso(user);
+        train.createTemplateDay(user, meso.getId(), WorkoutService.HU_DAY_LABELS.get(dow));
+        illnessSinceYesterday(user);
+
+        assertThat(plannedSkipService.excusedDates(user, Kind.GYM, today, today)).containsExactly(today);
+        assertThat(plannedSkipService.bridgedWeeks(user, today, today))
+            .containsExactly(PlannedSkipPolicy.isoWeekKey(today));
+    }
+
+    @Test
+    void testCentralRead_shouldKeepTheFreePass_whenASoftSkipFallsOnAnUnprotectedDayOfAProtectedWeek() {
+        UUID user = user();
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thursday = monday.plusDays(3);
+        train.createGymSlot(user, 0, "07:00");    // Monday
+        train.createGymSlot(user, 3, "07:00");    // Thursday
+        periods.ended(user, Reason.ILLNESS, monday, monday.plusDays(2));   // protects Mon + Tue
+        plannedSkips.create(user, thursday, Kind.GYM, null, null, null, Reason.TIRED);
+
+        List<Verdict> week = plannedSkipService.verdictsBetween(user, monday, monday.plusDays(6));
+
+        assertThat(week).extracting(v -> v.row().date()).containsExactly(monday, thursday);
+        Verdict recovery = week.get(0);
+        assertThat(recovery.row().source()).isEqualTo(Source.RECOVERY);
+        assertThat(recovery.freePass()).isFalse();
+        Verdict soft = week.get(1);
+        assertThat(soft.row().source()).isEqualTo(Source.USER);
+        assertThat(soft.freePass()).as("RECOVERY rows never take the week's pass").isTrue();
+        assertThat(soft.excused()).isTrue();
     }
 }

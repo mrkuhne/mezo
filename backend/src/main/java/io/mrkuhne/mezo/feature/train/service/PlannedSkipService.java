@@ -7,8 +7,12 @@ import io.mrkuhne.mezo.api.dto.PlannedSkipResponse;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSlotSkipEntity;
+import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.PlannedSkipRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Row;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Source;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Verdict;
@@ -23,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
@@ -52,6 +57,10 @@ public class PlannedSkipService {
     // Kihagyás S2 (mezo-q4xt2.2): protected kímélő-mód dates overlay the union as virtual RECOVERY
     // verdicts. RecoveryPeriodService depends only on its repositories — no cycle.
     private final RecoveryPeriodService recoveryPeriodService;
+    // Planned-gym-weekday lookup for the virtual RECOVERY GYM rows (see plannedGymWeekdays).
+    private final GymScheduleSlotRepository gymScheduleSlotRepository;
+    private final MesocycleRepository mesocycleRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
 
     @Transactional
     public PlannedSkipResponse upsert(UUID user, PlannedSkipRequest req) {
@@ -131,9 +140,10 @@ public class PlannedSkipService {
      *  the whole ISO weeks spanning [from, to] (free-pass correctness needs a whole week), then
      *  filtered back down to [from, to] and sorted date then createdAt.
      *
-     *  <p>Kihagyás S2 (mezo-q4xt2.2): every date a kímélő-mód period protects adds one virtual
-     *  GYM row with {@link Source#RECOVERY} (excused, no pass, out of the race) — unless the date
-     *  already has a USER GYM row, which carries the reason itself. SPORT and RUN protection is
+     *  <p>Kihagyás S2 (mezo-q4xt2.2): every PLANNED GYM day a kímélő-mód period protects adds one
+     *  virtual GYM row with {@link Source#RECOVERY} (excused, no pass, out of the race) — unless
+     *  the date already has a USER GYM row, which carries the reason itself. A protected rest day
+     *  gets no row, so it never bridges a week on its own (spec §9.2). SPORT and RUN protection is
      *  date-wide and rides {@link SportSlotSkipService.SportSkips} / {@link RunSkips}. */
     @Transactional(readOnly = true)
     public List<Verdict> verdictsBetween(UUID user, LocalDate from, LocalDate to) {
@@ -178,8 +188,10 @@ public class PlannedSkipService {
             .filter(e -> e.getKind() == Kind.GYM)
             .map(PlannedSkipEntity::getDate)
             .collect(Collectors.toSet());
-        recoveryPeriodService.protectedDays(user, weekFrom, weekTo).forEach((date, period) -> {
-            if (!userGymDates.contains(date)) {
+        Map<LocalDate, RecoveryPeriodEntity> protectedDays = recoveryPeriodService.protectedDays(user, weekFrom, weekTo);
+        Set<Integer> plannedGymDows = protectedDays.isEmpty() ? Set.of() : plannedGymWeekdays(user);
+        protectedDays.forEach((date, period) -> {
+            if (!userGymDates.contains(date) && plannedGymDows.contains(date.getDayOfWeek().getValue() - 1)) {
                 rows.add(new Row(recoveryRowId(user, date), date, Kind.GYM, null, null, null,
                     period.getCategory(), null, Source.RECOVERY, period.getCreatedAt()));
             }
@@ -191,6 +203,32 @@ public class PlannedSkipService {
                 .thenComparing(v -> v.row().createdAt())
                 .thenComparing(v -> v.row().id()))
             .toList();
+    }
+
+    /**
+     * Weekdays (0=Hét..6=Vas) that carry a planned gym session — loaded once per {@link
+     * #verdictsBetween} call, only when a protected date exists. A day is a planned gym day when
+     * the active meso has a template day with that HU label (the {@code
+     * WorkoutService#findPlannedTemplateForDate} rule the commitment, adherence and quest reads use)
+     * OR a {@code gym_schedule_slot} sits on it (the rule the missed-workouts / momentum flags and
+     * the workout windows use). Mirrored via repositories: injecting WorkoutService here would be a
+     * cycle (it depends on this service).
+     */
+    private Set<Integer> plannedGymWeekdays(UUID user) {
+        Set<Integer> dows = new HashSet<>();
+        gymScheduleSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(user)
+            .forEach(slot -> dows.add(slot.getDayOfWeek()));
+        mesocycleRepository.findByCreatedByAndStatusAndDeletedFalse(user, "active").stream().findFirst()
+            .ifPresent(meso -> workoutSessionRepository
+                .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(user, List.of(meso.getId())).stream()
+                .filter(s -> s.getTemplateSessionId() == null && s.getDayLabel() != null)
+                .forEach(s -> {
+                    int dow = WorkoutService.HU_DAY_LABELS.indexOf(s.getDayLabel());
+                    if (dow >= 0) {
+                        dows.add(dow);
+                    }
+                }));
+        return dows;
     }
 
     /** Stable id of the virtual RECOVERY row for one protected date — deterministic so a verdict
@@ -274,7 +312,9 @@ public class PlannedSkipService {
 
     @Transactional(readOnly = true)
     public boolean isRunSkipped(UUID user, LocalDate date, String sessionKey) {
-        return sessionKey != null && skippedRuns(user, date, date).contains(date, sessionKey);
+        // RunSkips.contains checks the protected date first, so a protected date answers true
+        // even for a null key — consistent with the record.
+        return skippedRuns(user, date, date).contains(date, sessionKey);
     }
 
     @Transactional(readOnly = true)
