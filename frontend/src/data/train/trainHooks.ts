@@ -646,11 +646,12 @@ function mesocyclesQuery(mock: boolean, qc: QueryClient) {
 }
 
 /** The active meso's current week (after any recovery shift) — the „Üdv újra!" week clause on
- *  surfaces that do not load the whole `useTrain()` (the Nap hub). Null without an active meso. */
-export function useActiveMesoWeek(): number | null {
+ *  surfaces that do not load the whole `useTrain()` (the Nap hub). Null without an active meso.
+ *  `enabled: false` skips the (real-mode) fetch — the Nap hub reads it only while a period exists. */
+export function useActiveMesoWeek({ enabled = true }: { enabled?: boolean } = {}): number | null {
   const mock = isMockMode()
   const qc = useQueryClient()
-  const { data } = useQuery(mesocyclesQuery(mock, qc))
+  const { data } = useQuery({ ...mesocyclesQuery(mock, qc), enabled })
   const m = (data ?? []).find((x) => x.status === 'active') ?? (mock ? activeMeso : null)
   return m?.currentWeek ?? null
 }

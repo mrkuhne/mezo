@@ -2,6 +2,7 @@ import path from 'node:path'
 import { test, expect, type Page } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
 import { seedSplashSkipped } from './splashSeed'
+import { brokenChipWords } from './wordWrap'
 
 /**
  * Kímélő mód S2 (mezo-q4xt2.2) — the Nap hub at the narrowest phone: the „Nem vagyok jól" pill,
@@ -64,6 +65,8 @@ test('Nap · kímélő mód: Nem vagyok jól → Mi történt? → the Hogy vagy
     return { out, scroll: el.scrollWidth, width: el.clientWidth }
   })
   expect(sheet.out).toBe(0)
+  // every reason label keeps its words whole (no „Gyomorront / ás") and inside its chip
+  expect(await brokenChipWords(page, '.nap-kmsheet .trm-whyc > span, .nap-kmsheet .trm-kmdc > button')).toEqual([])
   expect(sheet.scroll).toBeLessThanOrEqual(sheet.width + 1)
   await shot(page, '02-sheet-picked')
   await dialog.getByRole('button', { name: 'Kímélő mód bekapcsolása' }).click()

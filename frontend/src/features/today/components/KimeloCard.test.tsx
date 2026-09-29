@@ -176,4 +176,44 @@ describe('KimeloSlot — real mode', () => {
     expect(screen.getByText('Hogy vagy?')).toBeInTheDocument()
     expect(screen.queryByText('Rendben, holnap reggel újra rákérdezek')).not.toBeInTheDocument()
   })
+
+  it('a failed recovery read renders nothing — no „Nem vagyok jól" over an unknown state', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let got = false
+    server.use(http.get(`${API_BASE}/api/train/recovery`, () => { got = true; return HttpResponse.json({ messages: [] }, { status: 500 }) }))
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const { container } = render(
+      <QueryClientProvider client={client}><ToastProvider><KimeloSlot /></ToastProvider></QueryClientProvider>,
+    )
+    await waitFor(() => expect(got).toBe(true))
+    await waitFor(() => expect(client.getQueryState([...RECOVERY_QUERY_KEY, today()])?.status).toBe('error'))
+    expect(screen.queryByRole('button', { name: 'Nem vagyok jól' })).not.toBeInTheDocument()
+    expect(container.querySelector('.nap-kmcard, .nap-kmslim')).toBeNull()
+  })
+
+  it('no period: the meso list is never fetched (the „Üdv újra!" week is read only while a period exists)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let mesoCalls = 0
+    server.use(
+      http.get(`${API_BASE}/api/train/recovery`, () => HttpResponse.json(recoveryEmpty)),
+      http.get(`${API_BASE}/api/train/mesocycles`, () => { mesoCalls += 1; return HttpResponse.json([]) }),
+    )
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><ToastProvider><KimeloSlot /></ToastProvider></QueryClientProvider>)
+    expect(await screen.findByRole('button', { name: 'Nem vagyok jól' })).toBeInTheDocument()
+    expect(mesoCalls).toBe(0)
+  })
+
+  it('an open period: the meso list is fetched for the week clause', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let mesoCalls = 0
+    server.use(
+      http.get(`${API_BASE}/api/train/recovery`, () => HttpResponse.json(openState('ILLNESS', 'FEW_DAYS', 1))),
+      http.get(`${API_BASE}/api/train/mesocycles`, () => { mesoCalls += 1; return HttpResponse.json([]) }),
+    )
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={client}><ToastProvider><KimeloSlot /></ToastProvider></QueryClientProvider>)
+    expect(await screen.findByText('Hogy vagy?')).toBeInTheDocument()
+    await waitFor(() => expect(mesoCalls).toBe(1))
+  })
 })

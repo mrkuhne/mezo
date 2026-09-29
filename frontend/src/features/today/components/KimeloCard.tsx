@@ -84,21 +84,25 @@ export function KimeloCard({ period, busy, onNotYet, onBetter, onDiscard }: {
  * period → the quiet „Nem vagyok jól" pill that opens „Mi történt?"; an open one → `KimeloCard`.
  * „Jobban" follows the shared rule (`useRecoveryBetter`: day 1 discards, later → „Üdv újra!").
  * Every write's failure is toasted by the global MutationCache; the UI moves only on success.
- * Real mode renders nothing until the state is known, so a pill never flashes before the card.
+ * Real mode renders nothing until the state is known (or when the read failed), so a pill never
+ * flashes before the card.
  */
 export function KimeloSlot() {
   const toast = useToast()
-  const { recovery, isPending } = useRecovery()
+  const { recovery, isPending, isError } = useRecovery()
   const checkIn = useRecoveryCheckIn()
   const discard = useDiscardRecovery()
   const undoBetter = useUndoBetter()
-  const week = useActiveMesoWeek()
   const { better, welcome, closeWelcome } = useRecoveryBetter({ checkIn, discard })
   const [sheet, setSheet] = useState(false)
   const period = recovery.period ?? null
   const open = period && !period.endedOn ? period : null
+  // The meso list only matters for „Üdv újra!" — fetch it only while a period exists.
+  const week = useActiveMesoWeek({ enabled: Boolean(period) })
   const busy = checkIn.isPending || discard.isPending || undoBetter.isPending
-  if (isPending) return null
+  // Unknown state (loading, or a failed read) → nothing: never offer „Nem vagyok jól" over a
+  // period the server may already hold.
+  if (isPending || isError) return null
   return (
     <>
       {open ? (

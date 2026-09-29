@@ -2,6 +2,7 @@ import path from 'node:path'
 import { test, expect, type Page } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
 import { seedSplashSkipped } from './splashSeed'
+import { brokenChipWords } from './wordWrap'
 
 /**
  * Kímélő mód S2 (mezo-q4xt2.2) — Edzés · Mai through a whole recovery at the narrowest phone:
@@ -60,6 +61,7 @@ async function pickRecovery(page: Page, estimate: string, name: string) {
     return Array.from(el.querySelectorAll('.trm-kmdc button')).filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length
   })
   expect(chipsOutside).toBe(0)
+  expect(await brokenChipWords(page, '.trm-whysheet .trm-whyc > span, .trm-whysheet .trm-kmdc > button')).toEqual([])
   await dialog.getByRole('button', { name: estimate }).click()
   await expect(dialog.getByText('Kímélő mód bekapcsolva')).toBeVisible()
   await shot(page, name)

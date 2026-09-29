@@ -34,14 +34,14 @@ const recoveryKey = () => [...RECOVERY_QUERY_KEY, localDateString()] as const
  * trusts the server verbatim. `useTrain().plannedSkips` folds the protected dates in as DAY rows.
  */
 export function useRecovery() {
-  const { data, isPending } = useDualQuery<RecoveryState>({
+  const { data, isPending, isError } = useDualQuery<RecoveryState>({
     queryKey: recoveryKey(),
     mockData: recoveryEmpty,
     realFetch: () => recoveryApi.get(),
     realEmpty: recoveryEmpty,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
-  return { recovery: data, isPending }
+  return { recovery: data, isPending, isError }
 }
 
 /** Real mode: every read a recovery write can move — the skip dependents (`skipHooks`), this
