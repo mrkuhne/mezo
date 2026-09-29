@@ -3,11 +3,13 @@ package io.mrkuhne.mezo.feature.goal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import io.mrkuhne.mezo.feature.goal.engine.service.ExpenditureLearningService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
-import io.mrkuhne.mezo.feature.goal.entity.ExpenditureEstimateEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
@@ -165,16 +167,23 @@ class ActivityModelMigrationRunnerIT extends AbstractIntegrationTest {
         GoalEntity goal = goalRepository.findByCreatedByAndStatusAndDeletedFalse(owner, "active").stream().findFirst()
             .orElseThrow();
 
-        ExpenditureEstimateEntity row1Before = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK1_START)
-            .orElseThrow();
-        ExpenditureEstimateEntity row2Before = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK2_START)
-            .orElseThrow();
-        int appliedBefore1 = row1Before.getAppliedBaseKcal();
-        int appliedBefore2 = row2Before.getAppliedBaseKcal();
+        int appliedBefore1 = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK1_START)
+            .orElseThrow().getAppliedBaseKcal();
+        int appliedBefore2 = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK2_START)
+            .orElseThrow().getAppliedBaseKcal();
+
+        // Logged movement arrives AFTER the stored weeks were reviewed (the pre-v3 rows never credited
+        // it): an unplanned 400 kcal sport session every day of the learning window. Only a genuine
+        // re-chain can move the stored applied bases off their pre-migration values.
+        for (LocalDate d = WEEK2_END.minusDays(HISTORY_DAYS - 1L); !d.isAfter(WEEK2_END); d = d.plusDays(1)) {
+            trainPopulator.withKcal(trainPopulator.createSportSessionNoTime(owner, d, 60), 400);
+        }
 
         downgradeToV2AndInjectSplit(goal.getId());
 
         runner.run();
+
+        verify(expenditureLearning).rechainFrom(owner, WEEK1_START);
 
         entityManager.flush();
         entityManager.clear();
@@ -190,33 +199,36 @@ class ActivityModelMigrationRunnerIT extends AbstractIntegrationTest {
                 assertThat(seg.restDayKcal()).isNull();
             });
 
-        ExpenditureEstimateEntity row1After = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK1_START)
-            .orElseThrow();
-        ExpenditureEstimateEntity row2After = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK2_START)
-            .orElseThrow();
+        // Plain ints read BEFORE any verification replay — reviewWeek rewrites the same managed row.
+        int appliedAfter1 = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK1_START)
+            .orElseThrow().getAppliedBaseKcal();
+        int appliedAfter2 = estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK2_START)
+            .orElseThrow().getAppliedBaseKcal();
+        assertThat(List.of(appliedAfter1, appliedAfter2))
+            .as("the rollout's re-chain rewrote the stored weeks with the newly logged movement")
+            .isNotEqualTo(List.of(appliedBefore1, appliedBefore2));
 
-        // Both stored weeks were replayed by the rollout's rechain — a fresh replay of the same,
-        // unchanged inputs is idempotent and reproduces exactly what got persisted (no updatedAt
-        // column exists on this row to assert against instead).
-        ExpenditureEstimateEntity freshWeek1 = expenditureLearning.reviewWeek(owner, WEEK1_START).orElseThrow();
-        ExpenditureEstimateEntity freshWeek2 = expenditureLearning.reviewWeek(owner, WEEK2_START).orElseThrow();
-        assertThat(row1After.getAppliedBaseKcal()).isEqualTo(freshWeek1.getAppliedBaseKcal());
-        assertThat(row2After.getAppliedBaseKcal()).isEqualTo(freshWeek2.getAppliedBaseKcal());
-        // Sanity: the rows were genuinely re-fitted (persisted again), not skipped — both still
-        // carry a real applied base consistent with the earlier, pre-migration run.
-        assertThat(row1After.getAppliedBaseKcal()).isEqualTo(appliedBefore1);
-        assertThat(row2After.getAppliedBaseKcal()).isEqualTo(appliedBefore2);
-
+        // Second run BEFORE the verification replays below, so they cannot muddy the no-op check.
         var computedAtAfterFirstRun = reloaded.getTdeeBootstrap().computedAt();
+        clearInvocations(expenditureLearning);
 
         runner.run();
 
+        verify(expenditureLearning, never()).rechainFrom(eq(owner), any());
         entityManager.flush();
         entityManager.clear();
         GoalEntity reloadedAgain = goalRepository.findById(goal.getId()).orElseThrow();
         assertThat(reloadedAgain.getTdeeBootstrap().computedAt())
             .as("second run is a no-op — the goal is no longer stale")
             .isEqualTo(computedAtAfterFirstRun);
+        assertThat(estimates.findByCreatedByAndWeekStartAndDeletedFalse(owner, WEEK2_START).orElseThrow()
+            .getAppliedBaseKcal()).as("second run left the learned history alone").isEqualTo(appliedAfter2);
+
+        // What got persisted is exactly a fresh replay over the same (now movement-bearing) inputs.
+        int freshWeek1 = expenditureLearning.reviewWeek(owner, WEEK1_START).orElseThrow().getAppliedBaseKcal();
+        int freshWeek2 = expenditureLearning.reviewWeek(owner, WEEK2_START).orElseThrow().getAppliedBaseKcal();
+        assertThat(appliedAfter1).isEqualTo(freshWeek1);
+        assertThat(appliedAfter2).isEqualTo(freshWeek2);
     }
 
     @Test
