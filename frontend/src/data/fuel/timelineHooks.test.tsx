@@ -393,6 +393,31 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
         vi.useRealTimers()
       }
     })
+
+    // mezo-tb3s2 × Kihagyás S1 (mezo-q4xt2.1): a skipped occurrence is neither logged nor pending —
+    // `deriveBlocks` drops it through the central `isSkipped`, so the energy sheet lists no tile.
+    it('a SKIPPED gym session is not listed on the energy sheet at all (neither done nor pending)', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-07-02T10:00:00')) // Thursday, gym 18:30 still ahead
+      try {
+        server.use(
+          http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+          http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+          dayWith(energy),
+          http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([{
+            id: 's1', kind: 'GYM', date: '2026-07-02', dayOfWeek: null, time: null, sessionKey: null,
+            reasonCategory: 'TIRED', reasonText: null, source: 'USER', serious: false, freePass: true, excused: true,
+          }])),
+        )
+        const { Wrapper } = sharedWrapper()
+        const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+        await waitFor(() => expect(result.current.energyBreakdown).not.toBeNull())
+        await waitFor(() =>
+          expect(result.current.energyBreakdown!.movement.blocks?.find(b => b.kind === 'gym')).toBeUndefined())
+      } finally {
+        vi.useRealTimers()
+      }
+    })
   })
 
   // Task 7 (mezo-7102): resolveDayType(blocks) picks the cached template matching today's REAL

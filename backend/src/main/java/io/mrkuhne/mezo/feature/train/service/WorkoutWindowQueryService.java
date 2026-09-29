@@ -332,6 +332,15 @@ public class WorkoutWindowQueryService {
         Map<LocalDate, List<RunSessionLogEntity>> runsByDate = runSessionLogRepository
             .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
             .collect(Collectors.groupingBy(RunSessionLogEntity::getDate));
+        // Kihagyás S1 (mezo-q4xt2.1) × mezo-tb3s2: the same central skip read windowsFor uses — a
+        // skipped gym day / skipped prescribed run is neither logged nor pending. (Sport skips
+        // already ride `skips` above: plannedSportPool drops a skipped slot.)
+        List<PlannedSkipPolicy.Verdict> skipVerdicts = plannedSkipService.verdictsBetween(userId, from, to);
+        Set<LocalDate> gymSkipDates = skipVerdicts.stream()
+            .filter(v -> v.row().kind() == PlannedSkipEntity.Kind.GYM)
+            .map(v -> v.row().date())
+            .collect(Collectors.toSet());
+        Set<PlannedSkipService.RunSkipKey> runSkips = PlannedSkipService.runSkipsOf(skipVerdicts);
 
         // Looked up at most once for the whole range, and only if a done gym instance (planned or
         // extra) or a today-or-later pending preview needs it (mezo-tb3s2).
@@ -356,7 +365,8 @@ public class WorkoutWindowQueryService {
             result.put(day, movementForDay(day, gymSlots, doneByDate.getOrDefault(day, List.of()),
                 sportSlots, eventsByDate.getOrDefault(day, List.of()),
                 sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
-                runsByDate.getOrDefault(day, List.of()), restKcalPerHour));
+                runsByDate.getOrDefault(day, List.of()), restKcalPerHour,
+                gymSkipDates.contains(day), runSkips));
         }
         return result;
     }
@@ -367,7 +377,8 @@ public class WorkoutWindowQueryService {
             List<WorkoutSessionEntity> doneInstances, List<SportScheduleSlotEntity> sportSlots,
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
             Set<SportSlotSkipService.SkipKey> skips, RunningBlockEntity activeBlock,
-            List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour) {
+            List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour,
+            boolean gymSkipped, Set<PlannedSkipService.RunSkipKey> runSkips) {
         int dow = date.getDayOfWeek().getValue() - 1;
         boolean plannedDone = false;
         int plannedKcal = 0;
@@ -421,10 +432,13 @@ public class WorkoutWindowQueryService {
         }
 
         // Pending (display only, mezo-tb3s2): today's / a future date's still-unlogged plan at the
-        // moderate band. A past day's miss is simply a miss — no preview.
+        // moderate band. A past day's miss is simply a miss — no preview. A SKIPPED occurrence
+        // (Kihagyás S1, mezo-q4xt2.1) is not pending either: a skipped gym day previews no gym, a
+        // skipped prescribed run leaves the run count (a logged run on that day still credits as
+        // above — never hide a real workout). Sport skips are already out of `unmatchedSport`.
         int pendingKcal = 0;
         if (!date.isBefore(LocalDate.now())) {
-            long gymLeft = Math.max(0, gymSlotCount - plannedGymCount);
+            long gymLeft = gymSkipped ? 0 : Math.max(0, gymSlotCount - plannedGymCount);
             if (gymLeft > 0) {
                 int gymEach = activityEnergyModel
                     .netKcal("gym", null, props.gymDefaultMinutes(), restKcalPerHour.get()).orElse(0);
@@ -435,7 +449,10 @@ public class WorkoutWindowQueryService {
                 pendingKcal += activityEnergyModel
                     .netKcal(left.sport(), null, minutes, restKcalPerHour.get()).orElse(0);
             }
-            long runsLeft = Math.max(0, prescribedRunCount - plannedRunCount);
+            long unskippedRunCount = activeBlock == null ? 0 : prescribedRunSessionsOn(activeBlock, date)
+                .filter(s -> !runSkips.contains(new PlannedSkipService.RunSkipKey(date, s.key())))
+                .count();
+            long runsLeft = Math.max(0, unskippedRunCount - plannedRunCount);
             if (runsLeft > 0) {
                 int runEach = activityEnergyModel
                     .netKcal("run", null, props.runDefaultMinutes(), restKcalPerHour.get()).orElse(0);
