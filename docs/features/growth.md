@@ -2,7 +2,7 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-09-26
+updated: 2026-09-29
 tags: [today, me, train, fuel, intention, ritual, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
@@ -17,6 +17,8 @@ related: [today, me, train, fuel, habit, intention, ritual, _platform-data-layer
 ---
 
 # Growth — Daily Quests, Activity Log & Gamified Progression
+
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `QuestSelector`/`HabitEvaluator` read `findPlannedTemplateForDateUnlessSkipped` instead of the skip-blind lookup: a gym day the owner skipped is treated as a rest day, so `training_done_today` stays done-only (no neutral tick in S1). See [`train.md`](train.md) "Kihagyás (S1)".
 
 > Surfaces as the **"Napi küldetések"** + **"Tevékenységnapló"** cards on the **`/me/growth` page's `Skillek` tab** (Growth is a full-page sibling of the **Én** tab since Design 2.0), and on the **Nap** tab as a `Küldetések` mosaic tile → the dedicated **`/nap/kuldetesek`** page. Both quest surfaces read the same query; the activity log is additionally reachable from the app-wide quick-log FAB (`Napló → Aktivitás`). The wider economy surfaces through the **Én hub's identity hero** (level ring, `Lv`/`XP`/🔥 streak/🪙 coins) and the Growth page itself. **The (E3) "Growth — heti" card on Insights' Weekly tab is RETIRED (`mezo-p2tr`)** — `GrowthWeekCard.tsx`/`growthWeekApi.ts` are deleted along with the Weekly tab; the Progression `GET /api/progression/growth-week/{date}` endpoint survives with no FE consumer. **Status: ✅ E1 + E2 + E3 + the Growth page done** — daily-quest core shipped 2026-07-11 (`mezo-df7q`, E1); the growth layer (full 8-skill LIFE band + free-text activity log with AI categorization + the GROWTH quest slot + computed discipline/consistency traits) shipped 2026-07-11 (`mezo-jzca`, E2); the **life-integrations polish** (savings aggregate + weekly growth-week aggregate/endpoint + proactive digests + adaptive quest difficulty + companion flavor copy) shipped 2026-07-11 (`mezo-6ng8`, E3); the **Me Growth page** (dedicated `/me/growth` route + quest/activity history reads + a derived-on-read achievements economy; the three former Profil progression cards — athletic radar/muscle levels/LIFE — consolidated into one summary card and **radars retired app-wide**) shipped 2026-07-12 (`mezo-rmhr`). **E4** (shop/coins) remains, under umbrella epic `mezo-52vz`.
 

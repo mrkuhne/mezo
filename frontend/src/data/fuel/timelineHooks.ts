@@ -78,7 +78,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { occurrences } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
-  const { gymSchedule, sport, sportSlotSkips } = useTrain()
+  const { gymSchedule, sport, plannedSkips } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
@@ -105,8 +105,8 @@ export function useFuelTimeline(date: string = localDateString()) {
   // today keeps the `today`/`s.today` flag path (`undefined`) so mock mode's pinned demo "today"
   // and its deterministic tests stay exactly as they were.
   const blockDate = date === localDateString() ? undefined : date
-  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, [], blockDate)
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [], blockDate)
+  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, plannedSkips, [], blockDate)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, plannedSkips, sport.sessions ?? [], blockDate)
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged

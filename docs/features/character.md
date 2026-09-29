@@ -17,6 +17,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows a commit it doesn't otherwise concern. See [`train.md`](train.md) "Kihagyás (S1)".
+
 > **2026-09-29 — `mezo-mobji` (no character change).** The 1.1.0 changelog gained three train-owned `exercise` columns (`replaces_exercise_id`, `added_in_workout_id`, `saved_to_plan`, [`train.md` §4](train.md)); `CharacterSignalReads` resolves exercise names by id and keeps working for the new instance-scoped rows.
 
 > **2026-09-28 — S8 chat memory (`mezo-d6ivw.12`).** The csapatfal reply's "Megjegyeztem" chip (`ReplyAfterlife`) now renders through the shared `MemoryChip` (`surface="csapatfal"`, [`insights.md`](insights.md)) with no visible change; `teamChatHooks.ts` only had a comment updated. The 1.1.0 changelog gained `ai_message.forgotten_memories` + `extraction_blocked` (companion-owned, [`companion.md`](companion.md)); nothing in the character feature reads them.

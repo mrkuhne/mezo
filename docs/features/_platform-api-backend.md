@@ -18,6 +18,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
 
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** New fragment `api/feature/train/train-skip.yml` (tag `TrainSkip`, `GET/PUT/DELETE /api/train/skips`) merges into `api/openapi.yml` like any other feature fragment — no new pattern. `TRAIN_SKIP_DATE_OUT_OF_WINDOW`/`TRAIN_SKIP_TARGET_INVALID`/`TRAIN_SKIP_NOT_FOUND` join `messages.properties`. See [`train.md`](train.md) "Kihagyás (S1)".
+
 > **2026-09-29 — Gyakorlat csere / hozzáadás (`mezo-mobji`).** `train.yml` gained `POST /api/train/workouts/{id}/exercises` (`WorkoutExerciseChangeRequest` → `WorkoutExerciseChangeResponse {exerciseId, today}`) and `POST …/exercises/{exerciseId}/plan-sets` (`PlanSetsRequest`); `TodayExercise` gained `changeScope`/`replacesName`/`replacedByName`/`planSlot`. `messages.properties` gained `TRAIN_EXERCISE_NO_PLAN_SLOT` (409). Details: [`train.md` §4](train.md).
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One new contract fragment, `api/feature/train/train-readiness.yml` (tag `TrainReadiness`), registered in `api/generate/merge.yml`; `api/feature/checkin/checkin.yml` gained `GET /api/biometrics/checkin/plan` and the new check-in fields (enums `CheckInItemId`, `CheckInItemKind`, `PainRegion`, `CravingKind`, `AdaptiveReason` as `enum:`). Two features gained ports to stay cycle-free: train's `DayCheckInPort` (implemented in biometrics) and biometrics' `CheckInNeedSource`. Details: [`me.md` §4](me.md), [`train.md` §4](train.md).

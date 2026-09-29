@@ -29,6 +29,8 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -63,6 +65,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private WorkoutDayAdjustmentPopulator workoutDayAdjustmentPopulator;
     @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
+    @Autowired private PlannedSkipPopulator plannedSkipPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -624,6 +627,30 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains("futás: Sprint-intervallum");
+    }
+
+    @Test
+    void testTrainBlock_shouldOmitTodaysRun_whenThePrescribedRunIsSkipped() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        runningPopulator.createBlockWithSessions(owner, "Sprint blokk", "active", 4, 7);
+        // Kihagyás S1 (mezo-q4xt2.1, review I2): a RUN skip hides the run from the dated day line.
+        plannedSkipPopulator.create(owner, today, PlannedSkipEntity.Kind.RUN, null, null,
+            runKeyFor(today, 4), PlannedSkipEntity.Reason.TIRED);
+
+        String snapshot = assembler.render(owner, today);
+
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
+        assertThat(maSegment).doesNotContain("futás: Sprint-intervallum");
+        assertThat(snapshot.substring(snapshot.indexOf("Holnap (terv):")))
+            .as("only the skipped date's run disappears").contains("futás: Sprint-intervallum");
+    }
+
+    /** The {@code createBlockWithSessions} block's session key for {@code date}'s weekday — the
+     *  week clamps from the fixed 2026-06-01 start exactly like the renderers derive it. */
+    private static String runKeyFor(LocalDate date, int weeks) {
+        long week = Math.clamp(java.time.temporal.ChronoUnit.DAYS.between(LocalDate.parse("2026-06-01"), date) / 7 + 1, 1, weeks);
+        return "w" + week + "-s" + (date.getDayOfWeek().getValue() - 1);
     }
 
     @Test

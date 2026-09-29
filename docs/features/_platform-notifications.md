@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -17,6 +17,8 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 ---
 
 # Push Notifications Platform — Feature Documentation
+
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `AnchorResolver` resolves no gym anchor on a day the owner skipped (reads `WorkoutService.findPlannedTemplateForDateUnlessSkipped`, never the skip-blind sibling); the app-open schedule writer's `deriveBlocks` (Fuel) drops a skipped GYM/RUN block the same way it already dropped a skipped sport slot, so no fuel-slot notification fires for it either. See [`train.md`](train.md) "Kihagyás (S1)".
 
 > Cross-cutting delivery layer, no route/tab of its own (the FE surface lives at `/me/ertesitesek`,
 > documented from Me's side in [`me.md`](me.md)). **Push (N1/N2/N3): DONE** — N1 delivery spine + N2

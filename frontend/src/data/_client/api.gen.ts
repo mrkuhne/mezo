@@ -1004,6 +1004,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/skips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every skip in [from, to] with its read-time verdict (user skips + coach advice skips) */
+        get: operations["listPlannedSkips"];
+        /**
+         * Skip one occurrence, or change the reason of an existing skip (idempotent per target)
+         * @description Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER.
+         */
+        put: operations["upsertPlannedSkip"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/skips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Undo a skip ("Visszavonom") — the occurrence is planned again */
+        delete: operations["undoPlannedSkip"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -6764,6 +6802,43 @@ export interface components {
             regionLabel: string;
             /** @description The reported pain intensity (null when not answered) */
             intensity?: number | null;
+        };
+        /** @enum {string} */
+        PlannedSkipKind: "GYM" | "SPORT" | "RUN";
+        /** @enum {string} */
+        PlannedSkipReason: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | "TIRED" | "NO_TIME" | "NO_MOOD" | "OTHER" | "NONE";
+        PlannedSkipRequest: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["PlannedSkipKind"];
+            /** @description SPORT only, 0=Hét..6=Vas */
+            dayOfWeek?: number | null;
+            /** @description SPORT only */
+            time?: string | null;
+            /** @description RUN only */
+            sessionKey?: string | null;
+            reasonCategory: components["schemas"]["PlannedSkipReason"];
+            /** @description Kept only for OTHER */
+            reasonText?: string | null;
+        };
+        PlannedSkipResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["PlannedSkipKind"];
+            dayOfWeek?: number | null;
+            time?: string | null;
+            sessionKey?: string | null;
+            reasonCategory: components["schemas"]["PlannedSkipReason"];
+            reasonText?: string | null;
+            /** @enum {string} */
+            source: "USER" | "ADVICE";
+            serious: boolean;
+            /** @description The weekly free pass covers this skip */
+            freePass: boolean;
+            /** @description Does not count as missed */
+            excused: boolean;
         };
         /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
         ExpenditureExplanationResponse: {
@@ -15645,6 +15720,127 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listPlannedSkips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Skips, date then created ascending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedSkipResponse"][];
+                };
+            };
+            /** @description from after to (TRAIN_INVALID_DATE_RANGE) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    upsertPlannedSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedSkipRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored skip with its verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedSkipResponse"];
+                };
+            };
+            /** @description Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    undoPlannedSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

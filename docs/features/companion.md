@@ -107,7 +107,7 @@ The sections below describe its current behavior and the supporting components.
   renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
   snapshot's `Ma (terv):`/`Holnap (terv):`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
   and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
-  The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
+  Since Kihagyás S1 (`mezo-q4xt2.1`) both call sites read `findPlannedTemplateForDateUnlessSkipped`, so a gym day the owner skipped renders as `pihenőnap` here too — see [`train.md`](train.md) "Kihagyás (S1)". The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
   is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
   `gym (<day label>): <exercises>`. Sharing it is what the drift cost: the criterion used to be
   duplicated in `TrainTools.dayContentLine` and `ContextSnapshotAssembler.dayLine`, the snapshot's

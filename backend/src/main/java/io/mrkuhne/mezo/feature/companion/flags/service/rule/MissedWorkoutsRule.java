@@ -7,8 +7,10 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -49,6 +51,7 @@ public class MissedWorkoutsRule implements FlagRule {
 
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final PlannedSkipService plannedSkipService;
     private final FlagProperties properties;
 
     @Override
@@ -81,6 +84,10 @@ public class MissedWorkoutsRule implements FlagRule {
 
         Set<LocalDate> trained =
             Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
+        // Kihagyás S1 (mezo-q4xt2.1): an excused GYM day is not a violation of the schedule —
+        // it neither extends nor resets the miss-streak run, so it is skipped over entirely (unless
+        // it was trained anyway — then it resets the run like any trained day).
+        Set<LocalDate> excused = plannedSkipService.excusedDates(userId, Kind.GYM, from, to);
 
         List<String> plannedDays = new ArrayList<>();
         List<String> missedDays = new ArrayList<>();
@@ -92,11 +99,16 @@ public class MissedWorkoutsRule implements FlagRule {
             if (!plannedDows.contains(dow)) {
                 continue;
             }
-            plannedDays.add(day.toString());
             if (trained.contains(day)) {
+                // A trained day resets the run even if it also carries a skip — training wins.
+                plannedDays.add(day.toString());
                 run = 0;
                 continue;
             }
+            if (excused.contains(day)) {
+                continue;
+            }
+            plannedDays.add(day.toString());
             missedDays.add(day.toString());
             run++;
             longestRun = Math.max(longestRun, run);

@@ -8,12 +8,14 @@ import io.mrkuhne.mezo.feature.notification.domain.AnchorSet.AnchoredEvent;
 import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
 import io.mrkuhne.mezo.feature.notification.service.AnchorResolver;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -62,6 +64,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
+    @Autowired private PlannedSkipPopulator plannedSkipPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
@@ -135,6 +138,26 @@ class AnchorResolverIT extends AbstractIntegrationTest {
         assertThat(gymEvents)
                 .as("no anchor carries the skipped sport slot's own time")
                 .noneMatch(e -> "18:30".equals(e.dedupSuffix()));
+    }
+
+    @Test
+    void testResolve_shouldYieldNoGymAnchor_whenTodaysGymDayIsSkipped() {
+        UUID owner = ownerId();
+        int legacyDayOfWeek = WEDNESDAY.getDayOfWeek().getValue() - 1;
+        trainPopulator.createGymSlot(owner, legacyDayOfWeek, "07:00");
+        PlannedSkipEntity skip = plannedSkipPopulator.create(
+            owner, WEDNESDAY, PlannedSkipEntity.Kind.GYM, null, null, null, PlannedSkipEntity.Reason.TIRED);
+
+        AnchorSet skipped = anchorResolver.resolve(owner, WEDNESDAY);
+        assertThat(skipped.backendAnchors())
+            .as("a skipped gym day yields NO gym anchor — not even a generic 'Edzés' one")
+            .noneMatch(e -> e.category() == NotificationCategory.GYM);
+
+        plannedSkipPopulator.softDelete(skip);
+        AnchorSet undone = anchorResolver.resolve(owner, WEDNESDAY);
+        assertThat(undone.backendAnchors())
+            .as("undoing the skip brings the gym anchor back")
+            .anyMatch(e -> e.category() == NotificationCategory.GYM);
     }
 
     @Test

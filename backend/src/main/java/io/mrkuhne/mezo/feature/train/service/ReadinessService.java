@@ -101,7 +101,7 @@ public class ReadinessService {
     }
 
     private List<ExerciseEntity> plannedExercises(UUID userId, LocalDate date) {
-        return workoutService.findPlannedTemplateForDate(userId, date)
+        return workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date)
             .map(day -> exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
                 userId, List.of(day.getId())))
             .orElse(List.of());

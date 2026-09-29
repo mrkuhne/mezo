@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.goal.engine.service.TdeeBootstrapService;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -36,6 +38,7 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private SportSlotSkipPopulator skips;
+    @Autowired private PlannedSkipPopulator plannedSkips;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -90,6 +93,25 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testWindowsFor_shouldReturnNoGymWindow_whenTodaysGymDayIsSkipped() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "18:00");
+        PlannedSkipEntity skip = plannedSkips.create(
+            owner, wed, PlannedSkipEntity.Kind.GYM, null, null, null, PlannedSkipEntity.Reason.TIRED);
+
+        assertThat(service.windowsFor(owner, wed))
+            .as("a skipped gym day yields no gym window at all — Fuel must not score meals around it")
+            .isEmpty();
+
+        plannedSkips.softDelete(skip);
+
+        List<WorkoutWindowQueryService.Window> undone = service.windowsFor(owner, wed);
+        assertThat(undone).as("undoing the skip brings the gym window back").hasSize(1);
+        assertThat(undone.getFirst().kind()).isEqualTo("gym");
+    }
+
+    @Test
     void testWindowsFor_shouldLabelTheSportWindow_withTheSportName() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
@@ -112,6 +134,43 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
         assertThat(windows).hasSize(1);
         assertThat(windows.getFirst().label()).isEqualTo("Sprint-intervallum");
+    }
+
+    @Test
+    void testWindowsFor_shouldReturnNoRunWindow_whenThePrescribedRunIsSkipped() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);
+        running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00");
+        PlannedSkipEntity skip = plannedSkips.create(
+            owner, wedOfWeek2, PlannedSkipEntity.Kind.RUN, null, null, "w2-sprint", PlannedSkipEntity.Reason.TIRED);
+
+        assertThat(service.windowsFor(owner, wedOfWeek2))
+            .as("a skipped prescribed run yields no run window — Fuel must not score meals around it")
+            .isEmpty();
+        assertThat(service.windowsFor(owner, wedOfWeek2.minusDays(1), wedOfWeek2.plusDays(1)).get(wedOfWeek2))
+            .as("the ranged path honours the run skip too").isEmpty();
+
+        plannedSkips.softDelete(skip);
+
+        List<WorkoutWindowQueryService.Window> undone = service.windowsFor(owner, wedOfWeek2);
+        assertThat(undone).as("undoing the skip brings the run window back").hasSize(1);
+        assertThat(undone.getFirst().kind()).isEqualTo("run");
+    }
+
+    @Test
+    void testWindowsFor_shouldKeepTheRunWindow_whenASkippedRunWasLoggedAnyway() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);
+        UUID blockId = running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00").getId();
+        plannedSkips.create(
+            owner, wedOfWeek2, PlannedSkipEntity.Kind.RUN, null, null, "w2-sprint", PlannedSkipEntity.Reason.TIRED);
+        running.createRunLog(owner, blockId, 2, "w2-sprint", wedOfWeek2, 6, 8, null, null, 30);
+
+        assertThat(service.windowsFor(owner, wedOfWeek2))
+            .as("never hide a real workout: a run logged despite the skip keeps its window")
+            .extracting(WorkoutWindowQueryService.Window::kind).containsExactly("run");
     }
 
     @Test

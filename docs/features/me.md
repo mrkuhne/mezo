@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-design-system, _platform-notifications
 ---
 
 # Me Area — Feature Documentation
+
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `NotificationsPage`'s `Értesítés` preview reads `useTrain().plannedSkips` (was `sportSlotSkips`) into `deriveBlocks`, so a skipped gym/run block is left out of the preview's gym sub-line exactly like a skipped sport slot already was. See [`train.md`](train.md) "Kihagyás (S1)".
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The check-in backend (biometrics) grew from four fixed items to fourteen: new nullable `check_in` columns (mood, rested, soreness, pain gate + regions + intensity, motivation, hunger, craving + kinds, digestion, connection, day rating, `asked_items`, `adaptive_*`, `quick_exit`), a server-config question plan served by `GET /api/biometrics/checkin/plan`, and the adaptive „A nap kérdése". The Heti hub's stat cells are now three rows of three (Hangulat next to Energia, `MeWeekAggregates.avgCheckinMood`), and the day score's logging dimension counts a check-in as filled only when it is legacy, a quick exit, or all five core items were answered. §4 „Check-in (Check-in 2.0)"; the sheet itself is [`today.md`](today.md). Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
 

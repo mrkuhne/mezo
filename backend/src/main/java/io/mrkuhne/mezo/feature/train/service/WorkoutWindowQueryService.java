@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
@@ -53,6 +54,9 @@ public class WorkoutWindowQueryService {
     private final RunSessionLogRepository runSessionLogRepository;
     private final WorkoutService workoutService;
     private final SportSlotSkipService sportSlotSkipService;
+    // Kihagyás S1 (mezo-q4xt2.1): the gym window's label honours a gym skip too. Does NOT depend
+    // on WorkoutService or WorkoutWindowQueryService — no cycle.
+    private final PlannedSkipService plannedSkipService;
     private final TrainProperties props;
     private final ActivityEnergyModel activityEnergyModel;
     private final AthleteBodyPort athleteBodyPort;
@@ -108,12 +112,27 @@ public class WorkoutWindowQueryService {
         Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
         RunningBlockEntity activeBlock = runningBlockRepository
             .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
+        // Kihagyás S1 (mezo-q4xt2.1): ONE central skip read for the range — the skipped gym dates
+        // and the skipped RUN occurrences (date + prescribed session key) both derive from it.
+        List<PlannedSkipPolicy.Verdict> skipVerdicts = plannedSkipService.verdictsBetween(userId, from, to);
+        Set<LocalDate> gymSkipDates = skipVerdicts.stream()
+            .filter(v -> v.row().kind() == PlannedSkipEntity.Kind.GYM)
+            .map(v -> v.row().date())
+            .collect(Collectors.toSet());
+        Set<PlannedSkipService.RunSkipKey> runSkips = PlannedSkipService.runSkipsOf(skipVerdicts);
+        // A skipped run that was nonetheless logged that day keeps its window (the gym rule
+        // `!skipped || done`) — only fetched when a run skip exists in the range at all.
+        Set<LocalDate> runLoggedDates = runSkips.isEmpty() ? Set.of() : runSessionLogRepository
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
+            .map(RunSessionLogEntity::getDate)
+            .collect(Collectors.toSet());
 
         Map<LocalDate, List<Window>> result = new LinkedHashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             result.put(day, windowsForDay(day, gymSlots, gymDoneCounts, mesoSessions, sportSlots,
                 sportEventsByDate.getOrDefault(day, List.of()),
-                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock));
+                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
+                gymSkipDates.contains(day), runSkips, runLoggedDates.contains(day)));
         }
         return result;
     }
@@ -126,7 +145,8 @@ public class WorkoutWindowQueryService {
             Map<LocalDate, Long> gymDoneCounts, List<WorkoutSessionEntity> mesoSessions,
             List<SportScheduleSlotEntity> sportSlots, List<SportEventEntity> dayEvents,
             List<SportSessionEntity> daySessions, Set<SportSlotSkipService.SkipKey> skips,
-            RunningBlockEntity activeBlock) {
+            RunningBlockEntity activeBlock, boolean gymSkipped,
+            Set<PlannedSkipService.RunSkipKey> runSkips, boolean runLogged) {
         int dow = date.getDayOfWeek().getValue() - 1;
         List<Window> windows = new ArrayList<>();
 
@@ -134,19 +154,27 @@ public class WorkoutWindowQueryService {
             gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).toList();
         boolean gymDone = !todaysGymSlots.isEmpty()
             && gymDoneCounts.getOrDefault(date, 0L) >= todaysGymSlots.size();
-        String gymLabel = workoutService.findPlannedTemplateForDate(mesoSessions, date)
+        // Kihagyás S1 (mezo-q4xt2.1): a skipped gym day carries no planned label — and, when the
+        // gym was not actually done that day either, no gym window AT ALL (spec §8.1.9): a
+        // skipped occurrence must disappear from Fuel's pre/post-workout meal scoring exactly
+        // like a skipped sport occurrence does, not just lose its label. A gym that WAS done
+        // despite the skip (e.g. skip undone after logging, or logged before the skip) still
+        // yields its window — never hide a real workout.
+        String gymLabel = gymSkipped ? null : workoutService.findPlannedTemplateForDate(mesoSessions, date)
             .map(WorkoutSessionEntity::getType)
             .orElse(null);
-        todaysGymSlots.forEach(s -> {
-            LocalTime start = LocalTime.parse(s.getTime());
-            windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
-                "gym", gymDone, gymLabel));
-        });
+        if (!gymSkipped || gymDone) {
+            todaysGymSlots.forEach(s -> {
+                LocalTime start = LocalTime.parse(s.getTime());
+                windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
+                    "gym", gymDone, gymLabel));
+            });
+        }
 
         addSportWindowsForDay(date, dow, sportSlots, dayEvents, daySessions, skips, windows);
 
         if (activeBlock != null) {
-            addRunWindows(activeBlock, date, windows);
+            addRunWindows(activeBlock, date, windows, runSkips, runLogged);
         }
         return windows;
     }
@@ -432,8 +460,14 @@ public class WorkoutWindowQueryService {
      * {@code weekNumber}) and is keyed on today, not on the queried date — the
      * {@code RunningService}/{@code GoalProjectionService} idiom (mezo-tm76).
      */
-    private void addRunWindows(RunningBlockEntity block, LocalDate date, List<Window> windows) {
-        prescribedRunSessionsOn(block, date).forEach(s -> {
+    private void addRunWindows(RunningBlockEntity block, LocalDate date, List<Window> windows,
+            Set<PlannedSkipService.RunSkipKey> runSkips, boolean runLogged) {
+        prescribedRunSessionsOn(block, date)
+            // Kihagyás S1 (mezo-q4xt2.1, review I2): a skipped prescribed run disappears from the
+            // windows (Fuel's pre-workout scoring) exactly like a skipped gym/sport occurrence —
+            // unless a run was actually logged that day (never hide a real workout).
+            .filter(s -> runLogged || !runSkips.contains(new PlannedSkipService.RunSkipKey(date, s.key())))
+            .forEach(s -> {
             LocalTime start = LocalTime.parse(s.timeOfDay());
             windows.add(new Window(start, start.plusMinutes(props.runDefaultMinutes()),
                 "run", false, s.label()));
