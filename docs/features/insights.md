@@ -918,7 +918,10 @@ experiments (no event date), rejected/refuted/dormant patterns, watching/confirm
 Fresh and return questions retain their original dates even when an older unanswered event is returned by today's persistent inbox. An observation post replaces the matching pattern post so one question is not repeated.
 Days group by local date (Ma / Tegnap / `huMonthDayDow`; a non-ISO display date such as the mock
 predictions' „Máj 22” is kept verbatim and sorts after the dated days), each with at most ONE poster —
-the only glass box of the day. The poster must be *earned*: waiting > kiserlet > konzilium; without one,
+the only glass box of the day. `FeedPostHead.postMeta` also converts timestamp-bearing post times to
+the browser's local hour and minute before display; date-only edition posts have no clock label.
+This keeps the header clock consistent with the local-day grouping when the API supplies a UTC `Z`
+timestamp. The poster must be *earned*: waiting > kiserlet > konzilium; without one,
 only a busy day (≥3 posts) promotes its newest — a quiet day's lone post stays a flat panel, otherwise a
 sparse wall turns all-glass and the §3.4 ranking collapses (seen live in A2). The `tf-*` CSS section at the end of
 `boop-world.css` is the prototype's (`uveg-uzenofal.html`) wall/room anatomy on the shared U1 `.glass` kit.
