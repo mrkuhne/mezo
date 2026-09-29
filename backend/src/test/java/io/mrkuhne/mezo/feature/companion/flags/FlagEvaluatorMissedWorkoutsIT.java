@@ -195,6 +195,35 @@ class FlagEvaluatorMissedWorkoutsIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testMissedWorkouts_shouldClear_whenCompletedDaysFollowTwoMisses() {
+        UUID owner = ownerId();
+        monWedFriSchedule(owner);
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity template = trainPopulator.createTemplateDay(owner, meso.getId(), "A");
+        LocalDate today = LocalDate.now();
+        List<LocalDate> plannedDays = new ArrayList<>();
+        for (int i = windowDays(); i >= 1; i--) {
+            LocalDate day = today.minusDays(i);
+            int dow = day.getDayOfWeek().getValue() - 1;
+            if (dow == 0 || dow == 2 || dow == 4) {
+                plannedDays.add(day);
+            }
+        }
+        assertThat(plannedDays).hasSizeGreaterThanOrEqualTo(4);
+        // Two historical misses are followed by two completed planned workouts, as in production.
+        for (int i = 0; i < plannedDays.size(); i++) {
+            if (i != plannedDays.size() - 4 && i != plannedDays.size() - 3) {
+                trainPopulator.createWorkoutInstance(owner, template, plannedDays.get(i), "completed");
+            }
+        }
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MISSED_WORKOUTS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().observed()).isZero();
+    }
+
+    @Test
     void missed_workouts_stays_quiet_for_a_schedule_created_moments_ago() {
         // The schedule was created just now, so NONE of its planned weekdays existed as a plan
         // during the scan window — a day before the schedule existed cannot be a violation of it
@@ -301,7 +330,7 @@ class FlagEvaluatorMissedWorkoutsIT extends AbstractIntegrationTest {
         FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MISSED_WORKOUTS);
 
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
-        assertThat(verdict.clear().metric()).isEqualTo("longest_missed_run");
+        assertThat(verdict.clear().metric()).isEqualTo("current_missed_run");
         assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
     }
 

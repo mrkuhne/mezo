@@ -3321,11 +3321,13 @@ its own) and stays reviewable in isolation. S1 was a pure refactor of the origin
   `logging-gap.sleep-suspicion-deficit-hours` of deficit, the payload attaches that observed
   deficit instead of staying silent about it too.
 - **`MissedWorkoutsRule`** (spec §4 row 3) — raises when `≥ missed-workouts.min-consecutive-missed`
-  PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
+  most-recent PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
   `missed-workouts.window-days`) have no completed workout instance. "Consecutive" counts through
   the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri schedule raises on a missed
-  Mon + Wed, two calendar days apart. Only `templateSessionId IS NOT NULL AND status = 'completed'`
-  instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
+  Mon + Wed, two calendar days apart. A later completed planned day resets the current streak and
+  clears the flag even while the old misses remain inside the 14-day window; the payload's legacy
+  `longestMissedRun` field now carries the current streak length. Only `templateSessionId IS NOT NULL
+  AND status = 'completed'` instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
 - **`SleepDeficitCalculator`** (`flags/service/rule/SleepDeficitCalculator.java`) — the cumulative
   sleep-deficit-vs-goal arithmetic (goal lookup + the day-by-day `Σ max(0, goal − actual)` loop),
   extracted out of `SleepDebtRule` in bd `c6c045082` so `LoggingGapRule`'s "gap + suspicion"
