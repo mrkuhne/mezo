@@ -226,7 +226,7 @@ public class ExpenditureLearningService {
         // the previous applied base + that day's logged movement + the goal balance (M5, mezo-tb3s2).
         Map<LocalDate, IntakeDayClassifier.Status> status = IntakeDayClassifier.classify(windowStart, weekEnd, kcal,
             marksBetween(userId, windowStart.minusDays(e.referenceDays()), weekEnd),
-            d -> prevApplied + movementOn(movement, d) + balanceOn(goal, d),
+            d -> prevApplied + movementFrom(movement, d) + balanceOn(goal, d),
             e.suspiciousRatio(), e.referenceDays(), e.minReferenceDays());
 
         Map<LocalDate, BigDecimal> weights = weightQuery.dailyMeanWeightKg(userId, windowStart, weekEnd);
@@ -234,7 +234,7 @@ public class ExpenditureLearningService {
         for (LocalDate d = windowStart; !d.isAfter(weekEnd); d = d.plusDays(1)) {
             boolean usable = status.get(d) == IntakeDayClassifier.Status.USABLE;
             days.add(new ExpenditureFilter.Day(d, usable ? kcal.get(d) : null, usable ? carbs.get(d) : null,
-                movementOn(movement, d), balanceOn(goal, d), weights.containsKey(d) ? weights.get(d).doubleValue() : null));
+                movementFrom(movement, d), balanceOn(goal, d), weights.containsKey(d) ? weights.get(d).doubleValue() : null));
         }
         Optional<ExpenditureFilter.Traced> traced =
             ExpenditureFilter.runWithTrace(days, formulaBase, ExpenditureFilter.Params.of(props));
@@ -291,7 +291,7 @@ public class ExpenditureLearningService {
                 .map(ExpenditureEstimateEntity::getAppliedBaseKcal).orElse(formulaBase);
             Map<LocalDate, WorkoutWindowQueryService.DayMovement> mv =
                 workoutWindows.movementBetween(userId, refWindowStart, to);
-            fallbackRefKcal = d -> fallbackBase + movementOn(mv, d);
+            fallbackRefKcal = d -> fallbackBase + movementFrom(mv, d);
         } else {
             // No formula/plan to fall back on — never invent a reference, so a day with too little
             // own history is simply usable rather than guessed at.
@@ -394,7 +394,7 @@ public class ExpenditureLearningService {
     }
 
     /** The served Mozgás of {@code date} (planned + extra logged kcal, mezo-tb3s2); 0 when nothing moved. */
-    private static int movementOn(Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement, LocalDate date) {
+    private static int movementFrom(Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement, LocalDate date) {
         return movement.getOrDefault(date, WorkoutWindowQueryService.DayMovement.NONE).movementKcal();
     }
 
