@@ -110,7 +110,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
     IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class, JournalPopulator.class,
-    TrainPopulator.class, SportSlotSkipPopulator.class, PlannedSkipPopulator.class, WorkoutDayAdjustmentPopulator.class, ReadinessChoicePopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
+    TrainPopulator.class, SportSlotSkipPopulator.class, PlannedSkipPopulator.class, io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator.class, WorkoutDayAdjustmentPopulator.class, ReadinessChoicePopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
     GoalPlanLinkPopulator.class, GoalSuggestionPopulator.class, GraphPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     SleepGoalPopulator.class,

@@ -1506,7 +1506,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExerciseWeightGapEntity`→`exercise_weight_gap`, `GymScheduleSlotEntity`→`gym_schedule_slot`,
     `MesoTemplateEntity`→`meso_template`, `MesocycleEntity`→`mesocycle`, `MesocycleReportEntity`→`mesocycle_report`,
     `MuscleGroupVolumeLogEntity`→`muscle_group_volume_log`, `PlannedSkipEntity`→`planned_skip`,
-    `ReadinessChoiceEntity`→`readiness_choice`, `RunSessionLogEntity`→`run_session_log`,
+    `ReadinessChoiceEntity`→`readiness_choice`, `RecoveryDayReleaseEntity`→`recovery_day_release`,
+    `RecoveryPeriodEntity`→`recovery_period`, `RunSessionLogEntity`→`run_session_log`,
     `RunningBlockEntity`→`running_block`, `SportEventEntity`→`sport_event`,
     `SportScheduleSlotEntity`→`sport_schedule_slot`, `SportSessionEntity`→`sport_session`,
     `SportSlotSkipEntity`→`sport_slot_skip`, `WorkoutDayAdjustmentEntity`→`workout_day_adjustment`,
@@ -1514,9 +1515,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **repositories:** `ExerciseCatalogRepository`, `ExerciseFeedbackRepository`, `ExerciseRepository`,
     `ExerciseSetRepository`, `ExerciseWeightGapRepository`, `GymScheduleSlotRepository`, `MesoTemplateRepository`,
     `MesocycleReportRepository`, `MesocycleRepository`, `MuscleGroupVolumeLogRepository`, `PlannedSkipRepository`,
-    `ReadinessChoiceRepository`, `RunSessionLogRepository`, `RunningBlockRepository`, `SportEventRepository`,
-    `SportScheduleSlotRepository`, `SportSessionRepository`, `SportSlotSkipRepository`,
-    `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`, `WorkoutTimingProfileRepository`
+    `ReadinessChoiceRepository`, `RecoveryDayReleaseRepository`, `RecoveryPeriodRepository`, `RunSessionLogRepository`,
+    `RunningBlockRepository`, `SportEventRepository`, `SportScheduleSlotRepository`, `SportSessionRepository`,
+    `SportSlotSkipRepository`, `WorkoutDayAdjustmentRepository`, `WorkoutSessionRepository`,
+    `WorkoutTimingProfileRepository`
   - **services:** `ActivityEnergyModel`, `AthleteBodyPort`, `CatalogMediaResolver`, `ClosingBlockService`,
     `DayCheckInPort`, `E1rmSeries`, `EwmaEstimator`, `ExerciseCatalogService`, `ExerciseHistoryResolver`,
     `ExerciseRecordService`, `GoalRecomputePort`, `GymScheduleService`, `MedalEvaluator`, `MedalService`,
@@ -1615,7 +1617,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts,
     workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 87 IT + 21 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 88 IT + 21 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
     `ExerciseCatalogLoaderIT`, `ExerciseCatalogPermissionIT`, `ExerciseCatalogSlugRaceIT`,
@@ -1626,22 +1628,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MesoTemplateVolumeBackfillSqlIT`, `MesoTemplateVolumeFlagIT`, `MesocycleCloseReportIT`, `MusclePrioritiesCarryIT`,
     `PlannedSkipConsumersIT`, `PlannedSkipContractIT`, `PlannedSkipPersistenceIT`, `PrescribedSetsFoundationIT`,
     `ProvenanceRoundTripIT`, `ReadinessContractIT`, `ReadinessLightenIT`, `ReadinessServiceIT`,
-    `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`, `RunningContractIT`, `ScheduleGoalRecomputeIT`,
-    `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`, `SportServiceIT`, `SportSessionRangeIT`,
-    `SportSignalCalculatorIT`, `SportSlotSkipContractIT`, `SportSlotSkipPersistenceIT`, `TimingProfileIT`,
-    `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`, `TrainServiceIT`, `TrainingStreakCalculatorIT`,
-    `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`, `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`,
-    `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`, `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`,
-    `VolumePropertiesIT`, `WarmupExclusionIT`, `WeeklyScheduledActivityServiceIT`,
-    `WeeklyScheduledActivityTrainingDaysIT`, `WorkoutAutoCloseIT`, `WorkoutClosingNoteApiIT`, `WorkoutContractIT`,
-    `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`, `WorkoutDoneSemanticsIT`,
-    `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`, `WorkoutServiceIT`,
-    `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`, `WorkoutTimingIT`,
-    `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWeightGapIT`, `WorkoutWindowQueryServiceIT`
+    `RecoveryPeriodPersistenceIT`, `RunSessionLevelUpApiIT`, `RunSignalCalculatorIT`, `RunningContractIT`,
+    `ScheduleGoalRecomputeIT`, `SetRecommendationServiceIT`, `SportContractIT`, `SportEventContractIT`,
+    `SportServiceIT`, `SportSessionRangeIT`, `SportSignalCalculatorIT`, `SportSlotSkipContractIT`,
+    `SportSlotSkipPersistenceIT`, `TimingProfileIT`, `TimingProfileSwitchOffIT`, `TrainContractIT`, `TrainSeedDataIT`,
+    `TrainServiceIT`, `TrainingStreakCalculatorIT`, `VolumeArcContractIT`, `VolumeArcVolumeFlagIT`,
+    `VolumeBaselineSeedIT`, `VolumeBaselineSeedSwitchOffIT`, `VolumeEffectiveSetsIT`, `VolumeEffectiveSetsSwitchOffIT`,
+    `VolumeProgressionServiceIT`, `VolumeProgressionTierIT`, `VolumePropertiesIT`, `WarmupExclusionIT`,
+    `WeeklyScheduledActivityServiceIT`, `WeeklyScheduledActivityTrainingDaysIT`, `WorkoutAutoCloseIT`,
+    `WorkoutClosingNoteApiIT`, `WorkoutContractIT`, `WorkoutDayAdjustmentPersistenceIT`, `WorkoutDetailContractIT`,
+    `WorkoutDoneSemanticsIT`, `WorkoutExerciseChangeIT`, `WorkoutFinishLevelUpApiIT`, `WorkoutPlannedMuscleGroupsIT`,
+    `WorkoutServiceIT`, `WorkoutSessionRepositoryChallengeIT`, `WorkoutSetMutationIT`, `WorkoutTimingBackfillIT`,
+    `WorkoutTimingIT`, `WorkoutTodayPrescriptionIT`, `WorkoutTodayProgressionIT`, `WorkoutWeightGapIT`,
+    `WorkoutWindowQueryServiceIT`
   - **populators:** `BiometricProfilePopulator`, `CheckInPopulator`, `DatabasePopulator`, `GoalPopulator`,
-    `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RunningPopulator`,
-    `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`, `WeightLogPopulator`,
-    `WorkoutDayAdjustmentPopulator`
+    `MesoTemplatePopulator`, `PlannedSkipPopulator`, `ReadinessChoicePopulator`, `RecoveryPeriodPopulator`,
+    `RunningPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
 ### tutorial
 
@@ -1709,10 +1712,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
   `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PlannedSkipPopulator`,
   `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`, `ReadinessChoicePopulator`,
-  `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
-  `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`,
-  `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`,
-  `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+  `RecipePopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
+  `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`,
+  `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
+  `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`,
+  `WorkoutDayAdjustmentPopulator`
 - **`ResetDatabase` TRUNCATE list** — 1 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `character_council_quota`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
