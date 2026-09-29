@@ -25,8 +25,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Consecutive PLANNED gym days with nothing completed (spec 2026-09-03 §4 row 3) — so the
- * morning prompt stops cheering blindly at someone who has not trained since Friday.
+ * Current streak of consecutive PLANNED gym days with nothing completed (spec 2026-09-03 §4 row
+ * 3) — so an earlier missed pair stops raising after a completed planned workout.
  *
  * <p>"Consecutive" is in the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri
  * schedule raises on a missed Mon + Wed. Only completed INSTANCES count as training —
@@ -92,7 +92,6 @@ public class MissedWorkoutsRule implements FlagRule {
         List<String> plannedDays = new ArrayList<>();
         List<String> missedDays = new ArrayList<>();
         int run = 0;
-        int longestRun = 0;
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment)
             int dow = day.getDayOfWeek().getValue() - 1;
@@ -100,9 +99,10 @@ public class MissedWorkoutsRule implements FlagRule {
                 continue;
             }
             if (trained.contains(day)) {
-                // A trained day resets the run even if it also carries a skip — training wins.
+                // A trained day closes the current run, even if it also carries a skip.
                 plannedDays.add(day.toString());
                 run = 0;
+                missedDays.clear();
                 continue;
             }
             if (excused.contains(day)) {
@@ -111,16 +111,15 @@ public class MissedWorkoutsRule implements FlagRule {
             plannedDays.add(day.toString());
             missedDays.add(day.toString());
             run++;
-            longestRun = Math.max(longestRun, run);
         }
-        if (longestRun < cfg.minConsecutiveMissed()) {
+        if (run < cfg.minConsecutiveMissed()) {
             return FlagVerdict.clear(FlagKey.MISSED_WORKOUTS, new FlagVerdict.ClearEvidence(
-                "longest_missed_run", (double) longestRun, (double) cfg.minConsecutiveMissed(),
+                "current_missed_run", (double) run, (double) cfg.minConsecutiveMissed(),
                 null));
         }
         return FlagVerdict.raised(FlagKey.MISSED_WORKOUTS,
             FlagPayloadEnvelope.missedWorkouts(new FlagPayloadEnvelope.MissedWorkouts(
-                cfg.windowDays(), cfg.minConsecutiveMissed(), longestRun,
+                cfg.windowDays(), cfg.minConsecutiveMissed(), run,
                 missedDays, plannedDays)));
     }
 }
