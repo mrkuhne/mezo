@@ -86,6 +86,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private io.mrkuhne.mezo.support.populator.LifeGoalPopulator lifeGoalPopulator;
+    @Autowired private io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator recoveryPeriodPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -666,6 +667,75 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String tail = snapshot.substring(snapshot.indexOf("Holnap (terv):"));
         assertThat(tail).contains("futás: Sprint-intervallum");
+    }
+
+    /**
+     * Kihagyás S2 (mezo-q4xt2.2, task 6): an open recovery period ("kímélő mód") gets its own tone
+     * line in the train block — the model must stop treating a genuinely serious skip reason
+     * (illness, injury, stomach bug, travel) as a training gap to nag about.
+     */
+    @Test
+    void testTrainBlock_shouldRenderTheKimeloModTonelLine_whenARecoveryPeriodIsOpen() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LocalDate start = today.minusDays(2);
+        recoveryPeriodPopulator.open(owner, PlannedSkipEntity.Reason.ILLNESS, start,
+            io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate.FEW_DAYS);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("Kímélő mód aktív: Beteg, 3. nap, becslés: 2–3 nap. "
+            + "Ne sürgesd az edzést, ne említs elmaradást; gyógyulás, pihenés, folyadék.");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderEachCategoryAndEstimateInHungarian_whenARecoveryPeriodIsOpen() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        recoveryPeriodPopulator.open(owner, PlannedSkipEntity.Reason.INJURY, today,
+            io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate.UNKNOWN);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("Kímélő mód aktív: Sérülés, 1. nap, becslés: nem tudni.");
+    }
+
+    @Test
+    void testTrainBlock_shouldOmitTheKimeloModLine_whenNoRecoveryPeriodIsOpen() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).doesNotContain("Kímélő mód aktív").doesNotContain("Visszatérés kímélő mód után");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderTheComebackRampLine_whenReturningFromAShortRecoveryPeriod() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        // 2 days out -> CONTINUE, rampSessions 1 (RecoveryReturnPolicy) — nothing done yet.
+        recoveryPeriodPopulator.ended(owner, PlannedSkipEntity.Reason.STOMACH,
+            today.minusDays(2), today.minusDays(1));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("Visszatérés kímélő mód után: 0/1 könnyített edzés.");
+        assertThat(snapshot).doesNotContain("Kímélő mód aktív");
+    }
+
+    @Test
+    void testTrainBlock_shouldOmitTheComebackRampLine_whenTheComebackWasWaived() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var period = recoveryPeriodPopulator.ended(owner, PlannedSkipEntity.Reason.STOMACH,
+            today.minusDays(2), today.minusDays(1));
+        period.setComebackWaived(true);
+        recoveryPeriodPopulator.save(period);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).doesNotContain("Visszatérés kímélő mód után");
     }
 
     @Test
