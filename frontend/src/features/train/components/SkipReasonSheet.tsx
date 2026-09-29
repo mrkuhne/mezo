@@ -3,9 +3,9 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { SheetHead } from '@/shared/ui/SheetHead'
 import { Icon3D } from '@/shared/ui/clay'
 import { useToast } from '@/shared/ui/ToastProvider'
-import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { cn } from '@/shared/lib/cn'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 import type { PlannedSkip, SkipReason } from '@/features/train/logic/plannedSkips'
 import { REASONS, sheetNoteParts, skipDoneToast } from '@/features/train/logic/skipCopy'
 
@@ -39,8 +39,6 @@ export function SkipReasonSheet(props: SkipReasonSheetProps) {
 function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipReasonSheetProps & { skip: PlannedSkip }) {
   const toast = useToast()
   const [text, setText] = useState(skip.reasonText ?? '')
-  const voice = useVoiceInput((t) => setText((d) => (d ? `${d} ${t}` : t).slice(0, TEXT_MAX)))
-  const recording = voice.state === 'recording'
   const cur = skip.reasonCategory
   const chosen = cur !== 'NONE'
   const note = sheetNoteParts(skip)
@@ -66,16 +64,10 @@ function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipRea
           {cur === 'OTHER' && (
             <div className="uvl-field">
               <span className="uvl-flabel" id="skip-why-text">Mi történt? · saját szavakkal</span>
-              <span className="trm-inpmic">
+              <VoiceField domain="train" className="trm-inpmic" onTranscript={(t) => setText((d) => appendDictation(d, t, TEXT_MAX))}>
                 <textarea aria-labelledby="skip-why-text" value={text} maxLength={TEXT_MAX} placeholder="pl. családi program jött közbe"
                   onChange={(e) => setText(e.target.value)} />
-                <button type="button" className={cn('trm-micb', recording && 'is-live')} onClick={voice.toggle}
-                  disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
-                  aria-label={recording ? 'Felvétel leállítása' : 'Diktálás'} aria-pressed={recording}>
-                  <Icon3D name="t-mic" size={26} />
-                </button>
-              </span>
-              <VoiceBubble voice={voice} domain="train" />
+              </VoiceField>
             </div>
           )}
 

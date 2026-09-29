@@ -63,6 +63,8 @@ const {
   deleteDef: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@/data/hooks', () => ({
+  // the shared voice fields (mezo-xojq8) transcribe through this hook
+  useTranscribe: () => ({ transcribe: vi.fn() }),
   useHabitSummary: () => useHabitSummary(),
   useHabitCatalog: () => useHabitCatalog(),
   useHabitCatalogActions: () => useHabitCatalogActions(),

@@ -282,7 +282,7 @@ describe('ChatPage (mock mode)', () => {
     const { container } = renderPage()
     const composer = container.querySelector('.chat-composer')!
     expect(composer.classList.contains('mzc-composer')).toBe(true)
-    expect(screen.getByLabelText('Hangbevitel')).toBeInTheDocument()
+    expect(screen.getByLabelText('Diktálás')).toBeInTheDocument()
     expect(screen.getByLabelText('Küldés')).toBeInTheDocument()
   })
 

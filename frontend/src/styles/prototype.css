@@ -3455,10 +3455,6 @@ ol.md-list { list-style: decimal; }
   box-shadow: var(--shadow-md);
 }
 
-/* Recording mic (mezo-at8x.4) — a slow breath while the composer is listening. */
-.chat-mic-live { animation: pulse-soft 1.4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }
-
 /* ============================================================
    Mozaik 2.0 primitives (design_2.0 — mezo-d20.1.3)
    Values = the prototype heads' CSS ×1.18 (330→390px frame scale),
@@ -4474,15 +4470,14 @@ button.mz-tile:active { transform: scale(0.96); }
   border: 0.5px solid rgba(43, 33, 24, 0.08);
 }
 .mzc-composer textarea { border: none; outline: none; font-family: inherit; }
-.mzc-cmic, .mzc-csend {
+.mzc-csend {
   width: 44px; height: 44px; border-radius: 50%; border: none; flex: none;
   display: grid; place-items: center; padding: 0; font-family: inherit; cursor: pointer;
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
 }
-.mzc-cmic.rec { background: rgba(255, 107, 74, 0.16); color: var(--coral-deep); }
 .mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
-.mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
-.mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
+.mzc-csend:active { transform: scale(0.94); }
+.mzc-csend:disabled { opacity: 0.5; cursor: default; }
 
 /* ===== WeeklyBandsCard (wizard redesign, mezo-d20.14) — current → ceiling per
    muscle, no percentages. Reuses existing --mz-cell-, --mz-ink- and --mz-cellbg
@@ -4687,7 +4682,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .mzc-hstat[data-st="busy"] .mzc-hdot { animation: mzc-livepulse 1.2s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .mzc-cmic, .mzc-csend { transition: none; }
+  .mzc-csend { transition: none; }
   .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
   .mzc-memcard { transition: none; }
   .mzc-horb svg, .mzc-horb.busy svg, .mzc-horb.busy::before,
@@ -14853,8 +14848,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
 .logflow-composer .logflow-aichip .t-ico { filter: none; }
 .logflow-composer .logflow-aichip:disabled { opacity: 0.45; cursor: default; }
-.logflow-composer .logflow-aichip.is-live { --c: var(--dv-coral); color: var(--page, #191614); background: var(--c);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
 .logflow-composer .logflow-airun { margin-left: auto; color: var(--page, #191614); background: var(--c);
   box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
 .logflow-composer .logflow-aiphoto { display: inline-flex; align-items: center; gap: 6px; min-width: 0;
@@ -16569,9 +16562,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--c) 22%, transparent), transparent 72%); }
 .capture-drafting-title { font: 600 17px/1.3 var(--ff-display); color: var(--text-primary); }
 .capture-drafting-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--c); box-shadow: 0 0 8px var(--c); }
-.capture-sheet .capture-mic { position: absolute; top: 8px; right: 8px; min-height: 0; padding: 8px; }
-.capture-sheet .capture-mic.is-live { color: var(--page, #191614); background: var(--dv-coral);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-coral) 55%, transparent); }
 
 /* ─ the actions (`saveRow()`): Mégse flat · Mentés the lit primary in the sheet accent ─ */
 .capture-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 18px; }
@@ -17211,10 +17201,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border: 0; border-radius: 13px; background: rgba(245, 239, 230, .05); box-shadow: inset 0 0 0 1px var(--divider);
   color: var(--text-primary); font: 400 16px/1.45 var(--ff-body); }
 .rz-reflect-input::placeholder, .rz-reflect-gratitude textarea::placeholder { color: var(--text-muted); }
-.rz-screen .rz-reflect-mic.chip { margin-top: 8px; padding: 6px 10px; border: 0; border-radius: 999px;
-  color: var(--text-secondary); background: rgba(245, 239, 230, .05); box-shadow: inset 0 0 0 1px var(--divider); }
-.rz-screen .rz-reflect-mic.chip[aria-pressed='true'] { color: #191614; background: var(--dv-lav);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 50%, transparent); }
 .rz-reflect-hint, .rz-reflect-gratitude .text-tertiary { margin: 6px 2px 0; font: 400 11px/1.4 var(--ff-body); color: var(--text-muted); }
 /* the shared GratitudeRows, restyled only under the ritual root */
 .rz-reflect-gratitude .card { border: 0; border-radius: 13px; background: rgba(245, 239, 230, .05); box-shadow: inset 0 0 0 1px var(--divider); }
@@ -17553,7 +17539,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--c) 26%, transparent), rgba(245, 239, 230, 0.04));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 62%, transparent), 0 0 16px -5px var(--c);
 }
-.trm-whyc:focus-visible, .trm-micb:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.trm-whyc:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .trm-whynote {
   display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 14px;
   font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
@@ -17590,13 +17576,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   flex: 1; min-width: 0; min-height: 64px; padding: 12px 13px; resize: none;
   font-family: inherit; font-size: 14px; line-height: 1.5;
 }
-.trm-micb {
-  flex: 0 0 auto; width: 46px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 13px; cursor: pointer;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.trm-micb.is-live { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px var(--c); }
-.trm-micb:disabled { opacity: 0.45; cursor: default; }
-.sheet.glass.uv-sheet .trm-micb .t-ico { width: 26px; height: 26px; filter: none; }
 
 /* ── energy: amber glass, t-flame, the big lit numeral, the split bar ── */
 .trm .trm-energy.glass, .trm .trm-mus.glass { padding: 15px 16px; border-radius: 22px; }
@@ -26099,19 +26078,11 @@ main.settings-page {
 }
 .mzc-u8 .mzc-composer textarea { color: var(--text-primary); color-scheme: dark; }
 .mzc-u8 .mzc-composer textarea::placeholder { color: var(--text-muted); }
-.mzc-u8 .mzc-cmic {
-  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.mzc-u8 .mzc-cmic.rec {
-  color: #FFD2C4;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dv-coral) 42%, #3A332D), color-mix(in srgb, var(--dv-coral) 16%, #1E1B18));
-  box-shadow: 0 0 14px -2px rgba(255, 126, 92, 0.7), inset 0 0 0 1px rgba(255, 126, 92, 0.5);
-}
 .mzc-u8 .mzc-csend {
   background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dv-lav) 42%, #3A332D), color-mix(in srgb, var(--dv-lav) 16%, #1E1B18));
   box-shadow: 0 0 14px -2px rgba(171, 159, 210, 0.7), inset 0 0 0 1px rgba(171, 159, 210, 0.5);
 }
-.mzc-u8 .mzc-cmic .t-ico, .mzc-u8 .mzc-csend .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.mzc-u8 .mzc-csend .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 
 /* FeedbackChips, üveg variant (`glyph3d`): flat pills, the chosen verdict/reason lit lavender */
 .fbk-chips.is-3d { margin-top: 2px; }

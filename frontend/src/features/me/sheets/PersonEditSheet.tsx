@@ -3,6 +3,8 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon3D } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 import type { PersonEntry, PersonSaveInput, Relationship } from '@/data/types'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const RELS: Array<{ value: Relationship; hu: string }> = [
   { value: 'partner', hu: 'Társ' },
@@ -135,12 +137,14 @@ export function PersonEditSheet({ person, onClose }: { person: PersonEntry | nul
 
           <label className="ppl-sh-field">
             <span className="ppl-sh-lbl">Jegyzet</span>
-            <textarea
-              className="ppl-sh-ta"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="honnan ismered, mi fontos…"
-            />
+            <VoiceField domain="me" onTranscript={t => setNotes(appendDictation(notes, t))}>
+              <textarea
+                className="ppl-sh-ta"
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="honnan ismered, mi fontos…"
+              />
+            </VoiceField>
           </label>
 
           <div className="ppl-sh-pair">

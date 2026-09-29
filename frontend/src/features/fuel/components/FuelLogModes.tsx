@@ -22,7 +22,7 @@
 import type { CSSProperties } from 'react'
 import { huInt } from '@/shared/lib/huNum'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { useVoiceInput } from '@/shared/lib/voice/useVoiceInput'
 import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import type { UsualMeal } from '@/features/fuel/logic/usualMeals'
 import type { MealSlot } from '@/data/types'

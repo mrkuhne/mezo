@@ -61,6 +61,13 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-29 — Hangdiktálás mindenhol (`mezo-xojq8`).** Minden szabad szöveges mező (Check-in
+  gondolatok, napi szándék, tevékenység, edzés utáni és gyakorlat-jegyzet, sport/futás napló,
+  blokkzárás, edzésterv-interjú, gyógyszer-jegyzet, recept-műhely, alvás/súly/ember jegyzet,
+  döntés, cél- és szokás-varázsló, Rólam, csapatfal-válasz, csapat-chat, karakter-válasz) ugyanazt
+  a mikrofon-csempét kapta, ugyanazzal a hallgató Boop buborékkal; a korábbi 7 hely is erre állt át.
+  Egyszerre egy mikrofon szól, a diktált mondat a meglévő szöveg mögé kerül.
+  Spec: [`2026-09-29-hang-mindenhol-design`](../superpowers/specs/2026-09-29-hang-mindenhol-design.md).
 - **2026-09-29 — „Rólam is": egy emberről szóló mondat nem kér kétszer megjegyzést (`mezo-d6ivw.13`).**
   Ha a chatben egy néven nevezett ismerősödről mondasz valamit, Mezo azt már csak az ő lapjára
   jegyzi meg („Megjegyeztem: Dóri — …"), és nem kérdez rá mellé még egyszer „Megjegyezném"-mel

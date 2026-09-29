@@ -15,6 +15,8 @@ import { useTrain } from '@/data/hooks'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SheetHead } from '@/shared/ui/SheetHead'
 import { Icon3D } from '@/shared/ui/clay'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 export function MesoCloseSheet({ mesoId, title, onClose }: {
   mesoId: string
@@ -51,13 +53,15 @@ export function MesoCloseSheet({ mesoId, title, onClose }: {
             {/* Optional self-eval — the one input the report cannot compute for you */}
             <div className="uvl-field">
               <label className="uvl-flabel" htmlFor="meso-close-selfeval">Saját értékelés</label>
-              <textarea
-                id="meso-close-selfeval"
-                rows={4}
-                value={selfEval}
-                onChange={(e) => setSelfEval(e.target.value)}
-                placeholder="Hogy sikerült a blokk? (opcionális)"
-              />
+              <VoiceField domain="train" onTranscript={(t) => setSelfEval((d) => appendDictation(d, t))}>
+                <textarea
+                  id="meso-close-selfeval"
+                  rows={4}
+                  value={selfEval}
+                  onChange={(e) => setSelfEval(e.target.value)}
+                  placeholder="Hogy sikerült a blokk? (opcionális)"
+                />
+              </VoiceField>
             </div>
 
             {/* Footer — closing ENDS the block: the confirm keeps the coral warning outline (rule 29) */}

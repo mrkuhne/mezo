@@ -1,0 +1,32 @@
+/* ── Hang mindenhol (mezo-xojq8) ───────────────────────────────────────────
+   The one voice field: the caller's own field + a square glass mic tile to its right.
+   The tile is the Kihagyás "Egyéb" tile (was `.trm-micb`), the owner-approved reference.
+   Accent per domain, like the Hallgató Boop bubble. */
+.vfield { --c: var(--dv-lav); display: flex; align-items: stretch; gap: 8px; min-width: 0; }
+.vfield[data-domain="nap"]   { --c: var(--dv-amber); }
+.vfield[data-domain="train"] { --c: var(--dv-coral); }
+.vfield[data-domain="fuel"]  { --c: var(--dv-sage); }
+.vfield[data-domain="mezo"]  { --c: var(--dv-lav); }
+.vfield[data-domain="me"]    { --c: var(--dv-rose); }
+.vfield > textarea, .vfield > input { flex: 1 1 auto; min-width: 0; width: auto; }
+
+.vmic {
+  flex: 0 0 auto; width: 46px; min-height: 46px; display: grid; place-items: center;
+  padding: 0; border: 0; border-radius: 13px; cursor: pointer; color: inherit;
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.vmic .t-ico { width: 26px; height: 26px; filter: none; }
+.vmic:hover { background: rgba(245, 239, 230, 0.09); }
+.vmic:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.vmic.is-live {
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px var(--c);
+}
+.vmic:disabled { opacity: 0.45; cursor: default; }
+.vmic-sm { width: 38px; min-height: 38px; border-radius: 11px; }
+.vmic-sm .t-ico { width: 20px; height: 20px; }
+
+/* Composer bars keep their own layout; the tile just matches their control height. */
+.mzc-composer .vmic { width: 44px; min-height: 44px; align-self: center; } /* 44pt touch target */
+.wsh-composer .vmic { width: 40px; min-height: 40px; }

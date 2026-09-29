@@ -57,17 +57,8 @@ import {
   rescaleFrozen, lineNutrients, scaleNutrients, sumNutrients, NO_NUTRIENTS, factsOf,
 } from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
-import { useVoiceInput, type VoiceState } from '@/features/insights/logic/useVoiceInput'
-import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
-
-/** A mikrofon állapot-feliratai (A6, mezo-33k6). A „nem támogatott" ág NEM hazudik működőt:
- *  a gomb tiltott, és a felirata megmondja, miért. */
-const VOICE_LABEL: Record<VoiceState, string> = {
-  idle: 'Hang · mondd el, mit ettél',
-  recording: 'Hallgatlak — koppints a leállításhoz',
-  transcribing: 'Leiratozom a felvételt…',
-  unsupported: 'Hang · ez a böngésző nem tud hangot rögzíteni',
-}
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
 
 export type MealComposerPrefill =
   | { source: 'recipe'; recipeId: string }
@@ -285,10 +276,6 @@ export function MealComposer({
   const [aiText, setAiText] = useState('')
   const [aiPhoto, setAiPhoto] = useState<File | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
-  // A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül — a
-  // leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan (`ai-text`).
-  const voice = useVoiceInput(text => setAiText(d => (d ? `${d} ${text}` : text)))
-  const voiceRecording = voice.state === 'recording'
   // What actually landed in the meal FROM the AI this session — the honest input to
   // provenance.origin (see the file-header note).
   const [aiContribution, setAiContribution] = useState<{ photo: boolean; rawText: string | null } | null>(null)
@@ -671,10 +658,15 @@ export function MealComposer({
       )}
       {aiOpen && !aiBusy && (
         <div className="logflow-aipanel glass">
-          <textarea
-            value={aiText} onChange={(e) => setAiText(e.target.value)}
-            aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…" rows={2}
-          />
+          {/* A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül —
+              a leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan
+              (`ai-text`). A mikrofon a mező saját csempéje (mezo-xojq8), nem külön chip. */}
+          <VoiceField domain="fuel" onTranscript={(t) => setAiText((d) => appendDictation(d, t))}>
+            <textarea
+              value={aiText} onChange={(e) => setAiText(e.target.value)}
+              aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…" rows={2}
+            />
+          </VoiceField>
           <div className="logflow-airow">
             {aiPhoto ? (
               <span className="logflow-aiphoto">
@@ -692,13 +684,6 @@ export function MealComposer({
                   onChange={(e) => setAiPhoto(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
               </label>
             )}
-            <button type="button" className={'logflow-aichip' + (voiceRecording ? ' is-live' : '')}
-              onClick={voice.toggle}
-              disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
-              aria-label={VOICE_LABEL[voice.state]} aria-pressed={voiceRecording}>
-              <Icon3D name="t-mic" size={18} />
-              {voiceRecording ? 'Hallgatlak…' : voice.state === 'transcribing' ? 'Leiratozom…' : 'Hang'}
-            </button>
             <button type="button" className="logflow-aichip logflow-airun"
               disabled={!canRunAi} onClick={() => void runAi()}>
               <Icon3D name="t-score" size={18} />
@@ -706,7 +691,6 @@ export function MealComposer({
             </button>
           </div>
           {aiError && <p className="logflow-aierr">{aiError}</p>}
-          <VoiceBubble voice={voice} domain="fuel" />
           <p className="logflow-aihint">
             Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.
           </p>

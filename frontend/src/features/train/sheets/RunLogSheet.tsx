@@ -15,6 +15,8 @@ import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { NumberStep, ScaleRow } from '@/features/train/sheets/SportLogSheet'
 import type { RunSessionLogRequest } from '@/data/train/runningApi'
 import { localDateString } from '@/shared/lib/dates'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 export function RunLogSheet({ ctx, onClose, onSave, date }: {
   ctx: { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
@@ -64,7 +66,9 @@ export function RunLogSheet({ ctx, onClose, onSave, date }: {
             <NumberStep label="Pulzus-megnyugvás · mp" val={hr} step={5} min={0} max={300} onChange={setHr} />
             <div className="col gap-sm">
               <span className="label-mono">Jegyzet</span>
-              <input className="uvs-inp" aria-label="Futás jegyzet" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="opcionális" />
+              <VoiceField domain="train" size="sm" onTranscript={(t) => setNotes((d) => appendDictation(d, t))}>
+                <input className="uvs-inp" aria-label="Futás jegyzet" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="opcionális" />
+              </VoiceField>
             </div>
           </div>
           <div className="capture-actions">

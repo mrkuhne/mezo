@@ -135,8 +135,8 @@ detail lives in its own doc, [`journal.md`](journal.md) — not duplicated here.
 notes over a widening `[from,to]` window (`useJournalNotes`, `monthsBack` state starting at 3,
 „Korábbi hónapok" widens by 3 more months per tap), a `+ Új bejegyzés` header CTA, and a tap-any-card
 edit affordance — both open the same `JournalSheet` (create when `entry` is omitted; edit + two-step
-delete when set). The sheet is a free-text textarea + optional date + a mic button reusing
-`useVoiceInput` (the `ChatPage` composer idiom). **The same sheet is also reachable from the global
+delete when set). The sheet is a free-text textarea in the shared `VoiceField` (mic tile, since
+`mezo-xojq8`) + optional date. **The same sheet is also reachable from the global
 QuickInput „Napló" tile**, which now opens a two-option picker („Aktivitás" → the existing
 `ActivityLogSheet`; „Napló" → `JournalSheet`) instead of jumping straight to the activity log — see
 §5 below and [`journal.md`](journal.md) §2.

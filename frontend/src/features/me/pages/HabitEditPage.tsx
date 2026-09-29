@@ -32,6 +32,8 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Sheet } from '@/shared/ui/Sheet'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const XP_MIN = 5
 const XP_MAX = 15
@@ -49,26 +51,33 @@ function FieldCard({ children, delayMs, glass = false }: { children: ReactNode; 
   return <div className={cn('rt-fcard rise', glass && 'glass')} style={rise(delayMs)}>{children}</div>
 }
 
-function Field({ label, opt, value, onChange, placeholder, hint }: {
+function Field({ label, opt, value, onChange, placeholder, hint, voice = false }: {
   label: string
   opt?: boolean
   value: string
   onChange: (v: string) => void
   placeholder?: string
   hint?: string
+  /** A sentence field gets the shared mic tile (mezo-xojq8); names and links do not. */
+  voice?: boolean
 }) {
+  const input = (
+    <input
+      className="rt-fin"
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+    />
+  )
   return (
     <>
       <span className="rt-flabel">
         {label}{opt && <> <span className="rt-opt">opcionális</span></>}
       </span>
-      <input
-        className="rt-fin"
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
+      {voice
+        ? <VoiceField domain="me" size="sm" onTranscript={(t) => onChange(appendDictation(value, t))}>{input}</VoiceField>
+        : input}
       {hint && <div className="rt-hint">{hint}</div>}
     </>
   )
@@ -319,13 +328,15 @@ export function HabitEditPage() {
                 <span className="rt-pickrow-cv" aria-hidden="true">▾</span>
               </button>
               {anchor.key == null && (
-                <input
-                  className="rt-fin"
-                  aria-label="Saját horgony"
-                  value={anchor.label}
-                  placeholder="pl. „letettem a fogkefét”"
-                  onChange={(e) => setAnchor({ key: null, label: e.target.value })}
-                />
+                <VoiceField domain="me" size="sm" onTranscript={(t) => setAnchor({ key: null, label: appendDictation(anchor.label, t) })}>
+                  <input
+                    className="rt-fin"
+                    aria-label="Saját horgony"
+                    value={anchor.label}
+                    placeholder="pl. „letettem a fogkefét”"
+                    onChange={(e) => setAnchor({ key: null, label: e.target.value })}
+                  />
+                </VoiceField>
               )}
               <div className="rt-lockline">
                 <Icon3D name={anchorNote.sign} size={16} />
@@ -341,18 +352,18 @@ export function HabitEditPage() {
               onChange={setTitle}
             />
             {framework === 'FOGG' && (
-              <Field label="Ünneplésül … · shine" value={celebration} onChange={setCelebration} />
+              <Field label="Ünneplésül … · shine" voice value={celebration} onChange={setCelebration} />
             )}
             {framework === 'CLEAR' && (
               <>
-                <Field label="Jelzés" value={cue} onChange={setCue} />
-                <Field label="Vágy" value={craving} onChange={setCraving} />
-                <Field label="Jutalom" value={reward} onChange={setReward} />
-                <Field label="Identitás" opt value={identity} onChange={setIdentity} />
+                <Field label="Jelzés" voice value={cue} onChange={setCue} />
+                <Field label="Vágy" voice value={craving} onChange={setCraving} />
+                <Field label="Jutalom" voice value={reward} onChange={setReward} />
+                <Field label="Identitás" opt voice value={identity} onChange={setIdentity} />
               </>
             )}
             {framework === null && (
-              <Field label="Miért" opt value={why} onChange={setWhy} placeholder="…" />
+              <Field label="Miért" opt voice value={why} onChange={setWhy} placeholder="…" />
             )}
             <Field
               label="Link"

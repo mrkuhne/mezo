@@ -14,6 +14,8 @@ import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
 import { SPORT_LABELS, type SportKind } from '@/features/train/logic/sportKinds'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 // This LEGACY sheet's own 3-id vocabulary — the same pin the sibling sheets carry
 // (SportScheduleSheet, SportEventSheet). The sport-session WIRE widened to ten ids
@@ -207,22 +209,24 @@ export function SportLogSheet({ onClose, onSave, initialSport, date }: {
                 but no sheet ever surfaced it before this designed addition. */}
             <div className="col gap-sm">
               <span className="label-mono">Jegyzet</span>
-              <textarea
-                aria-label="Session jegyzet"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                maxLength={500}
-                rows={3}
-                placeholder="Hogy érezted magad, mi ment jól, mi fájt…"
-                style={{
-                  width: '100%',
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                  padding: '10px 12px',
-                  fontFamily: 'inherit',
-                  resize: 'vertical',
-                }}
-              />
+              <VoiceField domain="train" onTranscript={(t) => setNotes((d) => appendDictation(d, t, 500))}>
+                <textarea
+                  aria-label="Session jegyzet"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  maxLength={500}
+                  rows={3}
+                  placeholder="Hogy érezted magad, mi ment jól, mi fájt…"
+                  style={{
+                    width: '100%',
+                    fontSize: 13,
+                    lineHeight: 1.5,
+                    padding: '10px 12px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                  }}
+                />
+              </VoiceField>
             </div>
           </div>
 

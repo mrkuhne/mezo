@@ -19,6 +19,8 @@ import type { MedicationDoseInput } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Icon3D } from '@/shared/ui/clay'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 // A single form field: an eyebrow caption over a flat well. The <label> wraps the control so
 // getByLabelText resolves it.
@@ -107,7 +109,9 @@ export function LogDoseSheet({ onClose }: { onClose: () => void }) {
 
           {/* Jegyzet */}
           <Field label="Jegyzet">
-            <input className="fsx-sh-input" value={note} onChange={e => setNote(e.target.value)} placeholder="pl. hétfő reggel · subQ has" />
+            <VoiceField domain="fuel" size="sm" onTranscript={t => setNote(d => appendDictation(d, t))}>
+              <input className="fsx-sh-input" value={note} onChange={e => setNote(e.target.value)} placeholder="pl. hétfő reggel · subQ has" />
+            </VoiceField>
           </Field>
 
           {/* Actions */}

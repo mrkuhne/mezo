@@ -7,6 +7,8 @@ import type { FeedPost } from '@/features/insights/logic/teamFeed'
 import { Icon3D } from '@/shared/ui/clay'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import type { FeedReplyMode } from './FeedTrio'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 export interface FeedReplyTarget {
   post: FeedPost
@@ -42,13 +44,15 @@ function Composer({ value, onChange, onSend, sendLabel, pending, error }: {
 }) {
   return (
     <>
-      <textarea
-        className="tf-reply-text"
-        aria-label="A válaszod"
-        placeholder="Például: két este későig dolgoztam, azért csúszott a vacsora…"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-      />
+      <VoiceField domain="mezo" onTranscript={t => onChange(appendDictation(value, t))}>
+        <textarea
+          className="tf-reply-text"
+          aria-label="A válaszod"
+          placeholder="Például: két este későig dolgoztam, azért csúszott a vacsora…"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+        />
+      </VoiceField>
       {error && <p className="tf-error" role="alert">{error}</p>}
       <button type="button" className="glass tf-send tf-c-lav" disabled={pending || !value.trim()} onClick={onSend}>
         <Icon3D name="t-send" size={22} />

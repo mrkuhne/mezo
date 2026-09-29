@@ -864,7 +864,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternCopy.ts,
     patternEvidence.ts, patternHistory.ts, patternReading.ts, predictionStatus.ts, quickQuestions.ts, roladCopy.ts,
     team.ts, teamChat.ts, teamEdition.ts, teamFeed.fixtures.ts, teamFeed.ts, teamRooms.ts, toolDomains.ts,
-    useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    useStickToBottom.ts, verdicts.ts
   - **root:** boop-world.css, kerdezd.css, useForgetUndo.ts, useRoladInbox.ts
 
 ### intention
@@ -1686,7 +1686,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
 - **lib:** audio.ts, autoGrow.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts,
   resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts,
-  userScope.ts
+  userScope.ts, voice/useVoiceInput.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
   NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx, SheetHead.tsx,
@@ -1695,7 +1695,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg, evidence/EvidenceList.tsx,
   evidence/observationEvidence.ts, kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx,
   mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css,
-  voice/VoiceBubble.tsx
+  voice/VoiceBubble.tsx, voice/VoiceField.css, voice/VoiceField.tsx
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 

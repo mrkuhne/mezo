@@ -3207,6 +3207,190 @@ svg{overflow:visible}
   </aside>
 </div>
 
+<!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
+   Every free-text field in the app wears the same mic tile to the right of the text, and
+   every mic shows the same bubble: listening → thinking → done (or sad). The bubble is the
+   owner-approved one from hang-boop.html. */
+.vfield{display:flex;gap:8px;align-items:stretch}
+.vfield>.inp{flex:1;min-width:0;margin:0}
+.vfield>.inp.ta{min-height:64px}
+.vfield>textarea.inp{resize:none;min-height:64px}
+.vfield>textarea.inp[rows="1"]{min-height:0}
+.vfield>textarea.inp::placeholder{color:var(--faint)}
+.vfield .inp mark{background:color-mix(in srgb,var(--c,var(--lav)) 26%,transparent);color:inherit;border-radius:4px;padding:0 2px;transition:background 1.6s ease}
+.vfield .inp mark.faded{background:transparent}
+.vmic{flex:none;width:46px;min-height:46px;border:0;border-radius:13px;display:grid;place-items:center;cursor:pointer;color:inherit;
+  background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow .2s,background .2s}
+.vmic .icon{width:26px;height:26px;filter:none}
+.vmic:hover{background:rgba(245,239,230,.09)}
+.vmic:focus-visible{outline:2px solid var(--c,var(--lav));outline-offset:2px}
+.vmic.is-live{background:color-mix(in srgb,var(--c,var(--lav)) 14%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--lav)) 70%,transparent),0 0 14px -4px var(--c,var(--lav))}
+.vmic:disabled{opacity:.45;cursor:default}
+.vfilled{color:var(--ink)!important}
+.vmic.sm{width:36px;min-height:36px;border-radius:11px}.vmic.sm .icon{width:20px;height:20px}
+
+.vbub-slot{position:absolute;left:14px;right:14px;bottom:96px;z-index:55;pointer-events:none}
+.vbub{--lvl:0;pointer-events:auto;width:100%;display:grid;grid-template-columns:76px minmax(0,1fr) 36px;align-items:center;gap:12px;
+  padding:12px 12px 12px 10px;border:0;text-align:left;color:var(--ink);cursor:pointer;border-radius:28px;
+  transform:translateY(24px) scale(.96);opacity:0;transition:transform .45s cubic-bezier(.2,.78,.24,1),opacity .3s}
+.vbub[hidden]{display:none}
+.vbub.show{transform:none;opacity:1}
+.vbub.leave{transform:translateY(18px) scale(.97);opacity:0;transition-duration:.35s,.35s}
+.vbub .stage{position:relative;width:76px;height:76px;display:grid;place-items:center}
+.vbub .ring{position:absolute;inset:4px;border-radius:50%}
+.vbub .ring svg{width:100%;height:100%;overflow:visible}
+.vbub .halo{position:absolute;inset:-4px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 42%,transparent) 0%,transparent 68%);
+  transform:scale(calc(.72 + var(--lvl) * .5));opacity:calc(.35 + var(--lvl) * .65);transition:transform .08s linear,opacity .08s linear}
+.vbub svg.boop{width:56px;height:56px;position:relative;overflow:visible}
+.vbub .boop .boop-eye,.vbub .boop .boop-pupil,.vbub .boop .boop-brow,.vbub .boop .boop-body{transform-box:fill-box}
+.vbub .boop .boop-eye,.vbub .boop .boop-pupil,.vbub .boop .boop-brow{transform-origin:center}
+.vbub .boop .boop-body{transform-origin:50% 96%}
+.vbub .boop .boop-ear{transform-box:fill-box;transform-origin:50% 100%;transition:transform .25s}
+.vbub .boop .boop-brow,.vbub .boop .boop-pupil{transition:transform .35s cubic-bezier(.2,.78,.24,1)}
+.vbub .copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.vbub .k{font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.vbub .m{font-size:15px;font-weight:500;letter-spacing:-.2px}
+.vbub .h{font-size:12px;color:var(--mute,var(--faint))}
+.vbub .x{width:36px;height:36px;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px var(--hair);background:rgba(245,239,230,.05);color:var(--ink);
+  display:grid;place-items:center;cursor:pointer;font:400 18px/1 inherit}
+.vbub .x[hidden]{display:none}
+.vbub .bars{display:flex;gap:3px;align-items:center;height:14px;margin-top:2px}
+.vbub .bars i{width:3px;height:3px;border-radius:2px;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent);transition:height .08s linear}
+.vbub .track{stroke:rgba(245,239,230,.07);transition:stroke .2s}
+.vbub .arc{stroke:var(--c);stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 55%,transparent));opacity:0;transition:opacity .3s}
+.vbub[data-s="listening"] .track{stroke:color-mix(in srgb,var(--c) 55%,transparent);stroke-width:calc(1.5px + var(--lvl) * 3px)}
+.vbub[data-s="thinking"] .arc,.vbub[data-s="done"] .arc{opacity:1}
+.vbub[data-s="done"] .arc{stroke-dasharray:190 0}
+.vbub[data-s="thinking"] .halo{transform:scale(.85);opacity:.55}
+.vbub[data-s="thinking"] .bars,.vbub[data-s="done"] .bars,.vbub[data-s="sad"] .bars{display:none}
+.vbub[data-s="thinking"] .boop .boop-pupil{transform:translate(2.5px,-3px)}
+.vbub[data-s="thinking"] .boop .boop-brow-l{transform:translateY(-2px) rotate(-6deg)}
+.vbub[data-s="thinking"] .boop .boop-brow-r{transform:translateY(-2.6px) rotate(8deg)}
+.vbub[data-s="sad"]{--c:#B8584A}
+.vbub[data-s="sad"] .halo{opacity:.25;transform:scale(.8)}
+.vbub[data-s="sad"] .boop .boop-brow-l{transform:translateY(1px) rotate(14deg)}
+.vbub[data-s="sad"] .boop .boop-brow-r{transform:translateY(1px) rotate(-14deg)}
+.vbub[data-s="sad"] .boop .boop-pupil{transform:translateY(2.4px)}
+.vbub .dots{display:inline-flex;gap:2px;margin-left:2px}.vbub .dots i{font-style:normal}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .vbub .boop .boop-eye{animation:boop-blink 6s infinite}
+  body:not(.still) .vbub[data-s="listening"] .boop .boop-body{transform:translateY(calc(var(--lvl) * -2.5px)) scale(calc(1 + var(--lvl) * .05));transition:transform .08s linear}
+  body:not(.still) .vbub[data-s="listening"] .boop .boop-ear{transform:rotate(calc(var(--lvl) * 10deg))}
+  body:not(.still) .vbub[data-s="thinking"] .arc{animation:vbspin 1.3s linear infinite;transform-origin:50% 50%;transform-box:fill-box}
+  body:not(.still) .vbub[data-s="thinking"] .boop .boop-body{animation:vbponder 1.6s ease-in-out infinite}
+  body:not(.still) .vbub[data-s="done"] svg.boop{animation:vbhop .55s cubic-bezier(.3,.7,.3,1.4) both}
+  body:not(.still) .vbub[data-s="sad"] .boop .boop-body{animation:vbdroop .5s ease-out both}
+  body:not(.still) .vbub .dots i{animation:vbdot 1.2s infinite}
+  body:not(.still) .vbub .dots i:nth-child(2){animation-delay:.15s}
+  body:not(.still) .vbub .dots i:nth-child(3){animation-delay:.3s}
+}
+@media (prefers-reduced-motion:reduce){.vbub,.vbub *{transition:none!important;animation:none!important}}
+body.still .vbub,body.still .vbub *{transition:none!important;animation:none!important}
+@keyframes vbspin{to{transform:rotate(360deg)}}
+@keyframes vbponder{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes vbhop{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.06,.96)}70%{transform:translateY(0) scale(1.04,.95)}100%{transform:translateY(0) scale(1)}}
+@keyframes vbdroop{to{transform:translateY(2px) scale(1,.97)}}
+@keyframes vbdot{0%,60%,100%{opacity:.25}30%{opacity:1}}
+</style>
+<script>window.HANG_DOMAIN='en';</script>
+<script>
+/* Hang-kit. Markup helper for the pages:  VF(placeholder, sayText, {sm, id, value})
+   → one text field with the mic tile. Any other button with [data-vmic] (the chat composer's
+   mic, a labelled "Hang" chip) uses the same bubble; data-vtarget="<css selector>" names the
+   field it writes into, data-say the sentence the fake voice "says".
+   The page sets window.HANG_DOMAIN (nap|train|fuel|mezo|en) to pick the living Boop. */
+(()=>{
+'use strict';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+window.VF=(ph,say,o={})=>`<div class="vfield"><textarea class="inp"${o.id?` id="${o.id}"`:''} rows="${o.rows||2}" placeholder="${esc(ph)}">${o.value?esc(o.value):''}</textarea><button type="button" class="vmic${o.sm?' sm':''}" data-vmic data-say="${esc(say||'')}" aria-label="Diktálás" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#t-mic"/></svg></button></div>`;
+
+let bub,slot,state='idle',raf=0,timers=[],btn=null,target=null,say='',failNext=false;
+const later=(f,ms)=>timers.push(setTimeout(f,ms));
+const clear=()=>{timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf)};
+const q=s=>bub.querySelector(s);
+function build(){
+  const host=document.getElementById('phone')||document.body;
+  slot=document.createElement('div');slot.className='vbub-slot';
+  slot.innerHTML=`<div class="glass vbub" role="button" tabindex="-1" aria-live="polite" hidden data-s="listening">
+    <div class="stage"><div class="halo"></div><div class="ring"><svg viewBox="0 0 68 68"><circle class="track" cx="34" cy="34" r="30" fill="none" stroke-width="2"/><circle class="arc" cx="34" cy="34" r="30" fill="none" stroke-width="3" stroke-dasharray="46 144"/></svg></div><svg class="boop" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+    <div class="copy"><span class="k"></span><span class="m"></span><span class="h"></span><span class="bars">${'<i></i>'.repeat(12)}</span></div>
+    <button type="button" class="x" aria-label="Mégse, eldobom a felvételt">✕</button></div>`;
+  host.appendChild(slot);bub=slot.firstElementChild;
+  bub.addEventListener('click',e=>{if(e.target.closest('.x')){cancel();return}if(state==='listening')stop()});
+  bub.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&state==='listening'&&e.target===bub){e.preventDefault();stop()}});
+}
+function paintBoop(){
+  const d=window.HANG_DOMAIN||'nap',sym=document.getElementById('boop-'+d);
+  const svg=q('svg.boop');svg.innerHTML=sym?sym.innerHTML:'';
+}
+function accent(){
+  const from=btn||document.body;const c=getComputedStyle(from).getPropertyValue('--c').trim();
+  return c||'var(--lav)';
+}
+function copy(k,m,h){q('.k').textContent=k;q('.m').innerHTML=m;q('.h').textContent=h}
+function setBtn(){
+  if(!btn)return;const live=state==='listening';
+  btn.classList.toggle('is-live',live);btn.setAttribute('aria-pressed',live);
+  btn.disabled=state==='thinking'||state==='done';
+  btn.setAttribute('aria-label',live?'Felvétel leállítása':'Diktálás');
+  const l=btn.querySelector('[data-vlabel]');if(l)l.textContent=live?'Hallgatlak…':state==='thinking'?'Leiratozom…':(l.dataset.vlabel||'Hang');
+}
+function show(s){
+  state=s;bub.dataset.s=s;bub.hidden=false;bub.classList.remove('leave');
+  requestAnimationFrame(()=>bub.classList.add('show'));
+  q('.x').hidden=s!=='listening';bub.tabIndex=s==='listening'?0:-1;setBtn();
+}
+function hide(after){
+  bub.classList.add('leave');bub.classList.remove('show');
+  later(()=>{bub.hidden=true;bub.classList.remove('leave');state='idle';setBtn();bub.style.setProperty('--lvl',0);btn=null;after&&after()},360);
+}
+function listen(b){
+  if(!bub)build();clear();btn=b;say=b.dataset.say||'Ma kicsit fáradt vagyok, de jól esett a séta.';
+  target=b.dataset.vtarget?document.querySelector(b.dataset.vtarget):b.closest('.vfield')?.querySelector('.inp');
+  bub.style.setProperty('--c',accent());paintBoop();
+  show('listening');copy('Figyelek','Mondd nyugodtan','Koppints ide, ha végeztél');
+  const bars=[...q('.bars').children],t0=performance.now();let lvl=0;
+  const tick=t=>{const s=(t-t0)/1000,word=Math.sin(s*2.1)*Math.sin(s*.7+1)>-.15,
+    syl=Math.abs(Math.sin(s*11.3))*(.55+.45*Math.sin(s*3.7)**2),goal=s<.6?0:word?syl:.04;
+    if(gone()){cancel();return}
+    lvl+=(goal-lvl)*.28;bub.style.setProperty('--lvl',lvl.toFixed(3));
+    bars.forEach((x,i)=>{const v=Math.max(.12,lvl*(.5+.5*Math.abs(Math.sin(s*9+i*1.3))));x.style.height=(3+v*11).toFixed(1)+'px'});
+    raf=requestAnimationFrame(tick)};
+  raf=requestAnimationFrame(tick);
+}
+/* the field's sheet closed or re-rendered mid-recording: drop the clip, like the app does */
+function gone(){return target&&(!target.isConnected||(target.closest('.sheet')&&!target.closest('.sheet.on')))}
+function stop(){
+  cancelAnimationFrame(raf);bub.style.setProperty('--lvl',0);
+  show('thinking');copy('Leírom','Leírom, amit mondtál<span class="dots"><i>.</i><i>.</i><i>.</i></span>','Egy pillanat, mindjárt ott lesz');
+  if(failNext){failNext=false;later(()=>{show('sad');copy('Nem sikerült','Nem hallottam semmit','Próbáld újra, kicsit közelebbről');later(()=>hide(),3200)},1700);return}
+  later(()=>{show('done');copy('Kész','Beírtam','Nézd át, mielőtt elmented');const t=target,line=say;later(()=>hide(()=>insert(t,line)),750)},2200);
+}
+function cancel(){cancelAnimationFrame(raf);hide()}
+function insert(t,line){
+  if(!t)return;
+  if('value' in t&&t.tagName!=='BUTTON'){t.value=(t.value.trim()?t.value.trim()+' ':'')+line;t.dispatchEvent(new Event('input',{bubbles:true}));
+    t.style.transition='box-shadow 1.6s';t.style.boxShadow='inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--lav)) 70%,transparent)';setTimeout(()=>t.style.boxShadow='',900);return}
+  if(t.classList.contains('ph')){t.classList.remove('ph');t.textContent=''}
+  t.classList.add('vfilled');
+  t.querySelectorAll('mark').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));
+  if(t.textContent.trim())t.append(' ');
+  const m=document.createElement('mark');m.textContent=line;t.append(m);setTimeout(()=>m.classList.add('faded'),900);
+}
+/* capture phase: the page's own click router never sees a mic tap */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-vmic]');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  if(state==='idle')listen(b);else if(state==='listening'&&b===btn)stop();
+},true);
+/* a sheet close / route change mid-recording: drop the clip like the app does */
+window.addEventListener('hashchange',()=>{if(bub&&state==='listening')cancel()});
+window.HANG={failNext:()=>{failNext=true}};
+})();
+</script>
+<!-- hang-kit:end -->
 <script type="module">
 const $=s=>document.querySelector(s);
 const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
@@ -3360,7 +3544,7 @@ function celuj(step){
   const prev=s>1?`#celuj/${s-1}`:'#celok';
   let body='';
   if(s===1) body=`<label class="field"><span>A CÉL, A TE SZAVAIDDAL</span><span class="inp">Félmaraton tavasszal</span></label>
-    <label class="field"><span>MIÉRT FONTOS? · EGY MONDAT</span><span class="inp ph">Hogy bírjam a nyári túrákat</span></label>
+    <div class="field"><span>MIÉRT FONTOS? · EGY MONDAT</span>${VF('Hogy bírjam a nyári túrákat','Azért fontos, mert jövő nyáron végig akarom bírni a hosszú túrákat a barátaimmal.',{rows:1,sm:true})}</div>
     <label class="field"><span>HATÁRIDŐ · OPCIONÁLIS</span><span class="inp">2027. ápr. 12.</span></label>`;
   if(s===2) body=`<div class="card glass rise" style="--c:var(--lav)"><div class="ct">${I('score')}<strong>Mezo olvasata</strong></div>
       <p class="body">Egy tavaszi félmaraton egészség- és teljesítménycél: a futásra épül, de az alvás és a fehérje is tartja.</p></div>
@@ -3374,7 +3558,7 @@ function celuj(step){
     `<button class="xrow dash" style="--c:var(--sage);margin-top:10px;justify-content:center" data-sheet="pillar"><strong>＋ Pillér a katalógusból</strong></button>
     <p class="quiet" style="padding:10px 2px 0">Az AI csak a zárt jel-katalógusból választhat · 5 pillér a felső határ.</p>`;
   if(s===4) body=`<div class="wrapchips">${['Idő','Fáradtság','Időjárás','Utazás'].map((n,i)=>`<span class="flat ${i<2?'on':''}" style="--c:var(--coral)">${n}</span>`).join('')}</div>
-    <label class="field"><span>MI FOG KÖZBEJÖNNI?</span><span class="inp ph">pl. esős hétvégék</span></label>
+    <div class="field"><span>MI FOG KÖZBEJÖNNI?</span>${VF('pl. esős hétvégék','Szerintem az esős hétvégék és a hosszú munkanapok, amikor este már nincs erőm futni.')}</div>
     ${h3('HA–AKKOR')}
     <div class="card glass rise" style="--c:var(--coral)"><div class="hakkor"><div><b>HA</b><span>kimarad a keddi futás</span></div><div><b>AKKOR</b><span>szerdán 30 perc könnyű</span><small>sport-napló · másnap szólok · Mezo javaslata</small></div></div></div>
     <button class="xrow dash" style="--c:var(--coral);margin-top:10px;justify-content:center" data-toast="Új ha–akkor sor"><strong>＋ Még egy ha–akkor</strong></button>`;
@@ -3476,7 +3660,7 @@ function sulyuj(step){
     <label class="field"><span>CÉL NEVE</span><span class="inp">Nyári forma</span></label>
     <div class="two" style="margin-top:12px"><label class="field"><span>KEZDÉS</span><span class="inp">ápr. 22.</span></label><label class="field"><span>CÉL DÁTUM</span><span class="inp">szept. 8.</span></label></div>
     <div class="two" style="margin-top:12px"><label class="field"><span>START SÚLY</span><span class="inp">81,4 kg</span></label><label class="field"><span>CÉL SÚLY</span><span class="inp">73 kg</span></label></div>
-    <label class="field"><span>IDENTITY FRAME · OPCIONÁLIS</span><span class="inp ph">pl. „aki bírja a nyarat”</span></label>
+    <div class="field"><span>IDENTITY FRAME · OPCIONÁLIS</span>${VF('pl. „aki bírja a nyarat”','Olyan ember vagyok, aki bírja a nyarat.',{rows:1,sm:true})}</div>
     <div class="feas">${I('tick')}<span><b>Reális</b> · −0,5 kg/hét, a biztonságos sávon belül.</span></div>`;
   return topbar()+back(s>1?'#sulyuj/1':'#sulycel',s>1?'Mit építünk?':'Cél')+
   `<div class="wiz rise"><div class="prog5" style="--c:var(--coral);grid-template-columns:1fr 1fr">${[1,2].map(i=>`<i class="${i<=s?'on':''}"></i>`).join('')}</div>${body}</div>
@@ -3900,7 +4084,7 @@ function szerk(){
   `<div class="p16" style="display:grid;gap:12px;margin-top:14px">
     <label class="field"><span>CÍM · A TETT</span><span class="inp">50 fekvőtámasz</span></label>
     <label class="field"><span>ÜNNEPLÉSÜL</span><span class="inp">ökölrázás</span></label>
-    <label class="field"><span>MIÉRT</span><span class="inp ph">pl. hogy erősebb legyen a vállam</span></label></div>`+
+    <div class="field"><span>MIÉRT</span>${VF('pl. hogy erősebb legyen a vállam','Hogy erősebb legyen a vállam, és ne fájjon a hátam az ülőmunkától.',{rows:1,sm:true})}</div></div>`+
   h3('HOGYAN PIPÁLÓDIK?')+`<div class="seg"><button class="on" style="--c:var(--gold)">Kézzel pipálom</button><button>Adatból</button></div>`+
   h3('LÁNC')+`<div class="p16 wrapchips"><span class="flat on" style="--c:var(--gold)">Reggeli lánc</span><span class="flat">Esti lánc</span><span class="flat">Egyik sem</span></div>`+
   h3('MENNYIBE KERÜL? (ÚJRAÉRTÉKELHETŐ)')+effortCard()+
@@ -3920,7 +4104,7 @@ function uj(step){
   if(s==='fw') body=`<div class="p16">${[['fogg','anchor','Szokás-láncolás','BJ Fogg · Tiny Habits',['Horgony','Pici tett','Ünneplés']],['clear','gem','Négy törvény','James Clear · Atomic Habits',['Jelzés','Vágy','Válasz','Jutalom']],['free','note','Keret nélkül','csak a tett',[]]].map(f=>`<button class="fwc glass ${fwPick===f[0]?'on':''}" data-fw="${f[0]}"><div class="ct">${I(f[1])}<span><strong>${f[2]}</strong><small>${f[3]}</small></span></div>${f[4].length?`<div class="loopl">${f[4].map(x=>`<span>${x}</span>`).join('→')}</div>`:''}</button>`).join('')}</div>
     <div class="tip">${I('bulb')}<p>Kezdőknek a szokás-láncolás a legkönnyebb: egy meglévő szokásra ülteted az újat.</p></div>`;
   if(s==='anchor') body=`<div class="p16 wrapchips">${[['Ébredés időben','szokás'],['Reggeli napfény','szokás'],['Kávé után','Mezo-pillanat'],['Edzés vége','Mezo-pillanat']].map((a,k)=>`<span class="flat ${k===1?'on':''}" style="--c:var(--sage)">${a[0]}<b>${a[1]}</b></span>`).join('')}</div>
-    <div class="p16" style="margin-top:12px"><label class="field"><span>VAGY SAJÁT SZAVAKKAL</span><span class="inp ph">pl. miután leteszem a telefont</span></label></div>
+    <div class="p16" style="margin-top:12px"><div class="field"><span>VAGY SAJÁT SZAVAKKAL</span>${VF('pl. miután leteszem a telefont','Miután reggel lefőttem a kávét.',{rows:1,sm:true})}</div></div>
     <div class="tip">${I('anchor')}<p>A jó horgony minden nap biztosan megtörténik, és pontosan tudod, mikor ért véget.</p></div>`;
   if(s==='act') body=`<div class="p16"><label class="field"><span>ÉN … · A TETT</span><span class="inp">50 fekvőtámaszt csinálok</span></label></div>
     <div class="tip warn">${I('scissors')}<p>Ez nagynak tűnik. Mi lenne, ha 5-tel kezdenéd? A pici tett ragad meg.</p></div>
@@ -3929,10 +4113,10 @@ function uj(step){
     ${h3('MENNYIBE KERÜL?')}${effortCard()}
     ${h3('HOGYAN PIPÁLÓDIK?')}<div class="seg"><button class="on" style="--c:var(--gold)">Kézzel pipálom</button><button>Adatból</button></div>`;
   if(s==='celeb') body=`<div class="p16 wrapchips">${['ökölrázás','„Igen!”','mosoly a tükörbe','mély levegő'].map((c,k)=>`<span class="flat ${k===0?'on':''}" style="--c:var(--gold)">${c}</span>`).join('')}</div>
-    <div class="p16" style="margin-top:12px"><label class="field"><span>VAGY SAJÁT</span><span class="inp ph">pl. egy kis tánc</span></label></div>
+    <div class="p16" style="margin-top:12px"><div class="field"><span>VAGY SAJÁT</span>${VF('pl. egy kis tánc','Egy kis tánc a konyhában.',{rows:1,sm:true})}</div></div>
     <div class="tip">${I('anchor')}<p>Az ünneplés azonnal jöjjön, a tett után — ettől ragad meg az érzés.</p></div>
     <button class="commit on" data-toast="Vállalva"><i>${I('tick')}</i>Vállalom</button>`;
-  if(['cue','crave','reward'].includes(s)) body=`<div class="p16"><label class="field"><span>${s==='cue'?'JELZÉS':s==='crave'?'MIÉRT AKAROD? · VÁGY':'JUTALOM'}</span><span class="inp ph">…</span></label></div><div class="tip" style="--c:var(--lav)">${I('gem')}<p>A négy törvény egy-egy lépése.</p></div>`;
+  if(['cue','crave','reward'].includes(s)) body=`<div class="p16"><div class="field"><span>${s==='cue'?'JELZÉS':s==='crave'?'MIÉRT AKAROD? · VÁGY':'JUTALOM'}</span>${VF('…',s==='cue'?'Amikor este bekapcsolom a vízforralót a teához.':s==='crave'?'Mert utána nyugodtabban alszom el, és ezt nagyon szeretem.':'Utána kipipálom, és megnézem, hány napja tart a sorozat.')}</div></div><div class="tip" style="--c:var(--lav)">${I('gem')}<p>A négy törvény egy-egy lépése.</p></div>`;
   const last=i===steps.length-1;
   return topbar()+back(prevGo,prevT,`<button class="pillx ghost" data-go="#rutin">Mégse</button>`)+
   `<div class="steps rise" style="margin-top:12px">${steps.map((x,k)=>`<span class="${k<i?'done':k===i?'on':''}" style="--c:var(--gold)">${k+1}</span>`).join('')}</div>
@@ -4146,7 +4330,7 @@ function bszemely(mode){
     </div></div><div class="p16" style="margin-top:10px"><button class="btn flatb" data-toast="Kinyitva">Pontos összeállított szöveg ▾</button></div>`;
   return top+(mode==='about'?`<div class="p16"><div class="card glass rise" style="--c:var(--rose);--i:1"><span class="eb">AZ ALAPOK, AMIKET ISMER</span><div class="body">Daniel · 34 év · 180 cm · fogyás 76 kg-ig · heti 4 edzés</div></div></div>`+
     h3('A TÉNYEK FORRÁSA')+srows('var(--rose)',[srow('person','var(--rose)','Név és fiók','','#b-fiok'),srow('heart','var(--rose)','Testadatok és életkor','','#b-me'),srow('weight','var(--coral)','Súly- és edzéscéljaim','','#b-cel')],2):'')+
-  `<div class="p16" style="margin-top:12px"><div class="card glass rise" style="--c:var(--lav);--i:3"><span class="eb">${m[1]}</span><h3 style="font-size:17px;margin:3px 0 10px">${m[2]}</h3><div class="ta2">${m[3]}</div><div class="tafoot"><span>Csak te szerkeszted</span><span>${m[3].length} / 4000</span></div>
+  `<div class="p16" style="margin-top:12px"><div class="card glass rise" style="--c:var(--lav);--i:3"><span class="eb">${m[1]}</span><h3 style="font-size:17px;margin:3px 0 10px">${m[2]}</h3>${VF('',mode==='communication'?'Beszélj velem tömören, számokkal, és ha valami nem megy, mondd meg egyenesen.':'Hétköznap szoftverfejlesztő vagyok, hétvégén röplabdázom, és most a fogyásra meg az alvásra figyelek.',{value:m[3],rows:7})}<div class="tafoot"><span>Csak te szerkeszted</span><span>${m[3].length} / 4000</span></div>
     ${mode==='communication'?`<div class="hrow" style="margin-top:12px;gap:10px"><span class="grow" style="flex:1;font-size:13px;color:var(--sub)">Tanult kommunikációs profil használata</span><button class="tgl on" style="--c:var(--lav)" data-tgl aria-label="Tanult profil"></button></div>`:''}
     <button class="pillx" style="--c:var(--lav);width:100%;justify-content:center;height:44px;margin-top:14px" data-toast="Mentve — a következő beszélgetési fordulótól érvényes.">Változtatások mentése</button></div></div>`+
   (mode==='communication'?h3('AMIT MEZO TANULT A STÍLUSODRÓL')+`<div class="p16"><div class="card glass" style="--c:var(--lav)"><div class="ct">${I('chat')}<strong>Tömör, adatvezérelt</strong></div><div class="body">Rövid válaszokat szeretsz, számokkal. Az érzelmi kérdéseknél lassabb tempót.</div></div></div>`:'')+
@@ -4207,7 +4391,7 @@ const SH={
   weight:['var(--sky)',()=>`<div class="shh">${I('weight')}<div class="grow"><span class="eb">SÚLY</span><h3>Mi a számunk ma?</h3><small class="tiny">Egy mérés a napodban.</small></div><button class="x" data-closesheet aria-label="Bezár">✕</button></div>
     <div class="logbig"><b>78,4</b><small> kg</small></div><div class="ruler" style="position:relative;--c:var(--sky)"></div>
     <div class="chiprow">${['−0,5','−0,1','+0,1','+0,5'].map(n=>`<span class="flat">${n}</span>`).join('')}</div>
-    <label class="field" style="margin-top:14px"><span>EGY MONDAT · OPCIONÁLIS</span><span class="inp ph">pl. sós vacsora tegnap</span></label>
+    <div class="field" style="margin-top:14px"><span>EGY MONDAT · OPCIONÁLIS</span>${VF('pl. sós vacsora tegnap','Tegnap este sós pizzát ettem, meg keveset ittam.',{rows:1,sm:true})}</div>
     <div class="pair" style="padding:14px 0 0"><button class="pillx ghost" data-closesheet>Mégse</button><button class="pillx" style="--c:var(--sky)" data-toast="Mentve · 78,4 kg">${I('tick')}Mentés</button></div>`],
   sleep:['var(--lav)',()=>`<div class="shh">${I('sleep')}<div class="grow"><span class="eb">ALVÁS</span><h3>Hogyan aludtunk?</h3></div><button class="x" data-closesheet aria-label="Bezár">✕</button></div>
     <div class="seg" style="margin:0 0 10px"><button class="on" style="--c:var(--lav)">Kézi</button><button>Screenshot</button></div>
@@ -4223,7 +4407,7 @@ const SH={
     <div class="mrows">${[['A rendszeresség a király','Az azonos lefekvési idő erősebben jár együtt a jó közérzettel, mint az alvás hossza.'],['7 óra alatt','Kevesebb REM és mély alvás — a regeneráció a második felében történik.'],['Az éjszakai ébredés normális','Egy-két rövid ébredés minden éjszaka része.']].map(r=>`<button><span><strong>${r[0]}</strong><small>${r[1]}</small></span></button>`).join('')}</div>`],
   /* ── Én II (U7) lapjai ── */
   ai:['var(--lav)',()=>`<div class="shh">${I('spark')}<div class="grow"><span class="eb">AI JAVASLAT</span><h3>Milyen szokás segítene?</h3></div>${x}</div>
-    <label class="field"><span>SZÁNDÉK (OPCIONÁLIS)</span><span class="inp ph">pl. jobb esti lezárás</span></label>
+    <div class="field"><span>SZÁNDÉK (OPCIONÁLIS)</span>${VF('pl. jobb esti lezárás','Szeretném, ha este hamarabb letenném a telefont és nyugodtabban zárnám a napot.')}</div>
     <button class="pillx" style="--c:var(--lav);width:100%;justify-content:center;height:44px;margin-top:14px" data-toast="Mezo gondolkodik…">${I('spark')}Javasolj</button>`],
   chain:['var(--gold)',()=>`<div class="shh">${I('chain')}<div class="grow"><span class="eb">RUTIN</span><h3>Új rutin</h3></div>${x}</div>
     <label class="field"><span>NÉV</span><span class="inp ph">pl. Ebéd utáni szünet</span></label>
@@ -4235,23 +4419,22 @@ const SH={
     <span class="eb">EGYÉB</span><div style="margin-top:8px"><button class="optrow">${I('note')}<div class="grow"><strong>Saját szavakkal…</strong></div></button><button class="optrow unlink">${I('skip')}<div class="grow"><strong>Leoldom a horgonyt</strong></div></button></div>`],
   journal:['var(--sage)',()=>`<div class="shh">${I('journal')}<div class="grow"><span class="eb">NAPLÓ</span><h3>Mi jár a fejedben?</h3><small class="tiny">A gondolataidnak itt van helye.</small></div>${x}</div>
     <div class="seg" style="margin:0 0 12px"><button class="on" style="--c:var(--sage)">Napló</button><button>Döntés</button></div>
-    <div class="ta2" style="min-height:120px;color:var(--faint)">Írd le, mi jár a fejedben…</div>
-    <div class="hrow" style="margin-top:12px;gap:10px"><button class="micbtn" style="--c:var(--sage)" aria-label="Diktálás">${I('mic')}</button><label class="field" style="flex:1"><span>DÁTUM</span><span class="inp">2026. 09. 24.</span></label></div>
+    ${VF('Írd le, mi jár a fejedben…','Ma reggel sokkal nyugodtabb voltam a meeting előtt, a légzőgyakorlat tényleg segít. Holnap is megcsinálom.',{rows:5})}
+    <label class="field" style="margin-top:12px"><span>DÁTUM</span><span class="inp">2026. 09. 24.</span></label>
     <div class="pair" style="padding:16px 0 0"><button class="pillx ghost" data-closesheet style="justify-content:center">Mégse</button><button class="pillx" style="--c:var(--sage);justify-content:center" data-toast="Mentve">${I('tick')}Mentés</button></div>`],
   decision:['var(--gold)',()=>`<div class="shh">${I('compass')}<div class="grow"><span class="eb">DÖNTÉS</span><h3>Mennyire vált be? (1–5)</h3></div>${x}</div>
     <div class="rate" style="grid-template-columns:repeat(5,1fr)">${[1,2,3,4,5].map(n=>`<button class="${n===4?'cta':''}">${n}</button>`).join('')}</div>
-    <label class="field" style="margin-top:14px"><span>MI LETT BELŐLE? (NEM KÖTELEZŐ)</span><span class="inp">Három hét után belefér, a péntek a nehéz.</span></label>
+    <div class="field" style="margin-top:14px"><span>MI LETT BELŐLE? (NEM KÖTELEZŐ)</span>${VF('Mi lett belőle?','Három hét után belefér a négy edzés, csak a péntek nehéz, olyankor rövidebbet csinálok.',{value:'Három hét után belefér, a péntek a nehéz.'})}</div>
     <div class="pair" style="padding:16px 0 0"><button class="pillx ghost" data-closesheet style="justify-content:center">Mégse</button><button class="pillx" style="--c:var(--gold);justify-content:center" data-toast="Mentve">${I('tick')}Mentés</button></div>`],
   plog:['var(--rose)',()=>`<div class="shh">${I('people')}<div class="grow"><span class="eb">EMBEREK · GYORS LOG</span><h3>Mit jegyzünk meg?</h3></div>${x}</div>
-    <div class="hrow" style="gap:12px;padding:12px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)"><button class="micbtn" style="--c:var(--rose)">${I('mic')}</button><span><strong style="font-size:14px">Tartsd nyomva · mondd el</strong><small class="tiny" style="display:block">vagy gyors chip</small></span></div>
-    <div class="field" style="margin-top:14px"><span>KI?</span><div class="wrapchips">${P.slice(0,5).map((p,i)=>`<span class="flat ${i===0?'on':''}" style="--c:var(--rose)">${p.n}</span>`).join('')}</div></div>
+    <div class="field"><span>KI?</span><div class="wrapchips">${P.slice(0,5).map((p,i)=>`<span class="flat ${i===0?'on':''}" style="--c:var(--rose)">${p.n}</span>`).join('')}</div></div>
     <div class="field" style="margin-top:12px"><span>HOGY ÉRZED</span><div class="wrapchips">${Object.values(TONE).map((t,i)=>`<span class="flat ${i===0?'on':''}" style="--c:${t[1]}"><i class="dot"></i>${t[0]}</span>`).join('')}</div></div>
-    <label class="field" style="margin-top:12px"><span>EGY MONDAT · OPCIONÁLIS</span><span class="inp ph">pl. „Petrával hosszú vacsi, csendben”</span></label>
+    <div class="field" style="margin-top:12px"><span>EGY MONDAT · OPCIONÁLIS</span>${VF('pl. „Petrával hosszú vacsi, csendben”','Petrával hosszú vacsora volt ma este, csendben, jólesett.')}</div>
     <div class="pair" style="padding:16px 0 0"><button class="pillx ghost" data-closesheet style="justify-content:center">Mégse</button><button class="pillx" style="--c:var(--rose);justify-content:center" data-toast="Mentve">${I('tick')}Mentés</button></div>`],
   pedit:['var(--rose)',()=>`<div class="shh">${I('person')}<div class="grow"><span class="eb">EMBEREK</span><h3>Új személy</h3></div>${x}</div>
     <div style="display:grid;gap:12px"><label class="field"><span>NÉV</span><span class="inp">Marci</span></label><label class="field"><span>BECENÉV</span><span class="inp ph">pl. Marcika</span></label>
     <div class="field"><span>KAPCSOLAT</span><div class="wrapchips">${['Barát','Család','Kolléga','Csapattárs','Ismerős'].map((k,i)=>`<span class="flat ${i===4?'on':''}" style="--c:var(--rose)">${k}</span>`).join('')}</div></div>
-    <label class="field"><span>JEGYZET</span><span class="inp ph">honnan ismered, mi fontos…</span></label></div>
+    <div class="field"><span>JEGYZET</span>${VF('honnan ismered, mi fontos…','Marcival a röpiből ismerjük egymást, most költözött Budapestre, és a futás is érdekli.')}</div></div>
     <div class="pair" style="padding:16px 0 0"><button class="pillx ghost" data-closesheet style="justify-content:center">Mégse</button><button class="pillx" style="--c:var(--rose);justify-content:center" data-toast="Felvéve">${I('tick')}Felveszem</button></div>`],
 };
 function openSheet(k){const [c,f]=SH[k];const sh=$('#sheet');closeGb();sh.style.setProperty('--c',c);
