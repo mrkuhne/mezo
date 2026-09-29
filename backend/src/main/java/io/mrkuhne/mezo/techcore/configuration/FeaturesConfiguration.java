@@ -101,6 +101,11 @@ public class FeaturesConfiguration {
     public static final String KNOWLEDGE_RECHECK_JOB_SWITCH =
             "mezo.techcore.cron.knowledge-recheck-job.enabled";
 
+    /** S9 (mezo-d6ivw.10) weekly fact merge (schedule: mezo.companion.fact-merge.cron) — techcore
+     *  cron zone; off ⇒ the FactMergeJob bean does not exist (FactMergeService stays callable). */
+    public static final String FACT_MERGE_JOB_SWITCH =
+            "mezo.techcore.cron.fact-merge-job.enabled";
+
     /** Fuel P6 pantry import (OpenFoodFacts lookup + import endpoints). Gates OffClient + PantryImportController. */
     public static final String PANTRY_IMPORT_SWITCH = "mezo.feature.pantry-import.enabled";
 
