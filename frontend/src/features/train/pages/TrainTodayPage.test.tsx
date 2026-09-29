@@ -1394,8 +1394,10 @@ test('energy card (mock): shows the served logged movement off the same fixture 
   expect(card.querySelector('.trm-energy-main')!.textContent).toBe(`+${earned}kcal`)
   const doneSpan = card.querySelector('.trm-energy-split span:first-child')!
   expect(doneSpan.textContent).toBe(`${earned} kcal már a keretedben`)
-  // the mock fixture serves no `pendingMovementKcal` — no "még jön" line.
-  expect(within(card).queryByText(/még jön, ha megcsinálod/)).not.toBeInTheDocument()
+  // the mock fixture's still-unlogged evening run rides along as the pending preview.
+  const pending = mockFuelDayEnergy.pendingMovementKcal ?? 0
+  expect(pending).toBeGreaterThan(0)
+  expect(card.querySelectorAll('.trm-energy-split span')[1].textContent).toBe(`+${pending} kcal még jön, ha megcsinálod`)
   expect(within(card).getByText(/Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./)).toBeInTheDocument()
   expect(container.querySelector('.trm-energy-note')!.textContent).not.toMatch(/^A folyamatban lévő edzés/)
 })

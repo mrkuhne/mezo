@@ -88,6 +88,17 @@ describe('EnergyBreakdownSheet', () => {
     expect(screen.queryByText(/Még jön/)).not.toBeInTheDocument()
   })
 
+  it('hides the „Még jön” group when pending > 0 but every block is done by the FE rule (mezo-tb3s2)', () => {
+    // e.g. a non-meso gym workout: gymDoneDates marks the block done while the backend keeps it pending.
+    const allDone: EnergyBreakdown = {
+      ...fuelBreakdown,
+      movement: { ...fuelBreakdown.movement, blocks: fuelBreakdown.movement.blocks!.map(b => ({ ...b, done: true })) },
+    }
+    render(<EnergyBreakdownSheet breakdown={allDone} initial="movement" onClose={vi.fn()} />, { wrapper: Router })
+    expect(screen.queryByText(/Még jön/)).not.toBeInTheDocument()
+    expect(document.querySelector('.flp-etile.is-pending')).toBeNull()
+  })
+
   it('omits the deficit section and shows a weekly-avg movement (no pills) when deficit absent', () => {
     render(<EnergyBreakdownSheet breakdown={profileBreakdown} initial="base" onClose={vi.fn()} />, { wrapper: Router })
     expect(screen.getByText('Alaphő · NEAT')).toBeInTheDocument()

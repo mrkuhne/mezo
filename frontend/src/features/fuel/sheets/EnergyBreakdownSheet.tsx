@@ -242,9 +242,11 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                 </div>
               </>
             )}
-            {movement.parts && (movement.pending ?? 0) > 0 && (
+            {movement.parts && (movement.pending ?? 0) > 0 && (movement.blocks ?? []).some(b => !b.done) && (
               <>
-                {/* Not yet logged — previewed separately, still not a summand of `kcal` (mezo-tb3s2). */}
+                {/* Not yet logged — previewed separately, still not a summand of `kcal` (mezo-tb3s2).
+                    Gated on a not-done tile too: the FE's done rule can mark a block done the backend
+                    still counts as pending (e.g. a non-meso gym workout) — never a header over nothing. */}
                 <span className="flp-einfo">Még jön, ha megcsinálod · a keretben még nincs benne</span>
                 <div className="flp-etiles is-info">
                   {(movement.blocks ?? []).filter(b => !b.done).map((b, i) => (

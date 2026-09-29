@@ -1169,7 +1169,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
-  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
+    `TrainPopulator`
 
 ### pantry
 

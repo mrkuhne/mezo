@@ -5,7 +5,7 @@ import type {
 import { currentWeekOf, localDateString } from '@/shared/lib/dates'
 import { goalResponse, goalTimeline } from '@/data/me/goals'
 import { LAST_WEEK } from '@/data/fuel/expenditureLearningSeed'
-import { netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
+import { DEFAULT_RUN_MIN, netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 
 const TODAY = localDateString()
 
@@ -424,7 +424,9 @@ const m4Dimensions: MealDimension[] = [
 
 // The served day (mezo-tb3s2) for the mock, derived the way DayTargetProjector serves it: base (the
 // learned seed) + today's LOGGED movement (the done meso gym, 58′ net, + 90′ RPE 6.6 volleyball as
-// off-plan extra) + the segment's balance, floored at BMR; the still-unlogged sessions are pending.
+// off-plan extra) + the segment's balance, floored at BMR. The evening interval run is planned but
+// not logged yet: it rides along as the display-only pending preview (moderate band, the default
+// 45′ — WorkoutWindowQueryService's rule) and never enters the target.
 const MOCK_SEGMENTS = goalResponse.prescription!.segments
 const MOCK_WEEK = currentWeekOf(goalResponse.startDate!, goalTimeline.weeks)
 const MOCK_SEGMENT = MOCK_SEGMENTS.find(s => MOCK_WEEK >= s.fromWeek && MOCK_WEEK <= s.toWeek) ?? MOCK_SEGMENTS[0]
@@ -436,6 +438,7 @@ const MOCK_BASE_KCAL = LAST_WEEK.appliedBaseKcal
 const MOCK_REST = restKcalPerHour(MOCK_BMR)
 const MOCK_PLANNED_KCAL = netKcal('gym', null, 58, MOCK_REST) ?? 0
 const MOCK_EXTRA_KCAL = netKcal('volleyball', 6.6, 90, MOCK_REST) ?? 0
+const MOCK_PENDING_KCAL = netKcal('run', null, DEFAULT_RUN_MIN, MOCK_REST) ?? 0
 const MOCK_BALANCE_RAW = MOCK_SEGMENT.dailyEnergyBalanceKcal ?? 0
 const MOCK_TARGET_KCAL = Math.max(MOCK_BMR, MOCK_BASE_KCAL + MOCK_PLANNED_KCAL + MOCK_EXTRA_KCAL + MOCK_BALANCE_RAW)
 export const fuelDayEnergy: FuelDayEnergy = {
@@ -444,7 +447,7 @@ export const fuelDayEnergy: FuelDayEnergy = {
   extraMovementKcal: MOCK_EXTRA_KCAL,
   balanceKcal: MOCK_TARGET_KCAL - MOCK_BASE_KCAL - MOCK_PLANNED_KCAL - MOCK_EXTRA_KCAL,
   targetKcal: MOCK_TARGET_KCAL,
-  pendingMovementKcal: null,
+  pendingMovementKcal: MOCK_PENDING_KCAL,
   // Learned-base demo fixture (mezo-zz91i): baseKcal above IS the learned base; formulaBaseKcal is
   // the BMR × NEAT the confidence line's formula tile shows next to it. All from the part 2 seed.
   baseSource: 'learned',
