@@ -24,17 +24,19 @@ const OVERVIEW = {
   targetRateKgPerWeek: -0.74,
   projectedTargetDate: '2026-10-24',
   dataSufficiency: 'full',
+  // Day-type split retired (mezo-tb3s2, M4) — the real GoalOverviewService can only emit
+  // `uniform`/`uniform_kcal` now, never a training/rest split; this plumbing fixture mirrors that.
   diet: {
     weekAverageKcal: 2780,
-    todayDayType: 'training',
-    todayKcal: 2940,
-    trainingDayKcal: 2940,
-    restDayKcal: 2580,
+    todayDayType: 'uniform',
+    todayKcal: 2780,
+    trainingDayKcal: null,
+    restDayKcal: null,
     proteinG: 188,
     carbsG: 361,
     fatG: 82,
     basis: 'formula',
-    explanationCode: 'training_day_split',
+    explanationCode: 'uniform_kcal',
   },
   segment: {
     available: true,

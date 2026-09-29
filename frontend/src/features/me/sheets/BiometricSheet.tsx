@@ -144,7 +144,7 @@ export function BiometricSheet({
   )
 }
 
-/** The three-row split (Alaphő · NEAT / Betáblázott mozgás / Fenntartó) — lifted
+/** The three-row split (Alaphő · NEAT / Tervezett mozgás · heti átlag / Fenntartó) — lifted
  *  verbatim from the retired `BiometricCard`, the surface that used to carry it. */
 function TdeeRows({ tdee, explainable }: {
   tdee: NonNullable<BiometricProfileResponse['tdeeBootstrap']>
