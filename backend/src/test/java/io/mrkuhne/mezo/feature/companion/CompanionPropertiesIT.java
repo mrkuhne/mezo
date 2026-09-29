@@ -117,7 +117,8 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
                 .isEqualTo("sleep-quality~next-day-training-rpe");
         assertThat(properties.patterns().pairs().getFirst().metricA())
                 .isEqualTo(io.mrkuhne.mezo.feature.companion.service.MetricKey.SLEEP_QUALITY);
-        assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(1);
+        // wake-date re-lag (mezo-ck2.9): the night's own sleep_log.date IS the training day
+        assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(0);
     }
 
     /**

@@ -38,7 +38,7 @@ class PatternEmitIT extends AbstractIntegrationTest {
             LocalDate day = LocalDate.now().minusDays(1L + i);
             int stress = (i % 5) + 1;
             int quality = 6 - stress;
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, stress, null); // lag 1 (mezo-ck2.9)
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), quality);
         }
     }
