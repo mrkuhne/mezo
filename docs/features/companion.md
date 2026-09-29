@@ -738,10 +738,21 @@ endpoint's `events[]` — see below.
 COMPLETE (all 14 slices):**
 
 - **The learning loop closes** — a FIRST confirm on a pattern promotes it into a durable
-  `knowledge_fact` (`source=pattern`, factText = the pattern title, linked back via
-  `pattern.promoted_fact_id`; v1 category heuristic: physiology/trigger → health, response →
-  train). Later un-confirms leave the fact alone — it is Daniel's knowledge now, the Knowledge
-  tab owns its lifecycle. Repeat confirms never duplicate.
+  `knowledge_fact` (`source=pattern`, linked back via `pattern.promoted_fact_id`; v1 category
+  heuristic: physiology/trigger → health, response → train). **`factText` = the pattern title is
+  superseded (S8, `mezo-d6ivw.12`):** `PatternService.promoteToFact` now sets it via
+  `FactTextComposer.compose(kind, title, mechanism)` — a prompt-ready SENTENCE built from the
+  pattern's mechanism (up to two sentences, ≤500 chars), falling back to the title only for a
+  statistical-kind pattern or a blank/absent mechanism; `FactTextBackfillService` re-composes it
+  for already-promoted facts. **Hardening (2026-09-28, unrelated to mezo-tb3s2 but touched the same
+  file this session):** the sentence splitter used to treat any `[.!?…]` + whitespace as a
+  boundary, so a Hungarian abbreviation like "pl." mid-mechanism was mistaken for a sentence end
+  and the composed text was truncated mid-parenthesis; a boundary now also requires the next token
+  to look like a new sentence's start (uppercase, or an opening quote then uppercase) and the word
+  before the mark to not be a known abbreviation (`pl, kb, stb, ill, ún, vö, max, min, db, ld,
+  lásd, tkp, ti, uo, szül, ford`), and `compose()` falls back to the title if the result still
+  leaves an unbalanced `(` open. Later un-confirms leave the fact alone — it is Daniel's knowledge
+  now, the Knowledge tab owns its lifecycle. Repeat confirms never duplicate.
 - **Recurrence reinforcement** — when the nightly detection re-detects a CONFIRMED pattern in
   the SAME direction (sign of r), the promoted fact gets `reinforcement_count++` +
   `last_reinforced_at` — at most once per `reinforce-cooldown-days` (7): the sliding window

@@ -61,6 +61,23 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-29 — A napi keret a valódi logolt mozgást követi (`mezo-tb3s2`).** A Fuel keret Mozgás
+  sora ezentúl a nap TÉNYLEGESEN logolt edzéseinek nettó kalóriáját írja (tervezett + nem tervezett
+  session is), nem a heti terv átlagát — az owner egy meso edzést (~300 kcal) és egy 120′
+  röplabdát (490 kcal) logolt, és a keret csak +426-tal nőtt, mert az a heti terv átlaga volt, nem a
+  napi valóság. Egy még nem logolt, tervezett session halványan „még jön +X, ha megcsinálod"
+  előnézetet kap — nincs előleg. A tanulómotor (heti alap-becslés) most ugyanazt a logolt mozgás
+  számot kapja, amit a keret is szolgál, ezért egy kihagyott edzés már nem húzza le hamisan a
+  tanult alapot. Az Edzőnap-shift beállítás megszűnt (a keret most a valós edzésnapokat követi, az
+  áthelyezés értelmét vesztette); a mezőt a backend elfogadja, de figyelmen kívül hagyja. Az Edzés
+  „Amit a mozgásod hozzáad" kártya és a Fuel keret mostantól garantáltan ugyanazt a számot mutatja.
+  Backend: `DayTargetProjector` (`target = max(BMR, alap + mozgás + egyenleg)`),
+  `WorkoutWindowQueryService.DayMovement` (`plannedKcal`/`extraKcal`/`pendingKcal`), a régi
+  `DayTypeShiftCalculator` (edzőnap/pihenőnap felosztás) törölve, `ActivityEnergyModel` v3 rollout
+  (a tanulási előzmény újra-láncolva az új szabály szerint). Dokumentáció:
+  [`fuel.md`](../features/fuel.md) §4–§5/§8–§9 · [`goal-engine.md`](../features/goal-engine.md) §3
+  · [`train.md`](../features/train.md) (energia kártya) · [`me.md`](../features/me.md) (TDEE
+  felirat).
 - **2026-09-28 — A chat memóriája legyen látható és őszinte (S8, `mezo-d6ivw.12`).** A beszélgetés
   ezentúl elárulja, mit tanult, mit javasol, kire emlékszik és mit felejtett el — egy megjegyezett
   személy-tényhez „Megjegyeztem: … Visszavonom" chip jár, egy owner-tény javaslathoz „Megjegyezném:

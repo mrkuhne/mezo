@@ -24,7 +24,7 @@
 movement  = Σ net kcal of the date's LOGGED sessions        (planned + unplanned, M1)
 target    = max(BMR, base + movement + balance)             (base = served EnergyBase.neatBaselineKcal)
 carbs     = segment carbs + (target − seg.kcal) / 4         (unchanged idiom: the delta lands in carbs)
-pending   = Σ moderate-band net kcal of today's planned sessions not yet logged (display only, M2)
+pending   = Σ moderate-band net kcal of today-or-later's planned sessions not yet logged (display only, M2; the Fuel hero shows it only on today)
 ```
 
 - **`balance`** is the segment's `dailyEnergyBalanceKcal`, meaning the goal pace plus any accepted adjustment or deload override. It is unchanged and independent of movement (`GoalProjectionService.dailyEnergyBalance`). The BMR floor still folds into the Célod row, so the equation always closes.
@@ -41,7 +41,7 @@ pending   = Σ moderate-band net kcal of today's planned sessions not yet logged
 | `plannedDone` | kept (legacy callers) |
 | `plannedKcal` | net kcal of logged sessions matched to a plan slot |
 | `extraKcal` | net kcal of logged sessions not matched (unchanged) |
-| `pendingKcal` | today's planned-not-yet-logged sessions at the moderate band. Only for `date == today`, otherwise 0. |
+| `pendingKcal` | today's planned-not-yet-logged sessions at the moderate band, for `date` today or later (display only; the Fuel hero shows it only on today). `0` for a past date. |
 
 Sources, the same as today:
 - **Gym:** `netKcal("gym", null, gymMinutes)`, where `gymMinutes` comes from `active_seconds`, else the clamped span, else the default.
@@ -135,7 +135,7 @@ An in-progress gym session does not count until it is finished.
   - nothing logged
   - no-base legacy path
   - old prescription carrying a split is ignored
-- `WorkoutWindowQueryServiceIT`: `plannedKcal`, `extraKcal` and `pendingKcal`, including gym from `active_seconds`, sport with null kcal, in-progress gym, and pending only for today.
+- `WorkoutWindowQueryServiceIT`: `plannedKcal`, `extraKcal` and `pendingKcal`, including gym from `active_seconds`, sport with null kcal, in-progress gym, and pending reported for today or later (never for a past date).
 - `FuelDayServiceIT` / `FuelDayDayTypeIT`: rewritten to the new rule.
 - Learning:
   - `ExpenditureLearningServiceIT` / `Test`: movement input equals the served movement.

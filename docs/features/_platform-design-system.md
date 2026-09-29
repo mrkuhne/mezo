@@ -16,6 +16,14 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 ---
 > **2026-09-27 — Üveg U11 (`mezo-me75u.11`) — the epic closes.** An app-wide audit of all 126 routes drove the last fixes (legible copy — live text never uses `--text-disabled`; the last clay art in content → 3D, incl. `InfoButton`'s default `t-info` and the chat reference icons in `insights/logic/toolDomains.ts`; tick glyphs → `t-tick`; dark ink on lit coral). The dead pre-üveg CSS went (~5300 lines incl. dead emoji modules), the kit's `<Sheet glass>` field rule is zero-specificity (`:where()`), and `.uv-tgl` (glass Toggle) lives once in the uveg kit. Blocks `── uveg lezaras edzes|egyeb (`, pinned as `U11_BLOCKS`. Canon order: `docs/design_2.0/README.md`.
 
+> **2026-09-28 — Actual-movement budget (`mezo-tb3s2`).** `prototype.css` gained the Mozgás
+> pending-preview pill `.fmx-node-pend` (a faint dashed pill, `.node small.pend`, naming what still
+> fits if today's remaining planned sessions get logged) and the Edzés energy card's own faint
+> pending tile `.flp-etile.is-pending` (opacity `.55`, no fill). The empty-state line
+> `.trm .trm-energy-empty` is DELETED — the served-energy card now simply hides itself instead of
+> showing a "no weight on file" fallback sentence when there is no served energy to show. No new
+> primitive, no new sprite symbol.
+
 > **2026-09-28 — Eligazítás (`mezo-mgu2r`).** `prototype.css`'s `uveg edzes session` block gained the briefing family (`.wbr-*`: frameless hero halo, the gold glass challenge card reusing the variant-B `.wos-qc` rows, flat exercise rows, the portalled `.wbr-foot` Indulás that floats over `.phone-screen` like the dock), the card-head vs-last-week chip `.wo-delta` (`is-up` coral / hold-down amber), the tappable released badge (`.wos-pill-quest.is-released`) and the challenge detail glass body (`.wos-gb-qd`). No new primitive, no new sprite symbol.
 
 > **2026-09-28 — Arányos lépcső (`mezo-bk7sn`).** One more briefing-row line: `.wbr-row-why` (11px amber, the `.wo-delta` hold tone) carries the engine's reason when a target sits past the range top. The workout card reuses its existing `.wo-cue` slot for the same sentence. No new primitive.
