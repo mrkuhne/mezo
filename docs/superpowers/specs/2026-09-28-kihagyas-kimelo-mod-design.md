@@ -266,3 +266,33 @@ undo.
 ## Slice lessons
 
 (appended by each slice session)
+
+### S1 (2026-09-29, `mezo-q4xt2.1`)
+
+1. **The central read is `PlannedSkipService.verdictsBetween`** (train). It unions `planned_skip`
+   with the legacy advice table `sport_slot_skip`; a USER SPORT row wins over its ADVICE twin and
+   is judged `adviceBacked` (excused, no free pass, out of the pass race). S2's protected ranges
+   and S3's `MEAL` extend this one method — never add a second "is it skipped?" read.
+2. **Verdicts are read-time and need whole ISO weeks.** `verdictsBetween` widens to Mon–Sun before
+   `PlannedSkipPolicy.judge`; changing a reason never touches `created_at`, so it cannot move the
+   free pass. The FE `judge()` in `plannedSkips.ts` is a mock-only mirror of the Java policy.
+3. **"Planned gym" has more consumers than `findPlannedTemplateForDate` callers.** Switching to
+   `findPlannedTemplateForDateUnlessSkipped` was not enough: `AnchorResolver` (generic "Edzés"
+   anchor from a bare gym slot) and `WorkoutWindowQueryService` (gym + run windows that feed Fuel
+   meal scoring and the meal coach) needed their own checks, as did the companion day lines for
+   runs. `getToday` stays skip-blind on purpose (undo needs it).
+4. **Counting consumers:** streak bridges a week with ≥1 excused skip; commitment and the
+   missed-workouts flag drop excused days (a trained day beats a skip); meso adherence subtracts
+   only excused skips that fall on a non-empty template day, and `completionPct` stays uncapped.
+5. **FE:** one query (`usePlannedSkips`, window today−7…Sunday) feeds `useTrain().plannedSkips`;
+   `deriveBlocks` covers the Nap timeline, stack, notifications and their writer; `todayHooks`,
+   `useDayOrbFill`, `recapHooks`, `fuelWeekHooks` have their own gym/run logic and were patched
+   individually. Shared query keys live in `data/train/queryKeys.ts` (breaks a hooks cycle).
+   Real-mode skip writes invalidate week workouts, streak/progression, meso report, quests and
+   the Fuel day.
+6. **New sprite icons go into `docs/design_2.0/assets/titanium-custom.svg` + the generator** — a
+   guard test rejects hand-pasting into the generated sprite outputs.
+7. **Living prototypes are shared by parallel sessions.** The Edzés artifact was republished by
+   another slice after ours; always `read` before publishing and merge, never overwrite.
+8. Backend ITs: the fixed local DB had a drifted changeset; run every IT with
+   `-Dmezo.test.use-testcontainers=true`.
