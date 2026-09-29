@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.companion.service.GearClassifier;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
+import io.mrkuhne.mezo.feature.companion.service.merge.FactMergeJudge;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.TurnGear;
 import io.mrkuhne.mezo.feature.companion.service.TurnGearAnalyzer;
@@ -1122,6 +1123,9 @@ public class FakeCompanionLlm implements CompanionLlm {
                             + " ez így van — az utóbbi hetekben mintha másképp"
                             + " alakulna. Figyeljem tovább?\","
                             + "\"claim\":\"Mostanában ez másképp alakul.\"}";
+        }
+        if (systemPrompt.startsWith(FactMergeJudge.MARKER)) {
+            return FakeFactMerge.answer(systemPrompt);
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             if (userMessage.contains("[fake-recovery-batch:")) {
