@@ -30,7 +30,7 @@ pending   = Σ moderate-band net kcal of today-or-later's planned sessions not y
 - **`balance`** is the segment's `dailyEnergyBalanceKcal`, meaning the goal pace plus any accepted adjustment or deload override. It is unchanged and independent of movement (`GoalProjectionService.dailyEnergyBalance`). The BMR floor still folds into the Célod row, so the equation always closes.
 - **Segment `kcal` / `tdeeEstimate`** keep the expected weekly movement average. They remain the *planning* numbers: macro split basis, guards, the projected pace and profile TDEE. Only the per-day serve changes. A week that goes to plan therefore eats exactly the same weekly total as before.
 - **`trainingDayKcal` / `restDayKcal`** are no longer produced (`DayTypeShiftCalculator` is retired, per M4). Served targets ignore them if an old prescription still carries them.
-- **Without an EnergyBase** (the settings preview path and the static config path), the old behaviour is kept: `seg.kcal + extra`, with no breakdown. This path has no base, so it cannot compose base + movement.
+- **The settings preview passes the base too** (final-review fix): it projects the draft's segment with the draft calculation's EnergyBase and today's logged movement, so it shows exactly the target the Fuel day serves (base + logged movement + balance, BMR floor). **Without an EnergyBase** (only a bootstrap-less goal snapshot; the static config path serves the config targets), the old behaviour is kept: `seg.kcal + extra`, with no breakdown.
 
 ### Per-day movement (train-owned)
 

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
@@ -89,12 +90,14 @@ public class GoalEngineService {
      *
      * <p>Returns the segment covering {@code date}'s goal-week rather than the whole prescription so
      * the goal-week derivation (the {@code ContextSnapshotAssembler#goalBlock} idiom) stays inside
-     * the goal slice; {@code null} when there is no active goal, the active goal is incoherent (the
-     * same condition under which {@link #evaluate} clears its prescription), the owner has no
-     * biometric profile to project from, or no segment covers the date.
+     * the goal slice, together with the draft's bootstrap — the snapshot Mentés would store, whose
+     * base and BMR floor the served day target is built from (mezo-tb3s2); {@code null} when there
+     * is no active goal, the active goal is incoherent (the same condition under which {@link
+     * #evaluate} clears its prescription), the owner has no biometric profile to project from, or
+     * no segment covers the date.
      */
     @Transactional(readOnly = true)
-    public GoalPrescriptionJson.Segment previewActiveGoalSegment(
+    public SegmentPreview previewActiveGoalSegment(
         UUID userId, DietPreferences draftPreferences, LocalDate date) {
 
         List<GoalEntity> active =
@@ -107,8 +110,13 @@ public class GoalEngineService {
             return null;
         }
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
-        return GoalPrescriptionJson.currentSegment(
-            calculator.calculate(userId, goal, draftPreferences).prescription(), week);
+        GoalPrescriptionCalculator.Calculation calc = calculator.calculate(userId, goal, draftPreferences);
+        GoalPrescriptionJson.Segment seg = GoalPrescriptionJson.currentSegment(calc.prescription(), week);
+        return seg == null ? null : new SegmentPreview(seg, calc.bootstrap());
+    }
+
+    /** A draft's covering segment and the bootstrap it was calculated against ({@code null} when none). */
+    public record SegmentPreview(GoalPrescriptionJson.Segment segment, TdeeBootstrapJson bootstrap) {
     }
 
     /**

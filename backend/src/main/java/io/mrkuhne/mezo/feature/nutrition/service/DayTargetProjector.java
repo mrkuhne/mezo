@@ -23,8 +23,9 @@ import java.util.function.Supplier;
  * {@code balance} is the segment's {@code dailyEnergyBalanceKcal} (goal pace + accepted
  * adjustments), independent of movement. The segment's {@code kcal} stays the weekly PLANNING
  * number (the carb-delta anchor); a legacy {@code trainingDayKcal}/{@code restDayKcal} split is
- * ignored. Without an {@link EnergyBase} (settings preview) the pre-mezo-tb3s2 shape is kept:
- * {@code seg.kcal + extraKcal}, no floor, no breakdown. Every kcal delta lands in carbs (ISSN),
+ * ignored. Every live caller (Fuel day, meal scorer, settings preview, character reads) passes the
+ * goal's {@link EnergyBase}; only a bootstrap-less snapshot (no BMR / base recorded) falls back to
+ * the pre-mezo-tb3s2 shape: {@code seg.kcal + extraKcal}, no floor, no breakdown. Every kcal delta lands in carbs (ISSN),
  * derived at serve time and never stored. The {@link DailyTargets.Energy} breakdown always closes:
  * base + planned + extra + balance = target, with the BMR floor folded into the balance.
  *
@@ -56,7 +57,7 @@ public final class DayTargetProjector {
             kcal = Math.max(baseKcal + m.movementKcal() + segBalance,
                 base.bmr().setScale(0, RoundingMode.HALF_UP).intValueExact());
         } else {
-            kcal = seg.kcal() + m.extraKcal();   // no base (settings preview): the pre-mezo-tb3s2 shape
+            kcal = seg.kcal() + m.extraKcal();   // bootstrap-less snapshot: the pre-mezo-tb3s2 shape
         }
         int carbDeltaG = Math.round((kcal - seg.kcal()) / 4f);
         return new DailyTargets(kcal,
