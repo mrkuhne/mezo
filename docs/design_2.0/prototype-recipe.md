@@ -3,9 +3,9 @@
 The owner looks at a change once, at a clickable prototype, before any code. This is the recipe
 for that prototype. It was the `/uvegesites` skill's Procedure §1 (programme `mezo-me75u`, closed
 2026-09-27); the skill is archived at [`../archive/skills/uvegesites.md`](../archive/skills/uvegesites.md)
-and this page is now the living copy (`mezo-iwmsw`). The workflow around it (the three owner
-gates, the living per-domain prototypes, the *Kész, ha…* checklist) is in the root `CLAUDE.md`
-§Frontend change workflow.
+and this page is now the living copy (`mezo-iwmsw`). The shared workflow around it (the three
+owner gates, living per-domain prototypes and *Kész, ha…* checklist) is in the
+[`owner-visible-frontend` skill](../../.agents/skills/owner-visible-frontend/SKILL.md).
 
 ## The page
 
@@ -44,12 +44,14 @@ gates, the living per-domain prototypes, the *Kész, ha…* checklist) is in the
 - Click through every route in the in-app browser; the console must be clean.
 - Cache-bust with `?v=N` after edits — hash-only navigation does not reload the page.
 - Check 320px width and the reduced-motion ("Mozgás kikapcsolása") branch.
-- Publish it as an Artifact for the owner (the in-app browser cannot open artifact URLs, so the
-  local server is for your own checks). Living prototypes keep one fixed URL per domain.
+- Where an Artifact publishing tool is available, republish to the domain's fixed URL for the
+  owner. Otherwise show the browser-tested preview through a route the owner can actually open
+  and provide the repository file path. A localhost link alone may be inaccessible. Say plainly
+  that the fixed Artifact URL was not updated; settle the review route before prototype approval.
 
 ## Hand-off
 
-In Hungarian, business language (`CLAUDE.md` §Communication): the link, what to click, what
+In Hungarian, business language (the root house rules §Working with the owner): the link, what to click, what
 changed in everyday words, and 1–2 concrete questions only if there are genuine choices. **Then
 stop and wait for the OK.** Iterate on feedback in the same file. After the OK, commit the
 prototype with the change — it becomes the change's parity reference, and there is no further

@@ -2,8 +2,10 @@
 
 Each bottom-menu domain has one living, clickable prototype that always shows the domain as it
 is in production, in the Üveg look. Every frontend change edits its domain's file instead of
-starting a new prototype, and republishes it to the same Artifact URL, so the owner always opens
-the same link. The rules are in [`CLAUDE.md`](../../../../CLAUDE.md) §Frontend change workflow
+starting a new prototype. The fixed Artifact URLs below are republished when the publishing tool
+is available; other sessions arrange an owner-accessible preview and explicitly identify a URL
+that was not updated. The shared rules are in the
+[`owner-visible-frontend` skill](../../../../.agents/skills/owner-visible-frontend/SKILL.md)
 (`mezo-u75pt`, 2026-09-27).
 
 | Domain | File | Artifact URL | Last synced with production |
@@ -16,6 +18,5 @@ the same link. The rules are in [`CLAUDE.md`](../../../../CLAUDE.md) §Frontend 
 
 The shared voice kit lives in `_hang-kit.html`; after editing it run `node docs/design_2.0/prototypes/elo/_inject-hang-kit.mjs` to refresh the copy in all five files.
 
-A file is seeded the first time a change touches its domain (seed sources are listed in
-CLAUDE.md). Fill in the URL on the first publish and update the date on every merge that
-touches the domain.
+All five living files have been seeded. Update the sync note on every merge that touches a
+domain. Change its fixed URL only when the published target itself changes.
