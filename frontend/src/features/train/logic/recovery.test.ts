@@ -84,6 +84,8 @@ describe('returnCopy — the three rules', () => {
       .toBe('onnan folytatod, ahol abbahagytad, a program vége egy héttel később lesz.')
     expect(returnCopy(ret({ rule: 'RESUME', daysOut: 3, rampSessions: 2, shiftDays: 0 })).program)
       .toBe('a programod nem csúszik, onnan folytatod, ahol abbahagytad.')
+    expect(returnCopy(ret({ rule: 'STEP_BACK', daysOut: 10, rampSessions: 2, shiftDays: 0 })).program)
+      .toBe('a programod nem csúszik.')
   })
 })
 

@@ -111,7 +111,10 @@ export function returnCopy(ret: RecoveryReturn, opts: { week?: number | null } =
   if (ret.rule === 'CONTINUE') {
     program = 'a program megy tovább a naptár szerint.'
   } else if (shiftWeeks <= 0) {
-    program = 'a programod nem csúszik, onnan folytatod, ahol abbahagytad.'
+    // No shift: RESUME simply continues; a STEP_BACK that did not move the calendar only says so.
+    program = ret.rule === 'RESUME'
+      ? 'a programod nem csúszik, onnan folytatod, ahol abbahagytad.'
+      : 'a programod nem csúszik.'
   } else if (ret.rule === 'RESUME') {
     program = week
       ? `onnan folytatod, ahol abbahagytad: a ${week}. hét ismétlődik, a program vége ${later} később lesz${dates}.`
