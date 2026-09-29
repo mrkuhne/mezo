@@ -181,3 +181,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609281500_mezo-q4xt2.1_planned_skip.sql
+  - changeSet:
+      id: "1.1.0:202609290300_mezo-q4xt2.1_planned_skip_naming"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609290300_mezo-q4xt2.1_planned_skip_naming.sql
