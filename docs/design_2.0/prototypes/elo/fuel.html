@@ -1679,6 +1679,22 @@ svg{overflow:visible}
 .micbtn.rec{--c:var(--coral)}
 .aipanel{--c:var(--lav);margin:12px 16px 0;padding:12px;border-radius:22px;display:grid;gap:10px}
 .aipanel .inp{min-height:64px}
+.log-camera-open{display:grid;place-content:center;justify-items:center;gap:4px;width:100%;height:100%;border:0;background:none;color:var(--ink)}
+.log-camera-open .icon{width:72px;height:72px}
+.log-camera-open strong{font-size:15px;margin-top:0}
+.log-camera-open small{font-size:11px;color:var(--sub)}
+.log-photo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.viewf:has(.log-photo)::after{content:'';position:absolute;inset:45% 0 0;background:linear-gradient(transparent,#100d0be8);pointer-events:none}
+.log-photo-caption{position:absolute;z-index:2;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:end;gap:8px;padding:48px 15px 17px 17px;background:linear-gradient(transparent,#100d0be8);color:white;text-align:left}
+.log-photo-caption strong{font-size:14px;margin:0}
+.log-photo-caption small{display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#eee0d5}
+.log-photo-caption>span:last-child{display:flex;gap:6px}
+.log-photo-caption button{padding:6px 8px;border:1px solid #ffffff75;border-radius:999px;background:#191410bb;color:white;font-size:11px}
+.log-textrow{display:flex;gap:8px}
+.log-textrow textarea{flex:1;min-width:0;min-height:70px;padding:12px;border:1px solid #ffffff14;border-radius:14px;resize:vertical;background:#ffffff0b;color:var(--ink);font:inherit;font-size:13px;line-height:1.4}
+.log-textrow .vmic{flex:none;width:43px;border-radius:14px}
+.log-textrow .vmic .icon{width:29px;height:29px}
+.aipanel [data-lines]:disabled{opacity:.4;pointer-events:none}
 .srcs{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px 0}
 .lcard{--c:var(--carb);padding:12px 14px;border-radius:20px}
 .lcard-top{display:flex;align-items:center;gap:8px}
@@ -2594,21 +2610,15 @@ function muhely(draft){
 }
 
 /* ── LOGOLÁS ────────────────────────────────────────────── */
-let mode='foto', lines=false;
+let mode='foto', lines=false, logPhotoUrl='', logPhotoName='', logText='';
+const logEsc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function log(fail){
-  const M=[['foto','Fotó','camera','var(--coral)'],['hang','Hang','mic','var(--lav)'],['gepeles','Gépelés','journal','var(--sage)'],['szokasos','Szokásosak','repeat','var(--gold)']];
+  const M=[['foto','Fotó','camera','var(--coral)'],['kamra','Kamra','stack','var(--gold)'],['recept','Recept','book','var(--lav)'],['szokasos','Szokásosak','repeat','var(--sage)']];
   let body='';
-  if(fail) body=`<div class="dash" style="--c:var(--gold);margin:14px 16px 0;text-align:center"><div class="failart">${I('camera')}<b>?</b></div><span class="eb" style="margin-top:10px">ŐSZINTÉN SZÓLVA</span><strong style="display:block;font-size:17px;margin-top:4px">Ezt a tányért nem ismertem fel.</strong>
-    <p class="lead" style="padding:8px 0 12px">Nem találgatok a hátad mögött. Válassz egy másik utat — ugyanoda vezet.</p>
-    <div style="display:grid;gap:8px"><button class="btn flatb" data-mode="gepeles">Leírom szöveggel</button><button class="btn flatb" data-mode="szokasos">A szokásosakból választok</button><button class="btn flatb" data-mode="foto">Új fotót készítek</button></div></div>`;
-  else if(mode==='foto') body=`<button class="viewf glass lift" data-lines><i></i><i></i><i></i><i></i><span>${I('plate')}<strong>Fotózd le a tányért</strong></span></button><p class="hint">Fotózd le a tányért — a felismert tételeket lent átírhatod, és csak utána mentünk.</p><p class="hint"><a href="#log/hiba" style="color:var(--faint)">(minta: ha nem ismeri fel)</a></p>`;
-  else if(mode==='hang') body=`<button class="micbtn glass lift" data-vmic data-vtarget="#hangtext" data-say="Reggelire zabkását ettem görög joghurttal és egy marék erdei gyümölccsel." aria-label="Hang · mondd el, mit ettél">${I('mic')}</button><p class="hint">Koppints, és mondd el egy mondatban. A leírt mondatot lent még átírhatod.</p>
-    <div class="p16" style="display:grid;gap:8px;margin-top:12px"><span class="inp ${lines?'':'ph '}ta" id="hangtext">${lines?'Reggelire zabkását ettem görög joghurttal és egy marék erdei gyümölccsel.':'A leírt mondat itt jelenik meg…'}</span><button class="btn flatb" data-lines>${I('score')}Tovább · tételekre bontom</button></div>`;
-  else if(mode==='gepeles') body=`<p class="hint">Írd le egy mondatban, mit ettél — lent a Mezo-mezőben. Az AI tételekre bontja, te pedig átírhatod, mielőtt mentünk.</p>
-    <div class="srcs"><button class="cap glass lift" style="--c:var(--gold)" data-sheet="kamrapick">${I('stack')}<strong>Kamra</strong><small>polcról, grammra</small></button><button class="cap glass lift" style="--c:var(--coral)" data-sheet="receptpick">${I('book')}<strong>Recept</strong><small>adagra</small></button></div>
-    <div class="aipanel glass">${VF('pl. csirkés wrap és egy latte…','Egy csirkés wrap volt ebédre, meg egy latte.')}<div class="hrow"><span class="flat">${I('camera')}Fotó</span><button class="flat on" style="--c:var(--lav);margin-left:auto" data-lines>${I('score')}Elemzés</button></div>
-    <small style="font-size:11px;color:var(--faint);line-height:1.4">Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.</small></div>`;
-  else body=`<p class="hint">Amihez ilyenkor a leggyakrabban nyúlsz — egy koppintás, aztán jóváhagyod.</p><section class="list" style="margin-top:12px">${[['Zabkása gyümölccsel','Reggeli · 9× logoltad',420],['Túrós zabkása · áfonyával','Reggeli · 12× logoltad',689],['Tojásrántotta · spenóttal','Reggeli · egyszer logoltad',318]].map(([n,s,k],i)=>`<button class="row glass lift rise" style="--c:var(--gold);--i:${i}" data-lines><span class="well" style="--c:var(--gold)">${I('plate')}</span><span class="grow"><strong>${n}</strong><small>${s}</small></span><span class="end"><b>${k}<small>kcal</small></b></span></button>`).join('')}</section>`;
+  if(fail) body=`<div class="dash" style="--c:var(--gold);margin:12px 16px 0;text-align:center"><div class="failart">${I('camera')}<b>?</b></div><span class="eb" style="margin-top:10px">ŐSZINTÉN SZÓLVA</span><strong style="display:block;font-size:17px;margin-top:4px">Ezt a tányért nem ismertem fel.</strong><p class="lead" style="padding:8px 0 12px">Írd le lent, mit ettél, vagy próbáld meg új fotóval.</p><button class="btn flatb" data-log-photo>Új fotót készítek</button></div>`;
+  else if(mode==='szokasos') body=`<p class="hint">Amihez ilyenkor a leggyakrabban nyúlsz — egy koppintás, aztán jóváhagyod.</p><section class="list" style="margin-top:12px">${[['Zabkása gyümölccsel','Reggeli · 9× logoltad',420],['Túrós zabkása · áfonyával','Reggeli · 12× logoltad',689],['Tojásrántotta · spenóttal','Reggeli · egyszer logoltad',318]].map(([n,s,k],i)=>`<button class="row glass lift rise" style="--c:var(--gold);--i:${i}" data-log-usual="${logEsc(n)}"><span class="well" style="--c:var(--gold)">${I('plate')}</span><span class="grow"><strong>${n}</strong><small>${s}</small></span><span class="end"><b>${k}<small>kcal</small></b></span></button>`).join('')}</section>`;
+  else body=`<div class="viewf glass" style="height:176px;border-radius:24px;overflow:hidden"><i></i><i></i><i></i><i></i>${logPhotoUrl?`<img class="log-photo" src="${logPhotoUrl}" alt="A kiválasztott étel fotója"><div class="log-photo-caption"><span><strong>Ételfotó csatolva</strong><small>${logEsc(logPhotoName)}</small></span><span><button data-log-photo>Csere</button><button data-log-remove aria-label="Fotó eltávolítása">×</button></span></div>`:`<button class="log-camera-open" data-log-photo>${I('plate')}<strong>Fotózd le a tányért</strong><small>Koppints a fotózáshoz</small></button>`}</div><p class="hint" style="padding-top:10px">Fotózhatsz, vagy lent rögtön leírhatod, mit ettél.</p>`;
+  const compose=`<div class="aipanel glass" style="margin-top:12px"><div class="log-textrow"><textarea id="logtext" aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…">${logEsc(logText)}</textarea><button type="button" class="vmic" data-vmic data-vtarget="#logtext" data-say="Egy csirkés wrap és egy latte volt." aria-label="Diktálás"><svg class="icon" aria-hidden="true"><use href="#t-mic"/></svg></button></div><div class="hrow" style="justify-content:flex-end"><button class="flat on" style="--c:var(--lav)" data-lines ${!logPhotoUrl&&!logText.trim()?'disabled':''}>${I('score')}Elemzés</button></div><small style="font-size:11px;color:var(--faint);line-height:1.4">Szöveg, hang és fotó egy piszkozatban. Elemzés után a felismert tételeket még átírhatod.</small></div>`;
   const conf=lines?`
   ${sec('Tételek','3')}
   <section class="list">${[['Zabpehely','kamra','var(--carb)',60,'g',223,[8,36,4]],['Görög joghurt','kamra','var(--protein)',150,'g',146,[14,6,8]],['Erdei gyümölcs','becslés','var(--fiber)',80,'g',51,[1,10,0]]].map(([n,t,c,a,u,k,[p,cc,f]],i)=>`<div class="lcard glass rise" style="--c:${c};--i:${i}"><div class="lcard-top"><strong>${n}</strong><span class="tagf">${I(t==='kamra'?'stack':'score')}${t}</span><button class="x" style="width:28px;height:28px" aria-label="Eltávolítás">×</button></div>
@@ -2622,8 +2632,9 @@ function log(fail){
   return `${topbar()}
   <div style="padding:0 18px 4px"><button class="flat" data-back>‹ Vissza</button></div>
   <div class="logh rise">${I('sun')}<span class="t"><span class="eb">LOGOLÁS</span><strong>Reggeli</strong><small>08:00 · ablak</small></span><span class="daychip"><b>szept. 28.</b><small>ma</small></span></div>
-  ${fail?'':`<div class="modes glass" role="tablist" aria-label="Naplózási mód" style="--c:var(--coral)">${M.map(([k,l,ic,c])=>`<button class="mode ${mode===k?'on':''}" style="--c:${c}" data-mode="${k}" role="tab">${I(ic)}${l}</button>`).join('')}</div>`}
-  ${body}${conf}`;
+  <div class="modes glass" role="group" aria-label="Hozzáadás" style="--c:var(--coral)">${M.map(([k,l,ic,c])=>`<button class="mode ${mode===k?'on':''}" style="--c:${c}" ${k==='foto'?'data-log-photo':k==='kamra'?'data-sheet="kamrapick"':k==='recept'?'data-sheet="receptpick"':`data-mode="${k}"`}>${I(ic)}${l}</button>`).join('')}</div>
+  <input id="log-photo-input" type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+  ${body}${compose}${conf}${lines?'':'<div class="savebar" style="position:relative;bottom:auto"><button class="btn flatb" data-go="#mai">Mégse</button></div>'}`;
 }
 
 /* ── KIEGÉSZÍTŐK ────────────────────────────────────────── */
@@ -3211,6 +3222,18 @@ let toastT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2600)}
 function soft(){const y=$('#scroll').scrollTop;render();$('#scroll').scrollTop=y}
 const EXTRA_CLICKS=[];
+document.addEventListener('change',e=>{
+  if(e.target?.id!=='log-photo-input')return;
+  const file=e.target.files?.[0];if(!file)return;
+  if(logPhotoUrl)URL.revokeObjectURL(logPhotoUrl);
+  logPhotoUrl=URL.createObjectURL(file);logPhotoName=file.name;mode='foto';soft();
+});
+document.addEventListener('input',e=>{
+  if(e.target?.id!=='logtext')return;
+  logText=e.target.value;
+  const run=document.querySelector('.aipanel [data-lines]');
+  if(run)run.disabled=!logText.trim()&&!logPhotoUrl;
+});
 document.addEventListener('click',e=>{
   const t=e.target, go=t.closest('[data-go]'), tt=t.closest('[data-toast]'), sh=t.closest('[data-sheet]');
   for(const f of EXTRA_CLICKS){if(f(e,t))return}
@@ -3225,7 +3248,10 @@ document.addEventListener('click',e=>{
   const kfb=t.closest('[data-kf]'); if(kfb){kf=kfb.dataset.kf;soft();return}
   const rfb=t.closest('[data-rf]'); if(rfb){rf=rfb.dataset.rf;soft();return}
   const sv=t.closest('[data-serve]'); if(sv){serveAll=sv.dataset.serve==='1';soft();return}
-  const md=t.closest('[data-mode]'); if(md){mode=md.dataset.mode;lines=false;location.hash==='#log'?soft():location.hash='#log';return}
+  if(t.closest('[data-log-photo]')){mode='foto';if(location.hash==='#log'){document.querySelector('#log-photo-input')?.click()}else{location.hash='#log';setTimeout(()=>document.querySelector('#log-photo-input')?.click(),60)}return}
+  if(t.closest('[data-log-remove]')){if(logPhotoUrl)URL.revokeObjectURL(logPhotoUrl);logPhotoUrl='';logPhotoName='';soft();return}
+  const usual=t.closest('[data-log-usual]');if(usual){logText=(logText.trim()?logText.trim()+' ':'')+usual.dataset.logUsual;mode='foto';soft();return}
+  const md=t.closest('[data-mode]'); if(md){mode=md.dataset.mode;location.hash==='#log'?soft():location.hash='#log';return}
   if(t.closest('[data-lines]')){lines=true;soft();setTimeout(()=>$('#scroll').scrollTo({top:520,behavior:'smooth'}),60);return}
   const tk=t.closest('[data-take]'); if(tk){STACK.forEach(b=>b.items.forEach(x=>{if(x[0]===tk.dataset.take){x[3]=x[3]?0:1;x[4]=x[4]||'12:50'}}));closeSheet();soft();return}
   const it=t.closest('[data-item]'); if(it){openItem(it.dataset.item);return}

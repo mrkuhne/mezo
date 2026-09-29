@@ -14719,12 +14719,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: inset 0 0 0 1px var(--divider); }
 
 /* ─ The four ways in (FuelLogModes) ─ */
-.fmx-logmodes { margin: 0 0 14px; }
+.fmx-logmodes { margin: 0 0 2px; }
 .fmx-modes.glass { --c: var(--dv-coral); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px; margin: 2px 0 14px; padding: 6px; border-radius: 22px; }
+  gap: 4px; margin: 2px 0 12px; padding: 5px; border-radius: 22px; }
 .fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
-  padding: 8px 0 7px; border: 0; border-radius: 16px; background: transparent;
+  min-height: 64px; padding: 8px 0 7px; border: 0; border-radius: 16px; background: transparent;
   font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.fmx-mode.is-usual { margin-left: 2px; border-left: 1px solid var(--divider); }
 .fmx-modes .fmx-mode .t-ico { filter: grayscale(0.45) brightness(0.8); }
 .fmx-mode.is-active { color: var(--text-primary);
   background: radial-gradient(80% 90% at 50% 20%, color-mix(in srgb, var(--c) 26%, transparent), transparent 70%);
@@ -14733,27 +14734,40 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent)); }
 .fmx-mode:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; }
 
-.fmx-mode-hint { margin: 12px 6px 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); text-align: center; }
+.fmx-mode-hint { margin: 10px 6px 13px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); text-align: center; }
 .fmx-inline-ico { display: inline-block; vertical-align: -3px; }
 .fmx-mode-error { margin: 6px 0 0; font-size: 12px; color: var(--dv-coral); text-align: center; }
 .fmx-mode-empty.uv-empty { --c: var(--dv-amber); margin: 10px 0 4px; padding: 14px; border-radius: 20px;
   font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); text-align: center; }
 
-/* Fotó: the viewfinder IS the camera input (label → hidden file input). */
-.fmx-camera { text-align: center; }
-.fmx-finder.glass { --c: var(--dv-coral); display: grid; place-items: center; align-content: center; gap: 6px;
-  height: 230px; margin: 0; padding: 16px; border-radius: 26px; cursor: pointer; text-align: center; }
-.fmx-finder.glass > .t-ico {
+/* Camera stage, including the selected image preview from the approved prototype. */
+.fmx-photo-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fmx-finder.glass { --c: var(--dv-coral); position: relative; height: 176px; margin: 0;
+  border-radius: 24px; overflow: hidden; text-align: center; }
+.fmx-camera-open { display: grid; place-content: center; justify-items: center; gap: 4px;
+  width: 100%; height: 100%; border: 0; background: none; color: var(--text-primary); }
+.fmx-camera-open > .t-ico {
   filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px color-mix(in srgb, var(--c) 35%, transparent)); }
-.fmx-finder.glass > span { position: absolute; z-index: 1; width: 26px; height: 26px;
+.fmx-finder.glass > i { position: absolute; z-index: 3; width: 22px; height: 22px; pointer-events: none;
   border: 2.5px solid color-mix(in srgb, var(--c) 75%, #fff); filter: drop-shadow(0 0 6px var(--c)); }
-.fmx-finder.glass > span:nth-child(1) { top: 18px; left: 18px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
-.fmx-finder.glass > span:nth-child(2) { top: 18px; right: 18px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
-.fmx-finder.glass > span:nth-child(3) { bottom: 18px; left: 18px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
-.fmx-finder.glass > span:nth-child(4) { bottom: 18px; right: 18px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
-.fmx-finder b { margin-top: 6px; font-size: 16px; font-weight: 600; color: var(--text-primary); }
-.fmx-finder.glass > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.fmx-finder:focus-within { outline: 2px solid var(--c); outline-offset: 2px; }
+.fmx-finder.glass > i:nth-child(1) { top: 15px; left: 15px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+.fmx-finder.glass > i:nth-child(2) { top: 15px; right: 15px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+.fmx-finder.glass > i:nth-child(3) { bottom: 15px; left: 15px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+.fmx-finder.glass > i:nth-child(4) { bottom: 15px; right: 15px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+.fmx-camera-open strong { font-size: 15px; font-weight: 600; }
+.fmx-camera-open small { font-size: 11px; color: var(--text-secondary); }
+.fmx-photo-show { position: absolute; inset: 0; }
+.fmx-photo-show img { width: 100%; height: 100%; object-fit: cover; }
+.fmx-photo-show::after { content: ''; position: absolute; inset: 45% 0 0;
+  background: linear-gradient(transparent, rgba(16, 13, 11, 0.91)); pointer-events: none; }
+.fmx-photo-caption { position: absolute; z-index: 2; left: 17px; right: 15px; bottom: 17px;
+  display: flex; align-items: end; justify-content: space-between; gap: 10px; text-align: left; }
+.fmx-photo-caption strong { display: block; color: #fff; font-size: 14px; }
+.fmx-photo-caption small { display: block; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: #eee0d5; font-size: 10px; }
+.fmx-photo-controls { display: flex; gap: 6px; flex: none; }
+.fmx-photo-controls button { min-height: 32px; padding: 6px 8px; border: 1px solid #ffffff75;
+  border-radius: 999px; background: #191410bb; color: #fff; font-family: inherit; font-size: 11px; font-weight: 600; }
 
 /* Hang: one big glass disc — a real recorder, no sample sentences. Live = coral. */
 .fmx-voice { text-align: center; }
@@ -14837,6 +14851,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* The AI panel (prototype `.aipanel`): lavender glass; its field and chips are flat. */
 .logflow-composer .logflow-aipanel.glass { --c: var(--dv-lav); display: grid; gap: 10px; margin-top: 12px;
   padding: 12px; border-radius: 22px; }
+.flognew-page .logflow-aipanel.glass { margin-top: 0; }
 .logflow-composer .logflow-aipanel textarea { width: 100%; min-height: 64px; padding: 11px 13px; border: 0;
   border-radius: 13px; resize: none; font-family: inherit; font-size: 14px; color: var(--text-primary);
   background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
