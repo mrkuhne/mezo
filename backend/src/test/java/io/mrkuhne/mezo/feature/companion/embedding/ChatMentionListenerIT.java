@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.embedding;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
@@ -12,6 +13,10 @@ import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
+import io.mrkuhne.mezo.feature.companion.service.ChatMentionListener;
+import io.mrkuhne.mezo.feature.companion.service.ChatTurnCompleted;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -33,6 +38,9 @@ class ChatMentionListenerIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private MentionRepository mentionRepository;
     @Autowired private AiMessageRepository aiMessageRepository;
+    @Autowired private ChatMentionListener chatMentionListener;
+    @Autowired private AiConversationPopulator conversations;
+    @Autowired private AiMessagePopulator messages;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -72,5 +80,67 @@ class ChatMentionListenerIT extends ApiIntegrationTest {
             assertThat(m.getSourceRefKind()).isEqualTo("chat_turn");
             assertThat(m.getSourceRefId()).isEqualTo(userMessage.getId());
         });
+    }
+
+    /** mezo-tdabt: "ezt ne jegyezd meg" soft-deletes the preceding message's mention, and the forget
+     *  request's own words — even naming a person — never become a mention. */
+    @Test
+    void testForgetRequest_shouldSoftDeleteThePrecedingMention_andWriteNoneForItself() {
+        UUID owner = ownerId();
+        createPerson("Ádám");
+        ConversationResponse conversation = postForBody("/api/companion/conversation", null,
+                ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+        String uri = "/api/companion/conversation/" + conversation.getId() + "/message";
+        postForBody(uri, SendMessageRequest.builder().content("Ádám ma sokat segített").build(),
+                ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner)).hasSize(1));
+
+        // gear-audited: the forget pre-screen runs before any gear; the test asserts mentions only.
+        postForBody(uri, SendMessageRequest.builder().content("Ádámról ezt ne jegyezd meg").build(),
+                ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
+
+        await().during(1500, MILLISECONDS).atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner)).isEmpty());
+    }
+
+    /** mezo-tdabt: the listener re-checks the row under the FOR SHARE gate — a forget that
+     *  committed after the event was published still wins (the event flag is stale-false here). */
+    @Test
+    void testListener_shouldWriteNoMention_whenTheUserRowWasBlockedAfterTheEvent() {
+        UUID owner = ownerId();
+        createPerson("Ádám");
+        var conversation = conversations.conversation(owner);
+        AiMessageEntity blocked = messages.message(conversation, AiMessageEntity.ROLE_USER, "Ádám titka");
+        blocked.setExtractionBlocked(true);
+        aiMessageRepository.saveAndFlush(blocked);
+        AiMessageEntity control = messages.message(conversation, AiMessageEntity.ROLE_USER, "Ádám itt volt");
+
+        chatMentionListener.onChatTurnCompleted(
+                new ChatTurnCompleted(owner, blocked.getId(), "Ádám titka", UUID.randomUUID(), "ok", false));
+        chatMentionListener.onChatTurnCompleted(
+                new ChatTurnCompleted(owner, control.getId(), "Ádám itt volt", UUID.randomUUID(), "ok", false));
+
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner))
+                        .extracting(MentionEntity::getSourceRefId).contains(control.getId()));
+        await().during(1000, MILLISECONDS).atMost(3, SECONDS).untilAsserted(() ->
+                assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner))
+                        .extracting(MentionEntity::getSourceRefId).containsExactly(control.getId()));
+    }
+
+    /** mezo-tdabt: a turn published as blocked is skipped outright. */
+    @Test
+    void testListener_shouldWriteNoMention_whenTheEventIsBlocked() {
+        UUID owner = ownerId();
+        createPerson("Ádám");
+        var conversation = conversations.conversation(owner);
+        AiMessageEntity row = messages.message(conversation, AiMessageEntity.ROLE_USER, "Ádám titka");
+
+        chatMentionListener.onChatTurnCompleted(
+                new ChatTurnCompleted(owner, row.getId(), "Ádám titka", UUID.randomUUID(), "ok", true));
+
+        await().during(1000, MILLISECONDS).atMost(3, SECONDS).untilAsserted(() ->
+                assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner)).isEmpty());
     }
 }

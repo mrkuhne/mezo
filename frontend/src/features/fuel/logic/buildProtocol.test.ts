@@ -1,5 +1,5 @@
 import { deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
-import { todayIdx } from '@/data/train/runningAgenda'
+import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { localDateString } from '@/shared/lib/dates'
 import { runningBlocksMock } from '@/data/train/running'
 import type { GymSchedule, SportSession, VolleyballSession } from '@/data/types'
@@ -49,13 +49,13 @@ describe('deriveBlocks — sport-slot skip', () => {
 
   test('a skip matching today\'s weekday + time + date removes the sport block', () => {
     const todayIso = localDateString(new Date())
-    const skips = [{ dayOfWeek: todayIdx(), time: '18:00', date: todayIso }]
+    const skips = [{ kind: 'SPORT' as const, dayOfWeek: todayIdx(), time: '18:00', date: todayIso }]
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null, skips)
     expect(blocks.find((b) => b.kind === 'sport')).toBeUndefined()
   })
 
   test('a skip for a different date leaves today\'s sport block present', () => {
-    const skips = [{ dayOfWeek: todayIdx(), time: '18:00', date: '1999-01-01' }]
+    const skips = [{ kind: 'SPORT' as const, dayOfWeek: todayIdx(), time: '18:00', date: '1999-01-01' }]
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null, skips)
     expect(blocks.find((b) => b.kind === 'sport')?.time).toBe('18:00')
   })
@@ -229,7 +229,7 @@ describe('deriveBlocks — date param drives which day\'s training is used', () 
       day: 'Csü', time: '20:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés', today: false,
     }
     // 2026-09-24 is a Thursday -> weekday index 3.
-    const skips = [{ dayOfWeek: 3, time: '20:00', date: '2026-09-24' }]
+    const skips = [{ kind: 'SPORT' as const, dayOfWeek: 3, time: '20:00', date: '2026-09-24' }]
     const blocks = deriveBlocks(
       null, { schedule: { volleyball: { team: '', sessions: [session], season: '', weeklyHours: 0 } } },
       null, skips, [], '2026-09-24',
@@ -253,5 +253,40 @@ describe('deriveBlocks — date param drives which day\'s training is used', () 
     const active = runningBlocksMock.find((b) => b.status === 'active')!
     const blocks = deriveBlocks(null, { schedule: null }, active, [], [], '2026-09-21') // Monday
     expect(blocks.find((b) => b.kind === 'run')).toBeUndefined()
+  })
+})
+
+// --- deriveBlocks — GYM / RUN planned skips (Kihagyás S1, mezo-q4xt2.1) ---
+// A user-skipped gym day or run session must leave the fuel protocol / notification anchors /
+// Stack timeline the same way a skipped sport slot already does — matched per `isSkipped`.
+describe('deriveBlocks — gym + run planned skips', () => {
+  const gymSchedule: GymSchedule = {
+    weeklyTimes: [{ day: 'Kedd', active: true, today: false, time: '18:00', duration: 75, type: 'Legs' }],
+  }
+  const active = runningBlocksMock.find((b) => b.status === 'active')!
+  const runKey = runSessionsForDay(active, 1)[0]!.key
+
+  test('a GYM skip on the viewed date drops the gym block', () => {
+    const skips = [{ kind: 'GYM' as const, date: '2026-09-22' }]
+    const blocks = deriveBlocks(gymSchedule, { schedule: null }, null, skips, [], '2026-09-22')
+    expect(blocks.find((b) => b.kind === 'gym')).toBeUndefined()
+  })
+
+  test('a GYM skip on another date leaves the gym block', () => {
+    const skips = [{ kind: 'GYM' as const, date: '2026-09-29' }]
+    const blocks = deriveBlocks(gymSchedule, { schedule: null }, null, skips, [], '2026-09-22')
+    expect(blocks.find((b) => b.kind === 'gym')).toMatchObject({ label: 'Legs' })
+  })
+
+  test('a RUN skip on the viewed date + session key drops the run block', () => {
+    const skips = [{ kind: 'RUN' as const, date: '2026-09-22', sessionKey: runKey }]
+    const blocks = deriveBlocks(null, { schedule: null }, active, skips, [], '2026-09-22')
+    expect(blocks.find((b) => b.kind === 'run')).toBeUndefined()
+  })
+
+  test('a RUN skip for a different session key leaves the run block', () => {
+    const skips = [{ kind: 'RUN' as const, date: '2026-09-22', sessionKey: 'nope' }]
+    const blocks = deriveBlocks(null, { schedule: null }, active, skips, [], '2026-09-22')
+    expect(blocks.find((b) => b.kind === 'run')).toMatchObject({ time: '18:00' })
   })
 })

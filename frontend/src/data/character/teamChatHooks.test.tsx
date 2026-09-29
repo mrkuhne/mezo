@@ -276,7 +276,7 @@ describe('real mode', () => {
     client.setQueryData(['sleepGoal'], {})
     client.setQueryData(['habitDay'], {})
     client.setQueryData(['fuelDay'], {})
-    client.setQueryData(['train', 'sportSlotSkips', '2026-09-07'], [])
+    client.setQueryData(['train', 'plannedSkips', '2026-09-07'], [])
 
     const { result } = renderHook(() => useTeamChatActions(), { wrapper })
     result.current.apply('tc-thread-sleep-debt', 'shift_sleep_anchor')
@@ -287,7 +287,7 @@ describe('real mode', () => {
     expect(client.getQueryState(['habitDay'])?.isInvalidated).toBe(true)
     expect(client.getQueryState(['fuelDay'])?.isInvalidated).toBe(true)
     // Unrelated key (a different action's own extra invalidation) must stay untouched.
-    expect(client.getQueryState(['train', 'sportSlotSkips', '2026-09-07'])?.isInvalidated).toBe(false)
+    expect(client.getQueryState(['train', 'plannedSkips', '2026-09-07'])?.isInvalidated).toBe(false)
   })
 
   test('real answer() posts the choice and invalidates the day', async () => {

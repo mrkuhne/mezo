@@ -10,6 +10,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import tools.jackson.core.JacksonException;
 
 @Slf4j
 @RestControllerAdvice
@@ -174,6 +176,47 @@ public class GlobalExceptionHandler {
         m.setExceptionTraceId(traceId);
         m.setMessage(resolve(m));
         return ResponseEntity.badRequest().body(List.of(m));
+    }
+
+    /**
+     * A request BODY Spring could not read (Check-in 2.0 follow-up C): an unknown enum constant
+     * ({@code PainRegion}, {@code CravingKind}, {@code AdaptiveReason}, {@code CheckInItemId} …),
+     * a wrong JSON type, or syntactically broken JSON. Deserialization runs before the controller
+     * and before bean validation — the body twin of {@link #handleTypeMismatch} — so without this
+     * a malformed request answered 500. Global on purpose: an unreadable body is a client error on
+     * every endpoint. When Jackson knows where it failed, the answer is a FIELD
+     * {@code VALIDATION_INVALID_VALUE} naming the dotted path ({@code painRegions[1]}); otherwise a
+     * plain one. The offending value is not echoed (unvalidated client input; it is in the log).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<List<SystemMessage>> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        String traceId = UUID.randomUUID().toString();
+        String path = bodyPath(ex);
+        log.warn("Unreadable request body [traceId={}] at '{}': {}", traceId, path, ex.getMostSpecificCause().getMessage());
+        SystemMessage m = path.isEmpty()
+            ? SystemMessage.error("VALIDATION_INVALID_VALUE").build()
+            : SystemMessage.field("VALIDATION_INVALID_VALUE", path).build();
+        m.setExceptionTraceId(traceId);
+        m.setMessage(resolve(m));
+        return ResponseEntity.badRequest().body(List.of(m));
+    }
+
+    /** The JSON path Jackson recorded ({@code a.b[2].c}); empty when none (e.g. broken syntax). */
+    private static String bodyPath(Throwable ex) {
+        for (Throwable t = ex; t != null; t = t.getCause()) {
+            if (t instanceof JacksonException jackson) {
+                StringBuilder path = new StringBuilder();
+                for (JacksonException.Reference ref : jackson.getPath()) {
+                    if (ref.getPropertyName() != null) {
+                        path.append(path.isEmpty() ? "" : ".").append(ref.getPropertyName());
+                    } else if (ref.getIndex() >= 0) {
+                        path.append('[').append(ref.getIndex()).append(']');
+                    }
+                }
+                return path.toString();
+            }
+        }
+        return "";
     }
 
     /**

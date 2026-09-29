@@ -50,7 +50,7 @@ public class QuestSelector {
 
     @Transactional
     public List<DailyQuestEntity> generate(UUID userId, LocalDate date) {
-        String dayType = workoutService.findPlannedTemplateForDate(userId, date).isPresent()
+        String dayType = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date).isPresent()
             ? "GYM" : "REST";
         GoalPrescriptionJson.Segment segment = currentSegment(userId, date);
         List<DailyQuestEntity> recent =
@@ -71,7 +71,7 @@ public class QuestSelector {
     /** Replacement for a reroll: same slot, excludes every catalog key already used today. */
     @Transactional
     public Optional<DailyQuestEntity> replacement(UUID userId, DailyQuestEntity old, int salt) {
-        String dayType = workoutService.findPlannedTemplateForDate(userId, old.getQuestDate()).isPresent()
+        String dayType = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, old.getQuestDate()).isPresent()
             ? "GYM" : "REST";
         GoalPrescriptionJson.Segment segment = currentSegment(userId, old.getQuestDate());
         List<DailyQuestEntity> today =

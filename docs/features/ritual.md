@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -16,6 +16,8 @@ related: [today, habit, growth, intention, proactive, _platform-design-system, n
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
 
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** The Napzárás recap (`useDayRecap`, `data/ritual/recapHooks.ts`) no longer shows a gym "not-done" row for a day the owner skipped — a skipped GYM occurrence isn't an unfinished plan. See [`train.md`](train.md) "Kihagyás (S1)".
+>
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** Act 3 („Ma milyen volt", `ReflectionStep`) shows the evening check-in's day verdict read-only when it was given — „Az esti check-inben **7/10**-re értékelted a napot. Ide már csak a szavaid kellenek." with the `t-day` icon — so the ritual never asks the same question twice. Behaviour otherwise unchanged. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.10.
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The six Napzárás acts wear the dark glass: 3D moon / harvest art, amber and lavender lit primaries, glass loop rows and note/handoff boxes, the XP count-up as gradient text; the night-wash act tokens became warm graphite and the ✓/✕ glyphs became 3D ticks and a worded Kilépés. Behavior (acts, day close, confetti, count-up) unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).

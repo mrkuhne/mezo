@@ -42,3 +42,20 @@ test('a day with no date falls back to dayNumber 0', () => {
   const items = dayStripItems([day({ date: undefined })], () => false)
   expect(items[0].dayNumber).toBe(0)
 })
+
+// Kihagyás S1 (mezo-q4xt2.1): a skipped (not done) session is counted so the chip can carry the
+// t-skip mark (prototype elo/edzes.html `dstrip()`); without the predicate nothing is skipped.
+test('skipCount counts the not-done sessions the skip predicate marks', () => {
+  const items = dayStripItems(
+    [day({ gym: gymSlot, running: [run] })],
+    (_d, item) => item.kind === 'running',
+    (_d, item) => item.kind === 'gym',
+  )
+  expect(items[0]).toMatchObject({ doneCount: 1, skipCount: 1, sessionCount: 2 })
+  expect(dayStripItems([day({ gym: gymSlot })], () => false)[0].skipCount).toBe(0)
+})
+
+test('a done session is never counted as skipped (a trained day wins)', () => {
+  const items = dayStripItems([day({ gym: gymSlot })], () => true, () => true)
+  expect(items[0]).toMatchObject({ doneCount: 1, skipCount: 0 })
+})

@@ -1723,6 +1723,27 @@ the widen-to-conversation step. Published to the Mezo artifact URL; owner OK bef
   - "ezt ne jegyezd meg" shows "Elfelejtettem";
   - a prod DB check that the veto rows and the forgotten envelope exist.
 
+## S8b delta — forget really forgets (2026-09-28, owner delegated the decision, mezo-tdabt)
+
+**Owner decision (delegated: "rád bízom, vidd végig"):** the chip promises *"többé nem
+használom"*, so a chat turn whose **user** message is `extraction_blocked` (the forgotten
+message, every message on forget-all, and the forget request itself) is gone from every memory
+channel, not only from extraction:
+
+- **Recall:** `MemorySourceVisibilitySql`'s `chat_turn` clause hides an item whose paired user
+  message (the same pairing `MemorySourceRepairQuery` projects: the latest live user row of the
+  conversation at or before the assistant row) is blocked; the repair sweep treats the pair as
+  not-live, so the projected `memory_item` is retired, not just filtered. The legacy ANN path and
+  `TurnEmbeddingListener` follow the same rule.
+- **Mentions:** a blocked turn creates no `mention`, and a forget soft-deletes the mentions
+  already made from the blocked messages (people-owned port, companion → people). The daily
+  summary and the person timeline therefore stop quoting it.
+- **Raw-record reads** (personal-record tool, reflection evidence) skip blocked user rows and the assistant reply paired with one.
+
+**Out of scope:** the running conversation's own history (the user can delete the
+conversation); rewriting daily summaries already written before the forget; `mezo-vruhq`,
+`mezo-gwh0y`.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
@@ -1903,3 +1924,36 @@ the widen-to-conversation step. Published to the Mezo artifact URL; owner OK bef
     scope div, never by forking the CSS — but audit the scope class's OWN page-level rules first
     (`.tud9 { padding-bottom }` leaked; one neutralizing rule fixes it). A `<button>`→`<a>` swap
     on a kit tile needs `color:inherit;text-decoration:none` or the browser link skin shows.
+45. **(S8)** "Fail-open" on the chat turn path means NOT joining the turn's transaction: a
+    `@Transactional` callee that throws marks the outer turn rollback-only, and the caller's
+    catch still ends in `UnexpectedRollbackException` (people recall, the memory block). And a SQL
+    error aborts the Postgres transaction regardless — only non-DB failures are truly fail-open
+    (follow-up `mezo-570jb`). Prove it with a non-`@Transactional` IT spying a real proxied bean.
+46. **(S8)** A "forget" promise has more readers than the post-turn listeners: the nightly person
+    extraction and the `chat_day` text signal re-read raw chat rows. Any new "blocked" marker must
+    be swept across every raw-row reader (still open: embeddings/daily summary, `mezo-tdabt`).
+47. **(S8)** Never duplicate an intent matcher across Java and TS: a drift turns an ordinary turn
+    into a destructive UI offer. The backend that already ran the matcher returns a flag
+    (`TurnMemoryResponse.forgetRequest`).
+48. **(S8)** A poll that drives optimistic chips must stop — and patch the cache, not invalidate —
+    once the user acts; a backend that returns only live items otherwise unmounts the
+    confirmation ("Visszavonva…") on the next poll.
+49. **(S8)** Sentence splitting Hungarian free text must respect abbreviations (`pl.`, `kb.`,
+    `aug.`) — a naive `[.!?]\s+` split cut a fact mid-parenthesis in the prod dry-run. Always
+    dry-run a text backfill against production and read every before/after pair before apply.
+50. **(S8)** `java.util.Random(seed)` with a hand-rolled `31*h + epochDay` seed is NOT independent
+    across consecutive days: the first `nextDouble()` moves almost linearly with the seed
+    (the check-in "nap kérdése" drew the same branch for weeks; `mezo-x6t01`). Mix the seed
+    (SplitMix64) before seeding.
+51. **(S8b)** A "forget" is only honest when EVERY channel that re-reads the source honours the
+    marker: extraction, recall (lexical, dense, legacy ANN), the projection repair and embed
+    catch-up (else the nightly sweep re-projects it), derived rows (mentions → daily summary,
+    person page) and raw-record tools. Grep every reader of the source table before promising
+    "többé nem használom" in the UI.
+52. **(S8b)** Java text blocks strip trailing spaces: concatenating `"… and not " + fragment`
+    across a `"""` boundary produced `notcoalesce`. Pad and parenthesise SQL fragments that are
+    spliced into text blocks.
+53. **(S8b)** A new IT that POSTs a chat message must pass `PromptOrderFixtureGearGuardTest`
+    (a source scan, not in any focused IT list): a tool-free CHAT-gear fixture needs a domain word
+    or an adjacent `// gear-audited: <reason>`. Add the guard to every focused run that adds chat
+    fixtures — it red-lit main once (mezo-tdabt).

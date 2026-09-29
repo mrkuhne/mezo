@@ -80,7 +80,9 @@ export function useFuelTimeline(date: string = localDateString()) {
   const intakes = useIntakes(date)
   // `gymDoneDates`/`completedTodayWorkout` (mezo-tb3s2): real logged-gym provenance for the energy
   // sheet's `done` flag — the same pair `useDayOrbFill` reads for the day-orb gym fill.
-  const { gymSchedule, sport, sportSlotSkips, gymDoneDates, completedTodayWorkout } = useTrain()
+  // `plannedSkips` (mezo-q4xt2.1): a skipped gym/sport/run occurrence derives no block at all, so
+  // it is neither logged nor pending on the energy sheet.
+  const { gymSchedule, sport, plannedSkips, gymDoneDates, completedTodayWorkout } = useTrain()
   // `runSessions` (mezo-tb3s2): real logged-run provenance, same source `useDayOrbFill`/`useNeeds` use.
   const { activeRunningBlock, runSessions } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
@@ -108,8 +110,8 @@ export function useFuelTimeline(date: string = localDateString()) {
   // today keeps the `today`/`s.today` flag path (`undefined`) so mock mode's pinned demo "today"
   // and its deterministic tests stay exactly as they were.
   const blockDate = date === localDateString() ? undefined : date
-  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, [], blockDate)
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips, sport.sessions ?? [], blockDate)
+  const plannedBlocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, plannedSkips, [], blockDate)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, plannedSkips, sport.sessions ?? [], blockDate)
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged

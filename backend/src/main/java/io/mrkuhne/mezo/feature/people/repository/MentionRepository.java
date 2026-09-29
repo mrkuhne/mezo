@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.people.repository;
 
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -78,4 +79,8 @@ public interface MentionRepository extends JpaRepository<MentionEntity, UUID> {
             + " and source_ref_kind = :kind and source_ref_id = :refId)", nativeQuery = true)
     boolean existsSourceRefIncludingDeleted(@Param("userId") UUID userId, @Param("personId") UUID personId,
             @Param("kind") String kind, @Param("refId") UUID refId);
+
+    /** mezo-tdabt: the live mentions written from the given source refs (the chat forget's target). */
+    List<MentionEntity> findByCreatedByAndSourceRefKindAndSourceRefIdInAndDeletedFalse(
+            UUID createdBy, String sourceRefKind, Collection<UUID> sourceRefIds);
 }

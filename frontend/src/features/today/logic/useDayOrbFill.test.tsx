@@ -9,6 +9,7 @@ import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { todayIdx } from '@/data/train/runningAgenda'
+import { DAY_ORDER } from '@/data/train/train'
 import { localDateString } from '@/shared/lib/dates'
 
 // EGYETLEN fali-óra olvasás az egész fájlra (mezo-4jtz). A lenti tesztek kiolvassák a mai nap
@@ -150,8 +151,11 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours
       http.get(`${API_BASE}/api/train/sport-schedule`, () =>
         HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
       ),
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: dow, time: '17:00', date: todayIso }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([{
+          id: 's1', date: todayIso, kind: 'SPORT', dayOfWeek: dow, time: '17:00', sessionKey: null,
+          reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+        }]),
       ),
     )
     const { Wrapper, qc } = wrapperWithClient()
@@ -167,13 +171,62 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours
       http.get(`${API_BASE}/api/train/sport-schedule`, () =>
         HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
       ),
-      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-        HttpResponse.json([{ dayOfWeek: dow, time: '17:00', date: '1999-01-01' }]),
+      http.get(`${API_BASE}/api/train/skips`, () =>
+        HttpResponse.json([{
+          id: 's1', date: '1999-01-01', kind: 'SPORT', dayOfWeek: dow, time: '17:00', sessionKey: null,
+          reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+        }]),
       ),
     )
     const { Wrapper, qc } = wrapperWithClient()
     const { result } = renderHook(() => useDayOrbFill(), { wrapper: Wrapper })
     await waitFor(() => expect(qc.getQueryState(['train', 'sportSchedule'])?.status).toBe('success'))
+    await waitFor(() => expect(result.current.denominator).toBe(6))
+  })
+})
+
+// Kihagyás S1 (mezo-q4xt2.1) — a user-skipped gym day leaves the orb's denominator the same way
+// a skipped sport slot does: the plan no longer carries a gym session today.
+describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('gymPlanned honours a GYM planned skip (mezo-q4xt2.1)', () => {
+  const dow = todayIdx(clock.now)
+  const todayIso = localDateString(clock.now)
+  const meso = {
+    id: 'm-1', title: 'M', shortTitle: 'M', status: 'active', startDate: '2026-06-01', endDate: '2026-12-31',
+    weeks: 6, currentWeek: 1, split: '', style: '', phaseCurve: ['MEV'],
+    days: [{
+      id: 'd-1', day: DAY_ORDER[dow], type: 'Pull Day', muscle: 'back', exerciseCount: 1,
+      exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+    }],
+  }
+  const skipRow = (date: string) => ({
+    id: 'g1', date, kind: 'GYM', dayOfWeek: null, time: null, sessionKey: null,
+    reasonCategory: 'NONE', reasonText: null, source: 'USER', serious: false, freePass: true, excused: true,
+  })
+  const setup = (date: string) => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([meso])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+      http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([skipRow(date)])),
+    )
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const Wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    return { Wrapper, qc }
+  }
+
+  test('a GYM skip dated today drops the gym session from the denominator', async () => {
+    const { Wrapper, qc } = setup(todayIso)
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper: Wrapper })
+    await waitFor(() => expect(qc.getQueryState(['train', 'mesocycles'])?.status).toBe('success'))
+    await waitFor(() => expect(qc.getQueriesData({ queryKey: ['train', 'plannedSkips'] })[0]?.[1]).toHaveLength(1))
+    expect(result.current.denominator).toBe(5)
+  })
+
+  test('a GYM skip dated another day leaves the gym session in the denominator', async () => {
+    const { Wrapper, qc } = setup('1999-01-01')
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper: Wrapper })
+    await waitFor(() => expect(qc.getQueryState(['train', 'mesocycles'])?.status).toBe('success'))
     await waitFor(() => expect(result.current.denominator).toBe(6))
   })
 })

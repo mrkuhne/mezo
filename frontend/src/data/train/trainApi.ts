@@ -21,6 +21,8 @@ export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
 export type SetUpdateRequest = components['schemas']['SetUpdateRequest']
 export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
+export type WorkoutExerciseChangeRequest = components['schemas']['WorkoutExerciseChangeRequest']
+export type WorkoutExerciseChangeResponse = components['schemas']['WorkoutExerciseChangeResponse']
 export type WorkoutNoteRequest = components['schemas']['WorkoutNoteRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
 export type PrescribedSet = components['schemas']['PrescribedSet']
@@ -30,7 +32,6 @@ export type SportScheduleSlotInput = components['schemas']['SportScheduleSlotInp
 export type SportScheduleSlotResponse = components['schemas']['SportScheduleSlotResponse']
 export type SportEventCreateRequest = components['schemas']['SportEventCreateRequest']
 export type SportEventResponse = components['schemas']['SportEventResponse']
-export type SportSlotSkipResponse = components['schemas']['SportSlotSkipResponse']
 export type GymScheduleSlotInput = components['schemas']['GymScheduleSlotInput']
 export type GymScheduleSlotResponse = components['schemas']['GymScheduleSlotResponse']
 export type ExerciseCatalogItem = components['schemas']['ExerciseCatalogItem']
@@ -151,6 +152,18 @@ export const trainApi = {
       method: 'POST',
       body: JSON.stringify({ exerciseId } satisfies WorkoutSkipRequest),
     }),
+  /** Swap or add an exercise mid-workout (mezo-mobji) — returns the refreshed today payload. */
+  changeExercise: (workoutId: string, body: WorkoutExerciseChangeRequest): Promise<WorkoutExerciseChangeResponse> =>
+    apiFetch<WorkoutExerciseChangeResponse>(`/api/train/workouts/${workoutId}/exercises`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  /** "Szett hozzáadása → Minden hétre" (mezo-mobji): bumps ONE plan row, no day re-create. */
+  addPlanWorkingSets: (workoutId: string, exerciseId: string, delta = 1): Promise<void> =>
+    apiFetch<void>(`/api/train/workouts/${workoutId}/exercises/${exerciseId}/plan-sets`, {
+      method: 'POST',
+      body: JSON.stringify({ delta }),
+    }),
   saveWorkoutFeedback: (workoutId: string, body: WorkoutFeedbackInput[]): Promise<void> =>
     apiFetch<void>(`/api/train/workouts/${workoutId}/feedback`, {
       method: 'POST',
@@ -182,8 +195,6 @@ export const trainApi = {
     apiFetch<SportEventResponse>('/api/train/sport-events', { method: 'POST', body: JSON.stringify(body) }),
   deleteSportEvent: (id: string): Promise<void> =>
     apiFetch<void>(`/api/train/sport-events/${id}`, { method: 'DELETE' }),
-  sportSlotSkips: (from: string, to: string): Promise<SportSlotSkipResponse[]> =>
-    apiFetch<SportSlotSkipResponse[]>(`/api/train/sport-slot-skips?from=${from}&to=${to}`),
   gymSchedule: (): Promise<GymScheduleSlotResponse[]> =>
     apiFetch<GymScheduleSlotResponse[]>('/api/train/gym-schedule'),
   replaceGymSchedule: (body: GymScheduleSlotInput[]): Promise<GymScheduleSlotResponse[]> =>

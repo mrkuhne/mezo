@@ -69,6 +69,9 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MetricSeriesService {
 
+    /** NOVA4_KCAL_PCT's coverage gate — the same 70 % {@code ComfortEatingDetector} applies. */
+    static final double NOVA_MIN_COVERAGE = 0.70;
+
     private final SleepLogRepository sleepLogRepository;
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
@@ -95,6 +98,9 @@ public class MetricSeriesService {
     // legitimately be absent. ObjectProvider (the TodayActivitySource idiom) keeps this service
     // constructible either way — switch off ⇒ the four metrics report no data, honestly.
     private final ObjectProvider<TextSignalSeriesService> textSignalSeriesService;
+    // Check-in 2.0 follow-up B: DayScoreService itself reads this service (sleep/XP series), so
+    // the DAY_SCORE extractor resolves it lazily — a constructor dependency would be a cycle.
+    private final ObjectProvider<DayScoreService> dayScoreService;
 
     /**
      * The metric's per-day values inside {@code [from, to]} (inclusive). Reads traverse LAZY
@@ -159,6 +165,8 @@ public class MetricSeriesService {
             case CHECKIN_DIGESTION -> checkIn(userId, from, to, CheckInEntity::getDigestion);
             case CHECKIN_CONNECTION -> checkIn(userId, from, to, CheckInEntity::getConnection);
             case CHECKIN_DAY -> checkIn(userId, from, to, CheckInEntity::getDayRating);
+            case DAY_SCORE -> dayScore(userId, from, to);
+            case NOVA4_KCAL_PCT -> nova4KcalPct(userId, from, to);
         };
     }
 
@@ -332,6 +340,59 @@ public class MetricSeriesService {
                     .add(meal.getScore().doubleValue());
         }
         return average(perDay);
+    }
+
+    /**
+     * DAY_SCORE (Check-in 2.0 follow-up B): the app's day score ({@code DayEvaluation.base()},
+     * the number the Napom card shows) for every CLOSED day — {@code to} is clamped to yesterday,
+     * because today's score is still moving. A day the engine cannot score (null base) has no
+     * point. The same single day math as every other score reader; no formula here.
+     */
+    private Map<LocalDate, Double> dayScore(UUID userId, LocalDate from, LocalDate to) {
+        DayScoreService service = dayScoreService.getIfAvailable();
+        LocalDate lastClosed = LocalDate.now().minusDays(1);
+        LocalDate end = to.isAfter(lastClosed) ? lastClosed : to;
+        if (service == null || end.isBefore(from)) {
+            return Map.of();
+        }
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (DayScoreService.DayScore day : service.scores(userId, from, end)) {
+            if (day.score() != null) {
+                series.put(day.date(), day.score().doubleValue());
+            }
+        }
+        return series;
+    }
+
+    /**
+     * NOVA4_KCAL_PCT (Check-in 2.0 follow-up B, spec §3.4b): the share (0–100 %) of the day's
+     * NOVA-classified kcal that is NOVA 4 — the same classification and proxy
+     * {@code ComfortEatingDetector} reads (line snapshots, {@code snapshot_nova >= 4}). Its coverage
+     * gate applies too: a day counts only when at least {@link #NOVA_MIN_COVERAGE} of its kcal
+     * carries a NOVA class, so a day of mostly unclassified food never reads as "0 % processed".
+     */
+    private Map<LocalDate, Double> nova4KcalPct(UUID userId, LocalDate from, LocalDate to) {
+        Map<LocalDate, double[]> perDay = new HashMap<>(); // [total kcal, classified kcal, nova4 kcal]
+        for (MealEntity meal : mealRepository.findWithItemsBetween(userId, from, to)) {
+            double[] acc = perDay.computeIfAbsent(meal.getMealDate(), d -> new double[3]);
+            for (MealItemEntity item : meal.getItems()) {
+                double kcal = item.getSnapshotKcal() == null ? 0 : item.getSnapshotKcal().doubleValue();
+                acc[0] += kcal;
+                if (item.getSnapshotNova() != null) {
+                    acc[1] += kcal;
+                    if (item.getSnapshotNova() >= 4) {
+                        acc[2] += kcal;
+                    }
+                }
+            }
+        }
+        Map<LocalDate, Double> series = new HashMap<>();
+        perDay.forEach((day, acc) -> {
+            if (acc[0] > 0 && acc[1] > 0 && acc[1] / acc[0] >= NOVA_MIN_COVERAGE) {
+                series.put(day, 100.0 * acc[2] / acc[1]);
+            }
+        });
+        return series;
     }
 
     /**

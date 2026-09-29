@@ -777,6 +777,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Swap or add an exercise in an active workout (mezo-mobji)
+         * @description Creates an instance-scoped exercise row for the running workout (scope TODAY), and for scope MESO additionally writes the mesocycle's template day id-stably (one insert, the replaced row soft-deleted) so the change applies from the next session. Returns the refreshed today payload.
+         */
+        post: operations["changeWorkoutExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add working sets to an exercise's mesocycle plan without re-creating the day (mezo-mobji) */
+        post: operations["addPlanWorkingSets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/exercises/{exerciseId}/note": {
         parameters: {
             query?: never;
@@ -962,6 +999,44 @@ export interface paths {
         post: operations["chooseTodayReadiness"];
         /** Undo today's choice ("Visszaállítom a tervet") — normal prescriptions again for sets not yet logged */
         delete: operations["undoTodayReadiness"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/skips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every skip in [from, to] with its read-time verdict (user skips + coach advice skips) */
+        get: operations["listPlannedSkips"];
+        /**
+         * Skip one occurrence, or change the reason of an existing skip (idempotent per target)
+         * @description Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER.
+         */
+        put: operations["upsertPlannedSkip"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/skips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Undo a skip ("Visszavonom") — the occurrence is planned again */
+        delete: operations["undoPlannedSkip"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6169,6 +6244,17 @@ export interface components {
             rationale?: string | null;
             /** @description RIR-aware overload recommendation; null on first session / switch off. */
             progression?: components["schemas"]["ProgressionSignal"] | null;
+            /**
+             * @description Set on an exercise swapped/added during the open workout (mezo-mobji).
+             * @enum {string|null}
+             */
+            changeScope?: "TODAY" | "MESO" | null;
+            /** @description Name of the exercise this one replaced in the open workout. */
+            replacesName?: string | null;
+            /** @description On a swapped-out exercise that keeps its logged sets — the replacement's name. */
+            replacedByName?: string | null;
+            /** @description Whether a "Mezociklusra is" change may target this exercise (false for rows added only for this workout and for the fixed closing block). */
+            planSlot?: boolean;
         };
         PrescribedSet: {
             /** @enum {string} */
@@ -6395,6 +6481,37 @@ export interface components {
             rir?: number | null;
             side?: string;
             note?: string;
+        };
+        WorkoutExerciseChangeRequest: {
+            /** Format: uuid */
+            catalogId?: string | null;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
+            targetRIR: number;
+            /** @enum {string} */
+            scope: "TODAY" | "MESO";
+            /**
+             * Format: uuid
+             * @description Swap target; absent for an add.
+             */
+            replacesExerciseId?: string | null;
+        };
+        WorkoutExerciseChangeResponse: {
+            /**
+             * Format: uuid
+             * @description The new instance-scoped exercise row.
+             */
+            exerciseId: string;
+            today: components["schemas"]["WorkoutTodayResponse"];
+        };
+        PlanSetsRequest: {
+            delta: number;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */
@@ -6685,6 +6802,43 @@ export interface components {
             regionLabel: string;
             /** @description The reported pain intensity (null when not answered) */
             intensity?: number | null;
+        };
+        /** @enum {string} */
+        PlannedSkipKind: "GYM" | "SPORT" | "RUN";
+        /** @enum {string} */
+        PlannedSkipReason: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | "TIRED" | "NO_TIME" | "NO_MOOD" | "OTHER" | "NONE";
+        PlannedSkipRequest: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["PlannedSkipKind"];
+            /** @description SPORT only, 0=Hét..6=Vas */
+            dayOfWeek?: number | null;
+            /** @description SPORT only */
+            time?: string | null;
+            /** @description RUN only */
+            sessionKey?: string | null;
+            reasonCategory: components["schemas"]["PlannedSkipReason"];
+            /** @description Kept only for OTHER */
+            reasonText?: string | null;
+        };
+        PlannedSkipResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["PlannedSkipKind"];
+            dayOfWeek?: number | null;
+            time?: string | null;
+            sessionKey?: string | null;
+            reasonCategory: components["schemas"]["PlannedSkipReason"];
+            reasonText?: string | null;
+            /** @enum {string} */
+            source: "USER" | "ADVICE";
+            serious: boolean;
+            /** @description The weekly free pass covers this skip */
+            freePass: boolean;
+            /** @description Does not count as missed */
+            excused: boolean;
         };
         /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
         ExpenditureExplanationResponse: {
@@ -14902,6 +15056,129 @@ export interface operations {
             };
         };
     };
+    changeWorkoutExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutExerciseChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Change applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutExerciseChangeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout not active, or the replaced exercise has no plan slot (MESO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPlanWorkingSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanSetsRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The exercise has no plan slot */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     saveExerciseNote: {
         parameters: {
             query?: never;
@@ -15445,6 +15722,127 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listPlannedSkips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Skips, date then created ascending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedSkipResponse"][];
+                };
+            };
+            /** @description from after to (TRAIN_INVALID_DATE_RANGE) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    upsertPlannedSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedSkipRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored skip with its verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedSkipResponse"];
+                };
+            };
+            /** @description Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    undoPlannedSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

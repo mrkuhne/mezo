@@ -15,6 +15,8 @@ export interface DayStripItem {
   /** One tone per session, in time order — rendered as coloured dots. */
   dots: SessionTone[]
   doneCount: number
+  /** Not-done sessions the user skipped (Kihagyás S1, mezo-q4xt2.1) — each carries a t-skip mark. */
+  skipCount?: number
   sessionCount: number
 }
 
@@ -30,6 +32,9 @@ const toneOf = (item: AgendaItem): SessionTone =>
 export function dayStripItems(
   agenda: WeeklyAgendaDay[],
   isDone: (day: WeeklyAgendaDay, item: AgendaItem) => boolean,
+  // Kihagyás S1 (mezo-q4xt2.1): which sessions are skipped. A done session never counts as
+  // skipped — a trained day wins over a skip, as everywhere else.
+  isSkipped: (day: WeeklyAgendaDay, item: AgendaItem) => boolean = () => false,
 ): DayStripItem[] {
   return agenda.map((d) => {
     const sessions = daySessions(d)
@@ -39,6 +44,7 @@ export function dayStripItems(
       isToday: d.isToday,
       dots: sessions.map(toneOf),
       doneCount: sessions.filter((s) => isDone(d, s)).length,
+      skipCount: sessions.filter((s) => !isDone(d, s) && isSkipped(d, s)).length,
       sessionCount: sessions.length,
     }
   })

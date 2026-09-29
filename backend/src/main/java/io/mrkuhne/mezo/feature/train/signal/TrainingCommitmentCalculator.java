@@ -2,8 +2,10 @@ package io.mrkuhne.mezo.feature.train.signal;
 
 import io.mrkuhne.mezo.feature.progression.TrainingCommitmentSource;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -20,6 +22,7 @@ public class TrainingCommitmentCalculator implements TrainingCommitmentSource {
 
     private final MesocycleRepository mesocycleRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final PlannedSkipService plannedSkipService;
 
     @Override
     public Stats commitmentStats(UUID createdBy, LocalDate from, LocalDate to) {
@@ -35,9 +38,13 @@ public class TrainingCommitmentCalculator implements TrainingCommitmentSource {
             .stream()
             .filter(s -> s.getTemplateSessionId() == null)
             .forEach(s -> plannedLabels.add(s.getDayLabel()));
+        // Kihagyás S1 (mezo-q4xt2.1): an excused GYM day (serious reason / free pass / advice)
+        // never counts as "should have trained" — it leaves the planned count entirely.
+        Set<LocalDate> excused = plannedSkipService.excusedDates(createdBy, Kind.GYM, from, to);
         int planned = 0;
         for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {
-            if (plannedLabels.contains(WorkoutService.HU_DAY_LABELS.get(d.getDayOfWeek().getValue() - 1))) {
+            String label = WorkoutService.HU_DAY_LABELS.get(d.getDayOfWeek().getValue() - 1);
+            if (plannedLabels.contains(label) && !excused.contains(d)) {
                 planned++;
             }
         }

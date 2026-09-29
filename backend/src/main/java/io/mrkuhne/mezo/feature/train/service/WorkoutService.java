@@ -136,6 +136,9 @@ public class WorkoutService {
     // Check-in 2.0 readiness (mezo-ck2): the day's „Könnyítsük" overlay — every prescription capped
     // at HOLD, and the pain-loaded (care) exercises drop their heavy sets. Read-time only.
     private final ReadinessAssessor readinessAssessor;
+    // Kihagyás S1 (mezo-q4xt2.1): "is a gym day planned?" reads honour a gym skip. Does NOT
+    // depend on WorkoutService — no cycle.
+    private final PlannedSkipService plannedSkipService;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -195,11 +198,17 @@ public class WorkoutService {
         if (day == null) {
             return empty;
         }
-        List<ExerciseEntity> exercises = exerciseRepository
+        List<ExerciseEntity> templateRows = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(day.getId()));
-        if (exercises.isEmpty()) {
+        if (templateRows.isEmpty()) {
             return empty; // rest day
         }
+        // Mid-workout swap/add (mezo-mobji): the open instance's own rows, placed and filtered by
+        // the shared assembler; with no open instance the template passes through unchanged.
+        List<SessionExerciseAssembler.Entry> entries = open != null
+            ? assembleInstance(createdBy, open, templateRows)
+            : SessionExerciseAssembler.assemble(null, templateRows, List.of(), List.of(), Map.of(), Set.of());
+        List<ExerciseEntity> exercises = entries.stream().map(SessionExerciseAssembler.Entry::row).toList();
         Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, exercises);
         // Demo media: one batched catalog fetch for the day's linked exercises (catalog_id →
         // video_url), never per-exercise. Map keyed by catalog id; nulls filtered out.
@@ -255,8 +264,14 @@ public class WorkoutService {
         int repUp = 0;
         int hold = 0;
         List<TodayExercise> mapped = new ArrayList<>();
-        for (ExerciseEntity e : exercises) {
+        for (SessionExerciseAssembler.Entry entry : entries) {
+            ExerciseEntity e = entry.row();
             TodayExercise t = mapper.toTodayExercise(e);
+            t.setChangeScope(entry.changeScope() == null ? null
+                : TodayExercise.ChangeScopeEnum.fromValue(entry.changeScope()));
+            t.setReplacesName(entry.replacesName());
+            t.setReplacedByName(entry.replacedByName());
+            t.setPlanSlot(entry.planSlot());
             t.setLastWeek(lastWeek.get(e.getId()));
             if (e.getCatalogId() != null) {
                 CatalogMedia m = mediaByCatalog.get(e.getCatalogId());
@@ -266,8 +281,14 @@ public class WorkoutService {
                     t.setImageEndUrl(m.imageEndUrl());
                 }
             }
-            int effective = effectiveSets.getOrDefault(e.getId(), e.getWorkingSets());
-            effective = Math.max(1, effective + dayDelta);
+            int effective;
+            if (entry.workingSetsOverride() != null) {
+                effective = Math.max(1, entry.workingSetsOverride()); // swapped out: only what was logged
+            } else if (entry.changeScope() != null) {
+                effective = e.getWorkingSets(); // a row changed today already carries today's count
+            } else {
+                effective = Math.max(1, effectiveSets.getOrDefault(e.getId(), e.getWorkingSets()) + dayDelta);
+            }
             String careRegion = lighten.map(m -> m.get(e.getId())).orElse(null);
             if (careRegion != null) {
                 effective = 1; // the heavy working sets drop — one light working set remains
@@ -371,6 +392,32 @@ public class WorkoutService {
         return findPlannedTemplateForDate(activeMesoSessions(createdBy), date);
     }
 
+    /** Like {@link #findPlannedTemplateForDate} but empty when the user skipped that gym day
+     *  (Kihagyás S1). The pure variant stays for getToday, so a skipped day still resolves for
+     *  undo. No {@code @Transactional} — matches its sibling {@link #findPlannedTemplateForDate}. */
+    public Optional<WorkoutSessionEntity> findPlannedTemplateForDateUnlessSkipped(UUID userId, LocalDate date) {
+        return plannedSkipService.isGymSkipped(userId, date) ? Optional.empty() : findPlannedTemplateForDate(userId, date);
+    }
+
+    /**
+     * The coarse muscle groups ({@link MuscleGroup#of}) the planned template for {@code date}
+     * loads — the session's own muscle plus every planned exercise's. A pure READ over
+     * {@link #findPlannedTemplateForDate} (never {@code getToday}, which writes); empty when no
+     * session is planned that day. Check-in 2.0 follow-up C: the persistent-pain card offers
+     * "lighten tomorrow" only when this overlaps the painful region's groups.
+     */
+    public Set<String> plannedMuscleGroups(UUID createdBy, LocalDate date) {
+        return findPlannedTemplateForDate(createdBy, date)
+            .map(session -> java.util.stream.Stream.concat(
+                    java.util.stream.Stream.of(session.getMuscle()),
+                    exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                        createdBy, List.of(session.getId())).stream().map(ExerciseEntity::getMuscle))
+                .map(MuscleGroup::of)
+                .filter(group -> group != null && !group.isBlank())
+                .collect(Collectors.toUnmodifiableSet()))
+            .orElse(Set.of());
+    }
+
     /**
      * The active mesocycle's planned session rows, unbounded — the fetch {@link
      * #findPlannedTemplateForDate(UUID, LocalDate)} performs per date, extracted so a RANGE caller
@@ -426,9 +473,9 @@ public class WorkoutService {
      */
     public WorkoutDetailResponse getWorkoutDetail(UUID createdBy, UUID workoutId) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
-        List<ExerciseEntity> exercises = exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
-                createdBy, List.of(instance.getTemplateSessionId()));
+        List<SessionExerciseAssembler.Entry> entries = assembleInstance(createdBy, instance,
+            exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                createdBy, List.of(instance.getTemplateSessionId())));
         Map<UUID, List<ExerciseSetEntity>> setsByExercise = exerciseSetRepository
             .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
             .collect(Collectors.groupingBy(ExerciseSetEntity::getExerciseId));
@@ -444,7 +491,8 @@ public class WorkoutService {
             .startedAt(toOffsetDateTime(instance.getStartedAt()))
             .finishedAt(toOffsetDateTime(instance.getFinishedAt()))
             .activeSeconds(instance.getActiveSeconds())
-            .exercises(exercises.stream().map(e -> {
+            .exercises(entries.stream().map(entry -> {
+                ExerciseEntity e = entry.row();
                 List<ExerciseSetEntity> all = setsByExercise.getOrDefault(e.getId(), List.of());
                 return WorkoutDetailExercise.builder()
                     .exerciseId(e.getId())
@@ -452,7 +500,7 @@ public class WorkoutService {
                     .muscle(e.getMuscle())
                     .type(WorkoutDetailExercise.TypeEnum.fromValue(e.getType()))
                     .warmupSets(e.getWarmupSets())
-                    .workingSets(e.getWorkingSets())
+                    .workingSets(entry.workingSetsOverride() != null ? entry.workingSetsOverride() : e.getWorkingSets())
                     .repMin(e.getRepMin())
                     .repMax(e.getRepMax())
                     .targetRIR(e.getTargetRir())
@@ -641,10 +689,10 @@ public class WorkoutService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("TRAIN_WORKOUT_NOT_ACTIVE").build(), HttpStatus.CONFLICT);
         }
-        // The exercise must hang off the instance's template day — child writes verify the chain.
+        // The exercise must hang off the instance's template day or the instance itself (a row
+        // swapped/added mid-workout, mezo-mobji) — child writes verify the chain.
         ExerciseEntity exercise = exerciseRepository.findById(req.getExerciseId())
-            .filter(e -> createdBy.equals(e.getCreatedBy())
-                && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
+            .filter(e -> belongsTo(createdBy, instance, e))
             .orElseThrow(WorkoutService::notFound);
         ExerciseSetEntity set = new ExerciseSetEntity();
         set.setCreatedBy(createdBy);
@@ -767,10 +815,9 @@ public class WorkoutService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("TRAIN_WORKOUT_NOT_ACTIVE").build(), HttpStatus.CONFLICT);
         }
-        // The exercise must hang off the instance's template day — child writes verify the chain.
+        // The exercise must hang off the instance's template day or the instance itself (mezo-mobji).
         exerciseRepository.findById(exerciseId)
-            .filter(e -> createdBy.equals(e.getCreatedBy())
-                && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
+            .filter(e -> belongsTo(createdBy, instance, e))
             .orElseThrow(WorkoutService::notFound);
         // Idempotent: a skip marker already present for this (instance, exercise) is a no-op
         // (mirrors saveFeedback's find-or-create intent — no duplicate marker rows).
@@ -799,10 +846,12 @@ public class WorkoutService {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
         // Batch: the template day's exercises + this instance's existing feedback rows are each
         // loaded ONCE (was findById + findBy... + save per item — 2N+N round-trips).
-        Set<UUID> dayExerciseIds = exerciseRepository
-            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
-                createdBy, List.of(instance.getTemplateSessionId())).stream()
-            .map(ExerciseEntity::getId)
+        // The instance's own exercise list (mezo-mobji): template day + rows swapped/added in this
+        // instance + a swapped-out row that already carries sets.
+        Set<UUID> dayExerciseIds = assembleInstance(createdBy, instance,
+                exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                    createdBy, List.of(instance.getTemplateSessionId()))).stream()
+            .map(en -> en.row().getId())
             .collect(Collectors.toSet());
         Map<UUID, ExerciseFeedbackEntity> byExercise = exerciseFeedbackRepository
             .findByCreatedByAndWorkoutSessionId(createdBy, instance.getId()).stream()
@@ -926,6 +975,47 @@ public class WorkoutService {
             eventPublisher.publishEvent(new WorkoutFinishedEvent(createdBy, instance.getId()));
         }
         return base;
+    }
+
+    /**
+     * The instance's exercise list (mezo-mobji): the template day's live rows, the rows swapped or
+     * added in this instance, and any soft-deleted row (a "Mezociklusra is" swap) that already
+     * carries sets here — assembled by {@link SessionExerciseAssembler}.
+     */
+    List<SessionExerciseAssembler.Entry> assembleInstance(
+            UUID createdBy, WorkoutSessionEntity instance, List<ExerciseEntity> templateRows) {
+        List<ExerciseEntity> instanceRows = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(instance.getId()));
+        List<ExerciseSetEntity> sets = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId());
+        Map<UUID, Integer> loggedWorking = new java.util.HashMap<>();
+        for (ExerciseSetEntity set : sets) {
+            if (!set.isSkipped() && !"warmup".equals(set.getKind())) {
+                loggedWorking.merge(set.getExerciseId(), 1, Integer::sum);
+            }
+        }
+        Set<UUID> known = new java.util.HashSet<>();
+        templateRows.forEach(r -> known.add(r.getId()));
+        instanceRows.forEach(r -> known.add(r.getId()));
+        // A soft-deleted row ("Mezociklusra is" swap) is still part of this instance when it carries
+        // sets here, or when an instance row replaces it (it then marks the replacement's place).
+        Set<UUID> missing = java.util.stream.Stream.concat(
+                sets.stream().map(ExerciseSetEntity::getExerciseId),
+                instanceRows.stream().map(ExerciseEntity::getReplacesExerciseId).filter(java.util.Objects::nonNull))
+            .filter(id -> !known.contains(id)).collect(Collectors.toSet());
+        List<ExerciseEntity> deletedReferenced = missing.isEmpty() ? List.of()
+            : exerciseRepository.findOwnedByIdIncludingDeleted(createdBy, missing).stream()
+                .filter(ExerciseEntity::isDeleted)
+                .toList();
+        return SessionExerciseAssembler.assemble(instance.getId(), templateRows, instanceRows,
+            deletedReferenced, loggedWorking, closingBlockService.closingCatalogIds());
+    }
+
+    /** A loggable exercise of the instance: its template day's row or a row of the instance itself. */
+    private static boolean belongsTo(UUID createdBy, WorkoutSessionEntity instance, ExerciseEntity e) {
+        return createdBy.equals(e.getCreatedBy())
+            && (instance.getTemplateSessionId().equals(e.getWorkoutSessionId())
+                || instance.getId().equals(e.getWorkoutSessionId()));
     }
 
     /** Instance gate: owned AND an instance row (template rows are not loggable targets). */

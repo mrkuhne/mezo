@@ -1735,7 +1735,7 @@ test('real mode: a plyo set hides the kg stepper and logs weightKg 0 (reps-only)
   await waitFor(() => expect(calls).toContain('set:w-1:e-plyo:0:0')) // weightKg 0
 })
 
-// --- F2 add-set: optional "Minden hétre" template write (reuses the day-exercises PUT) ---
+// --- F2 add-set: optional "Minden hétre" plan write — one row +1 set, no day re-create (mezo-mobji) ---
 
 const TEMPLATE_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
 const TEMPLATE_DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
@@ -1775,14 +1775,19 @@ function useTemplateWriteHandlers(puts: { url: string; body: { name: string; wor
       const body = (await request.json()) as { templateSessionId: string }
       return HttpResponse.json({ id: 'w-1', templateSessionId: body.templateSessionId, date: '2026-06-12', status: 'active', sets: [] }, { status: 201 })
     }),
+    // The old full-list day PUT re-minted every exercise id under the running session.
     http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request, params }) => {
-      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; workingSets: number }[] })
+      puts.push({ url: `PUT ${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; workingSets: number }[] })
       return HttpResponse.json({ id: params.dayId, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, exercises: [] })
+    }),
+    http.post(`${API_BASE}/api/train/workouts/:id/exercises/:exerciseId/plan-sets`, async ({ request, params }) => {
+      puts.push({ url: `${params.id}/${params.exerciseId}`, body: [(await request.json()) as { name: string; workingSets: number }] })
+      return new HttpResponse(null, { status: 204 })
     }),
   )
 }
 
-test('real mode: add-set "Minden hétre" PUTs the day with the current exercise working sets bumped by 1', async () => {
+test('real mode: add-set "Minden hétre" adds one working set to that plan row only', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const puts: { url: string; body: { name: string; workingSets: number }[] }[] = []
   useTemplateWriteHandlers(puts)
@@ -1793,11 +1798,11 @@ test('real mode: add-set "Minden hétre" PUTs the day with the current exercise 
   await user.click(screen.getByText('Szett hozzáadása'))
   await user.click(await screen.findByText('Minden hétre'))
   await waitFor(() => expect(puts).toHaveLength(1))
-  expect(puts[0].url).toBe(`${TEMPLATE_MESO_ID}/${TEMPLATE_DAY_ID}`)
-  expect(puts[0].body.find((e) => e.name === 'Chest Supported Row')?.workingSets).toBe(5) // working 4 -> 5
+  expect(puts[0].url).toBe('w-1/e-1') // the running instance + the one plan row — no day PUT
+  expect(puts[0].body[0]).toEqual({ delta: 1 })
 })
 
-test('real mode: add-set "Csak ma" fires no template PUT', async () => {
+test('real mode: add-set "Csak ma" fires no plan write', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const puts: { url: string; body: { name: string; workingSets: number }[] }[] = []
   useTemplateWriteHandlers(puts)

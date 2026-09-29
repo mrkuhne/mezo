@@ -6,6 +6,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { MapView } from '@/features/admin/memory/views/MapView'
 import { ADMIN_MEMORY_NEIGHBORS_MOCK, ADMIN_MEMORY_VECTORS_MOCK } from '@/data/admin/adminMemoryMock'
+import { huArticle, huFrom } from '@/shared/lib/huNum'
 
 // MapView (mezo-4qyt.5, Step 5.6). The `?worker` import is mocked with an "instant" fake that
 // echoes the fit input's first two dims back as a `done` embedding — good enough to exercise
@@ -70,7 +71,7 @@ describe('MapView (mock mode)', () => {
 
   it('renders the sampled banner from the vectors response', async () => {
     renderMapView()
-    expect(await screen.findByText(new RegExp(`a ${ADMIN_MEMORY_VECTORS_MOCK.total}-ból`))).toBeInTheDocument()
+    expect(await screen.findByText(new RegExp(`${huArticle(ADMIN_MEMORY_VECTORS_MOCK.total)} ${huFrom(ADMIN_MEMORY_VECTORS_MOCK.total)}`))).toBeInTheDocument()
   })
 
   it('a suppressed item renders hollow (fill none, coloured stroke)', async () => {

@@ -27,6 +27,7 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -67,7 +68,10 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>Never calls {@code WorkoutService.getToday(...)}</b> — it hardcodes {@code LocalDate.now()}
  * and triggers three nested {@code @Transactional} <b>writes</b> (autoClose/rollover/closing
  * exercises); a per-minute cron doing that per user would be a write storm. This class only calls
- * the pure read {@link WorkoutService#findPlannedTemplateForDate(UUID, LocalDate)}.
+ * the pure read {@link WorkoutService#findPlannedTemplateForDateUnlessSkipped(UUID, LocalDate)} —
+ * and, on top of that, a skipped gym day (Kihagyás S1, mezo-q4xt2.1) yields NO gym anchor at all,
+ * checked separately via {@link io.mrkuhne.mezo.feature.train.service.PlannedSkipService#isGymSkipped}
+ * before the slot loop, exactly like the existing sport-slot skip check.
  *
  * <p><b>{@code RitualService} is optional</b> ({@link ObjectProvider}): the whole bean disappears
  * when {@code mezo.feature.ritual.enabled=false}, and when it is absent this resolver yields no
@@ -133,6 +137,7 @@ public class AnchorResolver {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
     private final SportSlotSkipService sportSlotSkipService;
+    private final PlannedSkipService plannedSkipService;
     private final WorkoutService workoutService;
     private final SleepAnchorPort sleepAnchorPort;
     private final ObjectProvider<RitualService> ritualServiceProvider;
@@ -178,14 +183,20 @@ public class AnchorResolver {
         // convert date's ISO 1=Mon..7=Sun explicitly; do NOT compare getValue() directly here.
         int legacyDayOfWeek = date.getDayOfWeek().getValue() - 1;
 
-        // Trap #2: findPlannedTemplateForDate, never getToday() (that one writes on every call).
-        Optional<WorkoutSessionEntity> plannedTemplate = workoutService.findPlannedTemplateForDate(owner, date);
+        // Trap #2: findPlannedTemplateForDateUnlessSkipped, never getToday() (that one writes on
+        // every call). Kihagyás S1: a skipped gym day yields no gym anchor at all — checked once
+        // via isGymSkipped (not via the empty Optional this resolves to, which gymSlotEvent would
+        // otherwise read as "no meso day" and still fire a generic "Edzés" reminder).
+        Optional<WorkoutSessionEntity> plannedTemplate = workoutService.findPlannedTemplateForDateUnlessSkipped(owner, date);
+        boolean gymSkipped = plannedSkipService.isGymSkipped(owner, date);
 
         List<AnchoredEvent> events = new ArrayList<>();
-        for (GymScheduleSlotEntity slot : gymScheduleSlotRepository
-                .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner)) {
-            if (slot.getDayOfWeek() == legacyDayOfWeek) {
-                events.add(gymSlotEvent(slot.getTime(), plannedTemplate));
+        if (!gymSkipped) {
+            for (GymScheduleSlotEntity slot : gymScheduleSlotRepository
+                    .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner)) {
+                if (slot.getDayOfWeek() == legacyDayOfWeek) {
+                    events.add(gymSlotEvent(slot.getTime(), plannedTemplate));
+                }
             }
         }
         for (SportScheduleSlotEntity slot : sportScheduleSlotRepository

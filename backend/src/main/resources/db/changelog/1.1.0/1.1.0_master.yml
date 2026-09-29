@@ -167,3 +167,24 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609272300_mezo-d6ivw.12_ai_message_forget.sql
+  - changeSet:
+      id: "1.1.0:202609282100_mezo-mobji_exercise_session_change"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609282100_mezo-mobji_exercise_session_change.sql
+  - changeSet:
+      id: "1.1.0:202609281500_mezo-q4xt2.1_planned_skip"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609281500_mezo-q4xt2.1_planned_skip.sql
+  - changeSet:
+      id: "1.1.0:202609290300_mezo-q4xt2.1_planned_skip_naming"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609290300_mezo-q4xt2.1_planned_skip_naming.sql

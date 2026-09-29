@@ -154,6 +154,145 @@ Today:
 - Contract fragments under `api/feature/*`, generated `api.gen.ts`; CODEMAP regen after every
   merge; `VITE_USE_MOCK=false` explicitly for the real-mode FE gate.
 
+## 8. Spec delta — S1 (2026-09-28, `mezo-q4xt2.1`)
+
+Brainstorm 2026-09-28 (recon: researcher + investigator). Owner answers in bold.
+
+### 8.1 Decisions
+1. **Which occurrences can be skipped: today, the rest of the current week ahead, and the
+   last 7 days retroactively** (owner: "harmadik"). A retro skip turns a past "Kimaradt"
+   occurrence into "Kihagytam · <ok>", so a forgotten sick day stops reading as a miss.
+   Window: `today-7 ≤ date ≤ Sunday of the current ISO week` (Europe/Budapest); the server
+   rejects dates outside it (400).
+2. **`OTHER` (Egyéb) and `NONE` (Most nem mondom) are soft until S4** (owner: "mehet").
+   S4's classifier may later re-categorise an `OTHER` row (the rule is read-time, so a
+   re-categorisation retro-fixes every stat).
+3. **Skip first, reason after** (Runna / TrainerRoad): "Kihagyom" writes the skip at once
+   (category `NONE`), then the reason sheet opens; picking a chip updates the same row;
+   "Most nem mondom" closes it. A double tap is idempotent (upsert under a per-user lock).
+4. **The skipped occurrence stays visible, muted**, with "Kihagyva · <ok>" and a
+   **Visszavonom** action on the card itself (persistent undo, no expiring snackbar only).
+   Undo = soft delete; the occurrence returns to its normal state.
+5. **Counting rule (read-time, in code — `PlannedSkipPolicy`):**
+   - serious (`ILLNESS, STOMACH, INJURY, TRAVEL`) → never counts as missed;
+   - soft (`TIRED, NO_TIME, NO_MOOD, OTHER, NONE`) → the **first soft skip of the ISO week
+     (gym + sport together, ordered by `created_at`) is covered by the free pass**; later
+     soft skips count as missed (copy stays reproach-free).
+   - Free pass shown as one quiet line in the reason sheet when it applies ("Ezt a heti
+     szabadjegyed fedezi — a sorozatod marad.") and as a small mark on the muted card. No
+     separate popup (Duolingo pattern, own sprite icon).
+   - "Excused" = serious or pass-covered. Excused skips leave the planned count; counted
+     skips stay as planned-but-not-done (exactly today's behaviour for a miss).
+6. **Streak (`TrainingStreakCalculator`, week-based):** a week with no session but ≥1 excused
+   skip is **bridged**: it neither breaks nor extends the streak.
+7. **Quest / habit:** a gym day whose gym is skipped (any category) is treated as a rest day
+   by `QuestSelector`; `training_done_today` stays done-only (no neutral tick in S1).
+8. **Programme:** a single skip never shifts the mesocycle (calendar-based today, unchanged);
+   the length-based rule is S2's.
+9. **Surfaces (Edzés domain):** Mai gym hero (a secondary "Kihagyom" beside
+   *Indítsuk*; not shown once the workout is done or in progress), non-today gym
+   `TodaySessionCard`s and every sport `TodaySessionCard` (planned / today / missed states) get
+   "Kihagyom" (past: "Kihagytam"); the Heti agenda shows skipped rows muted. The Nap timeline,
+   day orb, notifications and Fuel week keep **hiding** a skipped occurrence (they plan the
+   day; unchanged behaviour, now for gym too).
+10. **Running sessions are in S1 too** (owner, 2026-09-28, after the prototype: "igen"): a
+    prescribed run of the active running block gets the same "Kihagyom / Kihagytam" and
+    counting rule; kind `RUN`, keyed by `(date, session_key)`.
+11. **Prototype + icons approved** (owner, 2026-09-28: "tetszik"). **Two new sprite icons:** `t-ill` (thermometer) for ILLNESS, `t-travel` (suitcase) for
+    TRAVEL; the rest reuse `t-digestion, t-pain, t-rested, t-clock, t-mood, t-other`, the
+    button uses `t-skip`.
+
+### 8.2 Architecture
+- **One table `planned_skip`** (Liquibase, `1.1.0`): `id, created_by, is_deleted, created_at,
+  updated_at, date, kind (GYM|SPORT|RUN), day_of_week smallint null (0=Hét..6=Vas, SPORT only),
+  time varchar(5) null (SPORT only), session_key varchar(64) null (RUN only), reason_category varchar + CHECK, reason_text text null`;
+  partial unique index `(created_by, kind, date, coalesce(day_of_week,-1), coalesce(time,''),
+  coalesce(session_key,''))`
+  `where is_deleted = false`. **`sport_slot_skip` stays** (planning refinement 2026-09-28): the
+  advice writer keeps writing it, and the central read is the **union** of both tables — an
+  advice row reads as `SPORT / NONE / source=ADVICE`, always excused (the coach proposed it),
+  and is undoable through the same DELETE. `SportSlotSkipService.isSkipped/skipsBetween` answer
+  the union, so its 5 backend readers become user-skip-aware with no change of their own. No
+  data migration, no populator churn.
+- **Central read** in train: `PlannedSkipService` — `skipsBetween(user, from, to)`,
+  `isGymSkipped(user, date)`, `isSportSkipped(user, date, dow, time)`,
+  `excusedDates…` via `PlannedSkipPolicy`. Every consumer in §6 + the recon list goes through
+  it; S2's kímélő range extends this same service ("protected" dates), S3 adds `MEAL`.
+- **API** (fragment `api/feature/train/train-skip.yml`): `GET /api/train/skips?from&to`,
+  `PUT /api/train/skips` (upsert `{date, kind, dayOfWeek?, time?, sessionKey?, reasonCategory, reasonText?}`
+  → skip DTO incl. `excused`, `freePass`), `DELETE /api/train/skips/{id}` (undo). The old
+  `GET /api/train/sport-slot-skips` stays (facade) until its FE readers migrate in this slice.
+- **Gym "planned" callers** get a skip-aware path (`findPlannedTemplateForDate` itself stays
+  pure so `getToday` still resolves a skipped day for undo).
+- **FE:** `data/train/skipHooks.ts` (dual-mode, readiness pattern), `features/train/sheets/
+  SkipReasonSheet.tsx` (glass sheet, 8 chips + Egyéb text/dictation + Most nem mondom),
+  `isSportSlotSkipped` readers switched to the new query (range, not current week only).
+- Not switch-gated (plain CRUD, like readiness); no LLM in S1.
+
+### 8.3 Out of S1
+Kímélő mód and duration chip (S2); meals (S3); AI for Egyéb, memory, repeated "nincs kedvem"
+nudge (S4); one-off `sport_event` skips; the advice card's "applied" state reflecting a user
+undo.
+
+### 8.4 Prior art (S1-specific, researcher 2026-09-28)
+- Runna — persistent "Skipped" state is the undo: https://support.runna.com/en/articles/15012850-how-and-when-to-skip-a-run-managing-missed-sessions-in-your-training-plan — *adopted* (8.1.4); overflow-menu hiding *rejected*.
+- TrainerRoad — skip needs no reason, reason optional afterwards: https://www.trainerroad.com/blog/how-trainerroads-personalized-training-plans-adapt-to-interruptions-and-time-off/ — *adopted* (8.1.3).
+- Garmin Coach — no undo once the day passed: https://forums.garmin.com/sports-fitness/running-multisport/f/forerunner-945/251132/daily-suggested-workout-skipping-missing-a-training — *rejected* (retro window 8.1.1); escalate-after-repeats → S2/S4.
+- Duolingo streak freeze — quiet day mark, count holds: https://duolingo.deconstructoroffun.com/mechanics/streaks — *adopted* (8.1.5–6), inline line instead of silence.
+- No documented skipped-in-week-view style found; muted row + label chosen, strikethrough rejected (reads as deleted).
+
+### 8.5 Codebase terrain (investigator 2026-09-28) — corrections to §6/§7
+- **Stale §7:** the streak fix shipped (`mezo-iz4kt`): `TrainingStreakCalculator` uses
+  `findCompletedInstanceDates`.
+- `sport_slot_skip` has **no undo** and **no REST writer**; the advisory lock belongs to the
+  caller (`AdviceApplyService`), writer `proactive/service/SportSlotSkipAdapter.java:44`.
+- FE readers all go through `isSportSlotSkipped` (`features/train/logic/weekAgenda.ts:35`):
+  weekAgenda, buildProtocol, useDayOrbFill, todayHooks, recapHooks, fuelWeekHooks,
+  timelineHooks/deriveBlocks, stackDayHooks, notificationScheduleWriter, NotificationsPage,
+  TrainTodayPage; the hook (`trainHooks.ts:221`) fetches the current week only.
+- Backend sport readers: `WorkoutWindowQueryService:108,211,293`, `AnchorResolver:194`,
+  `PlanFeasibilityCalculator:134`, `TrainTools:410`, `ContextSnapshotAssembler:420`.
+- Gym planned/missed sites: `MissedWorkoutsRule:92` (uses `gym_schedule_slot`),
+  `TrainingCommitmentCalculator:32-48`, `MesocycleReportService:205-216`,
+  `QuestSelector:53,74`, `HabitEvaluator:90`, `AnchorResolver:182`, `TrainTools:372`,
+  `ContextSnapshotAssembler:399`, `ProactiveMemoryBlock:145`, `ProactiveChallengeService:59`,
+  `JointOveruseRule:83`, `WorkoutWindowQueryService:137`, `ReadinessService:104`.
+  "Insights weekly counts" (§6) has no site — dropped.
+- Two "planned gym" sources (`gym_schedule_slot` vs meso day labels) — a date-keyed GYM skip
+  covers both. Template: readiness (`202609272130_mezo-ck2_readiness_choice.sql`,
+  `ReadinessService:77/94`, `train-readiness.yml`, `data/train/readinessHooks.ts`); its
+  double-tap race (no lock → 500) must not be copied.
+
 ## Slice lessons
 
 (appended by each slice session)
+
+### S1 (2026-09-29, `mezo-q4xt2.1`)
+
+1. **The central read is `PlannedSkipService.verdictsBetween`** (train). It unions `planned_skip`
+   with the legacy advice table `sport_slot_skip`; a USER SPORT row wins over its ADVICE twin and
+   is judged `adviceBacked` (excused, no free pass, out of the pass race). S2's protected ranges
+   and S3's `MEAL` extend this one method — never add a second "is it skipped?" read.
+2. **Verdicts are read-time and need whole ISO weeks.** `verdictsBetween` widens to Mon–Sun before
+   `PlannedSkipPolicy.judge`; changing a reason never touches `created_at`, so it cannot move the
+   free pass. The FE `judge()` in `plannedSkips.ts` is a mock-only mirror of the Java policy.
+3. **"Planned gym" has more consumers than `findPlannedTemplateForDate` callers.** Switching to
+   `findPlannedTemplateForDateUnlessSkipped` was not enough: `AnchorResolver` (generic "Edzés"
+   anchor from a bare gym slot) and `WorkoutWindowQueryService` (gym + run windows that feed Fuel
+   meal scoring and the meal coach) needed their own checks, as did the companion day lines for
+   runs. `getToday` stays skip-blind on purpose (undo needs it).
+4. **Counting consumers:** streak bridges a week with ≥1 excused skip; commitment and the
+   missed-workouts flag drop excused days (a trained day beats a skip); meso adherence subtracts
+   only excused skips that fall on a non-empty template day, and `completionPct` stays uncapped.
+5. **FE:** one query (`usePlannedSkips`, window today−7…Sunday) feeds `useTrain().plannedSkips`;
+   `deriveBlocks` covers the Nap timeline, stack, notifications and their writer; `todayHooks`,
+   `useDayOrbFill`, `recapHooks`, `fuelWeekHooks` have their own gym/run logic and were patched
+   individually. Shared query keys live in `data/train/queryKeys.ts` (breaks a hooks cycle).
+   Real-mode skip writes invalidate week workouts, streak/progression, meso report, quests and
+   the Fuel day.
+6. **New sprite icons go into `docs/design_2.0/assets/titanium-custom.svg` + the generator** — a
+   guard test rejects hand-pasting into the generated sprite outputs.
+7. **Living prototypes are shared by parallel sessions.** The Edzés artifact was republished by
+   another slice after ours; always `read` before publishing and merge, never overwrite.
+8. Backend ITs: the fixed local DB had a drifted changeset; run every IT with
+   `-Dmezo.test.use-testcontainers=true`.

@@ -78,6 +78,26 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [`fuel.md`](../features/fuel.md) §4–§5/§8–§9 · [`goal-engine.md`](../features/goal-engine.md) §3
   · [`train.md`](../features/train.md) (energia kártya) · [`me.md`](../features/me.md) (TDEE
   felirat).
+- **2026-09-29 — Kihagyás S1 shipped (`mezo-q4xt2.1`).** Egy koppintással kihagyható egy tervezett
+  edzésnap, egy sport-alkalom vagy egy futás, opcionális okkal — soha nem hazug „megvan”, soha nem
+  néma „elmaradt”. Az Edzés Mai fülön „Kihagyom” (kihagyás után azonnal a „Miért?” lap: 8 ok-gomb +
+  Egyéb szöveg/mikrofon, „Most nem mondom”), a kihagyott kártya tompítva marad, „Kihagyva · ‹ok›” +
+  állandó „Visszavonom”. Komoly ok (betegség, gyomorrontás, sérülés, utazás) sosem számít
+  mulasztásnak; puha oknál (fáradt, nincs idő, nincs kedv, egyéb) a hét első ilyen kihagyását egy
+  heti szabadjegy fedezi, a sorozat nem szakad meg. A tervező felületek (Nap napló, nap-gömb, Fuel,
+  értesítések) a kihagyott edzést/sportot/futást ugyanúgy elrejtik, mint eddig a sportot. Backend:
+  új `planned_skip` tábla + `PlannedSkipService` központi olvasás (egyesítve a meglévő coach-oldali
+  kihagyás-táblával) + `/api/train/skips`. Két új ikon: `t-ill`, `t-travel`. Dokumentáció:
+  [`train.md`](../features/train.md) "Kihagyás (S1)". Élő prototípus: [`edzes.html`](../design_2.0/prototypes/elo/edzes.html).
+- **2026-09-29 — Edzés közben gyakorlat csere és hozzáadás (`mezo-mobji`).** Edzés közben a
+  gyakorlat ⋮ menüjéből lecserélhető egy gyakorlat (felül a hasonló izomra ható javaslatokkal), a
+  lista alján pedig új gyakorlat adható hozzá; mindkettőnél egy koppintással dönthető el, hogy
+  „Csak ma” vagy „Mezociklusra is” (a mezociklus hátralévő heteire, a mentett sablon nélkül). Ha
+  a gyakorlatból már van kész szett, az a régin marad, a hátralévők az újé. A változás a szerveren
+  él (újratöltés után is megvan, az összesítőben is látszik); a „Mezociklusra is” úgy írja a
+  tervet, hogy a futó edzés gyakorlatainak azonosítója nem változik — ugyanerre az útra került át
+  a „Szett hozzáadása → Minden hétre” is, amely korábban az egész napot újraírta. Két új 3D ikon
+  (csere, hozzáadás). Spec: `docs/superpowers/specs/2026-09-28-workout-exercise-swap-add-design.md`.
 - **2026-09-28 — A chat memóriája legyen látható és őszinte (S8, `mezo-d6ivw.12`).** A beszélgetés
   ezentúl elárulja, mit tanult, mit javasol, kire emlékszik és mit felejtett el — egy megjegyezett
   személy-tényhez „Megjegyeztem: … Visszavonom" chip jár, egy owner-tény javaslathoz „Megjegyezném:

@@ -78,9 +78,10 @@ public class JointOveruseRule implements FlagRule {
         }
 
         LocalDate tomorrow = today.plusDays(1);
-        // findPlannedTemplateForDate is a READ — never getToday, which WRITES on every call.
+        // findPlannedTemplateForDateUnlessSkipped is a READ — never getToday, which WRITES on
+        // every call. Kihagyás S1: a skipped tomorrow carries no muscle to flag.
         WorkoutSessionEntity planned =
-            workoutService.findPlannedTemplateForDate(userId, tomorrow).orElse(null);
+            workoutService.findPlannedTemplateForDateUnlessSkipped(userId, tomorrow).orElse(null);
         if (planned == null) {
             return FlagVerdict.unavailable(FlagKey.JOINT_OVERUSE,
                 UnavailableReason.NO_PLANNED_SESSION);

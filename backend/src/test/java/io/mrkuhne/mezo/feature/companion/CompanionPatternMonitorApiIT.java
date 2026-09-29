@@ -134,7 +134,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(response.getWindowTo()).isIn(dayBefore.minusDays(1), dayAfter.minusDays(1));
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
-        assertThat(response.getPairs()).hasSize(44); // V3.4 katalógus (8 eredeti + 21 új) + 15 check-in 2.0 (mezo-ck2)
+        assertThat(response.getPairs()).hasSize(45); // V3.4 katalógus (8 eredeti + 21 új) + 16 check-in 2.0 (mezo-ck2 + follow-up B)
         // A teljes V3.4 katalógus a NEM korrelálható kulcsok nélkül (mezo-dqzm: a TEXT_SOCIAL_CONTACT
         // belső jellé lépett vissza, a „társas nap" sorra a SOCIAL_MENTIONS felel).
         long correlatable = Arrays.stream(MetricKey.values()).filter(MetricKey::correlatable).count();

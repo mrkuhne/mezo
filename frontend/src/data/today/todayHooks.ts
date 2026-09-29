@@ -8,6 +8,7 @@ import { useWeight } from '@/data/me/weightHooks'
 import { huMonthDay, huMonthDayDow, huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { isSportSlotSkipped } from '@/features/train/logic/weekAgenda'
+import { isSkipped } from '@/features/train/logic/plannedSkips'
 import {
   today,
   user,
@@ -133,14 +134,17 @@ export function useToday(): TodayData {
   // agenda — only entries actually flagged `today` can match (a future weekday's session has no
   // ISO date to compare here), matched on today's weekday index + the slot's own time.
   const volleyballSessionsReal = (train.sport.schedule?.volleyball.sessions ?? []).filter(
-    (s) => !(s.today && isSportSlotSkipped(train.sportSlotSkips, todayIdx(now), s.time, todayIso)),
+    (s) => !(s.today && isSportSlotSkipped(train.plannedSkips, todayIdx(now), s.time, todayIso)),
   )
+  // A gym day the user skipped (Kihagyás S1, mezo-q4xt2.1) is no longer today's plan: the teaser
+  // stands down exactly as on a rest day. A trained day wins over a skip (done/open instance).
+  const gymSkipped = !doneWorkout && !openWorkout && isSkipped(train.plannedSkips, { kind: 'GYM', date: todayIso })
   return {
     today: {
       dayLabel: huWeekdayFull(now),
       dateLabel: huMonthDay(localDateString(now)),
-      workoutType: train.workout?.title ?? '',
-      workoutTime: gymToday?.time ?? '',
+      workoutType: gymSkipped ? '' : train.workout?.title ?? '',
+      workoutTime: gymSkipped ? '' : gymToday?.time ?? '',
       mesoPhase: meso?.phaseCurve?.[meso.currentWeek - 1] ?? '',
     },
     // Only the meso-derived fields go real here; the identity statics (name/handle/...) are
@@ -151,8 +155,8 @@ export function useToday(): TodayData {
       dayInWeek: ((now.getDay() + 6) % 7) + 1,
       mesoLabel: meso?.title ?? '',
     },
-    workout: train.workout,
-    workoutTime: gymToday?.time ?? null,
+    workout: gymSkipped ? null : train.workout,
+    workoutTime: gymSkipped ? null : gymToday?.time ?? null,
     workoutDone: Boolean(doneWorkout),
     workoutDoneSets: doneWorkout ? doneWorkout.sets.filter((s) => !s.skipped).length : null,
     workoutInProgress: Boolean(openWorkout),

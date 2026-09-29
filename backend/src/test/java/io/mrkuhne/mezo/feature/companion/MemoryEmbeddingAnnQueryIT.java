@@ -38,6 +38,9 @@ class MemoryEmbeddingAnnQueryIT extends AbstractIntegrationTest {
     @Autowired private MemoryEmbeddingPopulator memoryEmbeddingPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private TransactionTemplate transactionTemplate;
+    @Autowired private io.mrkuhne.mezo.support.populator.AiConversationPopulator conversations;
+    @Autowired private io.mrkuhne.mezo.support.populator.AiMessagePopulator messages;
+    @Autowired private io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository messageRepository;
 
     private static String literal(int axis) {
         return MemoryEmbeddingRepository.toVectorLiteral(MemoryEmbeddingPopulator.axisVector(axis));
@@ -136,5 +139,28 @@ class MemoryEmbeddingAnnQueryIT extends AbstractIntegrationTest {
         // (3) …and the transaction COMMITTED: a poisoned one dies here with UnexpectedRollbackException
         assertThat(memoryEmbeddingRepository.countByCreatedByAndKind(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN))
             .isEqualTo(2);
+    }
+
+    /** mezo-tdabt: a chat_turn row whose paired USER message was forgotten (extraction_blocked) is
+     *  never recalled; the unforgotten turn — same geometry — still is. */
+    @Test
+    void testNearestInKinds_shouldExcludeChatTurn_whenItsPairedUserMessageIsBlocked() {
+        UUID owner = userPopulator.createUser().getId();
+        var forgottenConversation = conversations.conversation(owner);
+        var forgottenUser = messages.message(forgottenConversation, "user", "titok");
+        var forgottenAssistant = messages.message(forgottenConversation, "assistant", "rendben");
+        forgottenUser.setExtractionBlocked(true);
+        messageRepository.saveAndFlush(forgottenUser);
+        var keptConversation = conversations.conversation(owner);
+        messages.message(keptConversation, "user", "nyilvános");
+        var keptAssistant = messages.message(keptConversation, "assistant", "szuper");
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN,
+            forgottenAssistant.getId(), "titok", DAY, MemoryEmbeddingPopulator.axisVector(0));
+        MemoryEmbeddingEntity kept = memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN,
+            keptAssistant.getId(), "nyilvános", DAY, MemoryEmbeddingPopulator.axisVector(0));
+
+        List<Hit> hits = annQuery.nearestInKinds(owner, List.of(MemoryEmbeddingEntity.KIND_CHAT_TURN), literal(0), 10);
+
+        assertThat(hits).extracting(Hit::id).containsExactly(kept.getId());
     }
 }

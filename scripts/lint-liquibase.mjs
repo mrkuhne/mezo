@@ -45,6 +45,9 @@ const GRANDFATHERED = {
   // mezo-d6ivw.5: released (deployed) with an ix_ index; 202609270230_mezo-d6ivw.5_proactive_memory_use_naming.sql
   // renames it in the live schema.
   '202609261600_mezo-d6ivw.5_proactive_memory_use.sql': new Set(['index-prefix']),
+  // mezo-q4xt2.1: released (deployed) with an ix_ index; 202609290300_mezo-q4xt2.1_planned_skip_naming.sql
+  // renames it in the live schema.
+  '202609281500_mezo-q4xt2.1_planned_skip.sql': new Set(['index-prefix']),
 };
 
 // `(?:\.\d+)*` (zero or more), not `?` (at most one): CLAUDE.md mandates the

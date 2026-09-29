@@ -11,6 +11,9 @@
 // Üveg (U10, mezo-me75u.10, `uveg-reteg` `SH.ex`): a coral glass sheet, the dumbbell 3D head with
 // the lit „Kész" pill, a flat search field, flat filter chips (the active one lit), exercise rows
 // as hairline-split flat rows with the coral + ring; a pick shows „Hozzáadva" with the tick icon.
+// Mid-workout swap/add (mezo-mobji): `mode="single"` closes on the first pick, and `similarTo`
+// puts a „Hasonló gyakorlatok" strip (same muscle first, then the same region) above the list;
+// `excludeNames` hides what the session already holds.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -26,16 +29,40 @@ import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
 import { VideoDemo } from '@/features/train/components/VideoDemo'
 import { ExerciseImage } from '@/features/train/components/ExerciseImage'
+import { muscleRegion } from '@/features/train/logic/muscleColors'
 
 interface ExercisePickerSheetProps {
   onClose: () => void
   onPick: (item: ExerciseLibraryItem) => void
   /** Context line for the header, e.g. "Csü · Pull" — which day receives the picks. */
   dayLabel?: string
+  /** 'single' closes on the first pick (mid-workout swap/add); 'multi' (default) stays open. */
+  mode?: 'multi' | 'single'
+  /** Header overrides for the single-pick uses. */
+  eyebrow?: string
+  title?: string
+  /** The muscle the „Hasonló gyakorlatok" strip matches (a swap's replaced exercise). */
+  similarTo?: string
+  /** Exercise names hidden from every list (already in the session). */
+  excludeNames?: string[]
 }
 
-export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePickerSheetProps) {
-  const { exerciseLibrary } = useTrain()
+/** Up to four library items for a swap: the same muscle first, then the same region. */
+export function similarExercises(library: ExerciseLibraryItem[], muscle: string, exclude: Set<string>): ExerciseLibraryItem[] {
+  const free = library.filter((e) => !exclude.has(e.name))
+  const region = muscleRegion(muscle)
+  const same = free.filter((e) => e.muscle === muscle)
+  const near = region ? free.filter((e) => e.muscle !== muscle && muscleRegion(e.muscle) === region) : []
+  return [...same, ...near].slice(0, 4)
+}
+
+export function ExercisePickerSheet({
+  onClose, onPick, dayLabel, mode = 'multi', eyebrow, title, similarTo, excludeNames,
+}: ExercisePickerSheetProps) {
+  const { exerciseLibrary: fullLibrary } = useTrain()
+  const excluded = new Set(excludeNames ?? [])
+  const exerciseLibrary = excluded.size ? fullLibrary.filter((e) => !excluded.has(e.name)) : fullLibrary
+  const single = mode === 'single'
   // Two-level filter: top = 'all'|'plyo'|region, sub = a muscle token within a region (or null).
   const [top, setTop] = useState<TopFilter>('all')
   const [sub, setSub] = useState<string | null>(null)
@@ -49,6 +76,8 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
 
   const subs = subMuscles(top)
 
+  const similar = similarTo && search === '' ? similarExercises(fullLibrary, similarTo, excluded) : []
+
   const filtered = exerciseLibrary.filter(
     (e) =>
       matchesMuscleFilter(e.muscle, e.type, top, sub) &&
@@ -61,11 +90,11 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
         <div className="uvl-body">
           <SheetHead
             icon="t-dumbbell"
-            eyebrow={`Gyakorlat választás${dayLabel ? ` · ${dayLabel}` : ''}`}
-            title="Mit pakolunk be?"
+            eyebrow={eyebrow ?? `Gyakorlat választás${dayLabel ? ` · ${dayLabel}` : ''}`}
+            title={title ?? 'Mit pakolunk be?'}
             titleId="exercise-picker-title"
-            sub={addedCount > 0 ? <span className="uvl-shh-count">{addedCount} hozzáadva</span> : undefined}
-            action={(
+            sub={!single && addedCount > 0 ? <span className="uvl-shh-count">{addedCount} hozzáadva</span> : undefined}
+            action={single ? undefined : (
               <button type="button" className="uvl-cta is-sm" onClick={close}>
                 Kész{addedCount > 0 ? ` · ${addedCount}` : ''}
               </button>
@@ -82,6 +111,25 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
               onChange={(e) => setSearch(e.target.value)}
             />
           </label>
+
+          {similar.length > 0 && (
+            <>
+              <span className="uvl-subh">Hasonló gyakorlatok</span>
+              <div className="uvl-exlist is-similar" role="group" aria-label="Hasonló gyakorlatok">
+                {similar.map((e) => (
+                  <button key={e.id} type="button" className="uvl-exrow" onClick={() => { onPick(e); close() }}>
+                    <ExerciseImage start={e.imageStartUrl} end={e.imageEndUrl} name={e.name} muscle={e.muscle} variant="thumb" />
+                    <span className="uvl-exrow-t">
+                      <strong>{e.name}</strong>
+                      <small>{MUSCLE_LABELS[e.muscle] ?? e.muscle} · {e.type}</small>
+                    </span>
+                    <em className="uvl-exrow-add" aria-hidden="true">›</em>
+                  </button>
+                ))}
+              </div>
+              <span className="uvl-subh">Összes gyakorlat</span>
+            </>
+          )}
 
           {/* Muscle filter — level 1: régiók */}
           <div className="uvl-chips is-scroll">
@@ -123,6 +171,10 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                   type="button"
                   onClick={() => {
                     onPick(e)
+                    if (single) {
+                      close()
+                      return
+                    }
                     setAddedCount((c) => c + 1)
                     setFlashId(e.id)
                     if (flashTimer.current) clearTimeout(flashTimer.current)

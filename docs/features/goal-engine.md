@@ -422,10 +422,10 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - `engine/service/ExpenditureExplainer.java` + `entity/ExpenditureExplanationJson.java` — the pure „Hogy tanultam?” explanation built in the weekly run and persisted on the row (`mezo-y72o3`).
 - `engine/service/IntakeDayClassifier.java` — pure day classification (usable/unlogged/suspicious/marked), the served-target fallback reference.
 - `engine/service/ExpenditureStepPolicy.java` — the pure weekly step (hedge/confirm, dead band, holding, rails, confidence).
-- `engine/service/ExpenditureLearningService.java` — the `@Transactional` weekly orchestrator (`reviewWeek`): gathers the window, classifies, filters, decides the step, upserts, supersedes the open `weekly_correction`, recomputes the goal.
+- `engine/service/ExpenditureLearningService.java` — the `@Transactional` weekly orchestrator (`reviewWeek`): gathers the window, classifies, filters, decides the step, upserts (the explanation best-effort — an explainer failure stores `null`, never rolls back the decision), supersedes the open `weekly_correction`, recomputes the goal; plus `backfillExplanation` (explain-only, `mezo-y72o3`).
 - `engine/service/LearnedBaseResolver.java` — serves the applied base as `neatBaselineKcal`, re-railed against today's formula (§3's ONE served-target rule).
 - `engine/port/DailyIntakePort.java` (impl `../../meal/service/GoalDailyIntakeAdapter.java`) — per-day kcal + carbs off `FuelDayService` (§5).
-- `../ExpenditureRolloutRunner.java` (`feature/goal/`) — the all-profiles, idempotent deploy-rollout runner, `@Order(208)` (§3).
+- `../ExpenditureRolloutRunner.java` (`feature/goal/`) — the all-profiles, idempotent deploy-rollout runner, `@Order(208)` (§3): first-estimate replay for new learners + explain-only backfill of `explanation = null` rows; skipped entirely when `expenditure.enabled` is off.
 - `entity/ExpenditureEstimateEntity.java` + `repository/ExpenditureEstimateRepository.java` + `entity/ExcludedIntakeDayJson.java` — the weekly persistence (§4).
 - `backend/src/main/resources/db/changelog/1.1.0/script/202609262200_mezo-zz91i_expenditure_estimate.sql` — the new-table migration.
 - `entity/TdeeBootstrapJson.java`'s `baseSource`/`formulaNeatBaselineKcal`/`learnedSdKcal`/`learnedConfidence` fields + `learned()` helper; `engine/service/GoalProjectionService.java`'s `dailyEnergyBalance` — skips `balanceAdjustmentKcal` while `bootstrap.learned()` (§3/§4).

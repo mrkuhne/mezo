@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +86,25 @@ public class MentionDetectionService {
             }
         }
         return written;
+    }
+
+    /**
+     * mezo-tdabt ("ezt ne jegyezd meg" really forgets): soft-deletes every live mention written from
+     * the given source refs — the chat forget passes the forgotten USER message ids with
+     * {@code chat_turn}. The ✕ idiom ({@code @SQLDelete}), so {@link #detect}'s including-deleted
+     * dedup never resurrects them; the daily summary and the person page read live rows only.
+     * Participates in the caller's transaction: the forget is all-or-nothing.
+     */
+    @Transactional
+    public int forgetBySourceRefs(UUID userId, String sourceRefKind, Collection<UUID> sourceRefIds) {
+        if (sourceRefIds == null || sourceRefIds.isEmpty()) {
+            return 0;
+        }
+        List<MentionEntity> rows = mentionRepository
+                .findByCreatedByAndSourceRefKindAndSourceRefIdInAndDeletedFalse(userId, sourceRefKind, sourceRefIds);
+        mentionRepository.deleteAll(rows);
+        mentionRepository.flush();
+        return rows.size();
     }
 
     /**

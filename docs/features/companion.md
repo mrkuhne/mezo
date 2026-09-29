@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-09-28 — fact-text sentence split (`mezo-d6ivw.12` fix).** `FactTextComposer` no longer ends a sentence at a Hungarian abbreviation: a `.`/`!`/`?`/`…` + space is a boundary only when the next token starts uppercase (or an opening quote + uppercase) and the word before it is not in its `ABBREVIATIONS` set (`pl`, `kb`, `stb`, `ill`, `ún`, …). Before, „pl.” cut the composed fact text mid-parenthesis. (Doc note added with `mezo-mobji`, which found the doc stale.)
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One shared renderer, `CheckInText` (biometrics), now prints every answered check-in item for the chat snapshot (latest row + a „ma korábban" line of today's other slots), the daily summary, the `get_recovery` tool (`scope=checkins`) and the meal coach; `PersonalRecordSource` exposes the new `check_in` columns. Flags: four new rules (`persistent_pain`, `poor_restedness`, `craving_streak`, `motivation_slump`) and two widened (`acute_bad_day` + mood/pain, `recovery_needed` + rested/soreness arm). Patterns: ten new `MetricKey`s and fifteen new pairs. `DayScoreService` counts a check-in as filled only when legacy / quick exit / core answered; `MeWeekService` adds the mood average. Details: §5.5 „Check-in 2.0 feeds", §4 flag table, the pattern-catalog block „Check-in 2.0 extended the catalog". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
 
@@ -105,7 +107,7 @@ The sections below describe its current behavior and the supporting components.
   renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
   snapshot's `Ma (terv):`/`Holnap (terv):`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
   and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
-  The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
+  Since Kihagyás S1 (`mezo-q4xt2.1`) both call sites read `findPlannedTemplateForDateUnlessSkipped`, so a gym day the owner skipped renders as `pihenőnap` here too (and a skipped prescribed run is left out of the day line via `PlannedSkipService.isRunSkipped`) — see [`train.md`](train.md) "Kihagyás (S1)". The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
   is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
   `gym (<day label>): <exercises>`. Sharing it is what the drift cost: the criterion used to be
   duplicated in `TrainTools.dayContentLine` and `ContextSnapshotAssembler.dayLine`, the snapshot's
@@ -785,10 +787,20 @@ COMPLETE (all 14 slices):**
   `gym-workload~next-day-checkin-soreness`, `training-monotony~checkin-motivation`,
   `sleep-quality~checkin-motivation`, `social-mentions~checkin-mood`, `habits-done~checkin-mood`,
   `daily-xp~checkin-mood`, `checkin-mood~checkin-day`, `meal-score~checkin-digestion`,
-  `social-mentions~checkin-connection`. **Deviations from spec §3.8:** `day-score~checkin-day` is
-  skipped (the day score is not a `MetricKey` series), and `meal-processing~checkin-digestion` is
-  realised as `meal-score~checkin-digestion` (no separate NOVA-share metric; the meal score weighs
-  NOVA). The existing `*~checkin-mental` pairs stay (clarity is still a real series).
+  `social-mentions~checkin-connection`. The existing `*~checkin-mental` pairs stay (clarity is
+  still a real series).
+- **Follow-up B (2026-09-28) — the two spec pairs, now real, and one lag fix** (catalog = 45 pairs):
+  two new `MetricKey`s — `day-score` (`DAY_SCORE`: `DayEvaluationEngine`'s `base()` via
+  `DayScoreService.scores`, CLOSED days only — `to` is clamped to yesterday; a null base is no
+  point; resolved through an `ObjectProvider` because `DayScoreService` itself reads
+  `MetricSeriesService`) and `nova4-kcal-pct` (`NOVA4_KCAL_PCT`: NOVA-4 share, 0–100 %, of the
+  day's NOVA-classified snapshot kcal — `ComfortEatingDetector`'s proxy with its ≥ 70 % coverage
+  gate, `MetricSeriesService.NOVA_MIN_COVERAGE`; `MetricSeriesFollowupIT`). Pairs
+  `day-score~checkin-day` („Egyezik az app pontszáma azzal, ahogy te értékeled a napot?") and
+  `nova4-kcal~checkin-digestion` were added; the `meal-score~checkin-digestion` stand-in was
+  **dropped** (redundant — the NOVA share is exactly what the score only approximated;
+  `meal-score~checkin-craving` stays). `sleep-duration~next-day-checkin-craving` (lag 1) was
+  re-keyed **`sleep-duration~checkin-craving`, lag 0** — see §9.
 
 **V3.4 (`mezo-6ha5`) shipped the catalog expansion + AI-context enrichment (spec:
 `2026-08-11-pattern-catalog-expansion-design.md`):**
@@ -4206,6 +4218,25 @@ around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.
   message is never re-read and re-saved in other words (`PersonFactService.capture` only drops exact
   normalized repeats). The other day-level readers were checked: weekly review lessons and life-event
   extraction never read chat; character signals read chat timestamps only.
+- **Forget really forgets — every memory channel** (`mezo-tdabt`): a chat turn whose USER message
+  is `extraction_blocked` is gone from recall, not only from extraction. The pairing is the
+  `chat_turn` projection's own (`MemorySourceVisibilitySql.forgottenTurn`: the latest live
+  `role='user'` row of the conversation with `created_at <=` the assistant row's, ties by id).
+  Unified recall (`LexicalMemoryQuery`, `DenseMemoryQuery`, `PersonalRecordQuery`'s `memory_item`)
+  hides it through `MemorySourceVisibilitySql.predicate`; `MemorySourceRepairQuery` treats the pair
+  as not-live, so the nightly sweep's `orphaned()` suppresses the projected item and `changed()`
+  never re-projects it. Legacy pgvector: `MemoryEmbeddingAnnQuery` excludes such `chat_turn` rows,
+  `TurnEmbeddingListener` skips a blocked event and `MemoryEmbeddingWriter.embedTurnByMessageId`
+  (live + catch-up) never embeds a forgotten turn. People: `ChatMentionListener` skips a blocked
+  event and re-checks the row under `MessageExtractionGate` (FOR SHARE) in the write transaction;
+  `ChatForgetService` (both routes, after the block) calls
+  `MentionDetectionService.forgetBySourceRefs(user, "chat_turn", ids)` — soft-delete, so the daily
+  summary and the person page stop quoting it and detect's including-deleted dedup never revives
+  it. Raw reads (`PersonalRecordQuery` `ai_message`: the LLM personal-record tool and the
+  reflection evidence of `ObservationContextService`) hide the blocked user row AND its paired
+  assistant reply. Not covered: the conversation's own history window, and daily summaries
+  written before the forget. Pinned by `ChatForgetRecallIT`, `ChatMentionListenerIT`,
+  `MemoryEmbeddingAnnQueryIT`.
 
 ## 4. Data model & API
 
@@ -9036,14 +9067,32 @@ reduced-motion branch) cover the FE surface — full detail: [`insights.md`](ins
 
 **Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a
 value in any rule, metric or renderer (legacy rows are read as-is). `persistent_pain` offers
-the general `lighten_tomorrow` action (like `joint_overuse`); narrowing it to „only when a planned
-exercise loads that region" via train's `PainRegionMap` is a possible refinement. `day-score~checkin-day` was skipped (no
-day-score `MetricKey`); `meal-processing~checkin-digestion` became `meal-score~checkin-digestion`.
+`lighten_tomorrow` only when tomorrow's planned session loads the frozen region (follow-up C,
+[`proactive.md`](proactive.md) — `AdviceActionCatalog` × train's `PainRegionMap` ×
+`WorkoutService.plannedMuscleGroups`). `day-score~checkin-day` and `nova4-kcal~checkin-digestion`
+landed in follow-up B (§3); the interim `meal-score~checkin-digestion` was dropped.
 `DayReviewService.contextSignals` carries `hangulat` (CHECKIN_MOOD) and `saját napértékelés`
 (CHECKIN_DAY) when answered, and the prompt tells the review to acknowledge a differing verdict
-without changing the points; A napom also shows the rating next to the score ([`today.md`](today.md)). The question-of-the-day need source is the catch-all
-`AllNonCoreNeedSource`; a companion-side `CheckInNeedSource` (active hypotheses / open pairs) is
-the intended next consumer ([`me.md` §4](me.md)).
+without changing the points; A napom also shows the rating next to the score ([`today.md`](today.md)). The question-of-the-day (follow-up A) now asks what the engine is
+actually waiting on: `HypothesisCheckInNeedSource` (`@Order(1)`, a Reflexió-owned
+`proposed`/`monitoring` row whose test plan reads a `checkin-*` series → „Most egy sejtést
+tesztelünk: „{title}”.") and `PairCheckInNeedSource` (`@Order(3)`, every catalog pair with a
+`CHECKIN_*` side whose statistical row is not confirmed/rejected/refuted/forgotten → „Most azt
+figyeljük: {question}"), with the character detectors in between ([`character.md`](character.md));
+`AllNonCoreNeedSource` is only the fallback ([`me.md` §4](me.md), `CheckInNeedSourcesIT`).
+
+**Sleep pair lags — what `sleep_log.date` means for the catalog (follow-up B finding).**
+`sleep_log.date` is the WAKE-UP morning, so a pair `sleep-* ~ X` at lag 0 already compares a night
+with the day AFTER it, and lag 1 reaches two days past bedtime. The new
+`sleep-duration~next-day-checkin-craving` (lag 1) was therefore off by one and became
+`sleep-duration~checkin-craving` (lag 0; it had no live pattern row yet, so the re-key lost no
+history). The same reading says the pre-existing `sleep-quality~next-day-training-rpe` and
+`sleep-duration~next-day-training-rpe` (lag 1) measure the training two days after bedtime, and
+`checkin-stress~sleep-quality` (lag 0, „aznapi alvás") pairs a day's stress with the night BEFORE
+it. They were deliberately **not** changed here: they are live keys (never renamed) that may carry
+user-judged rows, so re-lagging them changes what a confirmed pattern means — that needs its own
+decision (flagged as a follow-up). `late-meal~next-sleep-quality` (lag 1) and
+`sleep-*~checkin-rested` (lag 0) are correct as they stand.
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
 
@@ -9860,6 +9909,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 **Backend — Check-in 2.0 feeds (`mezo-ck2` — §4 flag table, §5.5)**
 - `flags/service/rule/{PersistentPainRule,PoorRestednessRule,CravingStreakRule,MotivationSlumpRule}.java` (new) + `AcuteBadDayRule`/`RecoveryNeededRule` (widened); wiring in `FlagKey`, `FlagEvaluator`, `FlagCatalog`, `FlagPayloadEnvelope`, `FlagFactRenderer`, `FlagTraceCopy`, `UnavailableReason`, `config/FlagProperties`, `proactive/service/AdvicePriority`; migration `1.1.0/script/202609272148_mezo-ck2_checkin_2_flag_keys.sql`; tests `PersistentPainRuleIT`, `PoorRestednessRuleIT`, `CravingStreakRuleIT`, `MotivationSlumpRuleIT`, `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorMomentumRecoveryIT`, `FlagPropertiesIT`, `service/FlagFactRendererTest`
 - `service/{MetricKey,MetricSeriesService}.java` (10 check-in keys; `MetricSeriesCheckinItemsIT`), `application.yml` pattern pairs (`CompanionPatternMonitorApiIT`, `CompanionPropertiesIT`)
+- Follow-up A/B (2026-09-28): `service/{HypothesisCheckInNeedSource,PairCheckInNeedSource}.java` (question-of-the-day sources; `CheckInNeedSourcesIT`), `DAY_SCORE`/`NOVA4_KCAL_PCT` in `MetricKey` + `MetricSeriesService.{dayScore,nova4KcalPct}` (`MetricSeriesFollowupIT`)
 - `service/ContextSnapshotAssembler.java` (`earlierTodayLine`), `service/DailySummaryService.java`, `tools/BiometricsTools.java`, `repository/PersonalRecordSource.java` — all via `feature/biometrics/checkin/service/CheckInText.java`
 - `service/DayScoreService.java` (`countsAsFilled`, `DayScoreServiceTest`), `service/MeWeekService.java` (`avgCheckinMood`, `MeWeekControllerIT`)
 

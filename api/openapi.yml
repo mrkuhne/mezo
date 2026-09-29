@@ -28,6 +28,14 @@ tags:
       morning check-in read against the gym plan: a "lighter day" suggestion
       with its reasons, the planned exercises a reported pain region loads, and
       the user's per-day choice (lighten / keep). Never automatic.
+  - name: TrainSkip
+    description: >-
+      Kihagyás S1 (mezo-q4xt2.1, spec 2026-09-28 §8) — the user skips one
+      planned occurrence (a gym day, a recurring sport slot occurrence, a
+      prescribed run) with an optional reason. Whether a skip counts as missed
+      is decided at read time: serious reasons never count, the first soft skip
+      of the ISO week is covered by the free pass, coach (advice) skips never
+      count.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -2273,6 +2281,115 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises':
+    post:
+      tags:
+        - Train
+      operationId: changeWorkoutExercise
+      summary: Swap or add an exercise in an active workout (mezo-mobji)
+      description: >-
+        Creates an instance-scoped exercise row for the running workout (scope
+        TODAY), and for scope MESO additionally writes the mesocycle's template
+        day id-stably (one insert, the replaced row soft-deleted) so the change
+        applies from the next session. Returns the refreshed today payload.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutExerciseChangeRequest'
+      responses:
+        '200':
+          description: Change applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutExerciseChangeResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'Workout not active, or the replaced exercise has no plan slot (MESO)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets':
+    post:
+      tags:
+        - Train
+      operationId: addPlanWorkingSets
+      summary: >-
+        Add working sets to an exercise's mesocycle plan without re-creating the
+        day (mezo-mobji)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSetsRequest'
+      responses:
+        '204':
+          description: Plan updated
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The exercise has no plan slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/exercises/{exerciseId}/note':
     put:
       tags:
@@ -2720,6 +2837,114 @@ paths:
                 $ref: '#/components/schemas/ReadinessTodayResponse'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/skips:
+    get:
+      tags:
+        - TrainSkip
+      operationId: listPlannedSkips
+      summary: >-
+        Every skip in [from, to] with its read-time verdict (user skips + coach
+        advice skips)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Skips, date then created ascending'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlannedSkipResponse'
+        '400':
+          description: from after to (TRAIN_INVALID_DATE_RANGE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TrainSkip
+      operationId: upsertPlannedSkip
+      summary: >-
+        Skip one occurrence, or change the reason of an existing skip
+        (idempotent per target)
+      description: >-
+        Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The
+        date must lie in [today-7, Sunday of the current ISO week]
+        (Europe/Budapest). reasonText is kept only for OTHER.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannedSkipRequest'
+      responses:
+        '200':
+          description: The stored skip with its verdict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannedSkipResponse'
+        '400':
+          description: >-
+            Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date
+            outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/skips/{id}':
+    delete:
+      tags:
+        - TrainSkip
+      operationId: undoPlannedSkip
+      summary: Undo a skip ("Visszavonom") — the occurrence is planned again
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Undone
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND)
           content:
             application/json:
               schema:
@@ -15119,6 +15344,31 @@ components:
           description: >-
             RIR-aware overload recommendation; null on first session / switch
             off.
+        changeScope:
+          type: string
+          enum:
+            - TODAY
+            - MESO
+          nullable: true
+          description: >-
+            Set on an exercise swapped/added during the open workout
+            (mezo-mobji).
+        replacesName:
+          type: string
+          nullable: true
+          description: Name of the exercise this one replaced in the open workout.
+        replacedByName:
+          type: string
+          nullable: true
+          description: >-
+            On a swapped-out exercise that keeps its logged sets — the
+            replacement's name.
+        planSlot:
+          type: boolean
+          description: >-
+            Whether a "Mezociklusra is" change may target this exercise (false
+            for rows added only for this workout and for the fixed closing
+            block).
     PrescribedSet:
       type: object
       required:
@@ -15680,6 +15930,87 @@ components:
         note:
           type: string
           maxLength: 500
+    WorkoutExerciseChangeRequest:
+      type: object
+      required:
+        - name
+        - muscle
+        - type
+        - warmupSets
+        - workingSets
+        - repMin
+        - repMax
+        - targetRIR
+        - scope
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        muscle:
+          type: string
+          maxLength: 60
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+            - plyo
+        warmupSets:
+          type: integer
+          minimum: 0
+          maximum: 6
+        workingSets:
+          type: integer
+          minimum: 1
+          maximum: 12
+        repMin:
+          type: integer
+          minimum: 1
+          maximum: 100
+        repMax:
+          type: integer
+          minimum: 1
+          maximum: 100
+        targetRIR:
+          type: integer
+          minimum: 0
+          maximum: 5
+        scope:
+          type: string
+          enum:
+            - TODAY
+            - MESO
+        replacesExerciseId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Swap target; absent for an add.
+    WorkoutExerciseChangeResponse:
+      type: object
+      required:
+        - exerciseId
+        - today
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+          description: The new instance-scoped exercise row.
+        today:
+          $ref: '#/components/schemas/WorkoutTodayResponse'
+    PlanSetsRequest:
+      type: object
+      required:
+        - delta
+      properties:
+        delta:
+          type: integer
+          minimum: 1
+          maximum: 3
     WorkoutSkipRequest:
       type: object
       required:
@@ -16407,6 +16738,106 @@ components:
           maximum: 10
           nullable: true
           description: The reported pain intensity (null when not answered)
+    PlannedSkipKind:
+      type: string
+      enum:
+        - GYM
+        - SPORT
+        - RUN
+    PlannedSkipReason:
+      type: string
+      enum:
+        - ILLNESS
+        - STOMACH
+        - INJURY
+        - TRAVEL
+        - TIRED
+        - NO_TIME
+        - NO_MOOD
+        - OTHER
+        - NONE
+    PlannedSkipRequest:
+      type: object
+      required:
+        - date
+        - kind
+        - reasonCategory
+      properties:
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/PlannedSkipKind'
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+          nullable: true
+          description: 'SPORT only, 0=Hét..6=Vas'
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          nullable: true
+          description: SPORT only
+        sessionKey:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: RUN only
+        reasonCategory:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        reasonText:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Kept only for OTHER
+    PlannedSkipResponse:
+      type: object
+      required:
+        - id
+        - date
+        - kind
+        - reasonCategory
+        - source
+        - serious
+        - freePass
+        - excused
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/PlannedSkipKind'
+        dayOfWeek:
+          type: integer
+          nullable: true
+        time:
+          type: string
+          nullable: true
+        sessionKey:
+          type: string
+          nullable: true
+        reasonCategory:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        reasonText:
+          type: string
+          nullable: true
+        source:
+          type: string
+          enum:
+            - USER
+            - ADVICE
+        serious:
+          type: boolean
+        freePass:
+          type: boolean
+          description: The weekly free pass covers this skip
+        excused:
+          type: boolean
+          description: Does not count as missed
     ExpenditureExplanationResponse:
       type: object
       description: >-
