@@ -1386,7 +1386,7 @@ components:
         id: { type: string, format: uuid }
         factText: { type: string }
         category: { type: string, description: "'train' | 'fuel' | 'health' | 'life'" }
-        source: { type: string, description: "'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' — 'manual' = the user typed it in the Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user claimed with „Rólam is” (mezo-d6ivw.13)" }
+        source: { type: string, description: "'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' | 'merge' — 'manual' = the user typed it in the Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user claimed with „Rólam is” (mezo-d6ivw.13), 'merge' = an accepted weekly fact merge (S9, mezo-d6ivw.10)" }
         owner: { type: string, enum: [szunya, mocor, falat, deru, mezo], description: "U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field." }
         reinforcementCount: { type: integer, description: 'How many times the fact was re-confirmed/re-detected (V1.3+/V3.3 increment it).' }
         includeInPrompt: { type: boolean, description: 'Whether the fact competes for the top-N system-prompt injection slots.' }
@@ -1397,11 +1397,11 @@ components:
         mutedReason:
           type: string
           nullable: true
-          enum: [user, refuted, superseded]
+          enum: [user, refuted, superseded, merged]
           description: >-
             S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később
-            nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. Null, ha
-            bekapcsolt.
+            nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel, merged =
+            összevontam egy hasonló ténnyel (S9). Null, ha bekapcsolt.
         mutedAt: { type: string, format: date-time, nullable: true, description: 'S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti némítás.' }
         supersededBy: { type: string, format: uuid, nullable: true, description: 'S6 — a tény, ami felülírta (drift-megerősítés).' }
         provenance: { $ref: '#/components/schemas/KnowledgeFactProvenance' }
@@ -1435,7 +1435,7 @@ components:
         id: { type: string, format: uuid }
         candidateText: { type: string }
         category: { type: string, description: "'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time" }
-        source: { type: string, description: "'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it" }
+        source: { type: string, description: "'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) | 'merge' (a weekly fact-merge proposal, S9 mezo-d6ivw.10) — the promoted knowledge fact inherits it" }
         owner: { type: string, enum: [szunya, mocor, falat, deru, mezo], description: "the character that brought the candidate — „<Név> hozta”" }
         evidence: { type: string, nullable: true, description: 'What the candidate rests on, in the proposer''s own words (weekly candidates only — chat extraction does not produce one).' }
         weekStart: { type: string, format: date, nullable: true, description: 'The ISO Monday of the weekly review that proposed this candidate (null for chat-extracted ones).' }
@@ -1449,6 +1449,14 @@ components:
           description: >-
             S8 (mezo-d6ivw.12) — the chat USER message the candidate was extracted from; null for a
             weekly-review candidate. The chat anchors its Megjegyezném chip on it.
+        mergeSources:
+          type: array
+          nullable: true
+          items: { type: string }
+          description: >-
+            S9 (mezo-d6ivw.10) — source='merge' only: the member facts' current texts, in the order
+            the proposal lists them (the Rólad „Összevonnám" card shows them above the proposed
+            sentence). Null for every other candidate.
         createdAt: { type: string, format: date-time }
     TurnMemoryResponse:
       type: object

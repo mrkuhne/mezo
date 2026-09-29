@@ -215,6 +215,13 @@ public interface CompanionMapper {
                 .build();
     }
 
+    /** S9 (mezo-d6ivw.10): the merge card's member texts, in member-id order — source='merge' only. */
+    default FactCandidateResponse toFactCandidateResponse(LearnedFactEntity entity, List<String> mergeSources) {
+        FactCandidateResponse r = toFactCandidateResponse(entity);
+        r.setMergeSources(mergeSources);
+        return r;
+    }
+
     /** Null ask envelope maps to []; the wire name carries the args —
      *  "get_recovery(scope=sleep,days=3)" (FE chip style).
      *

@@ -42,7 +42,7 @@ public class FactCandidateService {
         return learnedFactRepository
                 .findPendingVisible(userId, Instant.now())
                 .stream()
-                .map(mapper::toFactCandidateResponse)
+                .map(candidate -> toResponse(userId, candidate))
                 .toList();
     }
 
@@ -82,7 +82,23 @@ public class FactCandidateService {
             // promote it into a PREFERENCE node. Reject never sets promotedFactId, so no event fires.
             eventPublisher.publishEvent(new KnowledgeFactPromotedEvent(userId, candidate.getPromotedFactId()));
         }
-        return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));
+        return toResponse(userId, learnedFactRepository.saveAndFlush(candidate));
+    }
+
+    /** S9 (mezo-d6ivw.10): a merge candidate's {@code mergeSources} are the member facts' CURRENT
+     *  texts, resolved live (never cached on the candidate) — owner-checked, order preserved by
+     *  {@code mergeMemberIds}, a member the owner since deleted is simply skipped. */
+    private FactCandidateResponse toResponse(UUID userId, LearnedFactEntity candidate) {
+        if (!LearnedFactEntity.SOURCE_MERGE.equals(candidate.getSource()) || candidate.getMergeMemberIds() == null) {
+            return mapper.toFactCandidateResponse(candidate);
+        }
+        List<KnowledgeFactEntity> members = knowledgeFactRepository.findAllById(candidate.getMergeMemberIds());
+        List<String> mergeSources = candidate.getMergeMemberIds().stream()
+                .flatMap(id -> members.stream()
+                        .filter(m -> m.getId().equals(id) && userId.equals(m.getCreatedBy())))
+                .map(KnowledgeFactEntity::getFactText)
+                .toList();
+        return mapper.toFactCandidateResponse(candidate, mergeSources);
     }
 
     private UUID promote(UUID userId, String factText, LearnedFactEntity candidate) {
