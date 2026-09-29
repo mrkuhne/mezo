@@ -120,3 +120,12 @@ test('judge: an advice-backed USER row stays excused and leaves the pass for ano
 test('skipWindow: today-7 .. Sunday of this ISO week', () => {
   expect(skipWindow(new Date(2026, 8, 28))).toEqual({ fromIso: '2026-09-21', toIso: '2026-10-04' })
 })
+
+test('a DAY row (kímélő mód) hides every occurrence on its date, and nothing on another date', () => {
+  const skips: PlannedSkipKey[] = [{ kind: 'DAY', date: '2026-09-29' }]
+  expect(isSkipped(skips, { kind: 'SPORT', date: '2026-09-29', dayOfWeek: 1, time: '18:00' })).toBe(true)
+  expect(isSkipped(skips, gymKey('2026-09-29'))).toBe(true)
+  expect(isSkipped(skips, runKey('2026-09-29', 'w1-run1'))).toBe(true)
+  expect(isSportSlotSkipped(skips, 1, '18:00', '2026-09-29')).toBe(true)
+  expect(isSkipped(skips, gymKey('2026-09-30'))).toBe(false)
+})

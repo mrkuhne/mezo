@@ -7,7 +7,9 @@
 // ============================================================
 import { addDays, localDateString } from '@/shared/lib/dates'
 
-export type SkipKind = 'GYM' | 'SPORT' | 'RUN'
+/** `DAY` (Kihagyás S2, mezo-q4xt2.2) is the kímélő mód's virtual whole-day row — one per
+ *  protected recovery date (`recovery.ts`'s `protectedDayRows`), never written by a skip call. */
+export type SkipKind = 'GYM' | 'SPORT' | 'RUN' | 'DAY'
 export type SkipReason = 'ILLNESS' | 'STOMACH' | 'INJURY' | 'TRAVEL' | 'TIRED' | 'NO_TIME' | 'NO_MOOD' | 'OTHER' | 'NONE'
 
 /** The identity of one planned occurrence a skip can target — matched per `isSkipped` below.
@@ -27,7 +29,8 @@ export interface PlannedSkip extends PlannedSkipKey {
   id: string
   reasonCategory: SkipReason
   reasonText?: string | null
-  source: 'USER' | 'ADVICE'
+  /** `RECOVERY` — a virtual DAY row derived from a protected kímélő-mód date (S2), not a stored skip. */
+  source: 'USER' | 'ADVICE' | 'RECOVERY'
   serious: boolean
   freePass: boolean
   excused: boolean
@@ -45,8 +48,9 @@ export const SERIOUS: ReadonlySet<SkipReason> = new Set(['ILLNESS', 'STOMACH', '
 /** Same identity match every skip-aware FE read shares with the backend's own
  *  `WorkoutWindowQueryService.windowsFor` (mezo-cq06, extended for GYM/RUN in S1): `kind` + `date`
  *  always; SPORT also `dayOfWeek` + the unnormalised `"HH:mm"` `time` string compared as-is; RUN
- *  also `sessionKey`. */
+ *  also `sessionKey`. A `DAY` row (kímélő mód, S2) hides EVERY occurrence on its date. */
 function matches(s: PlannedSkipKey, t: PlannedSkipKey): boolean {
+  if (s.kind === 'DAY' && s.date === t.date) return true
   if (s.kind !== t.kind || s.date !== t.date) return false
   if (s.kind === 'SPORT') return s.dayOfWeek === t.dayOfWeek && s.time === t.time
   if (s.kind === 'RUN') return s.sessionKey === t.sessionKey

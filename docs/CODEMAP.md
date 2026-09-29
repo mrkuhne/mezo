@@ -1587,9 +1587,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** activityEnergy.ts, challengeApi.ts, challengeHooks.ts, customWorkoutHooks.ts, medalApi.ts,
     medalEvaluator.ts, medalHooks.ts, medalMock.ts, medalTypes.ts, mesoArcHooks.ts, mesoPlanHooks.ts, mesoPlanMock.ts,
     mesoReportHooks.ts, mesoTemplateHooks.ts, mockWorkoutEdits.ts, queryKeys.ts, readinessApi.ts, readinessHooks.ts,
-    readinessMock.ts, running.ts, runningAgenda.ts, runningApi.ts, runningDraft.ts, runningHooks.ts, skipApi.ts,
-    skipHooks.ts, timingProfileApi.ts, timingProfileHooks.ts, train.ts, trainApi.ts, trainHooks.ts,
-    weekMuscleLogHooks.ts, workoutDetailHooks.ts, workoutNoteHooks.ts
+    readinessMock.ts, recoveryApi.ts, recoveryHooks.ts, recoveryMock.ts, running.ts, runningAgenda.ts, runningApi.ts,
+    runningDraft.ts, runningHooks.ts, skipApi.ts, skipHooks.ts, timingProfileApi.ts, timingProfileHooks.ts, train.ts,
+    trainApi.ts, trainHooks.ts, weekMuscleLogHooks.ts, workoutDetailHooks.ts, workoutNoteHooks.ts
 - **FE ui** `frontend/src/features/train`
   - **pages:** ActiveWorkoutPage.tsx, CustomWorkoutBuilderPage.tsx, ExerciseStoryPage.tsx, ExercisesPage.tsx,
     ExercisesSkeleton.tsx, GymPage.tsx, MedalsPage.tsx, MesoComparePage.tsx, MesoDayEditPage.tsx, MesoDayPage.tsx,
@@ -1618,11 +1618,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     growthForecast.ts, gymDayTarget.ts, libraryStory.ts, loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts,
     mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, mesoWeekDone.ts, morningWindow.ts,
     muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, plannedSkips.ts,
-    progressionChip.ts, recordFor.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts, sessionLength.ts,
-    sessionState.ts, setBudget.ts, skipCopy.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts, sports.ts,
-    structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts, useRestTimer.ts,
-    warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts, workoutComparison.ts,
-    workoutState.ts
+    progressionChip.ts, recordFor.ts, recovery.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts,
+    sessionLength.ts, sessionState.ts, setBudget.ts, skipCopy.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts,
+    sports.ts, structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts,
+    useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts,
+    workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 91 IT + 23 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,

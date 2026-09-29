@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { invalidateFuelTargets } from '@/data/fuel/queryKeys'
 import { isMockMode } from '@/data/_client/mode'
@@ -43,6 +43,8 @@ import {
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { usePlannedSkips, PLANNED_SKIPS_QUERY_KEY } from '@/data/train/skipHooks'
+import { useRecovery } from '@/data/train/recoveryHooks'
+import { protectedDayRows } from '@/features/train/logic/recovery'
 import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
 import type { PlannedSkipKey } from '@/features/train/logic/plannedSkips'
 import { applyMockEdits, mockExerciseFor, type MockWorkoutEdit } from '@/data/train/mockWorkoutEdits'
@@ -674,7 +676,18 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   // into the SAME list server-side, as SPORT/NONE/source=ADVICE rows). `usePlannedSkips()` is the
   // single fetch of the skip window; every reader that used to destructure `sportSlotSkips` off
   // `useTrain()` now reads `plannedSkips` off it — one query, not two.
-  const { skips: plannedSkipsData } = usePlannedSkips()
+  const { skips: realSkips } = usePlannedSkips()
+  // Kímélő mód (Kihagyás S2, mezo-q4xt2.2): every protected recovery date joins as a virtual DAY
+  // row, which hides every planned occurrence on that date (`plannedSkips.ts`'s `matches`). The
+  // recovery GET covers today−7 … today+13, so the agenda sees next week's protected days too.
+  const { recovery } = useRecovery()
+  const plannedSkipsData = useMemo(
+    () => {
+      const days = protectedDayRows(recovery)
+      return days.length ? [...realSkips, ...days] : realSkips
+    },
+    [realSkips, recovery],
+  )
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
   const { data: gymSlotsData, isPending: gymSchedulePending, isError: gymScheduleError } = useQuery({
