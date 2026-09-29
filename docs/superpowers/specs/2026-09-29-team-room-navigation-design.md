@@ -45,7 +45,7 @@ Az irány belső referenciái az élő öt csapattagoldal, a meglévő Minták o
 a csapatfal és az [Üveg kánon](../../design_2.0/README.md). Külső termékből nem
 veszünk át új vizuális rendszert. Meleg grafit alap, meglévő Mozaik színek,
 eredeti üveganyag, Boop figurák, közös 3D sprite és változatlan alsó menü.
-A bejáratok elsődleges üvegobjektumok, a listák csendes sorok. Nincs üveg az
+A bejáratok elsődleges üvegobjektumok. A gyűjtemények áttekinthető, karakterjelzéssel ellátott sorok; az üzenőfal megtartja az eredeti személyes kártyákat, szereplőket, teljes gondolatokat és típushoz illő forráselőnézeteket. Nincs üveg az
 üvegben; a hosszú szöveg álló Geist. Új ikon nem szükséges.
 
 Élő prototípus: [mezo.html](../../design_2.0/prototypes/elo/mezo.html).
@@ -75,3 +75,33 @@ A részlet és chat az eredeti témát őrzi, olvasottság és válasz nem kever
 Üres, betöltési és hibaállapot; 320 px; csökkentett mozgás; meglévő háttérutak
 elérhetősége mind ellenőrzendő. Az app implementálása, helyi kapui, kiadása és
 éles ellenőrzése a további jóváhagyott munka része, nem e prototípus teljesítése.
+
+## Tulajdonosi korrekció a prototípushoz
+
+A csapat alatti témaközpontok iránya tetszik a tulajdonosnak. A fal lapos,
+hideg felsorolása és az egyszerűsített részlet/chat felület nem elfogadott.
+A felülvizsgált minta visszaveszi az eredeti poszt- és üvegkártyák, szereplők,
+forráselőnézetek és a rendes Mezo-chat vizuális nyelvét. A tartósság és a
+lapozás ezekbe épül be. Ez még felülvizsgálati minta, nem jóváhagyott appváltozás.
+
+A „Beszélgessünk erről” minden tudatos indításkor **új Mezo-beszélgetést** hoz
+létre a meglévő chat funkcióban. Nem külön egyszerűsített chatoldal és nem egy
+előre kitöltött cím továbbítása. A beszélgetés később a rendes előzményekből
+folytatható; az eredeti bejegyzéshez vissza lehet térni.
+
+A szerver a bejegyzés azonosítójából, a bejelentkezett felhasználóhoz tartozó
+adatbázisrekordokból állítja össze a kontextust: eredeti minta/észrevétel,
+típus, teljes szöveg és kérdés, aktuális állapot, megfigyelési időszak,
+eseménytörténet és bizonyítékok; hivatkozott naplóbejegyzések és chatüzenetek;
+kapcsolt tények, kísérletek és előrejelzések; korábbi felhasználói visszajelzések.
+Csak létező kapcsolatok alapján, tulajdonosi hozzáférés-ellenőrzéssel dolgozik.
+A frontend szövege nem hiteles kontextusforrás. A kapcsolatok későbbi chatfordulóknál
+is feloldhatók; a hosszú források elérhetősége nem veszhet el a promptméret miatt.
+Hiányzó forrást jelezni kell, nem helyettesíteni kitalált tartalommal. Az indítás
+hibája nem nyithat észrevétlenül üres kontextusú beszélgetést; újrapróbálás nem
+hozhat létre duplikált beszélgetést.
+
+A felhasználó a chat tetején látja, miről indult a beszélgetés, és lenyithatja
+a kapcsolódó forrásokat. A prototípus kizárólag fiktív kontextussal demonstrálja
+ezt; nincs adatbázis- vagy AI-integrációja. A végleges API és adatmodell a
+prototípus jóváhagyása utáni terv feladata.
