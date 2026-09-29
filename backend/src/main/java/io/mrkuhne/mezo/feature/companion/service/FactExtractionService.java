@@ -127,6 +127,13 @@ public class FactExtractionService {
             String normalized = normalize(fact.fact());
             if (!known.add(normalized)) {
                 KnowledgeFactEntity hit = confirmed.get(normalized);
+                // S9 (mezo-d6ivw.10): the exact text of a merged-away loser still dedupes — but the
+                // reinforcement belongs to whichever fact now carries that sentence, the survivor.
+                if (hit != null && KnowledgeFactEntity.MUTED_MERGED.equals(hit.getMutedReason())
+                        && hit.getSupersededBy() != null) {
+                    hit = knowledgeFactRepository
+                            .findByIdAndCreatedByAndDeletedFalse(hit.getSupersededBy(), userId).orElse(null);
+                }
                 if (hit != null) {
                     // V1.3 reinforcement: the chat re-learned a confirmed fact — that IS a re-confirmation
                     hit.setReinforcementCount(hit.getReinforcementCount() + 1);

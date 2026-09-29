@@ -59,20 +59,27 @@ public class FactCandidateService {
             candidate.setSnoozedUntil(Instant.now().plus(CandidateSnooze.DURATION));
             return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));
         }
+        boolean isMerge = LearnedFactEntity.SOURCE_MERGE.equals(candidate.getSource());
         switch (decision) {
             case LearnedFactEntity.DECISION_ACCEPT ->
-                    candidate.setPromotedFactId(promote(userId, candidate.getCandidateText(), candidate));
+                    candidate.setPromotedFactId(promoteDecision(userId, candidate.getCandidateText(), candidate));
             case LearnedFactEntity.DECISION_REFINE -> {
                 if (request.getRefinedText() == null || request.getRefinedText().isBlank()) {
                     throw new SystemRuntimeErrorException(
                             SystemMessage.field("VALIDATION_REQUIRED_FIELD", "refinedText").build());
                 }
                 candidate.setRefinedText(request.getRefinedText());
-                candidate.setPromotedFactId(promote(userId, request.getRefinedText(), candidate));
+                candidate.setPromotedFactId(promoteDecision(userId, request.getRefinedText(), candidate));
             }
             // S8 (mezo-d6ivw.12): "Ne" is permanent — chat chip AND inbox. The extractor's veto
-            // check (FactExtractionService) then never re-proposes the same text.
-            case LearnedFactEntity.DECISION_REJECT -> forgetService.vetoFactText(userId, candidate.getCandidateText());
+            // check (FactExtractionService) then never re-proposes the same text. S9: a merge
+            // proposal's „Maradjon külön" is not a forget — the member facts stand exactly as
+            // they were, so no veto row and the members are left untouched.
+            case LearnedFactEntity.DECISION_REJECT -> {
+                if (!isMerge) {
+                    forgetService.vetoFactText(userId, candidate.getCandidateText());
+                }
+            }
             default -> throw new SystemRuntimeErrorException(
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
@@ -101,19 +108,57 @@ public class FactCandidateService {
         return mapper.toFactCandidateResponse(candidate, mergeSources);
     }
 
-    private UUID promote(UUID userId, String factText, LearnedFactEntity candidate) {
+    /** Accept/refine on an ordinary candidate just mints the fact. On a merge candidate (S9,
+     *  mezo-d6ivw.10) it mints the fact REGARDLESS — the user asked for this sentence — with the
+     *  live members' reinforcement folded in, then mutes those still-live members onto it. A
+     *  member muted meanwhile (e.g. by the auto-merge sweep) is left exactly as it is. */
+    private UUID promoteDecision(UUID userId, String factText, LearnedFactEntity candidate) {
+        if (!LearnedFactEntity.SOURCE_MERGE.equals(candidate.getSource())) {
+            return promote(userId, factText, candidate, 0);
+        }
+        List<KnowledgeFactEntity> liveMembers = liveMergeMembers(userId, candidate);
+        int reinforcement = liveMembers.stream().mapToInt(KnowledgeFactEntity::getReinforcementCount).sum();
+        UUID newFactId = promote(userId, factText, candidate, reinforcement);
+        Instant now = Instant.now();
+        for (KnowledgeFactEntity member : liveMembers) {
+            member.mute(KnowledgeFactEntity.MUTED_MERGED, now);
+            member.setSupersededBy(newFactId);
+            knowledgeFactRepository.save(member);
+            eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, member.getId()));
+        }
+        return newFactId;
+    }
+
+    /** The still-live merge members (still in the prompt, not already superseded) — owner-checked,
+     *  a member the user or another merge already touched since is simply skipped. */
+    private List<KnowledgeFactEntity> liveMergeMembers(UUID userId, LearnedFactEntity candidate) {
+        if (candidate.getMergeMemberIds() == null) {
+            return List.of();
+        }
+        return knowledgeFactRepository.findAllById(candidate.getMergeMemberIds()).stream()
+                .filter(m -> userId.equals(m.getCreatedBy()))
+                .filter(m -> m.isIncludeInPrompt() && m.getSupersededBy() == null)
+                .toList();
+    }
+
+    private UUID promote(UUID userId, String factText, LearnedFactEntity candidate, int reinforcementCount) {
         KnowledgeFactEntity fact = new KnowledgeFactEntity();
         fact.setCreatedBy(userId);
         fact.setFactText(factText);
         fact.setCategory(candidate.getCategory());
         fact.setSource(sourceOf(candidate));
         fact.setOwner(candidate.getOwner());
+        fact.setReinforcementCount(reinforcementCount);
         return knowledgeFactRepository.saveAndFlush(fact).getId();
     }
 
     /** The promoted fact inherits the CANDIDATE's provenance (mezo-d20.7.6) — hardcoding 'chat'
-     *  would make an accepted weekly lesson lie about where it came from. */
+     *  would make an accepted weekly lesson lie about where it came from. S9: a merge proposal
+     *  promotes as 'merge', never 'chat'. */
     private static String sourceOf(LearnedFactEntity candidate) {
+        if (LearnedFactEntity.SOURCE_MERGE.equals(candidate.getSource())) {
+            return KnowledgeFactEntity.SOURCE_MERGE;
+        }
         return LearnedFactEntity.SOURCE_WEEKLY_REVIEW.equals(candidate.getSource())
                 ? KnowledgeFactEntity.SOURCE_WEEKLY_REVIEW
                 : KnowledgeFactEntity.SOURCE_CHAT;
