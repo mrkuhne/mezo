@@ -2514,8 +2514,10 @@ mezo:
       # 04:10 daily expiry sweep (one global query, no per-user fan-out).
       expiry-cron: "0 10 4 * * *"
       # Hourly catch-up sweep at :20 (mezo-a9bo7.23) — a safety net so a flag raise/clear the
-      # async listener missed still opens/resolves its ügy (a missed open never pushes).
+      # async listener missed still opens/resolves its ügy (daytime missed opens do not push).
       catchup-cron: "0 20 * * * *"
+      # Publish overnight flag raises at the end of quiet hours; hourly catch-up retries after restarts.
+      morning-release-cron: "0 0 7 * * *"
       # S7 (mezo-d6ivw.7): voiced (LLM) answers per ügy per local day; past it a template answers.
       reply-voiced-per-thread-day: 4
       # S7: all REPLY lines per user per local day (their own cap — they never eat daily-line-cap).
