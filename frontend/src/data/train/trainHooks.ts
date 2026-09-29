@@ -620,14 +620,9 @@ function useLogSportSession(
   )
 }
 
-export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
-  const mock = isMockMode()
-  const qc = useQueryClient()
-  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
-  // Day resolution is server-side (open instance > param > weekday label); param-less
-  // callers keep the plain today context. Mock ignores the param (static plan).
-  const workoutDay = opts?.workoutDay ?? null
-  const { data: mesoData, isPending: mesoPending } = useQuery({
+/** The `['train', 'mesocycles']` query — one definition for `useTrain` and `useActiveMesoWeek`. */
+function mesocyclesQuery(mock: boolean, qc: QueryClient) {
+  return {
     queryKey: ['train', 'mesocycles'],
     // Mock resolves SEEDED CACHE first, static fixture second (mesoReportHooks' mockResolve
     // idiom): mockStart/mockRerun (mezo-meyc.1) and mockClose (mezo-meyc.2) all edit this list
@@ -647,7 +642,27 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // guard the sibling mock caches below already carry (gymSchedule, sportEvents) — the
     // pantry/useDualQuery pattern. Real mode keeps the TanStack default.
     staleTime: mock ? Infinity : undefined,
-  })
+  }
+}
+
+/** The active meso's current week (after any recovery shift) — the „Üdv újra!" week clause on
+ *  surfaces that do not load the whole `useTrain()` (the Nap hub). Null without an active meso. */
+export function useActiveMesoWeek(): number | null {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  const { data } = useQuery(mesocyclesQuery(mock, qc))
+  const m = (data ?? []).find((x) => x.status === 'active') ?? (mock ? activeMeso : null)
+  return m?.currentWeek ?? null
+}
+
+export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
+  // Day resolution is server-side (open instance > param > weekday label); param-less
+  // callers keep the plain today context. Mock ignores the param (static plan).
+  const workoutDay = opts?.workoutDay ?? null
+  const { data: mesoData, isPending: mesoPending } = useQuery(mesocyclesQuery(mock, qc))
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
   // HU display dates), so the derivation happens inside the queryFn.
   const { data: sportData, isPending: sportQueryPending } = useQuery({

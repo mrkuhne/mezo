@@ -111,3 +111,55 @@ export function recoveryIcon(cat: SkipReason | null | undefined): Icon3DName {
 export function kimeloAgendaParts(session: string): { bold: string; rest: string } {
   return { bold: KIMELO.innerTitle, rest: ` · ${session} kimarad` }
 }
+
+// ── Kímélő mód on the Nap hub (mezo-q4xt2.2) — prototype elo/nap.html `kmSlot` / `kmSheet` /
+// `kmWelcome` and its click-handler toasts, verbatim. ──
+
+/** Every fixed kímélő-mód string on the Nap hub. */
+export const KIMELO_NAP = {
+  entry: 'Nem vagyok jól',
+  sheetEyebrow: 'KÍMÉLŐ MÓD',
+  sheetTitle: 'Mi történt?',
+  sheetSub: 'Szólj, és a napod hozzád igazodik. Nem kell magyarázkodnod.',
+  noteLead: 'Amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.',
+  noteRest: ' Bármikor befejezheted.',
+  cta: 'Kímélő mód bekapcsolása',
+  title: 'Hogy vagy?',
+  notYet: 'Még nem',
+  better: 'Jobban',
+  oops: 'Tévedés volt',
+  slimSub: 'Holnap reggel újra rákérdezek, hogy vagy.',
+  finish: 'Befejezem',
+  confirm: 'Töröljem a kímélő módot?',
+  confirmSub: 'A kihagyott edzések visszaállnak, mintha be se kapcsoltad volna.',
+  cancel: 'Mégse',
+  discard: 'Törlöm',
+  toastNotYet: 'Rendben, holnap reggel újra rákérdezek',
+  toastDiscarded: 'Kímélő mód törölve · az edzéseid visszaálltak',
+  toastWelcome: 'Jó, hogy jobban vagy',
+  toastUndone: 'Rendben, a kímélő mód folytatódik',
+  closeChip: 'edzés · kímélő mód',
+} as const
+
+/** The card's short estimate (prototype KMD[3], non-breaking like the prototype). */
+const NAP_ESTIMATE: Record<string, string> = {
+  TODAY: 'ma', FEW_DAYS: '2–3 nap', WEEK: 'kb. egy hét', UNKNOWN: 'nincs',
+}
+
+/** The „Hogy vagy?" sub-line: „Kímélő mód · 2. nap · becslés: " + „2–3 nap" (the estimate kept on
+ *  one line by the caller), or the question alone once the estimate has passed. */
+export function napKimeloSub(p: { dayIndex: number; estimate: string; estimateExpired: boolean }): { lead: string; estimate?: string } {
+  if (p.estimateExpired) return { lead: KIMELO.ask }
+  return { lead: `Kímélő mód · ${p.dayIndex}.\u00a0nap · becslés: `, estimate: NAP_ESTIMATE[p.estimate] ?? NAP_ESTIMATE.UNKNOWN }
+}
+
+/** The serious category's accent (prototype KMC): the chip glow, the card's `--c`. */
+const RECOVERY_HUE: Partial<Record<SkipReason, string>> = {
+  ILLNESS: 'var(--dv-rose)', STOMACH: 'var(--dv-sage)', INJURY: 'var(--dv-coral)', TRAVEL: 'var(--dv-sky)',
+}
+export function recoveryHue(cat: SkipReason | null | undefined): string {
+  return (cat && RECOVERY_HUE[cat]) || 'var(--dv-rose)'
+}
+
+/** The four serious reasons that open a period (the reason chips' first four). */
+export const SERIOUS_REASONS = REASONS.filter((r) => RECOVERY_HUE[r.id] != null)

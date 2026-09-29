@@ -71,6 +71,7 @@ import { RecoveryBlock, SkippedBlock } from '@/features/train/components/Skipped
 import { SkipReasonSheet } from '@/features/train/components/SkipReasonSheet'
 import { ComebackPill, comebackPillLabel } from '@/features/train/components/ComebackPill'
 import { WelcomeBackSheet } from '@/features/train/components/WelcomeBackSheet'
+import { useRecoveryBetter } from '@/features/train/logic/useRecoveryBetter'
 import { KIMELO, notYetToast } from '@/features/train/logic/skipCopy'
 import {
   useDiscardRecovery,
@@ -120,7 +121,7 @@ export function TrainTodayPage() {
   const releaseDay = useReleaseDay()
   const unreleaseDay = useUnreleaseDay()
   const waiveComeback = useWaiveComeback()
-  const [welcome, setWelcome] = useState(false)
+  const { better: endRecovery, welcome, closeWelcome } = useRecoveryBetter({ checkIn: recoveryCheckIn, discard: discardRecovery })
   const { goal: sleepGoal } = useSleepGoal()
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
@@ -383,16 +384,9 @@ export function TrainTodayPage() {
   const onFullLoad = (iso: string) => releaseDay.mutate({ date: iso, lighten: false }, {
     onSuccess: () => toast.show({ kind: 'info', text: KIMELO.toastWaived }),
   })
-  // „Jobban vagyok": the server rejects BETTER on the period's first day — a same-day recovery
-  // needs no return, so day 1 simply ends (discards) the period instead.
-  const onBetter = () => {
-    if (!openPeriod) return
-    if (openPeriod.dayIndex <= 1) {
-      discardRecovery.mutate(undefined, { onSuccess: () => toast.show({ kind: 'success', text: KIMELO.toastEnded }) })
-    } else {
-      recoveryCheckIn.mutate('BETTER', { onSuccess: () => setWelcome(true) })
-    }
-  }
+  // „Jobban vagyok": day 1 discards (the server has no same-day return), later BETTER → „Üdv újra!"
+  // — the shared rule in `useRecoveryBetter` (the Nap hub's card uses it too).
+  const onBetter = () => endRecovery(openPeriod)
   const onNotYet = () => {
     if (!openPeriod) return
     const cat = openPeriod.category
@@ -400,7 +394,7 @@ export function TrainTodayPage() {
   }
   const onUndoBetter = (fromSheet: boolean) => undoBetter.mutate(undefined, {
     onSuccess: () => {
-      setWelcome(false)
+      closeWelcome()
       toast.show({ kind: 'info', text: fromSheet ? KIMELO.toastStay : KIMELO.toastUndone })
     },
   })
@@ -1177,7 +1171,7 @@ export function TrainTodayPage() {
       {welcome && period?.return && (
         <WelcomeBackSheet ret={period.return} week={activeMeso.currentWeek} showRun={Boolean(activeRunningBlock)}
           busy={recoveryBusy}
-          onClose={() => setWelcome(false)}
+          onClose={closeWelcome}
           onOk={() => toast.show({ kind: 'success', text: KIMELO.toastWelcome })}
           onUndo={() => onUndoBetter(true)} />
       )}

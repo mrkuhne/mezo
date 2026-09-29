@@ -57,3 +57,77 @@
 
 /* Kérdezd a csapatot belépő (mezo-u3712) — a Nap alján */
 .nap-askteam { padding: 22px 6px 4px; }
+
+/* ── Kímélő mód a Mai oldalon (mezo-q4xt2.2; prototype elo/nap.html `.kmentry` `.kmpill` `.kmcard`
+   `.kmask` `.kmslim` `.kmdur`) — a „Nem vagyok jól" belépő, a „Hogy vagy?" kártya és a vékony sor.
+   A lap gyökerének (`.nap-hub`) flex gap-je tartja a függőleges ritmust, itt nincs külső margó. ── */
+.nap-kmentry { display: flex; justify-content: center; }
+.nap-kmpill {
+  display: inline-flex; align-items: center; gap: 7px; padding: 6px 13px 6px 8px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 12px var(--ff-body); color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nap-kmpill .t-ico { width: 20px; height: 20px; filter: none; }
+.nap-kmpill b { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+.nap-center .nap-kmcard.glass { padding: 16px 14px 12px; }
+.nap-center .nap-kmhalo {
+  position: absolute; right: -60px; top: -70px; width: 220px; height: 200px; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle, color-mix(in srgb, var(--c) 34%, transparent), rgba(255, 190, 96, 0.08) 45%, transparent 70%);
+}
+.nap-kmtop { display: flex; gap: 12px; align-items: center; }
+.nap-kmtop > span { min-width: 0; }
+.nap-kmart { flex: 0 0 auto; }
+.nap-kmeb {
+  display: block; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
+}
+.nap-kmtop strong { display: block; font-size: 20px; font-weight: 600; letter-spacing: -0.5px; margin-top: 3px; color: var(--text-primary); }
+.nap-kmtop small { display: block; font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+.nap-kmnw { white-space: nowrap; }
+.nap-kmtwo { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 14px; }
+.nap-kmbtn, .nap-kmgo {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-width: 0; padding: 12px 14px;
+  border: 0; border-radius: 18px; font: 600 14.5px var(--ff-body); cursor: pointer;
+}
+.nap-kmbtn { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.nap-kmgo {
+  font-size: 15px; font-weight: 700; color: #191614;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--dv-sage) 70%, #fff), var(--dv-sage));
+  box-shadow: 0 0 18px -2px color-mix(in srgb, var(--dv-sage) 60%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.nap-kmgo .t-ico { width: 22px; height: 22px; filter: none; }
+.nap-kmoops {
+  display: block; margin: 10px auto 0; padding: 0; border: 0; background: none; cursor: pointer;
+  font: 600 12px var(--ff-body); color: var(--text-muted); text-decoration: underline; text-underline-offset: 3px;
+}
+.nap-kmask { margin-top: 14px; padding: 12px; border-radius: 16px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.nap-kmask p { margin: 0; font-size: 13.5px; line-height: 1.45; color: var(--text-primary); }
+.nap-kmask p small { display: block; font-size: 12px; color: var(--text-secondary); margin-top: 3px; }
+.nap-kmbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.nap-kmbtns .nap-kmbtn { padding: 10px 12px; font-size: 13.5px; }
+.nap-kmbtns .nap-kmbtn.is-del { color: #FFB39C; background: rgba(255, 179, 156, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 179, 156, 0.35); }
+.nap-kmslim {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 18px;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nap-kmslim .t-ico { flex: 0 0 auto; filter: none; }
+.nap-kmslim > span { flex: 1; min-width: 0; }
+.nap-kmslim strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+.nap-kmslim small { display: block; font-size: 11.5px; color: var(--text-secondary); margin-top: 2px; }
+.nap-kmslim button { padding: 6px 0; border: 0; background: none; cursor: pointer; font: 600 12px var(--ff-body); color: var(--dv-sage); white-space: nowrap; }
+.nap-center :is(.nap-kmpill, .nap-kmbtn, .nap-kmgo, .nap-kmoops, .nap-kmslim button):disabled { opacity: 0.55; cursor: default; }
+
+/* „Mi történt?" — a lap kiportálódik a `.nap-center` alól, ezért hatókör nélkül; rózsa lap, a
+   komoly okok a saját színükben, a „Meddig tarthat?" négy oszlopban (320px-en kettőben). */
+.sheet.glass.uv-sheet.nap-kmsheet { --c: var(--dv-rose); }
+.nap-kmsheet .nap-kmdur .trm-kmdc { display: grid; grid-template-columns: repeat(4, auto); gap: 6px; }
+.nap-kmsheet .nap-kmdur .trm-kmdc > button { padding: 8px 6px; font-size: 12px; white-space: nowrap; text-align: center; }
+.nap-kmsheet .nap-kmdur .trm-kmdc > button.on { background: var(--kc); box-shadow: 0 0 12px color-mix(in srgb, var(--kc) 50%, transparent); }
+.nap-kmsheet .nap-kmdur .trm-kmdc > button:focus-visible { outline-color: var(--kc); }
+.nap-kmsheet .uvl-foot.nap-kmfoot { grid-template-columns: 1fr; }
+@media (max-width: 360px) {
+  .nap-kmsheet .nap-kmdur .trm-kmdc { grid-template-columns: 1fr 1fr; }
+  .nap-kmsheet .trm-whyc { gap: 7px; padding: 9px 8px; font-size: 12.5px; }
+  .sheet.glass.uv-sheet.nap-kmsheet .trm-whyc .t-ico { width: 26px; height: 26px; }
+}

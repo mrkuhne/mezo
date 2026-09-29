@@ -1485,9 +1485,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, CheckInSummary.tsx, CravingStep.tsx, IntentionSheet.tsx,
     PainStep.tsx, ReflectSheet.tsx, ScaleStep.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
-    EletjelStrip.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,
+    EletjelStrip.tsx, KimeloCard.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,
     NapPersonalInsight.css, NapPersonalInsight.tsx, NapomDayRatingCard.tsx, NapomDimensionRow.tsx, NapomLeadCard.tsx,
-    NapomReviewCard.tsx, NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, ObservationCard.tsx
+    NapomReviewCard.tsx, NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, NemVagyokJolSheet.tsx,
+    ObservationCard.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, checkinItems.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts,
     habitAction.ts, habitCelebration.ts, habitClayIcon.ts, mezoMessages.ts, napTimeline.ts, napom.ts, needs.ts,
     needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useChangedKeys.ts, useDayFace.ts,
@@ -1622,8 +1623,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     progressionChip.ts, recordFor.ts, recovery.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts,
     sessionLength.ts, sessionState.ts, setBudget.ts, skipCopy.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts,
     sports.ts, structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts,
-    useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, workoutCardMeta.ts,
-    workoutComparison.ts, workoutState.ts
+    useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts,
+    workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 91 IT + 23 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
