@@ -8024,13 +8024,15 @@ export interface components {
             consumed: components["schemas"]["MacroSet"];
             energy?: components["schemas"]["FuelDayEnergy"];
         };
-        /** @description The served target's equation (mezo-32m82): baseKcal (BMR × NEAT) + plannedMovementKcal (the weekly plan's share for the day, incl. the day-type shift) + extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal deficit/surplus; also absorbs the BMR floor) = targetKcal. Null on the static path (no goal or no biometric snapshot). */
+        /** @description The served target's equation (mezo-32m82, mezo-tb3s2): baseKcal (BMR × NEAT) + plannedMovementKcal (the LOGGED planned sessions' net kcal) + extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal deficit/surplus; also absorbs the BMR floor) = targetKcal. pendingMovementKcal is display only and never part of the sum. Null on the static path (no goal or no biometric snapshot). */
         FuelDayEnergy: {
             baseKcal: number;
             plannedMovementKcal: number;
             extraMovementKcal: number;
             balanceKcal: number;
             targetKcal: number;
+            /** @description Today's planned but not yet logged sessions at the moderate band (mezo-tb3s2) — display only, never in targetKcal. */
+            pendingMovementKcal?: number | null;
             /**
              * @description Where baseKcal comes from (mezo-zz91i) — the BMR × NEAT formula or the base learned from intake + weight trend.
              * @enum {string}

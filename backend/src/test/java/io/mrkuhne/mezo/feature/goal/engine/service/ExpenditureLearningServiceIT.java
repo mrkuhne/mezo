@@ -19,12 +19,15 @@ import io.mrkuhne.mezo.feature.goal.repository.IntakeDayMarkRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -77,6 +80,8 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
     @Autowired private EntityManager entityManager;
     @Autowired private IntakeDayMarkRepository marks;
     @Autowired private DietSettingsRepository dietSettings;
+    @Autowired private TrainPopulator train;
+    @Autowired private WorkoutWindowQueryService workoutWindows;
 
     private UUID userId;
     private UUID goalId;
@@ -131,8 +136,6 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         seedUserAndGoal(null);
         seedMealsAndWeighIns(suspicious);
         evaluate();
-        int planEat = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap().weeklyEatKcalPerDay()
-            .setScale(0, RoundingMode.HALF_UP).intValueExact();
 
         ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
         entityManager.flush();
@@ -150,7 +153,9 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         assertThat(x.unloggedDays()).isEqualTo(1);
         assertThat(x.historyWeeks()).isEqualTo(5);
         assertThat(x.avgIntakeKcal()).isEqualTo(2000);
-        assertThat(x.avgMovementKcal()).isEqualTo(planEat); // no workouts: the plan's movement average on every usable day
+        // mezo-tb3s2: the movement input is the served LOGGED movement, no longer the plan's daily
+        // average — no workouts were logged, so it is 0 on every usable day (was planEat).
+        assertThat(x.avgMovementKcal()).isZero();
         assertThat(x.startBaseKcal()).isEqualTo(row.getFormulaBaseKcal()); // no prior row, no adjustment
         assertThat(x.excludedDays()).containsExactly(new ExcludedIntakeDayJson(suspicious, 604, "suspicious"));
         // The scale falls 0.05 kg/day → ≈ −0.35 kg/week of tissue.
@@ -238,12 +243,11 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
         int priorApplied = 2500;
         seedPriorRow(WEEK_START.minusWeeks(1), priorApplied, -1, 2450, 150);
         GoalEntity goal = goalRepository.findById(goalId).orElseThrow();
-        TdeeBootstrapJson boot = goal.getTdeeBootstrap();
-        int planEat = boot.weeklyEatKcalPerDay().intValue();
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), WEEK_START) / 7 + 1;
         int balance = GoalPrescriptionJson.currentSegment(goal.getPrescription(), week).dailyEnergyBalanceKcal();
-        int servedTarget = priorApplied + planEat + balance;
-        int maintenance = priorApplied + planEat;
+        // mezo-tb3s2: the served target carries the day's LOGGED movement (none here), not the plan's EAT.
+        int servedTarget = priorApplied + balance;
+        int maintenance = priorApplied;
         int compliant = 1400;
         // Fixture sanity: below 0.6 × the prior-applied-based maintenance, at/above 0.6 × the served
         // (cut) target computed off the SAME prior-applied base.
@@ -345,6 +349,63 @@ class ExpenditureLearningServiceIT extends AbstractIntegrationTest {
             assertThat(row.getAppliedBaseKcal()).isEqualTo(row.getFormulaBaseKcal() + row.getStepKcal());
             assertThat(row.getExplanation()).isNull();
         }
+    }
+
+    // ── mezo-tb3s2: the learning consumes the served logged movement ──────
+
+    @Test
+    void testReviewWeek_shouldFeedLoggedMovement_notPlanAverage() {
+        LocalDate loggedDay = WEEK_START;               // Monday: planned gym done + a 490-kcal volleyball
+        LocalDate skippedDay = WEEK_START.plusDays(2);  // Wednesday: planned gym, never done
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        train.createGymSlot(userId, 0, "18:00");
+        train.createGymSlot(userId, 2, "18:00");
+        WorkoutSessionEntity template = train.createTemplateDay(userId, train.createActiveMeso(userId).getId(), "Hé");
+        train.createWorkoutInstance(userId, template, loggedDay, "completed");
+        train.withKcal(train.createSportSession(userId, loggedDay), 490); // no sport slot → extra
+        evaluate();
+        int planEat = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap().weeklyEatKcalPerDay()
+            .setScale(0, RoundingMode.HALF_UP).intValueExact();
+        WorkoutWindowQueryService.DayMovement logged = workoutWindows.movementOn(userId, loggedDay);
+        // Fixture sanity: the plan prices the gym days in; the served movement is 0 on the skip and
+        // gym + 490 on the logged day.
+        assertThat(planEat).isPositive();
+        assertThat(logged.plannedKcal()).isPositive();
+        assertThat(logged.extraKcal()).isEqualTo(490);
+        assertThat(workoutWindows.movementOn(userId, skippedDay).movementKcal()).isZero();
+
+        ExpenditureEstimateEntity row = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        // 34 usable days (35 fixture days minus the unlogged one); only the logged Monday moved.
+        int usable = row.getExplanation().usableDays();
+        assertThat(usable).isEqualTo(34);
+        int expectedAvgOfServedMovement = (int) Math.round(logged.movementKcal() / (double) usable);
+        assertThat(row.getExplanation().avgMovementKcal()).isEqualTo(expectedAvgOfServedMovement);
+    }
+
+    @Test
+    void testReviewWeek_shouldNotLowerBase_whenPlannedSessionSkipped() {
+        // Week A: no plan at all.
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        evaluate();
+        ExpenditureEstimateEntity noPlan = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        // Week B: otherwise identical, but a weekly gym slot that was never done (every Wednesday skipped).
+        seedUserAndGoal(null);
+        seedMealsAndWeighIns(null);
+        train.createGymSlot(userId, 2, "18:00");
+        evaluate();
+        int planEat = goalRepository.findById(goalId).orElseThrow().getTdeeBootstrap().weeklyEatKcalPerDay()
+            .setScale(0, RoundingMode.HALF_UP).intValueExact();
+        assertThat(planEat).isPositive(); // the skipped session IS priced into the plan
+        ExpenditureEstimateEntity skipped = service.reviewWeek(userId, WEEK_START).orElseThrow();
+
+        // The skip no longer charges the plan's unspent kcal to the learned base.
+        assertThat(skipped.getFormulaBaseKcal()).isEqualTo(noPlan.getFormulaBaseKcal());
+        assertThat(skipped.getPosteriorBaseKcal()).isEqualTo(noPlan.getPosteriorBaseKcal());
+        assertThat(skipped.getAppliedBaseKcal()).isEqualTo(noPlan.getAppliedBaseKcal());
     }
 
     // ── Part 2 (mezo-3n2so): day marks + the learning switch ───────────────

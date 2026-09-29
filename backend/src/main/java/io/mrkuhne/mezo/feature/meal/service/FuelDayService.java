@@ -50,12 +50,12 @@ import org.springframework.transaction.annotation.Transactional;
  * = Σ the day's meal macros; {@code water} consumed is the real Σ of the day's water-log entries
  * (via {@link WaterLogService}); no meal carries water in v1.
  *
- * <p>The served target (mezo-32m82) is projected by {@link DayTargetProjector} from
- * {@link WorkoutWindowQueryService#movementOn}: a split segment ({@code trainingDayKcal} /
- * {@code restDayKcal}, slice 3 mezo-sxlj) serves the training-day kcal only once a PLANNED session
- * was actually logged on the date ({@code plannedDone}) — the plan alone never raises it — and any
- * UNPLANNED logged movement adds its net kcal ({@code extraKcal}) on top; the result is floored at
- * the goal snapshot's BMR. Every kcal delta lands in carbs (ISSN), derived at serve time and never
+ * <p>The served target (mezo-tb3s2, spec §2) is projected by {@link DayTargetProjector} from
+ * {@link WorkoutWindowQueryService#movementOn}: base (BMR × NEAT) + every LOGGED session's net kcal
+ * (planned and unplanned alike — the plan alone never raises it) + the goal's daily balance, floored
+ * at the goal snapshot's BMR. There is no day-type pick; a legacy {@code trainingDayKcal} /
+ * {@code restDayKcal} split is ignored. Today's still-unlogged plan rides along as the display-only
+ * {@code pendingMovementKcal}. Every kcal delta lands in carbs (ISSN), derived at serve time and never
  * stored. The equation (Alap + Mozgás + Célod = target) rides along as the nullable
  * {@link FuelDayEnergy} on both the day and the week rollup.
  */
@@ -233,6 +233,7 @@ public class FuelDayService {
             .extraMovementKcal(e.extraMovementKcal())
             .balanceKcal(e.balanceKcal())
             .targetKcal(e.targetKcal())
+            .pendingMovementKcal(e.pendingMovementKcal())
             .baseSource(FuelDayEnergy.BaseSourceEnum.fromValue(e.baseSource()))
             .formulaBaseKcal(e.formulaBaseKcal())
             .baseSdKcal(e.baseSdKcal())
@@ -244,10 +245,10 @@ public class FuelDayService {
     /**
      * The shared segment → served-targets projection ({@link DayTargetProjector}, mezo-u2pd) with
      * this service's config fallback, the goal snapshot's {@link EnergyBase} (BMR floor + Alap) and
-     * the {@link WorkoutWindowQueryService#movementOn} probe bound in: {@code plannedDone} picks the
-     * day-type kcal (a planned session not yet done keeps the rest-day kcal), {@code extraKcal}
-     * credits unplanned logged movement on top (mezo-32m82). The probe is lazy — a DB round-trip
-     * the config path (no covering segment) must not pay.
+     * the {@link WorkoutWindowQueryService#movementOn} probe bound in: the date's logged planned +
+     * extra kcal is credited on top of the base, and a planned session not yet done credits nothing
+     * until it is logged (mezo-tb3s2). The probe is lazy — a DB round-trip the config path (no
+     * covering segment) must not pay.
      */
     private DailyTargets project(GoalEntity goal, UUID userId, LocalDate date) {
         return project(goal, date, () -> workoutWindowQueryService.movementOn(userId, date));

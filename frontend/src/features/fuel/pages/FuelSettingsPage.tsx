@@ -89,6 +89,9 @@ export function FuelSettingsPage() {
   const [proteinTier, setProteinTier] = useState(diet.proteinTier)
   const [waterMl, setWaterMl] = useState(diet.waterMl)
   const [fiberG, setFiberG] = useState(diet.fiberG)
+  // Edzőnap-shift has no control any more (mezo-tb3s2) — the stored value is a pure pass-through,
+  // sent back unchanged on save so a value the backend still accepts (and ignores) survives a
+  // round-trip through this page rather than getting silently reset.
   const [dayTypeShiftKcal, setDayTypeShiftKcal] = useState(diet.dayTypeShiftKcal)
   const [learningEnabled, setLearningEnabled] = useState(diet.learningEnabled)
   const [touchedFuel, setTouchedFuel] = useState(false)
@@ -136,7 +139,7 @@ export function FuelSettingsPage() {
   const preview = useMemo(() => buildFuelSettingsMacroPreview(draftTargets), [draftTargets])
   const dietDirty = splitPreset !== diet.splitPreset
     || proteinTier !== diet.proteinTier || waterMl !== diet.waterMl || fiberG !== diet.fiberG
-    || dayTypeShiftKcal !== diet.dayTypeShiftKcal || learningEnabled !== diet.learningEnabled
+    || learningEnabled !== diet.learningEnabled
     || (splitPreset === 'custom' && (
       Math.round(pPct * 10) !== diet.proteinPctX10
       || Math.round(cPct * 10) !== diet.carbsPctX10
@@ -343,13 +346,6 @@ export function FuelSettingsPage() {
               ))}
             </div>
           </div>
-          <div className="fset-row">
-            <span>Edzőnap-shift</span>
-            <NumberStepper label="Edzőnap-shift" value={dayTypeShiftKcal} min={0} max={500}
-              step={50} suffix="kcal" offAtZero
-              onChange={(value) => { setTouchedDiet(true); setDayTypeShiftKcal(value) }} />
-          </div>
-          <p>Pihenőnapról edzőnapra átcsoportosított kcal; a heti keret nem változik.</p>
           <p>
             A fehérje-szint a testsúlyod ÉS a zsírmentes tömeged szerinti számítást is állítja —
             a cél a kettő közül a nagyobb, egy felső korláttal. A mentés után a Makrók előnézete

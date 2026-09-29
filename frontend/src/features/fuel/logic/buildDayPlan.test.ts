@@ -296,16 +296,30 @@ describe('servedBudget', () => {
     expect(b).toMatchObject({ kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f })
     expect(b.energy).toEqual({
       base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal,
-      balance: energy.balanceKcal, target: energy.targetKcal,
+      balance: energy.balanceKcal, target: energy.targetKcal, pending: 0,
     })
     expect(b.energy.base + b.energy.planned + b.energy.extra + b.energy.balance).toBe(b.energy.target)
+  })
+
+  // mezo-tb3s2: `pendingMovementKcal` (still-unlogged planned sessions) passes through as
+  // `energy.pending` — absent on the wire stays honest-zero, never fabricated.
+  test('pendingMovementKcal passes through as energy.pending', () => {
+    const energy = { baseKcal: 2356, plannedMovementKcal: 570, extraMovementKcal: 0, balanceKcal: -327, targetKcal: 2599, pendingMovementKcal: 650 }
+    const b = servedBudget(targets, energy)
+    expect(b.energy.pending).toBe(650)
+  })
+
+  test('no pendingMovementKcal on the wire → energy.pending is 0, not undefined', () => {
+    const energy = { baseKcal: 2356, plannedMovementKcal: 570, extraMovementKcal: 0, balanceKcal: -327, targetKcal: 2599 }
+    const b = servedBudget(targets, energy)
+    expect(b.energy.pending).toBe(0)
   })
 
   test('no served energy (static path) → the targets pass through with a flat equation', () => {
     for (const energy of [null, undefined]) {
       const b = servedBudget(targets, energy)
       expect(b).toMatchObject({ kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f })
-      expect(b.energy).toEqual({ base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal })
+      expect(b.energy).toEqual({ base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal, pending: 0 })
     }
   })
 })

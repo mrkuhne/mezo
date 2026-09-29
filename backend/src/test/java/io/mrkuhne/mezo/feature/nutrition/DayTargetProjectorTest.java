@@ -15,8 +15,9 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 /**
- * The ONE served-target rule (mezo-u2pd, extended by mezo-32m82): day-type pick on PLANNED training
- * done, plus unplanned extra movement, floored at BMR, with an energy breakdown that always closes.
+ * The ONE served-target rule (mezo-u2pd; mezo-tb3s2 spec §2): base + LOGGED movement (planned +
+ * extra) + balance, floored at BMR, with an energy breakdown that always closes; pending is display
+ * only. Without an energy base the pre-mezo-tb3s2 shape (seg.kcal + extra) is kept.
  * Pure, so a plain unit test: the Fuel day, the meal scorer, the diet-settings preview and the
  * character reads all go through exactly this.
  */
@@ -27,8 +28,20 @@ class DayTargetProjectorTest {
 
     private static final EnergyBase BASE = new EnergyBase(new BigDecimal("1963"), new BigDecimal("2356"));
 
+    /** The owner-shaped example (spec §2): BMR 1961, base (BMR × NEAT) 2159. */
+    private static final EnergyBase BASE_OWNER = new EnergyBase(new BigDecimal("1961"), new BigDecimal("2159"));
+
+    private static Supplier<WorkoutWindowQueryService.DayMovement> mv(int planned, int extra, int pending) {
+        return () -> new WorkoutWindowQueryService.DayMovement(planned + extra > 0, planned, extra, pending);
+    }
+
     private static Supplier<WorkoutWindowQueryService.DayMovement> planned(boolean done) {
-        return () -> new WorkoutWindowQueryService.DayMovement(done, 0);
+        return () -> new WorkoutWindowQueryService.DayMovement(done, 0, 0, 0);
+    }
+
+    /** seg kcal 1816 (weekly planning number), balance −769, carbs 161. */
+    private static GoalPrescriptionJson.Segment ownerSeg() {
+        return segment(1816, 170, 161, 60, null, null, -769);
     }
 
     private static GoalPrescriptionJson.Segment segment(
@@ -65,40 +78,57 @@ class DayTargetProjectorTest {
     }
 
     @Test
-    void testProject_shouldServeSegmentUnchanged_whenSegmentCarriesNoDayTypeSplit() {
-        DailyTargets t = DayTargetProjector.project(
-            segment(2600, 180, 250, 90, null, null), null, planned(true), FALLBACK);
+    void testProject_shouldServeBasePlusLoggedMovementPlusBalance() {
+        DailyTargets t = DayTargetProjector.project(ownerSeg(), BASE_OWNER, mv(300, 490, 0), FALLBACK);
 
-        assertThat(t).isEqualTo(new DailyTargets(2600, 180, 250, 90, "goal", null));
+        assertThat(t.kcal()).isEqualTo(2159 + 790 - 769);            // 2180
+        assertThat(t.energy().plannedMovementKcal()).isEqualTo(300);
+        assertThat(t.energy().extraMovementKcal()).isEqualTo(490);
+        assertThat(t.energy().balanceKcal()).isEqualTo(-769);
+        assertThat(t.energy().targetKcal()).isEqualTo(2180);
+        assertThat(t.energy().pendingMovementKcal()).isNull();
+        assertThat(t.c()).isEqualTo(161 + Math.round((2180 - 1816) / 4f));
     }
 
     @Test
-    void testProject_shouldServeTrainingDayKcalWithCarbDelta_whenPlannedTrainingWasDone() {
+    void testProject_shouldFloorAtBmrAndFoldIntoBalance_whenNothingLogged() {
+        DailyTargets t = DayTargetProjector.project(ownerSeg(), BASE_OWNER, mv(0, 0, 650), FALLBACK);
+
+        assertThat(t.kcal()).isEqualTo(1961);
+        assertThat(t.energy().plannedMovementKcal() + t.energy().extraMovementKcal()).isZero();
+        assertThat(t.energy().balanceKcal()).isEqualTo(1961 - 2159);   // −198
+        assertThat(t.energy().pendingMovementKcal()).isEqualTo(650);   // display only: not in the target
+        assertThat(t.c()).isEqualTo(161 + Math.round((1961 - 1816) / 4f));
+    }
+
+    @Test
+    void testProject_shouldIgnoreLegacySplit() {
+        GoalPrescriptionJson.Segment split = segment(1816, 170, 161, 60, 2000, 1700, -769);
+
+        DailyTargets withSplit = DayTargetProjector.project(split, BASE_OWNER, mv(300, 490, 0), FALLBACK);
+        DailyTargets without = DayTargetProjector.project(ownerSeg(), BASE_OWNER, mv(300, 490, 0), FALLBACK);
+
+        assertThat(withSplit).isEqualTo(without);
+        assertThat(DayTargetProjector.project(split, BASE_OWNER, mv(0, 0, 0), FALLBACK))
+            .isEqualTo(DayTargetProjector.project(ownerSeg(), BASE_OWNER, mv(0, 0, 0), FALLBACK));
+    }
+
+    @Test
+    void testProject_shouldKeepSegKcalPlusExtra_whenNoEnergyBase() {
+        DailyTargets t = DayTargetProjector.project(ownerSeg(), null, mv(300, 490, 0), FALLBACK);
+
+        assertThat(t.kcal()).isEqualTo(1816 + 490);
+        assertThat(t.energy()).isNull();
+        assertThat(t.c()).isEqualTo(161 + Math.round(490 / 4f));
+    }
+
+    @Test
+    void testProject_shouldServeSegmentUnchanged_whenNoBaseAndNothingExtra() {
         DailyTargets t = DayTargetProjector.project(
             segment(2600, 180, 250, 90, 2800, 2400), null, planned(true), FALLBACK);
 
-        assertThat(t.kcal()).isEqualTo(2800);
-        assertThat(t.c()).isEqualTo(300); // +200 kcal / 4 = +50 g — the whole delta lands in carbs
-        assertThat(t.p()).isEqualTo(180);
-        assertThat(t.f()).isEqualTo(90);
-    }
-
-    @Test
-    void testProject_shouldServeRestDayKcalWithNegativeCarbDelta_whenNoPlannedTrainingWasDone() {
-        DailyTargets t = DayTargetProjector.project(
-            segment(2600, 180, 250, 90, 2800, 2400), null, planned(false), FALLBACK);
-
-        assertThat(t.kcal()).isEqualTo(2400);
-        assertThat(t.c()).isEqualTo(200);
-    }
-
-    @Test
-    void testProject_shouldKeepSegmentKcal_whenOnlyTheOtherDayTypeFieldIsSet() {
-        DailyTargets t = DayTargetProjector.project(
-            segment(2600, 180, 250, 90, 2800, null), null, planned(false), FALLBACK);
-
-        assertThat(t.kcal()).isEqualTo(2600);
-        assertThat(t.c()).isEqualTo(250);
+        // mezo-tb3s2: no base → seg.kcal + extra; the legacy day-type split no longer picks.
+        assertThat(t).isEqualTo(new DailyTargets(2600, 180, 250, 90, "goal", null));
     }
 
     @Test
@@ -118,16 +148,6 @@ class DayTargetProjectorTest {
     }
 
     @Test
-    void extraMovementRaisesTargetAndCarbs() {
-        // segment 2599 = base 2356 + planned 570 + balance −327; +573 unplanned volleyball
-        DailyTargets t = DayTargetProjector.project(segment(2599, 170, 300, 86, null, null, -327), BASE,
-            () -> new WorkoutWindowQueryService.DayMovement(false, 573), FALLBACK);
-        assertThat(t.kcal()).isEqualTo(3172);
-        assertThat(t.c()).isEqualTo(300 + Math.round(573 / 4f));
-        assertThat(t.energy()).isEqualTo(new DailyTargets.Energy(2356, 570, 573, -327, 3172, "formula", 2356, null, null));
-    }
-
-    @Test
     void aLearnedBaseCarriesItsProvenanceWithoutChangingTheArithmetic() {
         // mezo-zz91i: Alap is the learned 2356 (formula 2480); the equation still closes the same way.
         EnergyBase learned = EnergyBase.of(new io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson(
@@ -135,8 +155,10 @@ class DayTargetProjectorTest {
             new BigDecimal("2926"), "MSJ", java.time.OffsetDateTime.parse("2026-09-21T06:00:00Z"), 2,
             "learned", new BigDecimal("2480.40"), 140, "MEDIUM"));
         DailyTargets t = DayTargetProjector.project(segment(2599, 170, 300, 86, null, null, -327), learned,
-            () -> new WorkoutWindowQueryService.DayMovement(false, 573), FALLBACK);
-        assertThat(t.energy()).isEqualTo(new DailyTargets.Energy(2356, 570, 573, -327, 3172, "learned", 2480, 140, "MEDIUM"));
+            mv(570, 573, 0), FALLBACK);
+        // 2356 + 570 + 573 − 327 = 3172
+        assertThat(t.energy()).isEqualTo(
+            new DailyTargets.Energy(2356, 570, 573, -327, 3172, null, "learned", 2480, 140, "MEDIUM"));
     }
 
     @Test
@@ -149,25 +171,14 @@ class DayTargetProjectorTest {
     }
 
     @Test
-    void plannedDoneOnSplitSegmentStacksTheExtraOnTheTrainingDayKcal() {
-        int trainingKcal = 2800;
-        int extra = 300;
-        DailyTargets t = DayTargetProjector.project(segment(2600, 180, 250, 90, trainingKcal, 2400, -327), BASE,
-            () -> new WorkoutWindowQueryService.DayMovement(true, extra), FALLBACK);
-        assertThat(t.kcal()).isEqualTo(trainingKcal + extra);
-        assertThat(t.c()).isEqualTo(250 + Math.round((trainingKcal + extra - 2600) / 4f));
-        assertThat(t.energy().extraMovementKcal()).isEqualTo(extra);
-        assertThat(t.energy().plannedMovementKcal()).isEqualTo(trainingKcal - 2356 - (-327));
-        assertThat(t.energy().balanceKcal()).isEqualTo(-327);
-    }
-
-    @Test
     void equationAlwaysCloses() {
-        DailyTargets t = DayTargetProjector.project(segment(2599, 170, 300, 86, 2800, 2400, -327), BASE,
-            () -> new WorkoutWindowQueryService.DayMovement(true, 0), FALLBACK);
-        DailyTargets.Energy e = t.energy();
-        assertThat(e.baseKcal() + e.plannedMovementKcal() + e.extraMovementKcal() + e.balanceKcal())
-            .isEqualTo(e.targetKcal()).isEqualTo(t.kcal()).isEqualTo(2800);
+        for (var m : List.of(mv(0, 0, 0), mv(300, 0, 200), mv(0, 573, 0), mv(900, 400, 0))) {
+            DailyTargets t = DayTargetProjector.project(
+                segment(2599, 170, 300, 86, 2800, 2400, -327), BASE, m, FALLBACK);
+            DailyTargets.Energy e = t.energy();
+            assertThat(e.baseKcal() + e.plannedMovementKcal() + e.extraMovementKcal() + e.balanceKcal())
+                .isEqualTo(e.targetKcal()).isEqualTo(t.kcal());
+        }
     }
 
     @Test
@@ -177,15 +188,6 @@ class DayTargetProjectorTest {
         assertThat(t.kcal()).isEqualTo(1963);
         DailyTargets.Energy e = t.energy();
         assertThat(e.baseKcal() + e.plannedMovementKcal() + e.extraMovementKcal() + e.balanceKcal()).isEqualTo(1963);
-    }
-
-    @Test
-    void negativePlannedShareFoldsIntoBalance() {
-        // rest-day kcal below base+balance → Mozgás never shows a negative number
-        DailyTargets t = DayTargetProjector.project(segment(2600, 170, 300, 86, 2900, 1950, -327), BASE,
-            () -> WorkoutWindowQueryService.DayMovement.NONE, FALLBACK);
-        assertThat(t.energy().plannedMovementKcal()).isZero();
-        assertThat(t.energy().balanceKcal()).isEqualTo(1963 - 2356); // floor 1963 > 1950
     }
 
     @Test

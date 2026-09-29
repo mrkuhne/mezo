@@ -738,17 +738,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `IntakeDayMarkEntity`→`intake_day_mark`
   - **repositories:** `ExpenditureEstimateRepository`, `GoalPlanLinkRepository`, `GoalRepository`,
     `GoalSuggestionRepository`, `IntakeDayMarkRepository`
-  - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
-    `DietPreferences`, `DietPreferencesPort`, `ExpenditureExplainer`, `ExpenditureExplanationService`,
-    `ExpenditureFilter`, `ExpenditureInsightService`, `ExpenditureLearningService`, `ExpenditureStepPolicy`,
-    `ExpenditureWeekLearnedEvent`, `ExpenditureWeekNotificationListener`, `GoalDeletedEvent`, `GoalEngineService`,
-    `GoalEvaluationService`, `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`,
-    `GoalOverviewService`, `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`,
-    `GoalSavedEvent`, `GoalService`, `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`,
-    `GoalSuggestionNotificationListener`, `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`,
-    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
-    `GuardEvaluationService`, `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`,
-    `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
+  - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DietPreferences`,
+    `DietPreferencesPort`, `ExpenditureExplainer`, `ExpenditureExplanationService`, `ExpenditureFilter`,
+    `ExpenditureInsightService`, `ExpenditureLearningService`, `ExpenditureStepPolicy`, `ExpenditureWeekLearnedEvent`,
+    `ExpenditureWeekNotificationListener`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
+    `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`, `GoalOverviewService`,
+    `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
+    `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`, `GoalSuggestionNotificationListener`,
+    `GoalSuggestionPreviewService`, `GoalSuggestionProposedEvent`, `GoalSuggestionService`,
+    `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`,
+    `IntakeDayClassifier`, `IntakeDayMarkService`, `LearnedBaseResolver`, `MesoLifecycleSuggestionListener`,
+    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`, `WeeklyCardPolicy`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `ExpenditureExplanationMapper`, `ExpenditureInsightMapper`, `GoalMapper`, `GoalPlanLinkMapper`,
     `GoalSuggestionMapper`
@@ -766,7 +766,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
     GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
     POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 28 IT + 17 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 28 IT + 16 unit
   - **ITs:** `ActivityModelMigrationRunnerIT`, `AdaptiveReviewJobNotificationIT`, `AdaptiveReviewServiceIT`,
     `ExpenditureEstimateRepositoryIT`, `ExpenditureExplanationControllerIT`, `ExpenditureInsightControllerIT`,
     `ExpenditureInsightServiceIT`, `ExpenditureLearningServiceIT`, `ExpenditureRolloutRunnerIT`, `GoalContractIT`,
@@ -1068,15 +1068,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 26 IT + 8 unit
-  - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`,
+  - **ITs:** `FuelDayMovementIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`, `GoalIntakeAdherenceAdapterIT`,
     `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`,
     `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachStoreIT`,
     `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`, `MealOverridesScoringIT`,
     `MealOverridesServiceIT`, `MealRecipeCompositeScoringIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`,
     `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`,
     `WaterLogApiIT`
-  - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryCatalogPopulator`,
-    `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `MealPopulator`,
+    `PantryCatalogPopulator`, `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`,
+    `WeightLogPopulator`
 
 ### medication
 
@@ -1171,7 +1172,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
-  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`
+  - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
+    `TrainPopulator`
 
 ### pantry
 

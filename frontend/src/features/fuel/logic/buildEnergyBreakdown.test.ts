@@ -20,7 +20,7 @@ describe('buildEnergyBreakdown', () => {
     })!
     expect(bd.base).toMatchObject({ kcal: 2272, bmr: 1893, neat: 1.2, neatLabel: 'Ülő', formula: 'KATCH' })
     expect(bd.movement.kcal).toBe(1290)
-    expect(bd.movement.isWeeklyAvg).toBe(true) // the planned share is the weekly plan's part of the day
+    expect(bd.movement.isWeeklyAvg).toBe(false) // never a weekly average — only buildTdeeBreakdown (Én hub) still produces that shape
     expect(bd.movement.blocks?.map(b => b.label)).toEqual(['Gym', 'Röplabda'])
     expect(bd.movement.blocks?.[0].kcal).toBeGreaterThan(0)
     expect(bd.deficit).toMatchObject({ kcal: -869, goalLabel: 'Nyári cut' })
@@ -90,7 +90,7 @@ describe('buildEnergyBreakdown', () => {
     })!
     expect(bd.movement.kcal).toBe(energy.planned + energy.extra)
     expect(bd.movement.parts).toEqual([
-      { key: 'planned', label: 'A heti terved mai része', kcal: energy.planned },
+      { key: 'planned', label: 'Tervezett edzés · logolva', kcal: energy.planned },
       { key: 'extra', label: 'Terven kívüli mozgás', kcal: energy.extra },
     ])
     expect(bd.movement.parts!.reduce((a, p) => a + p.kcal, 0)).toBe(bd.movement.kcal)
@@ -141,5 +141,58 @@ describe('buildEnergyBreakdown', () => {
     })!
     expect(bd.movement.parts?.map(p => p.key)).toEqual(['planned'])
     expect(bd.movement.parts!.reduce((a, p) => a + p.kcal, 0)).toBe(bd.movement.kcal)
+  })
+
+  it('movement.pending mirrors energy.pending (mezo-tb3s2), defaulting to 0 when absent', () => {
+    const bd = buildEnergyBreakdown({
+      energy: { base: 2356, planned: 570, extra: 0, balance: 0, target: 2926, pending: 460 },
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1963, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Cut',
+    })!
+    expect(bd.movement.pending).toBe(460)
+
+    const noPending = buildEnergyBreakdown({
+      energy: { base: 2356, planned: 570, extra: 0, balance: 0, target: 2926 },
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1963, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Cut',
+    })!
+    expect(noPending.movement.pending).toBe(0)
+  })
+
+  it('each block carries done, straight through from the input (mezo-tb3s2)', () => {
+    const bd = buildEnergyBreakdown({
+      energy: { base: 2356, planned: 570, extra: 0, balance: 0, target: 2926 },
+      blocks: [
+        { ...blocks[0], done: true },
+        { ...blocks[1], done: false },
+      ],
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1963, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Cut',
+    })!
+    expect(bd.movement.blocks?.map(b => b.done)).toEqual([true, false])
+  })
+
+  it('a block with no done flag defaults to done: false', () => {
+    const bd = buildEnergyBreakdown({
+      energy: { base: 2356, planned: 570, extra: 0, balance: 0, target: 2926 },
+      blocks,
+      weightKg: 86,
+      tdeeBootstrap: { bmr: 1963, neat: 1.2, formula: 'KATCH' },
+      segment: null,
+      activityLabel: 'Ülő',
+      goalLabel: 'Cut',
+    })!
+    expect(bd.movement.blocks?.every(b => b.done === false)).toBe(true)
   })
 })

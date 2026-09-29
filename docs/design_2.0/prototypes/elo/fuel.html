@@ -1942,6 +1942,8 @@ svg{overflow:visible}
 .node small{display:block;font-size:11px;color:var(--sub)}
 .node b{font-size:15px;font-weight:600;color:color-mix(in srgb,var(--c) 75%,var(--ink));white-space:nowrap}
 .node.total{margin:0;padding:8px 10px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 45%,transparent)}
+.node small.pend{margin-top:3px;display:inline-block;padding:1px 7px;border-radius:999px;border:1px dashed color-mix(in srgb,var(--c) 45%,transparent);color:color-mix(in srgb,var(--c) 60%,var(--faint))}
+.etile.pend{opacity:.55;box-shadow:inset 0 0 0 1px rgba(245,239,230,.14);background:none}
 .node.total b i{font-style:normal;font-size:10.5px;color:var(--faint);margin-left:3px}
 .eqnote{font-size:12px;color:var(--sub);line-height:1.45;margin-top:12px}
 .eqmore{display:block;margin-top:10px;font-size:13px;font-weight:600;color:var(--sky)}
@@ -2683,10 +2685,19 @@ const sgn=n=>n<0?`−${Math.abs(Math.round(n))}`:`+${Math.round(n)}`;
 const HQ=()=>{const h=location.hash||'#mai';const [path,q='']=h.slice(1).split('?');return {path,q:Object.fromEntries(new URLSearchParams(q))}};
 
 /* a nap energiája — az éles FuelDayEnergy-hez hasonlóan: alap (tanult) + mozgás = mai cél */
-const E={formula:2400,learned:2480,sd:150,conf:'medium',move:320};
+/* mezo-tb3s2: a Mozgás a MA LOGOLT mozgás; a még meg nem csinált tervezett edzés csak halványan „még jön” */
+const MOVE_DAY={reggel:{l:'Reggel',done:[],pend:[['dumbbell','Felsőtest A','60 perc',190],['volley','Röpi edzés','90 perc',460]]},
+  delutan:{l:'Edzés után',done:[['dumbbell','Felsőtest A','58 perc',190]],pend:[['volley','Röpi edzés','90 perc',460]]},
+  este:{l:'Este',done:[['dumbbell','Felsőtest A','58 perc',190],['volley','Röpi edzés','95 perc',485]],pend:[]},
+  extra:{l:'+ terven kívül',done:[['dumbbell','Felsőtest A','58 perc',190],['volley','Röpi edzés','95 perc',485],['hike','Séta','terven kívül · 50 perc',95]],pend:[]}};
+const E={formula:2400,learned:2480,sd:150,conf:'medium',bal:-400,floor:1900,day:'delutan'};
+const sumK=a=>a.reduce((t,x)=>t+x[3],0);
+Object.defineProperty(E,'move',{get(){return sumK(MOVE_DAY[E.day].done)}});
+Object.defineProperty(E,'pend',{get(){return sumK(MOVE_DAY[E.day].pend)}});
 const baseNow=()=>E.learnedServed===false?E.formula:E.learned;
 E.prev=2420;   /* az előző heti keret-alap */
-const target=()=>baseNow()+E.move;
+const target=()=>Math.max(E.floor,baseNow()+E.move+E.bal);
+const balServed=()=>target()-baseNow()-E.move;   /* a padló a Célod sorba olvad */
 
 /* a napló: 7 napos pótlási ablak (backfillWindow) — ma + 7 nap vissza */
 const SLOTS=[{k:'reggeli',l:'Reggeli',ic:'sun',c:'var(--gold)',from:'07:00',to:'10:00',b:640},{k:'ebed',l:'Ebéd',ic:'bowl',c:'var(--sage)',from:'12:00',to:'14:30',b:900},{k:'uzsonna',l:'Uzsonna',ic:'snack',c:'var(--lav)',from:'16:00',to:'17:30',b:420},{k:'vacsora',l:'Vacsora',ic:'moon',c:'var(--sky)',from:'19:00',to:'21:00',b:840}];
@@ -2782,12 +2793,13 @@ function markSlot(){return ''}
 /* „Miből jön össze?" — a hero üvegdoboza (EquationBox) */
 function openEq(iso){
   const eaten=dayTot(iso), tgt=target(), rem=tgt-eaten, past=iso!==TODAY;
-  const N=[['Alap','flame','var(--gold)',E.learnedServed===false?'az alapanyagcseréd és az életmódod':'a súlytrendedből és az evésedből tanulva',kc(baseNow())],['Mozgás','dumbbell','var(--sage)','a heti edzésterved mai része',`+ ${E.move}`],['Célod','ring','var(--rose)','tartás','0'],['Étel','bowl','var(--coral)',past?'amit aznap logoltál':'amit ma eddig logoltál',`− ${kc(eaten)}`],['Marad','bolt','var(--sky)','a mai kereted maradéka',kc(rem)]];
+  const N=[['Alap','flame','var(--gold)',E.learnedServed===false?'az alapanyagcseréd és az életmódod':'a súlytrendedből és az evésedből tanulva',kc(baseNow())],['Mozgás','dumbbell','var(--sage)',(past?'aznap logolt mozgásod':'ma logolt mozgásod')+(MOVE_DAY[E.day].done.some(x=>x[2].startsWith('terven'))?' + terven kívüli':'')+(!past&&E.pend?`<br><small class="pend">még jön +${E.pend}, ha megcsinálod</small>`:''),`+ ${E.move}`],['Célod','ring','var(--rose)','a fogyási célod napi része',`− ${Math.abs(balServed())}`],['Étel','bowl','var(--coral)',past?'amit aznap logoltál':'amit ma eddig logoltál',`− ${kc(eaten)}`],['Marad','bolt','var(--sky)','a mai kereted maradéka',kc(rem)]];
   const d=$('#dialog'); d.style.setProperty('--c','var(--sky)');
   d.innerHTML=`<div class="eqbox"><div class="eqh">${I('bowl')}<span><strong>${kc(Math.abs(rem))}</strong><small>kcal ${rem<0?'a keret felett':past?'fért még bele':'fér még bele ma'}</small></span></div>
     <div class="eqbar"><i style="width:${Math.min(100,eaten/tgt*100)}%"></i><span>ettél</span><span class="r">még szabad</span></div>
     <div class="flow">${N.map(([l,ic,c,s,v],i)=>`<div class="node ${i===4?'total':''}" style="--c:${c}">${I(ic)}<span><strong>${l}</strong><small>${s}</small></span><b>${v}${i===4?'<i>kcal</i>':''}</b></div>`).join('')}</div>
-    <p class="eqnote">A keretet az alapigényed, a súlycélod és a mozgásod együtt adja — a számítás minden nap újraszületik.</p>
+    ${past?'':demo('mai mozgás','mozgas',Object.entries(MOVE_DAY).map(([k,v])=>[k,v.l]),E.day)}
+    <p class="eqnote">A keretet az alapigényed, a súlycélod és a mai mozgásod együtt adja — a keret akkor nő, amikor logolod az edzést.</p>
     <button class="eqmore" data-energy>Részletesen, honnan jön a keret ›</button>
     <button class="btn flatb" style="margin-top:12px" data-closedlg>Bezárom</button></div>`;
   d.classList.add('on');$('#scrim').classList.add('on');
@@ -2813,14 +2825,14 @@ function learnedFoot(){
     <div class="hw" id="hw"><div><div class="hw-in">${explainer()}</div></div></div>`;
 }
 SH.energy=['var(--sage)',()=>`<div class="shh">${I('ring')}<span class="grow"><span class="eb">NAPI CÉL</span><h3>Honnan jön a ${target()} kcal?</h3></span>${x}</div>
-    <p style="font-size:13px;color:var(--sub);line-height:1.45">A napi cél nem statikus — az alapanyagcserédből és a heti edzésterved mai részéből áll össze.</p>
-    <div class="eq section"><span><b>${baseNow()}</b>Alap</span>+<span><b>${E.move}</b>Mozgás</span>=<span class="res"><b>${target()}</b>Mai cél</span></div>
+    <p style="font-size:13px;color:var(--sub);line-height:1.45">A napi cél nem statikus — az alapigényedből, a ma logolt mozgásodból és a célodból áll össze.</p>
+    <div class="eq section"><span><b>${baseNow()}</b>Alap</span>+<span><b>${E.move}</b>Mozgás</span>−<span><b>${Math.abs(balServed())}</b>Célod</span>=<span class="res"><b>${target()}</b>Mai cél</span></div>
     ${baseBlock()}
-    <div class="eblk" style="--c:var(--gold)"><div class="esh"><span class="eb">MOZGÁS</span><b>+${E.move}</b></div>
-      <div class="etiles"><span class="etile">${I('calendar')}<b>290 <small>kcal</small></b>Heti terv<small>edzésterv</small></span><span class="eop">+</span><span class="etile">${I('steps')}<b>30 <small>kcal</small></b>Terven kívül<small>rögzítve, terven kívül</small></span><span class="eop">=</span><span class="etile res"><b>+${E.move} <small>kcal</small></b>Mai mozgás</span></div>
-      <span class="einfo">A mai edzéseid becsült többlete, tájékoztatásul</span>
-      <div class="etiles"><span class="etile">${I('dumbbell')}<b>380 <small>kcal</small></b>Felsőtest A<small>60 perc</small></span></div>
-      <p>A heti edzésterved <b>egyenletesen oszlik el</b> a hét napjain (edzésnapon kicsit több jut). A terven kívüli mozgásod aznap hozzáadódik. A becslés a nyugalmi energiád feletti többletet számolja.</p></div>
+    <div class="eblk" style="--c:var(--gold)"><div class="esh"><span class="eb">MOZGÁS · MA LOGOLVA</span><b>+${E.move}</b></div>
+      ${MOVE_DAY[E.day].done.length?`<div class="etiles">${MOVE_DAY[E.day].done.map(([ic,n,m,k])=>`<span class="etile">${I(ic)}<b>${k} <small>kcal</small></b>${n}<small>${m}</small></span>`).join('')}</div>`:`<p style="margin-top:6px">Ma még nincs logolt mozgásod.</p>`}
+      ${E.pend?`<span class="einfo">Még jön, ha megcsinálod · a keretben még nincs benne</span>
+      <div class="etiles">${MOVE_DAY[E.day].pend.map(([ic,n,m,k])=>`<span class="etile pend">${I(ic)}<b>+${k} <small>kcal</small></b>${n}<small>tervezett · ${m}</small></span>`).join('')}</div>`:''}
+      <p>A keret <b>akkor nő, amikor rögzíted</b> az edzést — a tervezett, még meg nem csinált edzés csak halványan látszik. A becslés a nyugalmi energiád feletti többletet számolja; ha rendszeresen túl- vagy alábecsül, a heti tanulás kiigazítja az alapodat.</p></div>
     <div style="height:10px"></div>`];
 
 /* ── „Hogy tanultam?" — a hat szakasz a legutóbbi hétről (LearnedBaseExplainer) ── */
@@ -2964,8 +2976,6 @@ function beallitas(){
   <section class="pair">${[['water','Víz-cél (ml)','2500','var(--sky)'],['fiber','Rost-cél (g)','30','var(--fiber)']].map(([ic,l,v,c],i)=>`<label class="fset-goal glass rise" style="--c:${c};--i:${i+3}">${I(ic)}<span>${l}</span><span class="inp">${v}</span></label>`).join('')}</section>
   ${sec('Finomhangolás')}
   <div class="fcard glass rise" style="--c:var(--lav);--i:5"><div class="field"><span>FEHÉRJE-SZINT</span><div class="seg" style="margin:0;justify-self:start"><button data-toast="Fehérje-szint: Alacsony">Alacsony</button><button data-toast="Fehérje-szint: Mérsékelt">Mérsékelt</button><button class="on" style="--c:var(--lav)">Magas</button></div></div>
-    <div class="hrow" style="justify-content:space-between"><span style="font-size:14px;font-weight:600">Edzőnap-shift</span><div class="stepper"><button>−</button><b>200</b><small>kcal</small><button>+</button></div></div>
-    <p class="fset-p">Pihenőnapról edzőnapra átcsoportosított kcal; a heti keret nem változik.</p>
     <p class="fset-p">A fehérje-szint a testsúlyod ÉS a zsírmentes tömeged szerinti számítást is állítja — a cél a kettő közül a nagyobb, egy felső korláttal. A mentés után a Makrók előnézete rögtön a választott szint szerinti grammot mutatja.</p>
     ${learnSwitch()}</div>
   <div class="list" style="margin-top:12px"><button class="row glass lift" style="--c:var(--gold)" data-go="#ablakok">${I('clock')}<span class="grow"><strong>Étkezési ablakok</strong><small>szerkesztése</small></span><span class="chev">›</span></button></div>
@@ -3260,7 +3270,8 @@ function saveSettings(){
 }
 
 EXTRA_CLICKS.push((e,t)=>{
-  const dm=t.closest('[data-demo]'); if(dm){const [k,v]=dm.dataset.demo.split('|');location.hash=k==='kartya'?`#mai?kartya=${v}`:`#tanulas?allapot=${v}`;if(k==='kartya'&&LS.hashCard===v){LS.card=v;LS.dismissed=false;LS.msg=null;soft()}if(k==='allapot'&&LS.hashPage===v){LS.hashPage=null;soft()}return true}
+  const dm=t.closest('[data-demo]'); if(dm&&dm.dataset.demo.startsWith('mozgas|')){E.day=dm.dataset.demo.split('|')[1];soft();openEq(TODAY);return true}
+  if(dm){const [k,v]=dm.dataset.demo.split('|');location.hash=k==='kartya'?`#mai?kartya=${v}`:`#tanulas?allapot=${v}`;if(k==='kartya'&&LS.hashCard===v){LS.card=v;LS.dismissed=false;LS.msg=null;soft()}if(k==='allapot'&&LS.hashPage===v){LS.hashPage=null;soft()}return true}
   const mk=t.closest('[data-mark]'); if(mk){const [iso,w]=mk.dataset.mark.split('|');setOn(iso,w==='1');return true}
   const um=t.closest('[data-unmark]'); if(um){clearMark(um.dataset.unmark);return true}
   if(t.closest('[data-weekly]')){e.stopPropagation();openWeekly();return true}

@@ -107,7 +107,7 @@ describe('deriveBlocks — ad-hoc logged sport session', () => {
   test('the logged session\'s OWN time and duration win over the plan it consumed', () => {
     const blocks = withSessions([planned()], [session({ time: '19:30', duration: 120 })])
     expect(blocks.filter((b) => b.kind === 'sport')).toEqual([
-      { kind: 'sport', sport: 'volleyball', time: '19:30', durationMin: 120, label: 'Volleyball' },
+      { kind: 'sport', sport: 'volleyball', time: '19:30', durationMin: 120, label: 'Volleyball', logged: true },
     ])
   })
 
@@ -129,6 +129,19 @@ describe('deriveBlocks — ad-hoc logged sport session', () => {
   test('no sessions passed keeps every caller byte-identical (default param)', () => {
     const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [planned()], season: '', weeklyHours: 0 } } }, null)
     expect(blocks.filter((b) => b.kind === 'sport')).toHaveLength(1)
+  })
+
+  // mezo-tb3s2 fix round 1: `logged` is real log provenance, not a clock-time guess — a block a
+  // session actually consumed is `logged: true`, a leftover planned occurrence nobody logged is
+  // `logged: false`, even once its scheduled time is long past.
+  test('a matched (logged) sport block carries logged: true', () => {
+    const blocks = withSessions([planned()], [session()])
+    expect(blocks.find((b) => b.kind === 'sport')?.logged).toBe(true)
+  })
+
+  test('a planned occurrence nobody logged carries logged: false, however far in the past its time is', () => {
+    const blocks = withSessions([planned({ time: '00:01' })], [])
+    expect(blocks.find((b) => b.kind === 'sport')?.logged).toBe(false)
   })
 })
 

@@ -23,7 +23,7 @@ describe('buildTdeeBreakdown', () => {
   it('maps tdeeBootstrap + activity into a deficit-free weekly-avg breakdown', () => {
     const bd = buildTdeeBreakdown(profile)!
     expect(bd.base).toMatchObject({ kcal: 2272, bmr: 1893, neat: 1.2, neatLabel: 'Ülő', formula: 'KATCH' })
-    expect(bd.movement).toMatchObject({ kcal: 1207, isWeeklyAvg: true })
+    expect(bd.movement).toMatchObject({ kcal: 1207, isWeeklyAvg: true, label: 'Tervezett mozgás · heti átlag' })
     expect(bd.movement.blocks).toBeUndefined()
     expect(bd.deficit).toBeUndefined()
     expect(bd.target).toBe(3479)

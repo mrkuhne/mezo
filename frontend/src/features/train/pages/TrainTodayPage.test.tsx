@@ -12,6 +12,9 @@ import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { snoozeKey } from '@/features/train/logic/morningWindow'
 import { localDateString, huMonthDayDow } from '@/shared/lib/dates'
 import { weekDateIso } from '@/features/train/logic/weekAgenda'
+// The energy card's served numbers in mock mode (Task 8, mezo-tb3s2) — read straight off the
+// same fixture `useFuelDay()` seeds from, never a hard-coded guess.
+import { fuelDayEnergy as mockFuelDayEnergy } from '@/data/fuel/fuel'
 
 // Weekly-row gym taps route straight to the session/review (direct-start flow,
 // mezo-bxpg) via useNavigate; mock it so we can assert the exact target
@@ -33,6 +36,10 @@ let goalOverride: ((real: ReturnType<typeof import('@/data/hooks').useGoal>) => 
 // needs its own override, the same graft-a-partial-override idiom as train/goal above,
 // rather than standing up the whole real-mode msw fixture set just for this one flag.
 let timingProfileOverride: ((real: ReturnType<typeof import('@/data/hooks').useTimingProfile>) => Record<string, unknown>) | null = null
+// Task 8 (mezo-tb3s2): the energy card now reads the served `useFuelDay()` energy directly —
+// this override lets a test force `isPending` (the "no numeric flash-then-swap" loading case)
+// without standing up a whole msw fixture just for that one flag.
+let fuelDayOverride: ((real: ReturnType<typeof import('@/data/hooks').useFuelDay>) => Record<string, unknown>) | null = null
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -49,6 +56,10 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       const real = actual.useTimingProfile(...args)
       return timingProfileOverride ? { ...real, ...timingProfileOverride(real) } : real
     },
+    useFuelDay: (...args: Parameters<typeof actual.useFuelDay>) => {
+      const real = actual.useFuelDay(...args)
+      return fuelDayOverride ? { ...real, ...fuelDayOverride(real) } : real
+    },
   }
 })
 
@@ -64,6 +75,7 @@ afterEach(() => {
   trainOverride = null
   goalOverride = null
   timingProfileOverride = null
+  fuelDayOverride = null
 })
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
@@ -1315,9 +1327,6 @@ const addTodaySportSlot = (real: ReturnType<typeof import('@/data/hooks').useTra
     },
   }
 }
-// A generic single-line "N kcal" number extractor for the split rows.
-const firstNumber = (text: string) => Number(text.match(/-?\d+(\.\d+)?/)?.[0])
-
 // Mock's active running block only prescribes Kedd/Pén (dayOfWeek 1/4, running.ts) — freeze
 // the clock to a Thursday (2026-07-16, the same fixed date the rest of this suite already
 // uses for day-of-week determinism, mezo-pfdv) so `todayIdx()` never silently folds a
@@ -1379,43 +1388,105 @@ test('the slot-driven volleyball hero is unchanged by the unscheduled-sport row'
   })
 })
 
-test('energy card: a planned+done mix splits honestly into earned vs. still-planned', () => {
-  trainOverride = (real) => addTodaySportSlot(real, true) // gym still planned (not completed), sport already logged
-  withFrozenThursday(() => {
-    const { container } = renderView()
-    const card = container.querySelector('.trm-energy')
-    expect(card).not.toBeNull()
-    const plannedKcal = firstNumber(card!.querySelector('.trm-energy-main strong')!.textContent!)
-    const spans = card!.querySelectorAll('.trm-energy-split span')
-    const earnedKcal = firstNumber(spans[0].textContent!)
-    const remainingKcal = firstNumber(spans[1].textContent!)
-    expect(spans[0].textContent).toMatch(/már megszolgálva/)
-    expect(spans[1].textContent).toMatch(/a tervben/)
-    // a real mix: both sides carry weight, and they honestly sum back to the headline
-    expect(earnedKcal).toBeGreaterThan(0)
-    expect(remainingKcal).toBeGreaterThan(0)
-    expect(earnedKcal + remainingKcal).toBe(plannedKcal)
-    expect(card!.querySelector('.trm-energy-note')!.textContent).toBe('Becslés, nem mérés.')
-  })
+// ---- Task 8 (mezo-tb3s2): the energy card reads the served Fuel energy, not a
+// client-side estimate — `trainDayEnergy`/weight/timing-profile no longer gate it at all. ----
+
+test('energy card (mock): shows the served logged movement off the same fixture useFuelDay seeds from', async () => {
+  const { container } = renderView()
+  const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
+  const earned = mockFuelDayEnergy.plannedMovementKcal + mockFuelDayEnergy.extraMovementKcal
+  expect(within(card).getByText(String(earned), { selector: '.trm-energy-main strong' })).toBeInTheDocument()
+  expect(card.querySelector('.trm-energy-main')!.textContent).toBe(`+${earned}kcal`)
+  const doneSpan = card.querySelector('.trm-energy-split span:first-child')!
+  expect(doneSpan.textContent).toBe(`${earned} kcal már a keretedben`)
+  // the mock fixture's still-unlogged evening run rides along as the pending preview.
+  const pending = mockFuelDayEnergy.pendingMovementKcal ?? 0
+  expect(pending).toBeGreaterThan(0)
+  expect(card.querySelectorAll('.trm-energy-split span')[1].textContent).toBe(`+${pending} kcal még jön, ha megcsinálod`)
+  expect(within(card).getByText(/Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./)).toBeInTheDocument()
+  expect(container.querySelector('.trm-energy-note')!.textContent).not.toMatch(/^A folyamatban lévő edzés/)
 })
 
-test('a non-today selection hides both the energy and the muscle-impact card', () => {
+test('energy card (real mode): shows the served logged movement and the pending preview', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+      HttpResponse.json({
+        date: String(params.date),
+        targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
+        consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+        meals: [],
+        energy: {
+          baseKcal: 2450, plannedMovementKcal: 190, extraMovementKcal: 0,
+          balanceKcal: 0, targetKcal: 2640, pendingMovementKcal: 460,
+        },
+      }),
+    ),
+  )
+  renderView()
+  const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
+  expect(within(card).getByText('190', { selector: '.trm-energy-main strong' })).toBeInTheDocument()
+  expect(card.querySelector('.trm-energy-main')!.textContent).toBe('+190kcal')
+  const spans = card.querySelectorAll('.trm-energy-split span')
+  expect(spans[0].textContent).toBe('190 kcal már a keretedben')
+  expect(spans[1].textContent).toBe('+460 kcal még jön, ha megcsinálod')
+  expect(within(card).getByText(/Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./)).toBeInTheDocument()
+})
+
+test('adds the in-progress note while a gym session is open', async () => {
+  trainOverride = (real) => ({
+    todaySession: {
+      templateSessionId: real.todaySession?.templateSessionId ?? 'd-1',
+      openWorkout: {
+        id: 'w-open', templateSessionId: real.todaySession?.templateSessionId ?? 'd-1',
+        date: localDateString(), status: 'active', sets: [],
+      },
+    },
+  })
+  const { container } = renderView()
+  await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
+  expect(container.querySelector('.trm-energy-note')!.textContent).toMatch(
+    /^A folyamatban lévő edzés a befejezéskor kerül a keretedbe\. Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./,
+  )
+})
+
+test('shows no card when there is no served energy and no pending/logged movement', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+      HttpResponse.json({
+        date: String(params.date),
+        targets: { kcal: 2400, p: 180, c: 260, f: 70, water: 4000 },
+        consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+        meals: [],
+        energy: {
+          baseKcal: 2400, plannedMovementKcal: 0, extraMovementKcal: 0,
+          balanceKcal: 0, targetKcal: 2400, pendingMovementKcal: 0,
+        },
+      }),
+    ),
+  )
+  const { container } = renderView()
+  expect(container.querySelector('.trm-energy')).toBeNull()
+})
+
+// "No numeric flash-then-swap" (same rule the poster's own fields follow): while
+// `useFuelDay` is still pending, the card must be entirely absent, never a "+0" flash.
+test('energy card: held entirely while useFuelDay is pending, appears once resolved', () => {
+  fuelDayOverride = (real) => ({ fuel: real.fuel, isPending: true })
+  const { container, rerender } = renderView()
+  expect(container.querySelector('.trm-energy')).toBeNull()
+  fuelDayOverride = null
+  rerender(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+  expect(container.querySelector('.trm-energy')).not.toBeNull()
+})
+
+test('a non-today selection hides the energy and the muscle-impact card', () => {
   const { container } = renderView()
   expect(container.querySelector('.trm-energy')).not.toBeNull() // sanity: today shows it
   fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
   expect(container.querySelector('.trm-energy')).toBeNull()
   expect(container.querySelector('.trm-mus')).toBeNull()
-})
-
-test('energy card: no weight on file renders the honest sentence, never a fabricated number', () => {
-  goalOverride = () => ({ goal: null, goalResponse: null })
-  const { container } = renderView()
-  const card = container.querySelector('.trm-energy')
-  expect(card).not.toBeNull()
-  expect(card!.querySelector('.trm-energy-main')).toBeNull()
-  expect(card!.querySelector('.trm-energy-empty')!.textContent).toBe(
-    'Ha megadod a súlyod, kiszámoljuk, mennyit ad a mai mozgásod a keretedhez.',
-  )
 })
 
 test('muscle-impact card: the ladder word tracks planned volume, and earned never overflows planned', () => {
@@ -1466,30 +1537,17 @@ test('gym day with a sport slot too: the impact footer admits the sport load is 
   expect(note).toMatch(/gym terved látod itt.*sportod terhelését külön, becsléssel/)
 })
 
-test('nothing planned today: neither card renders (never an all-zero table)', () => {
+test('nothing planned today: the muscle-impact card does not render (never an all-zero table)', () => {
+  // The energy card (Task 8, mezo-tb3s2) no longer reads today's training plan at all — it
+  // mirrors the served Fuel energy, so a rest day with no gym/sport is not asserted here.
   trainOverride = (real) => inactivateGym(real) // Csü rest day, mock carries no sport slot on Csü by default
   withFrozenThursday(() => {
     const { container } = renderView()
-    expect(container.querySelector('.trm-energy')).toBeNull()
     expect(container.querySelector('.trm-mus')).toBeNull()
   })
 })
 
 // ---- Fix round 1 (mezo-88iwa.6 review) ----
-
-// Finding 1 (ship-blocking): a real-mode first paint with the timing profile still
-// pending must hold the WHOLE energy card, not render "+0 kcal" from the still-empty
-// gym block. Mock's own `useTimingProfile` is always synchronous, so the override
-// above stands in for "real mode, pending" without standing up the whole msw fixture.
-test('energy card: held entirely while the timing profile is pending on a gym day, appears once resolved', () => {
-  timingProfileOverride = () => ({ data: null, isPending: true })
-  const { container, rerender } = renderView()
-  expect(container.querySelector('.trm-energy')).toBeNull()
-  timingProfileOverride = () => ({ data: null, isPending: false })
-  rerender(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
-  expect(container.querySelector('.trm-energy')).not.toBeNull()
-  expect(container.querySelector('.trm-energy-main strong')).not.toBeNull()
-})
 
 const addTwoTodaySportSlots = (real: ReturnType<typeof import('@/data/hooks').useTrain>, loggedKind: 'volleyball' | 'cross') => {
   const schedule = real.sport.schedule
@@ -1610,13 +1668,42 @@ describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
     expect(screen.getByText(/MAI ÁLLAPOT/)).toBeInTheDocument()
   })
 
-  it('the energy card leaves a skipped gym block out', async () => {
+  // mezo-tb3s2 × Kihagyás S1: the energy card mirrors the SERVED Fuel energy, and the backend's
+  // pending preview excludes a skipped occurrence — so a skip refetches the Fuel day and the
+  // card's „még jön" line follows it. Nothing logged changes: the credited number stays put.
+  it('the energy card drops a skipped gym from its served pending preview (real mode)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    let skipped = false
+    server.use(
+      http.put(`${API_BASE}/api/train/skips`, async ({ request }) => {
+        skipped = true
+        const body = await request.json() as Record<string, unknown>
+        return HttpResponse.json({
+          id: 'skip-1', source: 'USER', serious: false, freePass: true, excused: true,
+          dayOfWeek: null, time: null, sessionKey: null, reasonText: null, ...body,
+        })
+      }),
+      http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+        HttpResponse.json({
+          date: String(params.date),
+          targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
+          consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+          meals: [],
+          energy: {
+            baseKcal: 2450, plannedMovementKcal: 190, extraMovementKcal: 0,
+            balanceKcal: 0, targetKcal: 2640, pendingMovementKcal: skipped ? 0 : 460,
+          },
+        }),
+      ),
+    )
     const { container } = renderSkips()
-    const before = container.querySelector('.trm-energy-main strong')?.textContent ?? null
-    expect(before).not.toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Kihagyom' }))
-    await screen.findByText('Miért marad ki?')
-    await waitFor(() => expect(container.querySelector('.trm-energy-main strong')?.textContent ?? null).not.toBe(before))
+    const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
+    await waitFor(() => expect(card.querySelectorAll('.trm-energy-split span')[1]?.textContent)
+      .toBe('+460 kcal még jön, ha megcsinálod'))
+    fireEvent.click(await screen.findByRole('button', { name: 'Kihagyom' }))
+    await waitFor(() => expect(skipped).toBe(true))
+    await waitFor(() => expect(container.querySelectorAll('.trm-energy-split span')).toHaveLength(1))
+    expect(container.querySelector('.trm-energy-main strong')!.textContent).toBe('190')
   })
 
   it('a planned sport card offers Kihagyom; skipping it swaps the CTA row for the skipped block', async () => {

@@ -253,22 +253,29 @@ public class WorkoutWindowQueryService {
     }
 
     /**
-     * One date's movement (mezo-32m82, spec §5): was the day's PLANNED training done, and how many
-     * kcal of UNPLANNED ("extra") movement it held. {@code NONE} is the all-false/all-zero case.
-     * Replaces {@code hasLoggedTrainingOn} (mezo-u13jv) — see {@link #movementOn}'s javadoc for the
-     * owner decisions behind the split.
+     * One date's movement (mezo-tb3s2, spec §2): the net kcal of the LOGGED sessions matched to a plan
+     * ({@code plannedKcal}) and not matched ({@code extraKcal}); {@code pendingKcal} previews the date's
+     * still-unlogged planned sessions at the moderate band — display only, and only for today or later.
+     * {@code plannedDone} is kept for callers that only need adherence.
      */
-    public record DayMovement(boolean plannedDone, int extraKcal) {
-        public static final DayMovement NONE = new DayMovement(false, 0);
+    public record DayMovement(boolean plannedDone, int plannedKcal, int extraKcal, int pendingKcal) {
+        public static final DayMovement NONE = new DayMovement(false, 0, 0, 0);
+
+        /** The served Mozgás: everything logged, planned or not (M1). */
+        public int movementKcal() {
+            return plannedKcal + extraKcal;
+        }
     }
 
     /**
-     * Was the day's PLANNED training done, and how many kcal of UNPLANNED movement did it hold
-     * (mezo-32m82, spec §5, replacing {@code hasLoggedTrainingOn} from mezo-u13jv). Owner decisions
-     * D2–D4: a planned session's energy is already priced into the weekly base (the weekly
-     * schedule-derived EAT), so only PLANNED adherence is allowed to flip the day-type kcal pick —
-     * a logged session that fulfils no plan is credited separately as EXTRA kcal, and a planned
-     * session that was never done is not deducted (no negative credit for a miss).
+     * The date's LOGGED movement split into planned and extra kcal, plus a display-only preview of the
+     * still-unlogged plan (mezo-tb3s2, spec §2; the planned/extra split itself is mezo-32m82 §5,
+     * replacing {@code hasLoggedTrainingOn} from mezo-u13jv). Every logged session credits its net
+     * kcal — a session that fulfils a plan into {@code plannedKcal}, any other into {@code extraKcal};
+     * a planned session that was never done credits nothing (no negative credit for a miss).
+     * {@code pendingKcal} is that unlogged remainder at the moderate band (gym/run at their configured
+     * default minutes, sport at the slot's duration) — computed only for today or later, and never
+     * part of the served target.
      *
      * <p>Gym: a completed instance is PLANNED when it is meso-origin AND the weekday has a gym
      * slot AND fewer meso instances than slots have already been counted planned that day; every
@@ -281,9 +288,10 @@ public class WorkoutWindowQueryService {
      * priced in (D2/D3). Events still consume their nearest match so they can't steal a slot. Run: the active block's prescribed
      * sessions on the date are filled by the date's logged runs first; any logged run beyond that
      * count is extra at its persisted kcal. {@code plannedDone} is true when ANY of the three kinds
-     * matched a plan; {@code extraKcal} sums every kind's extras. The athlete's rest-kcal/hour is
-     * looked up at most once, lazily, only when an extra gym instance actually exists — an unknown
-     * body contributes 0, never a fabricated estimate.
+     * matched a plan; {@code plannedKcal} sums every matched session (gym via the net model, sport and
+     * run at their persisted kcal, a null kcal counting 0), {@code extraKcal} every kind's extras. The
+     * athlete's rest-kcal/hour is looked up at most once, lazily, only when a gym instance or a
+     * pending preview actually needs it — an unknown body contributes 0, never a fabricated estimate.
      */
     @Transactional(readOnly = true)
     public DayMovement movementOn(UUID userId, LocalDate date) {
@@ -324,8 +332,18 @@ public class WorkoutWindowQueryService {
         Map<LocalDate, List<RunSessionLogEntity>> runsByDate = runSessionLogRepository
             .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
             .collect(Collectors.groupingBy(RunSessionLogEntity::getDate));
+        // Kihagyás S1 (mezo-q4xt2.1) × mezo-tb3s2: the same central skip read windowsFor uses — a
+        // skipped gym day / skipped prescribed run is neither logged nor pending. (Sport skips
+        // already ride `skips` above: plannedSportPool drops a skipped slot.)
+        List<PlannedSkipPolicy.Verdict> skipVerdicts = plannedSkipService.verdictsBetween(userId, from, to);
+        Set<LocalDate> gymSkipDates = skipVerdicts.stream()
+            .filter(v -> v.row().kind() == PlannedSkipEntity.Kind.GYM)
+            .map(v -> v.row().date())
+            .collect(Collectors.toSet());
+        Set<PlannedSkipService.RunSkipKey> runSkips = PlannedSkipService.runSkipsOf(skipVerdicts);
 
-        // Looked up at most once for the whole range, and only if an extra gym instance needs it.
+        // Looked up at most once for the whole range, and only if a done gym instance (planned or
+        // extra) or a today-or-later pending preview needs it (mezo-tb3s2).
         Supplier<BigDecimal> restKcalPerHour = new Supplier<>() {
             private boolean loaded;
             private BigDecimal value;
@@ -347,7 +365,8 @@ public class WorkoutWindowQueryService {
             result.put(day, movementForDay(day, gymSlots, doneByDate.getOrDefault(day, List.of()),
                 sportSlots, eventsByDate.getOrDefault(day, List.of()),
                 sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock,
-                runsByDate.getOrDefault(day, List.of()), restKcalPerHour));
+                runsByDate.getOrDefault(day, List.of()), restKcalPerHour,
+                gymSkipDates.contains(day), runSkips));
         }
         return result;
     }
@@ -358,9 +377,11 @@ public class WorkoutWindowQueryService {
             List<WorkoutSessionEntity> doneInstances, List<SportScheduleSlotEntity> sportSlots,
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
             Set<SportSlotSkipService.SkipKey> skips, RunningBlockEntity activeBlock,
-            List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour) {
+            List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour,
+            boolean gymSkipped, Set<PlannedSkipService.RunSkipKey> runSkips) {
         int dow = date.getDayOfWeek().getValue() - 1;
         boolean plannedDone = false;
+        int plannedKcal = 0;
         int extraKcal = 0;
 
         // Gym.
@@ -371,6 +392,8 @@ public class WorkoutWindowQueryService {
             if (planned) {
                 plannedGymCount++;
                 plannedDone = true;
+                plannedKcal += activityEnergyModel
+                    .netKcal("gym", null, gymMinutes(instance), restKcalPerHour.get()).orElse(0);
                 continue;
             }
             extraKcal += activityEnergyModel
@@ -386,6 +409,7 @@ public class WorkoutWindowQueryService {
             }
             if (plan != null && !plan.oneOffEvent()) {
                 plannedDone = true;
+                plannedKcal += session.getKcal() != null ? session.getKcal() : 0;
             } else {
                 // No plan, OR a one-off event: the weekly base only sums RECURRING slots, so an
                 // event's energy was never priced in — credit the session as extra (spec D2/D3).
@@ -401,12 +425,42 @@ public class WorkoutWindowQueryService {
             if (plannedRunCount < prescribedRunCount) {
                 plannedRunCount++;
                 plannedDone = true;
+                plannedKcal += run.getKcal() != null ? run.getKcal() : 0;
             } else {
                 extraKcal += run.getKcal() != null ? run.getKcal() : 0;
             }
         }
 
-        return new DayMovement(plannedDone, extraKcal); // a record: value-equal to NONE when both are false/0
+        // Pending (display only, mezo-tb3s2): today's / a future date's still-unlogged plan at the
+        // moderate band. A past day's miss is simply a miss — no preview. A SKIPPED occurrence
+        // (Kihagyás S1, mezo-q4xt2.1) is not pending either: a skipped gym day previews no gym, a
+        // skipped prescribed run leaves the run count (a logged run on that day still credits as
+        // above — never hide a real workout). Sport skips are already out of `unmatchedSport`.
+        int pendingKcal = 0;
+        if (!date.isBefore(LocalDate.now())) {
+            long gymLeft = gymSkipped ? 0 : Math.max(0, gymSlotCount - plannedGymCount);
+            if (gymLeft > 0) {
+                int gymEach = activityEnergyModel
+                    .netKcal("gym", null, props.gymDefaultMinutes(), restKcalPerHour.get()).orElse(0);
+                pendingKcal += (int) gymLeft * gymEach;
+            }
+            for (PlannedSport left : unmatchedSport) {
+                int minutes = left.durationMin() != null ? left.durationMin() : props.gymDefaultMinutes();
+                pendingKcal += activityEnergyModel
+                    .netKcal(left.sport(), null, minutes, restKcalPerHour.get()).orElse(0);
+            }
+            long unskippedRunCount = activeBlock == null ? 0 : prescribedRunSessionsOn(activeBlock, date)
+                .filter(s -> !runSkips.contains(new PlannedSkipService.RunSkipKey(date, s.key())))
+                .count();
+            long runsLeft = Math.max(0, unskippedRunCount - plannedRunCount);
+            if (runsLeft > 0) {
+                int runEach = activityEnergyModel
+                    .netKcal("run", null, props.runDefaultMinutes(), restKcalPerHour.get()).orElse(0);
+                pendingKcal += (int) runsLeft * runEach;
+            }
+        }
+        // A record: value-equal to NONE when nothing moved and nothing is pending.
+        return new DayMovement(plannedDone, plannedKcal, extraKcal, pendingKcal);
     }
 
     /** Minutes for an EXTRA gym instance's net-kcal estimate: derived work time when known, else

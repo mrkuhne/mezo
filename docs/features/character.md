@@ -1718,7 +1718,11 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
 - `service/CharacterPromptAssembler.java` — the `[Karakter]` block renderer
 - `service/CharacterService.java` / `CharacterSignalReads.java` /
   `CharacterConfidenceWords.java` — reads, detector-input gathering, human-words confidence
-  (`CharacterService` also owns `runs()`/`run()`, S9)
+  (`CharacterService` also owns `runs()`/`run()`, S9). `CharacterSignalReads.kcalTarget`'s javadoc
+  was reworded for the actual-movement budget (`mezo-tb3s2`, 2026-09-28): the SERVED target it
+  projects through `DayTargetProjector` is now "base + logged planned + extra movement + balance"
+  rather than a day-type pick on planned-training-done ([`fuel.md`](fuel.md) §5) — no detector
+  behavior changed, since the method already delegated the whole projection.
 
 **Cross-feature port**: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java`
 (interface) — consumed by `feature/companion/service/ChatService.java`,

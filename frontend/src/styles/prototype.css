@@ -9106,6 +9106,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .fmx-node.is-total { margin-top: 6px; padding-top: 14px; border-top: 1px solid var(--divider); }
 .fmx-node.is-total > b { font-size: 24px; }
 .fmx-node.is-total > b i { font-style: normal; font-size: 11px; margin-left: 4px; color: var(--sub); }
+/* Mozgás pending preview (mezo-tb3s2) — the prototype's `.node small.pend`: a faint dashed pill
+   naming what still fits if today's remaining planned sessions get logged. */
+.fmx-node-pend { margin-top: 3px; display: inline-block; padding: 1px 7px; border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--node-color) 45%, transparent);
+  color: color-mix(in srgb, var(--node-color) 60%, var(--faint)); }
 .fmx-glass-note { margin: 10px 0 0; font-size: 10.5px; line-height: 1.55; color: var(--faint); text-align: left; }
 .fmx-glass-close { display: block; width: 100%; margin-top: 14px; padding: 11px 0;
   border: 0; border-radius: 14px; background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
@@ -15070,6 +15075,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .flp-etile-sub { font-size: 9.5px; color: var(--text-muted); }
 .flp-etile.is-result { background: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 45%, transparent); }
 .flp-etile.is-result .flp-etile-val { font-size: 18px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+/* mezo-tb3s2: today's still-scheduled, not-yet-logged session preview — faint, no fill. */
+.flp-etile.is-pending{opacity:.55;background:none;box-shadow:inset 0 0 0 1px rgba(245,239,230,.14)}
 /* mezo-32m82: the day's per-session previews under the served movement sum — informational, no operators. */
 .flp-einfo { display: block; margin: 10px 0 6px; font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
 .flp-etiles.is-info .flp-etile { flex: 0 1 120px; opacity: 0.78; }
@@ -17598,7 +17605,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .trm .trm-energy-split i.done { background: var(--dv-amber); box-shadow: 0 0 6px var(--dv-amber); }
 .trm .trm-energy-split i.plan { background: color-mix(in srgb, var(--dv-amber) 30%, transparent); }
 .trm .trm-energy-split b { font-weight: 600; color: var(--text-primary); }
-.trm .trm-energy-empty { margin: 10px 0 0; font-size: 13px; line-height: 1.55; color: var(--text-secondary); }
 .trm .trm-energy-note, .trm .trm-mus-note { margin: 10px 0 0; font-size: 11px; line-height: 1.45; color: var(--text-muted); }
 
 /* ── muscle impact: coral glass, rows in the region hue ── */

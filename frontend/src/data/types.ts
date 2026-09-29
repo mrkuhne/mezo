@@ -320,14 +320,19 @@ export interface MealAiDraft {
 }
 export interface Micronutrient { name: string; pct: number; target: string }
 export interface FuelSummary { name: string; when: string; state: 'done' | 'pending'; dose: string }
-/** The served target's equation (mezo-32m82): base + planned + extra + balance = target (= targets.kcal).
- *  Mirrors the generated `FuelDayEnergy` wire schema; null on the static path (no goal / no biometrics). */
+/** The served target's equation (mezo-32m82, mezo-tb3s2): base + planned + extra + balance = target
+ *  (= targets.kcal), where planned/extra are the LOGGED sessions' net kcal. Mirrors the generated
+ *  `FuelDayEnergy` wire schema; null on the static path (no goal / no biometrics). */
 export interface FuelDayEnergy {
   baseKcal: number
+  /** Net kcal of the LOGGED sessions that fulfilled a plan (mezo-tb3s2) — no longer the weekly share. */
   plannedMovementKcal: number
   extraMovementKcal: number
   balanceKcal: number
   targetKcal: number
+  /** Today's planned but not yet logged sessions at the moderate band (mezo-tb3s2) — display only,
+   *  never part of targetKcal; null/absent when nothing is pending. */
+  pendingMovementKcal?: number | null
   /** Where baseKcal comes from (mezo-zz91i): the BMR × NEAT formula or the base learned from intake + weight trend. */
   baseSource?: 'formula' | 'learned'
   /** BMR × NEAT, shown next to a learned base. */

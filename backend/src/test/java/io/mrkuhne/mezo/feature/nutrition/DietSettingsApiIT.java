@@ -17,10 +17,13 @@ import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.feature.goal.repository.ExpenditureEstimateRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
+import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -44,6 +47,8 @@ class DietSettingsApiIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private GoalSuggestionPopulator suggestionPopulator;
     @Autowired private GoalSuggestionRepository suggestionRepository;
+    @Autowired private FuelDayService fuelDayService;
+    @Autowired private TrainPopulator trainPopulator;
 
     @Test
     void testGetDietSettings_shouldReturnConfigDefaultGhost_whenNoneSet() {
@@ -255,11 +260,45 @@ class DietSettingsApiIT extends ApiIntegrationTest {
         putForBody("/api/diet/settings", req, auth, HttpStatus.OK, DietSettingsResponse.class);
 
         // The whole point of routing the preview through the calculator: no drift from the save.
+        // kcal/carbs are the SERVED day target (mezo-tb3s2) — what the Fuel day shows after Mentés.
         GoalPrescriptionJson.Segment saved = todaysSegment(owner, goal);
-        assertThat(preview.getKcal()).isEqualTo(saved.kcal());
+        DailyTargets served = fuelDayService.dailyTargets(owner, LocalDate.now());
+        assertThat(preview.getKcal()).isEqualTo(served.kcal());
         assertThat(preview.getProteinG()).isEqualTo(saved.proteinG());
-        assertThat(preview.getCarbsG()).isEqualTo(saved.carbsG());
+        assertThat(preview.getCarbsG()).isEqualTo(served.c());
         assertThat(preview.getFatG()).isEqualTo(saved.fatG());
+    }
+
+    /**
+     * mezo-tb3s2 final review: the preview used to project WITHOUT the goal's base — segment kcal +
+     * extra, no BMR floor — so with a planned week (the segment's planning kcal carries the weekly
+     * movement) it showed a number the Fuel day never serves. It must equal today's served target:
+     * base + today's logged movement + balance, BMR floor.
+     */
+    @Test
+    void testPreviewDietSettings_shouldServeTheFuelDayTarget_whenThePlanAndTodaysMovementDiffer() {
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        HttpHeaders auth = ownerAuthHeaders();
+        profilePopulator.create(owner);
+        LocalDate today = LocalDate.now();
+        int otherDay = today.getDayOfWeek().plus(3).getValue() - 1;
+        trainPopulator.createScheduleSlot(owner, otherDay, "18:00", 90, "training"); // planned, not today
+        activeGoalCoveringToday(owner);
+        trainPopulator.withKcal(trainPopulator.createSportSessionNoTime(owner, today, 45), 300); // unplanned, logged
+        GoalPrescriptionJson.Segment seg = todaysSegment(owner,
+            goalRepository.findByCreatedByAndStatusAndDeletedFalse(owner, "active").get(0));
+
+        DietSettingsPreviewResponse preview = postForBody("/api/diet/settings/preview",
+            draft(SetDietSettingsRequest.SplitPresetEnum.BALANCED, SetDietSettingsRequest.ProteinTierEnum.MODERATE),
+            auth, HttpStatus.OK, DietSettingsPreviewResponse.class);
+
+        DailyTargets served = fuelDayService.dailyTargets(owner, today);
+        assertThat(served.source()).isEqualTo("goal");
+        assertThat(preview.getKcal()).isEqualTo(served.kcal());
+        assertThat(preview.getCarbsG()).isEqualTo(served.c());
+        assertThat(preview.getKcal())
+            .as("not the pre-fix base-less shape (planning kcal + extra)")
+            .isNotEqualTo(seg.kcal() + 300);
     }
 
     @Test

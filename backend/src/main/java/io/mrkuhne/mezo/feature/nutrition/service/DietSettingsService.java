@@ -5,7 +5,6 @@ import io.mrkuhne.mezo.api.dto.DietSettingsResponse;
 import io.mrkuhne.mezo.api.dto.SetDietSettingsRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.DietPreferences;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
-import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
@@ -87,9 +86,11 @@ public class DietSettingsService {
      * preview. Read-only in the strong sense: no preference row is written and the active goal
      * keeps its stored prescription; {@link GoalEngineService#previewActiveGoalSegment} runs the
      * SAME {@code GoalPrescriptionCalculator} the save path runs, and the segment is projected
-     * through the SAME {@link DayTargetProjector} the Fuel day and the meal scorer use — so the
-     * previewed numbers are exactly the ones Mentés will make real. No active goal / no biometric
-     * profile / no covering segment → the static config targets, flagged {@code source=config}.
+     * through the SAME {@link DayTargetProjector} the Fuel day and the meal scorer use, with the
+     * draft's {@link EnergyBase} (base + BMR floor) and today's logged movement bound in — so the
+     * previewed kcal is the served day target (base + logged movement + balance, BMR floor) that
+     * Mentés will make real (mezo-tb3s2). No active goal / no biometric profile / no covering
+     * segment → the static config targets, flagged {@code source=config}.
      *
      * <p>The draft is validated like a save: an incoherent custom split is a 400, not a silently
      * balanced projection.
@@ -98,12 +99,12 @@ public class DietSettingsService {
     public DietSettingsPreviewResponse previewSettings(UUID userId, SetDietSettingsRequest req) {
         validateCustomSplit(req);
         LocalDate today = LocalDate.now();
-        GoalPrescriptionJson.Segment seg =
+        GoalEngineService.SegmentPreview preview =
             goalEngineService.previewActiveGoalSegment(userId, toPreferences(userId, req), today);
-        // No goal handle here (the engine owns the draft recompute): no EnergyBase, so no BMR floor
-        // and no breakdown — the preview only reads kcal and macros (mezo-32m82).
         DailyTargets t = DayTargetProjector.project(
-            seg, null, () -> workoutWindowQueryService.movementOn(userId, today), nutritionTargets);
+            preview == null ? null : preview.segment(),
+            preview == null ? null : EnergyBase.of(preview.bootstrap()),
+            () -> workoutWindowQueryService.movementOn(userId, today), nutritionTargets);
         return DietSettingsPreviewResponse.builder()
             .kcal(t.kcal())
             .proteinG(t.p())

@@ -31,5 +31,5 @@ const DIET_EXPLANATION: Record<string, string> = {
 }
 
 export function dietExplanation(code: string): string {
-  return DIET_EXPLANATION[code] ?? 'A keretet a profilod, a célütem és a heti mozgásterv együtt adja.'
+  return DIET_EXPLANATION[code] ?? 'A keretet az alapigényed, a súlycélod és az aznapi mozgásod együtt adja.'
 }
