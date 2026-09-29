@@ -43,3 +43,25 @@ test('chat-memória: reduced motion — no chip animation', async ({ page }) => 
   await expect(chip).toBeVisible()
   expect(await chip.evaluate((el) => getComputedStyle(el).animationName)).toBe('none')
 })
+
+test('chat-memória: „Rólam is" — két gomb a szöveg alatt, 320px, váltás Rólad is · kész-re (mezo-d6ivw.13)', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 800 })
+  await page.goto('/mezo/chat?c=new')
+  await page.waitForLoadState('networkidle')
+  await send(page, 'Dórival nyertünk!')
+  const chip = page.locator('.mzc-memchip.is-remembered.is-two').first()
+  await expect(chip).toBeVisible()
+  await expect(chip.getByText('Dóri lapján látod')).toBeVisible()
+  const text = await chip.locator('.mzc-memtx').boundingBox()
+  const me = chip.getByRole('button', { name: 'Rólam is' })
+  const meBox = await me.boundingBox()
+  expect(meBox!.y).toBeGreaterThanOrEqual(text!.y + text!.height - 1) // the button row wraps below the text
+  const chipBox = await chip.boundingBox()
+  expect(meBox!.x + meBox!.width).toBeLessThanOrEqual(chipBox!.x + chipBox!.width)
+  await me.click()
+  await expect(chip.getByRole('button', { name: 'Rólad is · kész' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(chip.getByText('Dóri lapján és a Tudástár Rólad részében is látod')).toBeVisible()
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth)
+  expect(overflow).toBeLessThanOrEqual(320)
+})

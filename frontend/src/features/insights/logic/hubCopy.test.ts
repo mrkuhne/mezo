@@ -127,12 +127,14 @@ describe('hubCopy · hub, tiles, sections', () => {
     expect(C.CHIP).toEqual({
       pattern: 'észrevételből', chat: 'beszélgetésből', manual: 'kézzel',
       weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál', team_chat: 'csapatfalról',
+      person_fact: 'ismerős lapjáról',
     })
     expect(C.ORIGIN.pattern).toBe('Megerősített észrevételből tanultam — amikor az egyik változik, a másik jellemzően követi.')
     expect(C.ORIGIN.chat).toBe('A beszélgetéseitekből szűrtem ki.')
     expect(C.ORIGIN.manual).toBe('Te vetted fel kézzel.')
     expect(C.ORIGIN.weekly_review).toBe('A heti áttekintésből derült ki.')
     expect(C.ORIGIN.question).toBe('Egy kérdésre válaszoltál rá.')
+    expect(C.ORIGIN.person_fact).toBe('Egy ismerősödről szóló beszélgetésből — te tetted ide a „Rólam is” gombbal.')
   })
   it('empty states', () => {
     expect(C.EMPTY).toEqual({

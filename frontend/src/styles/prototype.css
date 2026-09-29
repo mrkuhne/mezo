@@ -4412,6 +4412,18 @@ button.mz-tile:active { transform: scale(0.96); }
 .mzc-mbtn:disabled { opacity: 0.55; cursor: default; }
 .mzc-mbtn:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, white); outline-offset: 2px; }
 .mzc-memchip.is-proposed, .mzc-memchip.is-proposed .mzc-mbtn { --c: var(--dv-amber); }
+/* mezo-d6ivw.13 „Rólam is": két gomb egy emberről szóló chipen — a gombsor a szöveg alá tör
+   (paritás: mezo.html .s8chip.two / .s8btn.me / .s8btn.me.on). */
+.mzc-memchip.is-two { flex-wrap: wrap; align-items: flex-start; }
+.mzc-memchip.is-two > :first-child { margin-top: 1px; }
+.mzc-memchip.is-two .mzc-memtx { flex: 1 1 calc(100% - 30px); }
+.mzc-memchip.is-two .mzc-memacts { flex-basis: 100%; justify-content: flex-end; margin-top: 2px; }
+.mzc-mbtn.is-me { color: var(--text-secondary); background: none; box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--c) 45%, transparent); }
+.mzc-mbtn.is-me.is-on {
+  color: color-mix(in srgb, var(--c) 80%, var(--text-primary));
+  background: color-mix(in srgb, var(--c) 16%, transparent);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--c) 60%, transparent);
+}
 .mzc-memchip.is-forgotten, .mzc-memchip.is-forgotten .mzc-mbtn { --c: var(--dv-rose); }
 .mzc-memchip.is-forgotten { align-items: flex-start; }
 .mzc-memchip.is-forgotten > :first-child { margin-top: 1px; }

@@ -2208,6 +2208,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/turn-memory/person-fact/{personFactId}/about-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** „Rólam is" (mezo-d6ivw.13) — the user claims a chat person fact as their own too: it is copied into the knowledge facts (source person_fact, owner mezo, category life) and shows in the Tudástár Rólad section. Idempotent — a second call returns the same copy. */
+        post: operations["addPersonFactAboutMe"];
+        /** „Rólam is" tapped again (mezo-d6ivw.13) — the copy is removed (soft delete) WITHOUT a forget veto: the person fact stays on the person's page and a later „Rólam is" may copy it again. Idempotent — no copy means nothing to do. */
+        delete: operations["removePersonFactAboutMe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/forget-learned": {
         parameters: {
             query?: never;
@@ -8541,7 +8559,7 @@ export interface components {
             factText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' */
             category: string;
-            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion, 'weekly_review' with mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7 (mezo-d6ivw.7) */
+            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' — 'manual' = the user typed it in the Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user claimed with „Rólam is” (mezo-d6ivw.13) */
             source: string;
             /**
              * @description U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field.
@@ -8580,7 +8598,7 @@ export interface components {
         /** @description S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?). */
         KnowledgeFactProvenance: {
             /** @enum {string} */
-            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question" | "team_chat";
+            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question" | "team_chat" | "person_fact";
             /**
              * Format: uuid
              * @description Az észrevétel, amiből a tény született (source=pattern).
@@ -8658,6 +8676,21 @@ export interface components {
             text: string;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * Format: uuid
+             * @description mezo-d6ivw.13 — the live knowledge fact „Rólam is” copied this person fact into; null when the user has not claimed it (the chip shows Rólam is), set when it did (Rólad is · kész).
+             */
+            aboutMeFactId?: string | null;
+        };
+        /** @description mezo-d6ivw.13 — a chat person fact's „Rólam is” state. */
+        AboutMeResponse: {
+            /** Format: uuid */
+            personFactId: string;
+            /**
+             * Format: uuid
+             * @description The live knowledge-fact copy; null when there is none.
+             */
+            aboutMeFactId?: string | null;
         };
         /** @description S8 — one memory item a chat turn produced, as the forget flow lists it. kind person_fact refId = the person fact, fact_candidate = the undecided candidate, knowledge_fact = the promoted fact of an accepted candidate. */
         MemoryItemResponse: {
@@ -19343,6 +19376,77 @@ export interface operations {
             };
             /** @description Conversation or user message not found (or owned by someone else) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPersonFactAboutMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personFactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The person fact's about-me state after the call */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AboutMeResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person fact not found, no longer active, or owned by someone else (also when the people feature is off) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    removePersonFactAboutMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personFactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The person fact's about-me state after the call (aboutMeFactId null) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AboutMeResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

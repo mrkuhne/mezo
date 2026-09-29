@@ -914,8 +914,10 @@ export interface RecurringPattern { icon: IconName; color: string; title: string
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
 /** A knowledge_fact source oszlopa a dróton — chat-kivonat / minta-promóció / kézi felvétel /
  *  heti áttekintés javaslata / kérdésre adott válasz. */
-/** S7 (mezo-d6ivw.7): `team_chat` — a csapatfal-válaszból megjegyzett kivétel ténye. */
-export type FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat'
+/** S7 (mezo-d6ivw.7): `team_chat` — a csapatfal-válaszból megjegyzett kivétel ténye.
+ *  mezo-d6ivw.13: `person_fact` — egy ismerősről szóló chat-tény, amit a „Rólam is" gombbal
+ *  a sajátodnak is jelöltél (nem kézi felvétel: a mondatot Mezo jegyezte meg). */
+export type FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact'
 /** U9b (mezo-zpxv7): a tényt "birtokló" csapattag — a Rólad tag. */
 export type FactOwner = 'szunya' | 'mocor' | 'falat' | 'deru' | 'mezo'
 /** S6 (mezo-d6ivw.6) — miért hallgat egy tény/észrevétel: user = te hallgattattad el,

@@ -1604,6 +1604,11 @@ export const handlers = [
     HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })),
   http.get(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json({ forgotten: [] })),
+  // mezo-d6ivw.13 „Rólam is": the copy's id on POST, null on DELETE.
+  http.post(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) =>
+    HttpResponse.json({ personFactId: params.id, aboutMeFactId: `msw-aboutme-${String(params.id)}` })),
+  http.delete(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) =>
+    HttpResponse.json({ personFactId: params.id, aboutMeFactId: null })),
   http.get(`${API_BASE}/api/people/facts`, () => HttpResponse.json([])),
   http.delete(`${API_BASE}/api/people/:personId/facts/:factId`, () => new HttpResponse(null, { status: 204 })),
   // Companion knowledge facts (V1.2) — wire fixtures mirror the mock seeds so page/hook

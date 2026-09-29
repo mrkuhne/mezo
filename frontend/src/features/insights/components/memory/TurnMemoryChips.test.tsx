@@ -26,6 +26,24 @@ describe('TurnMemoryChips (mock mode)', () => {
     expect(await screen.findByText('a Tudástár Rólad részében látod')).toBeInTheDocument()
   })
 
+  test('Rólam is on a learned person fact: the sub-line and the button flip, and flip back', async () => {
+    renderChips('Dórival nyertünk', 0)
+    expect(await screen.findByText('Dóri lapján látod')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Rólam is' }))
+    expect(await screen.findByRole('button', { name: 'Rólad is · kész' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Dóri lapján és a Tudástár Rólad részében is látod')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Rólad is · kész' }))
+    expect(await screen.findByRole('button', { name: 'Rólam is' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByText('Dóri lapján látod')).toBeInTheDocument()
+  })
+
+  test('a kept owner proposal has no Rólam is (it is already about the owner)', async () => {
+    renderChips('Dórival nyertünk', 0)
+    await userEvent.click(await screen.findByRole('button', { name: 'Igen' }))
+    expect(await screen.findByText('a Tudástár Rólad részében látod')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Rólam is|Rólad is/ })).toHaveLength(1) // Dóri's chip only
+  })
+
   test('an earlier item forgotten later renders the struck line', async () => {
     renderChips('Dórival nyertünk', 0, new Set(['mock-pf-dori']))
     expect(await screen.findByText(/Elfelejtve ·/)).toBeInTheDocument()
@@ -60,6 +78,34 @@ describe('TurnMemoryChips (real mode)', () => {
     expect(await screen.findByText(/Nem volt mit elfelejteni/)).toBeInTheDocument()
     expect(await screen.findByRole('button', { name: 'Mindent ebből a beszélgetésből?' })).toBeInTheDocument()
     expect(screen.queryByText('még figyelek…')).not.toBeInTheDocument()
+  })
+
+  test('Rólam is calls the about-me endpoint and reflects the server answer; an already-claimed fact starts on', async () => {
+    const calls: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/companion/conversation/:id/turn-memory`, () =>
+        HttpResponse.json({ proposed: [], forgotten: [], forgetRequest: false, learned: [
+          { id: 'pf-1', personId: 'p-1', personName: 'Dóri', kind: 'preference', text: 'mellette önmagam vagyok',
+            createdAt: '2026-09-29T07:04:00Z', aboutMeFactId: null },
+          { id: 'pf-2', personId: 'p-1', personName: 'Dóri', kind: 'preference', text: 'az ölelés is természetes',
+            createdAt: '2026-09-29T07:04:00Z', aboutMeFactId: 'kf-9' },
+        ] })),
+      http.post(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) => {
+        calls.push(`POST ${String(params.id)}`)
+        return HttpResponse.json({ personFactId: params.id, aboutMeFactId: 'kf-1' })
+      }),
+      http.delete(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) => {
+        calls.push(`DELETE ${String(params.id)}`)
+        return HttpResponse.json({ personFactId: params.id, aboutMeFactId: null })
+      }),
+    )
+    renderChips('Dórival jól vagyunk.', 0, new Set(), 'u-1')
+    expect(await screen.findByRole('button', { name: 'Rólad is · kész' })).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Rólam is' }))
+    expect(await screen.findAllByRole('button', { name: 'Rólad is · kész' })).toHaveLength(2)
+    await userEvent.click(screen.getAllByRole('button', { name: 'Rólad is · kész' })[1])
+    expect(await screen.findByRole('button', { name: 'Rólam is' })).toBeInTheDocument()
+    expect(calls).toEqual(['POST pf-1', 'DELETE pf-2'])
   })
 
   test('an ordinary turn with nothing learned yet shows the listening status, not the empty forget state', async () => {
