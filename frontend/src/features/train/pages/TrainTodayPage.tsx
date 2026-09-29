@@ -368,13 +368,14 @@ export function TrainTodayPage() {
   const openPeriod = period && !period.endedOn ? period : null
   const recoveryBusy = openRecovery.isPending || recoveryCheckIn.isPending || undoBetter.isPending
     || discardRecovery.isPending || releaseDay.isPending || unreleaseDay.isPending || waiveComeback.isPending
-  // „Ma mégis edzek" trains on a protected date; a real skip row there would still hide the
-  // session, so it goes too (the prototype's period replaces today's skip the same way).
-  const dropSkipsOn = (iso: string) => {
-    for (const s of skips) if (s.date === iso) undo(s.id)
-  }
+  // „Ma mégis edzek" trains the GYM session on a protected date; a real gym skip row there would
+  // still hide it, so that one row goes too. Sport/run skips the user made on purpose stay.
   const onRelease = (iso: string) => releaseDay.mutate({ date: iso }, {
-    onSuccess: () => { dropSkipsOn(iso); toast.show({ kind: 'info', text: KIMELO.toastReleased }) },
+    onSuccess: () => {
+      const gymSkipRow = findSkip(skips, gymKey(iso))
+      if (gymSkipRow) undo(gymSkipRow.id)
+      toast.show({ kind: 'info', text: KIMELO.toastReleased })
+    },
   })
   const onUnrelease = (iso: string) => unreleaseDay.mutate(iso, {
     onSuccess: () => toast.show({ kind: 'info', text: KIMELO.toastUnreleased }),
@@ -1160,6 +1161,8 @@ export function TrainTodayPage() {
           // Today's (or a later) skip is replaced by the period (prototype: the retro rows stay).
           const cur = why ? findSkip(skips, why.target) : undefined
           if (cur && (cur.date >= clockIso || cur.date === todayIso)) undo(cur.id)
+          // The undone row unmounts the sheet mid-exit (its onClose never runs) — clear it here.
+          setWhy(null)
         }}
         onDone={(text) => {
           // The sheet already toasts „Megjegyeztem · …"; only an Egyéb text still needs saving.

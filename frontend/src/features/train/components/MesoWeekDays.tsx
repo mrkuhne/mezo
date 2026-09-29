@@ -46,10 +46,11 @@ export function MesoWeekDays({ meso, onOpenDay, firstDelayMs = 110 }: {
   const doneDays = doneByDay(details)
   const today = todayDayToken()
   // Kímélő mód S2 (mezo-q4xt2.2, prototype `dayCard` kmday): a protected training or sport day
-  // that is not already done reads as a muted row — „Kímélő mód · {session} kimarad" with the
+  // from today on that is not already done reads as a muted row — „Kímélő mód · {session} kimarad" with the
   // period's category icon. Rest days stay rest days; a done day keeps its card.
   const { recovery } = useRecovery()
   const protectedDates = new Set(recovery.protectedDates)
+  const todayIndex = DAY_ORDER.indexOf(today)
 
   return (
     <div className="pl-days">
@@ -62,7 +63,8 @@ export function MesoWeekDays({ meso, onOpenDay, firstDelayMs = 110 }: {
         const sport = day?.muscle === 'sport'
         const done = isToday ? null : (doneDays.get(token) ?? null)
 
-        if ((training || sport) && !done && protectedDates.has(weekDateIso(i))) {
+        // Today onwards only (prototype `dayCard`: `i >= today`) — a past day keeps its own card.
+        if ((training || sport) && !done && i >= todayIndex && protectedDates.has(weekDateIso(i))) {
           const line = kimeloAgendaParts(training ? training.type : (day?.type ?? 'sport'))
           return (
             <div key={token} className="tv-dayrest is-km rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>

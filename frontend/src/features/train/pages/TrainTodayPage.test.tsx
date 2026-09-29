@@ -1991,3 +1991,42 @@ test('real mode: /today comeback index 2 shows VISSZATÉRŐ EDZÉS · 2/2 and �
   expect(document.querySelector('.trm-cbsets')?.textContent).toBe('Row3 szett')
   expect(screen.queryByRole('button', { name: 'Mégsem vagyok jól' })).not.toBeInTheDocument()
 })
+
+// Fix round 1: „Ma mégis edzek" drops only the GYM skip on that date — a sport skip the user made
+// on purpose, with its own reason, survives.
+test('real mode: Ma mégis edzek undoes the gym skip only; a sport skip with its reason survives', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const today = localDateString()
+  const deleted: string[] = []
+  const row = (id: string, kind: string, reasonCategory: string) => ({
+    id, date: today, kind, dayOfWeek: kind === 'SPORT' ? (new Date().getDay() + 6) % 7 : null, time: kind === 'SPORT' ? '18:00' : null,
+    sessionKey: null, reasonCategory, reasonText: null, source: 'USER', serious: reasonCategory === 'ILLNESS',
+    freePass: false, excused: true,
+  })
+  const state = {
+    period: {
+      id: 'p-1', category: 'ILLNESS', estimate: 'FEW_DAYS', startDate: today, expectedEnd: null, endedOn: null, dayIndex: 2,
+      estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [], return: null,
+    },
+    protectedDates: [today],
+    comeback: null,
+  }
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({ openWorkout: null })),
+    http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([row('gym-1', 'GYM', 'ILLNESS'), row('sport-1', 'SPORT', 'NO_TIME')])),
+    http.delete(`${API_BASE}/api/train/skips/:id`, ({ params }) => {
+      deleted.push(String(params.id))
+      return new HttpResponse(null, { status: 204 })
+    }),
+    http.get(`${API_BASE}/api/train/recovery`, () => HttpResponse.json(state)),
+    http.put(`${API_BASE}/api/train/recovery/releases/:date`, () => HttpResponse.json(state)),
+  )
+  render(<QueryWrapper><ToastProvider><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></ToastProvider></QueryWrapper>)
+  fireEvent.click(await screen.findByRole('button', { name: /Ma mégis edzek/ }))
+  await waitFor(() => expect(deleted).toEqual(['gym-1']))
+  await new Promise((r) => setTimeout(r, 50))
+  expect(deleted).toEqual(['gym-1'])
+})

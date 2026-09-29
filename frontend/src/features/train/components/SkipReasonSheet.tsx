@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SheetHead } from '@/shared/ui/SheetHead'
 import { Icon3D } from '@/shared/ui/clay'
@@ -57,12 +57,15 @@ function SkipReasonSheetBody({
   const [km, setKm] = useState<{ estimate: RecoveryEstimate; saved: boolean } | null>(null)
   const closeRef = useRef<() => void>(() => {})
   const pending = useRef<{ timer: ReturnType<typeof setTimeout> | null; done: boolean; mounted: boolean }>({ timer: null, done: false, mounted: true })
-  const finishRecovery = () => {
+  // The latest callbacks, so the unmount cleanup below never calls a first-render closure.
+  const latest = useRef({ onRecoveryOpened, toast })
+  latest.current = { onRecoveryOpened, toast }
+  const finishRecovery = useCallback(() => {
     if (pending.current.done) return
     pending.current.done = true
-    onRecoveryOpened?.()
-    toast.show({ kind: 'success', text: KIMELO.toastOn })
-  }
+    latest.current.onRecoveryOpened?.()
+    latest.current.toast.show({ kind: 'success', text: KIMELO.toastOn })
+  }, [])
   useEffect(() => {
     const p = pending.current
     p.mounted = true
@@ -71,8 +74,7 @@ function SkipReasonSheetBody({
       // Closed early (backdrop, ✕) after the period was saved: still finish, just without the wait.
       if (p.timer) { clearTimeout(p.timer); p.timer = null; finishRecovery() }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [finishRecovery])
   const pickEstimate = (estimate: RecoveryEstimate) => {
     if (km || !onOpenRecovery) return
     setKm({ estimate, saved: false })

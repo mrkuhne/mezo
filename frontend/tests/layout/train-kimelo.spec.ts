@@ -128,6 +128,28 @@ test('Edzés Mai · kímélő mód return: Üdv újra!, the comeback note, Kikap
   await back.locator('.trm-cbnote').scrollIntoViewIfNeeded()
   await expectContained(page, '.trm-cbnote, .trm-cbacts')
   await shot(page, '10-comeback-pill')
+  // the quiet links must never sit under the fixed quick-log FAB (bottom-right): scrolled level
+  // with the FAB, their centre must hit the link itself, and they must stay clear
+  // of the FAB's column at any scroll position.
+  for (const name of ['Kikapcsolom a könnyítést', 'Mégsem vagyok jól']) {
+    const link = back.getByRole('button', { name })
+    await link.scrollIntoViewIfNeeded()
+    const hit = await link.evaluate((el) => {
+      // worst case: scroll the link level with the FAB's own centre line
+      const fabBox = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+      if (fabBox) {
+        const now = el.getBoundingClientRect()
+        const sc = document.querySelector('.screen-content') as HTMLElement
+        sc.scrollTop += (now.top + now.height / 2) - (fabBox.top + fabBox.height / 2)
+      }
+      const r = el.getBoundingClientRect()
+      const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
+      const fab = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+      return { onLink: Boolean(top && el.contains(top)), right: r.right, fabLeft: fab ? fab.left : Infinity }
+    })
+    expect(hit.onLink, name).toBe(true)
+    expect(hit.right, name).toBeLessThanOrEqual(hit.fabLeft)
+  }
   await back.getByRole('button', { name: 'Kikapcsolom a könnyítést' }).click()
   await expect(page.getByText('BETERVEZVE')).toBeVisible()
   await expect(page.locator('.trm-cbnote')).toHaveCount(0)

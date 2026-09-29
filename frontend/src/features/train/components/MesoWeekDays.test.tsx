@@ -10,8 +10,15 @@ import { weekDateIso } from '@/features/train/logic/weekAgenda'
 
 // Kímélő mód S2 (mezo-q4xt2.2, prototype elo/edzes.html `dayCard` kmday): the Terv week list mutes
 // every protected training/sport day — „Kímélő mód · {session} kimarad" with the category icon.
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => vi.unstubAllEnvs())
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-09-29T12:00:00')) // a Tuesday (Kedd)
+})
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.useRealTimers()
+})
 
 const meso = mesocycles[0]
 
@@ -30,9 +37,9 @@ const period = {
   endedOn: null, dayIndex: 1, estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [], return: null,
 }
 
-test('protected training and sport days read „Kímélő mód · … kimarad" with the category icon; rest days stay', () => {
-  // Kedd (Legs A, training) and Szo (Volleyball · meccs, sport) and Vas (Rest) protected.
-  const { container } = renderWith({ period, protectedDates: [weekDateIso(1), weekDateIso(5), weekDateIso(6)], comeback: null })
+test('protected training and sport days from today on read „Kímélő mód · … kimarad" with the category icon; rest and past days stay', () => {
+  // Hét (Push, past), Kedd (Legs A, today), Szo (Volleyball · meccs, sport) and Vas (Rest) protected.
+  const { container } = renderWith({ period, protectedDates: [0, 1, 5, 6].map((i) => weekDateIso(i)), comeback: null })
   const rows = [...container.querySelectorAll('.tv-dayrest.is-km')]
   expect(rows.map((r) => r.querySelector('em')?.textContent)).toEqual([
     'Kímélő mód · Legs A kimarad',
@@ -40,6 +47,8 @@ test('protected training and sport days read „Kímélő mód · … kimarad" w
   ])
   for (const r of rows) expect([...r.querySelectorAll('use')].at(-1)?.getAttribute('href')).toBe('#t-digestion')
   expect(screen.getByText('pihenőnap')).toBeInTheDocument()
+  // the past protected Monday keeps its own card (prototype `dayCard`: today onwards only)
+  expect(screen.getByText('Push')).toBeInTheDocument()
 })
 
 test('no protected dates: the week is unchanged', () => {

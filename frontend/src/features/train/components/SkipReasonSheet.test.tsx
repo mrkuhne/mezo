@@ -180,6 +180,20 @@ describe('SkipReasonSheet · kímélő mód (Kihagyás S2, prototype whySheet .k
     off()
   })
 
+  test('closed early after the save: finishes once, with the LATEST onRecoveryOpened', async () => {
+    const first = vi.fn()
+    const latest = vi.fn()
+    const props = { open: true, skip: ill(), title: 'Pull Day', canOpenRecovery: true, onClose: vi.fn(), onReason: vi.fn(), onDone: vi.fn(),
+      onOpenRecovery: () => Promise.resolve() }
+    const { rerender, unmount } = render(<SkipReasonSheet {...props} onRecoveryOpened={first} />)
+    fireEvent.click(screen.getByRole('button', { name: '2–3 nap' }))
+    await act(async () => { await Promise.resolve() })
+    rerender(<SkipReasonSheet {...props} onRecoveryOpened={latest} />)
+    unmount()
+    expect(latest).toHaveBeenCalledTimes(1)
+    expect(first).not.toHaveBeenCalled()
+  })
+
   test('a failed open resets the row (no note, no close)', async () => {
     const { onRecoveryOpened, onClose } = renderKm(ill(), { open: () => Promise.reject(new Error('x')) })
     fireEvent.click(screen.getByRole('button', { name: 'Kb. egy hét' }))
