@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -35,16 +36,14 @@ class ComebackRampTest {
         assertThat(result).isEqualTo(expectedFloor);
     }
 
-    @ParameterizedTest(name = "rirFloor(null) -> 3")
-    @CsvSource({
-        "null",
-    })
-    void rirFloor_null_returns3(String nullStr) {
+    @Test
+    void rirFloor_null_returns3() {
         Integer result = ComebackRamp.rirFloor(null);
 
         assertThat(result).isEqualTo(3);
     }
 
+    @Test
     void loadFactor_is090() {
         assertThat(ComebackRamp.LOAD_FACTOR).isEqualTo(new BigDecimal("0.90"));
     }
