@@ -5,8 +5,11 @@ import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryDayReleaseRepository;
 import io.mrkuhne.mezo.feature.train.repository.RecoveryPeriodRepository;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -36,27 +39,39 @@ public class RecoveryPeriodService {
      */
     @Transactional(readOnly = true)
     public Set<LocalDate> protectedDates(UUID user, LocalDate from, LocalDate to) {
-        Set<LocalDate> dates = new HashSet<>();
+        return new HashSet<>(protectedDays(user, from, to).keySet());
+    }
+
+    /**
+     * {@link #protectedDates} with the period covering each date — the central skip read needs its
+     * category and {@code createdAt} for the virtual RECOVERY verdict (Kihagyás S2, mezo-q4xt2.2).
+     * Should two (soft-deleted-free) periods ever overlap, the later-started one wins the date.
+     */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, RecoveryPeriodEntity> protectedDays(UUID user, LocalDate from, LocalDate to) {
+        Map<LocalDate, RecoveryPeriodEntity> days = new HashMap<>();
         if (from.isAfter(to)) {
-            return dates;
+            return days;
         }
-        List<RecoveryPeriodEntity> overlapping = overlapping(user, from, to);
+        List<RecoveryPeriodEntity> overlapping = overlapping(user, from, to).stream()
+            .sorted(Comparator.comparing(RecoveryPeriodEntity::getStartDate))
+            .toList();
         if (overlapping.isEmpty()) {
-            return dates;
+            return days;
         }
         for (RecoveryPeriodEntity p : overlapping) {
             LocalDate first = p.getStartDate().isAfter(from) ? p.getStartDate() : from;
             LocalDate last = p.getEndedOn() == null || p.getEndedOn().minusDays(1).isAfter(to)
                 ? to : p.getEndedOn().minusDays(1);
             for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
-                dates.add(d);
+                days.put(d, p);
             }
         }
         for (RecoveryDayReleaseEntity r : releases.findByCreatedByAndPeriodIdInAndDeletedFalse(
             user, overlapping.stream().map(RecoveryPeriodEntity::getId).toList())) {
-            dates.remove(r.getDate());
+            days.remove(r.getDate());
         }
-        return dates;
+        return days;
     }
 
     /** The user's open period (at most one, by the partial unique index). */

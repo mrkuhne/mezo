@@ -20,10 +20,12 @@ public final class PlannedSkipPolicy {
         // Private constructor for utility class
     }
 
-    /** Source of a skip: either user-declared or advice-driven. */
+    /** Source of a skip: user-declared, advice-driven, or a virtual row for a date a kímélő-mód
+     *  period protects (Kihagyás S2, mezo-q4xt2.2 — never persisted, never listed over REST). */
     public enum Source {
         USER,
-        ADVICE
+        ADVICE,
+        RECOVERY
     }
 
     /**
@@ -88,6 +90,8 @@ public final class PlannedSkipPolicy {
      *   <li>Serious reasons are always excused but never get a free pass.</li>
      *   <li>USER source soft rows (non-serious) get one free pass per ISO week, sorted by createdAt then id.</li>
      *   <li>ADVICE source rows are always excused but do not consume a free pass.</li>
+     *   <li>RECOVERY source rows (kímélő mód) are judged like ADVICE: always excused, never a free
+     *       pass, and out of the week's pass race.</li>
      *   <li>An advice-backed USER row ({@link Row#adviceBacked}) is judged like its ADVICE twin:
      *       always excused, never a free pass, and it does not consume the week's pass.</li>
      *   <li>Output order matches input order.</li>
@@ -110,7 +114,8 @@ public final class PlannedSkipPolicy {
             boolean pass = r.source() == Source.USER && !r.adviceBacked() && !serious
                 && r.id().equals(passByWeek.get(isoWeekKey(r.date())));
             return new Verdict(r, serious, pass,
-                serious || pass || r.source() == Source.ADVICE || r.adviceBacked());
+                serious || pass || r.source() == Source.ADVICE || r.source() == Source.RECOVERY
+                    || r.adviceBacked());
         }).toList();
     }
 }

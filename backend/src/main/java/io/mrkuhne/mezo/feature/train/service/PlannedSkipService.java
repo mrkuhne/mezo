@@ -49,6 +49,9 @@ public class PlannedSkipService {
     private final PlannedSkipRepository repository;
     private final SportSlotSkipService sportSlotSkipService;
     private final PlannedSkipLock lock;
+    // Kihagyás S2 (mezo-q4xt2.2): protected kímélő-mód dates overlay the union as virtual RECOVERY
+    // verdicts. RecoveryPeriodService depends only on its repositories — no cycle.
+    private final RecoveryPeriodService recoveryPeriodService;
 
     @Transactional
     public PlannedSkipResponse upsert(UUID user, PlannedSkipRequest req) {
@@ -114,14 +117,24 @@ public class PlannedSkipService {
         }
     }
 
+    /** The REST read. Virtual RECOVERY rows stay internal: the FE derives protection from
+     *  {@code GET /recovery} and must never try to undo one through {@code DELETE /skips/{id}}. */
     @Transactional(readOnly = true)
     public List<PlannedSkipResponse> list(UUID user, LocalDate from, LocalDate to) {
-        return verdictsBetween(user, from, to).stream().map(PlannedSkipService::toResponse).toList();
+        return verdictsBetween(user, from, to).stream()
+            .filter(v -> v.row().source() != Source.RECOVERY)
+            .map(PlannedSkipService::toResponse)
+            .toList();
     }
 
     /** Every skip in [from, to] with its read-time verdict — union of both tables, judged over
      *  the whole ISO weeks spanning [from, to] (free-pass correctness needs a whole week), then
-     *  filtered back down to [from, to] and sorted date then createdAt. */
+     *  filtered back down to [from, to] and sorted date then createdAt.
+     *
+     *  <p>Kihagyás S2 (mezo-q4xt2.2): every date a kímélő-mód period protects adds one virtual
+     *  GYM row with {@link Source#RECOVERY} (excused, no pass, out of the race) — unless the date
+     *  already has a USER GYM row, which carries the reason itself. SPORT and RUN protection is
+     *  date-wide and rides {@link SportSlotSkipService.SportSkips} / {@link RunSkips}. */
     @Transactional(readOnly = true)
     public List<Verdict> verdictsBetween(UUID user, LocalDate from, LocalDate to) {
         if (from.isAfter(to)) {
@@ -161,12 +174,29 @@ public class PlannedSkipService {
                 Reason.NONE, null, Source.ADVICE, e.getCreatedAt()));
         }
 
+        Set<LocalDate> userGymDates = userRows.stream()
+            .filter(e -> e.getKind() == Kind.GYM)
+            .map(PlannedSkipEntity::getDate)
+            .collect(Collectors.toSet());
+        recoveryPeriodService.protectedDays(user, weekFrom, weekTo).forEach((date, period) -> {
+            if (!userGymDates.contains(date)) {
+                rows.add(new Row(recoveryRowId(user, date), date, Kind.GYM, null, null, null,
+                    period.getCategory(), null, Source.RECOVERY, period.getCreatedAt()));
+            }
+        });
+
         return PlannedSkipPolicy.judge(rows).stream()
             .filter(v -> !v.row().date().isBefore(from) && !v.row().date().isAfter(to))
             .sorted(Comparator.comparing((Verdict v) -> v.row().date())
                 .thenComparing(v -> v.row().createdAt())
                 .thenComparing(v -> v.row().id()))
             .toList();
+    }
+
+    /** Stable id of the virtual RECOVERY row for one protected date — deterministic so a verdict
+     *  keeps its identity across reads. */
+    private static UUID recoveryRowId(UUID user, LocalDate date) {
+        return UUID.nameUUIDFromBytes(("recovery:" + user + ":" + date).getBytes());
     }
 
     /** Identity of one SPORT occurrence — date + weekday + clock time — used to drop an ADVICE
@@ -202,29 +232,49 @@ public class PlannedSkipService {
     public record RunSkipKey(LocalDate date, String sessionKey) {
     }
 
-    /** Every skipped prescribed run in [from, to] (any verdict) — the ONE central read the run
-     *  planning surfaces (workout windows, the companion's day lines) filter through
-     *  (Kihagyás S1, mezo-q4xt2.1 review I2). */
-    @Transactional(readOnly = true)
-    public Set<RunSkipKey> skippedRuns(UUID user, LocalDate from, LocalDate to) {
-        return runSkipsOf(verdictsBetween(user, from, to));
+    /** The skipped prescribed runs of a range: the exact RUN skips plus every protected
+     *  (kímélő-mód) date, on which ANY prescribed run is skipped (Kihagyás S2, mezo-q4xt2.2). */
+    public record RunSkips(Set<RunSkipKey> keys, Set<LocalDate> protectedDates) {
+
+        public RunSkips {
+            keys = Set.copyOf(keys);
+            protectedDates = Set.copyOf(protectedDates);
+        }
+
+        /** Is the prescribed run {@code sessionKey} skipped on {@code date}? */
+        public boolean contains(LocalDate date, String sessionKey) {
+            return protectedDates.contains(date)
+                || (sessionKey != null && keys.contains(new RunSkipKey(date, sessionKey)));
+        }
+
+        public boolean isEmpty() {
+            return keys.isEmpty() && protectedDates.isEmpty();
+        }
     }
 
-    /** {@link #skippedRuns} from an already-fetched verdict list (callers that also need the
-     *  gym dates read {@link #verdictsBetween} once and derive both). */
-    public static Set<RunSkipKey> runSkipsOf(List<Verdict> verdicts) {
+    /** Every skipped prescribed run in [from, to] (any verdict) — the ONE central read the run
+     *  planning surfaces (workout windows, the companion's day lines) filter through
+     *  (Kihagyás S1, mezo-q4xt2.1 review I2; protected dates since S2). */
+    @Transactional(readOnly = true)
+    public RunSkips skippedRuns(UUID user, LocalDate from, LocalDate to) {
+        return runSkipsOf(verdictsBetween(user, from, to), recoveryPeriodService.protectedDates(user, from, to));
+    }
+
+    /** {@link #skippedRuns} from an already-fetched verdict list plus the range's protected dates
+     *  (callers that also need the gym dates read {@link #verdictsBetween} once and derive both). */
+    public static RunSkips runSkipsOf(List<Verdict> verdicts, Set<LocalDate> protectedDates) {
         Set<RunSkipKey> keys = new HashSet<>();
         for (Verdict v : verdicts) {
             if (v.row().kind() == Kind.RUN && v.row().sessionKey() != null) {
                 keys.add(new RunSkipKey(v.row().date(), v.row().sessionKey()));
             }
         }
-        return keys;
+        return new RunSkips(keys, protectedDates);
     }
 
     @Transactional(readOnly = true)
     public boolean isRunSkipped(UUID user, LocalDate date, String sessionKey) {
-        return sessionKey != null && skippedRuns(user, date, date).contains(new RunSkipKey(date, sessionKey));
+        return sessionKey != null && skippedRuns(user, date, date).contains(date, sessionKey);
     }
 
     @Transactional(readOnly = true)
@@ -233,7 +283,7 @@ public class PlannedSkipService {
     }
 
     /** ISO week keys (see {@link PlannedSkipPolicy#isoWeekKey}) that hold at least one excused
-     *  skip — the "kímélő mód" bridge weeks (later slices). */
+     *  skip — including a kímélő-mód protected date (its virtual RECOVERY row, S2). */
     @Transactional(readOnly = true)
     public Set<Long> bridgedWeeks(UUID user, LocalDate from, LocalDate to) {
         Set<Long> weeks = new HashSet<>();

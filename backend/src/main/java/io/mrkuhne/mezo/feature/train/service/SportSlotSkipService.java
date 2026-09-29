@@ -37,6 +37,11 @@ import org.springframework.transaction.annotation.Transactional;
  * feasibility). {@link PlannedSkipRepository} is injected directly, not {@code PlannedSkipService}
  * (which itself depends on this class for the ADVICE side of ITS union) — that dependency would be
  * a cycle.
+ *
+ * <p>Kihagyás S2 (mezo-q4xt2.2): a date a kímélő-mód period protects hides EVERY slot occurrence
+ * on it — {@link #isSkipped} answers true and {@link #skipsBetween} carries the protected dates
+ * next to the exact keys ({@link SportSkips#contains}). {@link RecoveryPeriodService} depends only
+ * on its repositories, so injecting it here is cycle-free.
  */
 @Service
 @RequiredArgsConstructor
@@ -44,12 +49,20 @@ public class SportSlotSkipService {
 
     private final SportSlotSkipRepository repository;
     private final PlannedSkipRepository plannedSkipRepository;
+    private final RecoveryPeriodService recoveryPeriodService;
 
     /** Is this recurring slot hidden on this date? The slot is identified by weekday + clock time
      *  (see the changeset for why, not by row id) — checked against BOTH {@code sport_slot_skip}
-     *  (advice) and {@code planned_skip} SPORT rows (user, Kihagyás S1). */
+     *  (advice) and {@code planned_skip} SPORT rows (user, Kihagyás S1) — and true on any date a
+     *  kímélő-mód period protects (Kihagyás S2). */
     @Transactional(readOnly = true)
     public boolean isSkipped(UUID userId, int dayOfWeek, String time, LocalDate date) {
+        return hasSkipRow(userId, dayOfWeek, time, date)
+            || !recoveryPeriodService.protectedDates(userId, date, date).isEmpty();
+    }
+
+    /** A real skip row (advice or user) for this exact occurrence — protection not considered. */
+    private boolean hasSkipRow(UUID userId, int dayOfWeek, String time, LocalDate date) {
         return repository.existsByCreatedByAndDayOfWeekAndTimeAndDateAndDeletedFalse(
             userId, dayOfWeek, time, date)
             || plannedSkipRepository.findByCreatedByAndDateBetweenAndDeletedFalse(userId, date, date).stream()
@@ -61,9 +74,16 @@ public class SportSlotSkipService {
     /** Every skip in [from, to] — the batch read for the FE and for any path that already holds a
      *  week's worth of slots (one query instead of one per slot per day). Unions {@code
      *  sport_slot_skip} with {@code planned_skip} SPORT rows (Kihagyás S1); both collapse to the
-     *  same identity key, so a user skip and an advice skip on the same slot count once. */
+     *  same identity key, so a user skip and an advice skip on the same slot count once. Protected
+     *  kímélő-mód dates ride alongside (Kihagyás S2) — match through {@link SportSkips#contains}. */
     @Transactional(readOnly = true)
-    public Set<SkipKey> skipsBetween(UUID userId, LocalDate from, LocalDate to) {
+    public SportSkips skipsBetween(UUID userId, LocalDate from, LocalDate to) {
+        return new SportSkips(skipKeysBetween(userId, from, to),
+            recoveryPeriodService.protectedDates(userId, from, to));
+    }
+
+    /** The exact skip keys in [from, to] — both tables, no protection overlay. */
+    private Set<SkipKey> skipKeysBetween(UUID userId, LocalDate from, LocalDate to) {
         Set<SkipKey> keys = new HashSet<>();
         for (SportSlotSkipEntity e : repository.findByCreatedByAndDateBetweenAndDeletedFalse(userId, from, to)) {
             keys.add(new SkipKey(e.getDayOfWeek(), e.getTime(), e.getDate()));
@@ -98,7 +118,9 @@ public class SportSlotSkipService {
      *  does — the unique index is the LAST-RESORT data-integrity guard, not a race handler. */
     @Transactional
     public void skip(UUID userId, int dayOfWeek, String time, LocalDate date) {
-        if (isSkipped(userId, dayOfWeek, time, date)) {
+        // Only a real row makes this a no-op: a protected date still records the advice skip, so
+        // releasing the date ("Ma mégis edzek") does not silently bring the coach's skip back.
+        if (hasSkipRow(userId, dayOfWeek, time, date)) {
             return;
         }
         SportSlotSkipEntity entity = new SportSlotSkipEntity();
@@ -118,7 +140,7 @@ public class SportSlotSkipService {
         if (from.isAfter(to)) {
             throw new SystemRuntimeErrorException(SystemMessage.error("TRAIN_INVALID_DATE_RANGE").build());
         }
-        return skipsBetween(userId, from, to).stream()
+        return skipKeysBetween(userId, from, to).stream()
             .sorted(Comparator.comparing(SkipKey::date).thenComparing(SkipKey::time))
             .map(k -> new SportSlotSkipResponse().dayOfWeek(k.dayOfWeek()).time(k.time()).date(k.date()))
             .toList();
@@ -163,5 +185,20 @@ public class SportSlotSkipService {
 
     /** One skipped slot occurrence — weekday (0=Hét..6=Vas) + clock time + the skipped date. */
     public record SkipKey(int dayOfWeek, String time, LocalDate date) {
+    }
+
+    /** A range's sport skips: the exact slot keys plus the protected kímélő-mód dates, on which
+     *  every slot occurrence is skipped (Kihagyás S2, mezo-q4xt2.2). */
+    public record SportSkips(Set<SkipKey> keys, Set<LocalDate> protectedDates) {
+
+        public SportSkips {
+            keys = Set.copyOf(keys);
+            protectedDates = Set.copyOf(protectedDates);
+        }
+
+        /** Is the slot {@code dayOfWeek} (0=Hét..6=Vas) + {@code time} skipped on {@code date}? */
+        public boolean contains(int dayOfWeek, String time, LocalDate date) {
+            return protectedDates.contains(date) || keys.contains(new SkipKey(dayOfWeek, time, date));
+        }
     }
 }
