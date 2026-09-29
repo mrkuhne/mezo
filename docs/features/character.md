@@ -17,7 +17,7 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
-> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows a commit it doesn't otherwise concern. See [`train.md`](train.md) "Kihagyás (S1)".
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows commits it doesn't otherwise concern (the table and its follow-up `idx_` index rename). See [`train.md`](train.md) "Kihagyás (S1)".
 
 > **2026-09-29 — `mezo-mobji` (no character change).** The 1.1.0 changelog gained three train-owned `exercise` columns (`replaces_exercise_id`, `added_in_workout_id`, `saved_to_plan`, [`train.md` §4](train.md)); `CharacterSignalReads` resolves exercise names by id and keeps working for the new instance-scoped rows.
 
