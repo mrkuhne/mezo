@@ -84,6 +84,14 @@ test('edited time previews its window; Most restores the live clock', async () =
   expect(screen.getByLabelText('Evés időpontja')).toHaveValue('14:12')
 })
 
+test('native time input updates the preview before leaving the field', async () => {
+  const user = userEvent.setup()
+  renderComposer({ seedLine: true, logDate: '2026-09-27' })
+  await user.click(screen.getByRole('button', { name: /Mikor ettél/ }))
+  fireEvent.input(screen.getByLabelText('Evés időpontja'), { target: { value: '09:15' } })
+  expect(screen.getByRole('button', { name: /Mikor ettél/ })).toHaveTextContent('09:15 · Reggeli')
+})
+
 test('future time today blocks save, while edit mode keeps its existing time field', async () => {
   const user = userEvent.setup()
   renderComposer({ seedLine: true })
