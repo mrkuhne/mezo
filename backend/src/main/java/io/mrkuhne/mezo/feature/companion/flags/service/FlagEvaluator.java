@@ -22,10 +22,13 @@ import io.mrkuhne.mezo.feature.companion.flags.service.rule.RecoveryNeededRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.SleepDebtRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.SustainedStressRule;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -72,6 +75,9 @@ public class FlagEvaluator {
     private final PoorRestednessRule poorRestednessRule;
     private final CravingStreakRule cravingStreakRule;
     private final MotivationSlumpRule motivationSlumpRule;
+    /** Kihagyás S2 (mezo-q4xt2.2, task 6): the read-only gate for the four training-pressure
+     *  rules below — train, never the reverse (see the class this belongs to). */
+    private final RecoveryPeriodService recoveryPeriodService;
 
     /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 20 entries,
      *  one per rule, in AdvicePriority order. */
@@ -79,16 +85,26 @@ public class FlagEvaluator {
     public List<FlagVerdict> evaluate(UUID userId) {
         LocalDate today = LocalDate.now();
         List<FlagVerdict> verdicts = new ArrayList<>();
+        // Kihagyás S2 (mezo-q4xt2.2, task 6): while a recovery period ("kímélő mód") is open, the
+        // four training-pressure rules go quiet instead of running — a genuinely excused gap
+        // (illness, injury, a stomach bug, travel) must never be read back to the user as a nag.
+        Optional<RecoveryPeriodEntity> openRecovery = recoveryPeriodService.open(userId);
         verdicts.add(acuteBadDayRule.evaluate(userId, today));
         verdicts.add(loadFuelMismatchRule.evaluate(userId, today));
         verdicts.add(rapidWeightLossRule.evaluate(userId, today));
-        verdicts.add(jointOveruseRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.JOINT_OVERUSE, UnavailableReason.RECOVERY_MODE)
+                : jointOveruseRule.evaluate(userId, today));
         verdicts.add(persistentPainRule.evaluate(userId, today));
-        verdicts.add(missedWorkoutsRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.MISSED_WORKOUTS, UnavailableReason.RECOVERY_MODE)
+                : missedWorkoutsRule.evaluate(userId, today));
         verdicts.add(sleepDebtRule.evaluate(userId, today));
         verdicts.add(poorRestednessRule.evaluate(userId, today));
         verdicts.add(loggingGapRule.evaluate(userId, today));
-        verdicts.add(ignoredNudgeRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.IGNORED_NUDGE, UnavailableReason.RECOVERY_MODE)
+                : ignoredNudgeRule.evaluate(userId, today));
         verdicts.add(lateEatingRule.evaluate(userId, today));
         verdicts.add(protocolLapseRule.evaluate(userId, today));
         verdicts.add(mealRhythmDriftRule.evaluate(userId, today));
@@ -97,7 +113,9 @@ public class FlagEvaluator {
         verdicts.add(recoveryNeededRule.evaluate(userId, today));
         verdicts.add(sustainedStressRule.evaluate(userId, today));
         verdicts.add(motivationSlumpRule.evaluate(userId, today));
-        verdicts.add(momentumAtRiskRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.MOMENTUM_AT_RISK, UnavailableReason.RECOVERY_MODE)
+                : momentumAtRiskRule.evaluate(userId, today));
 
         boolean anyRaised = verdicts.stream().anyMatch(v -> v.outcome() == FlagOutcome.RAISED);
         FlagVerdict healthy = allHealthyRule.evaluate(userId, today);

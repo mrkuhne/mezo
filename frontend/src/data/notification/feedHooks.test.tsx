@@ -45,6 +45,48 @@ describe('useNotificationFeed', () => {
     await waitFor(() => expect(result.current.feed.items.filter((n) => !n.readAt)).toHaveLength(0))
   })
 
+  it('markItemRead stamps only the selected row (both modes)', async () => {
+    let state = notificationFeedSeed.map((n) => ({ ...n }))
+    server.use(
+      http.get(`${API_BASE}/api/notification/feed`, () => HttpResponse.json({ items: state })),
+      http.post(`${API_BASE}/api/notification/feed/:id/read`, ({ params }) => {
+        state = state.map((n) => n.id === params.id ? { ...n, readAt: new Date().toISOString() } : n)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { result } = renderHook(
+      () => ({ feed: useNotificationFeed(), actions: useNotificationFeedActions() }),
+      { wrapper: makeHookWrapper() },
+    )
+    await waitFor(() => expect(result.current.feed.items).toHaveLength(12))
+
+    await act(async () => { await result.current.actions.markItemRead('nf-1') })
+
+    await waitFor(() => expect(result.current.feed.items.find((n) => n.id === 'nf-1')?.readAt).not.toBeNull())
+    expect(result.current.feed.items.find((n) => n.id === 'nf-2')?.readAt).toBeNull()
+    expect(result.current.feed.items.filter((n) => !n.readAt)).toHaveLength(4)
+  })
+
+  it('real mode: a failed item read restores only that row', async () => {
+    if (isMockMode()) return
+    server.use(
+      http.get(`${API_BASE}/api/notification/feed`, () =>
+        HttpResponse.json({ items: notificationFeedSeed })),
+      http.post(`${API_BASE}/api/notification/feed/:id/read`, () =>
+        new HttpResponse(null, { status: 500 })),
+    )
+    const { result } = renderHook(
+      () => ({ feed: useNotificationFeed(), actions: useNotificationFeedActions() }),
+      { wrapper: makeHookWrapper() },
+    )
+    await waitFor(() => expect(result.current.feed.items).toHaveLength(12))
+
+    await act(async () => { await result.current.actions.markItemRead('nf-1').catch(() => {}) })
+
+    expect(result.current.feed.items.find((n) => n.id === 'nf-1')?.readAt).toBeNull()
+    expect(result.current.feed.items.filter((n) => !n.readAt)).toHaveLength(5)
+  })
+
   it('real mode: a failed read-all rolls the optimistic stamp back', async () => {
     if (isMockMode()) return
     server.use(

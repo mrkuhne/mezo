@@ -323,7 +323,7 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
         raiseLateEatingLog(owner);
         LocalDate yesterday = today().minusDays(1);
         TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING,
-                yesterday.atTime(23, 30).atZone(zone()).toInstant()).orElseThrow();
+                yesterday.atTime(21, 30).atZone(zone()).toInstant()).orElseThrow();
         assertThat(t.getOffer()).isEqualTo("EXCUSE");
 
         exceptionService.answer(owner, t.getId(), "EXCUSED");
@@ -653,7 +653,7 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
         raiseLateEatingLog(owner);
         LocalDate yesterday = today().minusDays(1);
         TeamChatThreadEntity t = service.open(owner, FlagKey.LATE_EATING,
-                yesterday.atTime(23, 30).atZone(zone()).toInstant()).orElseThrow();
+                yesterday.atTime(21, 30).atZone(zone()).toInstant()).orElseThrow();
         assertThat(t.getOffer()).isEqualTo("EXCUSE");
 
         service.reply(owner, t.getId(), "Igen, kupa volt " + MECCS);

@@ -45,6 +45,8 @@ import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.ritual.service.RitualService;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
@@ -55,6 +57,8 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryReturnPolicy;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
@@ -126,6 +130,9 @@ public class ContextSnapshotAssembler {
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
     private final RunningBlockRepository runningBlockRepository;
+    // Kihagyás S2 (mezo-q4xt2.2, task 6): the read side of kímélő mód — trainBlock's tone line and
+    // comeback-ramp line. Train, never the reverse (companion depends on train, not vice versa).
+    private final RecoveryPeriodService recoveryPeriodService;
     private final FuelDayService fuelDayService;
     private final ProtocolService protocolService;
     private final IntakeService intakeService;
@@ -309,6 +316,7 @@ public class ContextSnapshotAssembler {
                 b.append(" (").append(meso.getSplit()).append(')');
             }
         }
+        kimeloModLine(b, userId, today);
         // Dated resolution (mezo-xixu, the flagship fix): what's ACTUALLY on today/tomorrow,
         // not just the recurring weekly pattern below — the chat's #1 hallucination source.
         List<SportScheduleSlotResponse> sport = sportService.getSchedule(userId);
@@ -352,6 +360,59 @@ public class ContextSnapshotAssembler {
         }
         b.append(", ").append(sportCount).append(" sportalkalom, ").append(runCount).append(" futás");
         return b.toString();
+    }
+
+    /**
+     * Kihagyás S2 (mezo-q4xt2.2, task 6): the coach-tone line for kímélő mód — an OPEN recovery
+     * period gets the "aktív" line (category, day index, estimate, and the explicit instruction
+     * not to pressure the user about training); once it has ended, the comeback ramp gets its own
+     * line while it is still in progress and not waived. NEVER rendered in
+     * {@code ChatService.stableSystemPrompt} — this method only runs inside the per-turn snapshot.
+     * Mutually exclusive: an open period always wins (the ramp only exists after one has ended).
+     */
+    private void kimeloModLine(StringBuilder b, UUID userId, LocalDate today) {
+        Optional<RecoveryPeriodEntity> open = recoveryPeriodService.open(userId);
+        if (open.isPresent()) {
+            RecoveryPeriodEntity p = open.get();
+            long dayIndex = ChronoUnit.DAYS.between(p.getStartDate(), today) + 1;
+            b.append("; Kímélő mód aktív: ").append(huRecoveryCategory(p.getCategory())).append(", ")
+                    .append(dayIndex).append(". nap, becslés: ").append(huRecoveryEstimate(p.getEstimate()))
+                    .append(". Ne sürgesd az edzést, ne említs elmaradást; gyógyulás, pihenés, folyadék.");
+            return;
+        }
+        recoveryPeriodService.latestEnded(userId).ifPresent(p -> {
+            if (p.isComebackWaived()) {
+                return;
+            }
+            RecoveryReturnPolicy.Decision decision =
+                    RecoveryReturnPolicy.decide(p.getStartDate(), p.getEndedOn());
+            int done = recoveryPeriodService.comebackSessionsDone(p, today);
+            if (done < decision.rampSessions()) {
+                b.append("; Visszatérés kímélő mód után: ").append(done).append('/')
+                        .append(decision.rampSessions()).append(" könnyített edzés.");
+            }
+        });
+    }
+
+    /** {@link PlannedSkipEntity.Reason}'s four "serious" categories, in Hungarian (spec: task 6). */
+    private static String huRecoveryCategory(PlannedSkipEntity.Reason category) {
+        return switch (category) {
+            case ILLNESS -> "Beteg";
+            case STOMACH -> "Gyomorrontás";
+            case INJURY -> "Sérülés";
+            case TRAVEL -> "Úton";
+            default -> category.name();
+        };
+    }
+
+    /** {@link RecoveryPeriodEntity.Estimate} in Hungarian (spec: task 6). */
+    private static String huRecoveryEstimate(RecoveryPeriodEntity.Estimate estimate) {
+        return switch (estimate) {
+            case TODAY -> "csak ma";
+            case FEW_DAYS -> "2–3 nap";
+            case WEEK -> "kb. egy hét";
+            case UNKNOWN -> "nem tudni";
+        };
     }
 
     /**

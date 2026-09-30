@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-29
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -409,8 +409,9 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   prop (only `/train/mai` passes it — the hub's own anchor stays `train-hero`). Two S3a guides
   are deliberately anchor-less: `/nap/kuldetesek` (quest cards are data-conditional, an empty
   day is real) and `/train/review/:workoutId` (the whole page is data-gated). The S3b anchors add
-  `log-napvalto` (the `/fuel/log` day stepper), `log-forrasok` (the `MealComposer` source tiles —
-  shared, so the same node also exists inside the `LogFlowPage` overlay on other routes),
+  `log-napvalto` (the `/fuel/log` day stepper), `log-forrasok` (the direct Fotó · Kamra ·
+  Recept · Szokásosak actions on `FuelLogNewPage`; the `MealComposer` source tiles carry the
+  same anchor in the `LogFlowPage` overlay on other routes, ADR 0056),
   `receptek-tabs`, and three `PageHero kalauzAnchor` targets (`stack-hero`, `kamra-hero`,
   `naplo-hero`). Two more guides are deliberately anchor-less: `/fuel/plan` (every speaking card —
   weekly note, medication strip, supplement map — is data-conditional) and `/fuel/gyogyszer`

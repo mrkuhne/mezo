@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.OverloadSummary;
 import io.mrkuhne.mezo.api.dto.PrescribedSet;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.SetUpdateRequest;
+import io.mrkuhne.mezo.api.dto.TodayComeback;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailExercise;
@@ -45,6 +46,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -74,6 +76,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class WorkoutService {
+
+    /** Zone of the kímélő-mód date lookups — the same one the recovery services use. */
+    private static final ZoneId RECOVERY_TZ = ZoneId.of("Europe/Budapest");
 
     /** DayOfWeek (MONDAY..SUNDAY) → the HU day labels the frontend's DAY_ORDER uses. */
     public static final List<String> HU_DAY_LABELS =
@@ -139,6 +144,49 @@ public class WorkoutService {
     // Kihagyás S1 (mezo-q4xt2.1): "is a gym day planned?" reads honour a gym skip. Does NOT
     // depend on WorkoutService — no cycle.
     private final PlannedSkipService plannedSkipService;
+    // Kihagyás S2 kímélő mód (mezo-q4xt2.2): the comeback ramp + released-day lightening, read at
+    // getToday time from the period rows. Repository-only bean — no cycle.
+    private final RecoveryPeriodService recoveryPeriodService;
+
+    /**
+     * Today's kímélő-mód lightening (spec §9.1.4 / §9.1.6): the DTO shown on the hero, plus the
+     * prescription knobs — a load factor (null = none) and whether the progression is held.
+     * Every lightened session also drops a third of its sets and floors RIR at 3.
+     */
+    private record Comeback(TodayComeback dto, BigDecimal loadFactor, boolean holdOnly) {}
+
+    /**
+     * RELEASED when today is released from the open period with lightening kept; else RAMP while
+     * the latest ended period (not waived, no period open) still has ramp sessions left — index =
+     * sessions completed from its end up to yesterday + 1, so a session completed today keeps
+     * showing as the one it was. Index 1 (and a released day) → ≈90% load; index 2 → hold.
+     */
+    private Comeback comebackFor(UUID createdBy, LocalDate today) {
+        var open = recoveryPeriodService.open(createdBy);
+        if (open.isPresent()) {
+            boolean released = recoveryPeriodService.release(createdBy, today)
+                .filter(r -> r.isLighten() && r.getPeriodId().equals(open.get().getId()))
+                .isPresent();
+            return released
+                ? new Comeback(new TodayComeback().index(1).total(1).mode(TodayComeback.ModeEnum.RELEASED),
+                    ComebackRamp.LOAD_FACTOR, false)
+                : null;
+        }
+        return recoveryPeriodService.latestEnded(createdBy)
+            .filter(p -> !p.isComebackWaived())
+            .map(p -> {
+                int total = RecoveryReturnPolicy.decide(p.getStartDate(), p.getEndedOn()).rampSessions();
+                int index = recoveryPeriodService.comebackSessionsDone(p, today.minusDays(1)) + 1;
+                if (index > total) {
+                    return null;
+                }
+                TodayComeback dto = new TodayComeback().index(index).total(total).mode(TodayComeback.ModeEnum.RAMP);
+                return index == 1
+                    ? new Comeback(dto, ComebackRamp.LOAD_FACTOR, false)
+                    : new Comeback(dto, null, true);
+            })
+            .orElse(null);
+    }
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -259,6 +307,9 @@ public class WorkoutService {
         // Care exercise id → the pain region that flagged it. Undo deletes the choice, so the next
         // read prescribes normally again; logged sets are never touched (targets are per request).
         Optional<Map<UUID, String>> lighten = readinessAssessor.lightening(createdBy, LocalDate.now(), exercises);
+        // Kímélő mód (mezo-q4xt2.2): comeback ramp / released day — read-time only, like dayDelta;
+        // writes no workout_day_adjustment row. The readiness care override below still wins.
+        Comeback comeback = comebackFor(createdBy, LocalDate.now(RECOVERY_TZ));
         int weightUp = 0;
         int weightDown = 0;
         int repUp = 0;
@@ -284,10 +335,17 @@ public class WorkoutService {
             int effective;
             if (entry.workingSetsOverride() != null) {
                 effective = Math.max(1, entry.workingSetsOverride()); // swapped out: only what was logged
-            } else if (entry.changeScope() != null) {
-                effective = e.getWorkingSets(); // a row changed today already carries today's count
             } else {
-                effective = Math.max(1, effectiveSets.getOrDefault(e.getId(), e.getWorkingSets()) + dayDelta);
+                if (entry.changeScope() != null) {
+                    effective = e.getWorkingSets(); // a row changed today already carries today's count
+                } else {
+                    effective = Math.max(1, effectiveSets.getOrDefault(e.getId(), e.getWorkingSets()) + dayDelta);
+                    // Ramp lightening only on the planned count — a swapped / changed-today row
+                    // carries a count that is already today's (no double lightening).
+                    if (comeback != null) {
+                        effective = ComebackRamp.lightenedSets(effective);
+                    }
+                }
             }
             String careRegion = lighten.map(m -> m.get(e.getId())).orElse(null);
             if (careRegion != null) {
@@ -295,8 +353,14 @@ public class WorkoutService {
             }
             t.setWorkingSets(effective);
             if (hypertrophyGate.getIfAvailable() != null) {
-                Prescription p = setRecommendationService.prescribe(
-                    createdBy, e, deloadWeek, effective, lighten.isPresent());
+                Prescription p = comeback == null
+                    ? setRecommendationService.prescribe(createdBy, e, deloadWeek, effective, lighten.isPresent())
+                    : setRecommendationService.prescribe(createdBy, e, deloadWeek, effective,
+                        lighten.isPresent() || comeback.holdOnly(),
+                        // A deload week already lightens the load — no extra ×0.9 on top; the set
+                        // reduction and the RIR floor stay.
+                        deloadWeek ? null : comeback.loadFactor(),
+                        ComebackRamp.rirFloor(null));
                 if (careRegion != null) {
                     p = lightCareSet(p, careRegion);
                 }
@@ -335,6 +399,7 @@ public class WorkoutService {
             .completedWorkout(completedToday != null ? toInstanceResponse(createdBy, completedToday) : null)
             .weekDoneDates(weekDoneDates)
             .overloadSummary(overloadSummary)
+            .comeback(comeback == null ? null : comeback.dto())
             .build();
     }
 

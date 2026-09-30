@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { seedKalauzSeen } from './kalauzSeed'
 import { seedSplashSkipped } from './splashSeed'
+import { brokenChipWords } from './wordWrap'
 
 /**
  * Kihagyás S1 (mezo-q4xt2.1) — Edzés · Mai with a skipped occurrence, at the narrowest phone.
@@ -53,6 +54,8 @@ test('Edzés Mai · the skipped hero and the reason sheet stay contained @ 320px
       .filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length
   })
   expect(chipsOutside).toBe(0)
+  // the eight reason labels keep their words whole (no „Gyomorront / ás") and inside their chip
+  expect(await brokenChipWords(page, '.trm-whysheet .trm-whyc > span')).toEqual([])
   await dialog.getByRole('button', { name: 'Most nem mondom' }).click()
   await expect(dialog).toBeHidden()
 

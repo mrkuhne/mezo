@@ -6,6 +6,8 @@ import { Chip } from '@/shared/ui/Chip'
 import { Icon3D } from '@/shared/ui/clay'
 import { useHabitAiSuggest, useHabitCatalog } from '@/data/hooks'
 import type { HabitSuggestion } from '@/data/types'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const HINT_MAX = 200
 // Shared with RoutineWizardPage, which claims the value once on mount and deletes it.
@@ -84,6 +86,7 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
             <>
               <label className="rt-field">
                 <span className="rt-flabel">Szándék (opcionális)</span>
+                <VoiceField domain="me" size="sm" onTranscript={(t) => setHint(appendDictation(hint, t, HINT_MAX))}>
                 <input
                   className="rt-fin"
                   aria-label="Szándék"
@@ -92,6 +95,7 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
                   onChange={(e) => setHint(e.target.value)}
                   placeholder="pl. jobb esti lezárás"
                 />
+                </VoiceField>
               </label>
 
               <button

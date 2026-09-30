@@ -72,4 +72,14 @@ describe('Boop', () => {
       expect(svg.querySelector(`[id$="boop-${domain}-body"]`), `${domain} gradiens-definíció`).not.toBeNull()
     }
   })
+
+  test('mind a hét figura ugyanazt az apró, fekete háromszög orrot viseli', () => {
+    for (const domain of ['nap', 'train', 'fuel', 'mezo', 'me', 'gold', 'slate'] as const) {
+      const { container } = render(<Boop domain={domain} />)
+      const noses = container.querySelectorAll('svg.boop .boop-body path.boop-nose')
+      expect(noses, `${domain} orra`).toHaveLength(1)
+      expect(noses[0].getAttribute('fill')).toBe('#241D1B')
+      expect(noses[0].getAttribute('transform')).toBe('translate(10 11.5) scale(.8)')
+    }
+  })
 })

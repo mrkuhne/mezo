@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { Icon } from '@/shared/ui/Icon'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { useDecisionActions, useJournalActions, useGratitudeActions } from '@/data/hooks'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
-import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
-import { cn } from '@/shared/lib/cn'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { localDateString } from '@/shared/lib/dates'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 import type { JournalNote } from '@/data/journal/journalTypes'
@@ -40,10 +38,6 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
   const [lifeArea, setLifeArea] = useState<string | null>(null)
   const [date, setDate] = useState(entry?.occurredOn ?? localDateString())
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  // The transcript is appended to whatever's already typed — same "check before it commits"
-  // idiom as ChatPage's composer (useVoiceInput.ts:16-21).
-  const voice = useVoiceInput((t) => setText((d) => (d ? `${d} ${t}` : t)))
-  const recording = voice.state === 'recording'
   const busy = journalPending || decisionPending || gratitudePending
 
   const save = (close: () => void) => {
@@ -122,27 +116,19 @@ export function JournalSheet({ onClose, onBack, entry, initialMode }: JournalShe
               )
               : (
                 // Note/Decision mode: original single-textarea
-                <div className="card" style={{ padding: 10, position: 'relative' }}>
-                  <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    aria-label={mode === 'decision' ? 'Döntés' : undefined}
-                    aria-labelledby={mode === 'decision' ? undefined : 'journal-title'}
-                    placeholder={mode === 'decision' ? 'Mit döntöttél el — és miért?' : 'Írd le, mi jár a fejedben…'}
-                    autoFocus
-                    style={{ width: '100%', minHeight: 120, resize: 'none', fontSize: 16, lineHeight: 1.45, paddingRight: 36 }}
-                  />
-                  <button
-                    type="button"
-                    className={cn('chip capture-mic', recording && 'chat-mic-live is-live')}
-                    onClick={voice.toggle}
-                    disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
-                    aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
-                    aria-pressed={recording}
-                  >
-                    <Icon name={recording ? 'voice-wave' : 'mic'} size={14} />
-                  </button>
-                  <VoiceBubble voice={voice} domain="me" />
+                <div className="card" style={{ padding: 10 }}>
+                  {/* the shared voice field (mezo-xojq8): dictation appends to what's typed */}
+                  <VoiceField domain="me" onTranscript={(t) => setText((d) => appendDictation(d, t))}>
+                    <textarea
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      aria-label={mode === 'decision' ? 'Döntés' : undefined}
+                      aria-labelledby={mode === 'decision' ? undefined : 'journal-title'}
+                      placeholder={mode === 'decision' ? 'Mit döntöttél el — és miért?' : 'Írd le, mi jár a fejedben…'}
+                      autoFocus
+                      style={{ width: '100%', minHeight: 120, resize: 'none', fontSize: 16, lineHeight: 1.45 }}
+                    />
+                  </VoiceField>
                 </div>
               )}
 

@@ -3455,10 +3455,6 @@ ol.md-list { list-style: decimal; }
   box-shadow: var(--shadow-md);
 }
 
-/* Recording mic (mezo-at8x.4) — a slow breath while the composer is listening. */
-.chat-mic-live { animation: pulse-soft 1.4s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .chat-mic-live { animation: none; } }
-
 /* ============================================================
    Mozaik 2.0 primitives (design_2.0 — mezo-d20.1.3)
    Values = the prototype heads' CSS ×1.18 (330→390px frame scale),
@@ -4474,15 +4470,14 @@ button.mz-tile:active { transform: scale(0.96); }
   border: 0.5px solid rgba(43, 33, 24, 0.08);
 }
 .mzc-composer textarea { border: none; outline: none; font-family: inherit; }
-.mzc-cmic, .mzc-csend {
+.mzc-csend {
   width: 44px; height: 44px; border-radius: 50%; border: none; flex: none;
   display: grid; place-items: center; padding: 0; font-family: inherit; cursor: pointer;
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
 }
-.mzc-cmic.rec { background: rgba(255, 107, 74, 0.16); color: var(--coral-deep); }
 .mzc-csend { background: var(--mz-chat-send-bg); color: #fff; box-shadow: var(--mz-chat-send-shadow); }
-.mzc-cmic:active, .mzc-csend:active { transform: scale(0.94); }
-.mzc-cmic:disabled, .mzc-csend:disabled { opacity: 0.5; cursor: default; }
+.mzc-csend:active { transform: scale(0.94); }
+.mzc-csend:disabled { opacity: 0.5; cursor: default; }
 
 /* ===== WeeklyBandsCard (wizard redesign, mezo-d20.14) — current → ceiling per
    muscle, no percentages. Reuses existing --mz-cell-, --mz-ink- and --mz-cellbg
@@ -4687,7 +4682,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .mzc-hstat[data-st="busy"] .mzc-hdot { animation: mzc-livepulse 1.2s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
-  .mzc-cmic, .mzc-csend { transition: none; }
+  .mzc-csend { transition: none; }
   .mzc-wic.run, .mzc-wrow.run .mzc-wst i { animation: none; }
   .mzc-memcard { transition: none; }
   .mzc-horb svg, .mzc-horb.busy svg, .mzc-horb.busy::before,
@@ -13599,7 +13594,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Every glass surface takes ONE accent through `--c`; frame, glow, inner floor,
    icon halo and numeral tint all derive from it. Never glass inside glass (§3.4).
    Classes:
-     .glass            the card (§3): body + ::before gradient frame + ::after sheen
+     .glass            the card (§3): body + ::before gradient frame; no recurring sheen
      .glass.is-still   no sheen (always-visible chrome: TabBar, round header buttons)
      .glass.is-round   a round button: overflow visible (badges), no sheen (§7.1)
      .uv-flat          secondary cell/chip inside a card (§3 rank 3)
@@ -13661,6 +13656,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
+/* The decorative sweep stays dormant app-wide (mezo-ktog6). Keep its geometry for
+   feature-specific ::after overlays that reuse it (diff flash, focus rings, hit areas). */
 .glass::after {
   content: ''; position: absolute; top: -20%; bottom: -20%; left: -40%; width: 28%;
   pointer-events: none; z-index: 3; opacity: 0;
@@ -13718,11 +13715,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .uv-tint { color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
 
 /* §6 motion — the look; one-shot choreography stays on the kit's rAF primitives. */
-@keyframes uv-sheen {
-  0%, 70% { opacity: 0; transform: skewX(-20deg) translateX(-120%); }
-  74% { opacity: 1; } 92% { opacity: 0.9; }
-  100% { opacity: 0; transform: skewX(-20deg) translateX(620%); }
-}
 @keyframes uv-float { 0%, 100% { transform: translateY(2px) rotate(-3deg); } 50% { transform: translateY(-4px) rotate(1deg); } }
 @keyframes uv-glow {
   0%, 100% { filter: drop-shadow(0 6px 14px rgba(171, 159, 210, 0.28)); }
@@ -13734,7 +13726,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 @keyframes uv-wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
 @media (prefers-reduced-motion: no-preference) {
-  .glass::after { animation: uv-sheen 7s ease-in-out infinite; animation-delay: calc(1.2s + var(--i, 0) * 0.45s); }
   .uv-float { animation: uv-float 5s ease-in-out 1s infinite; }
   .uv-glow { animation: uv-glow 5s ease-in-out 1s infinite; }
 }
@@ -14724,12 +14715,13 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: inset 0 0 0 1px var(--divider); }
 
 /* ─ The four ways in (FuelLogModes) ─ */
-.fmx-logmodes { margin: 0 0 14px; }
+.fmx-logmodes { margin: 0 0 2px; }
 .fmx-modes.glass { --c: var(--dv-coral); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px; margin: 2px 0 14px; padding: 6px; border-radius: 22px; }
+  gap: 4px; margin: 2px 0 12px; padding: 5px; border-radius: 22px; }
 .fmx-mode { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
-  padding: 8px 0 7px; border: 0; border-radius: 16px; background: transparent;
+  min-height: 64px; padding: 8px 0 7px; border: 0; border-radius: 16px; background: transparent;
   font-family: inherit; font-size: 11px; font-weight: 600; color: var(--text-muted); }
+.fmx-mode.is-usual { margin-left: 2px; border-left: 1px solid var(--divider); }
 .fmx-modes .fmx-mode .t-ico { filter: grayscale(0.45) brightness(0.8); }
 .fmx-mode.is-active { color: var(--text-primary);
   background: radial-gradient(80% 90% at 50% 20%, color-mix(in srgb, var(--c) 26%, transparent), transparent 70%);
@@ -14738,27 +14730,40 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent)); }
 .fmx-mode:focus-visible { outline: 2px solid var(--c); outline-offset: -2px; }
 
-.fmx-mode-hint { margin: 12px 6px 4px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); text-align: center; }
+.fmx-mode-hint { margin: 10px 6px 13px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); text-align: center; }
 .fmx-inline-ico { display: inline-block; vertical-align: -3px; }
 .fmx-mode-error { margin: 6px 0 0; font-size: 12px; color: var(--dv-coral); text-align: center; }
 .fmx-mode-empty.uv-empty { --c: var(--dv-amber); margin: 10px 0 4px; padding: 14px; border-radius: 20px;
   font-size: 12.5px; line-height: 1.55; color: var(--text-secondary); text-align: center; }
 
-/* Fotó: the viewfinder IS the camera input (label → hidden file input). */
-.fmx-camera { text-align: center; }
-.fmx-finder.glass { --c: var(--dv-coral); display: grid; place-items: center; align-content: center; gap: 6px;
-  height: 230px; margin: 0; padding: 16px; border-radius: 26px; cursor: pointer; text-align: center; }
-.fmx-finder.glass > .t-ico {
+/* Camera stage, including the selected image preview from the approved prototype. */
+.fmx-photo-input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.fmx-finder.glass { --c: var(--dv-coral); position: relative; height: 176px; margin: 0;
+  border-radius: 24px; overflow: hidden; text-align: center; }
+.fmx-camera-open { display: grid; place-content: center; justify-items: center; gap: 4px;
+  width: 100%; height: 100%; border: 0; background: none; color: var(--text-primary); }
+.fmx-camera-open > .t-ico {
   filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px color-mix(in srgb, var(--c) 35%, transparent)); }
-.fmx-finder.glass > span { position: absolute; z-index: 1; width: 26px; height: 26px;
+.fmx-finder.glass > i { position: absolute; z-index: 3; width: 22px; height: 22px; pointer-events: none;
   border: 2.5px solid color-mix(in srgb, var(--c) 75%, #fff); filter: drop-shadow(0 0 6px var(--c)); }
-.fmx-finder.glass > span:nth-child(1) { top: 18px; left: 18px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
-.fmx-finder.glass > span:nth-child(2) { top: 18px; right: 18px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
-.fmx-finder.glass > span:nth-child(3) { bottom: 18px; left: 18px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
-.fmx-finder.glass > span:nth-child(4) { bottom: 18px; right: 18px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
-.fmx-finder b { margin-top: 6px; font-size: 16px; font-weight: 600; color: var(--text-primary); }
-.fmx-finder.glass > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.fmx-finder:focus-within { outline: 2px solid var(--c); outline-offset: 2px; }
+.fmx-finder.glass > i:nth-child(1) { top: 15px; left: 15px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
+.fmx-finder.glass > i:nth-child(2) { top: 15px; right: 15px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
+.fmx-finder.glass > i:nth-child(3) { bottom: 15px; left: 15px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
+.fmx-finder.glass > i:nth-child(4) { bottom: 15px; right: 15px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
+.fmx-camera-open strong { font-size: 15px; font-weight: 600; }
+.fmx-camera-open small { font-size: 11px; color: var(--text-secondary); }
+.fmx-photo-show { position: absolute; inset: 0; }
+.fmx-photo-show img { width: 100%; height: 100%; object-fit: cover; }
+.fmx-photo-show::after { content: ''; position: absolute; inset: 45% 0 0;
+  background: linear-gradient(transparent, rgba(16, 13, 11, 0.91)); pointer-events: none; }
+.fmx-photo-caption { position: absolute; z-index: 2; left: 17px; right: 15px; bottom: 17px;
+  display: flex; align-items: end; justify-content: space-between; gap: 10px; text-align: left; }
+.fmx-photo-caption strong { display: block; color: #fff; font-size: 14px; }
+.fmx-photo-caption small { display: block; max-width: 180px; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: #eee0d5; font-size: 10px; }
+.fmx-photo-controls { display: flex; gap: 6px; flex: none; }
+.fmx-photo-controls button { min-height: 32px; padding: 6px 8px; border: 1px solid #ffffff75;
+  border-radius: 999px; background: #191410bb; color: #fff; font-family: inherit; font-size: 11px; font-weight: 600; }
 
 /* Hang: one big glass disc — a real recorder, no sample sentences. Live = coral. */
 .fmx-voice { text-align: center; }
@@ -14842,6 +14847,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* The AI panel (prototype `.aipanel`): lavender glass; its field and chips are flat. */
 .logflow-composer .logflow-aipanel.glass { --c: var(--dv-lav); display: grid; gap: 10px; margin-top: 12px;
   padding: 12px; border-radius: 22px; }
+.flognew-page .logflow-aipanel.glass { margin-top: 0; }
 .logflow-composer .logflow-aipanel textarea { width: 100%; min-height: 64px; padding: 11px 13px; border: 0;
   border-radius: 13px; resize: none; font-family: inherit; font-size: 14px; color: var(--text-primary);
   background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
@@ -14853,8 +14859,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
 .logflow-composer .logflow-aichip .t-ico { filter: none; }
 .logflow-composer .logflow-aichip:disabled { opacity: 0.45; cursor: default; }
-.logflow-composer .logflow-aichip.is-live { --c: var(--dv-coral); color: var(--page, #191614); background: var(--c);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
 .logflow-composer .logflow-airun { margin-left: auto; color: var(--page, #191614); background: var(--c);
   box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent); }
 .logflow-composer .logflow-aiphoto { display: inline-flex; align-items: center; gap: 6px; min-width: 0;
@@ -16569,9 +16573,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--c) 22%, transparent), transparent 72%); }
 .capture-drafting-title { font: 600 17px/1.3 var(--ff-display); color: var(--text-primary); }
 .capture-drafting-dot { width: 12px; height: 12px; border-radius: 50%; border: 1.5px solid var(--c); box-shadow: 0 0 8px var(--c); }
-.capture-sheet .capture-mic { position: absolute; top: 8px; right: 8px; min-height: 0; padding: 8px; }
-.capture-sheet .capture-mic.is-live { color: var(--page, #191614); background: var(--dv-coral);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-coral) 55%, transparent); }
 
 /* ─ the actions (`saveRow()`): Mégse flat · Mentés the lit primary in the sheet accent ─ */
 .capture-actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 18px; }
@@ -17211,10 +17212,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   border: 0; border-radius: 13px; background: rgba(245, 239, 230, .05); box-shadow: inset 0 0 0 1px var(--divider);
   color: var(--text-primary); font: 400 16px/1.45 var(--ff-body); }
 .rz-reflect-input::placeholder, .rz-reflect-gratitude textarea::placeholder { color: var(--text-muted); }
-.rz-screen .rz-reflect-mic.chip { margin-top: 8px; padding: 6px 10px; border: 0; border-radius: 999px;
-  color: var(--text-secondary); background: rgba(245, 239, 230, .05); box-shadow: inset 0 0 0 1px var(--divider); }
-.rz-screen .rz-reflect-mic.chip[aria-pressed='true'] { color: #191614; background: var(--dv-lav);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 50%, transparent); }
 .rz-reflect-hint, .rz-reflect-gratitude .text-tertiary { margin: 6px 2px 0; font: 400 11px/1.4 var(--ff-body); color: var(--text-muted); }
 /* the shared GratitudeRows, restyled only under the ritual root */
 .rz-reflect-gratitude .card { border: 0; border-radius: 13px; background: rgba(245, 239, 230, .05); box-shadow: inset 0 0 0 1px var(--divider); }
@@ -17553,7 +17550,16 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--c) 26%, transparent), rgba(245, 239, 230, 0.04));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 62%, transparent), 0 0 16px -5px var(--c);
 }
-.trm-whyc:focus-visible, .trm-micb:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.trm-whyc:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+/* ≤360px (320px phones): two chip columns leave ~75px for a label — tighten the icon, gap and
+   type so the longest single word („Gyomorrontás") stays whole; words never break mid-word
+   (mezo-q4xt2.2 review: „Gyomorront / ás"). Shared by „Miért marad ki?" and the Nap „Mi történt?". */
+@media (max-width: 360px) {
+  .trm-whyg { gap: 6px; }
+  .trm-whyc { gap: 6px; padding: 9px 6px; font-size: 12px; }
+  .trm-whyc > span { overflow-wrap: normal; word-break: normal; hyphens: manual; }
+  .sheet.glass.uv-sheet .trm-whyc .t-ico { width: 24px; height: 24px; }
+}
 .trm-whynote {
   display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 14px;
   font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
@@ -17590,13 +17596,60 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   flex: 1; min-width: 0; min-height: 64px; padding: 12px 13px; resize: none;
   font-family: inherit; font-size: 14px; line-height: 1.5;
 }
-.trm-micb {
-  flex: 0 0 auto; width: 46px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 13px; cursor: pointer;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+
+/* ── Kímélő mód S2 (mezo-q4xt2.2) — prototype elo/edzes.html `.kmdur` `.kmq` `.kmlink` `.kmrel` `.cbnote` `.udvl` `.kmday` ── */
+/* „Meddig tarthat?" in the reason sheet (portals out of `.trm`, so unscoped) */
+.trm-kmdur-eb { display: block; margin-bottom: 8px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; color: var(--text-secondary); }
+.trm-kmdc { display: flex; flex-wrap: wrap; gap: 6px; }
+.trm-kmdc > button {
+  padding: 7px 12px; border: 0; border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
 }
-.trm-micb.is-live { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px var(--c); }
-.trm-micb:disabled { opacity: 0.45; cursor: default; }
-.sheet.glass.uv-sheet .trm-micb .t-ico { width: 26px; height: 26px; filter: none; }
+.trm-kmdc > button.on { color: #191614; background: var(--dv-lav); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-lav) 45%, transparent); }
+.trm-kmdc > button:disabled { cursor: default; }
+.trm-kmdc > button:disabled:not(.on) { opacity: 0.55; }
+.trm-kmdc > button:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.trm-whynote.is-km {
+  color: var(--text-primary); background: rgba(171, 159, 210, 0.08);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-lav) 55%, transparent);
+}
+/* the protected hero: the question line, the lit „Jobban vagyok", the quiet links */
+.trm .trm-skipd .trm-kmq { display: block; margin-top: 6px; font-style: normal; font-size: 12.5px; font-weight: 600; color: #C9BDF0; }
+.trm .trm-skacts .trm-pill .t-ico { width: 18px; height: 18px; filter: none; }
+.trm :is(.trm-skact, .trm-pill, .trm-kmlink):disabled { opacity: 0.55; cursor: default; }
+.trm .trm-kmlink {
+  display: inline-block; margin: 10px 6px 0; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--divider);
+}
+.trm .trm-kmlink:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; border-radius: 4px; }
+.trm .trm-kmrel { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--text-secondary); }
+.trm .trm-kmrel .t-ico { width: 18px; height: 18px; filter: none; }
+.trm .trm-kmrel .trm-kmlink { margin: 0; }
+/* the comeback ramp: the sage status pill and the note above the CTA */
+.trm .trm-stpill.is-cbk { color: #BFE0A8; background: rgba(143, 180, 154, 0.12); box-shadow: inset 0 0 0 1px rgba(143, 180, 154, 0.45); }
+.trm .trm-stpill.is-cbk i { background: var(--dv-sage); box-shadow: 0 0 8px var(--dv-sage); }
+.trm .trm-cbnote {
+  width: 100%; max-width: 330px; margin: 14px auto 0; padding: 12px 14px; border-radius: 18px; text-align: left;
+  background: rgba(143, 180, 154, 0.07); box-shadow: inset 0 0 0 1px rgba(143, 180, 154, 0.3);
+}
+.trm .trm-cbnote-hd { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; line-height: 1.35; color: var(--text-primary); }
+.trm .trm-cbnote-hd .t-ico { width: 28px; height: 28px; flex: 0 0 auto; filter: none; }
+.trm .trm-cbsets { display: grid; gap: 4px; margin-top: 10px; }
+.trm .trm-cbsets > div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--text-secondary); }
+.trm .trm-cbsets span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trm .trm-cbsets b { flex: 0 0 auto; font-weight: 600; color: var(--text-primary); }
+.trm .trm-cbacts { text-align: center; margin-bottom: 4px; }
+.trm .trm-cbnote + .trm-cbacts + .trm-start { margin-top: 8px; }
+/* „Üdv újra!" — the sage sheet, three note rows */
+.sheet.glass.uv-sheet.trm-udvsheet { --c: var(--dv-sage); }
+.trm-udvl { display: grid; gap: 8px; }
+/* „Mégsem vagyok jól" is the long label of the pair — it may wrap at 320px instead of overflowing its pill */
+.trm-udvsheet .uvl-foot .uvl-ghost { white-space: normal; text-align: center; line-height: 1.2; padding-inline: 12px; }
+/* the day strip's protected mark, and the Terv week's protected row */
+.trm .trm-day-ck .trm-day-km { opacity: 0.8; }
+.tv-dayrest.is-km { background: rgba(171, 159, 210, 0.06); box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.3); }
+.tv-dayrest.is-km em b { font-weight: 600; color: #C9BDF0; }
 
 /* ── energy: amber glass, t-flame, the big lit numeral, the split bar ── */
 .trm .trm-energy.glass, .trm .trm-mus.glass { padding: 15px 16px; border-radius: 22px; }
@@ -25319,10 +25372,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   margin: 14px 0 0; padding: 22px 16px; border-radius: 18px; text-align: center;
   font-size: 13.5px; color: var(--text-secondary);
 }
-.nf-page .nf-note {
-  margin: 22px 10px 0; font-size: 12px; line-height: 1.55; text-align: center; color: var(--text-muted);
-}
-
 /* ── settings (/settings/notifications) ── */
 .ntf-page .eyebrow {
   display: block; padding: 18px 4px 8px; font: 600 9.5px/1.2 var(--ff-body); letter-spacing: 1.3px;
@@ -26099,19 +26148,11 @@ main.settings-page {
 }
 .mzc-u8 .mzc-composer textarea { color: var(--text-primary); color-scheme: dark; }
 .mzc-u8 .mzc-composer textarea::placeholder { color: var(--text-muted); }
-.mzc-u8 .mzc-cmic {
-  color: var(--text-secondary); background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.mzc-u8 .mzc-cmic.rec {
-  color: #FFD2C4;
-  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dv-coral) 42%, #3A332D), color-mix(in srgb, var(--dv-coral) 16%, #1E1B18));
-  box-shadow: 0 0 14px -2px rgba(255, 126, 92, 0.7), inset 0 0 0 1px rgba(255, 126, 92, 0.5);
-}
 .mzc-u8 .mzc-csend {
   background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--dv-lav) 42%, #3A332D), color-mix(in srgb, var(--dv-lav) 16%, #1E1B18));
   box-shadow: 0 0 14px -2px rgba(171, 159, 210, 0.7), inset 0 0 0 1px rgba(171, 159, 210, 0.5);
 }
-.mzc-u8 .mzc-cmic .t-ico, .mzc-u8 .mzc-csend .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
+.mzc-u8 .mzc-csend .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
 
 /* FeedbackChips, üveg variant (`glyph3d`): flat pills, the chosen verdict/reason lit lavender */
 .fbk-chips.is-3d { margin-top: 2px; }

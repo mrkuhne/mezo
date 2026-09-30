@@ -12,11 +12,9 @@
 // logolás deep-linkelhető és a böngésző-vissza természetes. Ismeretlen `w` nem
 // hiba: ablakon kívüli logolásra esik vissza — sosem fabrikálunk ablakot.
 //
-// S1c (mezo-33k6): az oldal a KAMERÁN nyit. A `FuelLogModes` héj adja a négy utat (fotó → hang
-// → gépelés → szokásosak), és mindegyik a MealComposer meglévő karjaiba fut — a héj egyetlen
-// AI-hívást sem indít és egyetlen tételt sem ment. Az `?ai=1` deep link értelme változatlan:
-// „nyíljon a gépelés az AI-panellel". A felismerés kudarca itt él állapotként (`failed`), hogy
-// a héj a másik három utat tudja felajánlani hibaüzenet helyett.
+// ADR 0056 (mezo-qe90y): a négy közvetlen út Fotó, Kamra, Recept, Szokásosak. A MealComposer
+// szövegmezője és mikrofonja mindig látható; a fotó előnézete itt él, az AI csak Elemzésre indul.
+// Az `?ai=1` továbbra is a szöveges AI-bejáratot jelenti, most már a közös felületen.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -29,7 +27,7 @@ import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared
 import { ContentIcon } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { MealComposer } from '@/features/fuel/components/MealComposer'
-import { FuelLogModes, type LogMode } from '@/features/fuel/components/FuelLogModes'
+import { FuelLogModes, type LogMode, type LogSource } from '@/features/fuel/components/FuelLogModes'
 
 export function FuelLogNewPage() {
   const navigate = useNavigate()
@@ -70,16 +68,17 @@ export function FuelLogNewPage() {
 
   const dayLabel = `${huMonthDay(date).toLowerCase()}.`
 
-  // ── S1c: a négy út (mezo-33k6) ──────────────────────────────────────────────────────────────
-  // `?ai=1` a gépelésen nyit (az AI-panel nyitva) — minden más esetben a kamerán, ez az owner
-  // első számú módja. A héj állapotai itt élnek, a felismerés pedig a composer egyetlen
-  // AI-hívóhelyén fut: ide csak a FÁJL, a MONDAT és a KUDARC jele jut el.
-  const [mode, setMode] = useState<LogMode>(ai ? 'text' : 'photo')
+  // A kamera az alapnézet; a szöveg és mikrofon a héj alatt végig elérhető. A héj állapotai itt
+  // élnek, a felismerés pedig a composer egyetlen AI-hívóhelyén fut.
+  const [mode, setMode] = useState<LogMode>('photo')
   const [failed, setFailed] = useState(false)
   const [photo, setPhoto] = useState<File | null>(null)
-  const [aiTextIn, setAiTextIn] = useState<{ text: string; seq: number; run?: boolean } | null>(null)
-  const pushAiText = (text: string, run?: boolean) =>
-    setAiTextIn(prev => ({ text, seq: (prev?.seq ?? 0) + 1, run }))
+  const [sourceAction, setSourceAction] = useState<{ source: LogSource; seq: number } | null>(null)
+  const openSource = (source: LogSource) =>
+    setSourceAction(prev => ({ source, seq: (prev?.seq ?? 0) + 1 }))
+  const [aiTextIn, setAiTextIn] = useState<{ text: string; seq: number } | null>(null)
+  const pushAiText = (text: string) =>
+    setAiTextIn(prev => ({ text, seq: (prev?.seq ?? 0) + 1 }))
   // A szokásosak a nap logolt étkezéseiből rangsorolódnak, a terv saját órájával (nincs ambiens
   // idő). Előzmény nélkül a lista üres — a héj ezt őszintén ki is mondja.
   const usuals = rankUsualMeals(fuel.meals, nowHHmm)
@@ -127,27 +126,26 @@ export function FuelLogNewPage() {
         {!editing && <FuelLogModes
           mode={mode}
           onMode={(m) => { setFailed(false); setMode(m) }}
+          onSource={openSource}
+          photo={photo}
           onPhoto={(file) => { setFailed(false); setPhoto(file) }}
-          // Egy szokásos sor a NEVÉVEL indítja a meglévő szöveg-ágat — kitalált makrókat nem
-          // viszünk be, és a piszkozatot a user továbbra is jóváhagyja.
-          onUsual={(u) => pushAiText(u.title, true)}
-          onTranscript={(text) => pushAiText(text)}
+          onRemovePhoto={() => setPhoto(null)}
+          // A szokásos sor neve a szövegmezőbe kerül; a user külön indítja az elemzést.
+          onUsual={(u) => { pushAiText(u.title); setMode('photo') }}
           failed={failed}
           usuals={usuals}
         />}
         <MealComposer
           fixedSlot={tile?.slotKey}
           prefill={prefill}
-          aiPanelOpenOnMount={ai}
-          aiPanelOpen={mode === 'text' || mode === 'voice'}
+          aiPanelOpenOnMount={!editing || ai}
           incomingPhoto={photo}
           incomingAiText={aiTextIn}
-          onAiFailed={() => setFailed(true)}
-          // S1c.2 (mezo-33k6): ahol a héj renderel, ott a héj a bejárat — a composer nem kínál
-          // második ✨ AI kártyát, és a megerősítő részt csak az első tétellel hozza. A kézi
-          // pickerek a GÉPELÉS úton élnek (A3): ott a kézi sor-felvétel az, amit a user akar.
+          sourceAction={sourceAction}
+          onAiFailed={() => { setFailed(true); setPhoto(null) }}
+          onAiSucceeded={() => setFailed(false)}
+          // A héj adja a négy bejáratot; a composer szövegmezőt és a későbbi megerősítést adja.
           shellOwnsEntry={!editing}
-          manualSources={mode === 'text'}
           editMealId={editMealId}
           window={slot?.windowFrom && slot.windowTo && !editing ? { from: slot.windowFrom, to: slot.windowTo } : undefined}
           logDate={past ? date : undefined}

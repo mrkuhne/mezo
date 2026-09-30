@@ -8,6 +8,8 @@ import type { IfThenPlan, LifeGoalDimension, LifeGoalFrame, LifeGoalPillarInput,
 import { DIMENSION_ACCENT, DIMENSIONS, DIMENSION_ORDER, KIND_LABEL } from '@/features/me/logic/lifegoalLabels'
 import { PillarCatalogSheet } from '@/features/me/sheets/PillarCatalogSheet'
 import { pillarFromCatalog } from '@/features/me/logic/pillarFromCatalog'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 // Five-step goal-creation wizard (Task 11, mezo-iizd.1, prototype celok.html #page-wiz):
 // Cél → Keret → Pillérek → Ha–akkor → Összegzés (D8/D9). Step 1→2 fires `propose` ONCE
@@ -122,7 +124,9 @@ export function CelWizardPage() {
               <div className="lg-fcard glass"><label className="lg-flabel" htmlFor="lg-title">A cél, a te szavaiddal</label>
                 <textarea id="lg-title" className="lg-fin" rows={2} value={d.title} onChange={(e) => patch({ title: e.target.value })} placeholder="pl. Félmaraton tavasszal" /></div>
               <div className="lg-fcard glass"><label className="lg-flabel" htmlFor="lg-why">Miért fontos? · egy mondat</label>
-                <textarea id="lg-why" className="lg-fin" rows={2} value={d.whyText} onChange={(e) => patch({ whyText: e.target.value })} /></div>
+                <VoiceField domain="me" onTranscript={(t) => patch({ whyText: appendDictation(d.whyText, t) })}>
+                  <textarea id="lg-why" className="lg-fin" rows={2} value={d.whyText} onChange={(e) => patch({ whyText: e.target.value })} />
+                </VoiceField></div>
               <div className="lg-fcard glass"><label className="lg-flabel" htmlFor="lg-date">Határidő · opcionális</label>
                 <input id="lg-date" className="lg-fin" type="date" value={d.targetDate} onChange={(e) => patch({ targetDate: e.target.value })} /></div>
             </>)}
@@ -180,9 +184,13 @@ export function CelWizardPage() {
               {d.plans.map((p, i) => (
                 <div key={i} className={`lg-plan glass ${p.own ? 'own' : 'on'}`}>
                   <div className="lg-prow"><span className="lg-ifthen ha">HA</span>
-                    <textarea className="lg-ptxt" rows={2} value={p.ha} aria-label={`Ha ${i + 1}`} onChange={(e) => patch({ plans: d.plans.map((x, j) => (j === i ? { ...x, ha: e.target.value } : x)) })} /></div>
+                    <VoiceField domain="me" size="sm" className="flex-1" onTranscript={(t) => patch({ plans: d.plans.map((x, j) => (j === i ? { ...x, ha: appendDictation(x.ha, t) } : x)) })}>
+                      <textarea className="lg-ptxt" rows={2} value={p.ha} aria-label={`Ha ${i + 1}`} onChange={(e) => patch({ plans: d.plans.map((x, j) => (j === i ? { ...x, ha: e.target.value } : x)) })} />
+                    </VoiceField></div>
                   <div className="lg-prow"><span className="lg-ifthen ha akkor">AKKOR</span>
-                    <textarea className="lg-ptxt" rows={2} value={p.akkor} aria-label={`Akkor ${i + 1}`} onChange={(e) => patch({ plans: d.plans.map((x, j) => (j === i ? { ...x, akkor: e.target.value } : x)) })} /></div>
+                    <VoiceField domain="me" size="sm" className="flex-1" onTranscript={(t) => patch({ plans: d.plans.map((x, j) => (j === i ? { ...x, akkor: appendDictation(x.akkor, t) } : x)) })}>
+                      <textarea className="lg-ptxt" rows={2} value={p.akkor} aria-label={`Akkor ${i + 1}`} onChange={(e) => patch({ plans: d.plans.map((x, j) => (j === i ? { ...x, akkor: e.target.value } : x)) })} />
+                    </VoiceField></div>
                   <div className="lg-pfoot">{p.trigger ? TRIGGER_LABEL[p.trigger.source] ?? p.trigger.source : 'nincs hozzá jelem · ezt te tartod'}<span className="enc-own">{p.own ? 'saját' : 'Mezo javaslata'}</span></div>
                 </div>))}
               <button type="button" className="lg-addrow uv-empty" onClick={() => patch({ plans: [...d.plans, { ha: '', akkor: '', own: true }] })} disabled={d.plans.length >= 5}>＋ Még egy ha–akkor</button>

@@ -24,6 +24,8 @@ public record TeamChatProperties(
         /** The expiry sweep's schedule. */ @NotBlank String expiryCron,
         /** Task 11 (mezo-a9bo7.23): the hourly catch-up sweep's schedule. */
         @NotBlank String catchupCron,
+        /** Publish persisted overnight raises when quiet hours end. */
+        @NotBlank String morningReleaseCron,
         /** S7 (mezo-d6ivw.7): voiced (LLM) REPLY answers per ügy per local day; past it a
          *  template answers. */
         @Min(1) @Max(20) int replyVoicedPerThreadDay,

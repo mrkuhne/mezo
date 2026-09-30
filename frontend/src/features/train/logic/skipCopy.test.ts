@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
 import type { PlannedSkip, SkipReason } from '@/features/train/logic/plannedSkips'
-import { REASONS, sheetNote, sheetNoteParts, skipDoneToast, skipEffect, skipLabel } from '@/features/train/logic/skipCopy'
+import {
+  KIMELO, REASONS, kimeloAgendaParts, notYetToast, recoveryIcon, sheetNote, sheetNoteParts, skipDoneToast, skipEffect, skipLabel,
+} from '@/features/train/logic/skipCopy'
 
 const SERIOUS_R: SkipReason[] = ['ILLNESS', 'STOMACH', 'INJURY', 'TRAVEL']
 const ALL: SkipReason[] = ['ILLNESS', 'STOMACH', 'INJURY', 'TRAVEL', 'TIRED', 'NO_TIME', 'NO_MOOD', 'OTHER', 'NONE']
@@ -103,5 +105,28 @@ test('no shame vocabulary in any skip string (all reasons × pass / no pass / ad
 test('every skip icon ships in the Titanium sprite (t-ill / t-travel are new)', () => {
   const svg = readFileSync(join(process.cwd(), 'src/shared/ui/clay/titanium-icons.svg'), 'utf8')
   for (const id of [...REASONS.map((r) => r.icon), 't-skip', 't-shield', 't-repeat', 't-mic', 't-heart', 't-info'])
+    expect(svg).toContain(`<symbol id="${id}"`)
+})
+
+// ── Kímélő mód S2 (mezo-q4xt2.2) ──
+test('kímélő copy: the Még nem toast carries the care word; the category icon; the week-list line', () => {
+  expect(notYetToast('ILLNESS')).toBe('Rendben — holnap újra rákérdezek. Jobbulást!')
+  expect(notYetToast('INJURY')).toBe('Rendben — holnap újra rákérdezek. Kíméld magad.')
+  expect(notYetToast('NONE')).toBe('Rendben — holnap újra rákérdezek.')
+  expect(recoveryIcon('STOMACH')).toBe('t-digestion')
+  expect(recoveryIcon('TRAVEL')).toBe('t-travel')
+  expect(recoveryIcon('NONE')).toBe('t-kimelo')
+  expect(recoveryIcon(undefined)).toBe('t-kimelo')
+  expect(kimeloAgendaParts('Pull Day')).toEqual({ bold: 'Kímélő mód', rest: ' · Pull Day kimarad' })
+})
+
+test('no shame vocabulary in any kímélő string', () => {
+  const SHAME = /elrontott|túlléptél|hiba|rossz|bukta|kudarc|mulasztottál|lusta/i
+  for (const s of Object.values(KIMELO)) expect(s).not.toMatch(SHAME)
+})
+
+test('the kímélő icons ship in the Titanium sprite (t-kimelo is new)', () => {
+  const svg = readFileSync(join(process.cwd(), 'src/shared/ui/clay/titanium-icons.svg'), 'utf8')
+  for (const id of ['t-kimelo', 't-sprout', 't-calendar', 't-dumbbell', 't-run'])
     expect(svg).toContain(`<symbol id="${id}"`)
 })

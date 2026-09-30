@@ -109,6 +109,8 @@ public final class FlagTraceCopy {
                 .formatted(num(observed), num(threshold), detail == null || detail.isBlank() ? "—" : detail);
             case "longest_missed_run" -> "A leghosszabb kihagyott sorozat %s nap — a jelzéshez %s kellene."
                 .formatted(num(observed), num(threshold));
+            case "current_missed_run" -> "A jelenlegi kihagyott sorozat %s nap — a jelzéshez %s kellene."
+                .formatted(num(observed), num(threshold));
             case "habits_recent_avg" -> "Napi %s teljesített szokás — a %s-es visszaesési küszöb fölött."
                 .formatted(num(observed), num(threshold));
             case "missed_gym_days" -> "Nincs kihagyott edzésnap az ablakban.";

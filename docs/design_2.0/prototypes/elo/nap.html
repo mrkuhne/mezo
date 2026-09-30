@@ -54,7 +54,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
    1. translucent white body tinted by --c
    2. gradient hairline frame (mask trick) in --c → white → --c
    3. long hue-tinted drop + white inset edge (Mozaik signature)
-   4. periodic light sweep (sheen)                                   */
+   4. static glass highlights (no recurring sweep)                                   */
 .glass{--c:var(--sage);position:relative;isolation:isolate;border-radius:22px;
   background:
     radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--c) 20%,transparent),transparent 60%),
@@ -391,12 +391,11 @@ svg{overflow:visible}
 @keyframes boop-brow{0%,66%{transform:translateY(0)}72%,82%{transform:translateY(-1.6px)}88%,100%{transform:translateY(0)}}
 @keyframes boop-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
 
-/* ── Motion (one-shot rise + periodic sheen) ──── */
+/* ── Motion (one-shot rise; no recurring card sheen) ──── */
 @media (prefers-reduced-motion:no-preference){
   body:not(.still) .rise{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*70ms)}
   body:not(.still) .ring-prog{animation:ring 1.1s var(--ease) both;animation-delay:calc(.15s + var(--i,0)*80ms)}
   body:not(.still) .bar b{animation:grow 1s var(--ease) both;animation-delay:calc(.25s + var(--i,0)*70ms)}
-  body:not(.still) .glass::after{animation:sheen 7s ease-in-out infinite;animation-delay:calc(1.2s + var(--i,0)*.45s)}
   body:not(.still) .gauge .icon,body:not(.still) .mhero-art .icon,body:not(.still) .shero .medal{animation:float 5s ease-in-out 1s infinite}
   body:not(.still) .shero .big{animation:glow 5s ease-in-out 1s infinite}
   body:not(.still) .fab{animation:breathe 3s ease-in-out infinite}
@@ -404,7 +403,6 @@ svg{overflow:visible}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}}
 @keyframes ring{from{stroke-dasharray:0 100}}
 @keyframes grow{from{width:0}}
-@keyframes sheen{0%,70%{opacity:0;transform:skewX(-20deg) translateX(-120%)}74%{opacity:1}92%{opacity:.9}100%{opacity:0;transform:skewX(-20deg) translateX(620%)}}
 @keyframes float{0%,100%{transform:translateY(2px) rotate(-3deg)}50%{transform:translateY(-4px) rotate(1deg)}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 6px 14px rgba(155,143,196,.28))}50%{filter:drop-shadow(0 6px 26px rgba(155,143,196,.55))}}
 @keyframes breathe{0%,100%{box-shadow:0 18px 32px -18px rgba(155,143,196,.8),inset 0 1px 0 #fff}50%{box-shadow:0 18px 40px -14px rgba(155,143,196,1),0 0 22px rgba(155,143,196,.45),inset 0 1px 0 #fff}}
@@ -1179,6 +1177,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-fuel" viewBox="0 0 100 100">
@@ -1215,6 +1214,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-nap" viewBox="0 0 100 100">
@@ -1251,6 +1251,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-mezo" viewBox="0 0 100 100">
@@ -1287,6 +1288,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-en" viewBox="0 0 100 100">
@@ -1323,6 +1325,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
 </svg>
@@ -1467,6 +1470,8 @@ svg{overflow:visible}
 <!-- U3 (mezo-me75u.3) · Összegzés / memoár: tekercs -->
 <symbol id="t-scroll" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M16 10H46C50 10 52 13 52 16V50H22C18 50 16 47 16 44Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><rect x="10" y="7" width="12" height="10" rx="5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><path d="M22 50C18 50 16 53 16 55S18 59 22 59H54C50 59 49 56 49 55S50 50 52 50Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><g stroke="#e9e4f6" stroke-width="2" stroke-linecap="round" opacity=".75"><path d="M26 22H44"/><path d="M26 29H44"/><path d="M26 36H38"/></g><path d="M20 20V40" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></g></symbol>
 <!-- U3 (mezo-me75u.3) · Aktivitás: két lábnyom -->
+<symbol id="t-ill" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><g transform="rotate(28 32 32)"><rect x="25.5" y="4" width="13" height="42" rx="6.5" fill="url(#tg-titanium)" stroke="#f4f1ec" stroke-width=".9"/><circle cx="32" cy="48" r="10.5" fill="url(#tg-red)" stroke="#ffd9cf" stroke-width=".9"/><rect x="29.3" y="17" width="5.4" height="30" rx="2.7" fill="url(#tg-red)"/><g stroke="#8f8a84" stroke-width="1.3" stroke-linecap="round" opacity=".75"><path d="M38.5 12h-3.5M38.5 18h-2.4M38.5 24h-3.5M38.5 30h-2.4M38.5 36h-3.5"/></g><path d="M28.4 9.5v10" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/><path d="M26.2 44.5c1-2.4 2.8-3.8 5-4.3" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></g></g></symbol>
+<symbol id="t-travel" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M24 20v-5a4.5 4.5 0 0 1 4.5-4.5h7A4.5 4.5 0 0 1 40 15v5" fill="none" stroke="url(#tg-titanium)" stroke-width="3.6" stroke-linecap="round"/><rect x="9" y="19" width="46" height="35" rx="8" fill="url(#tg-blue)" stroke="#d9ecff" stroke-width=".9"/><rect x="19" y="19" width="5" height="35" fill="url(#tg-gold)" opacity=".95"/><rect x="40" y="19" width="5" height="35" fill="url(#tg-gold)" opacity=".95"/><path d="M9 33h46" stroke="#0e3a66" stroke-width="1.2" opacity=".35"/><circle cx="17" cy="57" r="2.6" fill="#3a3530"/><circle cx="47" cy="57" r="2.6" fill="#3a3530"/><path d="M14 25c1.5-2.5 3.5-3.6 6-3.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/></g></symbol>
 <symbol id="t-steps" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><g transform="rotate(-14 20 32)"><path d="M13 30C12 22 15 16 20 16S28 22 27 30C26 37 25 44 20 44S14 37 13 30Z" fill="url(#tg-rose)" stroke="#ffe0e6" stroke-width=".7"/><g fill="url(#tg-rose)" stroke="#ffe0e6" stroke-width=".5"><circle cx="13.5" cy="11" r="2.6"/><circle cx="18" cy="8.4" r="2.4"/><circle cx="22.4" cy="8.6" r="2.2"/><circle cx="26" cy="10.6" r="2"/><circle cx="28.4" cy="13.8" r="1.7"/></g><path d="M16 24C16 21 18 19 20 19" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/></g><g transform="rotate(12 44 40)"><path d="M37 44C36 36 39 30 44 30S52 36 51 44C50 51 49 58 44 58S38 51 37 44Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".7"/><g fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".5"><circle cx="37.5" cy="25" r="2.6"/><circle cx="42" cy="22.4" r="2.4"/><circle cx="46.4" cy="22.6" r="2.2"/><circle cx="50" cy="24.6" r="2"/><circle cx="52.4" cy="27.8" r="1.7"/></g><path d="M40 38C40 35 42 33 44 33" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/></g></g></symbol>
 <!-- U3 (mezo-me75u.3) · Gyors logolás: világító plusz-gömb -->
 <symbol id="t-quick" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="32" r="24" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".8"/><circle cx="32" cy="32" r="17" fill="#2a2440" opacity=".55"/><path d="M32 21V43M21 32H43" stroke="url(#tg-gold)" stroke-width="6" stroke-linecap="round"/><path d="M32 22.5V41.5M22.5 32H41.5" stroke="#fff3d6" stroke-width="1.6" stroke-linecap="round" opacity=".7"/><path d="M14 26C16 19 21 14 28 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".8"/></g></symbol>
@@ -2404,6 +2409,47 @@ svg{overflow:visible}
 .ndsheet .qb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 4px 12px;border-radius:18px;font-size:12.5px;font-weight:600;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
 .ndsheet .qb .icon{width:44px;height:44px;filter:drop-shadow(0 6px 7px rgba(0,0,0,.55)) drop-shadow(0 0 10px color-mix(in srgb,var(--c) 40%,transparent))}
 .ndsheet .qb small{font-weight:500;font-size:10.5px;color:var(--faint)}
+/* ══ KÍMÉLŐ MÓD (kihagyás S2, 2026-09-29) — a „Miért?" lap chipjei az Edzés prototípusból, azonos szabályokkal ══ */
+.whyg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.whyc{display:flex;align-items:center;gap:9px;min-width:0;padding:9px 10px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-size:13px;font-weight:600;line-height:1.2;color:var(--ink);text-align:left}
+.whyc .icon{width:30px;height:30px;flex:0 0 auto;filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+.whyc.on{background:radial-gradient(120% 140% at 0% 50%,color-mix(in srgb,var(--c) 26%,transparent),rgba(245,239,230,.04));box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 62%,transparent),0 0 16px -5px var(--c)}
+.whynote{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-size:12.5px;line-height:1.45;color:var(--sub)}
+.whynote .icon{width:22px;height:22px;flex:0 0 auto;filter:none}
+.whynote b{color:var(--ink);font-weight:600}
+.kmlab{display:block;margin-top:16px;font-size:10.5px;font-weight:700;letter-spacing:1.4px;color:var(--faint)}
+.kmdur{display:grid;grid-template-columns:repeat(4,auto);gap:6px;margin-top:8px}
+.kmdur .flat{justify-content:center;padding:8px 6px;font-size:12px;white-space:nowrap}
+@media (max-width:360px){.kmdur{grid-template-columns:1fr 1fr}.whyc{gap:7px;padding:9px 8px;font-size:12.5px}.whyc .icon{width:26px;height:26px}.whyc span{min-width:0;overflow-wrap:anywhere}}
+.kmentry{display:flex;justify-content:center;margin:10px 16px 0}
+.kmpill{display:inline-flex;align-items:center;gap:7px;padding:6px 13px 6px 8px;border-radius:999px;font-size:12px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.kmpill .icon{width:20px;height:20px;filter:none}
+.kmpill b{font-weight:400;font-size:14px;color:var(--faint)}
+.kmcard{margin:14px 16px 0;padding:16px 14px 12px;overflow:hidden}
+.kmcard .kmhalo{position:absolute;right:-60px;top:-70px;width:220px;height:200px;z-index:0;pointer-events:none;background:radial-gradient(circle,color-mix(in srgb,var(--c) 34%,transparent),rgba(255,190,96,.08) 45%,transparent 70%)}
+.kmcard>*{position:relative}
+.kmtop{display:flex;gap:12px;align-items:center}
+.kmtop .kmart{width:58px;height:58px;flex:0 0 auto}
+.kmtop .eb{color:color-mix(in srgb,var(--c) 75%,var(--ink))}
+.kmtop strong{display:block;font-size:20px;font-weight:600;letter-spacing:-.5px;margin-top:3px}
+.kmtop small{display:block;font-size:12.5px;color:var(--sub);margin-top:3px;line-height:1.4}
+.kmcard .two2{margin-top:14px}
+.kmcard .btn{padding:12px 14px}
+.kmcard .primary{padding:12px 14px}
+.kmoops{display:block;margin:10px auto 0;font-size:12px;font-weight:600;color:var(--faint);text-decoration:underline;text-underline-offset:3px}
+.kmask{margin-top:14px;padding:12px;border-radius:16px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.kmask p{font-size:13.5px;line-height:1.45;color:var(--ink)}
+.kmask p small{display:block;font-size:12px;color:var(--sub);margin-top:3px}
+.kmask .kmbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.kmask .btn{padding:10px 12px;font-size:13.5px}
+.kmask .kmdel{color:#FFB39C;background:rgba(255,179,156,.08);box-shadow:inset 0 0 0 1px rgba(255,179,156,.35)}
+.kmslim{display:flex;align-items:center;gap:12px;margin:14px 16px 0;padding:10px 14px;border-radius:18px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.kmslim .icon{width:32px;height:32px}
+.kmslim span{flex:1;min-width:0}
+.kmslim strong{display:block;font-size:13.5px;font-weight:600}
+.kmslim small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
+.kmslim button{font-size:12px;font-weight:600;color:var(--sage);white-space:nowrap}
+.kmback{display:block;margin:12px auto 0;font-size:12.5px;font-weight:600;color:var(--sub)}
 @media (max-width:360px){.nd .segring{width:190px;height:190px}}
 </style>
 
@@ -2434,6 +2480,8 @@ svg{overflow:visible}
       <a href="#nap/2026-09-23" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>A napom · tegnap, lezárva</a>
       <a href="#nap/2026-09-21" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>A napom · kevés adat</a>
       <a href="#maieste" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Mai · este 20:00 után</a>
+      <a href="#mai/kimelo" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-ill"/></svg>Mai · kímélő mód, 2. nap</a>
+      <a href="#mai/kimelo-lejart" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-travel"/></svg>Mai · kímélő mód, a becslés letelt</a>
       <a href="#eletjel" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-heart"/></svg>Életjelek</a>
       <a href="#kuldetesek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-quest"/></svg>Napi küldetések</a>
       <a href="#rutin" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-chain"/></svg>Rutin</a>
@@ -2449,6 +2497,8 @@ svg{overflow:visible}
       <li><a href="#" data-sheet="journal">Napló</a> · <a href="#" data-sheet="activity">Aktivitás</a> · <a href="#" data-sheet="naplopick">Mit naplózol?</a></li>
       <li><a href="#" data-sheet="reflect">Szándékkal élted a napot?</a> (Rutin · este)</li>
       <li><a href="#" data-sheet="ndlog">Mit írsz be?</a> (A napom · élő frissítés)</li>
+      <li>Kímélő mód: <a href="#" data-sheet="kimelo">Mi történt?</a> (a Mai „Nem vagyok jól” linkje) · <a href="#" data-sheet="kmwelcome">Üdv újra!</a> (a „Jobban” után)</li>
+      <li>Kímélő mód a kártyán: „Még nem” → vékony sor holnapig · „Tévedés volt” → megerősítés a kártyán belül</li>
       <li>Az értesítések: a harang a fejlécben</li>
       <li>Üres állapot: <a href="#kuldetesek/ures">nincs küldetés</a></li>
     </ul>
@@ -2456,6 +2506,190 @@ svg{overflow:visible}
   </aside>
 </div>
 
+<!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
+   Every free-text field in the app wears the same mic tile to the right of the text, and
+   every mic shows the same bubble: listening → thinking → done (or sad). The bubble is the
+   owner-approved one from hang-boop.html. */
+.vfield{display:flex;gap:8px;align-items:stretch}
+.vfield>.inp{flex:1;min-width:0;margin:0}
+.vfield>.inp.ta{min-height:64px}
+.vfield>textarea.inp{resize:none;min-height:64px}
+.vfield>textarea.inp[rows="1"]{min-height:0}
+.vfield>textarea.inp::placeholder{color:var(--faint)}
+.vfield .inp mark{background:color-mix(in srgb,var(--c,var(--lav)) 26%,transparent);color:inherit;border-radius:4px;padding:0 2px;transition:background 1.6s ease}
+.vfield .inp mark.faded{background:transparent}
+.vmic{flex:none;width:46px;min-height:46px;border:0;border-radius:13px;display:grid;place-items:center;cursor:pointer;color:inherit;
+  background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow .2s,background .2s}
+.vmic .icon{width:26px;height:26px;filter:none}
+.vmic:hover{background:rgba(245,239,230,.09)}
+.vmic:focus-visible{outline:2px solid var(--c,var(--lav));outline-offset:2px}
+.vmic.is-live{background:color-mix(in srgb,var(--c,var(--lav)) 14%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--lav)) 70%,transparent),0 0 14px -4px var(--c,var(--lav))}
+.vmic:disabled{opacity:.45;cursor:default}
+.vfilled{color:var(--ink)!important}
+.vmic.sm{width:36px;min-height:36px;border-radius:11px}.vmic.sm .icon{width:20px;height:20px}
+
+.vbub-slot{position:absolute;left:14px;right:14px;bottom:96px;z-index:55;pointer-events:none}
+.vbub{--lvl:0;pointer-events:auto;width:100%;display:grid;grid-template-columns:76px minmax(0,1fr) 36px;align-items:center;gap:12px;
+  padding:12px 12px 12px 10px;border:0;text-align:left;color:var(--ink);cursor:pointer;border-radius:28px;
+  transform:translateY(24px) scale(.96);opacity:0;transition:transform .45s cubic-bezier(.2,.78,.24,1),opacity .3s}
+.vbub[hidden]{display:none}
+.vbub.show{transform:none;opacity:1}
+.vbub.leave{transform:translateY(18px) scale(.97);opacity:0;transition-duration:.35s,.35s}
+.vbub .stage{position:relative;width:76px;height:76px;display:grid;place-items:center}
+.vbub .ring{position:absolute;inset:4px;border-radius:50%}
+.vbub .ring svg{width:100%;height:100%;overflow:visible}
+.vbub .halo{position:absolute;inset:-4px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 42%,transparent) 0%,transparent 68%);
+  transform:scale(calc(.72 + var(--lvl) * .5));opacity:calc(.35 + var(--lvl) * .65);transition:transform .08s linear,opacity .08s linear}
+.vbub svg.boop{width:56px;height:56px;position:relative;overflow:visible}
+.vbub .boop .boop-eye,.vbub .boop .boop-pupil,.vbub .boop .boop-brow,.vbub .boop .boop-body{transform-box:fill-box}
+.vbub .boop .boop-eye,.vbub .boop .boop-pupil,.vbub .boop .boop-brow{transform-origin:center}
+.vbub .boop .boop-body{transform-origin:50% 96%}
+.vbub .boop .boop-ear{transform-box:fill-box;transform-origin:50% 100%;transition:transform .25s}
+.vbub .boop .boop-brow,.vbub .boop .boop-pupil{transition:transform .35s cubic-bezier(.2,.78,.24,1)}
+.vbub .copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.vbub .k{font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.vbub .m{font-size:15px;font-weight:500;letter-spacing:-.2px}
+.vbub .h{font-size:12px;color:var(--mute,var(--faint))}
+.vbub .x{width:36px;height:36px;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px var(--hair);background:rgba(245,239,230,.05);color:var(--ink);
+  display:grid;place-items:center;cursor:pointer;font:400 18px/1 inherit}
+.vbub .x[hidden]{display:none}
+.vbub .bars{display:flex;gap:3px;align-items:center;height:14px;margin-top:2px}
+.vbub .bars i{width:3px;height:3px;border-radius:2px;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent);transition:height .08s linear}
+.vbub .track{stroke:rgba(245,239,230,.07);transition:stroke .2s}
+.vbub .arc{stroke:var(--c);stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 55%,transparent));opacity:0;transition:opacity .3s}
+.vbub[data-s="listening"] .track{stroke:color-mix(in srgb,var(--c) 55%,transparent);stroke-width:calc(1.5px + var(--lvl) * 3px)}
+.vbub[data-s="thinking"] .arc,.vbub[data-s="done"] .arc{opacity:1}
+.vbub[data-s="done"] .arc{stroke-dasharray:190 0}
+.vbub[data-s="thinking"] .halo{transform:scale(.85);opacity:.55}
+.vbub[data-s="thinking"] .bars,.vbub[data-s="done"] .bars,.vbub[data-s="sad"] .bars{display:none}
+.vbub[data-s="thinking"] .boop .boop-pupil{transform:translate(2.5px,-3px)}
+.vbub[data-s="thinking"] .boop .boop-brow-l{transform:translateY(-2px) rotate(-6deg)}
+.vbub[data-s="thinking"] .boop .boop-brow-r{transform:translateY(-2.6px) rotate(8deg)}
+.vbub[data-s="sad"]{--c:#B8584A}
+.vbub[data-s="sad"] .halo{opacity:.25;transform:scale(.8)}
+.vbub[data-s="sad"] .boop .boop-brow-l{transform:translateY(1px) rotate(14deg)}
+.vbub[data-s="sad"] .boop .boop-brow-r{transform:translateY(1px) rotate(-14deg)}
+.vbub[data-s="sad"] .boop .boop-pupil{transform:translateY(2.4px)}
+.vbub .dots{display:inline-flex;gap:2px;margin-left:2px}.vbub .dots i{font-style:normal}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .vbub .boop .boop-eye{animation:boop-blink 6s infinite}
+  body:not(.still) .vbub[data-s="listening"] .boop .boop-body{transform:translateY(calc(var(--lvl) * -2.5px)) scale(calc(1 + var(--lvl) * .05));transition:transform .08s linear}
+  body:not(.still) .vbub[data-s="listening"] .boop .boop-ear{transform:rotate(calc(var(--lvl) * 10deg))}
+  body:not(.still) .vbub[data-s="thinking"] .arc{animation:vbspin 1.3s linear infinite;transform-origin:50% 50%;transform-box:fill-box}
+  body:not(.still) .vbub[data-s="thinking"] .boop .boop-body{animation:vbponder 1.6s ease-in-out infinite}
+  body:not(.still) .vbub[data-s="done"] svg.boop{animation:vbhop .55s cubic-bezier(.3,.7,.3,1.4) both}
+  body:not(.still) .vbub[data-s="sad"] .boop .boop-body{animation:vbdroop .5s ease-out both}
+  body:not(.still) .vbub .dots i{animation:vbdot 1.2s infinite}
+  body:not(.still) .vbub .dots i:nth-child(2){animation-delay:.15s}
+  body:not(.still) .vbub .dots i:nth-child(3){animation-delay:.3s}
+}
+@media (prefers-reduced-motion:reduce){.vbub,.vbub *{transition:none!important;animation:none!important}}
+body.still .vbub,body.still .vbub *{transition:none!important;animation:none!important}
+@keyframes vbspin{to{transform:rotate(360deg)}}
+@keyframes vbponder{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes vbhop{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.06,.96)}70%{transform:translateY(0) scale(1.04,.95)}100%{transform:translateY(0) scale(1)}}
+@keyframes vbdroop{to{transform:translateY(2px) scale(1,.97)}}
+@keyframes vbdot{0%,60%,100%{opacity:.25}30%{opacity:1}}
+</style>
+<script>window.HANG_DOMAIN='nap';</script>
+<script>
+/* Hang-kit. Markup helper for the pages:  VF(placeholder, sayText, {sm, id, value})
+   → one text field with the mic tile. Any other button with [data-vmic] (the chat composer's
+   mic, a labelled "Hang" chip) uses the same bubble; data-vtarget="<css selector>" names the
+   field it writes into, data-say the sentence the fake voice "says".
+   The page sets window.HANG_DOMAIN (nap|train|fuel|mezo|en) to pick the living Boop. */
+(()=>{
+'use strict';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+window.VF=(ph,say,o={})=>`<div class="vfield"><textarea class="inp"${o.id?` id="${o.id}"`:''} rows="${o.rows||2}" placeholder="${esc(ph)}">${o.value?esc(o.value):''}</textarea><button type="button" class="vmic${o.sm?' sm':''}" data-vmic data-say="${esc(say||'')}" aria-label="Diktálás" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#t-mic"/></svg></button></div>`;
+
+let bub,slot,state='idle',raf=0,timers=[],btn=null,target=null,say='',failNext=false;
+const later=(f,ms)=>timers.push(setTimeout(f,ms));
+const clear=()=>{timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf)};
+const q=s=>bub.querySelector(s);
+function build(){
+  const host=document.getElementById('phone')||document.body;
+  slot=document.createElement('div');slot.className='vbub-slot';
+  slot.innerHTML=`<div class="glass vbub" role="button" tabindex="-1" aria-live="polite" hidden data-s="listening">
+    <div class="stage"><div class="halo"></div><div class="ring"><svg viewBox="0 0 68 68"><circle class="track" cx="34" cy="34" r="30" fill="none" stroke-width="2"/><circle class="arc" cx="34" cy="34" r="30" fill="none" stroke-width="3" stroke-dasharray="46 144"/></svg></div><svg class="boop" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+    <div class="copy"><span class="k"></span><span class="m"></span><span class="h"></span><span class="bars">${'<i></i>'.repeat(12)}</span></div>
+    <button type="button" class="x" aria-label="Mégse, eldobom a felvételt">✕</button></div>`;
+  host.appendChild(slot);bub=slot.firstElementChild;
+  bub.addEventListener('click',e=>{if(e.target.closest('.x')){cancel();return}if(state==='listening')stop()});
+  bub.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&state==='listening'&&e.target===bub){e.preventDefault();stop()}});
+}
+function paintBoop(){
+  const d=window.HANG_DOMAIN||'nap',sym=document.getElementById('boop-'+d);
+  const svg=q('svg.boop');svg.innerHTML=sym?sym.innerHTML:'';
+}
+function accent(){
+  const from=btn||document.body;const c=getComputedStyle(from).getPropertyValue('--c').trim();
+  return c||'var(--lav)';
+}
+function copy(k,m,h){q('.k').textContent=k;q('.m').innerHTML=m;q('.h').textContent=h}
+function setBtn(){
+  if(!btn)return;const live=state==='listening';
+  btn.classList.toggle('is-live',live);btn.setAttribute('aria-pressed',live);
+  btn.disabled=state==='thinking'||state==='done';
+  btn.setAttribute('aria-label',live?'Felvétel leállítása':'Diktálás');
+  const l=btn.querySelector('[data-vlabel]');if(l)l.textContent=live?'Hallgatlak…':state==='thinking'?'Leiratozom…':(l.dataset.vlabel||'Hang');
+}
+function show(s){
+  state=s;bub.dataset.s=s;bub.hidden=false;bub.classList.remove('leave');
+  requestAnimationFrame(()=>bub.classList.add('show'));
+  q('.x').hidden=s!=='listening';bub.tabIndex=s==='listening'?0:-1;setBtn();
+}
+function hide(after){
+  bub.classList.add('leave');bub.classList.remove('show');
+  later(()=>{bub.hidden=true;bub.classList.remove('leave');state='idle';setBtn();bub.style.setProperty('--lvl',0);btn=null;after&&after()},360);
+}
+function listen(b){
+  if(!bub)build();clear();btn=b;say=b.dataset.say||'Ma kicsit fáradt vagyok, de jól esett a séta.';
+  target=b.dataset.vtarget?document.querySelector(b.dataset.vtarget):b.closest('.vfield')?.querySelector('.inp');
+  bub.style.setProperty('--c',accent());paintBoop();
+  show('listening');copy('Figyelek','Mondd nyugodtan','Koppints ide, ha végeztél');
+  const bars=[...q('.bars').children],t0=performance.now();let lvl=0;
+  const tick=t=>{const s=(t-t0)/1000,word=Math.sin(s*2.1)*Math.sin(s*.7+1)>-.15,
+    syl=Math.abs(Math.sin(s*11.3))*(.55+.45*Math.sin(s*3.7)**2),goal=s<.6?0:word?syl:.04;
+    if(gone()){cancel();return}
+    lvl+=(goal-lvl)*.28;bub.style.setProperty('--lvl',lvl.toFixed(3));
+    bars.forEach((x,i)=>{const v=Math.max(.12,lvl*(.5+.5*Math.abs(Math.sin(s*9+i*1.3))));x.style.height=(3+v*11).toFixed(1)+'px'});
+    raf=requestAnimationFrame(tick)};
+  raf=requestAnimationFrame(tick);
+}
+/* the field's sheet closed or re-rendered mid-recording: drop the clip, like the app does */
+function gone(){return target&&(!target.isConnected||(target.closest('.sheet')&&!target.closest('.sheet.on')))}
+function stop(){
+  cancelAnimationFrame(raf);bub.style.setProperty('--lvl',0);
+  show('thinking');copy('Leírom','Leírom, amit mondtál<span class="dots"><i>.</i><i>.</i><i>.</i></span>','Egy pillanat, mindjárt ott lesz');
+  if(failNext){failNext=false;later(()=>{show('sad');copy('Nem sikerült','Nem hallottam semmit','Próbáld újra, kicsit közelebbről');later(()=>hide(),3200)},1700);return}
+  later(()=>{show('done');copy('Kész','Beírtam','Nézd át, mielőtt elmented');const t=target,line=say;later(()=>hide(()=>insert(t,line)),750)},2200);
+}
+function cancel(){cancelAnimationFrame(raf);hide()}
+function insert(t,line){
+  if(!t)return;
+  if('value' in t&&t.tagName!=='BUTTON'){t.value=(t.value.trim()?t.value.trim()+' ':'')+line;t.dispatchEvent(new Event('input',{bubbles:true}));
+    t.style.transition='box-shadow 1.6s';t.style.boxShadow='inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--lav)) 70%,transparent)';setTimeout(()=>t.style.boxShadow='',900);return}
+  if(t.classList.contains('ph')){t.classList.remove('ph');t.textContent=''}
+  t.classList.add('vfilled');
+  t.querySelectorAll('mark').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));
+  if(t.textContent.trim())t.append(' ');
+  const m=document.createElement('mark');m.textContent=line;t.append(m);setTimeout(()=>m.classList.add('faded'),900);
+}
+/* capture phase: the page's own click router never sees a mic tap */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-vmic]');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  if(state==='idle')listen(b);else if(state==='listening'&&b===btn)stop();
+},true);
+/* a sheet close / route change mid-recording: drop the clip like the app does */
+window.addEventListener('hashchange',()=>{if(bub&&state==='listening')cancel()});
+window.HANG={failNext:()=>{failNext=true}};
+})();
+</script>
+<!-- hang-kit:end -->
 <script>
 const $=s=>document.querySelector(s);
 const C=n=>`<svg class="icon" aria-hidden="true"><use href="#c-i-${n}"/></svg>`;
@@ -2543,6 +2777,7 @@ function mai(){
   const TL=[['23:35','bowl','Étkezés','Lazac · barna rizs · brokkoli','data-toast="Fuel · Mai"'],['13:00','bowl','Étkezés','Csirke + édesburgonya + spenót','data-toast="Fuel · Mai"'],['09:15','bowl','Étkezés','Túrós zabkása · áfonyával','data-toast="Fuel · Mai"'],['Ma','checkin','Check-in','Nyugodt ébredés · pihenve','data-go="#checkin"'],['Ma','checkin','Check-in','Egy pillanatkép rólad','data-go="#checkin"']];
   return `${topbar()}
   <div class="hubhead rise"><span class="eb">NAPKÖZPONT</span><h1>A napod.<br><span>Minden kapcsolódik.</span></h1></div>
+  ${kmSlot()}<!--ndslot-->
   <section class="orbit rise" style="--i:1">
     <button class="companion" data-go="#eletjel" aria-label="Életjelek"><span class="need"></span>${B('mezo',true)}</button>
     ${nodes.map(([cl,ic,l,s,c,act],i)=>`<button class="node ${cl}" style="--c:${c};--i:${i}" ${act}>${I(ic)}<strong>${l}</strong><small>${s}</small></button>`).join('')}
@@ -2677,8 +2912,8 @@ function napzaras(a=1){
       <div class="evs">${[['dumbbell','Push Day','kész'],['bowl','3 étkezés','112 g fehérje'],['sleep','Alvás','7,4 óra'],['checkin','Check-in','3 / 4']].map(([ic,l,m])=>`<div class="ev">${I(ic)}<strong>${l}</strong><em>${m==='kész'?I('tick'):''}${m}</em></div>`).join('')}</div>${next}`,
     3:`<span class="eb">MA MILYEN VOLT</span><h2>Milyen volt a napod valójában?</h2>
       <div class="rzday">${I('day')}<span>Az esti check-inben <b>7/10</b>-re értékelted a napot. Ide már csak a szavaid kellenek.</span></div>
-      <div class="rzbox glass"><span class="inp ph ta">Írd le, ahogy volt — senki más nem olvassa…</span><div class="hrow" style="margin-top:8px"><span class="flat">${I('mic')}Diktálom</span></div></div>
-      <div class="rzbox glass" style="--c:var(--gold)"><span class="eb">AMIÉRT HÁLÁS VAGY</span><div class="grat">${['1. dolog, amiért hálás vagy…','2. dolog…','3. dolog…'].map(p=>`<span class="inp ph">${p}</span>`).join('')}</div><small style="display:block;font-size:11px;color:var(--faint);margin-top:8px">Legfeljebb 3 sor — teljesen opcionális.</small></div>
+      <div class="rzbox glass">${VF('Írd le, ahogy volt — senki más nem olvassa…','Ma nyugodtabb voltam, mint tegnap, a délutáni séta sokat segített.',{rows:3})}</div>
+      <div class="rzbox glass" style="--c:var(--gold)"><span class="eb">AMIÉRT HÁLÁS VAGY</span><div class="grat">${[['1. dolog, amiért hálás vagy…','A reggeli kávé a teraszon.'],['2. dolog…','Anyával beszéltem telefonon.'],['3. dolog…','Végre jól aludtam.']].map(([p,s])=>VF(p,s,{sm:true,rows:1})).join('')}</div><small style="display:block;font-size:11px;color:var(--faint);margin-top:8px">Legfeljebb 3 sor — teljesen opcionális.</small></div>
       ${next}<button class="rzskip" data-go="#napzaras/4">Ma nem írok</button>`,
     4:`<span class="eb">NYITOTT HURKOK</span><h2>Zárd le, ami még nyitva</h2><p class="l">— aztán elengedheted.</p>
       <div class="loop glass" style="--c:var(--rose)">${I('checkin')}<span class="grow"><strong>20:00 check-in kimaradt</strong><small>3 / 4 check-in kész</small></span><button class="pillx" style="--c:var(--rose)" data-sheet="checkin">Koppints</button></div>
@@ -2759,7 +2994,7 @@ const SH={
   weight:['var(--sky)',()=>`${capH('var(--sky)','GYORS RÖGZÍTÉS','Mi a számunk ma?','Egy mérés a napodban.','weight','quick')}
     <div class="chero"><b>82,4<small>kg</small></b><div class="ruler"></div></div>
     <div class="chiprow">${['−0,5','−0,1','+0,1','+0,5'].map(l=>`<button class="flat" style="--c:var(--sky)">${l}</button>`).join('')}</div>
-    <label class="field section"><span>EGY MONDAT · OPCIONÁLIS</span><span class="inp ph">pl. „vasárnap reggel · folyadékvesztés”</span></label>${saveRow('var(--sky)')}`],
+    <div class="field section"><span>EGY MONDAT · OPCIONÁLIS</span>${VF('pl. „vasárnap reggel · folyadékvesztés”','Vasárnap reggel, edzés után mértem.',{rows:1})}</div>${saveRow('var(--sky)')}`],
   sleep:['var(--lav)',()=>`${capH('var(--lav)','GYORS RÖGZÍTÉS','Hogyan aludtunk?','Az éjszakád, néhány mozdulattal.','sleep','quick')}
     <div class="seg" style="margin:0 0 10px"><button class="on" style="--c:var(--lav)">Kézi</button><button data-toast="Screenshot mód — Sleep Cycle képből olvasom ki">Screenshot</button></div>
     <div class="chero"><b>7,4<small>h</small></b><svg class="nightarc" viewBox="0 0 220 70"><path d="M10 64 Q110 -18 210 64" fill="none" stroke="rgba(245,239,230,.1)" stroke-width="4" stroke-linecap="round"/><path d="M10 64 Q110 -18 210 64" fill="none" stroke="var(--lav)" stroke-width="4" stroke-linecap="round" stroke-dasharray="190 999" style="filter:drop-shadow(0 0 6px var(--lav))"/></svg>
@@ -2773,18 +3008,17 @@ const SH={
     <div class="two st2"><div class="stepper2"><span>Idő · perc</span><div class="stepper"><button>−</button><b>90</b><button>+</button></div></div><div class="stepper2"><span>Setek</span><div class="stepper"><button>−</button><b>5</b><button>+</button></div></div></div>
     <div class="field section"><span>RPE · ÖSSZESÍTETT NEHÉZSÉG</span>${scale(7,'var(--coral)')}</div>
     <div class="field section"><span>VÁLL TERHELÉS</span>${scale(5,'var(--gold)')}</div>
-    <label class="field section"><span>JEGYZET</span><span class="inp ph ta">Hogy érezted magad, mi ment jól, mi fájt…</span></label>${saveRow('var(--rose)')}`],
+    <div class="field section"><span>JEGYZET</span>${VF('Hogy érezted magad, mi ment jól, mi fájt…','Jól ment a nyitás, de a harmadik szettben már húzott a vállam.')}</div>${saveRow('var(--rose)')}`],
   journal:['var(--sage)',()=>`${capH('var(--sage)','GYORS RÖGZÍTÉS','Mi jár a fejedben?','A gondolataidnak itt van helye.','journal','naplopick')}
     <div style="display:flex;gap:6px;margin-bottom:10px">${['Napló','Döntés','Hála'].map((l,i)=>`<button class="flat ${i?'':'on'}" style="--c:var(--sage)">${l}</button>`).join('')}</div>
-    <span class="inp ph ta">Írd le, ami most benned van…</span>
-    <div class="hrow" style="margin-top:8px"><span class="flat">${I('mic')}Diktálom</span></div>
+    ${VF('Írd le, ami most benned van…','Kicsit feszült vagyok a holnapi megbeszélés miatt, de összeszedtem, mit akarok mondani.',{rows:4})}
     <label class="field section"><span>DÁTUM</span><span class="inp">2026. 09. 23.</span></label>
     <div class="two2 section"><button class="btn flatb" data-closesheet>Mégse</button><button class="primary" style="--c:var(--sage)" data-save>Mentem</button></div>`],
   activity:['var(--sage)',(st)=>st==='done'
     ?`${capH('var(--sage)','TEVÉKENYSÉGNAPLÓ','Megvan!','','steps')}<div class="gotit">${I('coin')}<span class="flat" style="margin-top:6px">${I('chain')}Pénzügyek</span><b>+15 XP</b><small style="display:block;color:var(--sub);font-size:12px;margin-top:4px">Küldetés teljesítve: Tegyél félre ma (+20 XP)</small></div><button class="primary section" style="--c:var(--sage)" data-closesheet>Kész</button>`
     :`${capH('var(--sage)','TEVÉKENYSÉGNAPLÓ','Mi történt ma?','A kis lépések is a napod részei.','steps','naplopick')}
     <div class="callout" style="--c:var(--gold);margin:0 0 10px"><span class="eb">${I('quest','inl')} MAI KÜLDETÉS</span><p>Tegyél félre ma · +20 XP a teljesítésért</p></div>
-    <span class="inp ph ta">pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…</span>
+    ${VF('pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…','Olvastam fél órát, és átraktam ötvenezret a megtakarításba.',{rows:3})}
     <p style="font-size:11.5px;color:var(--faint);margin-top:8px">Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</p>
     <div class="two2 section"><button class="btn flatb" data-closesheet>Mégse</button><button class="primary" style="--c:var(--sage)" data-sheet="activity-done">Naplózom</button></div>`],
   reflect:['var(--gold)',()=>`${capH('var(--gold)','RUTIN · ESTE','Szándékkal élted a napot?','','journal')}<div class="pair" style="padding:0;grid-template-columns:repeat(3,1fr)">${['Igen','Részben','Nem'].map(x=>`<button class="btn flatb" data-closesheet>${x}</button>`).join('')}</div>`],
@@ -2815,7 +3049,7 @@ const SH={
     return `${head}${prog}<span class="eb">MEGVAN · ÖSSZEGZÉS</span><h3 style="font-size:19px;margin:4px 0 12px">Bármi még amit szeretnél?</h3>
       ${ck.quick?`<div class="callout ckqbanner" style="--c:var(--sage)"><span class="eb">MOST CSAK ENNYI</span><p>Az alap megvan. A többi kérdés most üres marad — a check-in így is beszámít.</p></div>`:''}
       <div class="sumn">${S.map((id,i)=>{const it=ITEMS[id],d=ckDisp(id,a);return `<button style="--c:${it.c}" class="${i===S.length-1?'ad':''}" data-ckstep="${i}">${I(it.ic)}<span><small>${it.n}${i===S.length-1?' · a nap kérdése':''}</small><b class="${d&&d!=='—'?'':'none'}">${d===null?'üres':d==='—'?'kihagyva':d}</b></span></button>`}).join('')}</div>
-      <label class="field section"><span>GONDOLATOK · OPCIONÁLIS</span><span class="inp ph ta">pl. „tegnap volleyball után még izomláz” · „fejes meeting előtt”</span></label>
+      <div class="field section"><span>GONDOLATOK · OPCIONÁLIS</span>${VF('pl. „tegnap volleyball után még izomláz” · „fejes meeting előtt”','Tegnap röpi után még izomlázam van, és délután nehéz meeting jön.',{rows:3})}</div>
       <button class="primary section" style="--c:var(--rose)" data-save>${I('tick')}Mentés · ${slot}</button>`}]
 };
 function openSheet(k,...a){if(k==='activity-done'){k='activity';a=['done']} if(k==='checkin'&&!a.length&&!$('#sheet').classList.contains('on'))ck={slot:(SLOTS.find(x=>x.st==='now')||SLOTS.find(x=>x.st!=='done')||SLOTS[2]).t,step:0,a:{},quick:false};const [c,f]=SH[k];const sh=$('#sheet');sh.dataset.k=k;sh.style.setProperty('--c',c);sh.innerHTML=`<div class="grab"></div>`+f(...a);$('#scrim').classList.add('on');sh.classList.add('on');sh.scrollTop=0}
@@ -2957,11 +3191,11 @@ function ndCloseCard(){
   return `<div class="nd"><section class="zcard glass rise" style="--c:var(--lav);--i:1">
     <div class="zhalo"></div>
     <div class="ztop">${I('moon','zart')}<span><span class="eb">ESTE · NAPZÁRÁS</span><strong>Tegyük le a napot.</strong><small>Amit megőriznél, és amit elengednél. Kb. 3 perc.</small></span></div>
-    <div class="zchips"><span class="flat">${I('bowl')}${ndHu(T.kcal)} kcal</span><span class="flat">${I('dumbbell')}edzés ${T.work}/${T.workG}</span><span class="flat">${I('checkin')}check-in ${T.ck}/${T.ckG}</span><span class="flat">${ndDoneCount(d)}/6 terület kész</span></div>
+    <div class="zchips"><span class="flat">${I('bowl')}${ndHu(T.kcal)} kcal</span><span class="flat">${I('dumbbell')}${KM.on?'edzés · kímélő mód':`edzés ${T.work}/${T.workG}`}</span><span class="flat">${I('checkin')}check-in ${T.ck}/${T.ckG}</span><span class="flat">${ndDoneCount(d)}/6 terület kész</span></div>
     <button class="zgo" data-ndritual data-go="#napzaras">${I('moon')}Napzárás indítása<b>›</b></button>
   </section></div>`;
 }
-const maieste=()=>{const h=mai(),k=h.indexOf('</h1></div>')+'</h1></div>'.length;return h.slice(0,k)+ndCloseCard()+h.slice(k)};
+const maieste=()=>mai().replace('<!--ndslot-->',ndCloseCard()); // a kímélő-kártya (ha van) a napzárás-kártya fölött
 /* élő frissítés bemutató: amit beírsz, azonnal megjelenik a napi oldalon */
 const ndClock=[14,20];
 function ndTick(){ndClock[1]+=17;if(ndClock[1]>=60){ndClock[0]++;ndClock[1]-=60}NDT.updated=`${ndClock[0]}:${String(ndClock[1]).padStart(2,'0')}`}
@@ -2987,12 +3221,76 @@ document.addEventListener('click',e=>{
 },true);
 SH.ndlog=['var(--lav)',ndLogSheet];
 
+/* ══ KÍMÉLŐ MÓD (kihagyás S2, spec §9.1, 2026-09-29) ══════════════════════════════════
+   Belépő: a Mai csendes „Nem vagyok jól” linkje → „Mi történt?” lap (4 komoly ok + meddig).
+   Amíg tart: „Hogy vagy?” kártya a napzárás-kártya helyén (fölötte), Jobban / Még nem / Tévedés volt.
+   „Jobban” → „Üdv újra!” lap (a programszabály: ≤2 nap folytatás, 3–9 nap a hét ismétlődik); az 1. napon a „Jobban” egyszerűen megszünteti a módot („Kímélő mód befejezve”, nincs Üdv újra!). „Mégsem vagyok jól” után a keskeny sor marad (nem a teljes kártya) — mint élesben.
+   A kímélő mód soha nem ér véget magától: #mai/kimelo-lejart — a becslés letelt, ugyanaz a kérdés.
+   Demó: #mai/kimelo (2. nap), #mai/kimelo-lejart (4. nap). */
+const KMC=[['ILLNESS','ill','Beteg vagyok','var(--rose)'],['STOMACH','digestion','Gyomorrontás','var(--sage)'],['INJURY','pain','Sérülés / fájdalom','var(--coral)'],['TRAVEL','travel','Úton vagyok','var(--sky)']];
+const KMD=[['TODAY','Csak ma',0,'ma'],['FEW','2–3 nap',2,'2–3&nbsp;nap'],['WEEK','Kb. egy hét',6,'kb.&nbsp;egy&nbsp;hét'],['UNKNOWN','Nem tudom',null,'nincs']];
+const KM={on:false,cat:null,dur:null,day:1,later:false,ask:false,pick:{cat:null,dur:null},applied:null,prev:null};
+const kmCat=()=>KMC.find(c=>c[0]===KM.cat)||KMC[0], kmDur=()=>KMD.find(d=>d[0]===KM.dur)||KMD[3];
+const kmExpired=()=>{const o=kmDur()[2];return o!=null&&KM.day-1>o};
+function kmPreset(id){
+  if(id===KM.applied)return; KM.applied=id;
+  if(id==='kimelo')Object.assign(KM,{on:true,cat:'ILLNESS',dur:'FEW',day:2,later:false,ask:false});
+  if(id==='kimelo-lejart')Object.assign(KM,{on:true,cat:'STOMACH',dur:'FEW',day:4,later:false,ask:false});
+}
+function kmSlot(){
+  if(!KM.on)return `<div class="kmentry rise" style="--i:1"><button class="kmpill" data-sheet="kimelo">${I('heart')}Nem vagyok jól<b>›</b></button></div>`;
+  const c=kmCat(),d=kmDur();
+  if(KM.later)return `<div class="kmslim rise" style="--i:1">${I(c[1])}<span><strong>Kímélő mód · ${KM.day}. nap</strong><small>Holnap reggel újra rákérdezek, hogy vagy.</small></span><button data-kmbetter>Befejezem ›</button></div>`;
+  const sub=kmExpired()?'A becsült idő letelt — hogy vagy?':`Kímélő mód · ${KM.day}.&nbsp;nap · becslés: ${d[3]}`;
+  return `<section class="kmcard glass rise" style="--c:${c[3]};--i:1"><div class="kmhalo"></div>
+    <div class="kmtop">${I(c[1],'kmart')}<span><span class="eb">KÍMÉLŐ MÓD · ${c[2].toUpperCase()}</span><strong>Hogy vagy?</strong><small>${sub}</small></span></div>
+    ${KM.ask?`<div class="kmask"><p>Töröljem a kímélő módot?<small>A kihagyott edzések visszaállnak, mintha be se kapcsoltad volna.</small></p>
+      <div class="kmbtns"><button class="btn flatb" data-kmask="0">Mégse</button><button class="btn kmdel" data-kmdel>Törlöm</button></div></div>`
+    :`<div class="two2"><button class="btn flatb" data-kmlater>Még nem</button><button class="primary" style="--c:var(--sage)" data-kmbetter>${I('sun')}Jobban</button></div>
+    <button class="kmoops" data-kmask="1">Tévedés volt</button>`}
+  </section>`;
+}
+function kmSheet(){
+  const p=KM.pick,c=KMC.find(x=>x[0]===p.cat);
+  return `${capH('var(--rose)','KÍMÉLŐ MÓD','Mi történt?','Szólj, és a napod hozzád igazodik. Nem kell magyarázkodnod.','heart')}
+    <div class="whyg">${KMC.map(([id,ic,l,col])=>`<button class="whyc ${p.cat===id?'on':''}" style="--c:${col}" data-kmcat="${id}">${I(ic)}<span>${l}</span></button>`).join('')}</div>
+    ${c?`<span class="kmlab">MEDDIG TARTHAT?</span><div class="kmdur">${KMD.map(([id,l])=>`<button class="flat ${p.dur===id?'on':''}" style="--c:${c[3]}" data-kmdur="${id}">${l}</button>`).join('')}</div>`:''}
+    <div class="whynote">${I('heart')}<span><b>Amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.</b> Bármikor befejezheted.</span></div>
+    <button class="primary section" style="--c:var(--rose)" data-kmon ${c?'':'disabled'}>${I('shield')}Kímélő mód bekapcsolása</button>`;
+}
+function kmWelcome(){
+  const d=Math.max(1,KM.day-1),few=d<=2;
+  const prog=few?`<b>${d} nap kiesés</b> · a programod nem csúszik, onnan folytatod, ahol abbahagytad.`
+    :`<b>${d} nap kiesés</b> · onnan folytatod, ahol abbahagytad: a 3. hét ismétlődik, a program vége egy héttel később lesz.`;
+  const ramp=few?'<b>Az első edzés könnyített:</b> harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.':'<b>Az első 2 edzés könnyített:</b> harmadával kevesebb sorozat; az elsőn kb. 10%-kal kisebb súly.';
+  return `${capH('var(--sage)','KÍMÉLŐ MÓD VÉGE','Üdv újra!','Jó, hogy jobban vagy. Így folytatjuk:','sun')}
+    <div class="whynote">${I('calendar')}<span>${prog}</span></div>
+    <div class="whynote">${I('dumbbell')}<span>${ramp}</span></div>
+    <button class="primary section" style="--c:var(--sage)" data-kmok>${I('tick')}Rendben</button>
+    <button class="kmback" data-kmundo>Mégsem vagyok jól</button>`;
+}
+SH.kimelo=['var(--rose)',kmSheet];
+SH.kmwelcome=['var(--sage)',kmWelcome];
+document.addEventListener('click',e=>{
+  const t=e.target,stop=()=>{e.stopPropagation();e.preventDefault()};
+  if(t.closest('[data-sheet="kimelo"]')){stop();KM.pick={cat:KM.on?KM.cat:null,dur:KM.on?KM.dur:null};openSheet('kimelo');return}
+  const kc=t.closest('[data-kmcat]');if(kc){stop();KM.pick.cat=kc.dataset.kmcat;const y=$('#sheet').scrollTop;openSheet('kimelo');$('#sheet').scrollTop=y;return}
+  const kd=t.closest('[data-kmdur]');if(kd){stop();KM.pick.dur=KM.pick.dur===kd.dataset.kmdur?null:kd.dataset.kmdur;const y=$('#sheet').scrollTop;openSheet('kimelo');$('#sheet').scrollTop=y;return}
+  if(t.closest('[data-kmon]')){stop();if(!KM.pick.cat)return;Object.assign(KM,{on:true,cat:KM.pick.cat,dur:KM.pick.dur||'UNKNOWN',day:KM.on?KM.day:1,later:false,ask:false});closeSheet();soft();toast('Kímélő mód bekapcsolva');return}
+  if(t.closest('[data-kmlater]')){stop();KM.later=true;soft();toast('Rendben, holnap reggel újra rákérdezek');return}
+  const ka=t.closest('[data-kmask]');if(ka){stop();KM.ask=ka.dataset.kmask==='1';soft();return}
+  if(t.closest('[data-kmdel]')){stop();Object.assign(KM,{on:false,ask:false,later:false});soft();toast('Kímélő mód törölve · az edzéseid visszaálltak');return}
+  if(t.closest('[data-kmbetter]')){stop();if(KM.on&&KM.day===1){Object.assign(KM,{on:false,later:false,ask:false});KM.prev=null;soft();toast('Kímélő mód befejezve');return}KM.prev=KM.on?{...KM}:null;Object.assign(KM,{on:false,later:false,ask:false});soft();clearTimeout(toastT);$('#toast').classList.remove('on');openSheet('kmwelcome');return}
+  if(t.closest('[data-kmok]')){stop();KM.prev=null;closeSheet();toast('Jó, hogy jobban vagy');return}
+  if(t.closest('[data-kmundo]')){stop();if(KM.prev)Object.assign(KM,KM.prev,{on:true,later:true,ask:false,applied:KM.applied});KM.prev=null;closeSheet();soft();toast('Rendben, a kímélő mód folytatódik');return}
+},true);
+
 /* ── router ─────────────────────────────────────────────── */
 const TAB={mai:'Mai',checkin:'Mai',hatasok:'Mai',napom:'A napom',eletjel:'Mai',kuldetesek:'Mai',gyors:'Mai',uzenetek:'Beszélgetés',rutin:'Rutin',napzaras:'Mai',ikonok:'Mai',nap:'A napom',maieste:'Mai'};
 function render(){
   const h=location.hash||'#mai', [r,id]=h.slice(1).split('/');
   if(r==='rutin'&&id)face=id;
-  const V={mai,checkin,hatasok,napom,eletjel,kuldetesek:()=>kuldetesek(id==='ures'),rutin,uzenetek:()=>uzenetek(id||'uzenetek'),gyors,napzaras:()=>napzaras(id),ikonok,nap:()=>napDay(id,h.split('/')[2]),maieste};
+  const V={mai:()=>{kmPreset(id);return mai()},checkin,hatasok,napom,eletjel,kuldetesek:()=>kuldetesek(id==='ures'),rutin,uzenetek:()=>uzenetek(id||'uzenetek'),gyors,napzaras:()=>napzaras(id),ikonok,nap:()=>napDay(id,h.split('/')[2]),maieste};
   $('#scroll').innerHTML=(V[r]||mai)(); $('#scroll').scrollTop=0; closeSheet();
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
   $('#phone').classList.toggle('rz',r==='napzaras');

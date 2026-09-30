@@ -6,7 +6,7 @@ import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { notificationKindMeta } from '@/data/types'
-import { useNotificationFeed, useNotificationFeedActions } from '@/data/notification/feedHooks'
+import { useNotificationFeed, useNotificationFeedActions } from '@/data/hooks'
 import { groupByDay } from '@/features/notification/logic/groupByDay'
 import { timeLabel } from '@/features/notification/logic/stamp'
 import { ntfIcon } from '@/features/notification/logic/kindIcon'
@@ -39,7 +39,7 @@ export function AppHeader() {
   const condensed = useCondensedHeader()
 
   const { items: notifications } = useNotificationFeed()
-  const { markAllRead } = useNotificationFeedActions()
+  const { markAllRead, markItemRead } = useNotificationFeedActions()
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
   // A panel a LEGÚJABB 30 sort viszi (korábban hármat). A nyers `slice()` a feed érkezési
   // sorrendjét vette, ami se a backendben, se a mock seedben nem garantáltan csökkenő — a mock
@@ -227,12 +227,14 @@ export function AppHeader() {
                 {g.items.map((n) => {
                   const meta = notificationKindMeta(n.kind)
                   return (
-                    // Az olvasottság ITT az ÉLŐ `readAt` (nem nyitáskori pillanatkép, mint a teljes
-                    // feed oldalon): a „Mind olvasott" a szemed előtt tünteti el a kiemelést, és
-                    // pont ez a gomb dolga — a pillanatkép a feed oldal szerződése.
+                    // A panel és a teljes feed oldal egyaránt az élő `readAt` mezőt mutatja.
                     <button key={n.id} type="button"
                       className={cn('nap-ntfrow', n.readAt === null && 'unread')}
-                      onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
+                      onClick={() => {
+                        setNtfOpen(false)
+                        if (n.readAt === null) void markItemRead(n.id).catch(() => {})
+                        if (n.deeplink) navigate(n.deeplink)
+                      }}>
                       <span className={cn('nap-ntfico', meta.tint)} aria-hidden="true">
                         <ContentIcon name={ntfIcon(meta.clay)} size={28} />
                       </span>

@@ -9,6 +9,7 @@ import { editionPost } from '@/features/insights/logic/teamEdition'
 import type { FeedPost } from '@/features/insights/logic/teamFeed'
 import { FeedPostCard } from './FeedPostCard'
 import { FeedPosterCard } from './FeedPosterCard'
+import { postMeta } from './FeedPostHead'
 
 vi.mock('@/data/hooks', async importOriginal => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
@@ -19,6 +20,21 @@ vi.mock('@/data/hooks', async importOriginal => ({
 beforeEach(() => {
   vi.mocked(useObservationReply).mockReturnValue({ reply: vi.fn(), pendingPatternId: undefined })
   vi.mocked(usePatternActions).mockReturnValue({ decide: vi.fn(), pending: false })
+})
+
+test('az üzenőfal az UTC időpontot budapesti helyi időként mutatja, télen és nyáron is', () => {
+  const originalZone = process.env.TZ
+  process.env.TZ = 'Europe/Budapest'
+  try {
+    expect(postMeta({ ...KERES, kind: 'kerdes', occurredAt: '2026-09-29T19:31:00Z' }))
+      .toBe('21:31 · kérdés neked')
+    expect(postMeta({ ...KERES, kind: 'kerdes', occurredAt: '2026-01-29T19:31:00Z' }))
+      .toBe('20:31 · kérdés neked')
+    expect(postMeta(KERES)).toBe('kérés')
+  } finally {
+    if (originalZone === undefined) delete process.env.TZ
+    else process.env.TZ = originalZone
+  }
 })
 
 /**

@@ -12,6 +12,8 @@ const { useHabitCatalog, useHabitCatalogActions, createDef, updateDef, navigate 
   navigate: vi.fn(),
 }))
 vi.mock('@/data/hooks', () => ({
+  // the shared voice fields (mezo-xojq8) transcribe through this hook
+  useTranscribe: () => ({ transcribe: vi.fn() }),
   useHabitCatalog: () => useHabitCatalog(),
   useHabitCatalogActions: () => useHabitCatalogActions(),
   useProgressionProfile: () => ({ data: { life: [] } }),

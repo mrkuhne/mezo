@@ -16,6 +16,7 @@ class FlagTraceCopyTest {
         "deficit_hours", "stress_days_over", "bad_checkins", "load_avg_min", "fuel_arms_fired",
         "weight_trend_pct_wk", "trajectory", "shoulder_strain_avg", "tomorrow_muscle",
         "nudge_run_nights", "late_meal_days", "stale_domains", "longest_missed_run",
+        "current_missed_run",
         "habits_recent_avg", "missed_gym_days", "signals_matched", "quiet_days",
         "other_flags_raised", "pain_region_days", "low_rested_run", "craving_kind_days",
         "low_motivation_days");
@@ -32,6 +33,13 @@ class FlagTraceCopyTest {
     void a_numeric_clear_names_the_observed_value_and_the_threshold() {
         String text = FlagTraceCopy.clearText(new ClearEvidence("deficit_hours", 0.4, 1.0, null));
         assertThat(text).contains("0,4").contains("1,0");
+    }
+
+    @Test
+    void testClearText_shouldNameCurrentMissedRun_whenLaterWorkoutBreaksAnOldRun() {
+        String text = FlagTraceCopy.clearText(new ClearEvidence("current_missed_run", 0.0, 2.0, null));
+
+        assertThat(text).contains("jelenlegi").contains("0,0").contains("2,0");
     }
 
     /**

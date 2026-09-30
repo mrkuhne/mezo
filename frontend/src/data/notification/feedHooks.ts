@@ -37,7 +37,10 @@ export function useNotificationFeed(): { items: AppNotificationView[]; isPending
   return { items: data, isPending }
 }
 
-export function useNotificationFeedActions(): { markAllRead: () => Promise<void> } {
+export function useNotificationFeedActions(): {
+  markAllRead: () => Promise<void>
+  markItemRead: (id: string) => Promise<void>
+} {
   const qc = useQueryClient()
   const mock = isMockMode()
 
@@ -66,5 +69,35 @@ export function useNotificationFeedActions(): { markAllRead: () => Promise<void>
     (): Promise<void> => mutation.mutateAsync().then(() => undefined),
     [mutation],
   )
-  return { markAllRead }
+
+  const itemMutation = useMutation({
+    mutationFn: async (id: string) => {
+      if (!mock) await notificationFeedApi.readItem(id)
+    },
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: FEED_KEY })
+      const previousReadAt = qc.getQueryData<AppNotificationView[]>(FEED_KEY)
+        ?.find((n) => n.id === id)?.readAt
+      const now = new Date().toISOString()
+      qc.setQueryData<AppNotificationView[]>(FEED_KEY, (rows) =>
+        rows?.map((n) => n.id === id && n.readAt === null ? { ...n, readAt: now } : n))
+      return { previousReadAt }
+    },
+    onError: (_err, id, context) => {
+      if (context?.previousReadAt !== undefined) {
+        const readAt = context.previousReadAt
+        qc.setQueryData<AppNotificationView[]>(FEED_KEY, (rows) =>
+          rows?.map((n) => n.id === id ? { ...n, readAt } : n))
+      }
+    },
+    onSettled: () => {
+      if (!mock) qc.invalidateQueries({ queryKey: FEED_KEY })
+    },
+  })
+
+  const markItemRead = useCallback(
+    (id: string): Promise<void> => itemMutation.mutateAsync(id).then(() => undefined),
+    [itemMutation],
+  )
+  return { markAllRead, markItemRead }
 }

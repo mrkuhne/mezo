@@ -5,7 +5,7 @@
 // „megerősítem, amit elkaptam". Ez a fájl a látványossági szerződést őrzi:
 //   • héj alatt NINCS második ✨ AI bejárat (az a valódi duplikáció),
 //   • héj NÉLKÜL (a LogFlow-overlay: recept, kamra, Életjel, Rutin) minden marad, ahogy volt,
-//   • a kézi források (Kamra · Recept) nem tűnnek el — a GÉPELÉS úthoz tartoznak (manifeszt A3),
+//   • a kézi források a héj felső sorából nyílnak, nem jelennek meg másodszor a composerben,
 //   • a megerősítő rész (MIKOR · TÉTELEK · mentés-CTA) csak akkor jön, ha VAN mit megerősíteni,
 //   • a `fixedSlot` szabálya változatlan: ott a MIKOR sosem jelenik meg.
 //
@@ -58,18 +58,13 @@ test('héj alatt is megvan az EGYETLEN AI-szövegmező — a héj azt nyitja ki'
   expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
 })
 
-// ── A3: a kézi források nem tűnnek el, csak a gépelés úthoz kerülnek ─────────────────────────
+// ── ADR 0056: a kézi források a felső sávban vannak ───────────────────────────────────────────
 
-test('a gépelés úton a Kamra és a Recept elérhető', () => {
-  renderComposer({ shellOwnsEntry: true, manualSources: true })
-  expect(screen.getByRole('button', { name: 'Kamra · hozzáadás' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Recept · hozzáadás' })).toBeInTheDocument()
-})
-
-test('a fotó úton a kézi források nem tolakodnak elő', () => {
-  renderComposer({ shellOwnsEntry: true, manualSources: false })
+test('héj alatt a Kamra és a Recept nem duplázódik a composerben', () => {
+  renderComposer({ shellOwnsEntry: true, aiPanelOpenOnMount: true })
   expect(screen.queryByRole('button', { name: 'Kamra · hozzáadás' })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Recept · hozzáadás' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
 })
 
 test('héj nélkül a kézi források akkor is ott vannak, ha a hívó nem mond semmit', () => {

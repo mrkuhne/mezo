@@ -6,4 +6,5 @@ type FeedResponse = components['schemas']['NotificationFeedResponse']
 export const notificationFeedApi = {
   feed: () => apiFetch<FeedResponse>('/api/notification/feed'),
   readAll: () => apiFetch<void>('/api/notification/feed/read-all', { method: 'POST' }),
+  readItem: (id: string) => apiFetch<void>(`/api/notification/feed/${encodeURIComponent(id)}/read`, { method: 'POST' }),
 }

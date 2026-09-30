@@ -76,5 +76,9 @@ public enum UnavailableReason {
     /** craving_streak (mezo-ck2): fewer days with a craving answer than {@code min-days}. */
     NOT_ENOUGH_CRAVING_ANSWERS,
     /** motivation_slump (mezo-ck2): fewer days with a motivation answer than {@code min-days}. */
-    NOT_ENOUGH_MOTIVATION_ANSWERS
+    NOT_ENOUGH_MOTIVATION_ANSWERS,
+    /** missed_workouts / momentum_at_risk / joint_overuse / ignored_nudge (Kihagyás S2,
+     *  mezo-q4xt2.2, task 6): a recovery period ("kímélő mód") is open for this user, so a
+     *  training-pressure rule never runs — a genuinely excused gap must not be read back as a nag. */
+    RECOVERY_MODE
 }

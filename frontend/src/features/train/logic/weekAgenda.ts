@@ -28,6 +28,7 @@ export function buildWeekAgenda({
   weekWorkouts,
   today = new Date(),
   skips = [],
+  protectedDates = [],
 }: {
   gymTimes: GymScheduleDay[]
   sportSlots: VolleyballSession[]
@@ -35,6 +36,9 @@ export function buildWeekAgenda({
   weekWorkouts: { id: string; date: string; origin: string; status: string; title: string }[]
   today?: Date
   skips?: PlannedSkipKey[]
+  /** Kímélő mód S2 (mezo-q4xt2.2): the recovery state's protected dates — each such day is
+   *  flagged `protected` (its sessions stay listed; the surfaces mute them). */
+  protectedDates?: readonly string[]
 }): WeeklyAgendaDay[] {
   // Completed custom (saját) instances of this week, grouped by ISO date — extra
   // rows on the date they were actually trained (mezo-ws2x).
@@ -68,6 +72,7 @@ export function buildWeekAgenda({
       running: runSessionsForDay(runningBlock, DAY_ORDER.indexOf(d)),
       isToday: Boolean(g?.today || v.some((x) => x.today)),
       custom: customByDate.get(date) ?? [],
+      ...(protectedDates.includes(date) ? { protected: true } : {}),
     }
   })
 }

@@ -12,13 +12,16 @@
 // preset chips (each with its 3D goal icon), context chips, last-reply preview and composer are
 // flat inside it, the send button a lit lavender disc. The thread sheet's bubbles are flat cells.
 // ============================================================
-import { useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { ContentIcon, type Icon3DName } from '@/shared/ui/clay'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import type { WorkshopGoal } from '@/data/types'
+import { appendDictation, useVoiceInput } from '@/shared/lib/voice/useVoiceInput'
+import { MicTile } from '@/shared/ui/voice/VoiceField'
+import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 
 export interface WorkshopChatMessage { role: 'user' | 'assistant'; text: string }
 
@@ -53,6 +56,13 @@ export function WorkshopChatDock({
   goal, onGoal, text, onText, busy, history, error,
   onSend, onRetry, onEditFailed, onOpenPantry, contextNames, onDropContext,
 }: WorkshopChatDockProps) {
+  // Hang mindenhol (mezo-xojq8): the composer bar keeps its layout; the mic tile sits before
+  // send and appends to what's typed. Refs: the recorder keeps the callback from record-start.
+  const textRef = useRef(text)
+  textRef.current = text
+  const onTextRef = useRef(onText)
+  onTextRef.current = onText
+  const voice = useVoiceInput(useCallback((t: string) => onTextRef.current(appendDictation(textRef.current, t)), []))
   const [threadOpen, setThreadOpen] = useState(false)
   const lastReply = [...history].reverse().find(m => m.role === 'assistant')?.text ?? null
 
@@ -124,6 +134,7 @@ export function WorkshopChatDock({
             aria-label="Üzenet a Műhelynek"
           />
         </div>
+        <MicTile voice={voice} size="sm" />
         <button
           type="button"
           className="wsh-cbtn send"
@@ -134,6 +145,8 @@ export function WorkshopChatDock({
           <Icon name="send" size={14} />
         </button>
       </div>
+
+      <VoiceBubble voice={voice} domain="fuel" />
 
       {threadOpen && (
         <Sheet glass onClose={() => setThreadOpen(false)} className="fkx-rsheet-host uvl-fuel" labelledBy="workshop-thread-title">

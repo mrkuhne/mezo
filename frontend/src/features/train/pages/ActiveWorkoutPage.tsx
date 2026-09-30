@@ -84,6 +84,8 @@ import { restKcalPerHour } from '@/data/train/activityEnergy'
 import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { adjustedTarget } from '@/features/train/logic/repEquivalence'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 type Phase = 'brief' | 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
@@ -1446,15 +1448,17 @@ function NoteEditSheet({
               <h3 id="note-edit-title">Jegyzet a gyakorlathoz</h3>
             </span>
           </div>
-          <textarea
-            className="wos-sheet-ta"
-            aria-label="Gyakorlat-jegyzet szerkesztése"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={500}
-            rows={4}
-            placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
-          />
+          <VoiceField domain="train" onTranscript={(t) => setText((d) => appendDictation(d, t, 500))}>
+            <textarea
+              className="wos-sheet-ta"
+              aria-label="Gyakorlat-jegyzet szerkesztése"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={500}
+              rows={4}
+              placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
+            />
+          </VoiceField>
           <div className="wos-sheet-two">
             <button type="button" className="wos-pill is-block" onClick={close}>
               Mégse

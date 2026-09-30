@@ -124,7 +124,7 @@ shipped; the epic is complete.
   path.
 - **In-app feed `feature/appnotification` (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`, new package,
   new table, new switch):** **done** — `app_notification` outbox (§4), the 15-kind
-  `AppNotificationKind` catalog (§4), `AppNotificationService` (emit/feed/markAllRead, gated on
+  `AppNotificationKind` catalog (§4), `AppNotificationService` (emit/feed/markItemRead/markAllRead, gated on
   `NOTIFICATION_FEED_SWITCH`), and the always-on `AppNotificationEmitter` facade every producer
   injects (§9). **All 15 kinds emit** — F1 wired the 3 pattern-family sites (§3a/§5), F2 wired
   the original remaining 9 across the proactive/companion generators (§3a/§5), and later slices
@@ -234,8 +234,8 @@ bell, showing three ikon-less rows. Four things changed, all of them because a 3
   `features/notification/logic/category.ts`, each with its clay icon and a count. Only chips with
   rows are drawn, and when the selected chip disappears (`Olvasatlan` after `Mind olvasott`) the
   panel falls back to `Mind` BEFORE the list renders — see §9.
-- **`Mind olvasott` is the second `markAllRead()` call site**, and the first one reachable without
-  leaving the current page.
+- **`Mind olvasott` is the explicit `markAllRead()` call site**, available without leaving the
+  current page.
 
 ### 2b. The five kinds the last week's features were missing (mezo-0cbh)
 
@@ -303,27 +303,12 @@ without group headers. Both surfaces derive the day word from the ONE `dayLabel(
 `groupByDay.ts` was refactored onto it rather than keeping its own copy, so the two surfaces cannot
 disagree about what „Tegnap" means.
 
-**Read state is read differently on the two surfaces, on purpose.** The panel renders the LIVE
-`readAt`, the feed page an open-time snapshot (next paragraph but one). The asymmetry survived the
-panel gaining its own `Mind olvasott`: the feed page's snapshot exists so that *arriving* at the page
-does not erase what was new, but in the panel the un-highlighting IS the button's feedback — a
-snapshot there would make the press look like it did nothing.
-
-**Opening the feed page was the app's only reachable `markAllRead()` call site until mezo-g9fz
-added the panel's `Mind olvasott`.** Before mezo-nol0,
-no code path in the tree ever called it, so the header badge could light up but never clear
-(bd `mezo-61w0`, a real P2). `NotificationFeedPage` fires `markAllRead()` exactly once, in a `useEffect`
-gated by a `marked` ref, the moment it has a non-empty snapshot to act on — so the badge (shared
-cache, same unread count the header reads) goes dark as soon as the page mounts.
-
-**The rows stay highlighted anyway, because the page reads an OPEN-TIME snapshot, not the live
-cache.** On first render with data, it captures `new Set(items.filter(readAt === null).map(id))`
-into a `useRef` and keeps rendering `.unread`/`.nf-dot` off that frozen set for the rest of the
-page's lifetime — never off the live `readAt`, which `markAllRead`'s optimistic cache flip has
-already stamped. This is deliberate, classic-bell-style behavior carried over from the retired
-`NotificationBell`/`NotificationPanel` dropdown (mezo-gzhp.1, now deleted — mezo-h682): the badge
-clears immediately, but *while you're looking at the page* you can still see what was new. While the
-real-mode feed is still on its cold fetch (`useDualQuery`'s `realEmpty: []` is indistinguishable
+**Both surfaces use the live `readAt`.** Opening the feed page leaves unread rows untouched.
+Clicking a row in the panel or page calls `markItemRead(id)` before following its deeplink; the
+optimistic cache update clears only that row's dot and decreases the shared header badge by one.
+`Mind olvasott` in the panel remains the explicit bulk action. The item endpoint is idempotent and
+owner-scoped: a foreign or missing ID returns 404. While the real-mode feed is still on its cold
+fetch (`useDualQuery`'s `realEmpty: []` is indistinguishable
 from a genuinely empty list), the page shows a 3-row skeleton instead of either the ghost "nincs
 értesítésed" state or a mistaken 0-count hero — both would flash a lie the resolved fetch
 immediately contradicts.
@@ -336,8 +321,7 @@ identity is its `day` field (a stable `YYYY-MM-DD`), not its label — used as t
 label format change can never silently merge or split groups. Each row shows the kind's clay icon +
 tint (`APP_NOTIFICATION_KIND_META`, which carries `clay` alongside `emoji`/`tint` — the feed renders
 the clay icon, `emoji` stays for other call sites), title, body, and a time-of-day label; tapping a
-row navigates to `deeplink`. **There is still no per-item read endpoint** — opening the feed page is
-the only "read" action, by design (§9).
+row navigates to `deeplink` and marks only that row read through `POST /api/notification/feed/{id}/read`.
 
 ## 3. Architecture & data flow
 
@@ -450,7 +434,8 @@ emit site:
 [FE — GET /api/notification/feed on demand]
     useNotificationFeed()   — useDualQuery, real pre-resolve = empty list, refetches on window
                               focus / app open (TanStack default, no polling)
-    NotificationFeedPage open → POST /api/notification/feed/read-all  (markAllRead, optimistic)
+    Notification row click → POST /api/notification/feed/{id}/read  (markItemRead, optimistic)
+    Panel Mind olvasott → POST /api/notification/feed/read-all  (markAllRead, optimistic)
 ```
 
 **`CHALLENGE_EVENT` is the one kind with two independent producers for two different lifecycle
@@ -856,9 +841,9 @@ cycle once both domains needed to inject the emitter (§9).
 | Class | Responsibility |
 |---|---|
 | `AppNotificationKind` | the 15-kind in-app catalog (§4) — all 15 wired to producers |
-| `AppNotificationService` | `emit` (`REQUIRES_NEW`, dedup-idempotent), `feed(limit)`, `markAllRead` — gated on `NOTIFICATION_FEED_SWITCH` |
+| `AppNotificationService` | `emit` (`REQUIRES_NEW`, dedup-idempotent), `feed(limit)`, owner-scoped `markItemRead`, `markAllRead` — gated on `NOTIFICATION_FEED_SWITCH` |
 | `AppNotificationEmitter` | the always-on facade every producer injects — absorbs every exception (§9) |
-| `NotificationFeedController` | implements `NotificationFeedApi` — the two feed operations, thin delegation |
+| `NotificationFeedController` | implements `NotificationFeedApi` — the three feed operations, thin delegation |
 
 ### `app_notification` (F1, bd `mezo-gzhp.1`)
 
@@ -872,7 +857,7 @@ Migration: [`202608181400_..._create_app_notification.sql`](../../backend/src/ma
 | `ref_id uuid` | nullable — the domain row the notification is about (a pattern id, a fact id, …) |
 | `dedup_key varchar(80) not null` | the occurrence identity, e.g. `pattern_inbox:{pairKey}`, `pattern_signal:{pairKey}:{date}`, `fact_reinforced:{factId}:{count}` |
 | `occurred_at timestamptz not null default now()` | drives feed order and the Ma/Tegnap/dated-day grouping (`groupByDay.ts`, §2a) |
-| `read_at timestamptz` | null = unread; stamped in bulk by `markAllRead` (classic bell — no per-item read) |
+| `read_at timestamptz` | null = unread; stamped for a clicked row by `markItemRead` or in bulk by `markAllRead` |
 
 `uq_app_notification_created_by_dedup_key` (partial, live rows only) — makes `emit` **idempotent**
 across the cron-vs-lazy-GET double-generation race a future producer may have (F1's own producer,
@@ -930,7 +915,8 @@ either adding a new one or going `null` — see the table row below and §3b.
 | `PUT` | `/api/notification/pref` | N2 | upsert one or more; `400 NOTIFICATION_UNKNOWN_CATEGORY` on an unrecognized key |
 | `PUT` | `/api/notification/schedule` | N3 | replaces the named categories' live rows; `400 NOTIFICATION_UNKNOWN_CATEGORY` on an unrecognized key **or a known-but-backend-native one** |
 | `GET` | `/api/notification/feed?limit=` | F1 | `limit` 1..100, default 50; newest first; items `id`/`kind`/`title`/`body`/`deeplink`/`occurredAt`/`readAt` |
-| `POST` | `/api/notification/feed/read-all` | F1 | `204`; marks every unread row read — no per-item read endpoint (§9) |
+| `POST` | `/api/notification/feed/read-all` | F1 | `204`; marks every unread row read |
+| `POST` | `/api/notification/feed/{id}/read` | `mezo-d5y2m` | `204` idempotent; stamps one owned row, `404` for missing or foreign ID |
 
 **All six push operations live on one `NotificationController`** — `openapi-generator` emits one
 interface per OpenAPI `tag`, and every push path in `notification.yml` shares the `Notification` tag,
@@ -1048,16 +1034,15 @@ import { useNotificationFeed, useNotificationFeedActions } from '@/data/hooks'
 
 function NotificationFeedPage() {
   const { items, isPending } = useNotificationFeed()
-  const { markAllRead } = useNotificationFeedActions()
-  // open-time snapshot of unread ids drives the highlight; effect fires markAllRead() once
-  // (classic bell: badge clears immediately, page keeps its own read-snapshot for the highlight)
+  const { markItemRead } = useNotificationFeedActions()
+  // row click calls markItemRead(id); its live readAt drives the highlight and badge
 }
 ```
 
 `useNotificationFeed()` (`data/notification/feedHooks.ts`) is a `useDualQuery` whose real pre-resolve
 value is the **honest empty list**, never the mock seed — a badge must never flash a fabricated count
-at a live user before the first real fetch lands. `useNotificationFeedActions().markAllRead()` is
-optimistic (`onMutate` flips every row's `readAt` in the cache immediately, `onError` rolls back).
+at a live user before the first real fetch lands. Both `markItemRead(id)` and `markAllRead()` update
+the shared cache optimistically and roll back failed writes.
 
 **Backend (adding a new emit site):** inject `AppNotificationEmitter` (never
 `AppNotificationService` directly — the emitter is the only thing that survives the feed switch being
@@ -1189,8 +1174,8 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   orders newest-first, and the **deterministic emitter-absorption pin**
   (`testEmit_shouldNotPropagateToCaller_whenPersistFailsInsideTheService`) — asserts a failing
   persist inside the service never surfaces to the caller.
-- `NotificationFeedApiIT` (3) — own-rows-only newest-first, `read-all` stamps every row, `401` when
-  unauthenticated.
+- `NotificationFeedApiIT` (6) — own-rows-only newest-first, `read-all` stamps every row,
+  per-item idempotence and owner isolation, `401` when unauthenticated.
 - `AppNotificationKindTest` — pins the 15-key catalog (keys, familyKey, deeplink) against the spec.
 - `GoalSuggestionNotificationIT` (`feature/goal`, `mezo-ricj.4`) — pins the AFTER_COMMIT `goal_suggestion` producer, suggestion-id dedup, rollback safety and owner isolation.
 - `PatternEmitIT` (2, F1) — `PatternDetectionService.upsert` emits exactly one `pattern_inbox` row for
@@ -1215,7 +1200,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 
 **In-app feed (F1/mezo-nol0) — frontend:**
 - `data/notification/feedHooks.test.tsx` (both mock/real modes) — the honest-empty real
-  pre-resolve, the mapped view shape, `markAllRead`'s optimistic flip + rollback.
+  pre-resolve, the mapped view shape, and optimistic read actions.
 - `features/notification/logic/stamp.test.ts` — `dayLabel` (Ma/Tegnap/dated, and a same-date
   *different-year* day NOT counting as „Ma") and `notificationStamp`'s `nap · óra:perc` join
 - `app/AppHeader.ntfPeek.test.tsx` — the panel's newest-first ordering, its day-group labels + bare
@@ -1242,9 +1227,9 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 - `features/notification/logic/groupByDay.test.ts` — Ma/Tegnap plus every older day getting its own
   dated label (no `Korábban` bucket any more), newest-first sorting, pure and deterministic (`today`
   injected, no `new Date()` inside).
-- `features/me/pages/NotificationFeedPage.test.tsx` — the hero shows the open-time unread count (not
-  a live 0), items land in Ma vs. dated older groups, a row tap navigates to its `deeplink`,
-  open-time-unread rows stay highlighted for the rest of the page's life; the global header owns the settings entry.
+- `features/me/pages/NotificationFeedPage.test.tsx` — the hero shows the live unread count,
+  items land in Ma vs. dated older groups, opening the page leaves rows unread, and a row tap
+  reads only that row while navigating to its `deeplink`; the global header owns the settings entry.
 - `features/me/pages/NotificationFeedPage.empty.test.tsx` — genuinely empty feed shows the ghost
   state with no day-label header; a real-mode cold fetch (`isPending: true`, `items: []`) shows
   neither the ghost text nor a false empty state.
@@ -1496,13 +1481,10 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   category (N-slice catalog, §4) already delivers that event as a push; giving `memoir_ready` a
   familyKey too would double-notify the same moment through two different categories now that F3 has
   wired the mapping. `AppNotificationKindTest` pins this null.
-- **Classic bell semantics, deliberately simple: opening the feed page marks EVERYTHING read.** There
-  is no per-item read endpoint (§4) — the page's own open-time snapshot (`NotificationFeedPage`'s
-  `snapshot` ref) is what keeps the just-read rows' highlight/dot visible while you're on the page,
-  so the UI doesn't need a "half-read" server state to look right. A finer-grained per-item read
-  model was considered and rejected as unneeded complexity for a single-user app. Before mezo-nol0
-  this contract lived on the header's dropdown panel (`NotificationBell`/`NotificationPanel`, now
-  deleted, mezo-h682); moving it onto a full page changed the surface, not the semantics.
+- **Read state follows the row action (`mezo-d5y2m`).** Opening the feed page leaves unread rows
+  visible and unread. A row click stamps only that row, on either surface; the panel's
+  `Mind olvasott` button is the explicit bulk action. The old open-time snapshot and automatic
+  `markAllRead` behavior were removed ([ADR 0055](../decisions/0055-notification-read-on-click.md)).
 - **`NotificationFeedProperties`' inbox/band thresholds are a cross-stack pinned mirror, same shape
   as the N-slice `bandPromising`/`bandStrong` mirroring `strengthWord` (§5).** They must never drift
   from Insights' own `STRONG_SIGNAL`/`strengthWord` constants without updating both sides' tests.
@@ -1665,7 +1647,7 @@ cycle, §9)**
 
 **Frontend — in-app feed surface (F1 bd `mezo-gzhp.1`, feed page mezo-nol0, §2a)**
 - `frontend/src/features/me/pages/NotificationFeedPage.tsx` (route `/me/ertesitesek`) — the full feed
-  page; the only `markAllRead()` call site
+  page; row clicks mark only the clicked notification read
 - `frontend/src/features/notification/logic/stamp.ts` — the shared day/time labellers: `dayLabel`
   (Ma/Tegnap/dated, keyed on the calendar day not the label), `timeLabel`, and the `notificationStamp`
   join the header peek renders (mezo-tdzy). `groupByDay.ts` and `NotificationFeedPage.tsx` both read

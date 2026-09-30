@@ -17,6 +17,8 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 
 # Companion (AI chat brain) — Feature Documentation
 
+> **2026-09-30 — Kímélő mód tone + quiet flags (Kihagyás S2, `mezo-q4xt2.2`).** While a recovery period is open `ContextSnapshotAssembler.trainBlock` says so (never in the cached `stableSystemPrompt`) and `FlagEvaluator` silences four training-pressure rules with the new `UnavailableReason.RECOVERY_MODE` — see the two paragraphs in §3 marked „Kihagyás S2”; the lifecycle is in [`train.md`](train.md) §2.
+
 > **2026-09-28 — fact-text sentence split (`mezo-d6ivw.12` fix).** `FactTextComposer` no longer ends a sentence at a Hungarian abbreviation: a `.`/`!`/`?`/`…` + space is a boundary only when the next token starts uppercase (or an opening quote + uppercase) and the word before it is not in its `ABBREVIATIONS` set (`pl`, `kb`, `stb`, `ill`, `ún`, …). Before, „pl.” cut the composed fact text mid-parenthesis. (Doc note added with `mezo-mobji`, which found the doc stale.)
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One shared renderer, `CheckInText` (biometrics), now prints every answered check-in item for the chat snapshot (latest row + a „ma korábban" line of today's other slots), the daily summary, the `get_recovery` tool (`scope=checkins`) and the meal coach; `PersonalRecordSource` exposes the new `check_in` columns. Flags: four new rules (`persistent_pain`, `poor_restedness`, `craving_streak`, `motivation_slump`) and two widened (`acute_bad_day` + mood/pain, `recovery_needed` + rested/soreness arm). Patterns: ten new `MetricKey`s and fifteen new pairs. `DayScoreService` counts a check-in as filled only when legacy / quick exit / core answered; `MeWeekService` adds the mood average. Details: §5.5 „Check-in 2.0 feeds", §4 flag table, the pattern-catalog block „Check-in 2.0 extended the catalog". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
@@ -107,6 +109,7 @@ The sections below describe its current behavior and the supporting components.
   renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
   snapshot's `Ma (terv):`/`Holnap (terv):`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
   and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
+  **Kihagyás S2 (`mezo-q4xt2.2`) — the kímélő tone line.** `ContextSnapshotAssembler.trainBlock` appends, from `RecoveryPeriodService`, `; Kímélő mód aktív: <kategória>, <n>. nap, becslés: <…>. Ne sürgesd az edzést, ne említs elmaradást; gyógyulás, pihenés, folyadék.` while a period is open (categories `Beteg/Gyomorrontás/Sérülés/Úton`, estimates `csak ma/2–3 nap/kb. egy hét/…`), and `; Visszatérés kímélő mód után: k/N könnyített edzés.` during the comeback ramp (mirroring `RecoveryReturnPolicy.decide` + `comebackSessionsDone`; the line disappears when the ramp is done or waived). It lives in the volatile snapshot, never the cached system prompt. Train stays the owner of the lifecycle — the companion only reads it ([`train.md`](train.md) §2 „Kihagyás S2”).
   Since Kihagyás S1 (`mezo-q4xt2.1`) both call sites read `findPlannedTemplateForDateUnlessSkipped`, so a gym day the owner skipped renders as `pihenőnap` here too (and a skipped prescribed run is left out of the day line via `PlannedSkipService.isRunSkipped`) — see [`train.md`](train.md) "Kihagyás (S1)". The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
   is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
   `gym (<day label>): <exercises>`. Sharing it is what the drift cost: the criterion used to be
@@ -3321,11 +3324,13 @@ its own) and stays reviewable in isolation. S1 was a pure refactor of the origin
   `logging-gap.sleep-suspicion-deficit-hours` of deficit, the payload attaches that observed
   deficit instead of staying silent about it too.
 - **`MissedWorkoutsRule`** (spec §4 row 3) — raises when `≥ missed-workouts.min-consecutive-missed`
-  PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
+  most-recent PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
   `missed-workouts.window-days`) have no completed workout instance. "Consecutive" counts through
   the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri schedule raises on a missed
-  Mon + Wed, two calendar days apart. Only `templateSessionId IS NOT NULL AND status = 'completed'`
-  instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
+  Mon + Wed, two calendar days apart. A later completed planned day resets the current streak and
+  clears the flag even while the old misses remain inside the 14-day window; the payload's legacy
+  `longestMissedRun` field now carries the current streak length. Only `templateSessionId IS NOT NULL
+  AND status = 'completed'` instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
 - **`SleepDeficitCalculator`** (`flags/service/rule/SleepDeficitCalculator.java`) — the cumulative
   sleep-deficit-vs-goal arithmetic (goal lookup + the day-by-day `Σ max(0, goal − actual)` loop),
   extracted out of `SleepDebtRule` in bd `c6c045082` so `LoggingGapRule`'s "gap + suspicion"
@@ -3578,6 +3583,8 @@ can decline to judge, as opposed to judging and finding nothing wrong — new ga
 are impossible now that the verdict is a rule's only return type. The factories
 (`FlagVerdict.raised`/`clear`/`unavailable`) are the only way to build one and each validates its
 own required field is non-null.
+
+**Kihagyás S2 — `RECOVERY_MODE` (`mezo-q4xt2.2`).** `FlagEvaluator.evaluate` asks `RecoveryPeriodService.open(user)` once; while a recovery period is open it does **not run** the four training-pressure rules — `JointOveruseRule`, `MissedWorkoutsRule`, `IgnoredNudgeRule`, `MomentumAtRiskRule` — and records `FlagVerdict.unavailable(<key>, UnavailableReason.RECOVERY_MODE)` for each (a genuinely excused gap must never be read back as a nag). Wellbeing rules (`AcuteBadDayRule`, `PersistentPainRule`, sleep, weight…) keep running. Independently, `MomentumAtRiskRule.missedPlannedGymDays` became skip-aware (excused dates are not missed) — the S1 gap. `FlagEvaluatorRecoveryModeIT` (4 tests) and `MomentumAtRiskRuleTest` cover it.
 
 `all_healthy` is now evaluated on EVERY pass, not only when the other twelve raised nothing.
 `FlagEvaluator.evaluate` always calls `AllHealthyRule`; when it comes back RAISED but another rule

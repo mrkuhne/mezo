@@ -53,6 +53,22 @@ bd close <id>         # Complete work
 5. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
+## Working with the owner
+
+The owner decides what the product should do; agents choose the technical implementation. Write questions, trade-offs, blockers, plans and results to him in **Hungarian**, in everyday product language. Keep identifiers, paths, configuration keys and jargon out of decision questions; technical records in code, commits, Beads and docs remain precise.
+
+For a decision, give **A helyzet** (context), **A gond** (user-visible consequence), at most two or three **A lehetőségek** (what we would do and the cost in time, money or behavior), and **Az ajánlásom** (one recommended choice and why). Keep it short enough for one screen. Ask one question at a time during design work.
+
+## Visible frontend work and design
+
+The owner-approved UI direction is **Üveg**: Mozaik colors on a warm, dark graphite ground with Titanium glass material and custom 3D sprite icons. Follow [`docs/design_2.0/README.md`](docs/design_2.0/README.md) and its canonical style references; reuse the shared UI kit. New screens need a clickable prototype and the owner's approval before implementation.
+
+For any frontend change the owner will see, use the repo's `owner-visible-frontend` skill in `.agents/skills/` alongside the relevant process and frontend skills. The owner's sequence is: **design/spec approval → clickable prototype approval → implementation-plan approval → build, local gates, merge, push, deploy, live verification, report**. A small change may combine the spec and plan approval; an invisible bug fix may skip the prototype. After the final approval, carry the work through shipping without another visual review. Ask again only when a blocker changes what the owner will see. The skill owns the living-prototype and evidence-based acceptance details.
+
+## Production data
+
+Read-only queries of the production database are authorized when needed to understand or verify the task; use the deployment doc and runbook for access. Query only the necessary data and never copy the owner's real rows into commits, docs, prototypes or artifacts. Each production `INSERT`, `UPDATE`, `DELETE` or DDL needs the owner's explicit approval for that specific change. Schema changes go through Liquibase, never manual production DDL.
+
 ## Non-Interactive Shell Commands
 
 **ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts. Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.

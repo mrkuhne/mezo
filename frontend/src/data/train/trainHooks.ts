@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { invalidateFuelTargets } from '@/data/fuel/queryKeys'
 import { isMockMode } from '@/data/_client/mode'
@@ -43,6 +43,9 @@ import {
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
 import { usePlannedSkips, PLANNED_SKIPS_QUERY_KEY } from '@/data/train/skipHooks'
+import { useRecovery } from '@/data/train/recoveryHooks'
+import { withMockComeback } from '@/data/train/recoveryMock'
+import { protectedDayRows } from '@/features/train/logic/recovery'
 import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
 import type { PlannedSkipKey } from '@/features/train/logic/plannedSkips'
 import { applyMockEdits, mockExerciseFor, type MockWorkoutEdit } from '@/data/train/mockWorkoutEdits'
@@ -111,6 +114,7 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
         : null,
     })),
     challenges: [],
+    ...(r.comeback ? { comeback: r.comeback } : {}),
     overloadSummary: r.overloadSummary
       ? {
           weightUp: r.overloadSummary.weightUp,
@@ -616,14 +620,9 @@ function useLogSportSession(
   )
 }
 
-export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
-  const mock = isMockMode()
-  const qc = useQueryClient()
-  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
-  // Day resolution is server-side (open instance > param > weekday label); param-less
-  // callers keep the plain today context. Mock ignores the param (static plan).
-  const workoutDay = opts?.workoutDay ?? null
-  const { data: mesoData, isPending: mesoPending } = useQuery({
+/** The `['train', 'mesocycles']` query — one definition for `useTrain` and `useActiveMesoWeek`. */
+function mesocyclesQuery(mock: boolean, qc: QueryClient) {
+  return {
     queryKey: ['train', 'mesocycles'],
     // Mock resolves SEEDED CACHE first, static fixture second (mesoReportHooks' mockResolve
     // idiom): mockStart/mockRerun (mezo-meyc.1) and mockClose (mezo-meyc.2) all edit this list
@@ -643,7 +642,28 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // guard the sibling mock caches below already carry (gymSchedule, sportEvents) — the
     // pantry/useDualQuery pattern. Real mode keeps the TanStack default.
     staleTime: mock ? Infinity : undefined,
-  })
+  }
+}
+
+/** The active meso's current week (after any recovery shift) — the „Üdv újra!" week clause on
+ *  surfaces that do not load the whole `useTrain()` (the Nap hub). Null without an active meso.
+ *  `enabled: false` skips the (real-mode) fetch — the Nap hub reads it only while a period exists. */
+export function useActiveMesoWeek({ enabled = true }: { enabled?: boolean } = {}): number | null {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  const { data } = useQuery({ ...mesocyclesQuery(mock, qc), enabled })
+  const m = (data ?? []).find((x) => x.status === 'active') ?? (mock ? activeMeso : null)
+  return m?.currentWeek ?? null
+}
+
+export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
+  // Day resolution is server-side (open instance > param > weekday label); param-less
+  // callers keep the plain today context. Mock ignores the param (static plan).
+  const workoutDay = opts?.workoutDay ?? null
+  const { data: mesoData, isPending: mesoPending } = useQuery(mesocyclesQuery(mock, qc))
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
   // HU display dates), so the derivation happens inside the queryFn.
   const { data: sportData, isPending: sportQueryPending } = useQuery({
@@ -674,7 +694,18 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   // into the SAME list server-side, as SPORT/NONE/source=ADVICE rows). `usePlannedSkips()` is the
   // single fetch of the skip window; every reader that used to destructure `sportSlotSkips` off
   // `useTrain()` now reads `plannedSkips` off it — one query, not two.
-  const { skips: plannedSkipsData } = usePlannedSkips()
+  const { skips: realSkips } = usePlannedSkips()
+  // Kímélő mód (Kihagyás S2, mezo-q4xt2.2): every protected recovery date joins as a virtual DAY
+  // row, which hides every planned occurrence on that date (`plannedSkips.ts`'s `matches`). The
+  // recovery GET covers today−7 … today+13, so the agenda sees next week's protected days too.
+  const { recovery } = useRecovery()
+  const plannedSkipsData = useMemo(
+    () => {
+      const days = protectedDayRows(recovery)
+      return days.length ? [...realSkips, ...days] : realSkips
+    },
+    [realSkips, recovery],
+  )
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
   const { data: gymSlotsData, isPending: gymSchedulePending, isError: gymScheduleError } = useQuery({
@@ -1115,7 +1146,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mesocycles: mesos,
     // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
     activeMeso: realActiveMeso ?? (mock ? activeMeso : null),
-    workout: mock ? applyMockEdits(trainWorkout, mockEdits ?? []) : toWorkoutPlan(todayData),
+    workout: mock ? withMockComeback(applyMockEdits(trainWorkout, mockEdits ?? []), recovery) : toWorkoutPlan(todayData),
     // Mock serves the full static weekly schedule (Phase-1 parity); real derives
     // the meso's gym days (WHAT) joined with the standalone gym slots (WHEN).
     gymSchedule: mock ? { ...trainGymSchedule, weeklyTimes: trainGymSchedule.weeklyTimes.map((day, index) => ({ ...day, time: gymSlots.find(slot => slot.dayOfWeek === index)?.time ?? null })) } : deriveGymSchedule(realActiveMeso, gymSlots),
