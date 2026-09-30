@@ -3,7 +3,7 @@
 - **bd:** `mezo-yhhvg`
 - **Date:** 2026-09-30
 - **Domain:** Fuel, új étkezés naplózása
-- **Status:** működés jóváhagyva a tulajdonossal; kattintható minta és megvalósítási terv készül
+- **Status:** működés és kattintható minta jóváhagyva a tulajdonossal; a megvalósítási terv jóváhagyásra vár
 
 ## 1. Cél és döntés
 
@@ -11,9 +11,10 @@ A később rögzített étkezés a tényleges evési idővel és az ahhoz tartoz
 
 ## 2. Felület és működés
 
-- Az új étkezés megerősítő részében, közvetlenül a mentés előtt egy „Mikor ettél?” sor mutatja az alapértelmezett időt. Koppintásra nyílik az időválasztó; „Most” visszaállítja a mai nap alapidejét. Az időválasztás a Fotó, Kamra, Recept és Szokásosak utakból létrejött piszkozatnál ugyanaz a közös vezérlő.
-- Ma a gyors mentés alapja a jelenlegi idő. Korábbi napon a megnyitott ablak javasolt ideje, ablak nélküli indulásnál az adott napszak eddigi alapideje marad. Az alapérték megjelenik; a használónak nem kell külön állítania.
-- A kiválasztott nap + idő a bejegyzés tényleges időpontja. Az idő szerinti tervezett ablak neve a mező mellett frissül. Ha egyetlen ablak sem fedi az időt, az előnézet „Ablakon kívül” értéket mutat. A mentés ugyanide helyezi a bejegyzést; a megnyitó ablak nem írja felül a szándékosan átírt időt.
+- Az új étkezés megerősítő részében, közvetlenül a mentés előtt egy alapból csukott „Mikor ettél?” sor mutatja az aktuális helyi időt. Koppintásra nyílik az időválasztó; „Most” visszaállítja az aktuális időt. Az időválasztás a Fotó, Kamra, Recept és Szokásosak utakból létrejött piszkozatnál ugyanaz a közös vezérlő.
+- A gyors mentés alapja mindig az éppen aktuális idő, korábbi napra pótláskor is. Új naplózás nyitásakor a sor csukva indul; a használónak csak akkor kell kinyitnia, ha módosítani akarja az időt.
+- A sor lenyitása, becsukása, átírása és „Most” visszaállítása helyben történik: a napló többi része és a görgetési pozíció nem töltődik újra.
+- A kiválasztott nap + idő a bejegyzés tényleges időpontja. Az idő szerinti tervezett ablak neve a mező mellett frissül. Ha egyetlen ablak sem fedi az időt, az előnézet „Ablakon kívül” értéket mutat. A mentés ugyanide helyezi a bejegyzést; a megnyitó ablak nem írja felül az aktuális vagy átírt idő szerinti besorolást.
 - Mai napon jövőbeli idő nem menthető; a mezőn rövid, érthető hiba jelenik meg. A legfeljebb hét napos visszamenőleges napválasztás változatlan. A már rögzített étkezés időpontja továbbra is javítható.
 - Ha a mentés hibázik, a kiválasztott idő a piszkozatban marad az újrapróbáláshoz.
 
