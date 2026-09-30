@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -39,6 +41,7 @@ public class ForgetService {
     private final KnowledgeFactRepository factRepository;
     private final PatternRepository patternRepository;
     private final MemoryForgetVetoRepository vetoRepository;
+    private final LearnedFactRepository learnedFactRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
@@ -93,18 +96,32 @@ public class ForgetService {
         factRepository.delete(fact); // @SQLDelete → soft delete
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, fact.getId()));
         releaseSuperseded(userId, fact.getId());
+        withdrawMergeProposals(userId, fact.getId());
+    }
+
+    /** S9 final-review I2b (mezo-d6ivw.10): a pending merge proposal that would fold the
+     *  forgotten fact back in is withdrawn (soft-deleted) — accepting it later must never
+     *  resurrect a forgotten sentence. Decided proposals are history and stay as they are. */
+    private void withdrawMergeProposals(UUID userId, UUID forgottenId) {
+        learnedFactRepository.findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId).stream()
+                .filter(c -> LearnedFactEntity.SOURCE_MERGE.equals(c.getSource()))
+                .filter(c -> c.getMergeMemberIds() != null && c.getMergeMemberIds().contains(forgottenId))
+                .forEach(learnedFactRepository::delete); // @SQLDelete → soft delete
     }
 
     /**
      * A drift supersession's successor is gone, so "felülírta egy újabb észrevétel" is no longer
-     * true of the original. It is not re-injected on its own (the user made the knowledge go
+     * true of the original (S9: nor "összevontam" of a merged-away loser). It is not re-injected on its own (the user made the knowledge go
      * away, not come back) — it becomes the user's own mute: silent, listed under
      * Elhallgattatott, one tap from Visszakapcsolom.
      */
     private void releaseSuperseded(UUID userId, UUID forgottenId) {
         Instant now = Instant.now();
         for (KnowledgeFactEntity original : factRepository.findByCreatedByAndSupersededByAndDeletedFalse(userId, forgottenId)) {
-            if (KnowledgeFactEntity.MUTED_SUPERSEDED.equals(original.getMutedReason())) {
+            // S9 final-review I4: a merged-away loser whose survivor is forgotten is released the
+            // same way — "összevontam" is no longer true of it either.
+            if (KnowledgeFactEntity.MUTED_SUPERSEDED.equals(original.getMutedReason())
+                    || KnowledgeFactEntity.MUTED_MERGED.equals(original.getMutedReason())) {
                 original.mute(KnowledgeFactEntity.MUTED_USER, now);
             }
             original.setSupersededBy(null);

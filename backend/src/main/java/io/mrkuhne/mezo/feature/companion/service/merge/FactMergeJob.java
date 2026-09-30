@@ -34,7 +34,7 @@ public class FactMergeJob {
     private final UserFanOut userFanOut;
     private final FactMergeService factMergeService;
 
-    @Scheduled(cron = "${mezo.companion.fact-merge.cron}")
+    @Scheduled(cron = "${mezo.companion.fact-merge.cron}", zone = "Europe/Budapest")
     public void run() {
         userFanOut.forEachActiveUser("Fact merge", user -> {
             try {

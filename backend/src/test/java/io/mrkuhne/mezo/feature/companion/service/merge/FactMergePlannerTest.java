@@ -185,16 +185,32 @@ class FactMergePlannerTest {
         assertThat(proposal.category()).isEqualTo("fuel");
     }
 
+    /** Drift guard (spec S9 delta): a merged sentence is written from ORIGINALS only — a fact
+     *  that is itself a merge result never feeds a new {@code combine} rewrite. */
     @Test
-    void combineOfMergeMergeableSourceProducesProposal() {
+    void combineWithMergeSourcedMemberSkipped() {
         KnowledgeFactEntity chatFact = chat("fuel", 1, NOW);
         KnowledgeFactEntity merged = fact(KnowledgeFactEntity.SOURCE_MERGE, "fuel", 1, NOW, false);
 
         List<Plan> plans = FactMergePlanner.plan(
                 List.of(chatFact, merged), List.of(combine("mondat", 1, 2)), Set.of());
 
+        assertThat(plans).isEmpty();
+    }
+
+    /** ...but an exact repeat of a merge result may still be folded into it ({@code same}). */
+    @Test
+    void sameWithMergeSourcedMemberStillAutoMerges() {
+        KnowledgeFactEntity chatFact = chat("fuel", 1, NOW);
+        KnowledgeFactEntity merged = fact(KnowledgeFactEntity.SOURCE_MERGE, "fuel", 4, NOW, false);
+
+        List<Plan> plans = FactMergePlanner.plan(
+                List.of(chatFact, merged), List.of(same(1, 2)), Set.of());
+
         assertThat(plans).hasSize(1);
-        assertThat(plans.get(0)).isInstanceOf(Proposal.class);
+        AutoMerge merge = (AutoMerge) plans.get(0);
+        assertThat(merge.survivor()).isSameAs(merged);
+        assertThat(merge.losers()).containsExactly(chatFact);
     }
 
     @Test

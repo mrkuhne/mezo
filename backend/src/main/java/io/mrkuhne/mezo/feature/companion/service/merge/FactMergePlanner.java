@@ -127,6 +127,11 @@ public final class FactMergePlanner {
         if (!members.stream().allMatch(FactMergePlanner::mergeable)) {
             return null;
         }
+        // Drift guard (spec S9 delta): a merged sentence is written from ORIGINALS only — a fact
+        // that is itself a merge result may absorb exact repeats (same) but never feeds a rewrite.
+        if (members.stream().anyMatch(f -> KnowledgeFactEntity.SOURCE_MERGE.equals(f.getSource()))) {
+            return null;
+        }
         return new Proposal(List.copyOf(members), sentence, members.get(0).getCategory(), memberKey);
     }
 

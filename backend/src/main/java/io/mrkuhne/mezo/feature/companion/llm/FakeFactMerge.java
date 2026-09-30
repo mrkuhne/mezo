@@ -23,8 +23,8 @@ final class FakeFactMerge {
     }
 
     /**
-     * Every DUPLICATE normalized sentence (lowercased, trailing {@code .!?} stripped) pairs up
-     * as a {@code "same"} group; the first two lines carrying {@code #comb} pair up as a
+     * Every DUPLICATE normalized sentence (lowercased, trailing {@code .!?} stripped) groups up
+     * (at most 3, the real judge's bound) as a {@code "same"} group; the first two lines carrying {@code #comb} pair up as a
      * {@code "combine"} group with a canned sentence. Anything else ⇒ {@code {"groups":[]}}.
      */
     static String answer(String systemPrompt) {
@@ -53,8 +53,11 @@ final class FakeFactMerge {
             if (!groups.isEmpty()) {
                 groups.append(',');
             }
+            // the real judge's own bound: at most 3 members per group
+            String memberList = members.stream().limit(3).map(String::valueOf)
+                    .collect(java.util.stream.Collectors.joining(","));
             groups.append("{\"verdict\":\"same\",\"members\":[")
-                    .append(members.get(0)).append(',').append(members.get(1))
+                    .append(memberList)
                     .append("],\"sentence\":\"\"}");
         }
         if (combineMembers.size() == 2) {

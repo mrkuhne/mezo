@@ -74,9 +74,11 @@ public class FactMergeService {
      * roll back another plan's already-committed write.
      */
     public Outcome runFor(UUID userId) {
+        Set<UUID> pendingProposalMembers = pendingProposalMembers(userId);
         List<KnowledgeFactEntity> live = knowledgeFactRepository
                 .findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId).stream()
                 .filter(f -> f.isIncludeInPrompt() && f.getSupersededBy() == null)
+                .filter(f -> !pendingProposalMembers.contains(f.getId()))
                 .toList();
         Set<String> blocked = ledgerRepository.findByCreatedByAndDeletedFalse(userId).stream()
                 .map(FactMergeLedgerEntity::getMemberKey).collect(Collectors.toCollection(HashSet::new));
@@ -103,6 +105,17 @@ public class FactMergeService {
         }
         notify(userId, merged, proposed);
         return new Outcome(merged, proposed);
+    }
+
+    /** Final-review I2a: every member of the user's UNDECIDED merge proposals (snoozed ones
+     *  included) — such a fact is already spoken for; merging it elsewhere now would make a later
+     *  „Összevonom” fold in a stale member. */
+    private Set<UUID> pendingProposalMembers(UUID userId) {
+        return learnedFactRepository
+                .findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId).stream()
+                .filter(c -> LearnedFactEntity.SOURCE_MERGE.equals(c.getSource()) && c.getMergeMemberIds() != null)
+                .flatMap(c -> c.getMergeMemberIds().stream())
+                .collect(Collectors.toSet());
     }
 
     /** Facts grouped by category (a merge never crosses categories — {@code FactMergePlanner}'s

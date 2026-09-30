@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryForgetVetoRepository;
+import io.mrkuhne.mezo.feature.companion.service.CandidateSnooze;
 import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactPromotedEvent;
@@ -131,20 +132,53 @@ class FactCandidateMergeDecisionIT extends AbstractIntegrationTest {
                 .isEmpty();
     }
 
+    /** Final-review I3: „Később” on a merge proposal sleeps until the NEXT Monday sweep (the
+     *  card's own copy promises „jövő hétfőn”), not the generic 14 days — and the snooze answer
+     *  still carries the member sentences. */
     @Test
-    void testDecide_shouldSnoozeMergeCandidate_unchangedBehaviour() {
+    void testDecide_shouldSnoozeMergeCandidateUntilNextMondaySweep_withMergeSources() {
         UUID userId = databasePopulator.populateUser("merge-snooze@test.local");
         KnowledgeFactEntity a = knowledgeFactPopulator.fact(userId, "Szereti a teát", "fuel", 1);
+        KnowledgeFactEntity b = knowledgeFactPopulator.fact(userId, "Szereti a kávét", "fuel", 1);
         LearnedFactEntity candidate = learnedFactPopulator.mergeCandidate(
-                userId, "Összevont mondat", "fuel", List.of(a.getId()));
+                userId, "Összevont mondat", "fuel", List.of(a.getId(), b.getId()));
         Instant before = Instant.now();
 
         FactCandidateResponse decided = factCandidateService.decide(userId, candidate.getId(), decision("snooze", null));
 
+        Instant after = Instant.now();
         assertThat(decided.getUserDecision()).isNull();
+        assertThat(decided.getMergeSources()).containsExactly("Szereti a teát", "Szereti a kávét");
         LearnedFactEntity reloaded = learnedFactRepository.findById(candidate.getId()).orElseThrow();
         assertThat(reloaded.getUserDecision()).isNull();
-        assertThat(reloaded.getSnoozedUntil()).isAfter(before.plusSeconds(13 * 24 * 3600));
+        assertThat(reloaded.getSnoozedUntil())
+                .isBetween(CandidateSnooze.nextMergeSweep(before), CandidateSnooze.nextMergeSweep(after));
+        assertThat(factCandidateService.listPending(userId)).isEmpty();
+    }
+
+    @Test
+    void testDecide_shouldKeepFourteenDaySnooze_forNonMergeCandidate() {
+        UUID userId = databasePopulator.populateUser("chat-snooze@test.local");
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Szereti a teát", "fuel", null);
+        Instant before = Instant.now();
+
+        factCandidateService.decide(userId, candidate.getId(), decision("snooze", null));
+
+        LearnedFactEntity reloaded = learnedFactRepository.findById(candidate.getId()).orElseThrow();
+        assertThat(reloaded.getSnoozedUntil()).isAfterOrEqualTo(before.plus(CandidateSnooze.DURATION));
+    }
+
+    /** Final-review I2b: a merge proposal with fewer than two members left is no longer a merge. */
+    @Test
+    void testListPending_shouldHideMergeCandidate_whenFewerThanTwoMembersRemain() {
+        UUID userId = databasePopulator.populateUser("merge-orphan@test.local");
+        KnowledgeFactEntity a = knowledgeFactPopulator.fact(userId, "Szereti a teát", "fuel", 1);
+        KnowledgeFactEntity b = knowledgeFactPopulator.fact(userId, "Szereti a kávét", "fuel", 1);
+        learnedFactPopulator.mergeCandidate(userId, "Szereti a forró italokat", "fuel", List.of(a.getId(), b.getId()));
+        assertThat(factCandidateService.listPending(userId)).hasSize(1);
+
+        knowledgeFactRepository.delete(b); // @SQLDelete → soft delete, bypassing ForgetService
+
         assertThat(factCandidateService.listPending(userId)).isEmpty();
     }
 
@@ -231,5 +265,29 @@ class FactCandidateMergeDecisionIT extends AbstractIntegrationTest {
                 });
         assertThat(learnedFactRepository.findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId))
                 .isEmpty();
+    }
+
+    /** Final-review M3: the survivor lookup follows the whole chain — a sentence merged away
+     *  (or superseded) twice still reinforces the fact that carries it NOW. */
+    @Test
+    void testExtractFromTurn_shouldFollowSupersessionChainToTheLiveFact() {
+        UUID userId = databasePopulator.populateUser("merge-chain@test.local");
+        KnowledgeFactEntity live = knowledgeFactPopulator.fact(userId, "Reggel forró italt iszik", "fuel", 4);
+        KnowledgeFactEntity middle = knowledgeFactPopulator.fact(userId, "Szereti a kávét", "fuel", 0);
+        KnowledgeFactEntity oldest = knowledgeFactPopulator.fact(userId, "Szereti a teát", "fuel", 0);
+        middle.mute(KnowledgeFactEntity.MUTED_MERGED, Instant.now());
+        middle.setSupersededBy(live.getId());
+        knowledgeFactRepository.saveAndFlush(middle);
+        oldest.mute(KnowledgeFactEntity.MUTED_SUPERSEDED, Instant.now());
+        oldest.setSupersededBy(middle.getId());
+        knowledgeFactRepository.saveAndFlush(oldest);
+        String content = "megint mondom [fake-facts:[{\"fact\":\"Szereti a teát\",\"category\":\"fuel\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "tudom");
+
+        assertThat(persisted).isZero();
+        assertThat(knowledgeFactRepository.findById(live.getId()).orElseThrow().getReinforcementCount()).isEqualTo(5);
+        assertThat(knowledgeFactRepository.findById(middle.getId()).orElseThrow().getReinforcementCount()).isZero();
+        assertThat(knowledgeFactRepository.findById(oldest.getId()).orElseThrow().getReinforcementCount()).isZero();
     }
 }

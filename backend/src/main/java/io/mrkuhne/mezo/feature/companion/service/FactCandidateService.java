@@ -43,6 +43,10 @@ public class FactCandidateService {
                 .findPendingVisible(userId, Instant.now())
                 .stream()
                 .map(candidate -> toResponse(userId, candidate))
+                // S9 final-review I2b: a merge proposal with fewer than two members left is no
+                // longer a merge (a member was forgotten or deleted since) — it is not offered.
+                .filter(response -> !LearnedFactEntity.SOURCE_MERGE.equals(response.getSource())
+                        || response.getMergeSources() == null || response.getMergeSources().size() >= 2)
                 .toList();
     }
 
@@ -56,8 +60,12 @@ public class FactCandidateService {
         String decision = request.getDecision().getValue();
         if (LearnedFactEntity.DECISION_SNOOZE.equals(decision)) {
             // „Most ne” (U9b): not a decision — the candidate stays open and returns in 14 days.
-            candidate.setSnoozedUntil(Instant.now().plus(CandidateSnooze.DURATION));
-            return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));
+            // S9 final-review I3: a merge proposal's „Később” returns at the NEXT Monday sweep.
+            Instant now = Instant.now();
+            candidate.setSnoozedUntil(LearnedFactEntity.SOURCE_MERGE.equals(candidate.getSource())
+                    ? CandidateSnooze.nextMergeSweep(now)
+                    : now.plus(CandidateSnooze.DURATION));
+            return toResponse(userId, learnedFactRepository.saveAndFlush(candidate));
         }
         boolean isMerge = LearnedFactEntity.SOURCE_MERGE.equals(candidate.getSource());
         switch (decision) {

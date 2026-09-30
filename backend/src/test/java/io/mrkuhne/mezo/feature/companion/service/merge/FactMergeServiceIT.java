@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.companion.service.merge;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
+import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
 import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
@@ -12,7 +14,10 @@ import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.FactMergeLedgerRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
+import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
+import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.feature.companion.service.merge.FactMergeService.Outcome;
+import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
@@ -44,6 +49,9 @@ class FactMergeServiceIT extends AbstractIntegrationTest {
     @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
+    @Autowired private KnowledgeFactService knowledgeFactService;
+    @Autowired private FactCandidateService factCandidateService;
+    @Autowired private LearnedFactPopulator learnedFactPopulator;
 
     private KnowledgeFactEntity fact(UUID owner, String text, String source, int reinforcementCount,
                                       Instant lastReinforcedAt) {
@@ -230,5 +238,71 @@ class FactMergeServiceIT extends AbstractIntegrationTest {
         assertThat(outcome).isEqualTo(new Outcome(0, 0));
         assertThat(fakeCompanionLlm.completeCallCount()).isEqualTo(callsBefore);
         assertThat(notifications(owner)).isEmpty();
+    }
+
+    private void revive(UUID owner, UUID factId) {
+        knowledgeFactService.update(owner, factId, UpdateFactRequest.builder().includeInPrompt(true).build());
+    }
+
+    /** Final-review I1: „Visszakapcsolom” on an auto-merged loser is an undo — the next sweep must
+     *  never fold it back into the same survivor. */
+    @Test
+    void testRunFor_shouldNotRemerge_whenUserUndidOneLoserOfAnAutoMergedTriple() {
+        UUID owner = userPopulator.createUser().getId();
+        KnowledgeFactEntity a = fact(owner, "Hétvégén később kezdődik az első étkezés.", KnowledgeFactEntity.SOURCE_CHAT, 3, null);
+        KnowledgeFactEntity b = fact(owner, "hétvégén később kezdődik az első étkezés", KnowledgeFactEntity.SOURCE_CHAT, 1, null);
+        KnowledgeFactEntity c = fact(owner, "Hétvégén később kezdődik az első étkezés!", KnowledgeFactEntity.SOURCE_CHAT, 0, null);
+        assertThat(factMergeService.runFor(owner)).isEqualTo(new Outcome(1, 0));
+        assertThat(knowledgeFactRepository.findById(b.getId()).orElseThrow().getSupersededBy()).isEqualTo(a.getId());
+        assertThat(knowledgeFactRepository.findById(c.getId()).orElseThrow().getSupersededBy()).isEqualTo(a.getId());
+
+        revive(owner, b.getId());
+
+        assertThat(ledgerRepository.existsByCreatedByAndMemberKeyAndDeletedFalse(
+                owner, FactMergeLedgerEntity.keyOf(List.of(a.getId(), b.getId())))).isTrue();
+        assertThat(factMergeService.runFor(owner)).isEqualTo(new Outcome(0, 0));
+        KnowledgeFactEntity revived = knowledgeFactRepository.findById(b.getId()).orElseThrow();
+        assertThat(revived.isIncludeInPrompt()).isTrue();
+        assertThat(revived.getSupersededBy()).isNull();
+    }
+
+    /** Final-review I1: reviving a member of an ACCEPTED proposal is an undo too — it must never
+     *  be auto-merged into the fact the proposal minted. */
+    @Test
+    void testRunFor_shouldNotMergeRevivedProposalMember_intoTheMintedFact() {
+        UUID owner = userPopulator.createUser().getId();
+        KnowledgeFactEntity a = fact(owner, "Szereti a teát.", KnowledgeFactEntity.SOURCE_CHAT, 1, null);
+        KnowledgeFactEntity b = fact(owner, "Szereti a kávét.", KnowledgeFactEntity.SOURCE_CHAT, 1, null);
+        // the accepted sentence normalizes equal to A's, so the fake judge WOULD call them "same"
+        LearnedFactEntity proposal = learnedFactPopulator.mergeCandidate(
+                owner, "szereti a teát", CATEGORY, List.of(a.getId(), b.getId()));
+        UUID minted = factCandidateService.decide(owner, proposal.getId(), FactDecisionRequest.builder()
+                .decision(FactDecisionRequest.DecisionEnum.fromValue("accept")).build()).getPromotedFactId();
+        assertThat(knowledgeFactRepository.findById(a.getId()).orElseThrow().getSupersededBy()).isEqualTo(minted);
+
+        revive(owner, a.getId());
+
+        assertThat(factMergeService.runFor(owner)).isEqualTo(new Outcome(0, 0));
+        KnowledgeFactEntity revived = knowledgeFactRepository.findById(a.getId()).orElseThrow();
+        assertThat(revived.isIncludeInPrompt()).isTrue();
+        assertThat(revived.getSupersededBy()).isNull();
+    }
+
+    /** Final-review I2a: a fact riding an UNDECIDED merge proposal (snoozed ones included) stays
+     *  out of the sweep — otherwise accepting the proposal later would fold in a stale member. */
+    @Test
+    void testRunFor_shouldSkipMembersOfPendingMergeProposal_evenWhenSnoozed() {
+        UUID owner = userPopulator.createUser().getId();
+        KnowledgeFactEntity a = fact(owner, "Hétvégén később kezdődik az első étkezés.", KnowledgeFactEntity.SOURCE_CHAT, 2, null);
+        KnowledgeFactEntity b = fact(owner, "hétvégén később kezdődik az első étkezés", KnowledgeFactEntity.SOURCE_CHAT, 0, null);
+        KnowledgeFactEntity c = fact(owner, "Szereti a kávét.", KnowledgeFactEntity.SOURCE_CHAT, 1, null);
+        LearnedFactEntity proposal = learnedFactPopulator.mergeCandidate(
+                owner, "Egy korábbi javaslat", CATEGORY, List.of(a.getId(), c.getId()));
+        proposal.setSnoozedUntil(Instant.now().plus(3, ChronoUnit.DAYS));
+        learnedFactRepository.saveAndFlush(proposal);
+
+        assertThat(factMergeService.runFor(owner)).isEqualTo(new Outcome(0, 0));
+        assertThat(knowledgeFactRepository.findById(a.getId()).orElseThrow().isIncludeInPrompt()).isTrue();
+        assertThat(knowledgeFactRepository.findById(b.getId()).orElseThrow().isIncludeInPrompt()).isTrue();
     }
 }
