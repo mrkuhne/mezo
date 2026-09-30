@@ -27,6 +27,18 @@ describe('useTurnMemory (mock mode)', () => {
     await act(() => result.current.a.accept('mock-lf-self'))
     await waitFor(() => expect(result.current.m.memory.proposed[0].state).toBe('kept'))
   })
+
+  test('toggleAboutMe sets and clears a stand-in copy id in the cache (mezo-d6ivw.13)', async () => {
+    const wrapper = makeHookWrapper()
+    const anchor = { id: 'mock-turn-0', ordinal: 0, text: 'x' }
+    const { result } = renderHook(() => ({ m: useTurnMemory('c-1', anchor), a: useTurnMemoryActions('c-1', anchor) }), { wrapper })
+    await waitFor(() => expect(result.current.m.memory.learned).toHaveLength(1))
+    expect(result.current.m.memory.learned[0].aboutMeFactId).toBeNull()
+    await act(() => result.current.a.toggleAboutMe('mock-pf-dori', true))
+    await waitFor(() => expect(result.current.m.memory.learned[0].aboutMeFactId).toBe('mock-aboutme-mock-pf-dori'))
+    await act(() => result.current.a.toggleAboutMe('mock-pf-dori', false))
+    await waitFor(() => expect(result.current.m.memory.learned[0].aboutMeFactId).toBeNull())
+  })
 })
 
 describe('useTurnMemory (real mode)', () => {
@@ -140,6 +152,29 @@ describe('useTurnMemory (real mode)', () => {
       await flush(20_000)
 
       expect(result.current.m.memory.proposed).toEqual([expect.objectContaining({ id: 'lf-1', rejected: true })])
+      expect(calls).toBe(callsAfterAction)
+    })
+
+    test('toggleAboutMe → the server copy id lands in the cache, and a later poll keeps it (mezo-d6ivw.13)', async () => {
+      let calls = 0
+      server.use(
+        http.get(`${API_BASE}${TURN}`, () => {
+          calls++
+          return HttpResponse.json({ learned: [{ ...learnedWire, aboutMeFactId: null }], proposed: [], forgotten: [], forgetRequest: false })
+        }),
+        http.post(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) =>
+          HttpResponse.json({ personFactId: params.id, aboutMeFactId: 'kf-7' })),
+      )
+      const { result } = renderHook(() => ({ m: useTurnMemory('c-1', anchor), a: useTurnMemoryActions('c-1', anchor) }),
+        { wrapper: makeHookWrapper() })
+      await flush(0)
+      expect(result.current.m.memory.learned[0].aboutMeFactId).toBeNull()
+
+      await act(() => result.current.a.toggleAboutMe('pf-1', true))
+      const callsAfterAction = calls
+      await flush(20_000)
+
+      expect(result.current.m.memory.learned[0]).toEqual(expect.objectContaining({ id: 'pf-1', aboutMeFactId: 'kf-7' }))
       expect(calls).toBe(callsAfterAction)
     })
 

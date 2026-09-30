@@ -8,6 +8,8 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huMonthDay } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/data/me/goalApi'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain'
 type Guard = 'strength' | 'muscle'
@@ -411,13 +413,15 @@ function Step1({
 
         {field(
           'Identity frame · opcionális',
-          <textarea
-            value={identity}
-            onChange={e => setIdentity(e.target.value.slice(0, 200))}
-            aria-label="Identity frame"
-            placeholder='pl. "Erő megtartva — nem csak a szám."'
-            className="gp-ta"
-          />,
+          <VoiceField domain="me" onTranscript={t => setIdentity(appendDictation(identity, t, 200))}>
+            <textarea
+              value={identity}
+              onChange={e => setIdentity(e.target.value.slice(0, 200))}
+              aria-label="Identity frame"
+              placeholder='pl. "Erő megtartva — nem csak a szám."'
+              className="gp-ta"
+            />
+          </VoiceField>,
         )}
       </div>
     </div>

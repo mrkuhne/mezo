@@ -1,24 +1,24 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 
 // `useVoiceInput` talks to getUserMedia/MediaRecorder, neither of which exists under jsdom.
-// The stub exposes the transcript callback so the per-row target can be asserted directly —
-// which is the point of the extraction (the sheet used to append it to the wrong textarea).
-// `toggle` flips a real React state (via useState inside the mock, obeying rules of hooks the
-// same way the real hook does) so the recording-race regression test can observe `state`
-// actually flip to 'recording' and back, driving GratitudeRows' disabled-mic logic for real.
-const voice = vi.hoisted(() => ({ onTranscript: null as null | ((t: string) => void) }))
-vi.mock('@/features/insights/logic/useVoiceInput', () => ({
+// Every row owns its own voice field (mezo-xojq8), so the stub records WHICH hook instance was
+// toggled: `voice.active` is that row's transcript callback, and the test feeds it the text.
+const voice = vi.hoisted(() => ({ active: null as null | ((t: string) => void) }))
+vi.mock('@/shared/lib/voice/useVoiceInput', async (orig) => ({
+  ...(await orig<typeof import('@/shared/lib/voice/useVoiceInput')>()),
   useVoiceInput: (onTranscript: (t: string) => void) => {
-    voice.onTranscript = onTranscript
     const [state, setState] = useState<'idle' | 'recording'>('idle')
     return {
       state,
       error: null,
-      toggle: vi.fn(() => setState((s) => (s === 'recording' ? 'idle' : 'recording'))),
+      toggle: vi.fn(() => {
+        voice.active = onTranscript
+        setState((s) => (s === 'recording' ? 'idle' : 'recording'))
+      }),
     }
   },
 }))
@@ -88,8 +88,8 @@ describe('GratitudeRows', () => {
     render(<Harness max={3} onRows={onRows} />)
 
     await user.click(screen.getByRole('button', { name: '+ Még egy' }))
-    await user.click(screen.getAllByRole('button', { name: 'Hangbevitel' })[1])
-    voice.onTranscript!('Hívott anya')
+    await user.click(screen.getAllByRole('button', { name: 'Diktálás' })[1])
+    act(() => voice.active!('Hívott anya'))
 
     expect(onRows).toHaveBeenLastCalledWith(['', 'Hívott anya'])
   })
@@ -100,31 +100,22 @@ describe('GratitudeRows', () => {
     render(<Harness onRows={onRows} />)
 
     await user.type(screen.getByLabelText('1. hálás gondolat'), 'Reggeli kávé')
-    await user.click(screen.getByRole('button', { name: 'Hangbevitel' }))
-    voice.onTranscript!('a teraszon')
+    await user.click(screen.getByRole('button', { name: 'Diktálás' }))
+    act(() => voice.active!('a teraszon'))
 
     expect(onRows).toHaveBeenLastCalledWith(['Reggeli kávé a teraszon'])
   })
 
-  test('locks the mic to the recording row — a tap on another row cannot steal the target', async () => {
+  test('a row typed into WHILE its mic listened still gets the text appended, not overwritten', async () => {
     const user = userEvent.setup()
     const onRows = vi.fn()
     render(<Harness max={3} onRows={onRows} />)
     await user.click(screen.getByRole('button', { name: '+ Még egy' }))
 
-    // Start recording on row 1.
-    const mics = screen.getAllByRole('button', { name: 'Hangbevitel' })
-    await user.click(mics[0])
+    await user.click(screen.getAllByRole('button', { name: 'Diktálás' })[0])
+    await user.type(screen.getByLabelText('2. hálás gondolat'), 'Séta')
+    act(() => voice.active!('Hívott anya'))
 
-    // Row 2's mic must be locked out while row 1 is recording — otherwise tapping it would
-    // stop row 1's in-flight recording but reassign the target to row 2 first.
-    const rowTwoMic = screen.getAllByRole('button', { name: /Hangbevitel|Felvétel leállítása/ })[1]
-    expect(rowTwoMic).toBeDisabled()
-
-    // A tap on the disabled mic must be a no-op — the target must stay on row 1.
-    await user.click(rowTwoMic)
-    voice.onTranscript!('Hívott anya')
-
-    expect(onRows).toHaveBeenLastCalledWith(['Hívott anya', ''])
+    expect(onRows).toHaveBeenLastCalledWith(['Hívott anya', 'Séta'])
   })
 })

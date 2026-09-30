@@ -1,6 +1,5 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Icon } from '@/shared/ui/Icon'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback, useMemoryRetrievalFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
@@ -12,7 +11,8 @@ import type { ConversationResponse } from '@/data/insights/chatApi'
 import type { TurnAnchor } from '@/data/insights/turnMemoryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useStickToBottom } from '@/features/insights/logic/useStickToBottom'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { appendDictation, useVoiceInput } from '@/shared/lib/voice/useVoiceInput'
+import { MicTile } from '@/shared/ui/voice/VoiceField'
 import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
 import { cn } from '@/shared/lib/cn'
 import { autoGrow } from '@/shared/lib/autoGrow'
@@ -96,7 +96,7 @@ export function ChatPage() {
   const [draft, setDraft] = useState('')
   const draftRef = useRef<HTMLTextAreaElement>(null)
   // The transcript lands in the composer rather than being sent — the user checks it first.
-  const voice = useVoiceInput((text) => setDraft((d) => (d ? `${d} ${text}` : text)))
+  const voice = useVoiceInput((text) => setDraft((d) => appendDictation(d, text)))
   const recording = voice.state === 'recording'
   const { messages, mode } = data
   // The switch-off 404 can surface on either read; a draft thread makes no read of its own.
@@ -413,17 +413,8 @@ export function ChatPage() {
           gradient send disc. The sticky/`:has` plumbing keys off `.chat-composer`, so that
           class stays; controls honor the 44pt touch-target guardrail (prototype ~35px ×1.18). */}
       <div className="chat-composer mzc-composer glass is-still">
-        <button
-          type="button"
-          className={cn('mzc-cmic', recording && 'rec chat-mic-live')}
-          onClick={voice.toggle}
-          disabled={degraded || voice.state === 'unsupported' || voice.state === 'transcribing'}
-          aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
-          aria-pressed={recording}
-        >
-          {/* Recording keeps the line voice-wave: the 3D set has no "listening" glyph. */}
-          {recording ? <Icon name="voice-wave" size={18} /> : <Icon3D name="t-mic" size={28} />}
-        </button>
+        {/* the shared mic tile (mezo-xojq8) — same as every other field, only its place differs */}
+        <MicTile voice={voice} size="sm" disabled={degraded} className="mzc-vmic" />
         <textarea
           ref={draftRef}
           rows={1}

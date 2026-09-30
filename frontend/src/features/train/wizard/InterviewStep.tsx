@@ -16,6 +16,8 @@ import { CtaPrimary } from '@/shared/ui/Cta'
 import { Icon3D } from '@/shared/ui/clay'
 import { StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 /** The prototype's 7 round chips — short label per DAY_ORDER token. */
 const DAY_CHIPS: { day: string; short: string }[] = [
@@ -130,14 +132,16 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
           <Icon3D name="t-target" size={28} />
           <span className="mz-eyebrow mz-eb-lav mz-grow">A célod · opcionális</span>
         </div>
-        <textarea
-          rows={3}
-          maxLength={400}
-          aria-label="Mit szeretnél ebben a blokkban?"
-          placeholder="pl. röplabda szezon mellett, a vállam kímélve — de a hát és a váll nagyon jöhet"
-          value={state.goalText}
-          onChange={(e) => dispatch({ type: 'setGoalText', text: e.target.value })}
-        />
+        <VoiceField domain="train" onTranscript={(t) => dispatch({ type: 'setGoalText', text: appendDictation(state.goalText, t, 400) })}>
+          <textarea
+            rows={3}
+            maxLength={400}
+            aria-label="Mit szeretnél ebben a blokkban?"
+            placeholder="pl. röplabda szezon mellett, a vállam kímélve — de a hát és a váll nagyon jöhet"
+            value={state.goalText}
+            onChange={(e) => dispatch({ type: 'setGoalText', text: e.target.value })}
+          />
+        </VoiceField>
         <div className="mz-stepnote">
           Üresen is teljes program készül — a szöveg a gyakorlatválasztást és a napok hangolását befolyásolja.
         </div>

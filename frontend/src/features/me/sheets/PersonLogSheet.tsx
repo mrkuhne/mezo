@@ -3,6 +3,8 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon3D } from '@/shared/ui/clay'
 import { toneColor } from '@/features/me/logic/peopleVisuals'
 import type { Affect, MentionLogInput, PersonEntry } from '@/data/types'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const TONES: [Affect, string][] = [
   ['positive', 'Jó'],
@@ -85,8 +87,10 @@ export function PersonLogSheet({
           </div>
           <div className="ppl-sh-field">
             <span className="ppl-sh-lbl">Egy mondat · opcionális</span>
-            <textarea className="ppl-sh-ta" value={text} onChange={e => setText(e.target.value.slice(0, 240))}
-              placeholder='pl. "Petrával hosszú vacsi, csendben"' />
+            <VoiceField domain="me" onTranscript={t => setText(appendDictation(text, t, 240))}>
+              <textarea className="ppl-sh-ta" value={text} onChange={e => setText(e.target.value.slice(0, 240))}
+                placeholder='pl. "Petrával hosszú vacsi, csendben"' />
+            </VoiceField>
           </div>
           <div className="ppl-sh-pair">
             <button type="button" className="ppl-sh-ghost" onClick={close}>Mégse</button>

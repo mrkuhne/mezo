@@ -60,6 +60,7 @@ const ORIGIN_CHIP: Record<FactSource, string> = {
   weekly_review: 'heti áttekintésből',
   question: 'kérdésre válaszoltál',
   team_chat: 'csapatfalról',
+  person_fact: 'ismerős lapjáról',
 }
 
 export function originChipLabel(source: FactSource): string {

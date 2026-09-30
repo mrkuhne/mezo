@@ -274,14 +274,12 @@ test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async 
   // pins the row height so it cannot regress silently.
   await page.setViewportSize({ width: 393, height: 852 })
   // Fuel Titanium (mezo-qt5q): `/fuel/log` is retired — the day's blocks live on the Mai, and
-  // an unlogged block is the door into the camera-first logger. From there the Gépelés route
-  // owns the manual pickers (S1c.2, mezo-33k6) → Kamra source tile → picker.
+  // an unlogged block opens the logger. Its direct Kamra action opens the picker (mezo-qe90y).
   await page.goto('/fuel')
   await page.waitForLoadState('networkidle')
   await page.locator('.fmx-block:not(.is-done) .fmx-block-log').first().click()
   await page.waitForURL(/\/fuel\/log\/uj/)
-  await page.getByRole('tab', { name: /Gépelés/ }).click()
-  await page.getByRole('button', { name: 'Kamra · hozzáadás' }).click()
+  await page.getByRole('group', { name: 'Hozzáadás' }).getByRole('button', { name: 'Kamra' }).click()
   const rows = page.locator('.fkp-item')
   await expect(rows.first()).toBeVisible()
   const heights = await rows.evaluateAll(els => els.map(e => e.getBoundingClientRect().height))

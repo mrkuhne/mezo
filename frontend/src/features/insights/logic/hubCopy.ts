@@ -167,9 +167,11 @@ export const ORIGIN: Record<FactSource, string> = {
   weekly_review: 'A heti áttekintésből derült ki.',
   question: 'Egy kérdésre válaszoltál rá.',
   team_chat: 'A csapatfalon adott válaszodból jegyeztem meg.',
+  person_fact: 'Egy ismerősödről szóló beszélgetésből — te tetted ide a „Rólam is” gombbal.',
 }
 export const CHIP: Record<FactSource, string> = {
   pattern: 'észrevételből', chat: 'beszélgetésből', manual: 'kézzel', weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál', team_chat: 'csapatfalról',
+  person_fact: 'ismerős lapjáról',
 }
 export const OBS_ORIGIN = 'A napjaidból számoltam ki, és te erősítetted meg. Ezekből a napokból látszik:'
 export const GO_TO_OBSERVATION = 'Az észrevétel, amiből tanultam ›'

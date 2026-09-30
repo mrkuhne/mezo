@@ -47,6 +47,8 @@ import { MEDAL_TYPE_LABEL, formatMedalNumber } from '@/features/train/logic/meda
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 /** One record row of the step-one records card: the exercise, the medal type label
  *  (MEDAL_TYPE_LABEL) and the plain achieved values as chips ('105 kg', '10 ism.'). */
@@ -363,14 +365,16 @@ export function WorkoutCeremony({
             page's, and the page guarantees the save on both CTAs AND on unmount. */}
         <div className="wsum-note">
           <span className="wsum-note-q">Hogy ment?</span>
-          <textarea
-            className="wsum-note-ta"
-            maxLength={1000}
-            value={note}
-            aria-label="Hogy ment?"
-            placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…"
-            onChange={(e) => onNote(e.target.value)}
-          />
+          <VoiceField domain="train" onTranscript={(t) => onNote(appendDictation(note, t, 1000))}>
+            <textarea
+              className="wsum-note-ta"
+              maxLength={1000}
+              value={note}
+              aria-label="Hogy ment?"
+              placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…"
+              onChange={(e) => onNote(e.target.value)}
+            />
+          </VoiceField>
           <p className="wsum-note-hint">Nem kötelező — később is hozzáírhatod.</p>
         </div>
 

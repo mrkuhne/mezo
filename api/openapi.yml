@@ -6043,6 +6043,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/turn-memory/person-fact/{personFactId}/about-me':
+    post:
+      tags:
+        - Companion
+      operationId: addPersonFactAboutMe
+      summary: >-
+        „Rólam is" (mezo-d6ivw.13) — the user claims a chat person fact as their
+        own too: it is copied into the knowledge facts (source person_fact,
+        owner mezo, category life) and shows in the Tudástár Rólad section.
+        Idempotent — a second call returns the same copy.
+      parameters:
+        - name: personFactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The person fact's about-me state after the call
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutMeResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            Person fact not found, no longer active, or owned by someone else
+            (also when the people feature is off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Companion
+      operationId: removePersonFactAboutMe
+      summary: >-
+        „Rólam is" tapped again (mezo-d6ivw.13) — the copy is removed (soft
+        delete) WITHOUT a forget veto: the person fact stays on the person's
+        page and a later „Rólam is" may copy it again. Idempotent — no copy
+        means nothing to do.
+      parameters:
+        - name: personFactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The person fact's about-me state after the call (aboutMeFactId null)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutMeResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/companion/conversation/{conversationId}/forget-learned':
     get:
       tags:
@@ -9632,6 +9699,34 @@ paths:
           description: Stamped
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/notification/feed/{id}/read':
+    post:
+      tags:
+        - NotificationFeed
+      operationId: markNotificationFeedItemRead
+      summary: Mark one owned feed row read (NotificationFeed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Stamped; an already-read row is unchanged
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Row not found or belongs to another user
           content:
             application/json:
               schema:
@@ -21933,10 +22028,13 @@ components:
           type: string
           description: >-
             'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' |
-            'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2
-            extraction, 'pattern' with V3.3 promotion, 'weekly_review' with
-            mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7
-            (mezo-d6ivw.7)
+            'team_chat' | 'person_fact' — 'manual' = the user typed it in the
+            Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2),
+            'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an
+            accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever
+            question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply
+            (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user
+            claimed with „Rólam is” (mezo-d6ivw.13)
         owner:
           type: string
           enum:
@@ -22024,6 +22122,7 @@ components:
             - weekly_review
             - question
             - team_chat
+            - person_fact
         patternId:
           type: string
           format: uuid
@@ -22197,6 +22296,28 @@ components:
         createdAt:
           type: string
           format: date-time
+        aboutMeFactId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            mezo-d6ivw.13 — the live knowledge fact „Rólam is” copied this
+            person fact into; null when the user has not claimed it (the chip
+            shows Rólam is), set when it did (Rólad is · kész).
+    AboutMeResponse:
+      type: object
+      description: mezo-d6ivw.13 — a chat person fact's „Rólam is” state.
+      required:
+        - personFactId
+      properties:
+        personFactId:
+          type: string
+          format: uuid
+        aboutMeFactId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The live knowledge-fact copy; null when there is none.
     MemoryItemResponse:
       type: object
       description: >-

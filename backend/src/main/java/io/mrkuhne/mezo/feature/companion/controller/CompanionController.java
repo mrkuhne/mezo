@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.controller;
 
 import io.mrkuhne.mezo.api.controller.CompanionApi;
+import io.mrkuhne.mezo.api.dto.AboutMeResponse;
 import io.mrkuhne.mezo.api.dto.ConversationRenameRequest;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
@@ -24,6 +25,7 @@ import io.mrkuhne.mezo.api.dto.SimilarDaysResponse;
 import io.mrkuhne.mezo.api.dto.TurnMemoryResponse;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.service.AboutMeService;
 import io.mrkuhne.mezo.feature.companion.service.ChatForgetService;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
@@ -61,6 +63,7 @@ public class CompanionController implements CompanionApi {
     private final MemoryObservatoryService memoryObservatoryService;
     private final TurnMemoryService turnMemoryService;
     private final ChatForgetService chatForgetService;
+    private final AboutMeService aboutMeService;
     private final CompanionMapper mapper;
     private final CurrentUserId currentUserId;
 
@@ -181,5 +184,17 @@ public class CompanionController implements CompanionApi {
                 .forgotten(chatForgetService.forgetAll(currentUserId.get(), conversationId, request.getTriggerMessageId())
                         .stream().map(mapper::toMemoryItemResponse).toList())
                 .build();
+    }
+
+    @Override
+    public AboutMeResponse addPersonFactAboutMe(UUID personFactId) {
+        return AboutMeResponse.builder().personFactId(personFactId)
+                .aboutMeFactId(aboutMeService.add(currentUserId.get(), personFactId)).build();
+    }
+
+    @Override
+    public AboutMeResponse removePersonFactAboutMe(UUID personFactId) {
+        aboutMeService.remove(currentUserId.get(), personFactId);
+        return AboutMeResponse.builder().personFactId(personFactId).aboutMeFactId(null).build();
     }
 }

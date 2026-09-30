@@ -5,6 +5,7 @@ export type TurnMemoryResponse = components['schemas']['TurnMemoryResponse']
 export type MemoryItemResponse = components['schemas']['MemoryItemResponse']
 export type ForgetLearnedRequest = components['schemas']['ForgetLearnedRequest']
 export type ForgetLearnedResponse = components['schemas']['ForgetLearnedResponse']
+export type AboutMeResponse = components['schemas']['AboutMeResponse']
 
 /** S8 (mezo-d6ivw.12): one memory item a chat turn produced (forget list / widen preview). */
 export interface MemoryItem {
@@ -16,8 +17,13 @@ export interface MemoryItem {
   createdAt: string
   pending: boolean
 }
-/** `undone` (client-only) = the owner tapped Visszavonom here; the backend no longer lists it. */
-export interface TurnLearned { id: string; personId: string; who: string; kind: string; text: string; undone?: boolean }
+/** `undone` (client-only) = the owner tapped Visszavonom here; the backend no longer lists it.
+ *  `aboutMeFactId` (mezo-d6ivw.13) = the live „Rólam is" copy in the owner's own facts, null when
+ *  the fact stays only on the person's page. */
+export interface TurnLearned {
+  id: string; personId: string; who: string; kind: string; text: string; aboutMeFactId: string | null
+  undone?: boolean
+}
 /** `kept` = accepted/refined, its knowledge fact still live (undo forgets that fact). Client-only
  *  marks: `rejected` = the owner tapped Ne, `undone` = Visszavonom on the kept fact. */
 export interface TurnProposed {
@@ -44,7 +50,9 @@ export const toMemoryItem = (m: MemoryItemResponse): MemoryItem => ({
 
 export function toTurnMemory(r: TurnMemoryResponse): TurnMemory {
   return {
-    learned: r.learned.map((f) => ({ id: f.id, personId: f.personId, who: f.personName, kind: f.kind, text: f.text })),
+    learned: r.learned.map((f) => ({
+      id: f.id, personId: f.personId, who: f.personName, kind: f.kind, text: f.text, aboutMeFactId: f.aboutMeFactId ?? null,
+    })),
     proposed: r.proposed.map((c) => ({
       id: c.id,
       text: c.refinedText ?? c.candidateText,
@@ -57,6 +65,8 @@ export function toTurnMemory(r: TurnMemoryResponse): TurnMemory {
 }
 
 const CONVERSATION = '/api/companion/conversation'
+const aboutMeUrl = (personFactId: string) =>
+  `/api/companion/turn-memory/person-fact/${encodeURIComponent(personFactId)}/about-me`
 
 export const turnMemoryApi = {
   get: async (conversationId: string, messageId: string) =>
@@ -69,4 +79,7 @@ export const turnMemoryApi = {
       method: 'POST',
       body: JSON.stringify({ triggerMessageId } satisfies ForgetLearnedRequest),
     })).forgotten.map(toMemoryItem),
+  /** mezo-d6ivw.13 „Rólam is": returns the copy's id (on) or null (off). */
+  setAboutMe: async (personFactId: string, on: boolean) =>
+    (await apiFetch<AboutMeResponse>(aboutMeUrl(personFactId), { method: on ? 'POST' : 'DELETE' })).aboutMeFactId ?? null,
 }

@@ -65,17 +65,20 @@ test('A4: a lap a kamerán nyit', async () => {
   expect(activeMode(container)).toMatch(/Fotó/)
 })
 
-test('ai=1 a gépelésen nyit, az AI-panel nyitva — a deep link ígérete változatlan', async () => {
+test('ai=1 a közös fotó és szöveg felületen nyit', async () => {
   const { container } = renderAt('/fuel/log/uj?ai=1')
   expect(await screen.findByLabelText('Mit ettél?')).toBeInTheDocument()
-  expect(activeMode(container)).toMatch(/Gépelés/)
+  expect(activeMode(container)).toMatch(/Fotó/)
 })
 
-test('a héjban választott fotó a composer MEGLÉVŐ fotó-ágán fut le, nem egy második hívóhelyen', async () => {
+test('fotó után előnézet látszik, és a meglévő AI-ág csak az Elemzésre indul', async () => {
   renderAt('/fuel/log/uj')
   const file = new File(['x'], 'tanyer.jpg', { type: 'image/jpeg' })
   await userEvent.upload(await screen.findByLabelText('Étel fotó · kamera'), file)
-  // A MOCK AI-piszkozat sorai a tételek közé kerülnek — a felismerés a composerben futott.
+  expect(await screen.findByAltText('A kiválasztott étel fotója')).toBeInTheDocument()
+  expect(resizeSpy).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Elemzés/ }))
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
   expect(resizeSpy).toHaveBeenCalledWith(file)
 })
@@ -87,16 +90,38 @@ test('A4: a felismerés kudarca a héj őszinte állapotát nyitja, nem hibatoas
     await screen.findByLabelText('Étel fotó · kamera'),
     new File(['x'], 'tanyer.jpg', { type: 'image/jpeg' }),
   )
+  await userEvent.click(screen.getByRole('button', { name: /Elemzés/ }))
   expect(await screen.findByText(/nem ismertem fel/i)).toBeInTheDocument()
-  // És a másik három út ott van, a kamerával együtt.
-  expect(screen.getByRole('button', { name: /Leírom szöveggel/ })).toBeInTheDocument()
+  expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Új fotót/ })).toBeInTheDocument()
 })
 
-test('A7: egy szokásos sor a nevével indít piszkozatot — kitalált makrók nélkül', async () => {
+test('sikertelen fotó után a szöveg önállóan elemezhető, és a hibaállapot megszűnik', async () => {
+  hoisted.draftFails = true
   renderAt('/fuel/log/uj')
-  await userEvent.click(await screen.findByRole('tab', { name: /Szokásosak/ }))
+  await userEvent.upload(
+    await screen.findByLabelText('Étel fotó · kamera'),
+    new File(['x'], 'tanyer.jpg', { type: 'image/jpeg' }),
+  )
+  await userEvent.click(screen.getByRole('button', { name: /Elemzés/ }))
+  expect(await screen.findByText(/nem ismertem fel/i)).toBeInTheDocument()
+  hoisted.draftFails = false
+  await userEvent.type(screen.getByLabelText('Mit ettél?'), 'csirkés wrap')
+  await userEvent.click(screen.getByRole('button', { name: /Elemzés/ }))
+  expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
+  expect(screen.queryByText(/nem ismertem fel/i)).not.toBeInTheDocument()
+  expect(resizeSpy).toHaveBeenCalledTimes(1)
+})
+
+test('A7: egy szokásos sor a szövegmezőbe kerül; elemzés csak külön koppintásra indul', async () => {
+  renderAt('/fuel/log/uj')
+  await userEvent.click(await screen.findByRole('button', { name: /Szokásosak/ }))
   const rows = screen.getAllByRole('button', { name: /logoltad/ })
+  const name = rows[0].querySelector('strong')?.textContent
   await userEvent.click(rows[0])
+  expect(screen.getByLabelText('Mit ettél?')).toHaveValue(name)
+  expect(resizeSpy).not.toHaveBeenCalled()
+  await userEvent.click(screen.getByRole('button', { name: /Elemzés/ }))
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
 })
 

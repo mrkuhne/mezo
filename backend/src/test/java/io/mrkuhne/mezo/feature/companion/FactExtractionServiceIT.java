@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
@@ -45,6 +46,7 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private AiMessagePopulator messagePopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private PersonPopulator personPopulator;
 
     private List<LearnedFactEntity> pending(UUID userId) {
         return learnedFactRepository
@@ -213,5 +215,33 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(persisted).isZero();
         assertThat(pending(userId)).isEmpty();
+    }
+
+    @Test
+    void testExtractFromTurn_shouldDropCandidateNamingAKnownPerson_whenPeopleIsOn() {
+        UUID userId = databasePopulator.populateUser("extract-person-first@test.local");
+        personPopulator.createPerson(userId, "Barbi");
+        String content = "mesélek [fake-facts:[" +
+                "{\"fact\":\"Barbival egyre közelebb kerülünk egymáshoz\",\"category\":\"life\"}," +
+                "{\"fact\":\"Szeretek reggel futni\",\"category\":\"train\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "értem");
+
+        // mezo-d6ivw.13: the person memory owns what is about a named person — no duplicate proposal
+        assertThat(persisted).isEqualTo(1);
+        assertThat(pending(userId)).extracting(LearnedFactEntity::getCandidateText)
+                .containsExactly("Szeretek reggel futni");
+    }
+
+    @Test
+    void testExtractFromTurn_shouldKeepCandidate_whenTheNamedPersonIsOnlyACandidate() {
+        UUID userId = databasePopulator.populateUser("extract-person-candidate@test.local");
+        personPopulator.createCandidate(userId, "Barbi", "még nem ismert");
+        String content = "mesélek [fake-facts:[" +
+                "{\"fact\":\"Barbival szeretek sétálni\",\"category\":\"life\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "értem");
+
+        assertThat(persisted).isEqualTo(1); // only ACTIVE persons own facts (person memory grounding)
     }
 }

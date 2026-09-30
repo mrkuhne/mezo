@@ -54,7 +54,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
    1. translucent white body tinted by --c
    2. gradient hairline frame (mask trick) in --c → white → --c
    3. long hue-tinted drop + white inset edge (Mozaik signature)
-   4. periodic light sweep (sheen)                                   */
+   4. static glass highlights (no recurring sweep)                                   */
 .glass{--c:var(--sage);position:relative;isolation:isolate;border-radius:22px;
   background:
     radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--c) 20%,transparent),transparent 60%),
@@ -391,12 +391,11 @@ svg{overflow:visible}
 @keyframes boop-brow{0%,66%{transform:translateY(0)}72%,82%{transform:translateY(-1.6px)}88%,100%{transform:translateY(0)}}
 @keyframes boop-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.018)}}
 
-/* ── Motion (one-shot rise + periodic sheen) ──── */
+/* ── Motion (one-shot rise; no recurring card sheen) ──── */
 @media (prefers-reduced-motion:no-preference){
   body:not(.still) .rise{animation:rise .7s var(--ease) both;animation-delay:calc(var(--i,0)*70ms)}
   body:not(.still) .ring-prog{animation:ring 1.1s var(--ease) both;animation-delay:calc(.15s + var(--i,0)*80ms)}
   body:not(.still) .bar b{animation:grow 1s var(--ease) both;animation-delay:calc(.25s + var(--i,0)*70ms)}
-  body:not(.still) .glass::after{animation:sheen 7s ease-in-out infinite;animation-delay:calc(1.2s + var(--i,0)*.45s)}
   body:not(.still) .gauge .icon,body:not(.still) .mhero-art .icon,body:not(.still) .shero .medal{animation:float 5s ease-in-out 1s infinite}
   body:not(.still) .shero .big{animation:glow 5s ease-in-out 1s infinite}
   body:not(.still) .fab{animation:breathe 3s ease-in-out infinite}
@@ -404,7 +403,6 @@ svg{overflow:visible}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}}
 @keyframes ring{from{stroke-dasharray:0 100}}
 @keyframes grow{from{width:0}}
-@keyframes sheen{0%,70%{opacity:0;transform:skewX(-20deg) translateX(-120%)}74%{opacity:1}92%{opacity:.9}100%{opacity:0;transform:skewX(-20deg) translateX(620%)}}
 @keyframes float{0%,100%{transform:translateY(2px) rotate(-3deg)}50%{transform:translateY(-4px) rotate(1deg)}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 6px 14px rgba(155,143,196,.28))}50%{filter:drop-shadow(0 6px 26px rgba(155,143,196,.55))}}
 @keyframes breathe{0%,100%{box-shadow:0 18px 32px -18px rgba(155,143,196,.8),inset 0 1px 0 #fff}50%{box-shadow:0 18px 40px -14px rgba(155,143,196,1),0 0 22px rgba(155,143,196,.45),inset 0 1px 0 #fff}}
@@ -1179,6 +1177,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-fuel" viewBox="0 0 100 100">
@@ -1215,6 +1214,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-nap" viewBox="0 0 100 100">
@@ -1251,6 +1251,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-mezo" viewBox="0 0 100 100">
@@ -1287,6 +1288,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
   <symbol id="boop-en" viewBox="0 0 100 100">
@@ -1323,6 +1325,7 @@ svg{overflow:visible}
           <circle cx="60.2" cy="49.3" r="1.25" fill="#FFFFFF" opacity="0.9"/>
         </g>
       </g>
+      <path class="boop-nose" d="M47.8 55.4 Q50 54.8 52.2 55.4 Q52.8 55.6 52.2 56.5 L50.8 58.6 Q50 59.5 49.2 58.6 L47.8 56.5 Q47.2 55.6 47.8 55.4Z" fill="#241D1B" transform="translate(10 11.5) scale(.8)"/>
     </g>
   </symbol>
 </svg>
@@ -3286,11 +3289,6 @@ svg{overflow:visible}
 .whynote{display:flex;gap:9px;align-items:flex-start;margin-top:12px;padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);font-size:12.5px;line-height:1.45;color:var(--sub)}
 .whynote .icon{width:22px;height:22px;flex:0 0 auto;filter:none}
 .whynote b{color:var(--ink);font-weight:600}
-.inpmic{display:flex;gap:8px;align-items:stretch}
-.inpmic textarea{flex:1;min-height:64px;resize:none}
-.inpmic textarea::placeholder{color:var(--faint)}
-.micb{width:46px;border-radius:13px;display:grid;place-items:center;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
-.micb .icon{width:26px;height:26px;filter:none}
 .skwhen{font-size:11.5px;line-height:1.45;color:var(--faint);text-align:center;margin-top:10px;padding:0 24px}
 
 /* ── Kímélő mód S2 (mezo-q4xt2.2) ───────────────────────── */
@@ -3412,6 +3410,190 @@ svg{overflow:visible}
   </aside>
 </div>
 
+<!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
+   Every free-text field in the app wears the same mic tile to the right of the text, and
+   every mic shows the same bubble: listening → thinking → done (or sad). The bubble is the
+   owner-approved one from hang-boop.html. */
+.vfield{display:flex;gap:8px;align-items:stretch}
+.vfield>.inp{flex:1;min-width:0;margin:0}
+.vfield>.inp.ta{min-height:64px}
+.vfield>textarea.inp{resize:none;min-height:64px}
+.vfield>textarea.inp[rows="1"]{min-height:0}
+.vfield>textarea.inp::placeholder{color:var(--faint)}
+.vfield .inp mark{background:color-mix(in srgb,var(--c,var(--lav)) 26%,transparent);color:inherit;border-radius:4px;padding:0 2px;transition:background 1.6s ease}
+.vfield .inp mark.faded{background:transparent}
+.vmic{flex:none;width:46px;min-height:46px;border:0;border-radius:13px;display:grid;place-items:center;cursor:pointer;color:inherit;
+  background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair);transition:box-shadow .2s,background .2s}
+.vmic .icon{width:26px;height:26px;filter:none}
+.vmic:hover{background:rgba(245,239,230,.09)}
+.vmic:focus-visible{outline:2px solid var(--c,var(--lav));outline-offset:2px}
+.vmic.is-live{background:color-mix(in srgb,var(--c,var(--lav)) 14%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--lav)) 70%,transparent),0 0 14px -4px var(--c,var(--lav))}
+.vmic:disabled{opacity:.45;cursor:default}
+.vfilled{color:var(--ink)!important}
+.vmic.sm{width:36px;min-height:36px;border-radius:11px}.vmic.sm .icon{width:20px;height:20px}
+
+.vbub-slot{position:absolute;left:14px;right:14px;bottom:96px;z-index:55;pointer-events:none}
+.vbub{--lvl:0;pointer-events:auto;width:100%;display:grid;grid-template-columns:76px minmax(0,1fr) 36px;align-items:center;gap:12px;
+  padding:12px 12px 12px 10px;border:0;text-align:left;color:var(--ink);cursor:pointer;border-radius:28px;
+  transform:translateY(24px) scale(.96);opacity:0;transition:transform .45s cubic-bezier(.2,.78,.24,1),opacity .3s}
+.vbub[hidden]{display:none}
+.vbub.show{transform:none;opacity:1}
+.vbub.leave{transform:translateY(18px) scale(.97);opacity:0;transition-duration:.35s,.35s}
+.vbub .stage{position:relative;width:76px;height:76px;display:grid;place-items:center}
+.vbub .ring{position:absolute;inset:4px;border-radius:50%}
+.vbub .ring svg{width:100%;height:100%;overflow:visible}
+.vbub .halo{position:absolute;inset:-4px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--c) 42%,transparent) 0%,transparent 68%);
+  transform:scale(calc(.72 + var(--lvl) * .5));opacity:calc(.35 + var(--lvl) * .65);transition:transform .08s linear,opacity .08s linear}
+.vbub svg.boop{width:56px;height:56px;position:relative;overflow:visible}
+.vbub .boop .boop-eye,.vbub .boop .boop-pupil,.vbub .boop .boop-brow,.vbub .boop .boop-body{transform-box:fill-box}
+.vbub .boop .boop-eye,.vbub .boop .boop-pupil,.vbub .boop .boop-brow{transform-origin:center}
+.vbub .boop .boop-body{transform-origin:50% 96%}
+.vbub .boop .boop-ear{transform-box:fill-box;transform-origin:50% 100%;transition:transform .25s}
+.vbub .boop .boop-brow,.vbub .boop .boop-pupil{transition:transform .35s cubic-bezier(.2,.78,.24,1)}
+.vbub .copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.vbub .k{font-size:10px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.vbub .m{font-size:15px;font-weight:500;letter-spacing:-.2px}
+.vbub .h{font-size:12px;color:var(--mute,var(--faint))}
+.vbub .x{width:36px;height:36px;border-radius:50%;border:0;box-shadow:inset 0 0 0 1px var(--hair);background:rgba(245,239,230,.05);color:var(--ink);
+  display:grid;place-items:center;cursor:pointer;font:400 18px/1 inherit}
+.vbub .x[hidden]{display:none}
+.vbub .bars{display:flex;gap:3px;align-items:center;height:14px;margin-top:2px}
+.vbub .bars i{width:3px;height:3px;border-radius:2px;background:var(--c);box-shadow:0 0 6px color-mix(in srgb,var(--c) 60%,transparent);transition:height .08s linear}
+.vbub .track{stroke:rgba(245,239,230,.07);transition:stroke .2s}
+.vbub .arc{stroke:var(--c);stroke-linecap:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 55%,transparent));opacity:0;transition:opacity .3s}
+.vbub[data-s="listening"] .track{stroke:color-mix(in srgb,var(--c) 55%,transparent);stroke-width:calc(1.5px + var(--lvl) * 3px)}
+.vbub[data-s="thinking"] .arc,.vbub[data-s="done"] .arc{opacity:1}
+.vbub[data-s="done"] .arc{stroke-dasharray:190 0}
+.vbub[data-s="thinking"] .halo{transform:scale(.85);opacity:.55}
+.vbub[data-s="thinking"] .bars,.vbub[data-s="done"] .bars,.vbub[data-s="sad"] .bars{display:none}
+.vbub[data-s="thinking"] .boop .boop-pupil{transform:translate(2.5px,-3px)}
+.vbub[data-s="thinking"] .boop .boop-brow-l{transform:translateY(-2px) rotate(-6deg)}
+.vbub[data-s="thinking"] .boop .boop-brow-r{transform:translateY(-2.6px) rotate(8deg)}
+.vbub[data-s="sad"]{--c:#B8584A}
+.vbub[data-s="sad"] .halo{opacity:.25;transform:scale(.8)}
+.vbub[data-s="sad"] .boop .boop-brow-l{transform:translateY(1px) rotate(14deg)}
+.vbub[data-s="sad"] .boop .boop-brow-r{transform:translateY(1px) rotate(-14deg)}
+.vbub[data-s="sad"] .boop .boop-pupil{transform:translateY(2.4px)}
+.vbub .dots{display:inline-flex;gap:2px;margin-left:2px}.vbub .dots i{font-style:normal}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .vbub .boop .boop-eye{animation:boop-blink 6s infinite}
+  body:not(.still) .vbub[data-s="listening"] .boop .boop-body{transform:translateY(calc(var(--lvl) * -2.5px)) scale(calc(1 + var(--lvl) * .05));transition:transform .08s linear}
+  body:not(.still) .vbub[data-s="listening"] .boop .boop-ear{transform:rotate(calc(var(--lvl) * 10deg))}
+  body:not(.still) .vbub[data-s="thinking"] .arc{animation:vbspin 1.3s linear infinite;transform-origin:50% 50%;transform-box:fill-box}
+  body:not(.still) .vbub[data-s="thinking"] .boop .boop-body{animation:vbponder 1.6s ease-in-out infinite}
+  body:not(.still) .vbub[data-s="done"] svg.boop{animation:vbhop .55s cubic-bezier(.3,.7,.3,1.4) both}
+  body:not(.still) .vbub[data-s="sad"] .boop .boop-body{animation:vbdroop .5s ease-out both}
+  body:not(.still) .vbub .dots i{animation:vbdot 1.2s infinite}
+  body:not(.still) .vbub .dots i:nth-child(2){animation-delay:.15s}
+  body:not(.still) .vbub .dots i:nth-child(3){animation-delay:.3s}
+}
+@media (prefers-reduced-motion:reduce){.vbub,.vbub *{transition:none!important;animation:none!important}}
+body.still .vbub,body.still .vbub *{transition:none!important;animation:none!important}
+@keyframes vbspin{to{transform:rotate(360deg)}}
+@keyframes vbponder{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes vbhop{0%{transform:translateY(0) scale(1)}40%{transform:translateY(-10px) scale(1.06,.96)}70%{transform:translateY(0) scale(1.04,.95)}100%{transform:translateY(0) scale(1)}}
+@keyframes vbdroop{to{transform:translateY(2px) scale(1,.97)}}
+@keyframes vbdot{0%,60%,100%{opacity:.25}30%{opacity:1}}
+</style>
+<script>window.HANG_DOMAIN='train';</script>
+<script>
+/* Hang-kit. Markup helper for the pages:  VF(placeholder, sayText, {sm, id, value})
+   → one text field with the mic tile. Any other button with [data-vmic] (the chat composer's
+   mic, a labelled "Hang" chip) uses the same bubble; data-vtarget="<css selector>" names the
+   field it writes into, data-say the sentence the fake voice "says".
+   The page sets window.HANG_DOMAIN (nap|train|fuel|mezo|en) to pick the living Boop. */
+(()=>{
+'use strict';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+window.VF=(ph,say,o={})=>`<div class="vfield"><textarea class="inp"${o.id?` id="${o.id}"`:''} rows="${o.rows||2}" placeholder="${esc(ph)}">${o.value?esc(o.value):''}</textarea><button type="button" class="vmic${o.sm?' sm':''}" data-vmic data-say="${esc(say||'')}" aria-label="Diktálás" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#t-mic"/></svg></button></div>`;
+
+let bub,slot,state='idle',raf=0,timers=[],btn=null,target=null,say='',failNext=false;
+const later=(f,ms)=>timers.push(setTimeout(f,ms));
+const clear=()=>{timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf)};
+const q=s=>bub.querySelector(s);
+function build(){
+  const host=document.getElementById('phone')||document.body;
+  slot=document.createElement('div');slot.className='vbub-slot';
+  slot.innerHTML=`<div class="glass vbub" role="button" tabindex="-1" aria-live="polite" hidden data-s="listening">
+    <div class="stage"><div class="halo"></div><div class="ring"><svg viewBox="0 0 68 68"><circle class="track" cx="34" cy="34" r="30" fill="none" stroke-width="2"/><circle class="arc" cx="34" cy="34" r="30" fill="none" stroke-width="3" stroke-dasharray="46 144"/></svg></div><svg class="boop" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+    <div class="copy"><span class="k"></span><span class="m"></span><span class="h"></span><span class="bars">${'<i></i>'.repeat(12)}</span></div>
+    <button type="button" class="x" aria-label="Mégse, eldobom a felvételt">✕</button></div>`;
+  host.appendChild(slot);bub=slot.firstElementChild;
+  bub.addEventListener('click',e=>{if(e.target.closest('.x')){cancel();return}if(state==='listening')stop()});
+  bub.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&state==='listening'&&e.target===bub){e.preventDefault();stop()}});
+}
+function paintBoop(){
+  const d=window.HANG_DOMAIN||'nap',sym=document.getElementById('boop-'+d);
+  const svg=q('svg.boop');svg.innerHTML=sym?sym.innerHTML:'';
+}
+function accent(){
+  const from=btn||document.body;const c=getComputedStyle(from).getPropertyValue('--c').trim();
+  return c||'var(--lav)';
+}
+function copy(k,m,h){q('.k').textContent=k;q('.m').innerHTML=m;q('.h').textContent=h}
+function setBtn(){
+  if(!btn)return;const live=state==='listening';
+  btn.classList.toggle('is-live',live);btn.setAttribute('aria-pressed',live);
+  btn.disabled=state==='thinking'||state==='done';
+  btn.setAttribute('aria-label',live?'Felvétel leállítása':'Diktálás');
+  const l=btn.querySelector('[data-vlabel]');if(l)l.textContent=live?'Hallgatlak…':state==='thinking'?'Leiratozom…':(l.dataset.vlabel||'Hang');
+}
+function show(s){
+  state=s;bub.dataset.s=s;bub.hidden=false;bub.classList.remove('leave');
+  requestAnimationFrame(()=>bub.classList.add('show'));
+  q('.x').hidden=s!=='listening';bub.tabIndex=s==='listening'?0:-1;setBtn();
+}
+function hide(after){
+  bub.classList.add('leave');bub.classList.remove('show');
+  later(()=>{bub.hidden=true;bub.classList.remove('leave');state='idle';setBtn();bub.style.setProperty('--lvl',0);btn=null;after&&after()},360);
+}
+function listen(b){
+  if(!bub)build();clear();btn=b;say=b.dataset.say||'Ma kicsit fáradt vagyok, de jól esett a séta.';
+  target=b.dataset.vtarget?document.querySelector(b.dataset.vtarget):b.closest('.vfield')?.querySelector('.inp');
+  bub.style.setProperty('--c',accent());paintBoop();
+  show('listening');copy('Figyelek','Mondd nyugodtan','Koppints ide, ha végeztél');
+  const bars=[...q('.bars').children],t0=performance.now();let lvl=0;
+  const tick=t=>{const s=(t-t0)/1000,word=Math.sin(s*2.1)*Math.sin(s*.7+1)>-.15,
+    syl=Math.abs(Math.sin(s*11.3))*(.55+.45*Math.sin(s*3.7)**2),goal=s<.6?0:word?syl:.04;
+    if(gone()){cancel();return}
+    lvl+=(goal-lvl)*.28;bub.style.setProperty('--lvl',lvl.toFixed(3));
+    bars.forEach((x,i)=>{const v=Math.max(.12,lvl*(.5+.5*Math.abs(Math.sin(s*9+i*1.3))));x.style.height=(3+v*11).toFixed(1)+'px'});
+    raf=requestAnimationFrame(tick)};
+  raf=requestAnimationFrame(tick);
+}
+/* the field's sheet closed or re-rendered mid-recording: drop the clip, like the app does */
+function gone(){return target&&(!target.isConnected||(target.closest('.sheet')&&!target.closest('.sheet.on')))}
+function stop(){
+  cancelAnimationFrame(raf);bub.style.setProperty('--lvl',0);
+  show('thinking');copy('Leírom','Leírom, amit mondtál<span class="dots"><i>.</i><i>.</i><i>.</i></span>','Egy pillanat, mindjárt ott lesz');
+  if(failNext){failNext=false;later(()=>{show('sad');copy('Nem sikerült','Nem hallottam semmit','Próbáld újra, kicsit közelebbről');later(()=>hide(),3200)},1700);return}
+  later(()=>{show('done');copy('Kész','Beírtam','Nézd át, mielőtt elmented');const t=target,line=say;later(()=>hide(()=>insert(t,line)),750)},2200);
+}
+function cancel(){cancelAnimationFrame(raf);hide()}
+function insert(t,line){
+  if(!t)return;
+  if('value' in t&&t.tagName!=='BUTTON'){t.value=(t.value.trim()?t.value.trim()+' ':'')+line;t.dispatchEvent(new Event('input',{bubbles:true}));
+    t.style.transition='box-shadow 1.6s';t.style.boxShadow='inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--lav)) 70%,transparent)';setTimeout(()=>t.style.boxShadow='',900);return}
+  if(t.classList.contains('ph')){t.classList.remove('ph');t.textContent=''}
+  t.classList.add('vfilled');
+  t.querySelectorAll('mark').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));
+  if(t.textContent.trim())t.append(' ');
+  const m=document.createElement('mark');m.textContent=line;t.append(m);setTimeout(()=>m.classList.add('faded'),900);
+}
+/* capture phase: the page's own click router never sees a mic tap */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-vmic]');if(!b)return;
+  e.preventDefault();e.stopPropagation();
+  if(state==='idle')listen(b);else if(state==='listening'&&b===btn)stop();
+},true);
+/* a sheet close / route change mid-recording: drop the clip like the app does */
+window.addEventListener('hashchange',()=>{if(bub&&state==='listening')cancel()});
+window.HANG={failNext:()=>{failNext=true}};
+})();
+</script>
+<!-- hang-kit:end -->
 <script type="module">
 /* inlined for the living prototype: companion-titanium/body-geometry.js + muscle-taxonomy.js */
 // Generated by gen-body-geometry.mjs — do not hand-edit.
@@ -3603,7 +3785,7 @@ function whySheet(){
   const note=!c?'Ha megmondod, miért, a terv és az edző ehhez igazodik. Nem kötelező.':`${I(c[3]?'heart':passKey()===k?'shield':'info')}<span>${c[3]?`<b>Nem számít mulasztásnak.</b> ${CARE[c[0]]}`:passKey()===k?'<b>Ezt a heti szabadjegyed fedezi</b> — a sorozatod marad.':'<b>Ez rendes kihagyásnak számít</b> — a heti szabadjegyet már felhasználtad. Semmi gond, jövő héten új jár.'}</span>`;
   return `${capH(`KIHAGYVA · ${SKT[k][0].toUpperCase()}`,'Miért marad ki?','Nem kötelező — segít, hogy a terv hozzád igazodjon.',I('skip'))}
     <div class="whyg">${CATS.map(([id,ic,l])=>`<button class="whyc ${cur.cat===id?'on':''}" data-why="${id}">${I(ic)}<span>${l}</span></button>`).join('')}</div>
-    ${cur.cat==='OTHER'?`<div class="field section"><span>MI TÖRTÉNT? · SAJÁT SZAVAKKAL</span><div class="inpmic"><textarea id="whytext" class="inp" placeholder="pl. családi program jött közbe">${cur.text||''}</textarea><button class="micb" aria-label="Diktálás" data-toast="Diktálás — ugyanúgy, mint a check-inben">${I('mic')}</button></div></div>`:''}
+    ${cur.cat==='OTHER'?`<div class="field section"><span>MI TÖRTÉNT? · SAJÁT SZAVAKKAL</span>${VF('pl. családi program jött közbe','Családi program jött közbe, nem értem oda.',{id:'whytext',value:cur.text||''})}</div>`:''}
     ${c&&c[3]?`<div class="kmdur"><span class="eb">MEDDIG TARTHAT?</span><div class="kmdc">${KDUR.map((l,i)=>`<button class="${kmHere&&KM.dur===i?'on':''}" data-kmdur="${i}">${l}</button>`).join('')}</div></div>`:''}
     ${kmHere?`<div class="whynote kmon">${I('kimelo')}<span><b>Kímélő mód bekapcsolva</b> · amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.</span></div>`:`<div class="whynote">${c?note:`${I('info')}<span>${note}</span>`}</div>`}
     <div class="two2 section"><button class="btn flatb" data-whydone="0">Most nem mondom</button><button class="primary" style="--c:var(--lav)" data-whydone="1" ${c?'':'disabled'}>${I('tick')}Kész</button></div>`;
@@ -4705,7 +4887,7 @@ function cer(v){
     <button class="kcalh rise" style="--i:1" data-toast="Fuel · Mai (a mozgás hozzáadja a keretedhez)"><span class="line">${I('bowl')}<b>+${hu(CER.kcal)}<small>kcal</small></b></span><p>Ennyit nyertél a mai mozgással</p><span class="cnote" style="display:block;margin-top:4px">Becslés, nem mérés</span><i class="go">›</i></button>
     ${eyeb('A MAI EDZÉSEN','Izomcsoportok fejlődése')}
     <article class="cmus glass rise" style="--i:2">${CER.mus.map(([k,l,d,p],i)=>`<div class="r" style="--c:${muscleColor(k)}">${mchp(k)}<span><strong>${l}</strong><small>${d} / ${p} szett</small></span>${mini(d/p)}${bar(d/p*100,muscleColor(k),i)}</div>`).join('')}</article>
-    <label class="cnoteb rise"><span>Hogy ment?</span><span class="inp ph ta">Pl. rosszul aludtam, de a húzódzkodás jól ment…</span><small>Nem kötelező — később is hozzáírhatod.</small></label>
+    <div class="cnoteb rise"><span>Hogy ment?</span>${VF('Pl. rosszul aludtam, de a húzódzkodás jól ment…','Rosszul aludtam, de a húzódzkodás meglepően jól ment.')}<small>Nem kötelező — később is hozzáírhatod.</small></div>
     <div class="cfoot" style="opacity:1"><button class="ccta sage glass lift" data-go="#mai">${I('tick')}<span><strong>Vissza a mai napra</strong><small>Az edzés lezárva és elmentve</small></span><em>›</em></button>
     <button class="btn flatb" style="margin-top:8px" data-go="#cer">Vissza az értékeléshez</button></div>
     <p class="p-note">A csillagok a tervezett szettből, ismétlésből és súlyból számolnak, nem AI-értékelés.</p>`;
@@ -4798,18 +4980,18 @@ const SH={
     ${[['Pump · érzed?',['Semmi','Enyhe','Jó','Brutális'],2],['Joint pain',['Nincs','Enyhe','Erős'],0],['Akarunk még?',['Kevés volt','Pont jó','Sok volt'],1]].map(([q,o,s])=>`<div class="choice section"><span>${q}</span><div>${o.map((x,i)=>`<button class="flat ${i===s?'on':''}" style="--c:var(--coral)">${x}</button>`).join('')}</div></div>`).join('')}
     <div class="two2 section"><button class="btn flatb" data-closesheet>Hagyjuk</button><button class="primary" style="--c:var(--coral)" data-rest>Mentés · tovább</button></div>`],
   extra:['var(--coral)',()=>`${capH('EXTRA SZETT HOZZÁADVA','A tervbe is felvegyük?','Chest Supported Row · most 5 szett',I('weight'))}<div class="pair" style="padding:0"><button class="btn flatb" data-save>Minden hétre</button><button class="primary" style="--c:var(--coral)" data-save>Csak ma</button></div>`],
-  note:['var(--lav)',()=>`${capH('GYAKORLAT-JEGYZET','Jegyzet a gyakorlathoz','Chest Supported Row',I('note'))}<span class="inp ph ta">Forma-emlékeztető, beállítás, fájdalom-jelzés…</span>${two('var(--lav)','Mentés')}`],
-  wnote:['var(--lav)',()=>`${capH('EDZÉS-JEGYZET','Hogy ment?','Nem kötelező — később is hozzáírhatod.',I('note'))}<span class="inp ta">Ma a váll végig nyugton volt, a sorok tiszták…</span>${two('var(--lav)','Mentés')}`],
+  note:['var(--lav)',()=>`${capH('GYAKORLAT-JEGYZET','Jegyzet a gyakorlathoz','Chest Supported Row',I('note'))}${VF('Forma-emlékeztető, beállítás, fájdalom-jelzés…','A pad a harmadik fokon, a könyök végig zárva maradjon.')}${two('var(--lav)','Mentés')}`],
+  wnote:['var(--lav)',()=>`${capH('EDZÉS-JEGYZET','Hogy ment?','Nem kötelező — később is hozzáírhatod.',I('note'))}${VF('Hogy ment? Pl. rosszul aludtam, de…','Ma a váll végig nyugton volt, a sorok tiszták.',{value:'Ma a váll végig nyugton volt, a sorok tiszták…'})}${two('var(--lav)','Mentés')}`],
   custom:['var(--coral)',()=>`${capH('SAJÁT EDZÉS','Mit nyomunk ma?','',I('dumbbell'))}<p class="lead" style="padding:0">Az egyedi edzés összerakása a 5. szeletben kap üveget — itt csak a belépő látszik.</p>`],
   sportlog:['var(--rose)',()=>`${capH('SPORT LOG · RÖPI','Hogy ment?','Az idő, a terhelés és a saját élményed.',I('volley'))}
     <div class="two st2"><div class="stepper2"><span>Idő · perc</span><div class="stepper"><button>−</button><b>90</b><button>+</button></div></div><div class="stepper2"><span>Setek · összesen</span><div class="stepper"><button>−</button><b>5</b><button>+</button></div></div></div>
     <div class="field section"><span>RPE · ÖSSZESÍTETT NEHÉZSÉG</span>${scale(7,'var(--coral)')}</div><div class="field section"><span>VÁLL TERHELÉS</span>${scale(6,'var(--gold)')}</div>
-    <label class="field section"><span>JEGYZET</span><span class="inp ph ta">Hogy érezted magad, mi ment jól, mi fájt…</span></label>${two('var(--rose)','Mentés')}`],
+    <div class="field section"><span>JEGYZET</span>${VF('Hogy érezted magad, mi ment jól, mi fájt…','Jól ment a nyitás, a harmadik szettben kicsit húzott a váll.')}</div>${two('var(--rose)','Mentés')}`],
   runlog:['var(--sky)',()=>`${capH('FUTÁS LOG · SPRINT-INTERVALLUM','Hogy ment?','',I('run'))}
     <div class="stepper2"><span>Teljesített körök</span><div class="stepper"><button>−</button><b>6</b><button>+</button></div></div>
     <div class="field section"><span>RPE · ÉRZÉKELT NEHÉZSÉG</span>${scale(9,'var(--coral)')}</div>
     <div class="stepper2 section"><span>Pulzus-megnyugvás · mp</span><div class="stepper"><button>−</button><b>42</b><button>+</button></div></div>
-    <label class="field section"><span>JEGYZET</span><span class="inp ph ta">opcionális</span></label>${two('var(--sky)','Mentés')}`],
+    <div class="field section"><span>JEGYZET</span>${VF('opcionális','Az utolsó két kör nehéz volt, de tartottam az iramot.')}</div>${two('var(--sky)','Mentés')}`],
   pick:['var(--sky)',()=>{const sw=PICK.mode==='swap',o=EX[PICK.g];return `${capH(sw?`CSERE · ${o.n.toUpperCase()}`:'GYAKORLAT HOZZÁADÁSA',sw?'Mire cseréled?':'Mit adunk hozzá?',sw?muscleLabel(o.k):'Pull Day · a lista végére kerül',sw?mchp(o.k,'lg'):I('addex'))}
     <label class="pk-q"><span class="sr">Keresés</span><input id="pk-q" class="inp" type="search" placeholder="Keresés név szerint…" value="${PICK.q}" autocomplete="off"></label>
     <div id="pk-body">${pickBody()}</div>`}],
@@ -4827,7 +5009,7 @@ const SH={
     <div class="section"><span class="eb">HOGY ÉREZTED MAGAD BENNE?</span>
       <div class="chips" style="padding:8px 0 0">${['Nagyon jól','Jól','Vegyesen','Nehezen'].map((n,i)=>`<span class="flat ${i===1?'on':''}" style="--c:var(--gold)">${n}</span>`).join('')}</div></div>
     <div class="section"><span class="eb">JEGYZET (NEM KÖTELEZŐ)</span>
-      <div class="cell" style="margin-top:8px;color:var(--faint);font-size:13px">Mit vinnél tovább a következőbe?</div></div>
+      <div style="margin-top:8px">${VF('Mit vinnél tovább a következőbe?','A heti öt nap sok volt, a következőben négy napot szeretnék.')}</div></div>
     <div class="pair" style="padding:14px 0 0"><button class="pillx pghost" data-closesheet>Mégsem</button>
       <button class="pillx" style="--c:var(--gold)" data-go="#riport">${I('scroll')}Lezárás</button></div>`],
   start:['var(--sage)',()=>`<div class="shh">${I('play')}<div class="grow"><span class="eb">FUTAM INDÍTÁSA</span><h3>Hypertrophy 04 · Tavasz</h3></div>

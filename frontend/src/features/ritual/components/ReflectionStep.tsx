@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import { useCheckins, useGratitudeActions, useGratitudeEntries, useRitualActions, useRitualDay } from '@/data/hooks'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
-import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
-import { Icon } from '@/shared/ui/Icon'
 import { Icon3D } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 /**
  * Napzárás act 3 — „Ma milyen volt" (Phase 5 W1.2, mezo-b3pp.2, spec §5.2). The one act that
@@ -55,9 +53,6 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
   // The prose as it stood when the act opened, normalised the same way the comparison below is
   // (and the same way the server stores it) so a whitespace-only difference is never a "change".
   const [seed] = useState(() => (data.reflectionText ?? '').trim())
-  // Same append-to-what's-typed idiom as JournalSheet/ChatPage's composer (useVoiceInput.ts).
-  const voice = useVoiceInput((t) => setText((d) => (d ? `${d} ${t}` : t)))
-  const recording = voice.state === 'recording'
   // Check-in 2.0 (mezo-ck2, spec §3.10): the evening check-in already asked „Milyen volt a napod
   // összességében?" — show that verdict read-only, so this act asks only for the words.
   const { checkins } = useCheckins()
@@ -107,25 +102,17 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
         </div>
       )}
       <div className="rz-reflect-box glass">
-        <textarea
-          className="rz-reflect-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          aria-label="Milyen volt a napod valójában?"
-          placeholder="Írd le, ahogy volt — senki más nem olvassa…"
-        />
-        <button
-          type="button"
-          className={cn('chip', 'rz-reflect-mic', recording && 'chat-mic-live')}
-          onClick={voice.toggle}
-          disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
-          aria-label={recording ? 'Felvétel leállítása' : 'Hangbevitel'}
-          aria-pressed={recording}
-        >
-          {recording ? <Icon name="voice-wave" size={14} /> : <Icon3D name="t-mic" size={20} />}
-        </button>
+        {/* the shared voice field (mezo-xojq8): dictation appends to what's typed */}
+        <VoiceField domain="nap" onTranscript={(t) => setText((d) => appendDictation(d, t))}>
+          <textarea
+            className="rz-reflect-input"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            aria-label="Milyen volt a napod valójában?"
+            placeholder="Írd le, ahogy volt — senki más nem olvassa…"
+          />
+        </VoiceField>
       </div>
-      <VoiceBubble voice={voice} domain="nap" />
       {!savedPending && (
         <div className="rz-reflect-gratitude glass">
           <div className="rz-story-eyebrow">Amiért hálás vagy</div>

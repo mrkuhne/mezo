@@ -17,10 +17,12 @@ const KIND_LABEL: Record<FeedPostKind, string> = {
   bemutatkozas: 'bemutatkozás',
 }
 
-/** Óra:perc, ha a rekord időpontot is hordoz — a napot a nap-elválasztó mondja. */
+/** Helyi óra:perc, ha a rekord időpontot is hordoz — a napot a nap-elválasztó mondja. */
 function clock(iso: string): string | null {
-  const m = /T(\d{2}):(\d{2})/.exec(iso)
-  return m ? `${m[1]}:${m[2]}` : null
+  if (!iso.includes('T')) return null
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return null
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
 export function postMeta(post: FeedPost): string {

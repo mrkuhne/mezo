@@ -416,9 +416,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   (`DATA`/`REPLY`/`EXCUSED`, max 8 chars) and `closeNote` (max 60 chars, truncated); a clear from
   data still writes the `RESOLVE` line as before, but a reply-close writes no separate line kind —
   the `KIND_REPLY` line answers, and `closeReason`/`closeNote`/`closedAt` are set directly on the
-  thread row (`TeamChatReplyService.close`). `open(userId, flagKey, at)` no-ops when the flag has no owner (`all_healthy`), an ügy for that
-  flag is already `OPEN`, the day's line cap is reached (below — the thread itself is never
-  created in that case, not just its line), or `InterventionService.pick` finds no eligible
+  thread row (`TeamChatReplyService.close`). `open(userId, flagKey, at)` no-ops when the flag has no
+  owner (`all_healthy`), an ügy for that flag is already `OPEN`, the supplied time is inside quiet
+  hours, the day's line cap is reached (below — the thread itself is never created in that case,
+  not just its line), or `InterventionService.pick` finds no eligible
   library entry; otherwise it persists the thread (`ownerCharacter`, `guestCharacter`,
   `adviceKey`, the offered `actions[]` from `AdviceActionCatalog`) and writes the `OPEN` line (+
   optional `GUEST`/`SKEPTIC` lines, below). `resolve(userId, flagKey, evidence, at)` flips the one
@@ -437,7 +438,8 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   ügy. A separate `GUEST` map seeds cross-talk on 6 of those flags (e.g. `late_eating` →
   guest Szunya, `momentum_at_risk` → guest Mocor) — the same "a second character reacts" idea as
   the esti kiadás's own guest lines, but keyed by flag rather than by candidate shape.
-- **Events:** the existing `FlagRaisedEvent` opens an ügy; the new `FlagClearedEvent`
+- **Events:** the existing `FlagRaisedEvent` opens an ügy outside quiet hours; a raise during
+  22:00–07:00 is persisted but its ügy waits until 07:00. The `FlagClearedEvent`
   (`userId, flagKey, ClearEvidence, at` — published by `FlagTraceWriter` inside the same
   transaction as the trace row, whenever a rule's trace transitions TO `clear`, from any previous
   state) resolves one. `TeamChatEventListener` wires both — `AFTER_COMMIT` + `@Async`, the
@@ -467,15 +469,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   re-reads today's pushed ügyek and only then applies the policy — parallel raises from one
   evaluation can never both read "nothing pushed yet" (pinned by
   `TeamChatServiceIT.parallelOpens_neverExceedThePushPolicy`, which fails without the lock), and
-  a push can never outlive a rolled-back ügy. Before the budget it applies two gates: a library
-  entry with `channel: feed` never pushes (`AdvicePick.pushAllowed()`), and an open in the
-  EVENING part of `mezo.notification.quiet-hours` (22:00→midnight of the default 22:00–07:00
-  window, spec D3) stays silent without consuming the day's budget — unless the entry is
-  `quietHoursExempt`, whose push carries the `:quiet-exempt` dedup-key suffix
-  (`AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX`) so the feed-anchored push path lets it ring.
-  An after-midnight open inside the window still pushes (counts against that local day); its ring
-  is deferred to max(wake, quiet end) by `AnchorResolver.feedFireMinute`
-  ([_platform-notifications.md](_platform-notifications.md) §3b).
+  a push can never outlive a rolled-back ügy. Before the budget, a library entry with
+  `channel: feed` never pushes (`AdvicePick.pushAllowed()`). An overnight raise is not opened or
+  pushed until `mezo.notification.quiet-hours` ends; a still-raised flag is opened
+  with the morning publication timestamp and then follows the ordinary daily push budget.
 - **Budget & safety caps (`TeamChatProperties`, `mezo.character.team-chat.*`):**
   `zone: Europe/Budapest` (the day boundary for the line cap and the push budget);
   `expire-after-days: 7`; `daily-line-cap: 12` (character lines of any kind per user per local
@@ -485,7 +482,8 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   every `TeamChatVoiceWriter` call, independent of `CharacterCouncilBudget`; `team_chat` sits on
   the `throttled-features` list, [application.yml](../../backend/src/main/resources/application.yml)) —
   over the cap every line falls back to the honest template text (`voiced=false`); `expiry-cron`
-  (`"0 10 4 * * *"`, 04:10 daily) and `catchup-cron` (`"0 20 * * * *"`, hourly at :20).
+  (`"0 10 4 * * *"`, 04:10 daily), `catchup-cron` (`"0 20 * * * *"`, hourly at :20), and
+  `morning-release-cron` (`"0 0 7 * * *"`, 07:00 daily).
 - **Voice (`TeamChatVoiceWriter`, spec §5.3–5.4):** ONE guarded LLM call per `OPEN`/`RESOLVE`
   event writes the owner's line, the guest's line and — only on an `OPEN` whose raise's own frozen
   payload shows a genuine coverage gap (`skepticGap`: under-logged nights for `sleep_debt`,
@@ -504,12 +502,18 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   another's): `catchUpMissedOpens` re-walks every `CompanionFlagLogEntity` raise in the last 2 h
   (`CATCH_UP_LOOKBACK_HOURS` — the sweep is hourly, so 2 h covers one missed run; the original
   24 h would have re-opened, on the first run after the deploy, every pre-deploy raise that
-  already got the retired advice card) with no thread opened at/after it, and opens one with
-  `allowPush=false` (the moment for paging the user already passed); `catchUpMissedResolves`
+  already got the retired advice card) with no thread opened at/after it, and opens daytime raises
+  with `allowPush=false` (the moment for paging the user already passed); overnight raises wait for
+  the morning release described below. `catchUpMissedResolves`
   resolves every still-`OPEN` thread whose flag's latest trace row is a `clear`, backdated to that
   row's own `occurredAt` (so the chip reads when the flag actually cleared, not when the sweep
   happened to notice) — but never before the ügy's own `openedAt` (a stale clear older than the
   raise that opened it). Idempotent — a second run changes nothing.
+  `TeamChatExpiryJob.runMorningRelease` runs at 07:00. Both it and the hourly catch-up re-read
+  the preceding night's persisted raises and publish only flags whose latest trace is still raised.
+  A morning publication opens at its actual publication time and may push then;
+  the repeated scan skips any raise already represented by a thread. This recovers a missed 07:00
+  run after an application restart. A flag cleared before morning produces no ügy.
 - **Knowledge seam (`TeamChatKnowledgePort.forArea(owner, area)`):** background sentences for the
   voice's context block — Character owns *when/where* a line speaks, Emlékezet owns *what it
   knows*. Since S7 (`mezo-d6ivw.7`) `TeamChatKnowledgeAdapter` replaces the earlier
@@ -549,7 +553,9 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `normalizedTag`, `factText`, `keywords`, `active=true`, linked to the source thread/line), writes
     a `knowledge_fact` (`source=team_chat`, `owner`=the character key, `provenance` = a structured
     team-chat envelope carrying the line/thread id, `createdBy`=the user —
-    `KnowledgeFactService.captureFromTeamChat`), and records one `team_chat_exception_hit`
+    `KnowledgeFactService.captureFromTeamChat`; the `ck_knowledge_fact_source` CHECK it needs was last
+    re-cut by `202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql`, which keeps `team_chat`
+    and adds the chat's „Rólam is" `person_fact` source), and records one `team_chat_exception_hit`
     (`source=REPLY`). An **inactive** exception on the same tag is a durable veto — undone once via
     `.../remembered` (below), it is never re-captured, and a later reply on that tag always answers
     `ANSWER_ONLY`. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's
@@ -1256,6 +1262,11 @@ cross-domain flakiness, not a character regression — bd `mezo-oou9`; rerun onc
 investigating.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Team chat catch-up test clock:** `TeamChatServiceIT.catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear`
+  opens its setup thread at a fixed daytime hour. Backdating from `Instant.now()` can land inside
+  configured quiet hours (22:00–07:00), where `TeamChatService.open` correctly returns empty and
+  makes the test depend on when CI runs.
 
 - **Detector catalog is narrower than spec §5's v1 wishlist, but rounds 1–3 closed the
   physiological, Edzés-side, fuel/cycle, and psziché/viselkedés-meta cross-domain gaps** (S7

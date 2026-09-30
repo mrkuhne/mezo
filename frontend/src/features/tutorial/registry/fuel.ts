@@ -92,11 +92,11 @@ export const FUEL_KALAUZ: KalauzEntry[] = [
         ...fogalom('ablak'),
       },
       {
-        // A horgony a négy fül sávja (`FuelLogModes.tsx` `.fmx-logmodes`) — pontosan az, amit
+        // A horgony a négy forrás gombsora (`FuelLogModes.tsx` `.fmx-logmodes`) — pontosan az, amit
         // ez a kártya leír. A LogFlow-overlayben ugyanaz az elem a MealComposeren ül.
         kind: 'hogyan', spot: 'i-kamra', orb: 's-orb-figyel', anchor: 'log-forrasok',
         title: 'Négy út egy tányérig.',
-        voice: '**Fotó**, **Hang**, **Gépelés** és a **Szokásosak** — a fülekkel váltasz köztük. A kamera nyit elsőre, mert a fotó a leggyorsabb út.',
+        voice: '**Fotó**, **Kamra**, **Recept** és **Szokásosak** — innen rögtön hozzáadhatsz. A szövegmező és a mikrofon végig kéznél van; a fotó és a szöveg elemzése az Elemzés gombbal indul.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',

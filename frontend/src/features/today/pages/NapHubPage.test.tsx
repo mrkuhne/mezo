@@ -47,7 +47,8 @@ vi.mock('@/features/today/components/NapFuelGraphic', () => ({ NapFuelGraphic: (
 vi.mock('@/features/today/sheets/CheckInSheet', () => ({ CheckInSheet: ({ slotIdx, onSave, onClose }: { slotIdx: number; onSave: (d: object) => void; onClose: () => void }) => <div role="dialog">slot:{slotIdx}<button onClick={() => { onSave({ state: 'done', note: 'Megérkeztem' }); onClose() }}>Mentés</button></div> }))
 vi.mock('@/features/me/sheets/JournalSheet', () => ({ JournalSheet: () => <div role="dialog">Napló írása</div> }))
 vi.mock('@/features/today/sheets/ActivityLogSheet', () => ({ ActivityLogSheet: () => <div role="dialog">Aktivitás rögzítése</div> }))
-vi.mock('@/features/insights/logic/useVoiceInput', () => ({ useVoiceInput: () => ({ state: 'idle', toggle: vi.fn() }) }))
+vi.mock('@/shared/lib/voice/useVoiceInput', async (orig) => ({
+  ...(await orig<typeof import('@/shared/lib/voice/useVoiceInput')>()), useVoiceInput: () => ({ state: 'idle', toggle: vi.fn() }) }))
 // Kímélő mód (mezo-q4xt2.2): the slot reads the recovery state through the real hooks in mock
 // mode — a fresh client per render, optionally seeded with an open period.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

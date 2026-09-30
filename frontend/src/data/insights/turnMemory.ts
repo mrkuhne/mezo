@@ -7,11 +7,11 @@ import type { MemoryItem, TurnLearned, TurnMemory, TurnProposed } from '@/data/i
 const AT_22_05 = '2026-09-26T20:05:00Z'
 const AT_22_07 = '2026-09-26T20:07:00Z'
 const DORI: TurnLearned = { id: 'mock-pf-dori', personId: 'mock-person-dori', who: 'Dóri', kind: 'relationship_state',
-  text: 'a strandröpi-párod, együtt nyertétek a szeptemberi tornát' }
+  text: 'a strandröpi-párod, együtt nyertétek a szeptemberi tornát', aboutMeFactId: null }
 const ANNA: TurnLearned = { id: 'mock-pf-anna', personId: 'mock-person-anna', who: 'Anna', kind: 'preference',
-  text: 'régi csapattársad, rég beszéltetek' }
+  text: 'régi csapattársad, rég beszéltetek', aboutMeFactId: null }
 const BENCE: TurnLearned = { id: 'mock-pf-bence', personId: 'mock-person-bence', who: 'Bence', kind: 'shared_activity',
-  text: 'jövőre hármasban játszana veled és Annával' }
+  text: 'jövőre hármasban játszana veled és Annával', aboutMeFactId: null }
 const SELF: TurnProposed = { id: 'mock-lf-self', state: 'ask', promotedFactId: null,
   text: 'Egy nagy közös élmény után nehezen viselem az egyedül töltött estét.' }
 

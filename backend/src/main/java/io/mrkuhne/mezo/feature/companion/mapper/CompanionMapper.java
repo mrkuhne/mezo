@@ -68,8 +68,10 @@ public interface CompanionMapper {
                 .build();
     }
 
-    default TurnPersonFactResponse toTurnPersonFactResponse(PersonFactEntity fact, String personName) {
+    /** mezo-d6ivw.13: {@code aboutMeFactId} = the live „Rólam is" copy, null when unclaimed. */
+    default TurnPersonFactResponse toTurnPersonFactResponse(PersonFactEntity fact, String personName, UUID aboutMeFactId) {
         return TurnPersonFactResponse.builder()
+                .aboutMeFactId(aboutMeFactId)
                 .id(fact.getId())
                 .personId(fact.getPersonId())
                 .personName(personName)

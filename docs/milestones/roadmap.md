@@ -37,11 +37,11 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-gb1s` — **Mezo-kalauz (in-app tutorial)** | ◐ 6/10 (60%) | Per-page guided tour for beta onboarding. [`tutorial.md`](../features/tutorial.md). |
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
 | `mezo-06o0` / `mezo-88jw` | 🔄 open | Emberek section build-out; the daily-rhythm IA direction spec. |
-| `mezo-d6ivw` — **Mezo emlékezete** | ◐ 8/12 (66%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28. |
+| `mezo-d6ivw` — **Mezo emlékezete** | ◐ 10/13 (77%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28; „Rólam is" (`.13`, person first) shipped 2026-09-29. |
 | `mezo-q4xt2` — **Kihagyás + kímélő mód** | 🔄 open (2/4) | Edzés, sport és étkezés kihagyása egy gombbal, okkal (gyors gombok + Egyéb); komoly oknál (betegség, gyomorrontás, sérülés, utazás) több napos kímélő mód napi „Hogy vagy?” kérdéssel és fokozatos visszatéréssel; az MI megérti az okot, de nem ítélkezik. Spec [`2026-09-28-kihagyas-kimelo-mod-design`](../superpowers/specs/2026-09-28-kihagyas-kimelo-mod-design.md). Vezérli: `/kihagyas` skill. |
 | `mezo-rj214` — **Companion teljes adat-hozzáférés** | 🔄 open | A társ kérésre mindent lásson és elérjen ami az adatbázisban van (grammra pontos makrók/mikrók, összetevők, alvás, súly, naplózás, checkinek), és szabadabban tudjon beszélgetni. |
 | `mezo-ozri` — **OpenAI migráció** | 🔄 open | Provider-semleges LLM-varrat Geminiről OpenAI-ra (gpt-5.6-luna/-terra), config-vezérelt model-router, prompt-caching-optimalizált sorrend, per-user rolling USD cap. S2 (OpenAI adapter) shipped 2026-09-07; router/eval-rebaseline/prompt-caching még nyitva. |
-| `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | Az app és a companion-persona átnevezése Mezoról Boopra — amit a user olvas, az Boop; amit tárolunk, az marad `mezo`. |
+| `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | A PWA ikonja és telepített neve már Boop (`mezo-akskj`); a companion-persona és a további látható szövegek átnevezése még folyamatban van. A tárolt `mezo` azonosítók maradnak. |
 | `mezo-1npf` — **Diet Plan** | 🔄 open | A Cél diet planná bővül: testre szabható makró-split, cél-vezérelt dinamikus makrók, edzés/check-in/alvás hidak. |
 | `mezo-eq85` — **Reflexió** | 🔄 open | Mezo autonóm észrevételei szabad szövegből és mérhető adatból: jelkinyerés, hipotézis-életciklus a pattern táblán, éjjeli reflexió, önálló Észrevételek fül. |
 | `mezo-zjtm` — **Hermes agent + lokális LLM flow** | 🔄 open | Claude-kiegészítő/kiváltó lokális fejlesztői flow (LM Studio, M5 Max) a mezo házrenddel (bd, docs, PR+CI gate). |
@@ -61,6 +61,33 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-30 — Boop PWA ikon és avatárorr (`mezo-akskj`).** A telepített app ikonja a
+  jóváhagyott kék–lila–zöld Boop-hármas sötét grafit alapon; mind a hét élő Boop-avatár apró
+  fekete háromszög orrot kapott. A telepített app, az iOS kezdőképernyős név és a böngészőfül
+  neve Boop. A tágabb szöveges átnevezés a `mezo-r89o` epicben folytatódik.
+- **2026-09-29 — Egységes étkezésbevitel (`mezo-qe90y`).** A logoló négy közvetlen bejárata
+  Fotó · Kamra · Recept · Szokásosak; a szöveg és a mellette lévő mikrofon végig elérhető.
+  A kiválasztott fotó nagy előnézetben látszik, cserélhető vagy eltávolítható, és csak az
+  Elemzés gombra indul az AI. A meglévő tételek, forráslapok és mentés egy piszkozatban
+  maradnak. [ADR 0056](../decisions/0056-unified-meal-entry.md).
+- **2026-09-29 — Hangdiktálás mindenhol (`mezo-xojq8`).** Minden szabad szöveges mező (Check-in
+  gondolatok, napi szándék, tevékenység, edzés utáni és gyakorlat-jegyzet, sport/futás napló,
+  blokkzárás, edzésterv-interjú, gyógyszer-jegyzet, recept-műhely, alvás/súly/ember jegyzet,
+  döntés, cél- és szokás-varázsló, Rólam, csapatfal-válasz, csapat-chat, karakter-válasz) ugyanazt
+  a mikrofon-csempét kapta, ugyanazzal a hallgató Boop buborékkal; a korábbi 7 hely is erre állt át.
+  Egyszerre egy mikrofon szól, a diktált mondat a meglévő szöveg mögé kerül.
+  Spec: [`2026-09-29-hang-mindenhol-design`](../superpowers/specs/2026-09-29-hang-mindenhol-design.md).
+- **2026-09-29 — „Rólam is": egy emberről szóló mondat nem kér kétszer megjegyzést (`mezo-d6ivw.13`).**
+  Ha a chatben egy néven nevezett ismerősödről mondasz valamit, Mezo azt már csak az ő lapjára
+  jegyzi meg („Megjegyeztem: Dóri — …"), és nem kérdez rá mellé még egyszer „Megjegyezném"-mel
+  ugyanarra. A chipen új „Rólam is" gomb: egy koppintással a Tudástár Rólad részébe is bekerül
+  („Rólad is · kész"), újra koppintva kikerül onnan („Csak Dóri lapján marad."). Ha a tényt
+  visszavonod vagy a beszélgetésből elfelejteted, a Rólad-beli másolat is megy. A rólad szóló
+  javaslatokat Mezo mostantól egyes szám első személyben fogalmazza („Szeretek…"). Backend: új
+  `knowledge_fact.source = person_fact` + `source_person_fact_id` kapcsolat, két új végpont
+  (`POST`/`DELETE …/turn-memory/person-fact/{id}/about-me`). Élő prototípus:
+  [`mezo.html`](../design_2.0/prototypes/elo/mezo.html) `#chat/rolamis`. Dokumentáció:
+  [`companion.md`](../features/companion.md) §2–§4 · [`insights.md`](../features/insights.md) §2.5.
 - **2026-09-29 — A napi keret a valódi logolt mozgást követi (`mezo-tb3s2`).** A Fuel keret Mozgás
   sora ezentúl a nap TÉNYLEGESEN logolt edzéseinek nettó kalóriáját írja (tervezett + nem tervezett
   session is), nem a heti terv átlagát — az owner egy meso edzést (~300 kcal) és egy 120′

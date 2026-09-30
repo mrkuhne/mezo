@@ -3,6 +3,8 @@ import { useCharacterReplies, useCharacterReplyDraft } from '@/data/hooks'
 import type { CharacterReplySource } from '@/data/character/characterApi'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { CharacterExpertComment } from '@/features/character/components/CharacterExpertComment'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const STATUS_LABEL = {
   SAVED: 'Válaszod mentve · feldolgozásra vár',
@@ -126,18 +128,20 @@ export function CharacterReplyThread({
         >
           <label>
             Válasz a bejegyzésre
-            <textarea
-              ref={textarea}
-              aria-label="Mit pontosítanál?"
-              placeholder="Mit pontosítanál?"
-              maxLength={2000}
-              value={draft}
-              disabled={pending}
-              onChange={(event) => {
-                setDraft(event.target.value)
-                setSaved(false)
-              }}
-            />
+            <VoiceField domain="mezo" onTranscript={(t) => { setDraft(appendDictation(draft, t, 2000)); setSaved(false) }}>
+              <textarea
+                ref={textarea}
+                aria-label="Mit pontosítanál?"
+                placeholder="Mit pontosítanál?"
+                maxLength={2000}
+                value={draft}
+                disabled={pending}
+                onChange={(event) => {
+                  setDraft(event.target.value)
+                  setSaved(false)
+                }}
+              />
+            </VoiceField>
           </label>
           <div>
             <small>A válaszod bekerül a közös tudásba.</small>

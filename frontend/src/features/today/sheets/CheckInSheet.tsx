@@ -21,6 +21,8 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { CaptureHeader } from '@/shared/ui/CaptureHeader'
 import { localDateString } from '@/shared/lib/dates'
 import type { CheckinItemId, CheckinSlot, CheckinValues } from '@/data/types'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 /** The four canonical slots' daypart names, by slot time (index fallback for any other time). */
 const SLOT_NAME: Record<string, string> = { '06:30': 'Reggel', '10:00': 'Délelőtt', '14:00': 'Délután', '20:00': 'Este' }
@@ -239,9 +241,9 @@ export function CheckInSheet({
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <label htmlFor="checkin-note" className="label-mono">Gondolatok · opcionális</label>
             </div>
-            {/* the decorative mic chip is gone (mezo-setx.5.5) — a control that does
-                nothing is the ItemRow doctrine's dead button, not a form affordance */}
-            <div className="card" style={{ padding: 10, display: 'flex', gap: 8 }}>
+            {/* the mic is live again, the shared voice field (mezo-xojq8) */}
+            <div className="card" style={{ padding: 10 }}>
+              <VoiceField domain="nap" onTranscript={t => setNote(d => appendDictation(d, t))}>
               <textarea
                 id="checkin-note"
                 value={note}
@@ -253,6 +255,7 @@ export function CheckInSheet({
                   lineHeight: 1.45,
                 }}
               />
+              </VoiceField>
             </div>
           </div>
 

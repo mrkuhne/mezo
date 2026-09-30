@@ -1,8 +1,6 @@
-import { useRef, useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
-import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import type { BoopDomain } from '@/shared/ui/clay/boop/Boop'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -32,12 +30,11 @@ interface GratitudeRowsProps {
  * on „Mentem", the ritual act on „Tovább", fire-and-forget). That also keeps this file out of
  * `@/data/*` — the `frontend_conventions.md` rule for a component reused across features.
  *
- * The mic is per row and its target is tracked in a **ref**: `useVoiceInput`'s `onstop` closure
- * captures the transcript callback when recording STARTS (useVoiceInput.ts — `rec.onstop` closes
- * over `finish`, itself memoised on `onTranscript`), so reading the active row out of React state
- * inside the callback would read it as it stood at record-start. Before the extraction the
- * callback wrote into `JournalSheet`'s *note* textarea, which gratitude mode never renders — the
- * transcription simply vanished.
+ * Each row carries its own shared voice field (mezo-xojq8). `VoiceField` hands the transcript to
+ * the callback as it stands when the text ARRIVES, so row `i` appends to the current rows even
+ * though recording started renders earlier. (Before mezo-xojq8 one hook served every row through
+ * a target ref; before the W1.3 extraction the text landed in the journal's note textarea, which
+ * gratitude mode never renders, and vanished.)
  */
 export function GratitudeRows({
   rows,
@@ -49,20 +46,6 @@ export function GratitudeRows({
   hint,
   voiceDomain = 'me',
 }: GratitudeRowsProps) {
-  // Mirrors for the frozen voice callback (see the doc comment).
-  const rowsRef = useRef(rows)
-  rowsRef.current = rows
-  const targetRef = useRef(0)
-  const [activeRow, setActiveRow] = useState(0)
-
-  const voice = useVoiceInput((t) => {
-    const i = targetRef.current
-    const next = [...rowsRef.current]
-    next[i] = next[i] ? `${next[i]} ${t}` : t
-    onRowsChange(next)
-  })
-  const recording = voice.state === 'recording'
-
   const setRow = (i: number, value: string) => {
     const next = [...rows]
     next[i] = value
@@ -72,40 +55,21 @@ export function GratitudeRows({
   return (
     <>
       {rows.slice(0, max).map((r, i) => (
-        <div key={i} className="card" style={{ padding: 10, position: 'relative' }}>
-          <textarea
-            value={r}
-            onChange={(e) => setRow(i, e.target.value)}
-            aria-label={`${i + 1}. hálás gondolat`}
-            placeholder={`${i + 1}. dolog, amiért hálás vagy…`}
-            maxLength={280}
-            autoFocus={autoFocusFirst && i === 0 && rows.length === 1}
-            style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 16, lineHeight: 1.45, paddingRight: 36 }}
-          />
-          <button
-            type="button"
-            className={cn('chip', recording && activeRow === i && 'chat-mic-live')}
-            style={{
-              position: 'absolute', top: 8, right: 8, padding: 8,
-              ...(recording && activeRow === i
-                ? { background: 'var(--wash-amber)', borderColor: 'var(--coral-deep)', color: 'var(--coral-deep)' }
-                : {}),
-            }}
-            onClick={() => { targetRef.current = i; setActiveRow(i); voice.toggle() }}
-            disabled={
-              voice.state === 'unsupported' ||
-              voice.state === 'transcribing' ||
-              (recording && activeRow !== i)
-            }
-            aria-label={recording && activeRow === i ? 'Felvétel leállítása' : 'Hangbevitel'}
-            aria-pressed={recording && activeRow === i}
-          >
-            <Icon name={recording && activeRow === i ? 'voice-wave' : 'mic'} size={14} />
-          </button>
+        <div key={i} className="card" style={{ padding: 10 }}>
+          <VoiceField domain={voiceDomain} size="sm"
+            onTranscript={(t) => setRow(i, appendDictation(rows[i] ?? '', t, 280))}>
+            <textarea
+              value={r}
+              onChange={(e) => setRow(i, e.target.value)}
+              aria-label={`${i + 1}. hálás gondolat`}
+              placeholder={`${i + 1}. dolog, amiért hálás vagy…`}
+              maxLength={280}
+              autoFocus={autoFocusFirst && i === 0 && rows.length === 1}
+              style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 16, lineHeight: 1.45 }}
+            />
+          </VoiceField>
         </div>
       ))}
-
-      <VoiceBubble voice={voice} domain={voiceDomain} />
 
       {rows.length < max && (
         <button

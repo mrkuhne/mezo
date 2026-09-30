@@ -46,8 +46,8 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       manifest: {
-        name: 'Mezo',
-        short_name: 'Mezo',
+        name: 'Boop',
+        short_name: 'Boop',
         description: 'Holistic AI performance & health companion',
         // Dark-only lock (üveg bible §8, mezo-me75u.1): the near-black graphite canvas (mezo-nn7h0).
         theme_color: '#141210',
