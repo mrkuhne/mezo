@@ -36,6 +36,15 @@ tags:
       is decided at read time: serious reasons never count, the first soft skip
       of the ISO week is covered by the free pass, coach (advice) skips never
       count.
+  - name: TrainRecovery
+    description: >-
+      Kihagyás S2 (mezo-q4xt2.2, spec 2026-09-28 §9) — kímélő mód. A serious
+      skip reason (illness, stomach bug, injury, travel) opens a multi-day
+      recovery period; every planned gym/sport/run occurrence on a protected
+      date reads as skipped + excused. It never ends by itself: the daily
+      check-in's "Jobban" ends it and applies the return rule (continue / resume
+      the week / step back one week), shifting the active meso calendar; "Mégsem
+      vagyok jól" undoes that on the same day.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -2945,6 +2954,255 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery:
+    get:
+      tags:
+        - TrainRecovery
+      operationId: getRecovery
+      summary: >-
+        The caller's recovery state — the open period (or the one ended today),
+        protected dates, the comeback ramp
+      responses:
+        '200':
+          description: Current recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TrainRecovery
+      operationId: upsertRecovery
+      summary: 'Open a recovery period, or change the category/estimate of the open one'
+      description: >-
+        startDate defaults to today and must lie in [today-7, today]
+        (Europe/Budapest). An update keeps the open period's startDate. Only
+        serious categories (ILLNESS, STOMACH, INJURY, TRAVEL) are allowed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryUpsertRequest'
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: >-
+            Non-serious category (TRAIN_RECOVERY_CATEGORY_INVALID) or startDate
+            outside the window (TRAIN_RECOVERY_START_OUT_OF_WINDOW)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TrainRecovery
+      operationId: deleteRecovery
+      summary: >-
+        "Tévedés volt" — discard the open (or today-ended) period, reverting any
+        programme shift
+      responses:
+        '204':
+          description: Discarded
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No open or today-ended period (TRAIN_RECOVERY_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery/check-in:
+    post:
+      tags:
+        - TrainRecovery
+      operationId: recoveryCheckIn
+      summary: >-
+        Daily check-in — NOT_YET keeps the period open, BETTER ends it today and
+        applies the return rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryCheckInRequest'
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: BETTER on the start day (TRAIN_RECOVERY_TOO_EARLY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No open period (TRAIN_RECOVERY_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery/undo-better:
+    post:
+      tags:
+        - TrainRecovery
+      operationId: recoveryUndoBetter
+      summary: >-
+        "Mégsem vagyok jól" — reopen the period ended today and revert the
+        programme shift
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            No period ended today, or another period is already open
+            (TRAIN_RECOVERY_UNDO_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/recovery/releases/{date}':
+    put:
+      tags:
+        - TrainRecovery
+      operationId: releaseRecoveryDay
+      summary: >-
+        "Ma mégis edzek" — train normally on one protected date (lighter by
+        default)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryReleaseRequest'
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: >-
+            The date is not protected by the open period
+            (TRAIN_RECOVERY_DATE_NOT_PROTECTED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TrainRecovery
+      operationId: unreleaseRecoveryDay
+      summary: Undo "Ma mégis edzek" — the date is protected again
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: >-
+            The date is not protected by the open period
+            (TRAIN_RECOVERY_DATE_NOT_PROTECTED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery/waive-comeback:
+    post:
+      tags:
+        - TrainRecovery
+      operationId: waiveComeback
+      summary: >-
+        "Kikapcsolom a könnyítést" — switch off the comeback ramp of the latest
+        ended period
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No ended period (TRAIN_RECOVERY_NOT_FOUND)
           content:
             application/json:
               schema:
@@ -15352,6 +15610,35 @@ components:
             - $ref: '#/components/schemas/OverloadSummary'
           nullable: true
           description: Day-level overload summary; null when hypertrophy-drive is off.
+        comeback:
+          allOf:
+            - $ref: '#/components/schemas/TodayComeback'
+          nullable: true
+          description: >-
+            Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened
+            — a comeback ramp session after a recovery period, or a released
+            protected day. Null otherwise.
+    TodayComeback:
+      type: object
+      required:
+        - index
+        - total
+        - mode
+      properties:
+        index:
+          type: integer
+          description: 1-based position of today's session in the lightened run (1 or 2)
+        total:
+          type: integer
+          description: Lightened sessions in the run (1 or 2; 1 for a released day)
+        mode:
+          type: string
+          enum:
+            - RAMP
+            - RELEASED
+          description: >-
+            RAMP — the Nth gym session after the return; RELEASED — "Ma mégis
+            edzek" on a protected day with lightening kept.
     TodayExercise:
       type: object
       required:
@@ -16933,6 +17220,162 @@ components:
         excused:
           type: boolean
           description: Does not count as missed
+    RecoveryEstimate:
+      type: string
+      enum:
+        - TODAY
+        - FEW_DAYS
+        - WEEK
+        - UNKNOWN
+    RecoveryReturnRule:
+      type: string
+      enum:
+        - CONTINUE
+        - RESUME
+        - STEP_BACK
+    RecoveryUpsertRequest:
+      type: object
+      required:
+        - category
+        - estimate
+      properties:
+        category:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        estimate:
+          $ref: '#/components/schemas/RecoveryEstimate'
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          description: 'Defaults to today; [today-7, today]'
+    RecoveryCheckInRequest:
+      type: object
+      required:
+        - answer
+      properties:
+        answer:
+          type: string
+          enum:
+            - BETTER
+            - NOT_YET
+    RecoveryReleaseRequest:
+      type: object
+      properties:
+        lighten:
+          type: boolean
+          default: true
+          description: Train lighter on the released day
+    RecoveryReturn:
+      type: object
+      required:
+        - rule
+        - daysOut
+        - rampSessions
+        - shiftDays
+      properties:
+        rule:
+          $ref: '#/components/schemas/RecoveryReturnRule'
+        daysOut:
+          type: integer
+        rampSessions:
+          type: integer
+          description: Lightened sessions after the return (1 or 2)
+        shiftDays:
+          type: integer
+          description: Days the active meso calendar moved (multiple of 7)
+        newEndDate:
+          type: string
+          format: date
+          nullable: true
+          description: 'The shifted meso end date, when shifted'
+    RecoveryPeriod:
+      type: object
+      required:
+        - id
+        - category
+        - estimate
+        - startDate
+        - dayIndex
+        - estimateExpired
+        - checkedInToday
+        - releasedDates
+        - releasedUnlightened
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        estimate:
+          $ref: '#/components/schemas/RecoveryEstimate'
+        startDate:
+          type: string
+          format: date
+        expectedEnd:
+          type: string
+          format: date
+          nullable: true
+        endedOn:
+          type: string
+          format: date
+          nullable: true
+        dayIndex:
+          type: integer
+          description: today - startDate + 1
+        estimateExpired:
+          type: boolean
+          description: expectedEnd is before today
+        checkedInToday:
+          type: boolean
+        releasedDates:
+          type: array
+          items:
+            type: string
+            format: date
+        releasedUnlightened:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Released dates trained at full load
+        return:
+          allOf:
+            - $ref: '#/components/schemas/RecoveryReturn'
+          nullable: true
+    RecoveryComeback:
+      type: object
+      required:
+        - total
+        - done
+        - waived
+      properties:
+        total:
+          type: integer
+          description: 'Lightened sessions in the ramp (0, 1 or 2)'
+        done:
+          type: integer
+          description: Completed gym sessions since the return
+        waived:
+          type: boolean
+    RecoveryState:
+      type: object
+      required:
+        - protectedDates
+      properties:
+        period:
+          allOf:
+            - $ref: '#/components/schemas/RecoveryPeriod'
+          nullable: true
+        protectedDates:
+          type: array
+          items:
+            type: string
+            format: date
+          description: 'Protected dates in [today-7, today+13], released dates excluded'
+        comeback:
+          allOf:
+            - $ref: '#/components/schemas/RecoveryComeback'
+          nullable: true
     ExpenditureExplanationResponse:
       type: object
       description: >-

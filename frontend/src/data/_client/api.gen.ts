@@ -1042,6 +1042,97 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's recovery state — the open period (or the one ended today), protected dates, the comeback ramp */
+        get: operations["getRecovery"];
+        /**
+         * Open a recovery period, or change the category/estimate of the open one
+         * @description startDate defaults to today and must lie in [today-7, today] (Europe/Budapest). An update keeps the open period's startDate. Only serious categories (ILLNESS, STOMACH, INJURY, TRAVEL) are allowed.
+         */
+        put: operations["upsertRecovery"];
+        post?: never;
+        /** "Tévedés volt" — discard the open (or today-ended) period, reverting any programme shift */
+        delete: operations["deleteRecovery"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Daily check-in — NOT_YET keeps the period open, BETTER ends it today and applies the return rule */
+        post: operations["recoveryCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/undo-better": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** "Mégsem vagyok jól" — reopen the period ended today and revert the programme shift */
+        post: operations["recoveryUndoBetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/releases/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** "Ma mégis edzek" — train normally on one protected date (lighter by default) */
+        put: operations["releaseRecoveryDay"];
+        post?: never;
+        /** Undo "Ma mégis edzek" — the date is protected again */
+        delete: operations["unreleaseRecoveryDay"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/waive-comeback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** "Kikapcsolom a könnyítést" — switch off the comeback ramp of the latest ended period */
+        post: operations["waiveComeback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -6249,6 +6340,19 @@ export interface components {
             weekDoneDates?: string[];
             /** @description Day-level overload summary; null when hypertrophy-drive is off. */
             overloadSummary?: components["schemas"]["OverloadSummary"] | null;
+            /** @description Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened — a comeback ramp session after a recovery period, or a released protected day. Null otherwise. */
+            comeback?: components["schemas"]["TodayComeback"] | null;
+        };
+        TodayComeback: {
+            /** @description 1-based position of today's session in the lightened run (1 or 2) */
+            index: number;
+            /** @description Lightened sessions in the run (1 or 2; 1 for a released day) */
+            total: number;
+            /**
+             * @description RAMP — the Nth gym session after the return; RELEASED — "Ma mégis edzek" on a protected day with lightening kept.
+             * @enum {string}
+             */
+            mode: "RAMP" | "RELEASED";
         };
         TodayExercise: {
             /** Format: uuid */
@@ -6874,6 +6978,77 @@ export interface components {
             freePass: boolean;
             /** @description Does not count as missed */
             excused: boolean;
+        };
+        /** @enum {string} */
+        RecoveryEstimate: "TODAY" | "FEW_DAYS" | "WEEK" | "UNKNOWN";
+        /** @enum {string} */
+        RecoveryReturnRule: "CONTINUE" | "RESUME" | "STEP_BACK";
+        RecoveryUpsertRequest: {
+            category: components["schemas"]["PlannedSkipReason"];
+            estimate: components["schemas"]["RecoveryEstimate"];
+            /**
+             * Format: date
+             * @description Defaults to today; [today-7, today]
+             */
+            startDate?: string | null;
+        };
+        RecoveryCheckInRequest: {
+            /** @enum {string} */
+            answer: "BETTER" | "NOT_YET";
+        };
+        RecoveryReleaseRequest: {
+            /**
+             * @description Train lighter on the released day
+             * @default true
+             */
+            lighten: boolean;
+        };
+        RecoveryReturn: {
+            rule: components["schemas"]["RecoveryReturnRule"];
+            daysOut: number;
+            /** @description Lightened sessions after the return (1 or 2) */
+            rampSessions: number;
+            /** @description Days the active meso calendar moved (multiple of 7) */
+            shiftDays: number;
+            /**
+             * Format: date
+             * @description The shifted meso end date, when shifted
+             */
+            newEndDate?: string | null;
+        };
+        RecoveryPeriod: {
+            /** Format: uuid */
+            id: string;
+            category: components["schemas"]["PlannedSkipReason"];
+            estimate: components["schemas"]["RecoveryEstimate"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            expectedEnd?: string | null;
+            /** Format: date */
+            endedOn?: string | null;
+            /** @description today - startDate + 1 */
+            dayIndex: number;
+            /** @description expectedEnd is before today */
+            estimateExpired: boolean;
+            checkedInToday: boolean;
+            releasedDates: string[];
+            /** @description Released dates trained at full load */
+            releasedUnlightened: string[];
+            return?: components["schemas"]["RecoveryReturn"] | null;
+        };
+        RecoveryComeback: {
+            /** @description Lightened sessions in the ramp (0, 1 or 2) */
+            total: number;
+            /** @description Completed gym sessions since the return */
+            done: number;
+            waived: boolean;
+        };
+        RecoveryState: {
+            period?: components["schemas"]["RecoveryPeriod"] | null;
+            /** @description Protected dates in [today-7, today+13], released dates excluded */
+            protectedDates: string[];
+            comeback?: components["schemas"]["RecoveryComeback"] | null;
         };
         /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
         ExpenditureExplanationResponse: {
@@ -15892,6 +16067,324 @@ export interface operations {
                 };
             };
             /** @description No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    upsertRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Non-serious category (TRAIN_RECOVERY_CATEGORY_INVALID) or startDate outside the window (TRAIN_RECOVERY_START_OUT_OF_WINDOW) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discarded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No open or today-ended period (TRAIN_RECOVERY_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recoveryCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryCheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description BETTER on the start day (TRAIN_RECOVERY_TOO_EARLY) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No open period (TRAIN_RECOVERY_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recoveryUndoBetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No period ended today, or another period is already open (TRAIN_RECOVERY_UNDO_EXPIRED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    releaseRecoveryDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecoveryReleaseRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description The date is not protected by the open period (TRAIN_RECOVERY_DATE_NOT_PROTECTED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unreleaseRecoveryDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description The date is not protected by the open period (TRAIN_RECOVERY_DATE_NOT_PROTECTED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    waiveComeback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No ended period (TRAIN_RECOVERY_NOT_FOUND) */
             404: {
                 headers: {
                     [name: string]: unknown;

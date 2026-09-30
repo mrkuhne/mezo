@@ -56,11 +56,13 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
     expect(files.sort()).toEqual([
       'ActivityLogCard.tsx', 'DailyQuestList.tsx', 'DailyQuestsCard.tsx',
       'DailyQuestsSheet.tsx', 'EletjelStrip.tsx',
+      // Kímélő mód S2 (mezo-q4xt2.2) — a „Hogy vagy?" kártya és a „Nem vagyok jól" lap.
+      'KimeloCard.tsx',
       // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája.
       // Visszaöltöztetés (mezo-ju4j6.10): a nyitóoldal jelenlét-jele — agyag Mezo-szimbólum
       // a szükséglet-színek haloja előtt, a Boop-avatar foglalt helyén.
       'MezoMessagesSheet.tsx', 'NapCompanion.tsx', 'NapFuelGraphic.tsx',
-      'NapPersonalInsight.tsx', 'NapzarasCard.tsx', 'ObservationCard.tsx',
+      'NapPersonalInsight.tsx', 'NapzarasCard.tsx', 'NemVagyokJolSheet.tsx', 'ObservationCard.tsx',
     ])
   })
 })

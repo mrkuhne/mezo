@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-09-29
+updated: 2026-09-30
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** New fragment `api/feature/train/train-recovery.yml` (tag `TrainRecovery`, `/api/train/recovery*`) registered in `api/generate/merge.yml`; six Hungarian `TRAIN_RECOVERY_*` error keys in `messages.properties`; Liquibase `1.1.0` gains `recovery_period` + `recovery_day_release`. See [`train.md`](train.md) §2 "Kihagyás S2 — kímélő mód".
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** New fragment `api/feature/train/train-skip.yml` (tag `TrainSkip`, `GET/PUT/DELETE /api/train/skips`) merges into `api/openapi.yml` like any other feature fragment — no new pattern. `TRAIN_SKIP_DATE_OUT_OF_WINDOW`/`TRAIN_SKIP_TARGET_INVALID`/`TRAIN_SKIP_NOT_FOUND` join `messages.properties`. See [`train.md`](train.md) "Kihagyás (S1)".
 

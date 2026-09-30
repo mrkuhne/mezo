@@ -36,7 +36,9 @@ class SportSlotSkipServiceTest {
 
     private final SportSlotSkipRepository repository = mock(SportSlotSkipRepository.class);
     private final PlannedSkipRepository plannedSkipRepository = mock(PlannedSkipRepository.class);
-    private final SportSlotSkipService service = new SportSlotSkipService(repository, plannedSkipRepository);
+    private final RecoveryPeriodService recoveryPeriodService = mock(RecoveryPeriodService.class);
+    private final SportSlotSkipService service =
+        new SportSlotSkipService(repository, plannedSkipRepository, recoveryPeriodService);
 
     {
         // Default: no planned_skip rows unless a test overrides it — keeps the pre-existing
@@ -109,7 +111,7 @@ class SportSlotSkipServiceTest {
                 skip(USER, 4, "18:00", DATE),
                 skip(USER, 1, "07:00", DATE.plusDays(3))));
 
-        Set<SkipKey> result = service.skipsBetween(USER, from, to);
+        Set<SkipKey> result = service.skipsBetween(USER, from, to).keys();
 
         assertThat(result).containsExactlyInAnyOrder(
             new SkipKey(4, "18:00", DATE),
@@ -148,7 +150,7 @@ class SportSlotSkipServiceTest {
                 plannedSkip(USER, Kind.GYM, 2, null, DATE.plusDays(1)),
                 plannedSkip(USER, Kind.RUN, null, null, DATE.plusDays(2))));
 
-        Set<SkipKey> result = service.skipsBetween(USER, from, to);
+        Set<SkipKey> result = service.skipsBetween(USER, from, to).keys();
 
         assertThat(result).containsExactlyInAnyOrder(
             new SkipKey(4, "18:00", DATE),
@@ -160,7 +162,37 @@ class SportSlotSkipServiceTest {
         when(repository.findByCreatedByAndDateBetweenAndDeletedFalse(any(), any(), any()))
             .thenReturn(List.of());
 
-        assertThat(service.skipsBetween(USER, DATE, DATE.plusDays(7))).isEmpty();
+        assertThat(service.skipsBetween(USER, DATE, DATE.plusDays(7)).keys()).isEmpty();
+    }
+
+    @Test
+    void testIsSkipped_shouldReturnTrue_whenTheDateIsRecoveryProtected() {
+        when(recoveryPeriodService.protectedDates(USER, DATE, DATE)).thenReturn(Set.of(DATE));
+
+        assertThat(service.isSkipped(USER, 4, "18:00", DATE)).isTrue();
+        assertThat(service.isSkipped(USER, 1, "07:00", DATE)).as("every slot of the date").isTrue();
+    }
+
+    @Test
+    void testSkipsBetween_shouldMatchEverySlotOfAProtectedDate_butKeepOnlyRealKeys() {
+        when(recoveryPeriodService.protectedDates(USER, DATE, DATE.plusDays(7))).thenReturn(Set.of(DATE));
+
+        SportSlotSkipService.SportSkips skips = service.skipsBetween(USER, DATE, DATE.plusDays(7));
+
+        assertThat(skips.contains(4, "18:00", DATE)).isTrue();
+        assertThat(skips.contains(4, "18:00", DATE.plusDays(7))).isFalse();
+        assertThat(skips.keys()).isEmpty();
+    }
+
+    @Test
+    void testSkip_shouldStillInsertTheAdviceRow_whenTheDateIsOnlyRecoveryProtected() {
+        when(repository.existsByCreatedByAndDayOfWeekAndTimeAndDateAndDeletedFalse(USER, 4, "18:00", DATE))
+            .thenReturn(false);
+        when(recoveryPeriodService.protectedDates(USER, DATE, DATE)).thenReturn(Set.of(DATE));
+
+        service.skip(USER, 4, "18:00", DATE);
+
+        verify(repository).saveAndFlush(any(SportSlotSkipEntity.class));
     }
 
     @Test

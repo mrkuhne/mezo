@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery, DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { skipApi, type PlannedSkipRequest, type PlannedSkipResponse } from '@/data/train/skipApi'
@@ -13,6 +13,24 @@ import { WORKOUT_TODAY_QUERY_KEY, READINESS_TODAY_QUERY_KEY } from '@/data/train
  *  `sportSlotSkipsQueryKey`'s own week-in-the-key precedent) so a session left open across the
  *  window boundary invalidates into a fresh fetch instead of serving a stale window forever. */
 export const PLANNED_SKIPS_QUERY_KEY = ['train', 'plannedSkips'] as const
+
+/**
+ * Real mode: everything a planned-skip (or kímélő mód, `recoveryHooks.ts`) write can change —
+ * this list, today's workout/readiness (a GYM skip changes today's plan), and the server-side
+ * reads that count skips (Kihagyás S1, Tasks 5–6): the week's workouts, the robustness streak
+ * (progression profile), the meso close report's adherence, the daily quests and the Fuel day's
+ * workout windows — all by prefix.
+ */
+export function invalidateAfterWrite(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: PLANNED_SKIPS_QUERY_KEY })
+  void qc.invalidateQueries({ queryKey: WORKOUT_TODAY_QUERY_KEY })
+  void qc.invalidateQueries({ queryKey: READINESS_TODAY_QUERY_KEY })
+  void qc.invalidateQueries({ queryKey: ['train', 'weekWorkouts'] })
+  void qc.invalidateQueries({ queryKey: ['train', 'mesoReport'] }) // `mesoReportQueryKey` prefix
+  void qc.invalidateQueries({ queryKey: ['progressionProfile'] })
+  void qc.invalidateQueries({ queryKey: ['dailyQuests'] })
+  void qc.invalidateQueries({ queryKey: ['fuelDay'] })
+}
 
 function toPlannedSkip(r: PlannedSkipResponse): PlannedSkip {
   return {
@@ -96,22 +114,12 @@ export function usePlannedSkips() {
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
 
-  const invalidateAfterWrite = useCallback(() => {
-    void qc.invalidateQueries({ queryKey: PLANNED_SKIPS_QUERY_KEY })
-    void qc.invalidateQueries({ queryKey: WORKOUT_TODAY_QUERY_KEY })
-    void qc.invalidateQueries({ queryKey: READINESS_TODAY_QUERY_KEY })
-    // Server-side reads that now count skips (Kihagyás S1, Tasks 5–6): the week's workouts, the
-    // robustness streak (progression profile), the meso close report's adherence, the daily
-    // quests and the Fuel day's workout windows — all by prefix.
-    void qc.invalidateQueries({ queryKey: ['train', 'weekWorkouts'] })
-    void qc.invalidateQueries({ queryKey: ['train', 'mesoReport'] }) // `mesoReportQueryKey` prefix
-    void qc.invalidateQueries({ queryKey: ['progressionProfile'] })
-    void qc.invalidateQueries({ queryKey: ['dailyQuests'] })
-    void qc.invalidateQueries({ queryKey: ['fuelDay'] })
-  }, [qc])
+  const invalidate = useCallback(() => invalidateAfterWrite(qc), [qc])
 
   const upsertMutation = useMutation({
     mutationFn: async (vars: UpsertVars): Promise<{ list?: PlannedSkip[]; row: PlannedSkip }> => {
+      // A DAY row is a kímélő-mód protected date (S2), owned by `recoveryHooks.ts` — never a skip write.
+      if (vars.target.kind === 'DAY') throw new Error('a protected recovery day is not a planned skip')
       if (mock) {
         const prev = qc.getQueryData<PlannedSkip[]>(queryKey) ?? []
         const list = mockUpsert(prev, vars)
@@ -132,7 +140,7 @@ export function usePlannedSkips() {
     },
     onSuccess: ({ list }) => {
       if (list) qc.setQueryData(queryKey, list)
-      else invalidateAfterWrite()
+      else invalidate()
     },
   })
 
@@ -147,7 +155,7 @@ export function usePlannedSkips() {
     },
     onSuccess: ({ list }) => {
       if (list) qc.setQueryData(queryKey, list)
-      else invalidateAfterWrite()
+      else invalidate()
     },
   })
 

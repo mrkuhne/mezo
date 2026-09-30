@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SheetHead } from '@/shared/ui/SheetHead'
 import { Icon3D } from '@/shared/ui/clay'
@@ -7,7 +7,12 @@ import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { cn } from '@/shared/lib/cn'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 import type { PlannedSkip, SkipReason } from '@/features/train/logic/plannedSkips'
-import { REASONS, sheetNoteParts, skipDoneToast } from '@/features/train/logic/skipCopy'
+import { KIMELO, REASONS, sheetNoteParts, skipDoneToast } from '@/features/train/logic/skipCopy'
+import { categoryCopy, type RecoveryEstimate } from '@/features/train/logic/recovery'
+import { RecoveryDurationRow } from '@/features/train/components/RecoveryDurationRow'
+
+/** How long the „Kímélő mód bekapcsolva" note stays before the sheet closes (prototype: 1.4 s). */
+export const RECOVERY_CLOSE_MS = 1400
 
 const TEXT_MAX = 500
 
@@ -23,6 +28,14 @@ export interface SkipReasonSheetProps {
   onReason(reason: SkipReason, text?: string | null): void
   /** „Kész" — save the OTHER text (null when empty or not OTHER); the sheet then closes. */
   onDone(text?: string | null): void
+  /** Kímélő mód S2 (mezo-q4xt2.2): a serious reason offers „Meddig tarthat?" — only while no
+   *  period is open (the caller knows; omit ⇒ never offered, the S1 sheet). */
+  canOpenRecovery?: boolean
+  /** A duration chip was tapped — open the period. Resolves on success, rejects on failure
+   *  (the failure toast is the global mutation one; the row resets). */
+  onOpenRecovery?(estimate: RecoveryEstimate): Promise<unknown>
+  /** The period is on and the note has been shown — the sheet is closing. */
+  onRecoveryOpened?(): void
 }
 
 /**
@@ -36,8 +49,48 @@ export function SkipReasonSheet(props: SkipReasonSheetProps) {
   return <SkipReasonSheetBody key={props.skip.id} {...props} skip={props.skip} />
 }
 
-function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipReasonSheetProps & { skip: PlannedSkip }) {
+function SkipReasonSheetBody({
+  skip, title, onClose, onReason, onDone, canOpenRecovery, onOpenRecovery, onRecoveryOpened,
+}: SkipReasonSheetProps & { skip: PlannedSkip }) {
   const toast = useToast()
+  // Kímélő mód: the picked estimate (lit chip + the „bekapcsolva" note) and whether it is saved.
+  const [km, setKm] = useState<{ estimate: RecoveryEstimate; saved: boolean } | null>(null)
+  const closeRef = useRef<() => void>(() => {})
+  const pending = useRef<{ timer: ReturnType<typeof setTimeout> | null; done: boolean; mounted: boolean }>({ timer: null, done: false, mounted: true })
+  // The latest callbacks, so the unmount cleanup below never calls a first-render closure.
+  const latest = useRef({ onRecoveryOpened, toast })
+  latest.current = { onRecoveryOpened, toast }
+  const finishRecovery = useCallback(() => {
+    if (pending.current.done) return
+    pending.current.done = true
+    latest.current.onRecoveryOpened?.()
+    latest.current.toast.show({ kind: 'success', text: KIMELO.toastOn })
+  }, [])
+  useEffect(() => {
+    const p = pending.current
+    p.mounted = true
+    return () => {
+      p.mounted = false
+      // Closed early (backdrop, ✕) after the period was saved: still finish, just without the wait.
+      if (p.timer) { clearTimeout(p.timer); p.timer = null; finishRecovery() }
+    }
+  }, [finishRecovery])
+  const pickEstimate = (estimate: RecoveryEstimate) => {
+    if (km || !onOpenRecovery) return
+    setKm({ estimate, saved: false })
+    onOpenRecovery(estimate).then(
+      () => {
+        if (!pending.current.mounted) return finishRecovery()
+        setKm({ estimate, saved: true })
+        pending.current.timer = setTimeout(() => {
+          pending.current.timer = null
+          finishRecovery()
+          closeRef.current()
+        }, RECOVERY_CLOSE_MS)
+      },
+      () => { if (pending.current.mounted) setKm(null) },
+    )
+  }
   const [text, setText] = useState(skip.reasonText ?? '')
   const cur = skip.reasonCategory
   const chosen = cur !== 'NONE'
@@ -46,7 +99,10 @@ function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipRea
 
   return (
     <Sheet glass onClose={onClose} labelledBy="skip-why-title" className="trm-whysheet">
-      {(close) => (
+      {(close) => {
+        closeRef.current = close
+        const serious = categoryCopy(cur) !== null
+        return (
         <div className="uvl-body">
           <SheetHead icon="t-skip" eyebrow={`KIHAGYVA · ${title.toLocaleUpperCase('hu')}`} title="Miért marad ki?"
             titleId="skip-why-title" sub="Nem kötelező — segít, hogy a terv hozzád igazodjon." onClose={close} />
@@ -71,10 +127,21 @@ function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipRea
             </div>
           )}
 
-          <div className="trm-whynote">
-            <Icon3D name={note.icon} size={22} />
-            <span>{note.bold && <b>{note.bold}</b>}{note.rest}</span>
-          </div>
+          {serious && (canOpenRecovery || km) && onOpenRecovery && (
+            <RecoveryDurationRow value={km?.estimate ?? null} disabled={Boolean(km)} onPick={pickEstimate} />
+          )}
+
+          {km ? (
+            <div className="trm-whynote is-km" role="status">
+              <Icon3D name="t-kimelo" size={22} />
+              <span><b>{KIMELO.onLead}</b>{KIMELO.onRest}</span>
+            </div>
+          ) : (
+            <div className="trm-whynote">
+              <Icon3D name={note.icon} size={22} />
+              <span>{note.bold && <b>{note.bold}</b>}{note.rest}</span>
+            </div>
+          )}
 
           <div className="uvl-foot">
             <button type="button" className="uvl-ghost"
@@ -95,7 +162,8 @@ function SkipReasonSheetBody({ skip, title, onClose, onReason, onDone }: SkipRea
             </button>
           </div>
         </div>
-      )}
+        )
+      }}
     </Sheet>
   )
 }

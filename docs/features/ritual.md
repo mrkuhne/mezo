@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-09-29
+updated: 2026-09-30
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -15,6 +15,8 @@ related: [today, habit, growth, intention, proactive, _platform-design-system, n
 ---
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
+
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No ritual change; `NapHubPage` gained the kímélő mód slot above `NapzarasCard`, whose gym chip reads „edzés · kímélő mód” while a period is open ([`today.md`](today.md)).
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** The Napzárás recap (`useDayRecap`, `data/ritual/recapHooks.ts`) no longer shows a gym "not-done" row for a day the owner skipped — a skipped GYM occurrence isn't an unfinished plan. See [`train.md`](train.md) "Kihagyás (S1)".
 >

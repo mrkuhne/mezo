@@ -121,3 +121,31 @@ test('an ELMARADT state chip wears the missed tint', () => {
   render(<TodaySessionCard {...base} tone="run" stateLabel="ELMARADT" />)
   expect(screen.getByText('ELMARADT')).toHaveClass('is-miss')
 })
+
+// ── Kímélő mód S2 (mezo-q4xt2.2) — prototype kmInner() / the rCb run card ──
+test('kimelo: muted card, KÍMÉLŐ MÓD chip, the flat Kímélő mód block, no skip and no CTA (wins over a skip row)', () => {
+  const { container } = render(
+    <TodaySessionCard {...base} tone="sport" onLog={() => {}} onSkip={() => {}} skipped={skipRow} kimelo />,
+  )
+  expect(container.querySelector('.trm-sess.is-skip')).toBeInTheDocument()
+  expect(screen.getByText('KÍMÉLŐ MÓD')).toHaveClass('is-skip')
+  expect(container.querySelector('.trm-skipd.is-in use')?.getAttribute('href')).toBe('#t-kimelo')
+  expect(screen.getByText('Magától kimarad · nem számít mulasztásnak.')).toBeInTheDocument()
+  expect(screen.queryByText(/Kihagyva/)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Kihagyom' })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).toBeNull()
+})
+
+test('kimelo never hides a logged session', () => {
+  render(<TodaySessionCard {...base} tone="sport" logged loggedSummary="RPE 7" kimelo />)
+  expect(screen.queryByText('KÍMÉLŐ MÓD')).toBeNull()
+  expect(screen.getByText('RPE 7')).toBeInTheDocument()
+})
+
+test('rampNote: the „Visszatérő futás" note above the CTA', () => {
+  const { container } = render(<TodaySessionCard {...base} tone="run" onLog={() => {}} rampNote />)
+  expect(screen.getByText('Visszatérő futás')).toBeInTheDocument()
+  expect(screen.getByText('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')).toBeInTheDocument()
+  expect(container.querySelector('.trm-skipd.is-in use')?.getAttribute('href')).toBe('#t-sprout')
+  expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
+})

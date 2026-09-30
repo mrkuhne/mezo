@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-09-30
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -14,6 +14,8 @@ related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
 
 # Intention — Daily Creed, Foci & Evening Reflection
+
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No intention change; `NapHubPage` gained the kímélő mód slot above the Napzárás card ([`today.md`](today.md)).
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The intention and reflect sheets opened from Nap · Rutin wear the floating glass sheet with lit flat buttons. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 

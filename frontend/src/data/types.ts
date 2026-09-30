@@ -1591,6 +1591,9 @@ export interface WorkoutPlan {
   niggleWarning?: NiggleWarning
   challenges: Challenge[]
   overloadSummary?: OverloadSummary | null
+  /** Kímélő mód S2 (mezo-q4xt2.2): today's session is lightened — a comeback ramp session or a
+   *  released protected day; the served set counts are already reduced. Absent otherwise. */
+  comeback?: { index: number; total: number; mode: 'RAMP' | 'RELEASED' } | null
 }
 
 export interface GymSchedule { weeklyTimes: GymScheduleDay[] }
