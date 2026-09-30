@@ -14713,6 +14713,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: rgba(25, 22, 20, 0.82);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   box-shadow: inset 0 0 0 1px var(--divider); }
+/* Leave enough scroll travel for the optional time row to clear the sticky save bar. */
+.flognew-page .logflow-composer { padding-bottom: 96px; }
 
 /* ─ The four ways in (FuelLogModes) ─ */
 .fmx-logmodes { margin: 0 0 2px; }

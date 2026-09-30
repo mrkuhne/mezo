@@ -96,6 +96,14 @@ test('future time today blocks save, while edit mode keeps its existing time fie
   expect(screen.getByLabelText('Mikor ettél?')).toBeInTheDocument()
 })
 
+test('an emptied time field cannot send an invalid timestamp', async () => {
+  const user = userEvent.setup()
+  renderComposer({ seedLine: true })
+  await user.click(screen.getByRole('button', { name: /Mikor ettél/ }))
+  fireEvent.change(screen.getByLabelText('Evés időpontja'), { target: { value: '' } })
+  expect(screen.getByRole('button', { name: /Logolás/ })).toBeDisabled()
+})
+
 test('untouched time is read at save', async () => {
   const user = userEvent.setup()
   renderComposer({ seedLine: true, logDate: '2026-09-27' })

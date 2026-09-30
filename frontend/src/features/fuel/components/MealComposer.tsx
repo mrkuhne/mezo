@@ -516,10 +516,11 @@ export function MealComposer({
 
   const hasEatingTime = eatingTimeWindows != null && editMealId == null
   const previewTime = timeOverride ?? nowHHmm
-  const timePlacement = hasEatingTime ? resolveEatingTimePlacement(previewTime, eatingTimeWindows!) : null
+  const invalidTime = hasEatingTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(previewTime)
+  const timePlacement = hasEatingTime && !invalidTime ? resolveEatingTimePlacement(previewTime, eatingTimeWindows!) : null
   const isFutureTime = hasEatingTime && timeOverride != null &&
     `${logDate ?? localDateString()}T${timeOverride}` > `${localDateString()}T${nowHHmm}`
-  const canSave = lines.length > 0 && !isFutureTime && !timeSaveBusy
+  const canSave = lines.length > 0 && !invalidTime && !isFutureTime && !timeSaveBusy
   const save = () => {
     if (!canSave) return
     const saveTime = timeOverride ?? localHHmm()
@@ -920,6 +921,7 @@ export function MealComposer({
               <p>{timePlacement?.label != null && timePlacement.window != null
                 ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}`
                 : 'Ablakon kívül'}</p>
+              {invalidTime && <p role="alert" className="logflow-eaten-time-error">Adj meg egy érvényes időpontot.</p>}
               {isFutureTime && <p role="alert" className="logflow-eaten-time-error">jövőbeli időpontot nem lehet menteni.</p>}
             </div>
           )}
