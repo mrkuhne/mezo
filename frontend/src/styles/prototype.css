@@ -17555,10 +17555,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    type so the longest single word („Gyomorrontás") stays whole; words never break mid-word
    (mezo-q4xt2.2 review: „Gyomorront / ás"). Shared by „Miért marad ki?" and the Nap „Mi történt?". */
 @media (max-width: 360px) {
+  /* Headroom for CI's Linux font metrics: „Gyomorrontás" measured 89px there vs 85px of room at
+     12px (mezo-q4xt2.2 follow-up) — smaller icon/gap/padding + 11.5px type leave ~5px spare. */
   .trm-whyg { gap: 6px; }
-  .trm-whyc { gap: 6px; padding: 9px 6px; font-size: 12px; }
+  .trm-whyc { gap: 5px; padding: 9px 5px; font-size: 11.5px; letter-spacing: -0.1px; }
   .trm-whyc > span { overflow-wrap: normal; word-break: normal; hyphens: manual; }
-  .sheet.glass.uv-sheet .trm-whyc .t-ico { width: 24px; height: 24px; }
+  .sheet.glass.uv-sheet .trm-whyc .t-ico { width: 22px; height: 22px; }
 }
 .trm-whynote {
   display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border-radius: 14px;
