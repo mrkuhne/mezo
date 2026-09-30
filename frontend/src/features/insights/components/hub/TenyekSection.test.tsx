@@ -141,6 +141,31 @@ describe(`TenyekSection (${isMockMode() ? 'mock' : 'real'} mode)`, () => {
     })
   })
 
+  test('merged facts live in their own „Összevontam” fold with the survivor in the why line, and can be re-enabled', async () => {
+    const toasts: string[] = []
+    const off = onToast((t) => { if ('text' in t) toasts.push(t.text) })
+    renderPage('/?view=tenyek')
+    const fold = await screen.findByRole('button', { name: /Összevontam ·/ })
+    expect(fold).toHaveTextContent('Összevontam · 1')
+    await userEvent.click(fold)
+    const row = document.querySelector('[data-row="f:f17"]') as HTMLElement
+    expect(row).toHaveTextContent(/összevontam ezzel: „Pre-workout fueling: 2-3h előtte protein\+carb”/)
+    expect(row.querySelector('.th-why use[href="#t-layers"]')).not.toBeNull()
+    // not in the generic muted fold
+    await userEvent.click(screen.getByRole('button', { name: /Elhallgattatott ·/ }))
+    expect(screen.getByRole('button', { name: /Elhallgattatott ·/ })).toHaveTextContent('Elhallgattatott · 2')
+    await userEvent.click(within(row).getByRole('button', { name: /Visszakapcsolom/ }))
+    off()
+    expect(toasts).toEqual(['Visszakapcsoltam — újra külön használom'])
+  })
+
+  test('the Monday tidy-up strip counts the recent merges and points at the pending proposals', async () => {
+    renderPage('/?view=tenyek')
+    const strip = await screen.findByText(/Hétfői rendrakás: 1 ismétlést összevontam/)
+    expect(strip).toHaveTextContent('1 javaslat vár rád a Rólad oldalon.')
+    expect(screen.getByRole('link', { name: 'Megnézem ›' })).toHaveAttribute('href', '/mezo/rolad')
+  })
+
   test('the dossier door links to the character dossier', async () => {
     renderPage('/?view=tenyek')
     expect(await screen.findByRole('link', { name: new RegExp(LINKS.dossier) })).toHaveAttribute('href', '/mezo/karakter')

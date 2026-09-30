@@ -1775,3 +1775,258 @@ test('real mode: a stored GYM skip for today shows the skipped hero; a completed
   expect(await screen.findByRole('button', { name: /Eredmény/ })).toBeInTheDocument()
   expect(screen.queryByText('KIHAGYVA')).not.toBeInTheDocument()
 })
+
+// ── Kímélő mód S2 (mezo-q4xt2.2, prototype elo/edzes.html `kmHero`/`thero`/`udvSheet`/`cbBlock`) ──
+describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
+  const renderKm = (entry = '/train') =>
+    render(
+      <QueryWrapper>
+        <ToastProvider>
+          <MemoryRouter initialEntries={[entry]}>
+            <LevelUpProvider><TrainTodayPage /></LevelUpProvider>
+          </MemoryRouter>
+        </ToastProvider>
+      </QueryWrapper>,
+    )
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday — the mock's own „today" too
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const openKm = async (skipButton: HTMLElement, estimate: string) => {
+    fireEvent.click(skipButton)
+    await screen.findByText('Miért marad ki?')
+    fireEvent.click(screen.getByRole('button', { name: /Beteg vagyok/ }))
+    fireEvent.click(await screen.findByRole('button', { name: estimate }))
+    expect(await screen.findByText('Kímélő mód bekapcsolva', { selector: 'b' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Miért marad ki?')).not.toBeInTheDocument(), { timeout: 3000 })
+  }
+
+  it('Kihagyom → Beteg vagyok → 2–3 nap: the recovery hero; Ma mégis edzek / Mégse; day-1 Jobban vagyok ends it', async () => {
+    const { container } = renderKm()
+    await openKm(screen.getByRole('button', { name: 'Kihagyom' }), '2–3 nap')
+    expect(await screen.findByText('Kímélő mód bekapcsolva', { selector: '.toast *, .toast' })).toBeInTheDocument()
+    const hero = container.querySelector('.trm-hero')! as HTMLElement
+    expect(hero).toHaveClass('is-skip')
+    expect(within(hero).getByText('KÍMÉLŐ MÓD · 1. nap')).toHaveClass('is-skip')
+    expect(within(hero).getByText('Beteg vagy · becslés: 2–3 nap')).toBeInTheDocument()
+    expect(within(hero).getByText('Az edzés ma magától kimarad. Nem számít mulasztásnak, a sorozatod marad.')).toBeInTheDocument()
+    expect(hero.querySelector('.trm-skipd use')?.getAttribute('href')).toBe('#t-ill')
+    // the period replaced today's skip; no skip, no start, no readiness on a protected day
+    expect(screen.queryByText('KIHAGYVA')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+    expect(screen.queryByText(/MAI ÁLLAPOT/)).not.toBeInTheDocument()
+    // the strip marks the protected days kímélő (mock mode's date-keyed done signal ticks today's
+    // own chip done, and a done session is never muted — so read tomorrow's chip)
+    expect(screen.getByRole('tab', { name: /^Péntek.*kímélő mód/ })).toBeInTheDocument()
+
+    fireEvent.click(within(hero).getByRole('button', { name: /Ma mégis edzek/ }))
+    expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
+    expect(await screen.findByText('Rendben — ma edzel, holnaptól újra kímélő mód')).toBeInTheDocument()
+    expect(screen.getByText('Kímélő mód közben edzel · csak ma, könnyítve: kevesebb sorozat, kb. 10%-kal kisebb súly')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Kikapcsolom a könnyítést' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+    expect(await screen.findByText('KÍMÉLŐ MÓD · 1. nap')).toBeInTheDocument()
+    expect(await screen.findByText('Visszaállítva · ma pihensz')).toBeInTheDocument()
+
+    // day 1: the server has no return for a same-day recovery — „Jobban vagyok" ends it
+    fireEvent.click(screen.getByRole('button', { name: /Jobban vagyok/ }))
+    expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
+    expect(await screen.findByText('Kímélő mód befejezve')).toBeInTheDocument()
+    expect(screen.queryByText('Üdv újra!')).not.toBeInTheDocument()
+    expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
+  })
+
+  it('released day: Kikapcsolom a könnyítést trains it at full load', async () => {
+    renderKm()
+    await openKm(screen.getByRole('button', { name: 'Kihagyom' }), 'Kb. egy hét')
+    fireEvent.click(await screen.findByRole('button', { name: /Ma mégis edzek/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Kikapcsolom a könnyítést' }))
+    expect(await screen.findByText('Kímélő mód közben edzel · csak ma')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Kikapcsolom a könnyítést' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Mégse' })).toBeInTheDocument()
+  })
+
+  it('a protected sport card is muted „Kímélő mód" with no skip; the sheet offers no duration while a period is open', async () => {
+    renderKm()
+    await openKm(screen.getByRole('button', { name: 'Kihagyom' }), 'Kb. egy hét')
+    fireEvent.click(screen.getByRole('tab', { name: /^Péntek/ })) // Pén — volleyball 18:15, protected
+    const vb = await findTodayCard('Volleyball')
+    expect(vb).toHaveClass('is-skip')
+    expect(within(vb).getByText('KÍMÉLŐ MÓD')).toBeInTheDocument()
+    expect(within(vb).getByText('Magától kimarad · nem számít mulasztásnak.')).toBeInTheDocument()
+    expect(within(vb).queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
+    // a past day's skip with a serious reason: no „Meddig tarthat?" — the period is already open
+    fireEvent.click(screen.getByRole('tab', { name: /^Hétfő/ }))
+    const mon = await screen.findAllByRole('button', { name: 'Kihagytam' })
+    fireEvent.click(mon[0])
+    await screen.findByText('Miért marad ki?')
+    fireEvent.click(screen.getByRole('button', { name: /Beteg vagyok/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Beteg vagyok/ })).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.queryByText('MEDDIG TARTHAT?')).not.toBeInTheDocument()
+  })
+
+  it('a retro start: day 3 → Jobban vagyok → Üdv újra! → Rendben → the comeback pill → Kikapcsolom a könnyítést', async () => {
+    const { container } = renderKm('/train?day=1') // Kedd, a past missed gym day
+    const legs = await findTodayCard('Legs')
+    await openKm(within(legs).getByRole('button', { name: 'Kihagytam' }), '2–3 nap')
+    backToToday()
+    const hero = container.querySelector('.trm-hero')! as HTMLElement
+    expect(await within(hero).findByText('KÍMÉLŐ MÓD · 3. nap')).toBeInTheDocument()
+
+    fireEvent.click(within(hero).getByRole('button', { name: /Jobban vagyok/ }))
+    expect(await screen.findByRole('heading', { name: 'Üdv újra!' })).toBeInTheDocument()
+    expect(screen.getByText('KÍMÉLŐ MÓD VÉGE')).toBeInTheDocument()
+    const lines = [...document.querySelectorAll('.trm-udvl .trm-whynote')].map((n) => n.textContent)
+    expect(lines[0]).toBe('2 nap kiesés · a program megy tovább a naptár szerint.')
+    expect(lines[1]).toBe('Az első edzés könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.')
+    fireEvent.click(screen.getByRole('button', { name: /Rendben/ }))
+    await waitFor(() => expect(screen.queryByText('Üdv újra!')).not.toBeInTheDocument())
+    expect(await screen.findByText('Üdv újra! · könnyített visszatérés')).toBeInTheDocument()
+
+    const back = container.querySelector('.trm-hero')! as HTMLElement
+    expect(within(back).getByText('VISSZATÉRŐ EDZÉS · 1/1')).toHaveClass('is-cbk')
+    expect(within(back).getByText('Könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly')).toBeInTheDocument()
+    expect(back.querySelectorAll('.trm-cbsets > div').length).toBeGreaterThan(0)
+    expect(within(back).getByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
+    expect(within(back).getByRole('button', { name: 'Mégsem vagyok jól' })).toBeInTheDocument()
+    // the next planned run (Péntek) carries the half-length note while the ramp is on
+    fireEvent.click(screen.getByRole('tab', { name: /^Péntek/ }))
+    const nextRun = await findTodayCard('Piramis-intervallum')
+    expect(within(nextRun).getByText('Visszatérő futás')).toBeInTheDocument()
+    expect(within(nextRun).getByText('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')).toBeInTheDocument()
+    backToToday()
+
+    fireEvent.click(within(container.querySelector('.trm-hero') as HTMLElement).getByRole('button', { name: 'Kikapcsolom a könnyítést' }))
+    expect(await screen.findByText('Könnyítés kikapcsolva · teljes edzés')).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('BETERVEZVE')).toBeInTheDocument())
+    expect(screen.queryByText(/VISSZATÉRŐ EDZÉS/)).not.toBeInTheDocument()
+    // with the ramp off, the next run is a normal run again
+    fireEvent.click(screen.getByRole('tab', { name: /^Péntek/ }))
+    const run = await findTodayCard('Piramis-intervallum')
+    expect(within(run).queryByText('Visszatérő futás')).not.toBeInTheDocument()
+  })
+
+  it('Üdv újra! → Mégsem vagyok jól reopens the period', async () => {
+    const { container } = renderKm('/train?day=1')
+    await openKm(within(await findTodayCard('Legs')).getByRole('button', { name: 'Kihagytam' }), '2–3 nap')
+    backToToday()
+    fireEvent.click(await screen.findByRole('button', { name: /Jobban vagyok/ }))
+    const sheet = (await screen.findByRole('heading', { name: 'Üdv újra!' })).closest('.sheet') as HTMLElement
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Mégsem vagyok jól' }))
+    expect(await screen.findByText('Rendben — marad a kímélő mód')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Üdv újra!')).not.toBeInTheDocument())
+    expect(within(container.querySelector('.trm-hero') as HTMLElement).getByText('KÍMÉLŐ MÓD · 3. nap')).toBeInTheDocument()
+  })
+
+  it('the estimate has passed: „… volt", the question, Még nem → toast and the question goes', async () => {
+    const { container } = renderKm('/train?day=1')
+    await openKm(within(await findTodayCard('Legs')).getByRole('button', { name: 'Kihagytam' }), 'Csak ma')
+    backToToday()
+    const hero = container.querySelector('.trm-hero')! as HTMLElement
+    expect(await within(hero).findByText('Beteg vagy · becslés: csak ma volt')).toBeInTheDocument()
+    expect(within(hero).getByText('A becsült idő letelt — hogy vagy?')).toBeInTheDocument()
+    fireEvent.click(within(hero).getByRole('button', { name: 'Még nem' }))
+    expect(await screen.findByText('Rendben — holnap újra rákérdezek. Jobbulást!')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('A becsült idő letelt — hogy vagy?')).not.toBeInTheDocument())
+    expect(within(hero).getByRole('button', { name: /Ma mégis edzek/ })).toBeInTheDocument()
+  })
+})
+
+// Real mode: the server serves no plan on a protected day, so the hero falls back to the meso
+// template; „Ma mégis edzek" PUTs the release (lighter by default).
+test('real mode: a protected today shows the recovery hero from the template; Ma mégis edzek releases it', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const today = localDateString()
+  let released: unknown = null
+  const state = {
+    period: {
+      id: 'p-1', category: 'INJURY', estimate: 'WEEK', startDate: today, expectedEnd: null, endedOn: null, dayIndex: 2,
+      estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [], return: null,
+    },
+    protectedDates: [today],
+    comeback: null,
+  }
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({ openWorkout: null })),
+    http.get(`${API_BASE}/api/train/recovery`, () => HttpResponse.json(state)),
+    http.put(`${API_BASE}/api/train/recovery/releases/:date`, async ({ request, params }) => {
+      released = { date: params.date, body: await request.json() }
+      return HttpResponse.json(state)
+    }),
+  )
+  render(<QueryWrapper><ToastProvider><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></ToastProvider></QueryWrapper>)
+  expect(await screen.findByText('KÍMÉLŐ MÓD · 2. nap')).toBeInTheDocument()
+  expect(screen.getByText('Pull Day', { selector: '.trm-hero-title' })).toBeInTheDocument()
+  expect(screen.getByText('Sérülés / fájdalom · becslés: kb. egy hét')).toBeInTheDocument()
+  expect(screen.queryByText(/MAI ÁLLAPOT/)).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Ma mégis edzek/ }))
+  await waitFor(() => expect(released).toEqual({ date: today, body: { lighten: true } }))
+})
+
+// Real mode: the served comeback drives the hero pill (index 2 keeps the weight), with the
+// served (already reduced) set counts.
+test('real mode: /today comeback index 2 shows VISSZATÉRŐ EDZÉS · 2/2 and „a súly nem nő"', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({
+      templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0, openWorkout: null,
+      exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', type: 'compound', workingSets: 3, warmupSets: 0, repMin: 8, repMax: 10, targetRIR: 1 }],
+      comeback: { index: 2, total: 2, mode: 'RAMP' },
+    })),
+  )
+  render(<QueryWrapper><ToastProvider><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></ToastProvider></QueryWrapper>)
+  expect(await screen.findByText('VISSZATÉRŐ EDZÉS · 2/2')).toBeInTheDocument()
+  expect(screen.getByText('Könnyített: harmadával kevesebb sorozat, a súly nem nő')).toBeInTheDocument()
+  expect(document.querySelector('.trm-cbsets')?.textContent).toBe('Row3 szett')
+  expect(screen.queryByRole('button', { name: 'Mégsem vagyok jól' })).not.toBeInTheDocument()
+})
+
+// Fix round 1: „Ma mégis edzek" drops only the GYM skip on that date — a sport skip the user made
+// on purpose, with its own reason, survives.
+test('real mode: Ma mégis edzek undoes the gym skip only; a sport skip with its reason survives', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const today = localDateString()
+  const deleted: string[] = []
+  const row = (id: string, kind: string, reasonCategory: string) => ({
+    id, date: today, kind, dayOfWeek: kind === 'SPORT' ? (new Date().getDay() + 6) % 7 : null, time: kind === 'SPORT' ? '18:00' : null,
+    sessionKey: null, reasonCategory, reasonText: null, source: 'USER', serious: reasonCategory === 'ILLNESS',
+    freePass: false, excused: true,
+  })
+  const state = {
+    period: {
+      id: 'p-1', category: 'ILLNESS', estimate: 'FEW_DAYS', startDate: today, expectedEnd: null, endedOn: null, dayIndex: 2,
+      estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [], return: null,
+    },
+    protectedDates: [today],
+    comeback: null,
+  }
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({ openWorkout: null })),
+    http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([row('gym-1', 'GYM', 'ILLNESS'), row('sport-1', 'SPORT', 'NO_TIME')])),
+    http.delete(`${API_BASE}/api/train/skips/:id`, ({ params }) => {
+      deleted.push(String(params.id))
+      return new HttpResponse(null, { status: 204 })
+    }),
+    http.get(`${API_BASE}/api/train/recovery`, () => HttpResponse.json(state)),
+    http.put(`${API_BASE}/api/train/recovery/releases/:date`, () => HttpResponse.json(state)),
+  )
+  render(<QueryWrapper><ToastProvider><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></ToastProvider></QueryWrapper>)
+  fireEvent.click(await screen.findByRole('button', { name: /Ma mégis edzek/ }))
+  await waitFor(() => expect(deleted).toEqual(['gym-1']))
+  await new Promise((r) => setTimeout(r, 50))
+  expect(deleted).toEqual(['gym-1'])
+})

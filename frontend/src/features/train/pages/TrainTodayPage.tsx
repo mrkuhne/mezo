@@ -67,8 +67,22 @@ import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessio
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { usePlannedSkips } from '@/data/train/skipHooks'
 import { findSkip, skipWindow, type PlannedSkip, type PlannedSkipKey } from '@/features/train/logic/plannedSkips'
-import { SkippedBlock } from '@/features/train/components/SkippedBlock'
+import { RecoveryBlock, SkippedBlock } from '@/features/train/components/SkippedBlock'
 import { SkipReasonSheet } from '@/features/train/components/SkipReasonSheet'
+import { ComebackPill, comebackPillLabel } from '@/features/train/components/ComebackPill'
+import { WelcomeBackSheet } from '@/features/train/components/WelcomeBackSheet'
+import { useRecoveryBetter } from '@/features/train/logic/useRecoveryBetter'
+import { KIMELO, notYetToast } from '@/features/train/logic/skipCopy'
+import {
+  useDiscardRecovery,
+  useOpenRecovery,
+  useRecovery,
+  useRecoveryCheckIn,
+  useReleaseDay,
+  useUndoBetter,
+  useUnreleaseDay,
+  useWaiveComeback,
+} from '@/data/train/recoveryHooks'
 import { useToast } from '@/shared/ui/ToastProvider'
 
 /** Each sport's own 3D art (the sprite carries one per wire sport); volleyball is t-volley. */
@@ -96,6 +110,18 @@ export function TrainTodayPage() {
   const { skips, skip, setReason, undo } = usePlannedSkips()
   const [why, setWhy] = useState<{ target: PlannedSkipKey; title: string } | null>(null)
   const toast = useToast()
+  // Kímélő mód S2 (mezo-q4xt2.2, prototype elo/edzes.html `kmHero`/`thero`/`udvSheet`): the
+  // recovery state (protected dates, the open period, the comeback ramp) and its writes. Every
+  // failed write is toasted by the global MutationCache; the UI only moves on success.
+  const { recovery } = useRecovery()
+  const openRecovery = useOpenRecovery()
+  const recoveryCheckIn = useRecoveryCheckIn()
+  const undoBetter = useUndoBetter()
+  const discardRecovery = useDiscardRecovery()
+  const releaseDay = useReleaseDay()
+  const unreleaseDay = useUnreleaseDay()
+  const waiveComeback = useWaiveComeback()
+  const { better: endRecovery, welcome, closeWelcome } = useRecoveryBetter({ checkIn: recoveryCheckIn, discard: discardRecovery })
   const { goal: sleepGoal } = useSleepGoal()
   // Calibrated pacing (Task 12, mezo-dzbm): only the today chip's workoutMinutes reads this —
   // structureLint/peakWeekFit/programFit deliberately stay on the static estimate.
@@ -187,6 +213,8 @@ export function TrainTodayPage() {
     // Mai keeps a skipped occurrence ON the page (it renders as skipped, with its undo) — so the
     // agenda is built unfiltered here; every planning surface filters it out instead.
     skips: [],
+    // Kímélő mód S2: protected days stay listed too — flagged, so the strip and cards mute them.
+    protectedDates: recovery.protectedDates,
   })
 
   // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
@@ -332,6 +360,63 @@ export function TrainTodayPage() {
   const gymHeroPlan = !completedTodayWorkout && !todaySession?.openWorkout
   const todayGymSkip = gymHeroPlan ? findSkip(skips, gymKey(shownIso)) : undefined
 
+  // ── Kímélő mód S2 (mezo-q4xt2.2): protected days, the open period and its actions ──
+  // A protected date (the server's own list, releases already removed) mutes every planned session
+  // on it; a real skip row on that date reads as kímélő too while the period is open.
+  const protectedSet = new Set(recovery.protectedDates)
+  const isProtected = (iso: string | undefined) => Boolean(iso) && protectedSet.has(iso!)
+  const period = recovery.period ?? null
+  const openPeriod = period && !period.endedOn ? period : null
+  const recoveryBusy = openRecovery.isPending || recoveryCheckIn.isPending || undoBetter.isPending
+    || discardRecovery.isPending || releaseDay.isPending || unreleaseDay.isPending || waiveComeback.isPending
+  // „Ma mégis edzek" trains the GYM session on a protected date; a real gym skip row there would
+  // still hide it, so that one row goes too. Sport/run skips the user made on purpose stay.
+  const onRelease = (iso: string) => releaseDay.mutate({ date: iso }, {
+    onSuccess: () => {
+      const gymSkipRow = findSkip(skips, gymKey(iso))
+      if (gymSkipRow) undo(gymSkipRow.id)
+      toast.show({ kind: 'info', text: KIMELO.toastReleased })
+    },
+  })
+  const onUnrelease = (iso: string) => unreleaseDay.mutate(iso, {
+    onSuccess: () => toast.show({ kind: 'info', text: KIMELO.toastUnreleased }),
+  })
+  const onFullLoad = (iso: string) => releaseDay.mutate({ date: iso, lighten: false }, {
+    onSuccess: () => toast.show({ kind: 'info', text: KIMELO.toastWaived }),
+  })
+  // „Jobban vagyok": day 1 discards (the server has no same-day return), later BETTER → „Üdv újra!"
+  // — the shared rule in `useRecoveryBetter` (the Nap hub's card uses it too).
+  const onBetter = () => endRecovery(openPeriod)
+  const onNotYet = () => {
+    if (!openPeriod) return
+    const cat = openPeriod.category
+    recoveryCheckIn.mutate('NOT_YET', { onSuccess: () => toast.show({ kind: 'info', text: notYetToast(cat) }) })
+  }
+  const onUndoBetter = (fromSheet: boolean) => undoBetter.mutate(undefined, {
+    onSuccess: () => {
+      closeWelcome()
+      toast.show({ kind: 'info', text: fromSheet ? KIMELO.toastStay : KIMELO.toastUndone })
+    },
+  })
+  const onWaive = () => waiveComeback.mutate(undefined, {
+    onSuccess: () => toast.show({ kind: 'info', text: KIMELO.toastWaived }),
+  })
+  // The return can be taken back only on the day it ended (the server's undo window).
+  const canUndoBetter = Boolean(period?.endedOn && period.endedOn === clockIso)
+  // The first run after the return is half as long (prototype `rCb`): the next planned, not yet
+  // logged, not protected run from today on carries the note while the ramp is on.
+  const comebackOn = Boolean(recovery.comeback && !recovery.comeback.waived && recovery.comeback.total > 0)
+  const nextRun = (() => {
+    if (!comebackOn) return null
+    for (const d of agenda) {
+      if (!d.date || d.date < todayIso || isProtected(d.date)) continue
+      const runs = d.date === todayIso ? todayRuns : d.running
+      const r = runs.find((x) => !runLoggedFor(x.key))
+      if (r) return { iso: d.date, key: r.key }
+    }
+    return null
+  })()
+
   // ── Task 8 (mezo-tb3s2): the energy card, today-only — reads the SERVED Fuel energy ──
   // (never a client-side weight/MET estimate; the old `trainDayEnergy` path is gone from
   // this page). `earned` mirrors the exact equation Fuel's own budget hero shows for the
@@ -462,8 +547,42 @@ export function TrainTodayPage() {
         if (item.kind === 'gym') {
           const gym = item.gym
           if (isTodayShown) {
-            if (!workout) return null
             const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase} · GYM`
+            // Kímélő mód S2 (prototype `thero()` km + `kmHero()`): a protected, not-started day's
+            // hero. The server serves no plan on a protected day, so the title and the count fall
+            // back to the meso template; the readiness card is not shown (nothing to adjust).
+            if (openPeriod && isProtected(shownIso) && !completedTodayWorkout && !todaySession?.openWorkout) {
+              const md = activeMeso.days?.find((d) => d.day === shownDay?.day)
+              const title = workout?.title ?? md?.type ?? gym.type ?? 'Gym'
+              const exerciseCount = workout?.exercises.length ?? md?.exerciseCount ?? 0
+              const constellation = workout ? impactRows.filter((r) => r.plannedSets > 0 && r.token) : []
+              return (
+                <section key="hero-gym" className="trm-hero is-skip is-km">
+                  <span className="trm-stpill is-skip"><i aria-hidden="true" />{KIMELO.chip} · {openPeriod.dayIndex}. nap</span>
+                  <Icon3D name="t-dumbbell" size={98} className="trm-hero-art uv-float" />
+                  <span className="trm-hero-eb">{gymEyebrow}</span>
+                  <h2 className="trm-hero-title">{title}</h2>
+                  <p className="trm-hero-sub">{activeMeso.shortTitle} · {activeMeso.currentWeek}. hét / {activeMeso.weeks}</p>
+                  {constellation.length > 0 && (
+                    <div className="trm-hero-mchips">
+                      {constellation.map((r) => (
+                        <span key={r.region} className="trm-mchp" style={{ '--c': `var(--dv-${r.region})` } as CSSProperties}>
+                          <MuscleChip token={r.token} size={28} />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="trm-hero-pills">
+                    {exerciseCount > 0 && <span className="trm-fact">{exerciseCount} gyakorlat</span>}
+                    {workout && <span className="trm-fact">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>}
+                    {gym.type && <span className="trm-fact">{gym.type}</span>}
+                  </div>
+                  <RecoveryBlock period={openPeriod} busy={recoveryBusy}
+                    onRelease={() => onRelease(shownIso)} onBetter={onBetter} onNotYet={onNotYet} />
+                </section>
+              )
+            }
+            if (!workout) return null
             // Three-state gating (spec 2026-07-15): a completed instance wins (KÉSZ ·
             // Eredmény review), else an open instance (FOLYAMATBAN · Folytassuk),
             // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
@@ -487,6 +606,11 @@ export function TrainTodayPage() {
             const heroState = completedTodayWorkout ? 'done' : gymInProgress ? 'live' : 'plan'
             // Kihagyás S1 (prototype `thero()`): only the plan state can be skipped.
             const heroSkip = heroState === 'plan' ? todayGymSkip : undefined
+            // Kímélő mód S2: the comeback ramp session (prototype `cbBlock()`), and a released
+            // protected day („Ma mégis edzek", prototype `.kmrel`).
+            const comeback = heroState === 'plan' && !heroSkip && workout.comeback?.mode === 'RAMP' ? workout.comeback : null
+            const released = heroState === 'plan' && !heroSkip && Boolean(openPeriod?.releasedDates.includes(shownIso))
+            const releasedLight = released && !openPeriod!.releasedUnlightened.includes(shownIso)
             return (
               <>
               {/* The hero is FRAMELESS (bible §3.4 rank 1): a coral halo, no card. Only the CTA
@@ -495,9 +619,9 @@ export function TrainTodayPage() {
                 key="hero-gym"
                 className={cn('trm-hero', heroState === 'done' ? 'is-done' : heroState === 'live' && 'is-live', heroSkip && 'is-skip')}
               >
-                <span className={cn('trm-stpill', heroState === 'done' && 'is-done', heroState === 'plan' && !heroSkip && 'is-plan', heroSkip && 'is-skip')}>
+                <span className={cn('trm-stpill', heroState === 'done' && 'is-done', heroState === 'plan' && !heroSkip && !comeback && 'is-plan', heroSkip && 'is-skip', comeback && 'is-cbk')}>
                   <i aria-hidden="true" />
-                  {heroSkip ? 'KIHAGYVA' : heroState === 'done' ? 'KÉSZ' : heroState === 'live' ? 'FOLYAMATBAN' : 'BETERVEZVE'}
+                  {heroSkip ? 'KIHAGYVA' : comeback ? comebackPillLabel(comeback) : heroState === 'done' ? 'KÉSZ' : heroState === 'live' ? 'FOLYAMATBAN' : 'BETERVEZVE'}
                 </span>
                 <Icon3D name="t-dumbbell" size={98} className="trm-hero-art uv-float" />
                 <span className="trm-hero-eb">{gymEyebrow}</span>
@@ -550,6 +674,11 @@ export function TrainTodayPage() {
                   </button>
                 ) : (
                   <>
+                  {comeback && (
+                    <ComebackPill comeback={comeback} busy={recoveryBusy}
+                      exercises={workout.exercises.map((e) => ({ id: e.id, name: e.name, sets: e.sets }))}
+                      onWaive={onWaive} onUndo={canUndoBetter ? () => onUndoBetter(false) : undefined} />
+                  )}
                   <button type="button" className="trm-start glass is-go np-press"
                     style={{ '--c': 'var(--dv-coral)' } as CSSProperties} onClick={openSession}>
                     <Icon3D name="t-dumbbell" size={46} className="trm-start-art" />
@@ -559,8 +688,20 @@ export function TrainTodayPage() {
                     </span>
                     <em className="trm-start-go" aria-hidden="true">›</em>
                   </button>
-                  {/* Kihagyás S1: the quiet „Kihagyom" under the plan-state CTA. */}
-                  {inSkipWindow(shownIso) && (
+                  {/* Kímélő mód S2 (prototype `.kmrel`): a released protected day says so, with
+                      „Mégse" (protected again) and — while lightened — the full-load switch. */}
+                  {released ? (
+                    <div className="trm-kmrel">
+                      <Icon3D name="t-kimelo" size={18} />
+                      <span>{releasedLight ? KIMELO.released : KIMELO.releasedFull}</span>
+                      <button type="button" className="trm-kmlink" disabled={recoveryBusy} onClick={() => onUnrelease(shownIso)}>Mégse</button>
+                      {releasedLight && (
+                        <button type="button" className="trm-kmlink" disabled={recoveryBusy} onClick={() => onFullLoad(shownIso)}>
+                          Kikapcsolom a könnyítést
+                        </button>
+                      )}
+                    </div>
+                  ) : inSkipWindow(shownIso) && (
                     <button type="button" className="trm-skipbtn np-press"
                       onClick={() => startSkip(gymKey(shownIso), workout.title)}>
                       <Icon3D name="t-skip" size={18} />Kihagyom
@@ -589,7 +730,9 @@ export function TrainTodayPage() {
           const gymTitle = gym.type ?? md?.type ?? 'Gym'
           // Kihagyás S1: a not-done, not-started day in the window can be skipped (past ⇒ „Kihagytam").
           const gymSkip = done || resumable ? undefined : findSkip(skips, gymKey(shownIso))
-          const gymCanSkip = !done && !resumable && !gymSkip && inSkipWindow(shownIso)
+          // Kímélő mód S2: a protected day's session is muted, with no skip (it already kimarad).
+          const gymKm = !done && !resumable && isProtected(shownIso)
+          const gymCanSkip = !done && !resumable && !gymSkip && !gymKm && inSkipWindow(shownIso)
           return (
             <TodaySessionCard
               key="hero-gym"
@@ -609,6 +752,7 @@ export function TrainTodayPage() {
               skipLabel={gymState === 'missed' ? 'Kihagytam' : 'Kihagyom'}
               onSkipReason={() => setWhy({ target: gymKey(shownIso), title: gymTitle })}
               onSkipUndo={() => gymSkip && undoSkip(gymSkip)}
+              kimelo={gymKm}
             />
           )
         }
@@ -621,7 +765,8 @@ export function TrainTodayPage() {
           // Kihagyás S1: only a recurring slot can be skipped (a one-off event is out of scope).
           const vbKey = sportKey(shownIso, shownDay?.day ?? '', vb.time)
           const vbSkip = logged || vb.oneOff ? undefined : findSkip(skips, vbKey)
-          const vbCanSkip = !logged && !vb.oneOff && !vbSkip && inSkipWindow(shownIso)
+          const vbKm = !logged && isProtected(shownIso)
+          const vbCanSkip = !logged && !vb.oneOff && !vbSkip && !vbKm && inSkipWindow(shownIso)
           return (
             <TodaySessionCard
               key={`hero-sport-${k}-${vb.time}-${i}`}
@@ -656,6 +801,7 @@ export function TrainTodayPage() {
               skipLabel={state === 'missed' ? 'Kihagytam' : 'Kihagyom'}
               onSkipReason={() => setWhy({ target: vbKey, title: SPORT_TITLES[k] })}
               onSkipUndo={() => vbSkip && undoSkip(vbSkip)}
+              kimelo={vbKm}
             />
           )
         }
@@ -688,7 +834,8 @@ export function TrainTodayPage() {
         const runState = sessionState({ dayIso: shownIso, todayIso, timeOfDay: s.timeOfDay })
         const rKey = runKey(shownIso, s.key)
         const runSkip = rl ? undefined : findSkip(skips, rKey)
-        const runCanSkip = !rl && !runSkip && inSkipWindow(shownIso)
+        const runKm = !rl && isProtected(shownIso)
+        const runCanSkip = !rl && !runSkip && !runKm && inSkipWindow(shownIso)
         const openRunLog = () => setRunLogCtx({
           blockId: activeRunningBlock!.id,
           weekNumber: activeRunningBlock!.currentWeek,
@@ -719,6 +866,8 @@ export function TrainTodayPage() {
             skipLabel={runState === 'missed' ? 'Kihagytam' : 'Kihagyom'}
             onSkipReason={() => setWhy({ target: rKey, title: s.label })}
             onSkipUndo={() => runSkip && undoSkip(runSkip)}
+            kimelo={runKm}
+            rampNote={nextRun?.iso === shownIso && nextRun.key === s.key}
           />
         )
         })()}
@@ -992,6 +1141,23 @@ export function TrainTodayPage() {
         title={why?.title ?? ''}
         onClose={() => setWhy(null)}
         onReason={(reason, text) => why && setReason(why.target, reason, text)}
+        // Kímélő mód S2: a serious reason offers „Meddig tarthat?" while no period is open. The
+        // period starts on the skipped day — never later than today (the server's window).
+        canOpenRecovery={!openPeriod}
+        onOpenRecovery={(estimate) => {
+          const cur = why ? findSkip(skips, why.target) : undefined
+          if (!cur) return Promise.reject(new Error('no skip row'))
+          return openRecovery.mutateAsync({
+            category: cur.reasonCategory, estimate, startDate: cur.date < clockIso ? cur.date : clockIso,
+          })
+        }}
+        onRecoveryOpened={() => {
+          // Today's (or a later) skip is replaced by the period (prototype: the retro rows stay).
+          const cur = why ? findSkip(skips, why.target) : undefined
+          if (cur && (cur.date >= clockIso || cur.date === todayIso)) undo(cur.id)
+          // The undone row unmounts the sheet mid-exit (its onClose never runs) — clear it here.
+          setWhy(null)
+        }}
         onDone={(text) => {
           // The sheet already toasts „Megjegyeztem · …"; only an Egyéb text still needs saving.
           const cur = why ? findSkip(skips, why.target) : undefined
@@ -1000,6 +1166,15 @@ export function TrainTodayPage() {
           }
         }}
       />
+      {/* „Üdv újra!" (Kímélő mód S2): after „Jobban vagyok" the server's return rule, with the
+          active meso's (possibly shifted) current week for the calendar line. */}
+      {welcome && period?.return && (
+        <WelcomeBackSheet ret={period.return} week={activeMeso.currentWeek} showRun={Boolean(activeRunningBlock)}
+          busy={recoveryBusy}
+          onClose={closeWelcome}
+          onOk={() => toast.show({ kind: 'success', text: KIMELO.toastWelcome })}
+          onUndo={() => onUndoBetter(true)} />
+      )}
       {runLogCtx && (
         <RunLogSheet
           ctx={runLogCtx}

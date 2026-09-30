@@ -126,3 +126,81 @@ describe('SkipReasonSheet (prototype elo/edzes.html whySheet)', () => {
     expect(screen.queryByText('Miért marad ki?')).toBeNull()
   })
 })
+
+describe('SkipReasonSheet · kímélő mód (Kihagyás S2, prototype whySheet .kmdur)', () => {
+  function renderKm(skip: PlannedSkip, over: { canOpenRecovery?: boolean; open?: () => Promise<unknown> } = {}) {
+    const h = {
+      onClose: vi.fn(), onReason: vi.fn(), onDone: vi.fn(), onRecoveryOpened: vi.fn(),
+      onOpenRecovery: vi.fn(over.open ?? (() => Promise.resolve())),
+    }
+    const r = render(<SkipReasonSheet open skip={skip} title="Pull Day" canOpenRecovery={over.canOpenRecovery ?? true} {...h} />)
+    return { ...h, ...r }
+  }
+  const ill = () => sk({ reasonCategory: 'ILLNESS', serious: true, freePass: false })
+
+  afterEach(() => vi.useRealTimers())
+
+  test('a serious reason shows „Meddig tarthat?" with the four chips', () => {
+    renderKm(ill())
+    expect(screen.getByText('MEDDIG TARTHAT?')).toBeInTheDocument()
+    for (const l of ['Csak ma', '2–3 nap', 'Kb. egy hét', 'Nem tudom']) expect(screen.getByRole('button', { name: l })).toBeInTheDocument()
+  })
+
+  test('no row for a non-serious reason, and none while a period is already open', () => {
+    const { unmount } = renderKm(sk({ reasonCategory: 'TIRED' }))
+    expect(screen.queryByText('MEDDIG TARTHAT?')).toBeNull()
+    unmount()
+    renderKm(ill(), { canOpenRecovery: false })
+    expect(screen.queryByText('MEDDIG TARTHAT?')).toBeNull()
+  })
+
+  test('no chip picked = S1 behaviour (the serious note, Kész works)', () => {
+    const { onOpenRecovery } = renderKm(ill())
+    expect(screen.getByText('Nem számít mulasztásnak.')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Kész' }))
+    expect(onOpenRecovery).not.toHaveBeenCalled()
+  })
+
+  test('a chip opens the period, shows the note, closes after 1.4 s and toasts', async () => {
+    vi.useFakeTimers()
+    const toasts: ToastMessage[] = []
+    const off = onToast((t) => toasts.push(t))
+    const { onOpenRecovery, onRecoveryOpened, onClose } = renderKm(ill())
+    fireEvent.click(screen.getByRole('button', { name: '2–3 nap' }))
+    expect(onOpenRecovery).toHaveBeenCalledWith('FEW_DAYS')
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Kímélő mód bekapcsolva · amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.')
+    expect(screen.getByRole('button', { name: '2–3 nap' })).toHaveAttribute('aria-pressed', 'true')
+    expect(onRecoveryOpened).not.toHaveBeenCalled()
+    await act(async () => { vi.advanceTimersByTime(1400) })
+    expect(onRecoveryOpened).toHaveBeenCalledTimes(1)
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    expect(onClose).toHaveBeenCalled()
+    expect(toasts.map((t) => ('text' in t ? t.text : ''))).toContain('Kímélő mód bekapcsolva')
+    off()
+  })
+
+  test('closed early after the save: finishes once, with the LATEST onRecoveryOpened', async () => {
+    const first = vi.fn()
+    const latest = vi.fn()
+    const props = { open: true, skip: ill(), title: 'Pull Day', canOpenRecovery: true, onClose: vi.fn(), onReason: vi.fn(), onDone: vi.fn(),
+      onOpenRecovery: () => Promise.resolve() }
+    const { rerender, unmount } = render(<SkipReasonSheet {...props} onRecoveryOpened={first} />)
+    fireEvent.click(screen.getByRole('button', { name: '2–3 nap' }))
+    await act(async () => { await Promise.resolve() })
+    rerender(<SkipReasonSheet {...props} onRecoveryOpened={latest} />)
+    unmount()
+    expect(latest).toHaveBeenCalledTimes(1)
+    expect(first).not.toHaveBeenCalled()
+  })
+
+  test('a failed open resets the row (no note, no close)', async () => {
+    const { onRecoveryOpened, onClose } = renderKm(ill(), { open: () => Promise.reject(new Error('x')) })
+    fireEvent.click(screen.getByRole('button', { name: 'Kb. egy hét' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Kb. egy hét' })).toHaveAttribute('aria-pressed', 'false'))
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(onRecoveryOpened).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+})

@@ -39,6 +39,7 @@ import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockTo
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 import type { Pattern } from '@/data/types'
 import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
+import type { RecoveryState } from '@/data/train/recoveryApi'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -1240,6 +1241,9 @@ export const handlers = [
     })
   }),
   http.delete(`${API_BASE}/api/train/skips/:id`, () => new HttpResponse(null, { status: 204 })),
+  // Kímélő mód (Kihagyás S2): `useTrain()` reads it via `useRecovery()` — default: no period.
+  http.get(`${API_BASE}/api/train/recovery`, () =>
+    HttpResponse.json({ period: null, protectedDates: [], comeback: null } satisfies RecoveryState)),
   // Weekly gym slots fixture — Csü (index 3) carries a time so deriveGymSchedule
   // can fill the meso fixture's only gym day. Lean shape: id + dayOfWeek + time.
   http.get(`${API_BASE}/api/train/gym-schedule`, () =>
@@ -1648,6 +1652,7 @@ export const handlers = [
         userDecision: null,
         refinedText: null,
         promotedFactId: null,
+        mergeSources: c.mergeSources ?? null,
         createdAt: c.createdAt,
       })),
     ),

@@ -53,6 +53,20 @@ public class SetRecommendationService {
      */
     public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek,
                                   int effectiveWorkingSets, boolean holdOnly) {
+        return prescribe(createdBy, ex, deloadWeek, effectiveWorkingSets, holdOnly, null, 0);
+    }
+
+    /**
+     * Kímélő mód shape (Kihagyás S2, mezo-q4xt2.2, spec §9.1.6): a non-null {@code loadFactor}
+     * holds the progression ({@link ProgressionDecider#capAtHold}) and then scales the base to
+     * {@code loadFactor} × it, snapped to the plate grid — lever DELOAD with the comeback
+     * rationale. Every working set's target RIR is raised to at least {@code rirFloor} (0 = no
+     * floor). A null {@code loadFactor} with a 0 floor is exactly the readiness shape.
+     */
+    public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek,
+                                  int effectiveWorkingSets, boolean holdOnly,
+                                  BigDecimal loadFactor, int rirFloor) {
+        boolean hold = holdOnly || loadFactor != null;
         ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex);
         BigDecimal base;
         int workingReps;
@@ -69,8 +83,17 @@ public class SetRecommendationService {
             Decision d = ProgressionDecider.decide(
                 refSet, ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), stepPolicy(ex.getType()),
                 historyResolver.workingWeightsEverLogged(createdBy, ex), gaps, deloadWeek);
-            if (holdOnly) {
+            if (hold) {
                 d = ProgressionDecider.capAtHold(d, refSet, ex.getRepMin(), ex.getRepMax());
+            }
+            if (loadFactor != null) {
+                BigDecimal light = roundClamp(d.base().multiply(loadFactor));
+                // A small weight can snap straight back to the held base (10 kg × 0.9 → 10): keep the
+                // honest HOLD decision rather than claiming a lighter load it does not carry.
+                if (light.compareTo(d.base()) != 0) {
+                    d = new Decision(ProgressionDecider.Lever.DELOAD, light, d.workingReps(),
+                        light.subtract(ref.getWeightKg()), d.deltaReps(), ProgressionDecider.COMEBACK_RATIONALE);
+                }
             }
             base = d.base();
             workingReps = d.workingReps();
@@ -104,7 +127,7 @@ public class SetRecommendationService {
                 .build();
         } else if (ref != null) {
             base = null; // weightless history (plyo/bodyweight)
-            if (holdOnly) {
+            if (hold) {
                 workingReps = Math.min(ref.getReps(), ex.getRepMax());
                 rationale = ProgressionDecider.LIGHTENED_RATIONALE;
                 progression = ProgressionSignal.builder()
@@ -123,9 +146,11 @@ public class SetRecommendationService {
                     .build();
             }
         } else if (ex.getAnchorWeightKg() != null) {
-            base = roundClamp(ex.getAnchorWeightKg());
+            base = roundClamp(loadFactor == null
+                ? ex.getAnchorWeightKg() : ex.getAnchorWeightKg().multiply(loadFactor));
             workingReps = ex.getRepMax();
-            rationale = "Kezdő súly (anchor)";
+            rationale = loadFactor != null && base.compareTo(roundClamp(ex.getAnchorWeightKg())) != 0
+                ? ProgressionDecider.COMEBACK_RATIONALE : "Kezdő súly (anchor)";
             progression = null;
         } else {
             base = null;
@@ -153,7 +178,9 @@ public class SetRecommendationService {
                 .kind(PrescribedSet.KindEnum.WORKING)
                 .targetWeightKg(base)
                 .targetReps(workingReps)
-                .targetRIR(ex.getTargetRir())
+                .targetRIR(rirFloor > 0
+                    ? Integer.valueOf(Math.max(rirFloor, ex.getTargetRir() == null ? 0 : ex.getTargetRir()))
+                    : ex.getTargetRir())
                 .build());
         }
         return new Prescription(sets, rationale, progression);

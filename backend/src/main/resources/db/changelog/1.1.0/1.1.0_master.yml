@@ -195,3 +195,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql
+  - changeSet:
+      id: "1.1.0:202609291800_mezo-d6ivw.10_fact_merge"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609291800_mezo-d6ivw.10_fact_merge.sql
+  - changeSet:
+      id: "1.1.0:202609301200_mezo-q4xt2.2_recovery_period"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609301200_mezo-q4xt2.2_recovery_period.sql

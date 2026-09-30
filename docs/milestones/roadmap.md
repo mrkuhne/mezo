@@ -37,8 +37,8 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-gb1s` — **Mezo-kalauz (in-app tutorial)** | ◐ 6/10 (60%) | Per-page guided tour for beta onboarding. [`tutorial.md`](../features/tutorial.md). |
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
 | `mezo-06o0` / `mezo-88jw` | 🔄 open | Emberek section build-out; the daily-rhythm IA direction spec. |
-| `mezo-d6ivw` — **Mezo emlékezete** | ◐ 10/13 (77%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28; „Rólam is" (`.13`, person first) shipped 2026-09-29. |
-| `mezo-q4xt2` — **Kihagyás + kímélő mód** | 🔄 open (0/4) | Edzés, sport és étkezés kihagyása egy gombbal, okkal (gyors gombok + Egyéb); komoly oknál (betegség, gyomorrontás, sérülés, utazás) több napos kímélő mód napi „Hogy vagy?” kérdéssel és fokozatos visszatéréssel; az MI megérti az okot, de nem ítélkezik. Spec [`2026-09-28-kihagyas-kimelo-mod-design`](../superpowers/specs/2026-09-28-kihagyas-kimelo-mod-design.md). Vezérli: `/kihagyas` skill. |
+| `mezo-d6ivw` — **Mezo emlékezete** | ◐ 11/13 (85%) | A reflexiós észrevételek, a knowledge_fact/RAG memória, a Konzílium, a chat és a proaktív üzenetek egy összefüggő tanuló-motorrá és AI-élménnyé állnak össze, elsődlegesen a csapatfal (`mezo-a9bo7`) világán. Vezérli: `/emlekezet` skill. S8 (`.12`, chat-memória) shipped 2026-09-28; „Rólam is" (`.13`, person first) shipped 2026-09-29; S9 (`.10`, heti tény-összevonás) shipped 2026-09-30. |
+| `mezo-q4xt2` — **Kihagyás + kímélő mód** | 🔄 open (2/4) | Edzés, sport és étkezés kihagyása egy gombbal, okkal (gyors gombok + Egyéb); komoly oknál (betegség, gyomorrontás, sérülés, utazás) több napos kímélő mód napi „Hogy vagy?” kérdéssel és fokozatos visszatéréssel; az MI megérti az okot, de nem ítélkezik. Spec [`2026-09-28-kihagyas-kimelo-mod-design`](../superpowers/specs/2026-09-28-kihagyas-kimelo-mod-design.md). Vezérli: `/kihagyas` skill. |
 | `mezo-rj214` — **Companion teljes adat-hozzáférés** | 🔄 open | A társ kérésre mindent lásson és elérjen ami az adatbázisban van (grammra pontos makrók/mikrók, összetevők, alvás, súly, naplózás, checkinek), és szabadabban tudjon beszélgetni. |
 | `mezo-ozri` — **OpenAI migráció** | 🔄 open | Provider-semleges LLM-varrat Geminiről OpenAI-ra (gpt-5.6-luna/-terra), config-vezérelt model-router, prompt-caching-optimalizált sorrend, per-user rolling USD cap. S2 (OpenAI adapter) shipped 2026-09-07; router/eval-rebaseline/prompt-caching még nyitva. |
 | `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | A PWA ikonja és telepített neve már Boop (`mezo-akskj`); a companion-persona és a további látható szövegek átnevezése még folyamatban van. A tárolt `mezo` azonosítók maradnak. |
@@ -66,6 +66,16 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   evési időhöz tartozó tervezett ablakba könyvel. A mező helyben nyílik, a piszkozatot és a
   görgetést megtartja; hibás mentés után újrapróbálható. A meglévő javítási és overlay
   bejáratok megmaradtak. [Design](../superpowers/specs/2026-09-30-meal-log-eaten-time-design.md).
+- **2026-09-30 — Heti rendrakás: Mezo összevonja az ismétlődő tényeket (S9, `mezo-d6ivw.10`).**
+  Minden hétfő reggel 7:30-kor Mezo átnézi, mit tud rólad, és ami ugyanazt mondja kétszer, azt
+  magától egybe teszi (a régebbi vagy erősebb marad, a másik „Összevontam" mappába kerül, és egy
+  koppintással visszakapcsolható). Ha két tény együtt egy új mondatként olvasható jobban, azt csak
+  javasolja: a Rólad oldalon új „Összevonnám" kártya (Összevonom · Átírom · Később · Maradjon külön).
+  Minta-alapú megfigyelést, ismerős lapját és a csapat-üzenőfal tényeit nem bántja, és semmit nem töröl.
+  A Tudástárban „Hétfői rendrakás" sáv mutatja, mi történt a héten; heti egy csendes értesítés jelzi.
+  Backend: `FactMergeJob`/`Judge`/`Planner`/`Service`, `fact_merge_ledger`, migráció
+  `202609291800`, `mezo.techcore.cron.fact-merge-job.enabled`. Docs: `companion.md` „Heti
+  tény-összevonás", `insights.md` §2.4.
 - **2026-09-30 — Boop PWA ikon és avatárorr (`mezo-akskj`).** A telepített app ikonja a
   jóváhagyott kék–lila–zöld Boop-hármas sötét grafit alapon; mind a hét élő Boop-avatár apró
   fekete háromszög orrot kapott. A telepített app, az iOS kezdőképernyős név és a böngészőfül
@@ -110,6 +120,24 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   [`fuel.md`](../features/fuel.md) §4–§5/§8–§9 · [`goal-engine.md`](../features/goal-engine.md) §3
   · [`train.md`](../features/train.md) (energia kártya) · [`me.md`](../features/me.md) (TDEE
   felirat).
+- **2026-09-30 — Kihagyás S2 shipped (`mezo-q4xt2.2`).** Komoly ok (betegség, gyomorrontás, sérülés,
+  utazás) most már több napos **kímélő módot** nyithat: a „Miért?” lapon egy „Meddig tarthat?” sor
+  (csak ma · 2–3 nap · kb. egy hét · nem tudom), vagy a Nap főoldalon a „Nem vagyok jól” gomb – pihenőnapon
+  is. A kímélő mód napjain minden tervezett edzés, sport és futás „kímélő mód”-ként tompán marad, sosem
+  számít mulasztásnak, a sorozat nem szakad meg; az Edzés Mai fülön külön kártya, a napsávon és a heti
+  listán új „kímélő” ikon jelzi. A Nap főoldalon napi „Hogy vagy?” kérdés: „Jobban” (az első napon egyszerűen
+  megszűnik a mód, később „Üdv újra!” lap), „Még nem” (aznapra elrejti), „Tévedés volt” (mintha meg sem
+  nyílt volna). Visszatéréskor a program szabálya: ≤ 2 nap kiesés → folytatod; 3–9 nap → a megszakadt
+  hetet újrajátszod (a mezociklus egész héttel csúszik); 10+ nap → egy héttel korábbról, kicsit
+  kevesebb sorozattal. Utána automatikus **visszatérő edzés**: az első 1–2 edzés egyharmaddal kevesebb
+  sorozat, az elsőn kb. 10%-kal könnyebb súly, a másodikon nincs emelés, RIR ≥ 3 – kikapcsolható. „Ma
+  mégis edzek” egy napra kiengedi a kímélő módot (könnyített edzés), visszavonható; „Mégsem vagyok jól” az
+  aznapi „Jobban”-t vonja vissza. A coach hangneme megváltozik (nem sürget, nem említ elmaradást), és a négy
+  edzés-nyomás jelzés elhallgat a kímélő mód alatt. Backend: `recovery_period` + `recovery_day_release`
+  tábla, `RecoveryPeriodService`/`RecoveryReturnService`, `/api/train/recovery`, a központi kihagyás-olvasás
+  kiterjesztve. Egy új ikon: `t-kimelo`. Dokumentáció: [`train.md`](../features/train.md) „Kihagyás S2 —
+  kímélő mód”, [`today.md`](../features/today.md), [`companion.md`](../features/companion.md). Élő
+  prototípus: [`edzes.html`](../design_2.0/prototypes/elo/edzes.html), [`nap.html`](../design_2.0/prototypes/elo/nap.html).
 - **2026-09-29 — Kihagyás S1 shipped (`mezo-q4xt2.1`).** Egy koppintással kihagyható egy tervezett
   edzésnap, egy sport-alkalom vagy egy futás, opcionális okkal — soha nem hazug „megvan”, soha nem
   néma „elmaradt”. Az Edzés Mai fülön „Kihagyom” (kihagyás után azonnal a „Miért?” lap: 8 ok-gomb +

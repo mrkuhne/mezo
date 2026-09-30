@@ -12,7 +12,7 @@ const STATUS_HU: Record<string, string> = {
  *  silently fall back to its raw key. */
 const SOURCE_HU: Record<FactSource, string> = {
   chat: 'chat', pattern: 'minta', manual: 'kézi', weekly_review: 'heti', question: 'kérdés', team_chat: 'csapatfal',
-  person_fact: 'ismerős',
+  person_fact: 'ismerős', merge: 'összevont',
 }
 
 /** Hungarian labels for the wire's `kind` field (mezo-b3pp.22) — since mezo-eq85.10 this is

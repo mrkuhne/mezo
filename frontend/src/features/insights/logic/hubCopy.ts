@@ -24,6 +24,8 @@ export const TOAST = {
   undone: 'Visszavonva — minden a helyén',
   edited: 'Javítottam',
   /** S6 final review: a failed write rolls back — the toast must not have lied */
+  /** S9: re-enabling a merged-away fact — it now stands on its own again */
+  mergedBack: 'Visszakapcsoltam — újra külön használom',
   muteFailed: 'Nem sikerült — minden maradt a régiben',
   forgetFailed: 'Nem sikerült elfelejteni — visszatettem a helyére',
 } as const
@@ -40,13 +42,14 @@ export function stripNote(kind: 'active' | 'muted' | 'effect'): string {
 
 const WHY_LABEL: Record<FactMuteReason, string> = {
   user: 'te hallgattattad el', refuted: 'később nem igazolódott', superseded: 'felülírta egy újabb észrevétel',
+  merged: 'összevontam egy hasonló ténnyel',
 }
-export const WHY_ICON: Record<FactMuteReason, Icon3DName> = { user: 't-mute', refuted: 't-down', superseded: 't-history' }
+export const WHY_ICON: Record<FactMuteReason, Icon3DName> = { user: 't-mute', refuted: 't-down', superseded: 't-history', merged: 't-layers' }
 
 export function whyText(reason: FactMuteReason, at: string | null): string {
   const d = day(at)
   if (!d) return WHY_LABEL[reason]
-  return reason === 'superseded' ? `${WHY_LABEL.superseded}, ${d}` : `${WHY_LABEL[reason]} · ${d}`
+  return reason === 'superseded' || reason === 'merged' ? `${WHY_LABEL[reason]}, ${d}` : `${WHY_LABEL[reason]} · ${d}`
 }
 
 export interface ObsStatusInput {
@@ -146,6 +149,16 @@ export const noHits = (q: string) => `Nincs találat erre: „${q}”.`
 export const CLEAR_SEARCH = 'Keresés törlése'
 export const groupCount = (q: string, n: number) => (q.trim() ? `${n} találat` : String(n))
 export const MUTED_GROUP = 'Elhallgattatott'
+/** S9 (mezo-d6ivw.10): the „Összevontam” fold + the Monday tidy-up strip on the facts list. */
+export const MERGED_GROUP = 'Összevontam'
+export const MERGED_HINT = 'ugyanazt mondták, mint egy másik tény — visszakapcsolható'
+export const mergedWhy = (survivorText: string, at: string | null) => {
+  const d = day(at)
+  return `összevontam ezzel: „${survivorText}”${d ? `, ${d}` : ''}`
+}
+export const mergeStrip = (n: number, pending: number) =>
+  `Hétfői rendrakás: ${n} ismétlést összevontam${pending > 0 ? `, ${pending} javaslat vár rád a Rólad oldalon.` : '.'}`
+export const MERGE_STRIP_LINK = 'Megnézem ›'
 export const MUTED_HINT = { facts: 'megőrzöm, de semmire nem használom', effects: 'nem mutatom és nem használom' } as const
 export const onHint = (n: number) => (n ? `${n} bekapcsolva` : '')
 
@@ -168,10 +181,12 @@ export const ORIGIN: Record<FactSource, string> = {
   question: 'Egy kérdésre válaszoltál rá.',
   team_chat: 'A csapatfalon adott válaszodból jegyeztem meg.',
   person_fact: 'Egy ismerősödről szóló beszélgetésből — te tetted ide a „Rólam is” gombbal.',
+  // S9 final-review M1: the fact carries no member count, so the line names none (it may be 2 or 3)
+  merge: 'Hasonló tényekből vontam össze, a jóváhagyásoddal.',
 }
 export const CHIP: Record<FactSource, string> = {
   pattern: 'észrevételből', chat: 'beszélgetésből', manual: 'kézzel', weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál', team_chat: 'csapatfalról',
-  person_fact: 'ismerős lapjáról',
+  person_fact: 'ismerős lapjáról', merge: 'összevonásból',
 }
 export const OBS_ORIGIN = 'A napjaidból számoltam ki, és te erősítetted meg. Ezekből a napokból látszik:'
 export const GO_TO_OBSERVATION = 'Az észrevétel, amiből tanultam ›'

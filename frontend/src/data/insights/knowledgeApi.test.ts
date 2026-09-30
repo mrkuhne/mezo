@@ -52,6 +52,7 @@ describe('knowledgeApi wire mapping', () => {
     expect(candidate).toEqual({
       id: 'c-9', text: 'Reggel edz szívesen', category: 'train', owner: 'mocor', source: 'chat',
       createdAt: '2026-07-03T06:00:00Z', evidence: null, weekStart: null, conflictsWithFactId: null,
+      mergeSources: null,
     })
   })
 
@@ -72,7 +73,7 @@ describe('knowledgeApi wire mapping', () => {
     expect(candidate).toEqual({
       id: 'c-10', text: 'Heti javaslat', category: 'health', owner: 'szunya', source: 'weekly_review',
       createdAt: '2026-08-31T06:00:00Z', evidence: 'A hét minden napján 22:00 előtt lefeküdtél.',
-      weekStart: '2026-08-24', conflictsWithFactId: null,
+      weekStart: '2026-08-24', conflictsWithFactId: null, mergeSources: null,
     })
   })
 
@@ -92,7 +93,7 @@ describe('knowledgeApi wire mapping', () => {
     // real mode always maps conflictsWithFactId to null — the wire doesn't carry it yet, so the
     // mirror check drops the mock-only field instead of asserting it away entirely (mezo-ms9a).
     expect(await knowledgeApi.listCandidates()).toEqual(
-      candidateSeed.map((c) => ({ ...c, conflictsWithFactId: null })),
+      candidateSeed.map((c) => ({ ...c, conflictsWithFactId: null, mergeSources: c.mergeSources ?? null })),
     )
   })
 

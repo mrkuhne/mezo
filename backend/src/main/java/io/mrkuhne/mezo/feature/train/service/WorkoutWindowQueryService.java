@@ -109,7 +109,7 @@ public class WorkoutWindowQueryService {
         Map<LocalDate, List<SportSessionEntity>> sportSessionsByDate = sportSessionRepository
             .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
             .collect(Collectors.groupingBy(SportSessionEntity::getDate));
-        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
+        SportSlotSkipService.SportSkips skips = sportSlotSkipService.skipsBetween(userId, from, to);
         RunningBlockEntity activeBlock = runningBlockRepository
             .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
         // Kihagyás S1 (mezo-q4xt2.1): ONE central skip read for the range — the skipped gym dates
@@ -119,7 +119,7 @@ public class WorkoutWindowQueryService {
             .filter(v -> v.row().kind() == PlannedSkipEntity.Kind.GYM)
             .map(v -> v.row().date())
             .collect(Collectors.toSet());
-        Set<PlannedSkipService.RunSkipKey> runSkips = PlannedSkipService.runSkipsOf(skipVerdicts);
+        PlannedSkipService.RunSkips runSkips = PlannedSkipService.runSkipsOf(skipVerdicts, skips.protectedDates());
         // A skipped run that was nonetheless logged that day keeps its window (the gym rule
         // `!skipped || done`) — only fetched when a run skip exists in the range at all.
         Set<LocalDate> runLoggedDates = runSkips.isEmpty() ? Set.of() : runSessionLogRepository
@@ -144,9 +144,9 @@ public class WorkoutWindowQueryService {
     private List<Window> windowsForDay(LocalDate date, List<GymScheduleSlotEntity> gymSlots,
             Map<LocalDate, Long> gymDoneCounts, List<WorkoutSessionEntity> mesoSessions,
             List<SportScheduleSlotEntity> sportSlots, List<SportEventEntity> dayEvents,
-            List<SportSessionEntity> daySessions, Set<SportSlotSkipService.SkipKey> skips,
+            List<SportSessionEntity> daySessions, SportSlotSkipService.SportSkips skips,
             RunningBlockEntity activeBlock, boolean gymSkipped,
-            Set<PlannedSkipService.RunSkipKey> runSkips, boolean runLogged) {
+            PlannedSkipService.RunSkips runSkips, boolean runLogged) {
         int dow = date.getDayOfWeek().getValue() - 1;
         List<Window> windows = new ArrayList<>();
 
@@ -202,7 +202,7 @@ public class WorkoutWindowQueryService {
      */
     private void addSportWindowsForDay(LocalDate date, int dow, List<SportScheduleSlotEntity> sportSlots,
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
-            Set<SportSlotSkipService.SkipKey> skips, List<Window> windows) {
+            SportSlotSkipService.SportSkips skips, List<Window> windows) {
         List<PlannedSport> unmatched = plannedSportPool(date, dow, sportSlots, dayEvents, skips);
         List<SportSessionEntity> sessions = byTimeNullsLast(daySessions);
         for (SportSessionEntity session : sessions) {
@@ -232,11 +232,11 @@ public class WorkoutWindowQueryService {
      * apart the way the F2 nulls-order parity bug happened from a hand-duplicated per-day path.
      */
     private List<PlannedSport> plannedSportPool(LocalDate date, int dow, List<SportScheduleSlotEntity> slots,
-            List<SportEventEntity> events, Set<SportSlotSkipService.SkipKey> skips) {
+            List<SportEventEntity> events, SportSlotSkipService.SportSkips skips) {
         List<PlannedSport> pool = new ArrayList<>();
         slots.stream()
             .filter(s -> s.getDayOfWeek() == dow)
-            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
+            .filter(s -> !skips.contains(dow, s.getTime(), date))
             .forEach(s -> pool.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport(), false)));
         events.forEach(e -> pool.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport(), true)));
         return pool;
@@ -326,7 +326,7 @@ public class WorkoutWindowQueryService {
         Map<LocalDate, List<SportSessionEntity>> sportSessionsByDate = sportSessionRepository
             .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
             .collect(Collectors.groupingBy(SportSessionEntity::getDate));
-        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
+        SportSlotSkipService.SportSkips skips = sportSlotSkipService.skipsBetween(userId, from, to);
         RunningBlockEntity activeBlock = runningBlockRepository
             .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
         Map<LocalDate, List<RunSessionLogEntity>> runsByDate = runSessionLogRepository
@@ -340,7 +340,7 @@ public class WorkoutWindowQueryService {
             .filter(v -> v.row().kind() == PlannedSkipEntity.Kind.GYM)
             .map(v -> v.row().date())
             .collect(Collectors.toSet());
-        Set<PlannedSkipService.RunSkipKey> runSkips = PlannedSkipService.runSkipsOf(skipVerdicts);
+        PlannedSkipService.RunSkips runSkips = PlannedSkipService.runSkipsOf(skipVerdicts, skips.protectedDates());
 
         // Looked up at most once for the whole range, and only if a done gym instance (planned or
         // extra) or a today-or-later pending preview needs it (mezo-tb3s2).
@@ -376,9 +376,9 @@ public class WorkoutWindowQueryService {
     private DayMovement movementForDay(LocalDate date, List<GymScheduleSlotEntity> gymSlots,
             List<WorkoutSessionEntity> doneInstances, List<SportScheduleSlotEntity> sportSlots,
             List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
-            Set<SportSlotSkipService.SkipKey> skips, RunningBlockEntity activeBlock,
+            SportSlotSkipService.SportSkips skips, RunningBlockEntity activeBlock,
             List<RunSessionLogEntity> dayRuns, Supplier<BigDecimal> restKcalPerHour,
-            boolean gymSkipped, Set<PlannedSkipService.RunSkipKey> runSkips) {
+            boolean gymSkipped, PlannedSkipService.RunSkips runSkips) {
         int dow = date.getDayOfWeek().getValue() - 1;
         boolean plannedDone = false;
         int plannedKcal = 0;
@@ -450,7 +450,7 @@ public class WorkoutWindowQueryService {
                     .netKcal(left.sport(), null, minutes, restKcalPerHour.get()).orElse(0);
             }
             long unskippedRunCount = activeBlock == null ? 0 : prescribedRunSessionsOn(activeBlock, date)
-                .filter(s -> !runSkips.contains(new PlannedSkipService.RunSkipKey(date, s.key())))
+                .filter(s -> !runSkips.contains(date, s.key()))
                 .count();
             long runsLeft = Math.max(0, unskippedRunCount - plannedRunCount);
             if (runsLeft > 0) {
@@ -515,12 +515,12 @@ public class WorkoutWindowQueryService {
      * {@code RunningService}/{@code GoalProjectionService} idiom (mezo-tm76).
      */
     private void addRunWindows(RunningBlockEntity block, LocalDate date, List<Window> windows,
-            Set<PlannedSkipService.RunSkipKey> runSkips, boolean runLogged) {
+            PlannedSkipService.RunSkips runSkips, boolean runLogged) {
         prescribedRunSessionsOn(block, date)
             // Kihagyás S1 (mezo-q4xt2.1, review I2): a skipped prescribed run disappears from the
             // windows (Fuel's pre-workout scoring) exactly like a skipped gym/sport occurrence —
             // unless a run was actually logged that day (never hide a real workout).
-            .filter(s -> runLogged || !runSkips.contains(new PlannedSkipService.RunSkipKey(date, s.key())))
+            .filter(s -> runLogged || !runSkips.contains(date, s.key()))
             .forEach(s -> {
             LocalTime start = LocalTime.parse(s.timeOfDay());
             windows.add(new Window(start, start.plusMinutes(props.runDefaultMinutes()),

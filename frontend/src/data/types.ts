@@ -917,12 +917,12 @@ export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
 /** S7 (mezo-d6ivw.7): `team_chat` — a csapatfal-válaszból megjegyzett kivétel ténye.
  *  mezo-d6ivw.13: `person_fact` — egy ismerősről szóló chat-tény, amit a „Rólam is" gombbal
  *  a sajátodnak is jelöltél (nem kézi felvétel: a mondatot Mezo jegyezte meg). */
-export type FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact'
+export type FactSource = 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' | 'merge'
 /** U9b (mezo-zpxv7): a tényt "birtokló" csapattag — a Rólad tag. */
 export type FactOwner = 'szunya' | 'mocor' | 'falat' | 'deru' | 'mezo'
 /** S6 (mezo-d6ivw.6) — miért hallgat egy tény/észrevétel: user = te hallgattattad el,
  *  refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. */
-export type FactMuteReason = 'user' | 'refuted' | 'superseded'
+export type FactMuteReason = 'user' | 'refuted' | 'superseded' | 'merged'
 
 export interface MemoryPatternCount { kind: string; status: string; count: number }
 export interface MemoryFactSourceCount { source: FactSource; count: number }
@@ -1004,7 +1004,7 @@ export interface FactCandidate {
   /** U9b (mezo-zpxv7): melyik csapattag hozta a jelöltet — „<Név> hozta". */
   owner: FactOwner
   /** Honnan jött a jelölt — chat-kivonat vagy a heti áttekintés javaslata. */
-  source: 'chat' | 'weekly_review'
+  source: 'chat' | 'weekly_review' | 'merge'
   /** A jelölt létrejötte (ISO instant). */
   createdAt: string
   /** Amire a javaslat épül, a javasoló saját szavaival (csak heti jelölteknél; a chat-kivonat nem ad). */
@@ -1015,6 +1015,8 @@ export interface FactCandidate {
    *  `null` when it doesn't conflict with anything. Real mode always maps to `null` — the wire
    *  doesn't carry this yet. */
   conflictsWithFactId: string | null
+  /** S9 (mezo-d6ivw.10): source='merge' only — the member facts' texts the proposal folds together. */
+  mergeSources?: string[] | null
 }
 export type FactDecision = 'accept' | 'reject' | 'refine' | 'snooze'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
@@ -1591,6 +1593,9 @@ export interface WorkoutPlan {
   niggleWarning?: NiggleWarning
   challenges: Challenge[]
   overloadSummary?: OverloadSummary | null
+  /** Kímélő mód S2 (mezo-q4xt2.2): today's session is lightened — a comeback ramp session or a
+   *  released protected day; the served set counts are already reduced. Absent otherwise. */
+  comeback?: { index: number; total: number; mode: 'RAMP' | 'RELEASED' } | null
 }
 
 export interface GymSchedule { weeklyTimes: GymScheduleDay[] }

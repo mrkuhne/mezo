@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
+import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryForgetVetoEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
@@ -18,6 +21,8 @@ import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +38,8 @@ class ForgetServiceIT extends AbstractIntegrationTest {
     @Autowired private KnowledgeFactPopulator factPopulator;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private LearnedFactPopulator learnedFactPopulator;
+    @Autowired private LearnedFactRepository learnedFacts;
 
     @Test
     void forgetFact_shouldSoftDeleteAndVetoItsText() {
@@ -116,5 +123,48 @@ class ForgetServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> forgetService.forgetObservation(stranger, row.getId()))
                 .isInstanceOf(SystemRuntimeErrorException.class);
         assertThat(patterns.findById(row.getId()).orElseThrow().isForgotten()).isFalse();
+    }
+
+    /** Final-review I4 (mezo-d6ivw.10): a merged-away loser whose survivor is forgotten is no
+     *  longer „összevontam” — it becomes the user's own mute, exactly like a drift supersession. */
+    @Test
+    void forgetFact_shouldReleaseMergedLosers_asUserMuted() {
+        UUID owner = userPopulator.createUser().getId();
+        KnowledgeFactEntity survivor = factPopulator.fact(owner, "Szereti a teát.", "fuel", 3);
+        KnowledgeFactEntity loser = factPopulator.fact(owner, "szereti a teát", "fuel", 0);
+        loser.mute(KnowledgeFactEntity.MUTED_MERGED, Instant.now());
+        loser.setSupersededBy(survivor.getId());
+        facts.saveAndFlush(loser);
+
+        forgetService.forgetFact(owner, survivor.getId());
+
+        KnowledgeFactEntity released = facts.findById(loser.getId()).orElseThrow();
+        assertThat(released.getMutedReason()).isEqualTo(KnowledgeFactEntity.MUTED_USER);
+        assertThat(released.getSupersededBy()).isNull();
+        assertThat(released.isIncludeInPrompt()).isFalse();
+    }
+
+    /** Final-review I2b (mezo-d6ivw.10): forgetting a member of a pending merge proposal
+     *  withdraws the proposal — it would otherwise fold a forgotten sentence back in. */
+    @Test
+    void forgetFact_shouldWithdrawPendingMergeProposal_containingTheFact() {
+        UUID owner = userPopulator.createUser().getId();
+        KnowledgeFactEntity a = factPopulator.fact(owner, "Szereti a teát", "fuel", 1);
+        KnowledgeFactEntity b = factPopulator.fact(owner, "Szereti a kávét", "fuel", 1);
+        KnowledgeFactEntity c = factPopulator.fact(owner, "Szereti a kakaót", "fuel", 1);
+        LearnedFactEntity proposal = learnedFactPopulator.mergeCandidate(
+                owner, "Szereti a forró italokat", "fuel", List.of(a.getId(), b.getId()));
+        LearnedFactEntity unrelated = learnedFactPopulator.mergeCandidate(
+                owner, "Más összevonás", "fuel", List.of(b.getId(), c.getId()));
+        LearnedFactEntity decided = learnedFactPopulator.mergeCandidate(
+                owner, "Már eldöntve", "fuel", List.of(a.getId(), c.getId()));
+        decided.setUserDecision(LearnedFactEntity.DECISION_REJECT);
+        learnedFacts.saveAndFlush(decided);
+
+        forgetService.forgetFact(owner, a.getId());
+
+        assertThat(learnedFacts.findByIdAndCreatedByAndDeletedFalse(proposal.getId(), owner)).isEmpty();
+        assertThat(learnedFacts.findByIdAndCreatedByAndDeletedFalse(unrelated.getId(), owner)).isPresent();
+        assertThat(learnedFacts.findByIdAndCreatedByAndDeletedFalse(decided.getId(), owner)).isPresent();
     }
 }

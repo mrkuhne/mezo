@@ -59,3 +59,14 @@ test('a done session is never counted as skipped (a trained day wins)', () => {
   const items = dayStripItems([day({ gym: gymSlot })], () => true, () => true)
   expect(items[0]).toMatchObject({ doneCount: 1, skipCount: 0 })
 })
+
+// Kímélő mód S2 (mezo-q4xt2.2): a protected day with an open session carries one t-kimelo mark
+// instead of skip marks (prototype `dstrip()` `km`); a fully done day stays a done day.
+test('a protected day: protectedDay set, skip marks folded into it; done sessions still count', () => {
+  const items = dayStripItems([day({ gym: gymSlot, running: [run], protected: true })],
+    (_d, item) => item.kind === 'running', () => true)
+  expect(items[0]).toMatchObject({ protectedDay: true, skipCount: 0, doneCount: 1, sessionCount: 2 })
+  const done = dayStripItems([day({ gym: gymSlot, protected: true })], () => true)
+  expect(done[0].protectedDay).toBeUndefined()
+  expect(dayStripItems([day({ protected: true })], () => false)[0].protectedDay).toBeUndefined()
+})

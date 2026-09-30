@@ -21,3 +21,8 @@ export const WORKOUT_TODAY_QUERY_KEY = ['train', 'workoutToday'] as const
  *  `useTodayReadiness`) — a GYM planned-skip write can change today's plan the same way a
  *  readiness choice does, so `skipHooks.ts` invalidates it too. */
 export const READINESS_TODAY_QUERY_KEY = ['train', 'readiness', 'today'] as const
+
+/** Query-key PREFIX for the kímélő mód state (`recoveryHooks.ts`'s `useRecovery`, Kihagyás S2,
+ *  mezo-q4xt2.2) — here so `trainHooks.ts` can read it without importing `recoveryHooks.ts`'s
+ *  internals; the local date is appended there (the server's window is today-relative). */
+export const RECOVERY_QUERY_KEY = ['train', 'recovery'] as const

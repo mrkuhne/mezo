@@ -130,3 +130,52 @@ test('mezo-hq44: az „Ellentmond ennek" sor warning-ikont rajzol, nem ⚠ glif�
   expect(row.querySelector('svg')).toBeTruthy()
   expect(row.textContent).not.toMatch(/⚠/)
 })
+
+// S9 (mezo-d6ivw.10): the „Összevonnám” card
+describe('FactCandidateCard — összevonási javaslat', () => {
+  const merge: FactCandidate = {
+    id: 'c4', text: 'Késő esti evés után nálad gyakran nehezebb az elalvás.', category: 'fuel', owner: 'mezo',
+    source: 'merge', createdAt: '2026-08-21T07:00:00Z', evidence: null, weekStart: null, conflictsWithFactId: null,
+    mergeSources: ['A régi.', 'B régi.'],
+  }
+  test('shows the tag, both source sentences, the eyebrow, the proposal and the helper', () => {
+    const { container } = render(<FactCandidateCard candidate={merge} onDecide={() => {}} />)
+    expect(screen.getByText('ÖSSZEVONÁSI JAVASLAT')).toBeInTheDocument()
+    expect(screen.getByText(/„A régi\.”/)).toBeInTheDocument()
+    expect(screen.getByText(/„B régi\.”/)).toBeInTheDocument()
+    expect(container.querySelectorAll('.s9src use[href="#t-note"]')).toHaveLength(2)
+    expect(screen.getByText('EGY MONDATBAN')).toBeInTheDocument()
+    expect(screen.getByText(`„${merge.text}”`)).toBeInTheDocument()
+    expect(screen.getByText('A heti rendrakásnál feltűnt, hogy ez a kettő ugyanarról szól. Ha összevonom, a két régi mondat nem vész el: a Tényeknél visszakapcsolhatod.')).toBeInTheDocument()
+  })
+  test('three sources read „ez a három”', () => {
+    render(<FactCandidateCard candidate={{ ...merge, mergeSources: ['a', 'b', 'c'] }} onDecide={() => {}} />)
+    expect(screen.getByText(/ez a három ugyanarról szól/)).toBeInTheDocument()
+  })
+  test('the four verbs map to accept / refine / snooze / reject', async () => {
+    const onDecide = vi.fn()
+    const { container } = render(<FactCandidateCard candidate={merge} onDecide={onDecide} />)
+    expect(container.querySelector('button use[href="#t-layers"]')).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Összevonom' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Később' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Maradjon külön' }))
+    expect(onDecide.mock.calls).toEqual([['accept'], ['snooze'], ['reject']])
+  })
+  test('Átírom → Mégse goes back to the four verbs', async () => {
+    render(<FactCandidateCard candidate={merge} onDecide={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Átírom' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+    expect(screen.getByRole('button', { name: 'Összevonom' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+  test('Átírom opens the textarea; „Így vond össze” refines', async () => {
+    const onDecide = vi.fn()
+    render(<FactCandidateCard candidate={merge} onDecide={onDecide} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Átírom' }))
+    const ta = screen.getByRole('textbox', { name: 'Az összevont mondat' })
+    await userEvent.clear(ta)
+    await userEvent.type(ta, 'Saját mondat.')
+    await userEvent.click(screen.getByRole('button', { name: 'Így vond össze' }))
+    expect(onDecide).toHaveBeenCalledWith('refine', 'Saját mondat.')
+  })
+})

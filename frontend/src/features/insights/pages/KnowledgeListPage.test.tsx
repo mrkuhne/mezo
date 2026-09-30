@@ -15,7 +15,9 @@ import { TILE_STATE, heroNote } from '@/features/insights/logic/hubCopy'
 
 const MOCK_PENDING_COUNT = candidateSeed.length + lifeEventCandidateSeed.length
 const ACTIVE_SEED = factSeed.filter((f) => f.active)
-const MUTED_SEED = factSeed.filter((f) => !f.active)
+// S9: merged-away facts (f17) live in their own „Összevontam” fold, not under Elhallgattatott
+const MUTED_SEED = factSeed.filter((f) => !f.active && f.mutedReason !== 'merged')
+const MERGED_SEED = factSeed.filter((f) => !f.active && f.mutedReason === 'merged')
 
 const renderPage = (path = '/') =>
   render(
@@ -361,7 +363,7 @@ describe('KnowledgeListPage (mock mode)', () => {
     await userEvent.click(within(row).getByRole('button', { name: /Elhallgattatom/ }))
     expect(await screen.findByRole('button', { name: /Elhallgattatott ·/ })).toHaveTextContent(`Elhallgattatott · ${MUTED_SEED.length + 1}`)
     expect(screen.getByRole('button', { name: /Étkezés ·/ })).toHaveTextContent(`Étkezés · ${fuel - 1}`)
-    expect(screen.getByText(new RegExp(`${ACTIVE_SEED.length - 1} bekapcsolva · ${MUTED_SEED.length + 1} elhallgattatva`))).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(`${ACTIVE_SEED.length - 1} bekapcsolva · ${MUTED_SEED.length + MERGED_SEED.length + 1} elhallgattatva`))).toBeInTheDocument()
   })
 
   test('a keresés a látható szövegre szűr', async () => {

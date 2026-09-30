@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-29
+updated: 2026-09-30
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No character-detector change; the 1.1.0 changelog folder gained the `recovery_period`/`recovery_day_release` migration (see [`train.md`](train.md) §2 "Kihagyás S2").
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows commits it doesn't otherwise concern (the table and its follow-up `idx_` index rename). See [`train.md`](train.md) "Kihagyás (S1)".
 
@@ -1212,7 +1214,8 @@ Adatforrások+kör/Detektorok) were added to it.
   `CharacterPersistenceIT` (entity round-trip + jsonb envelopes + soft-delete unique-key
   behavior).
 - **`CharacterMetaReadsIT`** (round 4, new) — all four `MetaWindow` lists (triage decisions,
-  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows.
+  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows; a
+  `source='merge'` fact-merge decision is NOT a triage event (S9, `mezo-d6ivw.10` — housekeeping).
 - **Konzílium choreography**: `KonziliumProposalRoundIT`, `KonziliumVerdictRoundIT`,
   `KonziliumUserFeedbackIT`, `ClaimLifecycleIT` — all via `FakeCompanionLlm` sentinels keyed on
   a marker constant per round step (`PROPOSAL_MARKER`, `SKEPTIC_MARKER`, `INTEGRATOR_MARKER`,
