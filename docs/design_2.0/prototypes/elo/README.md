@@ -21,5 +21,9 @@ The shared voice kit lives in `_hang-kit.html`; after editing it run `node docs/
 All five living files disable the recurring glass-card sheen (`mezo-ktog6`, owner request
 2026-09-30). Their fixed Artifact URLs have not been republished by this Codex session.
 
+All five living files carry the approved small triangular nose on their Boop avatars
+(`mezo-akskj`, 2026-09-30). The Mezo file also has it on the gold and slate character variants.
+Their fixed Artifact URLs have not been republished by this Codex session.
+
 All five living files have been seeded. Update the sync note on every merge that touches a
 domain. Change its fixed URL only when the published target itself changes.

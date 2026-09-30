@@ -7,7 +7,8 @@ language decided in the mockup rounds — see `docs/design_2.0/2026-08-26-ui-ia-
 
 | File | Contents |
 |---|---|
-| `logo-orb.svg` | The Orb — standalone logo mark (app icon, chat avatar, coach marker) |
+| `logo-orb.svg` | Historical Orb mark; no longer the installed app icon |
+| `logo-boop.svg` | Approved Boop PWA mark: blue, lavender and sage figures on dark graphite, each with the small triangular nose |
 | `clay-icons.svg` | Sprite: 33 `<symbol>` icons, ids `i-*`, all `viewBox="0 0 100 100"` |
 | `clay-spots.svg` | Sprite: 22 `<symbol>` spot illustrations, ids `s-*` (incl. the 8 persona orb variants `s-orb-doki` … `s-orb-szkeptikus` — the Karakter profiling team, mezo-1gim.13: the `s-orb` clay recipe recolored per domain + a dashed inner-ring motif at per-persona rotation) |
 

@@ -41,7 +41,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-q4xt2` — **Kihagyás + kímélő mód** | 🔄 open (0/4) | Edzés, sport és étkezés kihagyása egy gombbal, okkal (gyors gombok + Egyéb); komoly oknál (betegség, gyomorrontás, sérülés, utazás) több napos kímélő mód napi „Hogy vagy?” kérdéssel és fokozatos visszatéréssel; az MI megérti az okot, de nem ítélkezik. Spec [`2026-09-28-kihagyas-kimelo-mod-design`](../superpowers/specs/2026-09-28-kihagyas-kimelo-mod-design.md). Vezérli: `/kihagyas` skill. |
 | `mezo-rj214` — **Companion teljes adat-hozzáférés** | 🔄 open | A társ kérésre mindent lásson és elérjen ami az adatbázisban van (grammra pontos makrók/mikrók, összetevők, alvás, súly, naplózás, checkinek), és szabadabban tudjon beszélgetni. |
 | `mezo-ozri` — **OpenAI migráció** | 🔄 open | Provider-semleges LLM-varrat Geminiről OpenAI-ra (gpt-5.6-luna/-terra), config-vezérelt model-router, prompt-caching-optimalizált sorrend, per-user rolling USD cap. S2 (OpenAI adapter) shipped 2026-09-07; router/eval-rebaseline/prompt-caching még nyitva. |
-| `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | Az app és a companion-persona átnevezése Mezoról Boopra — amit a user olvas, az Boop; amit tárolunk, az marad `mezo`. |
+| `mezo-r89o` — **Mezo → Boop átnevezés** | 🔄 open | A PWA ikonja és telepített neve már Boop (`mezo-akskj`); a companion-persona és a további látható szövegek átnevezése még folyamatban van. A tárolt `mezo` azonosítók maradnak. |
 | `mezo-1npf` — **Diet Plan** | 🔄 open | A Cél diet planná bővül: testre szabható makró-split, cél-vezérelt dinamikus makrók, edzés/check-in/alvás hidak. |
 | `mezo-eq85` — **Reflexió** | 🔄 open | Mezo autonóm észrevételei szabad szövegből és mérhető adatból: jelkinyerés, hipotézis-életciklus a pattern táblán, éjjeli reflexió, önálló Észrevételek fül. |
 | `mezo-zjtm` — **Hermes agent + lokális LLM flow** | 🔄 open | Claude-kiegészítő/kiváltó lokális fejlesztői flow (LM Studio, M5 Max) a mezo házrenddel (bd, docs, PR+CI gate). |
@@ -61,6 +61,10 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-09-30 — Boop PWA ikon és avatárorr (`mezo-akskj`).** A telepített app ikonja a
+  jóváhagyott kék–lila–zöld Boop-hármas sötét grafit alapon; mind a hét élő Boop-avatár apró
+  fekete háromszög orrot kapott. A telepített app, az iOS kezdőképernyős név és a böngészőfül
+  neve Boop. A tágabb szöveges átnevezés a `mezo-r89o` epicben folytatódik.
 - **2026-09-29 — Egységes étkezésbevitel (`mezo-qe90y`).** A logoló négy közvetlen bejárata
   Fotó · Kamra · Recept · Szokásosak; a szöveg és a mellette lévő mikrofon végig elérhető.
   A kiválasztott fotó nagy előnézetben látszik, cserélhető vagy eltávolítható, és csak az
