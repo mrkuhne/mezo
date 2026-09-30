@@ -30,12 +30,12 @@
 
 **Interfész:** `MealComposerProps.eatingTimeWindows?: readonly FuelSlot[]`. Ha a prop jelen van és `editMealId` nincs, a megerősítő részben az új „Mikor ettél?” sor váltja a régi MIKOR szegmenst; a meglévő overlay hívók és a javítás saját időmezője változatlan marad. Helyi állapot: `timeOpen: boolean = false`, `timeOverride: string | null = null`. A csukott alapérték és a mentéskori alapérték a helyi órából számolódik; a nyitott, még nem módosított mező „Most” értéke a megnyitás pillanatának ideje.
 
-- [ ] Piros komponens-tesztek befagyasztott helyi órával (`vi.setSystemTime(new Date(2026, 8, 30, 14, 10))`): tétel előtt nincs vezérlő; tétel után csukott „Most · 14:10”; nyitás/zárás ugyanazt a szövegmező DOM-csomópontot és görgetési értéket tartja; átírás a feloldott ablakot mutatja; „Most” visszaállít; mai jövőbeli idő hibát és tiltott mentést ad; javításkor a régi szerkesztő időmező marad.
-- [ ] Piros mentési tesztek: érintetlen mező a mentés pillanatának idejét küldi; átírt idő a megfelelő `slot`+`window`+`loggedAt` hármast küldi; elutasított mentés nem hív `onSaved`-et és megtartja a szerkesztett időt. A teszt ne stubolja mockra a kifejezetten valós módra futtatott ellenőrzést.
-- [ ] Futtasd a fókuszált tesztet mindkét explicit módban; a várt eredmény FAIL az új elvárásokon.
-- [ ] Az új sor és vezérlő a `MealComposer` JSX-ébe kerüljön, a meglévő `logflow` stíluscsaládba illő CSS-sel és címkézett időmezővel. A gomb helyi állapotot váltson (`aria-expanded`), ne navigáljon, ne remountolja a komponenst és ne fókuszáljon automatikusan az időmezőre. Amíg nincs kézi átírás, a csukott címke és az érintetlen nyitott mező percenként frissüljön; beíráskor az érték rögzüljön.
-- [ ] Mentéskor egyetlen `resolveEatingTimePlacement` eredményből készüljön a `MealInput.slot`, a `window` és a dátummal `offsetIso`-val összeállított `loggedAt`. A mai jövőbeli időt a teljes helyi dátum+idő alapján ellenőrizd. Az új idővezérlős út csak sikeres `logMealAsync` után hívja az `onSaved`-et; hibánál a piszkozat és az átírt idő maradjon. Az edit út továbbra is az étkezés saját idejét őrizze.
-- [ ] Futtasd a fókuszált teszteket PASS-ra; commit: `feat(fuel): add optional eating time to meal composer (mezo-yhhvg)`.
+- [x] Piros komponens-tesztek befagyasztott helyi órával (`vi.setSystemTime(new Date(2026, 8, 30, 14, 10))`): tétel előtt nincs vezérlő; tétel után csukott „Most · 14:10”; nyitás/zárás ugyanazt a szövegmező DOM-csomópontot és görgetési értéket tartja; átírás a feloldott ablakot mutatja; „Most” visszaállít; mai jövőbeli idő hibát és tiltott mentést ad; javításkor a régi szerkesztő időmező marad.
+- [x] Mentési tesztek: érintetlen mező a mentés pillanatának idejét küldi; átírt idő a megfelelő `slot`+`window`+`loggedAt` hármast küldi; elutasított mentés nem hív `onSaved`-et és megtartja a szerkesztett időt.
+- [x] A fókuszált komponens-teszt első mock futása FAIL az új elvárásokon; az elkészült vezérlővel a fókuszált teszt mindkét explicit beállításban PASS.
+- [x] Az új sor és vezérlő a `MealComposer` JSX-ébe kerüljön, a meglévő `logflow` stíluscsaládba illő CSS-sel és címkézett időmezővel. A gomb helyi állapotot váltson (`aria-expanded`), ne navigáljon, ne remountolja a komponenst és ne fókuszáljon automatikusan az időmezőre. Amíg nincs kézi átírás, a csukott címke és az érintetlen nyitott mező percenként frissüljön; beíráskor az érték rögzüljön.
+- [x] Mentéskor egyetlen `resolveEatingTimePlacement` eredményből készüljön a `MealInput.slot`, a `window` és a dátummal `offsetIso`-val összeállított `loggedAt`. A mai jövőbeli időt a teljes helyi dátum+idő alapján ellenőrizd. Az új idővezérlős út csak sikeres `logMealAsync` után hívja az `onSaved`-et; hibánál a piszkozat és az átírt idő maradjon. Az edit út továbbra is az étkezés saját idejét őrizze.
+- [x] Futtasd a fókuszált teszteket PASS-ra; commit: `feat(fuel): add optional eating time to meal composer (mezo-yhhvg)`.
 
 ## 3. Oldalbekötés és integrációs ellenőrzés
 
@@ -43,10 +43,10 @@
 
 **Interfész:** A lap `plan.slots` tömbjét adja `eatingTimeWindows`-ként a composernek. A korábbi napi `logDate` marad; a `logTime={past ? tile?.time : undefined}` és a kiválasztott tile `window` értéke nem írhatja felül az aktuális vagy kézzel választott evési időt. A `?w=` továbbra is a megnyitó kontextust, a fejlécet és a recept-előtöltést határozza meg.
 
-- [ ] Piros oldalszintű tesztek: `?d=&w=` indításkor a megerősítő sor csukott és az aktuális időt mutatja; egy reggeli időre átírt, délutáni tile-ról indított pótlás a kiválasztott napon a reggeli `slot`-tal és reggeli `window`-val mentődik; ablakon kívüli időnél nem küld hamis tervablakot; mind a Fotó, Kamra, Recept, Szokásosak út ugyanazt a vezérlőt kapja.
-- [ ] Futtasd: `cd frontend && CI=true VITE_USE_MOCK=true pnpm exec vitest run src/features/fuel/pages/FuelLogNewPage.test.tsx`; a várt eredmény FAIL.
-- [ ] Kösd be a tervablakokat és távolítsd el a régi, múltbeli tile-időre kényszerítő átadást. A meglévő forrásmódok, előtöltés, AI-elemzés és napra visszalépés viselkedése maradjon.
-- [ ] Futtasd az oldal és a kapcsolódó composer teszteket mindkét explicit módban PASS-ra; commit: `feat(fuel): wire eaten time into new meal log page (mezo-yhhvg)`.
+- [x] Piros oldalszintű tesztek: `?d=&w=` indításkor a megerősítő sor csukott és az aktuális időt mutatja; egy reggeli időre átírt, délutáni tile-ról indított pótlás a kiválasztott napon a reggeli `slot`-tal és reggeli `window`-val mentődik; ablakon kívüli időnél nem küld hamis tervablakot; mind a Fotó, Kamra, Recept, Szokásosak út ugyanazt a vezérlőt kapja.
+- [x] Futtasd: `cd frontend && CI=true VITE_USE_MOCK=true pnpm exec vitest run src/features/fuel/pages/FuelLogNewPage.test.tsx`; a várt eredmény FAIL.
+- [x] Kösd be a tervablakokat és távolítsd el a régi, múltbeli tile-időre kényszerítő átadást. A meglévő forrásmódok, előtöltés, AI-elemzés és napra visszalépés viselkedése maradjon.
+- [x] Futtasd az oldal és a kapcsolódó composer teszteket mindkét explicit módban PASS-ra; commit: `feat(fuel): wire eaten time into new meal log page (mezo-yhhvg)`.
 
 ## 4. Dokumentáció, helyi kapuk és kiadás
 

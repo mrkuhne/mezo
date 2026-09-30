@@ -3,7 +3,7 @@
 - **bd:** `mezo-yhhvg`
 - **Date:** 2026-09-30
 - **Domain:** Fuel, új étkezés naplózása
-- **Status:** működés és kattintható minta jóváhagyva a tulajdonossal; a megvalósítási terv jóváhagyásra vár
+- **Status:** működés, kattintható minta és megvalósítási terv jóváhagyva a tulajdonossal
 
 ## 1. Cél és döntés
 

@@ -61,6 +61,11 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-10-01 — Étkezés tényleges ideje (`mezo-yhhvg`).** Az új naplózásban a mentés előtt
+  becsukott „Mikor ettél?” sor mutatja az aktuális időt; átírva a kiválasztott napra és az
+  evési időhöz tartozó tervezett ablakba könyvel. A mező helyben nyílik, a piszkozatot és a
+  görgetést megtartja; hibás mentés után újrapróbálható. A meglévő javítási és overlay
+  bejáratok megmaradtak. [Design](../superpowers/specs/2026-09-30-meal-log-eaten-time-design.md).
 - **2026-09-30 — Boop PWA ikon és avatárorr (`mezo-akskj`).** A telepített app ikonja a
   jóváhagyott kék–lila–zöld Boop-hármas sötét grafit alapon; mind a hét élő Boop-avatár apró
   fekete háromszög orrot kapott. A telepített app, az iOS kezdőképernyős név és a böngészőfül
