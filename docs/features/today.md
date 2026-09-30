@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-30
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
 # 8 load-bearing paths. A napom's entry points are pages (NapomPage), components (napom/*),
 # logic (napom.ts), data/me/liveDay.ts, router.tsx and DayReviewWarmupJob. AppHeader.tsx is
@@ -21,6 +21,8 @@ related: [_platform-data-layer, _platform-design-system, me, insights, companion
 ---
 
 # Today — Feature Documentation
+
+> **2026-09-30 — Kímélő mód on the Nap hub (Kihagyás S2, `mezo-q4xt2.2`).** `NapHubPage` renders a `KimeloSlot` right under the heading, above `NapzarasCard`: a quiet **„Nem vagyok jól”** entry opens `NemVagyokJolSheet`; while a recovery period is open the slot becomes the **„Hogy vagy?”** `KimeloCard`. The training logic lives in [`train.md`](train.md) §2 „Kihagyás S2 — kímélő mód”.
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** `CheckInSheet` is rebuilt to the owner-approved prototype ([`elo/nap.html`](../design_2.0/prototypes/elo/nap.html) `#checkin`): the slot's server question plan one item per step (five core items + time-of-day items + „A nap kérdése"), **nothing pre-selected**, „Kihagyom" stores NULL, „Most csak ennyi" from step 6, pain (Nem/Igen → front/back figure + region chips → intensity) and craving (kinds from 4) sub-steps in `sheets/checkin/*`. `NapCheckinPage` shows the answered items as cells with a quick-exit tag and the new hint lines; A napom gains the „AZ APP SZERINT / SZERINTED" duo card (`NapomDayRatingCard`); the Kapcsolat ring refills from the evening „Kapcsolódás" answer ([`needs.md`](needs.md)). Backend (schema, plan endpoint, question of the day): [`me.md` §4](me.md). Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
 
@@ -252,6 +254,7 @@ look: rose/coral accents, a frameless halo hero, glass rows, no glass inside gla
   card waits for the same answer. A day nobody closes simply loses the card at midnight (the napzárás
   itself stays calendar-based, so after midnight the card would already target the new day)
   — the review still gets written by the overnight warm-up job regardless.
+- **Kímélő mód slot on Mai (`KimeloSlot` → `KimeloCard` / `NemVagyokJolSheet`, Kihagyás S2 `mezo-q4xt2.2`, build target `elo/nap.html` `kmCard`).** Rendered in `NapHubPage` right under the heading, *before* `NapzarasCard`; it reads `useRecovery()` and renders **nothing while the read is pending or errored** (no flash). States: (1) **no period** → a quiet „Nem vagyok jól” pill; a tap opens `NemVagyokJolSheet` („Mi történt?” glass sheet: the 4 serious chips in their own accents — ILLNESS rose, STOMACH sage, INJURY coral, TRAVEL sky — the shared `RecoveryDurationRow` „MEDDIG TARTHAT?", a note, „Kímélő mód bekapcsolása” disabled until a chip is picked; success → toast „Kímélő mód bekapcsolva” + close, failure leaves the sheet with the pick). Works on a rest day. (2) **period open** → the full `KimeloCard`: category icon (`t-kimelo` family), „KÍMÉLŐ MÓD · <KATEGÓRIA>”, „Hogy vagy?”, sub „Kímélő mód · n. nap · becslés: …” (or „A becsült idő letelt — hogy vagy?” once the estimate passed), buttons **Még nem / Jobban / Tévedés volt** (Tévedés volt asks in-card: „A kihagyott edzések visszaállnak, mintha be se kapcsoltad volna.” Mégse / Törlöm; success toast). (3) **`checkedInToday`** (after *Még nem*, and also after „Mégsem vagyok jól” in Üdv újra!) → a **slim line** with „Befejezem ›” instead of the full card (the prototype demo shows the full card after undo; production is server-driven). **Jobban** uses the shared `useRecoveryBetter` rule: on the period's first day it **discards** (toast „Kímélő mód befejezve”, no Üdv újra!); later it opens `WelcomeBackSheet` (`showRun={false}` — no run line on Nap; toasts „Jó, hogy jobban vagy” / „Rendben, a kímélő mód folytatódik”) with the active meso week from `useActiveMesoWeek({enabled: Boolean(period)})` (lazy: no meso request without a period). `NapzarasCard`'s gym chip reads **„edzés · kímélő mód”** while a period is open. The estimate sits in a nowrap span so „2–3 nap” never breaks; the chip words stay whole at 320 px (shared `.trm-whyc` rule). Tests: `KimeloCard.test.tsx`, `NemVagyokJolSheet.test.tsx`, `NapHubPage.test.tsx`, layout `nap-kimelo.spec.ts` (320 px).
 - **Overnight close (backend).** `DayReviewWarmupJob` pre-warms `day_review` for yesterday (and a
   catch-up window) every night at 02:30, so the morning read of a closed day is a cache hit, never
   a synchronous LLM call. A later log for that day re-writes the review exactly once, on its next

@@ -3038,7 +3038,7 @@ SH.ndlog=['var(--lav)',ndLogSheet];
 /* ══ KÍMÉLŐ MÓD (kihagyás S2, spec §9.1, 2026-09-29) ══════════════════════════════════
    Belépő: a Mai csendes „Nem vagyok jól” linkje → „Mi történt?” lap (4 komoly ok + meddig).
    Amíg tart: „Hogy vagy?” kártya a napzárás-kártya helyén (fölötte), Jobban / Még nem / Tévedés volt.
-   „Jobban” → „Üdv újra!” lap (a programszabály: ≤2 nap folytatás, 3–9 nap a hét ismétlődik).
+   „Jobban” → „Üdv újra!” lap (a programszabály: ≤2 nap folytatás, 3–9 nap a hét ismétlődik); az 1. napon a „Jobban” egyszerűen megszünteti a módot („Kímélő mód befejezve”, nincs Üdv újra!). „Mégsem vagyok jól” után a keskeny sor marad (nem a teljes kártya) — mint élesben.
    A kímélő mód soha nem ér véget magától: #mai/kimelo-lejart — a becslés letelt, ugyanaz a kérdés.
    Demó: #mai/kimelo (2. nap), #mai/kimelo-lejart (4. nap). */
 const KMC=[['ILLNESS','ill','Beteg vagyok','var(--rose)'],['STOMACH','digestion','Gyomorrontás','var(--sage)'],['INJURY','pain','Sérülés / fájdalom','var(--coral)'],['TRAVEL','travel','Úton vagyok','var(--sky)']];
@@ -3094,9 +3094,9 @@ document.addEventListener('click',e=>{
   if(t.closest('[data-kmlater]')){stop();KM.later=true;soft();toast('Rendben, holnap reggel újra rákérdezek');return}
   const ka=t.closest('[data-kmask]');if(ka){stop();KM.ask=ka.dataset.kmask==='1';soft();return}
   if(t.closest('[data-kmdel]')){stop();Object.assign(KM,{on:false,ask:false,later:false});soft();toast('Kímélő mód törölve · az edzéseid visszaálltak');return}
-  if(t.closest('[data-kmbetter]')){stop();KM.prev=KM.on?{...KM}:null;Object.assign(KM,{on:false,later:false,ask:false});soft();clearTimeout(toastT);$('#toast').classList.remove('on');openSheet('kmwelcome');return}
+  if(t.closest('[data-kmbetter]')){stop();if(KM.on&&KM.day===1){Object.assign(KM,{on:false,later:false,ask:false});KM.prev=null;soft();toast('Kímélő mód befejezve');return}KM.prev=KM.on?{...KM}:null;Object.assign(KM,{on:false,later:false,ask:false});soft();clearTimeout(toastT);$('#toast').classList.remove('on');openSheet('kmwelcome');return}
   if(t.closest('[data-kmok]')){stop();KM.prev=null;closeSheet();toast('Jó, hogy jobban vagy');return}
-  if(t.closest('[data-kmundo]')){stop();if(KM.prev)Object.assign(KM,KM.prev,{on:true,later:false,ask:false,applied:KM.applied});KM.prev=null;closeSheet();soft();toast('Rendben, a kímélő mód folytatódik');return}
+  if(t.closest('[data-kmundo]')){stop();if(KM.prev)Object.assign(KM,KM.prev,{on:true,later:true,ask:false,applied:KM.applied});KM.prev=null;closeSheet();soft();toast('Rendben, a kímélő mód folytatódik');return}
 },true);
 
 /* ── router ─────────────────────────────────────────────── */

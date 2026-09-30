@@ -4904,7 +4904,7 @@ document.addEventListener('click',e=>{
     setTimeout(()=>{if(!retro&&KM&&KM.from===k){delete SK[k];SKORD=SKORD.filter(x=>x!==k)}closeSheet();paintView();toast('Kímélő mód bekapcsolva')},1400);return}
   const kr=t.closest('[data-kmrel]'); if(kr){e.preventDefault();KM.released=kr.dataset.kmrel==='1';paintView();toast(KM.released?'Rendben — ma edzel, holnaptól újra kímélő mód':'Visszaállítva · ma pihensz');return}
   if(t.closest('[data-kmnotyet]')){KM.asked=true;paintView();toast(`Rendben — holnap újra rákérdezek. ${CARE[KM.cat]}`);return}
-  if(t.closest('[data-kmback]')){UDV=KM.day-1<=2?0:KM.day-1<=9?1:2;openSheet('udv');return}
+  if(t.closest('[data-kmback]')){if(KM.day===1){KM=null;paintView();toast('Kímélő mód befejezve');return}UDV=KM.day-1<=2?0:KM.day-1<=9?1:2;openSheet('udv');return}
   const ut=t.closest('[data-udvt]'); if(ut){UDV=+ut.dataset.udvt;$('#sheet').innerHTML='<div class="grab"></div>'+udvSheet();return}
   const ud=t.closest('[data-udv]'); if(ud){closeSheet();if(ud.dataset.udv==='1'){CB={n:1,of:UDV===0?1:2,waived:false,prev:KM};KM=null;paintView();toast('Üdv újra! · könnyített visszatérés')}else toast('Rendben — marad a kímélő mód');return}
   if(t.closest('[data-cbwaive]')){CB.waived=true;paintView();toast('Könnyítés kikapcsolva · teljes edzés');return}

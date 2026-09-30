@@ -475,3 +475,38 @@ pace (automatic by owner decision).
    another slice after ours; always `read` before publishing and merge, never overwrite.
 8. Backend ITs: the fixed local DB had a drifted changeset; run every IT with
    `-Dmezo.test.use-testcontainers=true`.
+
+### S2 (2026-09-30, `mezo-q4xt2.2`)
+
+1. **Protected dates ride the same central read.** `PlannedSkipService.verdictsBetween` adds the
+   virtual `RECOVERY` GYM verdicts (only on *planned* gym days), while SPORT and RUN are answered
+   by the date-aware predicates (`SportSlotSkipService.SportSkips.contains`, `PlannedSkipService.RunSkips.contains`),
+   not by rows. S3's `MEAL` must honour protected dates through the same read — never a second
+   "is this date protected?" lookup.
+2. **`RecoveryPeriodService` must stay repository-only.** Both `PlannedSkipService` and
+   `SportSlotSkipService` inject it; the moment it depends on a service the cycle returns (it
+   already needed `WorkoutSessionRepository` for `comebackSessionsDone`, a repository, so it is fine).
+3. **Planned-gym-day resolution goes through repositories inside `PlannedSkipService`** (meso
+   template day or `gym_schedule_slot`), never `WorkoutService`. The first cut added a virtual row
+   for every protected date; spec §9.2 ("with a planned template") governed and a rest day must not
+   bridge a week.
+4. **One source for the ramp count:** `RecoveryPeriodService.comebackSessionsDone`. `getToday`,
+   `RecoveryReturnService.comeback()` and the companion tone line all derive the index from it.
+5. **The backend rejects BETTER on the period's start day** (`TOO_EARLY`); the FE turns that into
+   a discard (day 1 "Jobban" = `DELETE /recovery`, no Üdv újra!). The prototypes had to be synced
+   afterwards (a prototype that always opens Üdv újra! was wrong for day 1).
+6. **`recoveryBacked` rows.** A USER skip on a protected day is excused and out of the free-pass
+   race, exactly like `adviceBacked` — without it a soft skip on a protected day burned the pass
+   (found in the final review). The FE mock `judge` does not model it (no protected-date
+   knowledge); the backend is authoritative.
+7. **Undo-better keeps `lastCheckDate`**, so the expired-estimate question stays hidden for the
+   rest of the day and Nap shows the slim line after "Mégsem vagyok jól" — production differs
+   from the always-full-card prototype demo.
+8. **Final-review traps worth remembering:** a load factor that rounds back to the reference weight
+   must stay HOLD; no ×0.9 stacking on a deload week; a period may not start before the last
+   ended one's `endedOn`; recovery lookups in `getToday` use Europe/Budapest.
+9. **Process:** another session already held ports 8765/8791 for its `http.server` — check
+   `lsof -i :<port>` before serving a prototype. The opus weekly limit ran out mid-slice; resume the
+   remaining tasks on sonnet rather than waiting.
+10. **New icon flow held:** `t-kimelo` came from the prototype's "Új ikonok" sheet → 
+    `titanium-custom.svg` + generator (S1 lesson 6).
