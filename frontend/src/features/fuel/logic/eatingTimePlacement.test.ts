@@ -41,7 +41,7 @@ describe('resolveEatingTimePlacement', () => {
 
   it('ignores incomplete or non-meal windows', () => {
     const incomplete = { ...windowSlot('breakfast', '07:00', '10:00'), windowTo: undefined }
-    const nonMeal = { ...windowSlot('lunch', '12:00', '14:30'), kind: 'block' as const }
+    const nonMeal = { ...windowSlot('lunch', '12:00', '14:30'), kind: 'midday' as const }
     expect(resolveEatingTimePlacement('08:00', [incomplete])).toEqual({ slot: 'breakfast', label: null })
     expect(resolveEatingTimePlacement('13:00', [nonMeal])).toEqual({ slot: 'lunch', label: null })
   })
