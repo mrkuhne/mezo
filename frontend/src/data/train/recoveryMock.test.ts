@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import type { RecoveryState } from '@/data/train/recoveryApi'
 import type { WorkoutPlan } from '@/data/types'
-import { mockTodayComeback, rampSets, withMockComeback } from '@/data/train/recoveryMock'
+import { mockOpen, mockTodayComeback, rampSets, withMockComeback } from '@/data/train/recoveryMock'
 
 const ended = (comeback: RecoveryState['comeback']): RecoveryState => ({
   period: {
@@ -39,4 +39,12 @@ test('withMockComeback serves the reduced working sets and the comeback; untouch
   expect(out.comeback).toEqual({ index: 1, total: 2, mode: 'RAMP' })
   expect(out.exercises.map((e) => [e.workingSets, e.sets])).toEqual([[3, 4], [2, 2], [1, 1]])
   expect(withMockComeback(plan, ended(null))).toBe(plan)
+})
+
+test('mockOpen: a new period may not start before the one that just ended (overlap guard)', () => {
+  const prev = ended(null) // ended on 2026-09-29
+  expect(() => mockOpen(prev, { category: 'STOMACH', estimate: 'FEW_DAYS', startDate: '2026-09-28' }, '2026-09-29'))
+    .toThrow('TRAIN_RECOVERY_START_OUT_OF_WINDOW')
+  expect(() => mockOpen(prev, { category: 'STOMACH', estimate: 'FEW_DAYS', startDate: '2026-09-29' }, '2026-09-29'))
+    .not.toThrow()
 })

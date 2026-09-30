@@ -355,6 +355,22 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testPrescribe_shouldKeepHold_whenLoadFactorSnapsBackToHeldBase() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Oldalemelés", "shoulders", "isolation");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(10), 8, 0);
+
+        Prescription p = svc.prescribe(owner, ex, false, 3, false, new BigDecimal("0.90"), 3);
+
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.HOLD);
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo("10");
+        assertThat(p.rationale()).doesNotContain("könnyebb");
+    }
+
+    @Test
     void testPrescribe_shouldBehaveAsBefore_whenLoadFactorNull() {
         UUID owner = ownerId();
         var meso = train.createActiveMeso(owner);

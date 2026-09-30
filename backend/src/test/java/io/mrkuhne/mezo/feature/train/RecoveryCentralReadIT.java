@@ -216,4 +216,27 @@ class RecoveryCentralReadIT extends AbstractIntegrationTest {
         assertThat(soft.freePass()).as("RECOVERY rows never take the week's pass").isTrue();
         assertThat(soft.excused()).isTrue();
     }
+
+    @Test
+    void testCentralRead_shouldNotSpendThePass_whenASoftSkipFallsOnAProtectedPlannedDay() {
+        UUID user = user();
+        LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate thursday = monday.plusDays(3);
+        train.createGymSlot(user, 0, "07:00");    // Monday
+        train.createGymSlot(user, 3, "07:00");    // Thursday
+        periods.ended(user, Reason.ILLNESS, monday, monday.plusDays(2));   // protects Mon + Tue
+        plannedSkips.create(user, monday, Kind.GYM, null, null, null, Reason.TIRED);
+        plannedSkips.create(user, thursday, Kind.GYM, null, null, null, Reason.TIRED);
+
+        List<Verdict> week = plannedSkipService.verdictsBetween(user, monday, monday.plusDays(6));
+
+        assertThat(week).extracting(v -> v.row().date()).containsExactly(monday, thursday);
+        Verdict onProtected = week.get(0);
+        assertThat(onProtected.row().source()).isEqualTo(Source.USER);
+        assertThat(onProtected.excused()).isTrue();
+        assertThat(onProtected.freePass()).as("the protection excuses it — no pass spent").isFalse();
+        Verdict later = week.get(1);
+        assertThat(later.freePass()).as("the week's pass is still there for the unprotected day").isTrue();
+        assertThat(later.excused()).isTrue();
+    }
 }

@@ -161,12 +161,18 @@ public class PlannedSkipService {
         Set<SlotIdentity> adviceSlots = adviceRows.stream()
             .map(e -> new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()))
             .collect(Collectors.toSet());
+        Map<LocalDate, RecoveryPeriodEntity> protectedDays = recoveryPeriodService.protectedDays(user, weekFrom, weekTo);
+        Set<Integer> plannedGymDows = protectedDays.isEmpty() ? Set.of() : plannedGymWeekdays(user);
         List<Row> rows = new ArrayList<>();
         for (PlannedSkipEntity e : userRows) {
             boolean adviceBacked = e.getKind() == Kind.SPORT
                 && adviceSlots.contains(new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()));
+            // A USER skip on a date the recovery period already protects (GYM: a protected planned
+            // gym day; SPORT/RUN: any protected date) is excused by the protection — never a pass.
+            boolean recoveryBacked = protectedDays.containsKey(e.getDate())
+                && (e.getKind() != Kind.GYM || plannedGymDows.contains(e.getDate().getDayOfWeek().getValue() - 1));
             rows.add(new Row(e.getId(), e.getDate(), e.getKind(), e.getDayOfWeek(), e.getTime(), e.getSessionKey(),
-                e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt(), adviceBacked));
+                e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt(), adviceBacked, recoveryBacked));
         }
 
         // A USER SPORT skip is authoritative over an ADVICE twin on the same occurrence (same
@@ -188,8 +194,6 @@ public class PlannedSkipService {
             .filter(e -> e.getKind() == Kind.GYM)
             .map(PlannedSkipEntity::getDate)
             .collect(Collectors.toSet());
-        Map<LocalDate, RecoveryPeriodEntity> protectedDays = recoveryPeriodService.protectedDays(user, weekFrom, weekTo);
-        Set<Integer> plannedGymDows = protectedDays.isEmpty() ? Set.of() : plannedGymWeekdays(user);
         protectedDays.forEach((date, period) -> {
             if (!userGymDates.contains(date) && plannedGymDows.contains(date.getDayOfWeek().getValue() - 1)) {
                 rows.add(new Row(recoveryRowId(user, date), date, Kind.GYM, null, null, null,

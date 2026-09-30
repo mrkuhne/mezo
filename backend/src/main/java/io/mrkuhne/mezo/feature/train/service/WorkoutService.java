@@ -46,6 +46,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -75,6 +76,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class WorkoutService {
+
+    /** Zone of the kímélő-mód date lookups — the same one the recovery services use. */
+    private static final ZoneId RECOVERY_TZ = ZoneId.of("Europe/Budapest");
 
     /** DayOfWeek (MONDAY..SUNDAY) → the HU day labels the frontend's DAY_ORDER uses. */
     public static final List<String> HU_DAY_LABELS =
@@ -305,7 +309,7 @@ public class WorkoutService {
         Optional<Map<UUID, String>> lighten = readinessAssessor.lightening(createdBy, LocalDate.now(), exercises);
         // Kímélő mód (mezo-q4xt2.2): comeback ramp / released day — read-time only, like dayDelta;
         // writes no workout_day_adjustment row. The readiness care override below still wins.
-        Comeback comeback = comebackFor(createdBy, LocalDate.now());
+        Comeback comeback = comebackFor(createdBy, LocalDate.now(RECOVERY_TZ));
         int weightUp = 0;
         int weightDown = 0;
         int repUp = 0;
@@ -336,9 +340,11 @@ public class WorkoutService {
                     effective = e.getWorkingSets(); // a row changed today already carries today's count
                 } else {
                     effective = Math.max(1, effectiveSets.getOrDefault(e.getId(), e.getWorkingSets()) + dayDelta);
-                }
-                if (comeback != null) {
-                    effective = ComebackRamp.lightenedSets(effective);
+                    // Ramp lightening only on the planned count — a swapped / changed-today row
+                    // carries a count that is already today's (no double lightening).
+                    if (comeback != null) {
+                        effective = ComebackRamp.lightenedSets(effective);
+                    }
                 }
             }
             String careRegion = lighten.map(m -> m.get(e.getId())).orElse(null);
@@ -350,7 +356,10 @@ public class WorkoutService {
                 Prescription p = comeback == null
                     ? setRecommendationService.prescribe(createdBy, e, deloadWeek, effective, lighten.isPresent())
                     : setRecommendationService.prescribe(createdBy, e, deloadWeek, effective,
-                        lighten.isPresent() || comeback.holdOnly(), comeback.loadFactor(),
+                        lighten.isPresent() || comeback.holdOnly(),
+                        // A deload week already lightens the load — no extra ×0.9 on top; the set
+                        // reduction and the RIR floor stay.
+                        deloadWeek ? null : comeback.loadFactor(),
                         ComebackRamp.rirFloor(null));
                 if (careRegion != null) {
                     p = lightCareSet(p, careRegion);

@@ -109,6 +109,19 @@ class RecoveryApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testUpsert_shouldReturn400_whenStartOverlapsEndedPeriod() {
+        RegisteredUser u = registerUser("Recovery Overlap");
+        recoveryPopulator.ended(u.id(), Reason.ILLNESS,
+            today().minusDays(6), today().minusDays(2));
+        RecoveryUpsertRequest req = upsert(PlannedSkipReason.STOMACH, RecoveryEstimate.FEW_DAYS)
+            .startDate(today().minusDays(4));
+
+        String body = putForBody(URL, req, u.headers(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "TRAIN_RECOVERY_START_OUT_OF_WINDOW");
+    }
+
+    @Test
     void testCheckIn_shouldMarkCheckedInAndStayOpen_whenNotYet() {
         RegisteredUser u = registerUser("Recovery NotYet");
         putForBody(URL, upsert(PlannedSkipReason.ILLNESS, RecoveryEstimate.UNKNOWN).startDate(today().minusDays(1)),

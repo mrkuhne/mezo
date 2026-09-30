@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -46,7 +47,7 @@ class ComebackTodayIT extends AbstractIntegrationTest {
 
     /** Per test, never a class-load constant (midnight-fragile fixtures). */
     private static LocalDate today() {
-        return LocalDate.now();
+        return LocalDate.now(java.time.ZoneId.of("Europe/Budapest"));
     }
 
     /**
@@ -55,7 +56,10 @@ class ComebackTodayIT extends AbstractIntegrationTest {
      */
     private void fixture() {
         owner = users.createUser().getId();
-        var meso = train.createActiveMeso(owner);
+        fixtureIn(train.createActiveMeso(owner));
+    }
+
+    private void fixtureIn(io.mrkuhne.mezo.feature.train.entity.MesocycleEntity meso) {
         String label = WorkoutService.HU_DAY_LABELS.get(today().getDayOfWeek().getValue() - 1);
         day = train.createTemplateDay(owner, meso.getId(), label);
         squat = train.createExercise(owner, day.getId(), "Guggolás", "quad", "compound");
@@ -181,6 +185,27 @@ class ComebackTodayIT extends AbstractIntegrationTest {
         WorkoutTodayResponse res = workoutService.getToday(owner, null);
         assertThat(res.getComeback()).isNull();
         assertThat(only(res).getWorkingSets()).isEqualTo(4);
+    }
+
+    @Test
+    void testGetToday_shouldNotStackLoadFactorOnDeload_whenDeloadWeek() {
+        owner = users.createUser().getId();
+        fixtureIn(train.activeMesoStartedWeeksAgo(owner, 0, 2, List.of("Deload", "MEV")));
+        recovery.ended(owner, Reason.ILLNESS, today().minusDays(4), today());
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        assertComeback(res.getComeback(), 1, 2, TodayComeback.ModeEnum.RAMP);
+        TodayExercise sq = only(res);
+        assertThat(sq.getWorkingSets()).as("the set reduction stays").isEqualTo(3);
+        assertThat(sq.getProgression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.DELOAD);
+        assertThat(sq.getRationale()).as("the plain deload, not the extra comeback ×0.9")
+            .isNotEqualTo("Visszatérő edzés — kb. 10%-kal könnyebb");
+        BigDecimal deloadOnly = workoutService.getToday(owner, null).getExercises().stream()
+            .filter(e -> e.getId().equals(squat.getId())).findFirst().orElseThrow()
+            .getProgression().getTargetWeightKg();
+        assertThat(deloadOnly).isGreaterThan(new BigDecimal("85"));
+        assertThat(working(sq)).allSatisfy(s -> assertThat(s.getTargetRIR()).isGreaterThanOrEqualTo(3));
     }
 
     private static void assertComeback(TodayComeback c, int index, int total, TodayComeback.ModeEnum mode) {

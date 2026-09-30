@@ -88,8 +88,12 @@ public class SetRecommendationService {
             }
             if (loadFactor != null) {
                 BigDecimal light = roundClamp(d.base().multiply(loadFactor));
-                d = new Decision(ProgressionDecider.Lever.DELOAD, light, d.workingReps(),
-                    light.subtract(ref.getWeightKg()), d.deltaReps(), ProgressionDecider.COMEBACK_RATIONALE);
+                // A small weight can snap straight back to the held base (10 kg × 0.9 → 10): keep the
+                // honest HOLD decision rather than claiming a lighter load it does not carry.
+                if (light.compareTo(d.base()) != 0) {
+                    d = new Decision(ProgressionDecider.Lever.DELOAD, light, d.workingReps(),
+                        light.subtract(ref.getWeightKg()), d.deltaReps(), ProgressionDecider.COMEBACK_RATIONALE);
+                }
             }
             base = d.base();
             workingReps = d.workingReps();
@@ -145,7 +149,8 @@ public class SetRecommendationService {
             base = roundClamp(loadFactor == null
                 ? ex.getAnchorWeightKg() : ex.getAnchorWeightKg().multiply(loadFactor));
             workingReps = ex.getRepMax();
-            rationale = "Kezdő súly (anchor)";
+            rationale = loadFactor != null && base.compareTo(roundClamp(ex.getAnchorWeightKg())) != 0
+                ? ProgressionDecider.COMEBACK_RATIONALE : "Kezdő súly (anchor)";
             progression = null;
         } else {
             base = null;

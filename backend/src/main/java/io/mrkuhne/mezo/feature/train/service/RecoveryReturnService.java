@@ -86,7 +86,13 @@ public class RecoveryReturnService {
             throw bad("TRAIN_RECOVERY_START_OUT_OF_WINDOW");
         }
         lock.lock(user);
-        RecoveryPeriodEntity p = periods.findFirstByCreatedByAndEndedOnIsNullAndDeletedFalse(user)
+        Optional<RecoveryPeriodEntity> open = periods.findFirstByCreatedByAndEndedOnIsNullAndDeletedFalse(user);
+        // A new period must not reach back into an earlier, already ended one (the overlap would
+        // double-protect the days and blur the comeback ramp). Editing the open one keeps its start.
+        if (open.isEmpty() && periodService.latestEnded(user).filter(l -> start.isBefore(l.getEndedOn())).isPresent()) {
+            throw bad("TRAIN_RECOVERY_START_OUT_OF_WINDOW");
+        }
+        RecoveryPeriodEntity p = open
             .orElseGet(() -> {
                 RecoveryPeriodEntity e = new RecoveryPeriodEntity();
                 e.setCreatedBy(user);

@@ -100,6 +100,8 @@ export function mockOpen(prev: RecoveryState, req: RecoveryUpsertRequest, today 
   const start = req.startDate ?? today
   if (start < addDays(today, -7) || start > today) throw new Error('TRAIN_RECOVERY_START_OUT_OF_WINDOW')
   const open = prev.period && !prev.period.endedOn ? prev.period : null
+  // A new period must not reach back into the one that just ended (the mock only knows that one).
+  if (!open && prev.period?.endedOn && start < prev.period.endedOn) throw new Error('TRAIN_RECOVERY_START_OUT_OF_WINDOW')
   const startDate = open?.startDate ?? start
   const off = OFFSET[req.estimate]
   const period: RecoveryPeriod = {
