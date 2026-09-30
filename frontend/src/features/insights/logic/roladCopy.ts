@@ -36,6 +36,23 @@ export const ROLAD_COPY = {
   factsTile: 'Tények rólad',
 } as const
 
+/** S9 (mezo-d6ivw.10): the „Összevonnám” card — copy from the approved prototype (mezo.html S9). */
+export const MERGE_COPY = {
+  tag: 'ÖSSZEVONÁSI JAVASLAT',
+  eyebrow: 'EGY MONDATBAN',
+  helper: (n: number) =>
+    `A heti rendrakásnál feltűnt, hogy ez a ${n === 3 ? 'három' : 'kettő'} ugyanarról szól. Ha összevonom, a két régi mondat nem vész el: a Tényeknél visszakapcsolhatod.`,
+  accept: 'Összevonom',
+  refine: 'Átírom',
+  refineSave: 'Így vond össze',
+  refineAria: 'Az összevont mondat',
+  snooze: 'Később',
+  reject: 'Maradjon külön',
+  keep: 'Összevontam — a két régi mondat a Tényeknél visszakapcsolható',
+  snoozed: 'Jövő hétfőn újra megkérdezem',
+  rejected: 'Külön maradnak — ezt a kettőt nem hozom fel újra',
+} as const
+
 export interface RoladQuoteClaim { id: string; text: string; character: TeamCharacterId }
 
 export function pickQuoteClaim(overview: CharacterOverviewResponse | null): RoladQuoteClaim | null {

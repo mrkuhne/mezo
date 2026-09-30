@@ -187,6 +187,7 @@ export function KnowledgeListPage() {
           <TenyekSection
             facts={facts} degraded={degraded} isPending={isPending} isError={isError} refetch={refetch}
             highlightFactId={highlightFactId} forget={undo.start} isHidden={undo.isHidden}
+            pendingMergeCount={degraded ? 0 : candidates.filter((c) => c.source === 'merge').length}
           />
         </EntranceGroup>
         {undoBar}

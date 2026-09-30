@@ -27722,6 +27722,13 @@ main.settings-page {
   color: var(--text-muted); cursor: pointer; }
 .kr9-rolad .tud9-no:hover, .kr9-rolad .tud9-no:focus-visible { color: var(--text-secondary); }
 .kr9-rolad .tud9-no:focus-visible { outline: 2px solid var(--c, var(--dv-sage)); outline-offset: 2px; }
+/* S9 (mezo-d6ivw.10): the „Összevonnám” card — the source sentences as small flat rows */
+.kr9-rolad .s9src { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 2px; padding: 0; list-style: none; }
+.kr9-rolad .s9src li { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; font-size: 13px; line-height: 1.35;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px rgba(245, 239, 230, 0.06); }
+.kr9-rolad .s9src .t-ico { width: 18px; height: 18px; flex: 0 0 auto; opacity: 0.8; }
+.kr9-rolad .s9arrow { margin: 10px 0 8px 2px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; color: var(--dv-amber); }
+.kr9-rolad .tud9-cand[data-merge-candidate] .tf-csub { display: block; -webkit-line-clamp: unset; overflow: visible; }
 .tud9 .tud9-foot, .kr9-rolad .tud9-foot { display: block; margin: 9px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--text-muted); }
 .kr9-rolad .tud9-prov { margin: 9px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--text-secondary); }
 .kr9-rolad .tud9-refine { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
@@ -30497,3 +30504,8 @@ main.settings-page {
 .wos .wo-change-err { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 10px 12px; border-radius: 14px;
   font-size: 12.5px; color: #FFB39C; background: rgba(255, 126, 92, 0.08); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.3); }
 .wos .wo-change-err button { margin-left: auto; border: 0; background: none; color: inherit; font-weight: 700; cursor: pointer; }
+
+/* S9 (mezo-d6ivw.10): the Monday tidy-up strip above the facts search */
+.tud9 .th-merge-strip { display: flex; align-items: center; gap: 8px; margin: 6px 16px 8px; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.4; color: var(--text-primary);
+  background: color-mix(in srgb, var(--dv-sage) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent); }
+.tud9 .th-merge-strip .th-link { margin-left: auto; white-space: nowrap; color: var(--dv-sage); font-weight: 650; text-decoration: none; }

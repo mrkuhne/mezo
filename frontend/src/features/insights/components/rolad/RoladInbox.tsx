@@ -4,7 +4,7 @@ import { Icon3D } from '@/shared/ui/clay'
 import { FactCandidateCard } from '@/features/insights/components/FactCandidateCard'
 import { LifeEventCandidateCard } from '@/features/insights/components/LifeEventCandidateCard'
 import { LifeEventAcceptedCard } from '@/features/insights/components/LifeEventAcceptedCard'
-import { ROLAD_COPY } from '@/features/insights/logic/roladCopy'
+import { MERGE_COPY, ROLAD_COPY } from '@/features/insights/logic/roladCopy'
 import type { Settled, useRoladInbox } from '@/features/insights/hooks/useRoladInbox'
 import { riseStyle } from './riseStyle'
 
@@ -21,19 +21,19 @@ function SettledRow({ s, style }: { s: Settled; style: React.CSSProperties }) {
     }
     return (
       <div className="glass tf-case tf-c-sage tf-s-sage tud9-case kr9-kept rise" style={style} data-settled="keep">
-        <span className="tf-crow"><span className="tf-st">Tényjelölt</span></span>
+        <span className="tf-crow"><span className="tf-st">{s.merge ? MERGE_COPY.tag : 'Tényjelölt'}</span></span>
         <span className="tf-cmain">
-          <Icon3D name="t-note" size={36} />
+          <Icon3D name={s.merge ? 't-layers' : 't-note'} size={36} />
           <span className="tf-ctxt"><span className="tf-ctitle">{s.title}</span></span>
         </span>
-        <span className="tf-after"><Icon3D name="t-tick" size={15} />{ROLAD_COPY.keep}</span>
+        <span className="tf-after"><Icon3D name="t-tick" size={15} />{s.merge ? MERGE_COPY.keep : ROLAD_COPY.keep}</span>
       </div>
     )
   }
   return (
     <div className="kr9-gone rise" style={style} data-settled={s.outcome}>
       <Icon3D name={GONE_ICON[s.outcome]} size={22} />
-      <span><b>{s.title}</b><small>{ROLAD_COPY[s.outcome]}</small></span>
+      <span><b>{s.title}</b><small>{s.merge ? (s.outcome === 'snooze' ? MERGE_COPY.snoozed : MERGE_COPY.rejected) : ROLAD_COPY[s.outcome]}</small></span>
     </div>
   )
 }

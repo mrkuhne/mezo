@@ -8559,7 +8559,7 @@ export interface components {
             factText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' */
             category: string;
-            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' — 'manual' = the user typed it in the Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user claimed with „Rólam is” (mezo-d6ivw.13) */
+            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' | 'merge' — 'manual' = the user typed it in the Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user claimed with „Rólam is” (mezo-d6ivw.13), 'merge' = an accepted weekly fact merge (S9, mezo-d6ivw.10) */
             source: string;
             /**
              * @description U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field.
@@ -8579,10 +8579,10 @@ export interface components {
             /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
             citedWeeks?: number | null;
             /**
-             * @description S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+             * @description S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel, merged = összevontam egy hasonló ténnyel (S9). Null, ha bekapcsolt.
              * @enum {string|null}
              */
-            mutedReason?: "user" | "refuted" | "superseded" | null;
+            mutedReason?: "user" | "refuted" | "superseded" | "merged" | null;
             /**
              * Format: date-time
              * @description S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti némítás.
@@ -8627,7 +8627,7 @@ export interface components {
             candidateText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time */
             category: string;
-            /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it */
+            /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) | 'merge' (a weekly fact-merge proposal, S9 mezo-d6ivw.10) — the promoted knowledge fact inherits it */
             source: string;
             /**
              * @description the character that brought the candidate — „<Név> hozta”
@@ -8655,6 +8655,8 @@ export interface components {
              * @description S8 (mezo-d6ivw.12) — the chat USER message the candidate was extracted from; null for a weekly-review candidate. The chat anchors its Megjegyezném chip on it.
              */
             derivedFromMessageId?: string | null;
+            /** @description S9 (mezo-d6ivw.10) — source='merge' only: the member facts' current texts, in the order the proposal lists them (the Rólad „Összevonnám" card shows them above the proposed sentence). Null for every other candidate. */
+            mergeSources?: string[] | null;
             /** Format: date-time */
             createdAt: string;
         };

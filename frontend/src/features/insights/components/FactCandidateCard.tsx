@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon3D } from '@/shared/ui/clay'
-import { candidateByline } from '@/features/insights/logic/roladCopy'
+import { MERGE_COPY, candidateByline } from '@/features/insights/logic/roladCopy'
 import type { FactCandidate, FactDecision, KnowledgeFact } from '@/data/types'
 
 /**
@@ -33,6 +33,60 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
     if (decision !== 'reject' && decision !== 'snooze' && conflictFact && turnOffOld) {
       onToggleConflict?.(conflictFact.id, false)
     }
+  }
+
+  if (candidate.source === 'merge') {
+    const sources = candidate.mergeSources ?? []
+    return (
+      <article className="glass tf-case tf-c-gold tf-s-gold tud9-case tud9-cand" data-fact-candidate data-merge-candidate>
+        <span className="tf-crow">
+          <span className="tf-st">{MERGE_COPY.tag}</span>
+          <em>{candidateByline(candidate.owner, candidate.createdAt)}</em>
+        </span>
+        <ul className="s9src">
+          {sources.map((t, i) => (
+            <li key={i}><Icon3D name="t-note" size={18} />„{t}”</li>
+          ))}
+        </ul>
+        <div className="s9arrow">{MERGE_COPY.eyebrow}</div>
+        <span className="tf-cmain">
+          <Icon3D name="t-layers" size={36} />
+          <span className="tf-ctxt">
+            <span className="tf-ctitle">„{candidate.text}”</span>
+            <span className="tf-csub">{MERGE_COPY.helper(sources.length)}</span>
+          </span>
+        </span>
+        {refining ? (
+          <div className="tud9-refine">
+            <textarea
+              className="tud9-input"
+              rows={2}
+              aria-label={MERGE_COPY.refineAria}
+              value={refinedText}
+              onChange={(e) => setRefinedText(e.target.value)}
+            />
+            <button type="button" className="tud9-btn is-main" disabled={!refinedText.trim()} onClick={() => decide('refine', refinedText.trim())}>
+              <Icon3D name="t-tick" size={20} />{MERGE_COPY.refineSave}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="tud9-acts">
+              <button type="button" className="tud9-btn is-main" onClick={() => decide('accept')}>
+                <Icon3D name="t-layers" size={20} />{MERGE_COPY.accept}
+              </button>
+              <button type="button" className="tud9-btn" onClick={() => setRefining(true)}>
+                <Icon3D name="t-pencil" size={20} />{MERGE_COPY.refine}
+              </button>
+              <button type="button" className="tud9-btn" onClick={() => decide('snooze')}>
+                <Icon3D name="t-clock" size={20} />{MERGE_COPY.snooze}
+              </button>
+            </div>
+            <button type="button" className="tud9-no" onClick={() => decide('reject')}>{MERGE_COPY.reject}</button>
+          </>
+        )}
+      </article>
+    )
   }
 
   return (

@@ -41,12 +41,20 @@ describe('hubCopy · why a thing is muted', () => {
     expect(C.whyText('refuted', '2026-09-16T08:00:00Z')).toBe('később nem igazolódott · Szep 16')
     expect(C.whyText('superseded', '2026-09-21T09:20:00Z')).toBe('felülírta egy újabb észrevétel, Szep 21')
   })
+  it('merged reads like superseded: comma + date', () => {
+    expect(C.whyText('merged', '2026-09-29T07:00:00Z')).toBe('összevontam egy hasonló ténnyel, Szep 29')
+    expect(C.whyText('merged', null)).toBe('összevontam egy hasonló ténnyel')
+    expect(C.mergedWhy('Ez marad.', '2026-09-29T07:00:00Z')).toBe('összevontam ezzel: „Ez marad.”, Szep 29')
+    expect(C.mergeStrip(2, 0)).toBe('Hétfői rendrakás: 2 ismétlést összevontam.')
+    expect(C.mergeStrip(2, 1)).toBe('Hétfői rendrakás: 2 ismétlést összevontam, 1 javaslat vár rád a Rólad oldalon.')
+    expect(C.TOAST.mergedBack).toBe('Visszakapcsoltam — újra külön használom')
+  })
   it('no date → reason only (backfilled / person facts)', () => {
     expect(C.whyText('user', null)).toBe('te hallgattattad el')
     expect(C.whyText('superseded', null)).toBe('felülírta egy újabb észrevétel')
   })
   it('why icons', () => {
-    expect(C.WHY_ICON).toEqual({ user: 't-mute', refuted: 't-down', superseded: 't-history' })
+    expect(C.WHY_ICON).toEqual({ user: 't-mute', refuted: 't-down', superseded: 't-history', merged: 't-layers' })
   })
 })
 
@@ -127,7 +135,7 @@ describe('hubCopy · hub, tiles, sections', () => {
     expect(C.CHIP).toEqual({
       pattern: 'észrevételből', chat: 'beszélgetésből', manual: 'kézzel',
       weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál', team_chat: 'csapatfalról',
-      person_fact: 'ismerős lapjáról',
+      person_fact: 'ismerős lapjáról', merge: 'összevonásból',
     })
     expect(C.ORIGIN.pattern).toBe('Megerősített észrevételből tanultam — amikor az egyik változik, a másik jellemzően követi.')
     expect(C.ORIGIN.chat).toBe('A beszélgetéseitekből szűrtem ki.')

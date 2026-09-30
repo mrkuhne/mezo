@@ -61,6 +61,7 @@ const ORIGIN_CHIP: Record<FactSource, string> = {
   question: 'kérdésre válaszoltál',
   team_chat: 'csapatfalról',
   person_fact: 'ismerős lapjáról',
+  merge: 'összevonásból',
 }
 
 export function originChipLabel(source: FactSource): string {

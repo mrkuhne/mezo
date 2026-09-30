@@ -1648,6 +1648,7 @@ export const handlers = [
         userDecision: null,
         refinedText: null,
         promotedFactId: null,
+        mergeSources: c.mergeSources ?? null,
         createdAt: c.createdAt,
       })),
     ),

@@ -43,6 +43,7 @@ export function toFactCandidate(c: FactCandidateResponse): FactCandidate {
     evidence: c.evidence ?? null,
     weekStart: c.weekStart ?? null,
     conflictsWithFactId: null,
+    mergeSources: c.mergeSources ?? null,
   }
 }
 

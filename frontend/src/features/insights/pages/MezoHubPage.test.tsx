@@ -99,7 +99,7 @@ describe('MezoHubPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: 'Memoár' })).toBeInTheDocument()
     expect(screen.getByText('Hét 20 · új fejezet')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tudástár' })).toBeInTheDocument()
-    expect(screen.getByText('16 tény · 14 a chatben')).toBeInTheDocument()
+    expect(screen.getByText('17 tény · 14 a chatben')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Előrejelzések' })).toBeInTheDocument()
     expect(screen.getByText('2 aktív · 100% bevált')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Kísérletek' })).toBeInTheDocument()
