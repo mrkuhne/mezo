@@ -49,7 +49,7 @@ export function FuelLogNewPage() {
   const laneRaw = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
   const lane = past ? asPastDayLane(laneRaw) : laneRaw
   // A `w` az ablak SAJÁT kulcsa (`${time}-${label}`) — pontos egyezés, sosem index.
-  // Ismeretlen kulcs → null: ablakon kívüli logolás, látható MIKOR szegmenssel.
+  // Ismeretlen kulcs → null: szabad induló kontextus, az evés idejét külön lehet megadni.
   const wKey = searchParams.get('w')
   const tile: WindowTileVM | null = lane.tiles.find(t => t.key === wKey) ?? null
 
@@ -147,9 +147,8 @@ export function FuelLogNewPage() {
           // A héj adja a négy bejáratot; a composer szövegmezőt és a későbbi megerősítést adja.
           shellOwnsEntry={!editing}
           editMealId={editMealId}
-          window={slot?.windowFrom && slot.windowTo && !editing ? { from: slot.windowFrom, to: slot.windowTo } : undefined}
+          eatingTimeWindows={!editing ? plan.slots : undefined}
           logDate={past ? date : undefined}
-          logTime={past ? tile?.time : undefined}
           saveLabel={past ? `✓ Pótlás · ${dayLabel}` : undefined}
           onSaved={back}
           onCancel={back}

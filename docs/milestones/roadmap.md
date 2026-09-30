@@ -61,6 +61,11 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-10-01 — Étkezés tényleges ideje (`mezo-yhhvg`).** Az új naplózásban a mentés előtt
+  becsukott „Mikor ettél?” sor mutatja az aktuális időt; átírva a kiválasztott napra és az
+  evési időhöz tartozó tervezett ablakba könyvel. A mező helyben nyílik, a piszkozatot és a
+  görgetést megtartja; hibás mentés után újrapróbálható. A meglévő javítási és overlay
+  bejáratok megmaradtak. [Design](../superpowers/specs/2026-09-30-meal-log-eaten-time-design.md).
 - **2026-09-30 — Heti rendrakás: Mezo összevonja az ismétlődő tényeket (S9, `mezo-d6ivw.10`).**
   Minden hétfő reggel 7:30-kor Mezo átnézi, mit tud rólad, és ami ugyanazt mondja kétszer, azt
   magától egybe teszi (a régebbi vagy erősebb marad, a másik „Összevontam" mappába kerül, és egy

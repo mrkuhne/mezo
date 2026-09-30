@@ -14713,6 +14713,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: rgba(25, 22, 20, 0.82);
   -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
   box-shadow: inset 0 0 0 1px var(--divider); }
+/* Leave enough scroll travel for the optional time row to clear the sticky save bar. */
+.flognew-page .logflow-composer { padding-bottom: 96px; }
 
 /* ─ The four ways in (FuelLogModes) ─ */
 .fmx-logmodes { margin: 0 0 2px; }
@@ -14981,6 +14983,20 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: rgba(245, 239, 230, 0.07); }
 .logflow-composer .logflow-daybar b { background: var(--dv-sage); box-shadow: 0 0 8px var(--dv-sage); }
 .logflow-composer .logflow-daybar i { background: var(--dv-lav); box-shadow: 0 0 8px var(--dv-lav); }
+.logflow-composer .logflow-eaten-time.uv-flat { margin-top: 14px; padding: 12px 14px; border-radius: 18px; }
+.logflow-composer .logflow-eaten-time-toggle { display: flex; width: 100%; min-height: 32px; align-items: center;
+  justify-content: space-between; gap: 12px; padding: 0; border: 0; background: none; color: var(--text-primary);
+  font: inherit; text-align: left; cursor: pointer; }
+.logflow-composer .logflow-eaten-time-title { font-weight: 600; white-space: nowrap; }
+.logflow-composer .logflow-eaten-time-summary { color: var(--text-secondary); font-size: 13px; text-align: right; }
+.logflow-composer .logflow-eaten-time-details { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); }
+.logflow-composer .logflow-eaten-time-inputrow { display: flex; align-items: center; gap: 8px; }
+.logflow-composer .logflow-eaten-time-inputrow input { min-width: 0; flex: 1; padding: 9px 11px; border: 1px solid var(--divider);
+  border-radius: 11px; background: rgba(245, 239, 230, 0.06); color: var(--text-primary); font: inherit; color-scheme: dark; }
+.logflow-composer .logflow-eaten-time-inputrow button { padding: 9px 13px; border: 1px solid var(--divider);
+  border-radius: 11px; background: rgba(245, 239, 230, 0.06); color: var(--text-primary); font: inherit; cursor: pointer; }
+.logflow-composer .logflow-eaten-time-details p { margin: 8px 0 0; color: var(--text-secondary); font-size: 12px; }
+.logflow-composer .logflow-eaten-time-error { margin: 8px 0 0; color: var(--dv-coral); font-size: 12px; }
 
 /* Actions: Mégse flat, the log CTA sage glass (prototype `.savebar`). */
 .logflow-composer .logflow-actions .cta-ghost { padding: 13px 16px; border: 0; border-radius: 18px;

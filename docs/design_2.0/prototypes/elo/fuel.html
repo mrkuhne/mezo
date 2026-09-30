@@ -28,7 +28,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-a
 
 /* ── Phone frame ─────────────────────────────── */
 .stage{display:flex;gap:40px;align-items:flex-start;padding:28px 16px 60px}
-.phone{position:relative;width:390px;max-width:100%;min-height:844px;height:844px;border-radius:44px;overflow:hidden;background:var(--page);
+.phone{position:relative;width:390px;max-width:100%;min-height:844px;height:844px;border-radius:44px;overflow:clip;background:var(--page);
   box-shadow:0 40px 80px -30px rgba(90,62,34,.35),0 0 0 10px #fff,0 0 0 11px rgba(43,33,24,.08)}
 @media(max-width:440px){.stage{padding:0}.phone{width:100vw;height:100vh;min-height:0;border-radius:0;box-shadow:none}}
 /* aurora the glass refracts */
@@ -229,8 +229,9 @@ svg{overflow:visible}
 /* bottom sheet */
 .scrim{position:absolute;inset:0;z-index:40;background:rgba(43,33,24,.22);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .3s}
 .scrim.on{opacity:1;pointer-events:auto}
-.sheet{position:absolute;left:10px;right:10px;bottom:10px;z-index:41;padding:10px 18px 22px;border-radius:30px;transform:translateY(110%);transition:transform .45s var(--ease)}
-.sheet.on{transform:none}
+.sheet{position:absolute;left:10px;right:10px;bottom:10px;z-index:41;padding:10px 18px 22px;border-radius:30px;visibility:hidden;pointer-events:none;transform:translateY(110%);transition:transform .45s var(--ease),visibility 0s .45s}
+.sheet.on{visibility:visible;pointer-events:auto;transform:none;transition:transform .45s var(--ease)}
+@media(prefers-reduced-motion:reduce){.sheet,.sheet.on{transition:none}}
 .sheet .grab{width:40px;height:5px;border-radius:3px;background:rgba(43,33,24,.14);margin:0 auto 14px}
 .sheet .sh-top{display:flex;align-items:center;gap:12px}
 .sheet .sh-top .icon{width:54px;height:54px}
@@ -1662,6 +1663,23 @@ svg{overflow:visible}
 .daychip{text-align:center;padding:7px 12px;border-radius:14px;background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
 .daychip b{display:block;font-size:14px}
 .daychip small{font-size:10.5px;color:var(--faint)}
+.log-time{margin:14px 16px 0;padding:0 14px;border-radius:18px;background:rgba(245,239,230,.045);box-shadow:inset 0 0 0 1px var(--hair)}
+.log-time-head{display:flex;align-items:center;gap:10px;width:100%;min-height:62px;text-align:left}
+.log-time-head .icon{width:28px;height:28px;flex:0 0 auto}
+.log-time-head .copy{flex:1;min-width:0}
+.log-time-head .copy strong{display:block;font-size:13px;font-weight:650;color:var(--ink)}
+.log-time-head .copy small{display:block;margin-top:2px;font-size:11px;color:var(--sub)}
+.log-time-head .value{font-size:15px;font-weight:700;color:var(--gold)}
+.log-time-head .chev{font-size:17px}
+.log-time-edit{display:flex;align-items:center;gap:10px;padding:0 0 13px}
+.log-time-edit[hidden],.log-time-note[hidden]{display:none}
+.log-time-edit input{width:128px;min-height:42px;padding:7px 10px;border-radius:12px;border:1px solid rgba(255,216,150,.38);background:rgba(12,11,10,.45);color:var(--ink);font:inherit;font-size:15px;color-scheme:dark}
+.log-time-edit .flat{min-height:42px}
+.log-time-note{padding:0 0 13px;font-size:11.5px;line-height:1.4;color:var(--sub)}
+.log-time-error{color:#ffb39c}
+.log-savebar{position:relative;bottom:auto;padding:8px;gap:8px}
+.log-savebar .log-time{grid-column:1/-1;margin:0}
+@media(max-width:360px){.log-time-head{gap:6px}.log-time-head .value{font-size:13px}.log-time-head .copy small{font-size:10px}}
 .modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 16px;padding:6px;border-radius:22px}
 .mode{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 7px;border-radius:16px;font-size:11px;font-weight:600;color:var(--faint)}
 .mode .icon{width:30px;height:30px;filter:grayscale(.45) brightness(.8)!important}
@@ -2614,8 +2632,21 @@ function muhely(draft){
 
 /* ── LOGOLÁS ────────────────────────────────────────────── */
 let mode='foto', lines=false, logPhotoUrl='', logPhotoName='', logText='';
+let logTimeOpen=false, logChosenTime='', logContextKey='';
+const currentLogTime=()=>{const now=new Date();return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`};
 const logEsc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 function log(fail){
+  const {q}=HQ(), date=q.d&&q.d<TODAY&&q.d>=addDays(TODAY,-7)?q.d:TODAY, past=date!==TODAY;
+  const sourceIndex=/^[0-3]$/.test(q.w||'')?Number(q.w):-1;
+  const contextKey=`${date}|${sourceIndex}`;
+  if(logContextKey!==contextKey){logContextKey=contextKey;logChosenTime='';logTimeOpen=false}
+  const time=logChosenTime||currentLogTime();
+  const targetIndex=SLOTS.findIndex(s=>toMin(time)>=toMin(s.from)&&toMin(time)<=toMin(s.to));
+  const targetSlot=SLOTS[targetIndex], future=!past&&!!logChosenTime&&toMin(time)>toMin(currentLogTime());
+  const timeLabel=logChosenTime?time:'Most · '+time;
+  const windowLabel=targetSlot?`${targetSlot.l} · ${targetSlot.from}–${targetSlot.to}`:'Ablakon kívül';
+  const timeContext=`${windowLabel} · ${logChosenTime?'tényleges':'aktuális'} idő`;
+  const timeControl=`<div class="log-time"><button class="log-time-head" type="button" data-log-time-toggle aria-expanded="${logTimeOpen}">${I('clock')}<span class="copy"><strong>Mikor ettél?</strong><small>${timeContext}</small></span><span class="value">${timeLabel}</span><span class="chev">${logTimeOpen?'⌃':'⌄'}</span></button><div class="log-time-edit" ${logTimeOpen?'':'hidden'}><input id="log-eaten-time" type="time" value="${time}" aria-label="Evés időpontja"><button type="button" class="flat" data-log-time-default>Most</button></div><p class="log-time-note${future?' log-time-error':''}" ${logTimeOpen?'':'hidden'}>${future?'A mai napra jövőbeli időpontot nem lehet menteni.':'Az étkezés a megadott idő szerinti ablakba kerül.'}</p></div>`;
   const M=[['foto','Fotó','camera','var(--coral)'],['kamra','Kamra','stack','var(--gold)'],['recept','Recept','book','var(--lav)'],['szokasos','Szokásosak','repeat','var(--sage)']];
   let body='';
   if(fail) body=`<div class="dash" style="--c:var(--gold);margin:12px 16px 0;text-align:center"><div class="failart">${I('camera')}<b>?</b></div><span class="eb" style="margin-top:10px">ŐSZINTÉN SZÓLVA</span><strong style="display:block;font-size:17px;margin-top:4px">Ezt a tányért nem ismertem fel.</strong><p class="lead" style="padding:8px 0 12px">Írd le lent, mit ettél, vagy próbáld meg új fotóval.</p><button class="btn flatb" data-log-photo>Új fotót készítek</button></div>`;
@@ -2629,15 +2660,38 @@ function log(fail){
     <p class="mm">${p} g feh. · ${cc} g szénh. · ${f} g zsír</p>${t==='becslés'?`<p class="mm" style="color:var(--sub)">${I('score').replace('class="icon ','class="icon " style="width:14px;height:14px;vertical-align:-2px;filter:none"')} Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.</p>`:''}</div>`).join('')}</section>
   <div class="total glass rise" style="--i:3"><span class="eb">EZ AZ ÉTKEZÉS · 3 TÉTEL</span><strong style="display:block;font-size:17px;margin-top:4px">Zabkása joghurttal és gyümölccsel</strong>
     <div class="four">${[['420','kcal','var(--gold)'],['23','fehérje','var(--protein)'],['52','szénh.','var(--carb)'],['12','zsír','var(--fat)']].map(([b,l,c])=>`<div class="stat" style="--c:${c}"><b>${b}</b><small>${l}</small></div>`).join('')}</div>
-    <small style="font-size:12px;color:var(--sub)">Mai nap eddig 1180 +420 = 1600 · cél 2800 kcal</small><span class="daybar"><b style="width:49%"></b><i style="width:18%"></i></span></div>
-  <div class="savebar"><button class="btn flatb" data-go="#mai">Mégse</button><button class="btn glass" style="--c:var(--sage)" data-toast="Mentve · +10 XP — az étkezés-ünnep (U10) nyílik">✓ Logolás · +10 XP</button></div>`
+    <small style="font-size:12px;color:var(--sub)">${past?'Ezen a napon':'Mai nap'} eddig ${dayTot(date)} +420 = ${dayTot(date)+420} · cél ${target()} kcal</small><span class="daybar"><b style="width:${Math.min(100,Math.round(dayTot(date)/target()*100))}%"></b><i style="width:${Math.min(100,Math.round(420/target()*100))}%"></i></span></div>
+  <div class="savebar log-savebar">${timeControl}<button class="btn flatb" data-go="#mai?d=${date}">Mégse</button><button class="btn glass" style="--c:var(--sage)" data-log-save ${future?'disabled':''}>✓ Logolás · +10 XP</button></div>`
   :'';
   return `${topbar()}
-  <div style="padding:0 18px 4px"><button class="flat" data-back>‹ Vissza</button></div>
-  <div class="logh rise">${I('sun')}<span class="t"><span class="eb">LOGOLÁS</span><strong>Reggeli</strong><small>08:00 · ablak</small></span><span class="daychip"><b>szept. 28.</b><small>ma</small></span></div>
+  <div style="padding:0 18px 4px"><button class="flat" data-go="#mai?d=${date}">‹ Vissza</button></div>
+  <div class="logh rise">${I(targetSlot?.ic||'bowl')}<span class="t"><span class="eb">${past?'PÓTLÁS':'LOGOLÁS'}</span><strong>${targetSlot?.l||'Ablakon kívül'}</strong><small>${targetSlot?`${targetSlot.from}–${targetSlot.to} · ablak`:'szabad étkezés'}</small></span><span class="daychip"><b>${huShort(date)}.</b><small>${past?'korábbi nap':'ma'}</small></span></div>
+  ${past?`<p class="hint" style="padding-top:2px">Amit itt logolsz, ${huShort(date)}-i napra könyvelődik.</p>`:''}
   <div class="modes glass" role="group" aria-label="Hozzáadás" style="--c:var(--coral)">${M.map(([k,l,ic,c])=>`<button class="mode ${mode===k?'on':''}" style="--c:${c}" ${k==='foto'?'data-log-photo':k==='kamra'?'data-sheet="kamrapick"':k==='recept'?'data-sheet="receptpick"':`data-mode="${k}"`}>${I(ic)}${l}</button>`).join('')}</div>
   <input id="log-photo-input" type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
-  ${body}${compose}${conf}${lines?'':'<div class="savebar" style="position:relative;bottom:auto"><button class="btn flatb" data-go="#mai">Mégse</button></div>'}`;
+  ${body}${compose}${conf}${lines?'':`<div class="savebar" style="position:relative;bottom:auto"><button class="btn flatb" data-go="#mai?d=${date}">Mégse</button></div>`}`;
+}
+function syncLogTime(){
+  const control=document.querySelector('.log-time');if(!control)return;
+  const {q}=HQ(),date=q.d&&q.d<TODAY&&q.d>=addDays(TODAY,-7)?q.d:TODAY;
+  const time=logChosenTime||currentLogTime();
+  const slot=SLOTS.find(s=>toMin(time)>=toMin(s.from)&&toMin(time)<=toMin(s.to));
+  const future=date===TODAY&&!!logChosenTime&&toMin(time)>toMin(currentLogTime());
+  const windowLabel=slot?`${slot.l} · ${slot.from}–${slot.to}`:'Ablakon kívül';
+  control.querySelector('.log-time-head').setAttribute('aria-expanded',String(logTimeOpen));
+  control.querySelector('.copy small').textContent=`${windowLabel} · ${logChosenTime?'tényleges':'aktuális'} idő`;
+  control.querySelector('.value').textContent=logChosenTime?time:`Most · ${time}`;
+  control.querySelector('.chev').textContent=logTimeOpen?'⌃':'⌄';
+  control.querySelector('.log-time-edit').hidden=!logTimeOpen;
+  const note=control.querySelector('.log-time-note');note.hidden=!logTimeOpen;
+  note.classList.toggle('log-time-error',future);
+  note.textContent=future?'A mai napra jövőbeli időpontot nem lehet menteni.':'Az étkezés a megadott idő szerinti ablakba kerül.';
+  control.querySelector('#log-eaten-time').value=time;
+  document.querySelector('[data-log-save]').disabled=future;
+  const header=document.querySelector('.logh');
+  header.querySelector('.icon').outerHTML=I(slot?.ic||'bowl');
+  header.querySelector('.t strong').textContent=slot?.l||'Ablakon kívül';
+  header.querySelector('.t small').textContent=slot?`${slot.from}–${slot.to} · ablak`:'szabad étkezés';
 }
 
 /* ── KIEGÉSZÍTŐK ────────────────────────────────────────── */
@@ -2957,7 +3011,7 @@ function blocks(iso){
         <div class="fmeal-bottom"><span class="mcells" role="img" aria-label="Makrók">${[['meat','var(--protein)',m.p,45],['carb','var(--carb)',m.c,90],['avocado','var(--fat)',m.f,25],['fiber','var(--fiber)',m.fib,10]].map(([ic,c,v,t])=>`<span class="mcell" style="--c:${c}">${I(ic)}${miniRing(v/t*100,c)}<i>${v} g</i></span>`).join('')}</span>
           <span class="fchips"><button class="gluchip ${g?'mid':''}" data-toast="Vércukor-doboz — ${GLU[g].toLowerCase()} emelkedés várható">${gluCurve(g)}${GLU[g]}</button>
           <button class="uscore" ${mid?`data-go="#score/${mid}"`:`data-toast="AI értékelés — ${fmt(sc)}"`} aria-label="AI értékelés: ${fmt(sc)}">${I('score')}${fmt(sc)}</button></span></div></div>`}).join('')}
-      ${rows.length?'':`<button class="flog" data-go="#log" aria-label="${s.l} · logolás ide"><span>＋</span><span><strong>Logolás ide</strong><small>${logLabel(s,now)}</small></span></button>`}
+      ${rows.length?'':`<button class="flog" data-go="#log?d=${iso}&w=${i}" aria-label="${s.l} · logolás ide"><span>＋</span><span><strong>Logolás ide</strong><small>${logLabel(s,now)}</small></span></button>`}
     </section>`}).join('');
 }
 
@@ -2980,8 +3034,9 @@ function mai(){
   <section class="macros rise" style="--i:2">${mac.map(([a,c,v,t,u],i)=>`<div class="macro ${a==='water'?'btn-like':''}" style="--c:${c}" ${a==='water'?'data-sheet="water" role="button" aria-label="Víz logolása"':''}>${I(a)}<div class="mring" style="--c:${c}">${ring(Math.round(parseFloat(String(v).replace(',','.'))/t*100),c,34,80).replace('style="','style="--i:'+i+';')}<span><strong class="tint">${v}</strong><small>/ ${fmt(t)} ${u}</small></span></div></div>`).join('')}</section>`}
   <div class="bhead rise" style="--i:3"><h2>${past?'Ezen a napon':'A mai blokkjaid'}</h2><span>${log.length} ÉTKEZÉS</span></div>
   <div class="blocks">${blocks(iso)}</div>
+  ${log.filter(m=>m[0]===-1).map(m=>`<div class="list" style="margin-top:10px"><div class="row glass" style="--c:var(--gold)">${I('bowl')}<span class="grow"><strong>${m[1]}</strong><small>${m[5]} · ablakon kívül</small></span><span class="end"><b>${m[2]}<small>kcal</small></b></span></div></div>`).join('')}
   ${markSlot(iso)}
-  <button class="loggen rise" style="--i:8" data-go="#log" aria-label="Logolás ablakon kívül">${I('bowl')}<span><b>Logolj bármit</b> · ablakon kívül is</span><span class="chev">›</span></button>
+  <button class="loggen rise" style="--i:8" data-go="#log?d=${iso}" aria-label="Logolás ablakon kívül">${I('bowl')}<span><b>Logolj bármit</b> · ablakon kívül is</span><span class="chev">›</span></button>
   ${!past&&yMissed?`<button class="pastchip rise" style="--i:9" data-go="#mai?d=${y}">${I('history')}<span>${huMD(y)} · ${yMissed} ablak pótolható</span></button>`:''}`;
 }
 /* 2. rész helyei — az 1. lépésben (a mostani éles állapot) üresek */
@@ -3210,8 +3265,11 @@ function renderNtf(){
 /* ── router ── */
 const TAB={mai:'Mai',meal:'Mai',score:'Mai',log:'Mai',beallitas:'Mai',ablakok:'Mai',tanulas:'Mai',konyha:'Konyha',kamra:'Konyha',receptek:'Konyha',recept:'Konyha','recept-uj':'Konyha',muhely:'Konyha',stack:'Kiegészítők',protokoll:'Kiegészítők','stack-uj':'Kiegészítők',gyogyszer:'Kiegészítők',trendek:'Trendek'};
 const EXTRA_ROUTES={};
+let previousRoute='';
 function render(){
   const {path}=HQ(),[r,id]=path.split('/');
+  if(r==='log'&&previousRoute!=='log'){logTimeOpen=false;logChosenTime='';logContextKey=''}
+  previousRoute=r;
   const V={mai,meal:()=>meal(id),score:()=>score(id),konyha,kamra:()=>id==='ures'?kamra(true):id?kamraItem(id):kamra(),receptek,recept:()=>recept(id),'recept-uj':editor,muhely:()=>muhely(id),log:()=>log(id==='hiba'),stack,protokoll,'stack-uj':()=>stackUj(id),gyogyszer:()=>gyogyszer(id),trendek,beallitas,ablakok:()=>ablakok(id),...EXTRA_ROUTES};
   $('#scroll').innerHTML=(V[r]||mai)(); $('#scroll').scrollTop=0; closeSheet();
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');renderNtf();
@@ -3226,6 +3284,11 @@ function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').cla
 function soft(){const y=$('#scroll').scrollTop;render();$('#scroll').scrollTop=y}
 const EXTRA_CLICKS=[];
 document.addEventListener('change',e=>{
+  if(e.target?.id==='log-eaten-time'){
+    logChosenTime=e.target.value;
+    syncLogTime();
+    return;
+  }
   if(e.target?.id!=='log-photo-input')return;
   const file=e.target.files?.[0];if(!file)return;
   if(logPhotoUrl)URL.revokeObjectURL(logPhotoUrl);
@@ -3251,10 +3314,23 @@ document.addEventListener('click',e=>{
   const kfb=t.closest('[data-kf]'); if(kfb){kf=kfb.dataset.kf;soft();return}
   const rfb=t.closest('[data-rf]'); if(rfb){rf=rfb.dataset.rf;soft();return}
   const sv=t.closest('[data-serve]'); if(sv){serveAll=sv.dataset.serve==='1';soft();return}
-  if(t.closest('[data-log-photo]')){mode='foto';if(location.hash==='#log'){document.querySelector('#log-photo-input')?.click()}else{location.hash='#log';setTimeout(()=>document.querySelector('#log-photo-input')?.click(),60)}return}
+  if(t.closest('[data-log-photo]')){mode='foto';if(HQ().path==='log'){document.querySelector('#log-photo-input')?.click()}else{location.hash='#log';setTimeout(()=>document.querySelector('#log-photo-input')?.click(),60)}return}
   if(t.closest('[data-log-remove]')){if(logPhotoUrl)URL.revokeObjectURL(logPhotoUrl);logPhotoUrl='';logPhotoName='';soft();return}
   const usual=t.closest('[data-log-usual]');if(usual){logText=(logText.trim()?logText.trim()+' ':'')+usual.dataset.logUsual;mode='foto';soft();return}
-  const md=t.closest('[data-mode]'); if(md){mode=md.dataset.mode;location.hash==='#log'?soft():location.hash='#log';return}
+  const md=t.closest('[data-mode]'); if(md){mode=md.dataset.mode;HQ().path==='log'?soft():location.hash='#log';return}
+  if(t.closest('[data-log-time-toggle]')){logTimeOpen=!logTimeOpen;syncLogTime();return}
+  if(t.closest('[data-log-time-default]')){logChosenTime='';syncLogTime();return}
+  if(t.closest('[data-log-save]')){
+    const {q}=HQ(),date=q.d&&q.d<TODAY&&q.d>=addDays(TODAY,-7)?q.d:TODAY;
+    const time=logChosenTime||currentLogTime();
+    if(date===TODAY&&toMin(time)>toMin(currentLogTime())){toast('A mai napra jövőbeli időpontot nem lehet menteni.');return}
+    const index=SLOTS.findIndex(s=>toMin(time)>=toMin(s.from)&&toMin(time)<=toMin(s.to));
+    (DAYLOG[date]??=[]).push([index,'Zabkása joghurttal és gyümölccsel',420,8.1,0,time]);
+    lines=false;logText='';logChosenTime='';logTimeOpen=false;
+    location.hash=`#mai?d=${date}`;
+    setTimeout(()=>toast(`Mentve · ${time} · ${SLOTS[index]?.l||'Ablakon kívül'}`),60);
+    return;
+  }
   if(t.closest('[data-lines]')){lines=true;soft();setTimeout(()=>$('#scroll').scrollTo({top:520,behavior:'smooth'}),60);return}
   const tk=t.closest('[data-take]'); if(tk){STACK.forEach(b=>b.items.forEach(x=>{if(x[0]===tk.dataset.take){x[3]=x[3]?0:1;x[4]=x[4]||'12:50'}}));closeSheet();soft();return}
   const it=t.closest('[data-item]'); if(it){openItem(it.dataset.item);return}

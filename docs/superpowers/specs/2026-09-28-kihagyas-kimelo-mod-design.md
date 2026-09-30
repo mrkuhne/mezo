@@ -508,5 +508,5 @@ pace (automatic by owner decision).
 9. **Process:** another session already held ports 8765/8791 for its `http.server` — check
    `lsof -i :<port>` before serving a prototype. The opus weekly limit ran out mid-slice; resume the
    remaining tasks on sonnet rather than waiting.
-10. **New icon flow held:** `t-kimelo` came from the prototype's "Új ikonok" sheet → 
+10. **New icon flow held:** `t-kimelo` came from the prototype's "Új ikonok" sheet →
     `titanium-custom.svg` + generator (S1 lesson 6).

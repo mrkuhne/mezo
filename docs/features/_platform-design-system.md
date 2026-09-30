@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-09-30
+updated: 2026-10-01
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -14,6 +14,7 @@ key_files:
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
+> **2026-10-01 — Fuel eating-time control (`mezo-yhhvg`).** The routed meal composer gained a flat disclosure row (`.logflow-eaten-time`) above its sticky save bar. The page adds bottom scroll space so the bar cannot cover the row at 320 px. It reuses Üveg colors and fields; no shared primitive or sprite changed.
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** One new sprite icon, `t-kimelo` (a sheltering leaf: `docs/design_2.0/assets/titanium-custom.svg` + generator, `Icon3DName`); a `Kímélő mód S2` block in `styles/prototype.css` and a shared 320 px rule for the reason/duration chips (`.trm-whyc` words stay whole).
 
 > **2026-09-27 — Üveg U11 (`mezo-me75u.11`) — the epic closes.** An app-wide audit of all 126 routes drove the last fixes (legible copy — live text never uses `--text-disabled`; the last clay art in content → 3D, incl. `InfoButton`'s default `t-info` and the chat reference icons in `insights/logic/toolDomains.ts`; tick glyphs → `t-tick`; dark ink on lit coral). The dead pre-üveg CSS went (~5300 lines incl. dead emoji modules), the kit's `<Sheet glass>` field rule is zero-specificity (`:where()`), and `.uv-tgl` (glass Toggle) lives once in the uveg kit. Blocks `── uveg lezaras edzes|egyeb (`, pinned as `U11_BLOCKS`. Canon order: `docs/design_2.0/README.md`.

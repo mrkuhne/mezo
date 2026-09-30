@@ -35,7 +35,7 @@
 // the LogFlowPage rule, kept verbatim (see that file's original header note).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { FuelMeal, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
+import type { FuelMeal, FuelSlot, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { useMealCeremony } from '@/features/fuel/MealCeremonyProvider'
 import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
@@ -50,6 +50,7 @@ import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
 import { ReceptPickSheet } from '@/features/fuel/sheets/ReceptPickSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 import { defaultMealSlot } from '@/features/fuel/logic/defaultMealSlot'
+import { resolveEatingTimePlacement } from '@/features/fuel/logic/eatingTimePlacement'
 import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { parseAmountInput, stepAmount } from '@/features/fuel/logic/amountGuard'
 import {
@@ -94,6 +95,9 @@ function lineHue(c: { p: number; c: number; f: number }): string {
 const SLOT_DEFAULT_TIME: Record<MealSlot, string> = {
   breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: '16:00',
 }
+
+const localHHmm = (date = new Date()) =>
+  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 
 interface EstimateSnapshot {
   per: number; basisUnit: string
@@ -238,6 +242,8 @@ export interface MealComposerProps {
   editMealId?: string
   /** A blokk ajánlott ablaka (mezo-6g52f) — a szerver ehhez pontozza az időzítést. */
   window?: { from: string; to: string }
+  /** The selected day's planned windows for new, page-based meal logging. */
+  eatingTimeWindows?: readonly FuelSlot[]
   onSaved: () => void
   onCancel: () => void
 }
@@ -246,7 +252,7 @@ export function MealComposer({
   fixedSlot, initialSlot, prefill, aiPanelOpenOnMount,
   incomingPhoto, incomingAiText, sourceAction, onAiFailed, onAiSucceeded,
   shellOwnsEntry = false,
-  logDate, logTime, saveLabel, editMealId, window, onSaved, onCancel,
+  logDate, logTime, saveLabel, editMealId, window, eatingTimeWindows, onSaved, onCancel,
 }: MealComposerProps) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
@@ -257,6 +263,17 @@ export function MealComposer({
   const { celebrateMeal } = useMealCeremony()
 
   const [slot, setSlot] = useState<MealSlot>(() => fixedSlot ?? initialSlot ?? defaultMealSlot())
+  const [timeOpen, setTimeOpen] = useState(false)
+  const [timeOverride, setTimeOverride] = useState<string | null>(null)
+  const [nowHHmm, setNowHHmm] = useState(localHHmm)
+  const [timeSaveBusy, setTimeSaveBusy] = useState(false)
+  const [timeSaveError, setTimeSaveError] = useState<string | null>(null)
+  useEffect(() => {
+    if (eatingTimeWindows == null || editMealId != null) return
+    const tick = () => setNowHHmm(localHHmm())
+    const interval = globalThis.setInterval(tick, 15_000)
+    return () => globalThis.clearInterval(interval)
+  }, [eatingTimeWindows, editMealId])
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
   // (mezo-53su); manual taps lock it too.
   const slotLocked = useRef(fixedSlot != null || initialSlot != null)
@@ -497,9 +514,19 @@ export function MealComposer({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a NEW seq only
   }, [incomingAiText])
 
-  const canSave = lines.length > 0
+  const hasEatingTime = eatingTimeWindows != null && editMealId == null
+  const previewTime = timeOverride ?? nowHHmm
+  const invalidTime = hasEatingTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(previewTime)
+  const timePlacement = hasEatingTime && !invalidTime ? resolveEatingTimePlacement(previewTime, eatingTimeWindows!) : null
+  const isFutureTime = hasEatingTime && timeOverride != null &&
+    `${logDate ?? localDateString()}T${timeOverride}` > `${localDateString()}T${nowHHmm}`
+  const canSave = lines.length > 0 && !invalidTime && !isFutureTime && !timeSaveBusy
   const save = () => {
     if (!canSave) return
+    const saveTime = timeOverride ?? localHHmm()
+    if (hasEatingTime && `${logDate ?? localDateString()}T${saveTime}` > `${localDateString()}T${localHHmm()}`) return
+    const savePlacement = hasEatingTime ? resolveEatingTimePlacement(saveTime, eatingTimeWindows!) : null
+    const saveWindow = hasEatingTime ? savePlacement?.window : window
     const items: MealItemInput[] = lines.map((l): MealItemInput => {
       if (l.source === 'estimate') {
         const est = l.estimate!
@@ -526,17 +553,19 @@ export function MealComposer({
       }
     })
     const input: MealInput = {
-      slot: fixedSlot ?? slot,
+      slot: savePlacement?.slot ?? fixedSlot ?? slot,
       // A8: a javítás az étkezés SAJÁT idejét viszi (a szerkesztő idő-mezőjéből), nem tolja
       // mostra — különben egy reggeli javítása este átköltöztetné a reggelit.
-      loggedAt: editMeal != null
+      loggedAt: savePlacement != null
+        ? offsetIso(logDate ?? localDateString(), saveTime)
+        : editMeal != null
         ? offsetIso(logDate ?? editMeal.mealDate ?? localDateString(), editTime || hhmmFromLoggedAt(editMeal.loggedAt, SLOT_DEFAULT_TIME[fixedSlot ?? slot]))
         : logDate != null
           ? offsetIso(logDate, logTime ?? SLOT_DEFAULT_TIME[fixedSlot ?? slot])
           : nowOffsetIso(),
       title: effectiveName.trim() || null,
       items,
-      ...(window ? { window } : {}),
+      ...(saveWindow ? { window: saveWindow } : {}),
       ...(aiContribution
         ? { provenance: { origin: aiContribution.photo ? 'ai-photo' : 'ai-text', rawText: aiContribution.rawText } }
         : {}),
@@ -570,6 +599,24 @@ export function MealComposer({
         hasBreakdown: true,
       })
     }
+    if (hasEatingTime) {
+      setTimeSaveBusy(true)
+      setTimeSaveError(null)
+      void logMealAsync(input).then(
+        (meal) => {
+          if (aiContribution && aiDraftId) {
+            reportOutcomeOnce(aiDraftId, aiLinesEditedRef.current ? 'edited' : 'accepted')
+          }
+          celebrate(meal as never)
+          onSaved()
+        },
+        () => {
+          setTimeSaveError('Nem sikerült menteni. Próbáld újra.')
+          setTimeSaveBusy(false)
+        },
+      )
+      return
+    }
     if (aiContribution && aiDraftId) {
       const draftId = aiDraftId
       const outcome = aiLinesEditedRef.current ? 'edited' : 'accepted'
@@ -601,7 +648,7 @@ export function MealComposer({
 
   return (
     <div className="logflow-composer">
-      {fixedSlot == null && showConfirm && (
+      {fixedSlot == null && eatingTimeWindows == null && showConfirm && (
         <>
           <span className="logflow-eyebrow uv-eyebrow">MIKOR</span>
           <div className="logflow-seg uv-flat">
@@ -852,6 +899,35 @@ export function MealComposer({
           </div>
         </div>
       </div>}
+
+      {hasEatingTime && showConfirm && (
+        <div className="logflow-eaten-time uv-flat">
+          <button type="button" className="logflow-eaten-time-toggle" aria-expanded={timeOpen}
+            aria-label="Mikor ettél?" onClick={() => { setNowHHmm(localHHmm()); setTimeOpen(open => !open) }}>
+            <span className="logflow-eaten-time-title">Mikor ettél?</span>
+            <span className="logflow-eaten-time-summary">
+              {timeOverride == null ? `Most · ${nowHHmm}` : `${previewTime} · ${timePlacement?.label != null && timePlacement.window != null
+                ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}` : 'Ablakon kívül'}`}
+              <span aria-hidden="true"> {timeOpen ? '▴' : '▾'}</span>
+            </span>
+          </button>
+          {timeOpen && (
+            <div className="logflow-eaten-time-details">
+              <div className="logflow-eaten-time-inputrow">
+                <input type="time" aria-label="Evés időpontja" value={previewTime}
+                  onChange={event => { setTimeOverride(event.target.value); setTimeSaveError(null) }} />
+                <button type="button" onClick={() => { setTimeOverride(null); setNowHHmm(localHHmm()); setTimeSaveError(null) }}>Most</button>
+              </div>
+              <p>{timePlacement?.label != null && timePlacement.window != null
+                ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}`
+                : 'Ablakon kívül'}</p>
+              {invalidTime && <p role="alert" className="logflow-eaten-time-error">Adj meg egy érvényes időpontot.</p>}
+              {isFutureTime && <p role="alert" className="logflow-eaten-time-error">jövőbeli időpontot nem lehet menteni.</p>}
+            </div>
+          )}
+          {timeSaveError && <p role="alert" className="logflow-eaten-time-error">{timeSaveError}</p>}
+        </div>
+      )}
 
       {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
       {editMealId != null && (
