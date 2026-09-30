@@ -5,20 +5,27 @@
 // slotokból (fuelSwimlane.tileKey). Minden MÁS hook valódi marad (mock mód) az importOriginal
 // spreaddel; a VITE_USE_MOCK stub miatt a fájl valós módban is ugyanezt méri.
 import type { ReactNode } from 'react'
-import { render, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, vi } from 'vitest'
-import type { FuelPlanToday, FuelSlot } from '@/data/types'
+import type { FuelPlanToday, FuelSlot, MealInput } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
-const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null }))
+const hoisted = vi.hoisted(() => ({ plan: null as FuelPlanToday | null, savedInputs: [] as MealInput[] }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
+    useMealActions: (date?: string) => {
+      const actions = actual.useMealActions(date)
+      return { ...actions, logMealAsync: (input: MealInput) => {
+        hoisted.savedInputs.push(input)
+        return actions.logMealAsync(input)
+      } }
+    },
     useFuelTimeline: () =>
       hoisted.plan
         ? {
@@ -45,6 +52,7 @@ import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => {
   hoisted.plan = null
+  hoisted.savedInputs = []
   vi.unstubAllEnvs()
 })
 
@@ -61,10 +69,12 @@ const baseCtx = {
 // szabálya adja (fuelSwimlane.tileKey), nem egy találgatott string.
 const REGGELI: FuelSlot = {
   time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'pending',
+  windowFrom: '07:00', windowTo: '10:00',
   kcal: 480, p: 30, c: 55, f: 12,
 }
 const UZSONNA: FuelSlot = {
   time: '16:30', kind: 'meal', label: 'Uzsonna', slotKey: 'snack', state: 'pending',
+  windowFrom: '16:00', windowTo: '17:30',
   kcal: 380, p: 26, c: 34, f: 15,
 }
 const TWO_WINDOWS = [REGGELI, UZSONNA]
@@ -160,10 +170,7 @@ test('ai=1 SZÁNDÉKOSAN kihagyja a terv-recept előtöltést', async () => {
   expect(screen.queryByText(recipe.name)).not.toBeInTheDocument()
 })
 
-// S1c.2 (mezo-33k6): a MIKOR szegmens a MEGERŐSÍTŐ részhez tartozik — az első tétellel jön.
-// Az „ablakon kívül" ígérete változatlan: ott a user maga választ ablakot, tehát a szegmensnek
-// ott KELL lennie, amint van mit könyvelni (rögzített ablaknál pedig sosem — azt a
-// MealComposer.shell.test.tsx őrzi).
+// Új étkezésnél a megerősítő idő sora az első tétellel jön, a forrásablaktól függetlenül.
 test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   const user = userEvent.setup()
@@ -171,7 +178,7 @@ test('ismeretlen ablak-kulcsnál ablakon kívüli módra esik vissza', async () 
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
   expect(screen.getByText('szabad tétel · te választod a mikort')).toBeInTheDocument()
   await addPantryLine(user)
-  expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mikor ettél?' })).toHaveAttribute('aria-expanded', 'false')
 })
 
 test('hiányzó w-nél is ablakon kívüli mód, sosem fabrikál ablakot', async () => {
@@ -180,7 +187,7 @@ test('hiányzó w-nél is ablakon kívüli mód, sosem fabrikál ablakot', async
   renderAt('/fuel/log/uj')
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
   await addPantryLine(user)
-  expect(screen.getByRole('button', { name: 'Reggeli' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mikor ettél?' })).toHaveAttribute('aria-expanded', 'false')
 })
 
 test('múltbeli napon Pótlás-hangulatot és a nap-figyelmeztetést mutatja', async () => {
@@ -306,9 +313,7 @@ test('múltbeli nap: a mentés a VÁLASZTOTT napra könyvelődik (logDate)', asy
   })
 })
 
-test('d + w együtt: a pótlás az ABLAK saját órájára könyvelődik (logTime)', async () => {
-  // Ez az az URL-alak, amit a Task 4 blokk-CTA-i generálnak — ezért itt a `w` az ablak-kulcs,
-  // a várt óra pedig a crafted slot saját ideje, nem hardcode-olt találgatás.
+test('d + w együtt: a pótlás alapból a mentés pillanatának idejére könyvelődik', async () => {
   hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
   const y = addDays(localDateString(), -1)
   const user = userEvent.setup()
@@ -316,11 +321,45 @@ test('d + w együtt: a pótlás az ABLAK saját órájára könyvelődik (logTim
     `/fuel/log/uj?d=${y}&w=${encodeURIComponent(keyOf(UZSONNA))}`,
   )
   expect(await screen.findByText('Uzsonna')).toBeInTheDocument()
-  await addPantryLineAndSave(user)
+  await addPantryLine(user)
+  const current = new Date()
+  const currentHHmm = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`
+  expect(screen.getByRole('button', { name: 'Mikor ettél?' })).toHaveTextContent(`Most · ${currentHHmm}`)
+  await user.click(screen.getByRole('button', { name: /pótlás/i }))
 
   const probe = renderHook(() => useFuelDay(y), { wrapper: qcWrapper })
   await waitFor(() => {
     const meals = probe.result.current.fuel.meals
-    expect(meals.some(m => m.loggedAt?.startsWith(`${y}T${UZSONNA.time}`))).toBe(true)
+    expect(meals.some(m => m.loggedAt?.startsWith(`${y}T${currentHHmm}`))).toBe(true)
   })
+})
+
+test('d + w pótlás: a kézzel beírt reggeli idő a reggeli ablakba kerül', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const y = addDays(localDateString(), -1)
+  const user = userEvent.setup()
+  renderAt(`/fuel/log/uj?d=${y}&w=${encodeURIComponent(keyOf(UZSONNA))}`)
+  await addPantryLine(user)
+  await user.click(screen.getByRole('button', { name: 'Mikor ettél?' }))
+  fireEvent.change(screen.getByLabelText('Evés időpontja'), { target: { value: '09:15' } })
+  await user.click(screen.getByRole('button', { name: /pótlás/i }))
+  await waitFor(() => expect(hoisted.savedInputs).toHaveLength(1))
+  expect(hoisted.savedInputs[0]).toMatchObject({
+    slot: 'breakfast', window: { from: '07:00', to: '10:00' },
+  })
+  expect(hoisted.savedInputs[0].loggedAt).toContain(`${y}T09:15`)
+})
+
+test('ablakon kívüli időnél nem küldi a megnyitó tile ablakát', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const y = addDays(localDateString(), -1)
+  const user = userEvent.setup()
+  renderAt(`/fuel/log/uj?d=${y}&w=${encodeURIComponent(keyOf(UZSONNA))}`)
+  await addPantryLine(user)
+  await user.click(screen.getByRole('button', { name: 'Mikor ettél?' }))
+  fireEvent.change(screen.getByLabelText('Evés időpontja'), { target: { value: '11:10' } })
+  expect(screen.getByText('Ablakon kívül')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: /pótlás/i }))
+  await waitFor(() => expect(hoisted.savedInputs).toHaveLength(1))
+  expect(hoisted.savedInputs[0].window).toBeUndefined()
 })
