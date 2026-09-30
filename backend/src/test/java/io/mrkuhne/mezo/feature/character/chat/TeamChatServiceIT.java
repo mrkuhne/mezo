@@ -563,16 +563,21 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     @Test
     void catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear() {
         UUID owner = owner();
-        raiseSleepDebtLog(owner);
+        // Keep the setup outside quiet hours regardless of when the CI suite runs.
+        Instant openedAt = todayAt(9, 0).truncatedTo(ChronoUnit.MICROS);
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_WRITE,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())),
+                openedAt.minus(1, ChronoUnit.MINUTES));
         TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT,
-                Instant.now().minus(5, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MICROS), false).orElseThrow();
+                openedAt, false).orElseThrow();
         FlagVerdict.ClearEvidence evidence = new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null);
         // Distinct from the catch-up run time below, so the assertion actually pins the backdate
         // (the chip reads "RENDEZŐDÖTT · hh:mm" — it must say when the flag really cleared).
-        Instant clearedAt = Instant.now().minus(3, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MICROS);
+        Instant clearedAt = openedAt.plus(2, ChronoUnit.HOURS);
         writeTrace(owner, FlagKey.SLEEP_DEBT, "clear", evidence, clearedAt);
 
-        service.catchUp(Instant.now());
+        service.catchUp(openedAt.plus(3, ChronoUnit.HOURS));
 
         TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo("RESOLVED");

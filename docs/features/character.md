@@ -1261,6 +1261,11 @@ investigating.
 
 ## 9. Decisions, gotchas & deferred
 
+- **Team chat catch-up test clock:** `TeamChatServiceIT.catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear`
+  opens its setup thread at a fixed daytime hour. Backdating from `Instant.now()` can land inside
+  configured quiet hours (22:00–07:00), where `TeamChatService.open` correctly returns empty and
+  makes the test depend on when CI runs.
+
 - **Detector catalog is narrower than spec §5's v1 wishlist, but rounds 1–3 closed the
   physiological, Edzés-side, fuel/cycle, and psziché/viselkedés-meta cross-domain gaps** (S7
   closed the polish items — HU decimal-comma formatting, switch-gated beans, honest
