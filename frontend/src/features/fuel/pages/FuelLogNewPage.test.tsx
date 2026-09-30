@@ -255,7 +255,29 @@ test('a Recept közvetlenül a receptválasztó lapot nyitja', async () => {
   expect(await screen.findByText('Válassz receptet')).toBeInTheDocument()
   await user.click((await screen.findAllByRole('button', { name: /hozzáadása$/i }))[0])
   expect(screen.getByText('TÉTELEK')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mikor ettél?' })).toHaveAttribute('aria-expanded', 'false')
   expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeEnabled()
+})
+
+test('a Fotó mód közös Elemzés útján is ugyanaz az időválasztó jelenik meg', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
+  renderAt('/fuel/log/uj')
+  await user.type(screen.getByLabelText('Mit ettél?'), 'zabkása')
+  await user.click(screen.getByRole('button', { name: 'Elemzés' }))
+  expect(await screen.findByRole('button', { name: 'Mikor ettél?' })).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('a Szokásosakból elemzett étkezés is a közös időválasztót kapja', async () => {
+  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+  const user = userEvent.setup()
+  renderAt('/fuel/log/uj')
+  await user.click(screen.getByRole('button', { name: 'Szokásosak' }))
+  const usual = document.querySelector('.fmx-usual') as HTMLButtonElement
+  expect(usual).toBeTruthy()
+  await user.click(usual)
+  await user.click(screen.getByRole('button', { name: 'Elemzés' }))
+  expect(await screen.findByRole('button', { name: 'Mikor ettél?' })).toHaveAttribute('aria-expanded', 'false')
 })
 
 test('a kameránál nincs második AI kártya, a szövegmező alapból látható', async () => {
