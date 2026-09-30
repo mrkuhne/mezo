@@ -18,5 +18,8 @@ that was not updated. The shared rules are in the
 
 The shared voice kit lives in `_hang-kit.html`; after editing it run `node docs/design_2.0/prototypes/elo/_inject-hang-kit.mjs` to refresh the copy in all five files.
 
+All five living files disable the recurring glass-card sheen (`mezo-ktog6`, owner request
+2026-09-30). Their fixed Artifact URLs have not been republished by this Codex session.
+
 All five living files have been seeded. Update the sync note on every merge that touches a
 domain. Change its fixed URL only when the published target itself changes.

@@ -13594,7 +13594,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Every glass surface takes ONE accent through `--c`; frame, glow, inner floor,
    icon halo and numeral tint all derive from it. Never glass inside glass (§3.4).
    Classes:
-     .glass            the card (§3): body + ::before gradient frame + ::after sheen
+     .glass            the card (§3): body + ::before gradient frame; no recurring sheen
      .glass.is-still   no sheen (always-visible chrome: TabBar, round header buttons)
      .glass.is-round   a round button: overflow visible (badges), no sheen (§7.1)
      .uv-flat          secondary cell/chip inside a card (§3 rank 3)
@@ -13656,6 +13656,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
+/* The decorative sweep stays dormant app-wide (mezo-ktog6). Keep its geometry for
+   feature-specific ::after overlays that reuse it (diff flash, focus rings, hit areas). */
 .glass::after {
   content: ''; position: absolute; top: -20%; bottom: -20%; left: -40%; width: 28%;
   pointer-events: none; z-index: 3; opacity: 0;
@@ -13713,11 +13715,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .uv-tint { color: color-mix(in srgb, var(--c) 78%, var(--text-primary)); }
 
 /* §6 motion — the look; one-shot choreography stays on the kit's rAF primitives. */
-@keyframes uv-sheen {
-  0%, 70% { opacity: 0; transform: skewX(-20deg) translateX(-120%); }
-  74% { opacity: 1; } 92% { opacity: 0.9; }
-  100% { opacity: 0; transform: skewX(-20deg) translateX(620%); }
-}
 @keyframes uv-float { 0%, 100% { transform: translateY(2px) rotate(-3deg); } 50% { transform: translateY(-4px) rotate(1deg); } }
 @keyframes uv-glow {
   0%, 100% { filter: drop-shadow(0 6px 14px rgba(171, 159, 210, 0.28)); }
@@ -13729,7 +13726,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 @keyframes uv-wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
 @media (prefers-reduced-motion: no-preference) {
-  .glass::after { animation: uv-sheen 7s ease-in-out infinite; animation-delay: calc(1.2s + var(--i, 0) * 0.45s); }
   .uv-float { animation: uv-float 5s ease-in-out 1s infinite; }
   .uv-glow { animation: uv-glow 5s ease-in-out 1s infinite; }
 }
