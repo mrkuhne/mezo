@@ -48,6 +48,8 @@ describe('hubCopy · why a thing is muted', () => {
     expect(C.mergeStrip(2, 0)).toBe('Hétfői rendrakás: 2 ismétlést összevontam.')
     expect(C.mergeStrip(2, 1)).toBe('Hétfői rendrakás: 2 ismétlést összevontam, 1 javaslat vár rád a Rólad oldalon.')
     expect(C.TOAST.mergedBack).toBe('Visszakapcsoltam — újra külön használom')
+    // M1: a merge-sourced fact carries no member count (2 or 3), so its origin line names none
+    expect(C.ORIGIN.merge).toBe('Hasonló tényekből vontam össze, a jóváhagyásoddal.')
   })
   it('no date → reason only (backfilled / person facts)', () => {
     expect(C.whyText('user', null)).toBe('te hallgattattad el')

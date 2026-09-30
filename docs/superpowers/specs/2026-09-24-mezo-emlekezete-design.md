@@ -1769,8 +1769,9 @@ cap is far away: this slice is about **readability and no repeated knowledge**, 
      loser is mergeable (below). The **survivor keeps its own text — no rewrite**; survivor =
      pattern-sourced > higher reinforcement > older.
    - **proposed** if the verdict is `combine` and no member is protected. The proposed sentence
-     is written from the original texts only (never from an earlier merge — drift guard), in
-     hedged, non-causal Hungarian.
+     is written from the original texts only (never from an earlier merge — drift guard, enforced
+     in code: a `merge`-sourced fact may take part in a `same` group only, never in a `combine`
+     proposal), in hedged, non-causal Hungarian.
    - **skipped** otherwise, or if the same set of facts was already rejected / undone (never
      re-offered).
 3. **Mergeable loser:** source `chat`, `weekly_review`, `manual`. **Protected** (never a loser,
@@ -1780,32 +1781,48 @@ cap is far away: this slice is about **readability and no repeated knowledge**, 
    auto-merge (a chat repetition folds into the observation).
 4. **Auto-merge mechanics:** the loser is muted with the new reason **`merged`** and
    `superseded_by = survivor`; the survivor's `reinforcement_count` += the loser's,
-   `last_reinforced_at` = the later one, provenance lists the merged-in fact ids.
+   `last_reinforced_at` = the later one. *(A provenance list of the merged-in fact ids on the
+   survivor was planned but is **not built** — the losers' own `superseded_by` links are the
+   trail; nothing is filed for it.)*
    `KnowledgeFactChangedEvent` for both rows (the graph node of the loser is archived for free).
    Pointers to the loser (`learned_fact.promoted_fact_id`) are re-pointed to the survivor.
 5. **Proposal accept** ("Összevonom", or "Átírom" with an edited sentence): a new fact (source
    `merge`, category of the group, reinforcement = sum) is created; every member is muted
    `merged` with `superseded_by` = the new fact. Forgetting the new fact later releases the
-   originals (existing `ForgetService.releaseSuperseded`). **"Maradjon külön"** records the
-   rejection; the same set is never proposed again. **"Később"** snoozes a week.
+   originals (`ForgetService.releaseSuperseded`, which treats a `merged` loser exactly like a
+   `superseded` one: it becomes the user's own mute, link cleared). **"Maradjon külön"** records
+   the rejection; the same set is never proposed again. **"Később"** snoozes the proposal until
+   the **next Monday sweep** (Monday 07:30 Europe/Budapest, strictly after now — the card says
+   „Jövő hétfőn újra megkérdezem"); an ordinary candidate's „Most ne" stays 14 days.
+   While a proposal is undecided (snoozed included) its members are **kept out of the sweep**, so
+   no auto-merge can make an accepted proposal fold in a stale member. Forgetting a member
+   **withdraws** the pending proposal (soft delete), and the inbox never shows a merge proposal
+   with fewer than two members left.
 6. **Undo:** a merged row appears in the Tudástár · Rólad (tények) list as muted with
    **"összevontam ezzel: „…”, <dátum>"** and the existing **Visszakapcsolom** — that unmutes it
-   and clears `superseded_by` (existing `unmute()`), and the pair is recorded as undone (never
-   re-merged). The survivor's added reinforcement is not rolled back (it only affects ordering).
+   and clears `superseded_by` (existing `unmute()`), and the pair {revived, survivor} is written
+   to the ledger (kind `auto`) *before* the link is cleared, so it is never re-merged — for an
+   auto-merge loser and for a member of an accepted proposal alike. The survivor's added reinforcement is not rolled back (it only affects ordering).
 7. **No re-learning of a merged-away sentence:** `FactExtractionService`'s exact dedupe also
    matches the normalized text of `merged` rows and reinforces their survivor instead of
-   proposing the sentence again.
+   proposing the sentence again — following the `superseded_by` chain through `merged` and
+   `superseded` rows (at most 5 hops) to the fact that carries the sentence now.
 8. **One quiet notification** per sweep, only if something happened: "Rendet raktam: N ismétlést
    összevontam, M javaslat vár rád" → the Rólad inbox when a proposal waits, else the Tudástár.
 
 ### Storage
 
-New owned table **`fact_merge`**: `id, owner, kind (auto|proposal), member_ids uuid[],
-survivor_id, proposed_text, status (pending|applied|rejected|snoozed|undone), snoozed_until,
-created_at, decided_at` + audit columns. It is the proposal store *and* the "never again" memory
-(set equality on sorted `member_ids`). Liquibase: the table, and `merged` added to
-`ck_knowledge_fact_muted_reason` + the `mutedReason` contract enum; `merge` added to the
-knowledge_fact source constants.
+*As built* (the planned single `fact_merge` table with its own status machine was not needed):
+
+- **`fact_merge_ledger`** (owned, soft-delete) — the once-ever memory only: `member_key` (the
+  member fact ids, sorted and comma-joined; unique per owner among live rows), `kind`
+  (`auto` | `proposal`) and, for a proposal, `learned_fact_id`. A key in the ledger is never
+  offered again, whatever happened to it (merged, proposed, rejected, undone).
+- **The proposal itself rides the ordinary candidate inbox:** a `learned_fact` row with
+  `source = 'merge'` and **`merge_member_ids uuid[]`** (NOT NULL exactly for merge rows); its
+  decision, snooze and afterlife are the inbox's own columns — no separate status column.
+- Liquibase: the table; `merged` added to `ck_knowledge_fact_muted_reason` + the `mutedReason`
+  contract enum; `merge` added to the knowledge_fact and learned_fact source checks.
 
 ### Surfaces (prototype before code: living `elo/mezo.html`)
 

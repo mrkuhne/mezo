@@ -181,7 +181,8 @@ export const ORIGIN: Record<FactSource, string> = {
   question: 'Egy kérdésre válaszoltál rá.',
   team_chat: 'A csapatfalon adott válaszodból jegyeztem meg.',
   person_fact: 'Egy ismerősödről szóló beszélgetésből — te tetted ide a „Rólam is” gombbal.',
-  merge: 'Két hasonló tényből vontam össze, a jóváhagyásoddal.',
+  // S9 final-review M1: the fact carries no member count, so the line names none (it may be 2 or 3)
+  merge: 'Hasonló tényekből vontam össze, a jóváhagyásoddal.',
 }
 export const CHIP: Record<FactSource, string> = {
   pattern: 'észrevételből', chat: 'beszélgetésből', manual: 'kézzel', weekly_review: 'heti áttekintésből', question: 'kérdésre válaszoltál', team_chat: 'csapatfalról',

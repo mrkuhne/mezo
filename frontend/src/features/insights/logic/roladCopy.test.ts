@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { LifeEventCandidate } from '@/data/types'
-import { candidateByline, factOwnerTag, graphCandidateByline, pickQuoteClaim, ROLAD_COPY } from './roladCopy'
+import { candidateByline, factOwnerTag, graphCandidateByline, MERGE_COPY, pickQuoteClaim, ROLAD_COPY } from './roladCopy'
 import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
 
 const claim = (id: string, confidence: number, proposedBy: string, sensitive = false) =>
@@ -63,4 +63,17 @@ it('keeps the approved copy verbatim', () => {
   expect(ROLAD_COPY.keep).toBe('Bekerült a rólad szóló képbe — a forrásával együtt')
   expect(ROLAD_COPY.snooze).toBe('Most nem került be — kb. két hét múlva újra megkérdezzük')
   expect(ROLAD_COPY.reject).toBe('Nem került be — nem kérdezzük újra')
+})
+
+describe('MERGE_COPY — n-aware (S9 final-review M1)', () => {
+  it('two sources: byte-identical to the approved prototype copy', () => {
+    expect(MERGE_COPY.helper(2)).toBe('A heti rendrakásnál feltűnt, hogy ez a kettő ugyanarról szól. Ha összevonom, a két régi mondat nem vész el: a Tényeknél visszakapcsolhatod.')
+    expect(MERGE_COPY.keep(2)).toBe('Összevontam — a két régi mondat a Tényeknél visszakapcsolható')
+    expect(MERGE_COPY.rejected(2)).toBe('Külön maradnak — ezt a kettőt nem hozom fel újra')
+  })
+  it('three sources: says „három” / „hármat” everywhere', () => {
+    expect(MERGE_COPY.helper(3)).toBe('A heti rendrakásnál feltűnt, hogy ez a három ugyanarról szól. Ha összevonom, a három régi mondat nem vész el: a Tényeknél visszakapcsolhatod.')
+    expect(MERGE_COPY.keep(3)).toBe('Összevontam — a három régi mondat a Tényeknél visszakapcsolható')
+    expect(MERGE_COPY.rejected(3)).toBe('Külön maradnak — ezt a hármat nem hozom fel újra')
+  })
 })

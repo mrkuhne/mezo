@@ -523,7 +523,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 312 IT + 99 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 312 IT + 100 unit
   - **ITs:** `AboutMeServiceIT`, `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`,
     `AnchoredConversationIT`, `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatForgetRecallIT`,
     `ChatForgetServiceIT`, `ChatForgetTurnIT`, `ChatMemoryBlocksFailOpenIT`, `ChatMemoryBlocksIT`,

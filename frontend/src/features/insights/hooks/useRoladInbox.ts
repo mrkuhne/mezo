@@ -13,6 +13,8 @@ export type Settled = {
   edgeCount: number
   /** S9: a fact-merge proposal — its afterlife line speaks about the two old sentences */
   merge?: boolean
+  /** S9 final-review M1: how many old sentences the proposal folds (2 or 3) — the afterlife copy's count */
+  mergeCount?: number
 }
 
 const OUTCOME: Record<FactDecision | LifeEventDecision, Settled['outcome']> = {
@@ -52,7 +54,7 @@ export function useRoladInbox() {
     const title = isMerge && (decision === 'snooze' || decision === 'reject') && c.mergeSources?.length
       ? c.mergeSources.join(' · ')
       : decision === 'refine' && refinedText ? refinedText : c.text
-    setSettled((prev) => [...prev, { id: c.id, kind: 'FACT', title, outcome: OUTCOME[decision], edgeCount: 0, ...(isMerge ? { merge: true } : {}) }])
+    setSettled((prev) => [...prev, { id: c.id, kind: 'FACT', title, outcome: OUTCOME[decision], edgeCount: 0, ...(isMerge ? { merge: true, mergeCount: c.mergeSources?.length ?? 2 } : {}) }])
     decideFactM(c.id, decision, refinedText).catch(() => rollback(c.id))
   }
 

@@ -26,14 +26,14 @@ function SettledRow({ s, style }: { s: Settled; style: React.CSSProperties }) {
           <Icon3D name={s.merge ? 't-layers' : 't-note'} size={36} />
           <span className="tf-ctxt"><span className="tf-ctitle">{s.merge ? `„${s.title}”` : s.title}</span></span>
         </span>
-        <span className="tf-after"><Icon3D name="t-tick" size={15} />{s.merge ? MERGE_COPY.keep : ROLAD_COPY.keep}</span>
+        <span className="tf-after"><Icon3D name="t-tick" size={15} />{s.merge ? MERGE_COPY.keep(s.mergeCount ?? 2) : ROLAD_COPY.keep}</span>
       </div>
     )
   }
   return (
     <div className="kr9-gone rise" style={style} data-settled={s.outcome}>
       <Icon3D name={GONE_ICON[s.outcome]} size={22} />
-      <span><b>{s.title}</b><small>{s.merge ? (s.outcome === 'snooze' ? MERGE_COPY.snoozed : MERGE_COPY.rejected) : ROLAD_COPY[s.outcome]}</small></span>
+      <span><b>{s.title}</b><small>{s.merge ? (s.outcome === 'snooze' ? MERGE_COPY.snoozed : MERGE_COPY.rejected(s.mergeCount ?? 2)) : ROLAD_COPY[s.outcome]}</small></span>
     </div>
   )
 }

@@ -7,7 +7,7 @@ import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
 import { localDateString } from '@/shared/lib/dates'
 import { FACT_CATEGORIES, factCategoryLabel } from '@/data/insights/knowledge'
 import { useFactEvidence, useKnowledgeHubActions } from '@/data/insights/knowledgeHubHooks'
-import { humanizeFactText, sortFacts } from '@/features/insights/logic/factCopy'
+import { humanizeFactText, recentAutoMergedCount, sortFacts } from '@/features/insights/logic/factCopy'
 import { matches } from '@/features/insights/logic/hubSearch'
 import {
   CHIP, DEGRADED, EMPTY, EVIDENCE_UNAVAILABLE, FACTS_NOTE, GO_TO_OBSERVATION, LINKS, MERGED_GROUP, MERGED_HINT,
@@ -30,7 +30,6 @@ const CATEGORY_SKIN: Record<FactCategory, { icon: Icon3DName; accent: string }> 
 
 const MUTED_KEY = 'f:muted'
 const MERGED_KEY = 'f:merged'
-const WEEK_MS = 7 * 24 * 3600 * 1000
 const isMerged = (f: KnowledgeFact) => !f.active && f.mutedReason === 'merged'
 const rowKey = (f: KnowledgeFact) => `f:${f.id}`
 const groupOf = (f: KnowledgeFact) => (f.active ? `f:${f.category}` : isMerged(f) ? MERGED_KEY : MUTED_KEY)
@@ -112,7 +111,8 @@ export function TenyekSection(props: TenyekSectionProps) {
   const inactive = sortFacts(visible.filter((f) => !f.active))
   const merged = inactive.filter(isMerged)
   const muted = inactive.filter((f) => !isMerged(f))
-  const recentMerged = merged.filter((f) => f.mutedAt && Date.now() - new Date(f.mutedAt).getTime() <= WEEK_MS).length
+  // M2: only the sweep's own auto-merges — an accepted proposal's members are not „ismétlés”
+  const recentMerged = recentAutoMergedCount(merged, Date.now(), facts)
   const groups = FACT_CATEGORIES
     .map(([cat, label]) => {
       const all = sortFacts(active.filter((f) => f.category === cat))

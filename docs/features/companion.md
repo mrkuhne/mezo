@@ -4128,7 +4128,8 @@ resurrection, ever, from any writer.
   already-gone original promotes only (fail-open, logged). **Forgetting the SUPERSEDING fact
   releases the original**: `ForgetService.releaseSuperseded` finds every live fact whose
   `supersededBy` points at the id just forgotten and, for each still `MUTED_SUPERSEDED`, turns it
-  into the user's own mute (`mute(MUTED_USER, now)`) and clears `supersededBy` — the original does
+  into the user's own mute (`mute(MUTED_USER, now)`) and clears `supersededBy` (since S9 the same
+  for a `MUTED_MERGED` loser) — the original does
   NOT come back on its own (the user made the knowledge go away, not come back); it sits under
   **Elhallgattatott**, one tap from **Visszakapcsolom**, and the hub stops saying "felülírta egy
   újabb észrevétel" about a fact that no longer exists.
@@ -4620,7 +4621,7 @@ from undo), a merge that needs a NEW sentence is only proposed, and nothing is e
 Spec: [S9 delta](../superpowers/specs/2026-09-24-mezo-emlekezete-design.md).
 
 - **Job** — `FactMergeJob` (`companion/service/merge`), cron `mezo.companion.fact-merge.cron`
-  (`0 30 7 * * MON`, after the dawn cluster and outside the 22:00–07:00 quiet window), gated on
+  (`0 30 7 * * MON`, zone `Europe/Budapest`, after the dawn cluster and outside the 22:00–07:00 quiet window), gated on
   `COMPANION_SWITCH` ∧ `mezo.techcore.cron.fact-merge-job.enabled` (off = the job bean is absent;
   `FactMergeService` stays callable). `UserFanOut` per user; one failing user never aborts the
   sweep. Named `FactMerge*` on purpose — `ConsolidationJob` is the period-summary ladder.
@@ -4629,11 +4630,15 @@ Spec: [S9 delta](../superpowers/specs/2026-09-24-mezo-emlekezete-design.md).
   It returns groups of 2–3 fact ids with a verdict `same` | `combine` (+ a proposed sentence);
   anything else is ignored (a change over time belongs to the quarterly recheck).
 - **Planner — code decides, the LLM never** (`FactMergePlanner`, pure). Live = not deleted, in the
-  prompt, not superseded. **Auto-merge** only for `same` inside one category when every loser is
+  prompt, not superseded, and **not a member of an undecided merge proposal** (snoozed included —
+  `FactMergeService.runFor` drops those ids before the judge call, so an accept later never folds
+  in a member the sweep merged away meanwhile). **Auto-merge** only for `same` inside one category when every loser is
   *mergeable* (source `chat|weekly_review|manual`); survivor = pattern-sourced > higher
   reinforcement > older, and it keeps its own text (no rewrite). **Proposal** for `combine` when
   no member is protected. **Protected** (never a loser, never in a proposal): `pattern`,
-  `person_fact`, `team_chat`, `question`, pinned. A pattern fact may still be a survivor. A member
+  `person_fact`, `team_chat`, `question`, pinned. A pattern fact may still be a survivor.
+  **Drift guard:** a `source='merge'` fact may take part in a `same` group (an exact repeat folds
+  into it) but never in a `combine` proposal — a merged sentence is written from originals only. A member
   set already in the ledger is skipped.
 - **Apply** — `FactMergeService.runFor(userId)`: one `REQUIRES_NEW` `TransactionTemplate` per
   PLAN (the `KnowledgeRecheckService` idiom; the class is NOT `@Transactional`). Auto-merge: each
@@ -4647,17 +4652,30 @@ Spec: [S9 delta](../superpowers/specs/2026-09-24-mezo-emlekezete-design.md).
 - **Decisions on a merge candidate** (`FactCandidateService.decide`) — accept/refine mints a
   `source='merge'` fact whose reinforcement is the sum of the still-live members', then mutes those
   members `merged` with `supersededBy` = the new fact (a member muted meanwhile is left alone);
-  reject („Maradjon külön") is NOT a forget — no veto row, members untouched; snooze is the
-  inbox's ordinary 14-day „Most ne". `FactCandidateResponse.mergeSources` is resolved live from
+  reject („Maradjon külön") is NOT a forget — no veto row, members untouched; snooze („Később")
+  sleeps until the **next Monday sweep** (`CandidateSnooze.nextMergeSweep`: Monday 07:30
+  Europe/Budapest strictly after now — the card promises „Jövő hétfőn"), not the ordinary 14-day
+  „Most ne"; the snooze answer carries `mergeSources` too. `listPending` hides a merge candidate
+  with fewer than two members left. `FactCandidateResponse.mergeSources` is resolved live from
   the members' current text, owner-checked. The promote path reads `source` from the candidate:
   a merge promotes as `merge`, never `chat`.
-  Forgetting the new fact later releases the originals (`ForgetService.releaseSuperseded`).
+  Forgetting the new fact later releases the originals (`ForgetService.releaseSuperseded` treats
+  `merged` like `superseded`: the loser becomes the user's own mute, `supersededBy` cleared — this
+  also covers an auto-merge survivor being forgotten). **Forgetting a member** of a pending merge
+  proposal withdraws it (`ForgetService.deleteAndVeto` soft-deletes every undecided
+  `source='merge'` candidate whose `merge_member_ids` contains the forgotten id).
 - **Ledger** — `fact_merge_ledger` (`created_by, member_key, kind auto|proposal, learned_fact_id`,
   partial unique `(created_by, member_key) where not is_deleted`). `member_key` is the SORTED
-  member-id set, so a set that was auto-merged, proposed, undone or rejected is offered exactly
-  once ever — Visszakapcsolom and „Maradjon külön" need no extra write.
+  member-id set, so a set that was auto-merged, proposed or rejected is offered exactly once ever.
+  **Undo writes one row:** Visszakapcsolom on a `merged` fact (`KnowledgeFactService.update`, the
+  unmute path) first records `keyOf({revived, supersededBy})` (kind `auto`, if absent) — BEFORE
+  `unmute()` clears the link — so neither a revived auto-merge loser nor a revived member of an
+  accepted proposal is ever merged back into that fact. „Maradjon külön" needs no extra write.
 - **No re-learning** — `FactExtractionService`'s exact-text dedupe also matches a `merged` row
-  and reinforces its SURVIVOR (the sentence is already known), instead of proposing it again.
+  and reinforces its SURVIVOR (the sentence is already known), instead of proposing it again. The
+  lookup follows the chain (`liveSuccessor`): while the hit is muted `merged` or `superseded` with
+  a `supersededBy`, hop on — at most 5 hops — so a sentence merged twice, or a drift-superseded
+  original, reinforces the fact that carries it now.
 - **Story engine** — `CharacterMetaReads.gatherTriage` skips `source='merge'` candidates: a
   housekeeping decision is not an accept/reject signal.
 - **Migration** `202609291800_mezo-d6ivw.10_fact_merge.sql`: `ck_knowledge_fact_source` + `merge`,

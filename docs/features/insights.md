@@ -504,16 +504,23 @@ flag). Backend semantics, the veto and every reader that must honour a forget/mu
   `supersededBy`) and the existing **Visszakapcsolom** as the undo (toast „Visszakapcsoltam — újra
   külön használom”). Search covers the fold; it counts toward the hit total.
 - **The „Hétfői rendrakás” strip** (`data-merge-strip`, `th-merge-strip`) above the list, shown only
-  when a fact was merged within the last 7 days (`mutedAt`): „Hétfői rendrakás: N ismétlést
+  when the Monday sweep auto-merged a fact within the last 7 days (`mutedAt`). N counts only the
+  sweep's own merges (`recentAutoMergedCount` in `logic/factCopy.ts`: a merged fact whose survivor
+  is NOT itself `source:'merge'` — an accepted proposal's members are not „ismétlés”, matching the
+  notification's count): „Hétfői rendrakás: N ismétlést
   összevontam[, M javaslat vár rád a Rólad oldalon.]” with a „Megnézem ›” link to `/mezo/rolad` when
   proposals wait (`pendingMergeCount`, from `KnowledgeListPage`'s open `source:'merge'` candidates).
-- **Provenance** — a `source:'merge'` fact reads „összevonásból” (`SOURCE_EYEBROW`) and „Két hasonló
-  tényből vontam össze, a jóváhagyásoddal.” in „Honnan tudom?”.
+- **Provenance** — a `source:'merge'` fact reads „összevonásból” (`SOURCE_EYEBROW`) and „Hasonló
+  tényekből vontam össze, a jóváhagyásoddal.” in „Honnan tudom?” (the fact carries no member count —
+  it may be 2 or 3 — so the line names none).
 
 The Rólad-side card („Összevonnám”, §2.0b inbox) is a `FactCandidateCard` merge variant
 (`source==='merge'`): the two/three original sentences (`mergeSources`), the proposed one, and the
 same four verbs — Összevonom (accept) · Átírom (refine) · Később (snooze) · Maradjon külön (reject),
-each leaving its own afterlife line (`MERGE_COPY`, `useRoladInbox` `merge` flag). Because the
+each leaving its own afterlife line (`MERGE_COPY`, `useRoladInbox` `merge` flag + `mergeCount`).
+The copy is count-aware: `helper(n)`, `keep(n)` and `rejected(n)` say „kettő/két/kettőt” for two
+sources and „három/hármat” for three (the two-source strings are the prototype's, byte for byte).
+„Később” returns the card at the next Monday sweep („Jövő hétfőn újra megkérdezem”). Because the
 collapsed inbox shows only the first 2 open cards, `RoladInbox` sorts merge candidates first (a
 stable partition) so the card is never hidden behind the fold.
 
