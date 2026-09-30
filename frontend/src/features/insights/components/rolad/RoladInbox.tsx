@@ -24,7 +24,7 @@ function SettledRow({ s, style }: { s: Settled; style: React.CSSProperties }) {
         <span className="tf-crow"><span className="tf-st">{s.merge ? MERGE_COPY.tag : 'Tényjelölt'}</span></span>
         <span className="tf-cmain">
           <Icon3D name={s.merge ? 't-layers' : 't-note'} size={36} />
-          <span className="tf-ctxt"><span className="tf-ctitle">{s.title}</span></span>
+          <span className="tf-ctxt"><span className="tf-ctitle">{s.merge ? `„${s.title}”` : s.title}</span></span>
         </span>
         <span className="tf-after"><Icon3D name="t-tick" size={15} />{s.merge ? MERGE_COPY.keep : ROLAD_COPY.keep}</span>
       </div>
@@ -52,7 +52,9 @@ export function RoladInbox({ inbox, delay = 0 }: { inbox: RoladInboxState; delay
 
   // First-seen order, so a decided card turns into its afterlife line IN PLACE instead of jumping
   // to the end (the hook drops decided ids from the open lists). Derived state, set during render.
-  const openIds = [...candidates.map((c) => c.id), ...lifeEvents.map((c) => c.id)]
+  // S9: a merge proposal comes first (prototype) — a stable partition, the rest keeps its order
+  const factIds = [...candidates.filter((c) => c.source === 'merge'), ...candidates.filter((c) => c.source !== 'merge')].map((c) => c.id)
+  const openIds = [...factIds, ...lifeEvents.map((c) => c.id)]
   const [order, setOrder] = useState<string[]>(openIds)
   const unseen = [...openIds, ...settled.map((s) => s.id)].filter((id) => !order.includes(id))
   if (unseen.length > 0) setOrder([...order, ...unseen])

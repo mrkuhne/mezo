@@ -197,7 +197,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   test('snoozing a candidate says it will come back in about two weeks', async () => {
     renderPage()
-    const card = within(inbox()).getByText(candidateSeed[1].text).closest('[data-fact-candidate]') as HTMLElement
+    const card = within(inbox()).getByText(candidateSeed[0].text).closest('[data-fact-candidate]') as HTMLElement
     await userEvent.click(within(card).getByRole('button', { name: 'Most ne' }))
     expect(await within(inbox()).findByText(ROLAD_COPY.snooze)).toBeInTheDocument()
   })
@@ -286,7 +286,7 @@ describe('BoopAboutPage — Rólad (real mode)', () => {
 
   test('renders the fetched candidates from the API', async () => {
     renderPage()
-    expect(await screen.findByText(candidateSeed[1].text)).toBeInTheDocument()
+    expect(await screen.findByText(candidateSeed[0].text)).toBeInTheDocument() // c4 (merge) leads, c1 second
     // no default graph handler in the test server → the graph candidates read as realEmpty
     expect(await screen.findByText(`${candidateSeed.length} JELÖLT`)).toBeInTheDocument()
   })

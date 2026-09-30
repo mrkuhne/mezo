@@ -161,6 +161,13 @@ describe('FactCandidateCard — összevonási javaslat', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Maradjon külön' }))
     expect(onDecide.mock.calls).toEqual([['accept'], ['snooze'], ['reject']])
   })
+  test('Átírom → Mégse goes back to the four verbs', async () => {
+    render(<FactCandidateCard candidate={merge} onDecide={() => {}} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Átírom' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+    expect(screen.getByRole('button', { name: 'Összevonom' })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
   test('Átírom opens the textarea; „Így vond össze” refines', async () => {
     const onDecide = vi.fn()
     render(<FactCandidateCard candidate={merge} onDecide={onDecide} />)

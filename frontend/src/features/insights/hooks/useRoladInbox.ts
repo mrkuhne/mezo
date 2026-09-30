@@ -47,8 +47,12 @@ export function useRoladInbox() {
   const rollback = (id: string) => setSettled((prev) => prev.filter((s) => s.id !== id))
 
   const decideFact = (c: FactCandidate, decision: FactDecision, refinedText?: string) => {
-    const title = decision === 'refine' && refinedText ? refinedText : c.text
-    setSettled((prev) => [...prev, { id: c.id, kind: 'FACT', title, outcome: OUTCOME[decision], edgeCount: 0, ...(c.source === 'merge' ? { merge: true } : {}) }])
+    const isMerge = c.source === 'merge'
+    // a merge proposal's snooze/reject line names the two old sentences (prototype), a keep the new one
+    const title = isMerge && (decision === 'snooze' || decision === 'reject') && c.mergeSources?.length
+      ? c.mergeSources.join(' · ')
+      : decision === 'refine' && refinedText ? refinedText : c.text
+    setSettled((prev) => [...prev, { id: c.id, kind: 'FACT', title, outcome: OUTCOME[decision], edgeCount: 0, ...(isMerge ? { merge: true } : {}) }])
     decideFactM(c.id, decision, refinedText).catch(() => rollback(c.id))
   }
 

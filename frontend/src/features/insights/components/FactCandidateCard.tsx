@@ -68,6 +68,9 @@ export function FactCandidateCard({ candidate, onDecide, conflictFact = null, on
             <button type="button" className="tud9-btn is-main" disabled={!refinedText.trim()} onClick={() => decide('refine', refinedText.trim())}>
               <Icon3D name="t-tick" size={20} />{MERGE_COPY.refineSave}
             </button>
+            <button type="button" className="tud9-btn" onClick={() => { setRefinedText(candidate.text); setRefining(false) }}>
+              {MERGE_COPY.refineCancel}
+            </button>
           </div>
         ) : (
           <>

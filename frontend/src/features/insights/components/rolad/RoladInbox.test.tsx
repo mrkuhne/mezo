@@ -75,6 +75,12 @@ describe('RoladInbox', () => {
     expect(rejected.querySelector('use[href="#t-skip"]')).not.toBeNull()
   })
 
+  test('an open merge proposal is listed first, ahead of the older fact candidates', () => {
+    render(<RoladInbox inbox={inbox()} />)
+    const cards = document.querySelectorAll('[data-fact-candidate], [data-graph-card]')
+    expect(cards[0]).toHaveAttribute('data-merge-candidate')
+  })
+
   test('a settled merge proposal speaks about the two old sentences', () => {
     render(<RoladInbox inbox={inbox({
       candidates: [], lifeEvents: [],
@@ -84,7 +90,7 @@ describe('RoladInbox', () => {
         { id: 'm3', kind: 'FACT', title: 'Külön', outcome: 'reject', edgeCount: 0, merge: true },
       ],
     })} />)
-    expect(screen.getByText('Összevont').closest('.tf-case')).toHaveTextContent('Összevontam — a két régi mondat a Tényeknél visszakapcsolható')
+    expect(screen.getByText('„Összevont”').closest('.tf-case')).toHaveTextContent('Összevontam — a két régi mondat a Tényeknél visszakapcsolható')
     expect(screen.getByText('Halasztott ö.').closest('.kr9-gone')).toHaveTextContent('Jövő hétfőn újra megkérdezem')
     expect(screen.getByText('Külön').closest('.kr9-gone')).toHaveTextContent('Külön maradnak — ezt a kettőt nem hozom fel újra')
   })

@@ -45,6 +45,7 @@ export const MERGE_COPY = {
   accept: 'Összevonom',
   refine: 'Átírom',
   refineSave: 'Így vond össze',
+  refineCancel: 'Mégse',
   refineAria: 'Az összevont mondat',
   snooze: 'Később',
   reject: 'Maradjon külön',
