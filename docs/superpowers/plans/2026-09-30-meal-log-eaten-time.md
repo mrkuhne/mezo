@@ -19,10 +19,10 @@
 
 **Interfész:** `resolveEatingTimePlacement(atHHmm: string, windows: readonly FuelSlot[]): { slot: MealSlot; window?: { from: string; to: string }; label: string | null }`. Csak `slotKey`-t és mindkét `windowFrom`/`windowTo` értéket hordozó étkezési ablak jelölt. Találatnál az első tervbeli egyezés nyer; éjfélen átnyúló tartományban `at >= from || at <= to`, egyébként a két végpont is beletartozik. Találat nélkül a `defaultMealSlot` az adott HH:mm alapján adja a kötelező API-kategóriát, `window` nélkül.
 
-- [ ] Írj piros teszteket: reggeli idő, délutáni másik ablakba átlépés, két ablak közötti és esti ablakon kívüli idő, éjfélen átnyúló ablak, hiányos tervablak.
-- [ ] Futtasd: `cd frontend && CI=true VITE_USE_MOCK=true pnpm exec vitest run src/features/fuel/logic/eatingTimePlacement.test.ts`; a várt eredmény FAIL.
-- [ ] Írd meg a tiszta függvényt; az időből feloldott `slot` és `window` egyetlen visszatérési értékből jöjjön, ne két külön keresésből.
-- [ ] Ugyanazzal a paranccsal PASS; commit: `feat(fuel): resolve meal window from eating time (mezo-yhhvg)`.
+- [x] Írj piros teszteket: reggeli idő, délutáni másik ablakba átlépés, két ablak közötti és esti ablakon kívüli idő, éjfélen átnyúló ablak, hiányos tervablak.
+- [x] Futtasd: `cd frontend && CI=true VITE_USE_MOCK=true pnpm exec vitest run src/features/fuel/logic/eatingTimePlacement.test.ts`; a várt eredmény FAIL.
+- [x] Írd meg a tiszta függvényt; az időből feloldott `slot` és `window` egyetlen visszatérési értékből jöjjön, ne két külön keresésből.
+- [x] Ugyanazzal a paranccsal PASS; commit: `feat(fuel): resolve meal window from eating time (mezo-yhhvg)`.
 
 ## 2. Közös megerősítő vezérlő és mentés
 
