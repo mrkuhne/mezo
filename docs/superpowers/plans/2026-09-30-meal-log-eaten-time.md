@@ -52,10 +52,10 @@
 
 **Fájlok:** `docs/features/fuel.md`, `docs/milestones/roadmap.md`, `docs/design_2.0/prototypes/elo/README.md`; a `docs/features/README.md` Fuel-sorát ellenőrizni kell. A `docs/CODEMAP.md` generált: csak a generátor írhatja.
 
-- [ ] A Fuel élő doksi §2/§3/§4/§9/§10 érintett részeit frissítsd: csukott aktuális idő, átírás, ablakválasztás, sikertelen mentés, fájltérkép. A prototípus-regiszterből az „élő még nincs kész” állapot csak az éles ellenőrzés után tűnjön el; a roadmap kapjon rövid szállítási bejegyzést.
+- [x] A Fuel élő doksi §2/§3/§4/§9/§10 érintett részeit frissítsd: csukott aktuális idő, átírás, ablakválasztás, sikertelen mentés, fájltérkép. A prototípus-regiszterből az „élő még nincs kész” állapot csak az éles ellenőrzés után tűnjön el; a roadmap kapjon rövid szállítási bejegyzést.
 - [x] Futtasd a helyi kapukat: `cd frontend && pnpm build`; `cd frontend && CI=true VITE_USE_MOCK=true pnpm test`; `cd frontend && CI=true VITE_USE_MOCK=false pnpm test`; `node scripts/gen-codemap.mjs`; `node scripts/lint-docs.mjs`; `git diff --check`. A már a munka előtt is jelzett, nem Fuel területű stale doksikat külön név szerint rögzítsd, ha továbbra is fennállnak; új Fuel-staleness nem maradhat.
 - [x] Browserben ellenőrizd a teljes új naplózási utat és az időmezőt 320 px-en, csökkentett mozgással és konzolhiba nélkül; nyitás/záráskor a piszkozat, DOM-mező és görgetés maradjon. Commit: `docs(fuel): document eating-time logging (mezo-yhhvg)`.
-- [ ] A helyi gate-ek után frissítsd a Beads backupot (`node scripts/check-beads-backup.mjs --fix`), commitold a változást, szinkronizáld a Beadst, majd a projekt munkafolyamata szerint `--no-ff` merge és push a mainre. Ellenőrizd a deploy futás sikerét, és az éles oldalon a vezérlő látható működését; adatellenőrzéshez csak olvasó lekérdezést használj. Zárd a `mezo-yhhvg` feladatot, és add meg a commitot és az ellenőrzés eredményét.
+- [x] A helyi gate-ek után frissítsd a Beads backupot (`node scripts/check-beads-backup.mjs --fix`), commitold a változást, szinkronizáld a Beadst, majd a projekt munkafolyamata szerint `--no-ff` merge és push a mainre. Ellenőrizd a deploy futás sikerét, és az éles oldalon a vezérlő látható működését; adatellenőrzéshez csak olvasó lekérdezést használj. Zárd a `mezo-yhhvg` feladatot, és add meg a commitot és az ellenőrzés eredményét.
 
 ## Kész, ha…
 
@@ -65,4 +65,6 @@
 - [x] A négy forrás, a recept-előtöltés, AI-elemzés, már mentett étkezés javítása, korábbi napra visszatérés és a meglévő navigáció tovább működik.
 
 **Helyi kapuk (2026-10-01):** build sikeres; mock mód 8980 zöld teszt; valós mód 8960 zöld + 46 zöld ChatPage teszt külön futtatva. A teljes valós módú párhuzamos futásban ez az egy ChatPage válaszvárás kétszer 5 másodperces időkorlátba futott; önállóan 46/46 zöld, Fuel hiba nem volt. A dokulintben a Fuel tiszta, egy korábbról stale lap maradt: `docs/features/settings.md`.
-- [ ] A releváns tesztek, teljes frontend build, mindkét explicit tesztmód, Fuel-dokulint, 320 px és reduced motion ellenőrzés, main push, deploy és éles UI-ellenőrzés bizonyított.
+- [x] A releváns tesztek, teljes frontend build, mindkét explicit tesztmód, Fuel-dokulint, 320 px és reduced motion ellenőrzés, main push, deploy és éles UI-ellenőrzés bizonyított.
+
+**Éles ellenőrzés (2026-10-01):** `0f2b98ef4d` no-ff merge → `e2362ea88f` kiadási commit → frontend `2.384.0`; két pod kész, ArgoCD Synced/Healthy. Az éles oldalon egy mentetlen tétellel a csukott sor az aktuális időt mutatta, az idő átírása és a lenyitás/becsukás megtartotta a piszkozatot és az URL-t; konzolhiba nem volt. Éles étkezést nem mentettünk.
