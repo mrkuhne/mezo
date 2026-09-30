@@ -2070,3 +2070,16 @@ stays unused); merging into / out of pattern facts beyond the survivor rule.
     (a source scan, not in any focused IT list): a tool-free CHAT-gear fixture needs a domain word
     or an adjacent `// gear-audited: <reason>`. Add the guard to every focused run that adds chat
     fixtures — it red-lit main once (mezo-tdabt).
+54. **(S9)** A per-feature contract fragment change needs `cd api/generate && npm run generate:api`
+    BEFORE the maven build: the DTOs are regenerated from the merged spec, and a stale merge fails
+    the contract drift gate or compiles against old DTOs.
+55. **(S9)** An IT that reaches `AppNotificationEmitter` (`REQUIRES_NEW`) must NOT be class-level
+    `@Transactional`: the emitter's insert waits on the uncommitted test user's FK row and
+    deadlocks (the `mezo-gzhp.1` trap, re-paid here). Commit the fixture, clean up via `ResetDatabase`.
+56. **(S9)** A proposal that needs an owner decision should reuse the existing candidate inbox
+    (`learned_fact.source='merge'` + `merge_member_ids`), not a new table + endpoints; "never offer
+    twice" is a once-ever ledger keyed on the SORTED member set, which also covers undo and reject.
+57. **(S9)** The collapsed Rólad inbox shows only the first 2 open cards, so a new card kind must
+    sort itself first (a stable partition) or it is invisible behind „Még N javaslat".
+58. **(S9)** The snooze period of a reused inbox verb is the inbox's (14 days), not the spec's
+    prose ("egy hét") — check the shared constant before promising a number in the spec/prototype copy.

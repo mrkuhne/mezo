@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-28
+updated: 2026-09-30
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -323,7 +323,7 @@ discovered slug is a `FEATURE_LABELS` key. Latest entry: `team_chat` („Csapat-
 beszélgetés)”, Emlékezet S7 `mezo-d6ivw.7`) — the csapatfal ügy-beszélgetés's guarded voice calls
 (nyitó/lezáró sorok és a felhasználó válaszára adott karakter-hang). (Previous entry:
 `companion_recheck` („Tudás-újraellenőrzés”, `mezo-d6ivw.2`) — the quarterly re-check of a
-hand-confirmed, plan-less knowledge fact.)
+hand-confirmed, plan-less knowledge fact; `companion_fact_merge` („Tény-összevonás”, `mezo-d6ivw.10`) — the weekly judge that groups repeated facts.)
 
 **Honesty rules** (repeated across every admin surface, not just this doc's pages): `null` and
 `0` are never conflated — a `null` `errorPct`/`p90LatencyMs`/`acceptedShare`/`costPerUse` means

@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-29
+updated: 2026-09-30
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -238,7 +238,7 @@ The sections below describe its current behavior and the supporting components.
 **V1.1 (`mezo-fnnq.6`) shipped the L3 memory spine — knowledge facts + prompt injection:**
 
 - **Two new owned tables** — `knowledge_fact` (fact_text, category `train|fuel|health|life`,
-  source `chat|pattern|manual` — a fourth, `weekly_review`, joined in `mezo-d20.7.6`, and a fifth,
+  source `chat|pattern|manual` (later widened: `weekly_review`, `question`, `team_chat`, `person_fact` and, S9, `merge`) — a fourth, `weekly_review`, joined in `mezo-d20.7.6`, and a fifth,
   `question`, in `mezo-d58h.7.5` (a once-ever question's answer — see the §5.7 note below),
   reinforcement_count, `include_in_prompt`, last_reinforced_at, and, since **U9b (`mezo-zpxv7`,
   2026-09-26)**, `owner varchar(16)` CHECK `szunya|mocor|falat|deru|mezo` NOT NULL)
@@ -4115,7 +4115,7 @@ resurrection, ever, from any writer.
   reinforcing exactly as before), `WeeklyLessonService` (the Monday weekly candidate proposal), and
   `PatternService` (a `decide`/promote path must 404 — same as forgetting — rather than resurrect a
   forgotten row: see the `isForgotten()` guard below).
-- **`knowledge_fact.muted_reason`** (nullable, enum `user|refuted|superseded`) + `muted_at`
+- **`knowledge_fact.muted_reason`** (nullable, enum `user|refuted|superseded|merged` — `merged` is S9, see „Heti tény-összevonás”) + `muted_at`
   distinguish a MUTED fact (kept, excluded from the prompt and from every count that means "active
   knowledge", one tap from **Visszakapcsolom**) from a FORGOTTEN one (gone, no way back).
   `KnowledgeFactEntity.mute(reason, at)` sets both; **`unmute()` clears `mutedReason`, `mutedAt`
@@ -4340,7 +4340,7 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
 - **`knowledge_fact`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `is_deleted`,
   `created_at`, `fact_text text`, `category varchar(16)` (`ck_knowledge_fact_category IN
   (train,fuel,health,life)`), `source varchar(16)` (`ck_knowledge_fact_source IN
-  (chat,pattern,manual)`, later widened with `weekly_review` by
+  (chat,pattern,manual)`, later widened (last: `merge`, S9 `202609291800_mezo-d6ivw.10_fact_merge.sql`, which also adds `muted_reason='merged'`, `learned_fact.source='merge'` + `merge_member_ids uuid[]` and the `fact_merge_ledger` table) with `weekly_review` by
   `202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql`, with `question` by
   `202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql`, and with `team_chat` by S7's
   `202609271000_mezo-d6ivw.7_team_chat_reply.sql`, and with `person_fact` by
@@ -4612,6 +4612,62 @@ named-effect engine's cache (§3 above has the full write-up):
   its own table, not a column on `effect_link`, precisely because `effect_link` rows are
   soft-deleted and re-created every night by the recompute (§3 above) — a flag on the row would die
   with it.
+
+### Heti tény-összevonás (Mezo emlékezete S9, ✅ `mezo-d6ivw.10`)
+
+Every Monday Mezo tidies the Tudástár: plain repetitions of a fact merge on their own (one tap
+from undo), a merge that needs a NEW sentence is only proposed, and nothing is ever deleted.
+Spec: [S9 delta](../superpowers/specs/2026-09-24-mezo-emlekezete-design.md).
+
+- **Job** — `FactMergeJob` (`companion/service/merge`), cron `mezo.companion.fact-merge.cron`
+  (`0 30 7 * * MON`, after the dawn cluster and outside the 22:00–07:00 quiet window), gated on
+  `COMPANION_SWITCH` ∧ `mezo.techcore.cron.fact-merge-job.enabled` (off = the job bean is absent;
+  `FactMergeService` stays callable). `UserFanOut` per user; one failing user never aborts the
+  sweep. Named `FactMerge*` on purpose — `ConsolidationJob` is the period-summary ladder.
+- **Judge** — `FactMergeJudge`: ONE LLM call per category chunk (≤ 120 live facts), slug
+  `companion_fact_merge` (admin label in `admin/lib/labels.ts`, `FakeCompanionLlm` marker branch).
+  It returns groups of 2–3 fact ids with a verdict `same` | `combine` (+ a proposed sentence);
+  anything else is ignored (a change over time belongs to the quarterly recheck).
+- **Planner — code decides, the LLM never** (`FactMergePlanner`, pure). Live = not deleted, in the
+  prompt, not superseded. **Auto-merge** only for `same` inside one category when every loser is
+  *mergeable* (source `chat|weekly_review|manual`); survivor = pattern-sourced > higher
+  reinforcement > older, and it keeps its own text (no rewrite). **Proposal** for `combine` when
+  no member is protected. **Protected** (never a loser, never in a proposal): `pattern`,
+  `person_fact`, `team_chat`, `question`, pinned. A pattern fact may still be a survivor. A member
+  set already in the ledger is skipped.
+- **Apply** — `FactMergeService.runFor(userId)`: one `REQUIRES_NEW` `TransactionTemplate` per
+  PLAN (the `KnowledgeRecheckService` idiom; the class is NOT `@Transactional`). Auto-merge: each
+  loser `mute(MUTED_MERGED)` + `supersededBy = survivor`; the survivor absorbs the losers'
+  `reinforcement_count` and the later `last_reinforced_at`; `learned_fact.promoted_fact_id`
+  pointers to a loser are re-pointed by hand (a soft delete never fires the FK `SET NULL`);
+  `KnowledgeFactChangedEvent` per row (the loser's graph node archives for free). Proposal: a
+  pending `learned_fact` with `source='merge'` + `merge_member_ids`, so it rides the ordinary
+  Rólad candidate inbox. **One notification per non-empty sweep**: `FACT_CANDIDATE` (deeplink to
+  Rólad) when a proposal waits, else `FACT_REINFORCED` (the Tudástár).
+- **Decisions on a merge candidate** (`FactCandidateService.decide`) — accept/refine mints a
+  `source='merge'` fact whose reinforcement is the sum of the still-live members', then mutes those
+  members `merged` with `supersededBy` = the new fact (a member muted meanwhile is left alone);
+  reject („Maradjon külön") is NOT a forget — no veto row, members untouched; snooze is the
+  inbox's ordinary 14-day „Most ne". `FactCandidateResponse.mergeSources` is resolved live from
+  the members' current text, owner-checked. The promote path reads `source` from the candidate:
+  a merge promotes as `merge`, never `chat`.
+  Forgetting the new fact later releases the originals (`ForgetService.releaseSuperseded`).
+- **Ledger** — `fact_merge_ledger` (`created_by, member_key, kind auto|proposal, learned_fact_id`,
+  partial unique `(created_by, member_key) where not is_deleted`). `member_key` is the SORTED
+  member-id set, so a set that was auto-merged, proposed, undone or rejected is offered exactly
+  once ever — Visszakapcsolom and „Maradjon külön" need no extra write.
+- **No re-learning** — `FactExtractionService`'s exact-text dedupe also matches a `merged` row
+  and reinforces its SURVIVOR (the sentence is already known), instead of proposing it again.
+- **Story engine** — `CharacterMetaReads.gatherTriage` skips `source='merge'` candidates: a
+  housekeeping decision is not an accept/reject signal.
+- **Migration** `202609291800_mezo-d6ivw.10_fact_merge.sql`: `ck_knowledge_fact_source` + `merge`,
+  `ck_knowledge_fact_muted_reason` + `merged`, `ck_learned_fact_source` + `merge`,
+  `learned_fact.merge_member_ids uuid[]` (`ck_learned_fact_merge_members`:
+  `(source='merge') = (merge_member_ids is not null)`), the ledger table. `ResetDatabase` truncates
+  the new owned table. Contract: `mutedReason` enum + `merged`, `source` enum + `merge`,
+  `FactCandidateResponse.mergeSources`.
+- **FE** — see [`insights.md`](insights.md) §2.0b/§2.4: the „Összevonnám” card on Rólad and the
+  „Összevontam · N” fold + „Hétfői rendrakás” strip in the Tudástár.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -5038,9 +5094,9 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     method's own `@Transactional`, no `saveAndFlush`. Each is a no-op (empty return) when the
     node was never promoted or is already archived, the same idempotence promotion already had.
     **`retractFact` has two triggers now, not one.** The *delete* half is still dead code in
-    practice — no service in main source soft-deletes a `knowledge_fact`, so nothing publishes a
-    delete-triggered retraction event, and the nightly complement sweep below remains its only
-    caller for that half. The *opt-out* half is live as of `mezo-b3pp.30` (this slice): every
+    practice only until S6/S8: `ForgetService.forgetFact` and `AboutMeService.remove` now
+    soft-delete a `knowledge_fact` and publish `KnowledgeFactChangedEvent`, which reaches
+    `retractFact` through `syncFact` below; the nightly complement sweep is the backstop. The *opt-out* half is live as of `mezo-b3pp.30` (this slice): every
     `KnowledgeFactService.update` publishes `KnowledgeFactChangedEvent` unconditionally, and
     `GraphPromotionListener` routes it to `syncFact` below, so flipping `include_in_prompt` off
     reaches `retractFact` on the same turn instead of waiting for dawn.
@@ -5140,7 +5196,7 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     soft-deleted) is invisible to them and its node would otherwise stay active forever; the
     sweep is what heals a retraction missed while the switch was off (no listener existed to hear
     the event). For a `knowledge_fact` specifically it remains the ONLY path that ever retracts
-    one for the *delete* half (nothing in main source soft-deletes a `knowledge_fact`) — the
+    one for the *delete* half when the event was missed (`ForgetService.forgetFact` / `AboutMeService.remove` now soft-delete and publish `KnowledgeFactChangedEvent`, S6/S8) — the
     *opt-out* half now also reaches `retractFact` on the next turn via `syncFact`
     (`mezo-b3pp.30`), with the sweep as its backstop, same as every other source kind. The
     `person` branch of the complement switch calls `retractPerson`, and the `life_goal` branch
@@ -6357,8 +6413,8 @@ narrates the wait and then is gone),
 includeInPrompt, lastReinforcedAt?, createdAt, patternTitle?, citedWeeks?, mutedReason?, mutedAt?,
 supersededBy?, provenance}` (V1.1; `owner`/`patternTitle` U9b/`mezo-tk88`; `citedWeeks`
 `mezo-d20.7.7`; **`mutedReason`/`mutedAt`/`supersededBy`/`provenance` are S6 (`mezo-d6ivw.6`)** —
-`mutedReason` is `user\|refuted\|superseded\|null` (§3 above), `provenance` is
-`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat\|person_fact,
+`mutedReason` is `user\|refuted\|superseded\|merged\|null` (`merged` S9) (§3 above), `provenance` is
+`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat\|person_fact\|merge,
 patternId?, sourceMessageId?}`, the structured "honnan jön" the lazy `GET
 /api/companion/fact/{factId}/evidence` (below) expands into evidence items). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +

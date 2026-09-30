@@ -121,7 +121,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Memoir / predictions / experiments | `/mezo/memoir` (Emlékek tab) · `/mezo/predictions`, `/mezo/experiments` (Üzenőfal tab) | [`insights.md`](insights.md) §2.3–§2.7 |
 | Weekly review (score bars, AI summary) | `/me/week` | [`me.md`](me.md) §1 (retired from Insights, `/mezo/weekly` redirects) |
 | Companion chat (real, Spring AI 2 / Gemini) — incl. turn-memory chips and „Rólam is" (`mezo-d6ivw.13`) | `/mezo/chat` | [`insights.md`](insights.md) §1, §2.5 · [`companion.md`](companion.md) §3–§4 |
-| Knowledge facts / knowledge graph ("Tudástár") | `/mezo/knowledge` (owned by Rólad tab) | [`insights.md`](insights.md) §2.4 · [`me.md`](me.md) §1 |
+| Knowledge facts / knowledge graph ("Tudástár") — incl. the Monday weekly fact merge (`mezo-d6ivw.10`: „Összevonnám” card on Rólad, „Összevontam” fold + strip) | `/mezo/knowledge` (owned by Rólad tab), `/mezo/rolad` | [`insights.md`](insights.md) §2.0b, §2.4 · [`companion.md`](companion.md) „Heti tény-összevonás” · [`me.md`](me.md) §1 |
 | Memória (RAG memory observatory) | `/mezo/memoria` (owned by A csapat tab) | [`insights.md`](insights.md) §2.9 |
 | Karakter dossier (7 experts + Szkeptikus, chaired by Mezo) | `/mezo/karakter/*` | [`character.md`](character.md) §2 |
 | Proactive companion feed (morning/sleep/weight/midday/evening/people/advice) | surfaces on `/nap/uzenetek` | [`proactive.md`](proactive.md) §2–§3 |

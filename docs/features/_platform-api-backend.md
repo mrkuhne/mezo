@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-09-29
+updated: 2026-09-30
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -273,6 +273,8 @@ The delivery-infra counterpart to the proactive epic (§ `Proactive` row above):
 **Csapatfal Act III — the team chat** (`mezo-a9bo7.21`–`.24`) grows the Character contract with `GET /api/character/team-chat` (one local day's chat — every line plus every currently-OPEN ügy, gated on `mezo.character.team-chat.zone`) + `POST /api/character/team-chat/threads/{threadId}/reply` + `POST /api/character/team-chat/threads/{threadId}/apply/{actionKey}`, all switch-gated by a new `FeaturesConfiguration.TEAM_CHAT_SWITCH` (`mezo.feature.team-chat.enabled`) — the same array-AND'ed-with-character-and-companion, `ObjectProvider`-consumed bean pattern the Esti kiadás switch above set. It follows no new pattern beyond that: `TeamChatService` (`feature/character/service/chat/`) is the single write path (open/resolve/expire), tuned entirely by a `@Validated TeamChatProperties` record (`mezo.character.team-chat.*` — zone, `expireAfterDays`, `dailyLineCap`, `maxPushesPerDay`, the LLM monthly cap, the expiry/catch-up cron schedules), and it reads the FE `frontend/src/data/hooks.ts` barrel through `data/character/teamChatHooks.ts` → `teamChatApi.ts`. The contract also adds `team_chat_day` to the shared insights `SourceKind` enum (alongside `checkin_coverage`) plus a new `messages.properties` line family for the team-chat template lines. The phone-push half of this slice (`AppNotificationKind.TEAM_CHAT`, budget policy, quiet-hours behavior) is platform-owned — see [`_platform-notifications.md`](_platform-notifications.md) §3b/§4 — not restated here. See [character.md](character.md) and [`docs/decisions/0053-csapat-elo-beszelgetes.md`](../decisions/0053-csapat-elo-beszelgetes.md).
 
 **A csapatfal válaszol** (Emlékezet S7, `mezo-d6ivw.7`) adds `POST /api/character/team-chat/threads/{threadId}/answer` (`{choice: EXCUSED|KEEP|STOP}`) and `DELETE …/threads/{threadId}/remembered` to the same switch-gated Character contract, widens `TeamChatThread` with `closeReason`/`closeNote`/`offer`/`offerTag`/`remembered`, and adds one `messages.properties` code (`CHARACTER_TEAM_CHAT_ANSWER_CONFLICT`, the 409 for a mismatched or already-differently-answered choice) — no new pattern. See [character.md](character.md) §Csapat-chat.
+
+**Weekly fact merge** (`mezo-d6ivw.10`) adds `FactMergeJob` (Monday 07:30, `mezo.companion.fact-merge.cron`), gated by `FeaturesConfiguration.FACT_MERGE_JOB_SWITCH` (`mezo.techcore.cron.fact-merge-job.enabled`); off ⇒ the bean does not exist. See [companion.md „Heti tény-összevonás”](companion.md).
 
 **A napom overnight pre-warm** (`mezo-yjzhw.1`) adds no new API surface — `DayReviewWarmupJob` (`feature/companion/service/DayReviewWarmupJob.java`, nightly 02:30) calls the existing `DayReviewService.assemble` per user × finished day so the first "Mai" load of the morning hits a warm cache instead of paying the LLM latency live. Gated by `FeaturesConfiguration.DAY_REVIEW_WARMUP_JOB_SWITCH` (`mezo.techcore.cron.day-review-warmup-job.enabled`); off ⇒ the bean does not exist. See [companion.md §"DayReviewWarmupJob"](companion.md) and [today.md](today.md).
 
