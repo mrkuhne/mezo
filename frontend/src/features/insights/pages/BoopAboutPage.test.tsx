@@ -157,9 +157,13 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     renderPage()
     expect(within(inbox()).getByText(`${OPEN} JELÖLT`)).toBeInTheDocument()
     await expandInbox()
-    expect(within(inbox()).getAllByRole('button', { name: 'Igen, jegyezd meg' })).toHaveLength(OPEN)
-    expect(within(inbox()).getAllByRole('button', { name: 'Most ne' })).toHaveLength(OPEN)
-    expect(within(inbox()).getAllByRole('button', { name: 'Nem igaz' })).toHaveLength(OPEN)
+    // the S9 merge proposal (candidateSeed's c4) wears its own verbs: Összevonom · Később · Maradjon külön
+    expect(within(inbox()).getAllByRole('button', { name: 'Igen, jegyezd meg' })).toHaveLength(OPEN - 1)
+    expect(within(inbox()).getAllByRole('button', { name: 'Most ne' })).toHaveLength(OPEN - 1)
+    expect(within(inbox()).getAllByRole('button', { name: 'Nem igaz' })).toHaveLength(OPEN - 1)
+    expect(within(inbox()).getAllByRole('button', { name: 'Összevonom' })).toHaveLength(1)
+    expect(within(inbox()).getAllByRole('button', { name: 'Később' })).toHaveLength(1)
+    expect(within(inbox()).getAllByRole('button', { name: 'Maradjon külön' })).toHaveLength(1)
   })
 
   test('accepting a candidate promotes it into the facts and leaves the kept line', async () => {
@@ -193,7 +197,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
 
   test('snoozing a candidate says it will come back in about two weeks', async () => {
     renderPage()
-    const card = within(inbox()).getByText(candidateSeed[1].text).closest('[data-fact-candidate]') as HTMLElement
+    const card = within(inbox()).getByText(candidateSeed[0].text).closest('[data-fact-candidate]') as HTMLElement
     await userEvent.click(within(card).getByRole('button', { name: 'Most ne' }))
     expect(await within(inbox()).findByText(ROLAD_COPY.snooze)).toBeInTheDocument()
   })
@@ -243,7 +247,7 @@ describe('BoopAboutPage — Rólad, a közös kép (mock mode)', () => {
     renderPage()
     await expandInbox()
     for (let n = 0; n < OPEN; n++) {
-      await userEvent.click(within(inbox()).getAllByRole('button', { name: 'Most ne' })[0])
+      await userEvent.click(within(inbox()).getAllByRole('button', { name: /^(Most ne|Később)$/ })[0])
     }
     expect(await within(inbox()).findByText('MIND ELDÖNTVE')).toBeInTheDocument()
     expect(within(inbox()).queryByText(/0 JELÖLT/)).not.toBeInTheDocument()
@@ -282,7 +286,7 @@ describe('BoopAboutPage — Rólad (real mode)', () => {
 
   test('renders the fetched candidates from the API', async () => {
     renderPage()
-    expect(await screen.findByText(candidateSeed[1].text)).toBeInTheDocument()
+    expect(await screen.findByText(candidateSeed[0].text)).toBeInTheDocument() // c4 (merge) leads, c1 second
     // no default graph handler in the test server → the graph candidates read as realEmpty
     expect(await screen.findByText(`${candidateSeed.length} JELÖLT`)).toBeInTheDocument()
   })
@@ -310,7 +314,7 @@ describe('BoopAboutPage — Rólad (real mode)', () => {
     const card = (await screen.findByText(candidateSeed[0].text)).closest('[data-fact-candidate]') as HTMLElement
     await userEvent.click(within(card).getByRole('button', { name: 'Igen, jegyezd meg' }))
     await waitFor(() => expect(posted).toBe(1))
-    await waitFor(() => expect(inbox().querySelectorAll('[data-fact-candidate]')).toHaveLength(candidateSeed.length - 1))
+    await waitFor(() => expect(inbox().querySelectorAll('[data-fact-candidate]')).toHaveLength(2)) // collapsed inbox: at most 2 open cards
     expect(within(inbox()).getByText(candidateSeed[0].text).closest('.tf-case')).toHaveTextContent(ROLAD_COPY.keep)
   })
 

@@ -7,11 +7,11 @@ import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
 import { localDateString } from '@/shared/lib/dates'
 import { FACT_CATEGORIES, factCategoryLabel } from '@/data/insights/knowledge'
 import { useFactEvidence, useKnowledgeHubActions } from '@/data/insights/knowledgeHubHooks'
-import { humanizeFactText, sortFacts } from '@/features/insights/logic/factCopy'
+import { humanizeFactText, recentAutoMergedCount, sortFacts } from '@/features/insights/logic/factCopy'
 import { matches } from '@/features/insights/logic/hubSearch'
 import {
-  CHIP, DEGRADED, EMPTY, EVIDENCE_UNAVAILABLE, FACTS_NOTE, GO_TO_OBSERVATION, LINKS, MUTED_GROUP, MUTED_HINT,
-  ORIGIN, SEARCH, SOURCE_EYEBROW, TOAST, WHY_ICON, groupCount, lead, onHint, reinforced, whyText,
+  CHIP, DEGRADED, EMPTY, EVIDENCE_UNAVAILABLE, FACTS_NOTE, GO_TO_OBSERVATION, LINKS, MERGED_GROUP, MERGED_HINT,
+  MERGE_STRIP_LINK, MUTED_GROUP, MUTED_HINT, ORIGIN, SEARCH, SOURCE_EYEBROW, TOAST, WHY_ICON, groupCount, lead, onHint, mergeStrip, mergedWhy, reinforced, whyText,
 } from '@/features/insights/logic/hubCopy'
 import { HubRow } from '@/features/insights/components/hub/HubRow'
 import { HubFold } from '@/features/insights/components/hub/HubFold'
@@ -29,8 +29,10 @@ const CATEGORY_SKIN: Record<FactCategory, { icon: Icon3DName; accent: string }> 
 }
 
 const MUTED_KEY = 'f:muted'
+const MERGED_KEY = 'f:merged'
+const isMerged = (f: KnowledgeFact) => !f.active && f.mutedReason === 'merged'
 const rowKey = (f: KnowledgeFact) => `f:${f.id}`
-const groupOf = (f: KnowledgeFact) => (f.active ? `f:${f.category}` : MUTED_KEY)
+const groupOf = (f: KnowledgeFact) => (f.active ? `f:${f.category}` : isMerged(f) ? MERGED_KEY : MUTED_KEY)
 /** What the search looks at: the sentence the user sees, plus the promoting pattern's title. */
 const haystack = (f: KnowledgeFact) => `${humanizeFactText(f.text)} ${f.patternTitle ?? ''}`
 
@@ -44,6 +46,8 @@ export interface TenyekSectionProps {
   highlightFactId: string | null
   forget: (req: ForgetRequest) => void
   isHidden: (key: string) => boolean
+  /** S9: pending `source:'merge'` candidates waiting on the Rólad page (the strip's second half) */
+  pendingMergeCount?: number
 }
 
 /** "Honnan tudom?" for one fact — mounted only while open, so the evidence fetch is lazy. */
@@ -73,7 +77,7 @@ function FactSource({ fact, onOpenObservation }: { fact: KnowledgeFact; onOpenOb
  * fact that is on goes into every conversation.
  */
 export function TenyekSection(props: TenyekSectionProps) {
-  const { facts, degraded, isPending, isError, refetch, highlightFactId, forget, isHidden } = props
+  const { facts, degraded, isPending, isError, refetch, highlightFactId, forget, isHidden, pendingMergeCount = 0 } = props
   const [params, setParams] = useSearchParams()
   const toast = useToast()
   const { muteFact, editFact, forgetFact } = useKnowledgeHubActions()
@@ -104,7 +108,11 @@ export function TenyekSection(props: TenyekSectionProps) {
 
   const visible = facts.filter((f) => !isHidden(rowKey(f)))
   const active = visible.filter((f) => f.active)
-  const muted = sortFacts(visible.filter((f) => !f.active))
+  const inactive = sortFacts(visible.filter((f) => !f.active))
+  const merged = inactive.filter(isMerged)
+  const muted = inactive.filter((f) => !isMerged(f))
+  // M2: only the sweep's own auto-merges — an accepted proposal's members are not „ismétlés”
+  const recentMerged = recentAutoMergedCount(merged, Date.now(), facts)
   const groups = FACT_CATEGORIES
     .map(([cat, label]) => {
       const all = sortFacts(active.filter((f) => f.category === cat))
@@ -112,7 +120,8 @@ export function TenyekSection(props: TenyekSectionProps) {
     })
     .filter((g) => g.all.length > 0)
   const mutedHits = muted.filter((f) => matches(haystack(f), q))
-  const hitCount = groups.reduce((n, g) => n + g.hits.length, 0) + mutedHits.length
+  const mergedHits = merged.filter((f) => matches(haystack(f), q))
+  const hitCount = groups.reduce((n, g) => n + g.hits.length, 0) + mutedHits.length + mergedHits.length
 
   const row = (f: KnowledgeFact) => {
     const text = humanizeFactText(f.text)
@@ -125,6 +134,12 @@ export function TenyekSection(props: TenyekSectionProps) {
       )
       : CHIP[f.source]
     const reason = f.mutedReason ?? 'user'
+    const wasMerged = isMerged(f)
+    const survivor = wasMerged && f.supersededBy ? facts.find((x) => x.id === f.supersededBy) : undefined
+    const why = f.active ? null : {
+      text: wasMerged && survivor ? mergedWhy(humanizeFactText(survivor.text), f.mutedAt ?? null) : whyText(reason, f.mutedAt ?? null),
+      icon: WHY_ICON[reason],
+    }
     return (
       <HubRow
         key={f.id}
@@ -134,7 +149,7 @@ export function TenyekSection(props: TenyekSectionProps) {
         text={text}
         query={q}
         sub={<>{reinforced(f.reinforced)} · {tag}{!f.active && ` · ${factCategoryLabel(f.category).toLowerCase()}`}</>}
-        why={f.active ? null : { text: whyText(reason, f.mutedAt ?? null), icon: WHY_ICON[reason] }}
+        why={why}
         muted={!f.active}
         canEdit
         source={() => <FactSource fact={f} onOpenObservation={openObservation} />}
@@ -143,7 +158,7 @@ export function TenyekSection(props: TenyekSectionProps) {
           // the prototype's `openFor`: the fact's new home opens so the user sees where it went
           setOpenGroups((s) => ({ ...s, [on ? MUTED_KEY : `f:${f.category}`]: true }))
           setClosedWhileSearching({})
-          toast.show({ kind: 'info', text: on ? TOAST.muted : TOAST.unmuted })
+          toast.show({ kind: 'info', text: on ? TOAST.muted : wasMerged ? TOAST.mergedBack : TOAST.unmuted })
         }}
         onEdit={(next) => { editFact(f.id, next); toast.show({ kind: 'info', text: TOAST.edited }) }}
         onForget={() => forget({ key: rowKey(f), label: text, computed: false, commit: () => forgetFact(f.id) })}
@@ -154,7 +169,14 @@ export function TenyekSection(props: TenyekSectionProps) {
 
   return (
     <>
-      <p className="th-lead rise">{lead.facts(visible.length, groups.length, active.length, muted.length)}</p>
+      <p className="th-lead rise">{lead.facts(visible.length, groups.length, active.length, inactive.length)}</p>
+      {recentMerged > 0 && (
+        <div className="th-fn th-merge-strip" data-merge-strip>
+          <Icon3D name="t-layers" size={20} />
+          <span>{mergeStrip(recentMerged, pendingMergeCount)}</span>
+          {pendingMergeCount > 0 && <Link to="/mezo/rolad" className="th-link">{MERGE_STRIP_LINK}</Link>}
+        </div>
+      )}
       <HubSearch value={query} onChange={onQuery} placeholder={SEARCH.facts} />
       {q && hitCount === 0 ? (
         <NoHits query={q} onClear={() => onQuery('')} />
@@ -171,6 +193,13 @@ export function TenyekSection(props: TenyekSectionProps) {
               </HubFold>
             )
           })}
+          {(!q ? merged.length > 0 : mergedHits.length > 0) && (
+            <HubFold id={MERGED_KEY} icon="t-layers" label={MERGED_GROUP}
+              count={groupCount(q, q ? mergedHits.length : merged.length)} hint={MERGED_HINT}
+              open={isOpen(MERGED_KEY)} onToggle={() => toggleGroup(MERGED_KEY)}>
+              <div className="th-list">{mergedHits.map(row)}</div>
+            </HubFold>
+          )}
           {(!q || mutedHits.length > 0) && (
             <HubFold id={MUTED_KEY} icon="t-mute" label={MUTED_GROUP}
               count={groupCount(q, q ? mutedHits.length : muted.length)} hint={MUTED_HINT.facts}

@@ -1744,6 +1744,136 @@ channel, not only from extraction:
 conversation); rewriting daily summaries already written before the forget; `mezo-vruhq`,
 `mezo-gwh0y`.
 
+## S9 delta — weekly fact merge: tidy what Mezo knows about you (2026-09-29, owner-approved direction, mezo-d6ivw.10)
+
+**Owner decision (2026-09-29, "minden amit ajánlasz oké"):** the **mixed** model. Plain
+repetitions merge automatically and stay one tap from undo; a merge that needs a *new sentence*
+is only proposed, and the owner decides. Nothing is ever deleted.
+
+**Reality check (prod, 2026-09-29):** 50 live facts (26 pattern, 13 chat, 10 weekly_review, 1
+muted); `superseded_by`, `conflicts_with`, `pinned` unused; max reinforcement 3. The 200 prompt
+cap is far away: this slice is about **readability and no repeated knowledge**, not the cap.
+
+### Behaviour
+
+1. **Weekly sweep** (`FactMergeJob`, Monday 07:30 Europe/Budapest, own switch; the name avoids
+   the existing `ConsolidationJob` = period_summary ladder). Per active owner: live facts
+   (not deleted, not muted, not superseded), grouped by category, **one LLM judge call per
+   category chunk (≤ 120 facts)** returning groups of 2–3 fact ids with a verdict:
+   - `same` — the facts say the same thing (a repetition);
+   - `combine` — they overlap and read better as one sentence; comes with a proposed sentence;
+   - anything else is ignored (unrelated, or a change over time — the quarterly recheck owns
+     drift).
+2. **Code decides, the LLM never** (house rule). A group is:
+   - **auto-merged** only if the verdict is `same`, all members share the category, and every
+     loser is mergeable (below). The **survivor keeps its own text — no rewrite**; survivor =
+     pattern-sourced > higher reinforcement > older.
+   - **proposed** if the verdict is `combine` and no member is protected. The proposed sentence
+     is written from the original texts only (never from an earlier merge — drift guard, enforced
+     in code: a `merge`-sourced fact may take part in a `same` group only, never in a `combine`
+     proposal), in hedged, non-causal Hungarian.
+   - **skipped** otherwise, or if the same set of facts was already rejected / undone (never
+     re-offered).
+3. **Mergeable loser:** source `chat`, `weekly_review`, `manual`. **Protected** (never a loser,
+   never in a proposal): `pattern` (recheck + drift hang on `pattern.promoted_fact_id`), person-fact
+   copies ("Rólam is"), `team_chat` (a csapatfal exception follows the fact id), `question`
+   (flip detection matches the text), pinned facts. A pattern fact may be the **survivor** of an
+   auto-merge (a chat repetition folds into the observation).
+4. **Auto-merge mechanics:** the loser is muted with the new reason **`merged`** and
+   `superseded_by = survivor`; the survivor's `reinforcement_count` += the loser's,
+   `last_reinforced_at` = the later one. *(A provenance list of the merged-in fact ids on the
+   survivor was planned but is **not built** — the losers' own `superseded_by` links are the
+   trail; nothing is filed for it.)*
+   `KnowledgeFactChangedEvent` for both rows (the graph node of the loser is archived for free).
+   Pointers to the loser (`learned_fact.promoted_fact_id`) are re-pointed to the survivor.
+5. **Proposal accept** ("Összevonom", or "Átírom" with an edited sentence): a new fact (source
+   `merge`, category of the group, reinforcement = sum) is created; every member is muted
+   `merged` with `superseded_by` = the new fact. Forgetting the new fact later releases the
+   originals (`ForgetService.releaseSuperseded`, which treats a `merged` loser exactly like a
+   `superseded` one: it becomes the user's own mute, link cleared). **"Maradjon külön"** records
+   the rejection; the same set is never proposed again. **"Később"** snoozes the proposal until
+   the **next Monday sweep** (Monday 07:30 Europe/Budapest, strictly after now — the card says
+   „Jövő hétfőn újra megkérdezem"); an ordinary candidate's „Most ne" stays 14 days.
+   While a proposal is undecided (snoozed included) its members are **kept out of the sweep**, so
+   no auto-merge can make an accepted proposal fold in a stale member. Forgetting a member
+   **withdraws** the pending proposal (soft delete), and the inbox never shows a merge proposal
+   with fewer than two members left.
+6. **Undo:** a merged row appears in the Tudástár · Rólad (tények) list as muted with
+   **"összevontam ezzel: „…”, <dátum>"** and the existing **Visszakapcsolom** — that unmutes it
+   and clears `superseded_by` (existing `unmute()`), and the pair {revived, survivor} is written
+   to the ledger (kind `auto`) *before* the link is cleared, so it is never re-merged — for an
+   auto-merge loser and for a member of an accepted proposal alike. The survivor's added reinforcement is not rolled back (it only affects ordering).
+7. **No re-learning of a merged-away sentence:** `FactExtractionService`'s exact dedupe also
+   matches the normalized text of `merged` rows and reinforces their survivor instead of
+   proposing the sentence again — following the `superseded_by` chain through `merged` and
+   `superseded` rows (at most 5 hops) to the fact that carries the sentence now.
+8. **One quiet notification** per sweep, only if something happened: "Rendet raktam: N ismétlést
+   összevontam, M javaslat vár rád" → the Rólad inbox when a proposal waits, else the Tudástár.
+
+### Storage
+
+*As built* (the planned single `fact_merge` table with its own status machine was not needed):
+
+- **`fact_merge_ledger`** (owned, soft-delete) — the once-ever memory only: `member_key` (the
+  member fact ids, sorted and comma-joined; unique per owner among live rows), `kind`
+  (`auto` | `proposal`) and, for a proposal, `learned_fact_id`. A key in the ledger is never
+  offered again, whatever happened to it (merged, proposed, rejected, undone).
+- **The proposal itself rides the ordinary candidate inbox:** a `learned_fact` row with
+  `source = 'merge'` and **`merge_member_ids uuid[]`** (NOT NULL exactly for merge rows); its
+  decision, snooze and afterlife are the inbox's own columns — no separate status column.
+- Liquibase: the table; `merged` added to `ck_knowledge_fact_muted_reason` + the `mutedReason`
+  contract enum; `merge` added to the knowledge_fact and learned_fact source checks.
+
+### Surfaces (prototype before code: living `elo/mezo.html`)
+
+- **Rólad inbox** (`/mezo/rolad`, `RoladInbox`): a new card kind **"Összevonnám"** — the 2–3
+  original sentences, the proposed one, and the inbox's four verbs (Összevonom · Átírom · Később ·
+  Maradjon külön).
+- **Tudástár · tények list:** the `merged` reason line + icon, Visszakapcsolom as undo.
+- **Not the csapatfal:** the wall is a character-voiced feed with no fact-management verbs.
+
+### Unification (the programme's standing question)
+
+A `knowledge_fact` is the one currency every channel spends — chat's facts block, the proactive
+apropó engine, csapatfal exceptions, the graph's PREFERENCE nodes. Merging at the store means
+**every channel sees the same single fact at once**, through the existing change event, instead
+of each consumer deduplicating on its own. It is the "sleep-time" consolidator of the one engine.
+
+### Out of scope
+
+`person_fact` duplicates; fact embeddings (at ~50 facts one judge call suffices — revisit past
+~300); temporal contradictions (the recheck owns them); "keep both, linked" (`conflicts_with`
+stays unused); merging into / out of pattern facts beyond the survivor rule.
+
+### Prior art (S9)
+
+- **Mem0** (https://arxiv.org/html/2504.19413): shortlist + LLM picks ADD/UPDATE/DELETE/NOOP —
+  adopted the judge-picks-an-operation shape; rejected hard DELETE and in-place UPDATE (no undo,
+  lost wording).
+- **Zep/Graphiti** (https://arxiv.org/html/2501.13956): dedup scoped tightly before the judge;
+  invalidate, never delete — adopted (category scope; `superseded_by` instead of delete).
+- **A-MEM** (https://arxiv.org/html/2502.12110): repeated LLM rewrites drift — adopted "write the
+  merged sentence from the originals only".
+- **Letta sleep-time** (https://docs.letta.com/guides/agents/architectures/sleeptime/) and
+  **LangMem** (https://langchain-ai.github.io/langmem/concepts/conceptual_guide/): background
+  consolidation beats in-conversation dedupe — adopted the weekly job; rejected free-text block
+  rewrites (no per-fact provenance or undo).
+
+### Codebase terrain (S9)
+
+- Store: `KnowledgeFactEntity` (mute :144, unmute :153 clears `supersededBy`), CHECK on
+  `muted_reason`, `KnowledgeFactResponse.mutedReason` enum (`companion.yml:1397`).
+- Pattern to copy: `PatternService.applyDriftConfirm` (:185-196) — the only existing
+  `superseded_by` writer. Job shape: `KnowledgeRecheckJob` (switches + `UserFanOut`, per-group
+  `REQUIRES_NEW`). LLM: `KnowledgeRecheckService` (:229) — new slug `companion_fact_merge`, admin
+  label, `FakeCompanionLlm` marker branch.
+- Dedupe hook: `FactExtractionService` (:112-160). Candidate accept (`FactCandidateService`) has
+  no dedupe — the weekly sweep catches its near-duplicates.
+- FE: `hubCopy.ts` `WHY_LABEL/WHY_ICON`, `TenyekSection`, `RoladInbox`.
+- Traps: soft delete → FK `SET NULL` never fires (re-point by hand); new owned table →
+  `ResetDatabase`; ArchUnit (`companion.service` ↛ `companion.reflection`); contract drift gate;
+  mock seed counts in three FE tests.
+
 ## Slice lessons
 
 (numbered; only what a later slice would otherwise pay for again)
@@ -1957,3 +2087,16 @@ conversation); rewriting daily summaries already written before the forget; `mez
     (a source scan, not in any focused IT list): a tool-free CHAT-gear fixture needs a domain word
     or an adjacent `// gear-audited: <reason>`. Add the guard to every focused run that adds chat
     fixtures — it red-lit main once (mezo-tdabt).
+54. **(S9)** A per-feature contract fragment change needs `cd api/generate && npm run generate:api`
+    BEFORE the maven build: the DTOs are regenerated from the merged spec, and a stale merge fails
+    the contract drift gate or compiles against old DTOs.
+55. **(S9)** An IT that reaches `AppNotificationEmitter` (`REQUIRES_NEW`) must NOT be class-level
+    `@Transactional`: the emitter's insert waits on the uncommitted test user's FK row and
+    deadlocks (the `mezo-gzhp.1` trap, re-paid here). Commit the fixture, clean up via `ResetDatabase`.
+56. **(S9)** A proposal that needs an owner decision should reuse the existing candidate inbox
+    (`learned_fact.source='merge'` + `merge_member_ids`), not a new table + endpoints; "never offer
+    twice" is a once-ever ledger keyed on the SORTED member set, which also covers undo and reject.
+57. **(S9)** The collapsed Rólad inbox shows only the first 2 open cards, so a new card kind must
+    sort itself first (a stable partition) or it is invisible behind „Még N javaslat".
+58. **(S9)** The snooze period of a reused inbox verb is the inbox's (14 days), not the spec's
+    prose ("egy hét") — check the shared constant before promising a number in the spec/prototype copy.

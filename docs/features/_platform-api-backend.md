@@ -276,6 +276,8 @@ The delivery-infra counterpart to the proactive epic (§ `Proactive` row above):
 
 **A csapatfal válaszol** (Emlékezet S7, `mezo-d6ivw.7`) adds `POST /api/character/team-chat/threads/{threadId}/answer` (`{choice: EXCUSED|KEEP|STOP}`) and `DELETE …/threads/{threadId}/remembered` to the same switch-gated Character contract, widens `TeamChatThread` with `closeReason`/`closeNote`/`offer`/`offerTag`/`remembered`, and adds one `messages.properties` code (`CHARACTER_TEAM_CHAT_ANSWER_CONFLICT`, the 409 for a mismatched or already-differently-answered choice) — no new pattern. See [character.md](character.md) §Csapat-chat.
 
+**Weekly fact merge** (`mezo-d6ivw.10`) adds `FactMergeJob` (Monday 07:30, `mezo.companion.fact-merge.cron`), gated by `FeaturesConfiguration.FACT_MERGE_JOB_SWITCH` (`mezo.techcore.cron.fact-merge-job.enabled`); off ⇒ the bean does not exist. See [companion.md „Heti tény-összevonás”](companion.md).
+
 **A napom overnight pre-warm** (`mezo-yjzhw.1`) adds no new API surface — `DayReviewWarmupJob` (`feature/companion/service/DayReviewWarmupJob.java`, nightly 02:30) calls the existing `DayReviewService.assemble` per user × finished day so the first "Mai" load of the morning hits a warm cache instead of paying the LLM latency live. Gated by `FeaturesConfiguration.DAY_REVIEW_WARMUP_JOB_SWITCH` (`mezo.techcore.cron.day-review-warmup-job.enabled`); off ⇒ the bean does not exist. See [companion.md §"DayReviewWarmupJob"](companion.md) and [today.md](today.md).
 
 This is the most load-bearing section — every seam, bidirectionally, with the crossing type.

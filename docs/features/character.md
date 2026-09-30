@@ -1214,7 +1214,8 @@ Adatforrások+kör/Detektorok) were added to it.
   `CharacterPersistenceIT` (entity round-trip + jsonb envelopes + soft-delete unique-key
   behavior).
 - **`CharacterMetaReadsIT`** (round 4, new) — all four `MetaWindow` lists (triage decisions,
-  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows.
+  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows; a
+  `source='merge'` fact-merge decision is NOT a triage event (S9, `mezo-d6ivw.10` — housekeeping).
 - **Konzílium choreography**: `KonziliumProposalRoundIT`, `KonziliumVerdictRoundIT`,
   `KonziliumUserFeedbackIT`, `ClaimLifecycleIT` — all via `FakeCompanionLlm` sentinels keyed on
   a marker constant per round step (`PROPOSAL_MARKER`, `SKEPTIC_MARKER`, `INTEGRATOR_MARKER`,

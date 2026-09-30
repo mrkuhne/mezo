@@ -1,4 +1,4 @@
-import { humanizeFactText, originChipLabel, bucketFacts } from '@/features/insights/logic/factCopy'
+import { humanizeFactText, originChipLabel, bucketFacts, recentAutoMergedCount } from '@/features/insights/logic/factCopy'
 import type { KnowledgeFact } from '@/data/types'
 
 const fact = (over: Partial<KnowledgeFact>): KnowledgeFact => ({
@@ -77,5 +77,32 @@ describe('bucketFacts', () => {
   it('minden tény pontosan egy vödörben van', () => {
     const { inPrompt, off } = bucketFacts(facts)
     expect(inPrompt.length + off.length).toBe(facts.length)
+  })
+})
+
+describe('recentAutoMergedCount (S9 final-review M2)', () => {
+  const now = Date.parse('2026-09-30T10:00:00Z')
+  const dayAgo = '2026-09-29T10:00:00Z'
+  const survivor = fact({ id: 's', source: 'chat' })
+  const minted = fact({ id: 'm', source: 'merge' })
+
+  it('csak a hétfői automatikus összevonás veszteseit számolja — egy elfogadott javaslat tagjait nem', () => {
+    const facts = [
+      survivor, minted,
+      fact({ id: 'a', active: false, mutedReason: 'merged', mutedAt: dayAgo, supersededBy: 's' }),
+      fact({ id: 'b', active: false, mutedReason: 'merged', mutedAt: dayAgo, supersededBy: 'm' }),
+      fact({ id: 'c', active: false, mutedReason: 'merged', mutedAt: dayAgo, supersededBy: 'm' }),
+    ]
+    expect(recentAutoMergedCount(facts, now)).toBe(1)
+  })
+
+  it('a hétnél régebbi és a nem összevont némítást kihagyja', () => {
+    const facts = [
+      survivor,
+      fact({ id: 'a', active: false, mutedReason: 'merged', mutedAt: '2026-09-20T10:00:00Z', supersededBy: 's' }),
+      fact({ id: 'b', active: false, mutedReason: 'user', mutedAt: dayAgo }),
+      fact({ id: 'c', active: false, mutedReason: 'merged', mutedAt: dayAgo, supersededBy: 's' }),
+    ]
+    expect(recentAutoMergedCount(facts, now)).toBe(1)
   })
 })

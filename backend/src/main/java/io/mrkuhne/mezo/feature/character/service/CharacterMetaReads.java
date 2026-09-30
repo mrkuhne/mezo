@@ -71,6 +71,11 @@ public class CharacterMetaReads {
         for (LearnedFactEntity f : learnedFactRepository
                 .findByCreatedByAndUserDecisionIsNotNullAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(
                         owner, from, toExclusive)) {
+            // S9 (mezo-d6ivw.10): a merge proposal's decision is not a triage event — it is
+            // housekeeping over facts already confirmed, not a fresh accept/reject signal.
+            if (LearnedFactEntity.SOURCE_MERGE.equals(f.getSource())) {
+                continue;
+            }
             boolean rejected = LearnedFactEntity.DECISION_REJECT.equals(f.getUserDecision());
             boolean refined = LearnedFactEntity.DECISION_REFINE.equals(f.getUserDecision());
             out.add(new DetectorInput.TriageDecisionPoint(localDate(f.getCreatedAt()), SOURCE_FACT,

@@ -66,4 +66,9 @@ public interface LearnedFactRepository extends JpaRepository<LearnedFactEntity, 
     /** S8 (mezo-d6ivw.12): the candidates one or more chat turns produced — turn-memory + forget. */
     List<LearnedFactEntity> findByCreatedByAndDerivedFromMessageIdInAndDeletedFalseOrderByCreatedAtAsc(
             UUID createdBy, Collection<UUID> messageIds);
+
+    /** S9 (mezo-d6ivw.10): the accepted candidates whose promoted fact is one of an auto-merge's
+     *  losers — re-pointed onto the survivor so the fact's provenance trail keeps working. */
+    List<LearnedFactEntity> findByCreatedByAndPromotedFactIdInAndDeletedFalse(
+            UUID createdBy, Collection<UUID> promotedFactIds);
 }

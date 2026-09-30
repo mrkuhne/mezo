@@ -601,6 +601,10 @@ mezo:
       # (KnowledgeRecheckService stays callable, the FlagSweepJob-vs-FlagService idiom)
       knowledge-recheck-job:
         enabled: true
+      # S9 (mezo-d6ivw.10) weekly fact merge (schedule: mezo.companion.fact-merge.cron);
+      # off = the FactMergeJob bean does not exist (FactMergeService stays callable)
+      fact-merge-job:
+        enabled: true
       # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
       feed-job:
@@ -1054,6 +1058,10 @@ mezo:
         dormant-after-days: 30
         strong-r: 0.3
         strong-p: 0.15
+    fact-merge:
+      # Monday 07:30 — after the dawn cluster and outside the 22:00-07:00 quiet window, so the one
+      # "Rendet raktam" notification lands when the user wakes, not at 03:00.
+      cron: "0 30 7 * * MON"
     memory-platform:
       # Vector generation served by the new retrieval path; re-embedding never flips this value.
       serving-embedding-version: gemini-embedding-001-768-v1

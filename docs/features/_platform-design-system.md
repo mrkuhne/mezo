@@ -72,6 +72,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 > U9 `karakter` block already owned (its own quote/inbox/afterlife/timeline rules —
 > `.kr9-rhead`/`.kr9-quote`/`.kr9-chip.is-main`/`.kr9-gone`/`.kr9-quiet`/`.kr9-lifer` — were already
 > pinned in `U9_BLOCKS['karakter']`, unchanged this round). **The inbox-card rules moved house:**
+> **S9 (`mezo-d6ivw.10`):** `prototype.css` gains the `.th-merge-strip` (Hétfői rendrakás) rule, and `FactCandidateCard` a merge variant („Összevonnám”, `t-layers`) on the same glass card.
+>
 > `FactCandidateCard`/`LifeEventCandidateCard`/`LifeEventAcceptedCard` (the `.tud9-case`/
 > `.tud9-conflict`/`.tud9-chk`/`.tud9-acts`/`.tud9-btn`/`.tud9-refine`/`.tud9-accepted` family) now
 > render on Rólad ONLY — the Tudástár shows a pointer card instead (§2.4) — so `prototype.css`'s

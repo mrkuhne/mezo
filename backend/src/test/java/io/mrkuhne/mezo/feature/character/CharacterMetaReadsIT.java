@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.detector.DetectorInput;
 import io.mrkuhne.mezo.feature.character.service.CharacterMetaReads;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
@@ -20,6 +21,7 @@ import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.ExperimentPopulator;
+import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
@@ -51,6 +53,7 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
     @Autowired private CharacterMetaReads metaReads;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
+    @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private PatternEventRepository patternEventRepository;
@@ -81,6 +84,15 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
     private void factDecision(LocalDate createdOn, String category, String decision) {
         LearnedFactEntity f = learnedFactPopulator.weeklyCandidate(owner, createdOn, "t", category, "e", decision);
         jdbcTemplate.update("update learned_fact set created_at = ? where id = ?", at(createdOn), f.getId());
+    }
+
+    /** S9 (mezo-d6ivw.10): a decided MERGE candidate — never a triage signal, only housekeeping
+     *  over facts already confirmed. */
+    private void mergeFactDecision(LocalDate createdOn) {
+        KnowledgeFactEntity member = knowledgeFactPopulator.fact(owner, "tag tény " + createdOn, "life", 1);
+        LearnedFactEntity f = learnedFactPopulator.mergeCandidate(owner, "összevont", "life", List.of(member.getId()));
+        jdbcTemplate.update("update learned_fact set created_at = ?, user_decision = 'accept' where id = ?",
+                at(createdOn), f.getId());
     }
 
     private void patternEvent(LocalDate on, String kind) {
@@ -130,6 +142,15 @@ class CharacterMetaReadsIT extends ApiIntegrationTest {
             assertThat(p.date()).isEqualTo(DAY.minusDays(1));
         });
         assertThat(pending).isNotNull();
+    }
+
+    @Test
+    void gather_triageDecisions_shouldIgnoreMergeCandidateDecisions() {
+        mergeFactDecision(DAY);
+
+        List<DetectorInput.TriageDecisionPoint> t = metaReads.gather(owner, from(), DAY).triageDecisions();
+
+        assertThat(t).isEmpty();
     }
 
     @Test

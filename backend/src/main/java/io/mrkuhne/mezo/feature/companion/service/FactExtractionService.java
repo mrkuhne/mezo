@@ -49,6 +49,9 @@ import java.util.stream.Collectors;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class FactExtractionService {
 
+    /** S9 final-review M3: how far the survivor lookup follows a merge/supersession chain. */
+    private static final int MAX_SUCCESSOR_HOPS = 5;
+
     /** The extraction prompt's first word — the fake LLM keys its deterministic answer on it. */
     public static final String EXTRACTION_MARKER = "TÉNYKINYERÉS";
 
@@ -127,6 +130,10 @@ public class FactExtractionService {
             String normalized = normalize(fact.fact());
             if (!known.add(normalized)) {
                 KnowledgeFactEntity hit = confirmed.get(normalized);
+                // S9 (mezo-d6ivw.10): the exact text of a merged-away (or superseded) fact still
+                // dedupes — but the reinforcement belongs to whichever fact carries that sentence
+                // NOW, so the chain is followed to its live end (bounded, a cycle cannot spin).
+                hit = liveSuccessor(userId, hit);
                 if (hit != null) {
                     // V1.3 reinforcement: the chat re-learned a confirmed fact — that IS a re-confirmation
                     hit.setReinforcementCount(hit.getReinforcementCount() + 1);
@@ -191,6 +198,19 @@ public class FactExtractionService {
     }
 
     /** Confirmed facts keyed by normalized text — a dedupe hit on one of these reinforces it (V1.3). */
+    /** Follows {@code supersededBy} while the fact is muted as 'merged' or 'superseded', at most
+     *  {@link #MAX_SUCCESSOR_HOPS} hops; {@code null} when a link points at a gone fact. */
+    private KnowledgeFactEntity liveSuccessor(UUID userId, KnowledgeFactEntity fact) {
+        KnowledgeFactEntity current = fact;
+        for (int hop = 0; hop < MAX_SUCCESSOR_HOPS && current != null && current.getSupersededBy() != null
+                && (KnowledgeFactEntity.MUTED_MERGED.equals(current.getMutedReason())
+                        || KnowledgeFactEntity.MUTED_SUPERSEDED.equals(current.getMutedReason())); hop++) {
+            current = knowledgeFactRepository
+                    .findByIdAndCreatedByAndDeletedFalse(current.getSupersededBy(), userId).orElse(null);
+        }
+        return current;
+    }
+
     private Map<String, KnowledgeFactEntity> confirmedByNormalizedText(UUID userId) {
         return knowledgeFactRepository
                 .findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
