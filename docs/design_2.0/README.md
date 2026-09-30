@@ -1,3 +1,7 @@
+> **Motion update (2026-09-30, mezo-ktog6):** the owner removed the recurring glass-card
+> light sweep app-wide. This overrides the older sheen recipe in the style bible; the glass
+> material remains. The app and all five living prototypes follow this rule.
+
 # Design 2.0 — index and status
 
 > ## ✅ 2026-09-26 — "Üveg" is DONE and is THE canon (`mezo-me75u` closed)
