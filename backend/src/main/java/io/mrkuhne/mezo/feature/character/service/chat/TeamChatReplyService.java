@@ -169,8 +169,12 @@ public class TeamChatReplyService {
                 case CLOSE_NEW_EXCEPTION -> {
                     String contextTag = draft.contextTag().strip();
                     String factText = draft.factText().strip();
-                    UUID factId = knowledge.captureFromTeamChat(userId, factText, thread.getOwnerCharacter(),
-                            lastUserLineId, thread.getId());
+                    UUID factId = captureFailOpen(userId, factText, thread, lastUserLineId);
+                    if (factId == null) {
+                        // The answer line above still lands; the ügy stays open, nothing remembered.
+                        outcome = TeamChatReplyDecision.Outcome.ANSWER_ONLY;
+                        break;
+                    }
                     TeamChatExceptionEntity e = new TeamChatExceptionEntity();
                     e.setCreatedBy(userId);
                     e.setFlagKey(thread.getFlagKey());
@@ -204,6 +208,19 @@ public class TeamChatReplyService {
         }
         log.info("Team chat ügy {} answered for user {} (voiced={}, verdict={}, outcome={})", threadId, userId,
                 draft.voiced(), draft.verdict(), outcome);
+    }
+
+    /** The remembered fact, in its OWN transaction ({@code REQUIRES_NEW} on the capture) — null when
+     *  it fails, so the REPLY line already written in this transaction still commits
+     *  (mezo-d6ivw.11). */
+    private UUID captureFailOpen(UUID userId, String factText, TeamChatThreadEntity thread, UUID lastUserLineId) {
+        try {
+            return knowledge.captureFromTeamChat(userId, factText, thread.getOwnerCharacter(), lastUserLineId,
+                    thread.getId());
+        } catch (RuntimeException ex) {
+            log.warn("Team chat fact capture failed for user {} ügy {} — answer only", userId, thread.getId(), ex);
+            return null;
+        }
     }
 
     /** True when {@code lineId} is on the transcript, no USER line follows it and no REPLY does. */

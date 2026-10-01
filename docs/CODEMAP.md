@@ -238,7 +238,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-30, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-10-01, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -274,7 +274,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **config:** `CharacterCouncilBudgetProperties`, `CharacterCouncilDebateProperties`, `CharacterCouncilProperties`,
     `CharacterFollowupProperties`, `CharacterMaturityProperties`, `CharacterProperties`, `CharacterReplyProperties`,
     `TeamChatProperties`
-  - **events/listeners:** `TeamChatEventListener`, `TeamChatRepliedEvent`, `TeamChatReplyListener`
+  - **events/listeners:** `TeamChatEventListener`, `TeamChatFactMirrorListener`, `TeamChatRepliedEvent`,
+    `TeamChatReplyListener`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `CharacterFollowupsEnvelope`,
     `CharacterReplyDiscussionEnvelope`, `ChatToolDomains`, `ChatTopicShiftDetector`, `CheckinGapDetector`,
     `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`, `ClaimEvidenceEnvelope`,
@@ -329,7 +330,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 68 IT + 23 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 68 IT + 26 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -362,7 +363,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-28, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-09-30, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-10-01, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-30, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-28, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-28, in-progress) ·

@@ -346,11 +346,13 @@ public class TeamChatService {
         return line;
     }
 
-    /** OPEN ügyek opened before {@code now − expireAfterDays} become EXPIRED; returns how many. */
+    /** OPEN ügyek opened before {@code now − expireAfterDays} become EXPIRED; returns how many.
+     *  Row-locked ({@code lockStaleOpen}, mezo-d6ivw.11): a reply-close holding an ügy's lock wins,
+     *  and the sweep then no longer sees that ügy as OPEN. */
     @Transactional
     public int expire(Instant now) {
         Instant before = now.minus(properties.expireAfterDays(), ChronoUnit.DAYS);
-        List<TeamChatThreadEntity> stale = threads.findByStatusAndOpenedAtBeforeAndDeletedFalse(STATUS_OPEN, before);
+        List<TeamChatThreadEntity> stale = threads.lockStaleOpen(before);
         for (TeamChatThreadEntity thread : stale) {
             thread.setStatus(STATUS_EXPIRED);
             thread.setClosedAt(now);

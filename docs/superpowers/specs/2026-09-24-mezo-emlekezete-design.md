@@ -2100,3 +2100,14 @@ stays unused); merging into / out of pattern facts beyond the survivor rule.
     sort itself first (a stable partition) or it is invisible behind „Még N javaslat".
 58. **(S9)** The snooze period of a reused inbox verb is the inbox's (14 days), not the spec's
     prose ("egy hét") — check the shared constant before promising a number in the spec/prototype copy.
+59. **(S7 polish, `mezo-d6ivw.11`)** A side-write inside a transaction that also carries the
+    user-visible result (the REPLY line) must run `REQUIRES_NEW` + caught: a joined `@Transactional`
+    that throws marks the OUTER transaction rollback-only even when the caller catches, and the
+    user loses the answer. Degrade the outcome instead (`ANSWER_ONLY`).
+60. **(S7 polish)** A row that mirrors another owner's state (the csapatfal exception ↔ its
+    knowledge fact) needs ONE sync point — an after-commit listener on the owner's change event —
+    not read-time filters scattered over the consumers: the filters covered the gate but missed the
+    reply commit (`mezo-bltxf`) and could never lift a veto (re-enable after undo stayed dead).
+61. **(S7 polish)** A debounce is a delayed SUBMIT (`CompletableFuture.delayedExecutor(…, pool)`),
+    never `Thread.sleep` on an `@Async` thread — the sleep pins a shared executor slot per event.
+    A burst test should commit its lines in ONE transaction so the test debounce can't be straddled.

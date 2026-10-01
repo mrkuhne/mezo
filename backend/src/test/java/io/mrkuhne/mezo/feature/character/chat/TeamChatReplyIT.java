@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
@@ -28,6 +29,7 @@ import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -44,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Emlékezet S7 Task 6 (mezo-d6ivw.7): the reply pipeline — the user's USER line publishes an
@@ -71,6 +74,8 @@ class TeamChatReplyIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private FlagLogPopulator flagLogPopulator;
     @MockitoSpyBean private TeamChatReplyVoiceWriter replyVoiceWriter;
+    @MockitoSpyBean private KnowledgeFactService knowledgeFacts;
+    @Autowired private TransactionTemplate tx;
 
     /** Whether a transaction was active at the moment of each reply voice call. */
     private final List<Boolean> txActiveAtReplyVoice = new CopyOnWriteArrayList<>();
@@ -180,6 +185,26 @@ class TeamChatReplyIT extends AbstractIntegrationTest {
         assertThat(teamChatPushes(owner)).isEmpty();
     }
 
+    /** mezo-d6ivw.11: a failed fact capture no longer takes the answer down — the REPLY line
+     *  lands, the ügy stays open, nothing is remembered. */
+    @Test
+    void failedFactCapture_stillAnswers_staysOpen_remembersNothing() {
+        UUID owner = owner();
+        TeamChatThreadEntity t = openLateEating(owner);
+        doThrow(new IllegalStateException("knowledge store down")).when(knowledgeFacts)
+                .captureFromTeamChat(any(UUID.class), any(), any(), any(UUID.class), any(UUID.class));
+
+        service.reply(owner, t.getId(), "10-kor ért véget a kupa " + MECCS);
+
+        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(linesOf(t.getId()))
+                .extracting(TeamChatLineEntity::getKind).containsExactly("OPEN", "USER", "REPLY"));
+        assertThat(linesOf(t.getId()).get(2).getBody()).isEqualTo("Értem, meccsnap volt — ez teljesen rendben van.");
+        TeamChatThreadEntity still = threads.findById(t.getId()).orElseThrow();
+        assertThat(still.getStatus()).isEqualTo("OPEN");
+        assertThat(exceptions.findFirstBySourceThreadIdAndCreatedByAndDeletedFalse(t.getId(), owner)).isEmpty();
+        assertThat(teamChatFacts(owner)).isEmpty();
+    }
+
     @Test
     void moodReply_answersButStaysOpen_andRemembersNothing() {
         UUID owner = owner();
@@ -205,11 +230,14 @@ class TeamChatReplyIT extends AbstractIntegrationTest {
         UUID owner = owner();
         TeamChatThreadEntity t = openLateEating(owner);
 
-        // Three replies well inside the debounce: the first two events find a newer USER line and
-        // step back, the third answers the whole burst.
-        service.reply(owner, t.getId(), "Ma későn értem haza.");
-        service.reply(owner, t.getId(), "Dugó volt.");
-        service.reply(owner, t.getId(), "Holnap jobb lesz.");
+        // Three replies committed together (mezo-d6ivw.11: three separate commits could straddle the
+        // short test debounce on a slow CI runner): all three events fire after the one commit, the
+        // first two find a newer USER line and step back, the third answers the whole burst.
+        tx.executeWithoutResult(status -> {
+            service.reply(owner, t.getId(), "Ma későn értem haza.");
+            service.reply(owner, t.getId(), "Dugó volt.");
+            service.reply(owner, t.getId(), "Holnap jobb lesz.");
+        });
 
         await().atMost(5, SECONDS).untilAsserted(() -> assertThat(linesOf(t.getId()))
                 .extracting(TeamChatLineEntity::getKind)

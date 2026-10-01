@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-30
+updated: 2026-10-01
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -426,7 +426,9 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   `OPEN` thread for that flag to `RESOLVED` and writes a `RESOLVE` line — unless the line cap is
   reached, in which case the status flip still happens (a cleared rule must never linger open)
   but the line itself is dropped. `expire(now)` (`TeamChatExpiryJob`, daily `expiry-cron`) closes
-  every thread still `OPEN` past `expireAfterDays` as `EXPIRED` — one global age-cutoff query, no
+  every thread still `OPEN` past `expireAfterDays` as `EXPIRED` — one global age-cutoff query
+  (row-locked, `TeamChatThreadRepository.lockStaleOpen`, `mezo-d6ivw.11`: a reply-close holding an
+  ügy's lock wins and the sweep then no longer sees it as `OPEN`), no
   per-user fan-out.
 - **Owner map (`TeamChatCast`, spec §5.2):** an explicit `Map<FlagKey, TeamCharacter>` — NOT
   `TeamCharacter.forMetricDomain`, since `FlagCatalog` domains (`training` etc.) are not the same
@@ -523,8 +525,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   it returns Mezo facts only, up to the same cap. Fail-open: any `RuntimeException` yields an empty
   list, never a thrown error.
 - **Reply → answer → close/remember (S7, `mezo-d6ivw.7`, package `service/chat/`).** A `USER`
-  line triggers `TeamChatRepliedEvent`; `TeamChatReplyListener` (`@Async`,
-  `@TransactionalEventListener(AFTER_COMMIT)`) waits `reply-debounce-ms` (default **1500 ms**) so a
+  line triggers `TeamChatRepliedEvent`; `TeamChatReplyListener`
+  (`@TransactionalEventListener(AFTER_COMMIT)`) submits the answer to Boot's
+  `applicationTaskExecutor` after `reply-debounce-ms` (default **1500 ms**) — a delayed submit
+  (`CompletableFuture.delayedExecutor`, `mezo-d6ivw.11`), never a sleeping pool thread — so a
   burst of quick lines gets ONE answer — from the newest unanswered `USER` line only
   (`TeamChatReplyService.isUnansweredNewest`/`pendingUserLines`, re-checked in `commit` in case the
   burst grew mid-debounce) — then calls `TeamChatReplyService.answer` as the event's user
@@ -536,7 +540,11 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   `question`/`other`); `EditionVoiceGuard.checkGuest` runs with the user's own reply text passed in
   as an extra whitelist argument, so a number/name the user already typed doesn't trip the guard on
   the owner's answer. No budget room, an LLM error, an unparseable answer, or a guard rejection all
-  fall back to a fixed Hungarian template line (`voiced=false`, `verdict=null`) — the fallback never
+  fall back to a fixed Hungarian template line (`voiced=false`, `verdict=null`). The proposed
+  `factText` passes the same guard on its own (`TeamChatReplyVoiceWriter.guardedFact`,
+  `mezo-d6ivw.11`: no invented number, no foreign emoji, no jargon, ≤2 sentences, ≤160 chars) — it
+  lands in every later prompt; a failing one is dropped (`null`), so the reply stays voiced but only
+  answers. The fallback never
   closes anything (closing requires a **voiced** `concrete_context` verdict,
   `TeamChatReplyDecision.decide`). Caps: `reply-voiced-per-thread-day` (default **4**) — past it a
   template answers instead of the LLM; `reply-daily-cap` (default **20**, all `REPLY` lines per user
@@ -553,20 +561,27 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `normalizedTag`, `factText`, `keywords`, `active=true`, linked to the source thread/line), writes
     a `knowledge_fact` (`source=team_chat`, `owner`=the character key, `provenance` = a structured
     team-chat envelope carrying the line/thread id, `createdBy`=the user —
-    `KnowledgeFactService.captureFromTeamChat`; the `ck_knowledge_fact_source` CHECK it needs was last
+    `KnowledgeFactService.captureFromTeamChat`, in its OWN transaction (`REQUIRES_NEW`,
+    `mezo-d6ivw.11`) and fail-open — a failed capture degrades the outcome to `ANSWER_ONLY`: the
+    REPLY line still commits, the ügy stays open, nothing is remembered; the `ck_knowledge_fact_source` CHECK it needs was last
     re-cut by `202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql`, which keeps `team_chat`
     and adds the chat's „Rólam is" `person_fact` source), and records one `team_chat_exception_hit`
-    (`source=REPLY`). An **inactive** exception on the same tag is a durable veto — undone once via
-    `.../remembered` (below), it is never re-captured, and a later reply on that tag always answers
-    `ANSWER_ONLY`. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's
+    (`source=REPLY`). An **inactive** exception on the same tag is a veto — undone via
+    `.../remembered` (below), STOP-ped on a review, or its fact muted/forgotten in the Tudástár — and
+    a later reply on that tag answers `ANSWER_ONLY` (no hit, no re-capture) for as long as it stays
+    inactive. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's
     exception is the tap (`EXCUSE_TAP_EQUIVALENT`: `closeReason=EXCUSED`, a `TAP` hit on the ügy's
     `openedAt` local day) — but only while that exception is still active; a withdrawn one (undo /
     STOP) degrades to a plain answer, as the tap endpoint 409s.
   - **Next occurrence (`TeamChatExceptionService.gate`, called inside `claimThread` on every
-    open).** The exception follows its knowledge fact: an active exception whose fact was deleted
-    or muted in the Tudástár (`includeInPrompt=false`, read via
-    `KnowledgeFactService.liveInPrompt`) is skipped — never mutated, so turning the fact back on
-    revives it. Order: an active exception with `≥ exception-review-hits` (default **4**) hits
+    open).** The exception MIRRORS its knowledge fact (`mezo-d6ivw.11`,
+    `TeamChatFactMirrorListener` → `TeamChatExceptionService.followFact`, async after every
+    `KnowledgeFactChangedEvent`): a fact muted, refuted, merged away or forgotten → the exception goes
+    inactive; turned back on in the Tudástár (even after an undo or a STOP) → active again with a
+    fresh review window (`windowStartedAt=now`, so old hits don't fire the review at once); an
+    edited fact text → the exception's `factText` (the chip) follows, when it fits 160 chars. The
+    gate additionally skips any active exception whose fact is not live
+    (`KnowledgeFactService.liveInPrompt`) — the belt for the mirror's async gap. Order: an active exception with `≥ exception-review-hits` (default **4**) hits
     inside the last `exception-window-days` (default **30**) that hasn't already offered a review in
     that SAME rolling window (since max(`windowStartedAt`, the floor day's start) — an ignored,
     expired or data-closed review therefore silences reviews only until it rolls out of the window)
@@ -579,6 +594,8 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `DELETE /api/character/team-chat/threads/{threadId}/remembered` — veto (deactivate the
     exception), mute the knowledge fact, delete that thread's `REPLY` hit, and reopen the thread
     (only if it was `RESOLVED` with `closeReason=REPLY` and no other `OPEN` thread shares the flag).
+    A raise of the same rule that opens a new ügy between that check and the reopen trips the
+    one-OPEN-per-rule index; the undo maps it to a retryable **409** (`mezo-d6ivw.11`), never a 500.
     Reads (`TeamChatReads`) keep an undone exception on its source ügy's `remembered` (inactive —
     the FE's "Visszavonva" confirmation) but drop one a REVIEW "Nem, figyelj rá" (STOP, close note
     `kivétel kikapcsolva`) withdrew: that was never an undo, and the review ügy's own REPLY line
