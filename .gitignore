@@ -7,6 +7,13 @@ node_modules/
 .claude/worktrees/
 # Local browser-preview dev-server config — machine-specific, never shared.
 .claude/launch.json
+# Impeccable design skill — vendored payload (~5 MB, 164 files), installed per machine
+# with `npx impeccable install` and refreshed with `npx impeccable update`.
+# Playbook: docs/infrastructure/impeccable-frontend-review.md
+.claude/skills/impeccable/
+.claude/agents/impeccable-*.md
+.impeccable/config.local.json
+.impeccable/live/
 
 # Build output
 dist/
