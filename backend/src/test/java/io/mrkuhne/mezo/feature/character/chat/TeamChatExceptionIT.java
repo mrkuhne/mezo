@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
@@ -515,6 +516,41 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
                 .hasSize(1);
     }
 
+    /** mezo-d6ivw.11 (S6 seam): the exception mirrors its fact — the Tudástár governs it. */
+    @Test
+    void hubReEnableAfterUndo_liftsTheVeto_andAnEditMovesTheChipText() {
+        UUID owner = owner();
+        TeamChatThreadEntity t = openLateEating(owner);
+        TeamChatExceptionEntity ex = concreteClose(owner, t);
+        exceptionService.undoRemembered(owner, t.getId());
+        assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isFalse();
+
+        knowledge.update(owner, ex.getKnowledgeFactId(), new UpdateFactRequest().includeInPrompt(true)
+                .factText("Kupanapokon későn eszel — ez rendben van."));
+
+        await().atMost(5, SECONDS).untilAsserted(() -> {
+            TeamChatExceptionEntity now = exceptions.findById(ex.getId()).orElseThrow();
+            assertThat(now.getActive()).isTrue();
+            assertThat(now.getFactText()).isEqualTo("Kupanapokon későn eszel — ez rendben van.");
+            assertThat(now.getWindowStartedAt()).isAfter(ex.getWindowStartedAt());
+        });
+    }
+
+    /** mezo-d6ivw.11 / mezo-bltxf (1): a fact muted in the hub deactivates its exception. */
+    @Test
+    void hubMute_deactivatesTheException() {
+        UUID owner = owner();
+        TeamChatThreadEntity t = openLateEating(owner);
+        TeamChatExceptionEntity ex = concreteClose(owner, t);
+        assertThat(ex.getActive()).isTrue();
+
+        knowledge.update(owner, ex.getKnowledgeFactId(), new UpdateFactRequest().includeInPrompt(false));
+
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isFalse());
+        assertThat(exceptions.findById(ex.getId()).orElseThrow().getFactText()).isEqualTo(ex.getFactText());
+    }
+
     @Test
     void undo_withANewerOpenThreadForTheRule_staysClosed_butWithdrawsKnowledge() {
         UUID owner = owner();
@@ -595,14 +631,16 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
                 .isEqualTo("EXCUSE");
     }
 
-    /** Item 6: the exception follows its fact — muted in the Tudástár → the rule nudges as normal. */
+    /** Item 6: the exception follows its fact — muted in the Tudástár → the rule nudges as normal.
+     *  mezo-d6ivw.11: the exception now MIRRORS the toggle (inactive while muted, active again on
+     *  re-enable) instead of staying active and being skipped at read time. */
     @Test
-    void factMutedInTheTudastar_exceptionIsSkipped_notMutated() {
+    void factMutedInTheTudastar_exceptionMirrorsTheToggle() {
         UUID owner = owner();
         TeamChatExceptionEntity ex = activeException(owner);
         checkInPopulator.createCheckIn(owner, today(), "20:00", 3, 3, "Este meccs volt, későn vacsiztam");
         knowledge.update(owner, ex.getKnowledgeFactId(),
-                new io.mrkuhne.mezo.api.dto.UpdateFactRequest().includeInPrompt(false));
+                new UpdateFactRequest().includeInPrompt(false));
         raiseLateEatingLog(owner);
 
         TeamChatThreadEntity normal = service.open(owner, FlagKey.LATE_EATING, todayAt(20, 0)).orElseThrow();
@@ -611,7 +649,8 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
         assertThat(normal.getExceptionId()).isNull();
         assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(ex.getId(), today().minusDays(60)))
                 .isZero();
-        assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isTrue(); // skipped, not mutated
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isFalse());
 
         // Turned back on: the exception is live again (the keyword day → a silent hit, nothing opens).
         backdate(normal);
@@ -622,7 +661,9 @@ class TeamChatExceptionIT extends AbstractIntegrationTest {
             threads.saveAndFlush(t);
         });
         knowledge.update(owner, ex.getKnowledgeFactId(),
-                new io.mrkuhne.mezo.api.dto.UpdateFactRequest().includeInPrompt(true));
+                new UpdateFactRequest().includeInPrompt(true));
+        await().atMost(5, SECONDS).untilAsserted(() ->
+                assertThat(exceptions.findById(ex.getId()).orElseThrow().getActive()).isTrue());
         raiseLateEatingLog(owner);
         assertThat(service.open(owner, FlagKey.LATE_EATING, todayAt(20, 30))).isEmpty();
         assertThat(hits.countByExceptionIdAndHitOnGreaterThanEqualAndDeletedFalse(ex.getId(), today())).isEqualTo(1);

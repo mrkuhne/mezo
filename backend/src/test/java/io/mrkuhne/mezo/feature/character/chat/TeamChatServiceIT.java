@@ -361,6 +361,54 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(threads.findById(fresh.getId()).orElseThrow().getStatus()).isEqualTo("OPEN");
     }
 
+    // (g2) mezo-d6ivw.11: the sweep row-locks — a reply-close holding the ügy's lock wins, and the
+    // sweep, released after that commit, no longer sees the ügy as OPEN (it used to overwrite the
+    // close as EXPIRED).
+    @Test
+    void expire_waitsForAConcurrentReplyClose_andNeverOverwritesIt() throws Exception {
+        UUID owner = owner();
+        Instant now = Instant.now();
+        TeamChatThreadEntity old = new TeamChatThreadEntity();
+        old.setCreatedBy(owner);
+        old.setFlagKey(FlagKey.SLEEP_DEBT);
+        old.setOwnerCharacter("szunya");
+        old.setStatus("OPEN");
+        old.setOpenedAt(now.minus(8, ChronoUnit.DAYS));
+        UUID id = threads.saveAndFlush(old).getId();
+
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> closer = pool.submit(() -> tx.executeWithoutResult(status -> {
+                TeamChatThreadEntity t = threads.lockOwned(id, owner).orElseThrow();
+                locked.countDown();
+                try {
+                    release.await(10, SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                t.setStatus("RESOLVED");
+                t.setCloseReason("REPLY");
+                t.setClosedAt(Instant.now());
+                threads.saveAndFlush(t);
+            }));
+            assertThat(locked.await(10, SECONDS)).isTrue();
+            Future<Integer> sweep = pool.submit(() -> service.expire(now));
+            Thread.sleep(300); // let the sweep reach the row lock and wait on it
+            assertThat(sweep.isDone()).isFalse();
+            release.countDown();
+            closer.get(10, SECONDS);
+            sweep.get(10, SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        TeamChatThreadEntity after = threads.findById(id).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("RESOLVED");
+        assertThat(after.getCloseReason()).isEqualTo("REPLY");
+    }
+
     // (h) a reply writes a USER line synchronously. S7 (mezo-d6ivw.7): the owner's async answer —
     // which may close the ügy — is TeamChatReplyIT's domain, so nothing here waits for it.
     @Test

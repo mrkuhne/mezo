@@ -42,8 +42,6 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     List<TeamChatThreadEntity> findByCreatedByAndStatusAndDeletedFalseOrderByOpenedAtAsc(
             UUID createdBy, String status);
 
-    List<TeamChatThreadEntity> findByStatusAndOpenedAtBeforeAndDeletedFalse(String status, Instant before);
-
     List<TeamChatThreadEntity> findByCreatedByAndOpenedAtBetweenAndDeletedFalse(
             UUID createdBy, Instant from, Instant to);
 
@@ -78,6 +76,15 @@ public interface TeamChatThreadRepository extends JpaRepository<TeamChatThreadEn
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select t from TeamChatThreadEntity t where t.id = :id and t.createdBy = :owner and t.deleted = false")
     Optional<TeamChatThreadEntity> lockOwned(UUID id, UUID owner);
+
+    /** mezo-d6ivw.11: the expiry sweep's read — every OPEN ügy opened before {@code before},
+     *  row-locked. Same re-check as {@link #lockOpenByFlag}: Postgres re-evaluates the status
+     *  predicate after the lock wait, so an ügy a concurrent reply-close (or answer, or clear)
+     *  closed meanwhile drops out instead of being overwritten as EXPIRED. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select t from TeamChatThreadEntity t where t.status = 'OPEN' and t.openedAt < :before"
+            + " and t.deleted = false")
+    List<TeamChatThreadEntity> lockStaleOpen(Instant before);
 
     /** S7 (mezo-d6ivw.7): the rule's OPEN ügy, row-locked — {@code TeamChatService.closeThread}'s
      *  read. The status predicate is re-evaluated after the lock wait (Postgres re-checks a

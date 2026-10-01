@@ -29,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -37,6 +38,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -307,8 +309,13 @@ public class KnowledgeFactService {
      * Same precedent as {@code QuestionAnswerService}: the user said it, so no Tudástár accept
      * step. Publishes {@link KnowledgeFactChangedEvent} so the graph syncs through its one
      * consumer.
+     *
+     * <p>{@code REQUIRES_NEW} (mezo-d6ivw.11): the caller ({@code TeamChatReplyService.commit})
+     * holds the ügy's row lock and writes the REPLY line in its own transaction — a failed capture
+     * must not mark THAT transaction rollback-only and take the user's answer down with it. The
+     * caller catches the failure and degrades to a plain answer.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID captureFromTeamChat(UUID userId, String text, String owner, UUID lineId, UUID threadId) {
         KnowledgeFactEntity fact = new KnowledgeFactEntity();
         fact.setCreatedBy(userId);
@@ -366,6 +373,18 @@ public class KnowledgeFactService {
         return repository.findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(factIds, userId).stream()
                 .map(KnowledgeFactEntity::getId)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * mezo-d6ivw.11: the fact's current text while it is live in the prompt (not deleted, not
+     * muted) — empty otherwise. The csapatfal exception mirror's read: an exception follows its
+     * fact's use-toggle and its edited text.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> liveText(UUID userId, UUID factId) {
+        return repository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+                .filter(KnowledgeFactEntity::isIncludeInPrompt)
+                .map(KnowledgeFactEntity::getFactText);
     }
 
     private KnowledgeFactEntity getOwned(UUID userId, UUID factId) {
