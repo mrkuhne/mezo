@@ -128,16 +128,22 @@ jobs:
           set -euo pipefail
 
           echo "== ${PACKAGE}: fetching all active container versions for user ${OWNER} =="
-          all_versions="[]"
+          # Pages are appended to a file and merged from there — NEVER passed to
+          # jq as an --argjson value: a single argv string over 128 KiB fails
+          # execve with "Argument list too long" (mezo-yau31), which the list
+          # crosses on its second page.
+          pages_file=$(mktemp)
           page=1
           while :; do
             resp=$(gh api \
               "/users/${OWNER}/packages/container/${PACKAGE}/versions?per_page=100&state=active&page=${page}")
             len=$(echo "$resp" | jq 'length')
             if [ "$len" -eq 0 ]; then break; fi
-            all_versions=$(jq -c -n --argjson a "$all_versions" --argjson b "$resp" '$a + $b')
+            printf '%s\n' "$resp" >> "$pages_file"
             page=$((page + 1))
           done
+          all_versions=$(jq -c -s 'add // []' "$pages_file")
+          rm -f "$pages_file"
 
           total=$(echo "$all_versions" | jq 'length')
           echo "${PACKAGE}: ${total} version(s) found"
