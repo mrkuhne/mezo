@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ContentIcon, Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { MozaikPage, PageHead, PageBody, Mosaic } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, Mosaic } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useLifeGoals, useLifeGoalMutations, useLifeGoalToday, useSignalCatalog, useGoal } from '@/data/hooks'
 import type { LifeGoalDimension, TrendArrow } from '@/data/lifegoal/lifegoalApi'
@@ -57,7 +57,7 @@ export function CelokPage() {
   if (isError && goals.length === 0) {
     return (
       <MozaikPage tone="sage" className="enc-page enc-celok">
-        <PageHead glass onBack={() => navigate('/me')} label="Én" />
+        <div className="ent-head" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a célokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -67,9 +67,10 @@ export function CelokPage() {
 
   return (
     <MozaikPage tone="sage" className="enc-page enc-celok">
-      <PageHead glass onBack={() => navigate('/me')} label="Én">
+      <div className="ent-head">
+        <span />
         <button type="button" className="enc-pill" onClick={() => navigate('/me/goals/new')}>＋ Új cél</button>
-      </PageHead>
+      </div>
       <PageBody principle="Ami nincs naplózva, az nem nulla — az üres.">
         <EntranceGroup>
           <div className="enc-title rise" style={{ '--d': '0ms' } as React.CSSProperties}>

@@ -27,7 +27,7 @@ export function NotificationFeedPage() {
 
   return (
     <MozaikPage tone="sky" className="nf-page">
-      <PageHead glass onBack={() => navigate('/me')} label="Én" />
+      <PageHead glass onBack={() => navigate('/me')} label="Hol tartok" />
       {/* Hideg fetch alatt a valódi darabszám még nem ismert. */}
       <PageHero art="t-bell" accent="var(--dv-sky)" name="Értesítések"
         big={isPending ? undefined : unreadCount || undefined}

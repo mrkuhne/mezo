@@ -62,7 +62,7 @@ export function GrowthHubPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me')} label="‹ Én" />
+      <PageHead glass onBack={() => navigate('/me')} label="Hol tartok" />
       <PageBody>
         <EntranceGroup>
           <GrowthHero totalXp={stats.totalXp} level={level} disciplinePct={profile.traits?.disciplinePct ?? null}

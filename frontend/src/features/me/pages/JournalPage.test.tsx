@@ -88,12 +88,11 @@ beforeEach(() => {
 })
 afterEach(() => vi.clearAllMocks())
 
-test('renders the Napló hero and the back chip', () => {
+test('renders the Napló hero; it is a tab page with no back chip', () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
   renderPage()
   expect(screen.getByText('Napló')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Én')
+  expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
 })
 
 test('the hero shows the honest streak derived from the gratitude fixture', () => {

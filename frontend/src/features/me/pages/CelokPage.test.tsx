@@ -26,6 +26,11 @@ test('renders the three active goals as tiles, Spanyol B2 parked, three live dim
   expect(document.querySelectorAll('.lg-dimchip:not(.empty)')).toHaveLength(3)
 })
 
+test('is a tab page: no back chip', () => {
+  renderHub()
+  expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
+})
+
 test('hub shows arrow counters and live tile dots', async () => {
   renderHub()
   await screen.findByText('Célok')

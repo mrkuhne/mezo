@@ -206,7 +206,7 @@ test('the header keeps the back chip left and both actions right, Log first (mez
   const head = container.querySelector('.mz-page-head')!
   const labels = [...head.children].map((el) => el.textContent?.replace(/\s+/g, ' ').trim())
   // Üveg: the glass back pill draws the ‹ as its own (aria-hidden) glyph next to the label.
-  expect(labels).toEqual(['‹Én', 'Log', '＋ Új személy'])
+  expect(labels).toEqual(['‹Hol tartok', 'Log', '＋ Új személy'])
   // The right-hand group starts at the first action — without this the three chips read as
   // one crowded left-packed row (the prototype pins the pair to the right edge).
   expect((head.children[1] as HTMLElement).style.marginLeft).toBe('auto')

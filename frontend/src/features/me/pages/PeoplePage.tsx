@@ -53,7 +53,7 @@ export function PeoplePage() {
 
   return (
     <MozaikPage tone="rose" className="ppl-page ppl-hub">
-      <PageHead glass onBack={() => navigate('/me')} label="Én">
+      <PageHead glass onBack={() => navigate('/me')} label="Hol tartok">
         {/* mezo-06o0.12 — the back chip alone on the left, BOTH actions against the right edge,
             Log first (the `margin-left: auto` on the first action). Üveg: Log is the lit rose
             pill, „＋ Új személy" the flat one — neither paints itself in the page wash
