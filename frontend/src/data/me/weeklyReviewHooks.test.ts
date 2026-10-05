@@ -52,12 +52,15 @@ describe('useWeeklyReview (real mode)', () => {
         HttpResponse.json({
           id: 'r1', weekStart: start, summary: 'Live summary', dayNotes: [], highlights: [],
           generatedAt: '2026-06-08T06:00:00Z', stale: true,
+          wentWell: 'Live went well', watchOut: 'Live watch out',
         })),
     )
     const { result } = renderHook(() => useWeeklyReview(start), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.review).not.toBeNull())
     expect(result.current.review?.summary).toBe('Live summary')
     expect(result.current.review?.stale).toBe(true)
+    expect(result.current.review?.wentWell).toBe('Live went well')
+    expect(result.current.review?.watchOut).toBe('Live watch out')
   })
 
   it('regenerate POSTs then invalidates the review query so the fresh row is refetched', async () => {
