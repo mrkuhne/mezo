@@ -25,7 +25,7 @@ export function GrowthHero({ totalXp, level, disciplinePct, consistencyWeeks }: 
   const disc = disciplinePct == null ? null : Math.max(0, Math.min(100, Math.round(disciplinePct)))
   return (
     <div className="gr-hero rise" style={{ '--d': '0ms' } as CSSProperties}>
-      <div className="gr-hero-ttl">Growth</div>
+      <div className="gr-hero-ttl">Fejlődés</div>
       <div className="gr-hero-row">
         <Icon3D name="t-up" size={54} className="gr-hero-icon" />
         <div aria-label={`${huInt(totalXp)} XP`}>

@@ -118,7 +118,7 @@ export const NAP_KALAUZ: KalauzEntry[] = [
         voice: 'A szokásaidat a Rutin-műhelyben rakod össze — itt csak éled őket. A pipák XP-ként is visszaköszönnek.',
         links: [
           { to: '/me/rutin', label: 'Rutin-műhely', icon: 'i-rend', effect: 'itt építed a szokásaid' },
-          { to: '/me/growth', label: 'Growth', icon: 'i-growth', effect: 'a pipák XP-t érnek' },
+          { to: '/me/growth', label: 'Fejlődés', icon: 'i-growth', effect: 'a pipák XP-t érnek' },
           { to: '/nap', label: 'Nap', icon: 'i-nap' },
         ],
       },
@@ -155,11 +155,11 @@ export const NAP_KALAUZ: KalauzEntry[] = [
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
         title: 'A küldetés csak ajtó.',
-        voice: 'Amit ajánl, az edzésben és a logolásban történik meg — az XP pedig a Growth-ban gyűlik.',
+        voice: 'Amit ajánl, az edzésben és a logolásban történik meg — az XP pedig a Fejlődésben gyűlik.',
         links: [
           { to: '/train', label: 'Edzés', icon: 'i-edzes' },
           { to: '/fuel', label: 'Fuel', icon: 'i-fuel' },
-          { to: '/me/growth', label: 'Growth', icon: 'i-growth', effect: 'ide folyik az XP' },
+          { to: '/me/growth', label: 'Fejlődés', icon: 'i-growth', effect: 'ide folyik az XP' },
         ],
       },
     ],
