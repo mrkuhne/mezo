@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-10-05
+updated: 2026-10-06
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-10-06 — `mezo-lhqw7` (no character change).** The 1.1.0 changelog gained `weekly_review.went_well`/`watch_out` (proactive-owned, [`proactive.md`](proactive.md) weekly review); the character feature reads neither.
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No character-detector change; the 1.1.0 changelog folder gained the `recovery_period`/`recovery_day_release` migration (see [`train.md`](train.md) §2 "Kihagyás S2").
 

@@ -238,7 +238,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-10-05, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-10-06, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -363,7 +363,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-28, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-10-05, shipped) ·
+  [docs/features/character.md](features/character.md) (updated 2026-10-06, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-10-05, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-10-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-06, in-progress) ·
@@ -1244,7 +1244,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### proactive
 
 *BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-29, complete)
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-06, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1478,7 +1478,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-25, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-09-30, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-28, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-29, complete) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-06, complete) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-09-30, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-30, mixed)
 
