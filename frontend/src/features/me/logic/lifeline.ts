@@ -4,7 +4,7 @@
 // stations come only from stored events (a whole-kg crossing of the weekly average toward the
 // goal, a perk unlock); the projection is drawn only when the 4-week rate heads to the target.
 import type { Goal, SleepEntry, WeightEntry } from '@/data/types'
-import { addDays, mondayOf } from '@/shared/lib/dates'
+import { addDays, localDateString, mondayOf } from '@/shared/lib/dates'
 
 export interface LifelinePoint { weekStart: string; avgKg: number }
 export interface LifelineStation { index: number; kind: 'kg' | 'perk'; title: string; dateIso: string; caption: string }
@@ -50,8 +50,7 @@ export function buildLifeline(input: Input): Lifeline | null {
 
   const weightWeeks = bucketByWeek(weightLog, (e) => e.date, from, to)
   const points: LifelinePoint[] = [...weightWeeks.keys()].sort().map((weekStart) => {
-    const entries = [...weightWeeks.get(weekStart)!].sort((a, b) => a.date.localeCompare(b.date))
-    return { weekStart, avgKg: round(mean(entries.map((e) => e.value)), 2) }
+    return { weekStart, avgKg: round(mean(weightWeeks.get(weekStart)!.map((e) => e.value)), 2) }
   })
   if (points.length < 2) return null
 
@@ -67,14 +66,17 @@ export function buildLifeline(input: Input): Lifeline | null {
   const stations: LifelineStation[] = []
   const targetKg = goal?.targetWeight ?? null
   if (targetKg != null) {
+    // Direction: target below the first average ⇒ down. Stations beyond the target are still shown.
     const down = targetKg < points[0].avgKg
+    // Running best (min for down, max for up): a station fires on the FIRST crossing only.
+    let best = points[0].avgKg
     for (let i = 1; i < points.length; i++) {
-      const prev = points[i - 1].avgKg
       const cur = points[i].avgKg
       // One station per crossing event, naming the furthest boundary passed toward the goal.
       const n = down
-        ? Math.floor(cur) < Math.floor(prev) ? Math.floor(cur) + 1 : null
-        : Math.ceil(cur) > Math.ceil(prev) ? Math.ceil(cur) - 1 : null
+        ? Math.floor(cur) < Math.floor(best) ? Math.floor(cur) + 1 : null
+        : Math.ceil(cur) > Math.ceil(best) ? Math.ceil(cur) - 1 : null
+      best = down ? Math.min(best, cur) : Math.max(best, cur)
       if (n == null) continue
       stations.push({
         index: i, kind: 'kg',
@@ -85,7 +87,7 @@ export function buildLifeline(input: Input): Lifeline | null {
     }
   }
   for (const perk of perks) {
-    const dateIso = perk.unlockedAt.slice(0, 10)
+    const dateIso = localDateString(new Date(perk.unlockedAt)) // UTC instant → local calendar day
     const index = points.findIndex((p) => p.weekStart === mondayOf(dateIso))
     if (index < 0) continue
     stations.push({ index, kind: 'perk', title: `Új képesség: ${perk.name}`, dateIso, caption: perk.effectCopy })
