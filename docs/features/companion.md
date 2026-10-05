@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-10-05
+updated: 2026-10-06
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -7794,7 +7794,7 @@ one seam in this doc that fans OUT to three other features at once. The crossing
 | `chat_message` | `ai_message` | this doc (§4) | `ChatPage` assistant bubbles ([`insights.md` §2.5](insights.md)) |
 | `feed_message` | `companion_message` | [`proactive.md` §4](proactive.md) | `MezoMessagesSheet` ([`today.md` §1](today.md)) |
 | `weekly_suggestion` | `weekly_suggestion` | [`proactive.md` §4](proactive.md) | Weekly „heti tervjavaslat" card ([`insights.md` §2.2](insights.md)) |
-| `weekly_review` | `weekly_review` | [`proactive.md` §10](proactive.md) | `WeekReviewCard` (`WeekHubPage` — [`me.md`](me.md)), `mezo-p2tr` |
+| `weekly_review` | `weekly_review` | [`proactive.md` §10](proactive.md) | `WeekAnalysisPage` ([`me.md`](me.md)), `mezo-p2tr` |
 | `memoir` | `memoir` | [`proactive.md` §4](proactive.md) | `MemoirPage` ([`insights.md` §2.3](insights.md)) |
 | `prediction` | `prediction` | [`proactive.md` §4](proactive.md) | `PredictionsPage` cards ([`insights.md` §2.6](insights.md)) |
 | `day_review` | `day_review` | this doc (§3/§4, `mezo-jcpt.4`) | `NapomReviewCard` (`NapomPage` — [`today.md`](today.md)), `mezo-jcpt.9` |
@@ -7807,7 +7807,7 @@ The FE side is a single page-level hook + one shared controlled component
 
 **`weekly_review` and `day_review` both vote on the row that carries the artifact itself, not
 on a separate generated-message row** — `WeeklyReviewEntity.id` and `DayReviewEntity.id`
-respectively — so their FE cards (`WeekReviewCard`, `NapomReviewCard`) gate the chip row on that
+respectively — so their FE surfaces (`WeekAnalysisPage`, `NapomReviewCard`) gate the chip row on that
 id's presence rather than on any scored/closed state: a scored day whose prose generation failed
 carries no `reviewId` and therefore no chips either (`NapomReviewCard.tsx` — see
 [`today.md`](today.md) "A napom").

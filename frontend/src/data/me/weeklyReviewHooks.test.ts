@@ -63,6 +63,21 @@ describe('useWeeklyReview (real mode)', () => {
     expect(result.current.review?.watchOut).toBe('Live watch out')
   })
 
+  it('an old row without the hero lines reads them as undefined (absent on the wire)', async () => {
+    const start = '2026-06-01'
+    server.use(
+      http.get(`${API_BASE}/api/proactive/weekly-review/${start}`, () =>
+        HttpResponse.json({
+          id: 'r0', weekStart: start, summary: 'Old row', dayNotes: [], highlights: [],
+          generatedAt: '2026-06-08T06:00:00Z', stale: false,
+        })),
+    )
+    const { result } = renderHook(() => useWeeklyReview(start), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.review).not.toBeNull())
+    expect(result.current.review?.wentWell).toBeUndefined()
+    expect(result.current.review?.watchOut).toBeUndefined()
+  })
+
   it('regenerate POSTs then invalidates the review query so the fresh row is refetched', async () => {
     const start = '2026-06-01'
     let getCalls = 0
