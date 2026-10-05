@@ -78,6 +78,11 @@ afterEach(() => {
 describe('Heti hub (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
+  test('back chip says Hol tartok', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('Hol tartok')
+  })
+
   test('hero: week title, the counted-up score ring and the delta pill with the previous week', () => {
     renderPage()
     expect(screen.getByText(deriveWeekTitle(mondayIso()))).toBeInTheDocument()

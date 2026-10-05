@@ -138,7 +138,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/mezo/coaching/kartya', label: 'A napi kártya', hint: 'A mai javaslat — és amit legyőzött.' },
 
   // ── Én ───────────────────────────────────────────────────────────────────
-  { route: '/me', label: 'Áttekintés', hint: 'Az Én-oldal központja.' },
+  { route: '/me', label: 'Hol tartok', hint: 'Hol tartasz: a heted, az életvonalad és a céljaid.' },
   { route: '/me/weight', label: 'Súly', hint: 'A súlyod alakulása és a naplózás.' },
   { route: '/me/sleep', label: 'Alvás', hint: 'Az alvásod hossza és minősége.' },
   { route: '/me/sleep/night', label: 'Éjszakai mód', hint: 'Sötét, teljes képernyős felület lefekvéshez.' },

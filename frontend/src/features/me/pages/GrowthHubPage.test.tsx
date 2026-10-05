@@ -41,9 +41,9 @@ beforeEach(() => {
 })
 afterEach(() => vi.clearAllMocks())
 
-test('hub anatomy: ‹ Én head, hero XP (FE sum 18 985), Ma strip, three tiles inside one EntranceGroup', () => {
+test('hub anatomy: ‹ Hol tartok head, hero XP (FE sum 18 985), Ma strip, three tiles inside one EntranceGroup', () => {
   const { container } = renderAt('/me/growth')
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('Hol tartok')
   expect(screen.getByText('18 985')).toBeInTheDocument()
   expect(screen.getByText('Szint 12')).toBeInTheDocument()          // gamificationProfileMock.level
   expect(screen.getByText('78%')).toBeInTheDocument()               // traits.disciplinePct

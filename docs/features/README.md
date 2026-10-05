@@ -36,9 +36,9 @@ These docs are **overwritten in place; git is the history.** When a feature chan
 
 Status legend: ✅ done · 🔶 mock-only (no real backend yet) · 🟣 Phase-3 (AI brain) deferred · mixed = per sub-feature. Statuses below are each doc's own declared status (frontmatter `status:` + its §1 detail) — read the doc for the exact per-layer breakdown.
 
-**Last reviewed: 2026-09-27.**
+**Last reviewed: 2026-10-06.**
 
-Live nav (5 domains × 4 tabs, [`frontend/src/app/navModel.ts`](../../frontend/src/app/navModel.ts)): **Nap** (`/nap` Mai · `/nap/napom` A napom · `/nap/uzenetek` Beszélgetés · `/nap/rutin` Rutin) · **Edzés** (`/train/mai` Mai · `/train/mesocycles` Terv · `/train/week` Terhelés · `/train/exercises` Gyakorlatok) · **Fuel** (`/fuel` Mai · `/fuel/stack` Kiegészítők · `/fuel/trendek` Trendek · `/fuel/konyha` Konyha) · **Mezo** (`/mezo` Üzenőfal · `/mezo/csapat` A csapat · `/mezo/rolad` Rólad · `/mezo/emlekek` Emlékek) · **Én** (`/me` Áttekintés · `/me/weight` Súly · `/me/sleep` Alvás · `/me/naplo` Napló). Visual language: dark-only "Üveg" ([`docs/design_2.0/2026-09-23-uveg-style-bible.md`](../design_2.0/2026-09-23-uveg-style-bible.md)).
+Live nav (5 domains × 4 tabs, [`frontend/src/app/navModel.ts`](../../frontend/src/app/navModel.ts)): **Nap** (`/nap` Mai · `/nap/napom` A napom · `/nap/uzenetek` Beszélgetés · `/nap/rutin` Rutin) · **Edzés** (`/train/mai` Mai · `/train/mesocycles` Terv · `/train/week` Terhelés · `/train/exercises` Gyakorlatok) · **Fuel** (`/fuel` Mai · `/fuel/stack` Kiegészítők · `/fuel/trendek` Trendek · `/fuel/konyha` Konyha) · **Mezo** (`/mezo` Üzenőfal · `/mezo/csapat` A csapat · `/mezo/rolad` Rólad · `/mezo/emlekek` Emlékek) · **Én** (`/me` Hol tartok — owns the week/growth/people/notification-feed pages · `/me/weight` Test — Súly | Alvás under one head, `/me/sleep` is its second view · `/me/goals` Célok · `/me/naplo` Napló). Visual language: dark-only "Üveg" ([`docs/design_2.0/2026-09-23-uveg-style-bible.md`](../design_2.0/2026-09-23-uveg-style-bible.md)).
 
 ### Domain docs
 
@@ -61,7 +61,7 @@ Live nav (5 domains × 4 tabs, [`frontend/src/app/navModel.ts`](../../frontend/s
 | [`companion.md`](companion.md) | AI conversation layer, no route of its own — surfaces via Mezo's Chat/Knowledge pages | mixed | Open-ended Hungarian conversation with owner-scoped data access: a smart retrieval loop + native streaming, 18 domain reads + 5 context/source reads on an audited 15-call budget. Backend real; FE surface is Insights' `ChatPage`/`KnowledgeListPage`. |
 | [`proactive.md`](proactive.md) | no dedicated route — feeds Nap's `/nap/uzenetek` thread, the companion feed, and Mezo's coaching pages | complete | The Phase-4 "companion speaks first" layer: one `companion_message` table, 9 kinds (morning/sleep/weight/midday/evening/people/advice, plus `intervention`/`setup` as pre-S4 history), event/cron-driven, one unified `GET /api/proactive/feed`. |
 | [`journal.md`](journal.md) | Én → Napló (`/me/naplo`; also reachable from the global QuickInput sheet) | ✅ done | Free-prose journal + gratitude + decision entries feeding the companion's narrative-memory embedding pipeline (`memory_embedding`); an open-decisions block with due chips + a review sheet. |
-| [`me.md`](me.md) | Én (`/me`, `/me/weight`, `/me/sleep`, `/me/naplo`) | mixed | Personal hub: identity/progression hero, weight goal, sleep, journal, weekly review, people, knowledge. Weight/sleep/journal/growth/habit/`Heti`/`Emberek` are backend-real (person facts since S3/S8, `mezo-d6ivw.3`/`.12`); `Tudás` reuses the companion Tudástár. |
+| [`me.md`](me.md) | Én tabs Hol tartok (`/me`) · Test (`/me/weight`, `/me/sleep`) · Célok (`/me/goals`) · Napló (`/me/naplo`) | mixed | Personal hub: identity/progression hero, weight goal, sleep, journal, weekly review, people. Weight/sleep/journal/growth/habit/`Heti`/`Emberek` are backend-real (person facts since S3/S8, `mezo-d6ivw.3`/`.12`). |
 | [`tutorial.md`](tutorial.md) | cross-cutting overlay — header "?" button on any route; first-launch welcome pager on `/nap` | mixed | Per-route "Mezo-kalauz" onboarding sheet + registry; the motor + 5 T1 hub guides + 22 T2 sub-page guides (Nap/Edzés/Fuel) are shipped. Still unbuilt: the Mezo/Én T2 batches and every T3 guide. |
 | [`admin-hub.md`](admin-hub.md) | `/admin/*` (desktop, OWNER-only) | ✅ done (BE + FE real + FE mock) | Owner console: a value dashboard (Pulzus · Emberek · Funkciók · Költés · Memória · Meghívók) plus a generic "Nyers adatok" `information_schema` row browser. |
 | [`admin-memory-explorer.md`](admin-memory-explorer.md) | `/admin/memory`, `/admin/users/:id/memory` | ✅ done (BE + FE real + FE mock) | RAG memory explorer, part 2 of the admin/observability series: an install-wide entry page + a per-user 5-view explorer (Áttekintés · Felidézések · Gráf · Térkép · Rétegek) over one shared inspector. |
@@ -126,7 +126,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Memória (RAG memory observatory) | `/mezo/memoria` (owned by A csapat tab) | [`insights.md`](insights.md) §2.9 |
 | Karakter dossier (7 experts + Szkeptikus, chaired by Mezo) | `/mezo/karakter/*` | [`character.md`](character.md) §2 |
 | Proactive companion feed (morning/sleep/weight/midday/evening/people/advice) | surfaces on `/nap/uzenetek` | [`proactive.md`](proactive.md) §2–§3 |
-| Áttekintés hub — identity/progression, tiles | `/me` | [`me.md`](me.md) §1–§2 |
+| Hol tartok hub — identity/progression, tiles | `/me` | [`me.md`](me.md) §1–§2 |
 | Weight goal + log ("Cél") | `/me/goals/weight` | [`me.md`](me.md) §2–§4 (weight ✅ backed) · engine: [`goal-engine.md`](goal-engine.md) |
 | Sleep log ("Alvás") | `/me/sleep` | [`me.md`](me.md) §2–§4 (sleep ✅ backed) |
 | People ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock shell) |

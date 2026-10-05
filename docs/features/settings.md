@@ -2,7 +2,7 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-09-28
+updated: 2026-10-06
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
@@ -28,6 +28,8 @@ related: [_platform-design-system, companion, me, fuel, train, insights, _platfo
 > `--settings-tone`/`--settings-ink` variables, the Téma picker's scene art (parked with light mode),
 > focus rings, and a few layout rules.
 
+> **2026-09-29 (`mezo-xojq8`, `mezo-d5y2m`):** the Mezo personal-context textarea (`MezoPersonalPage`, about-me / custom instructions) is wrapped in the shared `VoiceField` (mic tile, dictation appended within the 4000-char cap). Tapping a row in the header's notification panel now marks that item read (`markItemRead`, only if still unread) before following its deeplink; the panel and the full feed both show the live `readAt`.
+>
 > **2026-09-24 (`mezo-yjzhw.4`):** the header's day orb (`AppHeader.tsx`, the filling coral
 > `nap-avatar` button) now opens `/nap/napom/<today>` — A napom, the day's own reading — instead
 > of the retired `/me/week/napok/<today>` single-day route. Everything else about the header

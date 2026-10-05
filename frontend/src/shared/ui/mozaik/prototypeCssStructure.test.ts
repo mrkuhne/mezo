@@ -1646,6 +1646,27 @@ describe.each(U6_BLOCKS)('the uveg en %s section carries the glass ranking (mezo
 })
 
 /**
+ * Én IA (mezo-lhqw7) — blocks added by the Én information-architecture redesign. Append a
+ * `[name, selectors]` pair per `── uveg en <name> (mezo-lhqw7)` block.
+ */
+const LHQW7_BLOCKS: Array<[string, string[]]> = [
+  ['test', ['.ent-head', '.ent-seg-btn.is-on', '.ent-bio']],
+]
+
+describe.each(LHQW7_BLOCKS)('the uveg en %s section (mezo-lhqw7)', (name, sels) => {
+  const section = () => stripComments(slice(`── uveg en ${name} (`, `── /uveg en ${name} `))
+
+  test('the block exists and dresses every surface of the group', () => {
+    const css = section()
+    for (const sel of sels) expect(css, `${sel} missing from the uveg en ${name} block`).toContain(sel)
+  })
+
+  test('never glass inside glass (U1 rule 5)', () => {
+    expect(section()).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
+  })
+})
+
+/**
  * Üvegesítés U8a (mezo-me75u.13) — the „Miből látszik?" deep pages (prototypes/uveg-uzenofal.html
  * #minta/*, #elore/*, #kiserlet-oldal/*): pattern detail (laborfüzet, catalog, saved observation),
  * prediction and experiment. ONE glass hero per page, everything else flat, empty/error/loading
