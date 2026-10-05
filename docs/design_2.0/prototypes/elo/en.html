@@ -1372,7 +1372,7 @@ svg{overflow:visible}
 <symbol id="t-run" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M13 25c5-2 10 0 13 4l7 8 14 4c6 2 9 5 9 10v3H13Z" fill="url(#tg-titanium)" stroke="#c3bdd6" stroke-width=".8"/><path d="M14 48h41" stroke="url(#tg-blue)" stroke-width="5" stroke-linecap="round"/><path d="M23 32l6 7M29 30l6 7" stroke="#eae6f8" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M3 21h11M1 30h8M5 39h7" stroke="#9fe0f2" stroke-width="2.6" stroke-linecap="round" opacity=".65"/></g></symbol>
 <symbol id="t-history" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="34" cy="33" r="22" fill="url(#tg-titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="34" cy="33" r="15" fill="#0d1016" opacity=".55"/><path d="M34 23v11l8 5" fill="none" stroke="url(#tg-blue)" stroke-width="3.4" stroke-linecap="round"/><path d="M13 20a22 22 0 0 1 8-8" fill="none" stroke="url(#tg-blue)" stroke-width="3.4" stroke-linecap="round"/><path d="M10 9v11h11" fill="none" stroke="url(#tg-blue)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
 <symbol id="t-play" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="32" r="24" fill="url(#tg-titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="32" cy="32" r="17" fill="#0e1218" opacity=".5"/><path d="M26 22.5 44 32 26 41.5Z" fill="url(#tg-lime)" stroke="#eaffc4" stroke-width="1" stroke-linejoin="round"/></g></symbol>
-<symbol id="t-note" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M14 10h26l10 10v34H14Z" fill="url(#tg-titanium)" stroke="#c4bed7" stroke-width=".8"/><path d="M40 10v10h10" fill="none" stroke="#e6e1f4" stroke-width="2"/><path d="M21 30h20M21 38h16M21 46h10" stroke="#a9a3bd" stroke-width="2.6" stroke-linecap="round"/><path d="M45 33 55 43l-4 5-10-10Z" fill="url(#tg-gold)" stroke="#ffeec4" stroke-width=".8"/></g></symbol>
+<symbol id="t-pencil" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><g transform="rotate(45 32 32)"><rect x="25" y="3" width="14" height="41" rx="2.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="25" y="3" width="14" height="8" rx="2.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".5"/><rect x="25" y="10.5" width="14" height="4.5" fill="url(#tg-titanium)"/><path d="M25 44L32 58L39 44Z" fill="#f0dcbc" stroke="#ffebbe" stroke-width=".6"/><path d="M30 54L32 58L34 54Z" fill="#3a2e22"/><path d="M29 17V41" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></g></symbol><symbol id="t-note" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M14 10h26l10 10v34H14Z" fill="url(#tg-titanium)" stroke="#c4bed7" stroke-width=".8"/><path d="M40 10v10h10" fill="none" stroke="#e6e1f4" stroke-width="2"/><path d="M21 30h20M21 38h16M21 46h10" stroke="#a9a3bd" stroke-width="2.6" stroke-linecap="round"/><path d="M45 33 55 43l-4 5-10-10Z" fill="url(#tg-gold)" stroke="#ffeec4" stroke-width=".8"/></g></symbol>
 <symbol id="t-up" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M10 46 26 30l10 9 18-20" fill="none" stroke="url(#tg-lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 17h13v13" fill="none" stroke="url(#tg-lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 56h44" stroke="#ffffff1f" stroke-width="3" stroke-linecap="round"/></g></symbol>
 <symbol id="t-down" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M10 20 26 36l10-9 18 20" fill="none" stroke="url(#tg-gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 47h13V34" fill="none" stroke="url(#tg-gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 8h44" stroke="#ffffff1f" stroke-width="3" stroke-linecap="round"/></g></symbol>
 <symbol id="t-hold" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="32" r="23" fill="none" stroke="url(#tg-blue)" stroke-width="5"/><circle cx="32" cy="32" r="13" fill="none" stroke="url(#tg-blue)" stroke-width="4" opacity=".7"/><circle cx="32" cy="32" r="5" fill="url(#tg-blue)"/></g></symbol>
@@ -3224,6 +3224,43 @@ svg{overflow:visible}
 .tabhead .seg{margin:0}
 .tabhead .seg button{padding:8px 18px;font-size:13px}
 /* Növekedés hub (az utolsó régi oldal, most üvegben) */
+/* Fejlődés hub (mezo-lhqw7 S2): the growth hero + Ma strip stay; the three tiles are a glass mosaic */
+.grhero{display:grid;gap:6px;padding:4px 21px 2px}
+.grhero .ttl{font-size:20px;font-weight:700;letter-spacing:-.01em;text-align:center}
+.grhero .row{display:flex;align-items:center;justify-content:center;gap:12px}
+.grhero .row .icon{width:54px;height:54px}
+.grhero .numl{font-size:45px;font-weight:200;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.grhero .unit{font-size:13px;font-weight:700;color:var(--gold);margin-left:5px;letter-spacing:.04em}
+.grtraits{display:grid;gap:7px;padding:6px 4px 0}
+.grtr{display:grid;grid-template-columns:68px 1fr 64px;align-items:center;gap:9px}
+.grtr .lb{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.grtr .val{font-size:11px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.grtr .val small{font-weight:500;color:var(--sub);font-size:9.5px}
+.grtr .bar{height:7px}
+.wdots{display:flex;gap:5px;align-items:center}
+.wdots i{flex:1;height:8px;border-radius:5px;background:rgba(245,239,230,.07)}
+.wdots i.on{background:var(--sage)}
+.wdots i.now{box-shadow:0 0 0 1.5px var(--sage)}
+.grma{margin:12px 16px 0;padding:6px 12px 11px;border-radius:19px;background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+.grma .head{display:flex;align-items:center;gap:7px;width:100%;min-height:44px;padding:0 2px;text-align:left}
+.grma .head .eb{color:var(--gold)}
+.grma .xpp{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--sage);background:color-mix(in srgb,var(--sage) 14%,transparent);border-radius:7px;padding:2px 8px;font-variant-numeric:tabular-nums}
+.grma .chev{color:var(--faint);font-size:14px}
+.grma .head .eb+.chev{margin-left:auto}
+.grma .empty{font-size:11px;font-weight:300;color:var(--sub);padding:0 2px 6px;line-height:1.5}
+.grma .empty b{color:var(--ink);font-weight:600}
+.grchips{display:flex;flex-wrap:wrap;gap:6px}
+.grchip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 12px 7px 9px;min-height:34px;font-size:10.5px;font-weight:600;color:var(--sub);box-shadow:inset 0 0 0 1px var(--hair);background:rgba(245,239,230,.03)}
+.grchip .icon{width:17px;height:17px}
+.grchip.done{color:var(--sage);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sage) 55%,transparent);background:color-mix(in srgb,var(--sage) 10%,transparent)}
+.grchip.gone{opacity:.5;box-shadow:inset 0 0 0 1px var(--hair);border:1px dashed var(--faint)}
+.grchip.act{color:var(--lav);background:color-mix(in srgb,var(--lav) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lav) 45%,transparent)}
+.grchip.add{color:var(--gold);font-weight:700;background:color-mix(in srgb,var(--gold) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 50%,transparent)}
+.grsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.entile .pulse{position:absolute;top:13px;right:13px;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 70%,transparent)}
+.entile{position:relative}
+.entile strong .inl{width:15px;height:15px;vertical-align:-3px;margin-left:2px}
+.entile strong .mut{font-weight:400;color:var(--sub)}
 .grtiles{display:grid;gap:10px;padding:0 16px}
 .grtile{--c:var(--lav);display:flex;align-items:center;gap:13px;width:100%;padding:13px 14px 13px 12px;border-radius:22px;text-align:left}
 .grtile .well{width:56px;height:56px}
@@ -3602,13 +3639,13 @@ function hub(){
       <span class="ln"><span><b>Lv ${full?12:1}</b></span>${full?`<span>3 140 XP</span><span>${I('bolt')}6 nap</span><span>${I('coin')}240</span>`:`<span>az első napjaid</span>`}</span></span>
     <span class="chev">›</span></button>
   <section class="whub wkhero rise" style="--i:1" data-go="#het">
-    ${full?`<span class="eb">SZEPT. 21–27. · LEZÁRT HÉT</span><h1>Az egyensúly hete</h1>
+    ${full?`<span class="eb">SZEPT. 21–27. · LEZÁRT HÉT</span>
     <div class="wring">${ring(78,'var(--lav)',60,138)}<span class="ctr"><b>78</b><small>/ 100</small></span></div>
     <div class="wdelta"><b>+4</b>az előző héthez</div>
     <div class="wklines"><p style="--c:var(--sage)"><i></i><span><b>Jól ment:</b> fehérjecél öt napon, stabil alvás.</span></p>
       <p style="--c:var(--gold)"><i></i><span><b>Figyelj rá:</b> két késői vacsora felszínes alvással.</span></p></div>
     <button class="pillx wkcta" style="--c:var(--lav)" data-go="#het">A heti elemzés ›</button>`
-    :`<span class="eb">SZEPT. 21–27. · AZ ELSŐ HETED</span><h1>Még gyűlik a heted</h1>
+    :`<span class="eb">SZEPT. 21–27. · AZ ELSŐ HETED</span>
     <div class="wring">${ring(0,'var(--lav)',60,138)}<span class="ctr"><b>—</b><small>hétfőn jön</small></span></div>
     <div class="wklines"><p style="--c:var(--lav)"><i></i><span>Hétfő reggel érkezik az első heti elemzésed — addig elég, ha naplózol.</span></p></div>
     <button class="pillx wkcta" style="--c:var(--lav)" data-go="#het">A heted ›</button>`}
@@ -4172,19 +4209,32 @@ function kitunt(){
   </div></div>`+principle('Az érme itt költhető el — címre vagy sorozat-mentőre. Semmi más nem vásárolható, és semmi nem jár le.');
 }
 function novekedes(){
+  const full=ST.hub==='full';
+  const trait=(lb,w,c,val,i)=>`<div class="grtr"><span class="lb">${lb}</span>${bar(w,c,i)}<span class="val">${val}</span></div>`;
+  const qchip=(t,k)=>k==='done'?`<span class="grchip done">${I('tick')}<span class="grsr">kész: </span>${t}</span>`
+    :k==='gone'?`<span class="grchip gone">${t} · csendben lejárt</span>`:`<button class="grchip open" data-toast="Küldetések · a Nap fülön">${t}</button>`;
   return topbar()+back('#en','Hol tartok')+
-  `<section class="idhero rise" style="padding-top:4px">
-    <div class="xpring" role="img" aria-label="Szint 12 — 12% a következő szintig">${ring(12,'var(--rose)',58,128)}<span class="mono">D</span><span class="lv">Lv 12</span></div>
-    <h1>Daniel</h1>
-    <button class="titlechip" data-go="#kitunt">${I('record')}A kitartó</button>
-    <div class="idstats"><span class="flat" style="--c:var(--rose)">Lv 12</span><span class="flat">3 140 XP</span>
-      <button class="flat" data-go="#kitunt">${I('bolt')}6 nap</button><button class="flat" data-go="#kitunt">${I('coin')}240</button></div>
-    <button class="bio" data-toast="Beállítások · biometria"><b>34</b> év · <b>180</b> cm · <b>78,4</b> kg · <b>15%</b> testzsír</button>
+  `<section class="grhero rise">
+    <div class="ttl">Fejlődés</div>
+    <div class="row">${I('up','art')}<div><span class="numl">${full?'3 140':'0'}</span><span class="unit">XP</span></div></div>
+    <div class="grtraits">${trait('Szint '+(full?12:1),full?12:0,'var(--gold)',full?'420 <small>/ 3 500</small>':'0 <small>/ 100</small>',1)}
+      ${full?trait('Fegyelem',82,'var(--lav)','82%',2):''}
+      <div class="grtr"><span class="lb">Ritmus</span><span class="wdots" aria-hidden="true">${Array.from({length:8},(_,n)=>`<i class="${n>=(full?2:7)?'on':''}${n===7?' now':''}"></i>`).join('')}</span><span class="val">${full?6:1} <small>hét</small></span></div>
+    </div>
   </section>
-  <div class="grtiles" style="margin-top:16px">
-    <button class="grtile glass lift rise" style="--c:var(--lav);--i:2" data-go="#skillek"><span class="well" style="--c:var(--lav)">${I('up')}</span><span class="grow"><span class="eb">KÉPESSÉGEK</span><strong>14 skill · LIFE-átlag 3,4</strong><small>82% fegyelem · 6 hét</small></span><span class="chev">›</span></button>
-    <button class="grtile glass lift rise" style="--c:var(--sage);--i:3" data-go="#kitunt"><span class="well" style="--c:var(--sage)">${I('record')}</span><span class="grow"><span class="eb">KITÜNTETÉSEK</span><strong>5 / 9 jelvény</strong><small>6 napos sorozat · 240 érme</small></span><span class="chev">›</span></button>
-    <button class="grtile glass lift rise" style="--c:var(--sky);--i:4" data-go="#tevekenysegek"><span class="well" style="--c:var(--sky)">${I('journal')}</span><span class="grow"><span class="eb">TEVÉKENYSÉGEK</span><strong>23 küldetés · 30 nap</strong><small>e héten +120 LIFE XP</small></span><span class="chev">›</span></button>
+  <section class="grma rise" style="--i:1">
+    <button class="head" data-toast="Küldetések · a Nap fülön" aria-label="Küldetések · a Nap fülön"><span class="eb">MA${full?' · 2/4 küldetés':''}</span>${full?'<span class="xpp">+45 XP</span>':''}<span class="chev">›</span></button>
+    ${full?'':'<p class="empty">Ma még nincs küldetés — <b>a reggeli briefinggel jön.</b> Tevékenységet közben is logolhatsz.</p>'}
+    <div class="grchips">
+      ${full?qchip('Fehérje 150 g','done')+qchip('Reggeli séta','done')+qchip('Esti nyújtás','open')+qchip('Heti meal prep','gone')
+        +`<span class="grchip act">${I('pencil')}Meal prep a hétre · +15</span><span class="grchip act">${I('pencil')}Pénzügyek rendezése · +20</span>`:''}
+      <button class="grchip add" data-toast="Tevékenység naplózása">＋ Tevékenység</button>
+    </div>
+  </section>
+  <div class="duoen">
+    <button class="entile glass lift rise" style="--c:var(--lav);--i:2" data-go="#skillek">${I('sprout')}<span class="eb">SKILLEK</span>${full?'<strong>14 skill · legjobb Lv 7</strong>':''}</button>
+    <button class="entile glass lift rise" style="--c:var(--sky);--i:3" data-go="#tevekenysegek">${I('journal')}<span class="eb">TEVÉKENYSÉGEK</span>${full?`<strong>23${I('tick','inl')} · 9${I('pencil','inl')} <small class="mut">· 30 nap</small></strong>`:''}</button>
+    <button class="entile glass lift rise" style="--c:var(--sage);--i:4" data-go="#kitunt">${I('record')}${full?'<span class="pulse" aria-hidden="true"></span>':''}<span class="eb">KITÜNTETÉSEK</span>${full?'<strong>5 / 9 jelvény · 6 napos sorozat</strong>':''}</button>
   </div>`+principle('A szint visszajelzés, nem jutalom — semmi nem nyílik vagy zárul tőle.');
 }
 
