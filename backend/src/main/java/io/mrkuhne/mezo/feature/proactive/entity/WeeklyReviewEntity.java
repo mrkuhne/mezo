@@ -62,4 +62,12 @@ public class WeeklyReviewEntity extends OwnedEntity {
     @NotNull
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
+
+    /** One short model-written sentence — what went well. Null on pre-mezo-lhqw7 rows or when rejected. */
+    @Column(name = "went_well", columnDefinition = "text")
+    private String wentWell;
+
+    /** One short model-written sentence — what to watch next week. Null under the same conditions. */
+    @Column(name = "watch_out", columnDefinition = "text")
+    private String watchOut;
 }
