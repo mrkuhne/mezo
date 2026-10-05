@@ -33,6 +33,13 @@ programmes re-skinned it (U6, U7) but kept the August Design 2.0 hub-of-tiles:
 
 ## Design
 
+> **Planning addendum (2026-10-05).** Four points were settled against the code while writing
+> the plan (`docs/superpowers/plans/2026-10-05-en-ia.md` §Decisions): the Test tab keeps the two
+> existing URLs (`/me/weight` tab home owning `/me/sleep`, no `/me/test`); the Heted lines are
+> the first two sentences of the weekly review (no structured "went well / watch" data exists);
+> Életvonal stations come from whole-kg crossings and dated perks (badges carry no date); the
+> biometrics door moves to the bottom of the Test views. Where this section differs, the plan wins.
+
 ### Tab row (navModel)
 
 | Tab | Route | Owns (deep pages that light it) |
