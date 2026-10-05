@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-09-28
+updated: 2026-09-30
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,12 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** New fragment `api/feature/train/train-recovery.yml` (tag `TrainRecovery`, `/api/train/recovery*`) registered in `api/generate/merge.yml`; six Hungarian `TRAIN_RECOVERY_*` error keys in `messages.properties`; Liquibase `1.1.0` gains `recovery_period` + `recovery_day_release`. See [`train.md`](train.md) §2 "Kihagyás S2 — kímélő mód".
+
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** New fragment `api/feature/train/train-skip.yml` (tag `TrainSkip`, `GET/PUT/DELETE /api/train/skips`) merges into `api/openapi.yml` like any other feature fragment — no new pattern. `TRAIN_SKIP_DATE_OUT_OF_WINDOW`/`TRAIN_SKIP_TARGET_INVALID`/`TRAIN_SKIP_NOT_FOUND` join `messages.properties`. See [`train.md`](train.md) "Kihagyás (S1)".
+
+> **2026-09-29 — Gyakorlat csere / hozzáadás (`mezo-mobji`).** `train.yml` gained `POST /api/train/workouts/{id}/exercises` (`WorkoutExerciseChangeRequest` → `WorkoutExerciseChangeResponse {exerciseId, today}`) and `POST …/exercises/{exerciseId}/plan-sets` (`PlanSetsRequest`); `TodayExercise` gained `changeScope`/`replacesName`/`replacedByName`/`planSlot`. `messages.properties` gained `TRAIN_EXERCISE_NO_PLAN_SLOT` (409). Details: [`train.md` §4](train.md).
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One new contract fragment, `api/feature/train/train-readiness.yml` (tag `TrainReadiness`), registered in `api/generate/merge.yml`; `api/feature/checkin/checkin.yml` gained `GET /api/biometrics/checkin/plan` and the new check-in fields (enums `CheckInItemId`, `CheckInItemKind`, `PainRegion`, `CravingKind`, `AdaptiveReason` as `enum:`). Two features gained ports to stay cycle-free: train's `DayCheckInPort` (implemented in biometrics) and biometrics' `CheckInNeedSource`. Details: [`me.md` §4](me.md), [`train.md` §4](train.md).
 
@@ -270,6 +276,8 @@ The delivery-infra counterpart to the proactive epic (§ `Proactive` row above):
 
 **A csapatfal válaszol** (Emlékezet S7, `mezo-d6ivw.7`) adds `POST /api/character/team-chat/threads/{threadId}/answer` (`{choice: EXCUSED|KEEP|STOP}`) and `DELETE …/threads/{threadId}/remembered` to the same switch-gated Character contract, widens `TeamChatThread` with `closeReason`/`closeNote`/`offer`/`offerTag`/`remembered`, and adds one `messages.properties` code (`CHARACTER_TEAM_CHAT_ANSWER_CONFLICT`, the 409 for a mismatched or already-differently-answered choice) — no new pattern. See [character.md](character.md) §Csapat-chat.
 
+**Weekly fact merge** (`mezo-d6ivw.10`) adds `FactMergeJob` (Monday 07:30, `mezo.companion.fact-merge.cron`), gated by `FeaturesConfiguration.FACT_MERGE_JOB_SWITCH` (`mezo.techcore.cron.fact-merge-job.enabled`); off ⇒ the bean does not exist. See [companion.md „Heti tény-összevonás”](companion.md).
+
 **A napom overnight pre-warm** (`mezo-yjzhw.1`) adds no new API surface — `DayReviewWarmupJob` (`feature/companion/service/DayReviewWarmupJob.java`, nightly 02:30) calls the existing `DayReviewService.assemble` per user × finished day so the first "Mai" load of the morning hits a warm cache instead of paying the LLM latency live. Gated by `FeaturesConfiguration.DAY_REVIEW_WARMUP_JOB_SWITCH` (`mezo.techcore.cron.day-review-warmup-job.enabled`); off ⇒ the bean does not exist. See [companion.md §"DayReviewWarmupJob"](companion.md) and [today.md](today.md).
 
 This is the most load-bearing section — every seam, bidirectionally, with the crossing type.
@@ -435,7 +443,7 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 **techcore (the reusable spine)**
 - `techcore/persistence/OwnedEntity.java`, `OwnedRepository.java` — owned-entity superclass + `findAllOwned`
 - `techcore/security/SecurityConfig.java`, `CurrentUserId.java`, `CorsProperties.java` — stateless JWT + ownership resolution + CORS
-- `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract
+- `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract (an unreadable request body — unknown enum constant, wrong JSON type, broken JSON — is a 400 `VALIDATION_INVALID_VALUE` naming the JSON path since Check-in 2.0 follow-up C; [`_platform-auth-security.md`](_platform-auth-security.md), [`error_handling.md`](../references/error_handling.md))
 - `backend/src/main/resources/messages.properties` — message codes (Hungarian; newest: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
 
 **Reference feature (weight — smallest full slice)**

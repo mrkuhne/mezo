@@ -1368,7 +1368,7 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
 /**
  * Üvegesítés U1 (mezo-me75u.1): the ONE glass recipe every slice reuses (üveg style bible §3).
  * A second glass recipe or palette is the failure mode this guards: the kit lives in one block,
- * carries all four layers of the card, and keeps its sheen inside the reduced-motion gate.
+ * carries the glass material, and never runs the retired recurring card sheen.
  */
 describe('the uveg kit section is registered and carries the §3 recipe (mezo-me75u.1)', () => {
   const START_MARKER = '── uveg kit ('
@@ -1394,11 +1394,9 @@ describe('the uveg kit section is registered and carries the §3 recipe (mezo-me
     expect(stripComments(rawCss).match(/^\.glass \{/gm) ?? []).toHaveLength(1)
   })
 
-  test('the sheen only runs inside the reduced-motion gate; still/round glass never sweeps', () => {
+  test('glass never runs the recurring sheen, regardless of motion preference', () => {
     const css = rules()
-    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
-    expect(gate).toBeGreaterThan(-1)
-    expect(css.indexOf('animation: uv-sheen')).toBeGreaterThan(gate)
+    expect(stripComments(rawCss)).not.toContain('uv-sheen')
     expect(css).toMatch(/\.glass\.is-still::after, \.glass\.is-round::after \{[^}]*display: none/)
   })
 

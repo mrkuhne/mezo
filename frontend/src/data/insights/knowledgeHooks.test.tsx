@@ -33,9 +33,9 @@ describe('useKnowledge (real mode)', () => {
 
   it('fetches facts + candidates; edges stay an honest empty array', async () => {
     const { result } = renderHook(() => useKnowledge(), { wrapper: makeHookWrapper() })
-    await waitFor(() => expect(result.current.facts).toHaveLength(16))
+    await waitFor(() => expect(result.current.facts).toHaveLength(17))
     // real mode always maps conflictsWithFactId to null — the wire doesn't carry it yet (mezo-ms9a).
-    expect(result.current.candidates).toEqual(candidateSeed.map((c) => ({ ...c, conflictsWithFactId: null })))
+    expect(result.current.candidates).toEqual(candidateSeed.map((c) => ({ ...c, conflictsWithFactId: null, mergeSources: c.mergeSources ?? null })))
     expect(result.current.edges).toEqual([])
     expect(result.current.mode).toBe('live')
     expect(result.current.degraded).toBe(false)
@@ -117,7 +117,7 @@ describe('useKnowledgeActions (real mode)', () => {
     )
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
-    await waitFor(() => expect(result.current.read.facts).toHaveLength(16))
+    await waitFor(() => expect(result.current.read.facts).toHaveLength(17))
     act(() => result.current.actions.toggle('f1', false))
     await waitFor(() => expect(patched).toBe(1))
   })
@@ -138,7 +138,7 @@ describe('useKnowledgeActions (real mode)', () => {
     )
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useKnowledge(), actions: useKnowledgeActions() }), { wrapper })
-    await waitFor(() => expect(result.current.read.facts).toHaveLength(16))
+    await waitFor(() => expect(result.current.read.facts).toHaveLength(17))
     await act(async () => { await result.current.actions.decide('c1', 'accept') })
     await waitFor(() => expect(posted).toBe(1))
     await waitFor(() => expect(result.current.read.candidates).toHaveLength(0))

@@ -12,11 +12,14 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -35,6 +38,8 @@ public class LearnedFactEntity extends OwnedEntity {
     /** Mirrors ck_learned_fact_source — where the proposal came from (the promoted fact inherits it). */
     public static final String SOURCE_CHAT = "chat";
     public static final String SOURCE_WEEKLY_REVIEW = "weekly_review";
+    /** S9 (mezo-d6ivw.10): a weekly merge proposal — folds {@link #mergeMemberIds} into one sentence. */
+    public static final String SOURCE_MERGE = "merge";
 
     public static final String DECISION_ACCEPT = "accept";
     public static final String DECISION_REJECT = "reject";
@@ -58,11 +63,12 @@ public class LearnedFactEntity extends OwnedEntity {
     private String category;
 
     /** Mirrors ck_learned_fact_source: 'chat' = V1.2 post-turn extraction, 'weekly_review' = the
-     *  Monday weekly round's proposal (mezo-d20.7.6). {@code FactCandidateService.decide} derives
-     *  the promoted knowledge fact's source from this — promotion must not re-label the origin. */
+     *  Monday weekly round's proposal (mezo-d20.7.6), 'merge' = a weekly merge proposal (S9,
+     *  mezo-d6ivw.10). {@code FactCandidateService.decide} derives the promoted knowledge fact's
+     *  source from this — promotion must not re-label the origin. */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "chat|weekly_review")
+    @Pattern(regexp = "chat|weekly_review|merge")
     @Column(nullable = false, length = 16)
     private String source = SOURCE_CHAT;
 
@@ -105,6 +111,12 @@ public class LearnedFactEntity extends OwnedEntity {
     /** „Most ne” (U9b): hidden from the pending inbox until this instant; null = not snoozed. */
     @Column(name = "snoozed_until")
     private Instant snoozedUntil;
+
+    /** S9 (mezo-d6ivw.10): the 2–3 knowledge facts a merge proposal would fold into one sentence —
+     *  NOT NULL exactly for source='merge' (ck_learned_fact_merge_members). */
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "merge_member_ids", columnDefinition = "uuid[]")
+    private List<UUID> mergeMemberIds;
 
     @PrePersist
     void defaultOwner() {

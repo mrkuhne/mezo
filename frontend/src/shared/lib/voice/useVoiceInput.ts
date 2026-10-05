@@ -7,13 +7,17 @@ export type VoiceState = 'unsupported' | 'idle' | 'recording' | 'transcribing'
 /** Anything this short was a mis-tap, not a sentence. */
 const MIN_CLIP_BYTES = 512
 
+/** One microphone at a time, app-wide: with a voice field on every sentence field (mezo-xojq8)
+ *  a second tap elsewhere must not open a second recorder — it drops the first clip instead. */
+let activeCancel: (() => void) | null = null
+
 const isSupported = () =>
   typeof navigator !== 'undefined' &&
   typeof navigator.mediaDevices?.getUserMedia === 'function' &&
   typeof MediaRecorder !== 'undefined'
 
 /**
- * Push-to-talk for the chat composer (mezo-at8x.4): record → convert → transcribe → hand the
+ * Push-to-talk for every free-text field (chat composer mezo-at8x.4; everywhere since mezo-xojq8): record → convert → transcribe → hand the
  * text to the caller, which drops it in the input for the user to check before sending.
  *
  * The transcription itself is server-side ([`useTranscribe`](@/data/hooks)) rather than the
@@ -111,6 +115,7 @@ export function useVoiceInput(onTranscript: (text: string) => void): {
       rec.ondataavailable = (e) => { if (e.data.size) chunks.current.push(e.data) }
       cancelled.current = false
       rec.onstop = () => {
+        if (activeCancel === dropThis) activeCancel = null
         stream.getTracks().forEach((t) => t.stop())
         stopMeter()
         if (cancelled.current) {
@@ -120,6 +125,12 @@ export function useVoiceInput(onTranscript: (text: string) => void): {
         }
         void finish(rec.mimeType)
       }
+      const dropThis = () => {
+        cancelled.current = true
+        try { rec.stop() } catch { /* already stopped */ }
+      }
+      activeCancel?.()
+      activeCancel = dropThis
       rec.start()
       recorder.current = rec
       startMeter(stream)
@@ -145,4 +156,10 @@ export function useVoiceInput(onTranscript: (text: string) => void): {
   }, [])
 
   return { state, error, toggle, cancel, levelRef }
+}
+
+/** Dictation lands AFTER what is already typed, never over it; `max` keeps a field's limit. */
+export function appendDictation(prev: string, text: string, max?: number): string {
+  const next = prev ? `${prev} ${text}` : text
+  return max === undefined ? next : next.slice(0, max)
 }

@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 @TestComponent
@@ -40,6 +41,19 @@ public class LearnedFactPopulator {
         candidate.setWeekStart(weekStart);
         candidate.setEvidence(evidence);
         candidate.setUserDecision(decision);
+        return repository.saveAndFlush(candidate);
+    }
+
+    /** S9 (mezo-d6ivw.10): a weekly merge proposal — {@code memberIds} keep the order the merge
+     *  card shows them in. */
+    public LearnedFactEntity mergeCandidate(UUID createdBy, String candidateText, String category,
+            List<UUID> memberIds) {
+        LearnedFactEntity candidate = new LearnedFactEntity();
+        candidate.setCreatedBy(createdBy);
+        candidate.setCandidateText(candidateText);
+        candidate.setCategory(category);
+        candidate.setSource(LearnedFactEntity.SOURCE_MERGE);
+        candidate.setMergeMemberIds(memberIds);
         return repository.saveAndFlush(candidate);
     }
 }

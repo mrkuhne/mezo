@@ -777,6 +777,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Swap or add an exercise in an active workout (mezo-mobji)
+         * @description Creates an instance-scoped exercise row for the running workout (scope TODAY), and for scope MESO additionally writes the mesocycle's template day id-stably (one insert, the replaced row soft-deleted) so the change applies from the next session. Returns the refreshed today payload.
+         */
+        post: operations["changeWorkoutExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add working sets to an exercise's mesocycle plan without re-creating the day (mezo-mobji) */
+        post: operations["addPlanWorkingSets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/exercises/{exerciseId}/note": {
         parameters: {
             query?: never;
@@ -962,6 +999,135 @@ export interface paths {
         post: operations["chooseTodayReadiness"];
         /** Undo today's choice ("Visszaállítom a tervet") — normal prescriptions again for sets not yet logged */
         delete: operations["undoTodayReadiness"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/skips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every skip in [from, to] with its read-time verdict (user skips + coach advice skips) */
+        get: operations["listPlannedSkips"];
+        /**
+         * Skip one occurrence, or change the reason of an existing skip (idempotent per target)
+         * @description Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER.
+         */
+        put: operations["upsertPlannedSkip"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/skips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Undo a skip ("Visszavonom") — the occurrence is planned again */
+        delete: operations["undoPlannedSkip"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's recovery state — the open period (or the one ended today), protected dates, the comeback ramp */
+        get: operations["getRecovery"];
+        /**
+         * Open a recovery period, or change the category/estimate of the open one
+         * @description startDate defaults to today and must lie in [today-7, today] (Europe/Budapest). An update keeps the open period's startDate. Only serious categories (ILLNESS, STOMACH, INJURY, TRAVEL) are allowed.
+         */
+        put: operations["upsertRecovery"];
+        post?: never;
+        /** "Tévedés volt" — discard the open (or today-ended) period, reverting any programme shift */
+        delete: operations["deleteRecovery"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/check-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Daily check-in — NOT_YET keeps the period open, BETTER ends it today and applies the return rule */
+        post: operations["recoveryCheckIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/undo-better": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** "Mégsem vagyok jól" — reopen the period ended today and revert the programme shift */
+        post: operations["recoveryUndoBetter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/releases/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** "Ma mégis edzek" — train normally on one protected date (lighter by default) */
+        put: operations["releaseRecoveryDay"];
+        post?: never;
+        /** Undo "Ma mégis edzek" — the date is protected again */
+        delete: operations["unreleaseRecoveryDay"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/recovery/waive-comeback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** "Kikapcsolom a könnyítést" — switch off the comeback ramp of the latest ended period */
+        post: operations["waiveComeback"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2128,6 +2294,24 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/turn-memory/person-fact/{personFactId}/about-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** „Rólam is" (mezo-d6ivw.13) — the user claims a chat person fact as their own too: it is copied into the knowledge facts (source person_fact, owner mezo, category life) and shows in the Tudástár Rólad section. Idempotent — a second call returns the same copy. */
+        post: operations["addPersonFactAboutMe"];
+        /** „Rólam is" tapped again (mezo-d6ivw.13) — the copy is removed (soft delete) WITHOUT a forget veto: the person fact stays on the person's page and a later „Rólam is" may copy it again. Idempotent — no copy means nothing to do. */
+        delete: operations["removePersonFactAboutMe"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3703,6 +3887,23 @@ export interface paths {
         put?: never;
         /** Mark every unread feed row read (NotificationFeed) */
         post: operations["markNotificationFeedRead"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notification/feed/{id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark one owned feed row read (NotificationFeed) */
+        post: operations["markNotificationFeedItemRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6139,6 +6340,19 @@ export interface components {
             weekDoneDates?: string[];
             /** @description Day-level overload summary; null when hypertrophy-drive is off. */
             overloadSummary?: components["schemas"]["OverloadSummary"] | null;
+            /** @description Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened — a comeback ramp session after a recovery period, or a released protected day. Null otherwise. */
+            comeback?: components["schemas"]["TodayComeback"] | null;
+        };
+        TodayComeback: {
+            /** @description 1-based position of today's session in the lightened run (1 or 2) */
+            index: number;
+            /** @description Lightened sessions in the run (1 or 2; 1 for a released day) */
+            total: number;
+            /**
+             * @description RAMP — the Nth gym session after the return; RELEASED — "Ma mégis edzek" on a protected day with lightening kept.
+             * @enum {string}
+             */
+            mode: "RAMP" | "RELEASED";
         };
         TodayExercise: {
             /** Format: uuid */
@@ -6169,6 +6383,17 @@ export interface components {
             rationale?: string | null;
             /** @description RIR-aware overload recommendation; null on first session / switch off. */
             progression?: components["schemas"]["ProgressionSignal"] | null;
+            /**
+             * @description Set on an exercise swapped/added during the open workout (mezo-mobji).
+             * @enum {string|null}
+             */
+            changeScope?: "TODAY" | "MESO" | null;
+            /** @description Name of the exercise this one replaced in the open workout. */
+            replacesName?: string | null;
+            /** @description On a swapped-out exercise that keeps its logged sets — the replacement's name. */
+            replacedByName?: string | null;
+            /** @description Whether a "Mezociklusra is" change may target this exercise (false for rows added only for this workout and for the fixed closing block). */
+            planSlot?: boolean;
         };
         PrescribedSet: {
             /** @enum {string} */
@@ -6395,6 +6620,37 @@ export interface components {
             rir?: number | null;
             side?: string;
             note?: string;
+        };
+        WorkoutExerciseChangeRequest: {
+            /** Format: uuid */
+            catalogId?: string | null;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
+            targetRIR: number;
+            /** @enum {string} */
+            scope: "TODAY" | "MESO";
+            /**
+             * Format: uuid
+             * @description Swap target; absent for an add.
+             */
+            replacesExerciseId?: string | null;
+        };
+        WorkoutExerciseChangeResponse: {
+            /**
+             * Format: uuid
+             * @description The new instance-scoped exercise row.
+             */
+            exerciseId: string;
+            today: components["schemas"]["WorkoutTodayResponse"];
+        };
+        PlanSetsRequest: {
+            delta: number;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */
@@ -6685,6 +6941,114 @@ export interface components {
             regionLabel: string;
             /** @description The reported pain intensity (null when not answered) */
             intensity?: number | null;
+        };
+        /** @enum {string} */
+        PlannedSkipKind: "GYM" | "SPORT" | "RUN";
+        /** @enum {string} */
+        PlannedSkipReason: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | "TIRED" | "NO_TIME" | "NO_MOOD" | "OTHER" | "NONE";
+        PlannedSkipRequest: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["PlannedSkipKind"];
+            /** @description SPORT only, 0=Hét..6=Vas */
+            dayOfWeek?: number | null;
+            /** @description SPORT only */
+            time?: string | null;
+            /** @description RUN only */
+            sessionKey?: string | null;
+            reasonCategory: components["schemas"]["PlannedSkipReason"];
+            /** @description Kept only for OTHER */
+            reasonText?: string | null;
+        };
+        PlannedSkipResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["PlannedSkipKind"];
+            dayOfWeek?: number | null;
+            time?: string | null;
+            sessionKey?: string | null;
+            reasonCategory: components["schemas"]["PlannedSkipReason"];
+            reasonText?: string | null;
+            /** @enum {string} */
+            source: "USER" | "ADVICE";
+            serious: boolean;
+            /** @description The weekly free pass covers this skip */
+            freePass: boolean;
+            /** @description Does not count as missed */
+            excused: boolean;
+        };
+        /** @enum {string} */
+        RecoveryEstimate: "TODAY" | "FEW_DAYS" | "WEEK" | "UNKNOWN";
+        /** @enum {string} */
+        RecoveryReturnRule: "CONTINUE" | "RESUME" | "STEP_BACK";
+        RecoveryUpsertRequest: {
+            category: components["schemas"]["PlannedSkipReason"];
+            estimate: components["schemas"]["RecoveryEstimate"];
+            /**
+             * Format: date
+             * @description Defaults to today; [today-7, today]
+             */
+            startDate?: string | null;
+        };
+        RecoveryCheckInRequest: {
+            /** @enum {string} */
+            answer: "BETTER" | "NOT_YET";
+        };
+        RecoveryReleaseRequest: {
+            /**
+             * @description Train lighter on the released day
+             * @default true
+             */
+            lighten: boolean;
+        };
+        RecoveryReturn: {
+            rule: components["schemas"]["RecoveryReturnRule"];
+            daysOut: number;
+            /** @description Lightened sessions after the return (1 or 2) */
+            rampSessions: number;
+            /** @description Days the active meso calendar moved (multiple of 7) */
+            shiftDays: number;
+            /**
+             * Format: date
+             * @description The shifted meso end date, when shifted
+             */
+            newEndDate?: string | null;
+        };
+        RecoveryPeriod: {
+            /** Format: uuid */
+            id: string;
+            category: components["schemas"]["PlannedSkipReason"];
+            estimate: components["schemas"]["RecoveryEstimate"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            expectedEnd?: string | null;
+            /** Format: date */
+            endedOn?: string | null;
+            /** @description today - startDate + 1 */
+            dayIndex: number;
+            /** @description expectedEnd is before today */
+            estimateExpired: boolean;
+            checkedInToday: boolean;
+            releasedDates: string[];
+            /** @description Released dates trained at full load */
+            releasedUnlightened: string[];
+            return?: components["schemas"]["RecoveryReturn"] | null;
+        };
+        RecoveryComeback: {
+            /** @description Lightened sessions in the ramp (0, 1 or 2) */
+            total: number;
+            /** @description Completed gym sessions since the return */
+            done: number;
+            waived: boolean;
+        };
+        RecoveryState: {
+            period?: components["schemas"]["RecoveryPeriod"] | null;
+            /** @description Protected dates in [today-7, today+13], released dates excluded */
+            protectedDates: string[];
+            comeback?: components["schemas"]["RecoveryComeback"] | null;
         };
         /** @description "Hogy tanultam?" (mezo-y72o3) — the caller's most recent reviewed week that carries an explanation, joining the expenditure_estimate row with its persisted explanation jsonb. Every nullable field is honestly absent (no fallback), not a fabricated 0/'medium'. */
         ExpenditureExplanationResponse: {
@@ -7870,13 +8234,15 @@ export interface components {
             consumed: components["schemas"]["MacroSet"];
             energy?: components["schemas"]["FuelDayEnergy"];
         };
-        /** @description The served target's equation (mezo-32m82): baseKcal (BMR × NEAT) + plannedMovementKcal (the weekly plan's share for the day, incl. the day-type shift) + extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal deficit/surplus; also absorbs the BMR floor) = targetKcal. Null on the static path (no goal or no biometric snapshot). */
+        /** @description The served target's equation (mezo-32m82, mezo-tb3s2): baseKcal (BMR × NEAT) + plannedMovementKcal (the LOGGED planned sessions' net kcal) + extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal deficit/surplus; also absorbs the BMR floor) = targetKcal. pendingMovementKcal is display only and never part of the sum. Null on the static path (no goal or no biometric snapshot). */
         FuelDayEnergy: {
             baseKcal: number;
             plannedMovementKcal: number;
             extraMovementKcal: number;
             balanceKcal: number;
             targetKcal: number;
+            /** @description Today's planned but not yet logged sessions at the moderate band (mezo-tb3s2) — display only, never in targetKcal. */
+            pendingMovementKcal?: number | null;
             /**
              * @description Where baseKcal comes from (mezo-zz91i) — the BMR × NEAT formula or the base learned from intake + weight trend.
              * @enum {string}
@@ -8385,7 +8751,7 @@ export interface components {
             factText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' */
             category: string;
-            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion, 'weekly_review' with mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7 (mezo-d6ivw.7) */
+            /** @description 'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' | 'team_chat' | 'person_fact' | 'merge' — 'manual' = the user typed it in the Tudástár, 'chat' = an accepted chat-extraction candidate (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user claimed with „Rólam is” (mezo-d6ivw.13), 'merge' = an accepted weekly fact merge (S9, mezo-d6ivw.10) */
             source: string;
             /**
              * @description U9b (mezo-zpxv7): the team character that owns the fact — the Rólad tag. User-authored facts are shown as TŐLED by the FE from `source`, not from this field.
@@ -8405,10 +8771,10 @@ export interface components {
             /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
             citedWeeks?: number | null;
             /**
-             * @description S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+             * @description S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad el, refuted = később nem igazolódott (S2 cáfolat), superseded = felülírta egy újabb észrevétel, merged = összevontam egy hasonló ténnyel (S9). Null, ha bekapcsolt.
              * @enum {string|null}
              */
-            mutedReason?: "user" | "refuted" | "superseded" | null;
+            mutedReason?: "user" | "refuted" | "superseded" | "merged" | null;
             /**
              * Format: date-time
              * @description S6 — mikor hallgattatták el; null, ha bekapcsolt vagy S6 előtti némítás.
@@ -8424,7 +8790,7 @@ export interface components {
         /** @description S6 (mezo-d6ivw.6) — honnan jön a tény. A bizonyíték-elemeket a GET /api/companion/fact/{factId}/evidence adja lustán (Honnan tudom?). */
         KnowledgeFactProvenance: {
             /** @enum {string} */
-            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question" | "team_chat";
+            sourceKind: "chat" | "pattern" | "manual" | "weekly_review" | "question" | "team_chat" | "person_fact";
             /**
              * Format: uuid
              * @description Az észrevétel, amiből a tény született (source=pattern).
@@ -8453,7 +8819,7 @@ export interface components {
             candidateText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time */
             category: string;
-            /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it */
+            /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) | 'merge' (a weekly fact-merge proposal, S9 mezo-d6ivw.10) — the promoted knowledge fact inherits it */
             source: string;
             /**
              * @description the character that brought the candidate — „<Név> hozta”
@@ -8481,6 +8847,8 @@ export interface components {
              * @description S8 (mezo-d6ivw.12) — the chat USER message the candidate was extracted from; null for a weekly-review candidate. The chat anchors its Megjegyezném chip on it.
              */
             derivedFromMessageId?: string | null;
+            /** @description S9 (mezo-d6ivw.10) — source='merge' only: the member facts' current texts, in the order the proposal lists them (the Rólad „Összevonnám" card shows them above the proposed sentence). Null for every other candidate. */
+            mergeSources?: string[] | null;
             /** Format: date-time */
             createdAt: string;
         };
@@ -8502,6 +8870,21 @@ export interface components {
             text: string;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * Format: uuid
+             * @description mezo-d6ivw.13 — the live knowledge fact „Rólam is” copied this person fact into; null when the user has not claimed it (the chip shows Rólam is), set when it did (Rólad is · kész).
+             */
+            aboutMeFactId?: string | null;
+        };
+        /** @description mezo-d6ivw.13 — a chat person fact's „Rólam is” state. */
+        AboutMeResponse: {
+            /** Format: uuid */
+            personFactId: string;
+            /**
+             * Format: uuid
+             * @description The live knowledge-fact copy; null when there is none.
+             */
+            aboutMeFactId?: string | null;
         };
         /** @description S8 — one memory item a chat turn produced, as the forget flow lists it. kind person_fact refId = the person fact, fact_candidate = the undecided candidate, knowledge_fact = the promoted fact of an accepted candidate. */
         MemoryItemResponse: {
@@ -14900,6 +15283,129 @@ export interface operations {
             };
         };
     };
+    changeWorkoutExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutExerciseChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Change applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutExerciseChangeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout not active, or the replaced exercise has no plan slot (MESO) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPlanWorkingSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanSetsRequest"];
+            };
+        };
+        responses: {
+            /** @description Plan updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The exercise has no plan slot */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     saveExerciseNote: {
         parameters: {
             query?: never;
@@ -15443,6 +15949,445 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listPlannedSkips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Skips, date then created ascending */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedSkipResponse"][];
+                };
+            };
+            /** @description from after to (TRAIN_INVALID_DATE_RANGE) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    upsertPlannedSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedSkipRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored skip with its verdict */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlannedSkipResponse"];
+                };
+            };
+            /** @description Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    undoPlannedSkip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Undone */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    upsertRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Non-serious category (TRAIN_RECOVERY_CATEGORY_INVALID) or startDate outside the window (TRAIN_RECOVERY_START_OUT_OF_WINDOW) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteRecovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Discarded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No open or today-ended period (TRAIN_RECOVERY_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recoveryCheckIn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecoveryCheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description BETTER on the start day (TRAIN_RECOVERY_TOO_EARLY) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No open period (TRAIN_RECOVERY_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recoveryUndoBetter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No period ended today, or another period is already open (TRAIN_RECOVERY_UNDO_EXPIRED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    releaseRecoveryDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RecoveryReleaseRequest"];
+            };
+        };
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description The date is not protected by the open period (TRAIN_RECOVERY_DATE_NOT_PROTECTED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    unreleaseRecoveryDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description The date is not protected by the open period (TRAIN_RECOVERY_DATE_NOT_PROTECTED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    waiveComeback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new recovery state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryState"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No ended period (TRAIN_RECOVERY_NOT_FOUND) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18943,6 +19888,77 @@ export interface operations {
             };
             /** @description Conversation or user message not found (or owned by someone else) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addPersonFactAboutMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personFactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The person fact's about-me state after the call */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AboutMeResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person fact not found, no longer active, or owned by someone else (also when the people feature is off) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    removePersonFactAboutMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personFactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The person fact's about-me state after the call (aboutMeFactId null) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AboutMeResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -23104,6 +24120,44 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    markNotificationFeedItemRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stamped; an already-read row is unchanged */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Row not found or belongs to another user */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

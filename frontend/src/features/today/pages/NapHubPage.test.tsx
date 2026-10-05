@@ -1,7 +1,13 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
+import { ToastProvider } from '@/shared/ui/ToastProvider'
+import { RECOVERY_QUERY_KEY } from '@/data/train/recoveryHooks'
+import { mockOpen, recoveryEmpty } from '@/data/train/recoveryMock'
+import type { RecoveryState } from '@/data/train/recoveryApi'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 const store = vi.hoisted(() => ({
   save: vi.fn(), pending: false, error: false, retry: vi.fn(),
@@ -41,12 +47,19 @@ vi.mock('@/features/today/components/NapFuelGraphic', () => ({ NapFuelGraphic: (
 vi.mock('@/features/today/sheets/CheckInSheet', () => ({ CheckInSheet: ({ slotIdx, onSave, onClose }: { slotIdx: number; onSave: (d: object) => void; onClose: () => void }) => <div role="dialog">slot:{slotIdx}<button onClick={() => { onSave({ state: 'done', note: 'Megérkeztem' }); onClose() }}>Mentés</button></div> }))
 vi.mock('@/features/me/sheets/JournalSheet', () => ({ JournalSheet: () => <div role="dialog">Napló írása</div> }))
 vi.mock('@/features/today/sheets/ActivityLogSheet', () => ({ ActivityLogSheet: () => <div role="dialog">Aktivitás rögzítése</div> }))
-vi.mock('@/features/insights/logic/useVoiceInput', () => ({ useVoiceInput: () => ({ state: 'idle', toggle: vi.fn() }) }))
-function setup() {
-  return render(<MemoryRouter initialEntries={['/nap']}><Routes>
+vi.mock('@/shared/lib/voice/useVoiceInput', async (orig) => ({
+  ...(await orig<typeof import('@/shared/lib/voice/useVoiceInput')>()), useVoiceInput: () => ({ state: 'idle', toggle: vi.fn() }) }))
+// Kímélő mód (mezo-q4xt2.2): the slot reads the recovery state through the real hooks in mock
+// mode — a fresh client per render, optionally seeded with an open period.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
+function setup(recovery?: RecoveryState) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  if (recovery) client.setQueryData([...RECOVERY_QUERY_KEY, localDateString()], recovery)
+  return render(<QueryClientProvider client={client}><ToastProvider><MemoryRouter initialEntries={['/nap']}><Routes>
     <Route path="/nap" element={<NapHubPage />} />
     {['/nap/gyors', '/mezo/chat', '/nap/eletjel', '/nap/checkin'].map(path => <Route key={path} path={path} element={<div>destination:{path}</div>} />)}
-  </Routes></MemoryRouter>)
+  </Routes></MemoryRouter></ToastProvider></QueryClientProvider>)
 }
 it('opens the next check-in directly and saves to that slot', async () => {
   setup()
@@ -122,5 +135,40 @@ describe('NapHubPage — Kérdezd a csapatot (mezo-u3712)', () => {
     const link = screen.getByRole('link', { name: /Kérdezd a csapatot/ })
     expect(link).toHaveAttribute('href', '/mezo/diagnozis')
     expect(link).toHaveClass('glass')
+  })
+})
+
+describe('NapHubPage — kímélő mód (mezo-q4xt2.2)', () => {
+  const open = () => mockOpen(recoveryEmpty, { category: 'ILLNESS', estimate: 'FEW_DAYS', startDate: addDays(localDateString(), -1) })
+
+  test('no period: the „Nem vagyok jól" pill under the heading → Mi történt? → Beteg vagyok → 2–3 nap → the Hogy vagy? card', async () => {
+    const { container } = setup()
+    const pill = screen.getByRole('button', { name: 'Nem vagyok jól' })
+    // it sits between the heading and the orbit
+    const hub = container.querySelector('.nap-center')!
+    const order = [...hub.children].map((c) => c.className)
+    expect(order.findIndex((c) => c.includes('nap-kmentry'))).toBe(order.findIndex((c) => c.includes('nap-center-heading')) + 1)
+    await userEvent.click(pill)
+    await userEvent.click(await screen.findByRole('button', { name: 'Beteg vagyok' }))
+    await userEvent.click(screen.getByRole('button', { name: '2–3 nap' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Kímélő mód bekapcsolása' }))
+    expect(await screen.findByText('Kímélő mód bekapcsolva')).toBeInTheDocument()
+    expect(await screen.findByText('Hogy vagy?')).toBeInTheDocument()
+    expect(document.querySelector('.nap-kmtop small')?.textContent?.replace(/\s+/g, ' ')).toBe('Kímélő mód · 1. nap · becslés: 2–3 nap')
+    expect(screen.queryByRole('button', { name: 'Nem vagyok jól' })).not.toBeInTheDocument()
+  })
+
+  test('an open period: the card sits above the evening napzárás card, whose gym chip reads „edzés · kímélő mód"', () => {
+    store.tick = new Date('2026-09-17T20:30:00')
+    try {
+      const { container } = setup(open())
+      const card = container.querySelector('.nap-kmcard')!
+      const zcard = container.querySelector('.nap-zcard')!
+      expect(card.compareDocumentPosition(zcard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(screen.getByText('edzés · kímélő mód')).toBeInTheDocument()
+      expect(screen.queryByText('edzés 1/1')).not.toBeInTheDocument()
+    } finally {
+      store.tick = new Date('2026-09-17T14:00:00')
+    }
   })
 })

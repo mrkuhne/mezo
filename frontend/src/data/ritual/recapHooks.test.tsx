@@ -4,6 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { useDayRecap } from '@/data/ritual/recapHooks'
+import { useTrain } from '@/data/train/trainHooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 
 afterEach(() => {
@@ -104,6 +105,26 @@ describe('useDayRecap (real mode)', () => {
     expect(training).toEqual({ icon: 'i-edzes', label: 'Pull Day', meta: '✓', done: false })
   })
 
+  // Kihagyás S1 (mezo-q4xt2.1) — a skipped gym day is not an unfinished plan: no not-done row.
+  test('a GYM skip on the day drops the not-done training row', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(http.get(`${API_BASE}/api/train/skips`, () =>
+      HttpResponse.json([{
+        id: 'g1', date: DATE, kind: 'GYM', dayOfWeek: null, time: null, sessionKey: null,
+        reasonCategory: 'ILLNESS', reasonText: null, source: 'USER', serious: true, freePass: false, excused: true,
+      }]),
+    ))
+    // Render the recap next to useTrain() on the SAME query cache: once the train read shows both
+    // the day's plan ('Pull Day') and the skip, the recap in that same render has seen them too —
+    // so the negative assertion below can never pass merely because the workout had not loaded.
+    const { result } = renderHook(() => ({ recap: useDayRecap(DATE), train: useTrain() }), { wrapper: makeHookWrapper() })
+    await waitFor(() => {
+      expect(result.current.train.workout?.title).toBe('Pull Day')
+      expect(result.current.train.plannedSkips.some((s) => s.kind === 'GYM' && s.date === DATE)).toBe(true)
+    })
+    expect(result.current.recap.events.some((e) => e.icon === 'i-edzes')).toBe(false)
+  })
+
   test('closingNote is non-null ONLY when the feed carries an "evening" kind message', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     server.use(
@@ -180,8 +201,11 @@ describe('useDayRecap (real mode)', () => {
       vi.setSystemTime(new Date(`${REST_DAY}T08:00:00`))
       server.use(
         restDay(), sportScheduleFixture(),
-        http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-          HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: REST_DAY }]),
+        http.get(`${API_BASE}/api/train/skips`, () =>
+          HttpResponse.json([{
+            id: 's1', date: REST_DAY, kind: 'SPORT', dayOfWeek: 1, time: '17:00', sessionKey: null,
+            reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+          }]),
         ),
       )
       const { result } = renderHook(() => useDayRecap(REST_DAY), { wrapper: makeHookWrapper() })
@@ -195,8 +219,11 @@ describe('useDayRecap (real mode)', () => {
       vi.setSystemTime(new Date(`${REST_DAY}T08:00:00`))
       server.use(
         restDay(), sportScheduleFixture(),
-        http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
-          HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-23' }]), // next Tuesday
+        http.get(`${API_BASE}/api/train/skips`, () =>
+          HttpResponse.json([{
+            id: 's1', date: '2026-06-23', kind: 'SPORT', dayOfWeek: 1, time: '17:00', sessionKey: null, // next Tuesday
+            reasonCategory: 'NONE', reasonText: null, source: 'ADVICE', serious: false, freePass: false, excused: true,
+          }]),
         ),
       )
       const { result } = renderHook(() => useDayRecap(REST_DAY), { wrapper: makeHookWrapper() })

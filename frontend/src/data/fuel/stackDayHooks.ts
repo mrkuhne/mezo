@@ -37,7 +37,7 @@ export function useStackDay(date: string = localDateString()): {
   const { stash } = useStack()
   const intakes = useIntakes(date)
   const { goal: sleepGoal } = useSleepGoal()
-  const { gymSchedule, sport, sportSlotSkips } = useTrain()
+  const { gymSchedule, sport, plannedSkips } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings()
   const { weightLog } = useWeight()
@@ -46,7 +46,7 @@ export function useStackDay(date: string = localDateString()): {
   const bed = sleepGoal.bedTime
   const weightKg = weightLog.length ? weightLog[weightLog.length - 1].value : 0
 
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, plannedSkips)
   const firstBlockTime = blocks.length
     ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0].time
     : null

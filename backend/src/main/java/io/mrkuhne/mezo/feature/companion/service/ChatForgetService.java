@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.entity.ChatMemoryItem;
 import io.mrkuhne.mezo.feature.companion.entity.ForgottenMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.people.service.MentionDetectionService;
 import io.mrkuhne.mezo.feature.people.service.PersonFactService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
@@ -20,7 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * S8 (mezo-d6ivw.12, folds S6b mezo-d6ivw.9): "ezt ne jegyezd meg" in the chat. The chat and the
  * Tudástár speak the same verbs through the same writers: a person fact → {@link
- * PersonFactService#undo} (the inactive row is its own veto); an undecided owner proposal → a
+ * PersonFactService#undo} (the inactive row is its own veto; its „Rólam is" copy goes too,
+ * mezo-d6ivw.13); an undecided owner proposal → a
  * reject, which since S8 vetoes its text ({@link FactCandidateService#decide}); a proposal the
  * user already accepted in this conversation → {@link ForgetService#forgetFact}. Permanent — there
  * is no restore. The extraction race is closed by {@code extraction_blocked} (see {@link
@@ -37,7 +39,9 @@ public class ChatForgetService {
     private final TurnMemoryService turnMemoryService;
     private final FactCandidateService factCandidateService;
     private final ForgetService forgetService;
+    private final AboutMeService aboutMeService;
     private final ObjectProvider<PersonFactService> personFactService;
+    private final ObjectProvider<MentionDetectionService> mentionDetectionService;
 
     /** Forgets what the IMMEDIATELY PRECEDING user message of the conversation learned (owner
      *  ruling 2026-09-28: never walks back to an older turn — "ezt" means the last thing said).
@@ -53,6 +57,7 @@ public class ChatForgetService {
         }
         UUID preceding = rows.getLast();
         block(preceding);
+        forgetMentions(userId, List.of(preceding));
         // read AFTER the row lock: an extraction that committed meanwhile is included
         return forgetItems(userId, turnMemoryService.liveItemsOf(userId, List.of(preceding)));
     }
@@ -72,6 +77,7 @@ public class ChatForgetService {
         AiMessageEntity trigger = turnMemoryService.ownedUserMessage(userId, conversationId, triggerMessageId);
         List<UUID> rows = turnMemoryService.userMessageIds(userId, conversationId);
         rows.forEach(this::block);
+        forgetMentions(userId, rows);
         List<ChatMemoryItem> forgotten = forgetItems(userId, turnMemoryService.liveItemsOf(userId, rows));
         AiMessageEntity fresh = messageRepository.findById(trigger.getId()).orElseThrow();
         fresh.setForgottenMemories(ForgottenMemoriesEnvelope.append(fresh.getForgottenMemories(), forgotten));
@@ -87,6 +93,17 @@ public class ChatForgetService {
         });
     }
 
+    /** mezo-tdabt: the people mentions written from the forgotten user messages go too (the daily
+     *  summary and the person page quote their excerpts). Runs AFTER {@link #block}: a mention the
+     *  async listener committed meanwhile is read here; one still in flight sees the block through
+     *  the gate and is never written. Skipped when the people bean is absent. */
+    private void forgetMentions(UUID userId, List<UUID> userMessageIds) {
+        MentionDetectionService mentions = mentionDetectionService.getIfAvailable();
+        if (mentions != null) {
+            mentions.forgetBySourceRefs(userId, ChatMentionListener.SOURCE_REF_KIND, userMessageIds);
+        }
+    }
+
     private List<ChatMemoryItem> forgetItems(UUID userId, List<ChatMemoryItem> items) {
         PersonFactService facts = personFactService.getIfAvailable();
         List<ChatMemoryItem> done = new ArrayList<>();
@@ -95,6 +112,9 @@ public class ChatForgetService {
                 case ChatMemoryItem.KIND_PERSON_FACT -> {
                     if (facts == null) yield false;
                     facts.undo(userId, item.personId(), item.refId());
+                    // mezo-d6ivw.13: its „Rólam is" copy goes in the same transaction (the undo
+                    // event's async listener would find nothing left — idempotent)
+                    aboutMeService.remove(userId, item.refId());
                     yield true;
                 }
                 case ChatMemoryItem.KIND_FACT_CANDIDATE -> {

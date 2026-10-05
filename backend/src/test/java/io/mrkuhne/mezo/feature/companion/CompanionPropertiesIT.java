@@ -110,14 +110,15 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().minGroupN()).isEqualTo(3);
         assertThat(properties.patterns().reinforceCooldownDays()).isEqualTo(7);
         assertThat(properties.patterns().loadGymKgPerMin()).isEqualTo(100); // V3.4 derivált terhelés-skála
-        assertThat(properties.patterns().pairs()).hasSize(44); // V3.4 katalógus (8 v1 + 21 új) + 15 check-in 2.0 (mezo-ck2)
+        assertThat(properties.patterns().pairs()).hasSize(45); // V3.4 katalógus (8 v1 + 21 új) + 16 check-in 2.0 (mezo-ck2 15 + follow-up B: +day-score, meal-score→nova4)
         assertThat(properties.patterns().pairs())
                 .allSatisfy(p -> assertThat(p.mechanism()).isNotBlank()); // mezo-18bx: miért figyeljük
         assertThat(properties.patterns().pairs().getFirst().key())
                 .isEqualTo("sleep-quality~next-day-training-rpe");
         assertThat(properties.patterns().pairs().getFirst().metricA())
                 .isEqualTo(io.mrkuhne.mezo.feature.companion.service.MetricKey.SLEEP_QUALITY);
-        assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(1);
+        // wake-date re-lag (mezo-ck2.9): the night's own sleep_log.date IS the training day
+        assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(0);
     }
 
     /**
@@ -140,7 +141,9 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
                 .collect(java.util.stream.Collectors.toMap(CompanionProperties.PatternPair::key, p -> p));
         assertThat(byKey.get("sleep-duration~checkin-rested").metricB())
                 .isEqualTo(MetricKey.CHECKIN_RESTED);
-        assertThat(byKey.get("sleep-duration~next-day-checkin-craving").lagDays()).isEqualTo(1);
+        // sleep_log.date is the wake-up morning: lag 0 = the day after the night (follow-up B).
+        assertThat(byKey.get("sleep-duration~checkin-craving").lagDays()).isEqualTo(0);
+        assertThat(byKey).doesNotContainKeys("sleep-duration~next-day-checkin-craving", "meal-score~checkin-digestion");
         assertThat(byKey.get("gym-workload~next-day-checkin-soreness").metricB())
                 .isEqualTo(MetricKey.CHECKIN_SORENESS);
         assertThat(byKey.get("gym-workload~next-day-checkin-soreness").lagDays()).isEqualTo(1);
@@ -148,8 +151,11 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(byKey.get("checkin-mood~checkin-day").metricB()).isEqualTo(MetricKey.CHECKIN_DAY);
         assertThat(byKey.get("social-mentions~checkin-connection").metricB())
                 .isEqualTo(MetricKey.CHECKIN_CONNECTION);
-        assertThat(byKey.get("meal-score~checkin-digestion").metricB())
-                .isEqualTo(MetricKey.CHECKIN_DIGESTION);
+        assertThat(byKey.get("nova4-kcal~checkin-digestion").metricA()).isEqualTo(MetricKey.NOVA4_KCAL_PCT);
+        assertThat(byKey.get("nova4-kcal~checkin-digestion").metricB()).isEqualTo(MetricKey.CHECKIN_DIGESTION);
+        assertThat(byKey.get("day-score~checkin-day").metricA()).isEqualTo(MetricKey.DAY_SCORE);
+        assertThat(byKey.get("day-score~checkin-day").metricB()).isEqualTo(MetricKey.CHECKIN_DAY);
+        assertThat(byKey.get("day-score~checkin-day").lagDays()).isEqualTo(0);
         assertThat(byKey).containsKeys("sleep-quality~checkin-rested", "checkin-stress~checkin-craving",
                 "daily-protein~checkin-hunger", "meal-score~checkin-craving",
                 "training-monotony~checkin-motivation", "sleep-quality~checkin-motivation",

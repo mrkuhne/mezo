@@ -53,7 +53,8 @@ public final class ExpenditureExplainer {
 
         Integer avgIntake = usable == 0 ? null : (int) Math.round(in.days().stream()
             .filter(d -> d.intakeKcal() != null).mapToInt(Day::intakeKcal).average().orElseThrow());
-        // Over the same (usable) days as the intake average, so the simple equation compares like with like.
+        // The daily average of the logged movement (mezo-tb3s2), over the same (usable) days as the
+        // intake average, so the simple equation compares like with like.
         Integer avgMovement = usable == 0 ? null : (int) Math.round(in.days().stream()
             .filter(d -> d.intakeKcal() != null).mapToInt(Day::movementKcal).average().orElseThrow());
 

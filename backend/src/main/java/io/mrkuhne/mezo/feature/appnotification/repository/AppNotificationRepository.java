@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.appnotification.repository;
 import io.mrkuhne.mezo.feature.appnotification.entity.AppNotificationEntity;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,8 @@ public interface AppNotificationRepository extends JpaRepository<AppNotification
             UUID createdBy, Pageable pageable);
 
     List<AppNotificationEntity> findByCreatedByAndReadAtIsNullAndDeletedFalse(UUID createdBy);
+
+    Optional<AppNotificationEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     boolean existsByCreatedByAndDedupKeyAndDeletedFalse(UUID createdBy, String dedupKey);
 

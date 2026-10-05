@@ -36,4 +36,12 @@ public interface ExerciseRepository extends JpaRepository<ExerciseEntity, UUID> 
     @Query(value = "SELECT id, name, muscle, type, catalog_id AS \"catalogId\", created_at AS \"createdAt\" "
         + "FROM exercise WHERE created_by = :createdBy", nativeQuery = true)
     List<ExerciseIdentityRow> findIdentityRowsIncludingDeleted(@Param("createdBy") UUID createdBy);
+
+    /**
+     * Rows by id INCLUDING soft-deleted ones (mezo-mobji): a "Mezociklusra is" swap soft-deletes
+     * the replaced template row while the running instance still shows it with its logged sets.
+     */
+    @Query(value = "SELECT * FROM exercise WHERE created_by = :createdBy AND id IN (:ids)", nativeQuery = true)
+    List<ExerciseEntity> findOwnedByIdIncludingDeleted(
+        @Param("createdBy") UUID createdBy, @Param("ids") Collection<UUID> ids);
 }

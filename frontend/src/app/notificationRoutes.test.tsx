@@ -44,9 +44,7 @@ test('a fejléc dropdown lábléce a feedre visz', async () => {
   expect(await screen.findByText('Ma')).toBeInTheDocument()
 })
 
-// mezo-61w0 regressziós pinje: a badge eddig SOSEM tudott kialudni, mert a fában nem volt
-// elérhető markAllRead hívó. Most a feed-oldal megnyitása az.
-test('a fejléc olvasatlan-badge-e eltűnik, miután megnyitottuk a feedet', async () => {
+test('a feed oldal megnyitása nem törli a fejléc olvasatlan-badge-ét', async () => {
   renderAt('/nap')
   const bell = await screen.findByRole('button', { name: 'Értesítések, 5 olvasatlan' })
   expect(bell.querySelector('.nap-badge')).toHaveTextContent('5')
@@ -55,8 +53,8 @@ test('a fejléc olvasatlan-badge-e eltűnik, miután megnyitottuk a feedet', asy
   await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   await screen.findByText('Ma')
 
-  const after = await screen.findByRole('button', { name: 'Értesítések' })
-  expect(after.querySelector('.nap-badge')).toBeNull()
+  const after = await screen.findByRole('button', { name: 'Értesítések, 5 olvasatlan' })
+  expect(after.querySelector('.nap-badge')).toHaveTextContent('5')
 })
 
 test('legacy notification settings back leads to the common settings center', async () => {
@@ -82,21 +80,12 @@ test('header → center → notifications → center preserves the origin', asyn
   expect(container.querySelector('.nf-page')).toBeInTheDocument()
 })
 
-// Fix round 2 (final review, Minor 4): a `big` a NYITÁSKORI pillanatkép, a `sub` élő — egy végig
-// olvasott feeden ez egy nagy `0`-t állított a „… értesítés" fölé. Nulla olvasatlannál nincs bignum.
+// Nulla olvasatlannál nem jelenik meg felesleges nagy nulla a fejlécben.
 test('a végig olvasott feed nem rajzol nulla bignumot', async () => {
   const { container } = renderAt('/me/ertesitesek')
   await screen.findByText('Ma')
-  // az első nyitás a `markAllRead`-del mindent olvasottá tesz (a pillanatkép miatt a kiemelés
-  // marad, amíg itt vagyunk) — a bignum ilyenkor még a nyitáskori 5
-  expect(container.querySelector('.mz-bignum')).toHaveTextContent('5')
-
-  // …kilépünk a beállításokba és vissza: a feed újramountol, nulla olvasatlannal
-  await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
-  await screen.findByRole('heading', { name: 'Legyen a tiéd.' })
-  await userEvent.click(screen.getByRole('link', { name: 'Vissza az oldalra' }))
-
-  await screen.findByText('Ma')
+  await userEvent.click(screen.getByRole('button', { name: /^Értesítések, 5 olvasatlan/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Mind olvasott' }))
   expect(container.querySelector('.nf-row.unread')).toBeNull()
   expect(container.querySelector('.mz-bignum')).toBeNull()
   expect(container.querySelector('.mz-hero-sb')).toHaveTextContent('értesítés')

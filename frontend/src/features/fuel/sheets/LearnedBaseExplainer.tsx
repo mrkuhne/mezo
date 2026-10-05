@@ -124,7 +124,7 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
                   : <span className="l">± nem változott a súlyod<small>0 kg/hét (víz nélkül)</small></span>}
               <span className="r">{signed(-x.tissueKcalPerDay!)}</span></div>
             <div className="row"><Icon3D name="t-steps" size={24} />
-              <span className="l">− amit mozgással égettél<small>edzések + terven kívüli mozgás, napi átlag</small></span><span className="r">{signed(-x.avgMovementKcal!)}</span></div>
+              <span className="l">− amit mozgással égettél<small>logolt mozgás, napi átlag</small></span><span className="r">{signed(-x.avgMovementKcal!)}</span></div>
             <div className="row tot"><span className="l">= ennyit égetsz mozgás nélkül</span><span className="r">≈ {nf(round10(simple!))}</span></div>
           </div>
           {showWhy && (

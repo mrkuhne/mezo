@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { invalidateFuelTargets } from '@/data/fuel/queryKeys'
 import { isMockMode } from '@/data/_client/mode'
@@ -24,8 +24,8 @@ import {
   type SportScheduleSlotResponse,
   type SportSessionCreateRequest,
   type SportSessionResponse,
-  type SportSlotSkipResponse,
   type WorkoutFeedbackInput,
+  type WorkoutExerciseChangeRequest,
   type WorkoutInstanceResponse,
   type WorkoutTodayResponse,
 } from '@/data/train/trainApi'
@@ -42,12 +42,20 @@ import {
   MOCK_FIXTURE_WEIGHT_KG,
 } from '@/data/train/train'
 import { mesoReportQueryKey } from '@/data/train/mesoReportHooks'
+import { usePlannedSkips, PLANNED_SKIPS_QUERY_KEY } from '@/data/train/skipHooks'
+import { useRecovery } from '@/data/train/recoveryHooks'
+import { withMockComeback } from '@/data/train/recoveryMock'
+import { protectedDayRows } from '@/features/train/logic/recovery'
+import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
+import type { PlannedSkipKey } from '@/features/train/logic/plannedSkips'
+import { applyMockEdits, mockExerciseFor, type MockWorkoutEdit } from '@/data/train/mockWorkoutEdits'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
   GymScheduleSlot,
+  LoggedWorkoutExercise,
   Mesocycle,
   MusclePriorities,
   Sport,
@@ -87,6 +95,10 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
       videoUrl: e.videoUrl ?? null,
       imageStartUrl: e.imageStartUrl ?? null,
       imageEndUrl: e.imageEndUrl ?? null,
+      changeScope: e.changeScope ?? null,
+      replacesName: e.replacesName ?? null,
+      replacedByName: e.replacedByName ?? null,
+      planSlot: e.planSlot ?? true,
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
         : null,
@@ -102,6 +114,7 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
         : null,
     })),
     challenges: [],
+    ...(r.comeback ? { comeback: r.comeback } : {}),
     overloadSummary: r.overloadSummary
       ? {
           weightUp: r.overloadSummary.weightUp,
@@ -214,25 +227,20 @@ export function currentWeekRange(): { mondayIso: string; sundayIso: string } {
   return { mondayIso, sundayIso: addDays(mondayIso, 6) }
 }
 
-/** Query-key PREFIX for `sportSlotSkips` — exported (not just the full key below) so a
- *  successful skip_sport_slot apply (`adviceHooks.ts`) can invalidate every cached week's skips
- *  via react-query's own default prefix matching, without importing `currentWeekRange` itself or
- *  re-deriving "this week" a second time. */
-export const SPORT_SLOT_SKIPS_QUERY_KEY = ['train', 'sportSlotSkips'] as const
+/** Query-key PREFIX for planned skips — kept under the OLD `sportSlotSkips` name so
+ *  `adviceHooks.ts`'s `skip_sport_slot` invalidation (a prefix match) keeps working unchanged;
+ *  the real key is `PLANNED_SKIPS_QUERY_KEY` (`skipHooks.ts`), which this aliases (Kihagyás S1,
+ *  mezo-q4xt2.1 — the sport-only skip flow was folded into the combined gym/sport/run one). */
+export const SPORT_SLOT_SKIPS_QUERY_KEY = PLANNED_SKIPS_QUERY_KEY
 
-/** The `sportSlotSkips` query's own key — the Monday ISO date is IN the key (not just resolved
- *  inside the queryFn) so a session left open across a week boundary invalidates into a fresh
- *  fetch instead of serving last week's cached skips forever. */
-export function sportSlotSkipsQueryKey(): readonly [string, string, string] {
-  return [...SPORT_SLOT_SKIPS_QUERY_KEY, currentWeekRange().mondayIso]
-}
-
-/** Query-key PREFIX for `workoutToday` (the Train/Today plan endpoint, `trainApi.workoutToday`)
- *  — exported so a successful `lighten_tomorrow` apply (`adviceHooks.ts`) can invalidate every
- *  cached day's plan (the plain today context and any pinned-day session,
- *  `['train','workoutToday', workoutDay]`) via react-query's default prefix matching, the same
- *  `['train','workoutToday']` prefix this file's own mutations already invalidate on write. */
-export const WORKOUT_TODAY_QUERY_KEY = ['train', 'workoutToday'] as const
+/** Re-exported from `queryKeys.ts` (a dependency-free leaf) so every existing
+ *  `import { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/trainHooks'` keeps compiling — the
+ *  constant moved out from under here to break the `trainHooks → skipHooks → trainHooks` cycle
+ *  `usePlannedSkips()` (below) introduced (Kihagyás S1, mezo-q4xt2.1). See `queryKeys.ts` for the
+ *  full "why". */
+export { WORKOUT_TODAY_QUERY_KEY } from '@/data/train/queryKeys'
+/** Mock mode's mid-workout swap/add edits (mezo-mobji), replayed over the static plan. */
+const MOCK_WORKOUT_EDITS_KEY = ['train', 'mockWorkoutEdits'] as const
 
 export function mergeEventsIntoSchedule(
   base: SportSchedule | null,
@@ -475,6 +483,16 @@ type TrainData = {
   /** Soft-delete one logged set; the server renumbers the exercise's remaining setIndexes. */
   deleteSet: (workoutId: string, setId: string) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
+  /** Swap or add an exercise mid-workout (mezo-mobji). `onSuccess` gets the new exercise as the
+   *  refreshed plan shows it; `loggedOnReplaced` feeds mock mode's keep-vs-drop (real mode's
+   *  server knows its own sets). */
+  changeExercise: (
+    workoutId: string,
+    req: WorkoutExerciseChangeRequest,
+    opts?: { loggedOnReplaced?: number; onSuccess?: (created: LoggedWorkoutExercise) => void; onError?: (err: unknown) => void },
+  ) => void
+  /** „Szett hozzáadása → Minden hétre” (mezo-mobji): one plan row +1 set, ids untouched. */
+  addPlanWorkingSets: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string, opts?: FinishOpts) => void
@@ -484,9 +502,12 @@ type TrainData = {
   sportEvents: SportEventResponse[]
   addSportEvent: (req: SportEventCreateRequest, opts?: { onSuccess?: () => void; onSettled?: () => void }) => void
   deleteSportEvent: (id: string, opts?: MutateOpts) => void
-  /** This week's skipped recurring sport-slot occurrences (mezo-d58h.5) — feed straight into
-   *  `buildWeekAgenda`'s `skips` param. Empty in mock mode (no apply flow there yet). */
-  sportSlotSkips: SportSlotSkipResponse[]
+  /** This window's planned skips (Kihagyás S1, mezo-q4xt2.1; supersedes the sport-only
+   *  `sportSlotSkips` — a `skip_sport_slot` advice apply still lands here, as a SPORT/NONE/
+   *  source=ADVICE row) — feed straight into `buildWeekAgenda`'s `skips` param or match one
+   *  directly via `isSkipped`/`findSkip` (`plannedSkips.ts`). Sourced from the SAME
+   *  `usePlannedSkips()` fetch the skip UI itself uses — one query, not two. */
+  plannedSkips: PlannedSkipKey[]
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
   createCatalogExercise: (req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
   updateCatalogExercise: (id: string, req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
@@ -599,14 +620,9 @@ function useLogSportSession(
   )
 }
 
-export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
-  const mock = isMockMode()
-  const qc = useQueryClient()
-  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
-  // Day resolution is server-side (open instance > param > weekday label); param-less
-  // callers keep the plain today context. Mock ignores the param (static plan).
-  const workoutDay = opts?.workoutDay ?? null
-  const { data: mesoData, isPending: mesoPending } = useQuery({
+/** The `['train', 'mesocycles']` query — one definition for `useTrain` and `useActiveMesoWeek`. */
+function mesocyclesQuery(mock: boolean, qc: QueryClient) {
+  return {
     queryKey: ['train', 'mesocycles'],
     // Mock resolves SEEDED CACHE first, static fixture second (mesoReportHooks' mockResolve
     // idiom): mockStart/mockRerun (mezo-meyc.1) and mockClose (mezo-meyc.2) all edit this list
@@ -626,7 +642,28 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // guard the sibling mock caches below already carry (gymSchedule, sportEvents) — the
     // pantry/useDualQuery pattern. Real mode keeps the TanStack default.
     staleTime: mock ? Infinity : undefined,
-  })
+  }
+}
+
+/** The active meso's current week (after any recovery shift) — the „Üdv újra!" week clause on
+ *  surfaces that do not load the whole `useTrain()` (the Nap hub). Null without an active meso.
+ *  `enabled: false` skips the (real-mode) fetch — the Nap hub reads it only while a period exists. */
+export function useActiveMesoWeek({ enabled = true }: { enabled?: boolean } = {}): number | null {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  const { data } = useQuery({ ...mesocyclesQuery(mock, qc), enabled })
+  const m = (data ?? []).find((x) => x.status === 'active') ?? (mock ? activeMeso : null)
+  return m?.currentWeek ?? null
+}
+
+export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
+  const mock = isMockMode()
+  const qc = useQueryClient()
+  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
+  // Day resolution is server-side (open instance > param > weekday label); param-less
+  // callers keep the plain today context. Mock ignores the param (static plan).
+  const workoutDay = opts?.workoutDay ?? null
+  const { data: mesoData, isPending: mesoPending } = useQuery(mesocyclesQuery(mock, qc))
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
   // HU display dates), so the derivation happens inside the queryFn.
   const { data: sportData, isPending: sportQueryPending } = useQuery({
@@ -652,20 +689,23 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     initialData: mock ? ([] as SportEventResponse[]) : undefined,
     staleTime: mock ? Infinity : undefined,
   })
-  // Sport-slot skips (mezo-d58h.5) — this week's dated occurrences a skip_sport_slot advice
-  // action hid, fed into buildWeekAgenda's own filter (weekAgenda.ts). Mock has no advice-card
-  // apply flow yet, so mock mode always answers the empty list — the FE has never had a skip to
-  // show there; the real fetch scopes to the same Mon–Sun window `mergeEventsIntoSchedule` uses.
-  const { data: sportSlotSkipsData } = useQuery({
-    queryKey: sportSlotSkipsQueryKey(),
-    queryFn: mock
-      ? async () => [] as SportSlotSkipResponse[]
-      : () => {
-          const { mondayIso, sundayIso } = currentWeekRange()
-          return trainApi.sportSlotSkips(mondayIso, sundayIso)
-        },
-    initialData: mock ? ([] as SportSlotSkipResponse[]) : undefined,
-  })
+  // Planned skips (Kihagyás S1, mezo-q4xt2.1) — one-tap skips of a planned gym/sport/run
+  // occurrence, superseding the old sport-only `sport_slot_skip` advice flow (which still writes
+  // into the SAME list server-side, as SPORT/NONE/source=ADVICE rows). `usePlannedSkips()` is the
+  // single fetch of the skip window; every reader that used to destructure `sportSlotSkips` off
+  // `useTrain()` now reads `plannedSkips` off it — one query, not two.
+  const { skips: realSkips } = usePlannedSkips()
+  // Kímélő mód (Kihagyás S2, mezo-q4xt2.2): every protected recovery date joins as a virtual DAY
+  // row, which hides every planned occurrence on that date (`plannedSkips.ts`'s `matches`). The
+  // recovery GET covers today−7 … today+13, so the agenda sees next week's protected days too.
+  const { recovery } = useRecovery()
+  const plannedSkipsData = useMemo(
+    () => {
+      const days = protectedDayRows(recovery)
+      return days.length ? [...realSkips, ...days] : realSkips
+    },
+    [realSkips, recovery],
+  )
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
   const { data: gymSlotsData, isPending: gymSchedulePending, isError: gymScheduleError } = useQuery({
@@ -698,6 +738,15 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     queryKey: ['train', 'workoutToday', workoutDay],
     queryFn: mock ? async () => null : () => trainApi.workoutToday(workoutDay ?? undefined),
     initialData: mock ? null : undefined,
+  })
+  // Mock mode's mid-workout swaps/adds (mezo-mobji) — a client-owned cache replayed over the
+  // static plan (see mockWorkoutEdits). Pinned fresh so a refetch never drops the edits.
+  const { data: mockEdits } = useQuery({
+    queryKey: MOCK_WORKOUT_EDITS_KEY,
+    queryFn: async () => qc.getQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY) ?? [],
+    initialData: mock ? ([] as MockWorkoutEdit[]) : undefined,
+    staleTime: Infinity,
+    enabled: mock,
   })
 
   // Write mutations: mock mode no-ops (Phase-1 local behavior stays untouched);
@@ -817,6 +866,37 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? async (_args: { workoutId: string; setId: string }) => undefined
       : (args: { workoutId: string; setId: string }) => trainApi.deleteSet(args.workoutId, args.setId),
     onSuccess: invalidateToday,
+  })
+  // Mid-workout swap/add (mezo-mobji): real mode writes the server's refreshed today payload
+  // straight into every today key (the session then renders the new card in the same commit)
+  // and refetches; mock appends to the client-owned edit list.
+  const changeExerciseMutation = useMutation({
+    mutationFn: async (args: { workoutId: string; req: WorkoutExerciseChangeRequest; loggedOnReplaced: number }) => {
+      if (mock) {
+        const edit: MockWorkoutEdit = { id: `mock-${crypto.randomUUID()}`, req: args.req, loggedOnReplaced: args.loggedOnReplaced }
+        const replaced = args.req.replacesExerciseId
+          ? applyMockEdits(trainWorkout, qc.getQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY) ?? [])
+              .exercises.find((e) => e.id === args.req.replacesExerciseId) ?? null
+          : null
+        qc.setQueryData<MockWorkoutEdit[]>(MOCK_WORKOUT_EDITS_KEY, (prev) => [...(prev ?? []), edit])
+        return mockExerciseFor(edit, replaced?.name ?? null)
+      }
+      const res = await trainApi.changeExercise(args.workoutId, args.req)
+      qc.setQueriesData({ queryKey: WORKOUT_TODAY_QUERY_KEY }, res.today)
+      const created = toWorkoutPlan(res.today)?.exercises.find((e) => e.id === res.exerciseId)
+      if (!created) throw new Error('changeExercise: the new exercise is missing from today')
+      return created
+    },
+    onSuccess: invalidateToday,
+  })
+  const planSetsMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { workoutId: string; exerciseId: string }) => undefined
+      : (args: { workoutId: string; exerciseId: string }) => trainApi.addPlanWorkingSets(args.workoutId, args.exerciseId),
+    onSuccess: () => {
+      invalidateToday()
+      invalidate()
+    },
   })
   const skipMutation = useMutation({
     mutationFn: mock
@@ -994,6 +1074,22 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     (workoutId: string, exerciseId: string) => skipMutation.mutate({ workoutId, exerciseId }),
     [skipMutation],
   )
+  const changeExercise = useCallback(
+    (
+      workoutId: string,
+      req: WorkoutExerciseChangeRequest,
+      opts?: { loggedOnReplaced?: number; onSuccess?: (created: LoggedWorkoutExercise) => void; onError?: (err: unknown) => void },
+    ) =>
+      changeExerciseMutation.mutate(
+        { workoutId, req, loggedOnReplaced: opts?.loggedOnReplaced ?? 0 },
+        { onSuccess: (created) => opts?.onSuccess?.(created), onError: (err) => opts?.onError?.(err) },
+      ),
+    [changeExerciseMutation],
+  )
+  const addPlanWorkingSets = useCallback(
+    (workoutId: string, exerciseId: string) => planSetsMutation.mutate({ workoutId, exerciseId }),
+    [planSetsMutation],
+  )
   const saveExerciseNote = useCallback(
     (exerciseId: string, note: string) => noteMutation.mutate({ exerciseId, note }),
     [noteMutation],
@@ -1050,7 +1146,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     mesocycles: mesos,
     // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
     activeMeso: realActiveMeso ?? (mock ? activeMeso : null),
-    workout: mock ? trainWorkout : toWorkoutPlan(todayData),
+    workout: mock ? withMockComeback(applyMockEdits(trainWorkout, mockEdits ?? []), recovery) : toWorkoutPlan(todayData),
     // Mock serves the full static weekly schedule (Phase-1 parity); real derives
     // the meso's gym days (WHAT) joined with the standalone gym slots (WHEN).
     gymSchedule: mock ? { ...trainGymSchedule, weeklyTimes: trainGymSchedule.weeklyTimes.map((day, index) => ({ ...day, time: gymSlots.find(slot => slot.dayOfWeek === index)?.time ?? null })) } : deriveGymSchedule(realActiveMeso, gymSlots),
@@ -1084,7 +1180,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? { ...sport, schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), sessions: sportData?.sessions ?? [] }
       : { schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
     sportEvents: eventsData ?? [],
-    sportSlotSkips: sportSlotSkipsData ?? [],
+    plannedSkips: plannedSkipsData,
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     exerciseRecords: recordsData ?? [],
     activateMesocycle,
@@ -1096,6 +1192,8 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     updateSet,
     deleteSet,
     skipExercise,
+    changeExercise,
+    addPlanWorkingSets,
     saveExerciseNote,
     saveWorkoutFeedback,
     finishWorkout,

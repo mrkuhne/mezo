@@ -55,6 +55,12 @@ export interface PlannerBlock {
   label: string
   /** Sport id of a `sport` block (e.g. 'volleyball') — picks its row in the net activity-energy model (mezo-32m82). */
   sport?: string
+  /** A `sport` block was matched to an actually-logged `SportSession` (mezo-tb3s2, `resolveSportBlocks`)
+   *  rather than being a leftover unconsumed planned occurrence. Absent/false on every OTHER caller
+   *  (gym/run blocks, or a sport block from the schedule-only `deriveBlocks(..., [])` call) — those
+   *  kinds carry no logged-provenance of their own here and must be checked against their own logged
+   *  data source (gym: `gymDoneDates`/`completedTodayWorkout`; run: `runSessions`) by the caller. */
+  logged?: boolean
 }
 export interface DayPlanInput {
   wake: string
@@ -142,6 +148,11 @@ export interface DayBudget extends Macro4 {
     formulaBase?: number | null
     sd?: number | null
     confidence?: 'low' | 'medium' | 'high' | null
+    /** The still-unlogged planned sessions' kcal (mezo-tb3s2, `FuelDayEnergy.pendingMovementKcal`)
+     *  — a preview of what the Mozgás row would grow to if today's remaining planned sessions get
+     *  logged. Optional so DayBudget literals built outside `servedBudget` need no touch; every
+     *  reader defaults it to 0 (absent → nothing pending), never fabricates a number. */
+    pending?: number
   }
 }
 
@@ -156,8 +167,9 @@ export function servedBudget(targets: MacroSet, energy: FuelDayEnergy | null | u
     ? {
         base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal, balance: energy.balanceKcal, target: energy.targetKcal,
         source: energy.baseSource, formulaBase: energy.formulaBaseKcal, sd: energy.baseSdKcal, confidence: energy.baseConfidence,
+        pending: energy.pendingMovementKcal ?? 0,
       }
-    : { base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal }
+    : { base: targets.kcal, planned: 0, extra: 0, balance: 0, target: targets.kcal, pending: 0 }
   return { kcal: targets.kcal, p: targets.p, c: targets.c, f: targets.f, energy: e }
 }
 

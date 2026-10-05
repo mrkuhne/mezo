@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-27
+updated: 2026-09-30
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -323,7 +323,7 @@ discovered slug is a `FEATURE_LABELS` key. Latest entry: `team_chat` („Csapat-
 beszélgetés)”, Emlékezet S7 `mezo-d6ivw.7`) — the csapatfal ügy-beszélgetés's guarded voice calls
 (nyitó/lezáró sorok és a felhasználó válaszára adott karakter-hang). (Previous entry:
 `companion_recheck` („Tudás-újraellenőrzés”, `mezo-d6ivw.2`) — the quarterly re-check of a
-hand-confirmed, plan-less knowledge fact.)
+hand-confirmed, plan-less knowledge fact; `companion_fact_merge` („Tény-összevonás”, `mezo-d6ivw.10`) — the weekly judge that groups repeated facts.)
 
 **Honesty rules** (repeated across every admin surface, not just this doc's pages): `null` and
 `0` are never conflated — a `null` `errorPct`/`p90LatencyMs`/`acceptedShare`/`costPerUse` means
@@ -453,6 +453,7 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
 
 ## 9. Decisions, gotchas & deferred
 
+- **Hungarian number agreement (Check-in 2.0 follow-up C, 2026-09-28).** The memory explorer's sampled-vector banner no longer prints a fixed „a …-ból": `huArticle`/`huFrom` (`shared/lib/huNum.ts`) pick „a"/„az" and -ból/-ből from how the number is read aloud („az 1842-ből"); see [`admin-memory-explorer.md`](admin-memory-explorer.md). Copy only — no route, hook or contract moved.
 - **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`features/admin`) moved after this doc, in the shell strip re-dress (`mezo-ju4j6.3`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 
 - **Read-only, no export, no new role** — see [ADR 0038](../decisions/0038-admin-hub-cross-user-reads.md)

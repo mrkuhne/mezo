@@ -33,6 +33,9 @@ export const FEATURE_LABELS: Record<string, Entry> = {
   companion_consolidation: { label: 'Emlék-feldolgozás', hint: 'éjszakai emlék-összegzés' },
   companion_daily_summary: { label: 'Napi összefoglaló', hint: 'a nap AI-összegzése' },
   companion_fact_extract: { label: 'Tény-kinyerés', hint: 'tanult tények kigyűjtése' },
+  // VERIFIED: FactMergeJudge (S9, mezo-d6ivw.10) — heti egyszer megvizsgálja a jóváhagyott
+  // tények egy listáját, és javasolja az egyformán/átfedően szólók összevonását.
+  companion_fact_merge: { label: 'Tény-összevonás', hint: 'hasonló tények heti összevonása' },
   companion_person_fact_extract: { label: 'Személy-tény kinyerés', hint: 'tények a beszélgetésben említett emberekről' },
   companion_graph: { label: 'Tudásgráf-építés', hint: 'kapcsolatok felismerése' },
   // VERIFIED: HypothesisPipelineService — mintázat-figyelésből (PatternMonitorResponse)

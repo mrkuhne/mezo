@@ -101,6 +101,11 @@ public interface TrainMapper {
     @Mapping(target = "prescribedSets", ignore = true)
     @Mapping(target = "rationale", ignore = true)
     @Mapping(target = "progression", ignore = true)
+    // Session-change fields (mezo-mobji) come from SessionExerciseAssembler, not the row.
+    @Mapping(target = "changeScope", ignore = true)
+    @Mapping(target = "replacesName", ignore = true)
+    @Mapping(target = "replacedByName", ignore = true)
+    @Mapping(target = "planSlot", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
 
     @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")

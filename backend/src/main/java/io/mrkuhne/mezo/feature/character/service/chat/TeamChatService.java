@@ -29,6 +29,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -140,6 +141,9 @@ public class TeamChatService {
      *  of their own: the push step would not see the uncommitted ügy (the async
      *  {@link TeamChatEventListener} never does). */
     public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at) {
+        if (inQuietHours(at)) {
+            return Optional.empty();
+        }
         if (TransactionSynchronizationManager.isActualTransactionActive()) {
             // mezo-a9bo7.27: the push step runs in its own transaction and cannot see this caller's
             // uncommitted ügy — it would silently skip the push. Say so instead of staying quiet.
@@ -162,6 +166,9 @@ public class TeamChatService {
      *  for a raise the async listener missed WITHOUT paging the user — the moment for a push has
      *  already passed. Joins the caller's transaction when there is one (the sweep's per-user one). */
     public Optional<TeamChatThreadEntity> open(UUID userId, String flagKey, Instant at, boolean allowPush) {
+        if (inQuietHours(at)) {
+            return Optional.empty();
+        }
         if (allowPush) {
             return open(userId, flagKey, at);
         }
@@ -339,11 +346,13 @@ public class TeamChatService {
         return line;
     }
 
-    /** OPEN ügyek opened before {@code now − expireAfterDays} become EXPIRED; returns how many. */
+    /** OPEN ügyek opened before {@code now − expireAfterDays} become EXPIRED; returns how many.
+     *  Row-locked ({@code lockStaleOpen}, mezo-d6ivw.11): a reply-close holding an ügy's lock wins,
+     *  and the sweep then no longer sees that ügy as OPEN. */
     @Transactional
     public int expire(Instant now) {
         Instant before = now.minus(properties.expireAfterDays(), ChronoUnit.DAYS);
-        List<TeamChatThreadEntity> stale = threads.findByStatusAndOpenedAtBeforeAndDeletedFalse(STATUS_OPEN, before);
+        List<TeamChatThreadEntity> stale = threads.lockStaleOpen(before);
         for (TeamChatThreadEntity thread : stale) {
             thread.setStatus(STATUS_EXPIRED);
             thread.setClosedAt(now);
@@ -360,7 +369,49 @@ public class TeamChatService {
      *  Idempotent: a second run changes nothing. Never {@code @Transactional} itself — the
      *  self-call must go through the proxy. */
     public void catchUp(Instant now) {
+        releaseOvernight(now);
         userFanOut.forEachActiveUser("Team chat catch-up", user -> self.getObject().catchUpUser(user.getId(), now));
+    }
+
+    /** Publish the preceding night's persisted raises at wake time. The hourly catch-up also calls
+     * this, so an application restart after 07:00 does not lose the morning publication. */
+    public void releaseOvernight(Instant now) {
+        if (inQuietHours(now)) {
+            return;
+        }
+        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        if (!quietStart.isAfter(quietEnd)) {
+            return;
+        }
+        ZonedDateTime localNow = now.atZone(properties.zone());
+        Instant end = localNow.toLocalDate().atTime(quietEnd).atZone(properties.zone()).toInstant();
+        if (now.isBefore(end)) {
+            return;
+        }
+        Instant start = localNow.toLocalDate().minusDays(1).atTime(quietStart)
+                .atZone(properties.zone()).toInstant();
+        userFanOut.forEachActiveUser("Team chat morning release", user -> {
+            UUID userId = user.getId();
+            for (CompanionFlagLogEntity raise : flagLogs
+                    .findByCreatedByAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtAsc(userId, start)) {
+                if (!raise.getCreatedAt().isBefore(end)) {
+                    break;
+                }
+                String flagKey = raise.getFlagKey();
+                if (FlagKey.ALL_HEALTHY.equals(flagKey)
+                        || threads.existsByCreatedByAndFlagKeyAndOpenedAtGreaterThanEqualAndDeletedFalse(
+                                userId, flagKey, raise.getCreatedAt())) {
+                    continue;
+                }
+                boolean stillRaised = flagTraces.findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc(userId, flagKey)
+                        .filter(trace -> "raised".equals(trace.getOutcome()))
+                        .isPresent();
+                if (stillRaised) {
+                    open(userId, flagKey, now);
+                }
+            }
+        });
     }
 
     @Transactional
@@ -577,6 +628,16 @@ public class TeamChatService {
             return false;
         }
         return !at.atZone(properties.zone()).toLocalTime().isBefore(quietStart);
+    }
+
+    private boolean inQuietHours(Instant at) {
+        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
+        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
+        LocalTime local = at.atZone(properties.zone()).toLocalTime();
+        if (!quietStart.isAfter(quietEnd)) {
+            return false;
+        }
+        return !local.isBefore(quietStart) || local.isBefore(quietEnd);
     }
 
     private static Instant latest(Instant a, Instant b) {

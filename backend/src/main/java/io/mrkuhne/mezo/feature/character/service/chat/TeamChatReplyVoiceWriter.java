@@ -111,8 +111,28 @@ public class TeamChatReplyVoiceWriter {
             return fallback;
         }
         String verdict = a.verdict() != null && VERDICTS.contains(a.verdict().strip()) ? a.verdict().strip() : null;
-        return new TeamChatReplyDraft(body, true, verdict, blankToNull(a.contextTag()), blankToNull(a.factText()),
+        return new TeamChatReplyDraft(body, true, verdict, blankToNull(a.contextTag()),
+                guardedFact(who, a.factText(), threadFacts, userText),
                 TeamChatExceptionMatcher.cleanKeywords(a.keywords()));
+    }
+
+    /**
+     * mezo-d6ivw.11: the remembered sentence lands in EVERY later prompt (chat, proactive,
+     * csapatfal), so it passes the same content guard as the reply itself — no invented number,
+     * no foreign emoji, no jargon, at most two sentences — and the {@link TeamChatReplyDecision#FACT_MAX}
+     * length. A failing fact is dropped (null), which degrades the reply to a plain answer: the
+     * user still gets the line, nothing is remembered.
+     */
+    public static String guardedFact(TeamCharacter who, String factText, List<String> threadFacts, String userText) {
+        String fact = blankToNull(factText);
+        if (fact == null || fact.length() > TeamChatReplyDecision.FACT_MAX) {
+            return null;
+        }
+        if (EditionVoiceGuard.checkGuest(who, fact, threadFacts, userText).isPresent()) {
+            log.info("Team chat remembered sentence dropped by the guard — the reply stays a plain answer");
+            return null;
+        }
+        return fact;
     }
 
     /** A fixed, honest per-character acknowledgement — no number, no emoji, every character the same. */

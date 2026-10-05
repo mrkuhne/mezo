@@ -9,6 +9,8 @@ import { NapCompanion } from '@/features/today/components/NapCompanion'
 import { NapFuelGraphic } from '@/features/today/components/NapFuelGraphic'
 import { NapPersonalInsight } from '@/features/today/components/NapPersonalInsight'
 import { NapzarasCard } from '@/features/today/components/NapzarasCard'
+import { KimeloSlot } from '@/features/today/components/KimeloCard'
+import { useRecovery } from '@/data/train/recoveryHooks'
 import type { CSSProperties } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -35,6 +37,9 @@ export function NapHubPage() {
   const notes = useJournalNotes(date, date)
   const activities = useActivities(date)
   const [sheet, setSheet] = useState<'journal' | 'activity' | number | null>(null)
+  // Kímélő mód (mezo-q4xt2.2): an open period turns the napzárás gym chip into „edzés · kímélő mód".
+  const { recovery } = useRecovery()
+  const kimeloOn = Boolean(recovery.period && !recovery.period.endedOn)
   const nextIdx = checkins.findIndex(c => c.state === 'now')
   const fillIdx = nextIdx >= 0 ? nextIdx : checkins.findIndex(c => c.state !== 'done')
   const moments = buildNapTimeline(date, checkins, nutrition.fuel.meals, notes.data, activities.data)
@@ -59,7 +64,9 @@ export function NapHubPage() {
     // Az EntranceGroup a ház egyszeri belépő-koreográfiája (`.rise` + `--i` lépcső, 70ms).
     <EntranceGroup className={`nap-hub nap-center${scenario.anchorMode ? ' nap-center-quiet' : ''}`}>
       <div className="nap-center-heading rise" style={{ '--i': 0 } as CSSProperties}><p>NAPKÖZPONT</p><h1>A napod.<br /><span>Minden kapcsolódik.</span></h1></div>
-      <NapzarasCard now={tick} />
+      {/* Kímélő mód (prototype elo/nap.html `kmSlot`): the „Nem vagyok jól" pill or the „Hogy vagy?" card, above the napzárás card. */}
+      <KimeloSlot />
+      <NapzarasCard now={tick} kimelo={kimeloOn} />
       <section className="nap-center-orbit rise" style={{ '--i': 1 } as CSSProperties} aria-label="Gyors műveletek" data-kalauz-anchor="nap-hero">
         <div className="nap-center-companion"><NapCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} /></div>
         {actions.map((a, i) => <button type="button" aria-label={a.label} key={a.art} className={`nap-center-node nap-node-${a.art}`} style={{ '--c': a.hue, '--i': i } as CSSProperties} onClick={a.run} disabled={a.art === 'membrane' && (checkinDay.isPending || checkinDay.isError)}>

@@ -48,9 +48,10 @@ public class TeamChatKnowledgeAdapter implements TeamChatKnowledgePort {
     public List<String> forArea(UUID owner, TeamCharacter area) {
         try {
             String key = area.key();
-            boolean isMezo = MEZO_OWNER.equals(key);
-            List<String> mezo = facts.promptFactsForOwners(owner, List.of(MEZO_OWNER), isMezo ? MAX : MEZO_MAX);
-            if (isMezo) {
+            // The Szkeptikus owns no area (its key matches no fact owner): Mezo facts only, as documented.
+            boolean mezoOnly = MEZO_OWNER.equals(key) || area == TeamCharacter.SZKEPTIKUS;
+            List<String> mezo = facts.promptFactsForOwners(owner, List.of(MEZO_OWNER), mezoOnly ? MAX : MEZO_MAX);
+            if (mezoOnly) {
                 return mezo;
             }
             List<String> own = facts.promptFactsForOwners(owner, List.of(key), MAX - Math.min(MEZO_MAX, mezo.size()));

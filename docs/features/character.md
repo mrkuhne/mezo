@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-28
+updated: 2026-10-01
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -17,9 +17,15 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 
 # Karakter (user character dossier) — Feature Documentation
 
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No character-detector change; the 1.1.0 changelog folder gained the `recovery_period`/`recovery_day_release` migration (see [`train.md`](train.md) §2 "Kihagyás S2").
+
+> **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** No character-detector change — the new `planned_skip` table lives in the same `1.1.0` changelog folder as `character`'s own S1 migration, which is why this doc's key_file directory shows commits it doesn't otherwise concern (the table and its follow-up `idx_` index rename). See [`train.md`](train.md) "Kihagyás (S1)".
+
+> **2026-09-29 — `mezo-mobji` (no character change).** The 1.1.0 changelog gained three train-owned `exercise` columns (`replaces_exercise_id`, `added_in_workout_id`, `saved_to_plan`, [`train.md` §4](train.md)); `CharacterSignalReads` resolves exercise names by id and keeps working for the new instance-scoped rows.
+
 > **2026-09-28 — S8 chat memory (`mezo-d6ivw.12`).** The csapatfal reply's "Megjegyeztem" chip (`ReplyAfterlife`) now renders through the shared `MemoryChip` (`surface="csapatfal"`, [`insights.md`](insights.md)) with no visible change; `teamChatHooks.ts` only had a comment updated. The 1.1.0 changelog gained `ai_message.forgotten_memories` + `extraction_blocked` (companion-owned, [`companion.md`](companion.md)); nothing in the character feature reads them.
 
-> **2026-09-28 — Check-in 2.0 detectors (`mezo-ck2`).** Seven new detectors over the new check-in items — `pain-map` (doki), `sleep-need` (szomnologus), `craving-trigger` and `food-digestion` (taplalkozo), `mood-text-calibration` (pszichologus), `motivation-follow-through` (drill), `soreness-recovery` (edzo) — and three changed ones: `people-mood-link` (reads `mood`, falls back to `mental`; new `connection` arm), `comfort-eating` (low mood = `mood <= 4 OR stress >= 7`, `mental` only as fallback; new direct craving arm), `self-calibration` (new rested × sleep-quality pair). The catalog is now **47** detectors (`DetektorokPage`). `DetectorInput.CheckinDayPoint` carries the new day means + `painRegions`; `CharacterSignalReads` fills them. §1 „Check-in 2.0 round". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.4b–§3.7.
+> **2026-09-28 — Check-in 2.0 detectors (`mezo-ck2`).** Seven new detectors over the new check-in items — `pain-map` (doki), `sleep-need` (szomnologus), `craving-trigger` and `food-digestion` (taplalkozo), `mood-text-calibration` (pszichologus), `motivation-follow-through` (drill), `soreness-recovery` (edzo) — and three changed ones: `people-mood-link` (reads `mood`, falls back to `mental`; new `connection` arm), `comfort-eating` (low mood = `mood <= 4 OR stress >= 7`, `mental` only as fallback; new direct craving arm), `self-calibration` (new rested × sleep-quality pair). The catalog is now **47** detectors (`DetektorokPage`). `DetectorInput.CheckinDayPoint` carries the new day means + `painRegions`; `CharacterSignalReads` fills them. §1 „Check-in 2.0 round". **Follow-up A (2026-09-28):** `CharacterDetector.checkInNeeds()` (default empty) lets a detector tell the check-in's question of the day which item it waits on and why — `craving-trigger` (sóvárgás), `food-digestion` (emésztés), `soreness-recovery` (izomláz), `pain-map` (fájdalom) declare one each; `DetectorCheckInNeedSource` (`@Order(2)`, character switch, per-key kill switches honoured like `DetectorRegistry`) serves them ([`me.md` §4](me.md)). Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.4b–§3.7.
 
 > One-line: a synthesis layer over everything mezo already remembers — a persisted,
 > dimension-structured picture of *who Daniel is*, built by a visible team of 7 domain-expert
@@ -410,16 +416,19 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   (`DATA`/`REPLY`/`EXCUSED`, max 8 chars) and `closeNote` (max 60 chars, truncated); a clear from
   data still writes the `RESOLVE` line as before, but a reply-close writes no separate line kind —
   the `KIND_REPLY` line answers, and `closeReason`/`closeNote`/`closedAt` are set directly on the
-  thread row (`TeamChatReplyService.close`). `open(userId, flagKey, at)` no-ops when the flag has no owner (`all_healthy`), an ügy for that
-  flag is already `OPEN`, the day's line cap is reached (below — the thread itself is never
-  created in that case, not just its line), or `InterventionService.pick` finds no eligible
+  thread row (`TeamChatReplyService.close`). `open(userId, flagKey, at)` no-ops when the flag has no
+  owner (`all_healthy`), an ügy for that flag is already `OPEN`, the supplied time is inside quiet
+  hours, the day's line cap is reached (below — the thread itself is never created in that case,
+  not just its line), or `InterventionService.pick` finds no eligible
   library entry; otherwise it persists the thread (`ownerCharacter`, `guestCharacter`,
   `adviceKey`, the offered `actions[]` from `AdviceActionCatalog`) and writes the `OPEN` line (+
   optional `GUEST`/`SKEPTIC` lines, below). `resolve(userId, flagKey, evidence, at)` flips the one
   `OPEN` thread for that flag to `RESOLVED` and writes a `RESOLVE` line — unless the line cap is
   reached, in which case the status flip still happens (a cleared rule must never linger open)
   but the line itself is dropped. `expire(now)` (`TeamChatExpiryJob`, daily `expiry-cron`) closes
-  every thread still `OPEN` past `expireAfterDays` as `EXPIRED` — one global age-cutoff query, no
+  every thread still `OPEN` past `expireAfterDays` as `EXPIRED` — one global age-cutoff query
+  (row-locked, `TeamChatThreadRepository.lockStaleOpen`, `mezo-d6ivw.11`: a reply-close holding an
+  ügy's lock wins and the sweep then no longer sees it as `OPEN`), no
   per-user fan-out.
 - **Owner map (`TeamChatCast`, spec §5.2):** an explicit `Map<FlagKey, TeamCharacter>` — NOT
   `TeamCharacter.forMetricDomain`, since `FlagCatalog` domains (`training` etc.) are not the same
@@ -431,7 +440,8 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   ügy. A separate `GUEST` map seeds cross-talk on 6 of those flags (e.g. `late_eating` →
   guest Szunya, `momentum_at_risk` → guest Mocor) — the same "a second character reacts" idea as
   the esti kiadás's own guest lines, but keyed by flag rather than by candidate shape.
-- **Events:** the existing `FlagRaisedEvent` opens an ügy; the new `FlagClearedEvent`
+- **Events:** the existing `FlagRaisedEvent` opens an ügy outside quiet hours; a raise during
+  22:00–07:00 is persisted but its ügy waits until 07:00. The `FlagClearedEvent`
   (`userId, flagKey, ClearEvidence, at` — published by `FlagTraceWriter` inside the same
   transaction as the trace row, whenever a rule's trace transitions TO `clear`, from any previous
   state) resolves one. `TeamChatEventListener` wires both — `AFTER_COMMIT` + `@Async`, the
@@ -461,15 +471,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   re-reads today's pushed ügyek and only then applies the policy — parallel raises from one
   evaluation can never both read "nothing pushed yet" (pinned by
   `TeamChatServiceIT.parallelOpens_neverExceedThePushPolicy`, which fails without the lock), and
-  a push can never outlive a rolled-back ügy. Before the budget it applies two gates: a library
-  entry with `channel: feed` never pushes (`AdvicePick.pushAllowed()`), and an open in the
-  EVENING part of `mezo.notification.quiet-hours` (22:00→midnight of the default 22:00–07:00
-  window, spec D3) stays silent without consuming the day's budget — unless the entry is
-  `quietHoursExempt`, whose push carries the `:quiet-exempt` dedup-key suffix
-  (`AppNotificationKind.QUIET_HOURS_EXEMPT_SUFFIX`) so the feed-anchored push path lets it ring.
-  An after-midnight open inside the window still pushes (counts against that local day); its ring
-  is deferred to max(wake, quiet end) by `AnchorResolver.feedFireMinute`
-  ([_platform-notifications.md](_platform-notifications.md) §3b).
+  a push can never outlive a rolled-back ügy. Before the budget, a library entry with
+  `channel: feed` never pushes (`AdvicePick.pushAllowed()`). An overnight raise is not opened or
+  pushed until `mezo.notification.quiet-hours` ends; a still-raised flag is opened
+  with the morning publication timestamp and then follows the ordinary daily push budget.
 - **Budget & safety caps (`TeamChatProperties`, `mezo.character.team-chat.*`):**
   `zone: Europe/Budapest` (the day boundary for the line cap and the push budget);
   `expire-after-days: 7`; `daily-line-cap: 12` (character lines of any kind per user per local
@@ -479,7 +484,8 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   every `TeamChatVoiceWriter` call, independent of `CharacterCouncilBudget`; `team_chat` sits on
   the `throttled-features` list, [application.yml](../../backend/src/main/resources/application.yml)) —
   over the cap every line falls back to the honest template text (`voiced=false`); `expiry-cron`
-  (`"0 10 4 * * *"`, 04:10 daily) and `catchup-cron` (`"0 20 * * * *"`, hourly at :20).
+  (`"0 10 4 * * *"`, 04:10 daily), `catchup-cron` (`"0 20 * * * *"`, hourly at :20), and
+  `morning-release-cron` (`"0 0 7 * * *"`, 07:00 daily).
 - **Voice (`TeamChatVoiceWriter`, spec §5.3–5.4):** ONE guarded LLM call per `OPEN`/`RESOLVE`
   event writes the owner's line, the guest's line and — only on an `OPEN` whose raise's own frozen
   payload shows a genuine coverage gap (`skepticGap`: under-logged nights for `sleep_debt`,
@@ -498,12 +504,18 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   another's): `catchUpMissedOpens` re-walks every `CompanionFlagLogEntity` raise in the last 2 h
   (`CATCH_UP_LOOKBACK_HOURS` — the sweep is hourly, so 2 h covers one missed run; the original
   24 h would have re-opened, on the first run after the deploy, every pre-deploy raise that
-  already got the retired advice card) with no thread opened at/after it, and opens one with
-  `allowPush=false` (the moment for paging the user already passed); `catchUpMissedResolves`
+  already got the retired advice card) with no thread opened at/after it, and opens daytime raises
+  with `allowPush=false` (the moment for paging the user already passed); overnight raises wait for
+  the morning release described below. `catchUpMissedResolves`
   resolves every still-`OPEN` thread whose flag's latest trace row is a `clear`, backdated to that
   row's own `occurredAt` (so the chip reads when the flag actually cleared, not when the sweep
   happened to notice) — but never before the ügy's own `openedAt` (a stale clear older than the
   raise that opened it). Idempotent — a second run changes nothing.
+  `TeamChatExpiryJob.runMorningRelease` runs at 07:00. Both it and the hourly catch-up re-read
+  the preceding night's persisted raises and publish only flags whose latest trace is still raised.
+  A morning publication opens at its actual publication time and may push then;
+  the repeated scan skips any raise already represented by a thread. This recovers a missed 07:00
+  run after an application restart. A flag cleared before morning produces no ügy.
 - **Knowledge seam (`TeamChatKnowledgePort.forArea(owner, area)`):** background sentences for the
   voice's context block — Character owns *when/where* a line speaks, Emlékezet owns *what it
   knows*. Since S7 (`mezo-d6ivw.7`) `TeamChatKnowledgeAdapter` replaces the earlier
@@ -513,8 +525,10 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   it returns Mezo facts only, up to the same cap. Fail-open: any `RuntimeException` yields an empty
   list, never a thrown error.
 - **Reply → answer → close/remember (S7, `mezo-d6ivw.7`, package `service/chat/`).** A `USER`
-  line triggers `TeamChatRepliedEvent`; `TeamChatReplyListener` (`@Async`,
-  `@TransactionalEventListener(AFTER_COMMIT)`) waits `reply-debounce-ms` (default **1500 ms**) so a
+  line triggers `TeamChatRepliedEvent`; `TeamChatReplyListener`
+  (`@TransactionalEventListener(AFTER_COMMIT)`) submits the answer to Boot's
+  `applicationTaskExecutor` after `reply-debounce-ms` (default **1500 ms**) — a delayed submit
+  (`CompletableFuture.delayedExecutor`, `mezo-d6ivw.11`), never a sleeping pool thread — so a
   burst of quick lines gets ONE answer — from the newest unanswered `USER` line only
   (`TeamChatReplyService.isUnansweredNewest`/`pendingUserLines`, re-checked in `commit` in case the
   burst grew mid-debounce) — then calls `TeamChatReplyService.answer` as the event's user
@@ -526,7 +540,11 @@ in Mezo's own bullet — this subsection is the chat engine itself.
   `question`/`other`); `EditionVoiceGuard.checkGuest` runs with the user's own reply text passed in
   as an extra whitelist argument, so a number/name the user already typed doesn't trip the guard on
   the owner's answer. No budget room, an LLM error, an unparseable answer, or a guard rejection all
-  fall back to a fixed Hungarian template line (`voiced=false`, `verdict=null`) — the fallback never
+  fall back to a fixed Hungarian template line (`voiced=false`, `verdict=null`). The proposed
+  `factText` passes the same guard on its own (`TeamChatReplyVoiceWriter.guardedFact`,
+  `mezo-d6ivw.11`: no invented number, no foreign emoji, no jargon, ≤2 sentences, ≤160 chars) — it
+  lands in every later prompt; a failing one is dropped (`null`), so the reply stays voiced but only
+  answers. The fallback never
   closes anything (closing requires a **voiced** `concrete_context` verdict,
   `TeamChatReplyDecision.decide`). Caps: `reply-voiced-per-thread-day` (default **4**) — past it a
   template answers instead of the LLM; `reply-daily-cap` (default **20**, all `REPLY` lines per user
@@ -543,18 +561,27 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `normalizedTag`, `factText`, `keywords`, `active=true`, linked to the source thread/line), writes
     a `knowledge_fact` (`source=team_chat`, `owner`=the character key, `provenance` = a structured
     team-chat envelope carrying the line/thread id, `createdBy`=the user —
-    `KnowledgeFactService.captureFromTeamChat`), and records one `team_chat_exception_hit`
-    (`source=REPLY`). An **inactive** exception on the same tag is a durable veto — undone once via
-    `.../remembered` (below), it is never re-captured, and a later reply on that tag always answers
-    `ANSWER_ONLY`. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's
+    `KnowledgeFactService.captureFromTeamChat`, in its OWN transaction (`REQUIRES_NEW`,
+    `mezo-d6ivw.11`) and fail-open — a failed capture degrades the outcome to `ANSWER_ONLY`: the
+    REPLY line still commits, the ügy stays open, nothing is remembered; the `ck_knowledge_fact_source` CHECK it needs was last
+    re-cut by `202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql`, which keeps `team_chat`
+    and adds the chat's „Rólam is" `person_fact` source), and records one `team_chat_exception_hit`
+    (`source=REPLY`). An **inactive** exception on the same tag is a veto — undone via
+    `.../remembered` (below), STOP-ped on a review, or its fact muted/forgotten in the Tudástár — and
+    a later reply on that tag answers `ANSWER_ONLY` (no hit, no re-capture) for as long as it stays
+    inactive. On an `EXCUSE` offer ügy a free-text reply whose tag matches the offer's
     exception is the tap (`EXCUSE_TAP_EQUIVALENT`: `closeReason=EXCUSED`, a `TAP` hit on the ügy's
     `openedAt` local day) — but only while that exception is still active; a withdrawn one (undo /
     STOP) degrades to a plain answer, as the tap endpoint 409s.
   - **Next occurrence (`TeamChatExceptionService.gate`, called inside `claimThread` on every
-    open).** The exception follows its knowledge fact: an active exception whose fact was deleted
-    or muted in the Tudástár (`includeInPrompt=false`, read via
-    `KnowledgeFactService.liveInPrompt`) is skipped — never mutated, so turning the fact back on
-    revives it. Order: an active exception with `≥ exception-review-hits` (default **4**) hits
+    open).** The exception MIRRORS its knowledge fact (`mezo-d6ivw.11`,
+    `TeamChatFactMirrorListener` → `TeamChatExceptionService.followFact`, async after every
+    `KnowledgeFactChangedEvent`): a fact muted, refuted, merged away or forgotten → the exception goes
+    inactive; turned back on in the Tudástár (even after an undo or a STOP) → active again with a
+    fresh review window (`windowStartedAt=now`, so old hits don't fire the review at once); an
+    edited fact text → the exception's `factText` (the chip) follows, when it fits 160 chars. The
+    gate additionally skips any active exception whose fact is not live
+    (`KnowledgeFactService.liveInPrompt`) — the belt for the mirror's async gap. Order: an active exception with `≥ exception-review-hits` (default **4**) hits
     inside the last `exception-window-days` (default **30**) that hasn't already offered a review in
     that SAME rolling window (since max(`windowStartedAt`, the floor day's start) — an ignored,
     expired or data-closed review therefore silences reviews only until it rolls out of the window)
@@ -567,6 +594,8 @@ in Mezo's own bullet — this subsection is the chat engine itself.
     `DELETE /api/character/team-chat/threads/{threadId}/remembered` — veto (deactivate the
     exception), mute the knowledge fact, delete that thread's `REPLY` hit, and reopen the thread
     (only if it was `RESOLVED` with `closeReason=REPLY` and no other `OPEN` thread shares the flag).
+    A raise of the same rule that opens a new ügy between that check and the reopen trips the
+    one-OPEN-per-rule index; the undo maps it to a retryable **409** (`mezo-d6ivw.11`), never a 500.
     Reads (`TeamChatReads`) keep an undone exception on its source ügy's `remembered` (inactive —
     the FE's "Visszavonva" confirmation) but drop one a REVIEW "Nem, figyelj rá" (STOP, close note
     `kivétel kikapcsolva`) withdrew: that was never an undo, and the review ügy's own REPLY line
@@ -1202,7 +1231,8 @@ Adatforrások+kör/Detektorok) were added to it.
   `CharacterPersistenceIT` (entity round-trip + jsonb envelopes + soft-delete unique-key
   behavior).
 - **`CharacterMetaReadsIT`** (round 4, new) — all four `MetaWindow` lists (triage decisions,
-  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows.
+  predictions, quests, proposal outcomes), the catch-up upper bound, and an owner with no rows; a
+  `source='merge'` fact-merge decision is NOT a triage event (S9, `mezo-d6ivw.10` — housekeeping).
 - **Konzílium choreography**: `KonziliumProposalRoundIT`, `KonziliumVerdictRoundIT`,
   `KonziliumUserFeedbackIT`, `ClaimLifecycleIT` — all via `FakeCompanionLlm` sentinels keyed on
   a marker constant per round step (`PROPOSAL_MARKER`, `SKEPTIC_MARKER`, `INTEGRATOR_MARKER`,
@@ -1250,6 +1280,11 @@ cross-domain flakiness, not a character regression — bd `mezo-oou9`; rerun onc
 investigating.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Team chat catch-up test clock:** `TeamChatServiceIT.catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear`
+  opens its setup thread at a fixed daytime hour. Backdating from `Instant.now()` can land inside
+  configured quiet hours (22:00–07:00), where `TeamChatService.open` correctly returns empty and
+  makes the test depend on when CI runs.
 
 - **Detector catalog is narrower than spec §5's v1 wishlist, but rounds 1–3 closed the
   physiological, Edzés-side, fuel/cycle, and psziché/viselkedés-meta cross-domain gaps** (S7
@@ -1714,7 +1749,11 @@ Social additions: `service/CharacterReplyService.java` (owned save/list/retry), 
 - `service/CharacterPromptAssembler.java` — the `[Karakter]` block renderer
 - `service/CharacterService.java` / `CharacterSignalReads.java` /
   `CharacterConfidenceWords.java` — reads, detector-input gathering, human-words confidence
-  (`CharacterService` also owns `runs()`/`run()`, S9)
+  (`CharacterService` also owns `runs()`/`run()`, S9). `CharacterSignalReads.kcalTarget`'s javadoc
+  was reworded for the actual-movement budget (`mezo-tb3s2`, 2026-09-28): the SERVED target it
+  projects through `DayTargetProjector` is now "base + logged planned + extra movement + balance"
+  rather than a day-type pick on planned-training-done ([`fuel.md`](fuel.md) §5) — no detector
+  behavior changed, since the method already delegated the whole projection.
 
 **Cross-feature port**: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CharacterPromptSource.java`
 (interface) — consumed by `feature/companion/service/ChatService.java`,

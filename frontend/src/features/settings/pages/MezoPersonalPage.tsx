@@ -9,6 +9,8 @@ import { PROFILE_SOURCE_KIND } from '@/data/insights/graph'
 import { ProfileNodeCard } from '@/features/insights/components/ProfileNodeCard'
 import { Icon3D } from '@/shared/ui/clay'
 import '@/features/settings/personal-settings.css'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 type Mode = 'about' | 'communication' | 'context'
 const titles = { about: 'Rólam, a saját szavaimmal', communication: 'Így beszélj velem', context: 'Ezt kapja meg Mezo' }
@@ -44,7 +46,9 @@ function PersonalEditor({ mode }: { mode: 'about' | 'communication' }) {
     }}>
       <label htmlFor="personal-text"><span className="settings-kicker">{about ? 'AMIT MÉG TUDJ RÓLAM' : 'AZ ÉN KÉRÉSEM'}</span><h2>{about ? 'Saját bemutatkozás' : 'Saját instrukció'}</h2></label>
       <p>{about ? 'Mi fontos neked? Mivel foglalkozol, milyen szokásokat szeretnél tartani? Az ide írt szöveget Mezo nem írja át.' : 'Például: légy tömör; mondd ki, ha bizonytalan vagy; előbb kérdezz, mielőtt új tervet javasolsz.'}</p>
-      <textarea id="personal-text" aria-label={about ? 'Saját bemutatkozás' : 'Saját instrukció'} maxLength={4000} disabled={query.saving} rows={7} value={value} onChange={e => change(about ? { aboutMe: e.target.value } : { customInstructions: e.target.value })} />
+      <VoiceField domain="me" onTranscript={t => { const next = appendDictation(value, t, 4000); change(about ? { aboutMe: next } : { customInstructions: next }) }}>
+        <textarea id="personal-text" aria-label={about ? 'Saját bemutatkozás' : 'Saját instrukció'} maxLength={4000} disabled={query.saving} rows={7} value={value} onChange={e => change(about ? { aboutMe: e.target.value } : { customInstructions: e.target.value })} />
+      </VoiceField>
       <div className="personal-field-foot"><span>Csak te szerkeszted</span><span>{value.length} / 4000</span></div>
       {!about && <label className="personal-switch"><span><strong>Tanult kommunikációs profil használata</strong><small>A saját kérésed elsőbbséget kap a tanult stílussal szemben. Az alkalmazás szabályai továbbra is érvényesek.</small></span><input type="checkbox" aria-label="Tanult kommunikációs profil használata" disabled={query.saving} checked={values.useLearnedProfile} onChange={e => change({ useLearnedProfile: e.target.checked })} /></label>}
       {query.saveError && <p role="alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}

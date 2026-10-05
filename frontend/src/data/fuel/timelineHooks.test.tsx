@@ -140,6 +140,9 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('useFuelTimeline / us
       // Learned-base provenance passthrough (mezo-zz91i) — the mock fixture serves a learned base.
       source: fuelDayEnergy.baseSource, formulaBase: fuelDayEnergy.formulaBaseKcal,
       sd: fuelDayEnergy.baseSdKcal, confidence: fuelDayEnergy.baseConfidence,
+      // mezo-tb3s2: the still-unlogged planned movement passes through as `pending` (0 when the
+      // mock fixture serves no `pendingMovementKcal`).
+      pending: fuelDayEnergy.pendingMovementKcal ?? 0,
     })
     expect(e.base + e.planned + e.extra + e.balance).toBe(e.target)
     expect(result.current.budget.kcal).toBe(e.target) // targets.kcal IS the served target
@@ -318,7 +321,7 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
       await waitFor(() => expect(result.current.plan.energy.base).toBe(energy.baseKcal))
       expect(result.current.plan.energy).toEqual({
         base: energy.baseKcal, planned: energy.plannedMovementKcal, extra: energy.extraMovementKcal,
-        balance: energy.balanceKcal, target: energy.targetKcal,
+        balance: energy.balanceKcal, target: energy.targetKcal, pending: 0,
       })
       expect(result.current.budget.kcal).toBe(energy.targetKcal)
       expect(result.current.staticEnergy).toBe(false)
@@ -340,7 +343,80 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (rea
       await waitFor(() => expect(result.current.budget.kcal).toBe(2150))
       expect(result.current.staticEnergy).toBe(true)
       expect(result.current.energyBreakdown).toBeNull()
-      expect(result.current.plan.energy).toEqual({ base: 2150, planned: 0, extra: 0, balance: 0, target: 2150 })
+      expect(result.current.plan.energy).toEqual({ base: 2150, planned: 0, extra: 0, balance: 0, target: 2150, pending: 0 })
+    })
+
+    // mezo-tb3s2 fix round 1: `done` must come from an actual "was this logged" source, never from
+    // clock time. The default MSW gym fixture schedules Csü (Thursday) 18:30 (handlers.ts:1233); the
+    // default `/api/train/workouts/today` carries no `weekDoneDates`/`completedWorkout`, i.e. the
+    // session is scheduled but NOT logged. Pinning the clock well past its window (22:00 the SAME
+    // Thursday) reproduces exactly what broke the old `plan.slots`-time-elapsed derivation: it would
+    // have flipped this block to "done" purely because its window had passed.
+    it('a scheduled-but-unlogged gym session stays pending even once its window has long passed', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-07-02T22:00:00')) // Thursday, gym window (18:30 + 60′) long over
+      try {
+        server.use(
+          http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+          http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+          dayWith(energy),
+        )
+        const { Wrapper } = sharedWrapper()
+        const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+        await waitFor(() => expect(result.current.energyBreakdown).not.toBeNull())
+        const gymBlock = result.current.energyBreakdown!.movement.blocks?.find(b => b.kind === 'gym')
+        expect(gymBlock).toBeDefined()
+        expect(gymBlock!.done).toBe(false)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('the SAME gym session flips to done once it is actually logged (weekDoneDates), same clock time', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-07-02T22:00:00'))
+      try {
+        server.use(
+          http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+          http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+          dayWith(energy),
+          http.get(`${API_BASE}/api/train/workouts/today`, () =>
+            HttpResponse.json({ dayLabel: 'Csü', title: 'Pull Day', durationEst: 60, exercises: [], weekDoneDates: ['2026-07-02'] }),
+          ),
+        )
+        const { Wrapper } = sharedWrapper()
+        const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+        await waitFor(() => expect(result.current.energyBreakdown).not.toBeNull())
+        const gymBlock = result.current.energyBreakdown!.movement.blocks?.find(b => b.kind === 'gym')
+        expect(gymBlock?.done).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    // mezo-tb3s2 × Kihagyás S1 (mezo-q4xt2.1): a skipped occurrence is neither logged nor pending —
+    // `deriveBlocks` drops it through the central `isSkipped`, so the energy sheet lists no tile.
+    it('a SKIPPED gym session is not listed on the energy sheet at all (neither done nor pending)', async () => {
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date('2026-07-02T10:00:00')) // Thursday, gym 18:30 still ahead
+      try {
+        server.use(
+          http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([goalWithTdee])),
+          http.get(`${API_BASE}/api/goals/:id/timeline`, () => HttpResponse.json(timelineFixture)),
+          dayWith(energy),
+          http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([{
+            id: 's1', kind: 'GYM', date: '2026-07-02', dayOfWeek: null, time: null, sessionKey: null,
+            reasonCategory: 'TIRED', reasonText: null, source: 'USER', serious: false, freePass: true, excused: true,
+          }])),
+        )
+        const { Wrapper } = sharedWrapper()
+        const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+        await waitFor(() => expect(result.current.energyBreakdown).not.toBeNull())
+        await waitFor(() =>
+          expect(result.current.energyBreakdown!.movement.blocks?.find(b => b.kind === 'gym')).toBeUndefined())
+      } finally {
+        vi.useRealTimers()
+      }
     })
   })
 

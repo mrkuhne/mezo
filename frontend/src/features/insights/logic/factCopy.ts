@@ -60,6 +60,8 @@ const ORIGIN_CHIP: Record<FactSource, string> = {
   weekly_review: 'heti áttekintésből',
   question: 'kérdésre válaszoltál',
   team_chat: 'csapatfalról',
+  person_fact: 'ismerős lapjáról',
+  merge: 'összevonásból',
 }
 
 export function originChipLabel(source: FactSource): string {
@@ -81,4 +83,21 @@ export function bucketFacts(facts: KnowledgeFact[]) {
     inPrompt: sortFacts(facts.filter((f) => f.active)),
     off: sortFacts(facts.filter((f) => !f.active)),
   }
+}
+
+const WEEK_MS = 7 * 24 * 3600 * 1000
+
+/**
+ * S9 final-review M2: the „Hétfői rendrakás” strip's N — merged-away facts of the last week whose
+ * survivor is NOT itself a merge result. A member the user folded in by accepting a proposal
+ * (survivor source 'merge') is not an „ismétlés” the Monday sweep merged on its own, so it must
+ * not inflate the count the sweep's notification announced. Survivors are looked up in `all`.
+ */
+export function recentAutoMergedCount(
+  facts: KnowledgeFact[], now: number = Date.now(), all: KnowledgeFact[] = facts,
+): number {
+  const byId = new Map(all.map((f) => [f.id, f]))
+  return facts.filter((f) => !f.active && f.mutedReason === 'merged'
+    && f.mutedAt != null && now - new Date(f.mutedAt).getTime() <= WEEK_MS
+    && byId.get(f.supersededBy ?? '')?.source !== 'merge').length
 }

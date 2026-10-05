@@ -10,6 +10,8 @@ import { clearNightWake, readNightWake } from '@/features/me/logic/nightTrace'
 import { localDateString } from '@/shared/lib/dates'
 import { PhaseRail } from '@/features/me/components/PhaseRail'
 import { phaseBreakdown } from '@/features/me/logic/sleepPhases'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 function computeDuration(bedtime: string, wakeup: string): number {
   const [bh, bm] = bedtime.split(':').map(Number)
@@ -281,9 +283,11 @@ export function SleepLogSheet({
               <div className="col gap-sm mt-lg">
                 <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
                 <div className="card" style={{ padding: 10 }}>
-                  <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
-                    placeholder='pl. "magnézium kihagyva" · "sok só tegnap" · "késő vacsora"'
-                    style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
+                  <VoiceField domain="me" size="sm" onTranscript={t => setNote(appendDictation(note, t, 200))}>
+                    <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
+                      placeholder='pl. "magnézium kihagyva" · "sok só tegnap" · "késő vacsora"'
+                      style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
+                  </VoiceField>
                 </div>
               </div>
 

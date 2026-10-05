@@ -10,30 +10,15 @@ import type { RunningBlockResponse } from '@/data/train/runningApi'
 import { DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { localDateString } from '@/shared/lib/dates'
+import { isSportSlotSkipped, type PlannedSkipKey } from '@/features/train/logic/plannedSkips'
+
+export type { PlannedSkipKey } from '@/features/train/logic/plannedSkips'
+export { isSportSlotSkipped } from '@/features/train/logic/plannedSkips'
 
 /** ISO date of this week's weekday `index` (0 = Monday), relative to `today`. */
 export function weekDateIso(index: number, today = new Date()): string {
   const base = new Date(today.getFullYear(), today.getMonth(), today.getDate() - todayIdx(today) + index)
   return localDateString(base)
-}
-
-/** One skipped dated occurrence of a recurring sport slot (proactive coaching S5, mezo-d58h.5) —
- *  the same identity key the backend's `sport_slot_skip` uses: weekday (0=Hét..6=Vas, matching
- *  `DAY_ORDER`'s own index) + clock time + the skipped date. */
-export interface SportSlotSkip {
-  dayOfWeek: number
-  time: string
-  date: string
-}
-
-/** True when `skips` hides the (weekday, time) occurrence pinned to `date` — the SAME identity
- *  match every skip-aware FE read shares with the backend's own `WorkoutWindowQueryService.windowsFor` (skip-aware schedule read)
- *  (mezo-cq06): weekday index (0=Hét..6=Vas, matching `DAY_ORDER`) + the unnormalised `"HH:mm"`
- *  time string, compared as-is + the exact ISO date. Exported so the other date-specific FE
- *  reads (fuel protocol, Today hero, day-orb fill, ritual recap, fuel week) can match a skip the
- *  same way `buildWeekAgenda` below does, instead of each re-deriving the comparison. */
-export function isSportSlotSkipped(skips: SportSlotSkip[], dayOfWeek: number, time: string, date: string): boolean {
-  return skips.some((s) => s.dayOfWeek === dayOfWeek && s.time === time && s.date === date)
 }
 
 export function buildWeekAgenda({
@@ -43,13 +28,17 @@ export function buildWeekAgenda({
   weekWorkouts,
   today = new Date(),
   skips = [],
+  protectedDates = [],
 }: {
   gymTimes: GymScheduleDay[]
   sportSlots: VolleyballSession[]
   runningBlock: RunningBlockResponse | null
   weekWorkouts: { id: string; date: string; origin: string; status: string; title: string }[]
   today?: Date
-  skips?: SportSlotSkip[]
+  skips?: PlannedSkipKey[]
+  /** Kímélő mód S2 (mezo-q4xt2.2): the recovery state's protected dates — each such day is
+   *  flagged `protected` (its sessions stay listed; the surfaces mute them). */
+  protectedDates?: readonly string[]
 }): WeeklyAgendaDay[] {
   // Completed custom (saját) instances of this week, grouped by ISO date — extra
   // rows on the date they were actually trained (mezo-ws2x).
@@ -83,6 +72,7 @@ export function buildWeekAgenda({
       running: runSessionsForDay(runningBlock, DAY_ORDER.indexOf(d)),
       isToday: Boolean(g?.today || v.some((x) => x.today)),
       custom: customByDate.get(date) ?? [],
+      ...(protectedDates.includes(date) ? { protected: true } : {}),
     }
   })
 }

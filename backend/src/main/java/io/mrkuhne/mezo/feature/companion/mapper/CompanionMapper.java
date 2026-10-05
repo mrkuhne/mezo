@@ -68,8 +68,10 @@ public interface CompanionMapper {
                 .build();
     }
 
-    default TurnPersonFactResponse toTurnPersonFactResponse(PersonFactEntity fact, String personName) {
+    /** mezo-d6ivw.13: {@code aboutMeFactId} = the live „Rólam is" copy, null when unclaimed. */
+    default TurnPersonFactResponse toTurnPersonFactResponse(PersonFactEntity fact, String personName, UUID aboutMeFactId) {
         return TurnPersonFactResponse.builder()
+                .aboutMeFactId(aboutMeFactId)
                 .id(fact.getId())
                 .personId(fact.getPersonId())
                 .personName(personName)
@@ -211,6 +213,13 @@ public interface CompanionMapper {
                 .derivedFromMessageId(entity.getDerivedFromMessageId())
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .build();
+    }
+
+    /** S9 (mezo-d6ivw.10): the merge card's member texts, in member-id order — source='merge' only. */
+    default FactCandidateResponse toFactCandidateResponse(LearnedFactEntity entity, List<String> mergeSources) {
+        FactCandidateResponse r = toFactCandidateResponse(entity);
+        r.setMergeSources(mergeSources);
+        return r;
     }
 
     /** Null ask envelope maps to []; the wire name carries the args —

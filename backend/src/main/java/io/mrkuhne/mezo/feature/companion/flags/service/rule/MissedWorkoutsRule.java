@@ -7,8 +7,10 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -23,8 +25,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Consecutive PLANNED gym days with nothing completed (spec 2026-09-03 §4 row 3) — so the
- * morning prompt stops cheering blindly at someone who has not trained since Friday.
+ * Current streak of consecutive PLANNED gym days with nothing completed (spec 2026-09-03 §4 row
+ * 3) — so an earlier missed pair stops raising after a completed planned workout.
  *
  * <p>"Consecutive" is in the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri
  * schedule raises on a missed Mon + Wed. Only completed INSTANCES count as training —
@@ -49,6 +51,7 @@ public class MissedWorkoutsRule implements FlagRule {
 
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final PlannedSkipService plannedSkipService;
     private final FlagProperties properties;
 
     @Override
@@ -81,34 +84,42 @@ public class MissedWorkoutsRule implements FlagRule {
 
         Set<LocalDate> trained =
             Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
+        // Kihagyás S1 (mezo-q4xt2.1): an excused GYM day is not a violation of the schedule —
+        // it neither extends nor resets the miss-streak run, so it is skipped over entirely (unless
+        // it was trained anyway — then it resets the run like any trained day).
+        Set<LocalDate> excused = plannedSkipService.excusedDates(userId, Kind.GYM, from, to);
 
         List<String> plannedDays = new ArrayList<>();
         List<String> missedDays = new ArrayList<>();
         int run = 0;
-        int longestRun = 0;
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment)
             int dow = day.getDayOfWeek().getValue() - 1;
             if (!plannedDows.contains(dow)) {
                 continue;
             }
-            plannedDays.add(day.toString());
             if (trained.contains(day)) {
+                // A trained day closes the current run, even if it also carries a skip.
+                plannedDays.add(day.toString());
                 run = 0;
+                missedDays.clear();
                 continue;
             }
+            if (excused.contains(day)) {
+                continue;
+            }
+            plannedDays.add(day.toString());
             missedDays.add(day.toString());
             run++;
-            longestRun = Math.max(longestRun, run);
         }
-        if (longestRun < cfg.minConsecutiveMissed()) {
+        if (run < cfg.minConsecutiveMissed()) {
             return FlagVerdict.clear(FlagKey.MISSED_WORKOUTS, new FlagVerdict.ClearEvidence(
-                "longest_missed_run", (double) longestRun, (double) cfg.minConsecutiveMissed(),
+                "current_missed_run", (double) run, (double) cfg.minConsecutiveMissed(),
                 null));
         }
         return FlagVerdict.raised(FlagKey.MISSED_WORKOUTS,
             FlagPayloadEnvelope.missedWorkouts(new FlagPayloadEnvelope.MissedWorkouts(
-                cfg.windowDays(), cfg.minConsecutiveMissed(), longestRun,
+                cfg.windowDays(), cfg.minConsecutiveMissed(), run,
                 missedDays, plannedDays)));
     }
 }

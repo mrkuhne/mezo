@@ -19,7 +19,7 @@ import java.util.List;
  *                             empty days before the user's data began are not "unlogged", they are simply before it
  * @param historyWeeks         ceil(days from the first weigh-in in the window to its end / 7)
  * @param avgIntakeKcal        mean usable intake; {@code null} with no usable day
- * @param avgMovementKcal      mean movement input (plan average + unplanned extra) over the usable days — the
+ * @param avgMovementKcal      daily average of the logged movement (mezo-tb3s2) over the usable days — the
  *                             same days as {@code avgIntakeKcal}; {@code null} with no usable day
  * @param tissueRateKgPerWeek  the filter's tissue change over the traced span, per week
  * @param tissueKcalPerDay     that rate as kcal/day ({@code rate / 7 × kcalPerKg})

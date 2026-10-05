@@ -19,7 +19,6 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -96,7 +95,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         // With no gym/sport schedule seeded, scheduledWeeklyEat = 0; the only delta between the run-on and
         // run-off segments is the running EAT (MET run × weight × runDefaultMin/60 × sessions ÷ 7).
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
         // exactly two segments: W1–4 (run active) and W5–8 (run off) — the meso is a single phase class.
         assertThat(segments).hasSize(2);
@@ -128,11 +127,18 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         assertThat(runOn.activeSystems()).contains("run");
         assertThat(runOff.activeSystems()).doesNotContain("run");
 
-        // the net-activity model rewrite (mezo-32m82) dropped the old MET×kg×óra wording from the
-        // user-facing rationale (mezo-zz91i follow-up) — both the run-active and run-off phrasing
-        // now speak of "becsült mozgás" instead.
-        assertThat(runOn.rationale()).contains("becsült mozgás").doesNotContain("MET×kg×óra");
-        assertThat(runOff.rationale()).contains("becsült mozgás").doesNotContain("MET×kg×óra");
+        // the day-type split retirement (mezo-tb3s2, M4) rewrote the rationale again: it now names
+        // the day's LOGGED movement rather than an estimated weekly figure — and both segments carry
+        // null day-type fields (the split producer is gone).
+        assertThat(runOn.rationale()).isEqualTo(
+            "Futóblokk aktív → a napi keret az Alapod + az aznapi mozgásod (amit logolsz, a futást is) "
+                + "+ a célod.");
+        assertThat(runOff.rationale()).isEqualTo(
+            "Nincs futóblokk → a napi keret az Alapod + az aznapi mozgásod (amit logolsz) + a célod.");
+        for (ProjectionSegment s : segments) {
+            assertThat(s.trainingDayKcal()).isNull();
+            assertThat(s.restDayKcal()).isNull();
+        }
     }
 
     // ── Maintain: flat target ≈ TDEE, rate ≈ 0 ──────────────────────────────────────────────────
@@ -145,7 +151,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
 
         assertThat(segments).isNotEmpty();
         for (ProjectionSegment s : segments) {
@@ -164,7 +170,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
 
         assertThat(segments).isNotEmpty();
         double balance = expectedDailyBalanceMagnitude(); // 646.8 kcal/day surplus
@@ -193,7 +199,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
 
         // No running, single meso phase class over 1..8 → exactly one segment spanning the window.
         assertThat(segments).hasSize(1);
@@ -213,14 +219,14 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
 
         // Observed trailing-4w rate −0.30 kg/wk differs from the formula rate (−0.588 kg/wk).
         List<ProjectionSegment> provisional =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.PROVISIONAL, "-0.30"), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.PROVISIONAL, "-0.30"));
         // With provisional data the observed rate is the spine.
         assertThat(provisional.get(0).projectedRateKgPerWk().doubleValue())
             .isCloseTo(-0.30, within(0.001));
 
         // With no data the formula projection drives the rate (−0.588 kg/wk, ignores the trend value).
         List<ProjectionSegment> none =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "-0.30"), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "-0.30"));
         assertThat(none.get(0).projectedRateKgPerWk().doubleValue())
             .isCloseTo(-0.588, within(0.01));
     }
@@ -234,7 +240,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         goal.setSegmentOverrides(List.of(new GoalSegmentOverrideJson(3, 3, 0)));
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
         ProjectionSegment w3 = segments.stream()
             .filter(s -> s.fromWeek() <= 3 && s.toWeek() >= 3).findFirst().orElseThrow();
@@ -254,10 +260,10 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         goal.setBalanceAdjustmentKcal(-120); // an accepted "cut deeper" weekly correction
 
         List<ProjectionSegment> withAdjustment =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
         goal.setBalanceAdjustmentKcal(null);
         List<ProjectionSegment> baseline =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
         int delta = withAdjustment.get(0).dailyEnergyBalanceKcal() - baseline.get(0).dailyEnergyBalanceKcal();
         assertThat(delta).isEqualTo(-120);
@@ -274,10 +280,10 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         goal.setBalanceAdjustmentKcal(-120); // folded into the learned base by the first learning run (mezo-zz91i)
 
         List<ProjectionSegment> withAdjustment =
-            service.project(goal, user, learned, trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, learned, trend(DataSufficiencyEnum.NONE, null));
         goal.setBalanceAdjustmentKcal(0);
         List<ProjectionSegment> withoutAdjustment =
-            service.project(goal, user, learned, trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, learned, trend(DataSufficiencyEnum.NONE, null));
 
         assertThat(withAdjustment.get(0).dailyEnergyBalanceKcal())
             .isEqualTo(withoutAdjustment.get(0).dailyEnergyBalanceKcal());
@@ -291,7 +297,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         goal.setBalanceAdjustmentKcal(80); // a maintain goal's accepted calibration nudges upward
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
 
         assertThat(segments.get(0).dailyEnergyBalanceKcal()).isEqualTo(80);
     }
@@ -304,7 +310,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         goal.setSegmentOverrides(List.of(new GoalSegmentOverrideJson(3, 3, 0)));
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
         // Week 3 (the deload override) is untouched by the adjustment — the override REPLACES the
         // balance for its own week rather than composing with it.
@@ -320,29 +326,27 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
             .isCloseTo((int) Math.round(-expectedMagnitude - 120), within(1));
     }
 
-    // ── Day-type shift (slice 3 — mezo-sxlj): the weekly-invariant kcal split off rest days ────────
+    // ── Day-type split retired (mezo-tb3s2, M4) — every segment's day-type fields stay null ────────
 
     @Test
-    void dayTypeShiftSplitsSegmentKcalWeeklyInvariant() {
+    void dayTypeFieldsStayNull_evenWithManyTrainingDaysScheduled() {
         UUID user = databasePopulator.populateUser("proj-daytype@test.local");
-        // gym slots on 2 weekdays + a sport slot on a 3rd → scheduledTrainingDayOfWeeks unions to 3
-        // distinct days; no running block, no meso link → the whole window is one segment.
+        // 5 scheduled training weekdays (gym + sport slots) — under the retired split this would
+        // have produced a non-uniform trainingDayKcal/restDayKcal; now it changes nothing.
         trainPopulator.createGymSlot(user, 0, "07:00");
         trainPopulator.createGymSlot(user, 1, "07:00");
+        trainPopulator.createGymSlot(user, 3, "07:00");
+        trainPopulator.createGymSlot(user, 4, "07:00");
         trainPopulator.createScheduleSlot(user, 2, "18:00", 90, "training");
         GoalEntity goal = goalPopulator.createGoal(user, "cut", "active"); // 8-week window
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 200);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
-        ProjectionSegment seg = segments.get(0);
-        int kcal = seg.targetKcal().setScale(0, RoundingMode.HALF_UP).intValueExact();
-        assertThat(seg.restDayKcal()).isEqualTo(Math.max(kcal - 200, 1795)); // floored at ceil(bmr)
-        int effective = kcal - seg.restDayKcal();
-        assertThat(seg.trainingDayKcal())
-            .isEqualTo(kcal + Math.round(effective * 4 / 3f));
-        assertThat(3 * seg.trainingDayKcal() + 4 * seg.restDayKcal())
-            .isCloseTo(7 * kcal, within(2));
+        for (ProjectionSegment seg : segments) {
+            assertThat(seg.trainingDayKcal()).isNull();
+            assertThat(seg.restDayKcal()).isNull();
+        }
     }
 
     @Test
@@ -351,7 +355,7 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
 
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null), 0);
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
         assertThat(segments.get(0).trainingDayKcal()).isNull();
         assertThat(segments.get(0).restDayKcal()).isNull();

@@ -90,7 +90,7 @@ test('a skipped recurring slot is absent on its skipped date and present on anot
     runningBlock: null,
     weekWorkouts: [],
     today,
-    skips: [{ dayOfWeek: 1, time: '18:00', date: '2026-07-14' }], // this week's Kedd only
+    skips: [{ kind: 'SPORT', dayOfWeek: 1, time: '18:00', date: '2026-07-14' }], // this week's Kedd only
   })
   expect(agenda.find((a) => a.day === 'Kedd')!.sport).toEqual([])
 })
@@ -103,7 +103,7 @@ test('a skipped date does not hide the same recurring slot on a different week',
     runningBlock: null,
     weekWorkouts: [],
     today,
-    skips: [{ dayOfWeek: 1, time: '18:00', date: '2026-07-21' }], // next week's Kedd
+    skips: [{ kind: 'SPORT', dayOfWeek: 1, time: '18:00', date: '2026-07-21' }], // next week's Kedd
   })
   expect(agenda.find((a) => a.day === 'Kedd')!.sport).toHaveLength(1)
 })
@@ -116,7 +116,7 @@ test('a skip for a different clock time on the same day does not hide the slot',
     runningBlock: null,
     weekWorkouts: [],
     today,
-    skips: [{ dayOfWeek: 1, time: '20:00', date: '2026-07-14' }],
+    skips: [{ kind: 'SPORT', dayOfWeek: 1, time: '20:00', date: '2026-07-14' }],
   })
   expect(agenda.find((a) => a.day === 'Kedd')!.sport).toHaveLength(1)
 })
@@ -129,4 +129,22 @@ test('omitting skips behaves exactly as an empty list', () => {
     weekWorkouts: [],
   })
   expect(agenda.find((a) => a.day === 'Kedd')!.sport).toHaveLength(1)
+})
+
+// Kímélő mód S2 (mezo-q4xt2.2): protected dates flag their day; the sessions stay listed.
+test('protectedDates flags exactly those days as protected, keeping their sessions', () => {
+  const today = new Date(2026, 8, 29) // Tue
+  const agenda = buildWeekAgenda({
+    gymTimes: [gym('Kedd', '07:30'), gym('Sze', '07:30')],
+    sportSlots: [],
+    runningBlock: null,
+    weekWorkouts: [],
+    today,
+    protectedDates: ['2026-09-29', '2026-10-05'],
+  })
+  const tue = agenda.find((a) => a.day === 'Kedd')!
+  expect(tue.protected).toBe(true)
+  expect(tue.gym).not.toBeNull()
+  expect(agenda.find((a) => a.day === 'Sze')!.protected).toBeUndefined()
+  expect(agenda.filter((a) => a.protected)).toHaveLength(1)
 })

@@ -67,6 +67,17 @@ public class PersonalRecordQuery {
             predicate += " and exists (select 1 from exercise e where e.id = " + alias
                     + ".exercise_id and e.created_by = :user and e.is_deleted = false)";
         }
+        if (source.name().equals("ai_message")) {
+            // mezo-tdabt ("ezt ne jegyezd meg" really forgets): this catalogue feeds the LLM (the
+            // personal-record tool) and the reflection evidence (ObservationContextService), so a
+            // forgotten turn is hidden here at the source — the blocked user row itself AND the
+            // assistant reply paired with it (the reply usually restates what was said). Filtering
+            // here rather than in each consumer keeps exists()/fetch() revalidation consistent too.
+            // The forget REQUEST row is blocked as well, so it is hidden alike; the conversation's
+            // own history window does not read through here and is unaffected.
+            predicate += " and not " + alias + ".extraction_blocked and not (" + alias + ".role = 'assistant' and "
+                    + MemorySourceVisibilitySql.forgottenTurn(alias, "user") + ")";
+        }
         if (source.name().equals("memory_item")) {
             predicate += " and " + alias + ".state = 'active' and " + MemorySourceVisibilitySql.predicate(alias, "user");
         }

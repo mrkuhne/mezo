@@ -39,6 +39,7 @@ import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockTo
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
 import type { Pattern } from '@/data/types'
 import { expenditureExplanationSeed } from '@/data/fuel/expenditureExplanation'
+import type { RecoveryState } from '@/data/train/recoveryApi'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -82,9 +83,12 @@ const fuelDayFixture = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
   consumed: { kcal: 580, p: 42, c: 78, f: 12, water: 4000 },
   meals: [mealFixture],
-  // The served equation (mezo-32m82), closing on targets.kcal: base = the profile's 1910 × 1.35;
-  // planned = its 471/day weekly share + a 50 kcal training-day shift; a maintain day (balance 0).
-  energy: { baseKcal: 2579, plannedMovementKcal: 521, extraMovementKcal: 0, balanceKcal: 0, targetKcal: 3100 },
+  // The served equation (mezo-tb3s2), closing on targets.kcal: base 2579 + planned (LOGGED) 190 +
+  // extra 0 + balance 331 = 3100; a scheduled-but-not-yet-logged session previews as pending 460.
+  energy: {
+    baseKcal: 2579, plannedMovementKcal: 190, extraMovementKcal: 0, balanceKcal: 331, targetKcal: 3100,
+    pendingMovementKcal: 460,
+  },
 }
 const recipeLogFixture = {
   recentLogs: [
@@ -1226,6 +1230,20 @@ export const handlers = [
   ),
   // One-off sport events (mezo-e1sp) — default empty; tests override when they need one.
   http.get(`${API_BASE}/api/train/sport-events`, () => HttpResponse.json([])),
+  // Planned skips (Kihagyás S1, mezo-q4xt2.1) — default empty; tests override when they need one.
+  http.get(`${API_BASE}/api/train/skips`, () => HttpResponse.json([])),
+  http.put(`${API_BASE}/api/train/skips`, async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>
+    return HttpResponse.json({
+      id: 'skip-1', source: 'USER', serious: false, freePass: true, excused: true,
+      dayOfWeek: null, time: null, sessionKey: null, reasonText: null,
+      ...body,
+    })
+  }),
+  http.delete(`${API_BASE}/api/train/skips/:id`, () => new HttpResponse(null, { status: 204 })),
+  // Kímélő mód (Kihagyás S2): `useTrain()` reads it via `useRecovery()` — default: no period.
+  http.get(`${API_BASE}/api/train/recovery`, () =>
+    HttpResponse.json({ period: null, protectedDates: [], comeback: null } satisfies RecoveryState)),
   // Weekly gym slots fixture — Csü (index 3) carries a time so deriveGymSchedule
   // can fill the meso fixture's only gym day. Lean shape: id + dayOfWeek + time.
   http.get(`${API_BASE}/api/train/gym-schedule`, () =>
@@ -1590,6 +1608,11 @@ export const handlers = [
     HttpResponse.json({ learned: [], proposed: [], forgotten: [], forgetRequest: false })),
   http.get(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/companion/conversation/:id/forget-learned`, () => HttpResponse.json({ forgotten: [] })),
+  // mezo-d6ivw.13 „Rólam is": the copy's id on POST, null on DELETE.
+  http.post(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) =>
+    HttpResponse.json({ personFactId: params.id, aboutMeFactId: `msw-aboutme-${String(params.id)}` })),
+  http.delete(`${API_BASE}/api/companion/turn-memory/person-fact/:id/about-me`, ({ params }) =>
+    HttpResponse.json({ personFactId: params.id, aboutMeFactId: null })),
   http.get(`${API_BASE}/api/people/facts`, () => HttpResponse.json([])),
   http.delete(`${API_BASE}/api/people/:personId/facts/:factId`, () => new HttpResponse(null, { status: 204 })),
   // Companion knowledge facts (V1.2) — wire fixtures mirror the mock seeds so page/hook
@@ -1629,6 +1652,7 @@ export const handlers = [
         userDecision: null,
         refinedText: null,
         promotedFactId: null,
+        mergeSources: c.mergeSources ?? null,
         createdAt: c.createdAt,
       })),
     ),

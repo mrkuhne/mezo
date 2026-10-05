@@ -32,6 +32,7 @@ describe('LearnedBaseExplainerBody — the fixture numbers', () => {
     expect(calc).toEqual(['2780', '−352', '−426', '≈ 2000'])
     expect(screen.getByText(/\+0,32 kg\/hét valódi gyarapodás/)).toBeInTheDocument()
     expect(screen.getByText('Miért 2159 és nem 2000?')).toBeInTheDocument()
+    expect(screen.getByText('logolt mozgás, napi átlag')).toBeInTheDocument()
     expect(screen.getByText('4 hiányosnak tűnő nap')).toBeInTheDocument()
     expect([...document.querySelectorAll('.flp-how-chip .days span')].map(s => s.textContent))
       .toEqual(['szept. 13 · 604', 'szept. 19 · 929', 'szept. 20 · 828', 'szept. 24 · 1347'])

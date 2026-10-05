@@ -22,8 +22,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class ActivityEnergyModel {
 
-    /** Written into {@code tdee_bootstrap.activityModel}; the migration runner recomputes goals below it. */
-    public static final int VERSION = 2;
+    /** Written into {@code tdee_bootstrap.activityModel}; the migration runner recomputes goals below it.
+     *  3 = mezo-tb3s2: the served day credits logged movement and learning consumes it (re-chain on rollout). */
+    public static final int VERSION = 3;
 
     private static final String OTHER = "other";
     private static final BigDecimal HOURS_PER_DAY = BigDecimal.valueOf(24);

@@ -42,6 +42,8 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -98,6 +100,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private WorkoutDayAdjustmentPopulator workoutDayAdjustmentPopulator;
     @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
+    @Autowired private PlannedSkipPopulator plannedSkipPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -603,6 +606,27 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(out).contains("pihenőnap (gym); futás: Sprint-intervallum");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", LocalDate.now().toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldOmitTheRunningTail_whenThePrescribedRunIsSkipped() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        runningPopulator.createBlockWithSessions(owner, "Sprint blokk", "active", 4, 7);
+        // Kihagyás S1 (mezo-q4xt2.1, review I2): a RUN skip hides the run from the day line.
+        plannedSkipPopulator.create(owner, today, PlannedSkipEntity.Kind.RUN, null, null,
+            runKeyFor(today, 4), PlannedSkipEntity.Reason.TIRED);
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        assertThat(out).contains("pihenőnap (gym)").doesNotContain("futás: Sprint-intervallum");
+    }
+
+    /** The {@code createBlockWithSessions} block's session key for {@code date}'s weekday — the
+     *  week clamps from the fixed 2026-06-01 start exactly like the renderers derive it. */
+    private static String runKeyFor(LocalDate date, int weeks) {
+        long week = Math.clamp(java.time.temporal.ChronoUnit.DAYS.between(LocalDate.parse("2026-06-01"), date) / 7 + 1, 1, weeks);
+        return "w" + week + "-s" + (date.getDayOfWeek().getValue() - 1);
     }
 
     @Test

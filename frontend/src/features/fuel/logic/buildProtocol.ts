@@ -2,7 +2,8 @@ import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { DAY_ORDER } from '@/data/train/train'
 import { sportOf, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
-import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
+import { isSportSlotSkipped, type PlannedSkipKey } from '@/features/train/logic/weekAgenda'
+import { isSkipped } from '@/features/train/logic/plannedSkips'
 import { localDateString } from '@/shared/lib/dates'
 import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
@@ -41,11 +42,12 @@ export function deriveBlocks(
   gymSchedule: GymSchedule | null,
   sport: { schedule: SportSchedule | null },
   activeRunningBlock: RunningBlockResponse | null,
-  // Skipped dated occurrences of a recurring sport slot (mezo-cq06) — a skip_sport_slot advice
+  // Planned skips — GYM/SPORT/RUN (Kihagyás S1, mezo-q4xt2.1; SPORT since mezo-cq06). Skipped dated
+  // occurrences of a recurring sport slot (mezo-cq06) — a skip_sport_slot advice
   // action hides one dated occurrence; without this, the fuel protocol kept anchoring the
   // pre-workout meal / calorie budget on a sport block the backend already treats as absent.
   // Empty default keeps every caller that hasn't threaded skips through yet byte-identical.
-  skips: SportSlotSkip[] = [],
+  skips: PlannedSkipKey[] = [],
   // The day's LOGGED sport sessions (mezo-rilew). A session the user played but never planned
   // produced no block at all, so its burnt energy never reached the day's `eat` term and the Fuel
   // calorie target stayed put — the owner-visible bug. Sessions are matched against the planned
@@ -72,7 +74,9 @@ export function deriveBlocks(
   const gym = usesDate
     ? gymSchedule?.weeklyTimes.find(d => d.day === DAY_ORDER[weekdayIdx] && d.active && d.time)
     : gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
-  if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
+  // A user-skipped gym day (Kihagyás S1, mezo-q4xt2.1) is no longer a planned block — matched on
+  // the viewed ISO date alone, the same identity the backend's `WorkoutWindowQueryService` uses.
+  if (gym?.time && !isSkipped(skips, { kind: 'GYM', date: dayIso })) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
   // Sport: EVERY session for the viewed day — recurring slots whose `day` matches that weekday,
   // and dated one-off events whose `date` matches the viewed date exactly (mezo-e1sp's "every
   // today-session" rule, generalised off the `today` flag to the weekday/date pair the date path
@@ -99,7 +103,8 @@ export function deriveBlocks(
   // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping,
   // DEFAULT_RUN_MIN the net burn estimate).
   const run = runSessionsForDay(activeRunningBlock, weekdayIdx)[0]
-  if (run?.timeOfDay) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
+  // …and a skipped run session likewise (matched on date + the prescribed session key).
+  if (run?.timeOfDay && !isSkipped(skips, { kind: 'RUN', date: dayIso, sessionKey: run.key })) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
   return blocks
 }
 
@@ -134,9 +139,13 @@ function resolveSportBlocks(planned: PlannerBlock[], sessions: SportSession[], t
       time: s.time,
       durationMin: s.duration ?? plan?.durationMin ?? null,
       label: SPORT_TITLES[sportOf({ sport: s.sport as SportKind })],
+      // Matched to a real logged session (mezo-tb3s2) — never derived from clock time.
+      logged: true,
     })
   }
-  return [...blocks, ...unmatched]
+  // Leftover planned occurrences carry no logged session — explicitly false, not merely absent, so
+  // a caller can tell "known not logged" apart from "this block kind has no logged-provenance here".
+  return [...blocks, ...unmatched.map(b => ({ ...b, logged: false }))]
 }
 
 /** The planned sport block closest in time to a logged session — the backend's `nearestPlan`. */
@@ -162,7 +171,7 @@ export function deriveProtocolAnchors(
   activeRunningBlock: RunningBlockResponse | null,
   wake: string,
   bedtime: string,
-  skips: SportSlotSkip[] = [],
+  skips: PlannedSkipKey[] = [],
 ): ProtocolAnchors {
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, skips)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null

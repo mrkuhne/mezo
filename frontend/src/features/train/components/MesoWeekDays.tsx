@@ -24,6 +24,9 @@ import { MesoDayCard } from '@/features/train/components/MesoDayCard'
 import { doneByDay } from '@/features/train/logic/mesoWeekDone'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { todayDayToken } from '@/features/train/logic/mesoDates'
+import { useRecovery } from '@/data/train/recoveryHooks'
+import { weekDateIso } from '@/features/train/logic/weekAgenda'
+import { kimeloAgendaParts, recoveryIcon } from '@/features/train/logic/skipCopy'
 
 /** The day IF the plan actually trains on it — rest (`muscle: ''`), sport
  *  (`muscle: 'sport'`) and an empty exercise list are all off days. Returns the day
@@ -42,6 +45,12 @@ export function MesoWeekDays({ meso, onOpenDay, firstDelayMs = 110 }: {
   const { details } = useWeekMuscleLog()
   const doneDays = doneByDay(details)
   const today = todayDayToken()
+  // Kímélő mód S2 (mezo-q4xt2.2, prototype `dayCard` kmday): a protected training or sport day
+  // from today on that is not already done reads as a muted row — „Kímélő mód · {session} kimarad" with the
+  // period's category icon. Rest days stay rest days; a done day keeps its card.
+  const { recovery } = useRecovery()
+  const protectedDates = new Set(recovery.protectedDates)
+  const todayIndex = DAY_ORDER.indexOf(today)
 
   return (
     <div className="pl-days">
@@ -51,9 +60,28 @@ export function MesoWeekDays({ meso, onOpenDay, firstDelayMs = 110 }: {
         const isToday = token === today
         const name = DAY_LABELS[token] ?? token
         const delayMs = firstDelayMs + i * 20
+        const sport = day?.muscle === 'sport'
+        const done = isToday ? null : (doneDays.get(token) ?? null)
+
+        // Today onwards only (prototype `dayCard`: `i >= today`) — a past day keeps its own card.
+        if ((training || sport) && !done && i >= todayIndex && protectedDates.has(weekDateIso(i))) {
+          const line = kimeloAgendaParts(training ? training.type : (day?.type ?? 'sport'))
+          return (
+            <div key={token} className="tv-dayrest is-km rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
+              <span className="tv-day-tag">{name}</span>
+              <em><b>{line.bold}</b>{line.rest}</em>
+              {isToday && (
+                <span className="tv-day-stamp is-today">
+                  <Icon3D name="t-play" size={17} />
+                  Ma
+                </span>
+              )}
+              <Icon3D name={recoveryIcon(recovery.period?.category)} size={24} />
+            </div>
+          )
+        }
 
         if (!training) {
-          const sport = day?.muscle === 'sport'
           return (
             <div key={token} className="tv-dayrest rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
               <span className="tv-day-tag">{name}</span>
@@ -75,7 +103,7 @@ export function MesoWeekDays({ meso, onOpenDay, firstDelayMs = 110 }: {
             day={training}
             name={name}
             isToday={isToday}
-            done={isToday ? null : (doneDays.get(token) ?? null)}
+            done={done}
             delayMs={delayMs}
             onOpen={() => onOpenDay(token)}
           />

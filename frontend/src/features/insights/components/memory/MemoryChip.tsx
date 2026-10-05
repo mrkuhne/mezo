@@ -11,6 +11,11 @@ import { Icon3D } from '@/shared/ui/clay'
  * (lesson 33). `surface="csapatfal"` renders S7's exact DOM (`mzc-remchip` / `tf-remgone`), so the
  * team-chat reply does not change visually. Source: docs/design_2.0/prototypes/elo/mezo.html „S8 ·".
  *
+ * mezo-d6ivw.13 „Rólam is": a chat person-fact chip may carry `aboutMe` — a second, toggling
+ * action (Rólam is ⇄ Rólad is · kész, aria-pressed) that copies the fact into the owner's own
+ * facts. With two actions the chip is `is-two`: the button row wraps below the text (prototype
+ * `.s8chip.two`). The csapatfal surface never gets it.
+ *
  * Owner ruling 2026-09-28: "ezt ne jegyezd meg" forgets only the immediately preceding message;
  * when that message learned nothing, `forgotten.items` is empty — the chip then renders an
  * empty state instead of the "Elfelejtettem:" list (no heading, no permanence note), keeping the
@@ -21,6 +26,9 @@ export interface MemoryLine { who?: string | null; text: string }
 export const memoryLabel = (m: MemoryLine) => (m.who ? `${m.who} — ${m.text}` : m.text)
 
 type Phase = 'idle' | 'busy' | 'error' | 'done'
+
+/** „Rólam is" (mezo-d6ivw.13): `on` = the copy is live; `onToggle` flips it. */
+export interface AboutMeToggle { on: boolean; onToggle: () => Promise<void> }
 
 function useChipAction() {
   const [phase, setPhase] = useState<Phase>('idle')
@@ -43,7 +51,8 @@ const delayStyle = (delay?: number) => ({ ['--d' as string]: `${delay ?? 0}s` })
 
 export type MemoryChipProps =
   | { variant: 'remembered'; surface?: 'chat' | 'csapatfal'; item: MemoryLine; sub?: string; sensitive?: boolean
-      done?: boolean; undoneText?: string; forgotten?: boolean; delay?: number; onUndo: () => Promise<void> }
+      done?: boolean; undoneText?: string; forgotten?: boolean; delay?: number; onUndo: () => Promise<void>
+      aboutMe?: AboutMeToggle }
   | { variant: 'proposed'; item: MemoryLine; forgotten?: boolean; rejected?: boolean; delay?: number
       onAccept: () => Promise<void>; onReject: () => Promise<void> }
   | { variant: 'recalled'; names: string[]; onOpen: () => void }
@@ -67,17 +76,31 @@ function ForgottenLine({ item }: { item: MemoryLine }) {
   )
 }
 
-function Remembered({ surface = 'chat', item, sub, sensitive, done, undoneText = UNDONE, forgotten, delay, onUndo }:
+function Remembered({ surface = 'chat', item, sub, sensitive, done, undoneText = UNDONE, forgotten, delay, onUndo, aboutMe }:
   Extract<MemoryChipProps, { variant: 'remembered' }>) {
   const { phase, run } = useChipAction()
+  const [meBusy, setMeBusy] = useState(false)
+  const [meError, setMeError] = useState(false)
   if (forgotten) return <ForgottenLine item={item} />
   if (done || phase === 'done') {
     return surface === 'csapatfal'
       ? <p className="tf-remgone">{undoneText}</p>
       : <p className="mzc-memdone"><Icon3D name="t-spark" size={16} />{undoneText}</p>
   }
-  const busy = phase === 'busy'
+  const busy = phase === 'busy' || meBusy
   const undo = () => void run(onUndo, 'undone')
+  const toggleMe = async () => {
+    if (!aboutMe) return
+    setMeBusy(true)
+    setMeError(false)
+    try {
+      await aboutMe.onToggle()
+    } catch {
+      setMeError(true)
+    } finally {
+      setMeBusy(false)
+    }
+  }
   if (surface === 'csapatfal') {
     return (
       <div className="mzc-remwrap col gap-xs">
@@ -92,7 +115,7 @@ function Remembered({ surface = 'chat', item, sub, sensitive, done, undoneText =
   }
   return (
     <>
-      <div className="mzc-memchip is-remembered" style={delayStyle(delay)}>
+      <div className={`mzc-memchip is-remembered${aboutMe ? ' is-two' : ''}`} style={delayStyle(delay)}>
         <Icon3D name="t-spark" size={20} />
         <span className="mzc-memtx">
           <b>Megjegyeztem:</b> {item.who && <><b>{item.who}</b> — </>}{item.text}
@@ -100,10 +123,17 @@ function Remembered({ surface = 'chat', item, sub, sensitive, done, undoneText =
           {sub && <small>{sub}</small>}
         </span>
         <span className="mzc-memacts">
+          {aboutMe && (
+            <button type="button" className={`mzc-mbtn is-me${aboutMe.on ? ' is-on' : ''}`} aria-pressed={aboutMe.on}
+              disabled={busy} onClick={() => void toggleMe()}>
+              {aboutMe.on ? 'Rólad is · kész' : 'Rólam is'}
+            </button>
+          )}
           <button type="button" className="mzc-mbtn is-ghost" disabled={busy} onClick={undo}>Visszavonom</button>
         </span>
       </div>
       {phase === 'error' && <p className="mzc-memerr" role="alert">Nem sikerült visszavonni — próbáld újra.</p>}
+      {meError && <p className="mzc-memerr" role="alert">Nem sikerült — próbáld újra.</p>}
     </>
   )
 }

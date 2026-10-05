@@ -23,8 +23,8 @@
 //
 // S1c.2 (mezo-33k6): EGY naplózó, nem kettő. Ahol mód-héj (`FuelLogModes`) ül fölötte, ott a
 // héj birtokolja a „hogyan kezdem" kérdést (`shellOwnsEntry`): a composer elhagyja a saját ✨ AI
-// forrás-kártyáját, a kézi Kamra/Recept pickereket pedig csak a GÉPELÉS úton kínálja
-// (`manualSources`) — nem tűnnek el, csak oda kerülnek, ahol a kézi sor-felvétel értelmes (A3).
+// forrás-kártyáját, a kézi Kamra/Recept pickerek pedig a felső
+// Fotó · Kamra · Recept · Szokásosak sorból nyílnak (ADR 0056).
 // A megerősítő rész (MIKOR · TÉTELEK · összegző kártya · mentés-CTA) ilyenkor csak az első sorral
 // jelenik meg. Héj NÉLKÜL (a LogFlowPage-overlay: recept, kamra, Életjel, Rutin) minden marad,
 // ahogy volt — a két prop alapértelmezése a mai viselkedés.
@@ -35,7 +35,7 @@
 // the LogFlowPage rule, kept verbatim (see that file's original header note).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { FuelMeal, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
+import type { FuelMeal, FuelSlot, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { useMealCeremony } from '@/features/fuel/MealCeremonyProvider'
 import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
@@ -50,6 +50,7 @@ import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
 import { ReceptPickSheet } from '@/features/fuel/sheets/ReceptPickSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 import { defaultMealSlot } from '@/features/fuel/logic/defaultMealSlot'
+import { resolveEatingTimePlacement } from '@/features/fuel/logic/eatingTimePlacement'
 import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { parseAmountInput, stepAmount } from '@/features/fuel/logic/amountGuard'
 import {
@@ -57,17 +58,8 @@ import {
   rescaleFrozen, lineNutrients, scaleNutrients, sumNutrients, NO_NUTRIENTS, factsOf,
 } from '@/data/fuel/recipeMacros'
 import { RecipeOverrideRow } from '@/features/fuel/components/RecipeOverrideRow'
-import { useVoiceInput, type VoiceState } from '@/features/insights/logic/useVoiceInput'
-import { VoiceBubble } from '@/shared/ui/voice/VoiceBubble'
-
-/** A mikrofon állapot-feliratai (A6, mezo-33k6). A „nem támogatott" ág NEM hazudik működőt:
- *  a gomb tiltott, és a felirata megmondja, miért. */
-const VOICE_LABEL: Record<VoiceState, string> = {
-  idle: 'Hang · mondd el, mit ettél',
-  recording: 'Hallgatlak — koppints a leállításhoz',
-  transcribing: 'Leiratozom a felvételt…',
-  unsupported: 'Hang · ez a böngésző nem tud hangot rögzíteni',
-}
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
 
 export type MealComposerPrefill =
   | { source: 'recipe'; recipeId: string }
@@ -103,6 +95,9 @@ function lineHue(c: { p: number; c: number; f: number }): string {
 const SLOT_DEFAULT_TIME: Record<MealSlot, string> = {
   breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: '16:00',
 }
+
+const localHHmm = (date = new Date()) =>
+  `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 
 interface EstimateSnapshot {
   per: number; basisUnit: string
@@ -218,21 +213,16 @@ export interface MealComposerProps {
   prefill?: MealComposerPrefill
   /** Opens the ✨ AI panel expanded on mount (the per-window "AI" action, mezo-53su). */
   aiPanelOpenOnMount?: boolean
-  /** S1c (mezo-33k6): opens the ✨ panel while true, for the camera-first shell's gépelés/hang
-   *  modes. Mount-time opening stays `aiPanelOpenOnMount`'s job — this one reacts to later flips. */
-  aiPanelOpen?: boolean
-  /** S1c héj-kar (mezo-33k6): a photo chosen OUTSIDE the composer (the camera-first shell). A new
-   *  file runs the composer's EXISTING photo arm — resizeImage → draftMealFromAi → the user
-   *  confirms. There is exactly ONE AI call site, and it is here. */
+  /** The page's selected photo is only attached here. AI analysis starts on Elemzés. */
   incomingPhoto?: File | null
-  /** S1c héj-kar: text arriving from outside — a transcribed sentence or a „szokásos" row's name.
-   *  It lands in the SAME ✨ text field the typing arm uses; `run` starts the analysis at once
-   *  (the draft still needs the user's confirmation before anything is saved). `seq` makes a
-   *  repeated identical sentence a new event. */
-  incomingAiText?: { text: string; seq: number; run?: boolean } | null
+  /** The unified page's top-row pantry/recipe action opens the existing picker sheet. */
+  sourceAction?: { source: 'pantry' | 'recipe'; seq: number } | null
+  /** A selected usual meal's name lands in the persistent text field. */
+  incomingAiText?: { text: string; seq: number } | null
   /** S1c: the PHOTO arm failed — the shell raises its first-class failure state (A4), which
    *  offers the other three routes instead of an error toast. */
   onAiFailed?: () => void
+  onAiSucceeded?: () => void
   /** Melyik napra könyvelődik a mentés (ISO local date). Absent = ma (nowOffsetIso, byte-azonos). */
   logDate?: string
   /** A loggedAt idő-komponense HH:mm (ablak-indítás: az ablak ideje). Absent = slot-alap idő. */
@@ -245,10 +235,6 @@ export interface MealComposerProps {
    *  Alapértelmezése `false`: a héj NÉLKÜL futó hívók (a LogFlowPage-overlay — recept, kamra,
    *  Életjel, Rutin) bájtazonosan úgy renderelnek, ahogy eddig. */
   shellOwnsEntry?: boolean
-  /** S1c.2 (mezo-33k6): most relevánsak-e a KÉZI források (Kamra · Recept)? A héj alatt ez a
-   *  gépelés út szerződése (manifeszt A3: a kézi naplózás nem tűnik el, csak odakerül, ahol a
-   *  kézi sor-felvétel értelmes). Alapértelmezése `true` — a héj nélküli hívók változatlanok. */
-  manualSources?: boolean
   /** S1c (mezo-33k6, A8 · A9): egy MÁR LOGOLT étkezés szerkesztése. Jelen esetén a composer abból
    *  az étkezésből indul (sorok, cím, ablak, idő), a mentés `updateMeal`-t hív `logMeal` helyett,
    *  és megjelenik a két lépéses törlés. A javításról SOSEM megy AI-piszkozat-visszajelzés: az a
@@ -256,15 +242,17 @@ export interface MealComposerProps {
   editMealId?: string
   /** A blokk ajánlott ablaka (mezo-6g52f) — a szerver ehhez pontozza az időzítést. */
   window?: { from: string; to: string }
+  /** The selected day's planned windows for new, page-based meal logging. */
+  eatingTimeWindows?: readonly FuelSlot[]
   onSaved: () => void
   onCancel: () => void
 }
 
 export function MealComposer({
-  fixedSlot, initialSlot, prefill, aiPanelOpenOnMount, aiPanelOpen,
-  incomingPhoto, incomingAiText, onAiFailed,
-  shellOwnsEntry = false, manualSources = true,
-  logDate, logTime, saveLabel, editMealId, window, onSaved, onCancel,
+  fixedSlot, initialSlot, prefill, aiPanelOpenOnMount,
+  incomingPhoto, incomingAiText, sourceAction, onAiFailed, onAiSucceeded,
+  shellOwnsEntry = false,
+  logDate, logTime, saveLabel, editMealId, window, eatingTimeWindows, onSaved, onCancel,
 }: MealComposerProps) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
@@ -275,6 +263,17 @@ export function MealComposer({
   const { celebrateMeal } = useMealCeremony()
 
   const [slot, setSlot] = useState<MealSlot>(() => fixedSlot ?? initialSlot ?? defaultMealSlot())
+  const [timeOpen, setTimeOpen] = useState(false)
+  const [timeOverride, setTimeOverride] = useState<string | null>(null)
+  const [nowHHmm, setNowHHmm] = useState(localHHmm)
+  const [timeSaveBusy, setTimeSaveBusy] = useState(false)
+  const [timeSaveError, setTimeSaveError] = useState<string | null>(null)
+  useEffect(() => {
+    if (eatingTimeWindows == null || editMealId != null) return
+    const tick = () => setNowHHmm(localHHmm())
+    const interval = globalThis.setInterval(tick, 15_000)
+    return () => globalThis.clearInterval(interval)
+  }, [eatingTimeWindows, editMealId])
   // A slot-targeted launch keeps its slot even once an AI draft proposes a different one
   // (mezo-53su); manual taps lock it too.
   const slotLocked = useRef(fixedSlot != null || initialSlot != null)
@@ -285,10 +284,6 @@ export function MealComposer({
   const [aiText, setAiText] = useState('')
   const [aiPhoto, setAiPhoto] = useState<File | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
-  // A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül — a
-  // leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan (`ai-text`).
-  const voice = useVoiceInput(text => setAiText(d => (d ? `${d} ${text}` : text)))
-  const voiceRecording = voice.state === 'recording'
   // What actually landed in the meal FROM the AI this session — the honest input to
   // provenance.origin (see the file-header note).
   const [aiContribution, setAiContribution] = useState<{ photo: boolean; rawText: string | null } | null>(null)
@@ -478,8 +473,11 @@ export function MealComposer({
       setAiDraftId(draft.draftId)
       aiLinesEditedRef.current = false
       setAiText('')
-      setAiPhoto(null)
-      setAiOpen(false)
+      if (!shellOwnsEntry) {
+        setAiPhoto(null)
+        setAiOpen(false)
+      }
+      onAiSucceeded?.()
     } catch {
       setAiError('Nem sikerült az AI-feldolgozás. Próbáld újra, vagy add hozzá kézzel.')
       // A4: only a PHOTO failure is the shell's „ezt a tányért nem ismertem fel" state — a text
@@ -494,14 +492,17 @@ export function MealComposer({
   // ── S1c héj-karok (mezo-33k6) ───────────────────────────────────────────────────────────────
   // The shell hands its photo / transcript DOWN here instead of calling the AI itself, so the
   // single call site, the single ✨ text field and the provenance rules all stay in one place.
-  const shellPhotoRef = useRef<File | null>(null)
   useEffect(() => {
-    if (!incomingPhoto || shellPhotoRef.current === incomingPhoto) return
-    shellPhotoRef.current = incomingPhoto
-    setAiPhoto(incomingPhoto)
-    void runAiWith(incomingPhoto, aiText)
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a NEW file only; the text/run closure is read at that moment
-  }, [incomingPhoto])
+    if (shellOwnsEntry) setAiPhoto(incomingPhoto ?? null)
+  }, [incomingPhoto, shellOwnsEntry])
+
+  const sourceSeqRef = useRef(0)
+  useEffect(() => {
+    if (!sourceAction || sourceAction.seq === sourceSeqRef.current) return
+    sourceSeqRef.current = sourceAction.seq
+    if (sourceAction.source === 'pantry') setKamraOpen(true)
+    else setReceptOpen(true)
+  }, [sourceAction])
 
   const shellTextSeqRef = useRef(0)
   useEffect(() => {
@@ -510,15 +511,22 @@ export function MealComposer({
     const next = aiText ? `${aiText} ${incomingAiText.text}` : incomingAiText.text
     setAiText(next)
     setAiOpen(true)
-    if (incomingAiText.run) void runAiWith(null, next)
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fires on a NEW seq only
   }, [incomingAiText])
 
-  useEffect(() => { if (aiPanelOpen) setAiOpen(true) }, [aiPanelOpen])
-
-  const canSave = lines.length > 0
+  const hasEatingTime = eatingTimeWindows != null && editMealId == null
+  const previewTime = timeOverride ?? nowHHmm
+  const invalidTime = hasEatingTime && !/^([01]\d|2[0-3]):[0-5]\d$/.test(previewTime)
+  const timePlacement = hasEatingTime && !invalidTime ? resolveEatingTimePlacement(previewTime, eatingTimeWindows!) : null
+  const isFutureTime = hasEatingTime && timeOverride != null &&
+    `${logDate ?? localDateString()}T${timeOverride}` > `${localDateString()}T${nowHHmm}`
+  const canSave = lines.length > 0 && !invalidTime && !isFutureTime && !timeSaveBusy
   const save = () => {
     if (!canSave) return
+    const saveTime = timeOverride ?? localHHmm()
+    if (hasEatingTime && `${logDate ?? localDateString()}T${saveTime}` > `${localDateString()}T${localHHmm()}`) return
+    const savePlacement = hasEatingTime ? resolveEatingTimePlacement(saveTime, eatingTimeWindows!) : null
+    const saveWindow = hasEatingTime ? savePlacement?.window : window
     const items: MealItemInput[] = lines.map((l): MealItemInput => {
       if (l.source === 'estimate') {
         const est = l.estimate!
@@ -545,17 +553,19 @@ export function MealComposer({
       }
     })
     const input: MealInput = {
-      slot: fixedSlot ?? slot,
+      slot: savePlacement?.slot ?? fixedSlot ?? slot,
       // A8: a javítás az étkezés SAJÁT idejét viszi (a szerkesztő idő-mezőjéből), nem tolja
       // mostra — különben egy reggeli javítása este átköltöztetné a reggelit.
-      loggedAt: editMeal != null
+      loggedAt: savePlacement != null
+        ? offsetIso(logDate ?? localDateString(), saveTime)
+        : editMeal != null
         ? offsetIso(logDate ?? editMeal.mealDate ?? localDateString(), editTime || hhmmFromLoggedAt(editMeal.loggedAt, SLOT_DEFAULT_TIME[fixedSlot ?? slot]))
         : logDate != null
           ? offsetIso(logDate, logTime ?? SLOT_DEFAULT_TIME[fixedSlot ?? slot])
           : nowOffsetIso(),
       title: effectiveName.trim() || null,
       items,
-      ...(window ? { window } : {}),
+      ...(saveWindow ? { window: saveWindow } : {}),
       ...(aiContribution
         ? { provenance: { origin: aiContribution.photo ? 'ai-photo' : 'ai-text', rawText: aiContribution.rawText } }
         : {}),
@@ -589,6 +599,24 @@ export function MealComposer({
         hasBreakdown: true,
       })
     }
+    if (hasEatingTime) {
+      setTimeSaveBusy(true)
+      setTimeSaveError(null)
+      void logMealAsync(input).then(
+        (meal) => {
+          if (aiContribution && aiDraftId) {
+            reportOutcomeOnce(aiDraftId, aiLinesEditedRef.current ? 'edited' : 'accepted')
+          }
+          celebrate(meal as never)
+          onSaved()
+        },
+        () => {
+          setTimeSaveError('Nem sikerült menteni. Próbáld újra.')
+          setTimeSaveBusy(false)
+        },
+      )
+      return
+    }
     if (aiContribution && aiDraftId) {
       const draftId = aiDraftId
       const outcome = aiLinesEditedRef.current ? 'edited' : 'accepted'
@@ -613,14 +641,14 @@ export function MealComposer({
   // Héj NÉLKÜL mindhárom kapu nyitva van — a LogFlowPage-overlay (recept, kamra, Életjel, Rutin)
   // pontosan úgy renderel, ahogy eddig. Héj alatt: a bejárat a héjé, a megerősítés a miénk.
   const showAiSource = !shellOwnsEntry
-  const showManualSources = !shellOwnsEntry || manualSources
+  const showManualSources = !shellOwnsEntry
   const showSourceRow = showAiSource || showManualSources
   // „Van mit megerősíteni": legalább egy piszkozat-sor, vagy egy már logolt étkezés javítása.
   const showConfirm = !shellOwnsEntry || lines.length > 0 || editMealId != null
 
   return (
     <div className="logflow-composer">
-      {fixedSlot == null && showConfirm && (
+      {fixedSlot == null && eatingTimeWindows == null && showConfirm && (
         <>
           <span className="logflow-eyebrow uv-eyebrow">MIKOR</span>
           <div className="logflow-seg uv-flat">
@@ -669,14 +697,19 @@ export function MealComposer({
           Elemzem az étkezést…
         </div>
       )}
-      {aiOpen && !aiBusy && (
+      {aiOpen && (!aiBusy || shellOwnsEntry) && (
         <div className="logflow-aipanel glass">
-          <textarea
-            value={aiText} onChange={(e) => setAiText(e.target.value)}
-            aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…" rows={2}
-          />
+          {/* A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül —
+              a leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan
+              (`ai-text`). A mikrofon a mező saját csempéje (mezo-xojq8), nem külön chip. */}
+          <VoiceField domain="fuel" onTranscript={(t) => setAiText((d) => appendDictation(d, t))}>
+            <textarea
+              value={aiText} onChange={(e) => setAiText(e.target.value)}
+              aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…" rows={2}
+            />
+          </VoiceField>
           <div className="logflow-airow">
-            {aiPhoto ? (
+            {shellOwnsEntry ? null : aiPhoto ? (
               <span className="logflow-aiphoto">
                 {photoUrl && <img src={photoUrl} alt="Fotó előnézet" />}
                 {aiPhoto.name}
@@ -692,23 +725,17 @@ export function MealComposer({
                   onChange={(e) => setAiPhoto(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
               </label>
             )}
-            <button type="button" className={'logflow-aichip' + (voiceRecording ? ' is-live' : '')}
-              onClick={voice.toggle}
-              disabled={voice.state === 'unsupported' || voice.state === 'transcribing'}
-              aria-label={VOICE_LABEL[voice.state]} aria-pressed={voiceRecording}>
-              <Icon3D name="t-mic" size={18} />
-              {voiceRecording ? 'Hallgatlak…' : voice.state === 'transcribing' ? 'Leiratozom…' : 'Hang'}
-            </button>
             <button type="button" className="logflow-aichip logflow-airun"
-              disabled={!canRunAi} onClick={() => void runAi()}>
+              disabled={!canRunAi || aiBusy} onClick={() => void runAi()}>
               <Icon3D name="t-score" size={18} />
               Elemzés
             </button>
           </div>
           {aiError && <p className="logflow-aierr">{aiError}</p>}
-          <VoiceBubble voice={voice} domain="fuel" />
           <p className="logflow-aihint">
-            Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.
+            {shellOwnsEntry
+              ? 'Szöveg, hang és fotó egy piszkozatban. Elemzés után a felismert tételeket még átírhatod.'
+              : 'Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.'}
           </p>
         </div>
       )}
@@ -872,6 +899,35 @@ export function MealComposer({
           </div>
         </div>
       </div>}
+
+      {hasEatingTime && showConfirm && (
+        <div className="logflow-eaten-time uv-flat">
+          <button type="button" className="logflow-eaten-time-toggle" aria-expanded={timeOpen}
+            aria-label="Mikor ettél?" onClick={() => { setNowHHmm(localHHmm()); setTimeOpen(open => !open) }}>
+            <span className="logflow-eaten-time-title">Mikor ettél?</span>
+            <span className="logflow-eaten-time-summary">
+              {timeOverride == null ? `Most · ${nowHHmm}` : `${previewTime} · ${timePlacement?.label != null && timePlacement.window != null
+                ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}` : 'Ablakon kívül'}`}
+              <span aria-hidden="true"> {timeOpen ? '▴' : '▾'}</span>
+            </span>
+          </button>
+          {timeOpen && (
+            <div className="logflow-eaten-time-details">
+              <div className="logflow-eaten-time-inputrow">
+                <input type="time" aria-label="Evés időpontja" value={previewTime}
+                  onChange={event => { setTimeOverride(event.target.value); setTimeSaveError(null) }} />
+                <button type="button" onClick={() => { setTimeOverride(null); setNowHHmm(localHHmm()); setTimeSaveError(null) }}>Most</button>
+              </div>
+              <p>{timePlacement?.label != null && timePlacement.window != null
+                ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}`
+                : 'Ablakon kívül'}</p>
+              {invalidTime && <p role="alert" className="logflow-eaten-time-error">Adj meg egy érvényes időpontot.</p>}
+              {isFutureTime && <p role="alert" className="logflow-eaten-time-error">jövőbeli időpontot nem lehet menteni.</p>}
+            </div>
+          )}
+          {timeSaveError && <p role="alert" className="logflow-eaten-time-error">{timeSaveError}</p>}
+        </div>
+      )}
 
       {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
       {editMealId != null && (

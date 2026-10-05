@@ -50,4 +50,15 @@ public class TeamChatExpiryJob {
             log.warn("Team chat catch-up failed", e);
         }
     }
+
+    /** Release persisted overnight raises when the quiet window ends. The hourly catch-up is the
+     * recovery path if the application was down at this exact minute. */
+    @Scheduled(cron = "${mezo.character.team-chat.morning-release-cron}", zone = "Europe/Budapest")
+    public void runMorningRelease() {
+        try {
+            teamChatService.releaseOvernight(Instant.now());
+        } catch (Exception e) {
+            log.warn("Team chat morning release failed", e);
+        }
+    }
 }

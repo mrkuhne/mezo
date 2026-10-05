@@ -57,6 +57,8 @@ Three things ship together (the first two from W1.1, the third added by W1.4):
   `memory_embedding` in sync through the **existing single write path**,
   `MemoryEmbeddingWriter` (companion.md §"Embed pipeline" / §4). Journal never touches
   `memory_embedding` or `EmbeddingPort` itself — the memory write is entirely companion's.
+  (The same writer's chat-turn unit skips a turn the user asked to forget — `mezo-tdabt`,
+  companion.md §3 "Forget really forgets"; journal units are unaffected.)
 - **The `decision_entry` aggregate** (`feature/journal`, same package, `DecisionService`) — create
   (server-captures the context snapshot + defaults `reviewDue`), list (newest-first, no params),
   review (stamps the outcome, re-runnable). Own `DecisionEntrySavedEvent` → `DecisionEmbeddingListener`
@@ -109,9 +111,10 @@ floating `QuickLogFab`, not from a tab-bar centre button.
 
 ### `JournalSheet` (`features/me/sheets/JournalSheet.tsx`) — create + edit + delete, plus „Döntés" and „Hála" capture modes
 One free-text `<textarea>` (no length cap, placeholder „Írd le, mi jár a fejedben…", autofocus) plus
-an optional `<input type="date">` defaulting to today, plus a mic button reusing the shared
-`useVoiceInput` hook (`features/insights/logic/useVoiceInput`, the `ChatPage` composer idiom — the
-transcript is **appended** to whatever's already typed, not overwritten). While the mic listens or transcribes, the shared `VoiceBubble` (`shared/ui/voice/VoiceBubble`, `domain="me"`) shows the listening / transcribing Boop bubble — the same one every voice input uses since `mezo-zyyox` (Hallgató Boop). Header eyebrow „Napló",
+an optional `<input type="date">` defaulting to today; the textarea sits in the shared
+`VoiceField` (`shared/ui/voice/VoiceField`, since `mezo-xojq8` the one voice field every free-text
+field wears — the square mic tile to its right; the transcript is **appended** to whatever's
+already typed via `appendDictation`, not overwritten). While the mic listens or transcribes, the shared `VoiceBubble` (`shared/ui/voice/VoiceBubble`, `domain="me"`) shows the listening / transcribing Boop bubble — the same one every voice input uses since `mezo-zyyox` (Hallgató Boop). Header eyebrow „Napló",
 title „Mi jár a fejedben?" in create mode / „Bejegyzés szerkesztése" in edit mode (`entry` prop
 set). CTAs „Mégse" / „Mentem" — save calls `addNote` (create) or `updateNote` (edit) then closes.
 **Edit mode only** additionally offers **„Törlés" behind a two-step confirm („Törlés" →
@@ -151,8 +154,9 @@ because the two callers save at different moments: `JournalSheet`'s „Hála" mo
 is also what keeps the file out of `@/data/*`, the `frontend_conventions.md` rule for a component
 shared across features.
 
-The mic's target row is held in a **ref**, not state: `useVoiceInput`'s `rec.onstop` closes over the
-transcript callback as it stood when recording STARTED, so a state read inside it would be stale.
+Each row carries its own `VoiceField` (`size="sm"`, since `mezo-xojq8`); `VoiceField` keeps the
+latest transcript callback in a ref, because `useVoiceInput`'s `rec.onstop` closes over the one that
+stood when recording STARTED. (Until `mezo-xojq8` one hook served every row through a target ref.)
 Before the extraction the gratitude mic was wired to `JournalSheet`'s *note* textarea — a box
 gratitude mode never renders — so a transcription taken while capturing gratitude was silently
 lost; the extraction fixed it.

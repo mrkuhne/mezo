@@ -25,7 +25,7 @@ public final class ExpenditureFilter {
      *
      * @param intakeKcal   usable logged intake, or {@code null} (unlogged / excluded)
      * @param carbsG       that day's carbs when {@code intakeKcal} is usable, else {@code null}
-     * @param movementKcal the plan's daily movement average + the day's unplanned extra (net)
+     * @param movementKcal the day's served logged movement (planned + extra, mezo-tb3s2)
      * @param balanceKcal  the goal's daily energy balance (the drift assumed on an unknown day)
      * @param weightKg     the day's mean scale weight, or {@code null}
      */

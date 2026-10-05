@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
 import io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest;
+import io.mrkuhne.mezo.api.dto.PlanSetsRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutExerciseChangeRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutExerciseChangeResponse;
 import io.mrkuhne.mezo.api.dto.CatalogImagesRequest;
 import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
 import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
@@ -65,6 +68,7 @@ import io.mrkuhne.mezo.feature.train.service.TimingObservationExtractor;
 import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutExerciseChangeService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.math.BigDecimal;
@@ -84,6 +88,7 @@ public class TrainController implements TrainApi {
     private final MesoTemplateService mesoTemplateService;
     private final MesocycleReportService mesocycleReportService;
     private final WorkoutService workoutService;
+    private final WorkoutExerciseChangeService workoutExerciseChangeService;
     private final SportService sportService;
     private final SportSlotSkipService sportSlotSkipService;
     private final GymScheduleService gymScheduleService;
@@ -330,6 +335,16 @@ public class TrainController implements TrainApi {
     @Override
     public void skipWorkoutExercise(UUID id, WorkoutSkipRequest workoutSkipRequest) {
         workoutService.skipExercise(currentUserId.get(), id, workoutSkipRequest.getExerciseId());
+    }
+
+    @Override
+    public WorkoutExerciseChangeResponse changeWorkoutExercise(UUID id, WorkoutExerciseChangeRequest request) {
+        return workoutExerciseChangeService.change(currentUserId.get(), id, request);
+    }
+
+    @Override
+    public void addPlanWorkingSets(UUID id, UUID exerciseId, PlanSetsRequest planSetsRequest) {
+        workoutExerciseChangeService.addPlanWorkingSets(currentUserId.get(), id, exerciseId, planSetsRequest.getDelta());
     }
 
     @Override

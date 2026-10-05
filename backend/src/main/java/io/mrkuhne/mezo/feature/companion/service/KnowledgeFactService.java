@@ -6,12 +6,14 @@ import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.entity.FactMergeLedgerEntity;
 import io.mrkuhne.mezo.feature.companion.entity.FactOwner;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.FactMergeLedgerRepository;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -27,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -35,6 +38,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -79,6 +83,7 @@ public class KnowledgeFactService {
     private final ObjectProvider<HighlightCitationSource> citationSource;
     private final PromptPersona promptPersona;
     private final LearnedFactRepository learnedFactRepository;
+    private final FactMergeLedgerRepository mergeLedgerRepository;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
         // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
@@ -154,6 +159,7 @@ public class KnowledgeFactService {
         if (request.getIncludeInPrompt() != null) {
             boolean include = request.getIncludeInPrompt();
             if (include && !fact.isIncludeInPrompt()) {
+                rememberMergeUndo(userId, fact);
                 fact.unmute();
             } else if (!include && fact.isIncludeInPrompt()) {
                 // S6 (mezo-d6ivw.6): the user's own toggle — "te hallgattattad el". An already
@@ -170,6 +176,26 @@ public class KnowledgeFactService {
         eventPublisher.publishEvent(new KnowledgeFactChangedEvent(userId, factId));
         return mapper.toKnowledgeFactResponse(
                 repository.save(fact), null, citedWeeksOf(citedWeeks(userId), factId));
+    }
+
+    /**
+     * S9 final-review I1 (mezo-d6ivw.10): reviving a merged-away fact is an UNDO — the pair
+     * {revived, survivor} goes into the once-ever merge ledger (kind 'auto') BEFORE
+     * {@code unmute()} clears the link, so no later weekly sweep folds it back in. Idempotent.
+     */
+    private void rememberMergeUndo(UUID userId, KnowledgeFactEntity fact) {
+        if (!KnowledgeFactEntity.MUTED_MERGED.equals(fact.getMutedReason()) || fact.getSupersededBy() == null) {
+            return;
+        }
+        String memberKey = FactMergeLedgerEntity.keyOf(List.of(fact.getId(), fact.getSupersededBy()));
+        if (mergeLedgerRepository.existsByCreatedByAndMemberKeyAndDeletedFalse(userId, memberKey)) {
+            return;
+        }
+        FactMergeLedgerEntity undo = new FactMergeLedgerEntity();
+        undo.setCreatedBy(userId);
+        undo.setMemberKey(memberKey);
+        undo.setKind(FactMergeLedgerEntity.KIND_AUTO);
+        mergeLedgerRepository.save(undo);
     }
 
     /**
@@ -283,8 +309,13 @@ public class KnowledgeFactService {
      * Same precedent as {@code QuestionAnswerService}: the user said it, so no Tudástár accept
      * step. Publishes {@link KnowledgeFactChangedEvent} so the graph syncs through its one
      * consumer.
+     *
+     * <p>{@code REQUIRES_NEW} (mezo-d6ivw.11): the caller ({@code TeamChatReplyService.commit})
+     * holds the ügy's row lock and writes the REPLY line in its own transaction — a failed capture
+     * must not mark THAT transaction rollback-only and take the user's answer down with it. The
+     * caller catches the failure and degrades to a plain answer.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public UUID captureFromTeamChat(UUID userId, String text, String owner, UUID lineId, UUID threadId) {
         KnowledgeFactEntity fact = new KnowledgeFactEntity();
         fact.setCreatedBy(userId);
@@ -342,6 +373,18 @@ public class KnowledgeFactService {
         return repository.findByIdInAndCreatedByAndIncludeInPromptTrueAndDeletedFalse(factIds, userId).stream()
                 .map(KnowledgeFactEntity::getId)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    /**
+     * mezo-d6ivw.11: the fact's current text while it is live in the prompt (not deleted, not
+     * muted) — empty otherwise. The csapatfal exception mirror's read: an exception follows its
+     * fact's use-toggle and its edited text.
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> liveText(UUID userId, UUID factId) {
+        return repository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+                .filter(KnowledgeFactEntity::isIncludeInPrompt)
+                .map(KnowledgeFactEntity::getFactText);
     }
 
     private KnowledgeFactEntity getOwned(UUID userId, UUID factId) {

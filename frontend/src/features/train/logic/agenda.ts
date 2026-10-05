@@ -23,6 +23,9 @@ export interface WeeklyAgendaDay {
   isToday: boolean
   /** Completed custom (saját) workout instances on this date — extra done rows (mezo-ws2x). */
   custom?: { id: string; title: string }[]
+  /** Kímélő mód S2 (mezo-q4xt2.2): the date is protected by a recovery period — its planned
+   *  sessions magától kimaradnak. Absent when not protected. */
+  protected?: boolean
 }
 
 export type AgendaItem =

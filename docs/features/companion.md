@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-28
+updated: 2026-09-30
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,10 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-09-30 — Kímélő mód tone + quiet flags (Kihagyás S2, `mezo-q4xt2.2`).** While a recovery period is open `ContextSnapshotAssembler.trainBlock` says so (never in the cached `stableSystemPrompt`) and `FlagEvaluator` silences four training-pressure rules with the new `UnavailableReason.RECOVERY_MODE` — see the two paragraphs in §3 marked „Kihagyás S2”; the lifecycle is in [`train.md`](train.md) §2.
+
+> **2026-09-28 — fact-text sentence split (`mezo-d6ivw.12` fix).** `FactTextComposer` no longer ends a sentence at a Hungarian abbreviation: a `.`/`!`/`?`/`…` + space is a boundary only when the next token starts uppercase (or an opening quote + uppercase) and the word before it is not in its `ABBREVIATIONS` set (`pl`, `kb`, `stb`, `ill`, `ún`, …). Before, „pl.” cut the composed fact text mid-parenthesis. (Doc note added with `mezo-mobji`, which found the doc stale.)
 
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** One shared renderer, `CheckInText` (biometrics), now prints every answered check-in item for the chat snapshot (latest row + a „ma korábban" line of today's other slots), the daily summary, the `get_recovery` tool (`scope=checkins`) and the meal coach; `PersonalRecordSource` exposes the new `check_in` columns. Flags: four new rules (`persistent_pain`, `poor_restedness`, `craving_streak`, `motivation_slump`) and two widened (`acute_bad_day` + mood/pain, `recovery_needed` + rested/soreness arm). Patterns: ten new `MetricKey`s and fifteen new pairs. `DayScoreService` counts a check-in as filled only when legacy / quick exit / core answered; `MeWeekService` adds the mood average. Details: §5.5 „Check-in 2.0 feeds", §4 flag table, the pattern-catalog block „Check-in 2.0 extended the catalog". Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md).
 
@@ -105,7 +109,8 @@ The sections below describe its current behavior and the supporting components.
   renders as `gym (…): … ; sport: … ; futás: …`, the same three parts in the same order as the
   snapshot's `Ma (terv):`/`Holnap (terv):`. **Both the sport and the gym part are shared code** — `ToolText.sportLine`
   and `ToolText.gymLine` (mezo-4qu) — so the tool and the prompt snapshot cannot disagree about a day.
-  The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
+  **Kihagyás S2 (`mezo-q4xt2.2`) — the kímélő tone line.** `ContextSnapshotAssembler.trainBlock` appends, from `RecoveryPeriodService`, `; Kímélő mód aktív: <kategória>, <n>. nap, becslés: <…>. Ne sürgesd az edzést, ne említs elmaradást; gyógyulás, pihenés, folyadék.` while a period is open (categories `Beteg/Gyomorrontás/Sérülés/Úton`, estimates `csak ma/2–3 nap/kb. egy hét/…`), and `; Visszatérés kímélő mód után: k/N könnyített edzés.` during the comeback ramp (mirroring `RecoveryReturnPolicy.decide` + `comebackSessionsDone`; the line disappears when the ramp is done or waived). It lives in the volatile snapshot, never the cached system prompt. Train stays the owner of the lifecycle — the companion only reads it ([`train.md`](train.md) §2 „Kihagyás S2”).
+  Since Kihagyás S1 (`mezo-q4xt2.1`) both call sites read `findPlannedTemplateForDateUnlessSkipped`, so a gym day the owner skipped renders as `pihenőnap` here too (and a skipped prescribed run is left out of the day line via `PlannedSkipService.isRunSkipped`) — see [`train.md`](train.md) "Kihagyás (S1)". The gym helper owns the rest-day criterion outright: a present-but-empty template (zero exercises)
   is a rest day, rendering `pihenőnap (gym)` on both sides, and a populated one renders
   `gym (<day label>): <exercises>`. Sharing it is what the drift cost: the criterion used to be
   duplicated in `TrainTools.dayContentLine` and `ContextSnapshotAssembler.dayLine`, the snapshot's
@@ -236,7 +241,7 @@ The sections below describe its current behavior and the supporting components.
 **V1.1 (`mezo-fnnq.6`) shipped the L3 memory spine — knowledge facts + prompt injection:**
 
 - **Two new owned tables** — `knowledge_fact` (fact_text, category `train|fuel|health|life`,
-  source `chat|pattern|manual` — a fourth, `weekly_review`, joined in `mezo-d20.7.6`, and a fifth,
+  source `chat|pattern|manual` (later widened: `weekly_review`, `question`, `team_chat`, `person_fact` and, S9, `merge`) — a fourth, `weekly_review`, joined in `mezo-d20.7.6`, and a fifth,
   `question`, in `mezo-d58h.7.5` (a once-ever question's answer — see the §5.7 note below),
   reinforcement_count, `include_in_prompt`, last_reinforced_at, and, since **U9b (`mezo-zpxv7`,
   2026-09-26)**, `owner varchar(16)` CHECK `szunya|mocor|falat|deru|mezo` NOT NULL)
@@ -275,6 +280,13 @@ The sections below describe its current behavior and the supporting components.
   `learned_fact` rows. A broken answer means zero candidates, never a broken turn. **Since U9b**
   the extraction prompt's JSON also asks for `"owner":"szunya|mocor|falat|deru|mezo"` alongside
   category (a one-line team-role gloss in the prompt), resolved the same way at persist time.
+  **Person first (`mezo-d6ivw.13`, owner 2026-09-29):** a candidate whose text names an active known
+  person (`MentionDetectionService.matchActivePersons` — the same fold + word-start rule the recall
+  uses, so "Barbival" names Barbi) is silently dropped while the `PersonFactService` bean exists
+  (PEOPLE on) — the person memory saves it itself, so the chat no longer shows a "Megjegyeztem" AND a
+  "Megjegyezném" for the same sentence; PEOPLE off keeps the candidate (nothing else would own it).
+  The prompt also says: skip facts about a named person, and write every candidate in the user's
+  first person ("Szeretek…", "Nekem…").
   **S3 (`mezo-d6ivw.3`) added the person-directed sibling on the same event:**
   `PersonFactExtractionListener` → `PersonFactExtractionService` (slug
   `companion_person_fact_extract`, marker `SZEMÉLYTÉNY`) extracts durable facts about
@@ -283,9 +295,9 @@ The sections below describe its current behavior and the supporting components.
   (`ObjectProvider`, PEOPLE_SWITCH). The nightly `PersonExtractionService` emits the same
   fact shape as a third task of its single LLM call (`facts` array), persisted after
   `persistNight` in its own TX so a fact failure never sinks the night. Auto-save, no queue:
-  the chat reply grows a post-hoc "Megjegyeztem" chip with undo (FE polls
-  `GET /api/people/facts?sourceRefKind=chat_turn&sourceRefId={userMessageId}` on a short
-  backoff). Details + consumption ([Emberek] `tudás:` line, sensitivity kind's proactive
+  the chat reply grows a post-hoc "Megjegyeztem" chip with undo (since S8 the chips read the
+  turn's `GET .../turn-memory` — below — and since `mezo-d6ivw.13` the person-fact chip also
+  carries „Rólam is"). Details + consumption ([Emberek] `tudás:` line, sensitivity kind's proactive
   exclusion) in [me.md](me.md) §5.4.
 - **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first,
   `snoozed_until > now()` excluded) + `POST .../candidate/{id}/decision` (`accept|reject|refine`
@@ -738,10 +750,21 @@ endpoint's `events[]` — see below.
 COMPLETE (all 14 slices):**
 
 - **The learning loop closes** — a FIRST confirm on a pattern promotes it into a durable
-  `knowledge_fact` (`source=pattern`, factText = the pattern title, linked back via
-  `pattern.promoted_fact_id`; v1 category heuristic: physiology/trigger → health, response →
-  train). Later un-confirms leave the fact alone — it is Daniel's knowledge now, the Knowledge
-  tab owns its lifecycle. Repeat confirms never duplicate.
+  `knowledge_fact` (`source=pattern`, linked back via `pattern.promoted_fact_id`; v1 category
+  heuristic: physiology/trigger → health, response → train). **`factText` = the pattern title is
+  superseded (S8, `mezo-d6ivw.12`):** `PatternService.promoteToFact` now sets it via
+  `FactTextComposer.compose(kind, title, mechanism)` — a prompt-ready SENTENCE built from the
+  pattern's mechanism (up to two sentences, ≤500 chars), falling back to the title only for a
+  statistical-kind pattern or a blank/absent mechanism; `FactTextBackfillService` re-composes it
+  for already-promoted facts. **Hardening (2026-09-28, unrelated to mezo-tb3s2 but touched the same
+  file this session):** the sentence splitter used to treat any `[.!?…]` + whitespace as a
+  boundary, so a Hungarian abbreviation like "pl." mid-mechanism was mistaken for a sentence end
+  and the composed text was truncated mid-parenthesis; a boundary now also requires the next token
+  to look like a new sentence's start (uppercase, or an opening quote then uppercase) and the word
+  before the mark to not be a known abbreviation (`pl, kb, stb, ill, ún, vö, max, min, db, ld,
+  lásd, tkp, ti, uo, szül, ford`), and `compose()` falls back to the title if the result still
+  leaves an unbalanced `(` open. Later un-confirms leave the fact alone — it is Daniel's knowledge
+  now, the Knowledge tab owns its lifecycle. Repeat confirms never duplicate.
 - **Recurrence reinforcement** — when the nightly detection re-detects a CONFIRMED pattern in
   the SAME direction (sign of r), the promoted fact gets `reinforcement_count++` +
   `last_reinforced_at` — at most once per `reinforce-cooldown-days` (7): the sliding window
@@ -774,10 +797,20 @@ COMPLETE (all 14 slices):**
   `gym-workload~next-day-checkin-soreness`, `training-monotony~checkin-motivation`,
   `sleep-quality~checkin-motivation`, `social-mentions~checkin-mood`, `habits-done~checkin-mood`,
   `daily-xp~checkin-mood`, `checkin-mood~checkin-day`, `meal-score~checkin-digestion`,
-  `social-mentions~checkin-connection`. **Deviations from spec §3.8:** `day-score~checkin-day` is
-  skipped (the day score is not a `MetricKey` series), and `meal-processing~checkin-digestion` is
-  realised as `meal-score~checkin-digestion` (no separate NOVA-share metric; the meal score weighs
-  NOVA). The existing `*~checkin-mental` pairs stay (clarity is still a real series).
+  `social-mentions~checkin-connection`. The existing `*~checkin-mental` pairs stay (clarity is
+  still a real series).
+- **Follow-up B (2026-09-28) — the two spec pairs, now real, and one lag fix** (catalog = 45 pairs):
+  two new `MetricKey`s — `day-score` (`DAY_SCORE`: `DayEvaluationEngine`'s `base()` via
+  `DayScoreService.scores`, CLOSED days only — `to` is clamped to yesterday; a null base is no
+  point; resolved through an `ObjectProvider` because `DayScoreService` itself reads
+  `MetricSeriesService`) and `nova4-kcal-pct` (`NOVA4_KCAL_PCT`: NOVA-4 share, 0–100 %, of the
+  day's NOVA-classified snapshot kcal — `ComfortEatingDetector`'s proxy with its ≥ 70 % coverage
+  gate, `MetricSeriesService.NOVA_MIN_COVERAGE`; `MetricSeriesFollowupIT`). Pairs
+  `day-score~checkin-day` („Egyezik az app pontszáma azzal, ahogy te értékeled a napot?") and
+  `nova4-kcal~checkin-digestion` were added; the `meal-score~checkin-digestion` stand-in was
+  **dropped** (redundant — the NOVA share is exactly what the score only approximated;
+  `meal-score~checkin-craving` stays). `sleep-duration~next-day-checkin-craving` (lag 1) was
+  re-keyed **`sleep-duration~checkin-craving`, lag 0** — see §9.
 
 **V3.4 (`mezo-6ha5`) shipped the catalog expansion + AI-context enrichment (spec:
 `2026-08-11-pattern-catalog-expansion-design.md`):**
@@ -1974,6 +2007,15 @@ companion surface since V0.4, dual-mode:
   after "Ne"/"Visszavonom" dropped the item and its confirmation with it); "Igen" takes the promoted
   fact id from the decision response, and a forget-all settles every turn of the conversation. A reject or a forget is permanent — its chip becomes a flat
   "Elfelejtve · <struck-through text>" line, never an active control again.
+- **„Rólam is" (`mezo-d6ivw.13`) — a person fact the owner claims as their own too.** The learned
+  person-fact chip carries a second, toggling action (`MemoryChip` `aboutMe`, chat surface only —
+  the csapatfal chip is unchanged): „Rólam is" → `POST /api/companion/turn-memory/person-fact/{id}/about-me`
+  copies it into the owner's facts (Tudástár Rólad), the button turns „Rólad is · kész"
+  (`aria-pressed`), the sub-line says „<Név> lapján és a Tudástár Rólad részében is látod"; tapping
+  again (`DELETE …/about-me`) takes the copy back („Csak <Név> lapján marad."). With two actions the
+  chip wraps its button row below the text (`.mzc-memchip.is-two`). The state rides the turn memory
+  (`TurnPersonFactResponse.aboutMeFactId`) and the action patches + settles the turn cache like the
+  others (`useTurnMemoryActions.toggleAboutMe`).
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
   removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
@@ -3282,11 +3324,13 @@ its own) and stays reviewable in isolation. S1 was a pure refactor of the origin
   `logging-gap.sleep-suspicion-deficit-hours` of deficit, the payload attaches that observed
   deficit instead of staying silent about it too.
 - **`MissedWorkoutsRule`** (spec §4 row 3) — raises when `≥ missed-workouts.min-consecutive-missed`
-  PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
+  most-recent PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
   `missed-workouts.window-days`) have no completed workout instance. "Consecutive" counts through
   the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri schedule raises on a missed
-  Mon + Wed, two calendar days apart. Only `templateSessionId IS NOT NULL AND status = 'completed'`
-  instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
+  Mon + Wed, two calendar days apart. A later completed planned day resets the current streak and
+  clears the flag even while the old misses remain inside the 14-day window; the payload's legacy
+  `longestMissedRun` field now carries the current streak length. Only `templateSessionId IS NOT NULL
+  AND status = 'completed'` instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
 - **`SleepDeficitCalculator`** (`flags/service/rule/SleepDeficitCalculator.java`) — the cumulative
   sleep-deficit-vs-goal arithmetic (goal lookup + the day-by-day `Σ max(0, goal − actual)` loop),
   extracted out of `SleepDebtRule` in bd `c6c045082` so `LoggingGapRule`'s "gap + suspicion"
@@ -3539,6 +3583,8 @@ can decline to judge, as opposed to judging and finding nothing wrong — new ga
 are impossible now that the verdict is a rule's only return type. The factories
 (`FlagVerdict.raised`/`clear`/`unavailable`) are the only way to build one and each validates its
 own required field is non-null.
+
+**Kihagyás S2 — `RECOVERY_MODE` (`mezo-q4xt2.2`).** `FlagEvaluator.evaluate` asks `RecoveryPeriodService.open(user)` once; while a recovery period is open it does **not run** the four training-pressure rules — `JointOveruseRule`, `MissedWorkoutsRule`, `IgnoredNudgeRule`, `MomentumAtRiskRule` — and records `FlagVerdict.unavailable(<key>, UnavailableReason.RECOVERY_MODE)` for each (a genuinely excused gap must never be read back as a nag). Wellbeing rules (`AcuteBadDayRule`, `PersistentPainRule`, sleep, weight…) keep running. Independently, `MomentumAtRiskRule.missedPlannedGymDays` became skip-aware (excused dates are not missed) — the S1 gap. `FlagEvaluatorRecoveryModeIT` (4 tests) and `MomentumAtRiskRuleTest` cover it.
 
 `all_healthy` is now evaluated on EVERY pass, not only when the other twelve raised nothing.
 `FlagEvaluator.evaluate` always calls `AllHealthyRule`; when it comes back RAISED but another rule
@@ -4076,7 +4122,7 @@ resurrection, ever, from any writer.
   reinforcing exactly as before), `WeeklyLessonService` (the Monday weekly candidate proposal), and
   `PatternService` (a `decide`/promote path must 404 — same as forgetting — rather than resurrect a
   forgotten row: see the `isForgotten()` guard below).
-- **`knowledge_fact.muted_reason`** (nullable, enum `user|refuted|superseded`) + `muted_at`
+- **`knowledge_fact.muted_reason`** (nullable, enum `user|refuted|superseded|merged` — `merged` is S9, see „Heti tény-összevonás”) + `muted_at`
   distinguish a MUTED fact (kept, excluded from the prompt and from every count that means "active
   knowledge", one tap from **Visszakapcsolom**) from a FORGOTTEN one (gone, no way back).
   `KnowledgeFactEntity.mute(reason, at)` sets both; **`unmute()` clears `mutedReason`, `mutedAt`
@@ -4089,7 +4135,8 @@ resurrection, ever, from any writer.
   already-gone original promotes only (fail-open, logged). **Forgetting the SUPERSEDING fact
   releases the original**: `ForgetService.releaseSuperseded` finds every live fact whose
   `supersededBy` points at the id just forgotten and, for each still `MUTED_SUPERSEDED`, turns it
-  into the user's own mute (`mute(MUTED_USER, now)`) and clears `supersededBy` — the original does
+  into the user's own mute (`mute(MUTED_USER, now)`) and clears `supersededBy` (since S9 the same
+  for a `MUTED_MERGED` loser) — the original does
   NOT come back on its own (the user made the knowledge go away, not come back); it sits under
   **Elhallgattatott**, one tap from **Visszakapcsolom**, and the hub stops saying "felülírta egy
   újabb észrevétel" about a fact that no longer exists.
@@ -4180,7 +4227,21 @@ around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.
   the turn's owner-fact candidates (undecided, or accepted with a still-live promoted fact),
   `forgotten` = the triggering message's forget envelope, and `forgetRequest` = `ForgetIntent.matches`
   re-evaluated on that same message — the field the FE polls to distinguish "still extracting" from
-  "this was a forget turn that legitimately found nothing" (§4, §9).
+  "this was a forget turn that legitimately found nothing" (§4, §9). Each learned item carries
+  `aboutMeFactId` (`mezo-d6ivw.13`) from ONE batched `AboutMeService.aboutMeFactIds` read
+  (non-transactional, like the rest of this read path).
+- **„Rólam is" (`AboutMeService`, `mezo-d6ivw.13`)** — `add` copies an ACTIVE own person fact
+  (`PersonFactService.ownedActiveFact`, 404 for foreign/undone/PEOPLE off) into `knowledge_fact`
+  with `source=person_fact`, `owner=mezo`, `category=life`, `source_person_fact_id` = the person fact,
+  `provenance = MemoryProvenanceEnvelope.personFact()`; the text is the person fact's, prefixed
+  `"<Név>: "` only when it does not already name the person (fold, any inflection). Idempotent — one
+  live copy per person fact (`uq_knowledge_fact_source_person_fact`). `remove` soft-deletes the copy
+  **without a forget veto** (the user changed their mind; `ForgetService.forgetFact` would veto the
+  text), so a re-tap re-creates it. Both publish `KnowledgeFactChangedEvent` (graph sync). **The copy
+  goes with its person fact:** `PersonFactService.undo` publishes the people-owned
+  `PersonFactUndoneEvent` → `AboutMeUndoListener` (AFTER_COMMIT + `@Async`, swallow-and-log;
+  people never imports companion), and `ChatForgetService` removes it directly, in the forget's own
+  transaction, right after the undo.
 - **`ChatMemoryBlocks.conversationBlock`** — the per-turn `[Ebben a beszélgetésben]` block (what this
   conversation learned or proposed; the only items the model may call "megjegyeztem") — is
   fail-open the same way (S8 final review): any exception logs and yields "". Its read path
@@ -4195,6 +4256,25 @@ around every turn (`ChatService.routeAndAssemble`/`forgetIfAsked`, `ChatService.
   message is never re-read and re-saved in other words (`PersonFactService.capture` only drops exact
   normalized repeats). The other day-level readers were checked: weekly review lessons and life-event
   extraction never read chat; character signals read chat timestamps only.
+- **Forget really forgets — every memory channel** (`mezo-tdabt`): a chat turn whose USER message
+  is `extraction_blocked` is gone from recall, not only from extraction. The pairing is the
+  `chat_turn` projection's own (`MemorySourceVisibilitySql.forgottenTurn`: the latest live
+  `role='user'` row of the conversation with `created_at <=` the assistant row's, ties by id).
+  Unified recall (`LexicalMemoryQuery`, `DenseMemoryQuery`, `PersonalRecordQuery`'s `memory_item`)
+  hides it through `MemorySourceVisibilitySql.predicate`; `MemorySourceRepairQuery` treats the pair
+  as not-live, so the nightly sweep's `orphaned()` suppresses the projected item and `changed()`
+  never re-projects it. Legacy pgvector: `MemoryEmbeddingAnnQuery` excludes such `chat_turn` rows,
+  `TurnEmbeddingListener` skips a blocked event and `MemoryEmbeddingWriter.embedTurnByMessageId`
+  (live + catch-up) never embeds a forgotten turn. People: `ChatMentionListener` skips a blocked
+  event and re-checks the row under `MessageExtractionGate` (FOR SHARE) in the write transaction;
+  `ChatForgetService` (both routes, after the block) calls
+  `MentionDetectionService.forgetBySourceRefs(user, "chat_turn", ids)` — soft-delete, so the daily
+  summary and the person page stop quoting it and detect's including-deleted dedup never revives
+  it. Raw reads (`PersonalRecordQuery` `ai_message`: the LLM personal-record tool and the
+  reflection evidence of `ObservationContextService`) hide the blocked user row AND its paired
+  assistant reply. Not covered: the conversation's own history window, and daily summaries
+  written before the forget. Pinned by `ChatForgetRecallIT`, `ChatMentionListenerIT`,
+  `MemoryEmbeddingAnnQueryIT`.
 
 ## 4. Data model & API
 
@@ -4268,10 +4348,14 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
 - **`knowledge_fact`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `is_deleted`,
   `created_at`, `fact_text text`, `category varchar(16)` (`ck_knowledge_fact_category IN
   (train,fuel,health,life)`), `source varchar(16)` (`ck_knowledge_fact_source IN
-  (chat,pattern,manual)`, later widened with `weekly_review` by
+  (chat,pattern,manual)`, later widened (last: `merge`, S9 `202609291800_mezo-d6ivw.10_fact_merge.sql`, which also adds `muted_reason='merged'`, `learned_fact.source='merge'` + `merge_member_ids uuid[]` and the `fact_merge_ledger` table) with `weekly_review` by
   `202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql`, with `question` by
   `202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql`, and with `team_chat` by S7's
-  `202609271000_mezo-d6ivw.7_team_chat_reply.sql`), `reinforcement_count int default 0`, `include_in_prompt boolean
+  `202609271000_mezo-d6ivw.7_team_chat_reply.sql`, and with `person_fact` by
+  `202609291200_mezo-d6ivw.13_knowledge_fact_person_fact.sql`, which also adds the nullable
+  `source_person_fact_id uuid` (`fk_…→person_fact`) + the partial unique index
+  `uq_knowledge_fact_source_person_fact (created_by, source_person_fact_id) where not is_deleted` — the
+  „Rólam is" copy link), `reinforcement_count int default 0`, `include_in_prompt boolean
   default true`, `last_reinforced_at timestamptz`; index
   `idx_knowledge_fact_created_by_include_reinforcement (created_by, include_in_prompt,
   reinforcement_count desc)` — the injection query's key. **`source=team_chat`**
@@ -4536,6 +4620,79 @@ named-effect engine's cache (§3 above has the full write-up):
   its own table, not a column on `effect_link`, precisely because `effect_link` rows are
   soft-deleted and re-created every night by the recompute (§3 above) — a flag on the row would die
   with it.
+
+### Heti tény-összevonás (Mezo emlékezete S9, ✅ `mezo-d6ivw.10`)
+
+Every Monday Mezo tidies the Tudástár: plain repetitions of a fact merge on their own (one tap
+from undo), a merge that needs a NEW sentence is only proposed, and nothing is ever deleted.
+Spec: [S9 delta](../superpowers/specs/2026-09-24-mezo-emlekezete-design.md).
+
+- **Job** — `FactMergeJob` (`companion/service/merge`), cron `mezo.companion.fact-merge.cron`
+  (`0 30 7 * * MON`, zone `Europe/Budapest`, after the dawn cluster and outside the 22:00–07:00 quiet window), gated on
+  `COMPANION_SWITCH` ∧ `mezo.techcore.cron.fact-merge-job.enabled` (off = the job bean is absent;
+  `FactMergeService` stays callable). `UserFanOut` per user; one failing user never aborts the
+  sweep. Named `FactMerge*` on purpose — `ConsolidationJob` is the period-summary ladder.
+- **Judge** — `FactMergeJudge`: ONE LLM call per category chunk (≤ 120 live facts), slug
+  `companion_fact_merge` (admin label in `admin/lib/labels.ts`, `FakeCompanionLlm` marker branch).
+  It returns groups of 2–3 fact ids with a verdict `same` | `combine` (+ a proposed sentence);
+  anything else is ignored (a change over time belongs to the quarterly recheck).
+- **Planner — code decides, the LLM never** (`FactMergePlanner`, pure). Live = not deleted, in the
+  prompt, not superseded, and **not a member of an undecided merge proposal** (snoozed included —
+  `FactMergeService.runFor` drops those ids before the judge call, so an accept later never folds
+  in a member the sweep merged away meanwhile). **Auto-merge** only for `same` inside one category when every loser is
+  *mergeable* (source `chat|weekly_review|manual`); survivor = pattern-sourced > higher
+  reinforcement > older, and it keeps its own text (no rewrite). **Proposal** for `combine` when
+  no member is protected. **Protected** (never a loser, never in a proposal): `pattern`,
+  `person_fact`, `team_chat`, `question`, pinned. A pattern fact may still be a survivor.
+  **Drift guard:** a `source='merge'` fact may take part in a `same` group (an exact repeat folds
+  into it) but never in a `combine` proposal — a merged sentence is written from originals only. A member
+  set already in the ledger is skipped.
+- **Apply** — `FactMergeService.runFor(userId)`: one `REQUIRES_NEW` `TransactionTemplate` per
+  PLAN (the `KnowledgeRecheckService` idiom; the class is NOT `@Transactional`). Auto-merge: each
+  loser `mute(MUTED_MERGED)` + `supersededBy = survivor`; the survivor absorbs the losers'
+  `reinforcement_count` and the later `last_reinforced_at`; `learned_fact.promoted_fact_id`
+  pointers to a loser are re-pointed by hand (a soft delete never fires the FK `SET NULL`);
+  `KnowledgeFactChangedEvent` per row (the loser's graph node archives for free). Proposal: a
+  pending `learned_fact` with `source='merge'` + `merge_member_ids`, so it rides the ordinary
+  Rólad candidate inbox. **One notification per non-empty sweep**: `FACT_CANDIDATE` (deeplink to
+  Rólad) when a proposal waits, else `FACT_REINFORCED` (the Tudástár).
+- **Decisions on a merge candidate** (`FactCandidateService.decide`) — accept/refine mints a
+  `source='merge'` fact whose reinforcement is the sum of the still-live members', then mutes those
+  members `merged` with `supersededBy` = the new fact (a member muted meanwhile is left alone);
+  reject („Maradjon külön") is NOT a forget — no veto row, members untouched; snooze („Később")
+  sleeps until the **next Monday sweep** (`CandidateSnooze.nextMergeSweep`: Monday 07:30
+  Europe/Budapest strictly after now — the card promises „Jövő hétfőn"), not the ordinary 14-day
+  „Most ne"; the snooze answer carries `mergeSources` too. `listPending` hides a merge candidate
+  with fewer than two members left. `FactCandidateResponse.mergeSources` is resolved live from
+  the members' current text, owner-checked. The promote path reads `source` from the candidate:
+  a merge promotes as `merge`, never `chat`.
+  Forgetting the new fact later releases the originals (`ForgetService.releaseSuperseded` treats
+  `merged` like `superseded`: the loser becomes the user's own mute, `supersededBy` cleared — this
+  also covers an auto-merge survivor being forgotten). **Forgetting a member** of a pending merge
+  proposal withdraws it (`ForgetService.deleteAndVeto` soft-deletes every undecided
+  `source='merge'` candidate whose `merge_member_ids` contains the forgotten id).
+- **Ledger** — `fact_merge_ledger` (`created_by, member_key, kind auto|proposal, learned_fact_id`,
+  partial unique `(created_by, member_key) where not is_deleted`). `member_key` is the SORTED
+  member-id set, so a set that was auto-merged, proposed or rejected is offered exactly once ever.
+  **Undo writes one row:** Visszakapcsolom on a `merged` fact (`KnowledgeFactService.update`, the
+  unmute path) first records `keyOf({revived, supersededBy})` (kind `auto`, if absent) — BEFORE
+  `unmute()` clears the link — so neither a revived auto-merge loser nor a revived member of an
+  accepted proposal is ever merged back into that fact. „Maradjon külön" needs no extra write.
+- **No re-learning** — `FactExtractionService`'s exact-text dedupe also matches a `merged` row
+  and reinforces its SURVIVOR (the sentence is already known), instead of proposing it again. The
+  lookup follows the chain (`liveSuccessor`): while the hit is muted `merged` or `superseded` with
+  a `supersededBy`, hop on — at most 5 hops — so a sentence merged twice, or a drift-superseded
+  original, reinforces the fact that carries it now.
+- **Story engine** — `CharacterMetaReads.gatherTriage` skips `source='merge'` candidates: a
+  housekeeping decision is not an accept/reject signal.
+- **Migration** `202609291800_mezo-d6ivw.10_fact_merge.sql`: `ck_knowledge_fact_source` + `merge`,
+  `ck_knowledge_fact_muted_reason` + `merged`, `ck_learned_fact_source` + `merge`,
+  `learned_fact.merge_member_ids uuid[]` (`ck_learned_fact_merge_members`:
+  `(source='merge') = (merge_member_ids is not null)`), the ledger table. `ResetDatabase` truncates
+  the new owned table. Contract: `mutedReason` enum + `merged`, `source` enum + `merge`,
+  `FactCandidateResponse.mergeSources`.
+- **FE** — see [`insights.md`](insights.md) §2.0b/§2.4: the „Összevonnám” card on Rólad and the
+  „Összevontam · N” fold + „Hétfői rendrakás” strip in the Tudástár.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -4962,9 +5119,9 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     method's own `@Transactional`, no `saveAndFlush`. Each is a no-op (empty return) when the
     node was never promoted or is already archived, the same idempotence promotion already had.
     **`retractFact` has two triggers now, not one.** The *delete* half is still dead code in
-    practice — no service in main source soft-deletes a `knowledge_fact`, so nothing publishes a
-    delete-triggered retraction event, and the nightly complement sweep below remains its only
-    caller for that half. The *opt-out* half is live as of `mezo-b3pp.30` (this slice): every
+    practice only until S6/S8: `ForgetService.forgetFact` and `AboutMeService.remove` now
+    soft-delete a `knowledge_fact` and publish `KnowledgeFactChangedEvent`, which reaches
+    `retractFact` through `syncFact` below; the nightly complement sweep is the backstop. The *opt-out* half is live as of `mezo-b3pp.30` (this slice): every
     `KnowledgeFactService.update` publishes `KnowledgeFactChangedEvent` unconditionally, and
     `GraphPromotionListener` routes it to `syncFact` below, so flipping `include_in_prompt` off
     reaches `retractFact` on the same turn instead of waiting for dawn.
@@ -5064,7 +5221,7 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     soft-deleted) is invisible to them and its node would otherwise stay active forever; the
     sweep is what heals a retraction missed while the switch was off (no listener existed to hear
     the event). For a `knowledge_fact` specifically it remains the ONLY path that ever retracts
-    one for the *delete* half (nothing in main source soft-deletes a `knowledge_fact`) — the
+    one for the *delete* half when the event was missed (`ForgetService.forgetFact` / `AboutMeService.remove` now soft-delete and publish `KnowledgeFactChangedEvent`, S6/S8) — the
     *opt-out* half now also reaches `retractFact` on the next turn via `syncFact`
     (`mezo-b3pp.30`), with the sweep as its backstop, same as every other source kind. The
     `person` branch of the complement switch calls `retractPerson`, and the `life_goal` branch
@@ -6230,6 +6387,8 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/memory/llm-usage` | `LlmUsageResponse` | 200 · 401 · 404 | `mezo-al1i` — daily rollup over `llm_log_history` (`days` 1..90, default 30); `enabled:false` + empty `perDay` + zeroed `totals` when the `mezo.feature.llm-log.enabled` switch is off — the query never runs. |
 | `POST /api/companion/transcribe` | `TranscriptionResponse` | 200 · 400 · 401 · 404 · 502 | **`mezo-at8x.4`** — multipart `audio` → transcript. Own tag `CompanionVoice` → `CompanionVoiceApi` → `CompanionVoiceController`. Stateless + ephemeral: nothing persisted, the bytes live only for the one model call (`CompanionLlm.complete(system, "", InlineAudio)`, `CallKind.TRANSCRIBE`). Size/mime checked in `TranscriptionService` against `mezo.companion.transcription.*` (base mime only — `MediaRecorder`'s `;codecs=opus` is stripped) → FIELD `VALIDATION_INVALID_VALUE` on `audio`. **Empty text is a success, not an error** (silence); a model that narrates instead of transcribing (> 8 000 chars) → 502 `COMPANION_TRANSCRIBE_FAILED`. |
 | `GET /api/companion/conversation/{id}/turn-memory` | `TurnMemoryResponse` | 200 · 401 · 404 | **S8 (`mezo-d6ivw.12`)** — `TurnMemoryService.turnMemory`; required query `messageId` (the turn's USER message id). `learned`/`proposed`/`forgotten` may each be empty; `forgetRequest` is `ForgetIntent.matches` re-run on that message. The chat chips poll this on a 2s/3s/5s ladder, stopping on `forgetRequest`, a non-empty `forgotten`, or a chip action (the client patches its cache from then on). 404 for a missing/foreign conversation OR a `messageId` that is not that conversation's own USER row. |
+| `POST /api/companion/turn-memory/person-fact/{personFactId}/about-me` | `AboutMeResponse` | 200 · 401 · 404 | **`mezo-d6ivw.13` „Rólam is"** — `AboutMeService.add`: copies the owner's active chat person fact into `knowledge_fact` (`source=person_fact`), idempotent; returns `{personFactId, aboutMeFactId}`. 404 for a foreign/undone/deleted person fact or PEOPLE off. |
+| `DELETE /api/companion/turn-memory/person-fact/{personFactId}/about-me` | `AboutMeResponse` | 200 · 401 | **`mezo-d6ivw.13`** — `AboutMeService.remove`: soft-deletes the live copy, no forget veto; nothing to remove is a no-op (`aboutMeFactId: null`). |
 | `GET /api/companion/conversation/{id}/forget-learned` | `MemoryItemResponse[]` | 200 · 401 · 404 | **S8** — `ChatForgetService.preview`; every still-live memory item the conversation ever produced, newest first (the „Mindent ebből a beszélgetésből?" sheet's list). |
 | `POST /api/companion/conversation/{id}/forget-learned` | `ForgetLearnedResponse` | 200 · 401 · 404 | **S8** — `ChatForgetService.forgetAll`; body `ForgetLearnedRequest {triggerMessageId}` (the message whose Elfelejtettem chip offered the widen). Forgets every still-live item permanently and appends the result onto the trigger message's `forgotten_memories`. 404 for a missing/foreign conversation or trigger message. |
 
@@ -6279,8 +6438,8 @@ narrates the wait and then is gone),
 includeInPrompt, lastReinforcedAt?, createdAt, patternTitle?, citedWeeks?, mutedReason?, mutedAt?,
 supersededBy?, provenance}` (V1.1; `owner`/`patternTitle` U9b/`mezo-tk88`; `citedWeeks`
 `mezo-d20.7.7`; **`mutedReason`/`mutedAt`/`supersededBy`/`provenance` are S6 (`mezo-d6ivw.6`)** —
-`mutedReason` is `user\|refuted\|superseded\|null` (§3 above), `provenance` is
-`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat,
+`mutedReason` is `user\|refuted\|superseded\|merged\|null` (`merged` S9) (§3 above), `provenance` is
+`KnowledgeFactProvenance {sourceKind: chat\|pattern\|manual\|weekly_review\|question\|team_chat\|person_fact\|merge,
 patternId?, sourceMessageId?}`, the structured "honnan jön" the lazy `GET
 /api/companion/fact/{factId}/evidence` (below) expands into evidence items). **`mezo-al1i`** adds
 `MemoryOverviewResponse {l0, l1, l2, l3, jobs}` (nested `MemoryOverviewL0/L1/L2/L3/Jobs` +
@@ -9025,14 +9184,42 @@ reduced-motion branch) cover the FE surface — full detail: [`insights.md`](ins
 
 **Check-in 2.0 (`mezo-ck2`, 2026-09-28) — decisions, deviations, follow-ups.** NULL is never a
 value in any rule, metric or renderer (legacy rows are read as-is). `persistent_pain` offers
-the general `lighten_tomorrow` action (like `joint_overuse`); narrowing it to „only when a planned
-exercise loads that region" via train's `PainRegionMap` is a possible refinement. `day-score~checkin-day` was skipped (no
-day-score `MetricKey`); `meal-processing~checkin-digestion` became `meal-score~checkin-digestion`.
+`lighten_tomorrow` only when tomorrow's planned session loads the frozen region (follow-up C,
+[`proactive.md`](proactive.md) — `AdviceActionCatalog` × train's `PainRegionMap` ×
+`WorkoutService.plannedMuscleGroups`). `day-score~checkin-day` and `nova4-kcal~checkin-digestion`
+landed in follow-up B (§3); the interim `meal-score~checkin-digestion` was dropped.
 `DayReviewService.contextSignals` carries `hangulat` (CHECKIN_MOOD) and `saját napértékelés`
 (CHECKIN_DAY) when answered, and the prompt tells the review to acknowledge a differing verdict
-without changing the points; A napom also shows the rating next to the score ([`today.md`](today.md)). The question-of-the-day need source is the catch-all
-`AllNonCoreNeedSource`; a companion-side `CheckInNeedSource` (active hypotheses / open pairs) is
-the intended next consumer ([`me.md` §4](me.md)).
+without changing the points; A napom also shows the rating next to the score ([`today.md`](today.md)). The question-of-the-day (follow-up A) now asks what the engine is
+actually waiting on: `HypothesisCheckInNeedSource` (`@Order(1)`, a Reflexió-owned
+`proposed`/`monitoring` row whose test plan reads a `checkin-*` series → „Most egy sejtést
+tesztelünk: „{title}”.") and `PairCheckInNeedSource` (`@Order(3)`, every catalog pair with a
+`CHECKIN_*` side whose statistical row is not confirmed/rejected/refuted/forgotten → „Most azt
+figyeljük: {question}"), with the character detectors in between ([`character.md`](character.md));
+`AllNonCoreNeedSource` is only the fallback ([`me.md` §4](me.md), `CheckInNeedSourcesIT`).
+
+**Sleep pair lags — what `sleep_log.date` means for the catalog (follow-up B finding).**
+`sleep_log.date` is the WAKE-UP morning, so a pair `sleep-* ~ X` at lag 0 already compares a night
+with the day AFTER it, and lag 1 reaches two days past bedtime. The new
+`sleep-duration~next-day-checkin-craving` (lag 1) was therefore off by one and became
+`sleep-duration~checkin-craving` (lag 0; it had no live pattern row yet, so the re-key lost no
+history). The same reading says the pre-existing `sleep-quality~next-day-training-rpe` and
+`sleep-duration~next-day-training-rpe` (lag 1) measure the training two days after bedtime, and
+`checkin-stress~sleep-quality` (lag 0, „aznapi alvás") pairs a day's stress with the night BEFORE
+it. **Re-lagged 2026-09-29 (`mezo-ck2.9`, owner decision „javítsuk"), keys kept stable:**
+`sleep-quality~next-day-training-rpe`, `sleep-duration~next-day-training-rpe`,
+`sleep-quality~next-day-gym-workload` and `sleep-quality~next-day-hr-recovery` went lag 1 → **0**
+(the sweep found the last two with the same slip); `checkin-stress~sleep-quality` went lag 0 → **1**
+and its copy now says „az utána következő éjszaka". The keys were **not** renamed: the stress pair
+carries a user-CONFIRMED row with a promoted fact, and a new key would have orphaned both. The
+confirmed verdict stays — the question the owner confirmed („Elrontja az alvásod a stresszes
+nap?") is exactly what lag 1 measures; the nightly run refreshes the row's title/mechanism and
+stats, and if the corrected data no longer carries the claim, the knowledge recheck raises the
+normal drift card (S6 supersession). The promoted fact's own text still reads „aznapi" until then
+(changing it is a production data write). The FE renders the new lags as „aznap"/„másnap"
+(`lagWord`), matching `sleep-duration~checkin-craving`. `late-meal~next-sleep-quality` (lag 1),
+`bedtime-hour~sleep-quality` / `wakeup-hour~checkin-energy` / `sleep-*~checkin-*` (lag 0) and the
+`*~next-sleep-*` pairs (lag 1) are correct as they stand.
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
 
@@ -9849,6 +10036,7 @@ change is distinct from those smoothed rates. The underlying trend calculation i
 **Backend — Check-in 2.0 feeds (`mezo-ck2` — §4 flag table, §5.5)**
 - `flags/service/rule/{PersistentPainRule,PoorRestednessRule,CravingStreakRule,MotivationSlumpRule}.java` (new) + `AcuteBadDayRule`/`RecoveryNeededRule` (widened); wiring in `FlagKey`, `FlagEvaluator`, `FlagCatalog`, `FlagPayloadEnvelope`, `FlagFactRenderer`, `FlagTraceCopy`, `UnavailableReason`, `config/FlagProperties`, `proactive/service/AdvicePriority`; migration `1.1.0/script/202609272148_mezo-ck2_checkin_2_flag_keys.sql`; tests `PersistentPainRuleIT`, `PoorRestednessRuleIT`, `CravingStreakRuleIT`, `MotivationSlumpRuleIT`, `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorMomentumRecoveryIT`, `FlagPropertiesIT`, `service/FlagFactRendererTest`
 - `service/{MetricKey,MetricSeriesService}.java` (10 check-in keys; `MetricSeriesCheckinItemsIT`), `application.yml` pattern pairs (`CompanionPatternMonitorApiIT`, `CompanionPropertiesIT`)
+- Follow-up A/B (2026-09-28): `service/{HypothesisCheckInNeedSource,PairCheckInNeedSource}.java` (question-of-the-day sources; `CheckInNeedSourcesIT`), `DAY_SCORE`/`NOVA4_KCAL_PCT` in `MetricKey` + `MetricSeriesService.{dayScore,nova4KcalPct}` (`MetricSeriesFollowupIT`)
 - `service/ContextSnapshotAssembler.java` (`earlierTodayLine`), `service/DailySummaryService.java`, `tools/BiometricsTools.java`, `repository/PersonalRecordSource.java` — all via `feature/biometrics/checkin/service/CheckInText.java`
 - `service/DayScoreService.java` (`countsAsFilled`, `DayScoreServiceTest`), `service/MeWeekService.java` (`avgCheckinMood`, `MeWeekControllerIT`)
 

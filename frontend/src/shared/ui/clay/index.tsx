@@ -99,6 +99,12 @@ export type Icon3DName =
   // Check-in 2.0 (mezo-ck2) — owner OK 2026-09-27 on prototypes/elo/nap.html#ikonok
   | 't-mood' | 't-rested' | 't-soreness' | 't-pain' | 't-motivation' | 't-hunger' | 't-craving'
   | 't-day' | 't-digestion'
+  // Kihagyás S1 (mezo-q4xt2.1) — owner OK on prototypes/elo/edzes.html (the skip-reason chips)
+  | 't-ill' | 't-travel'
+  // Edzés csere / hozzáadás (mezo-mobji) — owner OK 2026-09-28 on prototypes/elo/edzes.html#ikonok
+  | 't-swap' | 't-addex'
+  // Kímélő mód S2 (mezo-q4xt2.2) — owner OK on prototypes/elo/edzes.html#ikonok
+  | 't-kimelo'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

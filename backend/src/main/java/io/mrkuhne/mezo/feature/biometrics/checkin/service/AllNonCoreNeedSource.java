@@ -1,25 +1,30 @@
 package io.mrkuhne.mezo.feature.biometrics.checkin.service;
 
 import java.util.Arrays;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 /**
- * Default {@link CheckInNeedSource} (mezo-ck2): every non-core item is wanted, so a need draw
- * asks the thinnest series overall. Narrower sources (hypotheses, pattern pairs, detectors) add
- * to this union later; until then the chooser still balances the rotating series.
+ * Fallback {@link CheckInNeedSource} (mezo-ck2): every non-core item is wanted with the generic
+ * "why", so a need draw asks the thinnest series overall. Consulted only when no specific source
+ * (hypotheses, pattern pairs, detectors) waits on anything.
  */
 @Component
 public class AllNonCoreNeedSource implements CheckInNeedSource {
 
-    private static final Set<CheckInItem> NON_CORE = Arrays.stream(CheckInItem.values())
+    private static final List<Need> NON_CORE = Arrays.stream(CheckInItem.values())
         .filter(i -> !i.core())
-        .collect(Collectors.toUnmodifiableSet());
+        .map(i -> new Need(i, null))
+        .toList();
 
     @Override
-    public Set<CheckInItem> wantedItems(UUID userId) {
+    public List<Need> needs(UUID userId) {
         return NON_CORE;
+    }
+
+    @Override
+    public boolean fallback() {
+        return true;
     }
 }

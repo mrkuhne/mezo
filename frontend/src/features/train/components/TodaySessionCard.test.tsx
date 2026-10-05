@@ -65,3 +65,87 @@ test('a read-only card (no ctaLabel) renders neither CTA nor tappable bar', () =
   expect(screen.getByText('TERVEZETT')).toBeInTheDocument()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })
+
+// ── Kihagyás S1 (mezo-q4xt2.1) — prototype elo/edzes.html `.sess` Kihagyom / is-skip ──
+const skipRow = {
+  id: 'k1', kind: 'RUN' as const, date: '2026-09-29', sessionKey: 'tue', reasonCategory: 'TIRED' as const,
+  reasonText: null, source: 'USER' as const, serious: false, freePass: true, excused: true,
+}
+
+test('onSkip: a ghost Kihagyom pill sits before the existing CTA', () => {
+  const onSkip = vi.fn()
+  const onLog = vi.fn()
+  const { container } = render(<TodaySessionCard {...base} tone="run" onLog={onLog} onSkip={onSkip} />)
+  const cta = container.querySelector('.trm-sess-cta')!
+  const buttons = [...cta.querySelectorAll('button')]
+  expect(buttons.map((b) => b.textContent)).toEqual(['Kihagyom', 'Naplózd a futást ›'])
+  expect(buttons[0].querySelector('use')?.getAttribute('href')).toBe('#t-skip')
+  fireEvent.click(buttons[0])
+  expect(onSkip).toHaveBeenCalledTimes(1)
+  expect(onLog).not.toHaveBeenCalled()
+})
+
+test('onSkip with skipLabel Kihagytam (a past missed session)', () => {
+  render(<TodaySessionCard {...base} tone="run" stateLabel="ELMARADT" onSkip={() => {}} skipLabel="Kihagytam" />)
+  expect(screen.getByRole('button', { name: 'Kihagytam' })).toBeInTheDocument()
+})
+
+test('onSkip on a read-only card (no CTA) still shows the Kihagyom pill', () => {
+  render(<TodaySessionCard {...base} tone="run" ctaLabel={undefined} stateLabel="TERVEZETT" onSkip={() => {}} />)
+  expect(screen.getByRole('button', { name: 'Kihagyom' })).toBeInTheDocument()
+})
+
+test('skipped: is-skip card, KIHAGYVA chip, the inner SkippedBlock instead of the CTA row', () => {
+  const onReason = vi.fn()
+  const onUndo = vi.fn()
+  const { container } = render(
+    <TodaySessionCard {...base} tone="run" onLog={() => {}} onSkip={() => {}} skipped={skipRow}
+      onSkipReason={onReason} onSkipUndo={onUndo} />,
+  )
+  expect(container.querySelector('.trm-sess.is-skip')).toBeInTheDocument()
+  expect(screen.getByText('KIHAGYVA')).toHaveClass('is-skip')
+  expect(screen.queryByText('MOST')).not.toBeInTheDocument()
+  expect(container.querySelector('.trm-skipd.is-in')).toBeInTheDocument()
+  expect(screen.getByText('Kihagyva · Fáradt vagyok')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
+  // facts stay (dimmed by CSS)
+  expect(container.querySelectorAll('.trm-fact')).toHaveLength(2)
+  fireEvent.click(screen.getByRole('button', { name: 'Másik ok' }))
+  expect(onReason).toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: /Visszavonom/ }))
+  expect(onUndo).toHaveBeenCalled()
+})
+
+test('an ELMARADT state chip wears the missed tint', () => {
+  render(<TodaySessionCard {...base} tone="run" stateLabel="ELMARADT" />)
+  expect(screen.getByText('ELMARADT')).toHaveClass('is-miss')
+})
+
+// ── Kímélő mód S2 (mezo-q4xt2.2) — prototype kmInner() / the rCb run card ──
+test('kimelo: muted card, KÍMÉLŐ MÓD chip, the flat Kímélő mód block, no skip and no CTA (wins over a skip row)', () => {
+  const { container } = render(
+    <TodaySessionCard {...base} tone="sport" onLog={() => {}} onSkip={() => {}} skipped={skipRow} kimelo />,
+  )
+  expect(container.querySelector('.trm-sess.is-skip')).toBeInTheDocument()
+  expect(screen.getByText('KÍMÉLŐ MÓD')).toHaveClass('is-skip')
+  expect(container.querySelector('.trm-skipd.is-in use')?.getAttribute('href')).toBe('#t-kimelo')
+  expect(screen.getByText('Magától kimarad · nem számít mulasztásnak.')).toBeInTheDocument()
+  expect(screen.queryByText(/Kihagyva/)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Kihagyom' })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).toBeNull()
+})
+
+test('kimelo never hides a logged session', () => {
+  render(<TodaySessionCard {...base} tone="sport" logged loggedSummary="RPE 7" kimelo />)
+  expect(screen.queryByText('KÍMÉLŐ MÓD')).toBeNull()
+  expect(screen.getByText('RPE 7')).toBeInTheDocument()
+})
+
+test('rampNote: the „Visszatérő futás" note above the CTA', () => {
+  const { container } = render(<TodaySessionCard {...base} tone="run" onLog={() => {}} rampNote />)
+  expect(screen.getByText('Visszatérő futás')).toBeInTheDocument()
+  expect(screen.getByText('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')).toBeInTheDocument()
+  expect(container.querySelector('.trm-skipd.is-in use')?.getAttribute('href')).toBe('#t-sprout')
+  expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
+})

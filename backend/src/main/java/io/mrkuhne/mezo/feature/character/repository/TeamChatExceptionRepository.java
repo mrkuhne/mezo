@@ -36,5 +36,9 @@ public interface TeamChatExceptionRepository extends JpaRepository<TeamChatExcep
             Collection<UUID> sourceThreadIds, UUID createdBy);
 
     /** Task 2 input: a batch of exceptions by id, owner-scoped. */
+    /** mezo-d6ivw.11: the exceptions remembered as {@code knowledgeFactId} — the fact mirror's read. */
+    List<TeamChatExceptionEntity> findByKnowledgeFactIdAndCreatedByAndDeletedFalse(UUID knowledgeFactId,
+            UUID createdBy);
+
     List<TeamChatExceptionEntity> findByIdInAndCreatedByAndDeletedFalse(Collection<UUID> ids, UUID createdBy);
 }

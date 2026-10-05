@@ -19,6 +19,8 @@ export interface EnergyBlock {
   kind: 'gym' | 'sport' | 'run'
   min: number
   kcal: number
+  /** Actually logged (mezo-tb3s2) vs. still-scheduled and not yet logged. */
+  done: boolean
 }
 /** One summand of the served movement (mezo-32m82): the weekly plan's share of the day, and the
  *  unplanned credit. The parts ARE the total — the `+ … =` row closes on `movement.kcal`. */
@@ -41,7 +43,15 @@ export interface EnergyBreakdown {
   /** `parts` (Fuel, the served day): the summands that close on `kcal`; `blocks` are then only
    *  informational per-session previews, shown without operators. No `parts` (the Én hub's TDEE):
    *  one weekly-average tile. */
-  movement: { kcal: number; isWeeklyAvg: boolean; parts?: EnergyPart[]; blocks?: EnergyBlock[] }
+  movement: {
+    kcal: number; isWeeklyAvg: boolean; parts?: EnergyPart[]; blocks?: EnergyBlock[]
+    /** Today's not-yet-logged planned sessions' estimated kcal (mezo-tb3s2) — display only, absent
+     *  on the Én hub's weekly-average path. */
+    pending?: number
+    /** Section title override for the weekly-average path (no `parts`) — the Én hub's own
+     *  `buildTdeeBreakdown` (mezo-tb3s2). Falls back to the generic label below. */
+    label?: string
+  }
   deficit?: { kcal: number; rateKgPerWk: number; goalLabel: string; rationale?: string }
   target: number
 }
@@ -63,16 +73,18 @@ const signed = (n: number) => (n < 0 ? `−${nf(Math.abs(n))}` : `+${nf(n)}`)
 const dec = (n: number) => n.toLocaleString('hu-HU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 // One roomy tile: optional 3D icon + name, uppercase sub-label, display value + faint unit.
-function Tile({ icon, name, sub, value, unit, result }: {
+function Tile({ icon, name, sub, value, unit, result, pending }: {
   icon?: Icon3DName
   name?: string
   sub: string
   value: string
   unit?: string
   result?: boolean
+  /** Still-scheduled, not-yet-logged preview (mezo-tb3s2) — faint, no fill. */
+  pending?: boolean
 }) {
   return (
-    <div className={`flp-etile${result ? ' is-result' : ''}`}>
+    <div className={`flp-etile${result ? ' is-result' : ''}${pending ? ' is-pending' : ''}`}>
       {icon && <Icon3D name={icon} size={36} />}
       <div className="flp-etile-val">
         {value}
@@ -132,7 +144,9 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
             </button>
           </div>
           <p className="flp-elead">
-            A napi cél nem statikus — az alapanyagcserédből, {movement.parts ? 'a heti edzésterved mai részéből' : movement.isWeeklyAvg ? 'a heti betáblázott mozgásból' : 'a ma rögzített mozgásodból'}{deficit ? ' és a célod deficitjéből' : ''} áll össze.
+            {movement.isWeeklyAvg
+              ? <>A napi cél nem statikus — az alapanyagcserédből, a heti betáblázott mozgásból{deficit ? ' és a célod deficitjéből' : ''} áll össze.</>
+              : 'A napi cél nem statikus — az alapigényedből, a ma logolt mozgásodból és a célodból áll össze.'}
           </p>
 
           {/* Equation bar — at-a-glance summary */}
@@ -198,7 +212,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
           {/* MOVEMENT */}
           <Seg tone="amber" on={hl('movement')}>
             <div className="flp-esh">
-              <span className="flp-estit">{movement.parts ? 'Mozgás' : 'Betáblázott mozgás'}</span>
+              <span className="flp-estit">{movement.parts ? 'Mozgás · ma logolva' : movement.label ?? 'Betáblázott mozgás'}</span>
               <span className="flp-esamt">{signed(movement.kcal)}</span>
             </div>
             <div className="flp-etiles">
@@ -217,23 +231,34 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                 <Tile icon="t-calendar" name="Heti átlag" sub="betáblázott ÷ 7" value={signed(movement.kcal)} unit="kcal" />
               )}
             </div>
-            {movement.parts && movement.blocks && movement.blocks.length > 0 && (
+            {movement.parts && movement.blocks && movement.blocks.some(b => b.done) && (
               <>
                 {/* Informational only — the day's sessions are NOT summands of the served total. */}
                 <span className="flp-einfo">A mai edzéseid becsült többlete, tájékoztatásul</span>
                 <div className="flp-etiles is-info">
-                  {movement.blocks.map((b, i) => (
+                  {movement.blocks.filter(b => b.done).map((b, i) => (
                     <Tile key={i} icon={BLOCK_ICON[b.kind]} name={b.label} sub={`${b.min} perc`} value={nf(b.kcal)} unit="kcal" />
+                  ))}
+                </div>
+              </>
+            )}
+            {movement.parts && (movement.pending ?? 0) > 0 && (movement.blocks ?? []).some(b => !b.done) && (
+              <>
+                {/* Not yet logged — previewed separately, still not a summand of `kcal` (mezo-tb3s2).
+                    Gated on a not-done tile too: the FE's done rule can mark a block done the backend
+                    still counts as pending (e.g. a non-meso gym workout) — never a header over nothing. */}
+                <span className="flp-einfo">Még jön, ha megcsinálod · a keretben még nincs benne</span>
+                <div className="flp-etiles is-info">
+                  {(movement.blocks ?? []).filter(b => !b.done).map((b, i) => (
+                    <Tile key={i} icon={BLOCK_ICON[b.kind]} name={b.label} sub={`tervezett · ${b.min} perc`} value={`+${nf(b.kcal)}`} unit="kcal" pending />
                   ))}
                 </div>
               </>
             )}
             <p className="flp-ewhy">
               {movement.parts
-                ? <>A heti edzésterved <b>egyenletesen oszlik el</b> a hét napjain (edzésnapon kicsit több jut). A terven kívüli mozgásod aznap hozzáadódik. A becslés a nyugalmi energiád feletti többletet számolja.</>
-                : movement.isWeeklyAvg
-                  ? <>A <b>heti</b> edzésterved napi átlaga — a nyugalmi energiád feletti többlet, a saját alapanyagcseréd alapján.</>
-                  : <>A <b>ma</b> rögzített edzéseid becsült energiája (a nyugalmi energiád feletti többlet). A tervezett, de még el nem végzett edzés nem számít bele — <b>a keret akkor nő, amikor rögzíted</b>.</>}
+                ? <>A keret <b>akkor nő, amikor rögzíted</b> az edzést — a tervezett, még meg nem csinált edzés csak halványan látszik. A becslés a nyugalmi energiád feletti többletet számolja; ha rendszeresen túl- vagy alábecsül, a heti tanulás kiigazítja az alapodat.</>
+                : <>A <b>heti</b> edzésterved napi átlaga — a nyugalmi energiád feletti többlet, a saját alapanyagcseréd alapján.</>}
             </p>
           </Seg>
 

@@ -14,17 +14,19 @@ import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 public record DailyTargets(int kcal, int p, int c, int f, String source, Energy energy) {
 
     /**
-     * Alap ({@code baseKcal}, BMR × NEAT) + Mozgás ({@code plannedMovementKcal}, the weekly plan's
-     * share incl. the day-type shift, never negative; {@code extraMovementKcal}, unplanned logged
-     * net kcal) + Célod ({@code balanceKcal}, the goal's deficit/surplus, which also absorbs the BMR
-     * floor and any negative planned share) = {@code targetKcal}. Always closes.
+     * Alap ({@code baseKcal}, BMR × NEAT) + Mozgás ({@code plannedMovementKcal}, the LOGGED planned
+     * sessions' net kcal; {@code extraMovementKcal}, unplanned logged net kcal) + Célod
+     * ({@code balanceKcal}, the goal's deficit/surplus, which also absorbs the BMR floor) =
+     * {@code targetKcal}. Always closes (mezo-tb3s2). {@code pendingMovementKcal} previews today's
+     * planned-but-unlogged sessions at the moderate band — display only, never in the sum; null
+     * when nothing is pending.
      *
      * <p>Provenance of Alap (mezo-zz91i): {@code baseSource} ({@code "formula"}|{@code "learned"}),
      * {@code formulaBaseKcal} (BMR × NEAT, shown next to a learned base), {@code baseSdKcal} and
      * {@code baseConfidence} (LOW|MEDIUM|HIGH; both null for formula). Display only — not arithmetic.
      */
     public record Energy(int baseKcal, int plannedMovementKcal, int extraMovementKcal, int balanceKcal, int targetKcal,
-                         String baseSource, Integer formulaBaseKcal, Integer baseSdKcal, String baseConfidence) {
+                         Integer pendingMovementKcal, String baseSource, Integer formulaBaseKcal, Integer baseSdKcal, String baseConfidence) {
     }
 
     public static DailyTargets fromConfig(NutritionTargetsProperties t) {

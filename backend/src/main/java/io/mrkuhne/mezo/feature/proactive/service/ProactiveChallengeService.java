@@ -56,7 +56,7 @@ public class ProactiveChallengeService {
     @Transactional
     public int pregenerateToday(UUID userId) {
         LocalDate today = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
-        return workoutService.findPlannedTemplateForDate(userId, today)
+        return workoutService.findPlannedTemplateForDateUnlessSkipped(userId, today)
                 .map(day -> getChallenges(userId, day.getId(), today).size())
                 .orElse(0);
     }

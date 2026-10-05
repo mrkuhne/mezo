@@ -1411,6 +1411,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts/{id}/exercises:
+    post:
+      tags: [Train]
+      operationId: changeWorkoutExercise
+      summary: Swap or add an exercise in an active workout (mezo-mobji)
+      description: >-
+        Creates an instance-scoped exercise row for the running workout (scope TODAY), and for
+        scope MESO additionally writes the mesocycle's template day id-stably (one insert, the
+        replaced row soft-deleted) so the change applies from the next session. Returns the
+        refreshed today payload.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutExerciseChangeRequest'
+      responses:
+        '200':
+          description: Change applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutExerciseChangeResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Workout not active, or the replaced exercise has no plan slot (MESO)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts/{id}/exercises/{exerciseId}/plan-sets:
+    post:
+      tags: [Train]
+      operationId: addPlanWorkingSets
+      summary: Add working sets to an exercise's mesocycle plan without re-creating the day (mezo-mobji)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSetsRequest'
+      responses:
+        '204':
+          description: Plan updated
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The exercise has no plan slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/exercises/{exerciseId}/note:
     put:
       tags: [Train]
@@ -2994,6 +3099,29 @@ components:
             - $ref: '#/components/schemas/OverloadSummary'
           nullable: true
           description: Day-level overload summary; null when hypertrophy-drive is off.
+        comeback:
+          allOf:
+            - $ref: '#/components/schemas/TodayComeback'
+          nullable: true
+          description: >-
+            Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened — a comeback
+            ramp session after a recovery period, or a released protected day. Null otherwise.
+    TodayComeback:
+      type: object
+      required: [index, total, mode]
+      properties:
+        index:
+          type: integer
+          description: 1-based position of today's session in the lightened run (1 or 2)
+        total:
+          type: integer
+          description: Lightened sessions in the run (1 or 2; 1 for a released day)
+        mode:
+          type: string
+          enum: [RAMP, RELEASED]
+          description: >-
+            RAMP — the Nth gym session after the return; RELEASED — "Ma mégis edzek" on a
+            protected day with lightening kept.
     TodayExercise:
       type: object
       required:
@@ -3068,6 +3196,24 @@ components:
             - $ref: '#/components/schemas/ProgressionSignal'
           nullable: true
           description: RIR-aware overload recommendation; null on first session / switch off.
+        changeScope:
+          type: string
+          enum: [TODAY, MESO]
+          nullable: true
+          description: Set on an exercise swapped/added during the open workout (mezo-mobji).
+        replacesName:
+          type: string
+          nullable: true
+          description: Name of the exercise this one replaced in the open workout.
+        replacedByName:
+          type: string
+          nullable: true
+          description: On a swapped-out exercise that keeps its logged sets — the replacement's name.
+        planSlot:
+          type: boolean
+          description: >-
+            Whether a "Mezociklusra is" change may target this exercise (false for rows added
+            only for this workout and for the fixed closing block).
     PrescribedSet:
       type: object
       required:
@@ -3459,6 +3605,70 @@ components:
         note:
           type: string
           maxLength: 500
+    WorkoutExerciseChangeRequest:
+      type: object
+      required: [name, muscle, type, warmupSets, workingSets, repMin, repMax, targetRIR, scope]
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        muscle:
+          type: string
+          maxLength: 60
+        type:
+          type: string
+          enum: [compound, isolation, plyo]
+        warmupSets:
+          type: integer
+          minimum: 0
+          maximum: 6
+        workingSets:
+          type: integer
+          minimum: 1
+          maximum: 12
+        repMin:
+          type: integer
+          minimum: 1
+          maximum: 100
+        repMax:
+          type: integer
+          minimum: 1
+          maximum: 100
+        targetRIR:
+          type: integer
+          minimum: 0
+          maximum: 5
+        scope:
+          type: string
+          enum: [TODAY, MESO]
+        replacesExerciseId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Swap target; absent for an add.
+    WorkoutExerciseChangeResponse:
+      type: object
+      required: [exerciseId, today]
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+          description: The new instance-scoped exercise row.
+        today:
+          $ref: '#/components/schemas/WorkoutTodayResponse'
+    PlanSetsRequest:
+      type: object
+      required: [delta]
+      properties:
+        delta:
+          type: integer
+          minimum: 1
+          maximum: 3
     WorkoutSkipRequest:
       type: object
       required:

@@ -22,6 +22,8 @@ import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import '@/features/insights/boop-world.css'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const PART_LABEL: Record<DayPart, string> = {
   REGGEL: 'Reggel',
@@ -441,13 +443,15 @@ function ReplyComposer({ target, onSend, onClose }: {
   return (
     <div className="tf-reply">
       <p className="tf-reply-intro">{replyIntro(target.mode, TEAM[target.thread.owner].name)}</p>
-      <textarea
-        className="tf-reply-text"
-        aria-label="A válaszod"
-        placeholder="Például: tegnap későn értem haza, azért csúszott a lefekvés…"
-        value={text}
-        onChange={e => setText(e.target.value)}
-      />
+      <VoiceField domain="mezo" onTranscript={t => setText(d => appendDictation(d, t))}>
+        <textarea
+          className="tf-reply-text"
+          aria-label="A válaszod"
+          placeholder="Például: tegnap későn értem haza, azért csúszott a lefekvés…"
+          value={text}
+          onChange={e => setText(e.target.value)}
+        />
+      </VoiceField>
       {error && <p className="tf-error" role="alert">{error}</p>}
       <button type="button" className="glass tf-send tf-c-lav" disabled={sending || !text.trim()} onClick={() => void send()}>
         <Icon3D name="t-send" size={22} />

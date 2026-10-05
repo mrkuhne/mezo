@@ -22,6 +22,9 @@ export const facts: KnowledgeFact[] = [
   // S6 (mezo-d6ivw.6) fix round 1 — a `o4` (refuted) észrevétel tanult ténye: a negyedéves
   // recheck cáfolta, ezért `mutedReason: 'refuted'` (nem felhasználói döntés) néma a hub-on.
   { id: 'f16', text: 'Edzés után mindig kevesebb a stresszed', category: 'health', active: false, reinforced: 2, source: 'pattern', owner: 'deru', lastReinforcedAt: null, createdAt: '2026-08-22T06:00:00Z', patternTitle: 'Edzés után mindig kevesebb a stresszed.', patternId: 'o4', mutedReason: 'refuted', mutedAt: '2026-09-16T03:40:00Z' },
+  // S9 (mezo-d6ivw.10): a hétfői rendrakás beolvasztotta a f13-mal azonos mondatot — az
+  // „Összevontam" fiókot és a „Hétfői rendrakás" sávot mutatja (mutedAt: a múlt napokban, mindig frissen).
+  { id: 'f17', text: 'Az edzés előtti étkezés 2-3 órával előtte esik neked a legjobban.', category: 'fuel', active: false, reinforced: 3, source: 'chat', owner: 'falat', lastReinforcedAt: null, createdAt: '2026-06-10T11:00:00Z', mutedReason: 'merged', mutedAt: new Date(Date.now() - 24 * 3600 * 1000).toISOString(), supersededBy: 'f13' },
 ]
 
 /** V1.2 mock candidates — the pending L2 confirm inbox of the demo. `c3` (mezo-ms9a) carries a
@@ -45,6 +48,13 @@ export const candidateSeed: FactCandidate[] = [
     id: 'c3', text: 'A röplabdát heti egy alkalomra ritkítod — csak szombaton jársz.', category: 'train',
     owner: 'mocor', source: 'chat', createdAt: '2026-08-22T07:00:00Z', evidence: null, weekStart: null,
     conflictsWithFactId: 'f4',
+  },
+  // S9 (mezo-d6ivw.10): the demo's one weekly merge proposal — two sentences about the same thing.
+  {
+    id: 'c4', text: 'Késő esti evés után nálad gyakran nehezebb az elalvás.', category: 'fuel',
+    owner: 'mezo', source: 'merge', createdAt: '2026-08-21T07:00:00Z', evidence: null, weekStart: null,
+    conflictsWithFactId: null,
+    mergeSources: ['Késő esti evés után nehezebben alszol el.', 'Ha 21 óra után vacsorázol, rosszabbul alszol.'],
   },
 ]
 

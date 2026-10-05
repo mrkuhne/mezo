@@ -139,7 +139,7 @@ export function useScheduleSnapshotWriter(): void {
   const intakes = useIntakes(localDateString())
   const { settings } = useFuelSettings()
   const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
-  const { gymSchedule, sport, sportSlotSkips } = useTrain()
+  const { gymSchedule, sport, plannedSkips } = useTrain()
   const { activeRunningBlock } = useRunning()
   const written = useRef(false)
 
@@ -155,7 +155,7 @@ export function useScheduleSnapshotWriter(): void {
     if (stackPending || stackError || protocolPending || protocolError) return
     written.current = true
 
-    const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
+    const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, plannedSkips)
     const slots = projectStackDay({
       occurrences, stash, intakes, wake: sleepGoal.wakeTime, bed: sleepGoal.bedTime,
       mealsPerDay: settings.mealsPerDay, blocks,

@@ -11,7 +11,6 @@ key_files:
   - frontend/src/features/today/pages/NapRutinPage.tsx
   - frontend/src/features/me/pages/RutinHubPage.tsx
   - frontend/src/features/me/pages/HabitPage.tsx
-  - frontend/src/features/me/pages/HabitEditPage.tsx
   - frontend/src/features/me/logic/habitFormation.ts
   - api/feature/habit/habit.yml
 related: [today, growth, me, fuel, train, intention, _platform-data-layer, _platform-api-backend]

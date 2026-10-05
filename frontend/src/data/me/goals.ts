@@ -141,8 +141,11 @@ export const goal: Goal = {
 
 // ── The mock prescription's energy chain (mezo-32m82) ─────────────────────────
 // One derivation, so every mock surface agrees: TDEE = BMR × NEAT + the net weekly EAT; each
-// segment's kcal = TDEE + its goal balance; its training/rest days sit a fixed shift around it
-// (DayTypeShiftCalculator); carbs close the segment kcal off the prescribed protein + fat.
+// segment's kcal = TDEE + its goal balance; carbs close the segment kcal off the prescribed
+// protein + fat. Day-type split retired (mezo-tb3s2, M4): every segment's trainingDayKcal/
+// restDayKcal is null now, on the backend and here — every mock consumer of a segment (the
+// prescription itself, the Goal-overview diet card, the suggestion-preview diff) follows, so
+// none of them can show a training/rest split that's impossible in production.
 // Net activity model over the mock week at rest 1720/24, közepes band: 4 × 90′ volleyball (323) +
 // 1 × 120′ (430) + 2 × 60′ gym (179) + 2 × 45′ run (446) = 2972/week → 425/day.
 export const MOCK_GOAL_BMR = 1720
@@ -150,23 +153,21 @@ const MOCK_GOAL_NEAT = 1.2
 const MOCK_NEAT_BASELINE_KCAL = Math.round(MOCK_GOAL_BMR * MOCK_GOAL_NEAT) // 2064
 const MOCK_WEEKLY_EAT_KCAL = 425
 const MOCK_TDEE_KCAL = MOCK_NEAT_BASELINE_KCAL + MOCK_WEEKLY_EAT_KCAL // 2489
-const MOCK_TRAINING_SHIFT_KCAL = 150
-const MOCK_REST_SHIFT_KCAL = -200
 function mockSegmentKcal(balanceKcal: number, proteinG: number, fatG: number) {
   const kcal = MOCK_TDEE_KCAL + balanceKcal
   return {
     kcal,
-    trainingDayKcal: kcal + MOCK_TRAINING_SHIFT_KCAL,
-    restDayKcal: kcal + MOCK_REST_SHIFT_KCAL,
+    trainingDayKcal: null,
+    restDayKcal: null,
     proteinG,
     carbsG: Math.round((kcal - proteinG * 4 - fatG * 9) / 4),
     fatG,
     dailyEnergyBalanceKcal: balanceKcal,
   }
 }
-/** Segment 1 (weeks 1–12, deep deficit): kcal 1973 · training 2123 · rest 1773 · carbs 182. */
+/** Segment 1 (weeks 1–12, deep deficit): kcal 1973 · carbs 182 · uniform (no day-type split). */
 const MOCK_SEG1 = mockSegmentKcal(-516, 163, 66)
-/** Segment 2 (weeks 13–20, taper): kcal 2203 · training 2353 · rest 2003 · carbs 232. */
+/** Segment 2 (weeks 13–20, taper): kcal 2203 · carbs 232 · uniform (no day-type split). */
 const MOCK_SEG2 = mockSegmentKcal(-286, 155, 73)
 
 // Mock raw GoalResponse — the G4b command-center hero reads the contract shape
@@ -209,9 +210,6 @@ export const goalResponse: GoalResponse = {
         fromWeek: 1,
         toWeek: 12,
         label: 'Mély deficit',
-        // Day-type shift (mezo-sxlj): mock's dayTypeShiftKcal is 200, T=4/R=3 mock schedule,
-        // no floor bite — trainingDayKcal/restDayKcal demo the split even though the diet-settings
-        // ghost itself stays at 0 (drift guard vs the BE config default).
         ...MOCK_SEG1,
         sleepTargetH: 7.5,
         restDays: [3, 7],
@@ -308,7 +306,10 @@ export const goalSuggestionPreviewSeed: GoalSuggestionPreviewResponse = {
   affectedToWeek: 20,
   current: {
     trajectory: 'cut', targetWeightKg: 73, targetDate: '2026-08-15', targetRateKgPerWeek: -0.48,
-    weekAverageKcal: MOCK_SEG1.kcal, trainingDayKcal: MOCK_SEG1.trainingDayKcal, restDayKcal: MOCK_SEG1.restDayKcal,
+    // Day-type split retired (mezo-tb3s2, M4): a segment's trainingDayKcal/restDayKcal are always
+    // null now, on the backend (GoalSuggestionPreviewService reads them straight off the M4-nulled
+    // segment) and here — never a changed field, since both sides are always null.
+    weekAverageKcal: MOCK_SEG1.kcal, trainingDayKcal: null, restDayKcal: null,
     proteinG: MOCK_SEG1.proteinG, carbsG: MOCK_SEG1.carbsG, fatG: MOCK_SEG1.fatG,
     segmentFromWeek: 3, segmentToWeek: 5, segmentLabel: 'MAV',
     guardStatus: null,
@@ -316,13 +317,13 @@ export const goalSuggestionPreviewSeed: GoalSuggestionPreviewResponse = {
   proposed: {
     trajectory: 'cut', targetWeightKg: 73, targetDate: '2026-08-15', targetRateKgPerWeek: -0.54,
     // The weekly correction's −120 kcal, carbs absorbing it (−30 g).
-    weekAverageKcal: MOCK_SEG1.kcal - 120, trainingDayKcal: MOCK_SEG1.trainingDayKcal - 120, restDayKcal: MOCK_SEG1.restDayKcal - 120,
+    weekAverageKcal: MOCK_SEG1.kcal - 120, trainingDayKcal: null, restDayKcal: null,
     proteinG: MOCK_SEG1.proteinG, carbsG: MOCK_SEG1.carbsG - 30, fatG: MOCK_SEG1.fatG,
     segmentFromWeek: 3, segmentToWeek: 5, segmentLabel: 'MAV',
     guardStatus: null,
   },
-  changedFields: ['targetRateKgPerWeek', 'weekAverageKcal', 'trainingDayKcal', 'restDayKcal', 'carbsG'],
-  unchangedFields: ['trajectory', 'targetWeightKg', 'targetDate', 'proteinG', 'fatG', 'segment', 'guards'],
+  changedFields: ['targetRateKgPerWeek', 'weekAverageKcal', 'carbsG'],
+  unchangedFields: ['trajectory', 'targetWeightKg', 'targetDate', 'proteinG', 'fatG', 'trainingDayKcal', 'restDayKcal', 'segment', 'guards'],
   warnings: ['Az alváshiány miatt a kalóriakorrekció tompítva lett.'],
   blockers: [],
   canApply: true,
@@ -336,12 +337,12 @@ export const goalSuggestionPreviewSeeds: Record<string, GoalSuggestionPreviewRes
     reasonCode: 'phase_change', affectedFromWeek: 3, affectedToWeek: 3,
     proposed: {
       ...goalSuggestionPreviewSeed.current,
-      targetRateKgPerWeek: -0.35, weekAverageKcal: 2390, trainingDayKcal: 2540,
-      restDayKcal: 2190, carbsG: 286, segmentFromWeek: 3, segmentToWeek: 3,
+      targetRateKgPerWeek: -0.35, weekAverageKcal: 2390, trainingDayKcal: null,
+      restDayKcal: null, carbsG: 286, segmentFromWeek: 3, segmentToWeek: 3,
       segmentLabel: 'Deload · tartás',
     },
-    changedFields: ['targetRateKgPerWeek', 'weekAverageKcal', 'trainingDayKcal', 'restDayKcal', 'carbsG', 'segment'],
-    unchangedFields: ['trajectory', 'targetWeightKg', 'targetDate', 'proteinG', 'fatG', 'guards'],
+    changedFields: ['targetRateKgPerWeek', 'weekAverageKcal', 'carbsG', 'segment'],
+    unchangedFields: ['trajectory', 'targetWeightKg', 'targetDate', 'proteinG', 'fatG', 'trainingDayKcal', 'restDayKcal', 'guards'],
   },
 }
 
@@ -365,17 +366,20 @@ export const goalOverviewSeed: GoalOverviewResponse = {
   targetRateKgPerWeek: -0.48,
   projectedTargetDate: '2026-08-14',
   dataSufficiency: 'full',
+  // Day-type split retired (mezo-tb3s2, M4): GoalOverviewService derives `split` from the
+  // segment's trainingDayKcal/restDayKcal, both null now — so it can only ever emit `uniform` /
+  // `uniform_kcal`, never `training`/`training_day_split`. The mock mirrors that.
   diet: {
     weekAverageKcal: MOCK_SEG1.kcal,
-    todayDayType: 'training',
-    todayKcal: MOCK_SEG1.trainingDayKcal,
-    trainingDayKcal: MOCK_SEG1.trainingDayKcal,
-    restDayKcal: MOCK_SEG1.restDayKcal,
+    todayDayType: 'uniform',
+    todayKcal: MOCK_SEG1.kcal,
+    trainingDayKcal: null,
+    restDayKcal: null,
     proteinG: MOCK_SEG1.proteinG,
     carbsG: MOCK_SEG1.carbsG,
     fatG: MOCK_SEG1.fatG,
     basis: 'formula',
-    explanationCode: 'training_day_split',
+    explanationCode: 'uniform_kcal',
   },
   segment: {
     available: true,

@@ -39,8 +39,11 @@ import { overflowWhy, progressionChip } from '@/features/train/logic/progression
 import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
 import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
 import { recordFor } from '@/features/train/logic/recordFor'
-import type { LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
-import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
+import type { ExerciseLibraryItem, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
+import type { ExerciseSetResponse, SetLogRequest, SetUpdateRequest, WorkoutExerciseChangeRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
+import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
+import { ExerciseScopeSheet, type ChangeScope } from '@/features/train/sheets/ExerciseScopeSheet'
+import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
 import type { Medal } from '@/data/train/medalTypes'
 import type { MockMedalContext } from '@/data/train/medalEvaluator'
 import {
@@ -61,6 +64,9 @@ import {
   slotIndex,
   seedFromOpen,
   skipExercise as skipExerciseModel,
+  swapExercise,
+  warmupSlotCount,
+  addExercise,
   unskipExercise as unskipExerciseModel,
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
@@ -78,6 +84,8 @@ import { restKcalPerHour } from '@/data/train/activityEnergy'
 import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { adjustedTarget } from '@/features/train/logic/repEquivalence'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 type Phase = 'brief' | 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
@@ -116,7 +124,7 @@ export function ActiveWorkoutPage() {
   const qc = useQueryClient()
   const dayParam = searchParams.get('day')
   const [pinnedDay, setPinnedDay] = useState<string | null>(null)
-  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, workoutFetching, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain({ workoutDay: dayParam ?? pinnedDay })
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, workoutFetching, startWorkout, logSet, updateSet, deleteSet, skipExercise, changeExercise, addPlanWorkingSets, saveExerciseNote, saveWorkoutFeedback, finishWorkout } = useTrain({ workoutDay: dayParam ?? pinnedDay })
   const resolvedTemplate = todaySession?.templateSessionId ?? null
   useEffect(() => {
     if (dayParam || pinnedDay || !resolvedTemplate) return
@@ -179,7 +187,8 @@ export function ActiveWorkoutPage() {
       saveExerciseNote={saveExerciseNote}
       saveWorkoutFeedback={saveWorkoutFeedback}
       finishWorkout={finishWorkout}
-      saveDayExercises={saveDayExercises}
+      changeExercise={changeExercise}
+      addPlanWorkingSets={addPlanWorkingSets}
     />
   )
 }
@@ -206,11 +215,16 @@ interface SessionProps {
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string, opts?: { note?: string | null; onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
-  saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
+  changeExercise: (
+    workoutId: string,
+    req: WorkoutExerciseChangeRequest,
+    opts?: { loggedOnReplaced?: number; onSuccess?: (created: LoggedWorkoutExercise) => void; onError?: (err: unknown) => void },
+  ) => void
+  addPlanWorkingSets: (workoutId: string, exerciseId: string) => void
 }
 
 function ActiveWorkoutSession({
-  workout, activeMeso, todaySession, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
+  workout, activeMeso, todaySession, startWorkout, logSet, updateSet, deleteSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, changeExercise, addPlanWorkingSets,
 }: SessionProps) {
   const W = workout
   const goBack = useBackNav('/train')
@@ -315,6 +329,11 @@ function ActiveWorkoutSession({
   const [glass, setGlass] = useState<{ kind: 'menu' | 'video' | 'records' | 'challenge'; id: string } | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
+  // Mid-workout swap/add (mezo-mobji): step 1 the picker, step 2 the „Csak ma / Mezociklusra is"
+  // sheet; a failed write leaves the list untouched and says so above the finish button.
+  const [pick, setPick] = useState<{ mode: 'swap' | 'add'; exerciseId?: string } | null>(null)
+  const [scopeFor, setScopeFor] = useState<{ mode: 'swap' | 'add'; exerciseId?: string; item: ExerciseLibraryItem } | null>(null)
+  const [changeFailed, setChangeFailed] = useState(false)
   // F4 durable per-exercise note: which exercise's editor is open + a per-exercise
   // local override so the pill updates instantly in BOTH modes (mock no-ops the
   // mutation; real refetches /today, but the override avoids a flash in between).
@@ -995,31 +1014,72 @@ function ActiveWorkoutSession({
     }
   }
 
-  // F2 "Minden hétre": persist the extra set to the TEMPLATE by bumping this
-  // exercise's set count in its meso day and reusing the day-exercises PUT. The
-  // day is the one whose exercise list contains the current exercise (by id).
+  // F2 "Minden hétre": one plan row +1 working set (mezo-mobji) — the old full-list day PUT
+  // re-minted every exercise id under the running session.
   const writeExtraSetToTemplate = (exerciseId: string) => {
-    // Meso-less custom (saját) sessions have no template day to persist against —
-    // already an effective no-op (mezo-ws2x D4), made explicit here.
-    if (!activeMeso) return
-    const day = activeMeso.days?.find((d) => d.exercises?.some((e) => e.id === exerciseId))
-    if (!day?.id) return
-    const exercises: GymExerciseInput[] = day.exercises.map((e) => ({
-      name: e.name,
-      muscle: e.muscle,
-      warmupSets: e.warmupSets,
-      // The extra set is a working set — bump the working count for this exercise only.
-      workingSets: e.id === exerciseId ? e.workingSets + 1 : e.workingSets,
-      repMin: e.repMin,
-      repMax: e.repMax,
-      targetRIR: e.targetRIR,
-      type: e.type,
-      ...(e.anchorWeightKg != null ? { anchorWeightKg: e.anchorWeightKg } : {}),
-      ...(e.warning ? { warning: e.warning } : {}),
-      ...(e.catalogId ? { catalogId: e.catalogId } : {}),
-      ...(e.countsTowardVolume !== undefined ? { countsTowardVolume: e.countsTowardVolume } : {}),
-    }))
-    saveDayExercises(activeMeso.id, day.id, exercises)
+    if (!canChange) return
+    addPlanWorkingSets(workoutId ?? 'mock', exerciseId)
+  }
+
+  // ── Mid-workout swap / add (mezo-mobji) ──
+  const mesoLine = activeMeso
+    ? activeMeso.weeks - activeMeso.currentWeek > 0
+      ? `A ${activeMeso.title} hátralévő ${activeMeso.weeks - activeMeso.currentWeek} hetében is.`
+      : `A ${activeMeso.title} hátralévő részében is.`
+    : null
+  // Real mode needs the started instance; mock logs against 'mock' like every other write.
+  const canChange = !logBlocked && (isMock || !!workoutId)
+  const scopeTarget = scopeFor?.exerciseId ? exerciseById(scopeFor.exerciseId) ?? null : null
+  const scopeLogged = scopeTarget ? session.logged[scopeTarget.id]?.length ?? 0 : 0
+  // The replacement's WORKING sets = what is left of the slot. With a server prescription the
+  // warm-up ramp is hidden (the visible count is working-only); without one the warm-up rows
+  // are visible too, so the ones not yet done come off the count.
+  const scopeNewSets = (() => {
+    if (!scopeFor) return 0
+    if (scopeFor.mode === 'add' || !scopeTarget) return libraryToGymExercise(scopeFor.item).workingSets
+    const visibleLeft = effectiveSetCount(session, scopeTarget.id) - scopeLogged
+    const warmupsLeft = warmupSlotCount(session, scopeTarget.id) > 0 ? 0 : Math.max(0, scopeTarget.warmupSets - scopeLogged)
+    return Math.max(1, visibleLeft - warmupsLeft)
+  })()
+  const applyChange = (scope: ChangeScope) => {
+    if (!scopeFor || !canChange) return
+    const recipe = libraryToGymExercise(scopeFor.item)
+    const old = scopeTarget
+    const req: WorkoutExerciseChangeRequest = {
+      catalogId: scopeFor.item.catalogId ?? null,
+      name: scopeFor.item.name,
+      muscle: scopeFor.item.muscle,
+      type: scopeFor.item.type,
+      // Mid-exercise the body is already warm: no new ramp for the rest of the slot.
+      warmupSets: old && scopeLogged > 0 ? 0 : recipe.warmupSets,
+      workingSets: scopeNewSets,
+      // A swap keeps the slot's prescription shape; an add takes the type's defaults.
+      repMin: old ? old.repMin : recipe.repMin,
+      repMax: old ? old.repMax : recipe.repMax,
+      targetRIR: old ? old.targetRIR : recipe.targetRIR,
+      scope,
+      replacesExerciseId: old?.id ?? null,
+    }
+    setChangeFailed(false)
+    changeExercise(workoutId ?? 'mock', req, {
+      loggedOnReplaced: scopeLogged,
+      onSuccess: (created) => {
+        const input = { id: created.id, warmupSets: created.warmupSets, workingSets: created.workingSets, prescribedSets: created.prescribedSets }
+        setSession((s) => (old ? swapExercise(s, old.id, input) : addExercise(s, input, closingAfter(s))))
+      },
+      onError: () => setChangeFailed(true),
+    })
+  }
+  /** An add lands before the fixed closing block, as the server places it: the first exercise
+   *  of the session's trailing run of plan-slot-less, unchanged ones. */
+  const closingAfter = (s: typeof session): string | undefined => {
+    let at: string | undefined
+    for (let i = s.order.length - 1; i >= 0; i--) {
+      const e = exerciseById(s.order[i])
+      if (!e || e.planSlot !== false || e.changeScope || e.replacedByName) break
+      at = e.id
+    }
+    return at
   }
 
   return (
@@ -1059,12 +1119,15 @@ function ActiveWorkoutSession({
               onEditNote={() => setNoteEditExId(menuEx.id)}
               onAddSet={() => {
                 setSession((s) => addExtraSet(s, menuEx.id))
-                setAddSetPrompt({ exerciseId: menuEx.id })
+                // „Minden hétre" needs a plan slot (mezo-mobji): a today-only row just grows today.
+                if (menuEx.planSlot !== false) setAddSetPrompt({ exerciseId: menuEx.id })
               }}
               onRemoveSet={() => handleSetDelete(menuEx, slotCount - 1)}
               onMoveEarlier={() => movePosition(menuEx.id, -1)}
               onMoveLater={() => movePosition(menuEx.id, 1)}
               onToggleSkip={() => handleToggleSkip(menuEx.id)}
+              loggedCount={session.logged[menuEx.id]?.length ?? 0}
+              onSwap={canChange ? () => setPick({ mode: 'swap', exerciseId: menuEx.id }) : undefined}
             />
             <WorkoutVideoGlass
               open={!!videoOpen}
@@ -1162,6 +1225,44 @@ function ActiveWorkoutSession({
           )}
         </Sheet>
       )}
+
+      {pick && (
+        <ExercisePickerSheet
+          mode="single"
+          eyebrow={pick.mode === 'swap' ? `Csere · ${exerciseById(pick.exerciseId)?.name ?? ''}` : 'Gyakorlat hozzáadása'}
+          title={pick.mode === 'swap' ? 'Mire cseréled?' : 'Mit adunk hozzá?'}
+          similarTo={pick.mode === 'swap' ? exerciseById(pick.exerciseId)?.muscle : undefined}
+          excludeNames={W.exercises.map((e) => e.name)}
+          onPick={(item) => setScopeFor({ mode: pick.mode, exerciseId: pick.exerciseId, item })}
+          onClose={() => setPick(null)}
+        />
+      )}
+      {scopeFor && !pick && (() => {
+        const rec = recordFor(exerciseRecords, { name: scopeFor.item.name, catalogId: scopeFor.item.catalogId })
+        const top = rec?.recentTopSets?.[rec.recentTopSets.length - 1]
+        const recipe = libraryToGymExercise(scopeFor.item)
+        const noPlan = scopeTarget?.planSlot === false
+        return (
+          <ExerciseScopeSheet
+            mode={scopeFor.mode}
+            item={scopeFor.item}
+            replacedName={scopeTarget?.name}
+            loggedOnReplaced={scopeLogged}
+            newSets={scopeNewSets}
+            repLabel={`${recipe.repMin}–${recipe.repMax}`}
+            planSlot={!noPlan}
+            noPlanNote={noPlan
+              ? scopeTarget?.changeScope
+                ? 'Ez a gyakorlat ma került be, nincs a mezociklus tervében, ezért csak mára cserélhető.'
+                : 'A nap végi levezetőt az app minden nap visszateszi, ezért csak mára cserélhető.'
+              : null}
+            mesoLine={mesoLine}
+            lastTop={top ? `${top.weightKg != null ? String(top.weightKg).replace('.', ',') : 'saját súly'} × ${top.reps}` : null}
+            onChoose={applyChange}
+            onClose={() => setScopeFor(null)}
+          />
+        )
+      })()}
 
       <div className="wos">
         {/* Header — the one piece of chrome the card list keeps: back pill, the
@@ -1272,6 +1373,17 @@ function ActiveWorkoutSession({
               Task 4's temporary plain button. */}
           {/* U4: a FLAT button — t-skip while nothing is logged, t-star while partial, t-tick
               once everything is done (the three states keep their `is-*` hooks). */}
+          {changeFailed && (
+            <div className="wo-change-err" role="alert">
+              <span>Nem sikerült menteni a változtatást — próbáld újra.</span>
+              <button type="button" aria-label="Értesítés bezárása" onClick={() => setChangeFailed(false)}>×</button>
+            </div>
+          )}
+          <button type="button" className="wo-add" disabled={!canChange} onClick={() => setPick({ mode: 'add' })}>
+            <Icon3D name="t-addex" size={26} />
+            Gyakorlat hozzáadása
+          </button>
+
           <button type="button" className={`wo-finish is-${finishState}`} onClick={handleFinishTap} disabled={logBlocked}>
             <span className="wo-finish-art">
               <Icon3D name={finishState === 'skip' ? 't-skip' : finishState === 'full' ? 't-tick' : 't-star'} size={26} />
@@ -1336,15 +1448,17 @@ function NoteEditSheet({
               <h3 id="note-edit-title">Jegyzet a gyakorlathoz</h3>
             </span>
           </div>
-          <textarea
-            className="wos-sheet-ta"
-            aria-label="Gyakorlat-jegyzet szerkesztése"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={500}
-            rows={4}
-            placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
-          />
+          <VoiceField domain="train" onTranscript={(t) => setText((d) => appendDictation(d, t, 500))}>
+            <textarea
+              className="wos-sheet-ta"
+              aria-label="Gyakorlat-jegyzet szerkesztése"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={500}
+              rows={4}
+              placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
+            />
+          </VoiceField>
           <div className="wos-sheet-two">
             <button type="button" className="wos-pill is-block" onClick={close}>
               Mégse

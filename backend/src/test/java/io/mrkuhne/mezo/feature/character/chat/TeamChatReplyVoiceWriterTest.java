@@ -93,6 +93,37 @@ class TeamChatReplyVoiceWriterTest {
         assertThat(d.keywords()).containsExactly("meccs", "kupa");
     }
 
+    /** mezo-d6ivw.11: the remembered sentence goes into every later prompt — it passes the reply's
+     *  own guard. A failing fact is dropped; the voiced reply itself still lands. */
+    @Test
+    void factTextWithInventedNumber_isDropped_butTheReplyStaysVoiced() {
+        var d = writerAnswering("{\"reply\":\"Értem, meccsnap volt.\",\"verdict\":\"concrete_context\","
+                + "\"contextTag\":\"meccsnap\",\"factText\":\"Meccsnapokon 3 órával később eszel.\",\"keywords\":[\"meccs\"]}")
+                .write(OWNER, falatThread, List.of("meccs volt"), List.of(), null);
+        assertThat(d.voiced()).isTrue();
+        assertThat(d.verdict()).isEqualTo("concrete_context");
+        assertThat(d.factText()).isNull();
+    }
+
+    @Test
+    void factTextWithJargon_isDropped() {
+        var d = writerAnswering("{\"reply\":\"Értem, meccsnap volt.\",\"verdict\":\"concrete_context\","
+                + "\"contextTag\":\"meccsnap\",\"factText\":\"Meccsnapokon eltér az intake.\",\"keywords\":[\"meccs\"]}")
+                .write(OWNER, falatThread, List.of("meccs volt"), List.of(), null);
+        assertThat(d.factText()).isNull();
+    }
+
+    @Test
+    void factTextTooLongOrThreeSentences_isDropped_userNumbersAllowed() {
+        String tooLong = "Meccsnapokon későn eszel. ".repeat(7).strip();
+        assertThat(TeamChatReplyVoiceWriter.guardedFact(TeamCharacter.FALAT, tooLong, List.of(), "")).isNull();
+        assertThat(TeamChatReplyVoiceWriter.guardedFact(TeamCharacter.FALAT, "Egy. Kettő. Három.", List.of(), ""))
+                .isNull();
+        assertThat(TeamChatReplyVoiceWriter.guardedFact(TeamCharacter.FALAT, "  Kupanapon 10 után eszel.  ",
+                List.of(), "10-kor ért véget a kupa")).isEqualTo("Kupanapon 10 után eszel.");
+        assertThat(TeamChatReplyVoiceWriter.guardedFact(TeamCharacter.FALAT, " ", List.of(), "")).isNull();
+    }
+
     @Test
     void inventedNumber_fallsBackToTemplate_withNoVerdict() {
         var d = writerAnswering("{\"reply\":\"Ez már a 3. alkalom.\",\"verdict\":\"concrete_context\",\"contextTag\":\"x\",\"factText\":\"y\",\"keywords\":[\"x1\"]}")

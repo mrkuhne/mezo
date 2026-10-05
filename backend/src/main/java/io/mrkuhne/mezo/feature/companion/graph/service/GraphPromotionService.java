@@ -314,12 +314,10 @@ public class GraphPromotionService {
 
     /** The mirror of {@link #promoteFact} (bd mezo-b3pp.31). A fact stops qualifying two ways:
      *  it is soft-deleted, or the user opts it out ({@code includeInPrompt = false}, mezo-b3pp.30).
-     *  No service in main source soft-deletes a {@code knowledge_fact} today, so nothing publishes
-     *  a delete-triggered retraction event — the soft-delete half exists only for {@link
-     *  #reconcile}'s sweep, ready for the day a delete surface lands. The opt-out half DOES have
-     *  a live trigger: {@code KnowledgeFactService.update} publishes an event Task 2 wires to
-     *  {@link #syncFact}, so an opt-out takes effect on the next turn rather than waiting for the
-     *  nightly sweep. */
+     *  Both halves have a live trigger: {@code KnowledgeFactService.update} (opt-out),
+     *  {@code ForgetService.forgetFact} and {@code AboutMeService.remove} (soft-delete) publish
+     *  {@code KnowledgeFactChangedEvent}, wired to {@link #syncFact}, so the change takes effect on
+     *  the next turn; {@link #reconcile}'s nightly sweep is the backstop for a missed event. */
     @Transactional
     public Optional<GraphNodeEntity> retractFact(UUID userId, UUID factId) {
         boolean stillLive = knowledgeFactRepository.findByIdAndCreatedByAndDeletedFalse(factId, userId)

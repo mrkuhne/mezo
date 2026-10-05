@@ -28,6 +28,23 @@ tags:
       morning check-in read against the gym plan: a "lighter day" suggestion
       with its reasons, the planned exercises a reported pain region loads, and
       the user's per-day choice (lighten / keep). Never automatic.
+  - name: TrainSkip
+    description: >-
+      Kihagyás S1 (mezo-q4xt2.1, spec 2026-09-28 §8) — the user skips one
+      planned occurrence (a gym day, a recurring sport slot occurrence, a
+      prescribed run) with an optional reason. Whether a skip counts as missed
+      is decided at read time: serious reasons never count, the first soft skip
+      of the ISO week is covered by the free pass, coach (advice) skips never
+      count.
+  - name: TrainRecovery
+    description: >-
+      Kihagyás S2 (mezo-q4xt2.2, spec 2026-09-28 §9) — kímélő mód. A serious
+      skip reason (illness, stomach bug, injury, travel) opens a multi-day
+      recovery period; every planned gym/sport/run occurrence on a protected
+      date reads as skipped + excused. It never ends by itself: the daily
+      check-in's "Jobban" ends it and applies the return rule (continue / resume
+      the week / step back one week), shifting the active meso calendar; "Mégsem
+      vagyok jól" undoes that on the same day.
   - name: Goal
     description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
   - name: BiometricProfile
@@ -2273,6 +2290,115 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises':
+    post:
+      tags:
+        - Train
+      operationId: changeWorkoutExercise
+      summary: Swap or add an exercise in an active workout (mezo-mobji)
+      description: >-
+        Creates an instance-scoped exercise row for the running workout (scope
+        TODAY), and for scope MESO additionally writes the mesocycle's template
+        day id-stably (one insert, the replaced row soft-deleted) so the change
+        applies from the next session. Returns the refreshed today payload.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutExerciseChangeRequest'
+      responses:
+        '200':
+          description: Change applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutExerciseChangeResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'Workout not active, or the replaced exercise has no plan slot (MESO)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/exercises/{exerciseId}/plan-sets':
+    post:
+      tags:
+        - Train
+      operationId: addPlanWorkingSets
+      summary: >-
+        Add working sets to an exercise's mesocycle plan without re-creating the
+        day (mezo-mobji)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanSetsRequest'
+      responses:
+        '204':
+          description: Plan updated
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The exercise has no plan slot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/exercises/{exerciseId}/note':
     put:
       tags:
@@ -2720,6 +2846,363 @@ paths:
                 $ref: '#/components/schemas/ReadinessTodayResponse'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/skips:
+    get:
+      tags:
+        - TrainSkip
+      operationId: listPlannedSkips
+      summary: >-
+        Every skip in [from, to] with its read-time verdict (user skips + coach
+        advice skips)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Skips, date then created ascending'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlannedSkipResponse'
+        '400':
+          description: from after to (TRAIN_INVALID_DATE_RANGE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TrainSkip
+      operationId: upsertPlannedSkip
+      summary: >-
+        Skip one occurrence, or change the reason of an existing skip
+        (idempotent per target)
+      description: >-
+        Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The
+        date must lie in [today-7, Sunday of the current ISO week]
+        (Europe/Budapest). reasonText is kept only for OTHER.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlannedSkipRequest'
+      responses:
+        '200':
+          description: The stored skip with its verdict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlannedSkipResponse'
+        '400':
+          description: >-
+            Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date
+            outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/skips/{id}':
+    delete:
+      tags:
+        - TrainSkip
+      operationId: undoPlannedSkip
+      summary: Undo a skip ("Visszavonom") — the occurrence is planned again
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Undone
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No live skip with this id for the caller (TRAIN_SKIP_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery:
+    get:
+      tags:
+        - TrainRecovery
+      operationId: getRecovery
+      summary: >-
+        The caller's recovery state — the open period (or the one ended today),
+        protected dates, the comeback ramp
+      responses:
+        '200':
+          description: Current recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TrainRecovery
+      operationId: upsertRecovery
+      summary: 'Open a recovery period, or change the category/estimate of the open one'
+      description: >-
+        startDate defaults to today and must lie in [today-7, today]
+        (Europe/Budapest). An update keeps the open period's startDate. Only
+        serious categories (ILLNESS, STOMACH, INJURY, TRAVEL) are allowed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryUpsertRequest'
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: >-
+            Non-serious category (TRAIN_RECOVERY_CATEGORY_INVALID) or startDate
+            outside the window (TRAIN_RECOVERY_START_OUT_OF_WINDOW)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TrainRecovery
+      operationId: deleteRecovery
+      summary: >-
+        "Tévedés volt" — discard the open (or today-ended) period, reverting any
+        programme shift
+      responses:
+        '204':
+          description: Discarded
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No open or today-ended period (TRAIN_RECOVERY_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery/check-in:
+    post:
+      tags:
+        - TrainRecovery
+      operationId: recoveryCheckIn
+      summary: >-
+        Daily check-in — NOT_YET keeps the period open, BETTER ends it today and
+        applies the return rule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryCheckInRequest'
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: BETTER on the start day (TRAIN_RECOVERY_TOO_EARLY)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No open period (TRAIN_RECOVERY_NOT_FOUND)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery/undo-better:
+    post:
+      tags:
+        - TrainRecovery
+      operationId: recoveryUndoBetter
+      summary: >-
+        "Mégsem vagyok jól" — reopen the period ended today and revert the
+        programme shift
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            No period ended today, or another period is already open
+            (TRAIN_RECOVERY_UNDO_EXPIRED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/recovery/releases/{date}':
+    put:
+      tags:
+        - TrainRecovery
+      operationId: releaseRecoveryDay
+      summary: >-
+        "Ma mégis edzek" — train normally on one protected date (lighter by
+        default)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecoveryReleaseRequest'
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: >-
+            The date is not protected by the open period
+            (TRAIN_RECOVERY_DATE_NOT_PROTECTED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TrainRecovery
+      operationId: unreleaseRecoveryDay
+      summary: Undo "Ma mégis edzek" — the date is protected again
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '400':
+          description: >-
+            The date is not protected by the open period
+            (TRAIN_RECOVERY_DATE_NOT_PROTECTED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/recovery/waive-comeback:
+    post:
+      tags:
+        - TrainRecovery
+      operationId: waiveComeback
+      summary: >-
+        "Kikapcsolom a könnyítést" — switch off the comeback ramp of the latest
+        ended period
+      responses:
+        '200':
+          description: The new recovery state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecoveryState'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No ended period (TRAIN_RECOVERY_NOT_FOUND)
           content:
             application/json:
               schema:
@@ -5556,6 +6039,73 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Conversation or user message not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/turn-memory/person-fact/{personFactId}/about-me':
+    post:
+      tags:
+        - Companion
+      operationId: addPersonFactAboutMe
+      summary: >-
+        „Rólam is" (mezo-d6ivw.13) — the user claims a chat person fact as their
+        own too: it is copied into the knowledge facts (source person_fact,
+        owner mezo, category life) and shows in the Tudástár Rólad section.
+        Idempotent — a second call returns the same copy.
+      parameters:
+        - name: personFactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The person fact's about-me state after the call
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutMeResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            Person fact not found, no longer active, or owned by someone else
+            (also when the people feature is off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Companion
+      operationId: removePersonFactAboutMe
+      summary: >-
+        „Rólam is" tapped again (mezo-d6ivw.13) — the copy is removed (soft
+        delete) WITHOUT a forget veto: the person fact stays on the person's
+        page and a later „Rólam is" may copy it again. Idempotent — no copy
+        means nothing to do.
+      parameters:
+        - name: personFactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The person fact's about-me state after the call (aboutMeFactId null)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutMeResponse'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -9149,6 +9699,34 @@ paths:
           description: Stamped
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/notification/feed/{id}/read':
+    post:
+      tags:
+        - NotificationFeed
+      operationId: markNotificationFeedItemRead
+      summary: Mark one owned feed row read (NotificationFeed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Stamped; an already-read row is unchanged
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Row not found or belongs to another user
           content:
             application/json:
               schema:
@@ -15032,6 +15610,35 @@ components:
             - $ref: '#/components/schemas/OverloadSummary'
           nullable: true
           description: Day-level overload summary; null when hypertrophy-drive is off.
+        comeback:
+          allOf:
+            - $ref: '#/components/schemas/TodayComeback'
+          nullable: true
+          description: >-
+            Kímélő mód (Kihagyás S2, mezo-q4xt2.2): today's session is lightened
+            — a comeback ramp session after a recovery period, or a released
+            protected day. Null otherwise.
+    TodayComeback:
+      type: object
+      required:
+        - index
+        - total
+        - mode
+      properties:
+        index:
+          type: integer
+          description: 1-based position of today's session in the lightened run (1 or 2)
+        total:
+          type: integer
+          description: Lightened sessions in the run (1 or 2; 1 for a released day)
+        mode:
+          type: string
+          enum:
+            - RAMP
+            - RELEASED
+          description: >-
+            RAMP — the Nth gym session after the return; RELEASED — "Ma mégis
+            edzek" on a protected day with lightening kept.
     TodayExercise:
       type: object
       required:
@@ -15119,6 +15726,31 @@ components:
           description: >-
             RIR-aware overload recommendation; null on first session / switch
             off.
+        changeScope:
+          type: string
+          enum:
+            - TODAY
+            - MESO
+          nullable: true
+          description: >-
+            Set on an exercise swapped/added during the open workout
+            (mezo-mobji).
+        replacesName:
+          type: string
+          nullable: true
+          description: Name of the exercise this one replaced in the open workout.
+        replacedByName:
+          type: string
+          nullable: true
+          description: >-
+            On a swapped-out exercise that keeps its logged sets — the
+            replacement's name.
+        planSlot:
+          type: boolean
+          description: >-
+            Whether a "Mezociklusra is" change may target this exercise (false
+            for rows added only for this workout and for the fixed closing
+            block).
     PrescribedSet:
       type: object
       required:
@@ -15680,6 +16312,87 @@ components:
         note:
           type: string
           maxLength: 500
+    WorkoutExerciseChangeRequest:
+      type: object
+      required:
+        - name
+        - muscle
+        - type
+        - warmupSets
+        - workingSets
+        - repMin
+        - repMax
+        - targetRIR
+        - scope
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        muscle:
+          type: string
+          maxLength: 60
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+            - plyo
+        warmupSets:
+          type: integer
+          minimum: 0
+          maximum: 6
+        workingSets:
+          type: integer
+          minimum: 1
+          maximum: 12
+        repMin:
+          type: integer
+          minimum: 1
+          maximum: 100
+        repMax:
+          type: integer
+          minimum: 1
+          maximum: 100
+        targetRIR:
+          type: integer
+          minimum: 0
+          maximum: 5
+        scope:
+          type: string
+          enum:
+            - TODAY
+            - MESO
+        replacesExerciseId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Swap target; absent for an add.
+    WorkoutExerciseChangeResponse:
+      type: object
+      required:
+        - exerciseId
+        - today
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+          description: The new instance-scoped exercise row.
+        today:
+          $ref: '#/components/schemas/WorkoutTodayResponse'
+    PlanSetsRequest:
+      type: object
+      required:
+        - delta
+      properties:
+        delta:
+          type: integer
+          minimum: 1
+          maximum: 3
     WorkoutSkipRequest:
       type: object
       required:
@@ -16407,6 +17120,262 @@ components:
           maximum: 10
           nullable: true
           description: The reported pain intensity (null when not answered)
+    PlannedSkipKind:
+      type: string
+      enum:
+        - GYM
+        - SPORT
+        - RUN
+    PlannedSkipReason:
+      type: string
+      enum:
+        - ILLNESS
+        - STOMACH
+        - INJURY
+        - TRAVEL
+        - TIRED
+        - NO_TIME
+        - NO_MOOD
+        - OTHER
+        - NONE
+    PlannedSkipRequest:
+      type: object
+      required:
+        - date
+        - kind
+        - reasonCategory
+      properties:
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/PlannedSkipKind'
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+          nullable: true
+          description: 'SPORT only, 0=Hét..6=Vas'
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          nullable: true
+          description: SPORT only
+        sessionKey:
+          type: string
+          maxLength: 64
+          nullable: true
+          description: RUN only
+        reasonCategory:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        reasonText:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: Kept only for OTHER
+    PlannedSkipResponse:
+      type: object
+      required:
+        - id
+        - date
+        - kind
+        - reasonCategory
+        - source
+        - serious
+        - freePass
+        - excused
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/PlannedSkipKind'
+        dayOfWeek:
+          type: integer
+          nullable: true
+        time:
+          type: string
+          nullable: true
+        sessionKey:
+          type: string
+          nullable: true
+        reasonCategory:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        reasonText:
+          type: string
+          nullable: true
+        source:
+          type: string
+          enum:
+            - USER
+            - ADVICE
+        serious:
+          type: boolean
+        freePass:
+          type: boolean
+          description: The weekly free pass covers this skip
+        excused:
+          type: boolean
+          description: Does not count as missed
+    RecoveryEstimate:
+      type: string
+      enum:
+        - TODAY
+        - FEW_DAYS
+        - WEEK
+        - UNKNOWN
+    RecoveryReturnRule:
+      type: string
+      enum:
+        - CONTINUE
+        - RESUME
+        - STEP_BACK
+    RecoveryUpsertRequest:
+      type: object
+      required:
+        - category
+        - estimate
+      properties:
+        category:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        estimate:
+          $ref: '#/components/schemas/RecoveryEstimate'
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          description: 'Defaults to today; [today-7, today]'
+    RecoveryCheckInRequest:
+      type: object
+      required:
+        - answer
+      properties:
+        answer:
+          type: string
+          enum:
+            - BETTER
+            - NOT_YET
+    RecoveryReleaseRequest:
+      type: object
+      properties:
+        lighten:
+          type: boolean
+          default: true
+          description: Train lighter on the released day
+    RecoveryReturn:
+      type: object
+      required:
+        - rule
+        - daysOut
+        - rampSessions
+        - shiftDays
+      properties:
+        rule:
+          $ref: '#/components/schemas/RecoveryReturnRule'
+        daysOut:
+          type: integer
+        rampSessions:
+          type: integer
+          description: Lightened sessions after the return (1 or 2)
+        shiftDays:
+          type: integer
+          description: Days the active meso calendar moved (multiple of 7)
+        newEndDate:
+          type: string
+          format: date
+          nullable: true
+          description: 'The shifted meso end date, when shifted'
+    RecoveryPeriod:
+      type: object
+      required:
+        - id
+        - category
+        - estimate
+        - startDate
+        - dayIndex
+        - estimateExpired
+        - checkedInToday
+        - releasedDates
+        - releasedUnlightened
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/PlannedSkipReason'
+        estimate:
+          $ref: '#/components/schemas/RecoveryEstimate'
+        startDate:
+          type: string
+          format: date
+        expectedEnd:
+          type: string
+          format: date
+          nullable: true
+        endedOn:
+          type: string
+          format: date
+          nullable: true
+        dayIndex:
+          type: integer
+          description: today - startDate + 1
+        estimateExpired:
+          type: boolean
+          description: expectedEnd is before today
+        checkedInToday:
+          type: boolean
+        releasedDates:
+          type: array
+          items:
+            type: string
+            format: date
+        releasedUnlightened:
+          type: array
+          items:
+            type: string
+            format: date
+          description: Released dates trained at full load
+        return:
+          allOf:
+            - $ref: '#/components/schemas/RecoveryReturn'
+          nullable: true
+    RecoveryComeback:
+      type: object
+      required:
+        - total
+        - done
+        - waived
+      properties:
+        total:
+          type: integer
+          description: 'Lightened sessions in the ramp (0, 1 or 2)'
+        done:
+          type: integer
+          description: Completed gym sessions since the return
+        waived:
+          type: boolean
+    RecoveryState:
+      type: object
+      required:
+        - protectedDates
+      properties:
+        period:
+          allOf:
+            - $ref: '#/components/schemas/RecoveryPeriod'
+          nullable: true
+        protectedDates:
+          type: array
+          items:
+            type: string
+            format: date
+          description: 'Protected dates in [today-7, today+13], released dates excluded'
+        comeback:
+          allOf:
+            - $ref: '#/components/schemas/RecoveryComeback'
+          nullable: true
     ExpenditureExplanationResponse:
       type: object
       description: >-
@@ -19805,11 +20774,12 @@ components:
       type: object
       nullable: true
       description: >-
-        The served target's equation (mezo-32m82): baseKcal (BMR × NEAT) +
-        plannedMovementKcal (the weekly plan's share for the day, incl. the
-        day-type shift) + extraMovementKcal (unplanned logged movement, net) +
-        balanceKcal (goal deficit/surplus; also absorbs the BMR floor) =
-        targetKcal. Null on the static path (no goal or no biometric snapshot).
+        The served target's equation (mezo-32m82, mezo-tb3s2): baseKcal (BMR ×
+        NEAT) + plannedMovementKcal (the LOGGED planned sessions' net kcal) +
+        extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal
+        deficit/surplus; also absorbs the BMR floor) = targetKcal.
+        pendingMovementKcal is display only and never part of the sum. Null on
+        the static path (no goal or no biometric snapshot).
       required:
         - baseKcal
         - plannedMovementKcal
@@ -19827,6 +20797,12 @@ components:
           type: integer
         targetKcal:
           type: integer
+        pendingMovementKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Today's planned but not yet logged sessions at the moderate band
+            (mezo-tb3s2) — display only, never in targetKcal.
         baseSource:
           type: string
           enum:
@@ -21052,10 +22028,14 @@ components:
           type: string
           description: >-
             'chat' | 'pattern' | 'manual' | 'weekly_review' | 'question' |
-            'team_chat' — V1.1 creates only 'manual'; 'chat' arrives with V1.2
-            extraction, 'pattern' with V3.3 promotion, 'weekly_review' with
-            mezo-d20.7.6, 'question' with mezo-d58h.7.5, 'team_chat' with S7
-            (mezo-d6ivw.7)
+            'team_chat' | 'person_fact' | 'merge' — 'manual' = the user typed it
+            in the Tudástár, 'chat' = an accepted chat-extraction candidate
+            (V1.2), 'pattern' = a confirmed pattern (V3.3), 'weekly_review' = an
+            accepted weekly lesson (mezo-d20.7.6), 'question' = a once-ever
+            question's answer (mezo-d58h.7.5), 'team_chat' = a csapatfal reply
+            (S7, mezo-d6ivw.7), 'person_fact' = a chat person fact the user
+            claimed with „Rólam is” (mezo-d6ivw.13), 'merge' = an accepted
+            weekly fact merge (S9, mezo-d6ivw.10)
         owner:
           type: string
           enum:
@@ -21108,10 +22088,12 @@ components:
             - user
             - refuted
             - superseded
+            - merged
           description: >-
             S6 (mezo-d6ivw.6) — miért hallgat a tény: user = te hallgattattad
             el, refuted = később nem igazolódott (S2 cáfolat), superseded =
-            felülírta egy újabb észrevétel. Null, ha bekapcsolt.
+            felülírta egy újabb észrevétel, merged = összevontam egy hasonló
+            ténnyel (S9). Null, ha bekapcsolt.
         mutedAt:
           type: string
           format: date-time
@@ -21143,6 +22125,7 @@ components:
             - weekly_review
             - question
             - team_chat
+            - person_fact
         patternId:
           type: string
           format: uuid
@@ -21210,7 +22193,8 @@ components:
           type: string
           description: >-
             'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday
-            weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact
+            weekly round's proposal, mezo-d20.7.6) | 'merge' (a weekly
+            fact-merge proposal, S9 mezo-d6ivw.10) — the promoted knowledge fact
             inherits it
         owner:
           type: string
@@ -21255,6 +22239,16 @@ components:
             S8 (mezo-d6ivw.12) — the chat USER message the candidate was
             extracted from; null for a weekly-review candidate. The chat anchors
             its Megjegyezném chip on it.
+        mergeSources:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: >-
+            S9 (mezo-d6ivw.10) — source='merge' only: the member facts' current
+            texts, in the order the proposal lists them (the Rólad „Összevonnám"
+            card shows them above the proposed sentence). Null for every other
+            candidate.
         createdAt:
           type: string
           format: date-time
@@ -21316,6 +22310,28 @@ components:
         createdAt:
           type: string
           format: date-time
+        aboutMeFactId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            mezo-d6ivw.13 — the live knowledge fact „Rólam is” copied this
+            person fact into; null when the user has not claimed it (the chip
+            shows Rólam is), set when it did (Rólad is · kész).
+    AboutMeResponse:
+      type: object
+      description: mezo-d6ivw.13 — a chat person fact's „Rólam is” state.
+      required:
+        - personFactId
+      properties:
+        personFactId:
+          type: string
+          format: uuid
+        aboutMeFactId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The live knowledge-fact copy; null when there is none.
     MemoryItemResponse:
       type: object
       description: >-

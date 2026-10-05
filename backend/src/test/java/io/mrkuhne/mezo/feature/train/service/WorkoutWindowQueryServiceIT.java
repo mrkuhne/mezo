@@ -5,11 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.goal.engine.service.TdeeBootstrapService;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -36,6 +38,7 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private SportSlotSkipPopulator skips;
+    @Autowired private PlannedSkipPopulator plannedSkips;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -90,6 +93,25 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testWindowsFor_shouldReturnNoGymWindow_whenTodaysGymDayIsSkipped() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "18:00");
+        PlannedSkipEntity skip = plannedSkips.create(
+            owner, wed, PlannedSkipEntity.Kind.GYM, null, null, null, PlannedSkipEntity.Reason.TIRED);
+
+        assertThat(service.windowsFor(owner, wed))
+            .as("a skipped gym day yields no gym window at all — Fuel must not score meals around it")
+            .isEmpty();
+
+        plannedSkips.softDelete(skip);
+
+        List<WorkoutWindowQueryService.Window> undone = service.windowsFor(owner, wed);
+        assertThat(undone).as("undoing the skip brings the gym window back").hasSize(1);
+        assertThat(undone.getFirst().kind()).isEqualTo("gym");
+    }
+
+    @Test
     void testWindowsFor_shouldLabelTheSportWindow_withTheSportName() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
@@ -112,6 +134,43 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
         assertThat(windows).hasSize(1);
         assertThat(windows.getFirst().label()).isEqualTo("Sprint-intervallum");
+    }
+
+    @Test
+    void testWindowsFor_shouldReturnNoRunWindow_whenThePrescribedRunIsSkipped() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);
+        running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00");
+        PlannedSkipEntity skip = plannedSkips.create(
+            owner, wedOfWeek2, PlannedSkipEntity.Kind.RUN, null, null, "w2-sprint", PlannedSkipEntity.Reason.TIRED);
+
+        assertThat(service.windowsFor(owner, wedOfWeek2))
+            .as("a skipped prescribed run yields no run window — Fuel must not score meals around it")
+            .isEmpty();
+        assertThat(service.windowsFor(owner, wedOfWeek2.minusDays(1), wedOfWeek2.plusDays(1)).get(wedOfWeek2))
+            .as("the ranged path honours the run skip too").isEmpty();
+
+        plannedSkips.softDelete(skip);
+
+        List<WorkoutWindowQueryService.Window> undone = service.windowsFor(owner, wedOfWeek2);
+        assertThat(undone).as("undoing the skip brings the run window back").hasSize(1);
+        assertThat(undone.getFirst().kind()).isEqualTo("run");
+    }
+
+    @Test
+    void testWindowsFor_shouldKeepTheRunWindow_whenASkippedRunWasLoggedAnyway() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);
+        UUID blockId = running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00").getId();
+        plannedSkips.create(
+            owner, wedOfWeek2, PlannedSkipEntity.Kind.RUN, null, null, "w2-sprint", PlannedSkipEntity.Reason.TIRED);
+        running.createRunLog(owner, blockId, 2, "w2-sprint", wedOfWeek2, 6, 8, null, null, 30);
+
+        assertThat(service.windowsFor(owner, wedOfWeek2))
+            .as("never hide a real workout: a run logged despite the skip keeps its window")
+            .extracting(WorkoutWindowQueryService.Window::kind).containsExactly("run");
     }
 
     @Test
@@ -485,7 +544,9 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
 
             assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isEqualTo(480);   // mezo-tb3s2: logged planned kcal is credited
             assertThat(m.extraKcal()).isZero();
+            assertThat(m.pendingKcal()).isZero();          // a past date never previews
         }
 
         // (b) A Saturday with no slots and a logged volleyball session with kcal 573 →
@@ -515,7 +576,9 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
 
             assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isEqualTo(480);
             assertThat(m.extraKcal()).isEqualTo(300);
+            assertThat(m.movementKcal()).isEqualTo(780);
         }
 
         // (d) A Monday with a gym slot, a completed meso instance and a completed custom instance
@@ -547,6 +610,9 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
             assertThat(m.plannedDone()).isTrue();
             assertThat(m.extraKcal()).isEqualTo(expectedExtra);
+            // mezo-tb3s2: the planned meso instance (no start/finish/active time → the 60′ default)
+            // credits the same moderate-gym net kcal into plannedKcal.
+            assertThat(m.plannedKcal()).isEqualTo(expectedExtra);
         }
 
         // (e) A skipped slot (sport-slot skip on that date) plus a logged session → extra.
@@ -603,8 +669,8 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
             }
             assertThat(ranged.get(monday).plannedDone()).isFalse();
             assertThat(ranged.get(monday).extraKcal()).isPositive();
-            assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 0));
-            assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, satKcal));
+            assertThat(ranged.get(wed)).isEqualTo(new WorkoutWindowQueryService.DayMovement(true, 480, 0, 0));
+            assertThat(ranged.get(sat)).isEqualTo(new WorkoutWindowQueryService.DayMovement(false, 0, satKcal, 0));
             assertThat(ranged.get(monday.plusDays(1))).isEqualTo(WorkoutWindowQueryService.DayMovement.NONE);
         }
 
@@ -637,6 +703,118 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
             assertThat(m.plannedDone()).isFalse();
             assertThat(m.extraKcal()).isZero();
+        }
+
+        // ── mezo-tb3s2 (spec §2): logged PLANNED kcal is credited; pending previews today's plan ──
+
+        /** round((MET_moderate − 1) × bmr/24 × minutes/60) — independent of ActivityEnergyModel. */
+        private int moderateNet(BigDecimal bmr, String met, int minutes) {
+            return new BigDecimal(met).subtract(BigDecimal.ONE).multiply(bmr)
+                .multiply(BigDecimal.valueOf(minutes))
+                .divide(BigDecimal.valueOf(24 * 60), MathContext.DECIMAL64)
+                .setScale(0, RoundingMode.HALF_UP).intValueExact();
+        }
+
+        @Test
+        void testMovementOn_shouldCreditPlannedGymKcal_whenMesoInstanceDone() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            BiometricProfileEntity profile = seedBody(owner, "80.00");
+            train.createGymSlot(owner, 2, "09:00");
+            UUID mesoId = train.createActiveMeso(owner).getId();
+            train.createWorkoutInstance(owner, train.createTemplateDay(owner, mesoId, "Sze"), wed,
+                "completed", 3600);
+            int expectedGymNet60 = moderateNet(
+                tdeeBootstrapService.bmr(profile, new BigDecimal("80.00")), "3.5", 60);
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isEqualTo(expectedGymNet60);
+            assertThat(m.extraKcal()).isZero();
+            assertThat(m.movementKcal()).isEqualTo(m.plannedKcal() + m.extraKcal());
+        }
+
+        @Test
+        void testMovementOn_shouldCreditPlannedSportPersistedKcal() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");   // recurring volleyball slot
+            train.withKcal(train.createSportSession(owner, wed), 490);
+
+            assertThat(service.movementOn(owner, wed).plannedKcal()).isEqualTo(490);
+        }
+
+        @Test
+        void testMovementOn_shouldReportPendingOnlyForTodayOrLater() {
+            UUID owner = owner();
+            LocalDate today = LocalDate.now();                  // pending keys on the real clock
+            int dow = today.getDayOfWeek().getValue() - 1;
+            BiometricProfileEntity profile = seedBody(owner, "80.00");
+            BigDecimal bmr = tdeeBootstrapService.bmr(profile, new BigDecimal("80.00"));
+            train.createGymSlot(owner, dow, "07:00");
+            train.createScheduleSlot(owner, dow, "18:00", 120, "training");  // volleyball, 120′
+            int gymDefaultNet = moderateNet(bmr, "3.5", 60);    // gym-default-minutes = 60
+            int volleyball120Net = moderateNet(bmr, "4.0", 120);
+
+            WorkoutWindowQueryService.DayMovement now = service.movementOn(owner, today);
+
+            assertThat(now.plannedKcal()).isZero();
+            assertThat(now.extraKcal()).isZero();
+            assertThat(now.pendingKcal()).isEqualTo(gymDefaultNet + volleyball120Net);
+            assertThat(service.movementOn(owner, today.minusWeeks(1)).pendingKcal()).isZero();
+        }
+
+        @Test
+        void testMovementOn_shouldNotPreviewASkippedOccurrence_whenTodaysGymRunAndSportAreSkipped() {
+            // Kihagyás S1 (mezo-q4xt2.1) × mezo-tb3s2: a skipped planned occurrence is neither
+            // logged nor pending — the pending preview uses the same skip-aware planned pool as
+            // the windows (gym by date, run by date + session key, sport by slot identity).
+            UUID owner = owner();
+            LocalDate today = LocalDate.now();                  // pending keys on the real clock
+            int dow = today.getDayOfWeek().getValue() - 1;
+            BiometricProfileEntity profile = seedBody(owner, "80.00");
+            BigDecimal bmr = tdeeBootstrapService.bmr(profile, new BigDecimal("80.00"));
+            train.createGymSlot(owner, dow, "07:00");
+            train.createScheduleSlot(owner, dow, "18:00", 120, "training");  // volleyball, 120′
+            running.createBlockAnchored(owner, today.minusDays(dow), 8, 1, 1, dow, "12:00");
+            int gymDefaultNet = moderateNet(bmr, "3.5", 60);
+            int volleyball120Net = moderateNet(bmr, "4.0", 120);
+
+            int all = service.movementOn(owner, today).pendingKcal();
+            assertThat(all).as("gym + run + volleyball all preview")
+                .isGreaterThan(gymDefaultNet + volleyball120Net);
+
+            plannedSkips.create(owner, today, PlannedSkipEntity.Kind.GYM, null, null, null,
+                PlannedSkipEntity.Reason.TIRED);
+            assertThat(service.movementOn(owner, today).pendingKcal())
+                .as("a skipped gym day previews no gym").isEqualTo(all - gymDefaultNet);
+
+            plannedSkips.create(owner, today, PlannedSkipEntity.Kind.RUN, null, null, "w1-sprint",
+                PlannedSkipEntity.Reason.TIRED);
+            assertThat(service.movementOn(owner, today).pendingKcal())
+                .as("a skipped prescribed run previews no run").isEqualTo(volleyball120Net);
+
+            plannedSkips.create(owner, today, PlannedSkipEntity.Kind.SPORT, dow, "18:00", null,
+                PlannedSkipEntity.Reason.TIRED);
+            WorkoutWindowQueryService.DayMovement allSkipped = service.movementOn(owner, today);
+            assertThat(allSkipped.pendingKcal()).as("a skipped sport slot previews nothing").isZero();
+            assertThat(allSkipped.movementKcal()).isZero();
+            assertThat(service.movementBetween(owner, today, today.plusDays(1)).get(today))
+                .as("the ranged path honours the skips too").isEqualTo(allSkipped);
+        }
+
+        @Test
+        void testMovementOn_shouldCountNullKcalSportAsZero() {
+            UUID owner = owner();
+            LocalDate wed = LocalDate.of(2026, 6, 24);
+            train.createScheduleSlot(owner, 2, "18:00", 90, "training");
+            train.createSportSession(owner, wed);               // matches the slot; kcal null (unknown body)
+
+            WorkoutWindowQueryService.DayMovement m = service.movementOn(owner, wed);
+
+            assertThat(m.plannedDone()).isTrue();
+            assertThat(m.plannedKcal()).isZero();
         }
     }
 }

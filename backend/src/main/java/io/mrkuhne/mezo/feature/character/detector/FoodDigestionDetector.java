@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character.detector;
 
+import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInItem;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,6 +53,11 @@ public class FoodDigestionDetector implements CharacterDetector {
     @Override
     public String key() {
         return "food-digestion";
+    }
+
+    @Override
+    public Map<CheckInItem, String> checkInNeeds() {
+        return Map.of(CheckInItem.DIGESTION, "Most azt figyeljük, melyik étel után lesz nehezebb a gyomrod.");
     }
 
     @Override

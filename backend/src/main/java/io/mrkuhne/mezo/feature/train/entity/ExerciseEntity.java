@@ -96,4 +96,23 @@ public class ExerciseEntity extends OwnedEntity {
     @NotNull
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;
+
+    /**
+     * Mid-workout swap (mezo-mobji): on an INSTANCE-scoped row, the row it replaces in that
+     * instance. The replaced row stays (with its logged sets) or drops out of the list when it
+     * has none — see SessionExerciseAssembler.
+     */
+    @Column(name = "replaces_exercise_id")
+    private UUID replacesExerciseId;
+
+    /**
+     * A template row written by a "Mezociklusra is" change made during workout instance X: hidden
+     * in X (X shows its own instance row instead), the plan from the next session on.
+     */
+    @Column(name = "added_in_workout_id")
+    private UUID addedInWorkoutId;
+
+    /** On an instance row: the change was also saved to the mesocycle ("Mezociklusra is"). */
+    @Column(name = "saved_to_plan", nullable = false)
+    private boolean savedToPlan = false;
 }

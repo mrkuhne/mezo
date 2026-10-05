@@ -361,6 +361,54 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(threads.findById(fresh.getId()).orElseThrow().getStatus()).isEqualTo("OPEN");
     }
 
+    // (g2) mezo-d6ivw.11: the sweep row-locks — a reply-close holding the ügy's lock wins, and the
+    // sweep, released after that commit, no longer sees the ügy as OPEN (it used to overwrite the
+    // close as EXPIRED).
+    @Test
+    void expire_waitsForAConcurrentReplyClose_andNeverOverwritesIt() throws Exception {
+        UUID owner = owner();
+        Instant now = Instant.now();
+        TeamChatThreadEntity old = new TeamChatThreadEntity();
+        old.setCreatedBy(owner);
+        old.setFlagKey(FlagKey.SLEEP_DEBT);
+        old.setOwnerCharacter("szunya");
+        old.setStatus("OPEN");
+        old.setOpenedAt(now.minus(8, ChronoUnit.DAYS));
+        UUID id = threads.saveAndFlush(old).getId();
+
+        CountDownLatch locked = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<?> closer = pool.submit(() -> tx.executeWithoutResult(status -> {
+                TeamChatThreadEntity t = threads.lockOwned(id, owner).orElseThrow();
+                locked.countDown();
+                try {
+                    release.await(10, SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                t.setStatus("RESOLVED");
+                t.setCloseReason("REPLY");
+                t.setClosedAt(Instant.now());
+                threads.saveAndFlush(t);
+            }));
+            assertThat(locked.await(10, SECONDS)).isTrue();
+            Future<Integer> sweep = pool.submit(() -> service.expire(now));
+            Thread.sleep(300); // let the sweep reach the row lock and wait on it
+            assertThat(sweep.isDone()).isFalse();
+            release.countDown();
+            closer.get(10, SECONDS);
+            sweep.get(10, SECONDS);
+        } finally {
+            pool.shutdownNow();
+        }
+
+        TeamChatThreadEntity after = threads.findById(id).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo("RESOLVED");
+        assertThat(after.getCloseReason()).isEqualTo("REPLY");
+    }
+
     // (h) a reply writes a USER line synchronously. S7 (mezo-d6ivw.7): the owner's async answer —
     // which may close the ügy — is TeamChatReplyIT's domain, so nothing here waits for it.
     @Test
@@ -563,16 +611,21 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     @Test
     void catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear() {
         UUID owner = owner();
-        raiseSleepDebtLog(owner);
+        // Keep the setup outside quiet hours regardless of when the CI suite runs.
+        Instant openedAt = todayAt(9, 0).truncatedTo(ChronoUnit.MICROS);
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_WRITE,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())),
+                openedAt.minus(1, ChronoUnit.MINUTES));
         TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT,
-                Instant.now().minus(5, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MICROS), false).orElseThrow();
+                openedAt, false).orElseThrow();
         FlagVerdict.ClearEvidence evidence = new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null);
         // Distinct from the catch-up run time below, so the assertion actually pins the backdate
         // (the chip reads "RENDEZŐDÖTT · hh:mm" — it must say when the flag really cleared).
-        Instant clearedAt = Instant.now().minus(3, ChronoUnit.HOURS).truncatedTo(ChronoUnit.MICROS);
+        Instant clearedAt = openedAt.plus(2, ChronoUnit.HOURS);
         writeTrace(owner, FlagKey.SLEEP_DEBT, "clear", evidence, clearedAt);
 
-        service.catchUp(Instant.now());
+        service.catchUp(openedAt.plus(3, ChronoUnit.HOURS));
 
         TeamChatThreadEntity reread = threads.findById(thread.getId()).orElseThrow();
         assertThat(reread.getStatus()).isEqualTo("RESOLVED");
@@ -636,6 +689,72 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         assertThat(reread.getClosedAt()).isEqualTo(openedAt);
     }
 
+    @Test
+    void overnightRaise_waitsUntilMorning_thenOpensOnceWithMorningTimestampAndPush() {
+        UUID owner = owner();
+        LocalDate day = LocalDate.now(properties.zone());
+        Instant night = day.atTime(0, 5).atZone(properties.zone()).toInstant();
+        Instant beforeMorning = day.atTime(6, 20).atZone(properties.zone()).toInstant();
+        Instant morning = day.atTime(7, 20).atZone(properties.zone()).toInstant();
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())), night);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "raised", null, night);
+
+        assertThat(service.open(owner, FlagKey.SLEEP_DEBT, night)).isEmpty();
+        service.catchUp(beforeMorning);
+        assertThat(threadsOf(owner)).isEmpty();
+
+        service.catchUp(morning);
+        TeamChatThreadEntity opened = threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(
+                owner, FlagKey.SLEEP_DEBT, "OPEN").orElseThrow();
+        assertThat(opened.getOpenedAt()).isEqualTo(morning);
+        assertThat(opened.getPushed()).isTrue();
+        assertThat(teamChatPushes(owner)).hasSize(1);
+
+        service.catchUp(morning.plus(1, ChronoUnit.HOURS));
+        assertThat(threadsOf(owner)).hasSize(1);
+        assertThat(teamChatPushes(owner)).hasSize(1);
+    }
+
+    @Test
+    void overnightRaise_doesNotPublishWhenFlagClearedBeforeMorning() {
+        UUID owner = owner();
+        LocalDate day = LocalDate.now(properties.zone());
+        Instant night = day.atTime(0, 5).atZone(properties.zone()).toInstant();
+        Instant morning = day.atTime(7, 0).atZone(properties.zone()).toInstant();
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())), night);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "raised", null, night);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "clear",
+                new FlagVerdict.ClearEvidence("deficit_hours", 2.0, 5.0, null), night.plus(1, ChronoUnit.HOURS));
+
+        service.catchUp(morning);
+
+        assertThat(threadsOf(owner)).isEmpty();
+        assertThat(teamChatPushes(owner)).isEmpty();
+    }
+
+    @Test
+    void overnightRaise_isRecoveredAfterRestartEvenWhenHourlyTraceStillRaised() {
+        UUID owner = owner();
+        LocalDate day = LocalDate.now(properties.zone());
+        Instant night = day.atTime(0, 5).atZone(properties.zone()).toInstant();
+        Instant afterRestart = day.atTime(8, 20).atZone(properties.zone()).toInstant();
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP,
+                FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
+                        7.5, 7, 7, 5.0, 6.5, Map.of())), night);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "raised", null, night);
+        writeTrace(owner, FlagKey.SLEEP_DEBT, "raised", null, day.atTime(8, 5)
+                .atZone(properties.zone()).toInstant());
+
+        service.catchUp(afterRestart);
+
+        assertThat(threads.findFirstByCreatedByAndFlagKeyAndStatusAndDeletedFalse(
+                owner, FlagKey.SLEEP_DEBT, "OPEN")).isPresent();
+    }
+
     // ---- final review C1 (mezo-a9bo7.25, spec D3): quiet hours 22:00–07:00. ----
 
     // An open in the evening part of the window stays silent AND leaves the day's budget alone: a
@@ -646,9 +765,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
         raiseLoadFuelLog(owner, 7);
         raiseSleepDebtLog(owner);
 
-        TeamChatThreadEntity evening = service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, todayAt(22, 30)).orElseThrow();
-
-        assertThat(threads.findById(evening.getId()).orElseThrow().getPushed()).isFalse();
+        assertThat(service.open(owner, FlagKey.LOAD_FUEL_MISMATCH, todayAt(22, 0))).isEmpty();
         assertThat(teamChatPushes(owner)).isEmpty();
 
         // SLEEP_DEBT does NOT outrank LOAD_FUEL_MISMATCH — it only pushes if the silent evening
@@ -660,19 +777,19 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
                 .satisfies(n -> assertThat(n.getRefId()).isEqualTo(morning.getId()));
     }
 
-    // An after-midnight open inside the window still pushes (counts against that local day), and
-    // the feed-anchored push path rings it no earlier than the quiet end.
+    // An after-midnight raise waits until morning; the morning thread and its push use that time.
     @Test
-    void afterMidnightQuietOpen_pushes_andItsAnchorWaitsForTheQuietEnd() {
+    void afterMidnightQuietOpen_waitsUntilMorning_andItsAnchorIsAfterTheQuietEnd() {
         UUID owner = owner();
         raiseSleepDebtLog(owner);
         Instant night = todayAt(3, 0);
 
-        TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, night).orElseThrow();
+        assertThat(service.open(owner, FlagKey.SLEEP_DEBT, night)).isEmpty();
+        TeamChatThreadEntity thread = service.open(owner, FlagKey.SLEEP_DEBT, todayAt(7, 0)).orElseThrow();
 
         assertThat(threads.findById(thread.getId()).orElseThrow().getPushed()).isTrue();
         AppNotificationEntity push = teamChatPushes(owner).getFirst();
-        push.setOccurredAt(night); // the row as it lands when the open really happens at 03:00
+        push.setOccurredAt(todayAt(7, 0));
         appNotifications.saveAndFlush(push);
 
         AnchorSet anchors = anchorResolver.resolve(owner, LocalDate.now(properties.zone()));

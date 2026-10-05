@@ -20,6 +20,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 /** HTTP round-trips through the GENERATED contract interfaces (api/openapi.yml). */
 class BiometricsContractIT extends ApiIntegrationTest {
@@ -207,5 +208,31 @@ class BiometricsContractIT extends ApiIntegrationTest {
         assertHasFieldError(body, "mood", "VALIDATION_INVALID_VALUE");
         assertHasFieldError(body, "painIntensity", "VALIDATION_INVALID_VALUE");
         assertHasFieldError(body, "dayRating", "VALIDATION_INVALID_VALUE");
+    }
+
+    /** Follow-up C: an unknown enum constant in the body is the client's fault — 400, never 500. */
+    @Test
+    void testSaveCheckIn_shouldReturn400NamingTheField_whenBodyEnumUnknown() {
+        HttpHeaders headers = ownerAuthHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String base = "{\"date\":\"2026-06-11\",\"slotTime\":\"20:00\",\"state\":\"done\",";
+
+        assertHasFieldError(postForBody("/api/biometrics/checkin", base + "\"pain\":true,\"painRegions\":[\"TERD\",\"FAROK\"]}",
+            headers, HttpStatus.BAD_REQUEST, String.class), "painRegions[1]", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(postForBody("/api/biometrics/checkin", base + "\"cravingKinds\":[\"SAVANYU\"]}",
+            headers, HttpStatus.BAD_REQUEST, String.class), "cravingKinds[0]", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(postForBody("/api/biometrics/checkin", base + "\"adaptiveReason\":\"WHIM\"}",
+            headers, HttpStatus.BAD_REQUEST, String.class), "adaptiveReason", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(postForBody("/api/biometrics/checkin", base + "\"askedItems\":[\"energy\",\"luck\"]}",
+            headers, HttpStatus.BAD_REQUEST, String.class), "askedItems[1]", "VALIDATION_INVALID_VALUE");
+    }
+
+    /** Follow-up C: broken JSON has no field to name — still a plain 400 with the house format. */
+    @Test
+    void testSaveCheckIn_shouldReturn400_whenBodyIsNotJson() {
+        HttpHeaders headers = ownerAuthHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        String body = postForBody("/api/biometrics/checkin", "{\"date\":", headers, HttpStatus.BAD_REQUEST, String.class);
+        assertThat(body).contains("\"code\":\"VALIDATION_INVALID_VALUE\"").contains("\"exceptionTraceId\"");
     }
 }

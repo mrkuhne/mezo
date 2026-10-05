@@ -65,7 +65,8 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
         for (int i = 0; i < days; i++) {
             LocalDate day = LocalDate.now().minusDays(1L + i);
             int stress = (i % 5) + 1;
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
+            // lag 1 (mezo-ck2.9): the stress day, then the night after it (wake-dated `day`)
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, stress, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 6 - stress);
         }
     }
@@ -123,7 +124,7 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
         assertThat(detail.getPattern().getId()).isEqualTo(row.getId());
         assertThat(detail.getEvents()).hasSize(1);
         assertThat(detail.getEvents().getFirst().getKind()).isEqualTo("snapshot");
-        assertThat(detail.getDays()).hasSize(10); // lag 0 — every seeded day aligns
+        assertThat(detail.getDays()).hasSize(10); // lag 1 — every seeded stress day meets its next night
         assertThat(detail.getImpact().getPredictions()).isEmpty();
     }
 

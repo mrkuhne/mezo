@@ -61,7 +61,17 @@ class KnowledgeFactTeamChatIT extends AbstractIntegrationTest {
             service.captureFromTeamChat(owner, "Falat-tény " + i + ".", "falat", UUID.randomUUID(), UUID.randomUUID());
         }
         service.captureFromTeamChat(owner, "Szunya-tény.", "szunya", UUID.randomUUID(), UUID.randomUUID());
+        // mezo-d6ivw.11: a real superseded fixture — the old version must never reach the block.
+        UUID oldId = service.captureFromTeamChat(owner, "Régi szunya-tény.", "szunya", UUID.randomUUID(),
+                UUID.randomUUID());
+        UUID newId = service.captureFromTeamChat(owner, "Új szunya-tény.", "szunya", UUID.randomUUID(),
+                UUID.randomUUID());
+        KnowledgeFactEntity superseded = repository.findByIdAndCreatedByAndDeletedFalse(oldId, owner).orElseThrow();
+        superseded.setSupersededBy(newId);
+        repository.saveAndFlush(superseded);
         assertThat(service.promptFactsForOwners(owner, List.of("falat"), 6)).hasSize(6).allMatch(s -> s.startsWith("Falat-tény"));
-        assertThat(service.promptFactsForOwners(owner, List.of("szunya"), 6)).containsExactly("Szunya-tény.");
+        assertThat(service.promptFactsForOwners(owner, List.of("szunya"), 6))
+                .containsExactlyInAnyOrder("Szunya-tény.", "Új szunya-tény.")
+                .doesNotContain("Régi szunya-tény.");
     }
 }

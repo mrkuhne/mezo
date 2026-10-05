@@ -53,7 +53,7 @@ const BASE_SUB = {
 
 const NODE: Record<EquationLine['key'], { color: string; icon: ClayIconName | Icon3DName; sub: string }> = {
   base: { color: 'var(--amber)', icon: 't-flame', sub: BASE_SUB.formula },
-  activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'a heti edzésterved mai része' },
+  activity: { color: 'var(--sage)', icon: 'i-edzes', sub: 'ma logolt mozgásod' },
   goal: { color: 'var(--rose)', icon: 'i-cel', sub: '' },
   eaten: { color: 'var(--coral)', icon: 'i-fuel', sub: 'amit ma eddig logoltál' },
   remaining: { color: 'var(--sky)', icon: 'i-lang', sub: 'a mai kereted maradéka' },
@@ -67,7 +67,7 @@ const GOAL_SUB: Record<'cut' | 'bulk' | 'maintain', string> = {
 
 /** The row's sub copy — Mozgás names an unplanned credit, Célod names the goal's direction. */
 function nodeSub(line: EquationLine, vm: KeretHeroVM, trajectory: Trajectory): string {
-  if (line.key === 'activity' && vm.chips?.extra) return `${NODE.activity.sub} + terven kívüli mozgás`
+  if (line.key === 'activity' && vm.chips?.extra) return `${NODE.activity.sub} + terven kívüli`
   // „tartás" only for a truly zero balance; a maintain goal's non-zero residual (the BMR floor)
   // gets no sub rather than a word that contradicts its signed number.
   if (line.key === 'goal') return trajectory === 'maintain' ? (line.value === 0 ? GOAL_SUB.maintain : '') : trajectory ? GOAL_SUB[trajectory] : ''
@@ -154,6 +154,9 @@ function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }
               <span className="fmx-node-copy">
                 <strong>{line.label}</strong>
                 <small>{nodeSub(line, vm, trajectory)}</small>
+                {line.key === 'activity' && !past && (vm.chips?.pending ?? 0) > 0 && (
+                  <small className="fmx-node-pend">még jön +{huInt(vm.chips!.pending)}, ha megcsinálod</small>
+                )}
               </span>
               <b>{nodeValue(line)}{line.key === 'remaining' && <i>kcal</i>}</b>
             </div>
@@ -161,8 +164,8 @@ function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }
         })}
       </div>
       <p className="fmx-glass-note">
-        A keretet az alapigényed, a súlycélod és a mozgásod együtt adja — a számítás minden nap
-        újraszületik.
+        A keretet az alapigényed, a súlycélod és a mai mozgásod együtt adja — a keret akkor nő, amikor
+        logolod az edzést.
       </p>
       {/* A15: a részletes, Énnel KÖZÖS energia-magyarázat nem veszik el — csendes ajtót kap,
           hogy a doboz maradhasson az, aminek a prototípus szánta: az egyenlet. */}

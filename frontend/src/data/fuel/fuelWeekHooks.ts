@@ -30,7 +30,8 @@ import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
 import { useTrain } from '@/data/train/trainHooks'
 import { useMedication } from '@/data/fuel/medicationHooks'
 import { DAY_ORDER } from '@/data/train/train'
-import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
+import { isSportSlotSkipped, type PlannedSkipKey } from '@/features/train/logic/weekAgenda'
+import { isSkipped } from '@/features/train/logic/plannedSkips'
 import type {
   GymScheduleDay,
   MedicationCycleCell,
@@ -104,13 +105,23 @@ export function withDefaultDuration(d: GymScheduleDay): GymScheduleDay {
  *  `start` + weekday, so both cases are handled the same way weekAgenda's own filter does. */
 export function filterSkippedSessions(
   sessions: VolleyballSession[],
-  skips: SportSlotSkip[],
+  skips: PlannedSkipKey[],
   start: string,
 ): VolleyballSession[] {
   return sessions.filter((s) => {
     const dayOfWeek = DAY_ORDER.indexOf(s.day as (typeof DAY_ORDER)[number])
     const date = s.date ?? addDays(start, dayOfWeek)
     return !isSportSlotSkipped(skips, dayOfWeek, s.time, date)
+  })
+}
+
+/** Turns off the gym day whose own date (`start` + weekday index) the user skipped (Kihagyás S1,
+ *  mezo-q4xt2.1) — the week grid then reads that day as gym-free, the same way `filterSkippedSessions`
+ *  drops a skipped sport occurrence. */
+export function dropSkippedGymDays(days: GymScheduleDay[], skips: PlannedSkipKey[], start: string): GymScheduleDay[] {
+  return days.map((d) => {
+    const date = addDays(start, DAY_ORDER.indexOf(d.day as (typeof DAY_ORDER)[number]))
+    return d.active && isSkipped(skips, { kind: 'GYM', date }) ? { ...d, active: false } : d
   })
 }
 
@@ -178,7 +189,7 @@ export function useFuelWeekRollup(start: string): FuelWeekRollupView {
  *  Only Trendek's week switch passes one; every other caller keeps the current week verbatim. */
 export function useFuelWeek(startIso?: string): FuelWeekView {
   const mock = isMockMode()
-  const { gymSchedule: trainGym, sport, sportSlotSkips } = useTrain()
+  const { gymSchedule: trainGym, sport, plannedSkips } = useTrain()
   const { cycle } = useMedication()
   const start = startIso ?? mondayIso()
   const rollup = useFuelWeekRollup(start)
@@ -204,11 +215,11 @@ export function useFuelWeek(startIso?: string): FuelWeekView {
   return {
     title: deriveWeekTitle(start),
     medCycleWeek: toMedCycleCells(cycle.week),
-    gymSchedule: (trainGym?.weeklyTimes ?? []).map(withDefaultDuration),
+    gymSchedule: dropSkippedGymDays(trainGym?.weeklyTimes ?? [], plannedSkips, start).map(withDefaultDuration),
     weeklySupplements: [],
     patterns: [],
     weeklyStats: deriveWeeklyStats(rollup.weekDays),
-    volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], sportSlotSkips, start),
+    volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], plannedSkips, start),
     weeklyNote: null,
     start,
     weekDays: rollup.weekDays,

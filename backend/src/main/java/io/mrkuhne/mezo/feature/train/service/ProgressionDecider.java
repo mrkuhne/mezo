@@ -224,6 +224,9 @@ public final class ProgressionDecider {
     /** HU rationale of a readiness-held exercise. */
     public static final String LIGHTENED_RATIONALE = "Könnyített nap — a múlt heti súly marad";
 
+    /** HU rationale of a load-factor comeback session (Kihagyás S2 kímélő mód, mezo-q4xt2.2). */
+    public static final String COMEBACK_RATIONALE = "Visszatérő edzés — kb. 10%-kal könnyebb";
+
     private static BigDecimal round(BigDecimal x, BigDecimal step) {
         BigDecimal rounded = x.divide(step, 0, RoundingMode.HALF_UP).multiply(step);
         return rounded.max(BigDecimal.ZERO).min(BigDecimal.valueOf(999));

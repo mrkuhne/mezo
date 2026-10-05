@@ -12,11 +12,13 @@ const COMPANION_FEED_KEY = ['companionFeed']
  * Action key -> the EXTRA query keys a successful apply invalidates, beyond the always-invalidated
  * companion feed below (mezo-d58h.5 review fix). The card's own re-fetch is not enough on its
  * own: `skip_sport_slot` changes what the week agenda renders (`weekAgenda.ts`'s `skips` filter),
- * and nothing else was refetching `sportSlotSkips` — the applied card looked done while the
+ * and nothing else was refetching the planned-skips list — the applied card looked done while the
  * skipped session kept showing on the week agenda until an unrelated navigation happened to
  * refetch it. Each entry is a PREFIX: react-query's default (non-`exact`) `invalidateQueries`
- * matches every more-specific cached key underneath it (every week's own `sportSlotSkips` key,
- * via `SPORT_SLOT_SKIPS_QUERY_KEY`), so this map does not need to know which week is cached.
+ * matches every more-specific cached key underneath it (every window's own planned-skips key, via
+ * `SPORT_SLOT_SKIPS_QUERY_KEY` — an alias of `skipHooks.ts`'s `PLANNED_SKIPS_QUERY_KEY` since
+ * Kihagyás S1, mezo-q4xt2.1 folded the sport-only skip flow into the combined one), so this map
+ * does not need to know which window is cached.
  *
  * One row per action that has FE-cached data beyond the card itself. `lighten_tomorrow` (S5,
  * Task 16) similarly affects a query outside the companion feed — the Train/Today plan

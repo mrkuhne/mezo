@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * V3.1 detection over the checkin-stress↔sleep-quality catalog pair (lag 0): a strongly
+ * V3.1 detection over the checkin-stress↔sleep-quality catalog pair (lag 1 since mezo-ck2.9 — a
+ * stress day meets the night after it, wake-dated one day later; seeders shift the check-in): a strongly
  * anti-correlated 10-day seed must surface a proposed negative pattern; re-runs refresh (never
  * duplicate); below-min-n stays silent; user-judged rows are frozen.
  */
@@ -57,7 +58,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
             LocalDate day = LocalDate.now().minusDays(1L + i);
             int stress = (i % 5) + 1;
             int quality = 6 - stress;
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, stress, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), quality);
         }
     }
@@ -167,7 +168,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         // shared gate thresholds (min-n 8, min-group-n 3, lookback-days 60)
         assertThat(row.getTestPlan().seriesA()).isEqualTo("checkin-stress");
         assertThat(row.getTestPlan().seriesB()).isEqualTo("sleep-quality");
-        assertThat(row.getTestPlan().lagDays()).isZero();
+        assertThat(row.getTestPlan().lagDays()).isEqualTo(1);
         assertThat(row.getTestPlan().expectedDirection()).isEqualTo(TestPlanEnvelope.DIRECTION_NEGATIVE);
         assertThat(row.getTestPlan().minN()).isEqualTo(8);
         assertThat(row.getTestPlan().minGroupN()).isEqualTo(3);
@@ -397,7 +398,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         int[] quality = {3, 1, 5, 1, 3};
         for (int i = 0; i < days; i++) {
             LocalDate day = LocalDate.now().minusDays(1L + i);
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, (i % 5) + 1, null);
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, (i % 5) + 1, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), quality[i % 5]);
         }
     }
@@ -407,7 +408,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         for (int i = 0; i < days; i++) {
             LocalDate day = LocalDate.now().minusDays(1L + i);
             int stress = (i % 5) + 1;
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, stress, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), stress);
         }
     }

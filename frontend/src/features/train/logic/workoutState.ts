@@ -290,6 +290,57 @@ export function mergePlan(s: Session, exercises: SessionExerciseInput[]): Sessio
   return { ...s, order: [...s.order, ...fresh.map((e) => e.id)], planned, prescribed }
 }
 
+/**
+ * Swap an exercise mid-workout (mezo-mobji). Before any logged set the new exercise simply takes
+ * the old one's slot and the old id leaves the session. After some sets the old exercise stays
+ * with exactly what was logged (its extra/removed slots fold into `planned`, so its effective
+ * count equals its logged count) and the new one goes right after it, carrying the remaining
+ * sets. Mirrors the backend's SessionExerciseAssembler, so a reload lands on the same list.
+ * Returns the SAME session when `oldId` is not in it. An `input.id` already in `order` (the
+ * refreshed plan merged first) is moved, never duplicated.
+ */
+export function swapExercise(s0: Session, oldId: string, input: SessionExerciseInput): Session {
+  if (!s0.order.includes(oldId)) return s0
+  // The refreshed plan may already have been merged (mergePlan appends unknown ids) — place it anew.
+  const s = { ...s0, order: s0.order.filter((x) => x !== input.id) }
+  const at = s.order.indexOf(oldId)
+  const planned = { ...s.planned, [input.id]: input.warmupSets + input.workingSets }
+  const prescribed = { ...s.prescribed, [input.id]: input.prescribedSets ?? [] }
+  const logged = s.logged[oldId]?.length ?? 0
+  const drop = <T,>(r: Record<string, T>) =>
+    Object.fromEntries(Object.entries(r).filter(([k]) => k !== oldId)) as Record<string, T>
+  if (logged === 0) {
+    const order = [...s.order.slice(0, at), input.id, ...s.order.slice(at + 1)]
+    return {
+      ...s,
+      order,
+      planned: drop(planned),
+      prescribed: drop(prescribed),
+      extra: drop(s.extra),
+      removed: drop(s.removed),
+      logged: drop(s.logged),
+      skipped: s.skipped.filter((x) => x !== oldId),
+    }
+  }
+  const remaining = Math.max(0, effectiveSetCount(s, oldId) - logged)
+  planned[oldId] = modelSetCount(s, oldId) - remaining
+  const order = [...s.order.slice(0, at + 1), input.id, ...s.order.slice(at + 1)]
+  return { ...s, order, planned, prescribed, extra: drop(s.extra), removed: drop(s.removed) }
+}
+
+/** Add an exercise mid-workout (mezo-mobji): last, or right before `beforeId` when given. */
+export function addExercise(s0: Session, input: SessionExerciseInput, beforeId?: string): Session {
+  const s = { ...s0, order: s0.order.filter((x) => x !== input.id) }
+  const at = beforeId ? s.order.indexOf(beforeId) : -1
+  const order = at < 0 ? [...s.order, input.id] : [...s.order.slice(0, at), input.id, ...s.order.slice(at)]
+  return {
+    ...s,
+    order,
+    planned: { ...s.planned, [input.id]: input.warmupSets + input.workingSets },
+    prescribed: { ...s.prescribed, [input.id]: input.prescribedSets ?? [] },
+  }
+}
+
 /** Persisted-set shape used when resuming an in-flight workout. */
 interface PersistedSet {
   id?: string

@@ -69,7 +69,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         return response.getMetrics().stream().filter(m -> key.equals(m.getKey())).findFirst().orElseThrow();
     }
 
-    /** Aznapi stressz + alvásminőség N napra visszamenőleg (lag=0 pár), változó értékekkel. */
+    /** Stressz + a RÁKÖVETKEZŐ éjszaka alvásminősége N napra visszamenőleg (lag=1 pár, mezo-ck2.9). */
     private void seedStressAndSleep(UUID owner, int days) {
         seedStressAndSleep(owner, days, LocalDate.now());
     }
@@ -85,7 +85,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
             LocalDate day = to.minusDays(i);
             // createCheckIn(owner, date, slotTime, energy, stress, note) — stress must vary here,
             // it's the correlated metric for STRESS_SLEEP_PAIR (energy is unused, stays constant).
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, 1 + i % 5, null);
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, 1 + i % 5, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 1 + (i * 2) % 5);
         }
     }
@@ -134,7 +134,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(response.getWindowTo()).isIn(dayBefore.minusDays(1), dayAfter.minusDays(1));
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
-        assertThat(response.getPairs()).hasSize(44); // V3.4 katalógus (8 eredeti + 21 új) + 15 check-in 2.0 (mezo-ck2)
+        assertThat(response.getPairs()).hasSize(45); // V3.4 katalógus (8 eredeti + 21 új) + 16 check-in 2.0 (mezo-ck2 + follow-up B)
         // A teljes V3.4 katalógus a NEM korrelálható kulcsok nélkül (mezo-dqzm: a TEXT_SOCIAL_CONTACT
         // belső jellé lépett vissza, a „társas nap" sorra a SOCIAL_MENTIONS felel).
         long correlatable = Arrays.stream(MetricKey.values()).filter(MetricKey::correlatable).count();
@@ -222,7 +222,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
             LocalDate day = to.minusDays(i);
             // stressz KONSTANS (4) — a sleep-quality változó marad, hogy a DEGENERATE a
             // stressz oldalról (Side.A) jöjjön, ne a párból adódó véletlen egybeesésből.
-            checkInPopulator.createCheckIn(owner, day, "08:00", 3, 4, null);
+            checkInPopulator.createCheckIn(owner, day.minusDays(1), "08:00", 3, 4, null); // lag 1
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 1 + (i * 2) % 5);
         }
 
@@ -309,7 +309,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(stress.getLabel()).isEqualTo("stressz-szint");
         assertThat(stress.getCoveredDays()).isEqualTo(6);
         assertThat(stress.getWindowDays()).isEqualTo(60);
-        assertThat(stress.getLastDayWithData()).isEqualTo(today.minusDays(1));
+        assertThat(stress.getLastDayWithData()).isEqualTo(today.minusDays(2)); // lag-1 seed: stress the day before each night
         assertThat(stress.getPairCount()).isEqualTo(3); // V3.4: + checkin-stress~late-meal-hour; mezo-ck2: + checkin-stress~checkin-craving
         assertThat(metric(response, "daily-kcal").getCoveredDays()).isZero();
         assertThat(metric(response, "daily-kcal").getLastDayWithData()).isNull();

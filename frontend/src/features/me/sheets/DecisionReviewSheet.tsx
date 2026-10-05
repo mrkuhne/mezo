@@ -5,6 +5,8 @@ import { Icon3D } from '@/shared/ui/clay'
 import { useDecisionActions } from '@/data/hooks'
 import { dayLabel } from '@/features/me/logic/growthJournal'
 import type { DecisionEntry } from '@/data/journal/decisionTypes'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const RATINGS = [1, 2, 3, 4, 5] as const
 
@@ -77,13 +79,15 @@ export function DecisionReviewSheet({ decision, today, onClose }: DecisionReview
             </div>
 
             <div className="card" style={{ padding: 10, marginTop: 8 }}>
-              <textarea
-                value={outcome}
-                onChange={(e) => setOutcome(e.target.value)}
-                aria-label="Hogyan sült el — részletek"
-                placeholder="Mi lett belőle? (nem kötelező)"
-                style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 15, lineHeight: 1.45 }}
-              />
+              <VoiceField domain="me" onTranscript={(t) => setOutcome(appendDictation(outcome, t))}>
+                <textarea
+                  value={outcome}
+                  onChange={(e) => setOutcome(e.target.value)}
+                  aria-label="Hogyan sült el — részletek"
+                  placeholder="Mi lett belőle? (nem kötelező)"
+                  style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 15, lineHeight: 1.45 }}
+                />
+              </VoiceField>
             </div>
           </div>
 

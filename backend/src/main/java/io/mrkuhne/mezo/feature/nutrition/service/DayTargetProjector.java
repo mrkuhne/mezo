@@ -10,21 +10,24 @@ import java.util.function.Supplier;
  * The ONE rule turning a goal-recept segment into the macro targets a single date serves — pure,
  * nutrition-owned, no I/O. Extracted from {@code FuelDayService} (mezo-u2pd) so the Fuel-day hero,
  * the meal scorer, the diet-settings draft preview and the character reads all project
- * identically; a surface that re-derived the day type or the config fallback on its own could
+ * identically; a surface that re-derived the movement credit or the config fallback on its own could
  * show numbers the day never serves.
  *
- * <p>The served target (mezo-32m82):
+ * <p>The served target (mezo-tb3s2, spec §2 — replacing the mezo-32m82 day-type pick):
  * <pre>
- *   dayKcal = split segment ? (PLANNED training done ? trainingDayKcal : restDayKcal) : seg.kcal
- *   target  = max(BMR, dayKcal + extraKcal)
- *   carbs   = segCarbs + round((target − seg.kcal) / 4)
+ *   movement = Σ net kcal of the date's LOGGED sessions (planned + unplanned)
+ *   target   = max(BMR, base + movement + balance)        base = EnergyBase.neatBaselineKcal
+ *   carbs    = segCarbs + round((target − seg.kcal) / 4)
+ *   pending  = today's planned-but-unlogged sessions at the moderate band (display only)
  * </pre>
- * The day-type pick keys on a <b>planned</b> session actually logged (the weekly plan already
- * budgets planned movement into the segment); unplanned logged movement arrives as its net
- * {@code extraKcal} on top. The BMR floor applies whenever the goal carries a biometric snapshot
- * ({@link EnergyBase}). Every kcal delta lands in carbs (ISSN), derived at serve time and never
- * stored. The {@link DailyTargets.Energy} breakdown always closes: base + planned + extra +
- * balance = target, with the floor and any negative planned share folded into the balance.
+ * {@code balance} is the segment's {@code dailyEnergyBalanceKcal} (goal pace + accepted
+ * adjustments), independent of movement. The segment's {@code kcal} stays the weekly PLANNING
+ * number (the carb-delta anchor); a legacy {@code trainingDayKcal}/{@code restDayKcal} split is
+ * ignored. Every live caller (Fuel day, meal scorer, settings preview, character reads) passes the
+ * goal's {@link EnergyBase}; only a bootstrap-less snapshot (no BMR / base recorded) falls back to
+ * the pre-mezo-tb3s2 shape: {@code seg.kcal + extraKcal}, no floor, no breakdown. Every kcal delta lands in carbs (ISSN),
+ * derived at serve time and never stored. The {@link DailyTargets.Energy} breakdown always closes:
+ * base + planned + extra + balance = target, with the BMR floor folded into the balance.
  *
  * <p>The movement probe is a {@link Supplier} because it is a DB round-trip the config path (no
  * covering segment) must not pay.
@@ -37,7 +40,7 @@ public final class DayTargetProjector {
     /**
      * @param seg      the covering recept segment, or {@code null} when no goal covers the date
      * @param base     the goal snapshot's BMR / BMR × NEAT, or {@code null} (no floor, no breakdown)
-     * @param movement lazily probed planned-done flag + unplanned extra kcal for the date
+     * @param movement lazily probed logged planned/extra kcal (+ display-only pending) for the date
      * @param fallback the static per-field config targets used wherever the segment is silent
      * @return the date's targets; {@code source} is {@code "goal"} iff a segment covered the date
      */
@@ -47,31 +50,32 @@ public final class DayTargetProjector {
             return seg == null ? DailyTargets.fromConfig(fallback) : legacy(seg, fallback);
         }
         WorkoutWindowQueryService.DayMovement m = movement.get();
-        boolean split = seg.trainingDayKcal() != null || seg.restDayKcal() != null;
-        Integer picked = split ? (m.plannedDone() ? seg.trainingDayKcal() : seg.restDayKcal()) : null;
-        int dayKcal = picked != null ? picked : seg.kcal();
-        int kcal = dayKcal + m.extraKcal();
+        int segBalance = seg.dailyEnergyBalanceKcal() != null ? seg.dailyEnergyBalanceKcal() : 0;
+        int kcal;
         if (base != null) {
-            kcal = Math.max(kcal, base.bmr().setScale(0, RoundingMode.HALF_UP).intValueExact());
+            int baseKcal = base.neatBaselineKcal().setScale(0, RoundingMode.HALF_UP).intValueExact();
+            kcal = Math.max(baseKcal + m.movementKcal() + segBalance,
+                base.bmr().setScale(0, RoundingMode.HALF_UP).intValueExact());
+        } else {
+            kcal = seg.kcal() + m.extraKcal();   // bootstrap-less snapshot: the pre-mezo-tb3s2 shape
         }
         int carbDeltaG = Math.round((kcal - seg.kcal()) / 4f);
         return new DailyTargets(kcal,
             seg.proteinG() != null ? seg.proteinG() : fallback.p(),
             (seg.carbsG() != null ? seg.carbsG() : fallback.c()) + carbDeltaG,
             seg.fatG() != null ? seg.fatG() : fallback.f(),
-            "goal", energy(base, seg, dayKcal, m.extraKcal(), kcal));
+            "goal", energy(base, m, kcal));
     }
 
-    /** Alap + Mozgás (planned share + extra) + Célod = target; the floor and any negative planned share land in Célod. */
-    private static DailyTargets.Energy energy(EnergyBase base, GoalPrescriptionJson.Segment seg, int dayKcal, int extra, int target) {
+    /** Alap + Mozgás (logged planned + extra) + Célod = target; the BMR floor lands in Célod. */
+    private static DailyTargets.Energy energy(EnergyBase base, WorkoutWindowQueryService.DayMovement m, int target) {
         if (base == null) {
             return null;
         }
         int baseKcal = base.neatBaselineKcal().setScale(0, RoundingMode.HALF_UP).intValueExact();
-        int segBalance = seg.dailyEnergyBalanceKcal() != null ? seg.dailyEnergyBalanceKcal() : 0;
-        int planned = Math.max(0, dayKcal - baseKcal - segBalance);
-        int balance = target - baseKcal - planned - extra;
-        return new DailyTargets.Energy(baseKcal, planned, extra, balance, target,
+        int balance = target - baseKcal - m.plannedKcal() - m.extraKcal();
+        return new DailyTargets.Energy(baseKcal, m.plannedKcal(), m.extraKcal(), balance, target,
+            m.pendingKcal() > 0 ? m.pendingKcal() : null,
             base.baseSource(), base.formulaBaseKcal(), base.sdKcal(), base.confidence());
     }
 

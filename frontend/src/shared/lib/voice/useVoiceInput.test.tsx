@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { makeHookWrapper } from '@/test/queryWrapper'
-import { useVoiceInput } from '@/features/insights/logic/useVoiceInput'
+import { appendDictation, useVoiceInput } from '@/shared/lib/voice/useVoiceInput'
 
 /** Minimal MediaRecorder stand-in — jsdom ships neither it nor getUserMedia. */
 class FakeMediaRecorder {
@@ -91,6 +91,28 @@ describe('useVoiceInput (mock mode)', () => {
     rec.stop = () => { rec.ondataavailable?.({ data: new Blob([new Uint8Array(10)]) }); rec.onstop?.() }
     await act(async () => { rec.stop() })
     await waitFor(() => expect(result.current.error).toMatch(/koppints/))
+  })
+
+  it('one mic at a time: starting a second field drops the first clip untranscribed (mezo-xojq8)', async () => {
+    installMediaStack()
+    const first = vi.fn()
+    const a = renderHook(() => useVoiceInput(first), { wrapper: makeHookWrapper() })
+    const b = renderHook(() => useVoiceInput(vi.fn()), { wrapper: makeHookWrapper() })
+
+    await act(async () => { a.result.current.toggle() })
+    expect(a.result.current.state).toBe('recording')
+    await act(async () => { b.result.current.toggle() })
+
+    expect(b.result.current.state).toBe('recording')
+    expect(a.result.current.state).toBe('idle')
+    await new Promise((r) => setTimeout(r, 20))
+    expect(first).not.toHaveBeenCalled()
+  })
+
+  it('appendDictation adds after what is typed and keeps the field limit', () => {
+    expect(appendDictation('', 'Szia')).toBe('Szia')
+    expect(appendDictation('Reggeli kávé', 'a teraszon')).toBe('Reggeli kávé a teraszon')
+    expect(appendDictation('abc', 'def', 5)).toBe('abc d')
   })
 
   it('is unsupported when the browser has no MediaRecorder', () => {

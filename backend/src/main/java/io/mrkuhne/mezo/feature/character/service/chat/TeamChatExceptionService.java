@@ -20,11 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -311,10 +313,60 @@ public class TeamChatExceptionService {
             thread.setClosedAt(null);
             thread.setCloseReason(null);
             thread.setCloseNote(null);
-            threads.saveAndFlush(thread);
+            try {
+                threads.saveAndFlush(thread);
+            } catch (DataIntegrityViolationException raced) {
+                // mezo-d6ivw.11: a concurrent raise of the rule opened a NEW ügy after the check
+                // above (with no active exception its claim takes no exception lock to serialize
+                // on) — the one-OPEN-per-rule index refuses the reopen. A retryable 409, not a 500;
+                // the whole undo rolls back, and a retry withdraws without reopening.
+                log.info("Team chat undo of ügy {} lost the reopen race for user {} — 409", threadId, userId);
+                throw conflict();
+            }
             log.info("Team chat ügy {} reopened by the remembered-chip undo for user {}", threadId, userId);
         }
         return thread;
+    }
+
+    /**
+     * mezo-d6ivw.11 (the S6 seam): a remembered exception MIRRORS its knowledge fact, the Tudástár
+     * being the one place the user governs what is remembered. Live fact → active exception (a
+     * re-enable after an undo / STOP lifts the veto, with a fresh review window, so old hits do not
+     * fire the review at once); muted, refuted or deleted fact → inactive (a later same-tag reply
+     * then stays a plain answer instead of counting a hit for knowledge the user withdrew,
+     * mezo-bltxf (1)); an edited fact text → the chip's text follows (when it fits the column).
+     * Idempotent; a fact no exception remembers is a no-op.
+     */
+    @Transactional
+    public void followFact(UUID userId, UUID factId) {
+        if (exceptions.findByKnowledgeFactIdAndCreatedByAndDeletedFalse(factId, userId).isEmpty()) {
+            return; // the common case — most facts never came from the csapatfal: no lock taken
+        }
+        exceptions.lockUserExceptions(userId);
+        Optional<String> live = knowledge.liveText(userId, factId).map(String::strip);
+        Instant now = Instant.now();
+        for (TeamChatExceptionEntity e : exceptions.findByKnowledgeFactIdAndCreatedByAndDeletedFalse(factId, userId)) {
+            boolean wasActive = Boolean.TRUE.equals(e.getActive());
+            boolean changed = false;
+            if (wasActive != live.isPresent()) {
+                e.setActive(live.isPresent());
+                if (live.isPresent()) {
+                    e.setWindowStartedAt(now.truncatedTo(ChronoUnit.MICROS));
+                }
+                changed = true;
+            }
+            String text = live.orElse(null);
+            if (text != null && !text.isEmpty() && text.length() <= TeamChatReplyDecision.FACT_MAX
+                    && !text.equals(e.getFactText())) {
+                e.setFactText(text);
+                changed = true;
+            }
+            if (changed) {
+                exceptions.saveAndFlush(e);
+                log.info("Team chat exception {} follows fact {} for user {} (active={})", e.getId(), factId, userId,
+                        e.getActive());
+            }
+        }
     }
 
     private void saveHit(UUID userId, UUID exceptionId, LocalDate day, String source, UUID threadId) {

@@ -9,8 +9,10 @@ import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ public class MomentumAtRiskRule implements FlagRule {
     private final FlagProperties properties;
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final PlannedSkipService plannedSkipService;
 
     /**
      * Habit completions in the recent window vs the baseline window before it, AND at least one
@@ -86,7 +89,9 @@ public class MomentumAtRiskRule implements FlagRule {
         return days == 0 ? 0 : sum / days;
     }
 
-    /** Planned gym weekdays inside the window with no completed workout instance that day. */
+    /** Planned gym weekdays inside the window with no completed workout instance that day and no
+     *  excused skip (serious reason, the week's free pass, advice or kímélő mód — the S1 central
+     *  read, Kihagyás S2 mezo-q4xt2.2): an excused day is not a missed day. */
     private List<String> missedPlannedGymDays(UUID userId, LocalDate from, LocalDate to) {
         Set<Integer> plannedDows = gymScheduleSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
@@ -96,11 +101,12 @@ public class MomentumAtRiskRule implements FlagRule {
             return List.of();
         }
         Set<LocalDate> trained = Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));
+        Set<LocalDate> excused = plannedSkipService.excusedDates(userId, Kind.GYM, from, to);
         List<String> missed = new ArrayList<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
             // gym_schedule_slot.day_of_week is 0=Monday..6=Sunday (the entity's own comment)
             int dow = day.getDayOfWeek().getValue() - 1;
-            if (plannedDows.contains(dow) && !trained.contains(day)) {
+            if (plannedDows.contains(dow) && !trained.contains(day) && !excused.contains(day)) {
                 missed.add(day.toString());
             }
         }

@@ -6,11 +6,17 @@ import static org.mockito.Mockito.when;
 
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepGoalEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
+import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope.Action;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +27,8 @@ import org.junit.jupiter.api.Test;
 class AdviceActionCatalogTest {
 
     private final SleepGoalRepository repository = mock(SleepGoalRepository.class);
+    private final CompanionFlagLogRepository flagLogRepository = mock(CompanionFlagLogRepository.class);
+    private final WorkoutService workoutService = mock(WorkoutService.class);
     private final AdviceMutationPort shiftSleepAnchorPort = mock(AdviceMutationPort.class);
     private final AdviceMutationPort lightenTomorrowPort = mock(AdviceMutationPort.class);
     private final AdviceActionCatalog catalog;
@@ -28,7 +36,7 @@ class AdviceActionCatalogTest {
     AdviceActionCatalogTest() {
         when(shiftSleepAnchorPort.actionKey()).thenReturn(AdviceActionKey.SHIFT_SLEEP_ANCHOR);
         when(lightenTomorrowPort.actionKey()).thenReturn(AdviceActionKey.LIGHTEN_TOMORROW);
-        catalog = new AdviceActionCatalog(repository, List.of(shiftSleepAnchorPort, lightenTomorrowPort));
+        catalog = new AdviceActionCatalog(repository, flagLogRepository, workoutService, List.of(shiftSleepAnchorPort, lightenTomorrowPort));
     }
 
     @Test
@@ -63,7 +71,7 @@ class AdviceActionCatalogTest {
     void testForCard_shouldOfferNothing_whenShiftSleepAnchorPortIsNotRegistered() {
         UUID user = UUID.randomUUID();
         when(repository.findByCreatedByAndDeletedFalse(user)).thenReturn(Optional.of(new SleepGoalEntity()));
-        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, List.of());
+        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, flagLogRepository, workoutService, List.of());
 
         assertThat(catalogWithNoPorts.forCard(user, FlagKey.SLEEP_DEBT)).isEmpty();
     }
@@ -84,18 +92,57 @@ class AdviceActionCatalogTest {
         assertThat(action.params()).containsEntry("delta", -1);
     }
 
+    /** Follow-up C: a painful knee (TERD → quad/ham) with a leg day planned tomorrow → offered. */
     @Test
-    void testForCard_shouldOfferLightenTomorrow_whenPersistentPain() {
-        List<Action> actions = catalog.forCard(UUID.randomUUID(), FlagKey.PERSISTENT_PAIN);
+    void testForCard_shouldOfferLightenTomorrow_whenPersistentPainRegionLoadedTomorrow() {
+        UUID user = UUID.randomUUID();
+        givenPainFlag(user, "TERD");
+        when(workoutService.plannedMuscleGroups(user, LocalDate.now().plusDays(1))).thenReturn(Set.of("quad", "glute"));
+
+        List<Action> actions = catalog.forCard(user, FlagKey.PERSISTENT_PAIN);
 
         assertThat(actions).extracting(Action::key).containsExactly(AdviceActionKey.LIGHTEN_TOMORROW);
         assertThat(actions.get(0).params()).containsEntry("delta", -1);
     }
 
+    /** Follow-up C: the knee hurts but tomorrow is an upper-body day (or nothing is planned). */
+    @Test
+    void testForCard_shouldOfferNothing_whenPersistentPainRegionNotLoadedTomorrow() {
+        UUID user = UUID.randomUUID();
+        givenPainFlag(user, "TERD");
+        when(workoutService.plannedMuscleGroups(user, LocalDate.now().plusDays(1))).thenReturn(Set.of("chest", "triceps"));
+        assertThat(catalog.forCard(user, FlagKey.PERSISTENT_PAIN)).isEmpty();
+
+        when(workoutService.plannedMuscleGroups(user, LocalDate.now().plusDays(1))).thenReturn(Set.of());
+        assertThat(catalog.forCard(user, FlagKey.PERSISTENT_PAIN)).isEmpty();
+    }
+
+    /** Follow-up C: a region with no training load (FEJ) or no flag row at all never offers. */
+    @Test
+    void testForCard_shouldOfferNothing_whenPersistentPainRegionUnmappedOrNoFlagRow() {
+        UUID user = UUID.randomUUID();
+        givenPainFlag(user, "FEJ");
+        when(workoutService.plannedMuscleGroups(user, LocalDate.now().plusDays(1))).thenReturn(Set.of("quad"));
+        assertThat(catalog.forCard(user, FlagKey.PERSISTENT_PAIN)).isEmpty();
+
+        UUID other = UUID.randomUUID();
+        when(flagLogRepository.findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(other,
+            FlagKey.PERSISTENT_PAIN)).thenReturn(Optional.empty());
+        assertThat(catalog.forCard(other, FlagKey.PERSISTENT_PAIN)).isEmpty();
+    }
+
+    private void givenPainFlag(UUID user, String region) {
+        CompanionFlagLogEntity row = new CompanionFlagLogEntity();
+        row.setPayload(FlagPayloadEnvelope.persistentPain(new FlagPayloadEnvelope.PersistentPain(
+            region, 3, 3, 5, 5, List.of("2026-09-26", "2026-09-27", "2026-09-28"), 6)));
+        when(flagLogRepository.findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(user,
+            FlagKey.PERSISTENT_PAIN)).thenReturn(Optional.of(row));
+    }
+
     @Test
     void testForCard_shouldOfferNothing_whenJointOveruseAndLightenTomorrowPortIsNotRegistered() {
         UUID user = UUID.randomUUID();
-        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, List.of());
+        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, flagLogRepository, workoutService, List.of());
 
         assertThat(catalogWithNoPorts.forCard(user, FlagKey.JOINT_OVERUSE)).isEmpty();
     }
@@ -130,7 +177,7 @@ class AdviceActionCatalogTest {
     void testForCard_shouldOfferNothing_whenIgnoredNudgeAndShiftSleepAnchorPortIsNotRegistered() {
         UUID user = UUID.randomUUID();
         when(repository.findByCreatedByAndDeletedFalse(user)).thenReturn(Optional.of(new SleepGoalEntity()));
-        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, List.of());
+        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, flagLogRepository, workoutService, List.of());
 
         assertThat(catalogWithNoPorts.forCard(user, FlagKey.IGNORED_NUDGE)).isEmpty();
     }

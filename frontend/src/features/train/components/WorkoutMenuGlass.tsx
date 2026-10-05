@@ -24,6 +24,9 @@
 // scopes the shared glass dialog to this page (centred, coral) without re-skinning every other
 // caller; the card itself is the ONE glass, the `.wos-gb` bodies inside it are flat.
 //
+// Csere (mezo-mobji): a „Gyakorlat cseréje" row (t-swap) sits above the skip row; it opens the
+// single-pick picker, then the „Csak ma / Mezociklusra is" sheet.
+//
 // Eligazítás (mezo-mgu2r): the challenge PICKER left this file for the briefing
 // (WorkoutBriefing) and the menu lost its Küldetések row; what stays is ChallengeDetailGlass,
 // opened from a card's challenge badge — release / take back one challenge mid-workout.
@@ -61,6 +64,10 @@ export interface WorkoutMenuGlassProps {
   onMoveEarlier: () => void
   onMoveLater: () => void
   onToggleSkip: () => void
+  /** Working sets already logged here — the swap row's hint (mezo-mobji). */
+  loggedCount?: number
+  /** Opens the swap picker; absent → no swap row (e.g. no started workout). */
+  onSwap?: () => void
 }
 
 function MenuRow({
@@ -94,6 +101,7 @@ export function noteHint(hasNote: boolean): string {
 export function WorkoutMenuGlass({
   open, exercise, tint, position, orderLength, slotCount, skipped, hasNote, canRemoveTrailingSet,
   onClose, onVideo, onEditNote, onAddSet, onRemoveSet, onMoveEarlier, onMoveLater, onToggleSkip,
+  loggedCount = 0, onSwap,
 }: WorkoutMenuGlassProps) {
   // Every row but Videó runs its action then dismisses the glass (Videó switches
   // the page to the OTHER glass instead — see the file header).
@@ -129,6 +137,13 @@ export function WorkoutMenuGlass({
           icon="t-down" label="Hátrébb" hint="Egy hellyel később"
           disabled={position === orderLength - 1} onClick={fire(onMoveLater)}
         />
+        {onSwap && (
+          <MenuRow
+            icon="t-swap" label="Gyakorlat cseréje"
+            hint={loggedCount > 0 ? `A ${loggedCount} kész szett itt marad, a többi az újé` : 'Hasonlóra vagy bármi másra'}
+            onClick={fire(onSwap)}
+          />
+        )}
         <MenuRow
           icon={skipped ? 't-repeat' : 't-skip'}
           warn={!skipped}

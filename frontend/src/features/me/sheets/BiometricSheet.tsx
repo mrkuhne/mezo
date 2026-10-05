@@ -144,7 +144,7 @@ export function BiometricSheet({
   )
 }
 
-/** The three-row split (Alaphő · NEAT / Betáblázott mozgás / Fenntartó) — lifted
+/** The three-row split (Alaphő · NEAT / Tervezett mozgás · heti átlag / Fenntartó) — lifted
  *  verbatim from the retired `BiometricCard`, the surface that used to carry it. */
 function TdeeRows({ tdee, explainable }: {
   tdee: NonNullable<BiometricProfileResponse['tdeeBootstrap']>
@@ -157,7 +157,7 @@ function TdeeRows({ tdee, explainable }: {
         <span className="amt">{Math.round(tdee.neatBaselineKcal)}</span>
       </div>
       <div className="row">
-        <span className="lab"><span className="dot dot-amber" />Betábl. mozgás</span>
+        <span className="lab"><span className="dot dot-amber" />Tervezett mozgás · heti átlag</span>
         <span className="amt">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
       </div>
       <div className="row total">

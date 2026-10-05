@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.json.MesoContextJson;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
@@ -20,12 +22,15 @@ import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.PlannedSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -80,6 +85,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private JdbcTemplate jdbcTemplate;
     @Autowired private ApplicationEvents events;
+    @Autowired private PlannedSkipPopulator plannedSkips;
 
     // ── close → frozen report ────────────────────────────────────────────────────
 
@@ -188,7 +194,7 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
         // currentWeek, so without the report-freeze override the arc would contradict adherence.
         MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner, 1);
 
-        trainService.closeMesocycle(owner, run.getId(), null);
+        trainService.closeMesocycle(owner, run.getId(), "ok");
 
         MesocycleReportResponse report = reportService.getReport(owner, run.getId());
         assertThat(report.getAdherence().getCompletedWeeks()).isEqualTo(2);
@@ -392,6 +398,43 @@ class MesocycleCloseReportIT extends AbstractIntegrationTest {
             assertThat(e.userId()).isEqualTo(owner);
             assertThat(e.mesocycleId()).isEqualTo(run.getId());
         });
+    }
+
+    // ── excused skips (Kihagyás S1, mezo-q4xt2.1) ───────────────────────────────
+
+    @Test
+    void testCloseMesocycle_shouldSubtractExcusedSkip_whenItFallsOnAPlannedDay() {
+        UUID owner = databasePopulator.populateUser("meso-close-skip-planned@test.local");
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner);
+        // The run started 7 days ago, so [start, today] spans 8 days and always holds a Monday —
+        // "Hét" is the non-empty Push day.
+        LocalDate monday = run.getStartDate().with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+        plannedSkips.create(owner, monday, Kind.GYM, null, null, null, Reason.ILLNESS);
+
+        trainService.closeMesocycle(owner, run.getId(), "ok");
+
+        // 2 non-empty days × 2 weeks = 4, minus the one excused planned Monday = 3
+        MesocycleReportResponse report = reportService.getReport(owner, run.getId());
+        assertThat(report.getAdherence().getPlannedSessions()).isEqualTo(3);
+        assertThat(report.getAdherence().getCompletionPct()).isEqualTo(100); // 3 done / 3 planned — uncapped, exact
+    }
+
+    @Test
+    void testCloseMesocycle_shouldNotSubtractExcusedSkip_whenItFallsOnARestOrEmptyDay() {
+        UUID owner = databasePopulator.populateUser("meso-close-skip-rest@test.local");
+        MesocycleEntity run = twoWeekRunWithThreeCompletedInstances(owner);
+        LocalDate start = run.getStartDate();
+        // Tuesday has no template day at all (rest); Saturday is the EMPTY "Szo" Legs day.
+        plannedSkips.create(owner, start.with(TemporalAdjusters.nextOrSame(DayOfWeek.TUESDAY)),
+            Kind.GYM, null, null, null, Reason.ILLNESS);
+        plannedSkips.create(owner, start.with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY)),
+            Kind.GYM, null, null, null, Reason.ILLNESS);
+
+        trainService.closeMesocycle(owner, run.getId(), "ok");
+
+        MesocycleReportResponse report = reportService.getReport(owner, run.getId());
+        assertThat(report.getAdherence().getPlannedSessions()).isEqualTo(4);
+        assertThat(report.getAdherence().getCompletionPct()).isEqualTo(75);
     }
 
     // ── fixtures ────────────────────────────────────────────────────────────────

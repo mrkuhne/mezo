@@ -89,7 +89,19 @@ test('static-energy days render no chip row (chips is null)', () => {
 test('a dynamic-energy day carries the raw base/activity/balance — a negative balance passes through unformatted', () => {
   const budget: DayBudget = { ...BUDGET, energy: { base: 2000, planned: 400, extra: 0, balance: -400, target: 2000 } }
   const vm = build({ budget, staticEnergy: false })
-  expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: -400 })
+  expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: -400, pending: 0 })
+})
+
+// mezo-tb3s2: the chips carry the served pending-movement preview, honest-0 when absent.
+test('chips carry the served pending-movement kcal', () => {
+  const budget: DayBudget = { ...BUDGET, energy: { ...BUDGET.energy, pending: 650 } }
+  const vm = build({ budget, staticEnergy: false })
+  expect(vm.chips?.pending).toBe(650)
+})
+
+test('chips.pending is 0 when the budget carries no pending field', () => {
+  const vm = build({ budget: BUDGET, staticEnergy: false })
+  expect(vm.chips?.pending).toBe(0)
 })
 
 // mezo-zz91i: `budget.energy.source` passes through as `baseSource`, independent of `chips`
@@ -109,13 +121,13 @@ test('a static-energy day has no baseSource — the DayBudget fallback carries n
 test('Mozgás is planned + extra; the extra share rides along for the sub copy (mezo-32m82)', () => {
   const energy = { base: 2356, planned: 570, extra: 572, balance: -327, target: 3171 }
   const vm = build({ budget: { ...BUDGET, kcal: energy.target, energy }, staticEnergy: false })
-  expect(vm.chips).toEqual({ base: energy.base, activity: energy.planned + energy.extra, extra: energy.extra, balance: energy.balance })
+  expect(vm.chips).toEqual({ base: energy.base, activity: energy.planned + energy.extra, extra: energy.extra, balance: energy.balance, pending: 0 })
 })
 
 test('a surplus day carries a positive raw balance — formatting (the sign glyph) is the components job', () => {
   const budget: DayBudget = { ...BUDGET, energy: { base: 2000, planned: 400, extra: 0, balance: 300, target: 2700 } }
   const vm = build({ budget, staticEnergy: false })
-  expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: 300 })
+  expect(vm.chips).toEqual({ base: 2000, activity: 400, extra: 0, balance: 300, pending: 0 })
 })
 
 // ── nap-sáv szegmensek ─────────────────────────────────────────────────────────
@@ -341,7 +353,7 @@ describe('heroEquationLines — Célod row (mezo-32m82)', () => {
     ({ ...baseVm, chips, remainingKcal: remaining, consumedKcal: consumed, targetKcal: remaining + consumed }) as KeretHeroVM
 
   test('cut day: Alap + Mozgás − Célod − Étel = Marad, and it closes', () => {
-    const lines = heroEquationLines(vm({ base: 2356, activity: 922, extra: 0, balance: -327 }), 'cut')
+    const lines = heroEquationLines(vm({ base: 2356, activity: 922, extra: 0, balance: -327, pending: 0 }), 'cut')
     expect(lines.map(l => l.key)).toEqual(['base', 'activity', 'goal', 'eaten', 'remaining'])
     const goal = lines.find(l => l.key === 'goal')!
     expect(goal.value).toBe(-327)
@@ -349,17 +361,17 @@ describe('heroEquationLines — Célod row (mezo-32m82)', () => {
   })
 
   test('bulk day keeps the row with a positive balance', () => {
-    const lines = heroEquationLines(vm({ base: 2356, activity: 570, extra: 0, balance: 250 }, 3176), 'bulk')
+    const lines = heroEquationLines(vm({ base: 2356, activity: 570, extra: 0, balance: 250, pending: 0 }, 3176), 'bulk')
     expect(lines.find(l => l.key === 'goal')!.value).toBe(250)
   })
 
   test('maintain with zero balance hides the row', () => {
-    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: 0 }, 2856), 'maintain')
+    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: 0, pending: 0 }, 2856), 'maintain')
     expect(lines.some(l => l.key === 'goal')).toBe(false)
   })
 
   test('no goal (trajectory null) → no Célod row, even with chips', () => {
-    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: -327 }), null)
+    const lines = heroEquationLines(vm({ base: 2356, activity: 500, extra: 0, balance: -327, pending: 0 }), null)
     expect(lines.some(l => l.key === 'goal')).toBe(false)
   })
 

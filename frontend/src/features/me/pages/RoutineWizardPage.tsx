@@ -35,6 +35,8 @@ import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Stepper } from '@/shared/ui/Stepper'
+import { VoiceField } from '@/shared/ui/voice/VoiceField'
+import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 /** 'NONE' is a real branch here (the retired sheet's job), only the wire knows it as null. */
 type FwChoice = HabitFramework | 'NONE'
@@ -456,13 +458,15 @@ export function RoutineWizardPage() {
                     </button>
                   ))}
                 </div>
-                <input
-                  className="rt-fin"
-                  aria-label="Horgony"
-                  value={anchorLabel}
-                  onChange={(e) => { setAnchorLabel(e.target.value); setAnchorHabitKey(null) }}
-                  placeholder="…vagy a saját szavaiddal: „kitöltöttem a reggeli kávét”"
-                />
+                <VoiceField domain="me" size="sm" onTranscript={(t) => { setAnchorLabel(appendDictation(anchorLabel, t)); setAnchorHabitKey(null) }}>
+                  <input
+                    className="rt-fin"
+                    aria-label="Horgony"
+                    value={anchorLabel}
+                    onChange={(e) => { setAnchorLabel(e.target.value); setAnchorHabitKey(null) }}
+                    placeholder="…vagy a saját szavaiddal: „kitöltöttem a reggeli kávét”"
+                  />
+                </VoiceField>
               </FieldCard>
               <Tip sign="t-anchor">
                 A horgony <b>végpillanata</b> számít: nem „reggel”, hanem „miután letettem a fogkefét”. Ugyanaz a hely, ugyanaz a gyakoriság.
@@ -476,13 +480,15 @@ export function RoutineWizardPage() {
               <FieldCard delayMs={80}>
                 <span className="rt-flabel">Mikor és hol? · jelzés</span>
                 <ChipField options={CUES} value={cue} onPick={setCue} />
-                <input
-                  className="rt-fin"
-                  aria-label="Jelzés"
-                  value={cue}
-                  onChange={(e) => setCue(e.target.value)}
-                  placeholder="pl. „7:10-kor, a konyhaasztalnál, a jegyzetfüzet a bögre mellett”"
-                />
+                <VoiceField domain="me" size="sm" onTranscript={(t) => setCue(appendDictation(cue, t))}>
+                  <input
+                    className="rt-fin"
+                    aria-label="Jelzés"
+                    value={cue}
+                    onChange={(e) => setCue(e.target.value)}
+                    placeholder="pl. „7:10-kor, a konyhaasztalnál, a jegyzetfüzet a bögre mellett”"
+                  />
+                </VoiceField>
               </FieldCard>
               <Tip tone="lav" sign="t-gem">
                 <b>1. törvény — tedd nyilvánvalóvá.</b> A jelzés legyen látható a térben: a füzet a párnán, a cipő az ajtóban.
@@ -495,23 +501,27 @@ export function RoutineWizardPage() {
             <>
               <FieldCard delayMs={80}>
                 <span className="rt-flabel">Miért akarod? · vágy</span>
-                <input
-                  className="rt-fin"
-                  aria-label="Vágy"
-                  value={craving}
-                  onChange={(e) => setCraving(e.target.value)}
-                  placeholder="pl. „tisztább fejjel indul a nap”"
-                />
+                <VoiceField domain="me" size="sm" onTranscript={(t) => setCraving(appendDictation(craving, t))}>
+                  <input
+                    className="rt-fin"
+                    aria-label="Vágy"
+                    value={craving}
+                    onChange={(e) => setCraving(e.target.value)}
+                    placeholder="pl. „tisztább fejjel indul a nap”"
+                  />
+                </VoiceField>
               </FieldCard>
               <FieldCard delayMs={100}>
                 <span className="rt-flabel">Milyen emberré tesz? <span className="rt-opt">identitás · opcionális</span></span>
-                <input
-                  className="rt-fin"
-                  aria-label="Identitás"
-                  value={identity}
-                  onChange={(e) => setIdentity(e.target.value)}
-                  placeholder="pl. „figyel a saját gondolataira”"
-                />
+                <VoiceField domain="me" size="sm" onTranscript={(t) => setIdentity(appendDictation(identity, t))}>
+                  <input
+                    className="rt-fin"
+                    aria-label="Identitás"
+                    value={identity}
+                    onChange={(e) => setIdentity(e.target.value)}
+                    placeholder="pl. „figyel a saját gondolataira”"
+                  />
+                </VoiceField>
                 <div className="rt-lockline">
                   <Icon3D name="t-gem" size={16} />
                   <span>Clear tézise: a szokás <b>szavazat</b> arra, hogy kinek tartod magad. Ez a mező a Fogg-ágon nincs.</span>

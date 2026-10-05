@@ -332,6 +332,63 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         assertThat(p.progression().getDeltaKg().signum()).isNegative();
     }
 
+    @Test
+    void testPrescribe_shouldLightenToLoadFactorWithRirFloor_whenComebackLoadFactor() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Guggolás", "quad", "compound");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(100), 8, 0);
+
+        Prescription p = svc.prescribe(owner, ex, false, 3, false, new BigDecimal("0.90"), 3);
+
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.DELOAD);
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo("90");
+        assertThat(p.progression().getDeltaKg()).isEqualByComparingTo("-10");
+        assertThat(p.rationale()).isEqualTo("Visszatérő edzés — kb. 10%-kal könnyebb");
+        var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
+        assertThat(work).hasSize(3).allSatisfy(s -> {
+            assertThat(s.getTargetWeightKg()).isEqualByComparingTo("90");
+            assertThat(s.getTargetRIR()).isEqualTo(3);
+        });
+    }
+
+    @Test
+    void testPrescribe_shouldKeepHold_whenLoadFactorSnapsBackToHeldBase() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Oldalemelés", "shoulders", "isolation");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(10), 8, 0);
+
+        Prescription p = svc.prescribe(owner, ex, false, 3, false, new BigDecimal("0.90"), 3);
+
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.HOLD);
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo("10");
+        assertThat(p.rationale()).doesNotContain("könnyebb");
+    }
+
+    @Test
+    void testPrescribe_shouldBehaveAsBefore_whenLoadFactorNull() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Guggolás", "quad", "compound");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(100), 8, 0);
+
+        Prescription plain = svc.prescribe(owner, ex, false, 3, false);
+        Prescription p = svc.prescribe(owner, ex, false, 3, false, null, 0);
+
+        assertThat(p.progression().getLever()).isEqualTo(plain.progression().getLever());
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo(plain.progression().getTargetWeightKg());
+        assertThat(p.rationale()).isEqualTo(plain.rationale());
+        assertThat(p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING))
+            .allSatisfy(s -> assertThat(s.getTargetRIR()).isZero());
+    }
+
     /** Find-or-create yields the demodata-seeded owner's id — the single-user principal. */
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());

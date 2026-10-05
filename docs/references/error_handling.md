@@ -79,7 +79,10 @@ The `message` field is NEVER set at the throw site. `GlobalExceptionHandler` res
 `VALIDATION_INVALID_VALUE` naming the parameter (a request value Spring could not CONVERT to the
 method's type — a malformed UUID, a non-numeric integer, an unknown enum constant; conversion runs
 before both the controller method and bean validation, so without this it would read as a server
-fault); `NoResourceFoundException` → 404 `RESOURCE_NOT_FOUND`; any other exception → 500
+fault); `HttpMessageNotReadableException` → 400 `VALIDATION_INVALID_VALUE` — its body twin: an
+unknown enum constant, a wrong JSON type or broken JSON in a request BODY; a FIELD message naming
+Jackson's dotted path (`painRegions[1]`) when one is known, a plain message otherwise (global for
+every endpoint, Check-in 2.0 follow-up C); `NoResourceFoundException` → 404 `RESOURCE_NOT_FOUND`; any other exception → 500
 `INTERNAL_ERROR`. New cross-cutting handlers belong there — never map exceptions in controllers.
 
 ## Error Code Convention

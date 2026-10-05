@@ -22,6 +22,9 @@ public interface PersonFactRepository extends JpaRepository<PersonFactEntity, UU
     List<PersonFactEntity> findByCreatedByAndPersonIdInAndActiveTrueAndIncludeInPromptTrueAndDeletedFalseOrderByCreatedAtDesc(
         UUID createdBy, Collection<UUID> personIds);
 
+    /** mezo-d6ivw.13: a fact by id alone (the „Rólam is" endpoint knows no person id). */
+    Optional<PersonFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
     Optional<PersonFactEntity> findByIdAndCreatedByAndPersonIdAndDeletedFalse(
         UUID id, UUID createdBy, UUID personId);
 

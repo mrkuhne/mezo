@@ -113,12 +113,44 @@ test('fogyásnál a Célod sor saját előjellel (−) és a fogyási szöveggel
   expect(within(goal as HTMLElement).getByText('a fogyási célod napi része')).toBeInTheDocument()
   // Mozgás = planned + extra, and the extra credit is named in its sub copy.
   expect(nodes[1].querySelector('b')!.textContent).toBe(`+ ${huInt(CUT.energy.planned + CUT.energy.extra)}`)
-  expect(within(nodes[1] as HTMLElement).getByText('a heti edzésterved mai része + terven kívüli mozgás')).toBeInTheDocument()
+  expect(within(nodes[1] as HTMLElement).getByText('ma logolt mozgásod + terven kívüli')).toBeInTheDocument()
   // Closure off the rendered VM: base + activity + balance − eaten = remaining.
   expect(hero.chips!.base + hero.chips!.activity + hero.chips!.balance - hero.consumedKcal).toBe(hero.remainingKcal)
   // Üveg: Alap wears the flame (the BMR sprite), Célod the target ring — Titanium sprites, no emoji.
   expect(nodes[0].querySelector('use')!.getAttribute('href')).toBe('#t-flame')
   expect(goal.querySelector('use')!.getAttribute('href')).toBe('#t-ring')
+})
+
+// mezo-tb3s2: a Mozgás sor a ma logolt mozgást nevezi meg, és — ha van még be nem logolt tervezett
+// edzés — előnézetet ad arról, mennyivel nőne a keret, ha az is bekerülne.
+const PENDING: DayBudget = { kcal: 2670, p: 160, c: 260, f: 80, energy: { base: 2480, planned: 190, extra: 0, balance: -400, target: 2670, pending: 460 } }
+
+test('a Mozgás sor a ma logolt mozgást nevezi meg, és a pending sort mutatja', async () => {
+  render(<FuelEnergyHero vm={vm({ budget: PENDING })} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const nodes = [...screen.getByRole('dialog').querySelectorAll('.fmx-node')]
+  const activity = nodes[1]
+  expect(within(activity as HTMLElement).getByText('ma logolt mozgásod')).toBeInTheDocument()
+  expect(within(activity as HTMLElement).getByText('még jön +460, ha megcsinálod')).toBeInTheDocument()
+})
+
+test('nincs pending sor, ha nincs mit belogolni', async () => {
+  const { unmount } = render(<FuelEnergyHero vm={vm({ budget: BUDGET })} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(screen.queryByText(/még jön/)).not.toBeInTheDocument()
+  unmount()
+})
+
+test('pending sor múltbeli napon sem jelenik meg', async () => {
+  render(<FuelEnergyHero vm={vm({ budget: PENDING })} past />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(screen.queryByText(/még jön/)).not.toBeInTheDocument()
+})
+
+test('az egyenlet doboz az új lábjegyzetet mutatja', async () => {
+  render(<FuelEnergyHero vm={vm()} />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  expect(screen.getByText(/a mai mozgásod együtt adja — a keret akkor nő, amikor logolod az edzést/)).toBeInTheDocument()
 })
 
 test('tömegelésnél a Célod sor + előjelű', async () => {

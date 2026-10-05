@@ -5,12 +5,17 @@ import { localDateString } from '@/shared/lib/dates'
 import { doneCount, isNapzarasCardWindow } from '@/features/today/logic/napom'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { huInt } from '@/shared/lib/huNum'
+import { KIMELO_NAP } from '@/features/train/logic/skipCopy'
 
 /** Evening napzárás card on Mai (owner 2026-09-24, mezo-yjzhw.4): from 20:00 local time until
  *  midnight, unless the ritual is closed, a lavender glass card sits under the
  *  "A napod." heading. After closing it shrinks to a flat done row linking to A napom.
  *  Reference: docs/design_2.0/prototypes/src/uveg-napod-body.html `closeCard()`. */
-export function NapzarasCard({ now }: { now: Date }) {
+export function NapzarasCard({ now, kimelo = false }: {
+  now: Date
+  /** Kímélő mód is on (mezo-q4xt2.2): the gym chip reads „edzés · kímélő mód" (prototype `ndCloseCard`). */
+  kimelo?: boolean
+}) {
   const date = localDateString(now)
   const navigate = useNavigate()
   const ritual = useRitualDay(date)
@@ -42,7 +47,8 @@ export function NapzarasCard({ now }: { now: Date }) {
   // Leading flat icons as the prototype's `closeCard()` chips: bowl · dumbbell · check-in.
   const chips: { text: string; icon?: Icon3DName }[] = []
   if (kcal != null) chips.push({ text: `${huInt(kcal)} kcal`, icon: 't-bowl' })
-  if (trainingFact) chips.push({ text: `edzés ${trainingFact}`, icon: 't-dumbbell' })
+  if (kimelo) chips.push({ text: KIMELO_NAP.closeChip, icon: 't-dumbbell' })
+  else if (trainingFact) chips.push({ text: `edzés ${trainingFact}`, icon: 't-dumbbell' })
   chips.push({ text: `check-in ${doneCheckins}/4`, icon: 't-checkin' })
   if (ev) chips.push({ text: `${doneCount(ev)}/6 terület kész` })
 

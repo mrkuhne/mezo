@@ -5,8 +5,8 @@ import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // A mock seed (data/notification/feedMock.ts) MAI napra van kötve (`at(daysAgo, hh:mm)`):
-// 4 olvasatlan ma (nf-1..nf-3, nf-7 + mezo-3n2so nf-12), 3 olvasott tegnap-előtti napokon
-// szétosztva (nf-4..nf-6).
+// 5 olvasatlan ma (nf-1..nf-3, nf-7 + mezo-3n2so nf-12), 7 olvasott korábbi napokon
+// szétosztva.
 // Ezért a mód kényszerítve van, hogy a real-módú CI-futás is ugyanezt lássa.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -26,7 +26,7 @@ const renderPage = () =>
     </QueryWrapper>,
   )
 
-test('a hero a nyitáskori olvasatlan-számot viszi, nem nullát', async () => {
+test('a hero az olvasatlan értesítések számát viszi, nem nullát', async () => {
   const { container } = renderPage()
   expect(await screen.findByText('Értesítések')).toBeInTheDocument()
   // A szám a `notificationFeedSeed` olvasatlan sorainak száma — a seedből SZÁRMAZIK,
@@ -52,8 +52,16 @@ test('egy sor koppintása a deeplinkre navigál', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent('/insights/patterns/late-meal-sleep')
 })
 
-// A badge azonnal nullázódik (markAllRead), de amíg az oldalon vagyunk, LÁTNI kell, mi volt új.
-test('a nyitáskor olvasatlan sorok kiemelve maradnak az oldalon', async () => {
+test('megnyitáskor megmaradnak az olvasatlanok, kattintásra csak az adott sor lesz olvasott', async () => {
+  const { container } = renderPage()
+  await screen.findByText('Ma')
+  expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(5)
+  await userEvent.click(screen.getByRole('button', { name: /Új minta vár döntésre/ }))
+  expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(4)
+  expect(screen.getByRole('button', { name: /Bejött egy előrejelzés/ })).toHaveClass('unread')
+})
+
+test('a megnyitás önmagában nem veszi le az olvasatlan kiemelést', async () => {
   const { container } = renderPage()
   await screen.findByText('Ma')
   expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(5)

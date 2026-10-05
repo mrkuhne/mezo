@@ -11,6 +11,7 @@ import type { UmapResponse } from '@/features/admin/memory/umap.worker'
 // instead of a plain import — this is the ONE seam `umapWorker.protocol.test.ts` mocks with
 // `vi.mock`, since jsdom has no real Worker and the fake never runs umap-js.
 import UmapWorker from '@/features/admin/memory/umap.worker?worker'
+import { huArticle, huFrom } from '@/shared/lib/huNum'
 
 // Térkép (mezo-4qyt.5) — a umap-js Web Worker projects the server's PCA-50 block down to 2D for
 // an SVG scatter; clicking a point fetches the 10 real pgvector neighbours so the inspector can
@@ -288,7 +289,7 @@ export function MapView({
       <AdminTile query={vectors} wash="sky" eyebrow="Térkép" span={12}>
         {vectors.data.sampled && (
           <div className="am-samplebanner">
-            {vectors.data.items.length} elem látszik a {vectors.data.total}-ból — a legfrissebb és
+            {vectors.data.items.length} elem látszik {huArticle(vectors.data.total)} {huFrom(vectors.data.total)} — a legfrissebb és
             legfontosabb mintája.
           </div>
         )}
