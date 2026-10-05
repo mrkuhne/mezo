@@ -55,7 +55,7 @@ class TeamChatPushDecisionTest {
         @SuppressWarnings("unchecked")
         ObjectProvider<TeamChatService> self = mock(ObjectProvider.class);
         service = new TeamChatService(threads, null, properties, null, null, null, null, emitter, null, null,
-                null, notification, self, null, null);
+                null, notification, new TeamChatQuietHours(notification, properties), self, null, null);
         when(self.getObject()).thenReturn(service);
         when(threads.findByCreatedByAndPushedTrueAndOpenedAtBetweenAndDeletedFalse(any(), any(), any()))
                 .thenReturn(List.of());
