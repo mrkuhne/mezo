@@ -48,14 +48,16 @@ test('hub anatomy: ‹ Hol tartok head, hero XP (FE sum 18 985), Ma strip, three
   expect(screen.getByText('Szint 12')).toBeInTheDocument()          // gamificationProfileMock.level
   expect(screen.getByText('78%')).toBeInTheDocument()               // traits.disciplinePct
   expect(screen.getByRole('button', { name: 'Küldetések · a Nap fülön' })).toBeInTheDocument()
-  for (const t of ['Skillek', 'Napló', 'Kitüntetések']) expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
+  for (const t of ['Skillek', 'Tevékenységek', 'Kitüntetések']) expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
   for (const r of container.querySelectorAll('.rise')) expect(r.closest('.mz-play')).not.toBeNull()
   // U11 (mezo-me75u.11): hero + tile art is the 3D set, no clay left in the content.
   const art = (name: string) => screen.getByRole('button', { name }).querySelector('.mz-spotwrap use')?.getAttribute('href')
   expect(container.querySelector('.gr-hero-icon use')?.getAttribute('href')).toBe('#t-up')
   expect(art('Skillek')).toBe('#t-sprout')
-  expect(art('Napló')).toBe('#t-journal')
+  expect(art('Tevékenységek')).toBe('#t-journal')
   expect(art('Kitüntetések')).toBe('#t-record')
+  expect(screen.queryByRole('button', { name: 'Napló' })).not.toBeInTheDocument()
+  for (const t of ['Skillek', 'Tevékenységek', 'Kitüntetések']) expect(screen.getByRole('button', { name: t })).toHaveClass('glass')
   expect(container.querySelector('use[href^="#i-"], use[href^="#s-"]')).toBeNull()
 })
 
@@ -63,16 +65,16 @@ test('tile lines come from the page hooks — band lengths, journal counts, badg
   renderAt('/me/growth')
   expect(screen.getByRole('button', { name: 'Skillek' })).toHaveTextContent('33 skill · legjobb Lv 7')
   const completed = mockQuestHistory.filter((q) => q.status === 'completed').length
-  expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(`${completed} teljesített · ${mockActivityHistory.length} tevékenység · 30 nap`)
+  expect(screen.getByRole('button', { name: 'Tevékenységek' })).toHaveTextContent(`${completed} teljesített · ${mockActivityHistory.length} tevékenység · 30 nap`)
   expect(screen.getByRole('button', { name: 'Kitüntetések' })).toHaveTextContent('4 / 9 jelvény · 6 napos sorozat')
 })
 
-test('cold load (real mode, unresolved): Napló renders no tile line — Skillek/Kitüntetések unaffected', () => {
+test('cold load (real mode, unresolved): Tevékenységek renders no tile line — Skillek/Kitüntetések unaffected', () => {
   hooks.useHabitSummary.mockReturnValue({ data: { perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] }, isPending: true })
   hooks.useQuestHistory.mockReturnValue({ data: [], isPending: true })
   hooks.useActivityHistory.mockReturnValue({ data: [], isPending: true })
   renderAt('/me/growth')
-  expect(screen.getByRole('button', { name: 'Napló' }).querySelector('.mz-tile-line')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Tevékenységek' }).querySelector('.mz-tile-line')).toBeNull()
   expect(screen.getByRole('button', { name: 'Skillek' }).querySelector('.mz-tile-line')).not.toBeNull()
   expect(screen.getByRole('button', { name: 'Kitüntetések' }).querySelector('.mz-tile-line')).not.toBeNull()
 })

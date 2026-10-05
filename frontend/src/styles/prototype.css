@@ -24016,6 +24016,30 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @media (prefers-reduced-motion: reduce) {
   .gra-page .gr-streak .gr-flame { animation: none; }
 }
+/* Fejlődés hub tiles (mezo-lhqw7 Task 8): the three hand/kit tiles are glass siblings of the Én hub
+   tiles — one `--c` each (lav / sky / sage), the glass body restated so `.mz-tile` / `.mz-w-*` cannot
+   win (rule 11). Everything inside (art, eyebrow, line, pulse dot) stays flat. */
+.gr-tile-sky { --c: var(--dv-sky); }
+.mz-tile.gr-tile.glass {
+  border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 112px; gap: 4px;
+  align-items: flex-start; text-align: left; color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.gr-tile .mz-tile-top { width: 100%; }
+.gr-tile .mz-eyebrow {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.gr-tile .mz-tile-line { text-align: left; color: var(--text-primary); overflow-wrap: anywhere; }
+.gr-tile .gr-pulse { background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 70%, transparent); }
+.gr-tile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 /* ── /uveg en2 novekedes ── */
 
 /* ── uveg en2 rutin (mezo-me75u.7) ── /me/rutin(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) + rutin sheets ── */

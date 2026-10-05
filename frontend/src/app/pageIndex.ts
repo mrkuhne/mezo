@@ -162,7 +162,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/me/rutin/szokasok', label: 'Szokásaid', hint: 'Minden szokásod egy listán.' },
   { route: '/me/growth', label: 'Fejlődés', hint: 'A hosszú távú ívek egy helyen.' },
   { route: '/me/growth/skillek', label: 'Skillek', hint: 'Amiben fejlődsz, szintekkel.' },
-  { route: '/me/growth/naplo', label: 'Fejlődés-napló', hint: 'A fejlődésed mérföldkövei.' },
+  { route: '/me/growth/naplo', label: 'Tevékenységek', hint: 'Küldetések és tevékenységek az elmúlt 30 napból.' },
   { route: '/me/growth/kituntetesek', label: 'Kitüntetések', hint: 'Amit eddig kiérdemeltél.' },
   { route: '/me/people', label: 'Emberek', hint: 'Akik számítanak — a köröd.' },
   { route: '/me/people/kor', label: 'A köröm', hint: 'A közeli embereid és a kapcsolat állapota.' },
