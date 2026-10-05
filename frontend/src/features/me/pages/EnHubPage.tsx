@@ -1,171 +1,47 @@
 // ============================================================
-// Mezo · EnHubPage — the Én tab's hub Mozaik face (mezo-d20.6.1)
-// Source of truth: docs/design_2.0/prototypes/src/en-body.html hub section
-// (values ×1.18). The Me shell (AppHero + SubNavDropdown) dissolves: this page
-// IS the /me index, the former sub-tabs are full-page siblings on their stable
-// routes (they keep their current faces until their own F5 slices land).
-// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
-// the initial, name, equipped title chip, Lv · XP · streak · coin, bio line) → the
-// ÉLETCÉL-HERO (mezo-iizd.4: the active life goals' dimension chips + the engine's
-// ↗ / → / ↘ counters, opening /me/goals) → the 6-tile mosaic
-// with live bottom lines. Persistent settings live in the shared /settings center.
-// The hero used to be the WEIGHT goal's coral track (with GoalMiniCard's maintain→„tartás"
-// rule) navigating to /me/goals/weight; mezo-iizd.4 retired that face — the weight goal's
-// entry point is now the Súlycél row on the Célok hub (CelokPage), and the daily weight
-// number stays on the mosaic's Súly tile.
-// Honest states (en-audit §6) are the contract, not the face:
-//  · the bio line renders only the bits that exist and vanishes at zero bits;
-//    with nothing set at all the hero offers BiometricCard's own CTA instead,
-//    so the write path survives the card's retirement;
-//  · an unresolved/failed `today` never becomes a fabricated „0↗ · 0→ · 0↘" — the hero
-//    falls back to the plain active-goal count (CelokPage's `todayHonest` idiom);
-//  · no active life goal at all → no invented ring, just the ＋ Új cél door;
-//  · null statistics render `—` in a mini-cell, never 0;
-//  · a tile line vanishes while its source is unresolved/empty — no page ever
-//    shows a fabricated number.
-// Üveg (mezo-me75u.6, prototypes/uveg-en.html#en): the identity hero is the one loud thing —
-// a frameless rose halo, the glowing XP ring, flat stat pills with 3D icons; the goal card and
-// every mosaic tile wear `.glass` in their own accent; the ＋ Új cél door is dashed. CSS:
-// prototype.css `── uveg en hub (`.
+// Mezo · EnHubPage — „Hol tartok", the Én tab's hub (mezo-lhqw7; was the identity-hero +
+// 6-tile mosaic face of mezo-d20.6.1 / mezo-me75u.6)
+// Source of truth: docs/design_2.0/prototypes/elo/en.html `hub()`.
+// Anatomy, top to bottom: the shell fejléc (app/AppHeader.tsx) → the IDENTITY STRIP (flat row:
+// monogram, name, title chip, Lv · XP · streak · coin → /me/growth) → the WEEK HERO (the last
+// closed week's score ring, delta, „Jól ment / Figyelj rá", → /me/week) → ÉLETVONAL (the
+// 12-week weight curve with stations and the sleep band → /me/weight) → CÉLOK ÁLLÁSA (the
+// weight goal + the active life goals → /me/goals) → the Fejlődés and Emberek tiles, plus the
+// wide Rutin tile. Súly / Alvás / Célok / Napló are bottom-bar tabs now (Test · Célok · Napló),
+// so they have no tile here; the biometrics line lives at the bottom of the Test tab (BioRow).
+// Each unit reads its OWN hooks (components/hub/*) — this page only composes them and computes
+// the three tile lines. Persistent settings live in the shared /settings center.
+// Honest states (en-audit §6) are the contract, not the face — each unit's header spells out
+// its own; the ones this page owns:
+//  · a tile line vanishes while its source is unresolved/empty — no page ever shows a
+//    fabricated number (no habits → no „0 / 0", no people → no count);
+//  · a line is `undefined` rather than `0`; `insufficient` is never a direction; pending ≠
+//    error ≠ empty; a regression is never red.
+// Üveg (bible §3.4): the week hero is the one loud thing — a frameless lavender halo; the
+// identity strip is flat; Életvonal (sky), Célok állása (coral) and every tile wear `.glass`
+// in ONE accent with flat rows inside; empty doors are dashed. CSS: prototype.css
+// `── uveg en hub (`.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
-import { Icon3D } from '@/shared/ui/clay'
-import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
+import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import {
-  useDecisions, useGamification, useLifeGoals, useLifeGoalToday,
-  useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
-} from '@/data/hooks'
-import { BioRow } from '@/features/me/components/BioRow'
-import { DIMENSIONS, ARROW_GLYPH } from '@/features/me/logic/lifegoalLabels'
-import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
-import { addDays, localDateString } from '@/shared/lib/dates'
-import { hu1, huInt } from '@/shared/lib/huNum'
-
-
-/** Signed Hungarian 1-decimal rate — `fmtSigned`'s sign rule with `hu1`'s comma separator
- *  (the prototype writes `−0,5`, never `-0.5`). */
-const huSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${hu1(Math.abs(n))}`
+import { useHabitDay, useHabitSummary, usePeople, useProgressionProfile } from '@/data/hooks'
+import { EnIdentityStrip } from '@/features/me/components/hub/EnIdentityStrip'
+import { WeekHeroCard } from '@/features/me/components/hub/WeekHeroCard'
+import { LifelineCard } from '@/features/me/components/hub/LifelineCard'
+import { GoalStandingCard } from '@/features/me/components/hub/GoalStandingCard'
+import { localDateString } from '@/shared/lib/dates'
 
 export function EnHubPage() {
   const navigate = useNavigate()
-  // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
-  // streak/coin stats deep-link to /me/growth/kituntetesek (StreakCard + TitlesSection,
-  // mezo-rmi0.1: the Growth hub's sibling route, was the ?tab=awards deep link);
-  // the two standalone sheets are retired.
-
-  // ── identity hero ───────────────────────────────────────────────────
-  const { user: profile } = useProfile()
-  const { profile: gam } = useGamification()
-  const { titles } = useTitles()
-  const equipped = titles.find((t) => t.equipped)
-  const xpPct = gam.xpForNext > 0 ? Math.min(100, Math.round((gam.xpInLevel / gam.xpForNext) * 100)) : 0
-  const initial = (profile?.name ?? '').trim().charAt(0).toUpperCase()
-
-  const { weightLog, weightTrends } = useWeight()
-  const latestKg = weightLog.length > 0 ? weightLog[weightLog.length - 1].value : null
-
-  // ── életcél-hero (mezo-iizd.4) ───────────────────────────────────────
-  // A hero mostanáig a SÚLYCÉL adata volt és /me/goals/weight-re vitt — az Én-hubról így
-  // semmi nem nyílt a /me/goals Célok hubra, pedig a spec D5 szerint a hosszú cél ott lakik.
-  // A súlycél parancsnoksága a Célok hub saját sorára költözött (mezo-iizd.4, CelokPage);
-  // a napi súly-szám a mozaik Súly-csempéjén marad.
-  // A korábbi bare `useGoal()` hívás („a cache-t melegen tartjuk a `rate`-hez") ELDOBOTT
-  // eredményű, és az indoklása sem állt: a `rate` a `weightTrends`-ból jön, a `weightLog`
-  // cache-t a fenti `useWeight` már meghúzza, a súlycél parancsnoksága pedig a Célok hubra
-  // költözött (mezo-iizd.4) — az Én-hubon semmi nem olvassa. Ezért kikerült.
-  const rate = weightTrends.last4w.weeklyRate
-  const { goals: lifeGoals, isPending: lifeGoalsPending } = useLifeGoals()
-  const { today: lifeToday, isPending: lifeTodayPending, isError: lifeTodayError } = useLifeGoalToday()
-  const activeGoals = lifeGoals.filter((g) => g.status === 'active')
-  // A mozaik Célok csempéje az ÁLLANDÓ ajtó a hubra (mezo-rn9u). A hero fölötte
-  // adat-vezérelt — aktív cél nélkül nem rajzolódik —, így korábban nulla aktív céllal
-  // a /me/goals sehonnan nem nyílt: a parkolás egyirányú ajtó lett (parkolod az egyetlen
-  // célod → a hub eltűnik → nem tudod visszakapcsolni), és vele tűnt el a lezárt célok
-  // szekció, a Jelek oldal és a Súlycél-sor is. A csempe SOSEM kapuzott.
-  const parkedGoals = lifeGoals.filter((g) => g.status === 'parked' || g.status === 'draft')
-  // A ház sor-szabálya: feloldatlan vagy üres forrásnál a sor eltűnik, nem hazudik nullát.
-  const celokBits = [
-    activeGoals.length > 0 ? `${activeGoals.length} aktív` : null,
-    parkedGoals.length > 0 ? `${parkedGoals.length} parkol` : null,
-  ].filter((b): b is string => b !== null)
-  const celokLine = lifeGoalsPending || celokBits.length === 0 ? undefined : celokBits.join(' · ')
-  // `insufficient` kimarad: túl kevés adat sosem irány (a CelokPage/LifeGoalTile guardrailje).
-  const arrows = lifeToday.goals.reduce(
-    (acc, s) => { if (s.arrow !== 'insufficient') acc[s.arrow] += 1; return acc },
-    { up: 0, flat: 0, down: 0 } as Record<'up' | 'flat' | 'down', number>,
-  )
-  // Feloldatlan/hibás `today` üres listája alakilag azonos a „még nincs iránya" esettel —
-  // számolni belőle kitalált „0↗ · 0→ · 0↘"-t adna (CelokPage `todayHonest` idióma).
-  const arrowsHonest = lifeTodayPending || lifeTodayError
-
-  let goalCard: React.ReactNode = null
-  if (!lifeGoalsPending && activeGoals.length > 0) {
-    const cells: MCell[] = arrowsHonest
-      ? [{ label: 'aktív cél', value: `${activeGoals.length}`, tone: 'coral' }]
-      : [
-          { label: 'emelkedik', value: `${ARROW_GLYPH.up} ${arrows.up}`, tone: 'sage' },
-          { label: 'tartja', value: `${ARROW_GLYPH.flat} ${arrows.flat}`, tone: 'lav' },
-          { label: 'csúszik', value: `${ARROW_GLYPH.down} ${arrows.down}`, tone: 'coral' },
-        ]
-    goalCard = (
-      <button type="button" className="enh-goalcard enh-lgcard glass rise"
-        style={{ '--d': '70ms', '--c': 'var(--dv-coral)', '--i': 1 } as React.CSSProperties}
-        aria-label="Célok · összegzés" onClick={() => navigate('/me/goals')}>
-        <div className="enh-goalhead">
-          <Icon3D name="t-ring" size={36} />
-          <span className="enh-goalttl">Célok</span>
-          <span className="enh-stch">{activeGoals.length} aktív</span>
-        </div>
-        <div className="enh-lgdims">
-          {/* .lg-goalchip: a sor által NEM hordozott felét nevezi meg — itt CÉL CÍME, mert a
-              hero nem hordoz cél-identitást. Szabály a prototype.css-ben, a token
-              definíciójánál (mezo-9r85). */}
-          {activeGoals.slice(0, 4).map((g) => (
-            <span key={g.id} className={`lg-goalchip ${DIMENSIONS[g.dimension].cls}`}><i />{g.title}</span>
-          ))}
-        </div>
-        <MCells cells={cells} />
-      </button>
-    )
-  } else if (!lifeGoalsPending) {
-    // Nincs aktív életcél — nincs kitalált gyűrű. Az ajtó a varázslóra nyílik.
-    goalCard = (
-      <button type="button" className="enh-newgoal uv-empty rise"
-        style={{ '--d': '70ms', '--c': 'var(--dv-coral)' } as React.CSSProperties}
-        onClick={() => navigate('/me/goals/new')}>
-        ＋ Új cél
-      </button>
-    )
-  }
 
   // ── tile bottom lines — each from its page's own hook ────────────────
-  const sulyLine = latestKg == null
-    ? undefined
-    : `${hu1(latestKg)} kg${rate !== 0 ? ` · ${huSigned(rate)} / hét` : ''}`
-
-  const { lastNight } = useSleep()
-  const alvasLine = lastNight == null
-    ? undefined
-    : `${hu1(lastNight.duration)} h${lastNight.quality != null ? ` · Q${lastNight.quality}` : ''}`
-
   const { data: progression } = useProgressionProfile()
   const growthBits = [
     progression?.traits.disciplinePct != null ? `${progression.traits.disciplinePct}% fegyelem` : null,
     progression != null && progression.traits.consistencyWeeks > 0 ? `${progression.traits.consistencyWeeks} hét` : null,
   ].filter((b): b is string => b !== null)
   const growthLine = growthBits.length > 0 ? growthBits.join(' · ') : undefined
-
-  const todayIso = localDateString()
-  const { data: gratitude, isPending: gratitudePending } = useGratitudeEntries(addDays(todayIso, -30), todayIso)
-  const gratitudeStreak = gratitudePending ? 0 : gratitudeStreakDays(gratitude.map((e) => e.occurredOn), todayIso)
-  const { data: decisions } = useDecisions()
-  const openDecisions = decisions.filter((d) => d.reviewedAt === null).length
-  const naploBits = [
-    !gratitudePending && gratitudeStreak > 0 ? `${gratitudeStreak} napos hála-sorozat` : null,
-    openDecisions > 0 ? `${openDecisions} nyitott döntés` : null,
-  ].filter((b): b is string => b !== null)
-  const naploLine = naploBits.length > 0 ? naploBits.join(' · ') : undefined
 
   const { people } = usePeople()
   const topPerson = [...people].sort((a, b) => b.mentionsThisWeek - a.mentionsThisWeek)[0]
@@ -175,6 +51,7 @@ export function EnHubPage() {
       ? `${topPerson.name} ${topPerson.mentionsThisWeek}× · e héten`
       : `${people.length} kapcsolat`
 
+  const todayIso = localDateString()
   const { habits: todayHabits } = useHabitDay(todayIso)
   const { data: habitSummary } = useHabitSummary()
   const strengthOf = (keys: string[]) => {
@@ -202,60 +79,19 @@ export function EnHubPage() {
   return (
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
-        {/* ===== identity hero ===== */}
-        <div className="enh-idhero uv-halo rise" data-kalauz-anchor="me-idhero" style={{ '--d': '0ms' } as React.CSSProperties}>
-          <div className="enh-idring" style={{ '--xp': xpPct } as React.CSSProperties}
-            role="img" aria-label={`Szint ${gam.level} — ${xpPct}% a következő szintig`}>
-            <svg className="uv-ring" viewBox="0 0 128 128" aria-hidden="true">
-              <circle className="uv-ring-track" cx="64" cy="64" r="58" pathLength={100} />
-              {xpPct > 0 && (
-                <circle className="uv-ring-prog enh-xpprog" cx="64" cy="64" r="58" pathLength={100}
-                  strokeDasharray={`${xpPct} 100`} />
-              )}
-            </svg>
-            <i aria-hidden="true">{initial}</i>
-            <span className="enh-lv" aria-hidden="true">Lv {gam.level}</span>
-          </div>
-          <div className="enh-nm">{profile?.name ?? ''}</div>
-          <button type="button" className={equipped != null ? 'enh-titlech' : 'enh-titlech is-none'}
-            aria-label={equipped != null ? `Viselt cím: ${equipped.name} — cím-bolt` : 'Cím-bolt'}
-            onClick={() => navigate('/me/growth/kituntetesek')}>
-            {equipped != null ? <><Icon3D name="t-record" size={18} />{equipped.name}</> : 'Válassz címet'}
-          </button>
-          <div className="enh-idstats">
-            <span className="enh-flat is-lv">Lv {gam.level}</span>
-            <span className="enh-flat">{huInt(gam.totalXp)} XP</span>
-            <button type="button" className="enh-idstat enh-flat" aria-label="Sorozat részletei"
-              style={{ opacity: gam.streakAlive === false ? 0.45 : 1 }}
-              onClick={() => navigate('/me/growth/kituntetesek')}><Icon3D name="t-bolt" size={18} /> {gam.streakDays} nap</button>
-            <button type="button" className="enh-idstat enh-flat" aria-label="Érme — címek"
-              onClick={() => navigate('/me/growth/kituntetesek')}><Icon3D name="t-coin" size={18} /> {gam.coins}</button>
-          </div>
-          <BioRow className="enh-bio" />
-        </div>
-
-        {/* ===== goal card ===== */}
-        {goalCard}
-
-        {/* ===== 6-tile mosaic ===== */}
+        <EnIdentityStrip />
+        <WeekHeroCard />
+        <LifelineCard />
+        <GoalStandingCard />
         <Mosaic>
-          <Tile wash="coral" art="t-ring" iconSize={44} eyebrow="Célok" delayMs={130} className="glass enh-tile enh-t-celok"
-            line={celokLine} onClick={() => navigate('/me/goals')} aria-label="Célok" />
-          <Tile wash="sky" art="t-weight" iconSize={44} eyebrow="Súly" delayMs={170} className="glass enh-tile enh-t-suly"
-            line={sulyLine} onClick={() => navigate('/me/weight')} aria-label="Súly" />
-          <Tile wash="lav" art="t-sleep" iconSize={44} eyebrow="Alvás" delayMs={210} className="glass enh-tile enh-t-alvas"
-            line={alvasLine} onClick={() => navigate('/me/sleep')} aria-label="Alvás" />
-          <Tile wash="lav" art="t-up" iconSize={44} eyebrow="Growth" delayMs={250} className="glass enh-tile enh-t-growth"
-            line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Growth" />
-          <Tile wash="white" art="t-journal" iconSize={44} eyebrow="Napló" delayMs={290} className="glass enh-tile enh-t-naplo"
-            line={naploLine} onClick={() => navigate('/me/naplo')} aria-label="Napló" />
-          <Tile wash="rose" art="t-people" iconSize={44} eyebrow="Emberek" delayMs={330} className="glass enh-tile enh-t-emberek"
+          <Tile wash="lav" art="t-up" iconSize={44} eyebrow="Fejlődés" delayMs={250} className="glass enh-tile enh-t-growth"
+            line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Fejlődés" />
+          <Tile wash="rose" art="t-people" iconSize={44} eyebrow="Emberek" delayMs={290} className="glass enh-tile enh-t-emberek"
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
-          <Tile wide wash="gold" art="t-chain" iconSize={44} eyebrow="Rutin" delayMs={410} className="glass enh-tile enh-t-rutin"
+          <Tile wide wash="gold" art="t-chain" iconSize={44} eyebrow="Rutin" delayMs={330} className="glass enh-tile enh-t-rutin"
             line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>
-
     </div>
   )
 }

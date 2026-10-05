@@ -75,10 +75,46 @@ export function weekSubline(phase: WeekPhase, hasReview: boolean, score: number 
 
 // ── analysis tile ──────────────────────────────────────────────────────────
 
+// Sentence splitting — ONE splitter for the analysis tile and the Én hub's week hero.
+// A „. " ends a sentence unless the dot closes an abbreviation („pl. a vacsora") or the text
+// simply carries on in lower case („szept. 21. után", „a 3. napon"): a Hungarian sentence starts
+// with a capital, a numeral or a quote mark. Same spirit as the backend's hero-line guard.
+const ABBREVIATIONS = new Set(['pl', 'stb', 'kb', 'ill', 'ún', 'vö', 'max', 'min', 'átl', 'dr'])
+
+/** Index just past the sentence-ending dot at or after `from`; -1 when the text has no further
+ *  sentence boundary (the remainder is one sentence, with or without a closing dot). */
+function sentenceEnd(text: string, from = 0): number {
+  for (let i = text.indexOf('. ', from); i >= 0; i = text.indexOf('. ', i + 1)) {
+    if (i === from) continue
+    const word = text.slice(from, i).split(/\s/).pop() ?? ''
+    if (ABBREVIATIONS.has(word.toLowerCase())) continue
+    const next = text.slice(i + 1).trimStart().charAt(0)
+    if (next !== '' && next === next.toLowerCase() && next !== next.toUpperCase()) continue // lower-case letter
+    return i + 1
+  }
+  return -1
+}
+
 /** The prototype's `firstSent()` — the tile shows one sentence, the page shows the prose. */
 export function firstSentence(text: string): string {
-  const i = text.indexOf('. ')
-  return i > 0 ? text.slice(0, i + 1) : text
+  const end = sentenceEnd(text)
+  return end > 0 ? text.slice(0, end) : text
+}
+
+/** The first `n` sentences, each trimmed — the Én hub's week hero on a review that predates the
+ *  model-written hero lines (mezo-lhqw7). Never pads: a one-sentence summary yields one line. */
+export function leadSentences(text: string, n: number): string[] {
+  const out: string[] = []
+  let from = 0
+  while (out.length < n && from < text.length) {
+    const end = sentenceEnd(text, from)
+    const sentence = (end > 0 ? text.slice(from, end) : text.slice(from)).trim()
+    if (sentence !== '') out.push(sentence)
+    if (end < 0) break
+    from = end
+    while (text.charAt(from) === ' ') from += 1
+  }
+  return out
 }
 
 export type GenStampTone = 'lav' | 'warn'

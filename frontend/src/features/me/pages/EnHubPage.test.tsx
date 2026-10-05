@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
@@ -9,56 +9,28 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// Én hub (mezo-d20.6.1) — the /me index's Mozaik face: identity hero + coral-ringed goal
-// card + 6-tile mosaic (Beállítások csempével). The behavioral contracts it inherits from the
-// retired ProfilePage/MeSection are the spec: the bio line renders only filled bits, the
-// theme sheet still flips data-theme, biometrics stay editable, a maintain goal reads
-// „tartás" with no track, and a null statistic is `—`, never 0.
+// Én hub — „Hol tartok" (mezo-lhqw7): the /me index composes four units (identity strip → week
+// hero → Életvonal → Célok állása) above the Fejlődés / Emberek tiles and the wide Rutin tile.
+// Each unit owns its hooks and its honest states, and has its own test file under
+// components/hub/; THIS file asserts the composition: the order, what left the hub (the Súly /
+// Alvás / Célok / Napló tiles are bottom-bar tabs now, the bio line lives on the Test tab), and
+// that everything the old hub linked to is still reachable.
 //
-// Data is stubbed at the hook boundary (the NapHubPage.test exemplar): the mock seeds and
-// the real-mode MSW fixtures differ, and these assertions are about the FACE, not about
-// which fixture a mode happens to serve. Only the hooks each assertion reads are stubbed;
-// everything else falls through to the real dual-mode hooks.
-const bioStore = vi.hoisted(() => ({
-  profile: { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' } as Record<string, unknown> | null,
-}))
-const weightStore = vi.hoisted(() => ({ log: [{ date: '2026-05-22', value: 78.6 }], rate: -0.5 }))
+// The composition is asserted on the MOCK seeds in both test runs (`VITE_USE_MOCK` is pinned to
+// `true` per test): the real-mode MSW fixtures carry a different, sparser account, and the
+// units' own tests already cover every honest state at the hook boundary in both modes. The two
+// `real mode:` tests at the bottom switch the flag themselves. Only the Rutin tile's two hooks
+// are stubbed, as before.
 const useHabitDay = vi.hoisted(() => vi.fn())
 const useHabitSummary = vi.hoisted(() => vi.fn())
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
-  return {
-    ...actual,
-    useGamification: () => ({
-      profile: {
-        level: 12, totalXp: 3140, xpInLevel: 60, xpForNext: 520, coins: 240,
-        streakDays: 6, streakAlive: true, streakSavers: 1,
-        activeTitleKey: 'fegyelmezett', ownedShopTitleKeys: [],
-        lastActiveDate: null, dayCounters: { date: '', counts: {} },
-      },
-    }),
-    useBiometricProfile: () => ({ profile: bioStore.profile, isPending: false }),
-    useWeight: () => ({
-      weightLog: weightStore.log,
-      weightTrends: { last7d: { avg: 78.96, weeklyRate: -0.5 }, last4w: { weeklyRate: weightStore.rate } },
-      logWeight: vi.fn(),
-    }),
-    useSleep: () => ({
-      sleepLog: [],
-      lastNight: { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: null },
-      logSleep: vi.fn(),
-    }),
-    useHabitDay,
-    useHabitSummary,
-  }
+  return { ...actual, useHabitDay, useHabitSummary }
 })
 
 beforeEach(() => {
-  bioStore.profile = { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' }
-  weightStore.log = [{ date: '2026-05-22', value: 78.6 }]
-  weightStore.rate = -0.5
-  localStorage.setItem('mezo-theme', 'light')
+  vi.stubEnv('VITE_USE_MOCK', 'true')
   useHabitDay.mockReturnValue({
     habits: [
       { key: 'morning-1', chain: 'MORNING', status: 'done' },
@@ -79,8 +51,11 @@ beforeEach(() => {
   })
 })
 
+afterEach(() => { vi.unstubAllEnvs() })
+
 function LocationProbe() {
-  return <div data-testid="loc">{useLocation().pathname}</div>
+  const { pathname, search } = useLocation()
+  return <div data-testid="loc">{pathname + search}</div>
 }
 
 function renderHub() {
@@ -91,7 +66,6 @@ function renderHub() {
           <>
             <Routes>
               <Route path="/me" element={<EnHubPage />} />
-              <Route path="/me/goals" element={<div>CELOK HUB</div>} />
               <Route path="*" element={null} />
             </Routes>
             <LocationProbe />
@@ -102,111 +76,80 @@ function renderHub() {
   )
 }
 
-test('the identity hero carries the XP ring, the name, the title chip and the Lv · XP · streak · coin row', async () => {
+/** `a` precedes `b` in document order. */
+const before = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+test('the hub reads top to bottom: identity strip → week hero → Életvonal → Célok állása → Fejlődés, Emberek', async () => {
   renderHub()
-  const ring = await screen.findByRole('img', { name: /Szint 12/ })
-  // in-level XP, not total: 60 / 520 ≈ 12%
-  expect(ring).toHaveStyle({ '--xp': '12' })
-  // Üveg (mezo-me75u.6): the XP ring is a glowing svg ring — the progress arc carries the
-  // in-level share — and the Lv pill sits on it as well as in the flat stat row
-  expect(ring.querySelector('.uv-ring-prog')?.getAttribute('stroke-dasharray')).toBe('12 100')
-  expect(ring.querySelector('.enh-lv')).toHaveTextContent('Lv 12')
-  expect(document.querySelector('.enh-idstats .enh-flat.is-lv')).toHaveTextContent('Lv 12')
-  expect(screen.getByText('3 140 XP')).toBeInTheDocument()
-  // F7.4 → Üveg (mezo-me75u.6): the streak/coin glyphs are the Titanium bolt and coin symbols
-  const streak = screen.getByRole('button', { name: 'Sorozat részletei' })
-  expect(streak).toHaveTextContent('6 nap')
-  expect(streak.querySelector('use')?.getAttribute('href')).toBe('#t-bolt')
-  const coins = screen.getByRole('button', { name: 'Érme — címek' })
-  expect(coins).toHaveTextContent('240')
-  expect(coins.querySelector('use')?.getAttribute('href')).toBe('#t-coin')
-  expect(document.querySelector('.enh-titlech')).not.toBeNull()
-  // the hero is frameless (a halo, never a card) and keeps the Kalauz anchor
-  const hero = document.querySelector('[data-kalauz-anchor="me-idhero"]')
-  expect(hero).toHaveClass('uv-halo')
-  expect(hero).not.toHaveClass('glass')
+  const strip = await screen.findByRole('button', { name: /· Fejlődés$/ })
+  const hero = document.querySelector('.enh-wkhero')!
+  const lifeline = document.querySelector('.enh-elv')!
+  const goals = await screen.findByRole('button', { name: 'Célok állása' })
+  const growth = screen.getByRole('button', { name: 'Fejlődés' })
+  const people = screen.getByRole('button', { name: 'Emberek' })
+  const order = [strip, hero, lifeline, goals, growth, people]
+  for (const el of order) expect(el).not.toBeNull()
+  for (let i = 1; i < order.length; i++) expect(before(order[i - 1], order[i])).toBe(true)
 })
 
-test('the bio line opens the canonical biometric settings editor', async () => {
+test('the ranking: the week hero is the one frameless halo, the strip is flat, the cards and tiles are glass', async () => {
   renderHub()
-  const bio = await screen.findByRole('button', { name: 'Biometria szerkesztése' })
-  expect(bio).toHaveTextContent('180 cm · 78,6 kg · 15% testzsír')
-  await userEvent.click(bio)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/settings/me/biometrics')
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-})
-
-test('with nothing measured the bio line vanishes — the hero offers the biometrics CTA instead', async () => {
-  bioStore.profile = null
-  weightStore.log = []
-  renderHub()
-  expect(await screen.findByRole('button', { name: 'Állítsd be a biometriád' })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Biometria szerkesztése' })).not.toBeInTheDocument()
-})
-
-test('a hero-kártya az életcélokat összegzi és a Célok hubra visz (mezo-iizd.4)', async () => {
-  renderHub()
-  const card = await screen.findByRole('button', { name: 'Célok · összegzés' })
-  expect(card).toBeInTheDocument()
-  // Üveg (mezo-me75u.6): one coral glass; the three direction cells stay flat inside it
-  expect(card).toHaveClass('glass')
-  expect(card.style.getPropertyValue('--c')).toBe('var(--dv-coral)')
-  expect(card.querySelector('use')?.getAttribute('href')).toBe('#t-ring')
-  expect(card.querySelectorAll('.mz-mcells .glass')).toHaveLength(0)
-  fireEvent.click(card)
-  expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
-})
-
-test('a súlycél-track eltűnt az Én-hubról', async () => {
-  renderHub()
-  await screen.findByRole('button', { name: 'Célok · összegzés' })
-  expect(document.querySelector('.enh-gtrack')).toBeNull()
-})
-
-test('renders the six small tiles plus the wide Rutin tile, each opening its own page', async () => {
-  renderHub()
-  const TILES: [string, string][] = [
-    ['Súly', '/me/weight'],
-    ['Alvás', '/me/sleep'],
-    ['Growth', '/me/growth'],
-    ['Napló', '/me/naplo'],
-    ['Emberek', '/me/people'],
-    ['Rutin', '/me/rutin'],
-  ]
-  for (const [label] of TILES) expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
-  // Üveg (mezo-me75u.6): every tile is glass with its Titanium 3D icon
-  const ART: [string, string][] = [
-    ['Célok', '#t-ring'], ['Súly', '#t-weight'], ['Alvás', '#t-sleep'], ['Growth', '#t-up'],
-    ['Napló', '#t-journal'], ['Emberek', '#t-people'], ['Rutin', '#t-chain'],
-  ]
+  const strip = await screen.findByRole('button', { name: /· Fejlődés$/ })
+  expect(strip).not.toHaveClass('glass')
+  expect(strip).toHaveAttribute('data-kalauz-anchor', 'me-idhero')
+  expect(document.querySelector('.enh-wkhero')).toHaveClass('uv-halo')
+  expect(document.querySelector('.enh-wkhero')).not.toHaveClass('glass')
+  expect(document.querySelector('.enh-elv')).toHaveClass('glass')
+  expect(await screen.findByRole('button', { name: 'Célok állása' })).toHaveClass('glass')
+  const ART: [string, string][] = [['Fejlődés', '#t-up'], ['Emberek', '#t-people'], ['Rutin', '#t-chain']]
   for (const [label, href] of ART) {
     const tile = screen.getByRole('button', { name: label })
     expect(tile).toHaveClass('glass')
     expect(tile.querySelector('.mz-spotwrap use')?.getAttribute('href')).toBe(href)
   }
-  await userEvent.click(screen.getByRole('button', { name: 'Súly' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
+  // never glass inside glass, never a control inside a control
+  expect(document.querySelectorAll('.glass .glass')).toHaveLength(0)
+  expect(document.querySelectorAll('button button')).toHaveLength(0)
 })
 
-// A fenti teszt neve ígéretet tett („each opens its own page"), amit a ciklus nem tartott be: csak a
-// `[label]`-t bontotta ki, tehát a `Súly`-on kívül MINDEN útvonal holt adat volt a tuple-ökben — a
-// mezo-nol0 által átirányított `/me/ertesitesek/beallitasok` bejegyzés semmit nem állított, miközben
-// ez az ág épp rá támaszkodik. A hub navigálás után lecsatolódik, ezért csempénként friss render.
-test('a hét csempe mindegyike a saját oldalára navigál', async () => {
-  const TILES: [string, string][] = [
-    ['Súly', '/me/weight'],
-    ['Alvás', '/me/sleep'],
-    ['Growth', '/me/growth'],
-    ['Napló', '/me/naplo'],
+test('the Súly, Alvás, Célok and Napló tiles left the hub — they are tabs now; Rutin stays', async () => {
+  renderHub()
+  await screen.findByRole('button', { name: 'Fejlődés' })
+  for (const label of ['Súly', 'Alvás', 'Célok', 'Napló', 'Growth']) {
+    expect(screen.queryByRole('button', { name: label })).toBeNull()
+  }
+  expect(document.querySelectorAll('.mz-tile')).toHaveLength(3)
+  expect(screen.getByRole('button', { name: 'Rutin' })).toBeInTheDocument()
+})
+
+test('the retired identity hero, its XP ring and the bio line are gone from the hub', async () => {
+  renderHub()
+  await screen.findByRole('button', { name: 'Fejlődés' })
+  expect(document.querySelector('.enh-idhero, .enh-idring, .enh-bio, .ent-bio')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Biometria szerkesztése' })).toBeNull()
+})
+
+// Reverse parity: everything the old hub opened is still one tap away. The hub unmounts on
+// navigation, so each door gets a fresh render.
+test('every door of the hub opens its own page', async () => {
+  const DOORS: [string | RegExp, string][] = [
+    [/· Fejlődés$/, '/me/growth'],          // level · XP · streak · coins · title live there
+    ['A heti elemzés ›', '/me/week?start='],
+    ['Célok állása', '/me/goals'],
+    ['Fejlődés', '/me/growth'],
     ['Emberek', '/me/people'],
     ['Rutin', '/me/rutin'],
   ]
-  for (const [label, path] of TILES) {
+  for (const [name, path] of DOORS) {
     const { unmount } = renderHub()
-    await userEvent.click(await screen.findByRole('button', { name: label }))
-    expect(screen.getByTestId('loc')).toHaveTextContent(path)
+    await userEvent.click(await screen.findByRole('button', { name }))
+    expect(screen.getByTestId('loc').textContent).toContain(path)
     unmount()
   }
+  renderHub()
+  await screen.findByRole('button', { name: 'Fejlődés' })
+  await userEvent.click(document.querySelector<HTMLButtonElement>('button.enh-elv-next')!)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
 })
 
 test('shows today done/total and both chain strengths on the Rutin tile', async () => {
@@ -225,89 +168,49 @@ test('shows no fabricated line on the Rutin tile when the user has no habits', a
   expect(rutin.querySelector('.mz-tile-line')).toBeNull()
 })
 
-test('tile bottom lines come from the pages own hooks — the Súly and Alvás lines are live', async () => {
-  renderHub()
-  const suly = await screen.findByRole('button', { name: 'Súly' })
-  expect(suly).toHaveTextContent('78,6 kg · −0,5 / hét')
-  expect(screen.getByRole('button', { name: 'Alvás' })).toHaveTextContent('7,5 h · Q9')
-})
-
-test('a tile whose source has nothing to say carries no fabricated line', async () => {
-  weightStore.log = []
-  renderHub()
-  const suly = await screen.findByRole('button', { name: 'Súly' })
-  expect(suly.querySelector('.mz-tile-line')).toBeNull()
-})
-
 test('a beállítások közös fejléc-bejárata mellett nincs helyi csempe', () => {
   renderHub()
   expect(screen.queryByRole('button', { name: 'Beállítások' })).toBeNull()
 })
 
-// ── the progression's HOME (F7.4, mezo-d20.8.4.1) ──
-// The retired StreakSheet/TitleShopSheet content lives on the Growth page's
-// Kitüntetések tab now — the hub's chips deep-link there instead of opening sheets.
-
-test('the title chip deep-links to the Growth awards tab', async () => {
-  renderHub()
-  await screen.findByText('3 140 XP')
-  const chip = document.querySelector<HTMLButtonElement>('button.enh-titlech')
-  expect(chip).not.toBeNull()
-  await userEvent.click(chip!)
-  expect(screen.getByTestId('loc').textContent).toBe('/me/growth/kituntetesek')
-})
-
-test('the coin and streak stats deep-link to the Growth awards tab too', async () => {
-  renderHub()
-  await userEvent.click(await screen.findByRole('button', { name: 'Érme — címek' }))
-  expect(screen.getByTestId('loc').textContent).toBe('/me/growth/kituntetesek')
-})
-
 test('the entrance choreography is armed — every .rise sits inside .mz-play', async () => {
   const { container } = renderHub()
-  await screen.findByRole('button', { name: 'Célok · összegzés' })
+  await screen.findByRole('button', { name: 'Fejlődés' })
   const rises = container.querySelectorAll('.rise')
   expect(rises.length).toBeGreaterThan(0)
   for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
 })
 
-// S2 (mezo-qw37.2): the hero's identity is the SIGNED-IN account, not a seed. `useProfile` is
-// deliberately not stubbed above, so this walks the real hook → useMe() → MSW /api/auth/me.
-test('real mode: the identity hero shows the account name from /api/auth/me', async () => {
+// S2 (mezo-qw37.2): the identity is the SIGNED-IN account, not a seed. `useProfile` is
+// deliberately not stubbed, so this walks the real hook → useMe() → MSW /api/auth/me.
+test('real mode: the identity strip shows the account name from /api/auth/me', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   setToken('t')
   renderHub()
-  await waitFor(() => expect(document.querySelector('.enh-nm')).toHaveTextContent('Owner'))
-  expect(document.querySelector('.enh-idring i')).toHaveTextContent('O')
+  await waitFor(() => expect(document.querySelector('.enh-idnm strong')).toHaveTextContent('Owner'))
+  expect(document.querySelector('.enh-idmono')).toHaveTextContent('O')
+  expect(screen.getByRole('button', { name: 'Owner · Fejlődés' })).toBeInTheDocument()
   vi.unstubAllEnvs()
   setToken(null)
 })
 
-// mezo-rn9u: a hero CSAK aktív cél mellett rajzolódott, és a Nap-csempe / Heti-kártya is
-// aktív célra kapuzott — nulla aktív céllal a /me/goals SEHONNAN nem nyílt. Ez egyirányú
-// ajtót csinált a parkolásból (parkolod az egyetlen célod → a hub eltűnik → nem tudod
-// visszakapcsolni), és a lezárt célokat, a Jelek oldalt és a Súlycél-sort is elzárta.
-// A mozaik Célok csempéje az ÁLLANDÓ ajtó; a hero marad adat-vezérelt.
-test('a mozaik Célok csempéje a hubra visz (mezo-rn9u)', async () => {
-  renderHub()
-  fireEvent.click(await screen.findByRole('button', { name: 'Célok' }))
-  expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
-})
-
-test('aktív életcél NÉLKÜL is ott a Célok csempe — a park-csapda ellen (mezo-rn9u)', async () => {
+// mezo-rn9u: with no goal at all the hub must not dead-end. The permanent door to the Célok
+// hub is the bottom bar's Célok tab now (app/navigation tests); on the hub itself the standing
+// card honestly gives way to the dashed door into the wizard.
+test('real mode, no goal of any kind: the dashed „＋ Első cél" door replaces the standing card', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   setToken('t')
-  server.use(http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json([])))
+  server.use(
+    http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+  )
   renderHub()
-  // a hero összegző kártyája joggal hiányzik (nincs mit összegezni), a csempe viszont áll
-  const tile = await screen.findByRole('button', { name: 'Célok' })
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Célok · összegzés' })).toBeNull())
-  // the ＋ Új cél door is free space: dashed, never glass (bible §3 rank 4)
-  const door = await screen.findByRole('button', { name: '＋ Új cél' })
+  const door = await screen.findByRole('button', { name: /＋ Első cél/ })
   expect(door).toHaveClass('uv-empty')
   expect(door).not.toHaveClass('glass')
-  fireEvent.click(tile)
-  expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Célok állása' })).toBeNull()
+  await userEvent.click(door)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/new')
   vi.unstubAllEnvs()
   setToken(null)
 })

@@ -1611,8 +1611,12 @@ describe.each(U4_BLOCKS)('the uveg edzes %s section carries the glass ranking (m
  * space dashed; never glass in glass.
  */
 const U6_BLOCKS: Array<[string, string[]]> = [
-  ['hub', ['.enh-hub .enh-idhero.uv-halo', '.enh-hub .enh-goalcard.glass', '.enh-hub .enh-newgoal.uv-empty',
-    '.enh-hub .mz-tile.enh-tile.glass', '.enh-hub .enh-titlech', '.enh-hub .enh-lv']],
+  // mezo-lhqw7: the hub is „Hol tartok" — flat identity strip, the week hero halo, Életvonal,
+  // Célok állása, the tiles. The identity hero / XP ring / title-chip selectors retired with it.
+  ['hub', ['.enh-hub .enh-idstrip', '.enh-hub .enh-wkhero.uv-halo', '.enh-hub .enh-wkcta', '.enh-hub .enh-elv',
+    '.enh-hub .enh-elv-curve', '.enh-hub .enh-elv-stn', '.enh-hub .enh-elv.enh-elv-empty.uv-empty',
+    '.enh-hub .enh-goalcard.glass', '.enh-hub .enh-goalcard .enh-grow', '.enh-hub .enh-newgoal.uv-empty',
+    '.enh-hub .mz-tile.enh-tile.glass']],
   ['celok', ['.enc-celok .enc-tile.glass', '.enc-celok .enc-hero.uv-halo', '.enc-celok .enc-xrow.glass',
     '.enc-celok .enc-newtile.uv-empty', '.enc-cel .lg-pillar.glass', '.enc-cel .lg-why.glass',
     '.enc-wiz .lg-fcard.glass', '.sheet.glass.enc-pcat']],
