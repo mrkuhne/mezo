@@ -111,6 +111,7 @@ public class TeamChatService {
     private final CompanionFlagTraceRepository flagTraces;
     private final UserFanOut userFanOut;
     private final NotificationProperties notificationProperties;
+    private final TeamChatQuietHours quietHours;
     private final ObjectProvider<TeamChatService> self;
     private final ApplicationEventPublisher events;
     /** S7 (mezo-d6ivw.7): the known-exception gate at open — a provider, since the exception
@@ -616,28 +617,13 @@ public class TeamChatService {
         return Optional.of(new ReservedPush(userId, thread.getId(), title, pushExcerpt(ownerBody), dedupKey));
     }
 
-    /** Spec D3 / final review C1: {@code at} falls in the part of the quiet window BEFORE local
-     *  midnight ({@code mezo.notification.quiet-hours}, wrap-aware — the
-     *  {@code AnchorResolver.interventionFireMinute} reading). Only a window that wraps midnight has
-     *  such a part; a same-day window (or start == end, "no quiet hours") never blocks here — the
-     *  feed-anchored push path defers those rings to the window's end instead. */
+    /** The evening part of the quiet window — see {@link TeamChatQuietHours#inEvening}. */
     boolean inEveningQuiet(Instant at) {
-        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
-        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
-        if (!quietStart.isAfter(quietEnd)) {
-            return false;
-        }
-        return !at.atZone(properties.zone()).toLocalTime().isBefore(quietStart);
+        return quietHours.inEvening(at);
     }
 
     private boolean inQuietHours(Instant at) {
-        LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
-        LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
-        LocalTime local = at.atZone(properties.zone()).toLocalTime();
-        if (!quietStart.isAfter(quietEnd)) {
-            return false;
-        }
-        return !local.isBefore(quietStart) || local.isBefore(quietEnd);
+        return quietHours.contains(at);
     }
 
     private static Instant latest(Instant a, Instant b) {

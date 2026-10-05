@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-30
+updated: 2026-10-05
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -4367,7 +4367,12 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   The fact also drives its exception: `KnowledgeFactService.liveInPrompt(userId, factIds)` (a
   read-only batch — which of these ids still exist with `include_in_prompt=true`) lets the
   character's exception gate skip an exception whose fact the user deleted or muted in the
-  Tudástár, and revive it when the fact is turned back on. Companion never imports character.
+  Tudástár, and revive it when the fact is turned back on. Since `mezo-d6ivw.11` the capture runs
+  `REQUIRES_NEW` (a failed capture must not roll back the caller's REPLY line — the caller catches
+  and only answers), and the exception actively MIRRORS the fact: character's
+  `TeamChatFactMirrorListener` consumes `KnowledgeFactChangedEvent` and reads
+  `KnowledgeFactService.liveText(userId, factId)` (the current text while live, empty otherwise)
+  to (de)activate the exception and move its chip text. Companion never imports character.
   **S6 (`mezo-d6ivw.6`) adds `muted_reason varchar(16)` (nullable,
   `ck_knowledge_fact_muted_reason IN (user,refuted,superseded)`) and `muted_at timestamptz`
   (nullable) — `202609271200_mezo-d6ivw.6_memory_forget.sql` + the one-off backfill
