@@ -864,3 +864,25 @@ test('train · the exercise swap picker and scope sheet stay contained at 320px'
   await expect(page.getByRole('button', { name: /^Csak ma/ })).toBeInViewport()
   await expect(page.getByRole('button', { name: /^Mezociklusra is/ })).toBeInViewport()
 })
+
+// ── Én · Hol tartok (mezo-lhqw7): the hub's strip, week hero, Életvonal and goal card at 320px ──
+// The Életvonal plot is an svg with absolutely positioned station buttons over it, and the week
+// hero's halo is 360px wide — both are the kind of thing that pushes a narrow phone sideways.
+test('Én hub · Hol tartok stays horizontally contained @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/me')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  await expect(page.getByRole('button', { name: 'Célok állása' })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+  const box = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const stations = [...document.querySelectorAll('.enh-elv-stn')].map((e) => e.getBoundingClientRect())
+    return {
+      scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth,
+      stationsInside: stations.every((r) => r.left >= 0 && r.right <= innerWidth),
+    }
+  })
+  expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1)
+  expect(box.stationsInside).toBe(true)
+})
