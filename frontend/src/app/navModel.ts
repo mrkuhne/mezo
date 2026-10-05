@@ -118,9 +118,15 @@ export const DOMAINS: NavDomain[] = [
     id: 'me',
     name: 'Én',
     tabs: [
-      { label: 'Áttekintés', route: '/me', icon: 'i-emberek' },
-      { label: 'Súly', route: '/me/weight', icon: 'i-suly' },
-      { label: 'Alvás', route: '/me/sleep', icon: 'i-alvas' },
+      // Én IA (mezo-lhqw7, owner 2026-09-28): the hub answers „Hol tartok"; the week family,
+      // Fejlődés and Emberek are its deep pages. `/me/ertesitesek` is entered from the header
+      // bell only — it is filed here so the lit tab is a statement, not a prefix guess.
+      { label: 'Hol tartok', route: '/me', icon: 'i-emberek',
+        owns: ['/me/week', '/me/growth', '/me/people', '/me/ertesitesek'] },
+      // Test = Súly + Alvás under one tab. The two pages keep their URLs (deep links from
+      // habitAction/questAction/push stay valid); the tab home is Súly (owner decision 6).
+      { label: 'Test', route: '/me/weight', icon: 'i-suly', owns: ['/me/sleep'] },
+      { label: 'Célok', route: '/me/goals', icon: 'i-cel' },
       { label: 'Napló', route: '/me/naplo', icon: 'i-naplo' },
     ],
   },
