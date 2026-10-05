@@ -442,6 +442,153 @@ pace (automatic by owner decision).
 - Traps: ArchUnit (the period lives in train); `ResetDatabase:50-52`; `idx_` index prefix;
   contract regen widens `PlannedSkip.source`; the FE `skipWindow` must stretch to the period.
 
+## 10. Spec delta — S3 (2026-10-06, `mezo-q4xt2.3`)
+
+Brainstorm 2026-10-05/06 (recon: researcher + investigator). Owner answers in bold.
+
+### 10.1 Decisions
+1. **The day target stays; the skipped share is neutral** (owner: "B").
+   - The daily kcal/macro target and the ring are unchanged by a meal skip.
+   - The skipped slot's budget share shows on the ring as a muted "kihagyva" segment, never as a
+     deficit, and never amber/red.
+   - "Fér még bele" = target − eaten − Σ skipped shares (floored at 0). The remaining slots keep
+     exactly their planned budgets: **no redistribution, explicit or implicit**.
+2. **Kímélő-mód Fuel differs per category** (owner: "A"). The Fuel day carries a `fuelMode`:
+   - `ILLNESS`, `STOMACH` → **`GUIDANCE`**: no kcal target, no macro rings, no slot budgets. The
+     hero is a guidance card: fluids first (the existing water tracking, shown as progress),
+     "egyél, amikor megy", light food. `STOMACH` adds an "Ezek könnyebben mennek le" list (phrased
+     as may-sit-easier, not a prescribed diet; strict BRAT is not recommended any more) and a short
+     "Mikor fordulj orvoshoz" list. Logged meals show as a plain total with no comparison.
+   - `INJURY` → **`MAINTENANCE`**: the deficit is switched off (target = max(goal target,
+     maintenance)); rings stay; the protein target is emphasised with one line of why.
+   - `TRAVEL` → **`ESTIMATE`**: the target stays as muted reference; one line "becsülj nyugodtan, a
+     fehérjére figyelj"; no over/under state.
+   - In every mode meals can be logged as usual, unlogged past slots are neutral (no "Kimaradt",
+     no "még pótolható" count), and every guidance block ends with "Ez nem orvosi tanács".
+   - The mode follows the **period's days** (start … ended_on−1, or open-ended), *including* a day
+     released with "Ma mégis edzek": being ill does not pause because of one light session.
+3. **A meal skip has its own short reason list** (owner: "A"): *Nem vagyok éhes · Nincs időm ·
+   Gyomorrontás · Beteg vagyok · Úton vagyok · Egyéb* + "Most nem mondom". Skip first, reason
+   after (§8.1.3). `STOMACH`, `ILLNESS`, `TRAVEL` reveal the S2 duration row and open/update the
+   kímélő period exactly like the training sheet. New reason category **`NOT_HUNGRY`** (MEAL only).
+4. **A meal skip is never "missed" and has no free pass.** There is no meal streak to protect.
+   MEAL rows are always `excused`, never `freePass`, stay **out of the weekly free-pass race**, and
+   never bridge the training streak.
+5. **Which slots:** any unlogged meal/snack slot of **today or the last 7 days** (no future
+   dates). A past "Kimaradt" slot offers "Kihagytam".
+6. **The skipped slot stays visible, muted** ("Kihagyva · <ok>") with **Visszavonom** and
+   **Mégis ettem** (withdraws the skip, then opens the log flow for that slot). It is never the
+   "now" window, never in the yesterday-"pótolható" count, and out of the late-log reflow chain.
+7. **Consumers go quiet, not just the screen.**
+   - Day with a meal skip: the day score's kcal fit is measured against `target − Σ skipped
+     kcal`; the coach context gets "Kihagyott étkezés: <slot> (<ok>)". Multi-day intake signals
+     (7-day load/fuel mismatch, trends) stay honest on purpose (decision 1).
+   - Period day (`GUIDANCE` / `ESTIMATE`): no "eaten/target" line for the coach or the meal coach
+     (a guidance line instead); the nutrition dimension of the day score is neutral; the
+     under-eating, logging-gap and meal-rhythm flags are silenced (`RECOVERY_MODE`); the macro
+     adherence detector, the protein quest, the meal habits and the adaptive kcal review ignore
+     the day. `MAINTENANCE` days are evaluated against the maintenance target and are also
+     excluded from the adaptive review. The water quest stays.
+   - Fuel week: a period day shows the kímélő mark instead of a percentage; no `is-over`.
+8. **Icons:** reuse `t-skip`, `t-kimelo`, `t-water`, `t-digestion`, `t-ill`, `t-travel`,
+   `t-clock`, `t-other`. New candidates decided at the prototype and shown on its "Új ikonok"
+   sheet: a light-food mark (soup/tea) and "nem vagyok éhes".
+
+### 10.2 Architecture
+- **`planned_skip` gains kind `MEAL`** (new Liquibase changeset; released ones are immutable):
+  `kind` CHECK + `ck_planned_skip_target` (MEAL: `session_key` not null, `day_of_week`/`time`
+  null), reason CHECK + `NOT_HUNGRY`, new nullable `planned_kcal int` (MEAL only). No new table.
+- **Slot identity = `session_key`** `"<slotKind>#<n>"` (`n` = 1-based index among the day's planned
+  windows of that slot kind, in time order: `lunch#1`, `snack#2`). Slots have no id and their
+  times move (relative anchors, reflow, day-type flips), so time is not a key. A row whose key
+  matches no window of the day is ignored by the FE (orphan) and can still be undone from the list.
+- **`planned_kcal` is a snapshot** of the slot's budget at skip time, sent by the FE (windows exist
+  only in the FE). The server clamps it to `0…day target`. It keeps the muted segment stable on
+  past days (past days are rebuilt from today's plan) and gives the backend the number for
+  decision 7 without a backend window engine.
+- **Central read, extended (S1 lesson 1, S2 lesson 1):** MEAL rows flow through
+  `PlannedSkipService.verdictsBetween`; `PlannedSkipPolicy.judge` marks them excused/no-pass and
+  skips them in the pass ordering; `bridgedWeeks`, `excusedDates` and every existing
+  kind-agnostic caller filter MEAL out (audit in the plan). New helper `mealSkipsOn(user, date)`
+  (label + reason + kcal) on the same service. No second read.
+- **Fuel mode** is a pure function `RecoveryFuelMode.of(category)` in train, answered by
+  `RecoveryPeriodService.fuelModes(user, from, to)` (period days, releases ignored; repository-only,
+  S2 lesson 2). `meal → train` is an existing allowed direction; train never imports meal/fuel.
+- **API:** `train-skip.yml` — `PlannedSkipKind += MEAL`, `PlannedSkipReason += NOT_HUNGRY`,
+  `plannedKcal` on request/response. `meal.yml` — `FuelDayResponse` gets nullable
+  `recovery {category, fuelMode, dayNumber}` and `skippedKcal`; in `MAINTENANCE` the served targets
+  are already the maintenance ones (`FuelDayService`), week days carry `fuelMode`.
+- **Backend consumers** (decision 7): `ContextSnapshotAssembler.fuelBlock`, `MealCoachPrompt`,
+  `DayEvaluationEngine` (nutrition), `FlagEvaluator` (+ `LoadFuelMismatchRule`, `LoggingGapRule`,
+  `MealRhythmDriftRule`), `MacroAdherenceDetector`, `QuestSelector`/`QuestEvaluator`
+  (`protein_target`), `HabitEvaluator` (`breakfast_protein`, `last_meal_before`),
+  `GoalIntakeAdherenceAdapter`; `WeeklyReviewGenerator` and `RetroLoggingProbe` to be read in the
+  plan. Companion reads the mode through the meal/train services it already uses.
+- **FE:**
+  - `buildDayPlan` takes the day's meal skips: **split the budget first, then mark** the window
+    `skipped` (so its share is never renormalised onto the others), exclude it from `nowWin`, the
+    reflow chain and "missed"; a new `FuelSlot.state = 'skipped'`.
+  - `plannedSkips.ts`: `MEAL` kind; the synthetic recovery `DAY` row must **not** match MEAL (a
+    protected day does not skip meals — it changes the mode); mock `judge` mirrors decision 4.
+  - `FuelMealBlocks` (Kihagyom / skipped card), `MealSkipSheet` (reuses the S2 duration row),
+    `FuelEnergyHero` (muted segment; per-mode hero), `FuelGuidanceCard`, `FuelWeekDayGlass`,
+    `heroWindow`, `fuelSwimlane`, `FuelMaiPage` yesterday chip, `FuelLogNewPage`, Nap
+    `useFuelPreview`. Guidance copy is static, in the FE, under the Fuel shame-vocabulary guard.
+- Not switch-gated (plain CRUD, like S1/S2). No LLM.
+
+### 10.3 Out of S3
+Skipping future days' meals; a meal streak or meal free pass; the Egyéb classifier, the
+fever/chest safety question, memory episodes, a coach nudge on a recurring skipped slot (S4);
+curated bland recipes in the recipe library; weight-trend handling of sick days; hydration
+targets raised for illness.
+
+### 10.4 Prior art (S3-specific, researcher 2026-10-05)
+- **MacroFactor fasting flag / partial days:** https://help.macrofactorapp.com/en/articles/16-track-a-fasting-day ,
+  https://help.macrofactorapp.com/en/articles/29-how-do-macrofactor-s-coaching-algorithms-deal-with-partially-logged-days
+  — "didn't eat" must be a stored state, not an absence. *Adopted*, one level down (per meal).
+- **Cronometer day status:** https://forums.cronometer.com/discussion/comment/21511 — day status
+  decides what enters averages. *Adopted* automatically for period days; the manual "mark
+  complete" step *rejected*.
+- **Eat This Much:** https://blog.eatthismuch.com/eat-this-much-tutorial-8-traking-what-you-eat-and-your-progress/
+  — target / planned / tracked are separate numbers; redistribution only as an explicit action.
+  *Adopted* (target unchanged, planned lower); no explicit skip was found there.
+- **NHS diarrhoea and vomiting:** https://www.nhs.uk/conditions/diarrhoea-and-vomiting/ — fluids in
+  small sips, eat when able, avoid fatty/spicy food, red-flag list. *Adopted* for the STOMACH
+  copy; BRAT as a prescribed diet *rejected* (CDC 2003: https://pubmed.ncbi.nlm.nih.gov/14627948/,
+  paediatric, verified only partially).
+- **GSSI injury nutrition (Tipton):** https://www.gssiweb.org/en/expert-panel/sports-medicine-publications/article/nutritional-support-for-exercise-induced-injuries-
+  — do not cut energy, keep protein high. *Adopted* as `MAINTENANCE` (sponsored review, not a
+  position stand).
+- Not found: any mainstream app that replaces the kcal target during illness; primary sources
+  for cold/flu and travel eating tips (that copy stays generic); user-complaint threads.
+
+### 10.5 Codebase terrain (investigator 2026-10-05)
+- **Slots have no identity:** `fuel/entity/MealSlotJson.java` (jsonb list, no id);
+  `buildDayPlan.ts:87` (`SlotKey` not unique), windows FE-only (`:372-376`), budget split
+  `splitBudget:257` / `splitBudgetPct:280`, state classifier `:638-655`, reflow `:466-505`.
+  Nothing is redistributed today; a missed slot keeps its share.
+- **FE slot-state readers:** `fuelSwimlane.ts:27,226`, `FuelMealBlocks.tsx:209,216,245`,
+  `heroWindow.ts:62`, `FuelMaiPage.tsx:141-143`, `FuelLogNewPage.tsx:47`,
+  `data/today/todayHooks.ts:204-214`. No meal logic in the orb, notifications or `deriveBlocks`.
+- **Target rendering:** `FuelEnergyHero.tsx:112,124,204`, `FuelWeekDayGlass.tsx:137` (`is-over`),
+  `fuelWeekView.ts:171-190`; backend `DayTargetProjector.java:47`, `FuelDayService.java:77,113,253-264`.
+- **Backend consumers:** `ContextSnapshotAssembler.java:635` (+ `kimeloModLine:373`),
+  `MealCoachPrompt.java:63,216`, `DayEvaluationEngine.java:165-198`, `FlagEvaluator.java:91-117`,
+  `MacroAdherenceDetector`, `QuestEvaluator.java:53,60`, `QuestSelector.java:192`,
+  `HabitEvaluator.java:100,107`, `GoalIntakeAdherenceAdapter.java:21` →
+  `AdaptiveReviewService.java:61`; `IntakeDayClassifier` already drops very low days.
+- **Skip plumbing:** `202609281500_mezo-q4xt2.1_planned_skip.sql`, `train-skip.yml:71`,
+  `PlannedSkipService.java:66,149,332,342` (§9.5 anchors have drifted), `PlannedSkipPolicy.java:119`,
+  `plannedSkips.ts:12,51-57,99,125`, `skipHooks.ts:24` (already invalidates the Fuel day).
+- **Boundary:** `ArchitectureTest.java:75` (cycle-free, frozen); `meal → train` exists
+  (`FuelDayService.java:25`); train imports only `auth`/`progression`.
+- **Reusable:** water tracking (`WaterLogService`, `FuelWaterModule`, `WaterLogSheet`). No
+  bland/light-food content exists anywhere.
+- **Traps:** `judge` and `bridgedWeeks` are kind-agnostic; the FE synthetic `DAY` row matches
+  every kind; dropping a window before the split redistributes by accident; past days are rebuilt
+  from today's plan; a template edit orphans a row; guard tests for shame vocabulary live in the
+  six Fuel page/component tests + `tutorial/registry/lint.ts`.
+
 ## Slice lessons
 
 (appended by each slice session)
