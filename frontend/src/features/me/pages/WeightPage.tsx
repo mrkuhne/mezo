@@ -13,12 +13,13 @@
 // one glass sky chart card, glass sky week cards (CSS `── uveg en suly (`).
 // ============================================================
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useGoal, useWeight } from '@/data/hooks'
+import { TestViewSwitch } from '@/features/me/components/TestViewSwitch'
+import { BioRow } from '@/features/me/components/BioRow'
 import { WeightHero, statRateColor } from '@/features/me/components/WeightHero'
 import { WeightTrendChart } from '@/features/me/components/WeightTrendChart'
 import { WeeklyWeightCard } from '@/features/me/components/WeeklyWeightCard'
@@ -29,7 +30,6 @@ const PERIODS: Period[] = ['7d', '30d', '90d', '1y']
 const WEEK_STEP = 6
 
 export function WeightPage() {
-  const navigate = useNavigate()
   const { weightLog, weightTrends, logWeight } = useWeight()
   const { goal, goalResponse } = useGoal()
   const [period, setPeriod] = useState<Period>('30d')
@@ -46,11 +46,11 @@ export function WeightPage() {
 
   return (
     <MozaikPage tone="sky" className="wt-page">
-      <PageHead glass onBack={() => navigate(-1)} label="Én">
+      <TestViewSwitch view="suly">
         <button type="button" className="mz-pgact wt-logbtn" onClick={() => setLogOpen(true)}>
           ＋ Súly naplózása
         </button>
-      </PageHead>
+      </TestViewSwitch>
       <EntranceGroup>
         <WeightHero log={weightLog} weightTrends={weightTrends} goal={goal} />
 
@@ -102,6 +102,7 @@ export function WeightPage() {
               Régebbi hetek <Icon name="chevron-down" size={12} />
             </button>
           )}
+          <BioRow />
         </PageBody>
       </EntranceGroup>
 

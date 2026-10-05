@@ -22767,6 +22767,29 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* ── /uveg en alvas ── */
 
+/* ── uveg en test (mezo-lhqw7) ── /me/weight + /me/sleep: the Test tab head and the bio row ── */
+.ent-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 16px 0; }
+.ent-seg {
+  display: flex; width: fit-content; max-width: 100%; padding: 3px; gap: 2px;
+  border-radius: 999px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ent-seg-btn {
+  min-width: 0; min-height: 36px; padding: 7px 15px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 12.5px/1 var(--ff-body); color: var(--text-secondary); background: none;
+}
+.ent-seg-btn.is-on {
+  color: #191614; background: var(--dv-sky);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sky) 45%, transparent);
+}
+.ent-seg-btn:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+.ent-bio {
+  display: block; margin: 18px auto 0; border: none; background: none; font-family: inherit; cursor: pointer;
+  min-height: 44px; padding: 4px 12px; font-size: 12px; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums;
+}
+.ent-bio:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+/* ── /uveg en test ── */
+
 /* ── uveg en het (mezo-me75u.6) ── /me/week(+/elemzes,/napok,/felfedezesek,/tanulsagok) ── */
 /* Reference: docs/design_2.0/prototypes/src/uveg-en-body.html `het()`, `elemzes()`, `napok()`,
    `felfedezesek()`, `tanulsagok()` (owner OK). Every rule is scoped to a page root — `.wkh-page`

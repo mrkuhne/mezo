@@ -28,15 +28,15 @@
 // every mosaic tile wear `.glass` in their own accent; the ＋ Új cél door is dashed. CSS:
 // prototype.css `── uveg en hub (`.
 // ============================================================
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Icon3D } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useBiometricProfile, useDecisions, useGamification, useLifeGoals, useLifeGoalToday,
+  useDecisions, useGamification, useLifeGoals, useLifeGoalToday,
   useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
-import { ageFromBirthDate } from '@/features/me/logic/biometricFields'
+import { BioRow } from '@/features/me/components/BioRow'
 import { DIMENSIONS, ARROW_GLYPH } from '@/features/me/logic/lifegoalLabels'
 import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
 import { addDays, localDateString } from '@/shared/lib/dates'
@@ -49,7 +49,6 @@ const huSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${hu
 
 export function EnHubPage() {
   const navigate = useNavigate()
-  const location = useLocation()
   // F7.4 (mezo-d20.8.4.1): the progression moved HOME — the title chip and the
   // streak/coin stats deep-link to /me/growth/kituntetesek (StreakCard + TitlesSection,
   // mezo-rmi0.1: the Growth hub's sibling route, was the ?tab=awards deep link);
@@ -63,19 +62,8 @@ export function EnHubPage() {
   const xpPct = gam.xpForNext > 0 ? Math.min(100, Math.round((gam.xpInLevel / gam.xpForNext) * 100)) : 0
   const initial = (profile?.name ?? '').trim().charAt(0).toUpperCase()
 
-  const { profile: biometric } = useBiometricProfile()
   const { weightLog, weightTrends } = useWeight()
   const latestKg = weightLog.length > 0 ? weightLog[weightLog.length - 1].value : null
-  // MeBioRow's rule, verbatim: `·`-joined non-null bits, nothing at zero bits. Each bit is
-  // guarded on its OWN field rather than on `biometric` alone (mezo-5cmq): the contract now
-  // types every profile field nullable, so a present profile is no longer a promise that
-  // birthDate/heightCm are filled — an unguarded read would print „null cm".
-  const bioBits = [
-    biometric?.birthDate ? `${ageFromBirthDate(biometric.birthDate)} év` : null,
-    biometric?.heightCm != null ? `${biometric.heightCm} cm` : null,
-    latestKg != null ? `${hu1(latestKg)} kg` : null,
-    biometric?.bodyFatPct != null ? `${biometric.bodyFatPct}% testzsír` : null,
-  ].filter((b): b is string => b !== null)
 
   // ── életcél-hero (mezo-iizd.4) ───────────────────────────────────────
   // A hero mostanáig a SÚLYCÉL adata volt és /me/goals/weight-re vitt — az Én-hubról így
@@ -243,19 +231,7 @@ export function EnHubPage() {
             <button type="button" className="enh-idstat enh-flat" aria-label="Érme — címek"
               onClick={() => navigate('/me/growth/kituntetesek')}><Icon3D name="t-coin" size={18} /> {gam.coins}</button>
           </div>
-          {bioBits.length > 0 ? (
-            <button type="button" className="enh-bio" aria-label="Biometria szerkesztése"
-              onClick={() => navigate('/settings/me/biometrics', { state: { from: location.pathname + location.search } })}>
-              {bioBits.join(' · ')}
-            </button>
-          ) : (
-            /* zero bits: the bio line itself vanishes (MeBioRow's contract) — but the
-               biometrics write path must not vanish with it, so the hero carries
-               BiometricCard's own empty-state CTA copy instead. */
-            <button type="button" className="enh-bio" onClick={() => navigate('/settings/me/biometrics', { state: { from: location.pathname + location.search } })}>
-              Állítsd be a biometriád
-            </button>
-          )}
+          <BioRow className="enh-bio" />
         </div>
 
         {/* ===== goal card ===== */}
