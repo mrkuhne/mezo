@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-29
+updated: 2026-10-06
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -145,7 +145,7 @@ Notification preferences now live at `/settings/notifications`, reached through 
 **In-app toast action contract (`mezo-ubxd`).** The global host also supports an optional action on a simple toast: `SimpleToast.action?: { label: string; onClick: () => void | Promise<void> }`. Stack uses this for the intake confirmation's **Visszavonás** button. It remains a simple success toast — the `RewardToast` shape and progression presentation are unchanged. Invoking the action dismisses that toast immediately; if its Promise rejects, the global TanStack `MutationCache.onError` emits the normal error toast. Queue capacity, kind-specific timers, newest-first order, per-item `role="status"`, close control and live-region behavior are unchanged.
 
 **Route:** `/me/ertesitesek` is now the in-app notification **feed** (`NotificationFeedPage.tsx`,
-§2a) — the settings surface described below moved one level down, to
+§2a; its glass back pill reads „Hol tartok” → `/me`, and the Én tab row files the route under the Hol tartok tab via `owns`, `mezo-lhqw7`) — the settings surface described below moved one level down, to
 `/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`, mezo-nol0). Full page-level description
 (layout, states, copy) is in [`me.md`](me.md) §2 "`Értesítés`" — this doc covers the platform
 mechanics both pages sit on top of.

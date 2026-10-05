@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-28
+updated: 2026-10-06
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -21,7 +21,7 @@ related: [goal-engine, growth, companion, me, today, train, ../research/entities
 
 # Life goals — Feature Documentation
 
-> One-line: general-purpose life goals ("Célok") at route `/me/goals` (tab "Én"), tagged to a
+> One-line: general-purpose life goals ("Célok") at route `/me/goals` (the Én **Célok** tab since `mezo-lhqw7` — a tab page: no back chip, an `.ent-head` row; the weight-goal `/me/goals/weight` page's back chip is „Célok” → `/me/goals`), tagged to a
 > PERMAH dimension and measured by 1–5 pillars drawn from a closed signal catalog.
 > **Status: slice 3 (`mezo-iizd.5`–`.7` engine, `.9`/`.4`/`.12` embedding) — ✅ backend CRUD/lifecycle/
 > catalog/AI-propose (slice 1) ✅ scorer core: `LifeGoalScorer` + 5 `SignalSource` adapters +

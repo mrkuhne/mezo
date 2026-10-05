@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-10-01
+updated: 2026-10-06
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -14,6 +14,7 @@ key_files:
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
+> **2026-10-06 — Én IA S1 (`mezo-lhqw7`).** One new `prototype.css` block, `── uveg en test (mezo-lhqw7)` (`.ent-head`, the `.ent-seg`/`.ent-seg-btn` Súly|Alvás segment with the sky `is-on` glow, `.ent-bio`), guarded by `LHQW7_BLOCKS` in `prototypeCssStructure.test.ts`. `app/navModel.ts` gained the Én row `Hol tartok · Test · Célok · Napló` with `owns` (see [`me.md`](me.md)); no sprite, token or shared-kit primitive changed.
 > **2026-10-01 — Fuel eating-time control (`mezo-yhhvg`).** The routed meal composer gained a flat disclosure row (`.logflow-eaten-time`) above its sticky save bar. The page adds bottom scroll space so the bar cannot cover the row at 320 px. It reuses Üveg colors and fields; no shared primitive or sprite changed.
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** One new sprite icon, `t-kimelo` (a sheltering leaf: `docs/design_2.0/assets/titanium-custom.svg` + generator, `Icon3DName`); a `Kímélő mód S2` block in `styles/prototype.css` and a shared 320 px rule for the reason/duration chips (`.trm-whyc` words stay whole).
 
