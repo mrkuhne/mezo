@@ -368,8 +368,51 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         assertThat(WeeklyReviewGenerator.heroLine(null, "")).isNull();
     }
 
-    /** (The sentinel itself rides in the payload via the memoir title, so the numeral is written as
-     *  a JSON escape: Jackson reads 9999, the payload text only ever holds the escape.) A numeral absent from the week payload is rejected by the number guard; summary intact. */
+    /** The sentinel itself rides in the payload via the memoir title (not in the narrow grounding),
+     *  but the numeral is still written as a JSON escape to be independent of that. A numeral absent
+     *  from the week facts is rejected by the number guard; summary intact. */
+    /** A non-string hero value must not drop the review. */
+    @Test
+    void aNonStringHeroValueDropsOnlyThatLine() {
+        UUID user = userPopulator.createUser("wr-hero-array@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Csendes hét.\",\"dayNotes\":[],\"anchorIndexes\":[],"
+                        + "\"wentWell\":[\"a\"],\"watchOut\":{\"x\":1}}]");
+
+        WeeklyReviewEntity review = generator.generate(user, WEEK_START);
+
+        assertThat(review).isNotNull();
+        assertThat(review.getSummary()).isEqualTo("Csendes hét.");
+        assertThat(review.getWentWell()).isNull();
+        assertThat(review.getWatchOut()).isNull();
+    }
+
+    @Test
+    void heroLineGroundsOnNumeralsOfTheGivenFacts() {
+        assertThat(WeeklyReviewGenerator.heroLine("Átlag 2100 kcal.", "kcal 2100 / cél 2200")).isNotNull();
+        assertThat(WeeklyReviewGenerator.heroLine("7,5 óra aludtál.", "alvás 7.5 óra")).isNotNull();
+        assertThat(WeeklyReviewGenerator.heroLine("3 edzésed volt.", "alvás 7.5 óra, 2 edzés")).isNull();
+    }
+
+    /** The narrow grounding must exclude dates, the anchor numbering and other-section numbers. */
+    @Test
+    void weekFactsExcludeDatesAnchorIndexesAndMemoirNumbers() {
+        UUID user = userPopulator.createUser("wr-hero-narrow@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedConfirmedPatternEvent(user, WEEK_START);
+        seedMemoirWithSentinel(user, WEEK_START, "Memoár 4242 tanulság");
+
+        WeeklyReviewGenerator.WeeklyReviewGather gather = generator.gather(user, WEEK_START);
+
+        assertThat(gather.payload()).contains("HORGONY-JELÖLTEK").contains("4242");
+        assertThat(gather.weekFacts())
+                .doesNotContain("HORGONY").doesNotContain("4242").doesNotContain(WEEK_START.toString());
+        assertThat(WeeklyReviewGenerator.heroLine("4242 tanulság.", gather.weekFacts())).isNull();
+        assertThat(WeeklyReviewGenerator.heroLine("A hét " + WEEK_START.getYear() + " volt.", gather.weekFacts()))
+                .isNull();
+    }
+
     @Test
     void anUngroundedNumeralInAHeroLineIsRejected() {
         UUID user = userPopulator.createUser("wr-hero-numeral@test.local").getId();

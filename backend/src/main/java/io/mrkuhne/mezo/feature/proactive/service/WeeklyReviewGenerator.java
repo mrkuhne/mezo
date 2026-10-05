@@ -38,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +46,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 /**
@@ -146,7 +148,14 @@ public class WeeklyReviewGenerator {
     private static final LlmCallContext CONTEXT =
             new LlmCallContext("proactive_weekly_review", "generate", null, null);
 
-    public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
+    /** Hero-line cap, in characters (mezo-lhqw7). */
+    private static final int HERO_LINE_MAX = 160;
+
+    private static final Pattern ISO_DATE = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+
+    /** {@code weekFacts} is the NARROW grounding text for the hero lines' number guard: only this
+     *  week's own logged/measured data, see {@link #gather}. {@code payload} is what the model sees. */
+    public record WeeklyReviewGather(String payload, List<Highlight> candidates, String weekFacts) {
     }
 
     record ParsedDayNote(String date, String note) {
@@ -155,19 +164,23 @@ public class WeeklyReviewGenerator {
     record ParsedCandidate(String text, String category, String evidence, String owner) {
     }
 
+    /** {@code wentWell}/{@code watchOut} stay raw {@link JsonNode}s so a non-string value costs only
+     *  that line, never the whole review ({@link #heroLineOf}). */
     record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes,
-            List<ParsedCandidate> candidateFacts, String wentWell, String watchOut) {
+            List<ParsedCandidate> candidateFacts, JsonNode wentWell, JsonNode watchOut) {
     }
-
-    private static final int HERO_LINE_MAX = 160;
 
     /** Hero sentence hygiene (mezo-lhqw7): absence beats a placeholder. A rejected line never
      *  drops the review — only a blank summary does. */
-    static String heroLine(String raw, String payload) {
+    static String heroLineOf(JsonNode node, String grounding) {
+        return node != null && node.isString() ? heroLine(node.asString(), grounding) : null;
+    }
+
+    static String heroLine(String raw, String grounding) {
         if (raw == null) return null;
         String text = raw.strip();
         if (text.isEmpty() || text.length() > HERO_LINE_MAX) return null;
-        return ProseNumberGuard.grounded(text, payload) ? text : null;
+        return ProseNumberGuard.grounded(text, grounding) ? text : null;
     }
 
     @Transactional
@@ -195,8 +208,8 @@ public class WeeklyReviewGenerator {
         review.setCreatedBy(userId);
         review.setWeekStart(weekStart);
         review.setSummary(parsed.summary().strip());
-        review.setWentWell(heroLine(parsed.wentWell(), gather.payload()));
-        review.setWatchOut(heroLine(parsed.watchOut(), gather.payload()));
+        review.setWentWell(heroLineOf(parsed.wentWell(), gather.weekFacts()));
+        review.setWatchOut(heroLineOf(parsed.watchOut(), gather.weekFacts()));
         review.setDayNotes(new WeeklyReviewDayNotesEnvelope(resolveDayNotes(parsed.dayNotes(), weekStart)));
         review.setHighlights(new WeeklyReviewHighlightsEnvelope(
                 resolveHighlights(parsed.anchorIndexes(), gather.candidates())));
@@ -229,8 +242,16 @@ public class WeeklyReviewGenerator {
 
         List<Highlight> candidates = new ArrayList<>();
         StringBuilder payload = new StringBuilder("A HÉT NAPJAI (" + weekStart + " – " + weekEnd + "):\n");
+        // The hero lines' number guard grounds on THIS text, not on the whole payload: only the
+        // week's own logged/measured data. IN: day lines, pattern events, new facts, life events,
+        // the wider-context sections. OUT: header, [Karakter] dossier, memoir title, predictions,
+        // the long-term memory block (other weeks) and the numbered HORGONY-JELÖLTEK list — their
+        // small integers would ground almost any invented count. ISO dates are stripped at the end.
+        StringBuilder weekFacts = new StringBuilder();
         for (MeWeekDay day : week.getDays()) {
-            payload.append(MeWeekService.renderDayLine(day)).append('\n');
+            String line = MeWeekService.renderDayLine(day);
+            payload.append(line).append('\n');
+            weekFacts.append(line).append('\n');
         }
 
         Instant since = WeeklyReviewWeekWindow.since(weekStart);
@@ -247,7 +268,9 @@ public class WeeklyReviewGenerator {
             for (PatternEventEntity event : patternEvents) {
                 String title = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId)
                         .map(PatternEntity::getTitle).orElse("Ismeretlen minta");
-                payload.append("- ").append(title).append(" (").append(event.getKind()).append(")\n");
+                String eventLine = "- " + title + " (" + event.getKind() + ")\n";
+                payload.append(eventLine);
+                weekFacts.append(eventLine);
                 // mezo-d20.7.7: the candidate carries the PATTERN's id, not the event's — a
                 // citation is about the pattern, and two events in one week are one pattern.
                 candidates.add(new Highlight(Highlight.KIND_PATTERN, title, event.getPatternId()));
@@ -261,6 +284,7 @@ public class WeeklyReviewGenerator {
             for (KnowledgeFactEntity fact : facts) {
                 String label = truncate(fact.getFactText(), 80);
                 payload.append("- ").append(label).append('\n');
+                weekFacts.append(label).append('\n');
                 candidates.add(new Highlight(Highlight.KIND_FACT, label, fact.getId()));
             }
         }
@@ -272,6 +296,7 @@ public class WeeklyReviewGenerator {
             payload.append("\nÉLETESEMÉNYEK:\n");
             for (GraphNodeEntity node : lifeEvents) {
                 payload.append("- ").append(node.getTitle()).append('\n');
+                weekFacts.append(node.getTitle()).append('\n');
                 candidates.add(new Highlight(Highlight.KIND_LIFE_EVENT, node.getTitle(), node.getId()));
             }
         }
@@ -293,7 +318,9 @@ public class WeeklyReviewGenerator {
         // The WIDER context (mezo-d20.7.8): journal, decisions, running experiments, mentions, the
         // medication cycle and the week's consolidated narrative. Deliberately contributes NO
         // anchor candidates — see the section below and WeeklyReviewContextSources' javadoc.
-        payload.append(contextSources.render(userId, weekStart, weekEnd, since, until));
+        String wider = contextSources.render(userId, weekStart, weekEnd, since, until);
+        payload.append(wider);
+        weekFacts.append(wider);
 
         // Memória mindenhol S8 (mezo-eq85.8): the week's own narratives ARE the query — same
         // idiom as MemoirGenerator's memory query, over this generator's own daily-summary read
@@ -315,7 +342,8 @@ public class WeeklyReviewGenerator {
             payload.append(i).append(": [").append(candidates.get(i).kind()).append("] ")
                     .append(candidates.get(i).label()).append('\n');
         }
-        return new WeeklyReviewGather(payload.toString(), candidates);
+        return new WeeklyReviewGather(payload.toString(), candidates,
+                ISO_DATE.matcher(weekFacts).replaceAll(""));
     }
 
     /** mezo-1gim.11: the [Karakter] dossier's contribution — "" when the bean is absent (either
