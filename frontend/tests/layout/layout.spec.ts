@@ -885,4 +885,10 @@ test('Én hub · Hol tartok stays horizontally contained @ 320px', async ({ page
   })
   expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1)
   expect(box.stationsInside).toBe(true)
+  // The small controls keep their drawn size but reach a 44px touch target through a hit zone.
+  const hit = await page.evaluate(() => ['.enh-wkcta', '.enh-elv-next'].map((sel) => {
+    const el = document.querySelector(sel)!
+    return Math.max(el.getBoundingClientRect().height, parseFloat(getComputedStyle(el, '::after').height))
+  }))
+  for (const h of hit) expect(h).toBeGreaterThanOrEqual(44)
 })

@@ -23,6 +23,9 @@ export function WeekHeroCard() {
   const navigate = useNavigate()
   const start = prevMonday(mondayIso())
   const { week, isPending, isError, refetch } = useMeWeek(start)
+  // `isPending` / `isError` here are "review OR digest" (the hook folds both reads). The hero
+  // only needs the review, so a digest hiccup also silences the lines — erring toward silence
+  // is intended: no line is better than a wrong „nem készült elemzés".
   const { review, isPending: reviewPending, isError: reviewError } = useWeeklyReview(start)
 
   const shell = (body: React.ReactNode) => (
@@ -43,11 +46,12 @@ export function WeekHeroCard() {
   )
 
   if (week == null) {
+    // The skeleton shimmers only while something is on its way; a resolved „no week" is the
+    // ring's own „tanulom" state, not an endless loader.
     return shell(
-      <>
-        <div className="wkh-skel ring" data-testid="enh-wk-skeleton" aria-hidden="true" />
-        {!isPending && cta}
-      </>,
+      isPending
+        ? <div className="wkh-skel ring" data-testid="enh-wk-skeleton" aria-hidden="true" />
+        : <><WeekScoreRing score={null} />{cta}</>,
     )
   }
 

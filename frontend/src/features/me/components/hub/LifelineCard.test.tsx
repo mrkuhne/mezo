@@ -15,7 +15,8 @@ const store = vi.hoisted(() => ({
   sleep: [] as { date: string; duration: number }[],
   goal: { targetWeight: 73 } as { targetWeight: number } | null,
   avg7: 79.7, rate4w: -0.3,
-  logWeight: vi.fn(),
+  logWeight: vi.fn(), refetch: vi.fn(),
+  pending: false, error: false,
 }))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
@@ -26,6 +27,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       weightLog: store.log,
       weightTrends: { last7d: { avg: store.avg7, weeklyRate: -0.3 }, last4w: { weeklyRate: store.rate4w } },
       logWeight: store.logWeight,
+      isPending: store.pending, isError: store.error, refetch: store.refetch,
     }),
     useSleep: () => ({ sleepLog: store.sleep, lastNight: null, logSleep: vi.fn() }),
     useGoal: () => ({ goal: store.goal, pending: false, isError: false }),
@@ -40,6 +42,9 @@ beforeEach(() => {
   store.avg7 = 79.7
   store.rate4w = -0.3
   store.logWeight.mockClear()
+  store.refetch.mockClear()
+  store.pending = false
+  store.error = false
 })
 
 test('too few measurements → the dashed empty state, and „Mérj most" opens the weight sheet', async () => {
@@ -141,4 +146,33 @@ test('without a weight goal the footer is the plain door, and the unresolved 7-d
   await userEvent.click(next)
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
   expect(within(document.querySelector<HTMLElement>('.enh-elv')!).queryByText(/^0/)).toBeNull()
+})
+
+// pending ≠ error ≠ empty (fix round 1): `weightLog` is [] in all three, only the flags differ.
+test('while the weight log loads: a quiet skeleton — not the „még kevés a mérés" empty state', () => {
+  store.log = []
+  store.pending = true
+  renderUnit(<LifelineCard />)
+  expect(screen.getByTestId('enh-elv-skeleton')).toHaveClass('enh-elv')
+  expect(screen.queryByText(/Még kevés a mérés/)).toBeNull()
+  expect(screen.queryByRole('button')).toBeNull()
+  expect(document.querySelector('.enh-elv')).toHaveTextContent('')
+})
+
+test('a failed weight-log read: the retryable error — not the empty state', async () => {
+  store.log = []
+  store.error = true
+  renderUnit(<LifelineCard />)
+  expect(screen.getByText('Nem sikerült betölteni a súlynaplót.')).toBeInTheDocument()
+  expect(screen.queryByText(/Még kevés a mérés/)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Mérj most' })).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Újra' }))
+  expect(store.refetch).toHaveBeenCalled()
+})
+
+test('only a RESOLVED log with fewer than two measured weeks is the empty state', () => {
+  store.log = [wk(0, 80)]
+  renderUnit(<LifelineCard />)
+  expect(screen.getByText(/Még kevés a mérés/)).toBeInTheDocument()
+  expect(screen.queryByTestId('enh-elv-skeleton')).toBeNull()
 })

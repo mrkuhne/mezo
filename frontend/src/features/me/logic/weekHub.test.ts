@@ -210,6 +210,11 @@ describe('leadSentences — the Én hub week hero on a review without hero lines
     expect(leadSentences('A 3. napon erős voltál. Utána pihentél.', 1)).toEqual(['A 3. napon erős voltál.'])
   })
 
+  test('a month abbreviation is not a sentence end, even before a numeral', () => {
+    expect(firstSentence('Szept. 21. után jobb lett. Második.')).toBe('Szept. 21. után jobb lett.')
+    expect(leadSentences('Aug. 3. óta tartod. Szép.', 2)).toEqual(['Aug. 3. óta tartod.', 'Szép.'])
+  })
+
   test('shares the splitter with firstSentence', () => {
     const text = 'Volt késői étkezés, pl. a szerdai vacsora. Utána felszínes volt az alvás.'
     expect(firstSentence(text)).toBe(leadSentences(text, 1)[0])

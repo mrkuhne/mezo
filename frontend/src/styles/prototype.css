@@ -21081,6 +21081,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: var(--canvas); background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
 }
 .enh-hub .enh-wkcta { --c: var(--dv-lav); margin-top: 12px; }
+/* 44px touch targets without changing the drawn size: an invisible hit zone over each small
+   control (the idiom the retired title chip used) */
+.enh-hub .enh-wkcta, .enh-hub .enh-elv-pill, .enh-hub .enh-elv-next { position: relative; }
+.enh-hub .enh-wkcta::after, .enh-hub .enh-elv-pill::after, .enh-hub .enh-elv-next::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%);
+}
 .enh-hub .enh-elv-pill { --c: var(--dv-sky); }
 .enh-hub .enh-elv-pill .t-ico { width: 18px; height: 18px; filter: none; }
 
@@ -21157,6 +21163,14 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .enh-hub .enh-elv-next span { min-width: 0; }
 .enh-hub .enh-elv-next b { color: var(--text-primary); font-weight: 600; }
+/* loading: a quiet block of the card's height (no copy, no jump when the curve lands);
+   a failed read: the house retryable error on the bare ground */
+.enh-hub .enh-elv.enh-elv-skel {
+  min-height: 372px; padding: 0;
+  background: linear-gradient(100deg, rgba(245, 239, 230, 0.03) 30%, rgba(245, 239, 230, 0.06) 50%, rgba(245, 239, 230, 0.03) 70%);
+  background-size: 300% 100%;
+}
+.enh-hub .enh-elv.enh-elv-err { padding: 0; }
 /* too few measurements: free space — dashed, no glass (bible §3 rank 4) */
 .enh-hub .enh-elv.enh-elv-empty.uv-empty { padding: 18px 16px; border-radius: 20px; text-align: center; }
 .enh-hub .enh-elv-empty > .t-ico {
@@ -21258,6 +21272,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   }
   @keyframes enh-elv-fade { from { opacity: 0; } }
   @keyframes enh-elv-grow { from { transform: scaleY(0); } }
+  .enh-hub .enh-elv-skel { animation: wkh-shim 1.2s linear infinite; }
   .mz-play .enh-elv-curve { animation: enh-elv-draw 1.6s var(--uv-ease) 0.2s both; }
   .mz-play .enh-elv-area { animation: enh-elv-fade 0.8s ease 1.2s both; }
   .mz-play .enh-elv-tgt, .mz-play .enh-elv-proj, .mz-play .enh-elv-tgl, .mz-play .enh-elv-endp {

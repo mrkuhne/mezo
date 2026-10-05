@@ -121,3 +121,12 @@ test('a failed load is an error with a retry, not an empty week', async () => {
   expect(refetch).toHaveBeenCalled()
   expect(screen.queryByRole('img')).toBeNull()
 })
+
+test('a resolved „no week" is the ring’s „tanulom" state with the door — not an endless skeleton', () => {
+  useMeWeek.mockReturnValue(weekState({ week: null, isPending: false, isError: false }))
+  renderUnit(<WeekHeroCard />)
+  expect(document.querySelector('.wkh-skel')).toBeNull()
+  expect(screen.getByRole('img', { name: 'Pontszám: tanulom' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'A heti elemzés ›' })).toBeInTheDocument()
+  expect(document.querySelectorAll('.enh-wkline')).toHaveLength(0)
+})

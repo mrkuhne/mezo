@@ -8,11 +8,15 @@
 //  · a life goal's direction is omitted while the today-read is unresolved or failed, and when
 //    the engine says `insufficient` — too little data is never a direction. A slipping goal
 //    reads „figyelmet kér" in its own accent, never red;
+//  · the percentage and the bar wait for the weight log: until it resolves the goal's „current"
+//    weight is its start weight, which would print a fabricated „0%";
+//  · a FAILED life-goals read is not „no goals": the weight row stays if it exists, but the card
+//    claims no „n aktív" count and the „＋ Első cél" door is never offered;
 //  · while the life goals load the card is absent (no flash of the empty door); with no row at
 //    all the door to the wizard takes its place.
 import { useNavigate } from 'react-router-dom'
 import { ContentIcon, Icon3D } from '@/shared/ui/clay'
-import { useGoal, useLifeGoals, useLifeGoalToday } from '@/data/hooks'
+import { useGoal, useLifeGoals, useLifeGoalToday, useWeight } from '@/data/hooks'
 import { ARROW_GLYPH, DIMENSIONS, DIMENSION_ACCENT } from '@/features/me/logic/lifegoalLabels'
 import { progressPct } from '@/features/me/logic/weightStats'
 import { hu1 } from '@/shared/lib/huNum'
@@ -23,7 +27,8 @@ const accent = (c: string) => ({ '--c': c } as React.CSSProperties)
 export function GoalStandingCard() {
   const navigate = useNavigate()
   const { goal, pending: goalPending, isError: goalError } = useGoal()
-  const { goals: lifeGoals, isPending: lifeGoalsPending } = useLifeGoals()
+  const { goals: lifeGoals, isPending: lifeGoalsPending, isError: lifeGoalsError } = useLifeGoals()
+  const { isPending: weightPending, isError: weightError } = useWeight()
   const { today, isPending: todayPending, isError: todayError } = useLifeGoalToday()
 
   if (lifeGoalsPending) return null
@@ -32,8 +37,9 @@ export function GoalStandingCard() {
   const rowCount = active.length + (weightGoal != null ? 1 : 0)
 
   if (rowCount === 0) {
-    // The weight goal may still be on its way — the empty door must not flash before it lands.
-    if (goalPending) return null
+    // The weight goal may still be on its way, or the life goals failed to load — in neither
+    // case do we know the user has no goal, so the empty door is not offered.
+    if (goalPending || lifeGoalsError) return null
     return (
       <button type="button" className="enh-newgoal uv-empty rise"
         style={{ '--d': '180ms', '--c': 'var(--dv-coral)' } as React.CSSProperties}
@@ -45,7 +51,7 @@ export function GoalStandingCard() {
   }
 
   const todayHonest = !todayPending && !todayError
-  const pct = weightGoal != null ? progressPct(weightGoal.startWeight, weightGoal.currentWeight, weightGoal.targetWeight) : null
+  const pct = weightGoal != null && !weightPending && !weightError ? progressPct(weightGoal.startWeight, weightGoal.currentWeight, weightGoal.targetWeight) : null
 
   return (
     <button type="button" className="enh-goalcard glass rise"
@@ -54,7 +60,7 @@ export function GoalStandingCard() {
       <span className="enh-goalhead">
         <Icon3D name="t-ring" size={36} />
         <span className="enh-goalttl">Célok állása</span>
-        <span className="enh-stch">{rowCount} aktív</span>
+        {!lifeGoalsError && <span className="enh-stch">{rowCount} aktív</span>}
       </span>
       <span className="enh-grows">
         {weightGoal != null && (

@@ -5,7 +5,10 @@
 // the tapped station's caption, and the door to the Test tab.
 // The card is a `div`: the stations and the footer are the buttons (never a button in a button).
 // Honest states (model: logic/lifeline.ts):
-//  · fewer than two measured weeks → the dashed empty state with „Mérj most", no invented curve;
+//  · the weight log still loading → a quiet skeleton of the card's height; a FAILED read → a
+//    retryable error — neither is „még kevés a mérés";
+//  · a RESOLVED log with fewer than two measured weeks → the dashed empty state with „Mérj
+//    most", no invented curve;
 //  · the target line, its label and the dotted projection only when the 4-week trend really
 //    heads to the target;
 //  · stations only from stored events; with none, the caption line is absent;
@@ -16,6 +19,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Icon3D } from '@/shared/ui/clay'
+import { GhostState } from '@/shared/ui/GhostState'
 import { useAchievements, useGoal, useSleep, useWeight } from '@/data/hooks'
 import { buildLifeline } from '@/features/me/logic/lifeline'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
@@ -40,7 +44,7 @@ const pct = (n: number, of: number): string => `${((n / of) * 100).toFixed(2)}%`
 
 export function LifelineCard() {
   const navigate = useNavigate()
-  const { weightLog, weightTrends, logWeight } = useWeight()
+  const { weightLog, weightTrends, logWeight, isPending, isError, refetch } = useWeight()
   const { sleepLog } = useSleep()
   const { goal } = useGoal()
   const { data: achievements } = useAchievements()
@@ -51,6 +55,19 @@ export function LifelineCard() {
     weightLog, sleepLog, perks: achievements?.perks ?? [], goal: goal ?? null,
     weeklyRate4w: weightTrends.last4w.weeklyRate, todayIso: localDateString(),
   })
+
+  // An empty `weightLog` means "nothing measured" only once the read has resolved.
+  if (weightLog.length === 0 && isPending) {
+    return <div className="enh-elv enh-elv-skel rise" data-testid="enh-elv-skeleton" aria-hidden="true"
+      style={{ '--d': '120ms' } as React.CSSProperties} />
+  }
+  if (weightLog.length === 0 && isError) {
+    return (
+      <div className="enh-elv enh-elv-err rise" style={{ '--d': '120ms' } as React.CSSProperties}>
+        <GhostState message="Nem sikerült betölteni a súlynaplót." ctaLabel="Újra" onCta={refetch} />
+      </div>
+    )
+  }
 
   if (l == null) {
     const latest = weightLog.length > 0 ? weightLog[weightLog.length - 1].value : null

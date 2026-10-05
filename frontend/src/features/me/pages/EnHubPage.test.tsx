@@ -8,6 +8,7 @@ import { setToken } from '@/data/_client/api'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { addDays, localDateString, mondayOf } from '@/shared/lib/dates'
 
 // Én hub — „Hol tartok" (mezo-lhqw7): the /me index composes four units (identity strip → week
 // hero → Életvonal → Célok állása) above the Fejlődés / Emberek tiles and the wide Rutin tile.
@@ -16,11 +17,15 @@ import { API_BASE } from '@/test/msw/handlers'
 // Alvás / Célok / Napló tiles are bottom-bar tabs now, the bio line lives on the Test tab), and
 // that everything the old hub linked to is still reachable.
 //
-// The composition is asserted on the MOCK seeds in both test runs (`VITE_USE_MOCK` is pinned to
-// `true` per test): the real-mode MSW fixtures carry a different, sparser account, and the
-// units' own tests already cover every honest state at the hook boundary in both modes. The two
-// `real mode:` tests at the bottom switch the flag themselves. Only the Rutin tile's two hooks
-// are stubbed, as before.
+// Every test runs in BOTH modes with no pin: the mock run reads the seeds, the real run
+// (`VITE_USE_MOCK=false`) signs in (`setToken`) and reads the repo's MSW handlers, with the weight
+// log re-dated into the Életvonal's 12-week window. Assertions are therefore about structure,
+// never about a seed's numbers — those live in the units' own tests. Only the Rutin tile's two
+// hooks are stubbed, as before.
+const REAL = import.meta.env.VITE_USE_MOCK === 'false'
+const MON = mondayOf(localDateString())
+/** Four measured weeks ending this week — enough for a curve in real mode. */
+const WEIGHT_LOG = [3, 2, 1, 0].map((w, i) => ({ id: `w${i}`, date: addDays(MON, -7 * w), value: 80.4 - i * 0.3, note: null }))
 const useHabitDay = vi.hoisted(() => vi.fn())
 const useHabitSummary = vi.hoisted(() => vi.fn())
 
@@ -30,7 +35,10 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 beforeEach(() => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
+  if (REAL) {
+    setToken('t')
+    server.use(http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json(WEIGHT_LOG)))
+  }
   useHabitDay.mockReturnValue({
     habits: [
       { key: 'morning-1', chain: 'MORNING', status: 'done' },
@@ -51,7 +59,7 @@ beforeEach(() => {
   })
 })
 
-afterEach(() => { vi.unstubAllEnvs() })
+afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
 function LocationProbe() {
   const { pathname, search } = useLocation()
@@ -82,9 +90,10 @@ const before = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) 
 test('the hub reads top to bottom: identity strip → week hero → Életvonal → Célok állása → Fejlődés, Emberek', async () => {
   renderHub()
   const strip = await screen.findByRole('button', { name: /· Fejlődés$/ })
+  const goals = await screen.findByRole('button', { name: 'Célok állása' })
+  await waitFor(() => expect(document.querySelector('.enh-elv-curve')).not.toBeNull())
   const hero = document.querySelector('.enh-wkhero')!
   const lifeline = document.querySelector('.enh-elv')!
-  const goals = await screen.findByRole('button', { name: 'Célok állása' })
   const growth = screen.getByRole('button', { name: 'Fejlődés' })
   const people = screen.getByRole('button', { name: 'Emberek' })
   const order = [strip, hero, lifeline, goals, growth, people]
@@ -99,6 +108,7 @@ test('the ranking: the week hero is the one frameless halo, the strip is flat, t
   expect(strip).toHaveAttribute('data-kalauz-anchor', 'me-idhero')
   expect(document.querySelector('.enh-wkhero')).toHaveClass('uv-halo')
   expect(document.querySelector('.enh-wkhero')).not.toHaveClass('glass')
+  await waitFor(() => expect(document.querySelector('.enh-elv-curve')).not.toBeNull())
   expect(document.querySelector('.enh-elv')).toHaveClass('glass')
   expect(await screen.findByRole('button', { name: 'Célok állása' })).toHaveClass('glass')
   const ART: [string, string][] = [['Fejlődés', '#t-up'], ['Emberek', '#t-people'], ['Rutin', '#t-chain']]
@@ -147,7 +157,7 @@ test('every door of the hub opens its own page', async () => {
     unmount()
   }
   renderHub()
-  await screen.findByRole('button', { name: 'Fejlődés' })
+  await waitFor(() => expect(document.querySelector('button.enh-elv-next')).not.toBeNull())
   await userEvent.click(document.querySelector<HTMLButtonElement>('button.enh-elv-next')!)
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
 })
@@ -190,8 +200,54 @@ test('real mode: the identity strip shows the account name from /api/auth/me', a
   await waitFor(() => expect(document.querySelector('.enh-idnm strong')).toHaveTextContent('Owner'))
   expect(document.querySelector('.enh-idmono')).toHaveTextContent('O')
   expect(screen.getByRole('button', { name: 'Owner · Fejlődés' })).toBeInTheDocument()
-  vi.unstubAllEnvs()
-  setToken(null)
+})
+
+// The real-mode gate for the composition (fix round 1): a cold load must already be the five
+// blocks in order, with no control inside a control, and the Életvonal must NOT claim „még kevés
+// a mérés" while its weight log is still on the wire.
+test('real mode: five blocks in order, no nested buttons, and no empty-state copy before the weight log resolves', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  let release: () => void = () => {}
+  const gate = new Promise<void>((resolve) => { release = resolve })
+  server.use(http.get(`${API_BASE}/api/biometrics/weight`, async () => {
+    await gate
+    return HttpResponse.json(WEIGHT_LOG)
+  }))
+  const { container } = renderHub()
+
+  // everything else has landed, the weight log has not
+  const goals = await screen.findByRole('button', { name: 'Célok állása' })
+  const strip = await screen.findByRole('button', { name: 'Owner · Fejlődés' })
+  expect(screen.getByTestId('enh-elv-skeleton')).toBeInTheDocument()
+  expect(screen.queryByText(/Még kevés a mérés/)).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Mérj most' })).toBeNull()
+  // the weight-goal row, if the fixture has one, shows no percentage yet
+  expect(container.querySelector('.enh-grow .uv-bar')).toBeNull()
+
+  const blocks = () => [
+    strip, container.querySelector('.enh-wkhero')!, container.querySelector('.enh-elv')!, goals,
+    screen.getByRole('button', { name: 'Fejlődés' }),
+  ]
+  for (const el of blocks()) expect(el).not.toBeNull()
+  for (let i = 1; i < blocks().length; i++) expect(before(blocks()[i - 1], blocks()[i])).toBe(true)
+  expect(container.querySelector('button button')).toBeNull()
+
+  release()
+  await waitFor(() => expect(container.querySelector('.enh-elv-curve')).not.toBeNull())
+  expect(screen.queryByTestId('enh-elv-skeleton')).toBeNull()
+  expect(screen.queryByText(/Még kevés a mérés/)).toBeNull()
+  for (let i = 1; i < blocks().length; i++) expect(before(blocks()[i - 1], blocks()[i])).toBe(true)
+  expect(container.querySelector('button button')).toBeNull()
+})
+
+test('real mode: a failed weight-log read is a retryable error on the Életvonal, not the empty state', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  server.use(http.get(`${API_BASE}/api/biometrics/weight`, () => new HttpResponse(null, { status: 500 })))
+  renderHub()
+  expect(await screen.findByText('Nem sikerült betölteni a súlynaplót.')).toBeInTheDocument()
+  expect(screen.queryByText(/Még kevés a mérés/)).toBeNull()
 })
 
 // mezo-rn9u: with no goal at all the hub must not dead-end. The permanent door to the Célok
@@ -211,6 +267,18 @@ test('real mode, no goal of any kind: the dashed „＋ Első cél" door replace
   expect(screen.queryByRole('button', { name: 'Célok állása' })).toBeNull()
   await userEvent.click(door)
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/new')
-  vi.unstubAllEnvs()
-  setToken(null)
+})
+
+test('real mode: a failed life-goals read never offers the „＋ Első cél" door', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  server.use(
+    http.get(`${API_BASE}/api/life-goals`, () => new HttpResponse(null, { status: 500 })),
+    http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+  )
+  renderHub()
+  await screen.findByRole('button', { name: 'Owner · Fejlődés' })
+  await waitFor(() => expect(document.querySelector('.enh-elv-curve, .enh-elv-empty, .enh-elv-err')).not.toBeNull())
+  expect(screen.queryByRole('button', { name: /Első cél/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Célok állása' })).toBeNull()
 })

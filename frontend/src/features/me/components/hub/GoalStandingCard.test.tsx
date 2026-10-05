@@ -8,7 +8,8 @@ type Arrow = 'up' | 'flat' | 'down' | 'insufficient'
 const store = vi.hoisted(() => ({
   goal: { startWeight: 81.4, currentWeight: 78.4, targetWeight: 73 } as object | null,
   goalPending: false, goalError: false,
-  lifeGoals: [] as object[], lifePending: false,
+  lifeGoals: [] as object[], lifePending: false, lifeError: false,
+  weightPending: false, weightError: false,
   today: [] as object[], todayPending: false, todayError: false,
 }))
 
@@ -17,7 +18,8 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   return {
     ...actual,
     useGoal: () => ({ goal: store.goal, pending: store.goalPending, isError: store.goalError }),
-    useLifeGoals: () => ({ goals: store.lifeGoals, isPending: store.lifePending, isError: false }),
+    useLifeGoals: () => ({ goals: store.lifeGoals, isPending: store.lifePending, isError: store.lifeError }),
+    useWeight: () => ({ weightLog: [], isPending: store.weightPending, isError: store.weightError }),
     useLifeGoalToday: () => ({ today: { goals: store.today }, isPending: store.todayPending, isError: store.todayError }),
   }
 })
@@ -29,7 +31,7 @@ beforeEach(() => {
   Object.assign(store, {
     goal: { startWeight: 81.4, currentWeight: 78.4, targetWeight: 73 }, goalPending: false, goalError: false,
     lifeGoals: [lg('a', 'Side hustle', 'accomplishment'), lg('b', 'Kockahas', 'health'), lg('c', 'Régi terv', 'meaning', 'parked')],
-    lifePending: false,
+    lifePending: false, lifeError: false, weightPending: false, weightError: false,
     today: [sum('a', 'up'), sum('b', 'insufficient')], todayPending: false, todayError: false,
   })
 })
@@ -129,4 +131,41 @@ test('no life goal and the weight goal still loading → nothing yet, not the em
   store.lifeGoals = []
   renderUnit(<GoalStandingCard />)
   expect(screen.queryByRole('button')).toBeNull()
+})
+
+// fix round 1 — a failed life-goals read is not „no goals"
+test('life goals failed to load, weight goal known: its row only — no „n aktív" claim, no door', () => {
+  store.lifeError = true
+  store.lifeGoals = []
+  renderUnit(<GoalStandingCard />)
+  const card = screen.getByRole('button', { name: 'Célok állása' })
+  expect(rows()).toHaveLength(1)
+  expect(rows()[0]).toHaveTextContent('Súlycél')
+  expect(card.querySelector('.enh-stch')).toBeNull()
+  expect(card).not.toHaveTextContent('aktív')
+  expect(screen.queryByRole('button', { name: /Első cél/ })).toBeNull()
+})
+
+test('life goals failed to load and no weight goal: nothing — never the „＋ Első cél" door', () => {
+  store.lifeError = true
+  store.lifeGoals = []
+  store.goal = null
+  renderUnit(<GoalStandingCard />)
+  expect(screen.queryByRole('button')).toBeNull()
+})
+
+test('the percentage and the bar wait for the weight log — no fabricated 0% while it loads or after it failed', () => {
+  // toGoal() falls back to the start weight until the log arrives → progress would read 0%.
+  store.goal = { startWeight: 81.4, currentWeight: 81.4, targetWeight: 73 }
+  store.weightPending = true
+  const { unmount } = renderUnit(<GoalStandingCard />)
+  expect(rows()[0]).toHaveTextContent('Súlycél')
+  expect(rows()[0]).not.toHaveTextContent('%')
+  expect(rows()[0].querySelector('.uv-bar')).toBeNull()
+  unmount()
+  store.weightPending = false
+  store.weightError = true
+  renderUnit(<GoalStandingCard />)
+  expect(rows()[0]).not.toHaveTextContent('%')
+  expect(rows()[0].querySelector('.uv-bar')).toBeNull()
 })

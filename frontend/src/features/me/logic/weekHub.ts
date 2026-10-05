@@ -79,7 +79,10 @@ export function weekSubline(phase: WeekPhase, hasReview: boolean, score: number 
 // A „. " ends a sentence unless the dot closes an abbreviation („pl. a vacsora") or the text
 // simply carries on in lower case („szept. 21. után", „a 3. napon"): a Hungarian sentence starts
 // with a capital, a numeral or a quote mark. Same spirit as the backend's hero-line guard.
-const ABBREVIATIONS = new Set(['pl', 'stb', 'kb', 'ill', 'ún', 'vö', 'max', 'min', 'átl', 'dr'])
+const ABBREVIATIONS = new Set([
+  'pl', 'stb', 'kb', 'ill', 'ún', 'vö', 'max', 'min', 'átl', 'dr',
+  'jan', 'febr', 'márc', 'ápr', 'máj', 'jún', 'júl', 'aug', 'szept', 'okt', 'nov', 'dec',
+])
 
 /** Index just past the sentence-ending dot at or after `from`; -1 when the text has no further
  *  sentence boundary (the remainder is one sentence, with or without a closing dot). */

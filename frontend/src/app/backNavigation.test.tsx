@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
@@ -24,36 +24,38 @@ function armedTiles(): number {
   return [...document.querySelectorAll('.rise')].filter(r => r.closest('.mz-play')).length
 }
 
+// The forward navigations are bottom-bar tab clicks (mezo-lhqw7): the hub's Súly / Alvás tiles
+// became the Test tab, and the tab links are the one navigation the Én hub will always have.
 test('the entrance choreography is armed on the way IN — a fresh load is an arrival', async () => {
   renderApp('/me')
-  expect(await screen.findByRole('button', { name: 'Emberek' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Célok állása' })).toBeInTheDocument()
   expect(armedTiles()).toBeGreaterThan(0)
 })
 
 test('a back navigation returns to a SETTLED page — no entrance replay, no flash', async () => {
-  // The hub's Súly / Alvás tiles became the Test tab (mezo-lhqw7); the remaining tiles are the
-  // in-page forward navigations now.
   const router = renderApp('/me')
-  await userEvent.click(await screen.findByRole('button', { name: 'Emberek' }))
-  expect(router.state.location.pathname).toBe('/me/people')
+  await screen.findByRole('button', { name: 'Célok állása' })
+  await userEvent.click(screen.getByRole('link', { name: 'Test' }))
+  expect(router.state.location.pathname).toBe('/me/weight')
 
   await act(async () => { await router.navigate(-1) })
   expect(router.state.location.pathname).toBe('/me')
 
-  // The hub is back and its tiles are present — but none of them is inside an armed
+  // The hub is back and its blocks are present — but none of them is inside an armed
   // `.mz-play`, so `.mz-play .rise { opacity: 0 }` never matches and nothing fades in.
-  expect(await screen.findByRole('button', { name: 'Emberek' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: 'Célok állása' })).toBeInTheDocument()
   expect(document.querySelectorAll('.rise').length).toBeGreaterThan(0)
   expect(armedTiles()).toBe(0)
 })
 
 test('a forward navigation made AFTER a back one is an arrival again', async () => {
   const router = renderApp('/me')
-  await userEvent.click(await screen.findByRole('button', { name: 'Emberek' }))
+  await screen.findByRole('button', { name: 'Célok állása' })
+  await userEvent.click(screen.getByRole('link', { name: 'Test' }))
   await act(async () => { await router.navigate(-1) })
   expect(armedTiles()).toBe(0)
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Rutin' }))
-  expect(router.state.location.pathname).toBe('/me/rutin')
-  expect(armedTiles()).toBeGreaterThan(0)
+  await userEvent.click(screen.getByRole('link', { name: 'Célok' }))
+  expect(router.state.location.pathname).toBe('/me/goals')
+  await waitFor(() => expect(armedTiles()).toBeGreaterThan(0))
 })
