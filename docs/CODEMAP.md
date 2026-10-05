@@ -238,7 +238,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-10-01, shipped) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-10-05, shipped) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
@@ -298,8 +298,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SportInterferenceDetector`, `StackSkipPatternDetector`, `StreakBreakResponseDetector`, `TeamCharacter`,
     `TeamChatActionsEnvelope`, `TeamChatBudget`, `TeamChatCast`, `TeamChatContext`, `TeamChatContextBlock`,
     `TeamChatExceptionMatcher`, `TeamChatExceptionService`, `TeamChatExpiryJob`, `TeamChatInterventionKeyAdapter`,
-    `TeamChatKnowledgeAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatReads`,
-    `TeamChatReplyDecision`, `TeamChatReplyDraft`, `TeamChatReplyService`, `TeamChatReplyVoiceWriter`,
+    `TeamChatKnowledgeAdapter`, `TeamChatKnowledgePort`, `TeamChatLines`, `TeamChatPushPolicy`, `TeamChatQuietHours`,
+    `TeamChatReads`, `TeamChatReplyDecision`, `TeamChatReplyDraft`, `TeamChatReplyService`, `TeamChatReplyVoiceWriter`,
     `TeamChatService`, `TeamChatVoiceWriter`, `TeamEditionReads`, `TeamEditionService`, `TrailingWindow`,
     `UnderLoggingDetector`, `VoicedGuest`, `VoicedText`, `WeekendGapDetector`
 - **Contract** `api/feature/character/character.yml` — 23 operations
@@ -330,7 +330,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **logic:** conferencePostItem.ts
   - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
     feedDayLabel.ts, inventory.ts, personaCharacter.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 68 IT + 26 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 68 IT + 27 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterBootstrapMemoryDisabledIT`, `CharacterBootstrapMemoryIT`, `CharacterClaimRevisionIT`,
     `CharacterClaimTemporalIT`, `CharacterConferenceJobIT`, `CharacterConferenceListIT`,
@@ -363,8 +363,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API + FE-data* · read next: [docs/features/admin-memory-explorer.md](features/admin-memory-explorer.md) (updated 2026-09-28, done) ·
-  [docs/features/character.md](features/character.md) (updated 2026-10-01, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-30, mixed) ·
+  [docs/features/character.md](features/character.md) (updated 2026-10-05, shipped) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-10-05, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-28, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-28, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-29, mixed) ·
@@ -822,7 +822,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-30, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-10-05, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -966,7 +966,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### llmlog
 
 *BE + API* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-30, done) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-30, mixed)
+  [docs/features/companion.md](features/companion.md) (updated 2026-10-05, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`

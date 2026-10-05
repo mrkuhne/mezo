@@ -31,6 +31,7 @@ import io.mrkuhne.mezo.feature.notification.service.AnchorResolver;
 import io.mrkuhne.mezo.feature.proactive.service.AdvicePriority;
 import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.TestTeamChatQuietHours;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -78,6 +79,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     @Autowired private ApplicationEventPublisher publisher;
     @Autowired private TransactionTemplate tx;
     @Autowired private AnchorResolver anchorResolver;
+    @Autowired private TestTeamChatQuietHours quietHours;
 
     /** A fixed local clock time today in the team chat's zone — push tests must not depend on the
      *  wall clock since the quiet window (22:00–07:00) gates pushes (final review C1). */
@@ -691,6 +693,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
 
     @Test
     void overnightRaise_waitsUntilMorning_thenOpensOnceWithMorningTimestampAndPush() {
+        quietHours.enforce(); // this test is ABOUT the window; every time below is explicit
         UUID owner = owner();
         LocalDate day = LocalDate.now(properties.zone());
         Instant night = day.atTime(0, 5).atZone(properties.zone()).toInstant();
@@ -761,6 +764,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     // later, lower-severity open on the same local day still pushes as the day's first.
     @Test
     void eveningQuietOpen_staysSilent_andDoesNotConsumeTheDaysBudget() {
+        quietHours.enforce(); // this test is ABOUT the window; every time below is explicit
         UUID owner = owner();
         raiseLoadFuelLog(owner, 7);
         raiseSleepDebtLog(owner);
@@ -780,6 +784,7 @@ class TeamChatServiceIT extends AbstractIntegrationTest {
     // An after-midnight raise waits until morning; the morning thread and its push use that time.
     @Test
     void afterMidnightQuietOpen_waitsUntilMorning_andItsAnchorIsAfterTheQuietEnd() {
+        quietHours.enforce(); // this test is ABOUT the window; every time below is explicit
         UUID owner = owner();
         raiseSleepDebtLog(owner);
         Instant night = todayAt(3, 0);

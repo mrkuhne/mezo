@@ -124,6 +124,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
     TextSignalPopulator.class,
     LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, LifeGoalPopulator.class,
+    TestTeamChatQuietHours.class,
     ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
@@ -144,8 +145,13 @@ public abstract class AbstractIntegrationTest {
     @Qualifier("llmLogExecutor")
     private ThreadPoolTaskExecutor llmLogExecutor;
 
+    @Autowired
+    private TestTeamChatQuietHours teamChatQuietHours;
+
     @BeforeEach
     void resetDatabaseState() {
+        // mezo-tielp: no test inherits another's quiet window — off unless the test enforces it.
+        teamChatQuietHours.reset();
         drainAsyncWork();
         resetDatabase.resetExceptMasterData();
     }
