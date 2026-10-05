@@ -36,7 +36,8 @@ programmes re-skinned it (U6, U7) but kept the August Design 2.0 hub-of-tiles:
 > **Planning addendum (2026-10-05).** Four points were settled against the code while writing
 > the plan (`docs/superpowers/plans/2026-10-05-en-ia.md` §Decisions): the Test tab keeps the two
 > existing URLs (`/me/weight` tab home owning `/me/sleep`, no `/me/test`); the Heted lines are
-> the first two sentences of the weekly review (no structured "went well / watch" data exists);
+> two new model-written weekly-review fields, `wentWell` / `watchOut` (owner chose this over
+> reusing the summary; rows from before fall back to the summary's first two sentences);
 > Életvonal stations come from whole-kg crossings and dated perks (badges carry no date); the
 > biometrics door moves to the bottom of the Test views. Where this section differs, the plan wins.
 
@@ -113,9 +114,9 @@ Today's `JournalPage`, back chip removed. No feature change (search/archive stay
 
 ### Not changing
 
-No data, endpoint or feature removed; every control and field of every touched page remains
-(reverse parity list in the plan). Backend unchanged (FE-only) unless the Életvonal station
-source proves to need an endpoint — then the plan says so explicitly and asks.
+No data, endpoint or feature removed (one additive change: `weekly_review.went_well` /
+`watch_out` + the two response fields); every control and field of every touched page remains
+(reverse parity list in the plan). Backend otherwise unchanged; the Életvonal needs no endpoint.
 
 ## States
 
