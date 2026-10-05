@@ -130,6 +130,10 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         memoirRepository.saveAndFlush(memoir);
     }
 
+    // memoir.title is varchar(200) and carries the whole sentinel, so the scripted lines stay short.
+    private static final String WENT_WELL = "Öt napon volt meg a fehérje.";
+    private static final String WATCH_OUT = "Késő vacsora, rosszabb alvás.";
+
     @Test
     void generatesRowFromWeekData() {
         UUID user = userPopulator.createUser("wr-gen@test.local").getId();
@@ -137,16 +141,19 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
         seedConfirmedPatternEvent(user, WEEK_START);
         seedMemoirWithSentinel(user, WEEK_START,
                 "[fake-review:{\"summary\":\"Jó hét volt.\",\"dayNotes\":[{\"date\":\""
-                        + WEEK_START + "\",\"note\":\"Nyugodt hétfő.\"}],\"anchorIndexes\":[0]}]");
+                        + WEEK_START + "\",\"note\":\"Csendes.\"}],\"anchorIndexes\":[0],"
+                        + "\"wentWell\":\"" + WENT_WELL + "\",\"watchOut\":\"" + WATCH_OUT + "\"}]");
 
         WeeklyReviewEntity review = generator.generate(user, WEEK_START);
 
         assertThat(review).isNotNull();
+        assertThat(review.getWentWell()).isEqualTo(WENT_WELL);
+        assertThat(review.getWatchOut()).isEqualTo(WATCH_OUT);
         assertThat(review.getWeekStart()).isEqualTo(WEEK_START);
         assertThat(review.getSummary()).isEqualTo("Jó hét volt.");
         assertThat(review.getDayNotes().notes()).hasSize(1);
         assertThat(review.getDayNotes().notes().get(0).date()).isEqualTo(WEEK_START);
-        assertThat(review.getDayNotes().notes().get(0).note()).isEqualTo("Nyugodt hétfő.");
+        assertThat(review.getDayNotes().notes().get(0).note()).isEqualTo("Csendes.");
         // anchorIndexes:[0] resolves to candidate #0 — the Pattern highlight (added before the
         // Memory candidate the memoir itself contributes).
         assertThat(review.getHighlights().highlights()).hasSize(1);
@@ -318,6 +325,64 @@ class WeeklyReviewGeneratorIT extends AbstractIntegrationTest {
 
         assertThat(generator.generate(user, WEEK_START)).isNotNull();
         assertThat(learnedFactRepository.findByCreatedByAndDeletedFalse(user)).isEmpty();
+    }
+
+    /** Old-style answer (hero keys absent) keeps the review; both hero fields stay null. */
+    @Test
+    void answerWithoutHeroLinesLeavesThemNull() {
+        UUID user = userPopulator.createUser("wr-hero-absent@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Csendes hét.\",\"dayNotes\":[],\"anchorIndexes\":[]}]");
+
+        WeeklyReviewEntity review = generator.generate(user, WEEK_START);
+
+        assertThat(review).isNotNull();
+        assertThat(review.getWentWell()).isNull();
+        assertThat(review.getWatchOut()).isNull();
+    }
+
+    /** Blank hero line is dropped, never the review. */
+    @Test
+    void aBlankHeroLineIsDroppedButTheReviewStays() {
+        UUID user = userPopulator.createUser("wr-hero-blank@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Csendes hét.\",\"dayNotes\":[],\"anchorIndexes\":[],"
+                        + "\"wentWell\":\"   \",\"watchOut\":\"\"}]");
+
+        WeeklyReviewEntity review = generator.generate(user, WEEK_START);
+
+        assertThat(review).isNotNull();
+        assertThat(review.getWentWell()).isNull();
+        assertThat(review.getWatchOut()).isNull();
+    }
+
+    /** The 160-char cap (a 161-char line cannot ride a 200-char memoir title, so the helper is
+     *  called directly): 160 passes, 161 and blank are null. */
+    @Test
+    void heroLineCapsAtOneHundredSixtyCharacters() {
+        assertThat(WeeklyReviewGenerator.heroLine("a".repeat(160), "")).hasSize(160);
+        assertThat(WeeklyReviewGenerator.heroLine("a".repeat(161), "")).isNull();
+        assertThat(WeeklyReviewGenerator.heroLine("   ", "")).isNull();
+        assertThat(WeeklyReviewGenerator.heroLine(null, "")).isNull();
+    }
+
+    /** (The sentinel itself rides in the payload via the memoir title, so the numeral is written as
+     *  a JSON escape: Jackson reads 9999, the payload text only ever holds the escape.) A numeral absent from the week payload is rejected by the number guard; summary intact. */
+    @Test
+    void anUngroundedNumeralInAHeroLineIsRejected() {
+        UUID user = userPopulator.createUser("wr-hero-numeral@test.local").getId();
+        seedDay(user, WEEK_START.plusDays(1));
+        seedMemoirWithSentinel(user, WEEK_START,
+                "[fake-review:{\"summary\":\"Csendes hét.\",\"dayNotes\":[],\"anchorIndexes\":[],"
+                        + "\"wentWell\":\"Átlag \\u0039999 kcal volt.\"}]");
+
+        WeeklyReviewEntity review = generator.generate(user, WEEK_START);
+
+        assertThat(review).isNotNull();
+        assertThat(review.getSummary()).isEqualTo("Csendes hét.");
+        assertThat(review.getWentWell()).isNull();
     }
 
     @Test

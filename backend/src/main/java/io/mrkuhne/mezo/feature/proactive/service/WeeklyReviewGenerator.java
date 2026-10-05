@@ -54,9 +54,13 @@ import tools.jackson.databind.ObjectMapper;
  * events + newly-created facts + active life events + the week's memoir/predictions + the wider
  * context {@link WeeklyReviewContextSources} renders, plus a
  * numbered anchor-candidate list) → ONE SMART-tier call with a strict-JSON contract
- * {@code {summary, dayNotes, anchorIndexes, candidateFacts}} — highlights are model-SELECTED from
+ * {@code {summary, dayNotes, anchorIndexes, candidateFacts, wentWell?, watchOut?}} — highlights are model-SELECTED from
  * code-collected candidates, never invented. Empty week (no day carries any logged data) or an
  * unusable answer ⇒ NO row. Existing row ⇒ returned untouched, no second LLM call.
+ *
+ * <p>{@code wentWell} / {@code watchOut} (mezo-lhqw7) are the optional one-sentence hero lines of
+ * the Én hub: stripped, blank or longer than 160 chars ⇒ null, and a numeral absent from the week
+ * payload ({@link ProseNumberGuard}) ⇒ null. A rejected line never drops the review.
  *
  * <p>{@code candidateFacts} is the round's one WRITE beyond the review row + its notification
  * (mezo-d20.7.6): the week's lessons, handed to {@link WeeklyLessonService} which bounds-checks,
@@ -99,11 +103,15 @@ public class WeeklyReviewGenerator {
             + "de sose számold újra és sose mondj velük ellentétes irányt. "
             + "Az owner a csapat azon tagja, akihez a tény tartozik: szunya = alvás, mocor = mozgás/edzés, "
             + "falat = étkezés, deru = közérzet és test, mezo = élet és minden más. "
+            + "A \"wentWell\" egyetlen rövid mondat arról, mi ment a legjobban a héten; a \"watchOut\" "
+            + "egyetlen rövid mondat arról, mire érdemes a jövő héten figyelni. Mindkettő csak az "
+            + "adatokból következhet, ítélkezés nélkül; ha nincs miről írni, hagyd ki a kulcsot. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "
             + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai], "
             + "\"candidateFacts\": [{\"text\": \"...\", \"category\": \"train|fuel|health|life\", "
-            + "\"evidence\": \"mire épül\", \"owner\": \"szunya|mocor|falat|deru|mezo\"}]}";
+            + "\"evidence\": \"mire épül\", \"owner\": \"szunya|mocor|falat|deru|mezo\"}], "
+            + "\"wentWell\": \"egy rövid mondat\", \"watchOut\": \"egy rövid mondat\"}";
 
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final MeWeekService meWeekService;
@@ -148,7 +156,18 @@ public class WeeklyReviewGenerator {
     }
 
     record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes,
-            List<ParsedCandidate> candidateFacts) {
+            List<ParsedCandidate> candidateFacts, String wentWell, String watchOut) {
+    }
+
+    private static final int HERO_LINE_MAX = 160;
+
+    /** Hero sentence hygiene (mezo-lhqw7): absence beats a placeholder. A rejected line never
+     *  drops the review — only a blank summary does. */
+    static String heroLine(String raw, String payload) {
+        if (raw == null) return null;
+        String text = raw.strip();
+        if (text.isEmpty() || text.length() > HERO_LINE_MAX) return null;
+        return ProseNumberGuard.grounded(text, payload) ? text : null;
     }
 
     @Transactional
@@ -176,6 +195,8 @@ public class WeeklyReviewGenerator {
         review.setCreatedBy(userId);
         review.setWeekStart(weekStart);
         review.setSummary(parsed.summary().strip());
+        review.setWentWell(heroLine(parsed.wentWell(), gather.payload()));
+        review.setWatchOut(heroLine(parsed.watchOut(), gather.payload()));
         review.setDayNotes(new WeeklyReviewDayNotesEnvelope(resolveDayNotes(parsed.dayNotes(), weekStart)));
         review.setHighlights(new WeeklyReviewHighlightsEnvelope(
                 resolveHighlights(parsed.anchorIndexes(), gather.candidates())));
