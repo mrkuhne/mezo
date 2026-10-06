@@ -3172,6 +3172,10 @@ svg{overflow:visible}
 .nameinp input:focus{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 60%,transparent)}
 .nameinp input::placeholder{color:var(--sub);font-weight:500}
 .sjlist{display:grid;gap:8px;padding:0 16px}
+/* élesben a sor bal szélén húzófogantyú ül (hosszan nyomva áthúzható) */
+.sjwrap{display:flex;align-items:center;gap:8px;min-width:0}
+.sjgrip{flex:none;width:20px;text-align:center;font-size:15px;color:var(--sub)}
+.sjwrap .sjrow{flex:1}
 .sjrow{--mc:var(--coral);border-radius:18px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair);min-width:0}
 .sjrow.open{background:rgba(245,239,230,.06);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--coral) 38%,transparent)}
 .sjhead{display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;padding:11px 13px;text-align:left}
@@ -4805,7 +4809,7 @@ function sjStep(i,f,lbl,v,min,max){const auto=f==='kg'&&v==null;
     <span><b class="${auto?'auto':''}">${auto?'auto':String(v).replace('.',',')}</b><small>${lbl}</small></span>
     <button data-sjst="${i}|${f}|1" aria-label="${lbl} növelése" ${f!=='kg'&&v>=max?'disabled':''}>+</button></div>`}
 function sjRow(e,i){const o=SJ.open===i;
-  return `<div class="sjrow ${o?'open':''}" style="--mc:${mcolor(e.k)}">
+  return `<div class="sjwrap"><span class="sjgrip" aria-hidden="true">⠿</span><div class="sjrow ${o?'open':''}" style="--mc:${mcolor(e.k)}">
     <button class="sjhead" data-sjopen="${i}" aria-expanded="${o}">${mchp(e.k,'sm')}
       <span class="nm"><strong>${e.n}</strong><small>${muscleLabel(e.k)} · ${sjSum(e)}</small></span><b class="chev">›</b></button>
     ${e.warn?`<div class="sjwarn">${I('bandage')}${e.warn}</div>`:''}
@@ -4817,7 +4821,7 @@ function sjRow(e,i){const o=SJ.open===i;
       <div class="sjfoot"><button class="flat" data-sjmv="${i}|-1" ${i===0?'disabled':''}>${I('up')}Feljebb</button>
         <button class="flat" data-sjmv="${i}|1" ${i===SJ.ex.length-1?'disabled':''}>${I('down')}Lejjebb</button>
         <button class="flat del" data-sjdel="${i}">${I('trash')}Kivesz</button></div>
-    </div>`:''}</div>`}
+    </div>`:''}</div></div>`}
 function sajat(id){
   if(id==='betolt')return topbar()+back('#mai','Vissza')+`<p class="ghostld">Betöltés…</p>`;
   if(id==='nincs')return topbar()+back('#mai','Vissza')+`<p class="ghostld">Ez a saját edzés nem található — lehet, hogy törölted.</p>`;
