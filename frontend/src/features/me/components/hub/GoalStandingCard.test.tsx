@@ -91,7 +91,10 @@ test('the weight row is absent while its goal is pending, failed or missing', ()
   const { unmount } = renderUnit(<GoalStandingCard />)
   expect(rows()).toHaveLength(2)
   expect(document.body).not.toHaveTextContent('Súlycél')
-  expect(document.querySelector('.enh-stch')).toHaveTextContent('2 aktív')
+  // final review: a failed weight-goal read may hide a row, so the card claims no count
+  expect(document.querySelector('.enh-stch')).toBeNull()
+  expect(document.body).not.toHaveTextContent('aktív')
+  expect(screen.queryByRole('button', { name: /Első cél/ })).toBeNull()
   unmount()
   store.goalError = false
   store.goal = null
@@ -162,10 +165,25 @@ test('the percentage and the bar wait for the weight log — no fabricated 0% wh
   expect(rows()[0]).toHaveTextContent('Súlycél')
   expect(rows()[0]).not.toHaveTextContent('%')
   expect(rows()[0].querySelector('.uv-bar')).toBeNull()
+  // …and the start weight is never shown as the current one: the title names only the target
+  expect(rows()[0].querySelector('strong')).toHaveTextContent(/^Súlycél · cél 73 kg$/)
+  expect(rows()[0]).not.toHaveTextContent('81,4')
   unmount()
   store.weightPending = false
   store.weightError = true
   renderUnit(<GoalStandingCard />)
   expect(rows()[0]).not.toHaveTextContent('%')
   expect(rows()[0].querySelector('.uv-bar')).toBeNull()
+  expect(rows()[0].querySelector('strong')).toHaveTextContent(/^Súlycél · cél 73 kg$/)
+  expect(rows()[0]).not.toHaveTextContent('81,4')
+})
+
+// final review — a failed weight-goal read is not „no goals" either
+test('the weight goal failed to load and there is no life goal: nothing — never the „＋ Első cél" door', () => {
+  store.goalError = true
+  store.goal = null
+  store.lifeGoals = []
+  renderUnit(<GoalStandingCard />)
+  expect(screen.queryByRole('button')).toBeNull()
+  expect(document.body).not.toHaveTextContent('Első cél')
 })

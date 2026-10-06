@@ -99,3 +99,72 @@ test('a measurement in a week after today is ignored', () => {
   const l = buildLifeline({ ...base, weightLog: [W('2026-09-08', 80.4), W('2026-09-22', 78.9), W('2026-09-30', 70)] })!
   expect(l.points.map((p) => p.weekStart)).toEqual(['2026-09-07', '2026-09-21'])
 })
+
+// final review — „first crossing" is judged against the whole log, not the 12-week window
+test('a pre-window low below the boundary: re-crossing it inside the window is not a station', () => {
+  const l = buildLifeline({ ...base, goal: { targetWeight: 73 }, weightLog: [
+    W('2026-03-02', 82), W('2026-03-09', 79.5),          // long before the window: already under 80
+    W('2026-09-08', 80.4), W('2026-09-15', 79.8), W('2026-09-22', 79.6),
+  ] })!
+  expect(l.points.map((p) => p.weekStart)).toEqual(['2026-09-07', '2026-09-14', '2026-09-21']) // the window is unchanged
+  expect(l.stations).toEqual([])
+})
+
+test('a pre-window low still lets a DEEPER boundary fire', () => {
+  const l = buildLifeline({ ...base, goal: { targetWeight: 73 }, weightLog: [
+    W('2026-03-02', 82), W('2026-03-09', 79.5),
+    W('2026-09-08', 80.4), W('2026-09-15', 79.8), W('2026-09-22', 78.9),
+  ] })!
+  expect(l.stations.map((s) => [s.index, s.title])).toEqual([[2, '79 kg alatt']])
+})
+
+test('a pre-window history that never crossed: the station still fires', () => {
+  const l = buildLifeline({ ...base, goal: { targetWeight: 73 }, weightLog: [
+    W('2026-03-02', 82), W('2026-03-09', 80.9),
+    W('2026-09-08', 80.4), W('2026-09-15', 79.8), W('2026-09-22', 79.6),
+  ] })!
+  expect(l.stations.map((s) => [s.index, s.title])).toEqual([[1, '80 kg alatt']])
+  expect(l.stations[0].caption).toBe('Először ment a heti átlagod 80 kg alá.')
+})
+
+test('with earlier history the window\'s FIRST week can itself be a first crossing', () => {
+  const l = buildLifeline({ ...base, goal: { targetWeight: 73 }, weightLog: [
+    W('2026-03-02', 82), W('2026-03-09', 81.2),          // never under 81 before the window
+    W('2026-09-08', 80.4), W('2026-09-22', 80.2),
+  ] })!
+  expect(l.stations.map((s) => [s.index, s.title, s.dateIso])).toEqual([[0, '81 kg alatt', '2026-09-07']])
+})
+
+test('upward goal: a pre-window high suppresses the re-crossing, a lower history does not', () => {
+  const win = [W('2026-09-08', 79.6), W('2026-09-15', 80.2), W('2026-09-22', 80.4)]
+  const seen = buildLifeline({ ...base, goal: { targetWeight: 90 }, weightLog: [W('2026-03-02', 78), W('2026-03-09', 80.6), ...win] })!
+  expect(seen.stations).toEqual([])
+  const fresh = buildLifeline({ ...base, goal: { targetWeight: 90 }, weightLog: [W('2026-03-02', 78), W('2026-03-09', 79.1), ...win] })!
+  expect(fresh.stations.map((s) => [s.index, s.title])).toEqual([[1, '80 kg fölött']])
+})
+
+// final review — a reached target is not „még 0,4 kg"
+test('reached: the latest average at or beyond the target in the goal\'s direction', () => {
+  const down = (vals: [number, number]) => buildLifeline({ ...base, goal: { targetWeight: 73 },
+    weightLog: [W('2026-09-08', vals[0]), W('2026-09-22', vals[1])] })!
+  expect(down([74.2, 73.4]).reached).toBe(false)
+  expect(down([74.2, 73]).reached).toBe(true)      // exactly on the target
+  const over = down([74.2, 72.6])
+  expect(over.reached).toBe(true)                  // overshot
+  expect(over.remainingKg).toBeCloseTo(0.4)        // the absolute distance alone would read „még 0,4 kg"
+  const up = (last: number) => buildLifeline({ ...base, goal: { targetWeight: 82 },
+    weightLog: [W('2026-09-08', 80.4), W('2026-09-22', last)] })!
+  expect(up(81.6).reached).toBe(false)
+  expect(up(82.3).reached).toBe(true)
+})
+
+test('reached keeps its direction when the target was passed before the window', () => {
+  const l = buildLifeline({ ...base, goal: { targetWeight: 73 }, weightLog: [
+    W('2026-03-02', 80), W('2026-09-08', 72.8), W('2026-09-22', 72.4),
+  ] })!
+  expect(l.reached).toBe(true)
+})
+
+test('reached is false without a goal', () => {
+  expect(buildLifeline({ ...base, weightLog: [W('2026-09-08', 80.4), W('2026-09-22', 78.9)] })!.reached).toBe(false)
+})

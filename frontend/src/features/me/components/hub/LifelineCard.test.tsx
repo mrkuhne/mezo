@@ -15,6 +15,7 @@ const store = vi.hoisted(() => ({
   sleep: [] as { date: string; duration: number }[],
   goal: { targetWeight: 73 } as { targetWeight: number } | null,
   avg7: 79.7, rate4w: -0.3,
+  perks: [] as { name: string; effectCopy: string; unlockedAt: string }[],
   logWeight: vi.fn(), refetch: vi.fn(),
   pending: false, error: false,
 }))
@@ -31,7 +32,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     }),
     useSleep: () => ({ sleepLog: store.sleep, lastNight: null, logSleep: vi.fn() }),
     useGoal: () => ({ goal: store.goal, pending: false, isError: false }),
-    useAchievements: () => ({ data: { badges: [], perks: [] } }),
+    useAchievements: () => ({ data: { badges: [], perks: store.perks } }),
   }
 })
 
@@ -41,6 +42,7 @@ beforeEach(() => {
   store.goal = { targetWeight: 73 }
   store.avg7 = 79.7
   store.rate4w = -0.3
+  store.perks = []
   store.logWeight.mockClear()
   store.refetch.mockClear()
   store.pending = false
@@ -116,7 +118,7 @@ test('without stations the caption line is absent', () => {
 
 test('the sleep band has one bar per point; a week without a logged night is marked, not invented', () => {
   renderUnit(<LifelineCard />)
-  const band = screen.getByRole('img', { name: /Alvás, heti átlag/ })
+  const band = screen.getByRole('img', { name: 'Alvás, heti átlag: 6,4–7,3 óra' }) // the range is read out
   const bars = [...band.querySelectorAll('i')]
   expect(bars).toHaveLength(4)
   expect(bars.map((b) => b.classList.contains('is-none'))).toEqual([false, true, true, false])
@@ -175,4 +177,61 @@ test('only a RESOLVED log with fewer than two measured weeks is the empty state'
   renderUnit(<LifelineCard />)
   expect(screen.getByText(/Még kevés a mérés/)).toBeInTheDocument()
   expect(screen.queryByTestId('enh-elv-skeleton')).toBeNull()
+})
+
+// final review
+test('the sleep band names a single value when every logged week has the same mean', () => {
+  store.sleep = [{ date: MON, duration: 7.3 }]
+  renderUnit(<LifelineCard />)
+  expect(screen.getByRole('img', { name: 'Alvás, heti átlag: 7,3 óra' })).toBeInTheDocument()
+})
+
+test('a reached (overshot) target: „Elérted a célod" — never „még 0,4 kg"', async () => {
+  store.goal = { targetWeight: 80 } // the latest weekly average is 79,6
+  renderUnit(<LifelineCard />)
+  const next = document.querySelector<HTMLButtonElement>('button.enh-elv-next')!
+  expect(next).toHaveTextContent('Elérted a célod: 80 kg›')
+  expect(next).not.toHaveTextContent(/még|következő állomás/)
+  await userEvent.click(next)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/weight')
+})
+
+// A perk's unlock instant, at local noon of a day inside the given week (timezone-proof).
+const perkAt = (weeksAgo: number, dayOffset: number) => new Date(`${addDays(MON, -7 * weeksAgo + dayOffset)}T12:00:00`).toISOString()
+
+test('a perk station is a button named after the perk; tapping it shows the perk\'s effect', async () => {
+  store.goal = null // no kg stations — the perk is the only one
+  store.perks = [{ name: 'Páncélzat', effectCopy: 'Tíz hét töretlenül: a sorozatod egy kihagyást elbír.', unlockedAt: perkAt(2, 1) }]
+  renderUnit(<LifelineCard />)
+  const stn = screen.getByRole('button', { name: /^Új képesség: Páncélzat · / })
+  expect(stn).toHaveClass('enh-elv-stn')
+  expect(stn).toHaveAttribute('aria-pressed', 'false')
+  await userEvent.click(stn)
+  expect(stn).toHaveAttribute('aria-pressed', 'true')
+  const cap = document.querySelector('.enh-elv-cap')!
+  expect(cap).toHaveTextContent('Új képesség: Páncélzat')
+  expect(cap).toHaveTextContent('Tíz hét töretlenül: a sorozatod egy kihagyást elbír.')
+})
+
+test('two stations on the same point are both reachable and do not sit exactly on each other', async () => {
+  store.goal = null
+  store.perks = [
+    { name: 'Páncélzat', effectCopy: 'első hatás', unlockedAt: perkAt(2, 1) },
+    { name: 'Második szél', effectCopy: 'második hatás', unlockedAt: perkAt(2, 3) },
+  ]
+  renderUnit(<LifelineCard />)
+  const a = screen.getByRole('button', { name: /^Új képesség: Páncélzat · / })
+  const b = screen.getByRole('button', { name: /^Új képesség: Második szél · / })
+  // same week → the same anchor point…
+  expect(a.style.left).toBe(b.style.left)
+  expect(a.style.top).toBe(b.style.top)
+  // …so the later one steps up by its `--stack` (CSS: translateY(-50% − stack × 16px))
+  expect(a.style.getPropertyValue('--stack')).toBe('0')
+  expect(b.style.getPropertyValue('--stack')).toBe('1')
+  await userEvent.click(b)
+  expect(document.querySelector('.enh-elv-cap')).toHaveTextContent('második hatás')
+  await userEvent.click(a)
+  expect(document.querySelector('.enh-elv-cap')).toHaveTextContent('első hatás')
+  expect(a).toHaveAttribute('aria-pressed', 'true')
+  expect(b).toHaveAttribute('aria-pressed', 'false')
 })

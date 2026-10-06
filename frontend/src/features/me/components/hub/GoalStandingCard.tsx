@@ -10,8 +10,11 @@
 //    reads „figyelmet kér" in its own accent, never red;
 //  · the percentage and the bar wait for the weight log: until it resolves the goal's „current"
 //    weight is its start weight, which would print a fabricated „0%";
-//  · a FAILED life-goals read is not „no goals": the weight row stays if it exists, but the card
-//    claims no „n aktív" count and the „＋ Első cél" door is never offered;
+//  · the same goes for the row's title: until the log resolves without error it names only the
+//    target („Súlycél · cél 73 kg") — the start weight is never shown as the current one;
+//  · a FAILED read — the life goals OR the weight goal — is not „no goals": the rows that did
+//    load stay, but the card claims no „n aktív" count and the „＋ Első cél" door is never
+//    offered (no row at all + any failed read → nothing);
 //  · while the life goals load the card is absent (no flash of the empty door); with no row at
 //    all the door to the wizard takes its place.
 import { useNavigate } from 'react-router-dom'
@@ -37,9 +40,9 @@ export function GoalStandingCard() {
   const rowCount = active.length + (weightGoal != null ? 1 : 0)
 
   if (rowCount === 0) {
-    // The weight goal may still be on its way, or the life goals failed to load — in neither
+    // The weight goal may still be on its way, or one of the two reads failed — in neither
     // case do we know the user has no goal, so the empty door is not offered.
-    if (goalPending || lifeGoalsError) return null
+    if (goalPending || goalError || lifeGoalsError) return null
     return (
       <button type="button" className="enh-newgoal uv-empty rise"
         style={{ '--d': '180ms', '--c': 'var(--dv-coral)' } as React.CSSProperties}
@@ -51,7 +54,8 @@ export function GoalStandingCard() {
   }
 
   const todayHonest = !todayPending && !todayError
-  const pct = weightGoal != null && !weightPending && !weightError ? progressPct(weightGoal.startWeight, weightGoal.currentWeight, weightGoal.targetWeight) : null
+  const logResolved = !weightPending && !weightError
+  const pct = weightGoal != null && logResolved ? progressPct(weightGoal.startWeight, weightGoal.currentWeight, weightGoal.targetWeight) : null
 
   return (
     <button type="button" className="enh-goalcard glass rise"
@@ -60,7 +64,7 @@ export function GoalStandingCard() {
       <span className="enh-goalhead">
         <Icon3D name="t-ring" size={36} />
         <span className="enh-goalttl">Célok állása</span>
-        {!lifeGoalsError && <span className="enh-stch">{rowCount} aktív</span>}
+        {!lifeGoalsError && !goalError && <span className="enh-stch">{rowCount} aktív</span>}
       </span>
       <span className="enh-grows">
         {weightGoal != null && (
@@ -68,7 +72,9 @@ export function GoalStandingCard() {
             <Icon3D name="t-weight" size={28} />
             <span className="enh-gbody">
               <span className="enh-gline">
-                <strong>Súlycél · {hu1(weightGoal.currentWeight)} → {hu1(weightGoal.targetWeight)} kg</strong>
+                <strong>{logResolved
+                  ? `Súlycél · ${hu1(weightGoal.currentWeight)} → ${hu1(weightGoal.targetWeight)} kg`
+                  : `Súlycél · cél ${hu1(weightGoal.targetWeight)} kg`}</strong>
                 {pct != null && <b>{pct}%</b>}
               </span>
               {pct != null && <span className="uv-bar" style={{ '--w': `${pct}%` } as React.CSSProperties}><b /></span>}

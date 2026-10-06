@@ -76,6 +76,20 @@ test('no percentage and no bar while the weight log is unresolved or failed — 
   expect(tile.querySelector('.uv-bar')).toBeNull()
 })
 
+// final review: until the log resolves the goal's „current" weight is its START weight
+test.each([
+  ['pending', { weightPending: true }],
+  ['failed', { weightError: true }],
+])('weight log %s: the title names only the target, and there is no pace / ETA line', (_n, patch) => {
+  Object.assign(store, { goal: { startWeight: 81.4, currentWeight: 81.4, targetWeight: 73 } }, patch)
+  renderTile()
+  const tile = screen.getByRole('button', { name: 'Súlycél' })
+  expect(tile.querySelector('.nm')).toHaveTextContent(/^Fogyás · cél 73 kg$/)
+  expect(tile).not.toHaveTextContent('81,4')
+  expect(tile.querySelector('.enc-wgoal-pace')).toBeNull()
+  expect(tile).not.toHaveTextContent(/kg \/ hét|kb\./)
+})
+
 test.each([
   ['pending', { pending: true }],
   ['error', { isError: true }],

@@ -86,7 +86,7 @@ export function CelokPage() {
             <PermahRing counts={counts} total={active.length} />
             <div className="enc-hero-copy">
               {active.length === 0
-                ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
+                ? <>Még nincs aktív életcélod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
                 : todayIsPending
                   ? <>A pillérek a meglévő naplódból számolnak. <strong>A heti irány most töltődik</strong> — a célok és pilléreik addig is itt élnek.</>
                   : todayIsError

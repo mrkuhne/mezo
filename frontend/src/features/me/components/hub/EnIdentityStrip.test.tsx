@@ -9,6 +9,8 @@ const store = vi.hoisted(() => ({
   titleEquipped: true,
   streakAlive: true as boolean | undefined,
   pending: false,
+  error: false,
+  level: 12, totalXp: 3140, coins: 240, streakDays: 6,
 }))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
@@ -17,14 +19,16 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     ...actual,
     useProfile: () => ({ user: store.name == null ? null : { name: store.name } }),
     useGamification: () => ({
-      isPending: store.pending,
-      profile: { level: 12, totalXp: 3140, xpInLevel: 60, xpForNext: 520, coins: 240, streakDays: 6, streakAlive: store.streakAlive },
+      isPending: store.pending, isError: store.error,
+      profile: { level: store.level, totalXp: store.totalXp, xpInLevel: 60, xpForNext: 520, coins: store.coins, streakDays: store.streakDays, streakAlive: store.streakAlive },
     }),
     useTitles: () => ({ titles: [{ key: 'a', name: 'A kitartó', equipped: store.titleEquipped }, { key: 'b', name: 'Másik', equipped: false }] }),
   }
 })
 
-beforeEach(() => { store.name = 'Daniel'; store.titleEquipped = true; store.streakAlive = true; store.pending = false })
+beforeEach(() => { store.name = 'Daniel'; store.titleEquipped = true; store.streakAlive = true; store.pending = false
+  Object.assign(store, { error: false, level: 12, totalXp: 3140, coins: 240, streakDays: 6 })
+})
 
 test('the strip carries the monogram, name, title chip and Lv · XP · streak · coin, and opens Fejlődés', async () => {
   renderUnit(<EnIdentityStrip />)
@@ -64,4 +68,16 @@ test('an unresolved profile shows no fabricated Lv / XP / coin numbers', () => {
   const strip = screen.getByRole('button', { name: 'Fejlődés' })
   expect(strip.querySelector('.enh-idln')).toBeNull()
   expect(strip).not.toHaveTextContent('XP')
+})
+
+// final review: a failed (non-404) read leaves the ghost profile in `data` — it is not shown
+test('a failed progression read hides the level / XP / streak / coin line; the name stays and the strip still navigates', async () => {
+  Object.assign(store, { error: true, level: 1, totalXp: 0, coins: 0, streakDays: 0 })
+  renderUnit(<EnIdentityStrip />)
+  const strip = screen.getByRole('button', { name: 'Daniel · Fejlődés' })
+  expect(strip.querySelector('.enh-idln')).toBeNull()
+  expect(strip).not.toHaveTextContent(/Lv|XP|0 nap/)
+  expect(strip.querySelector('.enh-idnm')).toHaveTextContent('Daniel')
+  await userEvent.click(strip)
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/growth')
 })

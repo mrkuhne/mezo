@@ -3,6 +3,8 @@
 // Honesty rules: fewer than two measured weeks → null (no curve, no invented point);
 // stations come only from stored events (a whole-kg crossing of the weekly average toward the
 // goal, a perk unlock); the projection is drawn only when the 4-week rate heads to the target.
+// „First crossing" is judged against the WHOLE weight log, not only the window: a low that has
+// aged out of the 12 weeks still counts, so re-crossing it is not announced as a first.
 import type { Goal, SleepEntry, WeightEntry } from '@/data/types'
 import { addDays, localDateString, mondayOf } from '@/shared/lib/dates'
 
@@ -15,6 +17,7 @@ export interface Lifeline {
   stations: LifelineStation[]
   targetKg: number | null
   remainingKg: number | null         // |latest − target|, null without a target
+  reached: boolean                   // latest average at or beyond the target in the goal's direction; false without a goal
   project: boolean                   // draw the dotted line only when the 4-week rate heads to the target
 }
 
@@ -65,12 +68,28 @@ export function buildLifeline(input: Input): Lifeline | null {
 
   const stations: LifelineStation[] = []
   const targetKg = goal?.targetWeight ?? null
+  let reached = false
   if (targetKg != null) {
-    // Direction: target below the first average ⇒ down. Stations beyond the target are still shown.
-    const down = targetKg < points[0].avgKg
-    // Running best (min for down, max for up): a station fires on the FIRST crossing only.
-    let best = points[0].avgKg
-    for (let i = 1; i < points.length; i++) {
+    // Weekly averages BEFORE the window (oldest first) — history the curve no longer draws.
+    const earlierWeeks = new Map<string, number[]>()
+    for (const e of weightLog) {
+      const wk = mondayOf(e.date)
+      if (wk >= from) continue
+      const list = earlierWeeks.get(wk)
+      if (list) list.push(e.value)
+      else earlierWeeks.set(wk, [e.value])
+    }
+    const earlier = [...earlierWeeks.keys()].sort().map((wk) => round(mean(earlierWeeks.get(wk)!), 2))
+    // Direction: target below the earliest known weekly average ⇒ down (the earliest in the whole
+    // log, so a target passed before the window does not flip it). Stations beyond the target
+    // are still shown.
+    const down = targetKg < (earlier.length > 0 ? earlier[0] : points[0].avgKg)
+    reached = down ? latest <= targetKg : latest >= targetKg
+    // Running best (min for down, max for up): a station fires on the FIRST crossing only. It is
+    // seeded from every pre-window week; without one, from the window's first point (which then
+    // has nothing to be compared against, so it cannot be a station itself).
+    let best = earlier.length > 0 ? (down ? Math.min(...earlier) : Math.max(...earlier)) : points[0].avgKg
+    for (let i = earlier.length > 0 ? 0 : 1; i < points.length; i++) {
       const cur = points[i].avgKg
       // One station per crossing event, naming the furthest boundary passed toward the goal.
       const n = down
@@ -97,6 +116,7 @@ export function buildLifeline(input: Input): Lifeline | null {
   return {
     points, deltaKg, sleepHours, stations, targetKg,
     remainingKg: targetKg != null ? Math.abs(latest - targetKg) : null,
+    reached,
     project: targetKg != null && weeklyRate4w !== 0 && Math.sign(weeklyRate4w) === Math.sign(targetKg - latest),
   }
 }
