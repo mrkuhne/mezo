@@ -2024,6 +2024,8 @@ export const handlers = [
       highlights: [],
       generatedAt: '2026-08-27T06:00:00Z',
       stale: false,
+      wentWell: 'A fehérjecélt öt napon tartottad, és a legjobb alvásod az edzésnappal esett egybe.',
+      watchOut: 'Két késői vacsora után felszínesebb volt az alvásod.',
     })
   }),
   // A hét tanulságai (mezo-d20.6.10) — the weekly knowledge-candidate read handoff §6.2

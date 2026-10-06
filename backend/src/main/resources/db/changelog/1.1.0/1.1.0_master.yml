@@ -209,3 +209,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609301200_mezo-q4xt2.2_recovery_period.sql
+  - changeSet:
+      id: "1.1.0:202610051200_mezo-lhqw7_weekly_review_went_well_watch_out"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202610051200_mezo-lhqw7_weekly_review_went_well_watch_out.sql

@@ -24852,6 +24852,19 @@ components:
             Best-effort: true when any of the week's logged
             weight/sleep/check-in/meal rows was created after generatedAt; false
             on probe failure (never blocks the read).
+        wentWell:
+          type: string
+          nullable: true
+          description: >-
+            One short Hungarian sentence, model-written — what went well this
+            week. Null on rows generated before mezo-lhqw7, or when the model
+            gave none / the guard rejected it.
+        watchOut:
+          type: string
+          nullable: true
+          description: >-
+            One short Hungarian sentence, model-written — what to watch next
+            week. Null under the same conditions as wentWell.
     WeeklyReviewPatternRef:
       type: object
       required:

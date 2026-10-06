@@ -9940,6 +9940,10 @@ export interface components {
             generatedAt: string;
             /** @description Best-effort: true when any of the week's logged weight/sleep/check-in/meal rows was created after generatedAt; false on probe failure (never blocks the read). */
             stale: boolean;
+            /** @description One short Hungarian sentence, model-written — what went well this week. Null on rows generated before mezo-lhqw7, or when the model gave none / the guard rejected it. */
+            wentWell?: string | null;
+            /** @description One short Hungarian sentence, model-written — what to watch next week. Null under the same conditions as wentWell. */
+            watchOut?: string | null;
         };
         WeeklyReviewPatternRef: {
             pairKey: string;

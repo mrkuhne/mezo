@@ -11,6 +11,9 @@ import java.util.stream.Collectors;
  * (the facts + suggestions the call was given). The prompt itself asks for number-free prose, so
  * in practice this guard fires only on an actual fabrication.
  *
+ * <p>A second caller is the weekly review's hero lines (mezo-lhqw7), grounded on the week's own
+ * measured data only.
+ *
  * <p>Conservative by design: an ungrounded numeral drops the WHOLE answer in favour of the
  * template prose. A card is never dropped, only its wording downgraded.
  */
