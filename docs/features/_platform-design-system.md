@@ -321,6 +321,10 @@ something new extends the kit, never forks a second recipe.
   well); the `DomainSwitcher` as a glass card of five Boops above the bar (tab summaries stay in
   the accessible name); the FAB as a breathing lavender glass square. There is no day-part
   switcher and no sheen on the bar.
+- **Saját edzés composer (`mezo-7ugb5`).** The `── uveg sajat edzes (mezo-7ugb5)` block at the end of
+  `prototype.css` styles `/train/custom/new|:id` (`.uvx-cw*`: the glass name card, flat recipe rows
+  that expand in place, paired steppers, the volume switch, ghost Mentés + the shared lit
+  `.uvs-primary`). It retired the U5 `.tv-custom` rules; everything is scoped to `.uvx-cw`.
 - **A napom tab dot (`mezo-yjzhw.4`).** The `── uveg napom (mezo-yjzhw.4)` block at the end of
   `prototype.css` styles `/nap/napom[/:date]` (week strip, six-segment ring, reading, lead card,
   drill-down rows, review layers — all scoped to `.napom-page`) plus one rule that lives in the

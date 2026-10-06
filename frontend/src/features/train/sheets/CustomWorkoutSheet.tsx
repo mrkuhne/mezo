@@ -1,8 +1,8 @@
 // ============================================================
 // Mezo · CustomWorkoutSheet — "Saját edzés" entry sheet (mezo-ws2x):
 // the saved custom templates (tap → start via /train/session?day=,
-// pencil → composer) + "Új összeállítása". Opened from Mai (rest-day card,
-// weekly-plan footer, no-meso ghost) and GymPage's header chip.
+// pencil → composer) + "Új összeállítása". Opened from Mai (no-meso ghost,
+// the gym poster's „Egyedi edzés" tile, rest-day card, today-only footer) and Heti's footer.
 // Üveg (U10, mezo-me75u.10): a coral glass sheet, the dumbbell 3D head, the saved workouts as
 // flat rows (the edit door a flat round pencil), and „Új összeállítása" as the dashed free slot.
 // ============================================================
