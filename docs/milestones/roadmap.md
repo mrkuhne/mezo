@@ -61,6 +61,10 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-10-06 — Saját edzés összerakása üvegben (`mezo-7ugb5`).** Az egyedi edzés összerakó oldala
+  megkapta az Üveg kinézetet; a gyakorlatok tömör összefoglaló sorok, koppintásra helyben nyílnak
+  (párba rendezett számlálók, volumen-kapcsoló, Feljebb/Lejjebb/Kivesz). Ismeretlen edzésnél
+  „nem található” jelzés az üres űrlap helyett. [Terv](../superpowers/plans/2026-10-01-sajat-edzes-uveg.md).
 - **2026-10-06 — Én — Hol tartok: heti hős Mezo „Jól ment / Figyelj rá” soraival, Életvonal, Célok állása (`mezo-lhqw7`, S1–S4 — az Én IA kész).**
   Az Én fül kezdőlapja most azt mutatja, hol tartasz: vékony azonosító sáv (egy koppintás a
   Fejlődésre), „A heted” az utolsó lezárt hét pontszámával, változásával és Mezo két sorával

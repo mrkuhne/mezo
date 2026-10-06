@@ -20854,7 +20854,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tv-tpls { --c: var(--dv-sage); }
 .tv-tpl { --c: var(--dv-sage); }
 .tv-wizard { --c: var(--dv-lav); }
-.tv-custom { --c: var(--dv-coral); }
 
 .tv-tpls .pl-lib-card.glass {
   background:
@@ -20916,17 +20915,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     inset 0 1px 0 rgba(255, 244, 230, 0.1);
 }
 
-/* the custom composer is a FORM: its head and save bar sit on the app ground, its recipe
-   rows are flat cells. The only lit control is „Indítás ma" — the one constructive CTA. */
-.tv-custom .card {
-  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.tv-custom .np-cta {
-  color: #191614; background: var(--c); border: 0;
-  box-shadow:
-    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
-    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
-}
 /* ── /uveg edzes2 sablonok ── */
 
 /* ── uveg edzes2 het (mezo-me75u.5) ── /train/week/terkep, /train/week/jelek, /train/week/mozgas ── */
@@ -30250,7 +30238,6 @@ main.settings-page {
 .ld-sport-note em { color: var(--text-muted); }
 .ld-map-sides span { color: var(--text-muted); }
 .mm-region-head span { color: var(--text-muted); }
-.tv-custom .eyebrow { color: var(--text-muted); }
 .uvs-sheet .label-mono { color: var(--text-muted); }
 
 /* 2 · lit coral controls: accent fill, dark ink, accent glow */
@@ -30729,3 +30716,62 @@ main.settings-page {
 .tud9 .th-merge-strip { display: flex; align-items: center; gap: 8px; margin: 6px 16px 8px; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.4; color: var(--text-primary);
   background: color-mix(in srgb, var(--dv-sage) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent); }
 .tud9 .th-merge-strip .th-link { margin-left: auto; white-space: nowrap; color: var(--dv-sage); font-weight: 650; text-decoration: none; }
+
+/* ── uveg sajat edzes (mezo-7ugb5) ── /train/custom/new, /train/custom/:id ── */
+/* The composer is a FORM: only the name card wears glass; the recipe rows are flat hairline
+   cells that expand in place; the only lit control is Indítás ma (rule 29). */
+.uvx-cw { --c: var(--dv-coral); overflow-x: clip; }
+.uvx-cw-name { display: block; margin: 0 16px; padding: 13px 15px; border-radius: 20px; }
+.uvx-cw-name .uv-eyebrow { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.uvx-cw-name .uvs-inp { margin-top: 6px; font-size: 16px; font-weight: 600; }
+.uvx-cw-h { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 18px 10px; }
+.uvx-cw-h em { font-style: normal; font-size: 11.5px; color: var(--text-muted); }
+.uvx-cw-list { padding: 0 16px; }
+.uvx-cw-row { border-radius: 18px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); min-width: 0; }
+.uvx-cw-row.is-open { background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent); }
+.uvx-cw-head { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 13px; text-align: left; background: none; border: 0; color: inherit; cursor: pointer; }
+.uvx-cw-nm { min-width: 0; }
+.uvx-cw-nm strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.uvx-cw-nm small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
+.uvx-cw-chev { font-size: 16px; color: var(--text-secondary); transition: transform 0.25s; }
+.uvx-cw-row.is-open .uvx-cw-chev { transform: rotate(90deg); }
+.uvx-cw-warn { display: flex; align-items: center; gap: 6px; margin: 0 13px 8px 51px; font-size: 11px; line-height: 1.35; color: #FFB39C; }
+.uvx-cw-panel { display: grid; gap: 10px; padding: 2px 13px 13px; }
+.uvx-cw-grp .uv-eyebrow { display: block; margin-bottom: 5px; font-size: 9.5px; color: var(--text-secondary); }
+.uvx-cw-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.uvx-cw-st { display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px; align-items: center; gap: 2px; padding: 5px;
+  border-radius: 13px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvx-cw-st button { width: 28px; height: 28px; border-radius: 50%; border: 0; display: grid; place-items: center; font-size: 16px;
+  color: color-mix(in srgb, var(--c) 75%, #fff); background: rgba(245, 239, 230, 0.06); cursor: pointer; }
+.uvx-cw-st span { min-width: 0; text-align: center; }
+.uvx-cw-st b { display: block; font-size: 16px; font-weight: 600; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.uvx-cw-st b.is-auto { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.uvx-cw-st small { display: block; font-size: 9.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uvx-cw-vol { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font-size: 12.5px; color: var(--text-secondary); cursor: pointer; text-align: left; }
+.uvx-cw-sw { position: relative; flex: none; width: 38px; height: 22px; border-radius: 11px; background: rgba(245, 239, 230, 0.1); transition: background 0.2s; }
+.uvx-cw-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #F5EFE6; transition: transform 0.2s; }
+.uvx-cw-vol.is-on { color: var(--text-primary); }
+.uvx-cw-vol.is-on .uvx-cw-sw { background: var(--c); }
+.uvx-cw-vol.is-on .uvx-cw-sw::after { transform: translateX(16px); }
+.uvx-cw-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.uvx-cw-act { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.uvx-cw-act:disabled { opacity: 0.35; cursor: default; }
+.uvx-cw-act.is-warn { margin-left: auto; color: #FFB39C; background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+.uvx-cw-empty { margin: 0 16px; padding: 14px; border-radius: 18px; font-size: 12.5px; text-align: center; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.02); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvx-cw-add { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 32px); margin: 12px 16px 0; padding: 14px;
+  border-radius: 20px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: rgba(245, 239, 230, 0.02);
+  font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); cursor: pointer; }
+.uvx-cw-cta { display: flex; gap: 9px; padding: 16px 16px 4px; }
+.uvx-cw-cta > * { flex: 1; justify-content: center; min-height: 48px; }
+.uvx-cw-save { flex: 0.8 !important; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; font-size: 14px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.uvx-cw-save:disabled { opacity: 0.45; cursor: default; }
+.uvx-cw-hint { margin: 6px 16px 0; font-size: 11.5px; text-align: center; color: var(--text-secondary); }
+.uvx-cw-ghost { margin: 24px 16px; padding: 22px; border-radius: 20px; text-align: center; font-size: 13px; color: var(--text-secondary); }
+:is(.uvx-cw-head, .uvx-cw-st button, .uvx-cw-vol, .uvx-cw-act, .uvx-cw-add, .uvx-cw-save):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .uvx-cw-chev, .uvx-cw-sw, .uvx-cw-sw::after { transition: none; } }
+/* ── /uveg sajat edzes ── */
