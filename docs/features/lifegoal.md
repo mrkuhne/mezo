@@ -199,7 +199,8 @@ every one of them renders NOTHING rather than a fabricated number when its sourc
   reported as an absence. The PERMAH centre caption is „életcél” (life goals only) and the header
   count includes the weight goal.
   The hub hero's own sentence likewise splits loading from failure („A heti irány most töltődik"
-  vs „A heti irányt most nem sikerült lekérni").
+  vs „A heti irányt most nem sikerült lekérni"). With no active LIFE goal it reads „Még nincs aktív
+  életcélod. …” (`mezo-lhqw7` final review) — the header may still say „1 aktív” for the weight goal.
 - **Én hub · life-goal hero** (`EnHubPage`, `mezo-iizd.4`) — the coral weight track is retired; the
   hero is now the active goals' dimension chips + an `MCells` trio `emelkedik ↗ / tartja → /
   csúszik ↘` off `useLifeGoalToday`, opening `/me/goals`. An unresolved/failed `today` collapses
