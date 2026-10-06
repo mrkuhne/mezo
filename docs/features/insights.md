@@ -2,7 +2,7 @@
 title: Insights (the Mezo tab)
 type: feature-domain
 status: mixed
-updated: 2026-09-30
+updated: 2026-10-06
 tags: [insights, mezo-tab, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -1618,6 +1618,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `data/useDualQuery.ts` — gained the optional real-mode-only `keepPreviousRealData` flag for `useFeedback`'s id-set-keyed cache (§5.7); default OFF, no existing caller affected. Documented in full in [`_platform-data-layer.md` §4/§10](_platform-data-layer.md), which owns this helper
 - **`components/GrowthWeekCard.tsx` is DELETED (`mezo-p2tr`)** — the Weekly "Growth — heti" card (E3, quests/LIFE XP/activities/savings + honest empty line) had `WeeklyPage` as its only consumer; growth domain docs in [`growth.md`](growth.md)
 - **`components/MotorHero.tsx · VerdictFilterChips.tsx · DomainSection.tsx · PairRow.tsx` are DELETED (`mezo-tk88.4`)** — the Motor page's `mezo-18bx` presentational units (hero card, verdict-filter chips, collapsible domain sections, expandable pair rows); superseded by `MotorStateHero`/`LifecycleSection` above. **`components/MetricCoverageRing.tsx` survives unchanged** — its `metric`/`referencingTitles`/`waiting` props are still exactly what the „Adat-egészség" panel needs
+- `logic/toolDomains.ts` / `chatRefs.ts` — the growth tool chip (`get_growth`) and the `Growth` ref kind are labelled **„Fejlődés”** (gold wash, `t-up`) since `mezo-lhqw7` — the area’s one name across the app; the kind keys are unchanged.
 - `logic/domains.ts` — **mezo-18bx, KEPT `mezo-tk88.4`**: `DOMAIN_META`/`DOMAIN_ORDER` (token-based domain colors, feeds `MotorStateHero`'s chip row) + `comparePairs` + `groupPairsByDomain` (primary domain = metric-B; `comparePairs`/`groupPairsByDomain` no longer have a live page consumer post-retirement but stay pure-tested, `domains.test.ts`)
 - `logic/lifecycle.ts` — **`mezo-tk88.4`**, the dashboard's bucketing spine: `LifecycleBucket`/`BUCKET_ORDER` (the six-bucket taxonomy + section order), `isStrongSignal` (the display-layer `|r|≥0.3 && p≤0.15` gate, `STRONG_SIGNAL` in `insights.ts`), `bucketize(patterns, monitor)` — matches `Pattern.pairKey` to `PatternMonitorPair.key`, a user-judged `status` always wins, an unmatched pair always lands in `gathering`; pure, unit-tested in `lifecycle.test.ts`
 - `logic/verdicts.ts` — **`mezo-tk88.4`** (lifted off the retired `PairRow.tsx`, unchanged): `bottleneckLabel` + `verdictSentence` (the honest per-verdict sentence, few_days' 🎯 nudge included) — now backs the „Még gyűlik az adat"/„Elvetve" lifecycle rows

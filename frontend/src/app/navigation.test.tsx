@@ -74,7 +74,10 @@ test('Me settings: no theme selector under the dark-only lock, the app stays dar
 test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.6.1)', async () => {
   renderApp('/me')
   expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Súly' })).toBeInTheDocument()
+  // mezo-lhqw7: the hub is „Hol tartok" — the Súly tile became the bottom bar's Test tab.
+  expect(await screen.findByRole('button', { name: 'Célok állása' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Súly' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Test' })).toHaveAttribute('href', '/me/weight')
   expect(screen.queryByLabelText('Me alnavigáció')).not.toBeInTheDocument()
 })
 

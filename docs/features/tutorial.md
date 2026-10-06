@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-09-29
+updated: 2026-10-06
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -227,7 +227,7 @@ Gated by the switch `mezo.feature.tutorial.enabled`
   - `train-hero` — all six `.eh-hero` variants in
     `frontend/src/features/train/pages/EdzesHubPage.tsx`.
   - ~~`mezo-chat`~~ — retired with the `/mezo` tour (`mezo-a9bo7.10`); the wall introduces itself in posts.
-  - `me-idhero` — the identity hero, one node, in `frontend/src/features/me/pages/EnHubPage.tsx`.
+  - `me-idhero` — the identity strip (one node; the Én hub’s flat top row, `mezo-lhqw7`), in `frontend/src/features/me/components/hub/EnIdentityStrip.tsx`.
 - **`BeallitasokPage`** (`frontend/src/features/me/pages/BeallitasokPage.tsx:70-87`) — the
   "Kalauzok újranézése" row calls `useTutorial().resetAll()` and reflects its promise in an
   `idle | busy | done | error` local state; this row is **not** owner-gated (unlike the LLM-usage
@@ -445,7 +445,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   `train-hero`.
 - `frontend/src/features/tutorial/registry/mezo.ts` — the Mezo hub guide (`mezo`), anchor
   `mezo-chat`.
-- `frontend/src/features/tutorial/registry/me.ts` — the Én hub guide (`me`), anchor `me-idhero`.
+- `frontend/src/features/tutorial/registry/me.ts` — the Én hub guide (`me`), anchor `me-idhero`; copy rewritten for „Hol tartok” (`mezo-lhqw7`: strip → A heted → Életvonal → Célok állása; links Test · Súly/Alvás, Célok, Fejlődés, Emberek) with `version` unchanged, so a seen guide does not reopen by itself.
 - `frontend/src/features/tutorial/registry/welcome.ts` — the `T0` welcome (`WELCOME`,
   `WELCOME_ID`, `WELCOME_VERSION`), deliberately outside `KALAUZ_REGISTRY` (§2).
 - `frontend/src/features/tutorial/registry/lint.ts` — shared hang-lint primitives (`FORBIDDEN`,
@@ -465,7 +465,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   (one per daypart face).
 - `frontend/src/features/train/pages/EdzesHubPage.tsx` — `data-kalauz-anchor="train-hero"` × 6
   (one per hero variant).
-- `frontend/src/features/me/pages/EnHubPage.tsx` — `data-kalauz-anchor="me-idhero"`.
+- `frontend/src/features/me/components/hub/EnIdentityStrip.tsx` — `data-kalauz-anchor="me-idhero"`.
 
 **Frontend — data layer**
 - `frontend/src/data/tutorial/tutorialProgressApi.ts`, `tutorialProgressHooks.ts` —

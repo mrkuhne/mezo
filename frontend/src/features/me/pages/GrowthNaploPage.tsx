@@ -29,8 +29,8 @@ export function GrowthNaploPage() {
 
   return (
     <MozaikPage tone="sky" className="grn-page">
-      <PageHead glass onBack={() => navigate('/me/growth')} label="Growth" />
-      <PageHero art="t-journal" accent="var(--dv-sky)" name="Napló" big={<>{completed}<small> teljesített küldetés</small></>} />
+      <PageHead glass onBack={() => navigate('/me/growth')} label="Fejlődés" />
+      <PageHero art="t-journal" accent="var(--dv-sky)" name="Tevékenységek" big={<>{completed}<small> teljesített küldetés</small></>} />
       <PageBody principle="Utolsó 30 nap · a teljesített küldetések és tevékenységek itt gyűlnek. A csendben lejárt küldetés nem hiba — ajánlat volt.">
         <EntranceGroup>
           {week && (

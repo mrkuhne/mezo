@@ -239,7 +239,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### character
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-10-06, shipped) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-10-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -628,7 +628,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-10-06, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -823,7 +823,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-10-06, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-30, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-10-06, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
@@ -1035,26 +1035,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, TempPasswordSheet.tsx,
     WeightLogSheet.tsx
   - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallUsage.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx,
-    AiTokenBar.tsx, BadgesCard.tsx, BioRow.tsx, DetailStat.tsx, EffectRows.tsx, EffortGrid.tsx, FieldRow.tsx,
-    FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx, GoalDetailHero.tsx, GoalDietWeekCard.tsx,
-    GoalGate.tsx, GoalGuardCard.tsx, GoalSegmentRail.tsx, GoalSettingsEditor.tsx, GoalSuggestionCard.tsx,
-    GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx,
-    HabitContextRings.tsx, HabitFormationCard.tsx, HabitFormationHistory.tsx, LifeGoalTile.tsx, MaStrip.tsx,
-    MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx,
-    NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx, PermahRing.tsx, PersonCard.tsx,
-    PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx, PushInstallGate.tsx,
-    RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx,
-    SleepStatCard.tsx, TestViewSwitch.tsx, TimePicker.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekGoalsCard.tsx,
-    WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx,
-    WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx, goalSettingsEditor.css
+    AiTokenBar.tsx, BadgesCard.tsx, BioRow.tsx, DetailStat.tsx, EffectRows.tsx, EffortGrid.tsx, EnIdentityStrip.tsx,
+    FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx, GoalDetailHero.tsx,
+    GoalDietWeekCard.tsx, GoalGate.tsx, GoalGuardCard.tsx, GoalSegmentRail.tsx, GoalSettingsEditor.tsx,
+    GoalStandingCard.tsx, GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx,
+    GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, HabitContextRings.tsx, HabitFormationCard.tsx,
+    HabitFormationHistory.tsx, LifeGoalTile.tsx, LifelineCard.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx,
+    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
+    PerksCard.tsx, PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx,
+    PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
+    SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStatCard.tsx, TestViewSwitch.tsx, TimePicker.tsx, WeekDayTile.tsx,
+    WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekHeroCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
+    WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
+    WeightTrendChart.tsx, goalSettingsEditor.css, hubTestKit.tsx, lifelineGeometry.ts
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, discoveryDrawers.ts, effectCopy.ts,
     goalLabels.ts, goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
     gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts,
-    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
-    perkMilestones.ts, personFactCopy.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts,
-    sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts,
-    weekNav.ts, weightStats.ts
+    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, lifeline.ts,
+    llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
+    peopleVisuals.ts, perkMilestones.ts, personFactCopy.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts,
+    sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
+    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 
@@ -1665,7 +1666,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### tutorial
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-09-29, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/tutorial.md](features/tutorial.md) (updated 2026-10-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/tutorial`
   - **entities→tables:** `TutorialProgressEntity`→`tutorial_progress`

@@ -52,7 +52,7 @@ export function GrowthSkillsPage() {
 
   return (
     <MozaikPage tone="lav" className="grs-page">
-      <PageHead glass onBack={() => navigate('/me/growth')} label="Growth" />
+      <PageHead glass onBack={() => navigate('/me/growth')} label="Fejlődés" />
       <PageHero art="t-up" accent="var(--dv-lav)" name="Képességek" big={<>{s.skillCount}<small> skill</small></>} />
       <PageBody principle="A szint visszajelzés, nem jutalom — semmi nem nyílik vagy zárul tőle. Az XP-idősort nem rajzoljuk: a contract nem hordoz sorozatot.">
         <EntranceGroup>

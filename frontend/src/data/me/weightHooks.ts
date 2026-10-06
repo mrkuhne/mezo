@@ -29,7 +29,7 @@ function foldTrend(trend: WeightTrendResponse): WeightTrends {
 export function useWeight() {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const { data: weightLog = [] } = useQuery({
+  const { data: weightLog = [], isPending: logPending, isError: logError, refetch } = useQuery({
     queryKey: ['weightLog'],
     queryFn: mock ? async () => initialWeightLog : weightApi.list,
     // Mock mode seeds synchronously so the first render matches the Phase-1
@@ -73,5 +73,12 @@ export function useWeight() {
     },
   })
   const logWeight = useCallback((input: WeightLogInput) => mutation.mutate(input), [mutation])
-  return { weightLog, weightTrends, logWeight }
+  // ADDITIVE (mezo-lhqw7): the LOG query's own liveness. `weightLog` is `[]` while the real-mode
+  // read is unresolved AND when it failed — without these a consumer reads both as "nothing
+  // measured yet" (the Én hub's Életvonal showed its empty state on a cold load). Mock mode
+  // seeds synchronously and never fetches: never pending, never failed.
+  return {
+    weightLog, weightTrends, logWeight,
+    isPending: !mock && logPending, isError: !mock && logError, refetch: () => { void refetch() },
+  }
 }

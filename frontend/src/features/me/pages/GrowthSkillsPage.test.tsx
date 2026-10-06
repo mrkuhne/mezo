@@ -12,9 +12,9 @@ const renderPage = () => render(<QueryWrapper><MemoryRouter initialEntries={['/m
 beforeEach(() => hooks.useProgressionProfile.mockReturnValue({ data: progressionProfileMock }))
 afterEach(() => vi.clearAllMocks())
 
-test('hero: 33 skill + ‹ Growth; stat strip LIFE avg / athlete level / muscle best', () => {
+test('hero: 33 skill + ‹ Fejlődés; stat strip LIFE avg / athlete level / muscle best', () => {
   renderPage()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Growth/)
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Fejlődés/)
   expect(screen.getByText('33')).toBeInTheDocument()
   expect(screen.getByText('1,8')).toBeInTheDocument()      // hu1(1.75) → "1,8"
   expect(screen.getByText('4,3')).toBeInTheDocument()      // athleteLevel

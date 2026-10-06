@@ -111,3 +111,37 @@ test('useWeight.logWeight invalidates ["habitDay"] and the day quest read (deriv
     expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-06-02']))
   })
 })
+
+// mezo-lhqw7: the log query's liveness is exposed ADDITIVELY — `weightLog` is [] while the read
+// is unresolved and when it failed, and a consumer must be able to tell those from "no data".
+test('useWeight (real mode) is pending until the log resolves, then not', async () => {
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
+  expect(result.current.isPending).toBe(true)
+  expect(result.current.isError).toBe(false)
+  expect(result.current.weightLog).toEqual([])
+  await waitFor(() => expect(result.current.isPending).toBe(false))
+  expect(result.current.weightLog.length).toBe(1)
+})
+
+test('useWeight (real mode) reports a failed log read as an error, and refetch retries it', async () => {
+  let calls = 0
+  server.use(http.get(`${API_BASE}/api/biometrics/weight`, () => {
+    calls += 1
+    return calls === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json([{ id: 'w1', date: '2026-06-01', value: 82.5, note: null }])
+  }))
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.isError).toBe(true))
+  expect(result.current.isPending).toBe(false)
+  expect(result.current.weightLog).toEqual([])
+  act(() => result.current.refetch())
+  await waitFor(() => expect(result.current.weightLog.length).toBe(1))
+  expect(result.current.isError).toBe(false)
+})
+
+test('useWeight (mock mode) is never pending and never failed', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
+  expect(result.current.isPending).toBe(false)
+  expect(result.current.isError).toBe(false)
+  expect(result.current.weightLog.length).toBeGreaterThan(0)
+})

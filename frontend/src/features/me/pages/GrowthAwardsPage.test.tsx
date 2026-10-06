@@ -42,9 +42,9 @@ beforeEach(() => {
 })
 afterEach(() => vi.clearAllMocks())
 
-test('hero 4 / 9 jelvény; streak card, titles, badge grid and perks in one EntranceGroup; ‹ Growth', () => {
+test('hero 4 / 9 jelvény; streak card, titles, badge grid and perks in one EntranceGroup; ‹ Fejlődés', () => {
   const { container } = renderPage()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Growth/)
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/‹\s*Fejlődés/)
   expect(screen.getByText('/ 9 jelvény')).toBeInTheDocument()
   expect(screen.getByTestId('streak-card')).toBeInTheDocument()
   expect(screen.getByTestId('titles-section')).toBeInTheDocument()

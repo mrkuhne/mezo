@@ -1611,8 +1611,12 @@ describe.each(U4_BLOCKS)('the uveg edzes %s section carries the glass ranking (m
  * space dashed; never glass in glass.
  */
 const U6_BLOCKS: Array<[string, string[]]> = [
-  ['hub', ['.enh-hub .enh-idhero.uv-halo', '.enh-hub .enh-goalcard.glass', '.enh-hub .enh-newgoal.uv-empty',
-    '.enh-hub .mz-tile.enh-tile.glass', '.enh-hub .enh-titlech', '.enh-hub .enh-lv']],
+  // mezo-lhqw7: the hub is „Hol tartok" — flat identity strip, the week hero halo, Életvonal,
+  // Célok állása, the tiles. The identity hero / XP ring / title-chip selectors retired with it.
+  ['hub', ['.enh-hub .enh-idstrip', '.enh-hub .enh-wkhero.uv-halo', '.enh-hub .enh-wkcta', '.enh-hub .enh-elv',
+    '.enh-hub .enh-elv-curve', '.enh-hub .enh-elv-stn', '.enh-hub .enh-elv.enh-elv-empty.uv-empty',
+    '.enh-hub .enh-goalcard.glass', '.enh-hub .enh-goalcard .enh-grow', '.enh-hub .enh-newgoal.uv-empty',
+    '.enh-hub .mz-tile.enh-tile.glass']],
   ['celok', ['.enc-celok .enc-tile.glass', '.enc-celok .enc-hero.uv-halo', '.enc-celok .enc-xrow.glass',
     '.enc-celok .enc-newtile.uv-empty', '.enc-cel .lg-pillar.glass', '.enc-cel .lg-why.glass',
     '.enc-wiz .lg-fcard.glass', '.sheet.glass.enc-pcat']],
@@ -1718,7 +1722,7 @@ describe('the uveg mezo mibol section carries the glass ranking (mezo-me75u.13)'
 const U7_BLOCKS: Array<[string, string[]]> = [
   ['novekedes', ['.grs-page .gr-band.glass', '.grs-page .gr-skl-ic.mono', '.grs-page .gr-skl-lv', '.grn-page .gr-day.glass',
     '.grn-page .gr-jrow .gr-jdot i', '.gra-page .gr-streak.gr-band::before', '.gra-page .gr-titcard.glass',
-    '.gra-page .gr-bdg .gr-ring svg', '.gra-page .gr-perks.glass']],
+    '.gra-page .gr-bdg .gr-ring svg', '.gra-page .gr-perks.glass', '.mz-tile.gr-tile.glass']],
   ['rutin', ['.rt-hub .rt-nextcard.glass', '.rt-hub .rt-nextcard .rt-bigtick', '.rt-hub .rt-chaintile.glass',
     '.rt-hub .mz-tile.glass.rt-door', '.rt-lanc .rt-macard.glass', '.rt-szokasok .rt-htile.glass',
     '.rt-szokas .rt-poster.glass', '.rt-szokas .rt-ctxgrid.glass', '.rt-wiz .rt-fwcard.glass', '.sheet.glass.rt-sheet']],
