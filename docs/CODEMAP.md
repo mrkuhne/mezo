@@ -737,7 +737,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-28, done) ·
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-10-06, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-10-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
@@ -1046,12 +1046,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
     SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStatCard.tsx, TestViewSwitch.tsx, TimePicker.tsx, WeekDayTile.tsx,
     WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekHeroCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
-    WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
-    WeightTrendChart.tsx, goalSettingsEditor.css, hubTestKit.tsx, lifelineGeometry.ts
+    WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx,
+    WeightGoalTile.tsx, WeightHero.tsx, WeightTrendChart.tsx, goalSettingsEditor.css, hubTestKit.tsx,
+    lifelineGeometry.ts
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, discoveryDrawers.ts, effectCopy.ts,
     goalLabels.ts, goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
     gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts,
-    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, lifeline.ts,
+    habitMetricPalette.ts, huSigned.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, lifeline.ts,
     llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
     peopleVisuals.ts, perkMilestones.ts, personFactCopy.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts,
     sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
@@ -1507,7 +1508,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### train
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-01, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-28, done) ·
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-10-06, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-30, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-30, done)
 
