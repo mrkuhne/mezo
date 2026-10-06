@@ -698,7 +698,10 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   events, new facts, life events and the wider this-week context sections, with ISO dates
   stripped; it deliberately EXCLUDES the header, the character dossier, the memoir title, the
   predictions, the long-term memory block and the anchor-candidate numbering, so a number can only
-  be grounded in this week's own data. A rejected line never drops the review.
+  be grounded in this week's own data. A rejected line never drops the review. Because that guard
+  only knows raw per-day tokens (a legitimate aggregate like „5 napon" or „átlag 7,5 óra" would be
+  nulled and the hero would fall back), the prompt asks for both lines **without digits** — numbers
+  spelled out or avoided; the guard remains the net for an answer that ignores it.
 - **Four operations** (`api/feature/proactive/proactive.yml`, served by `ProactiveController` —
   there is no `WeeklyReviewController`; only the test class is `WeeklyReviewControllerIT`) — all
   four (GET, regenerate, digest, lessons) share the SAME `requireMonday` 400 guard (`WEEKLY_REVIEW_START_NOT_MONDAY`), deliberately
