@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · SzokasaidPage (mezo-mgpr) — /me/rutin/szokasok, prototype rutin-formalodas.html
+// Mezo · SzokasaidPage (mezo-mgpr) — /nap/rutin/szokasok, prototype rutin-formalodas.html
 // `pg-lista` ×1.18. The habit list left the hub for its own page: four STAGE FILTER tiles
 // (multi-toggle; none selected = everything shows, so there is no fifth "Mind" tile), then
 // one full-width tile per habit — name top-left with its stage, the reps as the big numeral,
@@ -79,7 +79,7 @@ export function SzokasaidPage() {
   if (defs.length === 0) {
     return (
       <MozaikPage tone="gold" className="rt-uv rt-szokasok">
-        <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin" />
         <PageBody>
           {isPending ? <GhostState message="Szokások betöltése…" lines={3} />
             : isError ? <GhostState message="Nem sikerült betölteni a szokásokat." ctaLabel="Újra" onCta={refetch} />
@@ -131,7 +131,7 @@ export function SzokasaidPage() {
         type="button"
         className="rt-htile glass rise"
         style={{ ...rise(60 + order * 30), '--c': tone, '--i': order } as CSSProperties}
-        onClick={() => navigate(`/me/rutin/szokas/${d.habitKey}`)}
+        onClick={() => navigate(`/nap/rutin/szokas/${d.habitKey}`)}
         data-testid={`habit-tile-${d.habitKey}`}
       >
         <span className="rt-htop">
@@ -151,7 +151,7 @@ export function SzokasaidPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-szokasok">
-      <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+      <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin" />
       <PageHero art="t-harvest" accent="var(--dv-amber)" big={`${visible.length}`} name="Szokásaid" sub="formálódás szerint rendezve" />
       <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={[...filter].join('-')}>

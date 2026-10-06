@@ -56,7 +56,7 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
       // private mode / quota / a disabled store — the wizard simply opens unseeded
     }
     close()
-    navigate(`/me/rutin/uj?chain=${encodeURIComponent(s.chainKey)}`)
+    navigate(`/nap/rutin/uj?chain=${encodeURIComponent(s.chainKey)}`)
   }
 
   const dismiss = (s: HabitSuggestion) => {

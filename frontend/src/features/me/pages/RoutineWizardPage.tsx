@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · RoutineWizardPage (mezo-3zue.4, one-flow rebuild mezo-9k99) — /me/rutin/uj,
+// Mezo · RoutineWizardPage (mezo-3zue.4, one-flow rebuild mezo-9k99) — /nap/rutin/uj,
 // prototype rutin-formalodas.html `pg-wiz` ×1.18. ONE creation flow for every habit:
 //
 //  - the two frameworks are NOT the same flow any more: the Fogg branch builds an anchored
@@ -217,7 +217,7 @@ export function RoutineWizardPage() {
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
       <MozaikPage tone="gold" className="rt-uv rt-wiz">
-        <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -290,7 +290,7 @@ export function RoutineWizardPage() {
   const save = () => {
     if (fwChoice === null) return
     const done = (habitKey: string | undefined) =>
-      navigate(habitKey != null ? `/me/rutin?new=${encodeURIComponent(habitKey)}` : '/me/rutin')
+      navigate(habitKey != null ? `/nap/rutin/epites?new=${encodeURIComponent(habitKey)}` : '/nap/rutin/epites')
 
     // Re-framing CONVERTS the definition it was opened with — it must never mint a second one.
     // `updateDef` accepts no `skillKey`, so it is omitted; mode/metric ride the patch since
@@ -354,10 +354,10 @@ export function RoutineWizardPage() {
     <MozaikPage tone="gold" className="rt-uv rt-wiz">
       <PageHead
         glass
-        onBack={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : navigate('/me/rutin'))}
+        onBack={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : navigate('/nap/rutin/epites'))}
         label={stepIdx > 0 ? STEP_TITLES[steps[stepIdx - 1]] : 'Rutin'}
       >
-        <button type="button" className="pgact rt-ghostpill" onClick={() => navigate('/me/rutin')}>Mégse</button>
+        <button type="button" className="pgact rt-ghostpill" onClick={() => navigate('/nap/rutin/epites')}>Mégse</button>
       </PageHead>
       <PageBody>
         <EntranceGroup replayKey={stepId}>

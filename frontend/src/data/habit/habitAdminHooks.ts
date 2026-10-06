@@ -86,7 +86,7 @@ export function useHabitCatalogActions() {
     onSuccess: mock ? undefined : invalidateAll,
   })
   // Resolves with the CREATED definition (both arms) — the wizard needs the server-assigned
-  // habitKey to send the user back to `/me/rutin?new=<habitKey>` and have the hub highlight the
+  // habitKey to send the user back to `/nap/rutin/epites?new=<habitKey>` and have the hub highlight the
   // row it just made. Every other caller ignores the value, so this is additive.
   const createDefM = useMutation({
     mutationFn: async (input: HabitDefCreateInput): Promise<HabitDefInfo | undefined> => {

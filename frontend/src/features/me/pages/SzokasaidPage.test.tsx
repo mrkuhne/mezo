@@ -53,7 +53,7 @@ vi.mock('@/data/hooks', () => ({
 }))
 
 function renderPage() {
-  return render(<MemoryRouter initialEntries={['/me/rutin/szokasok']}><SzokasaidPage /></MemoryRouter>)
+  return render(<MemoryRouter initialEntries={['/nap/rutin/szokasok']}><SzokasaidPage /></MemoryRouter>)
 }
 
 beforeEach(() => {
@@ -132,7 +132,7 @@ describe('SzokasaidPage — a lista saját oldala (mezo-mgpr)', () => {
   test('a csempe a szokás oldalára visz, és sehol nincs pipa', () => {
     renderPage()
     fireEvent.click(screen.getByTestId('habit-tile-epul'))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/epul')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/epul')
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
 

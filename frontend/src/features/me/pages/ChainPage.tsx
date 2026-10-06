@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · ChainPage (mezo-vxd8) — /me/rutin/lanc/:chainKey, prototype rutin-formalodas.html
+// Mezo · ChainPage (mezo-vxd8) — /nap/rutin/lanc/:chainKey, prototype rutin-formalodas.html
 // `pg-lanc` ×1.18. ONE chain: rename, daypart, order — and the STACKING drawn. The vertical
 // rope is the chain's ORDER; the per-row badge says what the row is ACTUALLY anchored to
 // (`chainStacking.ts`); where the two disagree the rope goes dashed. Chain position and
@@ -65,7 +65,7 @@ export function ChainPage() {
     if (isPending) {
       return (
         <MozaikPage tone="lav" className="rt-uv rt-lanc">
-          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin" />
           <PageBody><GhostState message="Lánc betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -73,14 +73,14 @@ export function ChainPage() {
     if (isError) {
       return (
         <MozaikPage tone="lav" className="rt-uv rt-lanc">
-          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a láncot." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
         </MozaikPage>
       )
     }
-    return <Navigate to="/me/rutin" replace />
+    return <Navigate to="/nap/rutin/epites" replace />
   }
 
   const allDefs = (catalog?.chains ?? []).flatMap((c) => c.defs)
@@ -116,7 +116,7 @@ export function ChainPage() {
 
   const remove = () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
-    deleteChain(chain.id).then(() => navigate('/me/rutin'))
+    deleteChain(chain.id).then(() => navigate('/nap/rutin/epites'))
   }
 
   const stackRow = (d: HabitDefInfo, i: number) => {
@@ -139,7 +139,7 @@ export function ChainPage() {
         <button
           type="button"
           className="rt-sbody"
-          onClick={() => navigate(`/me/rutin/szokas/${d.habitKey}`)}
+          onClick={() => navigate(`/nap/rutin/szokas/${d.habitKey}`)}
           aria-label={`${d.title} · ${status === 'done' ? 'kész' : status === 'missed' ? 'kimaradt' : 'nyitott'}`}
         >
           <span className="rt-sbody-nm">{d.title}</span>
@@ -163,7 +163,7 @@ export function ChainPage() {
 
   return (
     <MozaikPage tone="lav" className="rt-uv rt-lanc">
-      <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin">
+      <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin">
         <button
           type="button"
           className="mz-pgact rt-act is-lav"
@@ -237,7 +237,7 @@ export function ChainPage() {
             type="button"
             className="rt-addrow rise"
             style={rise(90)}
-            onClick={() => navigate(`/me/rutin/uj?chain=${encodeURIComponent(chain.chainKey)}`)}
+            onClick={() => navigate(`/nap/rutin/uj?chain=${encodeURIComponent(chain.chainKey)}`)}
           >
             ＋ Új habit ebbe a láncba
           </button>

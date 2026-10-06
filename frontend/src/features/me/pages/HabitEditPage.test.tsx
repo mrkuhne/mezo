@@ -72,10 +72,10 @@ vi.mock('@/data/hooks', () => ({
 
 function renderPage(habitKey: string) {
   return render(
-    <MemoryRouter initialEntries={[`/me/rutin/szokas/${habitKey}/szerkesztes`]}>
+    <MemoryRouter initialEntries={[`/nap/rutin/szokas/${habitKey}/szerkesztes`]}>
       <Routes>
-        <Route path="/me/rutin/szokas/:habitKey/szerkesztes" element={<HabitEditPage />} />
-        <Route path="/me/rutin" element={<div>RUTIN HUB</div>} />
+        <Route path="/nap/rutin/szokas/:habitKey/szerkesztes" element={<HabitEditPage />} />
+        <Route path="/nap/rutin/epites" element={<div>RUTIN HUB</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -111,7 +111,7 @@ describe('HabitEditPage — recept és mentés', () => {
     fireEvent.change(screen.getByLabelText(/Jelzés/), { target: { value: '7:20-kor a konyhában' } })
     fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(updateDef).toHaveBeenCalledWith('d-intent', expect.objectContaining({ cue: '7:20-kor a konyhában' }))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/intent'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent'))
   })
 
   test('emptying the optional identity CLEARS it on the wire (blank string, mezo-pero)', () => {
@@ -319,7 +319,7 @@ describe('HabitEditPage — kilépések', () => {
   test('the back button returns to the habit page, not the hub', () => {
     renderPage('intent')
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/intent')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent')
   })
 
   test('a stored xp outside 5-15 is clamped on save', () => {

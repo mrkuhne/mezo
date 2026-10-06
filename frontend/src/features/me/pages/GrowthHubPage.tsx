@@ -23,7 +23,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
 export const TAB_REDIRECT: Record<string, string> = {
-  skills: '/me/growth/skillek', routines: '/me/rutin', journal: '/me/growth/naplo', awards: '/me/growth/kituntetesek',
+  skills: '/me/growth/skillek', routines: '/nap/rutin/epites', journal: '/me/growth/naplo', awards: '/me/growth/kituntetesek',
 }
 const MILESTONES = Object.keys(STREAK_MILESTONE_COINS).map(Number).sort((a, b) => a - b)
 const PULSE_WINDOW_DAYS = 10

@@ -45,7 +45,7 @@ public enum AppNotificationKind {
     GRAPH_CANDIDATE("graph_candidate", null, "/mezo/rolad"),
     /** A habit crossed the automaticity threshold. The deeplink base takes the habit key at emit
      *  time (the pattern kinds' idiom); once-ever per habit, enforced by the dedup key. */
-    HABIT_FORMATION("habit_formation", null, "/me/rutin/szokas"),
+    HABIT_FORMATION("habit_formation", null, "/nap/rutin/szokas"),
     /** The monthly deep-read konzílium wrote a new portrait — the {@code memoir_ready} /
      *  {@code weekly_review_ready} shape: "something about you is finished". */
     CHARACTER_PORTRAIT("character_portrait", null, "/me/karakter"),

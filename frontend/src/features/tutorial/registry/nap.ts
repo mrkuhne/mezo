@@ -117,7 +117,7 @@ export const NAP_KALAUZ: KalauzEntry[] = [
         title: 'Itt pipálsz, máshol épül.',
         voice: 'A szokásaidat a Rutin-műhelyben rakod össze — itt csak éled őket. A pipák XP-ként is visszaköszönnek.',
         links: [
-          { to: '/me/rutin', label: 'Rutin-műhely', icon: 'i-rend', effect: 'itt építed a szokásaid' },
+          { to: '/nap/rutin/epites', label: 'Rutin-műhely', icon: 'i-rend', effect: 'itt építed a szokásaid' },
           { to: '/me/growth', label: 'Fejlődés', icon: 'i-growth', effect: 'a pipák XP-t érnek' },
           { to: '/nap', label: 'Nap', icon: 'i-nap' },
         ],

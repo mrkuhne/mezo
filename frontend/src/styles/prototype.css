@@ -24051,7 +24051,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gr-tile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 /* ── /uveg en2 novekedes ── */
 
-/* ── uveg en2 rutin (mezo-me75u.7) ── /me/rutin(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) + rutin sheets ── */
+/* ── uveg en2 rutin (mezo-me75u.7) ── /nap/rutin/epites(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) (moved from /me/rutin, mezo-lhqw7) + rutin sheets ── */
 /* Ranking (bible §3.4, prototype uveg-en2.html #rutin/#lanc/#szokasok/#szokas/#szerk/#uj, sheets
    `ai`/`chain`/`anchor`). Every rule is scoped to a page root — `.rt-uv` plus one of `.rt-hub`,
    `.rt-lanc`, `.rt-szokasok`, `.rt-szokas`, `.rt-szerk`, `.rt-wiz` — or to the rutin sheets

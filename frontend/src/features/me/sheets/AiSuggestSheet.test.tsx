@@ -85,7 +85,7 @@ describe('AiSuggestSheet', () => {
     // the "never" half is pinned structurally by the omitted write hook in the module mock above.
     expect(JSON.parse(sessionStorage.getItem('mezo.routineWizard.suggestion') ?? 'null'))
       .toEqual(SUGGESTIONS[0])
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?chain=EVENING'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj?chain=EVENING'))
   })
 
   it('a sessionStorage failure still opens the wizard (the proposal is lost, the flow is not)', async () => {
@@ -98,7 +98,7 @@ describe('AiSuggestSheet', () => {
 
     fireEvent.click(screen.getAllByRole('button', { name: ACCEPT })[0])
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?chain=EVENING'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj?chain=EVENING'))
     setItem.mockRestore()
   })
 
