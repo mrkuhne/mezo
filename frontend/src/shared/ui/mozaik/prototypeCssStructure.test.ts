@@ -1618,7 +1618,7 @@ const U6_BLOCKS: Array<[string, string[]]> = [
     '.enh-hub .enh-goalcard.glass', '.enh-hub .enh-goalcard .enh-grow', '.enh-hub .enh-newgoal.uv-empty',
     '.enh-hub .mz-tile.enh-tile.glass']],
   ['celok', ['.enc-celok .enc-tile.glass', '.enc-celok .enc-hero.uv-halo', '.enc-celok .enc-xrow.glass',
-    '.enc-celok .enc-newtile.uv-empty', '.enc-cel .lg-pillar.glass', '.enc-cel .lg-why.glass',
+    '.enc-celok .enc-newtile.uv-empty', '.enc-celok .enc-wgoal-skel.glass', '.enc-cel .lg-pillar.glass', '.enc-cel .lg-why.glass',
     '.enc-wiz .lg-fcard.glass', '.sheet.glass.enc-pcat']],
   ['sulycel', ['.goal-hub-page .goal-course-hero.uv-halo', '.goal-hub-page .goal-hub-mosaic .mz-tile.glass',
     '.goal-hub-page .goal-empty-new.uv-empty', '.uv-goal .goal-detail-card.glass', '.goal-gate .goal-gate-card.glass',
