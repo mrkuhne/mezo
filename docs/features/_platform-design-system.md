@@ -14,6 +14,8 @@ key_files:
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
+> **2026-10-06 — Én IA final review (`mezo-lhqw7`).** `prototype.css` housekeeping, no new block: the `── uveg en test` block's `.ent-seg-btn` gains a **44px `::after` hit zone** (drawn pill stays 36px; the hub pills' idiom, asserted in `tests/layout/layout.spec.ts`), and the `── uveg en hub` block loses the dead `.enh-t-rutin` accent and the `.enh-tile.mz-tile-row*` wide-row rules (the Rutin tile left the hub in S4).
+>
 > **2026-10-06 — Én IA S1 (`mezo-lhqw7`).** One new `prototype.css` block, `── uveg en test (mezo-lhqw7)` (`.ent-head`, the `.ent-seg`/`.ent-seg-btn` Súly|Alvás segment with the sky `is-on` glow, `.ent-bio`), guarded by `LHQW7_BLOCKS` in `prototypeCssStructure.test.ts`. `app/navModel.ts` gained the Én row `Hol tartok · Test · Célok · Napló` with `owns` (see [`me.md`](me.md)); no sprite, token or shared-kit primitive changed.
 
 > **2026-10-06 — Én IA S3 (`mezo-lhqw7`).** The `── uveg en celok (` block gains the weight-goal tile family — `.enc-wgoal` (coral glass, same geometry as `.enc-tile`), `.enc-wgoal-pct`, `.enc-wgoal-pace`, the inert `.enc-wgoal-skel` skeleton (registered in `LHQW7_BLOCKS`/`U6_BLOCKS`), the quiet `.enc-quiet` line — and `.enc-newtile.is-wide`, the full-width row variant of the dashed tile (icon left, two text lines right). No new sprite, token or kit primitive; the tile reuses `Icon3D t-weight` and `.uv-bar`.

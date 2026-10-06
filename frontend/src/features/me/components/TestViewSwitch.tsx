@@ -17,7 +17,7 @@ export function TestViewSwitch({ view, children }: { view: 'suly' | 'alvas'; chi
   const navigate = useNavigate()
   const fromSwitch = (useLocation().state as { fromSwitch?: boolean } | null)?.fromSwitch === true
   const pressedRef = useRef<HTMLButtonElement>(null)
-  useEffect(() => { if (fromSwitch) pressedRef.current?.focus() }, [fromSwitch])
+  useEffect(() => { if (fromSwitch) pressedRef.current?.focus({ preventScroll: true }) }, [fromSwitch])
   return (
     <div className="ent-head">
       <div className="ent-seg" role="group" aria-label="Test nézet">

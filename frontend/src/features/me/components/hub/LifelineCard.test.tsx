@@ -13,7 +13,7 @@ const LOG = [wk(3, 80.4), wk(2, 80.2), wk(1, 79.8), wk(0, 79.6)] // one crossing
 const store = vi.hoisted(() => ({
   log: [] as { date: string; value: number }[],
   sleep: [] as { date: string; duration: number }[],
-  goal: { targetWeight: 73 } as { targetWeight: number } | null,
+  goal: { startWeight: 82, targetWeight: 73 } as { startWeight: number; targetWeight: number } | null,
   avg7: 79.7, rate4w: -0.3,
   perks: [] as { name: string; effectCopy: string; unlockedAt: string }[],
   logWeight: vi.fn(), refetch: vi.fn(),
@@ -39,7 +39,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 beforeEach(() => {
   store.log = LOG
   store.sleep = [{ date: addDays(MON, -21), duration: 6.4 }, { date: MON, duration: 7.3 }]
-  store.goal = { targetWeight: 73 }
+  store.goal = { startWeight: 82, targetWeight: 73 }
   store.avg7 = 79.7
   store.rate4w = -0.3
   store.perks = []
@@ -187,7 +187,7 @@ test('the sleep band names a single value when every logged week has the same me
 })
 
 test('a reached (overshot) target: „Elérted a célod" — never „még 0,4 kg"', async () => {
-  store.goal = { targetWeight: 80 } // the latest weekly average is 79,6
+  store.goal = { startWeight: 82, targetWeight: 80 } // the latest weekly average is 79,6
   renderUnit(<LifelineCard />)
   const next = document.querySelector<HTMLButtonElement>('button.enh-elv-next')!
   expect(next).toHaveTextContent('Elérted a célod: 80 kg›')

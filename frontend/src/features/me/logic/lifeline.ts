@@ -5,6 +5,7 @@
 // goal, a perk unlock); the projection is drawn only when the 4-week rate heads to the target.
 // „First crossing" is judged against the WHOLE weight log, not only the window: a low that has
 // aged out of the 12 weeks still counts, so re-crossing it is not announced as a first.
+// The goal's DIRECTION is the goal's own start → target — old history never decides it.
 import type { Goal, SleepEntry, WeightEntry } from '@/data/types'
 import { addDays, localDateString, mondayOf } from '@/shared/lib/dates'
 
@@ -25,7 +26,7 @@ interface Input {
   weightLog: WeightEntry[]
   sleepLog: SleepEntry[]
   perks: { name: string; effectCopy: string; unlockedAt: string }[]
-  goal: Pick<Goal, 'targetWeight'> | null
+  goal: Pick<Goal, 'targetWeight' | 'startWeight'> | null
   weeklyRate4w: number
   todayIso: string
   weeks?: number
@@ -80,10 +81,13 @@ export function buildLifeline(input: Input): Lifeline | null {
       else earlierWeeks.set(wk, [e.value])
     }
     const earlier = [...earlierWeeks.keys()].sort().map((wk) => round(mean(earlierWeeks.get(wk)!), 2))
-    // Direction: target below the earliest known weekly average ⇒ down (the earliest in the whole
-    // log, so a target passed before the window does not flip it). Stations beyond the target
-    // are still shown.
-    const down = targetKg < (earlier.length > 0 ? earlier[0] : points[0].avgKg)
+    // Direction comes from the GOAL (start → target), never from the log: an old low or high in
+    // the history says nothing about which way this goal points. Only a goal without a usable
+    // start (not finite, or equal to the target) falls back to the window's first point.
+    // Stations beyond the target are still shown.
+    const startKg = goal?.startWeight
+    const from0 = typeof startKg === 'number' && Number.isFinite(startKg) && startKg !== targetKg ? startKg : points[0].avgKg
+    const down = targetKg < from0
     reached = down ? latest <= targetKg : latest >= targetKg
     // Running best (min for down, max for up): a station fires on the FIRST crossing only. It is
     // seeded from every pre-window week; without one, from the window's first point (which then
