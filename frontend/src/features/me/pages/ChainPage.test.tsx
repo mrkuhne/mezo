@@ -182,3 +182,13 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
     expect(screen.getByText('RUTIN HUB')).toBeInTheDocument()
   })
 })
+
+// Én IA final review (mezo-lhqw7): the chip names where it LANDS — the builder is „Rutinok"
+// (/nap/rutin/epites, „Rutinok szerkesztése"); only the builder's own chip says „Rutin" (/nap/rutin).
+test('the back chip says „Rutinok" and lands on the routine builder', () => {
+  renderPage('MORNING')
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveTextContent(/^‹Rutinok$/)
+  fireEvent.click(back)
+  expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites')
+})

@@ -405,7 +405,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   carry the anchor too, or the spotlight silently degrades to "no anchor" on that face. The S3a
   anchors follow the same idiom where a page varies: `checkin-sor` sits on all three row-state
   variants (done/hot/dim) of the first check-in row, `rutin-lista` on the first habit group in
-  either daypart order (its guide's „Rutin-műhely” link points at `/nap/rutin/epites` since `mezo-lhqw7` S4), and `mai-napsav` travels through `DayStrip`'s optional `kalauzAnchor`
+  either daypart order (its guide's „Rutinok szerkesztése” link points at `/nap/rutin/epites` since `mezo-lhqw7` S4), and `mai-napsav` travels through `DayStrip`'s optional `kalauzAnchor`
   prop (only `/train/mai` passes it — the hub's own anchor stays `train-hero`). Two S3a guides
   are deliberately anchor-less: `/nap/kuldetesek` (quest cards are data-conditional, an empty
   day is real) and `/train/review/:workoutId` (the whole page is data-gated). The S3b anchors add

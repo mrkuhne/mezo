@@ -217,7 +217,7 @@ export function RoutineWizardPage() {
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
       <MozaikPage tone="gold" className="rt-uv rt-wiz">
-        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutin" />
+        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -355,7 +355,7 @@ export function RoutineWizardPage() {
       <PageHead
         glass
         onBack={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : navigate('/nap/rutin/epites'))}
-        label={stepIdx > 0 ? STEP_TITLES[steps[stepIdx - 1]] : 'Rutin'}
+        label={stepIdx > 0 ? STEP_TITLES[steps[stepIdx - 1]] : 'Rutinok'}
       >
         <button type="button" className="pgact rt-ghostpill" onClick={() => navigate('/nap/rutin/epites')}>Mégse</button>
       </PageHead>

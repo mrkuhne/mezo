@@ -242,3 +242,9 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     expect(screen.getByText('Nincs rutinadat erre a napra')).toBeInTheDocument()
   })
 })
+
+// Én IA final review (mezo-lhqw7): the builder's own chip lands on the Rutin TAB, so it says „Rutin".
+test('the builder\'s own back chip says „Rutin" (the tab it lands on), not „Rutinok"', () => {
+  renderPage()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/^‹Rutin$/)
+})

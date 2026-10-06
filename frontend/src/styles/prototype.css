@@ -21236,7 +21236,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .enh-hub .mz-mosaic { gap: 10px; margin-top: 4px; }
 .enh-hub .enh-t-growth  { --c: var(--dv-lav); }
 .enh-hub .enh-t-emberek { --c: var(--dv-rose); }
-.enh-hub .enh-t-rutin   { --c: var(--dv-amber); }
 .enh-hub .mz-tile.enh-tile.glass {
   border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 112px; gap: 4px;
   align-items: flex-start; text-align: left; color: var(--text-primary);
@@ -21259,15 +21258,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   text-align: left; font-size: 13px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3;
   color: var(--text-primary); overflow-wrap: anywhere;
 }
-/* Rutin: the wide row tile */
-.enh-hub .mz-tile.enh-tile.mz-tile-row.glass { flex-direction: row; align-items: center; gap: 12px; min-height: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-spotwrap { order: 0; margin: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-top { margin-top: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-line { margin-top: 2px; font-size: 14px; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-line small {
-  display: block; margin: 2px 0 0; font-size: 10.5px; font-weight: 500; color: var(--text-muted);
-}
-.enh-hub .enh-tile.mz-tile-row .mz-chev { font-size: 20px; color: var(--text-muted); }
 .enh-hub .enh-tile:focus-visible, .enh-hub .enh-goalcard:focus-visible, .enh-hub .enh-newgoal:focus-visible,
 .enh-hub .enh-idstrip:focus-visible, .enh-hub .enh-wkcta:focus-visible, .enh-hub .enh-elv-pill:focus-visible,
 .enh-hub .enh-elv-stn:focus-visible, .enh-hub .enh-elv-next:focus-visible {
@@ -22903,6 +22893,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sky) 45%, transparent);
 }
 .ent-seg-btn:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+/* 44px touch target without changing the drawn 36px pill: an invisible hit zone (the hub pills' idiom) */
+.ent-seg-btn { position: relative; }
+.ent-seg-btn::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 .ent-bio {
   display: block; margin: 18px auto 0; border: none; background: none; font-family: inherit; cursor: pointer;
   min-height: 44px; padding: 4px 12px; font-size: 12px; color: var(--mz-ink-mut);

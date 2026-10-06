@@ -8,8 +8,8 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
-// Súly re-face (mezo-d20.6.3) — MozaikPage subpage scaffold (‹ Én back chip,
-// page-head CTA, hero, stat strip, trend chart, weekly tiles). Behavior is
+// Súly re-face (mezo-d20.6.3) — MozaikPage scaffold (no back chip since mezo-lhqw7: it is
+// the Test TAB page with the Súly | Alvás switch; page-head CTA, hero, stat strip, trend chart, weekly tiles). Behavior is
 // unchanged: same hooks, same honest states, same log-sheet cascade.
 
 function renderPage() {

@@ -893,6 +893,25 @@ test('Én hub · Hol tartok stays horizontally contained @ 320px', async ({ page
   for (const h of hit) expect(h).toBeGreaterThanOrEqual(44)
 })
 
+// ── Én · Test (mezo-lhqw7): the Súly | Alvás switch is a 36px pill with a 44px hit zone ──────
+test('Én Test · the Súly | Alvás switch reaches a 44px touch target @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/me/weight')
+  await page.waitForLoadState('networkidle')
+  await expect(page.getByRole('group', { name: 'Test nézet' })).toBeVisible()
+  const segs = await page.evaluate(() => [...document.querySelectorAll('.ent-seg-btn')].map((el) => {
+    const after = getComputedStyle(el, '::after')
+    return { drawn: el.getBoundingClientRect().height, zone: parseFloat(after.height), position: after.position }
+  }))
+  expect(segs).toHaveLength(2)
+  for (const s of segs) {
+    expect(s.position).toBe('absolute')
+    expect(s.zone).toBeGreaterThanOrEqual(44)
+    expect(s.drawn).toBeLessThan(44) // the drawn pill did not grow
+  }
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+})
+
 // ── Nap · Rutin „Rutinok szerkesztése" entry (mezo-lhqw7), at 320px ──────────────────────────
 // The quiet flat row under the ticking lists is the only door to routine building; it must be
 // reachable above the floating tab bar, and the builder must light the Rutin tab.

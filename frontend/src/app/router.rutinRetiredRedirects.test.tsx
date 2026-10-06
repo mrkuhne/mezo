@@ -40,3 +40,14 @@ test.each([
   await waitFor(() => expect(router.state.location.pathname).toBe(to))
   expect(router.state.location.search).toBe('?x=1')
 })
+
+// final review: an unknown sub-path is forwarded like the known ones (/me/rutin/xyz →
+// /nap/rutin/xyz); nothing matches there, so the app's catch-all takes it — no throw, no 404.
+test('/me/rutin/xyz (unknown sub-path) ends on the catch-all destination without throwing', async () => {
+  const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const router = renderRouterAt('/me/rutin/xyz')
+  await waitFor(() => expect(router.state.location.pathname).toBe('/nap'))
+  expect(router.state.errors).toBeNull()
+  expect(errors).not.toHaveBeenCalled()
+  errors.mockRestore()
+})

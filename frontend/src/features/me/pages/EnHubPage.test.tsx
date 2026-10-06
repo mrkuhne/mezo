@@ -99,11 +99,13 @@ test('the ranking: the week hero is the one frameless halo, the strip is flat, t
 test('the Súly, Alvás, Célok and Napló tiles left the hub — they are tabs now, and Rutin moved to Nap', async () => {
   renderHub()
   await screen.findByRole('button', { name: 'Fejlődés' })
-  for (const label of ['Súly', 'Alvás', 'Célok', 'Napló', 'Growth']) {
+  for (const label of ['Súly', 'Alvás', 'Napló', 'Célok', 'Rutin']) {
     expect(screen.queryByRole('button', { name: label })).toBeNull()
   }
+  // …and by eyebrow too, so a tile with a different accessible name cannot slip back in
+  const eyebrows = [...document.querySelectorAll('.mz-tile .mz-eyebrow')].map((e) => e.textContent)
+  expect(eyebrows).toEqual(['Fejlődés', 'Emberek'])
   expect(document.querySelectorAll('.mz-tile')).toHaveLength(2)
-  expect(screen.queryByRole('button', { name: 'Rutin' })).toBeNull()
 })
 
 test('the retired identity hero, its XP ring and the bio line are gone from the hub', async () => {
