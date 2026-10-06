@@ -920,6 +920,18 @@ test('Nap Rutin · the „Rutinok szerkesztése" entry clears the tab bar @ 320p
   })
   expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
 
+  // ...and it is not covered by the floating + button either (boxes must not intersect)
+  const boxes = await page.evaluate(() => {
+    const row = Array.from(document.querySelectorAll('a')).find(a => /Rutinok szerkesztése/.test(a.textContent ?? ''))!.getBoundingClientRect()
+    const fab = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+    return { row: { top: row.top, bottom: row.bottom, left: row.left, right: row.right },
+      fab: fab ? { top: fab.top, bottom: fab.bottom, left: fab.left, right: fab.right } : null }
+  })
+  expect(boxes.fab, 'the + button should be on the page').not.toBeNull()
+  const f = boxes.fab!, r = boxes.row
+  const intersects = !(r.bottom <= f.top + 1 || f.bottom <= r.top + 1 || r.right <= f.left + 1 || f.right <= r.left + 1)
+  expect(intersects).toBe(false)
+
   await entry.click()
   await expect(page).toHaveURL(/\/nap\/rutin\/epites$/)
   await expect(page.locator('.tab-bar').getByRole('link', { name: /Rutin/ })).toHaveAttribute('aria-current', 'page')
