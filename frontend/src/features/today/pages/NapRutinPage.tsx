@@ -13,7 +13,7 @@
 // 3D icon, a gold strength bar; the "Most jön" row lights up inside the card (no nested glass).
 // ============================================================
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { EntranceGroup, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
@@ -282,6 +282,13 @@ export function NapRutinPage() {
               </div>
             </div>
           ))}
+          {/* the door to routine building (mezo-lhqw7): outside every "has habits" branch, so a
+              brand-new user with an empty day can still reach the builder */}
+          <Link to="/nap/rutin/epites" className="nr-edit rise" style={{ '--d': '420ms' } as React.CSSProperties}>
+            <Icon3D name="t-chain" size={30} />
+            <span className="nr-edit-tx"><b>Rutinok szerkesztése</b><small>láncok, szokások, új szokás</small></span>
+            <span aria-hidden="true">›</span>
+          </Link>
         </PageBody>
       </EntranceGroup>
 

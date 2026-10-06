@@ -272,7 +272,8 @@ test('a habit carrying a linkUrl renders its title as that external link (the af
 test('a habit with no linkUrl renders a plain title — no fabricated link', async () => {
   renderPage()
   await screen.findByText('50 fekvőtámasz')
-  expect(screen.queryByRole('link')).toBeNull()
+  // the only link on the page is the „Rutinok szerkesztése" entry — no habit title is a link
+  expect(screen.getAllByRole('link').map((a) => a.textContent)).toEqual([expect.stringContaining('Rutinok szerkesztése')])
 })
 
 test('the lánc-erő bars carry a staggered --d so the .mz-play fill animates', async () => {
@@ -422,5 +423,19 @@ describe('yesterday backfill (mezo-x9c2)', () => {
     const prev = screen.getByRole('button', { name: 'Előző nap' })
     await userEvent.click(prev)
     expect(prev).toBeDisabled()
+  })
+})
+
+describe('„Rutinok szerkesztése" entry (mezo-lhqw7)', () => {
+  test('the row under the lists opens the routine builder', async () => {
+    renderPage()
+    await userEvent.click(await screen.findByRole('link', { name: /Rutinok szerkesztése/ }))
+    expect(screen.getByTestId('loc')).toHaveTextContent('/nap/rutin/epites')
+  })
+
+  test('a day with no habits at all still shows the entry (a brand-new user can reach the builder)', async () => {
+    habitStore.seed([])
+    renderPage()
+    expect(await screen.findByRole('link', { name: /Rutinok szerkesztése/ })).toHaveAttribute('href', '/nap/rutin/epites')
   })
 })

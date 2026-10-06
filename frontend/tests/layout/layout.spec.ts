@@ -892,3 +892,35 @@ test('Én hub · Hol tartok stays horizontally contained @ 320px', async ({ page
   }))
   for (const h of hit) expect(h).toBeGreaterThanOrEqual(44)
 })
+
+// ── Nap · Rutin „Rutinok szerkesztése" entry (mezo-lhqw7), at 320px ──────────────────────────
+// The quiet flat row under the ticking lists is the only door to routine building; it must be
+// reachable above the floating tab bar, and the builder must light the Rutin tab.
+test('Nap Rutin · the „Rutinok szerkesztése" entry clears the tab bar @ 320px, and the builder lights the Rutin tab', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+  await page.goto('/nap/rutin')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  const entry = page.getByRole('link', { name: /Rutinok szerkesztése/ })
+  await entry.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    const scroller = document.querySelector('.screen-content') as HTMLElement
+    scroller.style.scrollBehavior = 'auto'
+    scroller.scrollTop = scroller.scrollHeight
+  })
+  await expect(entry).toBeVisible()
+  const spacing = await page.evaluate(() => {
+    const row = Array.from(document.querySelectorAll('a')).find(a => /Rutinok szerkesztése/.test(a.textContent ?? ''))!.getBoundingClientRect()
+    const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+    return { rowBottom: row.bottom, tabbarTop: tabbar.top }
+  })
+  expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
+
+  await entry.click()
+  await expect(page).toHaveURL(/\/nap\/rutin\/epites$/)
+  await expect(page.locator('.tab-bar').getByRole('link', { name: /Rutin/ })).toHaveAttribute('aria-current', 'page')
+})
