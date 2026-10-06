@@ -150,7 +150,8 @@ describe('real mode', () => {
     await screen.findByText('Célok')
     const first = document.querySelector('.mz-mosaic')!.firstElementChild!
     expect(first).toHaveClass('enc-wgoal-skel')
-    expect(first).toHaveTextContent('')
+    expect(first).toBeEmptyDOMElement()
+    expect(screen.getByText('3 aktív · 1 parkol')).toBeInTheDocument()
     expect(screen.queryByText('a súlycél most nem elérhető')).toBeNull()
   })
 

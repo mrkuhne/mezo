@@ -21414,7 +21414,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
   min-height: 170px; border-radius: 20px; text-align: center; color: var(--text-primary);
 }
-.enc-celok .enc-newtile.is-wide { grid-column: 1 / -1; min-height: 96px; }
+.enc-celok .enc-newtile.is-wide { grid-column: 1 / -1; flex-direction: row; gap: 12px; min-height: 84px; }
+.enc-celok .enc-newtile.is-wide .enc-newtile-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
 .enc-celok .enc-newtile b { font-size: 15px; font-weight: 600; }
 .enc-celok .enc-newtile small { font-size: 10.5px; color: var(--text-muted); }
 /* the weight goal: the first tile, same size as a life-goal tile; the percentage takes the arrow's slot */

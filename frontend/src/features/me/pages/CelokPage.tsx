@@ -118,8 +118,10 @@ export function CelokPage() {
             <button type="button" className="mz-tile enc-newtile is-wide uv-empty rise" style={{ '--d': `${130 + lifeShift + active.length * 40}ms` } as React.CSSProperties}
               onClick={() => navigate('/me/goals/new')} aria-label="Új cél">
               <Icon3D name="t-ring" size={40} />
-              <b>＋ Új cél</b>
-              <small>Mezo pilléreket javasol</small>
+              <span className="enc-newtile-txt">
+                <b>＋ Új cél</b>
+                <small>Mezo pilléreket javasol</small>
+              </span>
             </button>
           </Mosaic>
           {weightIsError && (
