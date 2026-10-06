@@ -68,8 +68,9 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
   csak akkor szaggatott vonallal a cél felé, ha a trend tényleg oda tart —, majd a Célok állása
   (súlycél százalékkal, aktív életcélok irányszóval). Ha kevés a mérés, a kártya ezt mondja ki, és
   „Mérj most”-ra visz; sosem rajzol kitalált görbét. A Heti elemzés ismét elérhető a hőskártyáról.
-  A növekedés neve mindenhol „Fejlődés”, a naplóé „Tevékenységek”, üveg csempékkel. A Rutin csempe
-  az S4-ig a hubon marad; a súlycél-csempe a Célok oldalon az S3. [Terv](../superpowers/plans/2026-10-05-en-ia.md),
+  A növekedés neve mindenhol „Fejlődés”, a naplóé „Tevékenységek”, üveg csempékkel. A súlycél (S3) egyenrangú
+  célként az első csempe a Célok oldalon, nem külön sor a célok mögött; a Rutin csempe
+  az S4-ig a hubon marad. [Terv](../superpowers/plans/2026-10-05-en-ia.md),
   [`me.md`](../features/me.md).
 - **2026-10-01 — Étkezés tényleges ideje (`mezo-yhhvg`).** Az új naplózásban a mentés előtt
   becsukott „Mikor ettél?” sor mutatja az aktuális időt; átírva a kiválasztott napra és az

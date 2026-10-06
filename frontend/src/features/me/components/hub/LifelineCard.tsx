@@ -22,6 +22,7 @@ import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { useAchievements, useGoal, useSleep, useWeight } from '@/data/hooks'
 import { buildLifeline } from '@/features/me/logic/lifeline'
+import { huSigned } from '@/features/me/logic/huSigned'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 import { localDateString } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
@@ -32,11 +33,6 @@ const HU_MONTHS_SHORT = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', '
 const huShortDate = (iso: string): string => {
   const [, m, d] = iso.split('-').map(Number)
   return `${HU_MONTHS_SHORT[m - 1]} ${d}.`
-}
-/** Signed one-decimal Hungarian numeral with U+2212; a value that rounds to zero carries no sign. */
-const huSigned = (n: number): string => {
-  const r = Math.round(n * 10) / 10
-  return `${r > 0 ? '+' : r < 0 ? '−' : ''}${hu1(Math.abs(r))}`
 }
 /** The prototype's bar height: 5,6 h is the floor of the 22px band. */
 const sleepBarPx = (h: number): number => Math.max(4, Math.min(22, Math.round((h - 5.6) * 12)))
