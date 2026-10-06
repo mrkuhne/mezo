@@ -85,10 +85,10 @@ vi.mock('@/data/hooks', () => ({
 
 function renderPage(habitKey: string) {
   return render(
-    <MemoryRouter initialEntries={[`/me/rutin/szokas/${habitKey}`]}>
+    <MemoryRouter initialEntries={[`/nap/rutin/szokas/${habitKey}`]}>
       <Routes>
-        <Route path="/me/rutin/szokas/:habitKey" element={<HabitPage />} />
-        <Route path="/me/rutin" element={<div>RUTIN HUB</div>} />
+        <Route path="/nap/rutin/szokas/:habitKey" element={<HabitPage />} />
+        <Route path="/nap/rutin/epites" element={<div>RUTIN HUB</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -125,13 +125,13 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
   test('the head button opens the editor page', () => {
     renderPage('intent')
     fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/intent/szerkesztes')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent/szerkesztes')
   })
 
   test('the recipe row itself opens the editor too', () => {
     renderPage('intent')
     fireEvent.click(screen.getByRole('button', { name: /szerkesztem/ }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/intent/szerkesztes')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent/szerkesztes')
   })
 
   test('a chip-linked FOGG recipe resolves the anchor title into the sentence', () => {
@@ -258,4 +258,14 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
     renderPage('intent')
     expect(screen.queryByTestId('formation-card')).toBeNull()
   })
+})
+
+// Én IA final review (mezo-lhqw7): the chip names where it LANDS — the builder is „Rutinok"
+// (/nap/rutin/epites, „Rutinok szerkesztése"); only the builder's own chip says „Rutin" (/nap/rutin).
+test('the back chip says „Rutinok" and lands on the routine builder', () => {
+  renderPage('intent')
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveTextContent(/^‹Rutinok$/)
+  fireEvent.click(back)
+  expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites')
 })

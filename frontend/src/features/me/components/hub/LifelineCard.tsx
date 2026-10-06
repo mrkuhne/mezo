@@ -13,7 +13,8 @@
 //    heads to the target;
 //  · stations only from stored events; with none, the caption line is absent;
 //  · a week without a logged night is a marked stub in the sleep band; no night at all → no band;
-//  · an unresolved trend (0) never prints „0 kg" as the 7-day average.
+//  · an unresolved trend (0) never prints „0 kg" as the 7-day average;
+//  · a reached (or overshot) target reads „Elérted a célod" — never „még 0,4 kg".
 // Motion: the curve draws once (CSS `enh-elv-draw`, armed by the entrance group, only under
 // prefers-reduced-motion: no-preference) — reduced motion and a back-navigation show the final frame.
 import { useState } from 'react'
@@ -88,6 +89,9 @@ export function LifelineCard() {
   const first = l.points[0], latestPoint = l.points[n - 1]
   const avg7 = weightTrends.last7d.avg
   const slept = l.sleepHours.filter((h): h is number => h != null)
+  // The band's range, from the logged weeks only — shown in the legend and read out by the band.
+  const sleepRange = slept.length === 0 ? null
+    : Math.min(...slept) === Math.max(...slept) ? hu1(slept[0]) : `${hu1(Math.min(...slept))}–${hu1(Math.max(...slept))}`
   const station = selected >= 0 ? l.stations[selected] : null
   // The axis names the first, the middle and the last week (the prototype's three labels).
   const axis = [...new Set(n >= 5 ? [0, Math.floor((n - 1) / 2), n - 1] : [0, n - 1])]
@@ -148,9 +152,9 @@ export function LifelineCard() {
         ))}
       </div>
 
-      {slept.length > 0 && (
+      {sleepRange != null && (
         <>
-          <div className="enh-elv-sleep" role="img" aria-label="Alvás, heti átlag"
+          <div className="enh-elv-sleep" role="img" aria-label={`Alvás, heti átlag: ${sleepRange} óra`}
             style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>
             {l.sleepHours.map((h, i) => (
               <i key={l.points[i].weekStart} className={h == null ? 'is-none' : undefined}
@@ -159,8 +163,7 @@ export function LifelineCard() {
           </div>
           <div className="enh-elv-sleepleg">
             <span><i aria-hidden="true" />alvás · heti átlag</span>
-            <span>{Math.min(...slept) === Math.max(...slept)
-              ? `${hu1(slept[0])} ó` : `${hu1(Math.min(...slept))}–${hu1(Math.max(...slept))} ó`}</span>
+            <span>{sleepRange} ó</span>
           </div>
         </>
       )}
@@ -175,9 +178,11 @@ export function LifelineCard() {
       )}
 
       <button type="button" className="enh-elv-next" onClick={() => navigate('/me/weight')}>
-        {l.targetKg != null && l.remainingKg != null
-          ? <span>A következő állomás: <b>{hu1(l.targetKg)} kg</b> — még {hu1(l.remainingKg)} kg</span>
-          : <span>A részletek a Test fülön</span>}
+        {l.targetKg != null && l.reached
+          ? <span>Elérted a célod: <b>{hu1(l.targetKg)} kg</b></span>
+          : l.targetKg != null && l.remainingKg != null
+            ? <span>A következő állomás: <b>{hu1(l.targetKg)} kg</b> — még {hu1(l.remainingKg)} kg</span>
+            : <span>A részletek a Test fülön</span>}
         <span className="enh-chev" aria-hidden="true">›</span>
       </button>
     </div>

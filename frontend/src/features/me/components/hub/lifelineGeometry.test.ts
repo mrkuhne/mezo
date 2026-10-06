@@ -6,7 +6,7 @@ const line = (over: Partial<Lifeline> = {}): Lifeline => ({
     { weekStart: '2026-09-07', avgKg: 80.4 }, { weekStart: '2026-09-14', avgKg: 80.2 },
     { weekStart: '2026-09-21', avgKg: 79.8 }, { weekStart: '2026-09-28', avgKg: 79.6 },
   ],
-  deltaKg: -0.8, sleepHours: [7, null, 6.5, 7.2], stations: [], targetKg: 73, remainingKg: 6.6, project: true,
+  deltaKg: -0.8, sleepHours: [7, null, 6.5, 7.2], stations: [], targetKg: 73, remainingKg: 6.6, reached: false, project: true,
   ...over,
 })
 

@@ -9,16 +9,20 @@ import { hu1 } from '@/shared/lib/huNum'
 // Same size and rhythm as LifeGoalTile. Honest states: nothing while the goal is pending / failed /
 // absent (the page owns those slots); the percentage and bar wait for the weight log — until it
 // resolves the goal's „current" weight is its start weight, which would print a fabricated „0%";
+// for the same reason the title names only the target and the pace/ETA line is absent until then
+// (the ETA would be computed from the start weight);
 // the pace line is omitted at a zero rate, its ETA part when no ETA can be computed.
 export function WeightGoalTile({ delayMs, onClick }: { delayMs: number; onClick: () => void }) {
   const { goal, goalResponse, pending, isError } = useGoal()
   const { weightTrends, isPending: logPending, isError: logError } = useWeight()
   if (pending || isError || goal == null || goalResponse == null) return null
 
-  const pct = !logPending && !logError ? progressPct(goal.startWeight, goal.currentWeight, goal.targetWeight) : null
+  const logResolved = !logPending && !logError
+  const pct = logResolved ? progressPct(goal.startWeight, goal.currentWeight, goal.targetWeight) : null
   const rate = weightTrends.last4w.weeklyRate
   const eta = etaWeeks(goal.currentWeight, goal.targetWeight, rate)
-  const pace = rate === 0 ? null : `${huSigned(rate)} kg / hét${eta != null ? ` · kb. ${eta} hét` : ''}`
+  const pace = !logResolved || rate === 0 ? null : `${huSigned(rate)} kg / hét${eta != null ? ` · kb. ${eta} hét` : ''}`
+  const label = TRAJECTORY_LABEL[goalResponse.trajectory]
 
   return (
     <button type="button" className="mz-tile lg-tile enc-tile enc-wgoal glass rise"
@@ -29,7 +33,9 @@ export function WeightGoalTile({ delayMs, onClick }: { delayMs: number; onClick:
         {pct != null && <span className="enc-wgoal-pct">{pct}%</span>}
       </span>
       <span className="mz-eyebrow">Súlycél · Egészség</span>
-      <span className="nm">{TRAJECTORY_LABEL[goalResponse.trajectory]} · {hu1(goal.currentWeight)} → {hu1(goal.targetWeight)} kg</span>
+      <span className="nm">{logResolved
+        ? `${label} · ${hu1(goal.currentWeight)} → ${hu1(goal.targetWeight)} kg`
+        : `${label} · cél ${hu1(goal.targetWeight)} kg`}</span>
       {pct != null && <span className="uv-bar" style={{ '--w': `${pct}%` } as React.CSSProperties}><b /></span>}
       {pace != null && <span className="enc-wgoal-pace">{pace}</span>}
     </button>

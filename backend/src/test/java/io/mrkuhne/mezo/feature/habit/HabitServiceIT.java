@@ -519,7 +519,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
             .filteredOn(n -> "habit_formation".equals(n.getKind()))
             .singleElement()
             .satisfies(n -> {
-                assertThat(n.getDeeplink()).isEqualTo("/me/rutin/szokas/morning_sunlight");
+                assertThat(n.getDeeplink()).isEqualTo("/nap/rutin/szokas/morning_sunlight");
                 assertThat(n.getTitle()).isEqualTo("Kezd magától menni");
             });
     }

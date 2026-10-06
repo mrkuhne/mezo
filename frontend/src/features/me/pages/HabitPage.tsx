@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · HabitPage (mezo-3zue.4, split by mezo-bk26) — /me/rutin/szokas/:habitKey,
+// Mezo · HabitPage (mezo-3zue.4, split by mezo-bk26) — /nap/rutin/szokas/:habitKey,
 // prototype rutin-formalodas.html `pg-habit` ×1.18. ONE habit's DETAILS: the formation
 // poster, the context rings, the lifetime history, and the recipe as a READ-ONLY sentence.
 // Every write — fields, framework, anchor, mode, chain, xp, pause, delete — lives on the
@@ -57,7 +57,7 @@ export function HabitPage() {
     if (isPending) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szokas">
-          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -67,14 +67,14 @@ export function HabitPage() {
     if (isError) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szokas">
-          <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin" />
+          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
         </MozaikPage>
       )
     }
-    return <Navigate to="/me/rutin" replace />
+    return <Navigate to="/nap/rutin/epites" replace />
   }
 
   const fwKey: 'FOGG' | 'CLEAR' | 'NONE' = def.framework ?? 'NONE'
@@ -83,11 +83,11 @@ export function HabitPage() {
   const recipe = recipeFromDef(def, (key) => defs.find((d) => d.habitKey === key)?.title)
   const done28 = row?.done28 ?? 0
   const missed28 = row?.missed28 ?? 0
-  const toEditor = () => navigate(`/me/rutin/szokas/${habitKey}/szerkesztes`)
+  const toEditor = () => navigate(`/nap/rutin/szokas/${habitKey}/szerkesztes`)
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-szokas">
-      <PageHead glass onBack={() => navigate('/me/rutin')} label="Rutin">
+      <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok">
         <button type="button" className="mz-pgact rt-act" onClick={toEditor}>Szerkesztés</button>
       </PageHead>
       {/* Honesty rule: a definition with no summary row has no 28-day standing yet — show no

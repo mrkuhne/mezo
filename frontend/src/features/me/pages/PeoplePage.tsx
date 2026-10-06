@@ -7,7 +7,7 @@
 // feed is GONE from here — those live in the sibling "A köröm" / "Említések" pages Task
 // 3–5 own. This page is only a hero + 3-cell stat strip + 4 navigation tiles (each its
 // own route, `navigate()`, never a local show/hide) + the Mezo-band chat handoff. ADR 0032
-// still applies: this page owns its own header (‹ Én back chip + Log/Új személy actions),
+// still applies: this page owns its own header (‹ Hol tartok back chip + Log/Új személy actions),
 // unchanged from the pre-hub PeoplePage (same PersonLogSheet/PersonEditSheet wiring).
 //
 // Honest states (per handoff and Task 1's `hubLines`): a null down/up person renders

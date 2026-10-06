@@ -509,27 +509,30 @@ export const routes: RouteObject[] = [
       { path: 'me/growth/skillek', element: <GrowthSkillsPage /> },
       { path: 'me/growth/naplo', element: <GrowthNaploPage /> },
       { path: 'me/growth/kituntetesek', element: <GrowthAwardsPage /> },
-      // Rutin home (mezo-3zue): the routine surface's own page under Én, reached from the Én
-      // hub's full-width Rutin tile. It absorbed /me/growth/rutin (mezo-rmi0.1) and the
-      // /me/routines/edit editor — build and edit here, tick on /nap/rutin.
-      { path: 'me/rutin', element: <RutinHubPage /> },
+      // Routine BUILDING lives on Nap's Rutin tab (mezo-lhqw7, „egy téma, egy hely"): ticking is
+      // /nap/rutin, building is /nap/rutin/epites (+ the pages below). Absorbed /me/rutin (mezo-3zue),
+      // /me/growth/rutin (mezo-rmi0.1) and the /me/routines/edit editor.
+      { path: 'nap/rutin/epites', element: <RutinHubPage /> },
       // The 4-step recipe wizard (mezo-3zue.4). Registered BEFORE any `:param` sibling so
       // "uj" can never be swallowed as a habit key.
-      { path: 'me/rutin/uj', element: <RoutineWizardPage /> },
+      { path: 'nap/rutin/uj', element: <RoutineWizardPage /> },
       // One chain's own page (mezo-vxd8): rename, daypart, order + the stacking drawn.
-      { path: 'me/rutin/lanc/:chainKey', element: <ChainPage /> },
+      { path: 'nap/rutin/lanc/:chainKey', element: <ChainPage /> },
       // The habit list on its own page (mezo-mgpr): stage filters + one tile per habit.
-      { path: 'me/rutin/szokasok', element: <SzokasaidPage /> },
-      // The single-recipe page (mezo-3zue.4). LAST of the `me/rutin/*` family: every static
+      { path: 'nap/rutin/szokasok', element: <SzokasaidPage /> },
+      // The single-recipe page (mezo-3zue.4). LAST of the `nap/rutin/szokas*` family: every static
       // sibling is registered above it so none is swallowed as a habit key. The parameter is
       // the habitKey (what the hub's rows link with), not the definition id.
-      { path: 'me/rutin/szokas/:habitKey', element: <HabitPage /> },
+      { path: 'nap/rutin/szokas/:habitKey', element: <HabitPage /> },
       // The recipe editor on its own page (mezo-bk26, choice board option B): HabitPage is the
       // details surface, every definition write lives here.
-      { path: 'me/rutin/szokas/:habitKey/szerkesztes', element: <HabitEditPage /> },
-      // Both former homes keep working as redirects.
-      { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
-      { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },
+      { path: 'nap/rutin/szokas/:habitKey/szerkesztes', element: <HabitEditPage /> },
+      // Én IA (mezo-lhqw7): the old /me/rutin home moved — old URLs (bookmarks, stored
+      // notifications with /me/rutin/szokas/…) must never 404.
+      { path: 'me/rutin', element: <RetiredRouteRedirect to="/nap/rutin/epites" /> },
+      { path: 'me/rutin/*', element: <LegacyPathRedirect prefix="/me/rutin" to="/nap/rutin" /> },
+      { path: 'me/growth/rutin', element: <RetiredRouteRedirect to="/nap/rutin/epites" /> },
+      { path: 'me/routines/edit', element: <RetiredRouteRedirect to="/nap/rutin/epites" /> },
       { path: 'me/naplo', element: <JournalPage /> },
       // Heti hub (mezo-d20.6.10) — the Design 2.0 tile hub replacing the long-scroll
       // WeekPage. Its four view tiles open full-screen siblings, NOT child routes: the

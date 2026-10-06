@@ -7208,7 +7208,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .srt-chev-focus { width: 0; overflow: hidden; opacity: 0; transition: opacity 0.15s ease; }
 .srt-chev-focus:focus-within { width: auto; overflow: visible; opacity: 1; }
 
-/* ===== Rutin wizard — /me/rutin/uj (mezo-3zue.4) =====
+/* ===== Rutin wizard — /nap/rutin/uj (mezo-3zue.4) =====
    docs/design_2.0/prototypes/src/rutin-epito-head.html `.sentence` / `.fwcard` / `.tip` /
    `.commit` + the form language (`.fcard`/`.flabel`/`.fin`/`.chips`/`.stepin`/`.lifegrid`),
    ×1.18 (330 → 390px frame). Every prototype hex is substituted by the nearest existing
@@ -7293,7 +7293,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .rt-commit small { font-size: 10px; color: var(--text-secondary); }
 .rt-wnav .cta-primary:disabled { opacity: 0.4; pointer-events: none; }
 
-/* ===== Szokás-oldal — /me/rutin/szokas/:habitKey (mezo-3zue.4) =====
+/* ===== Szokás-oldal — /nap/rutin/szokas/:habitKey (mezo-3zue.4) =====
    docs/design_2.0/prototypes/src/rutin-epito-head.html `.fwband` / `.hist` / `.danger`,
    ×1.18 (330 → 390px frame). The prototype's per-framework wash+shadow pair (set inline by
    `openEdit`) becomes three modifier classes on tokens: sage for Fogg, lavender for Clear,
@@ -16364,6 +16364,18 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: 0 0 8px color-mix(in srgb, var(--dv-amber) 60%, transparent);
 }
 .nr-page .nr-pct { flex: 0 0 auto; width: 36px; text-align: right; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: #FFD99A; }
+/* „Rutinok szerkesztése" (mezo-lhqw7): the door to /nap/rutin/epites — a quiet FLAT row (no glass),
+   so it never out-shouts the ticking cards; the page's own bottom padding clears the bar + the + button */
+.nr-page .nr-edit {
+  display: flex; align-items: center; gap: 12px; min-height: 44px; margin: 16px 0 0; padding: 11px 13px 11px 11px;
+  border-radius: 20px; color: var(--text-primary); text-decoration: none;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nr-page .nr-edit .nr-edit-tx { flex: 1; min-width: 0; }
+.nr-page .nr-edit .nr-edit-tx b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.nr-page .nr-edit .nr-edit-tx small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.nr-page .nr-edit > span[aria-hidden] { font-size: 18px; color: var(--text-muted); }
+.nr-page .nr-edit:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
 
 /* ── Intention / Reflect sheets: ONE floating amber glass each (bible U2 rule 15) ── */
 .sheet.glass.nap-glass-sheet {
@@ -21224,7 +21236,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .enh-hub .mz-mosaic { gap: 10px; margin-top: 4px; }
 .enh-hub .enh-t-growth  { --c: var(--dv-lav); }
 .enh-hub .enh-t-emberek { --c: var(--dv-rose); }
-.enh-hub .enh-t-rutin   { --c: var(--dv-amber); }
 .enh-hub .mz-tile.enh-tile.glass {
   border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 112px; gap: 4px;
   align-items: flex-start; text-align: left; color: var(--text-primary);
@@ -21247,15 +21258,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   text-align: left; font-size: 13px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3;
   color: var(--text-primary); overflow-wrap: anywhere;
 }
-/* Rutin: the wide row tile */
-.enh-hub .mz-tile.enh-tile.mz-tile-row.glass { flex-direction: row; align-items: center; gap: 12px; min-height: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-spotwrap { order: 0; margin: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-top { margin-top: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-line { margin-top: 2px; font-size: 14px; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-line small {
-  display: block; margin: 2px 0 0; font-size: 10.5px; font-weight: 500; color: var(--text-muted);
-}
-.enh-hub .enh-tile.mz-tile-row .mz-chev { font-size: 20px; color: var(--text-muted); }
 .enh-hub .enh-tile:focus-visible, .enh-hub .enh-goalcard:focus-visible, .enh-hub .enh-newgoal:focus-visible,
 .enh-hub .enh-idstrip:focus-visible, .enh-hub .enh-wkcta:focus-visible, .enh-hub .enh-elv-pill:focus-visible,
 .enh-hub .enh-elv-stn:focus-visible, .enh-hub .enh-elv-next:focus-visible {
@@ -22891,6 +22893,9 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sky) 45%, transparent);
 }
 .ent-seg-btn:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+/* 44px touch target without changing the drawn 36px pill: an invisible hit zone (the hub pills' idiom) */
+.ent-seg-btn { position: relative; }
+.ent-seg-btn::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 .ent-bio {
   display: block; margin: 18px auto 0; border: none; background: none; font-family: inherit; cursor: pointer;
   min-height: 44px; padding: 4px 12px; font-size: 12px; color: var(--mz-ink-mut);
@@ -24051,7 +24056,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .gr-tile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 /* ── /uveg en2 novekedes ── */
 
-/* ── uveg en2 rutin (mezo-me75u.7) ── /me/rutin(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) + rutin sheets ── */
+/* ── uveg en2 rutin (mezo-me75u.7) ── /nap/rutin/epites(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) (moved from /me/rutin, mezo-lhqw7) + rutin sheets ── */
 /* Ranking (bible §3.4, prototype uveg-en2.html #rutin/#lanc/#szokasok/#szokas/#szerk/#uj, sheets
    `ai`/`chain`/`anchor`). Every rule is scoped to a page root — `.rt-uv` plus one of `.rt-hub`,
    `.rt-lanc`, `.rt-szokasok`, `.rt-szokas`, `.rt-szerk`, `.rt-wiz` — or to the rutin sheets
@@ -30319,7 +30324,7 @@ main.settings-page {
 /* /me/goals/weight: the lit suggestion-count badge carries dark ink (bible U5 rule 36) */
 .goal-hub-page .goal-hub-mosaic .goal-tile-badged .mz-badge { color: #191614; }
 
-/* /me/rutin/szokasok: a stage with no habit yet — muted numeral + dim dots, legible label */
+/* /nap/rutin/szokasok: a stage with no habit yet — muted numeral + dim dots, legible label */
 .rt-szokasok .rt-ftile.is-zero { opacity: 1; }
 .rt-szokasok .rt-ftile.is-zero:not(.on) { background: transparent; }
 .rt-szokasok .rt-ftile.is-zero:not(.on) b { color: var(--text-muted); }

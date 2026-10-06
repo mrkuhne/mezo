@@ -1,9 +1,9 @@
 // ============================================================
-// Mezo · RutinHubPage (mezo-3zue.3, hub 2.0 mezo-mgpr) — /me/rutin, prototype
+// Mezo · RutinHubPage (mezo-3zue.3, hub 2.0 mezo-mgpr) — /nap/rutin/epites, prototype
 // rutin-formalodas.html `pg-hub` ×1.18. ONE screen, no scrolling: hero + statstrip, a single
 // „Következik" row, the active-chain tile, and two mosaic tiles (Szokásaid → its own page,
 // Építs → the one creation flow). The chain cards with their inline editor chrome moved out:
-// per-chain editing lives on the chain page (mezo-vxd8), the habit list on /me/rutin/szokasok.
+// per-chain editing lives on the chain page (mezo-vxd8), the habit list on /nap/rutin/szokasok.
 //
 // The daily logging home stays /nap/rutin (ADR + Daniel's S2 answer): the „Következik" row
 // and the chain tile NAVIGATE, they never tick — the hub must not become a second logging
@@ -38,7 +38,7 @@ export function RutinHubPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   // The wizard's ?new= hand-back highlights nothing here any more (the rows left for
-  // /me/rutin/szokasok), but arriving with it is still a valid address — ignore it quietly.
+  // /nap/rutin/szokasok), but arriving with it is still a valid address — ignore it quietly.
   void params
   const today = localDateString()
   const [date, setDate] = useState(today)
@@ -114,7 +114,7 @@ export function RutinHubPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-hub">
-      <PageHead glass onBack={() => navigate('/me')} label="Én">
+      <PageHead glass onBack={() => navigate('/nap/rutin')} label="Rutin">
         <button type="button" className="mz-pgact rt-act is-lav" onClick={() => setSuggestSheet(true)}>
           <Icon3D name="t-spark" size={18} />AI javaslat
         </button>
@@ -173,7 +173,7 @@ export function RutinHubPage() {
                     className="rt-chaintile glass rise"
                     style={{ '--d': '130ms' } as CSSProperties}
                     data-testid="chain-tile"
-                    onClick={() => navigate(`/me/rutin/lanc/${encodeURIComponent(activeChain.chainKey)}`)}
+                    onClick={() => navigate(`/nap/rutin/lanc/${encodeURIComponent(activeChain.chainKey)}`)}
                   >
                     <Icon3D name={DAYPART_ART[activeChain.daypart]} size={38} />
                     <span className="rt-chaintile-bd">
@@ -197,13 +197,13 @@ export function RutinHubPage() {
                     wash="lav" art="t-harvest" iconSize={44} eyebrow="Szokásaid" delayMs={170}
                     className="glass rt-door is-lav"
                     line={`${activeDefs.length} aktív${settled > 0 ? ` · ${settled} beérett` : ''}`}
-                    onClick={() => navigate('/me/rutin/szokasok')} aria-label="Szokásaid"
+                    onClick={() => navigate('/nap/rutin/szokasok')} aria-label="Szokásaid"
                   />
                   <Tile
                     wash="sage" art="t-book" iconSize={44} eyebrow="Építs" delayMs={200}
                     className="glass rt-door is-sage"
                     line="＋ Új szokás / lánc"
-                    onClick={() => navigate('/me/rutin/uj')} aria-label="Építs"
+                    onClick={() => navigate('/nap/rutin/uj')} aria-label="Építs"
                   />
                 </Mosaic>
                 <button

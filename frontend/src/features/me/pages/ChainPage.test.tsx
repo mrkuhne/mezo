@@ -69,10 +69,10 @@ vi.mock('@/data/hooks', () => ({
 
 function renderPage(chainKey: string) {
   return render(
-    <MemoryRouter initialEntries={[`/me/rutin/lanc/${chainKey}`]}>
+    <MemoryRouter initialEntries={[`/nap/rutin/lanc/${chainKey}`]}>
       <Routes>
-        <Route path="/me/rutin/lanc/:chainKey" element={<ChainPage />} />
-        <Route path="/me/rutin" element={<div>RUTIN HUB</div>} />
+        <Route path="/nap/rutin/lanc/:chainKey" element={<ChainPage />} />
+        <Route path="/nap/rutin/epites" element={<div>RUTIN HUB</div>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -115,7 +115,7 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
   test('a sor navigál a szokás oldalára, és sehol nincs pipa-kontroll (ADR)', () => {
     renderPage('MORNING')
     fireEvent.click(screen.getByRole('button', { name: /Reggeli fény/ }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/feny')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/feny')
     expect(screen.queryByRole('button', { name: /^Pipa/ })).toBeNull()
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
@@ -174,11 +174,21 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
   test('＋ Új habit a wizard Keret nélkül ajtajához visz, a lánccal előtöltve', () => {
     renderPage('MORNING')
     fireEvent.click(screen.getByRole('button', { name: /Új habit/ }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?chain=MORNING')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj?chain=MORNING')
   })
 
   test('ismeretlen chainKey a hubra pattan vissza', () => {
     renderPage('nincs-ilyen')
     expect(screen.getByText('RUTIN HUB')).toBeInTheDocument()
   })
+})
+
+// Én IA final review (mezo-lhqw7): the chip names where it LANDS — the builder is „Rutinok"
+// (/nap/rutin/epites, „Rutinok szerkesztése"); only the builder's own chip says „Rutin" (/nap/rutin).
+test('the back chip says „Rutinok" and lands on the routine builder', () => {
+  renderPage('MORNING')
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveTextContent(/^‹Rutinok$/)
+  fireEvent.click(back)
+  expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites')
 })

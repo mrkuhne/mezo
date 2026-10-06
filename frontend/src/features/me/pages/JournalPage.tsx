@@ -33,8 +33,8 @@ function windowFrom(monthsBack: number, todayIso: string): string {
 }
 
 // /me/naplo (Journal, mezo-d20.6.6 Mozaik re-face) — the read surface for free-prose journal
-// notes: the Hálanapló streak tile, the GOLD decision card (the "tile → own page" pattern's ‹ Én
-// back chip, source: en-body.html #page-naplo), and a month-grouped note list over a widening
+// notes: the Hálanapló streak tile, the GOLD decision card (source: en-body.html #page-naplo;
+// since mezo-lhqw7 this is the Én domain's Napló TAB page, so it has no back chip), and a month-grouped note list over a widening
 // date window (mem-daycard idiom, reused verbatim from the Memória Napló segment).
 //
 // Behavior stays the prior sheet-based page's, verbatim: mock+real dual mode, honest states

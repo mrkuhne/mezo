@@ -62,7 +62,10 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <p>{@code wentWell} / {@code watchOut} (mezo-lhqw7) are the optional one-sentence hero lines of
  * the Én hub: stripped, blank or longer than 160 chars ⇒ null, and a numeral absent from the week
- * payload ({@link ProseNumberGuard}) ⇒ null. A rejected line never drops the review.
+ * payload ({@link ProseNumberGuard}) ⇒ null. A rejected line never drops the review. The prompt
+ * therefore asks for both lines WITHOUT digits (numbers spelled out or avoided): the guard only
+ * knows the raw per-day tokens, so a legitimate aggregate ("5 napon", "átlag 7,5 óra") would be
+ * rejected and the hero would fall back — the guard stays as the net for a model that ignores it.
  *
  * <p>{@code candidateFacts} is the round's one WRITE beyond the review row + its notification
  * (mezo-d20.7.6): the week's lessons, handed to {@link WeeklyLessonService} which bounds-checks,
@@ -106,7 +109,8 @@ public class WeeklyReviewGenerator {
             + "Az owner a csapat azon tagja, akihez a tény tartozik: szunya = alvás, mocor = mozgás/edzés, "
             + "falat = étkezés, deru = közérzet és test, mezo = élet és minden más. "
             + "A \"wentWell\" egyetlen rövid mondat arról, mi ment a legjobban a héten; a \"watchOut\" "
-            + "egyetlen rövid mondat arról, mire érdemes a jövő héten figyelni. Mindkettő csak az "
+            + "egyetlen rövid mondat arról, mire érdemes a jövő héten figyelni. Számjegyet egyik "
+            + "mondatba se írj: a számokat betűvel írd ki, vagy fogalmazz szám nélkül. Mindkettő csak az "
             + "adatokból következhet, ítélkezés nélkül; ha nincs miről írni, hagyd ki a kulcsot. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "

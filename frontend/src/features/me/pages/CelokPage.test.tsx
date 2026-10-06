@@ -155,12 +155,32 @@ describe('real mode', () => {
     expect(screen.queryByText('a súlycél most nem elérhető')).toBeNull()
   })
 
+  // final review (mezo-lhqw7): the eyebrow counts the weight goal, so with ONLY a weight goal
+  // the hero must not say „nincs aktív célod" right under „1 aktív".
+  test('only a weight goal: „1 aktív · 0 parkol" and the hero speaks of LIFE goals', async () => {
+    const weightGoal = {
+      id: 'g1', title: 'Nyári cut', trajectory: 'cut', guards: [], status: 'active',
+      startDate: '2026-06-01', targetDate: '2026-07-27', startWeightKg: 84.2, targetWeightKg: 80,
+      rateTargetPctPerWeek: 0.7, identityFrame: 'x',
+    }
+    server.use(
+      http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([weightGoal])),
+    )
+    renderHub()
+    expect(await screen.findByText('1 aktív · 0 parkol')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Súlycél' })).toBeInTheDocument()
+    expect(document.querySelector('.enc-hero-copy')).toHaveTextContent(
+      'Még nincs aktív életcélod. Egy cél, két-három pillér — a többit a naplód hozza.')
+    expect(screen.queryByText(/Még nincs aktív célod/)).toBeNull()
+  })
+
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
     let calls = 0
     server.use(http.get(`${API_BASE}/api/life-goals`, () => { calls += 1; return new HttpResponse(null, { status: 500 }) }))
     renderHub()
     expect(await screen.findByText('Nem sikerült betölteni a célokat.')).toBeInTheDocument()
-    expect(screen.queryByText(/Még nincs aktív célod/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Még nincs aktív (élet)?célod/)).not.toBeInTheDocument()
     const before = calls
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     await waitFor(() => expect(calls).toBeGreaterThan(before))

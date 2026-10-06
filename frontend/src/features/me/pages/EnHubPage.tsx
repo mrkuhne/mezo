@@ -6,11 +6,11 @@
 // monogram, name, title chip, Lv · XP · streak · coin → /me/growth) → the WEEK HERO (the last
 // closed week's score ring, delta, „Jól ment / Figyelj rá", → /me/week) → ÉLETVONAL (the
 // 12-week weight curve with stations and the sleep band → /me/weight) → CÉLOK ÁLLÁSA (the
-// weight goal + the active life goals → /me/goals) → the Fejlődés and Emberek tiles, plus the
-// wide Rutin tile. Súly / Alvás / Célok / Napló are bottom-bar tabs now (Test · Célok · Napló),
+// weight goal + the active life goals → /me/goals) → the Fejlődés and Emberek tiles (two tiles; the
+// Rutin tile moved out — routine building lives on Nap's Rutin tab, „egy téma, egy hely"). Súly / Alvás / Célok / Napló are bottom-bar tabs now (Test · Célok · Napló),
 // so they have no tile here; the biometrics line lives at the bottom of the Test tab (BioRow).
 // Each unit reads its OWN hooks (components/hub/*) — this page only composes them and computes
-// the three tile lines. Persistent settings live in the shared /settings center.
+// the two tile lines. Persistent settings live in the shared /settings center.
 // Honest states (en-audit §6) are the contract, not the face — each unit's header spells out
 // its own; the ones this page owns:
 //  · a tile line vanishes while its source is unresolved/empty — no page ever shows a
@@ -25,12 +25,11 @@
 import { useNavigate } from 'react-router-dom'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useHabitDay, useHabitSummary, usePeople, useProgressionProfile } from '@/data/hooks'
+import { usePeople, useProgressionProfile } from '@/data/hooks'
 import { EnIdentityStrip } from '@/features/me/components/hub/EnIdentityStrip'
 import { WeekHeroCard } from '@/features/me/components/hub/WeekHeroCard'
 import { LifelineCard } from '@/features/me/components/hub/LifelineCard'
 import { GoalStandingCard } from '@/features/me/components/hub/GoalStandingCard'
-import { localDateString } from '@/shared/lib/dates'
 
 export function EnHubPage() {
   const navigate = useNavigate()
@@ -51,31 +50,6 @@ export function EnHubPage() {
       ? `${topPerson.name} ${topPerson.mentionsThisWeek}× · e héten`
       : `${people.length} kapcsolat`
 
-  const todayIso = localDateString()
-  const { habits: todayHabits } = useHabitDay(todayIso)
-  const { data: habitSummary } = useHabitSummary()
-  const strengthOf = (keys: string[]) => {
-    const values = habitSummary.habits
-      .filter((h) => keys.includes(h.key) && h.strengthPct != null)
-      .map((h) => h.strengthPct as number)
-    return values.length > 0 ? Math.round(values.reduce((s, v) => s + v, 0) / values.length) : null
-  }
-  const morningPct = strengthOf(todayHabits.filter((h) => h.chain === 'MORNING').map((h) => h.key))
-  const eveningPct = strengthOf(todayHabits.filter((h) => h.chain === 'EVENING').map((h) => h.key))
-  const doneToday = todayHabits.filter((h) => h.status === 'done').length
-  // No habits at all → no line. A fabricated "0 / 0" would read as a real standing.
-  const rutinLine = todayHabits.length === 0 ? undefined : (
-    <>
-      {doneToday} / {todayHabits.length} ma
-      {(morningPct != null || eveningPct != null) && (
-        <small>
-          {[morningPct != null ? `reggel ${morningPct}%` : null,
-            eveningPct != null ? `este ${eveningPct}%` : null].filter(Boolean).join(' · ')}
-        </small>
-      )}
-    </>
-  )
-
   return (
     <div className="enh-hub">
       <EntranceGroup className="mz-panel-stack">
@@ -88,8 +62,6 @@ export function EnHubPage() {
             line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Fejlődés" />
           <Tile wash="rose" art="t-people" iconSize={44} eyebrow="Emberek" delayMs={290} className="glass enh-tile enh-t-emberek"
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
-          <Tile wide wash="gold" art="t-chain" iconSize={44} eyebrow="Rutin" delayMs={330} className="glass enh-tile enh-t-rutin"
-            line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>
     </div>

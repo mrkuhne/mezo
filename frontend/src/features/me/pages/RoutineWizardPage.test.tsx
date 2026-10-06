@@ -62,7 +62,7 @@ beforeEach(() => {
   sessionStorage.clear()
 })
 
-const renderWizard = (path = '/me/rutin/uj') =>
+const renderWizard = (path = '/nap/rutin/uj') =>
   render(<MemoryRouter initialEntries={[path]}><RoutineWizardPage /></MemoryRouter>)
 const next = () => screen.getByRole('button', { name: /Tovább|Mentés/ })
 
@@ -100,7 +100,7 @@ describe('RoutineWizardPage', () => {
       framework: 'FOGG', anchorHabitKey: 'sun', celebration: 'ökölrázás',
     })
     expect(createDef).toHaveBeenCalledWith(expect.not.objectContaining({ anchorCopy: expect.anything() }))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites'))
   })
 
   it('sends a free-text Fogg anchor as anchorCopy, never alongside anchorHabitKey', async () => {
@@ -150,7 +150,7 @@ describe('RoutineWizardPage', () => {
   })
 
   it('seeds the form from ?prefill', () => {
-    renderWizard('/me/rutin/uj?prefill=intent')
+    renderWizard('/nap/rutin/uj?prefill=intent')
     expect(screen.getByRole('button', { name: /Négy törvény/ })).toHaveClass('on')
     fireEvent.click(next())
     expect(screen.getByLabelText('Jelzés')).toHaveValue('7:10-kor a konyhaasztalnál')
@@ -238,7 +238,7 @@ describe('RoutineWizardPage', () => {
   // --- A · re-framing CONVERTS the definition it was opened with (mezo-3zue.4) -------------
   it('converts the prefilled def instead of duplicating it, and keeps the FOGG/CLEAR shape honest', async () => {
     // `intent` is a CLEAR def; switching it to FOGG must PATCH d2, never create a second habit.
-    renderWizard('/me/rutin/uj?prefill=intent')
+    renderWizard('/nap/rutin/uj?prefill=intent')
     fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
@@ -256,11 +256,11 @@ describe('RoutineWizardPage', () => {
       title: 'Napi szándék leírása', xp: 10, framework: 'FOGG',
       anchorCopy: 'letettem a fogkefét', celebration: 'ökölrázás',
     })
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=intent'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=intent'))
   })
 
   it('omits chainKey on the convert path when the habit stayed in its chain', () => {
-    renderWizard('/me/rutin/uj?prefill=intent&chain=MORNING')
+    renderWizard('/nap/rutin/uj?prefill=intent&chain=MORNING')
     fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(next())
@@ -274,7 +274,7 @@ describe('RoutineWizardPage', () => {
   })
 
   it('sends chainKey on the convert path when the habit really moved chain', () => {
-    renderWizard('/me/rutin/uj?prefill=intent')
+    renderWizard('/nap/rutin/uj?prefill=intent')
     fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(next())
@@ -291,7 +291,7 @@ describe('RoutineWizardPage', () => {
     // anchorHabitKey: '' — an omission leaves the stale link (the PATCH guard is `!= null`) and
     // `recipeFromDef` prefers the link over the copy, so the typed anchor would vanish silently.
     // This is exactly the escape hatch HabitPage's read-only anchor field sends the user here for.
-    renderWizard('/me/rutin/uj?prefill=stack')
+    renderWizard('/nap/rutin/uj?prefill=stack')
     fireEvent.click(next())
     expect(screen.getByLabelText('Horgony')).toHaveValue('kész a Reggeli fény')
     fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
@@ -304,11 +304,11 @@ describe('RoutineWizardPage', () => {
       title: 'Egy oldal olvasás', xp: 5, framework: 'FOGG',
       anchorCopy: 'letettem a fogkefét', anchorHabitKey: '', celebration: 'ökölrázás',
     })
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=stack'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=stack'))
   })
 
   it('keeps the link — and sends no unlink — when a chip anchor is left alone', () => {
-    renderWizard('/me/rutin/uj?prefill=stack')
+    renderWizard('/nap/rutin/uj?prefill=stack')
     fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(next())
@@ -329,7 +329,7 @@ describe('RoutineWizardPage', () => {
       skillKey: 'recovery', xp: 10, chainKey: 'MORNING', framework: 'FOGG',
       cue: null, craving: null, reward: null, celebration: 'egy elégedett bólintás',
     }))
-    renderWizard('/me/rutin/uj?chain=MORNING')
+    renderWizard('/nap/rutin/uj?chain=MORNING')
 
     expect(sessionStorage.getItem('mezo.routineWizard.suggestion')).toBeNull()
     expect(screen.getByRole('button', { name: /Szokás-láncolás/ })).toHaveClass('on')
@@ -355,7 +355,7 @@ describe('RoutineWizardPage', () => {
     }))
     render(
       <StrictMode>
-        <MemoryRouter initialEntries={['/me/rutin/uj?chain=MORNING']}><RoutineWizardPage /></MemoryRouter>
+        <MemoryRouter initialEntries={['/nap/rutin/uj?chain=MORNING']}><RoutineWizardPage /></MemoryRouter>
       </StrictMode>,
     )
 
@@ -373,7 +373,7 @@ describe('RoutineWizardPage', () => {
       cue: 'este a nappaliban', craving: 'nyugodtabb elalvás', reward: 'egy fejezet',
       celebration: 'bólintás',
     }))
-    renderWizard('/me/rutin/uj?prefill=intent')
+    renderWizard('/nap/rutin/uj?prefill=intent')
 
     // The def is CLEAR; the suggestion proposed FOGG. The user came here to re-frame ONE habit.
     expect(screen.getByRole('button', { name: /Négy törvény/ })).toHaveClass('on')
@@ -392,7 +392,7 @@ describe('RoutineWizardPage', () => {
   })
 
   it('falls back to CREATE when ?prefill names a habitKey the catalog does not have', () => {
-    renderWizard('/me/rutin/uj?prefill=nincs-ilyen')
+    renderWizard('/nap/rutin/uj?prefill=nincs-ilyen')
     fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Horgony'), { target: { value: 'letettem a fogkefét' } })
@@ -423,7 +423,7 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
     fireEvent.click(next())
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin?new=custom_ab12'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=custom_ab12'))
   })
 
   it('warns softly when the Fogg behaviour looks too big, without blocking', () => {
@@ -442,7 +442,7 @@ describe('RoutineWizardPage', () => {
   // ---- fix wave (mezo-3zue.4) ----
 
   it('a re-framed FOGG habit is absent from its OWN anchor chips (a self-anchor 400s)', () => {
-    renderWizard('/me/rutin/uj?prefill=stack')
+    renderWizard('/nap/rutin/uj?prefill=stack')
     // step 1 seeded to FOGG by the prefill — walk to the anchor step
     fireEvent.click(next())
     expect(screen.getByRole('button', { name: 'kész a Reggeli fény' })).toBeInTheDocument()
@@ -482,7 +482,7 @@ describe('RoutineWizardPage', () => {
       chainKey: 'MORNING', title: 'Hidratálás', mode: 'MANUAL',
       skillKey: 'mindset', xp: 6, framework: null,
     })
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites'))
   })
 
   it('a DERIVED pick on the act step requires and sends the metric', () => {
@@ -524,12 +524,12 @@ describe('RoutineWizardPage', () => {
   })
 
   it('a Keret nélkül kártya conversion (?prefill) alatt nem elérhető — a keret nem nullázható a dróton', () => {
-    renderWizard('/me/rutin/uj?prefill=intent')
+    renderWizard('/nap/rutin/uj?prefill=intent')
     expect(screen.queryByRole('button', { name: /Keret nélkül/ })).toBeNull()
   })
 
   it('conversion érintetlen nehézség-ráccsal a tárolt XP-t küldi tovább, átárazás nélkül', () => {
-    renderWizard('/me/rutin/uj?prefill=intent')
+    renderWizard('/nap/rutin/uj?prefill=intent')
     fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(next())
@@ -547,4 +547,14 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     expect(refetch).toHaveBeenCalled()
   })
+})
+
+// Én IA final review (mezo-lhqw7): the chip names where it LANDS — the builder is „Rutinok"
+// (/nap/rutin/epites, „Rutinok szerkesztése"); only the builder's own chip says „Rutin" (/nap/rutin).
+test('the back chip says „Rutinok" and lands on the routine builder', () => {
+  renderWizard()
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveTextContent(/^‹Rutinok$/)
+  fireEvent.click(back)
+  expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites')
 })
