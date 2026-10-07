@@ -90,6 +90,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/learning-pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether the AI's own learning is paused right now, and until when */
+        get: operations["getLearningPause"];
+        /** Pause learning for the chosen duration (unchanged when a pause is already running) */
+        put: operations["startLearningPause"];
+        post?: never;
+        /** Resume learning (idempotent) */
+        delete: operations["endLearningPause"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/biometrics/weight": {
         parameters: {
             query?: never;
@@ -5556,6 +5575,22 @@ export interface components {
         ChangePasswordRequest: {
             currentPassword: string;
             newPassword: string;
+        };
+        LearningPauseRequest: {
+            /** @enum {string} */
+            choice: "tonight" | "tomorrow_morning" | "open";
+        };
+        LearningPauseResponse: {
+            paused: boolean;
+            /** Format: date-time */
+            startedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description Planned end; null while paused means open-ended
+             */
+            until?: string | null;
+            /** @enum {string|null} */
+            choice?: "tonight" | "tomorrow_morning" | "open" | null;
         };
         LogWeightRequest: {
             /** Format: date */
@@ -12978,6 +13013,106 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getLearningPause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current pause state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningPauseResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    startLearningPause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LearningPauseRequest"];
+            };
+        };
+        responses: {
+            /** @description Pause running */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningPauseResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    endLearningPause: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Learning resumed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LearningPauseResponse"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

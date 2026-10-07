@@ -5,6 +5,8 @@ info:
 tags:
   - name: Auth
     description: Multi-user auth — invite-code registration, login, current-user profile
+  - name: LearningPause
+    description: Most ne tanulj (mezo-rrjxe) — account-level pause of everything the AI learns on its own
 paths:
   /api/auth/login:
     post:
@@ -168,6 +170,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/learning-pause:
+    get:
+      tags: [LearningPause]
+      operationId: getLearningPause
+      summary: Whether the AI's own learning is paused right now, and until when
+      responses:
+        '200':
+          description: Current pause state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningPauseResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags: [LearningPause]
+      operationId: startLearningPause
+      summary: Pause learning for the chosen duration (unchanged when a pause is already running)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LearningPauseRequest'
+      responses:
+        '200':
+          description: Pause running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningPauseResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags: [LearningPause]
+      operationId: endLearningPause
+      summary: Resume learning (idempotent)
+      responses:
+        '200':
+          description: Learning resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningPauseResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   schemas:
     UpdateAccountRequest:
@@ -263,3 +329,29 @@ components:
           type: string
           minLength: 8
           maxLength: 72
+    LearningPauseRequest:
+      type: object
+      required: [choice]
+      properties:
+        choice:
+          type: string
+          enum: [tonight, tomorrow_morning, open]
+    LearningPauseResponse:
+      type: object
+      required: [paused]
+      properties:
+        paused:
+          type: boolean
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        until:
+          type: string
+          format: date-time
+          nullable: true
+          description: Planned end; null while paused means open-ended
+        choice:
+          type: string
+          nullable: true
+          enum: [tonight, tomorrow_morning, open]
