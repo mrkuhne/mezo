@@ -1,7 +1,7 @@
 # Csepp — the clinical re-dress of the app (design spec)
 
 **Date:** 2026-10-07 · **Driver:** `mezo-juo1e` (direction) → programme epic `cseppesites` (see §8)
-**Status:** direction approved by the owner on the prototype (`docs/design_2.0/prototypes/klinikai-iranyok.html`, variant **Ajánlott** + the **Jelek** sheet, Artifact https://claude.ai/artifact/Ax6faqjyEd6Xxw2J7MN45M, version 8). This spec records what was approved and the rules a later slice must not re-litigate.
+**Status:** direction approved by the owner on the prototype (`docs/design_2.0/prototypes/klinikai-iranyok.html`, variant **Ajánlott** + the **Jelek** sheet, Artifact https://claude.ai/artifact/Ax6faqjyEd6Xxw2J7MN45M, version 10). This spec records what was approved and the rules a later slice must not re-litigate.
 
 ## 1. Why
 
@@ -18,13 +18,16 @@ Four prototype rounds narrowed it down. What was rejected and why (owner, same d
 | Parchment "lelet" light theme | too big a flip, cold on the phone at night; the 3D icons look like stickers on paper |
 | Warm hybrid (graphite + orange accent + one glass card) | the warm/orange palette is not it |
 | Clinical dark + the existing 3D icons + one glass card | right material and soul, but **no signature graphic** — "nem tudom, hogy ez a Boop app" |
-| **+ the living drop (élő csepp) + the five quiet rules** | **approved direction** |
+| + the living drop (élő csepp) + the five quiet rules | the direction |
+| + steel-tinted icon set, pure-white light pair, muted macro category colours | **approved 2026-10-07** |
 
 ## 2. The direction in one paragraph
 
-Cool graphite ground, one steel-blue accent for the whole app, colour otherwise only as
-**meaning** (ok / attention / bad). The **Titanium 3D icon sprite stays** (it is the app's
-warmth). Glass survives only as **ranking**: one or two glass cards per screen carry the most
+Cool graphite ground (dark) or pure white (light), **both selectable, system default**. One
+steel-blue accent for the whole app, colour otherwise only as **meaning**: state (ok /
+attention / bad) and stable category identity (macros, muscle regions), both muted. The
+**Titanium 3D icon sprite stays** but is re-tuned into **one cool steel family** (owner:
+"egységes acél"): same forms, light and depth, no multicolour. Glass survives only as **ranking**: one or two glass cards per screen carry the most
 important thing; everything else is an open list with hairlines, no boxes. The signature is the
 **élő csepp**: a faceless, breathing, liquid-filling organic form that means exactly one thing —
 *your day* — large on Nap, small in every header and on the bottom-menu domain mark. The Boop
@@ -33,7 +36,13 @@ replace the creature artwork).
 
 ## 3. Tokens (the approved values)
 
-Dark only (the light theme stays parked, as under Üveg).
+Two themes, both shipped, user-selectable in settings, default follows the system
+(`prefers-color-scheme`). The light theme is **pure white**, not a tinted white.
+
+**Light:** ground `#FFFFFF`, card `#F7F9FB`, hairline `rgba(21,34,44,.10)`, ink/sub/faint
+`#15222C` / `#5B6B78` / `#8B98A3`, accent `#2E6FA8`, ok/warn/bad `#2F8A6A` / `#B07A1E` /
+`#B5473B`, macros protein/carb/fat `#C9655F` / `#B9853E` / `#A8923A`, aurora opacity `.28`,
+glass = milk glass (white, soft blue frame). **Dark:**
 
 | Token | Value | Use |
 |---|---|---|
@@ -43,8 +52,15 @@ Dark only (the light theme stays parked, as under Üveg).
 | ink / sub / faint | `#E6E9EA` / `#9AA3A8` / `#6B757B` | the three text greys |
 | accent `--acc` | `#7FB2D0` steel blue | primary button, active tab icon, glass frame, links |
 | ok / warn / bad | `#5FA98A` / `#CFA14A` / `#CF6B5E` | state only, never decoration |
+| macros `--protein/--carb/--fat` | `#D98B86` / `#D9A86B` / `#C9B560` | the three category bars, muted, everywhere (Fuel parity) |
 | domain tint `--dom` | Nap `#CFA14A` · Edzés `#CF6B5E` · Fuel sage · Mezo lavender · Én rose (desaturated like the two above) | **only** the bottom-menu domain mark and the selected day in a day strip |
 | aurora | four cool blobs (`#2F6B7A`, `#3B5A8A`, `#2E6B5E`), blur 70px, opacity `.16` | depth behind the ground |
+
+**Icons:** the Titanium sprite's ~60 shared gradients are regenerated into one steel family
+(hue pulled toward 205°, saturation ≈ 30 %, lightness kept) — in the prototype this is the
+duotone filter `grayscale(.75) sepia(.6) hue-rotate(165deg) saturate(1.35)`; in production
+`scripts/gen-titanium-sprite.mjs` emits the recoloured gradients so `Icon3D` call sites stay
+untouched. MuscleChip / BodyMap and the csepp keep their own colours (colour = meaning).
 
 Type: Geist (display 600, tight tracking), Geist Mono for labels and values with tabular
 numerals. **Four text roles only:** title, body, small mono label, big numeral. Chips and
@@ -93,8 +109,8 @@ tabs); behaviour frozen; glass-in-glass forbidden.
 
 ## 7. What stays untouched
 
-Routes, hooks, data, state machines, copy that is not a heading. The Titanium sprite and the
-`CLAY_TO_3D` meaning map. The muscle-map (MuscleChip / BodyMap) graphics — the owner's explicit
+Routes, hooks, data, state machines, copy that is not a heading. The Titanium sprite's symbol
+ids and the `CLAY_TO_3D` meaning map (only the gradient palette changes). The muscle-map (MuscleChip / BodyMap) graphics — the owner's explicit
 keep; they are the Edzés-domain hero rendered in the same material. The ceremony *pattern*.
 
 ## 8. Programme shape (the `cseppesites` skill drives it)
@@ -104,7 +120,7 @@ owner OK → build → gates → merge → deploy → live check → report. Sli
 
 | # | Slice | Scope |
 |---|---|---|
-| C1 | Alap + keret + kit | tokens on the dark root, the `Csepp` component, header + TabBar, the quiet primitives (open section, row, four text roles), guard tests rewritten, **the Csepp style bible** written, `CLAUDE.md` design banner updated. Prototype already approved (klinikai-iranyok Ajánlott + Jelek); only the chrome details and the mark need an OK. |
+| C1 | Alap + keret + kit | both theme roots (dark + pure white) and the **theme setting un-parked** (system default, settings toggle; `theme.ts`, `index.html`, `vite.config.ts` manifest), the steel sprite regeneration, the `Csepp` component, header + TabBar, the quiet primitives (open section, row, four text roles), guard tests rewritten, **the Csepp style bible** written, `CLAUDE.md` design banner updated. Prototype already approved (klinikai-iranyok Ajánlott + Jelek); only the chrome details and the mark need an OK. |
 | C2 | Nap | Mai (approved), A napom, Beszélgetés, Rutin + sheets |
 | C3 | Edzés | Mai (approved), Terv, Terhelés, Gyakorlatok |
 | C4 | Edzés közben | session, eligazítás, review, ceremonies |
@@ -173,3 +189,14 @@ supports dropping creatures and hero streaks.
 - The **five sibling forms'** final silhouettes (C7 design round).
 - Whether the **open-list sections** get a very faint shared background band if the screens
   feel too airy in practice (owner's call after seeing C2 live).
+
+## 12. Owner decisions, 2026-10-07 (do not re-litigate)
+
+1. Direction: clinical, adult, unisex; **Ajánlott** variant + **Jelek** sheet are the target.
+2. Boop: option **B** — roles stay, creature artwork goes; sibling forms of the csepp material.
+3. The élő csepp is the signature, one meaning (the day).
+4. The 3D icon set stays, re-tuned to **one uniform steel family** (no per-category tint).
+5. **Both themes**, selectable, system default; light is **pure white**.
+6. Colour = meaning: state colours + muted category colours (macros, muscle regions); grey otherwise.
+7. The five quiet rules (§5); glass only as ranking, 1–2 cards per screen.
+8. The muscle-map graphics stay.
