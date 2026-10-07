@@ -17,11 +17,6 @@ public final class FuelModeText {
     private FuelModeText() {
     }
 
-    /** The day's fuel mode, or {@code null} on a normal day. */
-    public static FuelDayResponse.FuelModeEnum mode(FuelDayResponse day) {
-        return day.getFuelMode();
-    }
-
     /** GUIDANCE: no calorie target at all — consumption only, and a coaching instruction. */
     public static String guidanceLine(FuelDayResponse day) {
         MacroSet c = day.getConsumed();

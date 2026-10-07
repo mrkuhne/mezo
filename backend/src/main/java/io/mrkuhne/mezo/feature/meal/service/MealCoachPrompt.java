@@ -311,7 +311,7 @@ final class MealCoachPrompt {
 
     private static String remaining(int target, BigDecimal consumed) {
         BigDecimal left = BigDecimal.valueOf(target)
-            .subtract(consumed == null ? BigDecimal.ZERO : consumed);
+            .subtract(consumed == null ? BigDecimal.ZERO : consumed).max(BigDecimal.ZERO);
         return left.stripTrailingZeros().toPlainString();
     }
 }

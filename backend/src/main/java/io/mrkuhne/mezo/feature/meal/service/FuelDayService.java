@@ -338,11 +338,15 @@ public class FuelDayService {
      * segment via {@link #segmentFor}, per-field config fallback, with the SAME day-type pick
      * ({@link #project}) the hero applies — so the score and the hero can never judge against
      * different numbers. An unplanned-movement day therefore raises the scorer's (and MealCoach's)
-     * target too (mezo-32m82).
+     * target too (mezo-32m82). On a MAINTENANCE (injury) kímélő-mód day the deficit is dropped,
+     * exactly as {@link #getDay} serves it (Kihagyás S3) — one place decides, so the scorer and the
+     * coach never judge against the deficit target the hero no longer shows.
      */
     @Transactional(readOnly = true)
     public DailyTargets dailyTargets(UUID userId, LocalDate date) {
-        return project(activeGoal(userId), userId, date);
+        RecoveryFuelMode mode = modeOf(recoveryPeriods.fuelDays(userId, date, date).get(date));
+        return project(activeGoal(userId), date,
+            () -> workoutWindowQueryService.movementOn(userId, date), mode == RecoveryFuelMode.MAINTENANCE);
     }
 
     /**

@@ -111,6 +111,20 @@ class FuelDayRecoveryIT extends AbstractIntegrationTest {
         assertThat(r.getTargets().getKcal().intValue()).isEqualTo(DEFICIT_TARGET - BALANCE_KCAL);
     }
 
+    /** The meal coach / scorer read {@code dailyTargets}: on a MAINTENANCE day it must equal the served target. */
+    @Test
+    void testDailyTargets_shouldServeTheMaintenanceTarget_whenInjuryPeriod() {
+        seed();
+        LocalDate day = weekStart.plusDays(2);
+        periods.open(owner, Reason.INJURY, day.minusDays(1), Estimate.WEEK);
+
+        int coachKcal = fuelDayService.dailyTargets(owner, day).kcal();
+
+        assertThat(coachKcal).isEqualTo(fuelDayService.getDay(owner, day).getTargets().getKcal().intValue())
+            .isEqualTo(BASE_KCAL).isGreaterThan(DEFICIT_TARGET);
+        assertThat(fuelDayService.dailyTargets(owner, day.minusDays(5)).kcal()).isEqualTo(DEFICIT_TARGET);
+    }
+
     @Test
     void testGetDay_shouldGuideAndZeroSkippedKcal_whenIllnessPeriodEvenWithAMealSkip() {
         seed();
