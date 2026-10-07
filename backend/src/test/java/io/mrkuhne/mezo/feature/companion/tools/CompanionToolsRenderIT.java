@@ -101,6 +101,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private WorkoutDayAdjustmentPopulator workoutDayAdjustmentPopulator;
     @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private PlannedSkipPopulator plannedSkipPopulator;
+    @Autowired private io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator recoveryPeriodPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -924,6 +925,35 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 new RefsEnvelope.Ref("FuelDay", "2026-07-08"),
                 new RefsEnvelope.Ref("FuelDay", "2026-07-09"),
                 new RefsEnvelope.Ref("FuelDay", "2026-07-10"));
+    }
+
+    @Test
+    void testGetFuelLog_shouldMarkAPeriodDayAsNotJudged_whenRangeWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate wednesday = LocalDate.of(2026, 7, 8);
+        recoveryPeriodPopulator.ended(owner, io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.ILLNESS,
+                wednesday, wednesday.plusDays(1));
+
+        String out = fuelTools.getFuelLog("week", wednesday.toString(), null, ctx(owner));
+
+        assertThat(out).contains("2026-07-08: kímélő nap (nincs értékelve)")
+                .contains("2026-07-07: 0/").contains("2026-07-10: 0/");
+    }
+
+    @Test
+    void testGetFuelLog_shouldCarryTheModeSentenceAndTheSkippedMeal_whenRangeDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        plannedSkipPopulator.create(owner, today.minusDays(1),
+                io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind.MEAL, null, null, "dinner#1",
+                io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.NO_TIME);
+        recoveryPeriodPopulator.open(owner, io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.ILLNESS,
+                today, io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate.FEW_DAYS);
+
+        String out = fuelTools.getFuelLog("day", today.toString(), 2, ctx(owner));
+
+        assertThat(out).contains("kihagyott étkezés: Vacsora (nincs ideje)")
+                .contains(today + ": Kímélő mód (betegség): ma nincs kalóriacél.");
     }
 
     @Test

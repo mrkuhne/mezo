@@ -688,6 +688,35 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             + "Ne sürgesd az edzést, ne említs elmaradást; gyógyulás, pihenés, folyadék.");
     }
 
+    /** Kihagyás S3 (mezo-q4xt2.3): a sick day prints no calorie target in the Fuel block. */
+    @Test
+    void testFuelBlock_shouldPrintNoTarget_whenTheDayIsAGuidanceDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        recoveryPeriodPopulator.open(owner, PlannedSkipEntity.Reason.STOMACH, today,
+            io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate.FEW_DAYS);
+
+        String snapshot = assembler.render(owner, today);
+
+        String fuel = snapshot.lines().filter(l -> l.startsWith("[Mai üzemanyag]")).findFirst().orElseThrow();
+        assertThat(fuel).contains("Kímélő mód (gyomorrontás): ma nincs kalóriacél.")
+            .contains("Ne mérd semmihez az evést, ne említs hiányt; folyadék és könnyű étel.")
+            .doesNotContainPattern("\\d+/\\d+ kcal");
+    }
+
+    @Test
+    void testFuelBlock_shouldNameASkippedMeal_asAnExcusedChoice() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        plannedSkipPopulator.create(owner, today, PlannedSkipEntity.Kind.MEAL, null, null,
+            "lunch#1", PlannedSkipEntity.Reason.NOT_HUNGRY);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("kihagyott étkezés: Ebéd (nem éhes)")
+            .contains("tudatos kihagyás, nem mulasztás.");
+    }
+
     @Test
     void testTrainBlock_shouldRenderEachCategoryAndEstimateInHungarian_whenARecoveryPeriodIsOpen() {
         UUID owner = userPopulator.createUser().getId();

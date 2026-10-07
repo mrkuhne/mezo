@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
+import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealCoachVerdict;
 import io.mrkuhne.mezo.api.dto.MealGlucoseTip;
 import io.mrkuhne.mezo.api.dto.MealImproveRow;
@@ -10,6 +11,7 @@ import io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -192,7 +194,7 @@ public class MealCoachService {
             }
             String userMessage = MealCoachPrompt.userMessage(date,
                 fuelDayService.dailyTargets(userId, date), windows, List.copyOf(blocks.values()),
-                person(userId, date));
+                person(userId, date), dayFuel(userId, date));
             // The subject is a single meal only when exactly one is narrated (an opened score sheet);
             // a day batch is about the day, so it leaves the entity id honestly empty (mezo-2zyu).
             UUID subject = blocks.size() == 1 ? blocks.keySet().iterator().next() : null;
@@ -207,6 +209,14 @@ public class MealCoachService {
                 userId, date, e);
             return List.of();
         }
+    }
+
+    /** The day's kímélő-mód fuel mode and skipped-meal kcal, read from the one Fuel day response. */
+    private MealCoachPrompt.DayFuel dayFuel(UUID userId, LocalDate date) {
+        FuelDayResponse day = fuelDayService.getDay(userId, date);
+        RecoveryFuelMode mode = day.getFuelMode() == null ? null
+            : RecoveryFuelMode.valueOf(day.getFuelMode().name());
+        return new MealCoachPrompt.DayFuel(mode, day.getSkippedKcal() == null ? 0 : day.getSkippedKcal());
     }
 
     /** The person behind the plate; a read failure degrades to "nincs adat", never kills the call. */

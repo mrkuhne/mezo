@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.Dimension;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -47,6 +48,14 @@ final class MealCoachPrompt {
         }
     }
 
+    /**
+     * The day's Fuel state beyond the plain targets (Kihagyás S3): the kímélő-mód fuel mode
+     * ({@code null} = a normal day) and the kcal of skipped meals, which leave the day's budget.
+     */
+    record DayFuel(RecoveryFuelMode mode, int skippedKcal) {
+        static final DayFuel NONE = new DayFuel(null, 0);
+    }
+
     static String userMessage(LocalDate date, DailyTargets targets,
                               List<Window> workouts, List<MealBlock> meals) {
         return userMessage(date, targets, workouts, meals, null);
@@ -58,10 +67,25 @@ final class MealCoachPrompt {
      */
     static String userMessage(LocalDate date, DailyTargets targets, List<Window> workouts,
                               List<MealBlock> meals, MealCoachContextReader.PersonContext person) {
+        return userMessage(date, targets, workouts, meals, person, DayFuel.NONE);
+    }
+
+    static String userMessage(LocalDate date, DailyTargets targets, List<Window> workouts,
+                              List<MealBlock> meals, MealCoachContextReader.PersonContext person,
+                              DayFuel fuel) {
+        boolean guidance = fuel.mode() == RecoveryFuelMode.GUIDANCE;
         StringBuilder sb = new StringBuilder();
         sb.append("NAP: ").append(date).append('\n');
-        sb.append("NAPI CÉLOK: ").append(targets.kcal()).append(" kcal · P ").append(targets.p())
-          .append("g · C ").append(targets.c()).append("g · F ").append(targets.f()).append("g\n");
+        if (guidance) {
+            sb.append("KÍMÉLŐ MÓD: ma nincs kalóriacél. Ne számolj hátralévő keretet; könnyű, jól "
+                + "tolerálható ételt javasolj, folyadékkal.\n");
+        } else {
+            sb.append("NAPI CÉLOK: ").append(targets.kcal()).append(" kcal · P ").append(targets.p())
+              .append("g · C ").append(targets.c()).append("g · F ").append(targets.f()).append("g\n");
+            if (fuel.mode() == RecoveryFuelMode.ESTIMATE) {
+                sb.append("A keret ma csak tájékoztató (utazás).\n");
+            }
+        }
 
         sb.append("MAI EDZÉSEK: ");
         if (workouts.isEmpty()) {
@@ -83,7 +107,7 @@ final class MealCoachPrompt {
         }
 
         for (MealBlock m : meals) {
-            appendMeal(sb, targets, m);
+            appendMeal(sb, targets, m, fuel);
             if (person != null) {
                 appendCheckIns(sb, MealCoachContextReader.upTo(person.checkIns(),
                     m.loggedAt().toString().substring(0, 5)));
@@ -203,7 +227,7 @@ final class MealCoachPrompt {
         return v == null ? 0 : v.doubleValue();
     }
 
-    private static void appendMeal(StringBuilder sb, DailyTargets targets, MealBlock m) {
+    private static void appendMeal(StringBuilder sb, DailyTargets targets, MealBlock m, DayFuel fuel) {
         sb.append("\n=== ÉTKEZÉS mealId=").append(m.mealId()).append(" ===\n");
         sb.append("Név: ").append(m.name() == null ? "-" : m.name())
           .append(" | slot: ").append(m.slot() == null ? "-" : m.slot())
@@ -212,9 +236,13 @@ final class MealCoachPrompt {
         sb.append("Szerep: ").append(roleLabel(m.role())).append('\n');
         sb.append("A NAP ÁLLAPOTA EDDIG A PONTIG: ").append(plain(m.kcalBefore())).append(" kcal · P ")
           .append(plain(m.pBefore())).append("g · C ").append(plain(m.cBefore())).append("g · F ")
-          .append(plain(m.fBefore())).append("g (marad: ")
-          .append(remaining(targets.kcal(), m.kcalBefore())).append(" kcal · P ")
-          .append(remaining(targets.p(), m.pBefore())).append("g)\n");
+          .append(plain(m.fBefore())).append('g');
+        if (fuel.mode() != RecoveryFuelMode.GUIDANCE) {
+            sb.append(" (marad: ")
+              .append(remaining(targets.kcal() - fuel.skippedKcal(), m.kcalBefore())).append(" kcal · P ")
+              .append(remaining(targets.p(), m.pBefore())).append("g)");
+        }
+        sb.append('\n');
 
         appendItems(sb, m.items());
 

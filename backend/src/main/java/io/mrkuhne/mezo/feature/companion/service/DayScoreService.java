@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.repository.WaterLogRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -237,6 +238,7 @@ public class DayScoreService {
             boolean loggedFuel = !fuelDay.getMeals().isEmpty();
             MacroSet consumed = fuelDay.getConsumed();
             MacroSet targets = fuelDay.getTargets();
+            double[] tgt = judgedTargets(fuelDay, targets);
             List<Window> windows = windowsByDate.getOrDefault(day, List.of());
             int planned = windows.size();
             int done = (int) windows.stream().filter(Window::done).count();
@@ -250,7 +252,7 @@ public class DayScoreService {
                     loggedFuel ? dbl(consumed.getP()) : null,
                     loggedFuel ? dbl(consumed.getC()) : null,
                     loggedFuel ? dbl(consumed.getF()) : null,
-                    dbl(targets.getKcal()), dbl(targets.getP()), dbl(targets.getC()), dbl(targets.getF()),
+                    targetOrNull(tgt, 0), targetOrNull(tgt, 1), targetOrNull(tgt, 2), targetOrNull(tgt, 3),
                     planned > 0 || done > 0,
                     planned, done,
                     sleepH.get(day), quality == null ? null : (int) Math.round(quality),
@@ -396,6 +398,41 @@ public class DayScoreService {
                 .findFirst()
                 .map(DayDimension::score)
                 .orElse(null);
+    }
+
+    /**
+     * The targets the day is judged against (Kihagyás S3): an unjudged kímélő-mód day (GUIDANCE,
+     * ESTIMATE) has none — {@code null} makes the nutrition dimension NO_DATA and the others
+     * renormalise; a day with skipped meals is judged against the targets scaled by the share of
+     * the budget that was left to eat (a non-positive share = nothing to judge). Inputs only —
+     * {@code DayEvaluationEngine} is untouched.
+     */
+    private static double[] judgedTargets(FuelDayResponse fuelDay, MacroSet targets) {
+        RecoveryFuelMode mode = fuelDay.getFuelMode() == null ? null
+                : RecoveryFuelMode.valueOf(fuelDay.getFuelMode().name());
+        if (mode != null && mode.unjudged()) {
+            return null;
+        }
+        double kcal = targets.getKcal() == null ? 0 : targets.getKcal().doubleValue();
+        double factor = 1.0;
+        int skipped = fuelDay.getSkippedKcal() == null ? 0 : fuelDay.getSkippedKcal();
+        if (skipped > 0 && kcal > 0) {
+            factor = (kcal - skipped) / kcal;
+            if (factor <= 0) {
+                return null;
+            }
+        }
+        return new double[] {
+            scaled(targets.getKcal(), factor), scaled(targets.getP(), factor),
+            scaled(targets.getC(), factor), scaled(targets.getF(), factor)};
+    }
+
+    private static double scaled(BigDecimal value, double factor) {
+        return value == null ? Double.NaN : value.doubleValue() * factor;
+    }
+
+    private static Double targetOrNull(double[] tgt, int i) {
+        return tgt == null || Double.isNaN(tgt[i]) ? null : tgt[i];
     }
 
     private static Double dbl(BigDecimal value) {

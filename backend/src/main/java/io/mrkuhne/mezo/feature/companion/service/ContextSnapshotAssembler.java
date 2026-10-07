@@ -26,6 +26,7 @@ import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.tools.FuelModeText;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
@@ -637,11 +638,17 @@ public class ContextSnapshotAssembler {
         MacroSet c = day.getConsumed();
         MacroSet t = day.getTargets();
         StringBuilder b = new StringBuilder("[Mai üzemanyag] ");
-        b.append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal())).append(" kcal, fehérje ")
-                .append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP())).append(" g, szénhidrát ")
-                .append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC())).append(" g, zsír ")
-                .append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g, víz ")
-                .append(ToolText.num(c.getWater())).append('/').append(ToolText.num(t.getWater())).append(" ml");
+        if (day.getFuelMode() == FuelDayResponse.FuelModeEnum.GUIDANCE) {
+            // Kihagyás S3: a sick day has no calorie target to print — only what was eaten.
+            b.append(FuelModeText.guidanceLine(day));
+        } else {
+            b.append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal())).append(" kcal, fehérje ")
+                    .append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP())).append(" g, szénhidrát ")
+                    .append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC())).append(" g, zsír ")
+                    .append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g, víz ")
+                    .append(ToolText.num(c.getWater())).append('/').append(ToolText.num(t.getWater())).append(" ml")
+                    .append(FuelModeText.suffix(day));
+        }
         ProtocolResponse active = protocolService.getView(userId).getActive();
         // mezo-padz: the protocol has NO name — the contract (api/feature/fuel/fuel.yml,
         // ProtocolResponse) carries id/version/builtAt/status/items and nothing name-like, so a
@@ -651,6 +658,9 @@ public class ContextSnapshotAssembler {
         b.append("; protokoll: ").append(active == null ? NO_DATA
                 : "v" + active.getVersion() + " aktív (nincs neve — csak a verziószám azonosítja)");
         b.append(", mai bevitel: ").append(intakeService.listForDay(userId, today).getIntakes().size());
+        if (day.getFuelMode() == null) {
+            b.append(FuelModeText.skips(plannedSkipService.mealSkipsOn(userId, today)));
+        }
         return b.toString();
     }
 
