@@ -36,6 +36,9 @@ public class TurnEmbeddingListener {
         if (event.extractionBlocked()) {
             return; // mezo-tdabt: a forget request's turn is never remembered (the writer re-checks too)
         }
+        if (event.learningPaused()) {
+            return; // mezo-rrjxe: "Most ne tanulj" — nothing from a paused turn is learned, now or later
+        }
         try {
             LlmActorContext.runAsCaptured(event.userId(), () ->
                     memoryEmbeddingWriter.embedTurnByMessageId(event.assistantMessageId()));

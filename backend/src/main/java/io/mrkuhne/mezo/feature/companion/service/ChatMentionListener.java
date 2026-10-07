@@ -50,6 +50,9 @@ public class ChatMentionListener {
         if (event.extractionBlocked()) {
             return;
         }
+        if (event.learningPaused()) {
+            return; // mezo-rrjxe: "Most ne tanulj" — nothing from a paused turn is learned, now or later
+        }
         try {
             transactionTemplate.executeWithoutResult(status -> {
                 if (!extractionGate.isBlocked(event.userMessageId())) {

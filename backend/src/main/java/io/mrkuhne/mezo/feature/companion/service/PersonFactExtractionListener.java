@@ -32,6 +32,9 @@ public class PersonFactExtractionListener {
         if (event.extractionBlocked()) {
             return; // S8: "ezt ne jegyezd meg" — never learn from the forget request itself
         }
+        if (event.learningPaused()) {
+            return; // mezo-rrjxe: "Most ne tanulj" — nothing from a paused turn is learned, now or later
+        }
         try {
             LlmActorContext.runAsCaptured(event.userId(), () -> personFactExtractionService.extractFromTurn(
                     event.userId(), event.userMessageId(), event.userContent(), event.assistantContent()));

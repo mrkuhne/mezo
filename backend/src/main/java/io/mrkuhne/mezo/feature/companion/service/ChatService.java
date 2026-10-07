@@ -228,6 +228,8 @@ public class ChatService {
     private final ObjectProvider<PeopleRecall> peopleRecall;
     /** fix round 1 finding 2 — serializes a dropped plan step's args for its synthetic outcome. */
     private final ObjectMapper objectMapper;
+    /** mezo-rrjxe — "Most ne tanulj": a turn made during a pause is flagged for every post-turn learner. */
+    private final io.mrkuhne.mezo.feature.auth.service.LearningPauseService learningPause;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction.
      *  {@code recalledRefs} (W3.1 Memory refs followed by the W2.4 GraphNode refs) are the ambient
@@ -291,9 +293,10 @@ public class ChatService {
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         // S8 (mezo-d6ivw.12): a forget request is never learned from — the listeners skip it
-        boolean blocked = messageRepository.findById(userMessageId).map(AiMessageEntity::isExtractionBlocked).orElse(false);
+        java.util.Optional<AiMessageEntity> userRow = messageRepository.findById(userMessageId);
+        boolean blocked = userRow.map(AiMessageEntity::isExtractionBlocked).orElse(false);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
-                assistant.getId(), answer, blocked));
+                assistant.getId(), answer, blocked, learningPausedAt(userId, userRow.orElse(null))));
         return mapper.toMessageResponse(assistant, userMessageId);
     }
 
@@ -416,8 +419,15 @@ public class ChatService {
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
-                assistant.getId(), answer, userRow.isExtractionBlocked()));
+                assistant.getId(), answer, userRow.isExtractionBlocked(), learningPausedAt(userId, userRow)));
         return mapper.toMessageResponse(assistant, userRow.getId());
+    }
+
+    /** mezo-rrjxe: was "Most ne tanulj" on when the user SAID this? Judged by the user row's own
+     *  instant, so a turn sent during a pause stays paused even if the answer lands after resume. */
+    private boolean learningPausedAt(UUID userId, AiMessageEntity userRow) {
+        Instant said = userRow == null || userRow.getCreatedAt() == null ? Instant.now() : userRow.getCreatedAt();
+        return learningPause.isPausedAt(userId, said);
     }
 
     /**

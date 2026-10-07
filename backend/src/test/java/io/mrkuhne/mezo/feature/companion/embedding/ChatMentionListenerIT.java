@@ -117,9 +117,9 @@ class ChatMentionListenerIT extends ApiIntegrationTest {
         AiMessageEntity control = messages.message(conversation, AiMessageEntity.ROLE_USER, "Ádám itt volt");
 
         chatMentionListener.onChatTurnCompleted(
-                new ChatTurnCompleted(owner, blocked.getId(), "Ádám titka", UUID.randomUUID(), "ok", false));
+                new ChatTurnCompleted(owner, blocked.getId(), "Ádám titka", UUID.randomUUID(), "ok", false, false));
         chatMentionListener.onChatTurnCompleted(
-                new ChatTurnCompleted(owner, control.getId(), "Ádám itt volt", UUID.randomUUID(), "ok", false));
+                new ChatTurnCompleted(owner, control.getId(), "Ádám itt volt", UUID.randomUUID(), "ok", false, false));
 
         await().atMost(5, SECONDS).untilAsserted(() ->
                 assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner))
@@ -138,7 +138,7 @@ class ChatMentionListenerIT extends ApiIntegrationTest {
         AiMessageEntity row = messages.message(conversation, AiMessageEntity.ROLE_USER, "Ádám titka");
 
         chatMentionListener.onChatTurnCompleted(
-                new ChatTurnCompleted(owner, row.getId(), "Ádám titka", UUID.randomUUID(), "ok", true));
+                new ChatTurnCompleted(owner, row.getId(), "Ádám titka", UUID.randomUUID(), "ok", true, false));
 
         await().during(1000, MILLISECONDS).atMost(3, SECONDS).untilAsserted(() ->
                 assertThat(mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(owner)).isEmpty());

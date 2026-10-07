@@ -9,7 +9,11 @@ import java.util.UUID;
  * by design. {@code assistantMessageId} is the turn's stable ref for the embedding row
  * (uq_memory_embedding_kind_ref_id). {@code extractionBlocked} (S8, mezo-d6ivw.12): the user
  * message was a forget request — the fact and person-fact listeners skip it entirely.
+ * {@code learningPaused} (mezo-rrjxe): the turn was made while "Most ne tanulj" was on — every
+ * post-turn learner skips it. Decided once, at publish time, from the USER message's own instant;
+ * a later resume does not un-pause this turn.
  */
 public record ChatTurnCompleted(UUID userId, UUID userMessageId, String userContent,
-                                UUID assistantMessageId, String assistantContent, boolean extractionBlocked) {
+                                UUID assistantMessageId, String assistantContent, boolean extractionBlocked,
+                                boolean learningPaused) {
 }

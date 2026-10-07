@@ -49,7 +49,7 @@ class PostTurnActorIT extends AbstractIntegrationTest {
         var userMessage = messages.message(conversation, "user", "Szeretek sétálni");
         var assistant = messages.message(conversation, "assistant", "Mesélj róla");
         var event = new ChatTurnCompleted(owner, userMessage.getId(), userMessage.getContent(),
-                assistant.getId(), assistant.getContent(), false);
+                assistant.getId(), assistant.getContent(), false, false);
         assertThat(LlmActorContext.capture()).isNull();
         extraction.onChatTurnCompleted(event);
         embedding.onChatTurnCompleted(event);
