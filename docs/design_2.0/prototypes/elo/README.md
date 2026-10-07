@@ -16,6 +16,31 @@ that was not updated. The shared rules are in the
 | Mezo | `mezo.html` | https://claude.ai/artifact/LBngXviRqUhc5q2ragbtex | 2026-09-30 — Heti rendrakás (`mezo-d6ivw.10`) shipped: the Rólad „Összevonnám" merge card (Összevonom · Átírom · Később · Maradjon külön, listed first) and the Tények „Hétfői rendrakás" strip + „Összevontam" fold with Visszakapcsolom match production (in the app the facts list is the Tudástár hub). 2026-09-29 — Hang mindenhol (`mezo-xojq8`): every free-text field carries the shared mic tile + Hallgató Boop via `_hang-kit.html` (injected by `_inject-hang-kit.mjs`), matching production. Earlier: 2026-09-29 — „Rólam is" (`mezo-d6ivw.13`) built to match `#chat/rolamis`: a named-person sentence gets only the person-fact chip (no duplicate Megjegyezném), with a Rólam is ⇄ Rólad is · kész toggle. 2026-09-28 — S8 chat-memória (`mezo-d6ivw.12`) shipped to main: the chat's answer card shows what each turn learned, proposed, recalled and forgot (Megjegyeztem/Megjegyezném chips, Emlékszem line + recall sheet, „ezt ne jegyezd meg" forget flow incl. the empty-forget state and the widen-to-conversation sheet). |
 | Én | `en.html` | https://claude.ai/artifact/TpZ8YTcX6rBLvLhpkfAK8M | 2026-10-06 — Én IA (`mezo-lhqw7`): tabs Hol tartok · Test · Célok · Napló. Matches production after the Én IA (`mezo-lhqw7`, slices S1–S4 + final-review fixes): `#en` (strip → week hero → Életvonal → Célok állása → Fejlődés · Emberek, no Rutin tile), `#celok` (weight goal first; the empty variant shows the dashed „＋ Súlycél” door with „Tervezd meg a tempót”, production empty-hero copy) and `#novekedes`; Életvonal has a third state „cél elérve” (curve below the target, no projection, „Elérted a célod” footer) and the sleep band reads „Alvás, heti átlag: <range> óra”. Recorded deviations: (1) the week hero has **no week title** (the app stores no named week; it keeps the date eyebrow, ring, delta, the labelled „Jól ment / Figyelj rá” lines and the CTA); (2) `#novekedes` **keeps the existing growth hero** („Fejlődés”, XP numeral, bars) and the „MA · küldetések” strip, then a 2-column glass mosaic Skillek · Tevékenységek · Kitüntetések; (3) the inert skeleton tile while the weight goal loads has no prototype state. **S4:** the Rutin move shipped — production's hub now has two tiles (Fejlődés · Emberek) like this prototype; the rutin routes live in `nap.html`. Republished to the fixed Artifact URL on 2026-10-06 (`mezo-lhqw7`). Earlier: 2026-09-29 — Hang mindenhol (`mezo-xojq8`): every free-text field carries the shared mic tile + Hallgató Boop via `_hang-kit.html` (injected by `_inject-hang-kit.mjs`), matching production. Earlier: 2026-09-28 — one router over `uveg-en.html` + `uveg-en2.html` (45 routes, tabs Áttekintés · Súly · Alvás · Napló per `navModel`). `mezo-p87ok` shipped: `#het` discovery card (bar + legend) and `#felfedezesek` (rare traces on top, Minták / Új tudás drawers) match production; `#het` shows the 3×3 cells with Hangulat next to Energia (Check-in 2.0, `mezo-ck2`), matching `WeekHubPage`. Known gaps vs the app: the settings editors for Fuel slots / biometrics / sleep / gym / sport, and `#rutin` still shows daily ticking (it lives on Nap · Rutin in the app). |
 
+## Is the link current? — the publish debt rule
+
+**A lagging link is a debt, and the next session that can publish pays it first** (owner
+decision 2026-10-07, `mezo-ov71l`). The owner only ever opens the fixed links, so a link that
+shows an older state than `main` misleads him silently.
+
+- **After changing a living prototype:** `node docs/design_2.0/prototypes/elo/_link-status.mjs --stamp <domain>`
+  (sets the "Állapot" date the page shows) → commit → publish to the fixed URL →
+  `_link-status.mjs --published <domain>` → commit `_published.json`.
+- **A session that cannot publish** (Codex, or a refused publish) stops after the commit and
+  files the debt: `bd create "Közzététel elmaradt: <Domain>" -t task -p 1 -l publish-debt`, with
+  the reason. It also says so in the hand-off. Never leave a lag unrecorded.
+- **Every session that can publish, at session start** (right after the red-main check): run
+  `node docs/design_2.0/prototypes/elo/_link-status.mjs` and `bd list --label publish-debt --status open`.
+  Publish whatever lags, record it with `--published`, close the debt — **before** your own work.
+  The only exception is a link deliberately held for an unmerged prototype awaiting the owner's
+  OK: leave it, and keep its debt open with that reason.
+
+`_published.json` holds, per domain, the hash and "Állapot" date of what was last published;
+`_link-status.mjs` compares it with the file on disk, so a lag shows even if nobody filed it.
+
+State on 2026-10-07: Nap, Edzés and Én are published with the "Állapot" date. **Fuel and Mezo are
+held** (open debts `mezo-et628`, `mezo-e63cp`): their links show unmerged prototypes awaiting the
+owner's OK (`feat/kihagyas-s3`, `feat/emlekezet-learning-pause`) and must not be rolled back.
+
 The shared desktop frame lives in `_panel-kit.html` (`mezo-eitra`, owner request 2026-10-07):
 the phone stays pinned and fits the window, the side panel scrolls on its own, screens are
 grouped by the app's tabs and follow the route, and the single "Legutóbb változott" block is the
