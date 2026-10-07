@@ -1,0 +1,84 @@
+<!-- panel-kit:start — generated from elo/_panel-kit.html by elo/_inject-panel-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Panel-kit (mezo-eitra): the shared desktop frame of every living prototype ──
+   The phone stays put and always fits the window; the side panel scrolls on its own.
+   Screens are grouped by the app's tabs in collapsible groups that follow the route.
+   The ONLY thing marked new is what the "Legutóbb változott" block names (see README). */
+.notes{width:360px}
+.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
+.notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
+.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
+.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
+.ntabs{display:flex;gap:6px;flex-wrap:wrap}
+.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--dc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 55%,transparent)}
+.recent{padding:13px 14px 14px;margin:2px 0 14px}
+.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
+.recent p{font-size:12.5px;margin:0 0 9px}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px}
+.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
+.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
+.grp{border-top:1px solid var(--hair)}
+.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .icon{width:24px;height:24px}
+.grp summary strong{font-size:15px;font-weight:600}
+.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
+.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
+.grp[open] summary i{transform:rotate(90deg)}
+.grp.cur summary strong{color:var(--dc)}
+.grp nav{display:grid;gap:6px;margin:0 0 14px}
+.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
+.grp nav a .icon{width:24px;height:24px}
+.grp nav a::after{display:none}
+.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
+.ujb{margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:1px;color:#2B2118;background:var(--gold)}
+.grp ul,.about ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
+.grp ul a,.about a{color:var(--sky)}
+.about{border-top:1px solid var(--hair);padding:11px 2px 0}
+.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+.about p{margin:8px 0 0}
+.about .ov{margin-top:12px}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
+@media(min-width:781px){
+  html,body{height:100%;overflow:hidden}
+  .stage{height:100vh;padding:24px 16px 0}
+  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
+}
+</style>
+<script>
+(function(){
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  const notes=q('#notes'), base=h=>h.slice(1).split(/[/?]/)[0], NEW_DAYS=14;
+  let cur=null;
+  function group(g,toTop){qa('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
+    qa('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
+    if(toTop){const d=q(`#jump .grp[data-grp="${g}"]`);notes.scrollTop+=d.getBoundingClientRect().top-notes.getBoundingClientRect().top-q('.nhead').offsetHeight}}
+  /* mark the screen you are on, open its group, keep it in view — the page's render() calls this */
+  window.panelSync=function(){
+    const nav=qa('#jump nav a'), all=[...nav,...qa('.rlinks a')], h=location.hash||nav[0].getAttribute('href'), r=base(h);
+    const exact=all.filter(a=>a.getAttribute('href')===h), fam=nav.filter(a=>a.getAttribute('href').startsWith('#')&&base(a.getAttribute('href'))===r);
+    const parent=fam.find(a=>a.getAttribute('href')==='#'+r)||fam[0];
+    const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...(parent?[parent]:[])];
+    all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
+    const main=hit.find(a=>a.closest('.grp')), g=main?main.closest('.grp').dataset.grp:cur;
+    if(main)q('#nnow').textContent=main.firstChild.nextSibling?main.childNodes[1].textContent.trim():main.textContent.trim();
+    if(g&&g!==cur){cur=g;group(g,false);notes.scrollTop=0}
+    if(main&&main.closest('.grp').open){const a=main.getBoundingClientRect(),b=notes.getBoundingClientRect(),top=b.top+q('.nhead').offsetHeight;
+      if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
+  const rec=q('.recent[data-uj]');
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+    rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
+    if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
+      if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
+  /* the phone always fits the window height */
+  const fit=()=>{q('#phone').style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-58)/844)):''};
+  addEventListener('resize',fit);fit();
+})();
+</script>
+<!-- panel-kit:end -->

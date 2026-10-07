@@ -26,6 +26,25 @@ owner gates, living per-domain prototypes and *Kész, ha…* checklist) is in th
   the notification panel, the glass TabBar with the living Boop, the domain switcher. Swap only
   what the area changes: the active domain's Boop, its `navModel` tabs and labels, and `--c`.
 
+## The side panel of a living prototype (owner, 2026-10-07, `mezo-eitra`)
+
+The five living prototypes share one desktop frame, generated from
+[`prototypes/elo/_panel-kit.html`](prototypes/elo/_panel-kit.html) by `_inject-panel-kit.mjs`
+(edit the kit, re-run the injector, never edit the copy inside a page):
+
+- **The phone stays put** and always fits the window height; only the side panel scrolls.
+- **Screens are grouped by the app's tabs** in `<details class="grp" data-grp="…">` groups (plus
+  at most one extra group for settings or icon sheets). A new route's link goes into its tab's
+  group; its states go into that group's *Állapotok és részletek* list. The panel follows the
+  route: the group of the current screen opens, the link is outlined, "Most itt" names it.
+- **Only what is really new is marked new.** The single `<section class="recent" data-uj="YYYY-MM-DD">`
+  block ("Legutóbb változott") is the one place that says what changed last. **Every change
+  rewrites it**: the ship date, a plain Hungarian title, one sentence, and links to the changed
+  routes. The kit puts an "ÚJ" badge on those links for 14 days and removes it by itself. Nothing
+  else in the panel may say "új", "ÚJ" or carry a slice code as news; when you add a change,
+  the previous one simply stops being new. (The "Új ikonok" sheet keeps its name: it is the
+  sheet's title, not a news marker.)
+
 ## Icons — custom, always (owner, 2026-09-23)
 
 - List every icon the screens show: content icons, empty states, tiles. Map each to the

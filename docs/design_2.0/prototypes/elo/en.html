@@ -259,17 +259,7 @@ svg{overflow:visible}
 .toast{position:absolute;left:50%;bottom:170px;z-index:60;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:999px;background:rgba(43,33,24,.86);color:#fff;font-size:12.5px;white-space:nowrap;transition:.3s var(--ease);pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ── Side notes (desktop) ────────────────────── */
-.notes{width:300px;padding-top:30px}
-.notes h1{font-size:28px;font-weight:600;letter-spacing:-1px}
-.notes .ov{font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
-.notes p{font-size:13.5px;line-height:1.55;color:var(--sub);margin:10px 0 18px}
-.notes nav{display:grid;gap:8px;margin-bottom:22px}
-.notes nav a{--c:var(--sage);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;text-decoration:none;color:var(--ink);font-size:13.5px;font-weight:500}
-.notes nav a .icon{width:28px;height:28px}
-.notes nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent)}
-.notes ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding-left:16px;display:grid;gap:4px}
-.toggle{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:12.5px;color:var(--sub)}
+/* ── Side panel (desktop): styles and behaviour come from the panel-kit block ── */
 @media(max-width:780px){.notes{display:none}}
 
 
@@ -1579,7 +1569,6 @@ svg{overflow:visible}
 .legend .icon{width:20px;height:20px}
 
 .poster p .icon,.icon.inl{width:18px;height:18px;display:inline-block;vertical-align:-4px;filter:none!important}
-.notes ul a{color:var(--sky)}
 /* Kamra tile */
 .tile{--c:var(--sage);display:flex;flex-direction:column;gap:6px;padding:14px 13px 13px;border-radius:20px;width:100%;min-height:176px}
 .tile-top{display:flex;justify-content:space-between;align-items:flex-start}
@@ -3284,77 +3273,206 @@ svg{overflow:visible}
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast"></div>
   </div>
-  <aside class="notes">
-    <span class="ov">ÉN · ÉLŐ PROTOTÍPUS · ÚJ FELÉPÍTÉS</span>
-    <h1>Én: Hol tartok · Test · Célok · Napló</h1>
-    <p>Az Én négy fülre rendeződik. A <b>Hol tartok</b> a heted, alatta az <b>Életvonal</b> (12 hét súlya egy vonalon, alvás-sávval és állomásokkal), a célok állása, a Fejlődés és az Emberek. A <b>Test</b> egy helyen mutatja a súlyt és az alvást, a <b>Célok</b> és a <b>Napló</b> saját fület kapott. A rutin építése a Nap · Rutin fülre költözött.</p>
-    <p class="abnote">Minden képernyőn <em>egy dolog a leghangosabb</em>: a Hol tartokon a heted pontszáma, az Életvonalon a görbe, a Célokon a hat életterület köre, a Súlyon a változás, az Alváson a tegnap éjjel. A többi üvegkártya vagy lapos sor alatta.</p>
-    <nav id="jump">
-      <span class="ov" style="margin:10px 0 4px">HOL TARTOK</span>
-      <a href="#en" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Hol tartok</a>
-      <a href="#het" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>A heted</a>
-      <a href="#elemzes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Heti elemzés</a>
-      <a href="#napok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sun"/></svg>A hét napjai</a>
-      <a href="#felfedezesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-lens"/></svg>Heti felfedezések</a>
-      <a href="#tanulsagok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gem"/></svg>A hét tanulságai</a>
-      <a href="#novekedes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Növekedés</a>
-      <a href="#skillek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Képességek</a>
-      <a href="#kitunt" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-record"/></svg>Kitüntetések</a>
-      <a href="#tevekenysegek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>Tevékenységek</a>
-      <a href="#emberek" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>Emberek</a>
-      <a href="#jeloltek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-lens"/></svg>Jelöltek</a>
-      <a href="#kor" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>A köröm</a>
-      <a href="#emlitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-chat"/></svg>Említések</a>
-      <a href="#heti" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>Heti kép (emberek)</a>
-      <a href="#ember" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Egy ember</a>
-      <span class="ov" style="margin:10px 0 4px">TEST</span>
-      <a href="#test" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-weight"/></svg>Test · Súly</a>
-      <a href="#test/alvas" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-sleep"/></svg>Test · Alvás</a>
-      <a href="#ejszaka/idle" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Éjszakai mód</a>
-      <span class="ov" style="margin:10px 0 4px">CÉLOK</span>
-      <a href="#celok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-ring"/></svg>Célok</a>
-      <a href="#cel" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sprout"/></svg>Egy cél oldala</a>
-      <a href="#celuj/1" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-ring"/></svg>Új cél varázsló</a>
-      <a href="#jelek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-signal"/></svg>Jelek</a>
-      <a href="#sulycel" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-weight"/></svg>Súlycél</a>
-      <a href="#sulyresz/diet" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-bowl"/></svg>Súlycél aloldalai</a>
-      <a href="#sulyuj/1" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-down"/></svg>Új súlycél</a>
-      <span class="ov" style="margin:10px 0 4px">NAPLÓ</span>
-      <a href="#naplo" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-journal"/></svg>Napló</a>
-      <span class="ov" style="margin:10px 0 4px">ÉRTESÍTÉSEK · BEÁLLÍTÁSOK</span>
-      <a href="#ertesitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-bell"/></svg>Értesítések</a>
-      <a href="#beall" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-gear"/></svg>Beállítások</a>
-      <a href="#b-train" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Edzés beállításai</a>
-      <a href="#b-me" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Én beállításai</a>
-      <a href="#b-cel" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-weight"/></svg>Súlycél beállítása</a>
-      <a href="#b-mezo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Mezo és te</a>
-      <a href="#b-nap" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Nap beállításai</a>
-      <a href="#b-alt" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-palette"/></svg>Megjelenés és app</a>
-      <a href="#b-ert" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-bell"/></svg>Értesítés-beállítások</a>
-      <a href="#b-fiok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-key"/></svg>Fiókod</a>
-      <a href="#b-szemely/about" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-person"/></svg>Rólam · stílus · kontextus</a>
-      <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-compass"/></svg>Új ikonok</a>
-    </nav>
-    <span class="ov">ÁLLAPOTOK</span>
-    <ul>
-      <li>Hol tartok: <a href="#" data-st="hub:full">minden adat</a> · <a href="#" data-st="hub:empty">új felhasználó</a></li>
-      <li>Életvonal: <a href="#" data-st="elv:full">12 hét</a> · <a href="#" data-st="elv:empty">még kevés a mérés</a> · <a href="#" data-st="elv:reached">cél elérve</a></li>
-      <li>Célok: <a href="#" data-st="celok:full">3 aktív</a> · <a href="#" data-st="celok:empty">még nincs cél</a> · <a href="#" data-sheet="pillar">pillér-katalógus</a></li>
-      <li>Súlycél: <a href="#" data-st="suly:full">aktív cél</a> · <a href="#" data-st="suly:empty">nincs súlycél</a> · <a href="#" data-gbox="gate">„előbb a biometriád”</a></li>
-      <li>Súlycél aloldalak: <a href="#sulyresz/diet">étrendi keret</a> · <a href="#sulyresz/segment">szakasz</a> · <a href="#sulyresz/plans">tervkapcsolatok</a> · <a href="#sulyresz/guards">védőkorlátok</a> · <a href="#sulyresz/javaslat">javaslat</a></li>
-      <li>Naplózás: <a href="#" data-sheet="weight">súly mérése</a> · <a href="#" data-sheet="sleep">alvás rögzítése</a> · <a href="#" data-sheet="stats">„miért számít”</a></li>
-      <li>Éjszaka: <a href="#ejszaka/idle">felébredtél?</a> · <a href="#ejszaka/wait">figyelem az időt</a> · <a href="#ejszaka/legzes">légzés</a> · <a href="#ejszaka/getup">ideje felkelni</a></li>
-      <li>Hét: <a href="#" data-st="het:run">a mostani hét</a> · <a href="#" data-st="het:closed">lezárt hét</a></li>
-      <li>Felfedezések: <a href="#" data-st="disc:sok">sok (34)</a> · <a href="#" data-st="disc:keves">kevés (5)</a> · <a href="#" data-st="disc:csend">csendes hét</a></li>
-      <li>Napló: <a href="#" data-st="dec:open">döntés vár értékelésre</a> · <a href="#" data-st="dec:done">visszanézve</a> · <a href="#" data-sheet="journal">új bejegyzés</a></li>
-      <li>Emberek: <a href="#" data-sheet="plog">gyors log</a> · <a href="#" data-sheet="pedit">új személy</a> · <a href="#" data-st="jel:empty">nincs több jelölt</a></li>
-      <li>Kitüntetések: <a href="#" data-st="tit:letra">címek · létra</a> · <a href="#" data-st="tit:bolt">bolt</a></li>
-      <li>Értesítések: <a href="#" data-st="nf:full">lista</a> · <a href="#" data-st="nf:empty">üres</a></li>
-    </ul>
+  <aside class="notes" id="notes" style="--dc:var(--rose)">
+    <div class="nhead">
+      <span class="ov">ÉN · ÉLŐ PROTOTÍPUS</span>
+      <div class="nnow"><small>MOST ITT</small><strong id="nnow"></strong></div>
+      <div class="ntabs" id="ntabs"><button type="button" data-ngrp="Hol tartok">Hol tartok</button><button type="button" data-ngrp="Test">Test</button><button type="button" data-ngrp="Célok">Célok</button><button type="button" data-ngrp="Napló">Napló</button><button type="button" data-ngrp="Beállítások">Beállítások</button></div>
+    </div>
+    <!-- The ONLY "new" marker of the prototype. Every change rewrites this block (date, title, one sentence, links). -->
+    <section class="recent glass" data-uj="2026-10-06" style="--c:var(--gold)">
+      <span class="ov">LEGUTÓBB VÁLTOZOTT</span>
+      <strong>Négy fül: Hol tartok · Test · Célok · Napló</strong>
+      <p>A Hol tartokon a heted és az Életvonal áll, a Célok élén a súlycél. A rutin a Napra költözött.</p>
+      <div class="rlinks"><a href="#en">Hol tartok</a><a href="#test">Test</a><a href="#celok">Célok</a><a href="#naplo">Napló</a></div>
+    </section>
+    <div id="jump">
+    <details class="grp" data-grp="Hol tartok" style="--c:var(--rose)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-emberek"/></svg><strong>Hol tartok</strong><em>16 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#en" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Hol tartok</a>
+        <a href="#het" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>A heted</a>
+        <a href="#elemzes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Heti elemzés</a>
+        <a href="#napok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sun"/></svg>A hét napjai</a>
+        <a href="#felfedezesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-lens"/></svg>Heti felfedezések</a>
+        <a href="#tanulsagok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gem"/></svg>A hét tanulságai</a>
+        <a href="#novekedes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Növekedés</a>
+        <a href="#skillek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Képességek</a>
+        <a href="#kitunt" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-record"/></svg>Kitüntetések</a>
+        <a href="#tevekenysegek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>Tevékenységek</a>
+        <a href="#emberek" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>Emberek</a>
+        <a href="#jeloltek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-lens"/></svg>Jelöltek</a>
+        <a href="#kor" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>A köröm</a>
+        <a href="#emlitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-chat"/></svg>Említések</a>
+        <a href="#heti" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>Heti kép (emberek)</a>
+        <a href="#ember" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Egy ember</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Hol tartok: <a href="#" data-st="hub:full">minden adat</a> · <a href="#" data-st="hub:empty">új felhasználó</a></li>
+        <li>Életvonal: <a href="#" data-st="elv:full">12 hét</a> · <a href="#" data-st="elv:empty">még kevés a mérés</a> · <a href="#" data-st="elv:reached">cél elérve</a></li>
+        <li>Hét: <a href="#" data-st="het:run">a mostani hét</a> · <a href="#" data-st="het:closed">lezárt hét</a></li>
+        <li>Felfedezések: <a href="#" data-st="disc:sok">sok (34)</a> · <a href="#" data-st="disc:keves">kevés (5)</a> · <a href="#" data-st="disc:csend">csendes hét</a></li>
+        <li>Emberek: <a href="#" data-sheet="plog">gyors log</a> · <a href="#" data-sheet="pedit">új személy</a> · <a href="#" data-st="jel:empty">nincs több jelölt</a></li>
+        <li>Kitüntetések: <a href="#" data-st="tit:letra">címek · létra</a> · <a href="#" data-st="tit:bolt">bolt</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Test" style="--c:var(--sky)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-suly"/></svg><strong>Test</strong><em>3 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#test" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-weight"/></svg>Test · Súly</a>
+        <a href="#test/alvas" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-sleep"/></svg>Test · Alvás</a>
+        <a href="#ejszaka/idle" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Éjszakai mód</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Naplózás: <a href="#" data-sheet="weight">súly mérése</a> · <a href="#" data-sheet="sleep">alvás rögzítése</a> · <a href="#" data-sheet="stats">„miért számít”</a></li>
+        <li>Éjszaka: <a href="#ejszaka/idle">felébredtél?</a> · <a href="#ejszaka/wait">figyelem az időt</a> · <a href="#ejszaka/legzes">légzés</a> · <a href="#ejszaka/getup">ideje felkelni</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Célok" style="--c:var(--sage)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-cel"/></svg><strong>Célok</strong><em>7 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#celok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-ring"/></svg>Célok</a>
+        <a href="#cel" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sprout"/></svg>Egy cél oldala</a>
+        <a href="#celuj/1" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-ring"/></svg>Új cél varázsló</a>
+        <a href="#jelek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-signal"/></svg>Jelek</a>
+        <a href="#sulycel" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-weight"/></svg>Súlycél</a>
+        <a href="#sulyresz/diet" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-bowl"/></svg>Súlycél aloldalai</a>
+        <a href="#sulyuj/1" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-down"/></svg>Új súlycél</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Célok: <a href="#" data-st="celok:full">3 aktív</a> · <a href="#" data-st="celok:empty">még nincs cél</a> · <a href="#" data-sheet="pillar">pillér-katalógus</a></li>
+        <li>Súlycél: <a href="#" data-st="suly:full">aktív cél</a> · <a href="#" data-st="suly:empty">nincs súlycél</a> · <a href="#" data-gbox="gate">„előbb a biometriád”</a></li>
+        <li>Súlycél aloldalak: <a href="#sulyresz/diet">étrendi keret</a> · <a href="#sulyresz/segment">szakasz</a> · <a href="#sulyresz/plans">tervkapcsolatok</a> · <a href="#sulyresz/guards">védőkorlátok</a> · <a href="#sulyresz/javaslat">javaslat</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Napló" style="--c:var(--sage)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-naplo"/></svg><strong>Napló</strong><em>1 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#naplo" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-journal"/></svg>Napló</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Napló: <a href="#" data-st="dec:open">döntés vár értékelésre</a> · <a href="#" data-st="dec:done">visszanézve</a> · <a href="#" data-sheet="journal">új bejegyzés</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Beállítások" style="--c:var(--rose)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#t-gear"/></svg><strong>Beállítások</strong><em>12 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#ertesitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-bell"/></svg>Értesítések</a>
+        <a href="#beall" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-gear"/></svg>Beállítások</a>
+        <a href="#b-train" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Edzés beállításai</a>
+        <a href="#b-me" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Én beállításai</a>
+        <a href="#b-cel" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-weight"/></svg>Súlycél beállítása</a>
+        <a href="#b-mezo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Mezo és te</a>
+        <a href="#b-nap" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Nap beállításai</a>
+        <a href="#b-alt" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-palette"/></svg>Megjelenés és app</a>
+        <a href="#b-ert" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-bell"/></svg>Értesítés-beállítások</a>
+        <a href="#b-fiok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-key"/></svg>Fiókod</a>
+        <a href="#b-szemely/about" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-person"/></svg>Rólam · stílus · kontextus</a>
+        <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-compass"/></svg>Új ikonok</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Értesítések: <a href="#" data-st="nf:full">lista</a> · <a href="#" data-st="nf:empty">üres</a></li>
+      </ul>
+    </details>
+    </div>
+    <details class="about">
+      <summary>Mi van ebben a prototípusban?</summary>
+      <p>Az Én négy fülre rendeződik. A <b>Hol tartok</b> a heted, alatta az <b>Életvonal</b> (12 hét súlya egy vonalon, alvás-sávval és állomásokkal), a célok állása, a Fejlődés és az Emberek. A <b>Test</b> egy helyen mutatja a súlyt és az alvást, a <b>Célok</b> és a <b>Napló</b> saját fület kapott. A rutin építése a Nap · Rutin fülre költözött.</p>
+      <p class="abnote">Minden képernyőn <em>egy dolog a leghangosabb</em>: a Hol tartokon a heted pontszáma, az Életvonalon a görbe, a Célokon a hat életterület köre, a Súlyon a változás, az Alváson a tegnap éjjel. A többi üvegkártya vagy lapos sor alatta.</p>
+    </details>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
 </div>
 
+<!-- panel-kit:start — generated from elo/_panel-kit.html by elo/_inject-panel-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Panel-kit (mezo-eitra): the shared desktop frame of every living prototype ──
+   The phone stays put and always fits the window; the side panel scrolls on its own.
+   Screens are grouped by the app's tabs in collapsible groups that follow the route.
+   The ONLY thing marked new is what the "Legutóbb változott" block names (see README). */
+.notes{width:360px}
+.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
+.notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
+.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
+.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
+.ntabs{display:flex;gap:6px;flex-wrap:wrap}
+.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--dc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 55%,transparent)}
+.recent{padding:13px 14px 14px;margin:2px 0 14px}
+.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
+.recent p{font-size:12.5px;margin:0 0 9px}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px}
+.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
+.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
+.grp{border-top:1px solid var(--hair)}
+.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .icon{width:24px;height:24px}
+.grp summary strong{font-size:15px;font-weight:600}
+.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
+.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
+.grp[open] summary i{transform:rotate(90deg)}
+.grp.cur summary strong{color:var(--dc)}
+.grp nav{display:grid;gap:6px;margin:0 0 14px}
+.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
+.grp nav a .icon{width:24px;height:24px}
+.grp nav a::after{display:none}
+.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
+.ujb{margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:1px;color:#2B2118;background:var(--gold)}
+.grp ul,.about ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
+.grp ul a,.about a{color:var(--sky)}
+.about{border-top:1px solid var(--hair);padding:11px 2px 0}
+.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+.about p{margin:8px 0 0}
+.about .ov{margin-top:12px}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
+@media(min-width:781px){
+  html,body{height:100%;overflow:hidden}
+  .stage{height:100vh;padding:24px 16px 0}
+  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
+}
+</style>
+<script>
+(function(){
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  const notes=q('#notes'), base=h=>h.slice(1).split(/[/?]/)[0], NEW_DAYS=14;
+  let cur=null;
+  function group(g,toTop){qa('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
+    qa('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
+    if(toTop){const d=q(`#jump .grp[data-grp="${g}"]`);notes.scrollTop+=d.getBoundingClientRect().top-notes.getBoundingClientRect().top-q('.nhead').offsetHeight}}
+  /* mark the screen you are on, open its group, keep it in view — the page's render() calls this */
+  window.panelSync=function(){
+    const nav=qa('#jump nav a'), all=[...nav,...qa('.rlinks a')], h=location.hash||nav[0].getAttribute('href'), r=base(h);
+    const exact=all.filter(a=>a.getAttribute('href')===h), fam=nav.filter(a=>a.getAttribute('href').startsWith('#')&&base(a.getAttribute('href'))===r);
+    const parent=fam.find(a=>a.getAttribute('href')==='#'+r)||fam[0];
+    const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...(parent?[parent]:[])];
+    all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
+    const main=hit.find(a=>a.closest('.grp')), g=main?main.closest('.grp').dataset.grp:cur;
+    if(main)q('#nnow').textContent=main.firstChild.nextSibling?main.childNodes[1].textContent.trim():main.textContent.trim();
+    if(g&&g!==cur){cur=g;group(g,false);notes.scrollTop=0}
+    if(main&&main.closest('.grp').open){const a=main.getBoundingClientRect(),b=notes.getBoundingClientRect(),top=b.top+q('.nhead').offsetHeight;
+      if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
+  const rec=q('.recent[data-uj]');
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+    rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
+    if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
+      if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
+  /* the phone always fits the window height */
+  const fit=()=>{q('#phone').style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-58)/844)):''};
+  addEventListener('resize',fit);fit();
+})();
+</script>
+<!-- panel-kit:end -->
 <!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
 <style>
 /* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
@@ -4575,7 +4693,7 @@ function render(){
   $('#scroll').innerHTML=view(); $('#scroll').scrollTop=0; closeSheet(); closeGb();
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
   tabbar(TAB[r]||HT);
-  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')===(location.hash||'#en')||(a.getAttribute('href').split('/')[0]==='#'+r&&!a.getAttribute('href').includes('/')))));
+  window.panelSync&&panelSync();
 }
 let toastT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
