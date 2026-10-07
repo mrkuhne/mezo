@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Klinikai irányok</title>
+<title>Csepp prototípus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap">
 <style>
@@ -492,9 +492,27 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
 @keyframes rise{from{opacity:0;transform:translateY(10px)}}
 @keyframes ringin{from{stroke-dasharray:0 1000}}
 @keyframes grow{from{width:0}}
+
+/* ── shell additions: sheets, switcher, back row ── */
+.backrow{padding:10px 16px 0}
+.backbtn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--sub)}
+.backbtn b{font-size:18px;line-height:1;font-weight:400}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:60;max-height:86%;overflow-y:auto;padding:8px 16px calc(24px + env(safe-area-inset-bottom,0px));border-radius:22px 22px 0 0;background:var(--card);border-top:1px solid var(--hair);box-shadow:0 -20px 40px -20px rgba(0,0,0,.6);transform:translateY(105%);transition:.32s var(--ease);scrollbar-width:none}
+.sheet.on{transform:none}
+.sheet-grab{width:36px;height:4px;border-radius:2px;background:var(--hair);margin:4px auto 14px}
+.scrim{position:absolute;inset:0;z-index:55;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:.3s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sw-sheet{position:absolute;left:10px;right:10px;bottom:92px;z-index:62;padding:14px 12px 12px;border-radius:20px;background:var(--card);border:1px solid var(--hair);box-shadow:0 16px 30px -16px rgba(0,0,0,.75)}
+.sw-sheet .eb{margin:0 4px 10px}
+.sw-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.swb{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0 6px;border-radius:12px;font-size:11px;font-weight:500;color:var(--sub)}
+.swb.on{color:var(--ink);background:color-mix(in srgb,var(--dom) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dom) 40%,transparent)}
+.phone[data-v="ajanlott"][data-d="fuel"]{--dom:#8FB49A}
+.phone[data-v="ajanlott"][data-d="mezo"]{--dom:#AB9FD2}
+.phone[data-v="ajanlott"][data-d="en"]{--dom:#D98B9D}
+.phone[data-v="ajanlott"] .sheet h2.t{margin-bottom:8px}
+.phone[data-v="ajanlott"] .ln.tap{cursor:pointer}
 </style>
-</head>
-<body>
 <svg class="sprite" xmlns="http://www.w3.org/2000/svg">
   <defs><radialGradient id="cs-sheen" cx="35%" cy="25%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".5" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
@@ -1603,27 +1621,65 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
 <symbol id="t-spark" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M27 7C29 20 32.5 24.5 45.5 27C32.5 29.5 29 34 27 47C25 34 21.5 29.5 8.5 27C21.5 24.5 25 20 27 7Z" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".8"/><path d="M47 34C48 40.5 50 42.5 56.5 43.5C50 44.5 48 46.5 47 53C46 46.5 44 44.5 37.5 43.5C44 42.5 46 40.5 47 34Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><path d="M48 7C48.6 10.2 49.6 11.2 52.8 11.8C49.6 12.4 48.6 13.4 48 16.6C47.4 13.4 46.4 12.4 43.2 11.8C46.4 11.2 47.4 10.2 48 7Z" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".5"/><path d="M24.5 16C24 20 22.5 23 19.5 25" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".7"/></g></symbol>
 <symbol id="t-trash" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M15 22H49L46 52C45.6 56 43 58 39 58H25C21 58 18.4 56 18 52Z" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><rect x="10" y="14" width="44" height="9" rx="4.5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><rect x="25" y="6" width="14" height="8" rx="3.5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><g stroke="#83291d" stroke-width="2" stroke-linecap="round" opacity=".5"><path d="M26 30V49"/><path d="M32 30V49"/><path d="M38 30V49"/></g><path d="M20.5 28C21 36 21.5 43 22.5 49" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
 <symbol id="t-compass" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="28.5" y="4" width="7" height="7" rx="2.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><circle cx="32" cy="34" r="25" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><circle cx="32" cy="34" r="19" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".6"/><g stroke="#dbeaff" stroke-width="1.6" stroke-linecap="round" opacity=".55"><path d="M32 17.5V20.5"/><path d="M32 47.5V50.5"/><path d="M15.5 34H18.5"/><path d="M45.5 34H48.5"/></g><path d="M39.5 23.5L35.2 36.2H28.8Z" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".6"/><path d="M28.8 31.8H35.2L24.5 44.5Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".6"/><circle cx="32" cy="34" r="2.8" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".5"/><path d="M13.5 26C15.5 20 20 15.6 25.5 13.6" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
+
+<symbol id="t-template" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="9" y="14" width="46" height="42" rx="7" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M9 21C9 17 11 14 16 14H48C53 14 55 17 55 21V25H9Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><g fill="#2a2440" opacity=".5"><rect x="15" y="31" width="11" height="8" rx="2"/><rect x="29" y="31" width="11" height="8" rx="2"/><rect x="43" y="31" width="6" height="8" rx="2"/><rect x="15" y="43" width="11" height="8" rx="2"/><rect x="29" y="43" width="6" height="8" rx="2"/></g><g stroke="#e9e4f6" stroke-width="2.2" stroke-linecap="round" opacity=".75"><path d="M19 8V16"/><path d="M32 8V16"/><path d="M45 8V16"/></g><path d="M13 29V50" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".5"/></g></symbol>
+<symbol id="t-compare" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="8" y="28" width="18" height="28" rx="5" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".8"/><rect x="38" y="15" width="18" height="41" rx="5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><path d="M32 9V57" stroke="#e9e4f6" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="3 4" opacity=".5"/><path d="M12.5 34V48" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/><path d="M42.5 21V41" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".65"/><circle cx="17" cy="21" r="3.6" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".6"/><circle cx="47" cy="8" r="3.6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/></g></symbol>
+<symbol id="t-pencil" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><g transform="rotate(45 32 32)"><rect x="25" y="3" width="14" height="41" rx="2.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="25" y="3" width="14" height="8" rx="2.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".5"/><rect x="25" y="10.5" width="14" height="4.5" fill="url(#tg-titanium)"/><path d="M25 44L32 58L39 44Z" fill="#f0dcbc" stroke="#ffebbe" stroke-width=".6"/><path d="M30 54L32 58L34 54Z" fill="#3a2e22"/><path d="M29 17V41" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></g></symbol>
+<symbol id="t-muscle" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M6 43C6 34 12 28.5 18.5 27.5C22.5 19.5 33 19 37 26.5C38.3 29 39.2 31 40 33V21C37.6 17.5 37.8 11 42 8C46.5 5 53.5 6.2 56.2 10.5C58.2 13.6 57.4 18 56 20.5V42C56 50 51 54.5 44 54.5L12.5 55.5C8.5 55.6 6 51.5 6 43Z" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><path d="M40 33C41.5 37 41 40.5 38.5 43" fill="none" stroke="#83291d" stroke-width="1.5" stroke-linecap="round" opacity=".5"/><path d="M42 13.5C45 12.5 49 12.8 52 14.5M41.5 18C44.5 17.2 48.5 17.5 51.5 19" fill="none" stroke="#83291d" stroke-width="1.2" stroke-linecap="round" opacity=".45"/><path d="M13 33C17.5 29.5 21 29 24 29.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/><path d="M24.5 24.5C28 22.5 31.5 23 34 25" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" opacity=".75"/><path d="M44 9.5C46.5 8.2 49.5 8.2 52 9.2" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-swap" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M11 31C12 19 21 11 32 11C39 11 44 14 47.5 18.5" fill="none" stroke="url(#tg-blue)" stroke-width="7.5" stroke-linecap="round"/><path d="M57.5 28.5 53.5 12.5 41.5 24Z" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".9" stroke-linejoin="round"/><path d="M53 33C52 45 43 53 32 53C25 53 20 50 16.5 45.5" fill="none" stroke="url(#tg-red)" stroke-width="7.5" stroke-linecap="round"/><path d="M6.5 35.5 10.5 51.5 22.5 40Z" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".9" stroke-linejoin="round"/><path d="M14.5 27C16.5 20 22.5 14.5 31 14.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".7"/><path d="M49.5 38C47.5 44 42 49 34 49.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></g></symbol>
+<symbol id="t-addex" viewBox="0 0 64 64"><use href="#t-dumbbell" x="-2" y="-2" width="50" height="50"/><g filter="url(#tg-shadow)"><circle cx="46" cy="46" r="13" fill="url(#tg-lime)" stroke="#eeffb9" stroke-width="1"/><path d="M46 39.5V52.5M39.5 46H52.5" stroke="#26331a" stroke-width="3.6" stroke-linecap="round"/><path d="M37.5 41.5C38.5 38 41.5 35.5 45 35" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"/></g></symbol>
+<symbol id="t-bandage" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><g transform="rotate(-38 32 32)"><rect x="3" y="22" width="58" height="20" rx="10" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="22" y="24.5" width="20" height="15" rx="3.5" fill="#fff3d6" opacity=".88"/><g fill="#b89757" opacity=".7"><circle cx="11" cy="29" r="1.1"/><circle cx="11" cy="35" r="1.1"/><circle cx="16" cy="32" r="1.1"/><circle cx="53" cy="29" r="1.1"/><circle cx="53" cy="35" r="1.1"/><circle cx="48" cy="32" r="1.1"/></g><path d="M28 32h8M32 28v8" stroke="#e07a63" stroke-width="2.4" stroke-linecap="round"/><path d="M9 25.5C14 24 19 24 22 24.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"/></g></g></symbol>
+<symbol id="t-kimelo" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M32 5L53 13V30C53 44 44 54 32 59C20 54 11 44 11 30V13Z" fill="url(#tg-purple)" stroke="#e7d7ff" stroke-width=".9"/><path d="M32 11L47 17V30C47 40.5 40.6 48.4 32 52.4C23.4 48.4 17 40.5 17 30V17Z" fill="#2c2340" opacity=".55"/><path d="M23 44C20.5 30 29 20.5 44 19C45.5 34 37 43.5 23 44Z" fill="url(#tg-lime)" stroke="#e7f6c6" stroke-width=".8"/><path d="M23.5 43.5C28.5 36 34 29.5 40.5 23.5" fill="none" stroke="#f3fbde" stroke-width="1.6" stroke-linecap="round" opacity=".85"/><path d="M30.5 35.5 27.5 30M35.5 30 34 24.5" fill="none" stroke="#f3fbde" stroke-width="1.1" stroke-linecap="round" opacity=".6"/><path d="M17 15.5L30 10.4" stroke="#ffffff" stroke-opacity=".45" stroke-width="1.8" stroke-linecap="round"/></g></symbol>
+<symbol id="t-signal" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M14 10A24 24 0 0 0 14 44" fill="none" stroke="url(#tg-purple)" stroke-width="4.6" stroke-linecap="round"/><path d="M50 10A24 24 0 0 1 50 44" fill="none" stroke="url(#tg-purple)" stroke-width="4.6" stroke-linecap="round"/><path d="M22 17A14 14 0 0 0 22 37" fill="none" stroke="url(#tg-blue)" stroke-width="4.6" stroke-linecap="round"/><path d="M42 17A14 14 0 0 1 42 37" fill="none" stroke="url(#tg-blue)" stroke-width="4.6" stroke-linecap="round"/><rect x="29" y="30" width="6" height="25" rx="3" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><rect x="19" y="53" width="26" height="6" rx="3" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><circle cx="32" cy="27" r="6.2" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".7"/><circle cx="30" cy="25" r="1.7" fill="#fff" opacity=".85"/><path d="M30.8 34V51" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".55"/></g></symbol>
+<symbol id="t-breath" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="29" y="5" width="6" height="21" rx="3" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><path d="M28 25C20 20 11 30 10 42C9 52 14 58 21 57C27 56 29 51 29 45V31Z" fill="url(#tg-pink)" stroke="#ffd9e6" stroke-width=".8"/><path d="M36 25C44 20 53 30 54 42C55 52 50 58 43 57C37 56 35 51 35 45V31Z" fill="url(#tg-pink)" stroke="#ffd9e6" stroke-width=".8"/><g fill="none" stroke="#e9e4f6" stroke-width="2.4" stroke-linecap="round"><path d="M32 24L27 31L25 38"/><path d="M32 24L37 31L39 38"/></g><path d="M15 38C15.5 33 17.5 29.5 21 27.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/><path d="M42 29C45 30 47.5 32.5 49 35.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".45"/></g></symbol>
+<symbol id="t-candle" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><ellipse cx="32" cy="55" rx="19" ry="5.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".7"/><rect x="24" y="28" width="16" height="27" rx="3.5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M36.5 28.5V35" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".4"/><path d="M32 23.5V28.5" stroke="#4a3f52" stroke-width="1.6" stroke-linecap="round"/><path d="M32 6C37.5 13 40 18 38 22.5C36.4 26 27.6 26 26 22.5C24 18 26.5 13 32 6Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><path d="M32 13.5C34.4 17.5 34.6 20.4 33.4 22C32.6 23 31.4 23 30.6 22C29.4 20.4 29.6 17.5 32 13.5Z" fill="url(#tg-red)"/><path d="M27.8 32V51" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></g></symbol>
+<symbol id="t-lens" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M39.5 39.5L54 54" stroke="url(#tg-titanium)" stroke-width="8.5" stroke-linecap="round"/><circle cx="27" cy="27" r="19.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="27" cy="27" r="14.5" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".6"/><path d="M31 21.5L32.6 26 37 27.6 32.6 29.2 31 33.7 29.4 29.2 25 27.6 29.4 26Z" fill="#fff" opacity=".85"/><path d="M17.5 22.5C19 18 22.5 15 27 14.4" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-bell" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="8.5" r="3.6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><path d="M32 11C21 11 16 19 16 29V39L10 46H54L48 39V29C48 19 43 11 32 11Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="9" y="44.5" width="46" height="5.5" rx="2.75" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".6"/><circle cx="32" cy="55" r="5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".6"/><path d="M21.5 36V29C21.5 22 24.5 17.5 29 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-key" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M27 30L53 56" stroke="url(#tg-titanium)" stroke-width="7" stroke-linecap="round"/><path d="M42.5 45.5L48.5 39.5M49 52L55 46" stroke="url(#tg-titanium)" stroke-width="5" stroke-linecap="round"/><circle cx="20" cy="22" r="13.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="17" cy="19" r="4.3" fill="#3a2e22" stroke="#ffebbe" stroke-width=".5"/><path d="M10.5 22C10.5 16.5 14 12.5 19 11.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-exit" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="8" y="7" width="30" height="50" rx="4" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M13 12L29 16V58L13 54Z" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".6"/><circle cx="25" cy="36" r="2" fill="url(#tg-gold)"/><path d="M33 28H47V21.5L58.5 32L47 42.5V36H33Z" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".7"/><path d="M16.5 18.5V40" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".55"/></g></symbol>
+<symbol id="t-palette" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M32 7C17 7 7 18 7 31C7 45 18 56 31 56C35 56 37 53 35 49C33 45 36 42 40 42H46C52 42 57 38 57 31C57 17 46 7 32 7Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><circle cx="19" cy="25" r="5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".5"/><circle cx="31" cy="17" r="5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".5"/><circle cx="44" cy="22" r="5" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".5"/><circle cx="17" cy="39" r="5" fill="url(#tg-lime)" stroke="#eeffb9" stroke-width=".5"/><circle cx="46" cy="33" r="3.2" fill="#2a2632"/><path d="M12 24C13.5 18 18 13.5 24 11.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
+<symbol id="t-flag" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><ellipse cx="14.5" cy="57.5" rx="8" ry="2.6" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".5"/><rect x="12" y="7" width="5" height="51" rx="2.5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".6"/><path d="M17 10C26 6 33 14 42 10C47 8 51 8 55 9V33C51 32 47 32 42 34C33 38 26 30 17 34Z" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><g fill="#5a1d14" opacity=".45"><path d="M24 10.5L31 13V21L24 19Z"/><path d="M38 12L45 10V18L38 20Z"/><path d="M31 21L38 20V28L31 29Z"/><path d="M45 18L52 17V25L45 26Z"/><path d="M17 20L24 19V27L17 28Z"/></g><circle cx="14.5" cy="7" r="3.4" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".5"/><path d="M21 14C26 12.5 30 14.5 34 15.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
+<symbol id="t-brain" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M31 10C26 7 19 9 18 14C12 15 9 21 11 26C7 29 7 36 11 39C10 45 15 50 21 49C23 54 29 56 31 52Z" fill="url(#tg-pink)" stroke="#ffd9e6" stroke-width=".8"/><path d="M33 10C38 7 45 9 46 14C52 15 55 21 53 26C57 29 57 36 53 39C54 45 49 50 43 49C41 54 35 56 33 52Z" fill="url(#tg-pink)" stroke="#ffd9e6" stroke-width=".8"/><g fill="none" stroke="#9c4668" stroke-width="1.5" stroke-linecap="round" opacity=".55"><path d="M18 14C21 16 22 19 21 22"/><path d="M11 26C15 26 18 28 19 31"/><path d="M21 49C20 45 22 42 25 41"/><path d="M46 14C43 16 42 19 43 22"/><path d="M53 26C49 26 46 28 45 31"/><path d="M43 49C44 45 42 42 39 41"/><path d="M26 32C28 30 30 31 31 33"/><path d="M38 32C36 30 34 31 33 33"/></g><path d="M15 20C16 16 19 13 23 12.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-layers" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M8 45V48.5L32 57.5L56 48.5V45L32 54Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".6"/><path d="M32 36L56 45L32 54L8 45Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M8 33V36.5L32 45.5L56 36.5V33L32 42Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"/><path d="M32 24L56 33L32 42L8 33Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><path d="M8 21V24.5L32 33.5L56 24.5V21L32 30Z" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".6"/><path d="M32 12L56 21L32 30L8 21Z" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".8"/><path d="M15 21L30 15.5" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/><path d="M15 33L24 29.7" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".5"/></g></symbol>
+<symbol id="t-album" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="9" y="10" width="34" height="40" rx="3.5" transform="rotate(-11 26 30)" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><g transform="rotate(7 36 34)"><rect x="19" y="13" width="35" height="43" rx="3.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="23" y="17" width="27" height="27" rx="2" fill="url(#tg-blue)" stroke="#dbeaff" stroke-width=".5"/><circle cx="43" cy="24" r="3.6" fill="#fff4d6" opacity=".95"/><path d="M23 44L31.5 33L37.5 39L41.5 35L50 44Z" fill="url(#tg-lime)"/><path d="M26 49.5H40" stroke="#604831" stroke-width="2" stroke-linecap="round" opacity=".5"/><path d="M22 20V38" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></g></g></symbol>
+<symbol id="t-diagnose" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M39.5 39.5L54 54" stroke="url(#tg-titanium)" stroke-width="8.5" stroke-linecap="round"/><circle cx="27" cy="27" r="19.5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><circle cx="27" cy="27" r="14.5" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".6"/><path d="M13.5 28H19.5L22.5 20.5L27 34.5L30.5 24.5L32.5 28H40.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" opacity=".92"/><path d="M16.5 19.5C18.5 15.8 22 13.4 26 13" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
+<symbol id="t-eye" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M4 32C12 18.5 21.5 12 32 12S52 18.5 60 32C52 45.5 42.5 52 32 52S12 45.5 4 32Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M10.5 32C17 22 24 17.5 32 17.5S47 22 53.5 32C47 42 40 46.5 32 46.5S17 42 10.5 32Z" fill="#efe9f7"/><circle cx="32" cy="32" r="12.5" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".6"/><circle cx="32" cy="32" r="5.6" fill="#231c33"/><circle cx="27.8" cy="27.6" r="2.8" fill="#fff" opacity=".95"/><path d="M13 27C17 21 23 17.8 29 17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".55"/></g></symbol>
+<symbol id="t-card" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="21" y="7" width="31" height="44" rx="5" transform="rotate(9 36 29)" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><rect x="12" y="12" width="32" height="45" rx="5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><path d="M28 19.5L30.3 26.2 37 28.5 30.3 30.8 28 37.5 25.7 30.8 19 28.5 25.7 26.2Z" fill="#fff" opacity=".92"/><g stroke="#604831" stroke-width="2" stroke-linecap="round" opacity=".5"><path d="M19 44H37"/><path d="M19 50H30"/></g><path d="M16 18V37" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
+<symbol id="t-whistle" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="14" cy="17" r="7" fill="none" stroke="url(#tg-titanium)" stroke-width="3.2"/><path d="M30 20H56C57.7 20 59 21.3 59 23V29C59 30.7 57.7 32 56 32H40Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><circle cx="27" cy="37" r="18" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="35" y="20" width="9" height="5.5" rx="1.5" fill="#3a2e22" opacity=".85"/><circle cx="27" cy="37" r="6.5" fill="#604831" opacity=".5"/><path d="M14.5 33C15.5 27.5 19.5 23 25 22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-graph" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M18 20L44 16M18 20L30 44M44 16L50 42M30 44L50 42M44 16L30 44" stroke="url(#tg-titanium)" stroke-width="3.2" stroke-linecap="round"/><circle cx="18" cy="20" r="8" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".8"/><circle cx="44" cy="16" r="6.5" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".8"/><circle cx="30" cy="44" r="10" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="50" cy="42" r="6" fill="url(#tg-lime)" stroke="#eeffb9" stroke-width=".8"/><path d="M14 17C15 15 17 14 19 14M24 40C25 37.5 27.5 36 30 36" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/></g></symbol>
+<symbol id="t-radar" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="32" r="26" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><circle cx="32" cy="32" r="21" fill="#1f2a36"/><circle cx="32" cy="32" r="14" fill="none" stroke="#78cfe7" stroke-width="1" opacity=".45"/><circle cx="32" cy="32" r="7" fill="none" stroke="#78cfe7" stroke-width="1" opacity=".45"/><path d="M32 32L32 11A21 21 0 0 1 50.2 21.5Z" fill="url(#tg-blue)" opacity=".85"/><circle cx="43" cy="25" r="3.4" fill="url(#tg-gold)" stroke="#fff3d6" stroke-width=".6"/><circle cx="32" cy="32" r="2.4" fill="#d1faff"/><path d="M14 22C17 16 22 12 28 11" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></symbol>
+<symbol id="t-grid" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="8" y="8" width="21" height="21" rx="6" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".8"/><rect x="35" y="8" width="21" height="21" rx="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="8" y="35" width="21" height="21" rx="6" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".8"/><rect x="35" y="35" width="21" height="21" rx="6" fill="url(#tg-lime)" stroke="#eeffb9" stroke-width=".8"/><path d="M12 14C13 12 15 11.5 17 11.5M39 14C40 12 42 11.5 44 11.5M12 41C13 39 15 38.5 17 38.5M39 41C40 39 42 38.5 44 38.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></g></symbol>
+<symbol id="t-council" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="16" cy="20" r="6.5" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".7"/><circle cx="32" cy="14" r="7.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".7"/><circle cx="48" cy="20" r="6.5" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".7"/><path d="M8 34C8 29 11.5 27 16 27S24 29 24 34Z" fill="url(#tg-blue)"/><path d="M40 34C40 29 43.5 27 48 27S56 29 56 34Z" fill="url(#tg-purple)"/><path d="M22 30C22 25 26.5 22.5 32 22.5S42 25 42 30Z" fill="url(#tg-gold)"/><ellipse cx="32" cy="40" rx="27" ry="10" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M5 40V45C5 50.5 17 55 32 55S59 50.5 59 45V40C59 45.5 47 50 32 50S5 45.5 5 40Z" fill="#3b3d4e" stroke="#8e8a9e" stroke-width=".6"/><path d="M14 37C20 33.5 27 32.5 33 32.5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".7"/><path d="M28 10.5C29 9 30.5 8.3 32 8.2" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/></g></symbol>
+<symbol id="t-jump" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="10" y="50" width="44" height="8" rx="4" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><path d="M32 4L49 23H38.5V43H25.5V23H15Z" fill="url(#tg-lime)" stroke="#dbf6aa" stroke-width="1" stroke-linejoin="round"/><path d="M31 9.5L21.5 20.5" stroke="#f2ffd8" stroke-width="1.8" stroke-linecap="round" opacity=".85"/><path d="M29 27V39" stroke="#f2ffd8" stroke-width="1.5" stroke-linecap="round" opacity=".6"/><path d="M15 46h7M42 46h7" stroke="#b8d777" stroke-width="2.4" stroke-linecap="round" opacity=".65"/></g></symbol>
+<symbol id="t-sprint" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M26 12L56 32 26 52 33 32Z" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".9" stroke-linejoin="round"/><path d="M30 18L49 31" stroke="#effcff" stroke-width="1.8" stroke-linecap="round" opacity=".8"/><path d="M4 22h17M2 32h24M4 42h17" stroke="#9fe0f2" stroke-width="3" stroke-linecap="round" opacity=".7"/><path d="M33 32L26 52" stroke="#1e4454" stroke-width="1.4" opacity=".45"/></g></symbol>
+<symbol id="t-core" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><rect x="13" y="8" width="38" height="13" rx="5.5" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><rect x="7" y="25.5" width="50" height="13" rx="5.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><rect x="13" y="43" width="38" height="13" rx="5.5" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><path d="M18 11.5H40M12 29H44M18 46.5H40" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".6"/><circle cx="32" cy="32" r="3.2" fill="#fff4ea" opacity=".9"/></g></symbol>
+<symbol id="t-juggle" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M12 42C15 14 49 14 52 42" fill="none" stroke="#b3a0ed" stroke-width="1.8" stroke-dasharray="3 4" stroke-linecap="round" opacity=".75"/><circle cx="32" cy="17" r="9" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="14" cy="44" r="9.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><circle cx="50" cy="44" r="9.5" fill="url(#tg-blue)" stroke="#d1faff" stroke-width=".8"/><path d="M27 14.5A5.5 5.5 0 0 1 31 11M9 41.5A5.5 5.5 0 0 1 13 38M45 41.5A5.5 5.5 0 0 1 49 38" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".75"/></g></symbol>
+<symbol id="t-stretch" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M11 48A22 22 0 0 1 53 48" fill="none" stroke="url(#tg-purple)" stroke-width="10" stroke-linecap="round"/><path d="M14.5 41A18 18 0 0 1 32 26" fill="none" stroke="#f3eaff" stroke-width="1.8" stroke-linecap="round" opacity=".7"/><circle cx="11" cy="48" r="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="53" cy="48" r="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><circle cx="32" cy="26" r="6" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><path d="M40 10l6 4-6 4M24 10l-6 4 6 4" fill="none" stroke="#b3a0ed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".8"/></g></symbol>
+<symbol id="t-target" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="29" cy="35" r="24" fill="url(#tg-titanium)" stroke="#d9d4ea" stroke-width=".8"/><circle cx="29" cy="35" r="17" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".8"/><circle cx="29" cy="35" r="10" fill="#f1e9df"/><circle cx="29" cy="35" r="5" fill="url(#tg-red)"/><path d="M12 27A18 18 0 0 1 22 18" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/><path d="M30 34L53 11" stroke="url(#tg-gold)" stroke-width="3.4" stroke-linecap="round"/><path d="M50 6L58 6 58 14 53 11Z" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6" stroke-linejoin="round"/></g></symbol>
+<symbol id="t-mute" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M9 13Q31 4 53 14L54 39Q37 48 24 44L11 53 14 40Q5 27 9 13Z" fill="url(#tg-purple)" stroke="#eee0ff" stroke-width=".8"/><g fill="#f3ecff" opacity=".35"><circle cx="21" cy="27" r="3"/><circle cx="31" cy="26" r="3"/><circle cx="41" cy="26" r="3"/></g><path d="M13 18C19 14 26 12.5 33 12.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".75"/><path d="M14 56L55 12" stroke="#141210" stroke-width="10.5" stroke-linecap="round" opacity=".6"/><path d="M14 56L55 12" stroke="url(#tg-titanium)" stroke-width="6.5" stroke-linecap="round"/><path d="M19 49L50 16" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".6"/></g></symbol>
+<symbol id="t-eraser" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M6 56H34" stroke="#f5efe6" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="1 5" opacity=".5"/><g transform="rotate(-38 34 30)"><rect x="12" y="20" width="42" height="21" rx="5" fill="url(#tg-rose)" stroke="#ffe0e6" stroke-width=".8"/><rect x="37" y="20" width="17" height="21" rx="5" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".7"/><path d="M40 20.5V40.5" stroke="#393647" stroke-width="1.2" opacity=".6"/><path d="M16 24.5H34" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/><path d="M43 24.5H50" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".6"/></g><g fill="url(#tg-rose)"><circle cx="40" cy="55" r="2"/><circle cx="46" cy="52" r="1.4"/></g></g></symbol>
+<symbol id="t-source" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M12 6H36L46 16V50H12Z" fill="url(#tg-titanium)" stroke="#e9e4f6" stroke-width=".8"/><path d="M36 6V16H46" fill="#c9c7d8" stroke="#e9e4f6" stroke-width=".7"/><g stroke="#e9e4f6" stroke-width="2" stroke-linecap="round" opacity=".55"><path d="M18 22H38"/><path d="M18 29H36"/><path d="M18 36H28"/></g><path d="M16 10V44" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".5"/><circle cx="44" cy="45" r="14" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><path d="M50 45a6 6 0 1 1-2.2-4.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M49.5 35.5L48.4 41 43 40.4" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 41a9 9 0 0 1 5-5" fill="none" stroke="#fff4d2" stroke-width="1.6" stroke-linecap="round" opacity=".7"/></g></symbol>
+<symbol id="t-cowave" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M6 30C13 14 21 14 28 30S44 46 58 22" fill="none" stroke="url(#tg-blue)" stroke-width="6.5" stroke-linecap="round"/><path d="M6 42C13 26 21 26 28 42S44 58 58 34" fill="none" stroke="url(#tg-rose)" stroke-width="6.5" stroke-linecap="round"/><path d="M9 26C13 19 17 17 21 18" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".75"/><path d="M9 38C13 31 17 29 21 30" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".6"/><path d="M28 34V38" stroke="#ffebbe" stroke-width="1.4" stroke-dasharray="1.5 1.5"/><g fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".6"><circle cx="28" cy="30" r="4"/><circle cx="28" cy="42" r="4"/></g></g></symbol>
 </svg>
 
 
+
 <div class="top">
-  <h1>Új UI irány · Nap és Edzés<small>három változat, ugyanaz a tartalom</small></h1>
+  <h1>Csepp · az új UI irány<small>Jelenlegi (élő) és Ajánlott, minden terület</small></h1>
   <div class="seg" id="vseg" role="tablist" aria-label="Változat">
     <button data-v="jelenlegi">Jelenlegi (Üveg)</button>
-    <button data-v="sotet">Klinikai sötét</button>
-    <button data-v="vilagos">Lelet világos</button>
-    <button data-v="hibrid">Hibrid meleg</button>
     <button data-v="ajanlott">Ajánlott</button>
   </div>
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
-    <button data-d="nap">Nap · Mai</button>
-    <button data-d="edzes">Edzés · Mai</button>
-    <button data-d="session">Edzés · közben</button>
+    <button data-d="nap">Nap</button>
+    <button data-d="edzes">Edzés</button>
+    <button data-d="fuel">Fuel</button>
+    <button data-d="mezo">Mezo</button>
+    <button data-d="en">Én</button>
     <button data-d="jelek">Jelek</button>
   </div>
   <label><input type="checkbox" id="vilagos"> világos (fehér)</label>
   <label><input type="checkbox" id="meleg"> eredeti ikonszínek</label>
-  <label><input type="checkbox" id="ikon3d"> mostani 3D ikonok</label>
   <label><input type="checkbox" id="still"> mozgás nélkül</label>
 </div>
 
@@ -1736,15 +1792,18 @@ function mchp(key,cls=''){
 }
 </script>
 <script>
+/* ═══════════════════════════════════════════════════════════════════
+   KIT — the shared toolkit every domain file (csepp/<domain>.js) builds on.
+   Read csepp/README.md before writing a domain file.
+   ═══════════════════════════════════════════════════════════════════ */
 const $=s=>document.querySelector(s);
-/* line icon → current production icon (Titanium t-* / clay c-i-*) */
-const TD={'i-gear':'c-i-beallitas','i-mail':'c-i-level','i-bell':'c-i-ertesites','i-sun':'c-i-nap','i-cal':'c-i-heti','i-chat':'c-i-mezo','i-list':'c-i-rend','i-dumb':'t-dumbbell','i-layers':'c-i-retegek','i-bars':'c-i-meso','i-book':'c-i-naplo','i-pulse':'t-checkin','i-plus':'t-quick','i-pen':'t-journal','i-steps':'t-steps','i-bowl':'t-bowl','i-check':'t-tick','i-flame':'t-flame','i-muscle':'t-muscle','i-run':'t-run','i-ball':'t-volley','i-clock':'t-clock','i-skip':'t-skip','i-warn':'t-pain','i-bed':'t-sleep','i-mood':'t-mood','i-bolt':'t-bolt','i-moon':'t-moon','i-grid':'t-stack'};
-let IK3D=false;
-const I=(n,cls='')=>(IK3D||V==='ajanlott')&&TD[n]?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${TD[n]}"/></svg>`:`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
 const circ=r=>2*Math.PI*r;
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const TD={'i-gear':'c-i-beallitas','i-mail':'c-i-level','i-bell':'c-i-ertesites','i-sun':'c-i-nap','i-cal':'c-i-heti','i-chat':'c-i-mezo','i-list':'c-i-rend','i-dumb':'t-dumbbell','i-layers':'c-i-retegek','i-bars':'c-i-meso','i-book':'c-i-naplo','i-pulse':'t-checkin','i-plus':'t-quick','i-pen':'t-journal','i-steps':'t-steps','i-bowl':'t-bowl','i-check':'t-tick','i-flame':'t-flame','i-muscle':'t-muscle','i-run':'t-run','i-ball':'t-volley','i-clock':'t-clock','i-skip':'t-skip','i-warn':'t-pain','i-bed':'t-sleep','i-mood':'t-mood','i-bolt':'t-bolt','i-moon':'t-moon','i-grid':'t-stack'};
+const I=(n,cls='')=>/^(t|c-i)-/.test(n)?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`:(V==='ajanlott')&&TD[n]?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${TD[n]}"/></svg>`:`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
+/* direct Titanium / clay symbol by id, e.g. T('t-avocado'), T('c-i-fuel') */
+const T=(id,cls='')=>`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 const ring=(p,c,r=38)=>`<div class="ring" style="--c:${c}"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="${r}"/><circle class="p" cx="44" cy="44" r="${r}" style="--d:${circ(r)*p/100}"/></svg><div class="c"><span><b>${p}%</b><small>ÉLETJELEK</small></span></div></div>`;
-
-
 /* ── Az élő csepp ── forma: nyugodt (kerek) · figyelj (hullámos) · baj (szögletesebb) */
 const CS_FORM={ok:'M50 5C72 5 92 20 93 44 94 70 76 95 50 95 24 95 6 70 7 44 8 20 28 5 50 5Z',
   warn:'M50 6C70 4 90 16 94 40 98 62 80 94 52 95 26 96 4 74 7 46 10 22 30 8 50 6Z',
@@ -1766,306 +1825,83 @@ function csepp(state,fill,{s=48,val=null,label=null,form=null,alive=true,color=n
         <path class="sheen" d="${d}"/><path class="hi" d="M28 24 Q36 14 48 12"/></g></svg>
     ${val!=null?`<span class="val"><span><b>${val}</b>${label?`<small>${label}</small>`:''}</span></span>`:''}</span>`;
 }
-const TEAM=[['Szunya','alvás','#AB9FD2','pebble',62],['Mocor','mozgás','#7FB2D0','bean',48],['Falat','étel','#8FB49A','drop',70],['Derű','kedv','#D9B67E','leaf',55],['Mezo','összkép','#9AA3A8','crystal',64]];
-function jelek(){
-  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
-  <div class="sec rise"><span class="eb">Jelek</span><span class="eb">a prototípus lapja</span></div>
-  <div class="p16 rise" style="--i:1"><h1 class="t">Az élő csepp</h1><p class="lead">Egy jel, egy jelentés: <b>a mai napod</b>. A töltöttség azt mutatja, mennyi van már meg a napból; a szín és a forma azt, hogy állsz. Arc nincs, de lélegzik.</p></div>
-  <section class="jl rise" style="--i:2"><div class="grid">
-    <div class="cell">${csepp('ok',57,{s:72,val:72})}<strong>Nyugodt</strong><small>kerek forma, lassú lélegzés, zöld</small></div>
-    <div class="cell">${csepp('warn',57,{s:72,val:48})}<strong>Figyelj</strong><small>hullámosabb forma, gyorsabb ritmus, borostyán</small></div>
-    <div class="cell">${csepp('bad',57,{s:72,val:21})}<strong>Baj</strong><small>szögletes forma, szapora ritmus, vörös</small></div>
-  </div></section>
-  <section class="jl rise" style="--i:3"><span class="eb">Töltöttség · a nap halad</span><div class="grid">
-    <div class="cell">${csepp('ok',12,{s:64,val:'1/7',alive:false})}<strong>Reggel</strong><small>egy jel megvan</small></div>
-    <div class="cell">${csepp('ok',57,{s:64,val:'4/7',alive:false})}<strong>Délután</strong><small>négy a hétből</small></div>
-    <div class="cell">${csepp('ok',100,{s:64,val:'7/7',alive:false})}<strong>Este</strong><small>teli: a nap kész</small></div>
-  </div></section>
-  <section class="jl rise" style="--i:4"><span class="eb">Méretek · ugyanaz a jel mindenhol</span><div class="grid" style="grid-template-columns:1fr">
-    <div class="cell" style="flex-direction:row;justify-content:space-around;align-items:flex-end">${csepp('ok',57,{s:124,val:72,label:'MA'})}${csepp('ok',57,{s:72,val:72})}${csepp('ok',57,{s:44,val:'4/7',cls:'mini'})}${csepp('ok',57,{s:28})}</div>
-  </div><p class="fn">Nagyban a Nap tetején (a mai állapotod), közepesen a kártyákon, kicsiben minden fejlécben, és ikonként az alsó menü terület-jelén.</p></section>
-  <section class="jl rise" style="--i:5"><span class="eb">A csapat · testvérformák, arc nélkül</span><div class="grid team">
-    ${TEAM.map(([n,r,c,f,fl])=>`<div class="cell">${csepp('ok',fl,{s:46,form:f,color:c})}<strong>${n}</strong><small>${r}</small></div>`).join('')}
-  </div><p class="fn">Ugyanaz az anyag, más sziluett és szín. Az üzenetekben ők szólnak: a forma a feladó, a szöveg a hang. Így marad meg a „többhangú csapat” a tamagotchi nélkül.</p></section>
-  <section class="jl rise" style="--i:6"><span class="eb">Szabály</span><p class="lead">A csepp csak <b>egy</b> dolgot jelent: a napodat. Díszként, gombként, más adathoz soha nem használjuk. Ettől lesz aláírás.</p></section>
-  </div>${nav('nap')}<div class="toast" id="toast"></div>`;
-}
 
-/* ── chrome (same content as production: wordmark · ? · beállítások · üzenetek · értesítések · nap-kör) ── */
-const header=()=>`<header class="hd">${V==='ajanlott'?`<span class="wm mark"><i class="logo"></i>boop</span>`:`<span class="wm">boop</span>`}
+/* ── chrome: header (wordmark · ? · beállítások · üzenetek · értesítések · csepp) ── */
+const header=()=>`<header class="hd"><span class="wm mark"><i class="logo"></i>boop</span>
   <button class="hb q" data-toast="Kalauz ehhez az oldalhoz">?</button>
   <button class="hb" data-toast="Beállítások" aria-label="Beállítások">${I('i-gear')}</button>
   <button class="hb" data-toast="Mezo üzenetei" aria-label="Mezo üzenetei">${I('i-mail')}<b class="n">2</b></button>
   <button class="hb" data-toast="Értesítések" aria-label="Értesítések">${I('i-bell')}<b class="n">3</b></button>
-  ${V==='ajanlott'?`<button class="hb cs" data-toast="A mai napod · 72 · 4 a 7 jelből megvan" aria-label="A mai napod">${csepp('ok',57,{s:40,val:72,cls:'mini'})}</button>`:`<button class="dayring" data-toast="A mai napod · 4 a 7 jelből megvan" aria-label="A mai napod"><svg viewBox="0 0 38 38"><circle class="t" cx="19" cy="19" r="15"/><circle class="p" cx="19" cy="19" r="15" style="--d:${(circ(15)*4/7).toFixed(1)}"/></svg><b>4/7</b></button>`}
+  <button class="hb cs" data-toast="A mai napod · 72 · 4 a 7 jelből megvan" aria-label="A mai napod">${csepp('ok',57,{s:40,val:72,cls:'mini'})}</button>
 </header>`;
-const NAV={nap:['i-sun',[['Mai','i-sun'],['A napom','i-cal'],['Beszélgetés','i-chat'],['Rutin','i-list']]],
-           edzes:['i-dumb',[['Mai','i-dumb'],['Terv','i-layers'],['Terhelés','i-bars'],['Gyakorlatok','i-book']]]};
-const nav=d=>{const [mark,tabs]=NAV[d];const idx=d==='nap'?0:1;
-  return `<nav class="nav"><button class="dmark" data-toast="Területváltó: Nap · Edzés · Fuel · Mezo · Én" aria-label="Területváltó">${V==='ajanlott'?csepp('ok',57,{s:36,form:'ok',color:'var(--dom)'}):`<i>${I(mark)}</i>`}<small>${[0,1,2,3,4].map(i=>`<b class="${i===idx?'on':''}"></b>`).join('')}</small></button>
-  ${tabs.map(([l,ic],i)=>`<button class="tb ${i===0?'on':''}" data-toast="${l}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`};
-
-/* ── NAP · MAI ── */
-function nap(){
-  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
-  <div class="sec rise"><span class="eb">Szerda · október 7.</span><span class="eb">Napközpont</span></div>
-  <div class="p16 rise" style="--i:1"><h1 class="t">A napod</h1></div>
-  ${V==='ajanlott'?`<section class="card hg hero-n rise" style="--i:2">${csepp('ok',57,{s:128,val:72,label:'MA'})}
-    <div style="flex:1;min-width:0"><span class="eb">Mai állapot · 72 / 100</span><p class="verdict">Ma jó nap egy közepes edzéshez.</p>
-      <p class="lead">Nyugodt ébredés, pihenve. Két check-in még hátravan.</p>
-      <div class="chips" style="margin-top:8px"><span class="chip">${I('i-bed')}7 ó 40 p</span><span class="chip">${I('i-bolt')}energia 6/10</span></div></div>
-  </section>
-  <div class="qa compact rise" style="--i:3">
-    <button data-toast="Check-in">${I('i-pulse')}Check-in</button>
-    <button data-toast="Gyors logolás">${I('i-plus')}Logolás</button>
-    <button data-toast="Napló">${I('i-pen')}Napló</button>
-    <button class="more" data-toast="Aktivitás · Chat · Életjelek">Több ›</button>
-  </div>`:`<section class="card hg rise" style="--i:2;display:flex;gap:14px;align-items:center">${ring(72,'var(--ok)')}
-    <div style="flex:1;min-width:0"><span class="eb">Mai állapot</span><h2 class="t" style="margin:4px 0 6px">Nyugodt ébredés, pihenve</h2>
-      <p class="lead">Két check-in még hátravan. Az alvásod a 7 napos átlag fölött van.</p>
-      <div class="chips" style="margin-top:8px"><span class="chip">${I('i-bed')}7 ó 40 p</span><span class="chip">${I('i-mood')}nyugodt</span><span class="chip">${I('i-bolt')}energia 6/10</span></div></div>
-  </section>
-  <div class="qa rise" style="--i:3">
-    <button data-toast="Check-in">${I('i-pulse')}Check-in</button>
-    <button data-toast="Gyors logolás">${I('i-plus')}Logolás</button>
-    <button data-toast="Napló">${I('i-pen')}Napló</button>
-    <button data-toast="Aktivitás">${I('i-steps')}Aktivitás</button>
-    <button data-toast="Beszélgetés">${I('i-chat')}Chat</button>
-  </div>`}
-  <section class="card rise" style="--i:4"><div class="hrow"><h2 class="t">Üzemanyag</h2><a href="#" data-toast="Fuel · Mai">Fuel · ma ›</a></div>
-    <div style="display:flex;align-items:baseline;gap:10px"><span class="num">2 060<small>kcal</small></span><span class="mono" style="font-size:12px;color:var(--sub)">/ 3 100 keret</span></div>
-    <div class="bar" style="margin:10px 0 14px;--c:var(--acc)"><b style="--w:66%"></b></div>
-    <div class="kv">
-      <span class="l">Fehérje</span><span class="v"><b>148</b> / 220 g</span><div class="bar" style="--c:var(--ok)"><b style="--w:67%"></b></div>
-      <span class="l">Szénhidrát</span><span class="v"><b>224</b> / 380 g</span><div class="bar" style="--c:var(--warn)"><b style="--w:59%"></b></div>
-      <span class="l">Zsír</span><span class="v"><b>58</b> / 95 g</span><div class="bar" style="--c:var(--info)"><b style="--w:61%"></b></div>
-    </div>
-    <p class="fn"><b style="color:var(--ink);font-weight:500">1 040 kcal</b> a napi keretig. A három sáv a saját célodhoz viszonyít.</p>
-  </section>
-  <section class="card obs rise" style="--i:5"><div class="hrow"><span class="eb">Megfigyelés · Mezo</span><a href="#" data-toast="Összes észrevétel">Összes ›</a></div>
-    <h2 class="t" style="margin:4px 0 8px">Anna és az alvásod</h2>
-    <p>Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol.</p>
-    <div class="conf"><div class="bar" style="--c:var(--warn)"><b style="--w:30%"></b></div><small>4 nap · alacsony bizonyosság</small></div>
-    <div class="ev"><span class="chip">4 hála-bejegyzés</span><span class="chip">4 éjszaka</span><span class="chip">+1 nap eltolás</span></div>
-    <p class="q">Ez még kevés ahhoz, hogy biztosat mondjak. Figyeljem tovább?</p>
-    <div class="acts"><button class="btn sm" data-toast="Megjegyeztem: figyelem tovább">Igen, figyeld</button><button class="btn sm ghost" data-toast="Megjegyeztem">Nem stimmel</button><button class="btn sm ghost" data-toast="Mezo · Chat">Mesélj erről</button></div>
-  </section>
-  <div class="sec rise" style="--i:6"><h2 class="t">Mai pillanatok</h2><span class="eb">5 bejegyzés</span></div>
-  <section class="card rise" style="--i:7;padding-top:4px;padding-bottom:4px">
-    <div class="row"><time>13:00</time>${I('i-bowl')}<span class="g"><strong>Étkezés</strong><small>Csirke · édesburgonya · spenót</small></span>${I('i-chev','chev')}</div>
-    <div class="row"><time>09:15</time>${I('i-bowl')}<span class="g"><strong>Étkezés</strong><small>Túrós zabkása · áfonyával</small></span>${I('i-chev','chev')}</div>
-    <div class="row"><time>07:10</time>${I('i-pulse')}<span class="g"><strong>Check-in · reggel</strong><small>Nyugodt ébredés · pihenve</small></span>${I('i-chev','chev')}</div>
-    <div class="row"><time>23:35</time>${I('i-bowl')}<span class="g"><strong>Étkezés · tegnap</strong><small>Lazac · barna rizs · brokkoli</small></span>${I('i-chev','chev')}</div>
-  </section>
-  </div>${nav('nap')}<div class="toast" id="toast"></div>`;
-}
-
-/* ── EDZÉS · MAI ── */
-function edzes(){
-  const D=[['HÉT',21,'ok'],['KEDD',22,'ok'],['SZE',23,'–'],['MA',24,'•','on'],['PÉN',25,'•'],['SZO',26,'pihenő','rest'],['VAS',27,'pihenő','rest']];
-  const MUS=[['back-wide','Hát (széles)',6,0,'erős'],['back-mid','Hát (közép)',4,3,'közepes'],['shoulder-rear','Váll (hátsó)',3,0,'enyhe'],['biceps-brachialis','Kar',3,0,'enyhe']];
-  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
-  <section class="ds rise">${D.map(([l,n,m,k])=>`<button class="${k||''}" data-toast="${l} · szept ${n}."><small>${l}</small><b>${n}</b><i class="${m==='ok'?'ok':''}">${m==='ok'?I('i-check'):m}</i></button>`).join('')}</section>
-  <section class="hero hg rise" style="--i:1"><div class="top"><span class="eb">Ma 07:30 · MAV · Gym</span><span class="st plan">Betervezve</span></div>${I('i-dumb','art')}
-    <h1 class="t">Pull Day</h1><p class="lead">Hypertrophy 04 · 3. hét / 6</p>
-    <div class="chips"><span class="chip">5 gyakorlat</span><span class="chip">16 szett</span><span class="chip">~78 perc</span><span class="chip">Húzás</span></div>
-    <div class="mus" style="gap:6px">${['back-wide','back-mid','shoulder-rear','biceps-brachialis','traps'].map(k=>mchp(k,'sm')).join('')}</div>
-    <div class="cta"><button class="btn" style="flex:1" data-toast="Eligazítás">${I('i-dumb')}Indítsuk ${I('i-chev')}</button><button class="link" data-toast="Kihagyom">Kihagyom</button></div>
-  </section>
-  <section class="card rise ${V==='ajanlott'?'hg':''}" style="--i:2"><div class="hero-cs" style="gap:12px">${V==='ajanlott'?csepp('warn',57,{s:56,val:48}):''}<span><span class="eb">Mai állapot · a reggeli check-inből</span><h2 class="t" style="margin:4px 0 0">Könnyebb nap javasolt</h2></span></div><div style="height:8px"></div>
-    <div class="kv">
-      <span class="l">Kipihentség</span><span class="v"><b>4</b> / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:40%"></b></div>
-      <span class="l">Izomláz</span><span class="v"><b>7</b> / 10</span><div class="bar" style="--c:var(--bad)"><b style="--w:70%"></b></div>
-      <span class="l">Kedv</span><span class="v"><b>5</b> / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:50%"></b></div>
-    </div>
-    <div class="warnl">${I('i-warn')}<span><b>Rear Delt Fly</b> · fáj a vállad (5/10). Ma óvatosan: könnyebb súly, vagy hagyd ki.</span></div>
-    <div class="acts"><button class="btn sm" data-toast="Könnyítve: a múlt heti súly marad">Könnyítsük</button><button class="btn sm ghost" data-toast="Marad a terv">Maradjon a terv</button></div>
-    <p class="fn">Csak javaslat. Magától nem változtat semmit.</p>
-  </section>
-  <div class="sec rise" style="--i:3"><h2 class="t">Ma még jön</h2><span class="eb">További ma</span></div>
-  <section class="card rise" style="--i:4"><div class="hrow"><span class="eb">Röpi · 18:00</span><span class="st plan">Tervezett</span></div>
-    <div class="row" style="padding-top:4px">${I('i-ball')}<span class="g"><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó · BVSC csarnok</small></span></div>
-    <div class="acts" style="margin-top:6px"><button class="btn sm ghost" data-toast="Kihagyom">${I('i-skip')}Kihagyom</button><button class="btn sm" data-toast="Sport logolása">Logold a session-t ›</button></div>
-  </section>
-  <section class="card rise" style="--i:5"><div class="hrow"><span class="eb">Futás · tegnap 18:00</span><span class="st bad">Elmaradt</span></div>
-    <div class="row" style="padding-top:4px">${I('i-run')}<span class="g"><strong>Sprint-intervallum</strong><small>RPE 9–10 · 6 kör</small></span></div>
-    <div class="acts" style="margin-top:6px"><button class="btn sm ghost" data-toast="Kihagytam">${I('i-skip')}Kihagytam</button><button class="btn sm" data-toast="Futás pótlása">Pótold ›</button></div>
-  </section>
-  <section class="card rise" style="--i:6"><div class="ch">${I('i-flame')}<span><span class="eb">A mai keretedhez</span><h2 class="t" style="margin:2px 0 6px">Amit a mozgásod hozzáad</h2></span></div>
-    <span class="num">+0<small>kcal</small></span>
-    <div class="split"><b style="width:0%"></b><i style="flex:1"></i></div>
-    <div class="leg"><span><b>0 kcal</b> már a keretedben</span><span><b>+650 kcal</b> még jön, ha megcsinálod</span></div>
-    <p class="fn">Ugyanez a szám áll a Fuel keretében. Becslés, nem mérés.</p>
-  </section>
-  <section class="card rise" style="--i:7"><div class="ch">${I('i-muscle')}<span><span class="eb">Hatás az izomzatodra</span><h2 class="t" style="margin:2px 0 8px">Mit terhel a mai mozgásod</h2></span></div>
-    ${MUS.map(([k,l,p,d,w])=>`<div class="musrow">${mchp(k,'sm')}<span class="l">${l}</span><span class="v">${w} · <b>${d}</b> / ${p}</span><div class="bar" style="--c:${muscleColor(k)}"><b class="sec2" style="--w:${p/6*100}%"></b></div></div>`).join('')}
-    <p class="fn">A halvány sáv a tervezett terhelés, a teli a már megszolgált. Becslés, nem mérés.</p>
-  </section>
-  <div class="sec rise" style="--i:8"><h2 class="t">Vagy inkább</h2></div>
-  <div class="pair rise" style="--i:9"><button data-toast="Egyedi edzés">${I('i-dumb')}<small>GYORS INDÍTÁS</small><strong>Egyedi edzés</strong></button><button data-toast="Sport naplózása">${I('i-ball')}<small>GYORS INDÍTÁS</small><strong>Sport naplózása</strong></button></div>
-  <button class="lrow rise" style="--i:10;width:calc(100% - 32px)" data-toast="Mezociklus">${I('i-layers')}<span class="g">Hypertrophy 04 · MAV · 3/6</span>${I('i-chev','chev')}</button>
-  <button class="lrow rise" style="--i:11;width:calc(100% - 32px)" data-toast="Sportjaid">${I('i-ball')}<span class="g">Sportjaid és szezonod</span>${I('i-chev','chev')}</button>
-  <button class="dashadd rise" style="--i:12" data-toast="Saját edzés">+ Saját edzés</button>
-  </div>${nav('edzes')}<div class="toast" id="toast"></div>`;
-}
-
-
-/* ── Ajánlott · 4. kör: a csendes Nap és Edzés ── */
-function nap2(){
-  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
-  <div class="sec rise" style="padding-bottom:4px"><span class="eb">Szerda · október 7.</span><span class="eb">4 / 7 jel</span></div>
-  <section class="card hg hero-n rise" style="--i:1">${csepp('ok',57,{s:128,val:72,label:'MA'})}
-    <div style="flex:1;min-width:0"><p class="verdict">Ma jó nap egy közepes edzéshez.</p>
-      <p class="txt sub">Nyugodt ébredés, 7 ó 40 p alvás. Két check-in még hátravan.</p></div>
-  </section>
-  <div class="qrow rise" style="--i:2"><button data-toast="Check-in">${I('i-pulse')}Check-in</button><button data-toast="Gyors logolás">${I('i-plus')}Logolás</button><button data-toast="Napló">${I('i-pen')}Napló</button><button class="more" data-toast="Aktivitás · Chat · Életjelek">Több ›</button></div>
-  <section class="open rise" style="--i:3"><span class="eb">Üzemanyag · a hét</span>
-    <div class="big"><span class="num">2 060</span><span class="v">/ 3 100 kcal ma · 1 040 van még</span></div>
-    ${wkBars()}
-    <p class="fn" style="margin-top:4px">Egy oszlop egy nap, a három szín a három makró. Ha a nap célja megvan, az oszlop elhallgat: szürke lesz. A szaggatott vonal a napi keret.</p>
-    <div style="height:6px"></div>
-    <div class="ln"><span class="g">Fehérje</span><span class="v"><b>148</b> / 220 g</span><div class="bar" style="--c:var(--protein)"><b style="--w:67%"></b></div></div>
-    <div class="ln"><span class="g">Szénhidrát</span><span class="v"><b>224</b> / 380 g</span><div class="bar" style="--c:var(--carb)"><b style="--w:59%"></b></div></div>
-    <div class="ln"><span class="g">Zsír</span><span class="v"><b>58</b> / 95 g</span><div class="bar" style="--c:var(--fat)"><b style="--w:61%"></b></div></div>
-  </section>
-  <section class="open rise" style="--i:4;padding-top:12px;padding-bottom:12px"><div class="ln" style="border-top:0;padding:4px 0">${I('i-cal')}<span class="g">Heti egyeztetés<span class="dot"></span><small>vasárnap · 1 javaslat vár · 3 lépés, kb. 2 perc</small></span>${I('i-chev','chev')}</div></section>
-  <section class="open rise" style="--i:4"><span class="eb">Megfigyelés</span>
-    <p class="txt">Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, még kevés. Figyeljem tovább?</p>
-    <div class="act"><button class="btn sm" data-toast="Megjegyeztem: figyelem tovább">Igen, figyeld</button><button class="lk" data-toast="Megjegyeztem">Nem stimmel</button><button class="lk" data-toast="Mezo · Chat">Mesélj erről</button></div>
-  </section>
-  <section class="open rise" style="--i:5"><span class="eb">Mai pillanatok</span>
-    <div class="ln"><time>13:00</time>${I('i-bowl')}<span class="g">Csirke · édesburgonya · spenót<small>Étkezés</small></span>${I('i-chev','chev')}</div>
-    <div class="ln"><time>09:15</time>${I('i-bowl')}<span class="g">Túrós zabkása · áfonyával<small>Étkezés</small></span>${I('i-chev','chev')}</div>
-    <div class="ln"><time>07:10</time>${I('i-pulse')}<span class="g">Nyugodt ébredés · pihenve<small>Check-in · reggel</small></span>${I('i-chev','chev')}</div>
-    <div class="ln"><time>23:35</time>${I('i-bowl')}<span class="g">Lazac · barna rizs · brokkoli<small>Étkezés · tegnap</small></span>${I('i-chev','chev')}</div>
-  </section>
-  </div>${nav('nap')}<div class="toast" id="toast"></div>`;
-}
-function edzes2(){
-  const D=[['HÉT',21,'ok'],['KEDD',22,'ok'],['SZE',23,'–'],['MA',24,'•','on'],['PÉN',25,'•'],['SZO',26,'pihenő','rest'],['VAS',27,'pihenő','rest']];
-  const MUS=[['back-wide','Hát (széles)',6,0],['back-mid','Hát (közép)',4,3],['shoulder-rear','Váll (hátsó)',3,0],['biceps-brachialis','Kar',3,0]];
-  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
-  <section class="ds rise">${D.map(([l,n,m,k])=>`<button class="${k||''}" data-toast="${l} · szept ${n}."><small>${l}</small><b>${n}</b><i class="${m==='ok'?'ok':''}">${m==='ok'?I('i-check'):m}</i></button>`).join('')}</section>
-  <section class="hero hg rise" style="--i:1"><div class="top"><span class="eb">Ma 07:30 · Gym · Hypertrophy 04 · 3/6</span></div>${I('i-dumb','art')}
-    <h1 class="t">Pull Day</h1>
-    <div class="chips"><span class="chip">5 gyakorlat</span><span class="chip">16 szett</span><span class="chip">~78 perc</span></div>
-    <div class="mus" style="gap:6px">${['back-wide','back-mid','shoulder-rear','biceps-brachialis','traps'].map(k=>mchp(k,'sm')).join('')}</div>
-    <div class="cta"><button class="btn" style="flex:1" data-toast="Eligazítás">${I('i-dumb')}Indítsuk ${I('i-chev')}</button><button class="lk" data-toast="Kihagyom">Kihagyom</button></div>
-  </section>
-  <section class="card hg rise" style="--i:2;margin-top:0"><div class="hero-cs" style="gap:12px">${csepp('warn',57,{s:56,val:48})}<span style="flex:1"><p class="verdict" style="font-size:17px;margin:0 0 2px">Könnyebb nap javasolt</p><p class="txt sub">Izomláz 7/10, kipihentség 4/10. A jobb vállad fáj: a Rear Delt Fly-t könnyebb súllyal, vagy hagyd ki.</p></span></div>
-    <div class="act" style="margin-top:10px"><button class="btn sm" data-toast="Könnyítve: a múlt heti súly marad">Könnyítsük</button><button class="lk" data-toast="Marad a terv">Maradjon a terv</button></div>
-  </section>
-  <section class="open rise" style="--i:3"><span class="eb">Ma még jön</span>
-    <div class="ln">${I('i-ball')}<span class="g">Röpi edzés · BVSC<small>18:00 · 90 perc</small></span><span class="st q">Tervezett</span></div>
-    <div class="ln">${I('i-run')}<span class="g">Sprint-intervallum<small>tegnap · 6 kör · RPE 9–10</small></span><span class="st bad">Elmaradt</span></div>
-    <div class="act" style="margin-top:8px"><button class="lk" data-toast="Futás pótlása">Pótold a futást</button><button class="lk" data-toast="Sport logolása">Logold a röpit</button></div>
-  </section>
-  <section class="open rise" style="--i:4"><span class="eb">Mai terhelés</span>
-    <div class="big"><span class="num">+650</span><span class="v">kcal jön a kereted fölé, ha megcsinálod</span></div>
-    <div style="height:6px"></div>
-    ${MUS.map(([k,l,p,d])=>`<div class="ln">${mchp(k,'sm')}<span class="g">${l}</span><span class="v"><b>${d}</b> / ${p}</span><div class="bar q"><b style="--w:${p/6*100}%"></b></div></div>`).join('')}
-    <p class="fn">Becslés, nem mérés. Ugyanez a szám áll a Fuel keretében.</p>
-  </section>
-  <section class="open rise" style="--i:5"><span class="eb">Vagy inkább</span>
-    <div class="ln">${I('i-dumb')}<span class="g">Egyedi edzés</span>${I('i-chev','chev')}</div>
-    <div class="ln">${I('i-ball')}<span class="g">Sport naplózása</span>${I('i-chev','chev')}</div>
-    <div class="ln">${I('i-layers')}<span class="g">Mezociklus<small>Hypertrophy 04 · MAV · 3. hét / 6</small></span>${I('i-chev','chev')}</div>
-  </section>
-  </div>${nav('edzes')}<div class="toast" id="toast"></div>`;
-}
-
-
-/* ── MacroFactor-minta: heti makró-oszlopok; teljesült nap semleges ── */
+/* ── chrome: bottom nav — domain mark (csepp, --dom tint) + the domain's tabs ── */
+const DOMS=[['nap','Nap','#CFA14A'],['edzes','Edzés','#CF6B5E'],['fuel','Fuel','#8FB49A'],['mezo','Mezo','#AB9FD2'],['en','Én','#D98B9D']];
+function nav(d,active){const reg=REG[d]; if(!reg) return '';
+  return `<nav class="nav"><button class="dmark" data-switcher aria-label="Területváltó">${csepp('ok',57,{s:36,form:'ok',color:'var(--dom)'})}<small>${DOMS.map(([k])=>`<b class="${k===d?'on':''}"></b>`).join('')}</small></button>
+  ${reg.tabs.map(([l,ic,route])=>`<button class="tb ${route===active?'on':''}" data-go="${route}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`}
+const switcher=()=>`<div class="sw-sheet" id="swsheet"><small class="eb">Területváltó</small><div class="sw-grid">${DOMS.map(([k,n,c])=>`<button class="swb ${k===D?'on':''}" data-dom="${k}" style="--dom:${c}">${csepp('ok',57,{s:40,form:'ok',color:c,alive:false})}<span>${n}</span></button>`).join('')}</div></div>`;
+/* ── page helpers ── */
+const back=(label='Vissza',route='mai')=>`<div class="backrow rise"><button class="backbtn" data-go="${route}"><b>‹</b>${label}</button></div>`;
+const sec=(eb,right='')=>`<div class="sec rise"><span class="eb">${eb}</span>${right?`<span class="eb">${right}</span>`:''}</div>`;
+const page=(inner,d,active,{pad=''}={})=>`<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll" ${pad?`style="padding-bottom:${pad}"`:''}>${header()}${inner}</div>${nav(d,active)}<div class="toast" id="toast"></div><div class="sheet" id="sheet"></div><div class="scrim" id="scrim"></div>`;
+let CSS_SEEN=new Set();function css(txt){const k=txt.slice(0,60);if(CSS_SEEN.has(k))return;CSS_SEEN.add(k);const st=document.createElement('style');st.textContent=txt;document.head.appendChild(st)}
 function wkBars(){
   const W=[['H',[.26,.52,.22],.98,1],['K',[.28,.5,.22],.9,0],['Sze',[.24,.54,.22],1.02,1],['Cs',[.27,.51,.22],.72,0],['P',[.3,.48,.22],.66,0,'today'],['Szo',null,0,0],['V',null,0,0]];
   return `<div class="wk">${W.map(([l,m,h,met,t])=>m?`<span class="d ${met?'met':''} ${t||''}" style="--h:${Math.round(h*82)}%"><i class="p" style="--f:${m[0]}"></i><i class="c" style="--f:${m[1]}"></i><i class="f" style="--f:${m[2]}"></i></span>`:`<span class="d empty" style="--h:82%"></span>`).join('')}</div>
   <div class="wkl">${W.map(([l,,,,t])=>`<span>${t?`<b>${l}</b>`:l}</span>`).join('')}</div>`;
 }
-/* ── BWS-minta: edzés közben — súly · ism · erő, javaslat a sorban, automatikus pihenő ── */
-function session2(){
-  const row=(n,kg,r,e,st)=>st==='done'?`<span class="n">${n}</span><span class="v done">${kg}</span><span class="v done">${r}</span><span class="v done">${e}</span><span class="tk">${I('i-check')}</span>`
-    :st==='cur'?`<span class="n">${n}</span><span class="in ph">${kg}</span><span class="in ph">${r}</span><span class="in ph">${e}</span><button class="tk go" data-toast="Szett kész · a pihenő indul" aria-label="Szett kész">${I('i-check')}</button>`
-    :`<span class="n">${n}</span><span class="up">${kg}</span><span class="up">${r}</span><span class="up">${e}</span><span></span>`;
-  const head=`<span class="h">#</span><span class="h">kg</span><span class="h">ism</span><span class="h">erő</span><span></span>`;
-  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll" style="padding-bottom:170px">${header()}
-  <div class="sec rise" style="padding-bottom:6px"><span class="eb">Pull Day · 3. hét / 6</span><span class="eb">7 / 16 szett · 31 perc</span></div>
-  <div class="pb rise">${[1,1,.5,0,0].map((w,i)=>`<i><b style="--w:${w*100}%"></b></i>`).join('')}</div>
-  <section class="ex hg rise" style="--i:1"><div class="exh">${mchp('back-wide')}<span class="g"><strong>Húzódzkodás (súlyozott)</strong><small>múlt hét 10 kg × 8 · ma a javaslat <b>12,5 kg × 8</b></small></span></div>
-    <div class="sets">${head}${row(1,'12,5','8','7','done')}${row(2,'12,5','8','8','done')}${row(3,'12,5','8','8','cur')}${row(4,'12,5','7–8','8–9','up')}</div>
-    <div class="tech">${I('i-book')}<span class="g"><b>Technika</b> · Beállás · Végrehajtás · Gyakori hibák</span>${I('i-chev','chev')}</div>
-  </section>
-  <section class="ex rise" style="--i:2"><div class="exh">${mchp('back-mid','sm')}<span class="g"><strong>Döntött törzsű evezés</strong><small>múlt hét 70 kg × 10 · ma <b>72,5 kg × 10</b></small></span></div>
-    <div class="sets">${head}${row(1,'72,5','10','8','up')}${row(2,'72,5','10','8','up')}${row(3,'72,5','10','9','up')}</div>
-  </section>
-  <section class="ex rise" style="--i:3"><div class="exh">${mchp('shoulder-rear','sm')}<span class="g"><strong>Rear Delt Fly</strong><small>könnyítve a váll miatt · <b>10 kg × 12</b>, a múlt heti 12,5 helyett</small></span></div>
-    <div class="sets">${head}${row(1,'10','12','7','up')}${row(2,'10','12','7','up')}${row(3,'10','12','8','up')}</div>
-  </section>
-  <section class="ex rise" style="--i:4"><div class="exh">${mchp('biceps-brachialis','sm')}<span class="g"><strong>Kalapácsbicepsz</strong><small>múlt hét 16 kg × 12 · ma <b>16 kg × 13</b></small></span></div>
-    <div class="sets">${head}${row(1,'16','13','8','up')}${row(2,'16','13','8','up')}${row(3,'16','12–13','9','up')}</div>
-  </section>
-  <section class="ex rise" style="--i:5"><div class="exh">${mchp('traps','sm')}<span class="g"><strong>Vállemelés</strong><small>múlt hét 30 kg × 15 · ma <b>30 kg × 15</b></small></span></div>
-    <div class="sets">${head}${row(1,'30','15','8','up')}${row(2,'30','15','8','up')}${row(3,'30','15','9','up')}</div>
-  </section>
-  <p class="fn p16 rise" style="--i:6;padding:0 16px">A harmadik mező beírásakor a pihenő magától indul. A javaslat a múlt hetedből jön; felülírhatod.</p>
-  </div>
-  <div class="rest rise" style="--i:2"><div class="ring sm" style="--c:var(--acc)"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="38"/><circle class="p" cx="44" cy="44" r="38" style="--d:${(circ(38)*.62).toFixed(1)}"/></svg></div><span class="g"><strong>01:12</strong><small>pihenő · 90 mp az ajánlott</small></span><button class="pill" data-toast="+15 mp">+15</button><button class="pill" data-toast="Pihenő átugorva">Tovább</button></div>
-  ${nav('edzes')}<div class="toast" id="toast"></div>`;
-}
 
-/* ── notes column (owner-facing, Hungarian) ── */
-const NOTES={
-  jelenlegi:`<h2>Jelenlegi · Üveg</h2><p>Az élő prototípus, változtatás nélkül, összehasonlításnak. Üvegdobozok színes kerettel, fénylő glória, színes köd a háttérben, 3D ikonok, Boop a Nap oldal közepén és az alsó menüben.</p>
-  <h2>Ami játékossá teszi</h2><ul><li>Öt pasztellszín egyszerre (korall, zsálya, levendula, rózsa, borostyán), díszként, nem jelentésként.</li><li>Fényes, 3D, játékszerű ikonok és figurák.</li><li>Puha, kerek, lebegő formák, csillogás.</li></ul>`,
-  sotet:`<h2>Klinikai sötét</h2><p>A mostani sötét alap marad, de hűvös grafit lesz, üveg és köd nélkül. A kártyák laposak, vékony kerettel. <b>Egy</b> kiemelő szín van (acélkék), a többi szín csak állapotot jelent: zöld jó, borostyán figyelj, vörös baj.</p>
-  <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
-  <h2>Mi változott</h2><ul><li>A Boop helyén a Nap oldalon egy állapot-gyűrű és egy mondat áll: hogy vagy ma, mi van még hátra.</li><li>Az öt lebegő gomb egy sor kis, egyforma műveletté lett.</li><li>A makró-reaktor három vékony sáv lett, számmal és céllal.</li><li>Vékony vonalas ikonok a 3D helyett. Az alsó menüben a Boop helyén a terület jele áll.</li><li>Számok és címkék műszer-betűvel (egyforma szélességű számjegyek), mint egy leletben.</li></ul>
-  <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
-  ajanlott:`<h2>Ajánlott</h2><p>Ez a három kör összegzése: a <b>Klinikai sötét</b> hűvös grafit alapja és fegyelme, a <b>mostani 3D ikonok</b> mint az app lelke, és oldalanként <b>egy</b> üveg hangsúlykártya (a Nap oldalon a mai állapotod, az Edzésen a mai edzés). A háttérben egészen halvány, hűvös derengés, narancs nélkül.</p>
-  <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
-  <h2>7. kör · MacroFactor és Built With Science minták</h2><ul><li><b>Heti makró-oszlopok</b> (MacroFactor): hét nap egymás mellett, a három makró színe; ha a nap célja megvan, az oszlop elhallgat (szürke). Nincs pipa, nincs ítélet.</li><li><b>Heti egyeztetés</b> sor kis ponttal (MacroFactor): heti, lépésekre bontott, kihagyható beszélgetés a napi pontszám helyett.</li><li><b>Edzés · közben</b> fül (Built With Science): súly · ismétlés · erő egy sorban, a javasolt súly a sorban, a harmadik mező után magától induló pihenő; technika-lap fix szerkezettel (Beállás · Végrehajtás · Gyakori hibák). Az aktuális gyakorlat üvegben, a többi nyitott.</li></ul>
-  <h2>6. kör · acél ikonok + tiszta fehér</h2><p>A 3D ikonok megmaradnak, de az egész készlet <b>egy hűvös acélkék családba</b> van hangolva: ugyanaz a forma és fény, csak nem tarka. Így illeszkednek a klinikai alaphoz, sötéten és fehéren is. Az <b>eredeti ikonszínek</b> pipával összehasonlíthatod. Az izomtérkép és a csepp megtartja a saját színét, mert ott a szín jelentés. A világos mód alapja most <b>tiszta fehér</b>, a kártyák alig szürkék.</p>
-  <h2>5. kör · világos pár + makrószínek</h2><p>Fent a <b>világos</b> pipával az Ajánlott világos párja: fehér alap, tinta-kék szöveg, mély kék kiemelés, ugyanazok az állapot- és kategóriaszínek sötétebben. A makrók visszakapták a saját színüket, tompítva: a kategória színe állandó jelentés, nem dísz.</p>
-  <h2>4. kör · csend</h2><ul><li><b>Négy szövegszerep:</b> cím, szöveg, kis műszer-címke, nagy szám. Chip és lábjegyzet csak ahol pótolhatatlan.</li><li><b>Doboz csak az üvegnek:</b> a hős-kártyák keretben, minden más nyitott lista vékony vonallal.</li><li><b>Két árnyalat:</b> alap és vonalszín.</li><li><b>Szín = jelentés:</b> ami rendben van, szürke sáv; színt csak az kap, ami figyelmet kér. Acélkék csak a fő gombon.</li><li><b>Egy dolgot egyszer:</b> a csepp maga „a napod”, a cím eltűnt.</li></ul>
-  <h2>3. kör · az élő csepp</h2><p>Az app jele: egy arc nélküli, lélegző, folyadékkal töltődő forma. Nagyban a Nap tetején (ez a mai állapotod otthona), kicsiben minden fejlécben és az alsó menü terület-jelén. A <b>Jelek</b> fülön egymás mellett a három állapot, a töltöttség, a méretek és a csapat testvérformái.</p>
-  <h2>2. kör · a hét javítás</h2><ul><li><b>A szám a hős:</b> a Nap oldalon a 72 nagy gyűrűben, karnyújtásnyiról olvasható.</li><li><b>Ítélet, nem leírás:</b> „Ma jó nap egy közepes edzéshez.” Ez a Boop-edző hangja, arc nélkül.</li><li><b>Kevesebb gyors művelet:</b> három fő gomb egy csendes sorban, a többi a „Több” mögött.</li><li><b>Fejléc:</b> egy kis jel és a név csendesebben. A névről később döntünk.</li><li><b>Két üveg az Edzésen:</b> a mai edzés és a „Könnyebb nap javasolt” tanács. Ez a nap két fontos dolga.</li><li><b>Terület-szín csak az alsó menü jelén</b> (Nap borostyán, Edzés korall), minden más semleges.</li><li><b>Láthatóbb derengés</b> a háttérben, a kártyák nem világítanak jobban tőle.</li></ul>
-  <h2>A szabályok</h2><ul><li>Egy kiemelő szín (acélkék) az egész appban; a terület nem kap saját színt. A többi szín csak állapot: zöld jó, borostyán figyelj, vörös baj.</li><li>Üveg = rangsor: oldalanként egy kártya, amelyik a legfontosabb. Minden más lapos, vékony kerettel.</li><li>Az ikonkészlet marad, nem kell újrarajzolni; csak a figurák (Boop) cserélődnek később.</li><li>Számok és címkék műszer-betűvel, egyforma számjegy-szélességgel.</li></ul>
-  <h2>Hangulat</h2><p>Oura fegyelme a mostani app ikonjaival: komoly, de nem száraz.</p>`,
-  hibrid:`<h2>Hibrid meleg</h2><p>A mostani meleg grafit alap és a halvány színes derengés marad, az ikonok és figurák helyett viszont vonalas jelek. Az üveg nem tűnik el: <b>egy</b> hangsúlyos kártya viseli oldalanként (a Nap oldalon a mai állapotod, az Edzésen a mai edzés), a többi kártya nyugodt, lapos, vékony kerettel.</p>
-  <div class="pal"><span><i class="sw" style="background:#141210"></i>alap</span><span><i class="sw" style="background:#E0A95A"></i>Nap-szín</span><span><i class="sw" style="background:#E8785A"></i>Edzés-szín</span><span><i class="sw" style="background:#8FB49A"></i>jó</span><span><i class="sw" style="background:#E0A95A"></i>figyelj</span><span><i class="sw" style="background:#E8785A"></i>baj</span></div>
-  <h2>Mi változott</h2><ul><li>Egy terület-szín oldalanként (Nap: borostyán, Edzés: korall), a többi szín csak állapot. Nincs öt pasztell egyszerre.</li><li>Az üveg a rangsor eszköze: ami a legfontosabb, az üvegben van és világít; minden más csendes.</li><li>A fejléc, az alsó menü és a derengés a mostani appból ismerős, így nem idegen.</li></ul>
-  <h2>Hangulat</h2><p>A mostani app lelke egy felnőtt műszerfalban: meleg, de rendezett. A legkisebb váltás a három közül.</p>`,
-  vilagos:`<h2>Lelet világos</h2><p>Papírfehér alap, tinta-szürke szöveg, egyetlen mély zöldeskék kiemelés. A címek komoly talpas betűvel, a számok és címkék műszer-betűvel: olyan, mint egy jól szedett orvosi lelet.</p>
-  <div class="pal"><span><i class="sw" style="background:#F7F7F4"></i>alap</span><span><i class="sw" style="background:#FFFFFF"></i>kártya</span><span><i class="sw" style="background:#1F6F6A"></i>kiemelés</span><span><i class="sw" style="background:#2E8A68"></i>jó</span><span><i class="sw" style="background:#B07A1E"></i>figyelj</span><span><i class="sw" style="background:#B5473B"></i>baj</span></div>
-  <h2>Mi változott</h2><ul><li>Ugyanaz az elrendezés és tartalom, mint a sötét klinikainál, csak a világos alapon.</li><li>A talpas címbetű adja a felnőtt, „rendelő" hangot; minden más vonalas és visszafogott.</li><li>A kártyáknak alig van árnyéka; a hierarchiát a betűméret és a vékony vonalak adják.</li></ul>
-  <h2>Hangulat</h2><p>Function Health és az Apple Egészség világa: a legunisexebb és a legfelnőttebb. Ez a legnagyobb váltás: az egész app megfordul sötétről világosra.</p>`};
-
-/* ── router ── */
-let V='ajanlott',D='nap';
+/* ── registry + router ── */
+const REG={};
+function register(d,def){REG[d]=def; if(def.css) css(def.css);}
+let V='ajanlott',D='nap',R='mai',ARG='';
+let LIGHT=false,WARM=false,HIST=[];
+function go(route){if(!route)return;HIST.push(R+(ARG?'.'+ARG:''));const [r,...a]=route.split('.');R=r;ARG=a.join('.');render()}
+function goBack(){const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=a.join('.');render()}
 function render(){
   const ph=$('#phone');
-  if((D==='jelek'||D==='session')&&V==='jelenlegi')V='ajanlott';
-  if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${D}.html#mai"></iframe>`}
-  else{ph.dataset.v=V;ph.dataset.d=D==='jelek'?'nap':D==='session'?'edzes':D;if(V==='ajanlott'&&LIGHT)ph.dataset.t='light';else ph.removeAttribute('data-t');ph.classList.toggle('warm',WARM);ph.innerHTML=D==='jelek'?jelek():D==='session'?(V==='ajanlott'?session2():edzes()):V==='ajanlott'?(D==='nap'?nap2():edzes2()):(D==='nap'?nap():edzes())}
-  $('#notes').innerHTML=NOTES[V];
+  if(D==='jelek'&&V==='jelenlegi')V='ajanlott';
+  if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.classList.remove('warm');
+    const file=D==='jelek'?'nap':D; ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${file}.html#${R}${ARG?'/'+ARG:''}"></iframe>`}
+  else{ph.dataset.v='ajanlott';ph.dataset.d=D==='jelek'?'nap':D;if(LIGHT)ph.dataset.t='light';else ph.removeAttribute('data-t');ph.classList.toggle('warm',WARM);
+    const reg=REG[D]; const fnr=reg&&(reg.routes[R]||reg.routes.mai);
+    ph.innerHTML=fnr?fnr(ARG):`<div class="scroll">${header()}<p class="p16 txt" style="padding:40px 16px;color:var(--sub)">Ez a terület (${D}) még nincs kidolgozva.</p></div>`;
+    if(reg&&reg.after)reg.after(R,ARG);}
+  const reg=REG[D]; $('#notes').innerHTML=(reg&&reg.notes)||'';
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
-  history.replaceState(null,'',`#${V}-${D}`);
+  history.replaceState(null,'',`#${V==='jelenlegi'?'j':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
+  $('#phone .scroll')?.scrollTo(0,0);
 }
-function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid|ajanlott)-(nap|edzes|jelek|session)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
+function fromHash(){const m=/^#(j|a)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
+function openSheet(html){const s=$('#sheet');if(!s)return;s.innerHTML=`<div class="sheet-grab"></div>${html}`;s.classList.add('on');$('#scrim').classList.add('on')}
+function closeSheet(){$('#sheet')?.classList.remove('on');$('#scrim')?.classList.remove('on');$('#swsheet')?.remove()}
 document.addEventListener('click',e=>{
   const v=e.target.closest('#vseg button');if(v){V=v.dataset.v;render();return}
-  const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;render();return}
+  const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;R='mai';ARG='';HIST=[];render();return}
+  const dm=e.target.closest('[data-dom]');if(dm){D=dm.dataset.dom;R='mai';ARG='';HIST=[];render();return}
+  if(e.target.closest('[data-switcher]')){e.preventDefault();$('#phone').insertAdjacentHTML('beforeend',switcher());$('#scrim').classList.add('on');return}
+  if(e.target.id==='scrim'||e.target.closest('[data-close]')){closeSheet();return}
+  const sh=e.target.closest('[data-sheet]');if(sh){e.preventDefault();const reg=REG[D];const f=reg&&reg.sheets&&reg.sheets[sh.dataset.sheet];if(f)openSheet(f(sh.dataset.arg||''));else toast(sh.dataset.sheet);return}
+  const bk=e.target.closest('[data-back]');if(bk){e.preventDefault();goBack();return}
+  const g=e.target.closest('[data-go]');if(g){e.preventDefault();closeSheet();go(g.dataset.go);return}
   const t=e.target.closest('[data-toast]');if(t){e.preventDefault();toast(t.dataset.toast)}
 });
 let tt;function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1800)}
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
-$('#ikon3d').addEventListener('change',e=>{IK3D=e.target.checked;render()});
-let LIGHT=false,WARM=false;$('#meleg').addEventListener('change',e=>{WARM=e.target.checked;render()});$('#vilagos').addEventListener('change',e=>{LIGHT=e.target.checked;render()});
-if(/vilagos/.test(location.search)){LIGHT=true;$('#vilagos').checked=true}
-if(/ikon3d/.test(location.search)){IK3D=true;$('#ikon3d').checked=true}
+$('#meleg').addEventListener('change',e=>{WARM=e.target.checked;render()});
+$('#vilagos').addEventListener('change',e=>{LIGHT=e.target.checked;render()});
 if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
+if(/vilagos/.test(location.search)){LIGHT=true;$('#vilagos').checked=true}
 window.addEventListener('hashchange',()=>{fromHash();render()});
-fromHash();render();
+window.K={I,T,ring,csepp,mchp:(...a)=>mchp(...a),muscleColor:(k)=>muscleColor(k),header,nav,back,sec,page,css,wkBars,register,go,toast,openSheet,closeSheet,esc,circ,get D(){return D},get R(){return R},get ARG(){return ARG},get LIGHT(){return LIGHT}};
+window.addEventListener('DOMContentLoaded',()=>{fromHash();render()});
 </script>
+<script src="csepp/nap.js"></script>
+<script src="csepp/edzes.js"></script>
+<script src="csepp/fuel.js"></script>
+<script src="csepp/mezo.js"></script>
+<script src="csepp/en.js"></script>
+<script src="csepp/jelek.js"></script>
 </body>
 </html>
