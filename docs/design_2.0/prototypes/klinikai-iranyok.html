@@ -248,6 +248,42 @@ svg.ic.td{stroke:none;width:26px;height:26px;filter:drop-shadow(0 4px 5px rgba(0
 .phone[data-v="ajanlott"] .hero .chips .chip{background:transparent;border:0;padding:0;color:var(--sub);font-size:11.5px}
 .phone[data-v="ajanlott"] .hero .chips{gap:0 14px}
 
+
+/* ── Makró-kategóriaszínek (állandó, tompa) ── */
+.phone[data-v="ajanlott"]{--protein:#D98B86;--carb:#D9A86B;--fat:#C9B560}
+/* ══ AJÁNLOTT · VILÁGOS — fehér-kék klinikai pár ══ */
+.phone[data-v="ajanlott"][data-t="light"]{
+  --page:#F4F7FA; --ink:#15222C; --sub:#5B6B78; --faint:#8B98A3; --hair:rgba(21,34,44,.10);
+  --card:#FFFFFF; --card2:#EAF0F5; --acc:#2E6FA8; --acc-ink:#FFFFFF;
+  --ok:#2F8A6A; --warn:#B07A1E; --bad:#B5473B; --info:#2E6FA8;
+  --protein:#C9655F;--carb:#B9853E;--fat:#A8923A;
+  box-shadow:0 40px 90px -30px rgba(21,34,44,.35),0 0 0 10px #FFFFFF,0 0 0 11px rgba(21,34,44,.10);
+}
+.phone[data-v="ajanlott"][data-t="light"] .aurora i{opacity:.55;filter:blur(70px)}
+.phone[data-v="ajanlott"][data-t="light"] .aurora i:nth-child(1){background:#CFE3F2}
+.phone[data-v="ajanlott"][data-t="light"] .aurora i:nth-child(2){background:#DDE8F5}
+.phone[data-v="ajanlott"][data-t="light"] .aurora i:nth-child(3){background:#D6EEE8}
+.phone[data-v="ajanlott"][data-t="light"] .aurora i:nth-child(4){background:#E3EAF4}
+.phone[data-v="ajanlott"][data-t="light"] .hd{background:linear-gradient(180deg,rgba(244,247,250,.94) 60%,rgba(244,247,250,.6))}
+.phone[data-v="ajanlott"][data-t="light"] .hb{background:#fff;border-color:var(--hair);box-shadow:0 1px 2px rgba(21,34,44,.06)}
+.phone[data-v="ajanlott"][data-t="light"] .nav{background:rgba(255,255,255,.82);border-color:var(--hair);box-shadow:0 14px 30px -16px rgba(21,34,44,.35)}
+.phone[data-v="ajanlott"][data-t="light"] .card{background:#fff;border-color:var(--hair)}
+.phone[data-v="ajanlott"][data-t="light"] .hg{
+  background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--c) 14%,transparent),transparent 62%),linear-gradient(160deg,rgba(255,255,255,.92),rgba(240,245,250,.8));
+  box-shadow:0 18px 34px -18px rgba(21,34,44,.35),0 0 24px -8px color-mix(in srgb,var(--c) 30%,transparent),inset 0 1px 0 #fff}
+.phone[data-v="ajanlott"][data-t="light"] .hg::before{background:linear-gradient(145deg,color-mix(in srgb,var(--c) 70%,transparent) 0%,rgba(255,255,255,.9) 30%,color-mix(in srgb,var(--c) 20%,transparent) 62%,color-mix(in srgb,var(--c) 55%,transparent) 100%)}
+.phone[data-v="ajanlott"][data-t="light"] .bar.q b{background:rgba(21,34,44,.22)}
+.phone[data-v="ajanlott"][data-t="light"] .st.q{background:rgba(21,34,44,.05)}
+.phone[data-v="ajanlott"][data-t="light"] svg.ic.td{filter:drop-shadow(0 3px 5px rgba(21,34,44,.28))}
+.phone[data-v="ajanlott"][data-t="light"] .csepp .val{color:#fff}
+.phone[data-v="ajanlott"][data-t="light"] .csepp .shell{fill:color-mix(in srgb,var(--c) 8%,#fff);stroke:color-mix(in srgb,var(--c) 45%,rgba(21,34,44,.2))}
+.phone[data-v="ajanlott"][data-t="light"] .mchp{background:radial-gradient(circle at 35% 28%,#fff,color-mix(in srgb,var(--c) 18%,#EAF0F5));box-shadow:inset 0 0 0 1px var(--hair)}
+.phone[data-v="ajanlott"][data-t="light"] .ds button.on{background:#fff}
+.phone[data-v="ajanlott"][data-t="light"] .jl .cell{background:#fff}
+.phone[data-v="ajanlott"][data-t="light"] .toast{background:var(--ink);color:#fff}
+.phone[data-v="ajanlott"][data-t="light"] .wm.mark{color:var(--ink)}
+.phone[data-v="ajanlott"][data-t="light"] .dmark i{background:color-mix(in srgb,var(--dom) 14%,#fff)}
+
 /* ── header ── */
 .hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
 .wm{flex:1;font-family:var(--disp);font-weight:var(--dispw);font-size:21px;letter-spacing:var(--dispt)}
@@ -1530,6 +1566,7 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
     <button data-d="edzes">Edzés · Mai</button>
     <button data-d="jelek">Jelek</button>
   </div>
+  <label><input type="checkbox" id="vilagos"> világos (fehér-kék)</label>
   <label><input type="checkbox" id="ikon3d"> mostani 3D ikonok</label>
   <label><input type="checkbox" id="still"> mozgás nélkül</label>
 </div>
@@ -1829,9 +1866,9 @@ function nap2(){
   <section class="open rise" style="--i:3"><span class="eb">Üzemanyag</span>
     <div class="big"><span class="num">2 060</span><span class="v">/ 3 100 kcal · 1 040 van még</span></div>
     <div class="bar q" style="margin:10px 0 12px"><b style="--w:66%"></b></div>
-    <div class="ln"><span class="g">Fehérje</span><span class="v"><b>148</b> / 220 g</span><div class="bar q"><b style="--w:67%"></b></div></div>
-    <div class="ln"><span class="g">Szénhidrát</span><span class="v"><b>224</b> / 380 g</span><div class="bar q"><b style="--w:59%"></b></div></div>
-    <div class="ln"><span class="g">Zsír</span><span class="v"><b>58</b> / 95 g</span><div class="bar q"><b style="--w:61%"></b></div></div>
+    <div class="ln"><span class="g">Fehérje</span><span class="v"><b>148</b> / 220 g</span><div class="bar" style="--c:var(--protein)"><b style="--w:67%"></b></div></div>
+    <div class="ln"><span class="g">Szénhidrát</span><span class="v"><b>224</b> / 380 g</span><div class="bar" style="--c:var(--carb)"><b style="--w:59%"></b></div></div>
+    <div class="ln"><span class="g">Zsír</span><span class="v"><b>58</b> / 95 g</span><div class="bar" style="--c:var(--fat)"><b style="--w:61%"></b></div></div>
   </section>
   <section class="open rise" style="--i:4"><span class="eb">Megfigyelés</span>
     <p class="txt">Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, még kevés. Figyeljem tovább?</p>
@@ -1888,6 +1925,7 @@ const NOTES={
   <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
   ajanlott:`<h2>Ajánlott</h2><p>Ez a három kör összegzése: a <b>Klinikai sötét</b> hűvös grafit alapja és fegyelme, a <b>mostani 3D ikonok</b> mint az app lelke, és oldalanként <b>egy</b> üveg hangsúlykártya (a Nap oldalon a mai állapotod, az Edzésen a mai edzés). A háttérben egészen halvány, hűvös derengés, narancs nélkül.</p>
   <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
+  <h2>5. kör · világos pár + makrószínek</h2><p>Fent a <b>világos (fehér-kék)</b> pipával az Ajánlott fehér-kék párja: hűvös fehér alap, tinta-kék szöveg, mély kék kiemelés, ugyanazok az állapot- és kategóriaszínek sötétebben. A makrók visszakapták a saját színüket, tompítva: a kategória színe állandó jelentés, nem dísz.</p>
   <h2>4. kör · csend</h2><ul><li><b>Négy szövegszerep:</b> cím, szöveg, kis műszer-címke, nagy szám. Chip és lábjegyzet csak ahol pótolhatatlan.</li><li><b>Doboz csak az üvegnek:</b> a hős-kártyák keretben, minden más nyitott lista vékony vonallal.</li><li><b>Két árnyalat:</b> alap és vonalszín.</li><li><b>Szín = jelentés:</b> ami rendben van, szürke sáv; színt csak az kap, ami figyelmet kér. Acélkék csak a fő gombon.</li><li><b>Egy dolgot egyszer:</b> a csepp maga „a napod”, a cím eltűnt.</li></ul>
   <h2>3. kör · az élő csepp</h2><p>Az app jele: egy arc nélküli, lélegző, folyadékkal töltődő forma. Nagyban a Nap tetején (ez a mai állapotod otthona), kicsiben minden fejlécben és az alsó menü terület-jelén. A <b>Jelek</b> fülön egymás mellett a három állapot, a töltöttség, a méretek és a csapat testvérformái.</p>
   <h2>2. kör · a hét javítás</h2><ul><li><b>A szám a hős:</b> a Nap oldalon a 72 nagy gyűrűben, karnyújtásnyiról olvasható.</li><li><b>Ítélet, nem leírás:</b> „Ma jó nap egy közepes edzéshez.” Ez a Boop-edző hangja, arc nélkül.</li><li><b>Kevesebb gyors művelet:</b> három fő gomb egy csendes sorban, a többi a „Több” mögött.</li><li><b>Fejléc:</b> egy kis jel és a név csendesebben. A névről később döntünk.</li><li><b>Két üveg az Edzésen:</b> a mai edzés és a „Könnyebb nap javasolt” tanács. Ez a nap két fontos dolga.</li><li><b>Terület-szín csak az alsó menü jelén</b> (Nap borostyán, Edzés korall), minden más semleges.</li><li><b>Láthatóbb derengés</b> a háttérben, a kártyák nem világítanak jobban tőle.</li></ul>
@@ -1908,7 +1946,7 @@ function render(){
   const ph=$('#phone');
   if(D==='jelek'&&V==='jelenlegi')V='ajanlott';
   if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${D}.html#mai"></iframe>`}
-  else{ph.dataset.v=V;ph.dataset.d=D==='jelek'?'nap':D;ph.innerHTML=D==='jelek'?jelek():V==='ajanlott'?(D==='nap'?nap2():edzes2()):(D==='nap'?nap():edzes())}
+  else{ph.dataset.v=V;ph.dataset.d=D==='jelek'?'nap':D;if(V==='ajanlott'&&LIGHT)ph.dataset.t='light';else ph.removeAttribute('data-t');ph.innerHTML=D==='jelek'?jelek():V==='ajanlott'?(D==='nap'?nap2():edzes2()):(D==='nap'?nap():edzes())}
   $('#notes').innerHTML=NOTES[V];
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
@@ -1923,6 +1961,8 @@ document.addEventListener('click',e=>{
 let tt;function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1800)}
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
 $('#ikon3d').addEventListener('change',e=>{IK3D=e.target.checked;render()});
+let LIGHT=false;$('#vilagos').addEventListener('change',e=>{LIGHT=e.target.checked;render()});
+if(/vilagos/.test(location.search)){LIGHT=true;$('#vilagos').checked=true}
 if(/ikon3d/.test(location.search)){IK3D=true;$('#ikon3d').checked=true}
 if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
 window.addEventListener('hashchange',()=>{fromHash();render()});
