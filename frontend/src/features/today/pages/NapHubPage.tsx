@@ -74,7 +74,7 @@ export function NapHubPage() {
         </button>)}
       </section>
       {checkinDay.isError && <p className="nap-center-read-error" role="alert">A check-injeidet most nem sikerült betölteni. <button type="button" onClick={() => { void checkinDay.refetch() }}>Check-in újratöltése</button></p>}
-      <NapFuelGraphic consumed={nutrition.fuel.consumed} targets={nutrition.fuel.targets} isPending={nutrition.isPending} isError={nutrition.isError} onRetry={nutrition.refetch} />
+      <NapFuelGraphic guidance={nutrition.fuel.fuelMode === 'GUIDANCE'} consumed={nutrition.fuel.consumed} targets={nutrition.fuel.targets} isPending={nutrition.isPending} isError={nutrition.isError} onRetry={nutrition.refetch} />
       <NapPersonalInsight date={date} />
       <section className="nap-center-timeline rise" style={{ '--i': 4 } as CSSProperties} aria-labelledby="nap-moments-title">
         <header><p>AMI MÁR A NAPOD RÉSZE</p><h2 id="nap-moments-title">Mai pillanatok</h2></header>

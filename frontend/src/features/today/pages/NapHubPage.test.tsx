@@ -14,11 +14,12 @@ const store = vi.hoisted(() => ({
   notes: [] as object[],
   slots: [{ time: '08:00', state: 'done', note: null, values: null }, { time: '12:00', state: 'now', note: null, values: null }],
   tick: new Date('2026-09-17T14:00:00'),
+  fuelMode: null as string | null,
 }))
 vi.mock('@/data/hooks', () => ({
   useTodayScenario: () => ({ anchorMode: false }),
   useCheckins: () => ({ checkins: store.slots, saveCheckIn: store.save, isPending: store.pending, isError: store.error, refetch: store.retry }),
-  useFuelDay: () => ({ fuel: { consumed: { kcal: 900 }, targets: { kcal: 2000 }, meals: [] }, isPending: false }),
+  useFuelDay: () => ({ fuel: { consumed: { kcal: 900 }, targets: { kcal: 2000 }, meals: [], fuelMode: store.fuelMode }, isPending: false }),
   useJournalNotes: () => ({ data: store.notes, isPending: false }),
   useActivities: () => ({ data: [], isPending: false }),
   // NapzarasCard's own hooks (mezo-yjzhw.4): at the default 14:00 tick the card renders
@@ -43,7 +44,7 @@ vi.mock('@/features/today/logic/useNeeds', () => ({ useNeeds: () => ({ states: [
 vi.mock('@/features/today/logic/useMinuteTick', () => ({ useMinuteTick: () => store.tick }))
 vi.mock('@/features/today/logic/useDayFace', () => ({ useDayFace: () => ({ face: 'nap' }) }))
 vi.mock('@/features/today/components/NapPersonalInsight', () => ({ NapPersonalInsight: () => <div>Valódi megfigyelés</div> }))
-vi.mock('@/features/today/components/NapFuelGraphic', () => ({ NapFuelGraphic: () => <div>Makrók</div> }))
+vi.mock('@/features/today/components/NapFuelGraphic', () => ({ NapFuelGraphic: ({ guidance }: { guidance?: boolean }) => <div>{guidance ? 'Makrók · kímélő' : 'Makrók'}</div> }))
 vi.mock('@/features/today/sheets/CheckInSheet', () => ({ CheckInSheet: ({ slotIdx, onSave, onClose }: { slotIdx: number; onSave: (d: object) => void; onClose: () => void }) => <div role="dialog">slot:{slotIdx}<button onClick={() => { onSave({ state: 'done', note: 'Megérkeztem' }); onClose() }}>Mentés</button></div> }))
 vi.mock('@/features/me/sheets/JournalSheet', () => ({ JournalSheet: () => <div role="dialog">Napló írása</div> }))
 vi.mock('@/features/today/sheets/ActivityLogSheet', () => ({ ActivityLogSheet: () => <div role="dialog">Aktivitás rögzítése</div> }))
@@ -171,4 +172,16 @@ describe('NapHubPage — kímélő mód (mezo-q4xt2.2)', () => {
       store.tick = new Date('2026-09-17T14:00:00')
     }
   })
+})
+
+// Kihagyás S3 (mezo-q4xt2.3): a GUIDANCE nap a Nap fuel-kártyájának is a kímélő sort adja.
+it('hands the GUIDANCE day to the fuel card, and only that day', () => {
+  store.fuelMode = 'GUIDANCE'
+  const view = setup()
+  expect(screen.getByText('Makrók · kímélő')).toBeInTheDocument()
+  view.unmount()
+  store.fuelMode = 'MAINTENANCE'
+  setup()
+  expect(screen.getByText('Makrók')).toBeInTheDocument()
+  store.fuelMode = null
 })

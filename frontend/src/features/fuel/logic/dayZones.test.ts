@@ -112,3 +112,11 @@ test('a midnight-EXACT bedtime (00:00) still unwraps a 00:15 slot into the eveni
   })
   expect(result.map(z => z.key)).toEqual(['morning', 'evening'])
 })
+
+test('zone state: a skipped window is resolved — done-or-skipped zones are not left "ahead"', () => {
+  const mixed = zones([meal('09:00', { state: 'done' }), meal('10:30', { state: 'skipped' })])
+  expect(mixed[0].state).toBe('done')
+  expect(zones([meal('19:30', { state: 'skipped' })])[0].state).toBe('done')
+  // a still-pending window keeps the zone ahead
+  expect(zones([meal('09:00', { state: 'skipped' }), meal('10:30', { state: 'pending' })])[0].state).toBe('ahead')
+})

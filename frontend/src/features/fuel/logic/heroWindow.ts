@@ -82,7 +82,8 @@ export function pickHeroWindow(input: {
       consumedKcal: consumed.kcal,
       targetKcal: budget.kcal,
       doneCount: windows.filter(s => s.state === 'done').length,
-      totalCount: windows.length,
+      // A skipped window is resolved, not pending: it leaves the n/m denominator (Kihagyás S3).
+      totalCount: windows.filter(s => s.state !== 'skipped').length,
       proteinG: consumed.p,
       proteinTargetG: budget.p,
     },

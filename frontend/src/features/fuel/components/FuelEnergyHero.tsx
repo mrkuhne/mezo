@@ -38,6 +38,7 @@ import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
 import { WeeklyLearningSheet } from '@/features/fuel/sheets/WeeklyLearningSheet'
 import { signed } from '@/features/fuel/sheets/learnedBaseFormat'
 import type { ExpenditureWeeklyCard } from '@/data/fuel/expenditureApi'
+import type { FuelMode } from '@/features/fuel/logic/fuelMode'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain' | null
 
@@ -99,8 +100,8 @@ function weeklyWord(card: ExpenditureWeeklyCard): string {
   return n ? `${n} nap kimaradt` : 'a keret nem változott'
 }
 
-function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }: {
-  vm: KeretHeroVM; past: boolean; trajectory: Trajectory; onClose: () => void
+function EquationBox({ vm, past, trajectory, mode, onClose, onFull, weekly, onWeekly }: {
+  vm: KeretHeroVM; past: boolean; trajectory: Trajectory; mode: FuelMode | null; onClose: () => void
   /** A15: a MEGLÉVŐ, Énnel közös energia-magyarázat — a doboz csendes ajtaja. */
   onFull?: () => void
   /** mezo-3n2so: the weekly card when the Alap row should open it (today only). */
@@ -108,8 +109,12 @@ function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }
   onWeekly?: () => void
 }) {
   const titleId = useId()
-  const lines = heroEquationLines(vm, trajectory)
+  // Kihagyás S3: with an injury the goal is paused — the Célod row stays, reading 0.
+  const goalPaused = mode === 'MAINTENANCE'
+  const lines = heroEquationLines(vm, trajectory, goalPaused)
   const over = vm.remainingKcal < 0
+  // ESTIMATE never says „felett": the keret is only informative on a travel day.
+  const overWord = mode === 'ESTIMATE' ? 'a keret körül' : 'a keret felett'
   // Kihagyás S3: the skipped windows' share — a neutral „Kihagyva" row before „Marad".
   const skipped = vm.skippedKcal
 
@@ -122,7 +127,7 @@ function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }
         <ContentIcon name="i-fuel" size={56} />
         <div>
           <strong>{huInt(Math.abs(vm.remainingKcal))}</strong>
-          <small id={titleId}>kcal {over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}</small>
+          <small id={titleId}>kcal {over ? overWord : past ? 'fért még bele' : 'fér még bele ma'}</small>
         </div>
       </div>
       <div className="fmx-glass-bar" role="img"
@@ -158,7 +163,7 @@ function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }
               <span className="fmx-node-art"><ContentIcon name={NODE[line.key].icon} size={24} /></span>
               <span className="fmx-node-copy">
                 <strong>{line.label}</strong>
-                <small>{nodeSub(line, vm, trajectory)}</small>
+                <small>{line.key === 'goal' && goalPaused ? 'szünetel, amíg a sérülés tart' : nodeSub(line, vm, trajectory)}</small>
                 {line.key === 'activity' && !past && (vm.chips?.pending ?? 0) > 0 && (
                   <small className="fmx-node-pend">még jön +{huInt(vm.chips!.pending)}, ha megcsinálod</small>
                 )}
@@ -198,7 +203,7 @@ function EquationBox({ vm, past, trajectory, onClose, onFull, weekly, onWeekly }
   )
 }
 
-export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEnergy, onWater, weeklyCard = null }: {
+export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEnergy, onWater, weeklyCard = null, mode = null, note = null }: {
   vm: KeretHeroVM
   /** A13: egy MÚLTBELI napot nézünk — a „ma” szó ilyenkor hazugság lenne. */
   past?: boolean
@@ -212,6 +217,12 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
   /** mezo-3n2so: the weekly learning summary worth showing (null = nothing to say). Only today's
    *  hero signals it — a past day never shows the dot or the highlighted Alap row. */
   weeklyCard?: ExpenditureWeeklyCard | null
+  /** Kímélő mód (Kihagyás S3): MAINTENANCE leads with the protein ring and pauses the goal row;
+   *  ESTIMATE mutes the numerals and speaks of a keret „körül", never „felett". GUIDANCE never
+   *  reaches the hero (the page shows the guidance card instead). */
+  mode?: FuelMode | null
+  /** The recovery note, placed between the „Miből jön össze?" chip and the macro rings. */
+  note?: React.ReactNode
 }) {
   const [boxOpen, setBoxOpen] = useState(false)
   // The card is snapshot when the sheet opens: a dismiss (or a mark's refetch) may null the live
@@ -221,6 +232,8 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
   const remaining = useFuelCountUp(vm.remainingKcal)
   const eaten = useFuelCountUp(vm.consumedKcal)
   const over = vm.remainingKcal < 0
+  const estimate = mode === 'ESTIMATE'
+  const overWord = estimate ? 'a keret körül' : 'a keret felett'
   // Kihagyás S3: the skipped windows keep their share of the keret — drawn as a neutral segment
   // after the eaten arc (1.5-unit gap, butt cap), never redistributed and never a miss.
   const skipped = vm.skippedKcal
@@ -229,7 +242,7 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
   const SKIP_GAP = 1.5
 
   return (
-    <div className="fmx-hero">
+    <div className={`fmx-hero${estimate ? ' is-estimate' : ''}`}>
       {/* A jóváhagyott h1 elrendezés (fuel-dashboard.js `hero-pair`): HÁROM egyenrangú rész
           EGY sorban — balra amit megettél, középen a tál az ívben, jobbra ami még belefér.
           A két szám AZONOS méretű (38px); a jobb oldali csak világosabb és glow-t kap, mert
@@ -258,10 +271,10 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
         <div className="fmx-hero-side is-lead">
           {/* ONE sentence for the screen reader; the count-up digits are its decoration. */}
           <strong className="fmx-hero-remaining"
-            aria-label={`${huInt(Math.abs(vm.remainingKcal))} kcal ${over ? 'a keret felett' : past ? 'fért még bele' : 'fér még bele ma'}`}>
+            aria-label={`${huInt(Math.abs(vm.remainingKcal))} kcal ${over ? overWord : past ? 'fért még bele' : 'fér még bele ma'}`}>
             <span aria-hidden="true">{huInt(Math.abs(remaining))}</span>
           </strong>
-          <small aria-hidden="true">{over ? 'A KERET FELETT' : 'MÉG BELEFÉR'}</small>
+          <small aria-hidden="true">{over ? (estimate ? 'A KERET KÖRÜL' : 'A KERET FELETT') : estimate ? 'KB. ENNYI FÉR MÉG' : 'MÉG BELEFÉR'}</small>
         </div>
       </div>
       {skipped > 0 && (
@@ -279,9 +292,10 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
         <b aria-hidden="true">›</b>
         <u className="fmx-chip-sheen" aria-hidden="true" />
       </button>
-      <FuelMacroRings rings={vm.rings} onWater={onWater} />
+      {note}
+      <FuelMacroRings rings={vm.rings} onWater={onWater} leadKey={mode === 'MAINTENANCE' ? 'p' : undefined} />
       {boxOpen && (
-        <EquationBox vm={vm} past={past} trajectory={trajectory} onClose={() => setBoxOpen(false)}
+        <EquationBox vm={vm} past={past} trajectory={trajectory} mode={mode} onClose={() => setBoxOpen(false)}
           onFull={onOpenEnergy ? () => { setBoxOpen(false); onOpenEnergy() } : undefined}
           weekly={weekly} onWeekly={() => { setBoxOpen(false); setWeeklyShown(weekly) }} />
       )}

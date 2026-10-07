@@ -30811,3 +30811,98 @@ main.settings-page {
 .fmx-skline b { color: var(--text-primary); font-weight: 600; }
 .fmx-glass-bar .fmx-gb-skip { position: absolute; top: 0; bottom: 0; left: var(--l); width: var(--w); border-radius: 4px;
   background: repeating-linear-gradient(135deg, rgba(201, 189, 240, 0.55) 0 4px, rgba(201, 189, 240, 0.2) 4px 8px); }
+
+/* ── Kihagyás S3 (mezo-q4xt2.3) · kímélő-mód Fuel — prototype elo/fuel.html `Kihagyás S3`, 2. rész ──
+   Három arc (tanács · szinten tartó · becslés) és a heti nézet kímélő napja. A hue végig a
+   levendula (--dv-lav); semmi sem piros vagy borostyán, és semmi sem méri a napot a kerethez.
+   Egy üveg kártyánként: a `.fmx-gcard` az üveg, a belső sorai laposak. */
+.fmx-kmstrip { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0 0 4px;
+  padding: 8px 12px 8px 8px; border: 0; border-radius: 16px; font: inherit; font-size: 12.5px; text-align: left;
+  color: var(--text-secondary); cursor: pointer; background: rgba(171, 159, 210, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.3); }
+.fmx-kmstrip .t-ico { width: 26px; height: 26px; flex: 0 0 auto; }
+.fmx-kmstrip > span { flex: 1; min-width: 0; }
+.fmx-kmstrip b { color: var(--text-primary); font-weight: 600; }
+.fmx-kmstrip:focus-visible, .fmx-gwater:focus-visible, .fmx-gdoc:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.fmx-kmnote { display: flex; gap: 11px; align-items: flex-start; margin: 10px 0 0; padding: 12px 14px; border-radius: 18px;
+  font-size: 12.5px; line-height: 1.45; text-align: left; color: var(--text-secondary); background: rgba(171, 159, 210, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.28); }
+.fmx-kmnote .t-ico { width: 34px; height: 34px; flex: 0 0 auto; }
+.fmx-kmnote > span { min-width: 0; }
+.fmx-kmnote b { display: block; margin-bottom: 2px; font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.fmx-kmnote em { display: block; margin-top: 6px; font-style: normal; font-size: 10.5px; color: var(--faint); }
+/* ESTIMATE: a számok halványak, a műszer visszafogott — a keret most csak tájékoztat. */
+.fmx-hero.is-estimate .fmx-hero-side > strong,
+.fmx-hero.is-estimate .fmx-hero-side.is-lead > strong { color: var(--text-secondary); text-shadow: none; }
+.fmx-hero.is-estimate .fmx-gauge { opacity: 0.55; }
+/* MAINTENANCE: a fehérje a fő cél — izzó gyűrű + „FŐ CÉL" felirat. */
+.fmx-cell.is-lead .fmx-ring { filter: drop-shadow(0 0 10px color-mix(in srgb, var(--macro-color) 70%, transparent)); }
+.fmx-lead-cap { font-size: 8.5px; font-weight: 700; letter-spacing: 1px; white-space: nowrap;
+  color: color-mix(in srgb, var(--macro-color) 80%, var(--text-primary)); }
+/* GUIDANCE: egy üvegkártya — a belső sorok laposak (nincs üveg az üvegben). */
+.fmx-gcard { margin: 6px 0 0; padding: 16px 14px 14px; border-radius: 26px; text-align: left; }
+.fmx-ghead { display: flex; gap: 12px; align-items: flex-start; }
+.fmx-ghead > .t-ico { width: 56px; height: 56px; flex: 0 0 auto; }
+.fmx-ghead > span { min-width: 0; }
+.fmx-geb { display: block; font-size: 10px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: #C9BDF0; }
+.fmx-geasy .fmx-geb { color: var(--text-secondary); }
+.fmx-ghead h2 { margin: 3px 0 0; font-size: 23px; font-weight: 600; letter-spacing: -0.7px; line-height: 1.15; color: var(--text-primary); }
+.fmx-ghead p { margin: 5px 0 0; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+.fmx-gwater { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 14px; padding: 10px 12px; border: 0;
+  border-radius: 18px; font: inherit; text-align: left; color: inherit; cursor: pointer; min-height: 44px;
+  background: rgba(127, 178, 222, 0.08); box-shadow: inset 0 0 0 1px rgba(127, 178, 222, 0.32); }
+.fmx-gw { position: relative; width: 52px; height: 52px; flex: 0 0 auto; display: grid; place-items: center; }
+.fmx-gw svg:first-child { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.fmx-gw circle { fill: none; stroke-width: 6; }
+.fmx-gw-track { stroke: rgba(245, 239, 230, 0.07); }
+.fmx-gw-prog { stroke: var(--dv-sky); stroke-linecap: round; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--dv-sky) 55%, transparent)); }
+.fmx-gw .t-ico { position: relative; width: 26px; height: 26px; filter: none; }
+.fmx-gw-t { flex: 1; min-width: 0; }
+.fmx-gw-t b { display: block; font-size: 22px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.1; color: var(--text-primary); }
+.fmx-gw-t small { display: block; font-size: 11.5px; color: var(--text-secondary); }
+.fmx-gwater em { flex: 0 0 auto; padding: 7px 12px; border-radius: 999px; font-style: normal; font-size: 12.5px; font-weight: 700;
+  color: #141210; background: var(--dv-sky); box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sky) 50%, transparent); }
+.fmx-gtips { display: grid; gap: 10px; margin-top: 14px; }
+.fmx-gtip { display: flex; gap: 11px; align-items: flex-start; }
+.fmx-gtip .t-ico { width: 32px; height: 32px; flex: 0 0 auto; }
+.fmx-gtip > span { min-width: 0; }
+.fmx-gtip b { display: block; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); }
+.fmx-gtip small { display: block; margin-top: 1px; font-size: 12px; line-height: 1.45; color: var(--text-secondary); }
+.fmx-geasy { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--divider); }
+.fmx-gchips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.fmx-gchips span { padding: 6px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-geasy small { display: block; margin-top: 8px; font-size: 11.5px; line-height: 1.4; color: var(--faint); }
+.fmx-gdoc { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 44px; margin-top: 14px; padding: 10px 12px; border: 0;
+  border-radius: 14px; font: inherit; font-size: 13px; font-weight: 600; text-align: left; color: var(--text-primary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-gdoc .t-ico { width: 22px; height: 22px; filter: none; }
+.fmx-gdoc span { flex: 1; min-width: 0; }
+.fmx-gdoc b { font-weight: 400; color: var(--faint); }
+.fmx-gtotal { margin: 12px 0 0; font-size: 12.5px; text-align: center; color: var(--text-secondary); }
+.fmx-gtotal b { font-weight: 600; color: var(--text-primary); }
+.fmx-gfine { margin: 4px 0 0; font-size: 10.5px; text-align: center; color: var(--faint); }
+/* „Mikor fordulj orvoshoz?" lap */
+.fmx-doctor-sheet { --c: var(--dv-lav); }
+.fmx-docl { list-style: none; display: grid; gap: 8px; margin: 4px 0 0; padding: 0; }
+.fmx-docl li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.4; color: var(--text-primary); }
+.fmx-docl li i { flex: 0 0 auto; width: 7px; height: 7px; margin-top: 7px; border-radius: 50%; background: var(--dv-lav);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--dv-lav) 60%, transparent); }
+.fmx-docl li span { min-width: 0; }
+.fmx-docnote { display: flex; gap: 9px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.45;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-docnote .t-ico { width: 22px; height: 22px; flex: 0 0 auto; filter: none; }
+/* GUIDANCE blokkok: a beírt étkezés puszta kcal-ja, keret nélkül */
+.fmx-bplain { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.fmx-bplain small { margin-left: 3px; font-size: 10px; font-weight: 500; color: var(--faint); }
+/* Heti nézet: a kímélő nap jele a pont helyén, sraffozott levendula oszlop */
+.ftx-day.is-recovery .ftx-day-score { color: var(--dv-lav); display: grid; place-items: center; }
+.ftx-day.is-recovery .ftx-day-score .t-ico { width: 18px; height: 18px; filter: none; display: block; }
+.ftx-day .ftx-fill.is-recovery { box-shadow: none;
+  background: repeating-linear-gradient(135deg, rgba(171, 159, 210, 0.5) 0 5px, rgba(171, 159, 210, 0.2) 5px 10px); }
+.ftx-day.is-recovery.is-over .ftx-fill { background: repeating-linear-gradient(135deg, rgba(171, 159, 210, 0.5) 0 5px, rgba(171, 159, 210, 0.2) 5px 10px); }
+/* Nap: a GUIDANCE nap egyetlen sora a makró-műszer helyén */
+.nap-fuel-guidance { display: flex; align-items: center; gap: 10px; margin: 6px 0 0; font-size: 13.5px; line-height: 1.4; color: var(--text-secondary); }
+.nap-fuel-guidance .t-ico { width: 24px; height: 24px; flex: 0 0 auto; filter: none; }
+.nap-fuel-guidance span { min-width: 0; }
+@media (max-width: 360px) { .fmx-ghead > .t-ico { width: 44px; height: 44px; } .fmx-ghead h2 { font-size: 20px; } }

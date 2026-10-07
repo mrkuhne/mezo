@@ -40,6 +40,9 @@ export interface WeekDayVM {
   training: boolean
   /** A keret FELETT jár. Állapot, nem hiba — a nézet más színt ad neki, nem hibajelzést. */
   over: boolean
+  /** Kímélő nap (Kihagyás S3): a nap bármilyen kímélő módban volt. Nincs keret-mérés — se
+   *  százalék, se „keret felett" —, és a heti átlagokba sem számít bele; a beírt étel megmarad. */
+  recovery: boolean
 }
 
 export interface WeekViewVM {
@@ -61,7 +64,8 @@ function avgPct(days: WeekDayVM[]): number | null {
 /** A naplózott napok kalória-átlaga — `null`, ha egyetlen nap sincs naplózva (a csempe „—"-t ír).
  *  A nem naplózott nap NEM nulla: egyszerűen nincs benne az átlagban. */
 export function loggedKcalAvg(days: WeekDayVM[]): number | null {
-  const logged = days.filter((d): d is WeekDayVM & { kcal: number } => d.kcal != null)
+  // Egy kímélő nap nem számít bele a heti értékelésbe (Kihagyás S3), az átlagba sem.
+  const logged = days.filter((d): d is WeekDayVM & { kcal: number } => d.kcal != null && !d.recovery)
   if (logged.length === 0) return null
   return logged.reduce((sum, d) => sum + d.kcal, 0) / logged.length
 }
@@ -170,7 +174,9 @@ export function buildWeekView(
     // jelzés, amiből a hiány kiolvasható. Ezt itt egy helyen mondjuk ki, hogy ne szóródjon szét.
     const logged = d.consumed.kcal > 0
     const targetKcal = d.targets.kcal > 0 ? d.targets.kcal : null
-    const pct = logged && targetKcal != null ? (d.consumed.kcal / targetKcal) * 100 : null
+    const recovery = d.fuelMode != null
+    // Kímélő napon nincs keret-mérés: pct null (kimarad az átlagokból), és sosem „felette".
+    const pct = logged && targetKcal != null && !recovery ? (d.consumed.kcal / targetKcal) * 100 : null
     return {
       date: d.date,
       label: WEEK_BAR_DOW[new Date(`${d.date}T12:00:00`).getDay()],
@@ -181,7 +187,8 @@ export function buildWeekView(
       dayScore: dayScores[d.date] ?? null,
       logged,
       training: training.has(d.date),
-      over: logged && targetKcal != null && d.consumed.kcal > targetKcal + OVER_TOLERANCE_KCAL,
+      over: !recovery && logged && targetKcal != null && d.consumed.kcal > targetKcal + OVER_TOLERANCE_KCAL,
+      recovery,
     }
   })
 

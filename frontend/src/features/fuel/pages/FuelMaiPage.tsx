@@ -83,6 +83,8 @@ import type { WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
+import { FuelGuidanceCard } from '@/features/fuel/components/FuelGuidanceCard'
+import { FuelRecoveryNote, FuelRecoveryStrip } from '@/features/fuel/components/FuelRecoveryNote'
 import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionBanner'
 import { FuelMealBlocks } from '@/features/fuel/components/FuelMealBlocks'
 import { DayLearningMark } from '@/features/fuel/components/DayLearningMark'
@@ -143,7 +145,9 @@ export function FuelMaiPage() {
   // keret-műszer „még belefér <teljes keret>" olvasata egy lezárt napon valótlan lenne. A
   // blokkok maradnak: a pótlás útja nyitva, szégyenmentes hangon.
   const hasDayData = fuel.meals.length > 0 || fuel.consumed.kcal > 0 || fuel.consumed.water > 0
-  const emptyPast = past && !hasDayData
+  // Kihagyás S3: a kímélő nap (az eddigi napló nélkül is) saját arcot kap — nem „nincs adat".
+  const mode = fuel.fuelMode
+  const emptyPast = past && !hasDayData && mode == null
 
   // ── hub-csali chip: tegnap pótolható ablakok (mezo-1j3z) — past-normalized lane,
   // ONE live door into `/fuel/log?d=<tegnap>`; hides itself when nothing is missed.
@@ -182,16 +186,38 @@ export function FuelMaiPage() {
             minDate={earliestBackfillDate(today)} eyebrow />
         </div>
 
+        {/* Kihagyás S3: MAINTENANCE / ESTIMATE — a vékony sáv a hero fölött; a Nap oldalon zárható le. */}
+        {(mode === 'MAINTENANCE' || mode === 'ESTIMATE') && (
+          <div className="rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+            <FuelRecoveryStrip category={fuel.recoveryCategory} day={fuel.recoveryDay}
+              onTap={() => toast.show({ kind: 'info', text: 'A kímélő módot a Nap oldalon zárod le: Hogy vagy? → Jobban' })} />
+          </div>
+        )}
+
         {emptyPast ? (
           <p className="fmx-nodata rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             Erre a napra nincs adat — amit most logolsz, erre a napra könyvelődik.
           </p>
+        ) : mode === 'GUIDANCE' ? (
+          // GUIDANCE: nincs kalóriacél — egy üvegkártya váltja a heroát, a „Miből jön össze?"-t és a gyűrűket.
+          <div className="fh-hero rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+            <FuelGuidanceCard
+              category={fuel.recoveryCategory === 'STOMACH' ? 'STOMACH' : 'ILLNESS'}
+              day={fuel.recoveryDay}
+              waterMl={fuel.consumed.water}
+              waterTargetMl={fuel.targets.water}
+              eatenKcal={fuel.consumed.kcal}
+              onWater={() => setWaterOpen(true)}
+            />
+          </div>
         ) : (
           <div className="fh-hero rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             <FuelEnergyHero
               vm={keretHeroVm}
               past={past}
               trajectory={trajectory}
+              mode={mode}
+              note={mode === 'MAINTENANCE' || mode === 'ESTIMATE' ? <FuelRecoveryNote mode={mode} /> : null}
               // A15: the shared sheet, opened at its first section — not the hero's local box.
               onOpenEnergy={() => setEnergyOpen('base')}
               onWater={() => setWaterOpen(true)}
@@ -215,6 +241,7 @@ export function FuelMaiPage() {
             meals={doneRows}
             day={{ wake, bed, nowHHmm: past ? null : nowHHmm, training: trainingSpan(blocks) }}
             fiberTargetG={dietSettings.fiberG}
+            fuelMode={mode}
             skipping={{
               date, today, fuelMode: fuel.fuelMode,
               onSkip: (tile) => skip(mealTarget(tile.skipKey), (row) => setWhyId(row.id), tile.budgetKcal ?? tile.kcal),
@@ -247,7 +274,7 @@ export function FuelMaiPage() {
             feladata, megtartva. S5 (mezo-qt5q): a `/fuel/log` lap kivezetve, a pótlás ajtaja
             MAGA a Mai lapozója (`/fuel?d=`) — ugyanaz a nap, egy redirect nélkül. */}
         {/* Csak a mai nézetben csali: egy visszalapozott napon a lapozó MAGA a pótlás útja. */}
-        {!past && !yPending && yMissed > 0 && (
+        {!past && !yPending && yMissed > 0 && fuelY.fuelMode == null && (
           <button type="button" className="fmx-pastchip rise" style={{ '--d': '130ms' } as React.CSSProperties}
             aria-label={`Pótlás · ${huMonthDay(yesterday).toLowerCase()}. · ${yMissed} ablak pótolható`}
             onClick={() => navigate(`/fuel?d=${yesterday}`)}>

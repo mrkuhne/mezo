@@ -360,3 +360,49 @@ test('valós módban a táplálkozási felismerés sora megjelenik', async () =>
   expect(container.textContent).not.toContain('SZIGORÚAN A MEZÓBAN')
   expect(container.textContent).not.toContain('CSAK A MEZÓBAN')
 })
+
+// --- Kihagyás S3 (mezo-q4xt2.3): a kímélő nap a heti képben ---------------------------------
+
+/** Valós mód: a nyitott hét szombatja (a keret FELETT járt) kímélő nap — GUIDANCE. */
+function serveWeekWithRecoveryDay(mode: 'GUIDANCE' | 'MAINTENANCE' = 'GUIDANCE') {
+  const targets = { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 }
+  server.use(http.get(`${API_BASE}/api/fuel/week/:start`, ({ params }) => {
+    const start = String(params.start)
+    return HttpResponse.json({
+      start,
+      days: Array.from({ length: 7 }, (_, i) => ({
+        date: addDays(start, i),
+        targets,
+        consumed: { kcal: i === 5 ? 3100 : 2300, p: 150, c: 240, f: 72, water: 2200 },
+        ...(i === 5 ? { fuelMode: mode } : {}),
+      })),
+      mealScoreAvg: 0.71,
+      weightAvgKg: 82.9,
+    })
+  }))
+}
+
+test('a kímélő nap jele a pont helyén áll, sraffozott oszloppal — se százalék, se keret-vonal, se „felett"', async () => {
+  serveWeekWithRecoveryDay()
+  const { container } = renderView({ real: true })
+  const bar = await screen.findByRole('button', { name: new RegExp(`${overDay()}.*kímélő nap`, 'i') })
+  expect(bar).toHaveClass('is-recovery')
+  expect(bar).not.toHaveClass('is-over')
+  expect(bar.querySelector('.ftx-day-score use')!.getAttribute('href')).toBe('#t-kimelo')
+  expect(bar.querySelector('.ftx-target')).toBeNull()
+  expect(bar.querySelector('.ftx-fill.is-recovery')).not.toBeNull()
+  expect(bar.textContent).not.toMatch(/%|\d+ kcal/)
+  // a többi nap a megszokott: keret-vonallal
+  expect(container.querySelectorAll('.ftx-target')).toHaveLength(6)
+})
+
+test('a kímélő nap részletei: „Kímélő nap", az ÍGY SZÁMOLOM szöveg, semmi mérés a kerethez', async () => {
+  serveWeekWithRecoveryDay('MAINTENANCE')
+  renderView({ real: true })
+  await userEvent.click(await screen.findByRole('button', { name: new RegExp(`${overDay()}.*kímélő nap`, 'i') }))
+  const box = await screen.findByRole('dialog')
+  expect(within(box).getByText('Kímélő nap')).toBeInTheDocument()
+  expect(box.textContent).toContain('Amit ezen a napon ettél (3 100 kcal), nem mérem a kerethez, és a heti értékelésbe sem számít bele. A beírt étkezéseid megmaradnak.')
+  expect(box.textContent).not.toMatch(/felé ment|belefértél|étkezés-pont|elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
+  expect(box.querySelector('use')!.getAttribute('href')).toBe('#t-kimelo')
+})

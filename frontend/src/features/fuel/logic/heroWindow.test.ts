@@ -102,3 +102,10 @@ test('a skipped window is never the hero and never listed as missed', () => {
   if (r.hero.kind !== 'open') throw new Error('unreachable')
   expect(r.hero.slot).toBe(now)
 })
+
+test('a closed hero counts a skipped window as resolved: it leaves the total', () => {
+  const { hero } = pick([slot({ state: 'done' }), slot({ time: '16:30', state: 'skipped' }), slot({ time: '19:00', state: 'done' })])
+  if (hero.kind !== 'closed') throw new Error('unreachable')
+  expect(hero.doneCount).toBe(2)
+  expect(hero.totalCount).toBe(2)
+})

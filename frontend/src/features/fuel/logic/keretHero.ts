@@ -131,7 +131,8 @@ export function buildKeretHero(input: {
     consumedKcal: consumed.kcal,
     targetKcal: budget.kcal,
     doneCount: doneWindows.length,
-    totalCount: windows.length,
+    // A skipped window is resolved, not pending (Kihagyás S3): it leaves the n/m denominator.
+    totalCount: windows.length - skippedWindows.length,
     segments,
     nowFrac,
     // Static-energy days (no served `energy` — no goal / no biometric snapshot) hide the chip row
@@ -256,12 +257,17 @@ export interface EquationLine {
  * Statikus keretnél (nincs cél / biometria) nincs bontás: a sorok `null`-ok maradnak, és a
  * felület gondolatjelet ír, nem nullát (őszinte-null szabály).
  */
-export function heroEquationLines(vm: KeretHeroVM, trajectory: 'cut' | 'bulk' | 'maintain' | null = null): EquationLine[] {
-  const balance = vm.chips?.balance ?? null
+export function heroEquationLines(
+  vm: KeretHeroVM,
+  trajectory: 'cut' | 'bulk' | 'maintain' | null = null,
+  /** Kímélő mód / sérülés (Kihagyás S3): the goal is paused — the Célod row stays, reading 0. */
+  goalPaused = false,
+): EquationLine[] {
+  const balance = goalPaused ? 0 : vm.chips?.balance ?? null
   // No goal (trajectory null) → no goal row. A zero balance on a maintain goal is "tartás" with
   // nothing to add — the row would only be noise. A goal user's past day (chips null) keeps the
   // row so it honestly reads „—" like its neighbours.
-  const showGoal = trajectory != null && !(balance === 0 && trajectory === 'maintain')
+  const showGoal = goalPaused || (trajectory != null && !(balance === 0 && trajectory === 'maintain'))
   return [
     { key: 'base', label: 'Alap', value: vm.chips?.base ?? null, sign: null },
     { key: 'activity', label: 'Mozgás', value: vm.chips?.activity ?? null, sign: '+' },

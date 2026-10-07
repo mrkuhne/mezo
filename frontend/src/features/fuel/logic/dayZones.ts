@@ -66,7 +66,8 @@ export function buildDayZones(input: {
     const kcal = meals.reduce((sum, s) => sum + (s.kcal ?? 0), 0)
     const state: ZoneState = zoneSlots.some(s => s.state === 'now')
       ? 'open'
-      : meals.length > 0 && meals.every(s => s.state === 'done')
+      // A skipped window is resolved (Kihagyás S3): a zone of done-or-skipped meals is complete.
+      : meals.length > 0 && meals.every(s => s.state === 'done' || s.state === 'skipped')
         ? 'done'
         : 'ahead'
     const burnKcal = zoneSlots

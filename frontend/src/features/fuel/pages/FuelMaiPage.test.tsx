@@ -18,6 +18,11 @@
 // the shared EnergyBreakdownSheet, and the Fuel-beállítások band opens the settings page.
 // ============================================================
 import { render, screen, waitFor, within } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { recoveryKey } from '@/data/train/recoveryHooks'
+import { recoveryEmpty } from '@/data/train/recoveryMock'
+import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
+import type { SkipReason } from '@/features/train/logic/plannedSkips'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -43,6 +48,8 @@ const hoisted = vi.hoisted(() => ({
   injectMissedSlot: false,
   overrideSlots: null as FuelSlot[] | null,
   emptyDates: [] as string[],
+  /** Kihagyás S3: override the day's consumed kcal (e.g. to overshoot the keret). */
+  consumedKcal: null as number | null,
   dayCalls: [] as string[],
   timelineCalls: [] as string[],
 }))
@@ -56,6 +63,9 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       const real = actual.useFuelDay(date)
       if (date != null && hoisted.emptyDates.includes(date)) {
         return { ...real, fuel: { ...real.fuel, meals: [], consumed: ZERO } }
+      }
+      if (hoisted.consumedKcal != null) {
+        return { ...real, fuel: { ...real.fuel, consumed: { ...real.fuel.consumed, kcal: hoisted.consumedKcal } } }
       }
       return real
     },
@@ -91,6 +101,7 @@ afterEach(() => {
   hoisted.injectMissedSlot = false
   hoisted.overrideSlots = null
   hoisted.emptyDates = []
+  hoisted.consumedKcal = null
   hoisted.dayCalls = []
   hoisted.timelineCalls = []
 })
@@ -519,4 +530,127 @@ test('„Mégis ettem" undoes the skip and goes to log into the window', async (
   await user.click(within(block as HTMLElement).getByRole('button', { name: 'Mégis ettem' }))
   await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj'))
   expect(screen.getByTestId('loc').textContent).toContain('w=')
+})
+
+
+// ── Kihagyás S3 (mezo-q4xt2.3): a négy kímélő arc ───────────────────────────────────────────────
+const SHAME_RX = /elrontott|túlléptél|hiba|rossz|bukta|kudarc/i
+
+/** Mock mód: a kímélő időszak a recovery-cache-ben él, a Fuel-nap ebből származtatja a módot. */
+function renderRecovery(category: SkipReason, path = '/fuel') {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const today = localDateString()
+  client.setQueryData(recoveryKey(), {
+    ...recoveryEmpty,
+    period: { id: 'p1', category, estimate: 'WEEK', startDate: addDays(today, -1), dayIndex: 2,
+      estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [] },
+  })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}><FuelMaiPage /><LocationProbe /></MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+test.each([['ILLNESS', 'BETEG VAGY'], ['STOMACH', 'GYOMORRONTÁS']] as const)(
+  'GUIDANCE (%s): the guidance card replaces the hero, the equation chip and the rings; no Kihagyom, no pótolható',
+  async (category, who) => {
+    const { container } = renderRecovery(category)
+    expect(await screen.findByRole('heading', { name: 'Ma nincs kalóriacél' })).toBeInTheDocument()
+    expect(screen.getByText(`KÍMÉLŐ MÓD · ${who} · 2. NAP`)).toBeInTheDocument()
+    expect(container.querySelector('.fmx-hero')).toBeNull()
+    expect(container.querySelector('.fmx-rings')).toBeNull()
+    expect(container.querySelector('.fmx-tapchip')).toBeNull()
+    expect(container.textContent).not.toMatch(/MÉG BELEFÉR|A KERET|Miből jön össze|Kihagyom|pótolható/)
+    expect(container.textContent).not.toMatch(/\d+\s*\/\s*\d+\s*kcal/)
+    expect(container.querySelector('.fmx-budget-ring')).toBeNull()
+    expect(container.textContent).not.toMatch(SHAME_RX)
+    // the blocks stay: meals can still be logged, plain
+    expect(container.querySelector('.fmx-blocks')).not.toBeNull()
+    expect(container.querySelector('.fmx-bplain')).not.toBeNull()
+  },
+)
+
+test('GUIDANCE: the water row opens the water sheet; the strip is not shown', async () => {
+  const { container } = renderRecovery('ILLNESS')
+  await userEvent.click(await screen.findByRole('button', { name: 'Víz logolása' }))
+  expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  expect(container.querySelector('.fmx-kmstrip')).toBeNull()
+})
+
+test('MAINTENANCE: the strip, the hero on the served keret, the injury note and the protein ring as the lead', async () => {
+  const { container } = renderRecovery('INJURY')
+  const strip = await screen.findByRole('button', { name: /Kímélő mód, Sérülés, 2\. nap/ })
+  expect(strip).toHaveTextContent('Kímélő mód · Sérülés · 2. nap')
+  expect(container.querySelector('.fmx-hero')).not.toBeNull()
+  expect(container.textContent).toContain('MÉG BELEFÉR')
+  expect(screen.getByText('Sérülés alatt nem fogyókúrázunk')).toBeInTheDocument()
+  expect(container.querySelector('.fmx-kmnote em')).toHaveTextContent('Ez nem orvosi tanács.')
+  const lead = container.querySelectorAll('.fmx-cell.is-lead')
+  expect(lead).toHaveLength(1)
+  expect(lead[0]).toHaveTextContent('FŐ CÉL')
+  expect(container.textContent).not.toMatch(SHAME_RX)
+  // the strip explains where the mode is closed (a toast, no navigation)
+  const seen: ToastMessage[] = []
+  const off = onToast(t => seen.push(t))
+  await userEvent.click(strip)
+  off()
+  expect(seen.map(t => ('text' in t ? t.text : ''))).toEqual(['A kímélő módot a Nap oldalon zárod le: Hogy vagy? → Jobban'])
+  expect(screen.getByTestId('loc')).toHaveTextContent(/^\/fuel$/)
+})
+
+test('MAINTENANCE: the equation box pauses the goal', async () => {
+  renderRecovery('INJURY')
+  await userEvent.click(await screen.findByRole('button', { name: /Miből jön össze/ }))
+  expect(screen.getByText('szünetel, amíg a sérülés tart')).toBeInTheDocument()
+})
+
+test('ESTIMATE: the „Úton vagy" strip, the muted hero, „KB. ENNYI FÉR MÉG"; over the keret it says „A KERET KÖRÜL", never „felett"', async () => {
+  const { container, unmount } = renderRecovery('TRAVEL')
+  const strip = await screen.findByRole('button', { name: /Kímélő mód, Úton vagy, 2\. nap/ })
+  expect(strip).toHaveTextContent('Kímélő mód · Úton vagy · 2. nap')
+  expect(container.querySelector('.fmx-hero')).toHaveClass('is-estimate')
+  expect(container.textContent).toContain('KB. ENNYI FÉR MÉG')
+  expect(screen.getByText('Úton vagy, becsülj nyugodtan')).toBeInTheDocument()
+  expect(container.querySelector('.fmx-cell.is-lead')).toBeNull()
+  unmount()
+  hoisted.consumedKcal = 9000
+  const over = renderRecovery('TRAVEL')
+  await screen.findByRole('button', { name: /Kímélő mód, Úton vagy/ })
+  expect(over.container.textContent).toContain('A KERET KÖRÜL')
+  expect(over.container.textContent).not.toMatch(/A KERET FELETT|a keret felett/i)
+  expect(over.container.textContent).not.toMatch(SHAME_RX)
+})
+
+test('no recovery period: the normal hero, no strip, no note', async () => {
+  const { container } = renderView()
+  expect(container.querySelector('.fmx-hero')).not.toBeNull()
+  expect(container.querySelector('.fmx-kmstrip')).toBeNull()
+  expect(container.querySelector('.fmx-kmnote')).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Ma nincs kalóriacél' })).toBeNull()
+})
+
+test('in every recovery mode an unlogged closed window shows no „még pótolható" chip', async () => {
+  for (const category of ['INJURY', 'TRAVEL', 'ILLNESS'] as const) {
+    const { container, unmount } = renderRecovery(category)
+    await screen.findByRole('button', { name: /Víz logolása/ })
+    expect(container.querySelector('.fmx-when-chip')?.textContent ?? '').not.toMatch(/pótolható/)
+    expect(container.querySelector('.fmx-blocks')!.textContent).not.toMatch(/pótolható/)
+    unmount()
+  }
+})
+
+test('the „tegnap pótolható" chip is hidden when YESTERDAY has a fuel mode (a kímélő nap is nothing to make up)', async () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  // control: no period → the chip is there
+  const control = renderView()
+  expect(control.container.querySelector('.fmx-pastchip')).not.toBeNull()
+  control.unmount()
+  // INJURY since the day before yesterday → yesterday is a MAINTENANCE day
+  const { container } = renderRecovery('INJURY')
+  await screen.findByRole('button', { name: /Kímélő mód, Sérülés/ })
+  expect(container.querySelector('.fmx-pastchip')).toBeNull()
 })

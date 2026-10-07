@@ -238,7 +238,7 @@ function logButtonLabel(tile: WindowTileVM, nowHHmm: string | null): string {
 
 /** The skipped window's body (Kihagyás S3, prototype `.skipd.in` + `.skacts`): flat inside the
  *  block — never glass in glass. A skip is neutral: the budget stays, nothing is redistributed. */
-function SkippedMeal({ tile, skipping }: { tile: WindowTileVM; skipping: MealSkipActions }) {
+function SkippedMeal({ tile, skipping, guidance }: { tile: WindowTileVM; skipping: MealSkipActions; guidance: boolean }) {
   const skip = tile.skip!
   const reason = MEAL_REASONS.find(r => r.value === skip.reasonCategory)
   const hasReason = skip.reasonCategory !== 'NONE'
@@ -249,7 +249,10 @@ function SkippedMeal({ tile, skipping }: { tile: WindowTileVM; skipping: MealSki
         <Icon3D name={(reason?.icon ?? 't-skip') as Icon3DName} size={28} />
         <span>
           <b>Kihagyva · {mealSkipLabel(skip)}</b>
-          <small>{kcal != null ? `${huInt(kcal)} kcal kiesett a napból. ` : ''}A többi étkezésed nem lett nagyobb.</small>
+          {/* GUIDANCE: the day has no keret, so nothing „kiesik" — just care, never a miss. */}
+          <small>{guidance
+            ? 'Nem számít mulasztásnak. Jobbulást!'
+            : `${kcal != null ? `${huInt(kcal)} kcal kiesett a napból. ` : ''}A többi étkezésed nem lett nagyobb.`}</small>
         </span>
       </div>
       <div className="fmx-skacts">
@@ -267,7 +270,7 @@ function SkippedMeal({ tile, skipping }: { tile: WindowTileVM; skipping: MealSki
   )
 }
 
-function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogInto, onOpenMeal, onOpenScore, onOpenClock, onOpenGlycemic }: {
+function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, mode, onLogInto, onOpenMeal, onOpenScore, onOpenClock, onOpenGlycemic }: {
   tile: WindowTileVM
   rows: DoneMealRow[]
   /** A jelen idő — az „Ajánlott" sor chipjéhez és az óra „most nyitva" jelöléséhez. Null a
@@ -278,6 +281,9 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogIn
   /** A blokk sorszáma a listában — a pont-chip lüktetés-staggerének (`--i`) nevezője. */
   index: number
   skipping?: MealSkipActions
+  /** Kímélő mód (Kihagyás S3): GUIDANCE drops every budget cue; MAINTENANCE/ESTIMATE only drop
+   *  the „még pótolható" nudge. null outside a recovery period. */
+  mode: FuelMode | null
   onLogInto: (tile: WindowTileVM) => void
   onOpenMeal: (mealId: string) => void
   /** A pont-chip SAJÁT célja: az AI értékelés, nem az étkezés részletei (mezo-jb84). */
@@ -294,8 +300,9 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogIn
   const skipped = tile.state === 'skipped' && tile.skip != null && rows.length === 0
   // „Kihagytam": the window is closed (a past day, or the clock is past its end) — past tense.
   const closed = nowHHmm == null || (tile.windowTo != null && toMin(nowHHmm) > toMin(tile.windowTo))
+  const guidance = mode === 'GUIDANCE'
   const canSkip = Boolean(skipping) && !skipped && rows.length === 0 && tile.skipKey != null
-    && skipping!.fuelMode !== 'GUIDANCE' && canSkipMealOn(skipping!.date, skipping!.today)
+    && !guidance && canSkipMealOn(skipping!.date, skipping!.today)
 
   return (
     // Üveg (mezo-me75u.1, §3.4): a logged block is glass in its slot hue; an empty one is the
@@ -315,14 +322,23 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogIn
               this ring and has budgetKcal null; tile.kcal is its only kcal source then. */}
           {skipped
             ? <span className="fmx-bskip">kihagyva</span>
-            : <BudgetRing kcal={rows.length ? loggedKcal : tile.budgetKcal ?? tile.kcal} budgetKcal={tile.budgetKcal} logged={rows.length > 0} />}
+            : guidance
+              // GUIDANCE: no budget ring — a logged block shows its kcal plain, an empty one nothing.
+              ? loggedKcal != null && rows.length > 0 && <span className="fmx-bplain">{huInt(loggedKcal)}<small>kcal</small></span>
+              : <BudgetRing kcal={rows.length ? loggedKcal : tile.budgetKcal ?? tile.kcal} budgetKcal={tile.budgetKcal} logged={rows.length > 0} />}
         </span>
       </div>
-      {rows.length === 0 && !skipped && tile.windowFrom && tile.windowTo && (
+      {rows.length === 0 && !skipped && guidance && (
+        <div className="fmx-when">Ha megy, egyél. Nincs mihez mérni.</div>
+      )}
+      {rows.length === 0 && !skipped && !guidance && tile.windowFrom && tile.windowTo && (
         <div className="fmx-when">Ajánlott <b>{tile.windowFrom}–{tile.windowTo}</b>
-          <span className={`fmx-when-chip${nowHHmm != null && toMin(nowHHmm) >= toMin(tile.windowFrom) && toMin(nowHHmm) <= toMin(tile.windowTo) ? ' is-now' : ''}`}>
-            {whenChip(tile.windowFrom, tile.windowTo, nowHHmm)}
-          </span></div>
+          {/* Kímélő módban semmi sem „pótolandó": a lezárt ablak chipje elmarad. */}
+          {!(mode != null && whenChip(tile.windowFrom, tile.windowTo, nowHHmm) === 'még pótolható') && (
+            <span className={`fmx-when-chip${nowHHmm != null && toMin(nowHHmm) >= toMin(tile.windowFrom) && toMin(nowHHmm) <= toMin(tile.windowTo) ? ' is-now' : ''}`}>
+              {whenChip(tile.windowFrom, tile.windowTo, nowHHmm)}
+            </span>
+          )}</div>
       )}
       {rows.map(r => (
         <div key={r.mealId} className="fmx-meal-row">
@@ -347,7 +363,7 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogIn
           </div>
         </div>
       ))}
-      {skipped && skipping && <SkippedMeal tile={tile} skipping={skipping} />}
+      {skipped && skipping && <SkippedMeal tile={tile} skipping={skipping} guidance={guidance} />}
       {rows.length === 0 && !skipped && (
         <div className={canSkip ? 'fmx-frow' : undefined}>
           <button type="button" className="fmx-block-log" onClick={() => onLogInto(tile)}
@@ -358,7 +374,8 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogIn
               {/* Szégyenmentes: a kimaradt ablak „még pótolható", nem hiba (mezo-6g52f R1: a saját
                   ablakból számolva, nem a tile.state „most" jelöléséből, ami a nap ELSŐ lognélküli
                   ablakára igaz akkor is, ha az később nyílik). */}
-              <small>{logButtonLabel(tile, nowHHmm)}</small>
+              <small>{mode != null && (guidance || logButtonLabel(tile, nowHHmm) === 'még pótolható')
+                ? 'ha ettél, beírhatod' : logButtonLabel(tile, nowHHmm)}</small>
             </span>
           </button>
           {canSkip && (
@@ -374,7 +391,7 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, onLogIn
   )
 }
 
-export function FuelMealBlocks({ lane, meals, day, fiberTargetG, skipping, onLogInto, onOpenMeal, onOpenScore }: {
+export function FuelMealBlocks({ lane, meals, day, fiberTargetG, skipping, fuelMode, onLogInto, onOpenMeal, onOpenScore }: {
   lane: WindowLaneVM
   meals: DoneMealRow[]
   /** A napóra napi kerete (mezo-6g52f) — az ablakok és az étkezésszám a lane-ből származik.
@@ -384,10 +401,13 @@ export function FuelMealBlocks({ lane, meals, day, fiberTargetG, skipping, onLog
   fiberTargetG: number
   /** Kihagyás S3: the meal-skip actions; omitted ⇒ no skip UI. */
   skipping?: MealSkipActions
+  /** The day's kímélő-mód Fuel behaviour (Kihagyás S3) — falls back to `skipping.fuelMode`. */
+  fuelMode?: FuelMode | null
   onLogInto: (tile: WindowTileVM) => void
   onOpenMeal: (mealId: string) => void
   onOpenScore: (mealId: string) => void
 }) {
+  const mode = fuelMode ?? skipping?.fuelMode ?? null
   const [clockFor, setClockFor] = useState<string | null>(null)
   const [glucoseFor, setGlucoseFor] = useState<string | null>(null)
   const glucoseRow = meals.find(m => m.mealId === glucoseFor) ?? null
@@ -412,7 +432,7 @@ export function FuelMealBlocks({ lane, meals, day, fiberTargetG, skipping, onLog
   return (
     <div className="fmx-blocks">
       {lane.tiles.map((tile, index) => (
-        <BlockCard key={tile.key} tile={tile} nowHHmm={day.nowHHmm} fiberTargetG={fiberTargetG} index={index} skipping={skipping}
+        <BlockCard key={tile.key} tile={tile} nowHHmm={day.nowHHmm} fiberTargetG={fiberTargetG} index={index} skipping={skipping} mode={mode}
           rows={meals.filter(m => m.mealId === tile.mealId)}
           onLogInto={onLogInto} onOpenMeal={onOpenMeal} onOpenScore={onOpenScore} onOpenClock={setClockFor}
           onOpenGlycemic={setGlucoseFor} />

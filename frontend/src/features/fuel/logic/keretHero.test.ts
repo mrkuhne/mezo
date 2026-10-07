@@ -420,3 +420,23 @@ test('no skipped window → skippedKcal 0 and remaining unchanged', () => {
   expect(vm.skippedLabels).toEqual([])
   expect(vm.remainingKcal).toBe(BUDGET.kcal - 500)
 })
+
+test('a skipped window is resolved: it leaves the n/m denominator (doneCount/totalCount)', () => {
+  const vm = build({
+    slots: [
+      slot({ state: 'done', time: '07:40', slotKey: 'breakfast' }),
+      slot({ state: 'skipped', time: '16:30', label: 'Uzsonna', slotKey: 'snack', budgetKcal: 420 }),
+      slot({ state: 'pending', time: '19:30', slotKey: 'dinner' }),
+    ],
+  })
+  expect(vm.doneCount).toBe(1)
+  expect(vm.totalCount).toBe(2)
+})
+
+test('heroEquationLines with a paused goal keeps the Célod row, reading 0', () => {
+  const vm = build()
+  const lines = heroEquationLines(vm, 'maintain', true)
+  expect(lines.find(l => l.key === 'goal')).toMatchObject({ value: 0, sign: '±' })
+  // not paused + maintain + zero balance → no row (unchanged)
+  expect(heroEquationLines({ ...vm, chips: { ...vm.chips!, balance: 0 } }, 'maintain').some(l => l.key === 'goal')).toBe(false)
+})

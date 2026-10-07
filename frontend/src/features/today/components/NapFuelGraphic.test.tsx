@@ -79,3 +79,26 @@ describe('NapFuelGraphic', () => {
     expect(card).toHaveClass('glass')
   })
 })
+
+// Kihagyás S3 (mezo-q4xt2.3): a GUIDANCE nap nem mér kalóriát — egyetlen nyugodt sor a műszer helyén.
+describe('NapFuelGraphic · kímélő mód', () => {
+  it('shows ONE calm line instead of the macro instrument on a guidance day', () => {
+    const { container } = render(<NapFuelGraphic guidance consumed={consumed} targets={targets} />)
+    expect(screen.getByText('Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(container.querySelector('.nap-fuel-reactor')).toBeNull()
+    expect(container.textContent).not.toMatch(/keret|1 460|2 200|elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
+    expect(container.querySelector('use')).not.toBeNull()
+  })
+
+  it('without guidance the instrument is unchanged', () => {
+    render(<NapFuelGraphic consumed={consumed} targets={targets} />)
+    expect(screen.getByRole('button', { name: /teljes energiabevitel/i })).toBeInTheDocument()
+    expect(screen.queryByText(/ma nincs kalóriacél/)).toBeNull()
+  })
+
+  it('a loading or failed read still wins over the guidance line', () => {
+    render(<NapFuelGraphic guidance consumed={zero} targets={targets} isPending />)
+    expect(screen.getByRole('status')).toHaveTextContent('Táplálkozási adatok betöltése')
+  })
+})
