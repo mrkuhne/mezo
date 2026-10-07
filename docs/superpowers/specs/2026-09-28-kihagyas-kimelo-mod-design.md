@@ -515,7 +515,7 @@ Brainstorm 2026-10-05/06 (recon: researcher + investigator). Owner answers in bo
   kind-agnostic caller filter MEAL out (audit in the plan). New helper `mealSkipsOn(user, date)`
   (label + reason + kcal) on the same service. No second read.
 - **Fuel mode** is a pure function `RecoveryFuelMode.of(category)` in train, answered by
-  `RecoveryPeriodService.fuelModes(user, from, to)` (period days, releases ignored; repository-only,
+  `RecoveryPeriodService.fuelDays(user, from, to)` (period days, releases ignored; repository-only,
   S2 lesson 2). `meal → train` is an existing allowed direction; train never imports meal/fuel.
 - **API:** `train-skip.yml` — `PlannedSkipKind += MEAL`, `PlannedSkipReason += NOT_HUNGRY`,
   `plannedKcal` on request/response. `meal.yml` — `FuelDayResponse` gets nullable
