@@ -2665,6 +2665,63 @@ svg{overflow:visible}
 .curve svg{width:100%;height:120px;margin-top:6px;overflow:visible}
 .newgrid3{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
 
+/* ── Fejlődés-lap (mezo-a8kcs): gyakorlatonkénti grafikon — Erő / Legjobb sorozat ── */
+.pg{--c:var(--coral)}
+.pg-hero{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;margin:2px 0 12px}
+.pg-hero .v{font-size:40px;font-weight:300;letter-spacing:-1.6px;line-height:1;color:color-mix(in srgb,var(--c) 45%,var(--ink));text-shadow:0 0 22px color-mix(in srgb,var(--c) 45%,transparent);font-variant-numeric:tabular-nums}
+.pg-hero .v small{font-size:14px;font-weight:500;letter-spacing:0;color:var(--sub);margin-left:4px;text-shadow:none}
+.pg-hero .since{font-size:11.5px;color:var(--faint)}
+.pg .seg{display:flex;margin:0 0 4px}
+.pg .seg button{flex:1;text-align:center}
+.pg .seg button.on{--c:inherit}
+.pg .seg button[disabled]{opacity:.4}
+.pg-why{font-size:11.5px;line-height:1.45;color:var(--sub);margin:6px 2px 0}
+.pg-ch{margin-top:10px}
+.pg-ch svg{display:block;width:100%;height:auto;overflow:visible;touch-action:manipulation}
+.pg-ch .gl{stroke:rgba(245,239,230,.07);stroke-width:1}
+.pg-ch .ax{font-size:9.5px;fill:var(--faint);font-variant-numeric:tabular-nums}
+.pg-ch .dl{fill:rgba(245,239,230,.05)}
+.pg-ch .dlt{font-size:8.5px;font-weight:600;letter-spacing:.9px;fill:var(--faint)}
+.pg-ch .cy{stroke:rgba(245,239,230,.2);stroke-width:1;stroke-dasharray:2 4}
+.pg-ch .cyt{font-size:8.5px;font-weight:600;letter-spacing:.9px;fill:var(--sub)}
+.pg-ch .ln{fill:none;stroke:var(--c);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 6px var(--c))}
+.pg-ch .pt{fill:var(--c)}
+.pg-ch .pt.rec{fill:var(--gold);filter:drop-shadow(0 0 5px var(--gold))}
+.pg-ch .guide{stroke:color-mix(in srgb,var(--c) 45%,transparent);stroke-width:1}
+.pg-ch .halo{fill:color-mix(in srgb,var(--c) 22%,transparent)}
+.pg-ch .halo.rec{fill:color-mix(in srgb,var(--gold) 24%,transparent)}
+.pg-ch .rp{font-size:9px;font-weight:600;fill:var(--sub);text-anchor:middle;font-variant-numeric:tabular-nums}
+.pg-ch .hit{fill:transparent;cursor:pointer}
+.pg-read{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(245,239,230,.04);box-shadow:inset 0 0 0 1px var(--hair)}
+.pg-read .d{font-size:10px;font-weight:600;letter-spacing:1.1px;color:var(--faint);text-transform:uppercase}
+.pg-read .set{font-size:17px;font-weight:600;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.pg-read .tags{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.pg-read .est{grid-column:1 / -1;font-size:11.5px;color:var(--sub)}
+.pg-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:600;color:var(--sub);background:rgba(245,239,230,.06);white-space:nowrap}
+.pg-tag.rec{color:#FFE0AE;background:color-mix(in srgb,var(--gold) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 32%,transparent)}
+.pg-list{margin-top:2px}
+.pg-list button{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;width:100%;padding:10px 2px;text-align:left;border-top:1px solid var(--hair);font-size:13px}
+.pg-list button:first-child{border-top:0}
+.pg-list .d{font-size:11.5px;color:var(--faint)}
+.pg-list .set{font-weight:600;font-variant-numeric:tabular-nums}
+.pg-list .set small{font-weight:500;color:var(--faint);margin-left:6px;font-size:11.5px}
+.pg-list button.on .set{color:color-mix(in srgb,var(--c) 55%,var(--ink))}
+.pg-empty{padding:18px 14px;border-radius:16px;border:1.2px dashed rgba(245,239,230,.16);text-align:center;font-size:13px;line-height:1.5;color:var(--sub);margin-top:10px}
+.pg-empty strong{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+.pg-foot{margin-top:12px}
+.pgdoor{margin-bottom:4px}
+.pgdoor svg.sp{flex:0 0 auto;width:54px;height:22px;overflow:visible}
+.pgdoor svg.sp path{fill:none;stroke:var(--c);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 4px var(--c))}
+.curve.pgc{padding:14px 14px 12px}
+.curve.pgc svg{height:auto;margin-top:0}
+.pgpage .pg-list{padding:0 18px}
+@keyframes pgdraw{to{stroke-dashoffset:0}}
+@keyframes pgpop{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .pg-ch.draw .ln{stroke-dasharray:1;stroke-dashoffset:1;animation:pgdraw .9s var(--ease) .1s forwards}
+  body:not(.still) .pg-ch.draw .pt,body:not(.still) .pg-ch.draw .halo,body:not(.still) .pg-ch.draw .rp,body:not(.still) .pg-ch.draw .guide{animation:pgpop .35s ease-out .75s both}
+}
+
 /* ── LEZÁRÓ CEREMÓNIA (jutalomoldal, 2 lépés) — üveg, arany fénnyel ── */
 .phone.cermode .scroll{padding-bottom:40px}
 .cer{position:relative;overflow-x:clip;text-align:center;padding:40px 16px 8px}
@@ -3384,11 +3441,11 @@ svg{overflow:visible}
       <div class="ntabs" id="ntabs"><button type="button" data-ngrp="Mai">Mai</button><button type="button" data-ngrp="Terv">Terv</button><button type="button" data-ngrp="Terhelés">Terhelés</button><button type="button" data-ngrp="Gyakorlatok">Gyakorlatok</button></div>
     </div>
     <!-- The ONLY "new" marker of the prototype. Every change rewrites this block (date, title, one sentence, links). -->
-    <section class="recent glass" data-uj="2026-10-06" style="--c:var(--gold)">
+    <section class="recent glass" data-uj="2026-10-07" style="--c:var(--coral)">
       <span class="ov">LEGUTÓBB VÁLTOZOTT</span>
-      <strong>Saját edzés szerkesztő</strong>
-      <p>A sorok összecsukva egy összegzést mutatnak, és helyben nyílnak ki, egyszerre egy.</p>
-      <div class="rlinks"><a href="#sajat">Szerkesztés</a><a href="#sajat/uj">Új, üres</a><a href="#sajat/betolt">Betöltés</a><a href="#sajat/nincs">Nem található</a></div>
+      <strong>Fejlődés gyakorlatonként</strong>
+      <p>Edzés közben a rekordok kártyájáról felcsúszik egy lap: váltható grafikon (Erő / Legjobb sorozat), megérinthető pontok, jelölt pihenőhét és ciklusváltás, alatta az alkalmak.</p>
+      <div class="rlinks"><a href="#" data-prog="row" data-at="#session">Fejlődés-lap</a><a href="#" data-gbox="recs">Honnan nyílik</a><a href="#review/gyak">Összegzésből</a><a href="#exercise">A gyakorlat oldalán</a></div>
     </section>
     <div id="jump">
     <details class="grp" data-grp="Mai" style="--c:var(--coral)">
@@ -3418,6 +3475,7 @@ svg{overflow:visible}
         <li>A gyakorlatkártyán a „Múlt hét / Ma a cél” dobozok helyett egy kis címke a név alatt (↑ +2,5 kg / +1 ism. / tartjuk)</li>
         <li><b>Csere / hozzáadás:</b> ⋮ menü → <a href="#" data-gbox="menu" data-g="0">Gyakorlat cseréje, 3 kész szettel</a> (a kész szettek maradnak, a többi az újé) · <a href="#" data-gbox="menu" data-g="1">még el nem kezdett gyakorlat cseréje</a> (a helyére kerül) · <a href="#" data-pick="add">+ Gyakorlat hozzáadása</a> a lista alján · minden után: <b>Csak ma</b> / <b>Mezociklusra is</b> · <a href="#" data-resetex>eredeti terv vissza</a></li>
         <li>Edzés közben a küldetés csak a gyakorlaton látszik: koppints a <a href="#" data-gbox="qb" data-g="1">küldetés-jelvényre</a> → elengedés / visszavétel</li>
+        <li><b>Fejlődés-lap:</b> a gyakorlatkártya napló-gombja → rekordok → „Fejlődés” sor. Állapotok: <a href="#" data-prog="row" data-at="#session">két nézet, két ciklus, pihenőhét</a> · <a href="#" data-prog="face" data-at="#session">csak Legjobb sorozat (12 ismétlés fölött)</a> · <a href="#" data-prog="pull" data-at="#session">súly nélküli gyakorlat</a> · <a href="#" data-prog="egy" data-at="#session">egyetlen alkalom</a> · <a href="#" data-prog="ures" data-at="#session">még nincs alkalom</a></li>
         <li>Edzés közben: <a href="#" data-gbox="menu">gyakorlat-menü</a> · <a href="#" data-gbox="recs">rekordok</a> · <a href="#" data-gbox="fin">befejezés</a> · <a href="#" data-rest>pihenő-óra</a></li>
         <li>Lapok: <a href="#" data-sheet="set">szett szerkesztése</a> · <a href="#" data-sheet="rp">szett-visszajelzés</a> · <a href="#" data-sheet="extra">extra szett</a> · <a href="#" data-sheet="note">jegyzet</a></li>
         <li><a href="#" data-sheet="sportlog">Sport log lap</a> · <a href="#" data-sheet="runlog">Futás log lap</a></li>
@@ -3479,6 +3537,7 @@ svg{overflow:visible}
       <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
       <ul>
         <li><a href="#medals/ures">Medálok · üres</a></li>
+        <li><a href="#exercise">Egy gyakorlat oldala</a> — „Az erőd íve” a váltható grafikonnal és az alkalmak listájával</li>
       </ul>
     </details>
     </div>
@@ -4134,6 +4193,7 @@ function review(v){
   if(v==='gyak') return `${topbar()}${back('#review','Összegzés')}
     <section class="gyhero rise" style="--c:${muscleColor('back-mid')}">${mchp('back-mid','lg')}<span><span class="eb">HÁT (KÖZÉP) · PULL DAY</span><h1>Chest Supported Row</h1><p>4 szett · a top szett 105 × 10</p></span></section>
     <section class="sstrip4 q rise"><div class="cell"><b>105×10</b><small>Top szett</small></div><div class="cell"><b>1 670</b><small>kg volumen</small></div><div class="cell"><b>1,8</b><small>Ø RIR</small></div><div class="cell"><b>102,5×9</b><small>Előzőleg</small></div></section>
+    <section class="p16"><div class="mrows pgdoor rise" style="--c:${muscleColor('back-mid')};margin-top:10px"><button data-prog="row">${I('trend')}<span><strong>Fejlődés ebben a gyakorlatban</strong><small>becsült erő · +13,3 kg júl 29. óta</small></span>${pgSpark()}<b class="chev">›</b></button></div></section>
     ${eyeb('MEDÁL','')}<section class="list"><article class="medr glass rise">${`<span class="well" style="--c:var(--gold)">${I('record')}</span>`}<span class="grow"><small class="t">SÚLY-REKORD</small><strong>Chest Supported Row</strong></span><span class="end"><b>105 kg</b><small>előző: 102,5 kg</small></span></article></section>
     ${eyeb('SZETTEK','')}<section class="list">${[['105 kg × 10','RIR 2','célsávban','1 050 kg',''],['105 kg × 10','RIR 1','célsávban','1 050 kg','Az utolsó ismétlés kemény volt'],['105 kg × 9','RIR 2','sávon kívül','945 kg',''],['105 kg × 10','RIR 2','célsávban','1 050 kg','']].map(([a,r,t,vol,n],i)=>`<div class="xset rise" style="--i:${i}"><span><b>${a}</b><small>${r}${n?` · „${n}”`:''}</small></span><em class="${t==='célsávban'?'':'out'}">${t}</em><span class="v">${vol}</span></div>`).join('')}</section>`;
   return `${topbar()}${back('#mai','Vissza')}
@@ -4276,14 +4336,14 @@ function exercises(){
   <button class="dashadd rise" style="--c:var(--gold)" data-toast="Új gyakorlat lap">＋ Új gyakorlat</button>`;
 }
 function exercise(){
-  const pts=[118,121,124,122,126.7,130,134,140];const W=300,H=110;const xy=pts.map((p,i)=>[8+i*(W-16)/(pts.length-1),H-8-(p-115)/27*(H-16)]);
+  PG.k='row';PG.sel=null;PG.v='ero';PG.draw=true;
   return `${topbar()}${back('#exercises','Gyakorlatok')}
-  <section class="gyhero rise" style="--c:${muscleColor('back-mid')}">${mchp('back-mid','lg')}<span><span class="eb">HÁT (KÖZÉP) · SAJÁT</span><h1>Chest Supported Row</h1><div class="foot2">24 alkalom · márc 4. óta · 12,4 t összsúly</div></span></section>
+  <section class="gyhero rise" style="--c:${muscleColor('back-mid')}">${mchp('back-mid','lg')}<span><span class="eb">HÁT (KÖZÉP) · SAJÁT</span><h1>Chest Supported Row</h1><div class="foot2">9 alkalom · júl 29. óta · 12,4 t összsúly</div></span></section>
   ${eyeb('REKORDJAID','',`<button class="infob" data-toast="A rekordok magyarázata">${I('info')}</button>`)}
   <section class="recs3"><div class="rec glass rise">${I('ring')}<small>BECSÜLT 1RM</small><b>140 kg</b><em>Becslés, nem mérés</em></div><div class="rec glass rise" style="--i:1">${I('weight')}<small>LEGJOBB SZETT</small><b>107,5×8</b><em>aug 28.</em></div><div class="rec glass rise" style="--i:2">${I('protocol')}<small>LEGTÖBB VOLUMEN</small><b>3 150 kg</b><em>szept 24. a csúcs · 12,4 t összesen</em></div></section>
   <div class="gap"></div><div class="callout rise" style="--c:var(--gold)"><span class="eb">${I('record','inl')} KÖVETKEZŐ CÉL</span><p>107,5 kg × 8 — a legjobb szetted, most RIR 2-vel.</p></div>
-  ${eyeb('AZ ERŐD ÍVE','')}
-  <article class="curve glass rise" style="--c:${muscleColor('back-mid')}"><svg viewBox="0 0 ${W} ${H}"><path d="M${xy.map(p=>p.join(' ')).join(' L')}" fill="none" stroke="var(--c)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 0 6px var(--c))"/>${xy.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="${i===xy.length-1?5:3}" fill="var(--c)"/>`).join('')}</svg><p class="fnote">becsült 1RM · márc → szept</p></article>
+  ${eyeb('AZ ERŐD ÍVE','',`<button class="infob" data-toast="Két nézet: a becsült erőd és az alkalom legjobb sorozata. Koppints egy pontra a részletekért.">${I('info')}</button>`)}
+  <div class="pg pgpage" data-pgroot="page" style="--c:${muscleColor('back-mid')}">${(()=>{const h=pgBodyHtml('page');PG.draw=false;return h})()}</div>
   ${eyeb('MEDÁLJAID','')}
   <section class="list">${[['Súly-rekord','105 kg','szept 24.'],['1RM-rekord','126,7 kg','szept 17.']].map(([l,v,d],i)=>`<article class="medr glass rise" style="--i:${i}"><span class="well" style="--c:var(--gold)">${I('record')}</span><span class="grow"><small class="t">${l.toUpperCase()}</small><strong>${d}</strong></span><span class="end"><b>${v}</b></span></article>`).join('')}</section>
   ${eyeb('HOL SZEREPEL','')}
@@ -4291,6 +4351,81 @@ function exercise(){
   ${eyeb('GYAKORLAT KEZELÉSE','')}
   <section class="list"><button class="lrow rise" data-toast="Szerkesztés lap">${I('note')}<span>Szerkesztés<small style="display:block;font-size:11px;color:var(--faint)">Név, izom, típus — és a törlés</small></span><b class="chev">›</b></button><button class="lrow rise" data-toast="Demó videó">${I('camera')}<span>Demó videó</span><b class="chev">›</b></button></section>`;
 }
+
+/* ── FEJLŐDÉS-LAP (mezo-a8kcs) ───────────────────────────── */
+/* egy pont = egy alkalom legjobb sorozata: [nap-sorszám, dátum, kg (0 = súly nélkül), ism., RIR, jel]  jel: 'dl' pihenőhét */
+const PGD={
+  row:{n:'Chest Supported Row',k:'back-mid',cyc:[[0,'HYPERTROPHY 03'],[6,'HYPERTROPHY 04']],
+    p:[[0,'júl 29.',95,10,3],[7,'aug 5.',97.5,10,2],[14,'aug 12.',100,12,0],[21,'aug 19.',102.5,9,1],[30,'aug 28.',107.5,8,1],[36,'szept 3.',90,10,4,'dl'],[43,'szept 10.',100,10,3],[50,'szept 17.',102.5,10,1],[57,'szept 24. · ma',105,10,1]]},
+  face:{n:'Face Pull',k:'shoulder-rear',cyc:[[0,'HYPERTROPHY 04']],
+    p:[[0,'szept 3.',25,15,3],[7,'szept 10.',25,16,2],[14,'szept 17.',27,17,2],[21,'szept 24. · ma',27,17,2]]},
+  pull:{n:'Húzódzkodás',k:'back-wide',cyc:[[0,'HYPERTROPHY 04']],
+    p:[[0,'aug 27.',0,6,2],[8,'szept 4.',0,7,2],[15,'szept 11.',0,7,1],[22,'szept 18.',0,8,1],[28,'szept 24. · ma',0,9,1]]},
+  egy:{n:'Cable Pull-Around',k:'back-wide',cyc:[[0,'HYPERTROPHY 04']],p:[[0,'szept 17.',22,13,2]]},
+  ures:{n:'Hammer Curl',k:'biceps-brachialis',cyc:[],p:[]}
+};
+const PG={k:'row',v:'ero',sel:null,draw:false};
+const pgN=n=>(Math.round(n*10)/10).toLocaleString('hu-HU').replace(/[\u00a0\u202f]/g,' ');
+const e1=(kg,r)=>kg*(30+r)/30;
+/* az Erő csak súllyal, legfeljebb 12 ismétlésig számolható — különben a Legjobb sorozat nézet nyílik */
+const pgEro=d=>d.p.length>0&&d.p.every(p=>p[2]>0)&&d.p.some(p=>p[3]<=12)&&d.p.filter(p=>p[3]<=12).length>=Math.ceil(d.p.length/2);
+const pgBody=d=>d.p.every(p=>!p[2]);
+const pgVal=(d,p,v)=>v==='ero'?e1(p[2],p[3]):pgBody(d)?p[3]:p[2];
+const pgSet=p=>p[2]?`${pgN(p[2])} kg × ${p[3]}`:`${p[3]} ism.`;
+function pgChart(d,v,sel){
+  const W=320,H=168,L=6,R=34,T=20,B=22, pts=d.p, n=pts.length;
+  const vals=pts.map(p=>pgVal(d,p,v)), unit=v==='ero'||!pgBody(d)?'kg':'';
+  let lo=Math.min(...vals), hi=Math.max(...vals);
+  /* a tengely legalább a csúcs 15%-át fogja át, hogy a kis ingás ne tűnjön zuhanásnak */
+  const span=Math.max(hi-lo,hi*.15), mid=(hi+lo)/2; lo=mid-span/2*1.15; hi=mid+span/2*1.15;
+  const x0=pts[0][0], x1=Math.max(pts[n-1][0],x0+1);
+  const X=t=>L+10+(t-x0)/(x1-x0)*(W-L-R-20), Y=y=>T+(hi-y)/(hi-lo)*(H-T-B);
+  const xy=pts.map((p,i)=>[X(p[0]),Y(vals[i])]);
+  const best=vals.indexOf(Math.max(...vals));
+  const step=[1,2,2.5,5,10,20,25,50].find(s=>(hi-lo)/s<=3.4)||50;
+  const ticks=[];for(let t=Math.ceil(lo/step)*step;t<=hi;t+=step)ticks.push(t);
+  const dl=pts.map((p,i)=>p[5]==='dl'?i:-1).filter(i=>i>=0);
+  const lab=n<=6;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${d.n}: ${v==='ero'?'becsült erő':'legjobb sorozat'} alkalmanként">
+    ${ticks.map(t=>`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(t)}" y2="${Y(t)}"/><text class="ax" x="${W-R+5}" y="${Y(t)+3}">${pgN(t)}${unit?'':''}</text>`).join('')}
+    ${dl.map(i=>{const x=xy[i][0];return `<rect class="dl" x="${x-13}" y="${T-6}" width="26" height="${H-T-B+12}" rx="8"/><text class="dlt" x="${x}" y="${H-B+16}" text-anchor="middle">PIHENŐHÉT</text>`}).join('')}
+    ${d.cyc.map(([i,l],j)=>{const x=j?(xy[i-1][0]+xy[i][0])/2:L;return `${j?`<line class="cy" x1="${x}" x2="${x}" y1="${T-8}" y2="${H-B+4}"/>`:''}<text class="cyt" x="${x+(j?5:0)}" y="9">${l}</text>`}).join('')}
+    <line class="guide" x1="${xy[sel][0]}" x2="${xy[sel][0]}" y1="${T-4}" y2="${H-B+4}"/>
+    ${n>1?`<path class="ln" pathLength="1" d="M${xy.map(p=>p.map(q=>q.toFixed(1)).join(' ')).join(' L')}"/>`:''}
+    <circle class="halo ${sel===best?'rec':''}" cx="${xy[sel][0]}" cy="${xy[sel][1]}" r="10"/>
+    ${xy.map(([x,y],i)=>`<circle class="pt ${i===best?'rec':''}" cx="${x}" cy="${y}" r="${i===sel?5:i===best?4:3}"/>${v==='set'&&!pgBody(d)&&(lab||i===sel)?`<text class="rp" x="${x}" y="${y-9}">×${pts[i][3]}</text>`:''}`).join('')}
+    <text class="ax" x="${xy[0][0]}" y="${H-B+16}" text-anchor="${n>1?'start':'middle'}">${dl[0]===0?'':pts[0][1].replace(' · ma','')}</text>
+    ${n>1&&dl[dl.length-1]!==n-1?`<text class="ax" x="${xy[n-1][0]}" y="${H-B+16}" text-anchor="end">${/ma/.test(pts[n-1][1])?'ma':pts[n-1][1]}</text>`:''}
+    ${xy.map(([x],i)=>{const a=i?(xy[i-1][0]+x)/2:0,b=i<n-1?(x+xy[i+1][0])/2:W;return `<rect class="hit" data-pgp="${i}" x="${a}" y="0" width="${b-a}" height="${H}"><title>${pts[i][1]}</title></rect>`}).join('')}
+  </svg>`;
+}
+/* mode: 'sheet' (fejléc + hős + lista + ajtó a teljes oldalra) | 'page' (a gyakorlat oldalán, üvegkártyában) */
+function pgBodyHtml(mode){
+  const d=PGD[PG.k], n=d.p.length, can=pgEro(d), v=can?PG.v:'set', body=pgBody(d);
+  const head=mode==='sheet'?`<div class="shh">${mchp(d.k,'lg')}<div class="grow"><span class="eb">FEJLŐDÉS · ${muscleLabel(d.k).toUpperCase()}</span><h3>${d.n}</h3></div><button class="x" data-closesheet aria-label="Bezár">✕</button></div>`:'';
+  const foot=mode==='sheet'?`<div class="mrows pg-foot"><button data-go="#exercise">${I('journal')}<span><strong>A gyakorlat teljes oldala</strong><small>Rekordok, medálok, hol szerepel</small></span><b class="chev">›</b></button></div>`:'';
+  if(!n) return `${head}<div class="pg-empty"><strong>Még nincs naplózott alkalom.</strong>Az első sorozatod után itt kezdődik a vonal.</div>${foot}`;
+  const sel=PG.sel==null||PG.sel>=n?n-1:PG.sel, p=d.p[sel], last=d.p[n-1], first=d.p[0];
+  const cur=pgVal(d,last,v), dv=cur-pgVal(d,first,v), u=v==='ero'||!body?'kg':'ism.';
+  const best=d.p.map(q=>pgVal(d,q,v)); const bi=best.indexOf(Math.max(...best));
+  const hero=`<div class="pg-hero"><span class="v">${v==='set'&&!body?`${pgN(last[2])}<small>kg × ${last[3]}</small>`:`${pgN(cur)}<small>${u}</small>`}</span>${n>1?`<span class="dchip ${dv>0?'up':'hold'}">${dv>0?'↑ +':dv<0?'↓ −':''}${dv?pgN(Math.abs(dv))+' '+u:'tartod'}</span><span class="since">${first[1]} óta · ${n} alkalom</span>`:`<span class="since">${first[1]} · 1 alkalom</span>`}</div>`;
+  const seg=`<div class="seg" role="tablist"><button role="tab" data-pgv="ero" class="${v==='ero'?'on':''}" aria-selected="${v==='ero'}" ${can?'':'disabled'}>Erő</button><button role="tab" data-pgv="set" class="${v==='set'?'on':''}" aria-selected="${v==='set'}">Legjobb sorozat</button></div>`;
+  const why=!can?`<p class="pg-why">${body?'Súly nélküli gyakorlatnál nincs erőbecslés — itt az ismétlések számát látod.':'12 ismétlés fölött az erőbecslés nem megbízható, ezért itt a legjobb sorozatod súlyát látod.'}</p>`
+    :v==='ero'?`<p class="pg-why">Becsült erő: a legjobb sorozatod súlyából és ismétléséből számolva. Becslés, nem mérés.</p>`
+    :`<p class="pg-why">Az alkalom legjobb sorozata${body?'':' — a vonal a súlyt, a kis szám az ismétlést mutatja'}.</p>`;
+  const chart=n>1?`<div class="pg-ch ${PG.draw?'draw':''}">${pgChart(d,v,sel)}</div>`
+    :`<div class="pg-ch">${pgChart(d,v,0)}</div><p class="pg-why">Egy alkalom még csak egy pont — a következő után lesz belőle vonal.</p>`;
+  const read=`<div class="pg-read"><span class="d">${p[1]}</span><span class="tags">${sel===bi&&n>1?'<span class="pg-tag rec">rekord</span>':''}${p[5]==='dl'?'<span class="pg-tag">pihenőhét</span>':''}<span class="pg-tag">RIR ${p[4]}</span></span><span class="set">${pgSet(p)}</span>${p[2]?`<span class="est">${p[3]<=12?`becsült erő ${pgN(e1(p[2],p[3]))} kg`:'12 ismétlés fölött nincs erőbecslés'} · ${p[4]} ismétlés maradt a tartalékban</span>`:`<span class="est">${p[4]} ismétlés maradt a tartalékban</span>`}</div>`;
+  const rows=d.p.map((q,i)=>[q,i]).reverse().slice(0,mode==='sheet'?5:99);
+  const list=n>1?`${mode==='sheet'?'<span class="subh">LEGUTÓBBI ALKALMAK</span>':''}<div class="pg-list">${rows.map(([q,i])=>`<button data-pgp="${i}" class="${i===sel?'on':''}"><span class="d">${q[1].replace(' · ma','')}</span><span class="set">${pgSet(q)}<small>RIR ${q[4]}</small></span><span>${i===bi?'<span class="pg-tag rec">rekord</span>':q[5]==='dl'?'<span class="pg-tag">pihenőhét</span>':/ma/.test(q[1])?'<span class="pg-tag">ma</span>':''}</span></button>`).join('')}</div>`:'';
+  if(mode==='page') return `<article class="curve pgc glass rise" style="--c:${muscleColor(d.k)}">${seg}${why}${chart}${read}</article>${n>1?eyeb('ALKALMAK','',`${n} alkalom · ${first[1]} óta`):''}${list}`;
+  return `${head}${hero}${seg}${why}${chart}${read}${list}${foot}`;
+}
+function pgPaint(root){const m=root.dataset.pgroot;root.innerHTML=pgBodyHtml(m);PG.draw=false}
+function openProg(k){PG.k=k;PG.sel=null;PG.v='ero';PG.draw=true;const d=PGD[k],sh=$('#sheet');closeGb();
+  sh.style.setProperty('--c',muscleColor(d.k));sh.innerHTML=`<div class="grab"></div><div class="pg" data-pgroot="sheet" style="--c:${muscleColor(d.k)}">${pgBodyHtml('sheet')}</div>`;PG.draw=false;
+  $('#scrim').classList.add('on');sh.classList.add('on');sh.scrollTop=0}
+const pgSpark=()=>{const v=PGD.row.p.map(p=>e1(p[2],p[3])),lo=Math.min(...v),hi=Math.max(...v);return `<svg class="sp" viewBox="0 0 54 22" aria-hidden="true"><path d="M${v.map((y,i)=>`${(2+i*50/(v.length-1)).toFixed(1)} ${(20-(y-lo)/(hi-lo)*18).toFixed(1)}`).join(' L')}"/></svg>`};
 
 /* ── ÚJ IKONOK ───────────────────────────────────────────── */
 function ikonok(){
@@ -5122,10 +5257,11 @@ CHAL.forEach(c=>c.rel=false);
 const GB={
   menu:['var(--coral)',(g)=>{const gi=+(g||0),e=EX[gi]||EX[0],d=e.sets.filter(isDone).length;return `<div class="gb-top"><span class="eb">GYAKORLAT</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp(e.k)}<span><h3>${e.n}</h3><p>${e.sets.length} szett · ${muscleLabel(e.k)}</p></span></div>
     <div class="mrows">${[['camera','Videó','A mozdulat bemutatója','recs'],['note','Jegyzet','Forma-emlékeztető, beállítás…','note'],['weight','Szett hozzáadása',`Most ${e.sets.length} szett van`,'extra'],['weight','Szett elvétele','',''],['up','Előrébb','',''],['down','Hátrébb','',''],['swap','Gyakorlat cseréje',d?`A ${d} kész szett itt marad, a többi az újé`:'Hasonlóra vagy bármi másra','pick'],['skip','Gyakorlat kihagyása','','']].map(([ic,l,h,sh])=>`<button class="${ic==='skip'?'warnr':''}" ${sh==='pick'?`data-pick="swap" data-g="${gi}"`:sh&&sh!=='recs'?`data-sheet="${sh}"`:`data-toast="${l}"`}>${I(ic)}<span><strong>${l}</strong>${h?`<small>${h}</small>`:''}</span><b class="chev">›</b></button>`).join('')}</div>`}],
-  recs:['var(--gold)',()=>`<div class="gb-top"><span class="eb">HÁT (KÖZÉP) · 24 ALKALOM</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp('back-mid')}<span><h3>Chest Supported Row</h3></span></div>
+  recs:['var(--gold)',()=>`<div class="gb-top"><span class="eb">HÁT (KÖZÉP) · 9 ALKALOM</span><button data-closegb aria-label="Bezárás">×</button></div><div class="gb-title">${mchp('back-mid')}<span><h3>Chest Supported Row</h3></span></div>
+    <div class="mrows pgdoor" style="--c:${muscleColor('back-mid')}"><button data-prog="row">${I('trend')}<span><strong>Fejlődés</strong><small>becsült erő · +13,3 kg júl 29. óta</small></span>${pgSpark()}<b class="chev">›</b></button></div>
     <span class="subh">A MÚLTKORI ALKALOM</span><div class="kgrow"><div class="cell"><small>KG</small><b>102,5</b></div><div class="cell"><small>REP</small><b>9</b></div><div class="cell"><small>RIR</small><b>2</b></div></div>
     <span class="subh">MEGDÖNTHETŐ REKORDOK</span>
-    <div class="recbar"><div class="hrow"><span>${I('ring')}BECSÜLT 1RM</span><span>márc 4. óta áll</span></div><b>140 kg</b>${bar(86,'var(--gold)')}<small>Becslés, nem mérés</small></div>
+    <div class="recbar"><div class="hrow"><span>${I('ring')}BECSÜLT 1RM</span><span>aug 12. óta áll</span></div><b>140 kg</b>${bar(86,'var(--gold)')}<small>Becslés, nem mérés</small></div>
     <div class="recbar beat"><div class="hrow"><span>${I('weight')}LEGJOBB SZETT</span><em>MA MEGDÖNTVE</em></div><b>105 × 10</b>${bar(100,'var(--gold)')}</div>
     <div class="recbar"><div class="hrow"><span>${I('protocol')}LEGTÖBB VOLUMEN</span><span>egy alkalmon</span></div><b>3 150 kg</b>${bar(66,'var(--gold)')}</div>
     <span class="subh">REP-REKORDOK</span><div class="grows">${[['100 kg','12','aug 12.'],['105 kg','10','ma'],['107,5 kg','8','aug 28.']].map(([k,r,d])=>`<div><span>${k}</span><b>${r} rep</b><em>${d}</em></div>`).join('')}</div>`],
@@ -5279,6 +5415,9 @@ document.addEventListener('click',e=>{
   if(t.closest('a[href="#cer"]')&&location.hash==='#cer'){e.preventDefault();render();return}
   if(t.closest('[data-closesheet]')){closeSheet();return}
   if(t.closest('[data-closegb]')){closeGb();return}
+  const pgo=t.closest('[data-prog]'); if(pgo){e.preventDefault();const k=pgo.dataset.prog,at=pgo.dataset.at;if(at&&!location.hash.startsWith(at)){location.hash=at;setTimeout(()=>openProg(k),80)}else openProg(k);return}
+  const pgv=t.closest('[data-pgv]'); if(pgv){if(pgv.disabled)return;PG.v=pgv.dataset.pgv;PG.draw=true;pgPaint(pgv.closest('[data-pgroot]'));return}
+  const pgp=t.closest('[data-pgp]'); if(pgp){PG.sel=+pgp.dataset.pgp;pgPaint(pgp.closest('[data-pgroot]'));return}
   const skb=t.closest('[data-skip]'); if(skb){e.preventDefault();const k=skb.dataset.skip;SK[k]={cat:'NONE',text:''};SKORD.push(k);WHYK=k;paintView();openSheet('why');toast('Kihagyva — bármikor visszavonhatod');return}
   const wy=t.closest('[data-why]'); if(wy){const tx=$('#whytext');if(tx)SK[WHYK].text=tx.value.trim();SK[WHYK].cat=wy.dataset.why;if(KM&&KM.from===WHYK){if(serious(WHYK))KM.cat=SK[WHYK].cat;else KM=null}$('#sheet').innerHTML='<div class="grab"></div>'+whySheet();paintView();return}
   const wd=t.closest('[data-whydone]'); if(wd){const tx=$('#whytext');if(tx)SK[WHYK].text=tx.value.trim();closeSheet();paintView();if(wd.dataset.whydone==='1')toast(`Megjegyeztem · ${skLabel(WHYK)}`);return}
