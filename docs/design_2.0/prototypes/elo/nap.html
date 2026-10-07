@@ -258,17 +258,7 @@ svg{overflow:visible}
 .toast{position:absolute;left:50%;bottom:170px;z-index:60;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:999px;background:rgba(43,33,24,.86);color:#fff;font-size:12.5px;white-space:nowrap;transition:.3s var(--ease);pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ── Side notes (desktop) ────────────────────── */
-.notes{width:300px;padding-top:30px}
-.notes h1{font-size:28px;font-weight:600;letter-spacing:-1px}
-.notes .ov{font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
-.notes p{font-size:13.5px;line-height:1.55;color:var(--sub);margin:10px 0 18px}
-.notes nav{display:grid;gap:8px;margin-bottom:22px}
-.notes nav a{--c:var(--sage);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;text-decoration:none;color:var(--ink);font-size:13.5px;font-weight:500}
-.notes nav a .icon{width:28px;height:28px}
-.notes nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent)}
-.notes ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding-left:16px;display:grid;gap:4px}
-.toggle{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:12.5px;color:var(--sub)}
+/* ── Side panel (desktop): styles and behaviour come from the panel-kit block ── */
 @media(max-width:780px){.notes{display:none}}
 
 
@@ -1557,7 +1547,6 @@ svg{overflow:visible}
 .legend .icon{width:20px;height:20px}
 
 .poster p .icon,.icon.inl{width:18px;height:18px;display:inline-block;vertical-align:-4px;filter:none!important}
-.notes ul a{color:var(--sky)}
 /* Kamra tile */
 .tile{--c:var(--sage);display:flex;flex-direction:column;gap:6px;padding:14px 13px 13px;border-radius:20px;width:100%;min-height:176px}
 .tile-top{display:flex;justify-content:space-between;align-items:flex-start}
@@ -2713,54 +2702,179 @@ svg{overflow:visible}
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast"></div>
   </div>
-  <aside class="notes">
-    <span class="ov">NAP · ÉLŐ PROTOTÍPUS</span>
-    <h1>A Nap · Check-in 2.0</h1>
-    <p>Ugyanaz a tartalom, mint élesben, az új anyagban: a Mai központ, a Check-in, az Életjelek, a Küldetések, a Rutin, a Beszélgetés, a Gyors logolás a rögzítő lapokkal, a Napzárás és az értesítések panelje.</p>
-    <nav id="jump">
-      <a href="#mai" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Mai (Napközpont)</a>
-      <a href="#checkin" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-checkin"/></svg>Check-in (új)</a>
-      <a href="#hatasok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-orb"/></svg>Mit táplál az új check-in?</a>
-      <a href="#napom" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-day"/></svg>A napod · Te: 7/10</a>
-      <a href="#nap/2026-09-24" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-orb"/></svg>A napom · ma, élőben</a>
-      <a href="#nap/2026-09-24/este" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>A napom · este, napzárás előtt</a>
-      <a href="#nap/2026-09-23" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>A napom · tegnap, lezárva</a>
-      <a href="#nap/2026-09-21" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>A napom · kevés adat</a>
-      <a href="#maieste" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Mai · este 20:00 után</a>
-      <a href="#mai/kimelo" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-ill"/></svg>Mai · kímélő mód, 2. nap</a>
-      <a href="#mai/kimelo-lejart" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-travel"/></svg>Mai · kímélő mód, a becslés letelt</a>
-      <a href="#eletjel" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-heart"/></svg>Életjelek</a>
-      <a href="#kuldetesek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-quest"/></svg>Napi küldetések</a>
-      <a href="#rutin" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-chain"/></svg>Rutin</a>
-      <a href="#rutin-epites" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-dawn"/></svg>Rutinok szerkesztése</a>
-      <a href="#lanc" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chain"/></svg>Egy lánc</a>
-      <a href="#szokasok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-harvest"/></svg>Szokásaid</a>
-      <a href="#szokas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Egy szokás</a>
-      <a href="#szerk" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-book"/></svg>Szokás szerkesztése</a>
-      <a href="#rutin-uj/fw" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-anchor"/></svg>Új szokás varázsló</a>
-      <a href="#uzenetek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés (Mezo üzenetei)</a>
-      <a href="#gyors" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-quick"/></svg>Gyors logolás</a>
-      <a href="#napzaras" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Napzárás</a>
-      <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Új ikonok</a>
-    </nav>
-    <span class="ov">LAPOK, AMIK ALULRÓL JÖNNEK</span>
-    <ul>
-      <li>Check-in 2.0: <a href="#" data-ckslot="06:30">reggel</a> · <a href="#" data-ckslot="10:00">délelőtt</a> · <a href="#" data-ckslot="14:00">délután</a> · <a href="#" data-ckslot="20:00">este</a></li>
-      <li><a href="#" data-sheet="water">Víz</a> · <a href="#" data-sheet="weight">Súly</a> · <a href="#" data-sheet="sleep">Alvás</a> · <a href="#" data-sheet="sport">Sport</a></li>
-      <li><a href="#" data-sheet="journal">Napló</a> · <a href="#" data-sheet="activity">Aktivitás</a> · <a href="#" data-sheet="naplopick">Mit naplózol?</a></li>
-      <li><a href="#" data-sheet="reflect">Szándékkal élted a napot?</a> (Rutin · este)</li>
-      <li><a href="#" data-sheet="ndlog">Mit írsz be?</a> (A napom · élő frissítés)</li>
-      <li>Kímélő mód: <a href="#" data-sheet="kimelo">Mi történt?</a> (a Mai „Nem vagyok jól” linkje) · <a href="#" data-sheet="kmwelcome">Üdv újra!</a> (a „Jobban” után)</li>
-      <li>Kímélő mód a kártyán: „Még nem” → vékony sor holnapig · „Tévedés volt” → megerősítés a kártyán belül</li>
-      <li>Rutinok szerkesztése: <a href="#" data-rst="rutin:full">ma, félúton</a> · <a href="#" data-rst="rutin:done">mind megvan</a> · <a href="#" data-rst="rutin:past">egy korábbi nap</a> · <a href="#" data-sheet="ai">AI javaslat</a> · <a href="#" data-sheet="chain">új lánc</a></li>
-      <li>Lánc: <a href="#" data-rst="lanc:view">nézet</a> · <a href="#" data-rst="lanc:edit">szerkesztés</a> · Varázsló: <a href="#rutin-uj/fw">keret</a> · <a href="#rutin-uj/anchor">horgony</a> · <a href="#rutin-uj/act">tett</a> · <a href="#rutin-uj/celeb">ünneplés</a> · <a href="#" data-sheet="anchor">„Mihez kötöd?”</a></li>
-      <li>Az értesítések: a harang a fejlécben</li>
-      <li>Üres állapot: <a href="#kuldetesek/ures">nincs küldetés</a></li>
-    </ul>
+  <aside class="notes" id="notes" style="--dc:var(--gold)">
+    <div class="nhead">
+      <span class="ov">NAP · ÉLŐ PROTOTÍPUS</span>
+      <div class="nnow"><small>MOST ITT</small><strong id="nnow"></strong></div>
+      <div class="ntabs" id="ntabs"><button type="button" data-ngrp="Mai">Mai</button><button type="button" data-ngrp="A napom">A napom</button><button type="button" data-ngrp="Beszélgetés">Beszélgetés</button><button type="button" data-ngrp="Rutin">Rutin</button></div>
+    </div>
+    <!-- The ONLY "new" marker of the prototype. Every change rewrites this block (date, title, one sentence, links). -->
+    <section class="recent glass" data-uj="2026-10-06" style="--c:var(--gold)">
+      <span class="ov">LEGUTÓBB VÁLTOZOTT</span>
+      <strong>Rutinok szerkesztése a Rutin fülön</strong>
+      <p>A rutinépítés az Énből ide költözött: a Rutin fül alján a „Rutinok szerkesztése” sor nyitja.</p>
+      <div class="rlinks"><a href="#rutin">Rutin</a><a href="#rutin-epites">Rutinok szerkesztése</a><a href="#lanc">Egy lánc</a><a href="#szokasok">Szokásaid</a></div>
+    </section>
+    <div id="jump">
+    <details class="grp" data-grp="Mai" style="--c:var(--gold)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-nap"/></svg><strong>Mai</strong><em>11 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#mai" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Mai (Napközpont)</a>
+        <a href="#checkin" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-checkin"/></svg>Check-in</a>
+        <a href="#hatasok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-orb"/></svg>Mit táplál az új check-in?</a>
+        <a href="#maieste" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Mai · este 20:00 után</a>
+        <a href="#mai/kimelo" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-ill"/></svg>Mai · kímélő mód, 2. nap</a>
+        <a href="#mai/kimelo-lejart" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-travel"/></svg>Mai · kímélő mód, a becslés letelt</a>
+        <a href="#eletjel" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-heart"/></svg>Életjelek</a>
+        <a href="#kuldetesek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-quest"/></svg>Napi küldetések</a>
+        <a href="#gyors" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-quick"/></svg>Gyors logolás</a>
+        <a href="#napzaras" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Napzárás</a>
+        <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Új ikonok</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Check-in 2.0: <a href="#" data-ckslot="06:30">reggel</a> · <a href="#" data-ckslot="10:00">délelőtt</a> · <a href="#" data-ckslot="14:00">délután</a> · <a href="#" data-ckslot="20:00">este</a></li>
+        <li><a href="#" data-sheet="water">Víz</a> · <a href="#" data-sheet="weight">Súly</a> · <a href="#" data-sheet="sleep">Alvás</a> · <a href="#" data-sheet="sport">Sport</a></li>
+        <li><a href="#" data-sheet="journal">Napló</a> · <a href="#" data-sheet="activity">Aktivitás</a> · <a href="#" data-sheet="naplopick">Mit naplózol?</a></li>
+        <li>Kímélő mód: <a href="#" data-sheet="kimelo">Mi történt?</a> (a Mai „Nem vagyok jól” linkje) · <a href="#" data-sheet="kmwelcome">Üdv újra!</a> (a „Jobban” után)</li>
+        <li>Kímélő mód a kártyán: „Még nem” → vékony sor holnapig · „Tévedés volt” → megerősítés a kártyán belül</li>
+        <li>Üres állapot: <a href="#kuldetesek/ures">nincs küldetés</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="A napom" style="--c:var(--gold)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-heti"/></svg><strong>A napom</strong><em>5 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#napom" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-day"/></svg>A napod · Te: 7/10</a>
+        <a href="#nap/2026-09-24" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-orb"/></svg>A napom · ma, élőben</a>
+        <a href="#nap/2026-09-24/este" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>A napom · este, napzárás előtt</a>
+        <a href="#nap/2026-09-23" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>A napom · tegnap, lezárva</a>
+        <a href="#nap/2026-09-21" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>A napom · kevés adat</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li><a href="#" data-sheet="ndlog">Mit írsz be?</a> (A napom · élő frissítés)</li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Beszélgetés" style="--c:var(--lav)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-mezo"/></svg><strong>Beszélgetés</strong><em>1 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#uzenetek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés (Mezo üzenetei)</a>
+      </nav>
+    </details>
+    <details class="grp" data-grp="Rutin" style="--c:var(--gold)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-rend"/></svg><strong>Rutin</strong><em>7 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#rutin" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-chain"/></svg>Rutin</a>
+        <a href="#rutin-epites" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-dawn"/></svg>Rutinok szerkesztése</a>
+        <a href="#lanc" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chain"/></svg>Egy lánc</a>
+        <a href="#szokasok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-harvest"/></svg>Szokásaid</a>
+        <a href="#szokas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Egy szokás</a>
+        <a href="#szerk" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-book"/></svg>Szokás szerkesztése</a>
+        <a href="#rutin-uj/fw" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-anchor"/></svg>Új szokás varázsló</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li><a href="#" data-sheet="reflect">Szándékkal élted a napot?</a> (Rutin · este)</li>
+        <li>Rutinok szerkesztése: <a href="#" data-rst="rutin:full">ma, félúton</a> · <a href="#" data-rst="rutin:done">mind megvan</a> · <a href="#" data-rst="rutin:past">egy korábbi nap</a> · <a href="#" data-sheet="ai">AI javaslat</a> · <a href="#" data-sheet="chain">új lánc</a></li>
+        <li>Lánc: <a href="#" data-rst="lanc:view">nézet</a> · <a href="#" data-rst="lanc:edit">szerkesztés</a> · Varázsló: <a href="#rutin-uj/fw">keret</a> · <a href="#rutin-uj/anchor">horgony</a> · <a href="#rutin-uj/act">tett</a> · <a href="#rutin-uj/celeb">ünneplés</a> · <a href="#" data-sheet="anchor">„Mihez kötöd?”</a></li>
+      </ul>
+    </details>
+    </div>
+    <details class="about">
+      <summary>Mi van ebben a prototípusban?</summary>
+      <p>Ugyanaz a tartalom, mint élesben, az új anyagban: a Mai központ, a Check-in, az Életjelek, a Küldetések, a Rutin, a Beszélgetés, a Gyors logolás a rögzítő lapokkal, a Napzárás és az értesítések panelje.</p>
+      <ul>
+        <li>Az értesítések: a harang a fejlécben</li>
+      </ul>
+    </details>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
 </div>
 
+<!-- panel-kit:start — generated from elo/_panel-kit.html by elo/_inject-panel-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Panel-kit (mezo-eitra): the shared desktop frame of every living prototype ──
+   The phone stays put and always fits the window; the side panel scrolls on its own.
+   Screens are grouped by the app's tabs in collapsible groups that follow the route.
+   The ONLY thing marked new is what the "Legutóbb változott" block names (see README). */
+.notes{width:360px}
+.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
+.notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
+.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
+.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
+.ntabs{display:flex;gap:6px;flex-wrap:wrap}
+.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--dc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 55%,transparent)}
+.recent{padding:13px 14px 14px;margin:2px 0 14px}
+.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
+.recent p{font-size:12.5px;margin:0 0 9px}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px}
+.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
+.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
+.grp{border-top:1px solid var(--hair)}
+.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .icon{width:24px;height:24px}
+.grp summary strong{font-size:15px;font-weight:600}
+.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
+.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
+.grp[open] summary i{transform:rotate(90deg)}
+.grp.cur summary strong{color:var(--dc)}
+.grp nav{display:grid;gap:6px;margin:0 0 14px}
+.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
+.grp nav a .icon{width:24px;height:24px}
+.grp nav a::after{display:none}
+.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
+.ujb{margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:1px;color:#2B2118;background:var(--gold)}
+.grp ul,.about ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
+.grp ul a,.about a{color:var(--sky)}
+.about{border-top:1px solid var(--hair);padding:11px 2px 0}
+.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+.about p{margin:8px 0 0}
+.about .ov{margin-top:12px}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
+@media(min-width:781px){
+  html,body{height:100%;overflow:hidden}
+  .stage{height:100vh;padding:24px 16px 0}
+  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
+}
+</style>
+<script>
+(function(){
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  const notes=q('#notes'), base=h=>h.slice(1).split(/[/?]/)[0], NEW_DAYS=14;
+  let cur=null;
+  function group(g,toTop){qa('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
+    qa('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
+    if(toTop){const d=q(`#jump .grp[data-grp="${g}"]`);notes.scrollTop+=d.getBoundingClientRect().top-notes.getBoundingClientRect().top-q('.nhead').offsetHeight}}
+  /* mark the screen you are on, open its group, keep it in view — the page's render() calls this */
+  window.panelSync=function(){
+    const nav=qa('#jump nav a'), all=[...nav,...qa('.rlinks a')], h=location.hash||nav[0].getAttribute('href'), r=base(h);
+    const exact=all.filter(a=>a.getAttribute('href')===h), fam=nav.filter(a=>a.getAttribute('href').startsWith('#')&&base(a.getAttribute('href'))===r);
+    const parent=fam.find(a=>a.getAttribute('href')==='#'+r)||fam[0];
+    const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...(parent?[parent]:[])];
+    all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
+    const main=hit.find(a=>a.closest('.grp')), g=main?main.closest('.grp').dataset.grp:cur;
+    if(main)q('#nnow').textContent=main.firstChild.nextSibling?main.childNodes[1].textContent.trim():main.textContent.trim();
+    if(g&&g!==cur){cur=g;group(g,false);notes.scrollTop=0}
+    if(main&&main.closest('.grp').open){const a=main.getBoundingClientRect(),b=notes.getBoundingClientRect(),top=b.top+q('.nhead').offsetHeight;
+      if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
+  const rec=q('.recent[data-uj]');
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+    rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
+    if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
+      if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
+  /* the phone always fits the window height */
+  const fit=()=>{q('#phone').style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-58)/844)):''};
+  addEventListener('resize',fit);fit();
+})();
+</script>
+<!-- panel-kit:end -->
 <!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
 <style>
 /* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
@@ -3702,7 +3816,7 @@ function render(){
   $('#phone').classList.toggle('rz',r==='napzaras');
   $('#fab').style.display=(r==='mai'||r==='maieste'||r==='gyors'||!V[r])?'none':'';
   tabbar(TAB[r]||'Mai');
-  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')==='#'+r||a.getAttribute('href')===location.hash)));
+  window.panelSync&&panelSync();
 }
 let toastT,rewT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}

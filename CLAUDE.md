@@ -178,6 +178,10 @@ now (all four tabs, their sheets), in the approved Üveg look:
   changed page in place) instead of starting a new file. A change spanning domains edits each.
   The first time a domain is touched, seed its file from the listed sources, matched against
   the live screens, and commit that seed before the change itself.
+- **Only what is really new is marked new.** Each living prototype has one "Legutóbb változott"
+  block at the top of its side panel; every change rewrites it (date, title, one sentence, links
+  to the changed routes). Nothing else in the panel says "új". New routes go into their tab's
+  group. The frame itself is shared (`_panel-kit.html` + `_inject-panel-kit.mjs`); see the recipe.
 - **Publish it as an Artifact** (`Artifact` tool, `artifact-design` loaded first) and keep
   **one fixed URL per domain**, recorded in
   [`docs/design_2.0/prototypes/elo/README.md`](docs/design_2.0/prototypes/elo/README.md).

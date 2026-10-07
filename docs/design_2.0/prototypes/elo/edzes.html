@@ -258,48 +258,7 @@ svg{overflow:visible}
 .toast{position:absolute;left:50%;bottom:170px;z-index:60;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:999px;background:rgba(43,33,24,.86);color:#fff;font-size:12.5px;white-space:nowrap;transition:.3s var(--ease);pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ── Side panel (desktop): the phone stays put, the panel scrolls on its own ── */
-.notes{width:360px}
-.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
-.notes p{font-size:13px;line-height:1.55;color:var(--sub)}
-.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
-.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
-.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint)}
-.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
-.ntabs{display:flex;gap:6px;flex-wrap:wrap}
-.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
-.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--coral) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--coral) 55%,transparent)}
-.recent{padding:13px 14px 14px;margin:2px 0 14px}
-.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
-.recent p{font-size:12.5px;margin:0 0 9px}
-.rlinks{display:flex;flex-wrap:wrap;gap:6px}
-.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
-.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
-.grp{border-top:1px solid var(--hair)}
-.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
-.grp summary::-webkit-details-marker{display:none}
-.grp summary .icon{width:24px;height:24px}
-.grp summary strong{font-size:15px;font-weight:600}
-.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
-.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
-.grp[open] summary i{transform:rotate(90deg)}
-.grp.cur summary strong{color:var(--coral)}
-.grp nav{display:grid;gap:6px;margin:0 0 14px}
-.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
-.grp nav a .icon{width:24px;height:24px}
-.grp nav a::after{display:none}
-.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
-.grp ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
-.grp ul a,.about a{color:var(--ink)}
-.about{border-top:1px solid var(--hair);padding:11px 2px 0}
-.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
-.about p{margin:8px 0 0}
-.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
-@media(min-width:781px){
-  html,body{height:100%;overflow:hidden}
-  .stage{height:100vh;padding:24px 16px 0}
-  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
-}
+/* ── Side panel (desktop): styles and behaviour come from the panel-kit block ── */
 @media(max-width:780px){.notes{display:none}}
 
 
@@ -1576,7 +1535,6 @@ svg{overflow:visible}
 .legend .icon{width:20px;height:20px}
 
 .poster p .icon,.icon.inl{width:18px;height:18px;display:inline-block;vertical-align:-4px;filter:none!important}
-.notes ul a{color:var(--sky)}
 /* Kamra tile */
 .tile{--c:var(--sage);display:flex;flex-direction:column;gap:6px;padding:14px 13px 13px;border-radius:20px;width:100%;min-height:176px}
 .tile-top{display:flex;justify-content:space-between;align-items:flex-start}
@@ -3419,14 +3377,15 @@ svg{overflow:visible}
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast"></div>
   </div>
-  <aside class="notes" id="notes">
+  <aside class="notes" id="notes" style="--dc:var(--coral)">
     <div class="nhead">
       <span class="ov">EDZÉS · ÉLŐ PROTOTÍPUS</span>
-      <div class="nnow"><small>MOST ITT</small><strong id="nnow">Mai</strong></div>
+      <div class="nnow"><small>MOST ITT</small><strong id="nnow"></strong></div>
       <div class="ntabs" id="ntabs"><button type="button" data-ngrp="Mai">Mai</button><button type="button" data-ngrp="Terv">Terv</button><button type="button" data-ngrp="Terhelés">Terhelés</button><button type="button" data-ngrp="Gyakorlatok">Gyakorlatok</button></div>
     </div>
-    <section class="recent glass" style="--c:var(--gold)">
-      <span class="ov">LEGUTÓBB VÁLTOZOTT · OKT. 6.</span>
+    <!-- The ONLY "new" marker of the prototype. Every change rewrites this block (date, title, one sentence, links). -->
+    <section class="recent glass" data-uj="2026-10-06" style="--c:var(--gold)">
+      <span class="ov">LEGUTÓBB VÁLTOZOTT</span>
       <strong>Saját edzés szerkesztő</strong>
       <p>A sorok összecsukva egy összegzést mutatnak, és helyben nyílnak ki, egyszerre egy.</p>
       <div class="rlinks"><a href="#sajat">Szerkesztés</a><a href="#sajat/uj">Új, üres</a><a href="#sajat/betolt">Betöltés</a><a href="#sajat/nincs">Nem található</a></div>
@@ -3436,28 +3395,28 @@ svg{overflow:visible}
       <summary><svg class="icon" aria-hidden="true"><use href="#c-i-edzes"/></svg><strong>Mai</strong><em>11 képernyő</em><i aria-hidden="true">›</i></summary>
       <nav>
         <a href="#mai" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Mai</a>
-        <a href="#indulas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-quest"/></svg>Eligazítás (új)</a>
+        <a href="#indulas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-quest"/></svg>Eligazítás</a>
         <a href="#session" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-clock"/></svg>Edzés közben</a>
         <a href="#cer" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-star"/></svg>Edzés lezárása (jutalomoldal)</a>
         <a href="#review" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-record"/></svg>Összegzés (lezárt edzés)</a>
-        <a href="#sajat" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Saját edzés</a>
         <a href="#sport" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-volley"/></svg>Sport</a>
         <a href="#sportlog" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-other"/></svg>Sport naplózása</a>
         <a href="#mai/sze" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-skip"/></svg>Kihagyás utólag (szerda)</a>
         <a href="#mai/kimelo3" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-kimelo"/></svg>Kímélő mód · 3. nap</a>
         <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-swap"/></svg>Új ikonok</a>
+        <a href="#sajat" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Saját edzés</a>
       </nav>
       <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
       <ul>
-        <li><b>Új · Kihagyás:</b> a <a href="#mai">Mai</a> edzésen a „Kihagyom”, a röpin a „Kihagyom”, a <a href="#mai/sze">szerdai elmaradt edzésen</a> a „Kihagytam” → „Miért?” ablak → kihagyott állapot, visszavonással. Próbáld: szerda „Fáradt vagyok” (szabadjegy), utána ma a röpi „Nincs időm” (már rendes kihagyás), majd vond vissza a szerdait — a szabadjegy átszáll a röpire.</li>
-        <li><b>Új · Kímélő mód:</b> a „Miért?” ablakban egy komoly okra (Beteg vagyok, Gyomorrontás, Sérülés / fájdalom, Úton vagyok) megjelenik a „Meddig tarthat?” sor — egy választás bekapcsolja. Állapotok: <a href="#" data-kmdemo="1">kímélő mód · 1. nap</a> (Ma mégis edzek / Jobban vagyok) · <a href="#mai/kimelo3">3. nap, letelt a becslés</a> (Jobban vagyok / Még nem) · „Jobban vagyok” → <b>Üdv újra!</b> ablak a három programszabállyal · <a href="#" data-kmdemo="back">visszatérő edzés 1/2</a> (könnyített szettek, fele olyan hosszú futás) · a hét napjai: <a href="#terv">Terv · A heted</a> (kímélő módban)</li>
+        <li><b>Kihagyás:</b> a <a href="#mai">Mai</a> edzésen a „Kihagyom”, a röpin a „Kihagyom”, a <a href="#mai/sze">szerdai elmaradt edzésen</a> a „Kihagytam” → „Miért?” ablak → kihagyott állapot, visszavonással. Próbáld: szerda „Fáradt vagyok” (szabadjegy), utána ma a röpi „Nincs időm” (már rendes kihagyás), majd vond vissza a szerdait — a szabadjegy átszáll a röpire.</li>
+        <li><b>Kímélő mód:</b> a „Miért?” ablakban egy komoly okra (Beteg vagyok, Gyomorrontás, Sérülés / fájdalom, Úton vagyok) megjelenik a „Meddig tarthat?” sor — egy választás bekapcsolja. Állapotok: <a href="#" data-kmdemo="1">kímélő mód · 1. nap</a> (Ma mégis edzek / Jobban vagyok) · <a href="#mai/kimelo3">3. nap, letelt a becslés</a> (Jobban vagyok / Még nem) · „Jobban vagyok” → <b>Üdv újra!</b> ablak a három programszabállyal · <a href="#" data-kmdemo="back">visszatérő edzés 1/2</a> (könnyített szettek, fele olyan hosszú futás) · a hét napjai: <a href="#terv">Terv · A heted</a> (kímélő módban)</li>
         <li>Check-in 2.0: a Mai oldalon a <b>Mai állapot</b> kártya (a reggeli check-inből)</li>
         <li>Mai edzés: <a href="#" data-state="plan">betervezve</a> · <a href="#" data-state="run">folyamatban</a> · <a href="#" data-state="done">kész</a></li>
         <li><a href="#mai/pihen">Pihenőnap</a> · <a href="#mai/ures">nincs mesociklus</a></li>
-        <li><b>Új:</b> <a href="#indulas">Eligazítás</a> — indítás előtt: várható idő, küldetések kiválasztása, gyakorlatlista · <a href="#session/uj">Edzés az Indulás után (0 szett)</a> · <a href="#" data-rest>pihenőóra (ketyeg)</a></li>
-        <li><b>Új (arányos lépcső):</b> a súlyemelés a súlyhoz mért (Chest Row 102,5 → 105 × 9, Lat 72 → 74,5 × 11); ha a következő valódi súly túl nagy ugrás, előbb ismétlés — Hammer Curl 15 × 13, indoklással az <a href="#indulas">Eligazításon</a> és a <a href="#session/uj">kártyán</a></li>
+        <li><a href="#indulas">Eligazítás</a> — indítás előtt: várható idő, küldetések kiválasztása, gyakorlatlista · <a href="#session/uj">Edzés az Indulás után (0 szett)</a> · <a href="#" data-rest>pihenőóra (ketyeg)</a></li>
+        <li><b>Arányos lépcső:</b> a súlyemelés a súlyhoz mért (Chest Row 102,5 → 105 × 9, Lat 72 → 74,5 × 11); ha a következő valódi súly túl nagy ugrás, előbb ismétlés — Hammer Curl 15 × 13, indoklással az <a href="#indulas">Eligazításon</a> és a <a href="#session/uj">kártyán</a></li>
         <li>A gyakorlatkártyán a „Múlt hét / Ma a cél” dobozok helyett egy kis címke a név alatt (↑ +2,5 kg / +1 ism. / tartjuk)</li>
-        <li><b>Új (csere / hozzáadás):</b> ⋮ menü → <a href="#" data-gbox="menu" data-g="0">Gyakorlat cseréje, 3 kész szettel</a> (a kész szettek maradnak, a többi az újé) · <a href="#" data-gbox="menu" data-g="1">még el nem kezdett gyakorlat cseréje</a> (a helyére kerül) · <a href="#" data-pick="add">+ Gyakorlat hozzáadása</a> a lista alján · minden után: <b>Csak ma</b> / <b>Mezociklusra is</b> · <a href="#" data-resetex>eredeti terv vissza</a></li>
+        <li><b>Csere / hozzáadás:</b> ⋮ menü → <a href="#" data-gbox="menu" data-g="0">Gyakorlat cseréje, 3 kész szettel</a> (a kész szettek maradnak, a többi az újé) · <a href="#" data-gbox="menu" data-g="1">még el nem kezdett gyakorlat cseréje</a> (a helyére kerül) · <a href="#" data-pick="add">+ Gyakorlat hozzáadása</a> a lista alján · minden után: <b>Csak ma</b> / <b>Mezociklusra is</b> · <a href="#" data-resetex>eredeti terv vissza</a></li>
         <li>Edzés közben a küldetés csak a gyakorlaton látszik: koppints a <a href="#" data-gbox="qb" data-g="1">küldetés-jelvényre</a> → elengedés / visszavétel</li>
         <li>Edzés közben: <a href="#" data-gbox="menu">gyakorlat-menü</a> · <a href="#" data-gbox="recs">rekordok</a> · <a href="#" data-gbox="fin">befejezés</a> · <a href="#" data-rest>pihenő-óra</a></li>
         <li>Lapok: <a href="#" data-sheet="set">szett szerkesztése</a> · <a href="#" data-sheet="rp">szett-visszajelzés</a> · <a href="#" data-sheet="extra">extra szett</a> · <a href="#" data-sheet="note">jegyzet</a></li>
@@ -3468,6 +3427,7 @@ svg{overflow:visible}
     <details class="grp" data-grp="Terv" style="--c:var(--coral)">
       <summary><svg class="icon" aria-hidden="true"><use href="#c-i-retegek"/></svg><strong>Terv</strong><em>16 képernyő</em><i aria-hidden="true">›</i></summary>
       <nav>
+        <a href="#futas" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-run"/></svg>Futás</a>
         <a href="#terv" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-peak"/></svg>Terv · a futó terved</a>
         <a href="#run" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-protocol"/></svg>A terv saját oldala</a>
         <a href="#nap" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Egy edzésnap</a>
@@ -3482,11 +3442,11 @@ svg{overflow:visible}
         <a href="#riport" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-scroll"/></svg>Egy futam riportja</a>
         <a href="#osszevetes" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-compare"/></svg>Két futam összevetése</a>
         <a href="#ujterv" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-flask"/></svg>Új terv összeállítása</a>
-        <a href="#futas" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-run"/></svg>Futás</a>
         <a href="#tervikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-template"/></svg>Új ikonok (Terv)</a>
       </nav>
       <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
       <ul>
+        <li><a href="#futasterv">Futóterv szerkesztése</a></li>
         <li>Terv: <a href="#" data-tstate="run">fut egy terv</a> · <a href="#" data-tstate="none">nem fut terv</a> · <a href="#" data-tstate="empty">még nincs terved</a></li>
         <li>Nap: <a href="#nap/Csü">edzésnap</a> · <a href="#nap/Szo">sportnap</a> · <a href="#nap/Vas">pihenőnap</a> · <a href="#napszerk">nap szerkesztése</a></li>
         <li>Izom: <a href="#izom/back-wide">még fér bele</a> · <a href="#izom/chest-mid">felső értéken</a> · <a href="#izom/biceps-brachialis">még kevés</a></li>
@@ -3494,17 +3454,16 @@ svg{overflow:visible}
         <li>Sablon: <a href="#sablon">olvasó oldal</a> · <a href="#sablonszerk">szerkesztő</a> · <a href="#" data-sheet="start">futam indítása lap</a> · <a href="#" data-gbox="tdel">törlés megerősítés</a></li>
         <li>Varázsló: <a href="#ujterv">kérdések</a> · <a href="#ujterv/gen">generálás</a> · <a href="#ujterv/kesz">kész vázlat</a></li>
         <li>Lezárás: <a href="#" data-sheet="close">edzésterv lezárása</a></li>
-        <li><a href="#futasterv">Futóterv szerkesztése</a></li>
       </ul>
     </details>
     <details class="grp" data-grp="Terhelés" style="--c:var(--coral)">
       <summary><svg class="icon" aria-hidden="true"><use href="#c-i-meso"/></svg><strong>Terhelés</strong><em>5 képernyő</em><i aria-hidden="true">›</i></summary>
       <nav>
+        <a href="#gym" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-muscle"/></svg>Terhelés (Gym)</a>
         <a href="#terheles" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-bolt"/></svg>Terhelés · a heted</a>
         <a href="#terkep" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-muscle"/></svg>Izomtérkép</a>
         <a href="#jelek" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-pattern"/></svg>Minden izomjel</a>
         <a href="#mozgas" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-steps"/></svg>Minden mozgásod</a>
-        <a href="#gym" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-muscle"/></svg>Terhelés (Gym)</a>
       </nav>
       <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
       <ul>
@@ -3514,8 +3473,8 @@ svg{overflow:visible}
     <details class="grp" data-grp="Gyakorlatok" style="--c:var(--gold)">
       <summary><svg class="icon" aria-hidden="true"><use href="#c-i-naplo"/></svg><strong>Gyakorlatok</strong><em>2 képernyő</em><i aria-hidden="true">›</i></summary>
       <nav>
-        <a href="#exercises" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-journal"/></svg>Gyakorlatok</a>
         <a href="#medals" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-record"/></svg>Medálok</a>
+        <a href="#exercises" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-journal"/></svg>Gyakorlatok</a>
       </nav>
       <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
       <ul>
@@ -3532,6 +3491,90 @@ svg{overflow:visible}
   </aside>
 </div>
 
+<!-- panel-kit:start — generated from elo/_panel-kit.html by elo/_inject-panel-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Panel-kit (mezo-eitra): the shared desktop frame of every living prototype ──
+   The phone stays put and always fits the window; the side panel scrolls on its own.
+   Screens are grouped by the app's tabs in collapsible groups that follow the route.
+   The ONLY thing marked new is what the "Legutóbb változott" block names (see README). */
+.notes{width:360px}
+.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
+.notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
+.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
+.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
+.ntabs{display:flex;gap:6px;flex-wrap:wrap}
+.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--dc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 55%,transparent)}
+.recent{padding:13px 14px 14px;margin:2px 0 14px}
+.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
+.recent p{font-size:12.5px;margin:0 0 9px}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px}
+.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
+.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
+.grp{border-top:1px solid var(--hair)}
+.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .icon{width:24px;height:24px}
+.grp summary strong{font-size:15px;font-weight:600}
+.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
+.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
+.grp[open] summary i{transform:rotate(90deg)}
+.grp.cur summary strong{color:var(--dc)}
+.grp nav{display:grid;gap:6px;margin:0 0 14px}
+.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
+.grp nav a .icon{width:24px;height:24px}
+.grp nav a::after{display:none}
+.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
+.ujb{margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:1px;color:#2B2118;background:var(--gold)}
+.grp ul,.about ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
+.grp ul a,.about a{color:var(--sky)}
+.about{border-top:1px solid var(--hair);padding:11px 2px 0}
+.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+.about p{margin:8px 0 0}
+.about .ov{margin-top:12px}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
+@media(min-width:781px){
+  html,body{height:100%;overflow:hidden}
+  .stage{height:100vh;padding:24px 16px 0}
+  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
+}
+</style>
+<script>
+(function(){
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  const notes=q('#notes'), base=h=>h.slice(1).split(/[/?]/)[0], NEW_DAYS=14;
+  let cur=null;
+  function group(g,toTop){qa('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
+    qa('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
+    if(toTop){const d=q(`#jump .grp[data-grp="${g}"]`);notes.scrollTop+=d.getBoundingClientRect().top-notes.getBoundingClientRect().top-q('.nhead').offsetHeight}}
+  /* mark the screen you are on, open its group, keep it in view — the page's render() calls this */
+  window.panelSync=function(){
+    const nav=qa('#jump nav a'), all=[...nav,...qa('.rlinks a')], h=location.hash||nav[0].getAttribute('href'), r=base(h);
+    const exact=all.filter(a=>a.getAttribute('href')===h), fam=nav.filter(a=>a.getAttribute('href').startsWith('#')&&base(a.getAttribute('href'))===r);
+    const parent=fam.find(a=>a.getAttribute('href')==='#'+r)||fam[0];
+    const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...(parent?[parent]:[])];
+    all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
+    const main=hit.find(a=>a.closest('.grp')), g=main?main.closest('.grp').dataset.grp:cur;
+    if(main)q('#nnow').textContent=main.firstChild.nextSibling?main.childNodes[1].textContent.trim():main.textContent.trim();
+    if(g&&g!==cur){cur=g;group(g,false);notes.scrollTop=0}
+    if(main&&main.closest('.grp').open){const a=main.getBoundingClientRect(),b=notes.getBoundingClientRect(),top=b.top+q('.nhead').offsetHeight;
+      if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
+  const rec=q('.recent[data-uj]');
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+    rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
+    if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
+      if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
+  /* the phone always fits the window height */
+  const fit=()=>{q('#phone').style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-58)/844)):''};
+  addEventListener('resize',fit);fit();
+})();
+</script>
+<!-- panel-kit:end -->
 <!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
 <style>
 /* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
@@ -5226,27 +5269,8 @@ function render(){
   $('#dockwrap').innerHTML=r==='session'?dock(id==='uj'?0:DONE):r==='indulas'?bfoot():'';
   $('#phone').classList.toggle('cermode',r==='cer'); if(r==='cer'&&!id)runCer(); if(r!=='indulas')TICK=null;
   tabbar(TAB[r]||'Mai');
-  panelSync(h,r);
+  window.panelSync&&panelSync();
 }
-/* side panel: mark the screen you are on, open its group, keep it in view */
-let PGRP=null;
-function panelGrp(g,scroll){document.querySelectorAll('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
-  document.querySelectorAll('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
-  if(scroll){const d=document.querySelector(`#jump .grp[data-grp="${g}"]`),n=$('#notes');n.scrollTop+=d.getBoundingClientRect().top-n.getBoundingClientRect().top-$('.nhead').offsetHeight}}
-function panelSync(h,r){
-  const all=[...document.querySelectorAll('#jump nav a,.rlinks a')], exact=all.filter(a=>a.getAttribute('href')===h);
-  const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...all.filter(a=>a.closest('.grp')&&a.getAttribute('href')==='#'+r)];
-  all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
-  const main=hit.find(a=>a.closest('.grp'))||document.querySelector(`#jump nav a[href="#${r}"]`), g=main?main.closest('.grp').dataset.grp:(TAB[r]||'Mai');
-  $('#nnow').textContent=main?main.textContent.trim():g;
-  if(g!==PGRP){PGRP=g;panelGrp(g,false);$('#notes').scrollTop=0}
-  if(main&&main.closest('.grp').open){const n=$('#notes'),a=main.getBoundingClientRect(),b=n.getBoundingClientRect(),top=b.top+$('.nhead').offsetHeight;
-    if(a.top<top)n.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)n.scrollTop+=a.bottom-b.bottom+12}
-}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){PGRP=b.dataset.ngrp;panelGrp(PGRP,true)}});
-/* the phone always fits the window height */
-function fitPhone(){const p=$('#phone');p.style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-24-34)/844)):''}
-addEventListener('resize',fitPhone);fitPhone();
 let toastT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
 function soft(){const y=$('#scroll').scrollTop;render();$('#scroll').scrollTop=y}

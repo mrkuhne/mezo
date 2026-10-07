@@ -258,17 +258,7 @@ svg{overflow:visible}
 .toast{position:absolute;left:50%;bottom:170px;z-index:60;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:999px;background:rgba(43,33,24,.86);color:#fff;font-size:12.5px;white-space:nowrap;transition:.3s var(--ease);pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ── Side notes (desktop) ────────────────────── */
-.notes{width:300px;padding-top:30px}
-.notes h1{font-size:28px;font-weight:600;letter-spacing:-1px}
-.notes .ov{font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
-.notes p{font-size:13.5px;line-height:1.55;color:var(--sub);margin:10px 0 18px}
-.notes nav{display:grid;gap:8px;margin-bottom:22px}
-.notes nav a{--c:var(--sage);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;text-decoration:none;color:var(--ink);font-size:13.5px;font-weight:500}
-.notes nav a .icon{width:28px;height:28px}
-.notes nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent)}
-.notes ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding-left:16px;display:grid;gap:4px}
-.toggle{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:12.5px;color:var(--sub)}
+/* ── Side panel (desktop): styles and behaviour come from the panel-kit block ── */
 @media(max-width:780px){.notes{display:none}}
 
 
@@ -4115,84 +4105,205 @@ body:not(.still) .u8 .typing i:nth-child(3){animation-delay:.3s}
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast"></div>
   </div>
-  <aside class="notes">
-    <span class="ov">MEZO · ÜVEG · A TELJES SZEKCIÓ</span>
-    <h1>Az egész Mezo,<br>egy világban</h1>
-    <p>A jóváhagyott csapatfal-világ (fal, csapat, szobák, posztok, „Miből látszik?” oldalak), az élesben már üveg Mezo I (U8), és most a Mezo II (U9): Karakter-napló, Rólad, dimenziók, Konzílium, Gépterem, Tudástár, Minták, Előrejelzések. Mindenhol az 5 szereplő és a Szkeptikus.</p>
-    <nav id="jump">
-      <span class="ov" style="margin:14px 0 2px">ÜZENŐFAL — A FAL ÉS AMI RÓLA NYÍLIK</span>
-      <a href="#fal" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Üzenőfal (csapatfal)</a>
-      <a href="#poszt/vacsora" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-chat"/></svg>Egy poszt saját oldala</a>
-      <a href="#poszt/dontes" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Döntés-flow (Rád vár)</a>
-      <a href="#elsonap" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Első nap (új user)</a>
-      <a href="#naplo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-person"/></svg>Karakter-napló (a régi fal, fülek nélkül)</a>
-      <a href="#mintak" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pattern"/></svg>Minták</a>
-      <a href="#minta/viz" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-flask"/></svg>Egy minta (U8a)</a>
-      <a href="#elorejelzesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-orb"/></svg>Előrejelzések</a>
-      <a href="#elore/meccs-energia" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-orb"/></svg>Egy előrejelzés (U8a)</a>
-      <a href="#kiserletek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-flask"/></svg>Kísérletek</a>
-      <a href="#kiserlet-oldal/szenhidrat" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-flask"/></svg>Egy kísérlet (U8a)</a>
-      <a href="#diagnozis" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-diagnose"/></svg>Diagnózis</a>
-      <a href="#diag/1" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-diagnose"/></svg>Egy riport</a>
-      <a href="#coaching" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-whistle"/></svg>Coaching</a>
-      <a href="#megfigyelo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-eye"/></svg>Megfigyelő</a>
-      <a href="#kartya" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-card"/></svg>A napi kártya</a>
-      <a href="#chat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés</a>
-      <a href="#chat/ures" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-eraser"/></svg>Beszélgetés · üres felejtés (S8)</a>
-      <a href="#chat/rolamis" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-spark"/></svg>Beszélgetés · „Rólam is” (új)</a>
-      <a href="#rolad" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-layers"/></svg>Rólad · „Összevonnám” javaslat (S9, új)</a>
-      <a href="#tenyek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-layers"/></svg>Tények · heti rendrakás, összevontak (S9, új)</a>
-      <span class="ov" style="margin:14px 0 2px">A CSAPAT</span>
-      <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-people"/></svg>A csapat + 5 szoba (csapatfal)</a>
-      <a href="#tud/szunya" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-journal"/></svg>Amit rólad tud (egy szoba mélye)</a>
-      <a href="#konzilium" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-council"/></svg>Konzílium</a>
-      <a href="#gepterem" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-gear"/></svg>Gépterem</a>
-      <a href="#futasok" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-history"/></svg>Futások</a>
-      <a href="#futas/ejsz" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Egy futás</a>
-      <a href="#adatforrasok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-link"/></svg>Adatforrások</a>
-      <a href="#detektorok" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-radar"/></svg>Detektorok</a>
-      <a href="#osszes" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-grid"/></svg>Összes funkció</a>
-      <a href="#memoria" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-layers"/></svg>Memória</a>
-      <span class="ov" style="margin:14px 0 2px">RÓLAD</span>
-      <a href="#rolad" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Rólad — a közös kép (ÚJ, U9b)</a>
-      <a href="#dimenziok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Dimenziók (a Rólad ajtaja mögött)</a>
-      <a href="#dimenzio/physical" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-heart"/></svg>Egy dimenzió</a>
-      <a href="#tudastar" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Tudástár (ÚJ: javaslatok nélkül)</a>
-      <a href="#tenyek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-note"/></svg>Tények</a>
-      <a href="#eletesemenyek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Életesemények (ÚJ, S6c)</a>
-      <a href="../uveg-tudastar-hub.html#tudastar" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Tudástár-hub (külön oldal, kész)</a>
-      <a href="#kategoriak" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-graph"/></svg>Kategóriák</a>
-      <a href="#hogyan" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-info"/></svg>Hogyan működik?</a>
-      <a href="#node" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pattern"/></svg>Egy kapcsolat</a>
-      <a href="#rolad-terv" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-shield"/></svg>Rólad · az eredeti D3 terv (összevetéshez)</a>
-      <span class="ov" style="margin:14px 0 2px">EMLÉKEK</span>
-      <a href="#emlekek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-album"/></svg>Emlékek</a>
-      <a href="#emlek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-album"/></svg>Napi emlék</a>
-      <a href="#memoar" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-scroll"/></svg>Memoár</a>
-      <a href="#archivum" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-scroll"/></svg>Memoár · archívum</a>
-      <a href="#fejezet/19" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-book"/></svg>Egy fejezet</a>
-      <span class="ov" style="margin:14px 0 2px">ÚJ IKONOK</span>
-      <a href="#ikonok9" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-spark"/></svg>A 9. szelet ikonjai (jóváhagyva)</a>
-      <a href="#ikonok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-spark"/></svg>A csapatfal ikonjai</a>
-    </nav>
-    <span class="ov">ÁLLAPOTOK</span>
-    <ul>
-      <li>Karakter-napló: <a href="#" data-st="hub:feed">napló</a> · <a href="#" data-st="hub:intro">kezdés előtt</a> · <a href="#" data-st="hub:progress">gyűjtjük</a> · <a href="#" data-st="hub:reveal">elkészült</a> · <a href="#" data-st="hub:empty">még korai</a> · <a href="#" data-st="hub:degraded">kikapcsolva</a></li>
-      <li>Konzílium: <a href="#" data-st="konz:ov">áttekintés</a> · <a href="#" data-st="konz:cv">beszélgetés</a> · <a href="#" data-msheet9="archive">archívum</a> · <a href="#" data-st="konz:none">még nincs</a></li>
-      <li>Futás: <a href="#futas/ejsz">éjszakai</a> · <a href="#futas/csendes">csendes</a> · <a href="#futas/heti">heti</a> · <a href="#futas/kiadas">esti kiadás</a> · <a href="#futas/nincs">nem található</a> · <a href="#kor">egy kör</a></li>
-      <li>Rólad: <a href="#" data-st="rol:full">teljes</a> · <a href="#" data-st="rol:week">heti áttekintésből</a> · <a href="#" data-st="rol:empty">új felhasználó</a> · <a href="#" data-st="rol:degraded">társ kikapcsolva</a></li>
-      <li>Tudástár: <a href="#" data-st="tud:full">rendes</a> · <a href="#" data-st="tud:degraded">kikapcsolva</a> · a négy szakasz a <a href="../uveg-tudastar-hub.html#tudastar">hub-oldalon</a></li>
-      <li>Minták: <a href="#" data-st="bucket:decide">döntésre vár</a> · <a href="#" data-st="bucket:confirmed">megerősítve</a> · <a href="#" data-st="bucket:monitoring">megfigyelés</a> · <a href="#" data-st="bucket:gathering">még gyűlik</a> · <a href="#" data-st="bucket:noRel">nincs kapcsolat</a> · <a href="#" data-msheet9="filter">szűrés</a></li>
-      <li>Előrejelzések: <a href="#" data-st="pred:all">mind</a> · <a href="#" data-st="pred:pending">folyamatban</a> · <a href="#" data-st="pred:closed">lezárt</a> · <a href="#" data-st="pred:empty">még nincs</a></li>
-      <li><b>Chat-memória (S8, új):</b> <a href="#" data-s8="reset">a teljes beszélgetés</a> · négy jelzés: Megjegyeztem · Megjegyezném · Emlékszem · Elfelejtettem — új ikon nincs, mind a meglévő készletből (spark, bulb, people, eraser) · <a href="#chat/ures">üres felejtés</a>: a felejtés a közvetlenül előző üzenetet érinti, ha az nem tanult semmit, becsületes üres állapot + bővítő ajánlat (owner döntés 2026-09-28)</li>
-      <li>Beszélgetés: <a href="#" data-st="ch:full">beszélgetés</a> · <a href="#" data-st="ch:typing">Mezo dolgozik</a> · <a href="#" data-st="ch:err">hiba</a> · <a href="#" data-st="ch:empty">új</a> · <a href="#" data-st="ch:off">nem elérhető</a></li>
-      <li>Napi kártya: <a href="#" data-st="card:open">még nem léptél</a> · <a href="#" data-st="card:done">alkalmaztad</a> · <a href="#" data-st="card:none">ma nincs</a></li>
-      <li>Kísérletek: <a href="#" data-st="ex:mind">mind</a> · <a href="#" data-st="ex:aktiv">aktív</a> · <a href="#" data-st="ex:ures">üres</a> · Memória: <a href="#" data-st="mem:retegek">rétegek</a> · <a href="#" data-st="mem:naplo">napló</a> · <a href="#" data-st="mem:kereso">kereső</a> · <a href="#" data-st="mem:audit">audit</a></li>
-    </ul>
+  <aside class="notes" id="notes" style="--dc:var(--lav)">
+    <div class="nhead">
+      <span class="ov">MEZO · ÉLŐ PROTOTÍPUS</span>
+      <div class="nnow"><small>MOST ITT</small><strong id="nnow"></strong></div>
+      <div class="ntabs" id="ntabs"><button type="button" data-ngrp="Üzenőfal">Üzenőfal</button><button type="button" data-ngrp="A csapat">A csapat</button><button type="button" data-ngrp="Rólad">Rólad</button><button type="button" data-ngrp="Emlékek">Emlékek</button><button type="button" data-ngrp="Ikonok">Ikonok</button></div>
+    </div>
+    <!-- The ONLY "new" marker of the prototype. Every change rewrites this block (date, title, one sentence, links). -->
+    <section class="recent glass" data-uj="2026-09-30" style="--c:var(--gold)">
+      <span class="ov">LEGUTÓBB VÁLTOZOTT</span>
+      <strong>Heti rendrakás</strong>
+      <p>A Rólad „Összevonnám” javaslata, és a Tények hétfői rendrakása az összevontakkal.</p>
+      <div class="rlinks"><a href="#rolad">Rólad</a><a href="#tenyek">Tények</a></div>
+    </section>
+    <div id="jump">
+    <details class="grp" data-grp="Üzenőfal" style="--c:var(--lav)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-mezo"/></svg><strong>Üzenőfal</strong><em>19 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#fal" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Üzenőfal (csapatfal)</a>
+        <a href="#poszt/vacsora" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-chat"/></svg>Egy poszt saját oldala</a>
+        <a href="#poszt/dontes" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Döntés-flow (Rád vár)</a>
+        <a href="#elsonap" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Első nap (új user)</a>
+        <a href="#naplo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-person"/></svg>Karakter-napló (a régi fal, fülek nélkül)</a>
+        <a href="#mintak" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pattern"/></svg>Minták</a>
+        <a href="#minta/viz" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-flask"/></svg>Egy minta (U8a)</a>
+        <a href="#elorejelzesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-orb"/></svg>Előrejelzések</a>
+        <a href="#elore/meccs-energia" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-orb"/></svg>Egy előrejelzés (U8a)</a>
+        <a href="#kiserletek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-flask"/></svg>Kísérletek</a>
+        <a href="#kiserlet-oldal/szenhidrat" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-flask"/></svg>Egy kísérlet (U8a)</a>
+        <a href="#diagnozis" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-diagnose"/></svg>Diagnózis</a>
+        <a href="#diag/1" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-diagnose"/></svg>Egy riport</a>
+        <a href="#coaching" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-whistle"/></svg>Coaching</a>
+        <a href="#megfigyelo" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-eye"/></svg>Megfigyelő</a>
+        <a href="#kartya" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-card"/></svg>A napi kártya</a>
+        <a href="#chat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chat"/></svg>Beszélgetés</a>
+        <a href="#chat/ures" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-eraser"/></svg>Beszélgetés · üres felejtés (S8)</a>
+        <a href="#chat/rolamis" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-spark"/></svg>Beszélgetés · „Rólam is”</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Karakter-napló: <a href="#" data-st="hub:feed">napló</a> · <a href="#" data-st="hub:intro">kezdés előtt</a> · <a href="#" data-st="hub:progress">gyűjtjük</a> · <a href="#" data-st="hub:reveal">elkészült</a> · <a href="#" data-st="hub:empty">még korai</a> · <a href="#" data-st="hub:degraded">kikapcsolva</a></li>
+        <li>Minták: <a href="#" data-st="bucket:decide">döntésre vár</a> · <a href="#" data-st="bucket:confirmed">megerősítve</a> · <a href="#" data-st="bucket:monitoring">megfigyelés</a> · <a href="#" data-st="bucket:gathering">még gyűlik</a> · <a href="#" data-st="bucket:noRel">nincs kapcsolat</a> · <a href="#" data-msheet9="filter">szűrés</a></li>
+        <li>Előrejelzések: <a href="#" data-st="pred:all">mind</a> · <a href="#" data-st="pred:pending">folyamatban</a> · <a href="#" data-st="pred:closed">lezárt</a> · <a href="#" data-st="pred:empty">még nincs</a></li>
+        <li><b>Chat-memória (S8):</b> <a href="#" data-s8="reset">a teljes beszélgetés</a> · négy jelzés: Megjegyeztem · Megjegyezném · Emlékszem · Elfelejtettem — új ikon nincs, mind a meglévő készletből (spark, bulb, people, eraser) · <a href="#chat/ures">üres felejtés</a>: a felejtés a közvetlenül előző üzenetet érinti, ha az nem tanult semmit, becsületes üres állapot + bővítő ajánlat (owner döntés 2026-09-28)</li>
+        <li>Beszélgetés: <a href="#" data-st="ch:full">beszélgetés</a> · <a href="#" data-st="ch:typing">Mezo dolgozik</a> · <a href="#" data-st="ch:err">hiba</a> · <a href="#" data-st="ch:empty">új</a> · <a href="#" data-st="ch:off">nem elérhető</a></li>
+        <li>Napi kártya: <a href="#" data-st="card:open">még nem léptél</a> · <a href="#" data-st="card:done">alkalmaztad</a> · <a href="#" data-st="card:none">ma nincs</a></li>
+        <li>Kísérletek: <a href="#" data-st="ex:mind">mind</a> · <a href="#" data-st="ex:aktiv">aktív</a> · <a href="#" data-st="ex:ures">üres</a> · Memória: <a href="#" data-st="mem:retegek">rétegek</a> · <a href="#" data-st="mem:naplo">napló</a> · <a href="#" data-st="mem:kereso">kereső</a> · <a href="#" data-st="mem:audit">audit</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="A csapat" style="--c:var(--lav)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-emberek"/></svg><strong>A csapat</strong><em>10 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#csapat" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-people"/></svg>A csapat + 5 szoba (csapatfal)</a>
+        <a href="#tud/szunya" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-journal"/></svg>Amit rólad tud (egy szoba mélye)</a>
+        <a href="#konzilium" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-council"/></svg>Konzílium</a>
+        <a href="#gepterem" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-gear"/></svg>Gépterem</a>
+        <a href="#futasok" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-history"/></svg>Futások</a>
+        <a href="#futas/ejsz" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Egy futás</a>
+        <a href="#adatforrasok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-link"/></svg>Adatforrások</a>
+        <a href="#detektorok" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-radar"/></svg>Detektorok</a>
+        <a href="#osszes" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-grid"/></svg>Összes funkció</a>
+        <a href="#memoria" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-layers"/></svg>Memória</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Konzílium: <a href="#" data-st="konz:ov">áttekintés</a> · <a href="#" data-st="konz:cv">beszélgetés</a> · <a href="#" data-msheet9="archive">archívum</a> · <a href="#" data-st="konz:none">még nincs</a></li>
+        <li>Futás: <a href="#futas/ejsz">éjszakai</a> · <a href="#futas/csendes">csendes</a> · <a href="#futas/heti">heti</a> · <a href="#futas/kiadas">esti kiadás</a> · <a href="#futas/nincs">nem található</a> · <a href="#kor">egy kör</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Rólad" style="--c:var(--rose)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-kristaly"/></svg><strong>Rólad</strong><em>11 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#rolad" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Rólad — a közös kép</a>
+        <a href="#dimenziok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Dimenziók (a Rólad ajtaja mögött)</a>
+        <a href="#dimenzio/physical" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-heart"/></svg>Egy dimenzió</a>
+        <a href="#tudastar" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Tudástár</a>
+        <a href="#tenyek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-note"/></svg>Tények</a>
+        <a href="#eletesemenyek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sun"/></svg>Életesemények</a>
+        <a href="../uveg-tudastar-hub.html#tudastar" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Tudástár-hub (külön oldal, kész)</a>
+        <a href="#kategoriak" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-graph"/></svg>Kategóriák</a>
+        <a href="#hogyan" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-info"/></svg>Hogyan működik?</a>
+        <a href="#node" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pattern"/></svg>Egy kapcsolat</a>
+        <a href="#rolad-terv" class="glass" style="--c:#8E86A3"><svg class="icon"><use href="#t-shield"/></svg>Rólad · az eredeti D3 terv (összevetéshez)</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Rólad: <a href="#" data-st="rol:full">teljes</a> · <a href="#" data-st="rol:week">heti áttekintésből</a> · <a href="#" data-st="rol:empty">új felhasználó</a> · <a href="#" data-st="rol:degraded">társ kikapcsolva</a></li>
+        <li>Tudástár: <a href="#" data-st="tud:full">rendes</a> · <a href="#" data-st="tud:degraded">kikapcsolva</a> · a négy szakasz a <a href="../uveg-tudastar-hub.html#tudastar">hub-oldalon</a></li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Emlékek" style="--c:var(--lav)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-naplo"/></svg><strong>Emlékek</strong><em>5 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#emlekek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-album"/></svg>Emlékek</a>
+        <a href="#emlek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-album"/></svg>Napi emlék</a>
+        <a href="#memoar" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-scroll"/></svg>Memoár</a>
+        <a href="#archivum" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-scroll"/></svg>Memoár · archívum</a>
+        <a href="#fejezet/19" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-book"/></svg>Egy fejezet</a>
+      </nav>
+    </details>
+    <details class="grp" data-grp="Ikonok" style="--c:var(--lav)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#t-grid"/></svg><strong>Ikonok</strong><em>2 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#ikonok9" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-spark"/></svg>A 9. szelet ikonjai (jóváhagyva)</a>
+        <a href="#ikonok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-spark"/></svg>A csapatfal ikonjai</a>
+      </nav>
+    </details>
+    </div>
+    <details class="about">
+      <summary>Mi van ebben a prototípusban?</summary>
+      <p>A jóváhagyott csapatfal-világ (fal, csapat, szobák, posztok, „Miből látszik?” oldalak), az élesben már üveg Mezo I (U8), és most a Mezo II (U9): Karakter-napló, Rólad, dimenziók, Konzílium, Gépterem, Tudástár, Minták, Előrejelzések. Mindenhol az 5 szereplő és a Szkeptikus.</p>
+    </details>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
 </div>
 
+<!-- panel-kit:start — generated from elo/_panel-kit.html by elo/_inject-panel-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Panel-kit (mezo-eitra): the shared desktop frame of every living prototype ──
+   The phone stays put and always fits the window; the side panel scrolls on its own.
+   Screens are grouped by the app's tabs in collapsible groups that follow the route.
+   The ONLY thing marked new is what the "Legutóbb változott" block names (see README). */
+.notes{width:360px}
+.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
+.notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
+.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
+.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
+.ntabs{display:flex;gap:6px;flex-wrap:wrap}
+.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--dc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 55%,transparent)}
+.recent{padding:13px 14px 14px;margin:2px 0 14px}
+.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
+.recent p{font-size:12.5px;margin:0 0 9px}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px}
+.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
+.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
+.grp{border-top:1px solid var(--hair)}
+.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .icon{width:24px;height:24px}
+.grp summary strong{font-size:15px;font-weight:600}
+.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
+.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
+.grp[open] summary i{transform:rotate(90deg)}
+.grp.cur summary strong{color:var(--dc)}
+.grp nav{display:grid;gap:6px;margin:0 0 14px}
+.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
+.grp nav a .icon{width:24px;height:24px}
+.grp nav a::after{display:none}
+.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
+.ujb{margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:1px;color:#2B2118;background:var(--gold)}
+.grp ul,.about ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
+.grp ul a,.about a{color:var(--sky)}
+.about{border-top:1px solid var(--hair);padding:11px 2px 0}
+.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+.about p{margin:8px 0 0}
+.about .ov{margin-top:12px}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
+@media(min-width:781px){
+  html,body{height:100%;overflow:hidden}
+  .stage{height:100vh;padding:24px 16px 0}
+  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
+}
+</style>
+<script>
+(function(){
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  const notes=q('#notes'), base=h=>h.slice(1).split(/[/?]/)[0], NEW_DAYS=14;
+  let cur=null;
+  function group(g,toTop){qa('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
+    qa('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
+    if(toTop){const d=q(`#jump .grp[data-grp="${g}"]`);notes.scrollTop+=d.getBoundingClientRect().top-notes.getBoundingClientRect().top-q('.nhead').offsetHeight}}
+  /* mark the screen you are on, open its group, keep it in view — the page's render() calls this */
+  window.panelSync=function(){
+    const nav=qa('#jump nav a'), all=[...nav,...qa('.rlinks a')], h=location.hash||nav[0].getAttribute('href'), r=base(h);
+    const exact=all.filter(a=>a.getAttribute('href')===h), fam=nav.filter(a=>a.getAttribute('href').startsWith('#')&&base(a.getAttribute('href'))===r);
+    const parent=fam.find(a=>a.getAttribute('href')==='#'+r)||fam[0];
+    const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...(parent?[parent]:[])];
+    all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
+    const main=hit.find(a=>a.closest('.grp')), g=main?main.closest('.grp').dataset.grp:cur;
+    if(main)q('#nnow').textContent=main.firstChild.nextSibling?main.childNodes[1].textContent.trim():main.textContent.trim();
+    if(g&&g!==cur){cur=g;group(g,false);notes.scrollTop=0}
+    if(main&&main.closest('.grp').open){const a=main.getBoundingClientRect(),b=notes.getBoundingClientRect(),top=b.top+q('.nhead').offsetHeight;
+      if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
+  const rec=q('.recent[data-uj]');
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+    rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
+    if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
+      if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
+  /* the phone always fits the window height */
+  const fit=()=>{q('#phone').style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-58)/844)):''};
+  addEventListener('resize',fit);fit();
+})();
+</script>
+<!-- panel-kit:end -->
 <!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
 <style>
 /* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
@@ -5273,8 +5384,7 @@ function render(){
   const h=location.hash||'#fal',[r,id,st]=h.slice(1).split('/');
   const html=window.MZX&&MZX.has(r)?MZX.view(r,id,st):r==='rolad-terv'?rolad():r==='csapat'?csapat():r==='szoba'?szoba(id):r==='poszt'?(id==='kiserlet'?pkiserlet():id==='sejtes'?psejtes():id==='dontes'?pdontes():id==='elorejelzes'?pelorejelzes():poszt()):r==='bizonyitek'?bizonyitek():r==='tud'?tudja(id):r==='ugyek'?ugyek(id):r==='konzilium'?konzilium():r==='gepterem'?gepterem():r==='elsonap'?elsonap():r==='ikonok'?ikonok():r==='rolad'?rolad():r==='emlekek'?emlekek():r==='memoar'?memoar():r==='nap'?napemlek(id):r==='minta'?minta(id,st):r==='elore'?elore(id):r==='kiserlet-oldal'?kiserletOldal(id,st):r==='mintak'?mintak():r==='elorejelzesek'?elorejelzesek():r==='kiserletek'?kiserletek():r==='elo'?elo(id):r==='nap-uzenetek'?napUzenetek():fal();
   $('#scroll').innerHTML=html;$('#dock').innerHTML='';$('#phone').classList.remove('nofab');if(window.MZX&&MZX.has(r))MZX.after(r,id);$('#scroll').scrollTop=0;closeSheet();ntfOpen=false;$('#ntf')?.classList.remove('on');$('#switcher')?.classList.remove('on');
-  const jl=[...document.querySelectorAll('#jump a')],exact=jl.some(a=>a.getAttribute('href')===h);
-  jl.forEach(a=>a.setAttribute('aria-current',String(exact?a.getAttribute('href')===h:a.getAttribute('href').slice(1).split('/')[0]===r)));
+  window.panelSync&&panelSync();
   document.querySelectorAll('.tb').forEach(t=>t.classList.toggle('on',t.dataset.tab===((window.MZX&&MZX.tab(r))||(r==='szoba'||r==='tud'||r==='ugyek'||r==='konzilium'||r==='gepterem'?'csapat':r==='poszt'||r==='elo'||r==='bizonyitek'||r==='elsonap'||r==='ikonok'||['minta','elore','kiserlet-oldal','mintak','elorejelzesek','kiserletek'].includes(r)?'fal':r==='memoar'||r==='nap'?'emlekek':r))));
   /* korong: csak a falon, egyszer, ~9 mp után */
   clearTimeout(pillT);$('#pill').classList.remove('on');
