@@ -463,8 +463,11 @@ Brainstorm 2026-10-05/06 (recon: researcher + investigator). Owner answers in bo
      maintenance)); rings stay; the protein target is emphasised with one line of why.
    - `TRAVEL` → **`ESTIMATE`**: the target stays as muted reference; one line "becsülj nyugodtan, a
      fehérjére figyelj"; no over/under state.
-   - In every mode meals can be logged as usual, unlogged past slots are neutral (no "Kimaradt",
-     no "még pótolható" count), and every guidance block ends with "Ez nem orvosi tanács".
+   - In every mode meals can be logged as usual and unlogged past slots are neutral (no "Kimaradt",
+     no "még pótolható" count). The health guidance (`GUIDANCE`, `MAINTENANCE`) ends with "Ez nem
+     orvosi tanács"; `GUIDANCE` also offers "Mikor fordulj orvoshoz?" (a short sheet).
+   - In `GUIDANCE` there is no "Kihagyom" on a slot (nothing is expected, so nothing can be
+     skipped); a slot skipped earlier keeps its muted card without a kcal figure.
    - The mode follows the **period's days** (start … ended_on−1, or open-ended), *including* a day
      released with "Ma mégis edzek": being ill does not pause because of one light session.
 3. **A meal skip has its own short reason list** (owner: "A"): *Nem vagyok éhes · Nincs időm ·
