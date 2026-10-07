@@ -181,6 +181,41 @@ svg.ic.td{stroke:none;width:26px;height:26px;filter:drop-shadow(0 4px 5px rgba(0
 .qa.compact button svg.ic.td{width:22px;height:22px}
 .qa.compact button.more{color:var(--faint)}
 
+
+/* ── Az élő csepp — az app jele (arc nélküli, lélegző, folyadékkal töltődő forma) ── */
+.csepp{display:block;position:relative;flex:0 0 auto;width:var(--s,48px);height:var(--s,48px)}
+.csepp svg{width:100%;height:100%;overflow:visible;display:block}
+.csepp .shell{fill:color-mix(in srgb,var(--c) 10%,rgba(255,255,255,.04));stroke:color-mix(in srgb,var(--c) 55%,rgba(255,255,255,.25));stroke-width:1.2;vector-effect:non-scaling-stroke}
+.csepp .liq{fill:var(--c);opacity:.92}
+.csepp .sheen{fill:url(#cs-sheen);mix-blend-mode:soft-light}
+.csepp .hi{fill:none;stroke:rgba(255,255,255,.45);stroke-width:2.2;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.csepp .body{filter:drop-shadow(0 0 calc(var(--s,48px)/6) color-mix(in srgb,var(--c) 55%,transparent)) drop-shadow(0 8px 14px rgba(0,0,0,.45));transform-origin:50% 60%;transform-box:fill-box}
+.csepp .val{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:#fff}
+.csepp .val b{font-family:var(--disp);font-weight:700;font-size:calc(var(--s,48px)*.3);letter-spacing:-.04em;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 2px 10px rgba(0,0,0,.45)}
+.csepp .val small{display:block;font-family:var(--mono);font-size:calc(var(--s,48px)*.07);letter-spacing:.1em;opacity:.85;margin-top:.3em}
+.csepp.mini .val b{font-size:calc(var(--s,48px)*.28);font-weight:600}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .csepp.alive .body{animation:cs-breathe 4.6s ease-in-out infinite}
+  body:not(.still) .csepp.alive .wave{animation:cs-wave 3.6s ease-in-out infinite}
+  body:not(.still) .csepp.alive.warn .body{animation-duration:3.2s}
+  body:not(.still) .csepp.alive.bad .body{animation-duration:2.2s}
+}
+@keyframes cs-breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes cs-wave{0%,100%{transform:translateX(0)}50%{transform:translateX(-10px)}}
+.hero-cs{display:flex;gap:16px;align-items:center}
+.hb.cs{border:0;background:none;width:44px;height:44px}
+/* Jelek lap */
+.jl{padding:0 16px 10px}
+.jl .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.jl .cell{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px 10px;border-radius:var(--r);background:var(--card);border:1px solid var(--hair);text-align:center}
+.jl .cell strong{font-size:12.5px;font-weight:500}
+.jl .cell small{font-size:11px;color:var(--sub);line-height:1.35}
+.jl .team{grid-template-columns:repeat(5,1fr);gap:6px}
+.jl .team .cell{padding:12px 2px 8px}
+.jl .team strong{font-size:11px}
+.jl .team small{font-size:9.5px}
+.jl p.lead{margin-top:6px}
+
 /* ── header ── */
 .hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
 .wm{flex:1;font-family:var(--disp);font-weight:var(--dispw);font-size:21px;letter-spacing:var(--dispt)}
@@ -339,6 +374,7 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
 </head>
 <body>
 <svg class="sprite" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="cs-sheen" cx="35%" cy="25%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".5" stop-color="#fff" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient></defs>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
   <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4 7.5l8 5.5 8-5.5"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5h-14z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
@@ -1460,6 +1496,7 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap · Mai</button>
     <button data-d="edzes">Edzés · Mai</button>
+    <button data-d="jelek">Jelek</button>
   </div>
   <label><input type="checkbox" id="ikon3d"> mostani 3D ikonok</label>
   <label><input type="checkbox" id="still"> mozgás nélkül</label>
@@ -1582,18 +1619,65 @@ const I=(n,cls='')=>(IK3D||V==='ajanlott')&&TD[n]?`<svg class="ic td ${cls}" ari
 const circ=r=>2*Math.PI*r;
 const ring=(p,c,r=38)=>`<div class="ring" style="--c:${c}"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="${r}"/><circle class="p" cx="44" cy="44" r="${r}" style="--d:${circ(r)*p/100}"/></svg><div class="c"><span><b>${p}%</b><small>ÉLETJELEK</small></span></div></div>`;
 
+
+/* ── Az élő csepp ── forma: nyugodt (kerek) · figyelj (hullámos) · baj (szögletesebb) */
+const CS_FORM={ok:'M50 5C72 5 92 20 93 44 94 70 76 95 50 95 24 95 6 70 7 44 8 20 28 5 50 5Z',
+  warn:'M50 6C70 4 90 16 94 40 98 62 80 94 52 95 26 96 4 74 7 46 10 22 30 8 50 6Z',
+  bad:'M50 6L84 18 94 50 80 86 48 95 16 82 6 48 18 16Z',
+  /* testvérformák */
+  drop:'M50 4C62 24 90 44 90 64 90 83 72 96 50 96 28 96 10 83 10 64 10 44 38 24 50 4Z',
+  pebble:'M50 14C78 12 96 32 94 54 92 80 70 90 48 88 22 86 4 70 6 48 8 26 26 16 50 14Z',
+  leaf:'M50 4C84 18 96 56 78 84 68 96 32 96 22 84 4 56 16 18 50 4Z',
+  bean:'M38 6C62 2 92 16 94 44 96 72 78 96 54 96 36 96 32 80 26 66 18 50 6 38 10 24 14 12 26 8 38 6Z',
+  crystal:'M50 4L86 26 90 66 58 96 20 86 8 44 24 16Z'};
+let CS_ID=0;
+function csepp(state,fill,{s=48,val=null,label=null,form=null,alive=true,color=null,cls=''}={}){
+  const id='cs'+(++CS_ID), c=color||{ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)'}[state]||'var(--acc)';
+  const d=CS_FORM[form||state]; const y=100-Math.max(6,Math.min(100,fill));
+  return `<span class="csepp ${alive?'alive':''} ${state} ${cls}" style="--s:${s}px;--c:${c}" aria-label="${label||''}">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${id}"><path d="${d}"/></clipPath></defs>
+      <g class="body"><path class="shell" d="${d}"/>
+        <g clip-path="url(#${id})"><g class="wave"><path class="liq" d="M-20 ${y} Q-10 ${y-4} 0 ${y} T20 ${y} T40 ${y} T60 ${y} T80 ${y} T100 ${y} T120 ${y} T140 ${y} V110 H-20Z"/></g></g>
+        <path class="sheen" d="${d}"/><path class="hi" d="M28 24 Q36 14 48 12"/></g></svg>
+    ${val!=null?`<span class="val"><span><b>${val}</b>${label?`<small>${label}</small>`:''}</span></span>`:''}</span>`;
+}
+const TEAM=[['Szunya','alvás','#AB9FD2','pebble',62],['Mocor','mozgás','#7FB2D0','bean',48],['Falat','étel','#8FB49A','drop',70],['Derű','kedv','#D9B67E','leaf',55],['Mezo','összkép','#9AA3A8','crystal',64]];
+function jelek(){
+  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
+  <div class="sec rise"><span class="eb">Jelek</span><span class="eb">a prototípus lapja</span></div>
+  <div class="p16 rise" style="--i:1"><h1 class="t">Az élő csepp</h1><p class="lead">Egy jel, egy jelentés: <b>a mai napod</b>. A töltöttség azt mutatja, mennyi van már meg a napból; a szín és a forma azt, hogy állsz. Arc nincs, de lélegzik.</p></div>
+  <section class="jl rise" style="--i:2"><div class="grid">
+    <div class="cell">${csepp('ok',57,{s:72,val:72})}<strong>Nyugodt</strong><small>kerek forma, lassú lélegzés, zöld</small></div>
+    <div class="cell">${csepp('warn',57,{s:72,val:48})}<strong>Figyelj</strong><small>hullámosabb forma, gyorsabb ritmus, borostyán</small></div>
+    <div class="cell">${csepp('bad',57,{s:72,val:21})}<strong>Baj</strong><small>szögletes forma, szapora ritmus, vörös</small></div>
+  </div></section>
+  <section class="jl rise" style="--i:3"><span class="eb">Töltöttség · a nap halad</span><div class="grid">
+    <div class="cell">${csepp('ok',12,{s:64,val:'1/7',alive:false})}<strong>Reggel</strong><small>egy jel megvan</small></div>
+    <div class="cell">${csepp('ok',57,{s:64,val:'4/7',alive:false})}<strong>Délután</strong><small>négy a hétből</small></div>
+    <div class="cell">${csepp('ok',100,{s:64,val:'7/7',alive:false})}<strong>Este</strong><small>teli: a nap kész</small></div>
+  </div></section>
+  <section class="jl rise" style="--i:4"><span class="eb">Méretek · ugyanaz a jel mindenhol</span><div class="grid" style="grid-template-columns:1fr">
+    <div class="cell" style="flex-direction:row;justify-content:space-around;align-items:flex-end">${csepp('ok',57,{s:124,val:72,label:'MA'})}${csepp('ok',57,{s:72,val:72})}${csepp('ok',57,{s:44,val:'4/7',cls:'mini'})}${csepp('ok',57,{s:28})}</div>
+  </div><p class="fn">Nagyban a Nap tetején (a mai állapotod), közepesen a kártyákon, kicsiben minden fejlécben, és ikonként az alsó menü terület-jelén.</p></section>
+  <section class="jl rise" style="--i:5"><span class="eb">A csapat · testvérformák, arc nélkül</span><div class="grid team">
+    ${TEAM.map(([n,r,c,f,fl])=>`<div class="cell">${csepp('ok',fl,{s:46,form:f,color:c})}<strong>${n}</strong><small>${r}</small></div>`).join('')}
+  </div><p class="fn">Ugyanaz az anyag, más sziluett és szín. Az üzenetekben ők szólnak: a forma a feladó, a szöveg a hang. Így marad meg a „többhangú csapat” a tamagotchi nélkül.</p></section>
+  <section class="jl rise" style="--i:6"><span class="eb">Szabály</span><p class="lead">A csepp csak <b>egy</b> dolgot jelent: a napodat. Díszként, gombként, más adathoz soha nem használjuk. Ettől lesz aláírás.</p></section>
+  </div>${nav('nap')}<div class="toast" id="toast"></div>`;
+}
+
 /* ── chrome (same content as production: wordmark · ? · beállítások · üzenetek · értesítések · nap-kör) ── */
 const header=()=>`<header class="hd">${V==='ajanlott'?`<span class="wm mark"><i class="logo"></i>boop</span>`:`<span class="wm">boop</span>`}
   <button class="hb q" data-toast="Kalauz ehhez az oldalhoz">?</button>
   <button class="hb" data-toast="Beállítások" aria-label="Beállítások">${I('i-gear')}</button>
   <button class="hb" data-toast="Mezo üzenetei" aria-label="Mezo üzenetei">${I('i-mail')}<b class="n">2</b></button>
   <button class="hb" data-toast="Értesítések" aria-label="Értesítések">${I('i-bell')}<b class="n">3</b></button>
-  <button class="dayring" data-toast="A mai napod · 4 a 7 jelből megvan" aria-label="A mai napod"><svg viewBox="0 0 38 38"><circle class="t" cx="19" cy="19" r="15"/><circle class="p" cx="19" cy="19" r="15" style="--d:${(circ(15)*4/7).toFixed(1)}"/></svg><b>4/7</b></button>
+  ${V==='ajanlott'?`<button class="hb cs" data-toast="A mai napod · 72 · 4 a 7 jelből megvan" aria-label="A mai napod">${csepp('ok',57,{s:40,val:72,cls:'mini'})}</button>`:`<button class="dayring" data-toast="A mai napod · 4 a 7 jelből megvan" aria-label="A mai napod"><svg viewBox="0 0 38 38"><circle class="t" cx="19" cy="19" r="15"/><circle class="p" cx="19" cy="19" r="15" style="--d:${(circ(15)*4/7).toFixed(1)}"/></svg><b>4/7</b></button>`}
 </header>`;
 const NAV={nap:['i-sun',[['Mai','i-sun'],['A napom','i-cal'],['Beszélgetés','i-chat'],['Rutin','i-list']]],
            edzes:['i-dumb',[['Mai','i-dumb'],['Terv','i-layers'],['Terhelés','i-bars'],['Gyakorlatok','i-book']]]};
 const nav=d=>{const [mark,tabs]=NAV[d];const idx=d==='nap'?0:1;
-  return `<nav class="nav"><button class="dmark" data-toast="Területváltó: Nap · Edzés · Fuel · Mezo · Én" aria-label="Területváltó"><i>${I(mark)}</i><small>${[0,1,2,3,4].map(i=>`<b class="${i===idx?'on':''}"></b>`).join('')}</small></button>
+  return `<nav class="nav"><button class="dmark" data-toast="Területváltó: Nap · Edzés · Fuel · Mezo · Én" aria-label="Területváltó">${V==='ajanlott'?csepp('ok',57,{s:36,form:'ok',color:'var(--dom)'}):`<i>${I(mark)}</i>`}<small>${[0,1,2,3,4].map(i=>`<b class="${i===idx?'on':''}"></b>`).join('')}</small></button>
   ${tabs.map(([l,ic],i)=>`<button class="tb ${i===0?'on':''}" data-toast="${l}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`};
 
 /* ── NAP · MAI ── */
@@ -1601,7 +1685,7 @@ function nap(){
   return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
   <div class="sec rise"><span class="eb">Szerda · október 7.</span><span class="eb">Napközpont</span></div>
   <div class="p16 rise" style="--i:1"><h1 class="t">A napod</h1></div>
-  ${V==='ajanlott'?`<section class="card hg hero-n rise" style="--i:2">${ring(72,'var(--ok)').replace('class="ring"','class="ring big"')}
+  ${V==='ajanlott'?`<section class="card hg hero-n rise" style="--i:2">${csepp('ok',57,{s:128,val:72,label:'MA'})}
     <div style="flex:1;min-width:0"><span class="eb">Mai állapot · 72 / 100</span><p class="verdict">Ma jó nap egy közepes edzéshez.</p>
       <p class="lead">Nyugodt ébredés, pihenve. Két check-in még hátravan.</p>
       <div class="chips" style="margin-top:8px"><span class="chip">${I('i-bed')}7 ó 40 p</span><span class="chip">${I('i-bolt')}energia 6/10</span></div></div>
@@ -1663,7 +1747,7 @@ function edzes(){
     <div class="mus" style="gap:6px">${['back-wide','back-mid','shoulder-rear','biceps-brachialis','traps'].map(k=>mchp(k,'sm')).join('')}</div>
     <div class="cta"><button class="btn" style="flex:1" data-toast="Eligazítás">${I('i-dumb')}Indítsuk ${I('i-chev')}</button><button class="link" data-toast="Kihagyom">Kihagyom</button></div>
   </section>
-  <section class="card rise ${V==='ajanlott'?'hg':''}" style="--i:2"><span class="eb">Mai állapot · a reggeli check-inből</span><h2 class="t" style="margin:4px 0 8px">Könnyebb nap javasolt</h2>
+  <section class="card rise ${V==='ajanlott'?'hg':''}" style="--i:2"><div class="hero-cs" style="gap:12px">${V==='ajanlott'?csepp('warn',57,{s:56,val:48}):''}<span><span class="eb">Mai állapot · a reggeli check-inből</span><h2 class="t" style="margin:4px 0 0">Könnyebb nap javasolt</h2></span></div><div style="height:8px"></div>
     <div class="kv">
       <span class="l">Kipihentség</span><span class="v"><b>4</b> / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:40%"></b></div>
       <span class="l">Izomláz</span><span class="v"><b>7</b> / 10</span><div class="bar" style="--c:var(--bad)"><b style="--w:70%"></b></div>
@@ -1710,6 +1794,7 @@ const NOTES={
   <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
   ajanlott:`<h2>Ajánlott</h2><p>Ez a három kör összegzése: a <b>Klinikai sötét</b> hűvös grafit alapja és fegyelme, a <b>mostani 3D ikonok</b> mint az app lelke, és oldalanként <b>egy</b> üveg hangsúlykártya (a Nap oldalon a mai állapotod, az Edzésen a mai edzés). A háttérben egészen halvány, hűvös derengés, narancs nélkül.</p>
   <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
+  <h2>3. kör · az élő csepp</h2><p>Az app jele: egy arc nélküli, lélegző, folyadékkal töltődő forma. Nagyban a Nap tetején (ez a mai állapotod otthona), kicsiben minden fejlécben és az alsó menü terület-jelén. A <b>Jelek</b> fülön egymás mellett a három állapot, a töltöttség, a méretek és a csapat testvérformái.</p>
   <h2>2. kör · a hét javítás</h2><ul><li><b>A szám a hős:</b> a Nap oldalon a 72 nagy gyűrűben, karnyújtásnyiról olvasható.</li><li><b>Ítélet, nem leírás:</b> „Ma jó nap egy közepes edzéshez.” Ez a Boop-edző hangja, arc nélkül.</li><li><b>Kevesebb gyors művelet:</b> három fő gomb egy csendes sorban, a többi a „Több” mögött.</li><li><b>Fejléc:</b> egy kis jel és a név csendesebben. A névről később döntünk.</li><li><b>Két üveg az Edzésen:</b> a mai edzés és a „Könnyebb nap javasolt” tanács. Ez a nap két fontos dolga.</li><li><b>Terület-szín csak az alsó menü jelén</b> (Nap borostyán, Edzés korall), minden más semleges.</li><li><b>Láthatóbb derengés</b> a háttérben, a kártyák nem világítanak jobban tőle.</li></ul>
   <h2>A szabályok</h2><ul><li>Egy kiemelő szín (acélkék) az egész appban; a terület nem kap saját színt. A többi szín csak állapot: zöld jó, borostyán figyelj, vörös baj.</li><li>Üveg = rangsor: oldalanként egy kártya, amelyik a legfontosabb. Minden más lapos, vékony kerettel.</li><li>Az ikonkészlet marad, nem kell újrarajzolni; csak a figurák (Boop) cserélődnek később.</li><li>Számok és címkék műszer-betűvel, egyforma számjegy-szélességgel.</li></ul>
   <h2>Hangulat</h2><p>Oura fegyelme a mostani app ikonjaival: komoly, de nem száraz.</p>`,
@@ -1726,14 +1811,15 @@ const NOTES={
 let V='ajanlott',D='nap';
 function render(){
   const ph=$('#phone');
+  if(D==='jelek'&&V==='jelenlegi')V='ajanlott';
   if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${D}.html#mai"></iframe>`}
-  else{ph.dataset.v=V;ph.dataset.d=D;ph.innerHTML=D==='nap'?nap():edzes()}
+  else{ph.dataset.v=V;ph.dataset.d=D==='jelek'?'nap':D;ph.innerHTML=D==='nap'?nap():D==='jelek'?jelek():edzes()}
   $('#notes').innerHTML=NOTES[V];
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
   history.replaceState(null,'',`#${V}-${D}`);
 }
-function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid|ajanlott)-(nap|edzes)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
+function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid|ajanlott)-(nap|edzes|jelek)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
 document.addEventListener('click',e=>{
   const v=e.target.closest('#vseg button');if(v){V=v.dataset.v;render();return}
   const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;render();return}
