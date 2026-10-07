@@ -17184,7 +17184,9 @@ components:
           minimum: 0
           maximum: 5000
           nullable: true
-          description: 'MEAL only: the slot budget at skip time (snapshot)'
+          description: >-
+            MEAL only: the slot budget at skip time (snapshot); omitted on a
+            later upsert keeps the stored value
     PlannedSkipResponse:
       type: object
       required:
@@ -17237,7 +17239,9 @@ components:
           minimum: 0
           maximum: 5000
           nullable: true
-          description: 'MEAL only: the slot budget at skip time (snapshot)'
+          description: >-
+            MEAL only: the slot budget at skip time (snapshot); omitted on a
+            later upsert keeps the stored value
     RecoveryEstimate:
       type: string
       enum:

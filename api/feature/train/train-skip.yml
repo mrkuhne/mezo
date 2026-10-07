@@ -82,7 +82,7 @@ components:
         sessionKey: { type: string, maxLength: 64, nullable: true, description: 'RUN: the block session key; MEAL: <slotKind>#<n>' }
         reasonCategory: { $ref: '#/components/schemas/PlannedSkipReason' }
         reasonText: { type: string, maxLength: 500, nullable: true, description: Kept only for OTHER }
-        plannedKcal: { type: integer, minimum: 0, maximum: 5000, nullable: true, description: 'MEAL only: the slot budget at skip time (snapshot)' }
+        plannedKcal: { type: integer, minimum: 0, maximum: 5000, nullable: true, description: 'MEAL only: the slot budget at skip time (snapshot); omitted on a later upsert keeps the stored value' }
     PlannedSkipResponse:
       type: object
       required: [id, date, kind, reasonCategory, source, serious, freePass, excused]
@@ -99,4 +99,4 @@ components:
         serious: { type: boolean }
         freePass: { type: boolean, description: The weekly free pass covers this skip }
         excused: { type: boolean, description: Does not count as missed }
-        plannedKcal: { type: integer, minimum: 0, maximum: 5000, nullable: true, description: 'MEAL only: the slot budget at skip time (snapshot)' }
+        plannedKcal: { type: integer, minimum: 0, maximum: 5000, nullable: true, description: 'MEAL only: the slot budget at skip time (snapshot); omitted on a later upsert keeps the stored value' }

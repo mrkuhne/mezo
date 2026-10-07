@@ -417,4 +417,39 @@ class PlannedSkipContractIT extends ApiIntegrationTest {
         assertThat(rows.get(0).plannedKcal()).isEqualTo(200);
         assertThat(plannedSkipService.mealSkipsBetween(user.id(), today, today)).containsOnlyKeys(today);
     }
+
+    @Test
+    void testUpsert_shouldKeepMealKcal_whenReasonOnlyReUpsert() {
+        HttpHeaders auth = ownerAuthHeaders();
+        putForBody("/api/train/skips", mealReq(today(), "lunch#1", PlannedSkipReason.NONE, 900),
+            auth, HttpStatus.OK, PlannedSkipResponse.class);
+        PlannedSkipResponse second = putForBody("/api/train/skips",
+            mealReq(today(), "lunch#1", PlannedSkipReason.NOT_HUNGRY, null), auth, HttpStatus.OK, PlannedSkipResponse.class);
+        assertThat(second.getPlannedKcal()).isEqualTo(900);
+        assertThat(second.getReasonCategory()).isEqualTo(PlannedSkipReason.NOT_HUNGRY);
+    }
+
+    @Test
+    void testUpsert_shouldReturn400_whenPlannedKcalOutOfRange() {
+        HttpHeaders auth = ownerAuthHeaders();
+        putForBody("/api/train/skips", mealReq(today(), "lunch#1", PlannedSkipReason.NONE, 5001),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+        putForBody("/api/train/skips", mealReq(today(), "lunch#1", PlannedSkipReason.NONE, -1),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+    }
+
+    @Test
+    void testUpsert_shouldReturn400_whenMealDateOlderThanSevenDays() {
+        String body = putForBody("/api/train/skips", mealReq(today().minusDays(8), "lunch#1", PlannedSkipReason.NONE, null),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_SKIP_DATE_OUT_OF_WINDOW");
+    }
+
+    @Test
+    void testUpsert_shouldDropPlannedKcal_whenKindIsGym() {
+        PlannedSkipResponse gym = putForBody("/api/train/skips", new PlannedSkipRequest()
+            .date(today()).kind(PlannedSkipKind.GYM).reasonCategory(PlannedSkipReason.TIRED).plannedKcal(500),
+            ownerAuthHeaders(), HttpStatus.OK, PlannedSkipResponse.class);
+        assertThat(gym.getPlannedKcal()).isNull();
+    }
 }

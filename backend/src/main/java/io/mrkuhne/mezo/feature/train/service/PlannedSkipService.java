@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -94,7 +95,10 @@ public class PlannedSkipService {
                 return e;
             });
         row.setReasonCategory(reason);
-        row.setPlannedKcal(kind == Kind.MEAL ? req.getPlannedKcal() : null);
+        // A reason-only re-upsert (no plannedKcal) keeps the stored snapshot; only MEAL carries one.
+        if (kind == Kind.MEAL && req.getPlannedKcal() != null) {
+            row.setPlannedKcal(req.getPlannedKcal());
+        }
         String text = req.getReasonText() == null ? null : req.getReasonText().trim();
         row.setReasonText(reason == Reason.OTHER && text != null && !text.isEmpty() ? text : null);
         row.setUpdatedAt(Instant.now());
@@ -343,7 +347,7 @@ public class PlannedSkipService {
         return verdictsBetween(user, from, to).stream()
             .map(Verdict::row)
             .filter(r -> r.kind() == Kind.MEAL)
-            .collect(Collectors.groupingBy(Row::date, java.util.TreeMap::new, Collectors.toList()));
+            .collect(Collectors.groupingBy(Row::date, TreeMap::new, Collectors.toList()));
     }
 
     @Transactional(readOnly = true)

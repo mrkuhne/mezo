@@ -6959,7 +6959,7 @@ export interface components {
             reasonCategory: components["schemas"]["PlannedSkipReason"];
             /** @description Kept only for OTHER */
             reasonText?: string | null;
-            /** @description MEAL only: the slot budget at skip time (snapshot) */
+            /** @description MEAL only: the slot budget at skip time (snapshot); omitted on a later upsert keeps the stored value */
             plannedKcal?: number | null;
         };
         PlannedSkipResponse: {
@@ -6980,7 +6980,7 @@ export interface components {
             freePass: boolean;
             /** @description Does not count as missed */
             excused: boolean;
-            /** @description MEAL only: the slot budget at skip time (snapshot) */
+            /** @description MEAL only: the slot budget at skip time (snapshot); omitted on a later upsert keeps the stored value */
             plannedKcal?: number | null;
         };
         /** @enum {string} */
