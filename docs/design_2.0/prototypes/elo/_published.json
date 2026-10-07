@@ -1,0 +1,17 @@
+{
+  "nap": {
+    "sha256": "28dd5e001bba2d00cc53b446f750feb4764d2bced628462bae252c0bb7aa6fbf",
+    "allapot": "2026-10-07",
+    "published": "2026-10-07"
+  },
+  "edzes": {
+    "sha256": "a4af3d1cc9aa0dbcc492bf950c77d4b435f6d03604059e16d1b2248e16409aba",
+    "allapot": "2026-10-07",
+    "published": "2026-10-07"
+  },
+  "en": {
+    "sha256": "7785ca8629848826abed3ee570c173567b4d6150e5025ae3fc9b8ed19dc4349d",
+    "allapot": "2026-10-07",
+    "published": "2026-10-07"
+  }
+}

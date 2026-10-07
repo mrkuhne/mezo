@@ -37,6 +37,10 @@ shows an older state than `main` misleads him silently.
 `_published.json` holds, per domain, the hash and "Állapot" date of what was last published;
 `_link-status.mjs` compares it with the file on disk, so a lag shows even if nobody filed it.
 
+State on 2026-10-07: Nap, Edzés and Én are published with the "Állapot" date. **Fuel and Mezo are
+held** (open debts `mezo-et628`, `mezo-e63cp`): their links show unmerged prototypes awaiting the
+owner's OK (`feat/kihagyas-s3`, `feat/emlekezet-learning-pause`) and must not be rolled back.
+
 The shared desktop frame lives in `_panel-kit.html` (`mezo-eitra`, owner request 2026-10-07):
 the phone stays pinned and fits the window, the side panel scrolls on its own, screens are
 grouped by the app's tabs and follow the route, and the single "Legutóbb változott" block is the
