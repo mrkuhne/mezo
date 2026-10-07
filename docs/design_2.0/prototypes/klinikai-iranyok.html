@@ -161,6 +161,26 @@ svg.ic.td{stroke:none;width:26px;height:26px;filter:drop-shadow(0 4px 5px rgba(0
 .ch svg.ic{color:var(--acc)}
 .ch svg.ic.td{width:30px;height:30px}
 
+
+/* ── Ajánlott · 2. kör: a 7 javítás ── */
+.phone[data-v="ajanlott"][data-d="nap"]{--dom:#CFA14A}
+.phone[data-v="ajanlott"][data-d="edzes"]{--dom:#CF6B5E}
+.phone[data-v="ajanlott"] .aurora i{opacity:.16}                                   /* 7: láthatóbb derengés */
+.phone[data-v="ajanlott"] .dmark i{color:var(--dom);background:color-mix(in srgb,var(--dom) 14%,transparent);border-color:color-mix(in srgb,var(--dom) 40%,transparent)}  /* 6: terület-szín csak itt */
+.phone[data-v="ajanlott"] .dmark small b.on{background:var(--dom)}
+.phone[data-v="ajanlott"] .ds button.on b{color:var(--dom)}
+.wm.mark{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;letter-spacing:-.2px;color:var(--sub)}   /* 4: jel + csendes név */
+.wm.mark .logo{width:22px;height:22px;border-radius:50%;border:2.5px solid var(--acc);position:relative;flex:0 0 auto;box-shadow:0 0 12px -2px color-mix(in srgb,var(--acc) 60%,transparent)}
+.wm.mark .logo::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--acc)}
+.hero-n{display:flex;gap:16px;align-items:center}                                    /* 1: a szám a hős */
+.ring.big{width:124px;height:124px}.ring.big svg{width:124px;height:124px}.ring.big circle{stroke-width:7}
+.ring.big .c b{font-size:36px;letter-spacing:-1.5px}.ring.big .c small{font-size:9px;margin-top:4px}
+.hero-n .verdict{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt);font-size:19px;line-height:1.2;margin:4px 0 6px;text-wrap:balance}  /* 2: ítélet */
+.qa.compact{grid-template-columns:repeat(4,1fr)}                                     /* 3: kevesebb, kisebb művelet */
+.qa.compact button{flex-direction:row;justify-content:center;gap:6px;padding:9px 4px;font-size:11px;border-radius:10px}
+.qa.compact button svg.ic.td{width:22px;height:22px}
+.qa.compact button.more{color:var(--faint)}
+
 /* ── header ── */
 .hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
 .wm{flex:1;font-family:var(--disp);font-weight:var(--dispw);font-size:21px;letter-spacing:var(--dispt)}
@@ -1563,7 +1583,7 @@ const circ=r=>2*Math.PI*r;
 const ring=(p,c,r=38)=>`<div class="ring" style="--c:${c}"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="${r}"/><circle class="p" cx="44" cy="44" r="${r}" style="--d:${circ(r)*p/100}"/></svg><div class="c"><span><b>${p}%</b><small>ÉLETJELEK</small></span></div></div>`;
 
 /* ── chrome (same content as production: wordmark · ? · beállítások · üzenetek · értesítések · nap-kör) ── */
-const header=()=>`<header class="hd"><span class="wm">boop</span>
+const header=()=>`<header class="hd">${V==='ajanlott'?`<span class="wm mark"><i class="logo"></i>boop</span>`:`<span class="wm">boop</span>`}
   <button class="hb q" data-toast="Kalauz ehhez az oldalhoz">?</button>
   <button class="hb" data-toast="Beállítások" aria-label="Beállítások">${I('i-gear')}</button>
   <button class="hb" data-toast="Mezo üzenetei" aria-label="Mezo üzenetei">${I('i-mail')}<b class="n">2</b></button>
@@ -1581,7 +1601,17 @@ function nap(){
   return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll">${header()}
   <div class="sec rise"><span class="eb">Szerda · október 7.</span><span class="eb">Napközpont</span></div>
   <div class="p16 rise" style="--i:1"><h1 class="t">A napod</h1></div>
-  <section class="card hg rise" style="--i:2;display:flex;gap:14px;align-items:center">${ring(72,'var(--ok)')}
+  ${V==='ajanlott'?`<section class="card hg hero-n rise" style="--i:2">${ring(72,'var(--ok)').replace('class="ring"','class="ring big"')}
+    <div style="flex:1;min-width:0"><span class="eb">Mai állapot · 72 / 100</span><p class="verdict">Ma jó nap egy közepes edzéshez.</p>
+      <p class="lead">Nyugodt ébredés, pihenve. Két check-in még hátravan.</p>
+      <div class="chips" style="margin-top:8px"><span class="chip">${I('i-bed')}7 ó 40 p</span><span class="chip">${I('i-bolt')}energia 6/10</span></div></div>
+  </section>
+  <div class="qa compact rise" style="--i:3">
+    <button data-toast="Check-in">${I('i-pulse')}Check-in</button>
+    <button data-toast="Gyors logolás">${I('i-plus')}Logolás</button>
+    <button data-toast="Napló">${I('i-pen')}Napló</button>
+    <button class="more" data-toast="Aktivitás · Chat · Életjelek">Több ›</button>
+  </div>`:`<section class="card hg rise" style="--i:2;display:flex;gap:14px;align-items:center">${ring(72,'var(--ok)')}
     <div style="flex:1;min-width:0"><span class="eb">Mai állapot</span><h2 class="t" style="margin:4px 0 6px">Nyugodt ébredés, pihenve</h2>
       <p class="lead">Két check-in még hátravan. Az alvásod a 7 napos átlag fölött van.</p>
       <div class="chips" style="margin-top:8px"><span class="chip">${I('i-bed')}7 ó 40 p</span><span class="chip">${I('i-mood')}nyugodt</span><span class="chip">${I('i-bolt')}energia 6/10</span></div></div>
@@ -1592,7 +1622,7 @@ function nap(){
     <button data-toast="Napló">${I('i-pen')}Napló</button>
     <button data-toast="Aktivitás">${I('i-steps')}Aktivitás</button>
     <button data-toast="Beszélgetés">${I('i-chat')}Chat</button>
-  </div>
+  </div>`}
   <section class="card rise" style="--i:4"><div class="hrow"><h2 class="t">Üzemanyag</h2><a href="#" data-toast="Fuel · Mai">Fuel · ma ›</a></div>
     <div style="display:flex;align-items:baseline;gap:10px"><span class="num">2 060<small>kcal</small></span><span class="mono" style="font-size:12px;color:var(--sub)">/ 3 100 keret</span></div>
     <div class="bar" style="margin:10px 0 14px;--c:var(--acc)"><b style="--w:66%"></b></div>
@@ -1633,7 +1663,7 @@ function edzes(){
     <div class="mus" style="gap:6px">${['back-wide','back-mid','shoulder-rear','biceps-brachialis','traps'].map(k=>mchp(k,'sm')).join('')}</div>
     <div class="cta"><button class="btn" style="flex:1" data-toast="Eligazítás">${I('i-dumb')}Indítsuk ${I('i-chev')}</button><button class="link" data-toast="Kihagyom">Kihagyom</button></div>
   </section>
-  <section class="card rise" style="--i:2"><span class="eb">Mai állapot · a reggeli check-inből</span><h2 class="t" style="margin:4px 0 8px">Könnyebb nap javasolt</h2>
+  <section class="card rise ${V==='ajanlott'?'hg':''}" style="--i:2"><span class="eb">Mai állapot · a reggeli check-inből</span><h2 class="t" style="margin:4px 0 8px">Könnyebb nap javasolt</h2>
     <div class="kv">
       <span class="l">Kipihentség</span><span class="v"><b>4</b> / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:40%"></b></div>
       <span class="l">Izomláz</span><span class="v"><b>7</b> / 10</span><div class="bar" style="--c:var(--bad)"><b style="--w:70%"></b></div>
@@ -1680,6 +1710,7 @@ const NOTES={
   <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
   ajanlott:`<h2>Ajánlott</h2><p>Ez a három kör összegzése: a <b>Klinikai sötét</b> hűvös grafit alapja és fegyelme, a <b>mostani 3D ikonok</b> mint az app lelke, és oldalanként <b>egy</b> üveg hangsúlykártya (a Nap oldalon a mai állapotod, az Edzésen a mai edzés). A háttérben egészen halvány, hűvös derengés, narancs nélkül.</p>
   <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
+  <h2>2. kör · a hét javítás</h2><ul><li><b>A szám a hős:</b> a Nap oldalon a 72 nagy gyűrűben, karnyújtásnyiról olvasható.</li><li><b>Ítélet, nem leírás:</b> „Ma jó nap egy közepes edzéshez.” Ez a Boop-edző hangja, arc nélkül.</li><li><b>Kevesebb gyors művelet:</b> három fő gomb egy csendes sorban, a többi a „Több” mögött.</li><li><b>Fejléc:</b> egy kis jel és a név csendesebben. A névről később döntünk.</li><li><b>Két üveg az Edzésen:</b> a mai edzés és a „Könnyebb nap javasolt” tanács. Ez a nap két fontos dolga.</li><li><b>Terület-szín csak az alsó menü jelén</b> (Nap borostyán, Edzés korall), minden más semleges.</li><li><b>Láthatóbb derengés</b> a háttérben, a kártyák nem világítanak jobban tőle.</li></ul>
   <h2>A szabályok</h2><ul><li>Egy kiemelő szín (acélkék) az egész appban; a terület nem kap saját színt. A többi szín csak állapot: zöld jó, borostyán figyelj, vörös baj.</li><li>Üveg = rangsor: oldalanként egy kártya, amelyik a legfontosabb. Minden más lapos, vékony kerettel.</li><li>Az ikonkészlet marad, nem kell újrarajzolni; csak a figurák (Boop) cserélődnek később.</li><li>Számok és címkék műszer-betűvel, egyforma számjegy-szélességgel.</li></ul>
   <h2>Hangulat</h2><p>Oura fegyelme a mostani app ikonjaival: komoly, de nem száraz.</p>`,
   hibrid:`<h2>Hibrid meleg</h2><p>A mostani meleg grafit alap és a halvány színes derengés marad, az ikonok és figurák helyett viszont vonalas jelek. Az üveg nem tűnik el: <b>egy</b> hangsúlyos kártya viseli oldalanként (a Nap oldalon a mai állapotod, az Edzésen a mai edzés), a többi kártya nyugodt, lapos, vékony kerettel.</p>
