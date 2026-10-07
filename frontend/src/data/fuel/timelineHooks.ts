@@ -25,6 +25,7 @@ import { useBiometricProfile } from '@/data/me/biometricHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
+import { usePlannedSkips } from '@/data/train/skipHooks'
 import { buildDayPlan, servedBudget } from '@/features/fuel/logic/buildDayPlan'
 import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
 import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
@@ -85,6 +86,8 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { gymSchedule, sport, plannedSkips, gymDoneDates, completedTodayWorkout } = useTrain()
   // `runSessions` (mezo-tb3s2): real logged-run provenance, same source `useDayOrbFill`/`useNeeds` use.
   const { activeRunningBlock, runSessions } = useRunning()
+  // The full skip rows (id + reason) for the date's MEAL skips — the same query `useTrain()` reads.
+  const { skips: allSkips } = usePlannedSkips()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
   const { templates } = useSlotTemplates() // Per-day-type meal-slot templates (mezo-7102)
@@ -147,6 +150,7 @@ export function useFuelTimeline(date: string = localDateString()) {
     wake, bed, mealsPerDay, blocks, budget, weightKg, restPerHour,
     meals: fuel.meals, recipes, protocolSlots,
     caffeineCutoff: settings.caffeineCutoff, nowHHmm, template,
+    mealSkips: allSkips.filter(s => s.kind === 'MEAL' && s.date === date),
   })
 
   // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the

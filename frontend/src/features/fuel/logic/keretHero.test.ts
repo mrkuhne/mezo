@@ -399,3 +399,24 @@ test('doneMealRows carries sugar and resolves fibre from the nutrients envelope'
   // Őszinte-null: amit a forrás nem adott, az null marad — a sáv ilyenkor becsül, és kimondja.
   expect(doneMealRows([m], [s])[0]).toMatchObject({ sugarG: null })
 })
+
+// ── Kihagyás S3: a skipped window keeps its share, but is not "left to eat" ──
+test('skipped windows: remaining = target − eaten − skipped; the skipped kcal and labels ride along', () => {
+  const vm = build({
+    budget: { ...BUDGET, kcal: 2270 },
+    consumed: { kcal: 1180, p: 90, c: 130, f: 40 },
+    slots: [
+      slot({ state: 'done', time: '07:40' }),
+      slot({ state: 'skipped', time: '16:30', label: 'Uzsonna', slotKey: 'snack', budgetKcal: 420 }),
+    ],
+  })
+  expect(vm.remainingKcal).toBe(670)
+  expect(vm.skippedKcal).toBe(420)
+  expect(vm.skippedLabels).toEqual(['Uzsonna'])
+})
+test('no skipped window → skippedKcal 0 and remaining unchanged', () => {
+  const vm = build({ consumed: { kcal: 500, p: 1, c: 1, f: 1 } })
+  expect(vm.skippedKcal).toBe(0)
+  expect(vm.skippedLabels).toEqual([])
+  expect(vm.remainingKcal).toBe(BUDGET.kcal - 500)
+})

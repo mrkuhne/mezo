@@ -20,6 +20,11 @@ export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: strin
 export interface DaySegVM { widthPct: number; toneAlt: boolean }
 export interface KeretHeroVM {
   remainingKcal: number
+  /** Kihagyás S3: the skipped windows' own budget shares — `remainingKcal` already excludes them
+   *  (target − eaten − skipped); the hero draws them as their own ring segment. */
+  skippedKcal: number
+  /** Labels of the skipped windows (e.g. 'Uzsonna'), chronological. */
+  skippedLabels: string[]
   consumedKcal: number
   targetKcal: number
   doneCount: number
@@ -74,6 +79,10 @@ export function buildKeretHero(input: {
   // a stack/protocol slot is never an eating window, so it never enters the day-bar or the n/m count).
   const windows = slots.filter(isMealSlot).slice().sort((a, z) => toMin(a.time) - toMin(z.time))
   const doneWindows = windows.filter(s => s.state === 'done')
+  // A skipped window keeps its budget share (no redistribution) but is not "left to eat": the
+  // plan-derived sum, so the ring segment and the slot cards always agree.
+  const skippedWindows = windows.filter(s => s.state === 'skipped')
+  const skippedKcal = skippedWindows.reduce((sum, s) => sum + (s.budgetKcal ?? 0), 0)
 
   const segments: DaySegVM[] = doneWindows.map((s, i) => ({
     // Segments share ONE denominator (budget.kcal) with the track background the component draws
@@ -116,7 +125,9 @@ export function buildKeretHero(input: {
   return {
     // Honest negative on an overshoot day — no clamp. `KeretHero` already formats a negative
     // remainingKcal with the Unicode minus (U+2212) via its `fmt` helper.
-    remainingKcal: budget.kcal - consumed.kcal,
+    remainingKcal: budget.kcal - consumed.kcal - skippedKcal,
+    skippedKcal,
+    skippedLabels: skippedWindows.map(s => s.label),
     consumedKcal: consumed.kcal,
     targetKcal: budget.kcal,
     doneCount: doneWindows.length,

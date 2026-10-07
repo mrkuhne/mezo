@@ -91,3 +91,14 @@ test('a now window after the clock has not started — buildDayPlan promoted the
   if (hero.kind !== 'open') throw new Error('unreachable')
   expect(hero.started).toBe(false)
 })
+
+test('a skipped window is never the hero and never listed as missed', () => {
+  const skipped = slot({ state: 'skipped', time: '12:00' })
+  const { hero, missed } = pick([skipped])
+  expect(hero.kind).toBe('closed')
+  expect(missed).toEqual([])
+  const now = slot({ time: '16:30', label: 'Uzsonna', slotKey: 'snack' })
+  const r = pick([skipped, now])
+  if (r.hero.kind !== 'open') throw new Error('unreachable')
+  expect(r.hero.slot).toBe(now)
+})

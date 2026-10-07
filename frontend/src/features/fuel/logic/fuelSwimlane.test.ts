@@ -283,3 +283,14 @@ test('a shifted window carries its cause onto the tile (mezo-9sltu); an unshifte
   expect(tiles[1].shiftedAfter).toEqual({ label: 'Ebéd', at: '14:50' })
   expect(tiles[0].shiftedAfter).toBeUndefined()
 })
+
+test('a skipped tile carries skipKey + skip, and past-day normalisation keeps it skipped', () => {
+  const skip = { id: 's1', reasonCategory: 'NOT_HUNGRY' as const, reasonText: null }
+  const lane = buildWindowLane({
+    slots: [slot({ state: 'skipped', skipKey: 'breakfast#1', skip }), slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: 'pending' })],
+    budget, meals: [],
+  })
+  expect(lane.tiles[0]).toMatchObject({ state: 'skipped', skipKey: 'breakfast#1', skip })
+  const past = asPastDayLane(lane)
+  expect(past.tiles.map(t => t.state)).toEqual(['skipped', 'missed'])
+})
