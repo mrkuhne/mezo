@@ -75,8 +75,8 @@ public class FlagEvaluator {
     private final PoorRestednessRule poorRestednessRule;
     private final CravingStreakRule cravingStreakRule;
     private final MotivationSlumpRule motivationSlumpRule;
-    /** Kihagyás S2 (mezo-q4xt2.2, task 6): the read-only gate for the four training-pressure
-     *  rules below — train, never the reverse (see the class this belongs to). */
+    /** Kihagyás S2/S3 (mezo-q4xt2.2/.3): the read-only gate for the seven rules below — four
+     *  training-pressure rules and three fuel-judgement rules; train, never the reverse. */
     private final RecoveryPeriodService recoveryPeriodService;
 
     /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 20 entries,
@@ -85,12 +85,15 @@ public class FlagEvaluator {
     public List<FlagVerdict> evaluate(UUID userId) {
         LocalDate today = LocalDate.now();
         List<FlagVerdict> verdicts = new ArrayList<>();
-        // Kihagyás S2 (mezo-q4xt2.2, task 6): while a recovery period ("kímélő mód") is open, the
-        // four training-pressure rules go quiet instead of running — a genuinely excused gap
-        // (illness, injury, a stomach bug, travel) must never be read back to the user as a nag.
+        // Kihagyás S2/S3 (mezo-q4xt2.2/.3): while a recovery period ("kímélő mód") is open, the
+        // seven rules (four training-pressure, three fuel-judgement) go quiet instead of running —
+        // a genuinely excused gap or a sick-day plate (illness, injury, a stomach bug, travel)
+        // must never be read back to the user as a nag.
         Optional<RecoveryPeriodEntity> openRecovery = recoveryPeriodService.open(userId);
         verdicts.add(acuteBadDayRule.evaluate(userId, today));
-        verdicts.add(loadFuelMismatchRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.LOAD_FUEL_MISMATCH, UnavailableReason.RECOVERY_MODE)
+                : loadFuelMismatchRule.evaluate(userId, today));
         verdicts.add(rapidWeightLossRule.evaluate(userId, today));
         verdicts.add(openRecovery.isPresent()
                 ? FlagVerdict.unavailable(FlagKey.JOINT_OVERUSE, UnavailableReason.RECOVERY_MODE)
@@ -101,13 +104,17 @@ public class FlagEvaluator {
                 : missedWorkoutsRule.evaluate(userId, today));
         verdicts.add(sleepDebtRule.evaluate(userId, today));
         verdicts.add(poorRestednessRule.evaluate(userId, today));
-        verdicts.add(loggingGapRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.LOGGING_GAP, UnavailableReason.RECOVERY_MODE)
+                : loggingGapRule.evaluate(userId, today));
         verdicts.add(openRecovery.isPresent()
                 ? FlagVerdict.unavailable(FlagKey.IGNORED_NUDGE, UnavailableReason.RECOVERY_MODE)
                 : ignoredNudgeRule.evaluate(userId, today));
         verdicts.add(lateEatingRule.evaluate(userId, today));
         verdicts.add(protocolLapseRule.evaluate(userId, today));
-        verdicts.add(mealRhythmDriftRule.evaluate(userId, today));
+        verdicts.add(openRecovery.isPresent()
+                ? FlagVerdict.unavailable(FlagKey.MEAL_RHYTHM_DRIFT, UnavailableReason.RECOVERY_MODE)
+                : mealRhythmDriftRule.evaluate(userId, today));
         verdicts.add(energyDipMealTimingRule.evaluate(userId, today));
         verdicts.add(cravingStreakRule.evaluate(userId, today));
         verdicts.add(recoveryNeededRule.evaluate(userId, today));

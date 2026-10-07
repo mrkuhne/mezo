@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -97,6 +98,8 @@ public class MealRhythmDriftRule implements FlagRule {
     private final MealRepository mealRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final FlagProperties properties;
+    /** Kihagyás S3: recovery-period days are not observed. */
+    private final RecoveryPeriodService recoveryPeriodService;
 
     @Override
     public FlagVerdict evaluate(UUID userId, LocalDate today) {
@@ -117,10 +120,14 @@ public class MealRhythmDriftRule implements FlagRule {
         LocalDate to = today.minusDays(1);
         LocalDate from = to.minusDays(cfg.windowDays() - 1L);
 
+        // Kihagyás S3: days inside a recovery period (any mode) are dropped from the observation
+        // window — a sick day's skipped dinner is not a dead slot, nor its 23:00 toast a drift.
+        Set<LocalDate> excused = recoveryPeriodService.fuelDays(userId, from, to).keySet();
+
         Map<LocalDate, Map<String, LocalTime>> earliestByDayAndKind = new HashMap<>();
         for (MealEntity meal : mealRepository
                 .findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(userId, from, to)) {
-            if (meal.getLoggedAt() == null || meal.getSlot() == null) {
+            if (meal.getLoggedAt() == null || meal.getSlot() == null || excused.contains(meal.getMealDate())) {
                 continue;
             }
             LocalTime at = meal.getLoggedAt().atZone(ZoneId.systemDefault()).toLocalTime();

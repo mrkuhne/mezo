@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -58,6 +60,7 @@ public class HabitEvaluator {
     private final HabitTargets habitTargets;
     private final HabitProperties properties;
     private final CaffeineCutoffPort caffeineCutoffPort;
+    private final RecoveryPeriodService recoveryPeriodService;
 
     /** Metrics decidable during the day (re-checked on every read). */
     public static final Set<String> INTRADAY_METRICS = Set.of("sleep_wake_window", "manual",
@@ -97,7 +100,7 @@ public class HabitEvaluator {
                     .stream()
                     .anyMatch(r -> date.equals(r.getDate()));
             }
-            case "breakfast_protein" -> fuelDayService.getDay(userId, date).getMeals().stream()
+            case "breakfast_protein" -> isGuidanceDay(userId, date) || fuelDayService.getDay(userId, date).getMeals().stream()
                 .filter(m -> "breakfast".equals(m.getSlot()))
                 .map(m -> m.getMacros().getP())
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
@@ -105,6 +108,9 @@ public class HabitEvaluator {
             case "no_stim_after" -> stimIntakes(userId, date).stream()
                 .noneMatch(t -> t.isAfter(caffeineCutoffPort.resolve(userId)));
             case "last_meal_before" -> {
+                if (isGuidanceDay(userId, date)) {
+                    yield true; // kímélő mód (illness / stomach): a sick day never breaks the chain
+                }
                 var meals = mealRepository
                     .findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date);
                 if (meals.isEmpty()) {
@@ -130,6 +136,12 @@ public class HabitEvaluator {
                 yield false;
             }
         };
+    }
+
+    /** Kihagyás S3: the date lies in an illness / stomach-bug recovery period (Fuel mode GUIDANCE). */
+    private boolean isGuidanceDay(UUID userId, LocalDate date) {
+        var period = recoveryPeriodService.fuelDays(userId, date, date).get(date);
+        return period != null && RecoveryFuelMode.of(period.getCategory()) == RecoveryFuelMode.GUIDANCE;
     }
 
     private Optional<SleepLogEntity> sleepLog(UUID userId, LocalDate date) {

@@ -357,8 +357,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
     `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `PantryItemPopulator`,
     `PatternEventPopulator`, `PatternPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-    `QuestPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`,
-    `TextSignalPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`
+    `QuestPopulator`, `RecoveryPeriodPopulator`, `RunningPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
+    `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
+    `WeeklyReviewPopulator`
 
 ### companion
 
@@ -466,20 +467,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionToolRegistry`, `ConsumerPolicy`, `ConversationContextTools`, `CravingStreakRule`, `DayReviewJson`,
     `DayReviewLlmAdapter`, `EmbeddingPort`, `EnergyDipMealTimingRule`, `FactMergeJob`, `FactMergeJudge`,
     `FactMergePlanner`, `FactMergeService`, `FactOwner`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`, `FakeFactMerge`,
-    `FeedContextTools`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `ForgottenMemoriesEnvelope`, `FuelTools`,
-    `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`, `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`,
-    `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`,
-    `InsightsTools`, `JointOveruseRule`, `KnowledgeBackfillRunner`, `LateEatingRule`, `LifeGoalGraphSource`,
-    `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`,
-    `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`, `LoadFuelMismatchRule`,
-    `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`, `MedicationTools`,
-    `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`,
-    `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`, `MomentumAtRiskRule`,
-    `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `OpenAiCompanionLlm`,
-    `OpenAiUsageExtractor`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`,
-    `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersistentPainRule`, `PersonalRecordTools`,
-    `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`,
-    `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
+    `FeedContextTools`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `ForgottenMemoriesEnvelope`,
+    `FuelModeText`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`, `GoalTools`,
+    `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`,
+    `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `KnowledgeBackfillRunner`,
+    `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`,
+    `LifeGoalText`, `LifeGoalTools`, `LlmModelRouter`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
+    `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
+    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
+    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
+    `MomentumAtRiskRule`, `MotivationSlumpRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
+    `OpenAiCompanionLlm`, `OpenAiUsageExtractor`, `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`,
+    `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`, `PersistentPainRule`,
+    `PersonalRecordTools`, `PoorRestednessRule`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`,
+    `ProtocolLapseRule`, `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
     `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
     `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`,
     `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `SpringAiCompanionLlm`, `StackPlacementLlmAdapter`,
@@ -696,11 +697,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, mealClockWindow.ts
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
-    eatingTimePlacement.ts, formatImpact.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts,
+    eatingTimePlacement.ts, formatImpact.ts, fuelMode.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts,
     fuelWeekView.ts, glycemicBand.ts, heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts,
     mealCeremony.ts, mealContext.ts, mealDisplayName.ts, mealForecast.ts, mealNutrients.ts, mealQualityTruth.ts,
-    mealShare.ts, mealWindow.ts, pantryProvenance.ts, projectStackDay.ts, recipeRole.ts, recipeSlotFace.ts,
-    resolveDayType.ts, scoreArithmetic.ts, stackBands.ts, useStackIntakeToggle.ts, usualMeals.ts, validateSlotPlan.ts
+    mealShare.ts, mealSkips.ts, mealWindow.ts, pantryProvenance.ts, projectStackDay.ts, recipeRole.ts,
+    recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, stackBands.ts, useStackIntakeToggle.ts, usualMeals.ts,
+    validateSlotPlan.ts
   - **root:** MealCeremonyProvider.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
   - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
@@ -817,8 +819,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `HabitCatalogBootstrapIT`, `HabitCatalogIT`, `HabitChainDefEntityIT`, `HabitDayEntityIT`, `HabitEvaluatorIT`,
     `HabitJobIT`, `HabitServiceIT`, `HabitTargetsSleepIT`
   - **populators:** `DatabasePopulator`, `FuelSettingsPopulator`, `HabitPopulator`, `MealPopulator`,
-    `PantryItemPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
-    `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WeightLogPopulator`
+    `PantryItemPopulator`, `RecoveryPeriodPopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`,
+    `WeightLogPopulator`
 
 ### insights
 
@@ -1392,7 +1395,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/quest` — 10 IT + 0 unit
   - **ITs:** `DailyQuestEntityIT`, `QuestActivityCompletionIT`, `QuestAdaptiveDifficultyIT`, `QuestApiIT`,
     `QuestCatalogIT`, `QuestEvaluatorIT`, `QuestFlavorIT`, `QuestHistoryApiIT`, `QuestJobIT`, `QuestSelectorIT`
-  - **populators:** `CheckInPopulator`, `QuestPopulator`, `UserPopulator`, `WeightLogPopulator`
+  - **populators:** `CheckInPopulator`, `GoalPopulator`, `QuestPopulator`, `RecoveryPeriodPopulator`, `UserPopulator`,
+    `WeightLogPopulator`
 
 ### quickinput
 
