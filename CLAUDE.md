@@ -188,6 +188,12 @@ now (all four tabs, their sheets), in the approved Üveg look:
   Later sessions republish to that URL (`read` it first, then publish with `url`), so the owner
   always opens the same link. The in-app browser cannot open artifact URLs — verify over the
   local HTTP server, publish for the owner.
+- **A lagging link is a debt the next session pays first** (owner, 2026-10-07). At session start
+  run `node docs/design_2.0/prototypes/elo/_link-status.mjs` and
+  `bd list --label publish-debt --status open`; publish what lags and close the debt before your
+  own work. After changing a prototype: `--stamp <domain>` (the "Állapot" date on the page) →
+  commit → publish → `--published <domain>` → commit. If you cannot publish, file a
+  `publish-debt` issue. Full rule: `docs/design_2.0/prototypes/elo/README.md`.
 - After the change ships, the living prototype must match production. If the build had to
   deviate, update the prototype in the same merge.
 

@@ -3273,7 +3273,7 @@ svg{overflow:visible}
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast"></div>
   </div>
-  <aside class="notes" id="notes" style="--dc:var(--rose)">
+  <aside class="notes" id="notes" data-allapot="2026-10-07" style="--dc:var(--rose)">
     <div class="nhead">
       <span class="ov">ÉN · ÉLŐ PROTOTÍPUS</span>
       <div class="nnow"><small>MOST ITT</small><strong id="nnow"></strong></div>
@@ -3399,6 +3399,7 @@ svg{overflow:visible}
 .notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
 .notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
 .nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nstate{font-weight:600;color:var(--sub)}
 .nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
 .nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
 .nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
@@ -3461,9 +3462,12 @@ svg{overflow:visible}
       if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
   };
   document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  const M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+  /* which day's state this copy carries (set by _link-status.mjs --stamp) */
+  if(notes.dataset.allapot){const d=new Date(notes.dataset.allapot+'T00:00:00');q('.nhead .ov').insertAdjacentHTML('beforeend',` · <b class="nstate">ÁLLAPOT: ${M[d.getMonth()]}. ${d.getDate()}.</b>`)}
   /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
   const rec=q('.recent[data-uj]');
-  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00');
     rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
     if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
       if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
