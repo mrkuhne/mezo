@@ -1015,7 +1015,7 @@ export interface paths {
         get: operations["listPlannedSkips"];
         /**
          * Skip one occurrence, or change the reason of an existing skip (idempotent per target)
-         * @description Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER.
+         * @description Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER. MEAL: sessionKey = `<slotKind>#<n>` (slotKind breakfast|lunch|dinner|snack, n the 1-based index among the day's windows of that kind), date in [today-7, today]; NOT_HUNGRY is MEAL-only.
          */
         put: operations["upsertPlannedSkip"];
         post?: never;
@@ -6943,9 +6943,9 @@ export interface components {
             intensity?: number | null;
         };
         /** @enum {string} */
-        PlannedSkipKind: "GYM" | "SPORT" | "RUN";
+        PlannedSkipKind: "GYM" | "SPORT" | "RUN" | "MEAL";
         /** @enum {string} */
-        PlannedSkipReason: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | "TIRED" | "NO_TIME" | "NO_MOOD" | "OTHER" | "NONE";
+        PlannedSkipReason: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | "TIRED" | "NO_TIME" | "NO_MOOD" | "NOT_HUNGRY" | "OTHER" | "NONE";
         PlannedSkipRequest: {
             /** Format: date */
             date: string;
@@ -6954,11 +6954,13 @@ export interface components {
             dayOfWeek?: number | null;
             /** @description SPORT only */
             time?: string | null;
-            /** @description RUN only */
+            /** @description RUN: the block session key; MEAL: <slotKind>#<n> */
             sessionKey?: string | null;
             reasonCategory: components["schemas"]["PlannedSkipReason"];
             /** @description Kept only for OTHER */
             reasonText?: string | null;
+            /** @description MEAL only: the slot budget at skip time (snapshot) */
+            plannedKcal?: number | null;
         };
         PlannedSkipResponse: {
             /** Format: uuid */
@@ -6978,6 +6980,8 @@ export interface components {
             freePass: boolean;
             /** @description Does not count as missed */
             excused: boolean;
+            /** @description MEAL only: the slot budget at skip time (snapshot) */
+            plannedKcal?: number | null;
         };
         /** @enum {string} */
         RecoveryEstimate: "TODAY" | "FEW_DAYS" | "WEEK" | "UNKNOWN";
@@ -16025,7 +16029,7 @@ export interface operations {
                     "application/json": components["schemas"]["PlannedSkipResponse"];
                 };
             };
-            /** @description Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW) */
+            /** @description Missing field, bad target (TRAIN_SKIP_TARGET_INVALID), reason not allowed for the kind (TRAIN_SKIP_REASON_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW) */
             400: {
                 headers: {
                     [name: string]: unknown;

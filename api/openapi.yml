@@ -2902,7 +2902,10 @@ paths:
       description: >-
         Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The
         date must lie in [today-7, Sunday of the current ISO week]
-        (Europe/Budapest). reasonText is kept only for OTHER.
+        (Europe/Budapest). reasonText is kept only for OTHER. MEAL: sessionKey =
+        `<slotKind>#<n>` (slotKind breakfast|lunch|dinner|snack, n the 1-based
+        index among the day's windows of that kind), date in [today-7, today];
+        NOT_HUNGRY is MEAL-only.
       requestBody:
         required: true
         content:
@@ -2918,8 +2921,9 @@ paths:
                 $ref: '#/components/schemas/PlannedSkipResponse'
         '400':
           description: >-
-            Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date
-            outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+            Missing field, bad target (TRAIN_SKIP_TARGET_INVALID), reason not
+            allowed for the kind (TRAIN_SKIP_REASON_INVALID) or date outside the
+            window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
           content:
             application/json:
               schema:
@@ -17126,6 +17130,7 @@ components:
         - GYM
         - SPORT
         - RUN
+        - MEAL
     PlannedSkipReason:
       type: string
       enum:
@@ -17136,6 +17141,7 @@ components:
         - TIRED
         - NO_TIME
         - NO_MOOD
+        - NOT_HUNGRY
         - OTHER
         - NONE
     PlannedSkipRequest:
@@ -17165,7 +17171,7 @@ components:
           type: string
           maxLength: 64
           nullable: true
-          description: RUN only
+          description: 'RUN: the block session key; MEAL: <slotKind>#<n>'
         reasonCategory:
           $ref: '#/components/schemas/PlannedSkipReason'
         reasonText:
@@ -17173,6 +17179,12 @@ components:
           maxLength: 500
           nullable: true
           description: Kept only for OTHER
+        plannedKcal:
+          type: integer
+          minimum: 0
+          maximum: 5000
+          nullable: true
+          description: 'MEAL only: the slot budget at skip time (snapshot)'
     PlannedSkipResponse:
       type: object
       required:
@@ -17220,6 +17232,12 @@ components:
         excused:
           type: boolean
           description: Does not count as missed
+        plannedKcal:
+          type: integer
+          minimum: 0
+          maximum: 5000
+          nullable: true
+          description: 'MEAL only: the slot budget at skip time (snapshot)'
     RecoveryEstimate:
       type: string
       enum:

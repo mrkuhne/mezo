@@ -9,8 +9,8 @@ import { addDays, localDateString } from '@/shared/lib/dates'
 
 /** `DAY` (Kihagyás S2, mezo-q4xt2.2) is the kímélő mód's virtual whole-day row — one per
  *  protected recovery date (`recovery.ts`'s `protectedDayRows`), never written by a skip call. */
-export type SkipKind = 'GYM' | 'SPORT' | 'RUN' | 'DAY'
-export type SkipReason = 'ILLNESS' | 'STOMACH' | 'INJURY' | 'TRAVEL' | 'TIRED' | 'NO_TIME' | 'NO_MOOD' | 'OTHER' | 'NONE'
+export type SkipKind = 'GYM' | 'SPORT' | 'RUN' | 'MEAL' | 'DAY'
+export type SkipReason = 'ILLNESS' | 'STOMACH' | 'INJURY' | 'TRAVEL' | 'TIRED' | 'NO_TIME' | 'NO_MOOD' | 'NOT_HUNGRY' | 'OTHER' | 'NONE'
 
 /** The identity of one planned occurrence a skip can target — matched per `isSkipped` below.
  *  `dayOfWeek`/`time` only matter for SPORT, `sessionKey` only for RUN. */

@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.api.dto.PlannedSkipKind;
 import io.mrkuhne.mezo.api.dto.PlannedSkipReason;
 import io.mrkuhne.mezo.api.dto.PlannedSkipRequest;
 import io.mrkuhne.mezo.api.dto.PlannedSkipResponse;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
@@ -26,6 +28,7 @@ class PlannedSkipContractIT extends ApiIntegrationTest {
 
     @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private SportSlotSkipService sportSlotSkipService;
+    @Autowired private PlannedSkipService plannedSkipService;
 
     private static final ZoneId TZ = ZoneId.of("Europe/Budapest");
 
@@ -320,5 +323,98 @@ class PlannedSkipContractIT extends ApiIntegrationTest {
         List<PlannedSkipResponse> list = getForList(
             "/api/train/skips?from=" + today + "&to=" + today, auth, HttpStatus.OK, PlannedSkipResponse.class);
         assertThat(list).hasSize(1);
+    }
+
+    private PlannedSkipRequest mealReq(LocalDate date, String key, PlannedSkipReason reason, Integer kcal) {
+        return new PlannedSkipRequest().date(date).kind(PlannedSkipKind.MEAL).sessionKey(key)
+            .reasonCategory(reason).plannedKcal(kcal);
+    }
+
+    @Test
+    void testUpsert_shouldExcuseMealWithoutPass_whenMealSkipped() {
+        HttpHeaders auth = ownerAuthHeaders();
+        PlannedSkipResponse r = putForBody("/api/train/skips",
+            mealReq(today(), "lunch#1", PlannedSkipReason.NONE, 900), auth, HttpStatus.OK, PlannedSkipResponse.class);
+        assertThat(r.getExcused()).isTrue();
+        assertThat(r.getFreePass()).isFalse();
+        assertThat(r.getPlannedKcal()).isEqualTo(900);
+    }
+
+    @Test
+    void testUpsert_shouldUpdateMealReason_whenSameSlotAgain() {
+        HttpHeaders auth = ownerAuthHeaders();
+        PlannedSkipResponse first = putForBody("/api/train/skips",
+            mealReq(today(), "lunch#1", PlannedSkipReason.NONE, 900), auth, HttpStatus.OK, PlannedSkipResponse.class);
+        PlannedSkipResponse second = putForBody("/api/train/skips",
+            mealReq(today(), "lunch#1", PlannedSkipReason.NOT_HUNGRY, 900), auth, HttpStatus.OK, PlannedSkipResponse.class);
+        assertThat(second.getId()).isEqualTo(first.getId());
+        assertThat(second.getReasonCategory()).isEqualTo(PlannedSkipReason.NOT_HUNGRY);
+    }
+
+    @Test
+    void testUpsert_shouldReturn400_whenMealSlotKindUnknown() {
+        String body = putForBody("/api/train/skips", mealReq(today(), "brunch#1", PlannedSkipReason.NONE, null),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_SKIP_TARGET_INVALID");
+    }
+
+    @Test
+    void testUpsert_shouldReturn400_whenMealDateInFuture() {
+        String body = putForBody("/api/train/skips", mealReq(today().plusDays(1), "lunch#1", PlannedSkipReason.NONE, null),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_SKIP_DATE_OUT_OF_WINDOW");
+    }
+
+    @Test
+    void testUpsert_shouldReturn400_whenReasonDoesNotFitKind() {
+        HttpHeaders auth = ownerAuthHeaders();
+        String meal = putForBody("/api/train/skips", mealReq(today(), "lunch#1", PlannedSkipReason.TIRED, null),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(meal, "TRAIN_SKIP_REASON_INVALID");
+        String gym = putForBody("/api/train/skips", new PlannedSkipRequest()
+            .date(today()).kind(PlannedSkipKind.GYM).reasonCategory(PlannedSkipReason.NOT_HUNGRY),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(gym, "TRAIN_SKIP_REASON_INVALID");
+    }
+
+    @Test
+    void testUpsert_shouldKeepGymPass_whenMealSkippedFirstInSameWeek() {
+        LocalDate today = today();
+        HttpHeaders auth = ownerAuthHeaders();
+        putForBody("/api/train/skips", mealReq(today, "lunch#1", PlannedSkipReason.NONE, null),
+            auth, HttpStatus.OK, PlannedSkipResponse.class);
+        putForBody("/api/train/skips", new PlannedSkipRequest()
+            .date(today).kind(PlannedSkipKind.GYM).reasonCategory(PlannedSkipReason.NO_TIME),
+            auth, HttpStatus.OK, PlannedSkipResponse.class);
+
+        List<PlannedSkipResponse> list = getForList(
+            "/api/train/skips?from=" + today + "&to=" + today, auth, HttpStatus.OK, PlannedSkipResponse.class);
+        PlannedSkipResponse gym = list.stream().filter(r -> r.getKind() == PlannedSkipKind.GYM).findFirst().orElseThrow();
+        assertThat(gym.getFreePass()).isTrue();
+    }
+
+    @Test
+    void testUndo_shouldRemoveMealSkip() {
+        LocalDate today = today();
+        HttpHeaders auth = ownerAuthHeaders();
+        PlannedSkipResponse meal = putForBody("/api/train/skips",
+            mealReq(today, "dinner#1", PlannedSkipReason.NONE, 700), auth, HttpStatus.OK, PlannedSkipResponse.class);
+        deleteAndExpect("/api/train/skips/" + meal.getId(), auth, HttpStatus.NO_CONTENT);
+        assertThat(getForList("/api/train/skips?from=" + today + "&to=" + today, auth, HttpStatus.OK,
+            PlannedSkipResponse.class)).isEmpty();
+    }
+
+    @Test
+    void testBridgedWeeks_shouldIgnoreMealSkip_andMealSkipsOnReadsItBack() {
+        LocalDate today = today();
+        RegisteredUser user = registerUser("Meal Skip Owner");
+        putForBody("/api/train/skips", mealReq(today, "snack#1", PlannedSkipReason.NOT_HUNGRY, 200),
+            user.headers(), HttpStatus.OK, PlannedSkipResponse.class);
+
+        assertThat(plannedSkipService.bridgedWeeks(user.id(), today, today)).isEmpty();
+        List<PlannedSkipPolicy.Row> rows = plannedSkipService.mealSkipsOn(user.id(), today);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).plannedKcal()).isEqualTo(200);
+        assertThat(plannedSkipService.mealSkipsBetween(user.id(), today, today)).containsOnlyKeys(today);
     }
 }

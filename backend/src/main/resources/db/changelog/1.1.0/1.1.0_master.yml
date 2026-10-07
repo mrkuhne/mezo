@@ -216,3 +216,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202610051200_mezo-lhqw7_weekly_review_went_well_watch_out.sql
+  - changeSet:
+      id: "1.1.0:202610071200_mezo-q4xt2.3_planned_skip_meal"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202610071200_mezo-q4xt2.3_planned_skip_meal.sql

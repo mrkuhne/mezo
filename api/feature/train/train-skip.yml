@@ -35,6 +35,8 @@ paths:
       description: >-
         Target = (date, kind, dayOfWeek+time for SPORT, sessionKey for RUN). The date must lie in
         [today-7, Sunday of the current ISO week] (Europe/Budapest). reasonText is kept only for OTHER.
+        MEAL: sessionKey = `<slotKind>#<n>` (slotKind breakfast|lunch|dinner|snack, n the 1-based index
+        among the day's windows of that kind), date in [today-7, today]; NOT_HUNGRY is MEAL-only.
       requestBody:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/PlannedSkipRequest' } } }
@@ -43,7 +45,7 @@ paths:
           description: The stored skip with its verdict
           content: { application/json: { schema: { $ref: '#/components/schemas/PlannedSkipResponse' } } }
         '400':
-          description: Missing field, bad target (TRAIN_SKIP_TARGET_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
+          description: Missing field, bad target (TRAIN_SKIP_TARGET_INVALID), reason not allowed for the kind (TRAIN_SKIP_REASON_INVALID) or date outside the window (TRAIN_SKIP_DATE_OUT_OF_WINDOW)
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
         '401':
           description: Missing/invalid token
@@ -65,10 +67,10 @@ paths:
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
 components:
   schemas:
-    PlannedSkipKind: { type: string, enum: [GYM, SPORT, RUN] }
+    PlannedSkipKind: { type: string, enum: [GYM, SPORT, RUN, MEAL] }
     PlannedSkipReason:
       type: string
-      enum: [ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, OTHER, NONE]
+      enum: [ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, NOT_HUNGRY, OTHER, NONE]
     PlannedSkipRequest:
       type: object
       required: [date, kind, reasonCategory]
@@ -77,9 +79,10 @@ components:
         kind: { $ref: '#/components/schemas/PlannedSkipKind' }
         dayOfWeek: { type: integer, minimum: 0, maximum: 6, nullable: true, description: 'SPORT only, 0=Hét..6=Vas' }
         time: { type: string, pattern: '^\d{2}:\d{2}$', nullable: true, description: SPORT only }
-        sessionKey: { type: string, maxLength: 64, nullable: true, description: RUN only }
+        sessionKey: { type: string, maxLength: 64, nullable: true, description: 'RUN: the block session key; MEAL: <slotKind>#<n>' }
         reasonCategory: { $ref: '#/components/schemas/PlannedSkipReason' }
         reasonText: { type: string, maxLength: 500, nullable: true, description: Kept only for OTHER }
+        plannedKcal: { type: integer, minimum: 0, maximum: 5000, nullable: true, description: 'MEAL only: the slot budget at skip time (snapshot)' }
     PlannedSkipResponse:
       type: object
       required: [id, date, kind, reasonCategory, source, serious, freePass, excused]
@@ -96,3 +99,4 @@ components:
         serious: { type: boolean }
         freePass: { type: boolean, description: The weekly free pass covers this skip }
         excused: { type: boolean, description: Does not count as missed }
+        plannedKcal: { type: integer, minimum: 0, maximum: 5000, nullable: true, description: 'MEAL only: the slot budget at skip time (snapshot)' }

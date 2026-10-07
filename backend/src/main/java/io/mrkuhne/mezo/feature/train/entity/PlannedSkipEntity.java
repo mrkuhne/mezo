@@ -21,6 +21,7 @@ import org.hibernate.type.SqlTypes;
 
 /**
  * One user-declared skip of a planned occurrence (Kihagyás S1, mezo-q4xt2.1, spec 2026-09-28 §8).
+ * MEAL (S3, mezo-q4xt2.3) keys on the slot as {@code <slotKind>#<n>} in {@code session_key}.
  * GYM keys on the date alone; SPORT on the slot IDENTITY (dayOfWeek 0=Hét..6=Vas + time — NOT ISO,
  * see {@link SportSlotSkipEntity}); RUN on the running block's session key. Whether the skip
  * counts as missed is decided at read time by {@code PlannedSkipPolicy}. Undo = soft delete.
@@ -35,9 +36,9 @@ import org.hibernate.type.SqlTypes;
 @SQLRestriction("is_deleted = false")
 public class PlannedSkipEntity extends OwnedEntity {
 
-    public enum Kind { GYM, SPORT, RUN }
+    public enum Kind { GYM, SPORT, RUN, MEAL }
 
-    public enum Reason { ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, OTHER, NONE }
+    public enum Reason { ILLNESS, STOMACH, INJURY, TRAVEL, TIRED, NO_TIME, NO_MOOD, NOT_HUNGRY, OTHER, NONE }
 
     @Id
     @GeneratedValue
@@ -70,6 +71,10 @@ public class PlannedSkipEntity extends OwnedEntity {
 
     @Column(name = "reason_text", length = 500)
     private String reasonText;
+
+    /** MEAL only: the skipped slot's kcal budget at skip time (a snapshot — windows exist only in the FE). */
+    @Column(name = "planned_kcal")
+    private Integer plannedKcal;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt = Instant.now();
