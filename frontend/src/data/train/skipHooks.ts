@@ -81,7 +81,8 @@ function mockUpsert(prev: PlannedSkip[], vars: UpsertVars): PlannedSkip[] {
     id: existing?.id ?? newMockId(),
     reasonCategory: vars.reason,
     reasonText: otherText(vars.reason, vars.text),
-    ...(vars.target.kind === 'MEAL' ? { plannedKcal: vars.plannedKcal ?? null } : {}),
+    // A re-upsert without a snapshot (reason change) keeps the stored one.
+    ...(vars.target.kind === 'MEAL' ? { plannedKcal: vars.plannedKcal ?? existing?.plannedKcal ?? null } : {}),
     source: 'USER',
     serious: false,
     freePass: false,

@@ -291,3 +291,89 @@ test('nowHHmm null (múltbéli nap) esetén nincs nyitott óra és nincs "most n
   expect(container.querySelector('.fmx-mclock.is-open')).toBeNull()
   expect(container.textContent).not.toMatch(/most nyitva/i)
 })
+
+// ── Kihagyás S3 (mezo-q4xt2.3): Kihagyom / the skipped card ────────────────────────────────────
+const SHAME = /elrontott|túlléptél|hiba|rossz|bukta|kudarc/i
+
+function skipFixture({ skipped = false, reason = 'NOT_HUNGRY' as const } = {}) {
+  const slots: FuelSlot[] = [
+    slot({ time: '12:30', label: 'Ebéd', slotKey: 'lunch', state: 'now', windowFrom: '11:45', windowTo: '13:15', budgetKcal: 700, skipKey: 'lunch#1' }),
+    slot({
+      time: '16:30', label: 'Uzsonna', slotKey: 'snack', state: skipped ? 'skipped' : 'pending',
+      windowFrom: '16:00', windowTo: '17:00', budgetKcal: 420, skipKey: 'snack#1',
+      ...(skipped ? { skip: { id: 'sk-1', reasonCategory: reason, reasonText: null } } : {}),
+    }),
+  ]
+  return { lane: buildWindowLane({ slots, budget: BUDGET, meals: [] }), meals: [], day: { ...day, nowHHmm: '12:40' } }
+}
+
+const skipping = (over: Record<string, unknown> = {}) => ({
+  date: '2026-09-12', today: '2026-09-12', fuelMode: null,
+  onSkip: vi.fn(), onReason: vi.fn(), onUndo: vi.fn(), onAte: vi.fn(), ...over,
+})
+
+test('an unlogged pending tile offers „Kihagyom" with an accessible name, and the tap hands over the tile', async () => {
+  const sk = skipping()
+  render(<FuelMealBlocks {...props(skipFixture())} skipping={sk} />)
+  const btn = screen.getByRole('button', { name: /Uzsonna kihagyása/ })
+  expect(btn).toHaveTextContent('Kihagyom')
+  expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-skip')
+  await userEvent.click(btn)
+  expect(sk.onSkip).toHaveBeenCalledWith(expect.objectContaining({ skipKey: 'snack#1' }))
+})
+
+test('the button reads „Kihagytam" on a past day and once the window is over', () => {
+  const { unmount } = render(<FuelMealBlocks {...props({ ...skipFixture(), day: { ...day, nowHHmm: null } })}
+    skipping={skipping({ date: '2026-09-11' })} />)
+  expect(screen.getByRole('button', { name: /Uzsonna kihagyása/ })).toHaveTextContent('Kihagytam')
+  unmount()
+  render(<FuelMealBlocks {...props({ ...skipFixture(), day: { ...day, nowHHmm: '17:30' } })} skipping={skipping()} />)
+  expect(screen.getByRole('button', { name: /Uzsonna kihagyása/ })).toHaveTextContent('Kihagytam')
+  expect(screen.getByRole('button', { name: /Ebéd kihagyása/ })).toHaveTextContent('Kihagytam')
+})
+
+test('no skip button without the actions, on a GUIDANCE day, or older than 7 days', () => {
+  const { unmount } = render(<FuelMealBlocks {...props(skipFixture())} />)
+  expect(screen.queryByText('Kihagyom')).toBeNull()
+  unmount()
+  const g = render(<FuelMealBlocks {...props(skipFixture())} skipping={skipping({ fuelMode: 'GUIDANCE' })} />)
+  expect(screen.queryByText('Kihagyom')).toBeNull()
+  g.unmount()
+  render(<FuelMealBlocks {...props(skipFixture())} skipping={skipping({ date: '2026-09-01' })} />)
+  expect(screen.queryByText(/Kihagy/)).toBeNull()
+})
+
+test('a skipped tile shows the muted card: reason, kcal line, three pills — and no Logolás ide / budget ring', async () => {
+  const sk = skipping()
+  const { container } = render(<FuelMealBlocks {...props(skipFixture({ skipped: true }))} skipping={sk} />)
+  const block = container.querySelector('.fmx-block.is-skipped')!
+  expect(block).not.toBeNull()
+  expect(block.querySelector('.fmx-bskip')).toHaveTextContent('kihagyva')
+  expect(block.querySelector('.fmx-budget-ring')).toBeNull()
+  expect(block).toHaveTextContent('Kihagyva · Nem vagyok éhes')
+  expect(block).toHaveTextContent('420 kcal kiesett a napból. A többi étkezésed nem lett nagyobb.')
+  expect(block.querySelector('.fmx-skipd use')?.getAttribute('href')).toBe('#t-nohunger')
+  expect(block.textContent).not.toContain('Logolás ide')
+  expect(screen.queryByRole('button', { name: /Uzsonna kihagyása/ })).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Másik ok' }))
+  expect(sk.onReason).toHaveBeenCalled()
+  await userEvent.click(screen.getByRole('button', { name: 'Visszavonom' }))
+  expect(sk.onUndo).toHaveBeenCalled()
+  await userEvent.click(screen.getByRole('button', { name: 'Mégis ettem' }))
+  expect(sk.onAte).toHaveBeenCalledWith(expect.objectContaining({ skipKey: 'snack#1' }))
+})
+
+test('a skip without a reason reads „ok nélkül" and offers „Okot adok"', () => {
+  render(<FuelMealBlocks {...props(skipFixture({ skipped: true, reason: 'NONE' as never }))} skipping={skipping()} />)
+  expect(screen.getByText('Kihagyva · ok nélkül')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Okot adok' })).toBeInTheDocument()
+})
+
+test('no shame vocabulary, no warn/over class in any skip state', () => {
+  for (const fx of [skipFixture(), skipFixture({ skipped: true }), skipFixture({ skipped: true, reason: 'NONE' as never })]) {
+    const { container, unmount } = render(<FuelMealBlocks {...props({ ...fx, day: { ...day, nowHHmm: '17:30' } })} skipping={skipping()} />)
+    expect(container.textContent).not.toMatch(SHAME)
+    expect(container.querySelector('.is-skipped.is-missed, .is-skipped .fmx-br-over, [class*="warn"]')).toBeNull()
+    unmount()
+  }
+})

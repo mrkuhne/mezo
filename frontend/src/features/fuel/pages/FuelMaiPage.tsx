@@ -75,6 +75,11 @@ import { trainingSpan } from '@/features/fuel/logic/mealWindow'
 import { backfillDate, earliestBackfillDate } from '@/features/fuel/logic/backfillWindow'
 import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { ContentIcon } from '@/shared/ui/clay'
+import { useToast } from '@/shared/ui/ToastProvider'
+import { usePlannedSkips } from '@/data/train/skipHooks'
+import { useOpenRecovery, useRecovery } from '@/data/train/recoveryHooks'
+import { MealSkipSheet } from '@/features/fuel/sheets/MealSkipSheet'
+import type { WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { FuelEnergyHero } from '@/features/fuel/components/FuelEnergyHero'
@@ -108,6 +113,12 @@ export function FuelMaiPage() {
   const { card: weeklyCard } = useExpenditureWeeklyCard()
 
   const [waterOpen, setWaterOpen] = useState(false)
+  // Kihagyás S3 (mezo-q4xt2.3): the meal skip — one tap, an optional reason in a sheet.
+  const toast = useToast()
+  const { skips, skip, setReason, undo } = usePlannedSkips()
+  const { recovery } = useRecovery()
+  const openRecovery = useOpenRecovery()
+  const [whyId, setWhyId] = useState<string | null>(null)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
 
   // ── keret-hero VM (unchanged data spine, Titanium face — mezo-33k6) ───
@@ -141,6 +152,18 @@ export function FuelMaiPage() {
   const { plan: planY, budget: budgetY } = useFuelTimeline(yesterday)
   const laneY = asPastDayLane(buildWindowLane({ slots: planY.slots, budget: budgetY, meals: fuelY.meals }))
   const yMissed = laneY.tiles.filter(t => t.state === 'missed').length
+
+  const mealTarget = (sessionKey: string | null | undefined) => ({ kind: 'MEAL' as const, date, sessionKey })
+  const whySkip = whyId ? skips.find(x => x.id === whyId) : undefined
+  const whyTile = whySkip ? lane.tiles.find(t => t.skipKey === whySkip.sessionKey) : undefined
+  const skippedCount = lane.tiles.filter(t => t.state === 'skipped').length
+  const logInto = (tile: WindowTileVM) => {
+    const slot = plan.slots.find(s => s.slotKey != null && tileKey(s) === tile.key)
+    // A13: a logolás a MEGTEKINTETT naphoz kapcsolódik — a nap megy a `?d=`-ben.
+    const q = [slot ? `w=${encodeURIComponent(tileKey(slot))}` : '', dayParam]
+      .filter(Boolean).join('&')
+    navigate(`/fuel/log/uj${q ? `?${q}` : ''}`)
+  }
 
   // mezo-jb84: a Receptek / Kamra / Gyógyszer / Trendek csempék adat-sorai a csempékkel együtt
   // elmentek. A lekérdezéseiket is elhagyjuk — egy lap ne olvasson adatot, amit nem mutat.
@@ -184,7 +207,7 @@ export function FuelMaiPage() {
             és hogy hány étkezés van már a napban. */}
         <div className="fmx-blocks-head rise" style={{ '--d': '60ms' } as React.CSSProperties}>
           <h2>{past ? 'Ezen a napon' : 'A mai blokkjaid'}</h2>
-          <span>{doneRows.length} ÉTKEZÉS</span>
+          <span>{doneRows.length} ÉTKEZÉS{skippedCount > 0 ? ` · ${skippedCount} KIHAGYVA` : ''}</span>
         </div>
         <div className="rise" style={{ '--d': '70ms' } as React.CSSProperties} data-kalauz-anchor="fuel-log">
           <FuelMealBlocks
@@ -192,13 +215,15 @@ export function FuelMaiPage() {
             meals={doneRows}
             day={{ wake, bed, nowHHmm: past ? null : nowHHmm, training: trainingSpan(blocks) }}
             fiberTargetG={dietSettings.fiberG}
-            onLogInto={(tile) => {
-              const slot = plan.slots.find(s => s.slotKey != null && tileKey(s) === tile.key)
-              // A13: a logolás a MEGTEKINTETT naphoz kapcsolódik — a nap megy a `?d=`-ben.
-              const q = [slot ? `w=${encodeURIComponent(tileKey(slot))}` : '', dayParam]
-                .filter(Boolean).join('&')
-              navigate(`/fuel/log/uj${q ? `?${q}` : ''}`)
+            skipping={{
+              date, today, fuelMode: fuel.fuelMode,
+              onSkip: (tile) => skip(mealTarget(tile.skipKey), (row) => setWhyId(row.id), tile.budgetKcal ?? tile.kcal),
+              onReason: (tile) => tile.skip && setWhyId(tile.skip.id),
+              onUndo: (tile) => tile.skip && undo(tile.skip.id, () =>
+                toast.show({ kind: 'success', text: 'Visszavonva · az étkezés visszakerült a napba' })),
+              onAte: (tile) => tile.skip && undo(tile.skip.id, () => logInto(tile)),
             }}
+            onLogInto={logInto}
             onOpenMeal={(mealId) => navigate(`/fuel/etkezes/${mealId}`)}
             // A pont-chip az AI ÉRTÉKELÉSRE visz — a sor többi része a részletekre.
             onOpenScore={(mealId) => navigate(`/fuel/etkezes/${mealId}/ertekeles`)}
@@ -242,6 +267,21 @@ export function FuelMaiPage() {
             A Mai így arról szól, amiért nyitod: hogy állsz ma, és logolj. */}
       </EntranceGroup>
 
+      <MealSkipSheet
+        open={Boolean(whySkip)}
+        skip={whySkip}
+        slotLabel={whyTile?.label ?? ''}
+        onClose={() => setWhyId(null)}
+        onReason={(reason, text) => whySkip && setReason(mealTarget(whySkip.sessionKey), reason, text)}
+        onDone={(text) => {
+          // The sheet already toasts „Megjegyeztem · …"; only an Egyéb text still needs saving.
+          if (whySkip?.reasonCategory === 'OTHER' && (text ?? null) !== (whySkip.reasonText ?? null)) {
+            setReason(mealTarget(whySkip.sessionKey), 'OTHER', text)
+          }
+        }}
+        canOpenRecovery={!recovery.period}
+        openRecovery={(req) => openRecovery.mutateAsync(req)}
+      />
       {waterOpen && (
         <WaterLogSheet
           currentMl={fuel.consumed.water}

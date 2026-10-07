@@ -105,6 +105,8 @@ export type Icon3DName =
   | 't-swap' | 't-addex'
   // Kímélő mód S2 (mezo-q4xt2.2) — owner OK on prototypes/elo/edzes.html#ikonok
   | 't-kimelo'
+  // Kihagyás S3 (mezo-q4xt2.3) — owner OK on prototypes/elo/fuel.html#ikonok-s3
+  | 't-tea' | 't-nohunger'
 
 /** Mounts the clay + Titanium <symbol>/<gradient> defs once (main.tsx). */
 export const ClaySprites = memo(function ClaySprites() {

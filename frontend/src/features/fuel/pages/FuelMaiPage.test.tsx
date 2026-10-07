@@ -481,3 +481,42 @@ test('az étkezés sora továbbra is a részletekre visz', async () => {
   await userEvent.click(screen.getAllByRole('button', { name: /Túrós zabkása/ })[0])
   expect(screen.getByTestId('loc').textContent).toMatch(/^\/fuel\/etkezes\/[^/]+$/)
 })
+
+// ── Kihagyás S3 (mezo-q4xt2.3): skip a meal, give a reason, undo ───────────────────────────────
+test('Kihagyom → reason sheet → Nem vagyok éhes → Kész: the block is the skipped card and the header counts it; Visszavonom restores', async () => {
+  const user = userEvent.setup()
+  const { container } = renderView()
+  expect(screen.getByText(/^\d+ ÉTKEZÉS$/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: /Uzsonna kihagyása/ }))
+  // The skip is saved at once and the reason sheet opens for it.
+  const sheetTitle = await screen.findByRole('heading', { name: 'Miért marad ki?' })
+  expect(sheetTitle).toBeInTheDocument()
+  expect(screen.getByText('KIHAGYVA · UZSONNA')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Nem vagyok éhes' }))
+  await user.click(screen.getByRole('button', { name: 'Kész' }))
+  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Miért marad ki?' })).toBeNull())
+  const block = container.querySelector('.fmx-block.is-skipped')!
+  expect(block).toHaveTextContent('Kihagyva · Nem vagyok éhes')
+  expect(block).toHaveTextContent('kiesett a napból. A többi étkezésed nem lett nagyobb.')
+  expect(screen.getByText(/· 1 KIHAGYVA$/)).toBeInTheDocument()
+  expect(container.querySelector('.ring-skip')).not.toBeNull()
+  expect(container.textContent).not.toMatch(/elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
+
+  await user.click(within(block as HTMLElement).getByRole('button', { name: 'Visszavonom' }))
+  await waitFor(() => expect(container.querySelector('.fmx-block.is-skipped')).toBeNull())
+  expect(screen.getByRole('button', { name: /Uzsonna.*logolás ide/ })).toBeInTheDocument()
+  expect(screen.queryByText(/KIHAGYVA$/)).toBeNull()
+})
+
+test('„Mégis ettem" undoes the skip and goes to log into the window', async () => {
+  const user = userEvent.setup()
+  const { container } = renderView()
+  await user.click(screen.getByRole('button', { name: /Uzsonna kihagyása/ }))
+  await user.click(await screen.findByRole('button', { name: 'Most nem mondom' }))
+  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Miért marad ki?' })).toBeNull())
+  const block = container.querySelector('.fmx-block.is-skipped')!
+  expect(block).toHaveTextContent('Kihagyva · ok nélkül')
+  await user.click(within(block as HTMLElement).getByRole('button', { name: 'Mégis ettem' }))
+  await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj'))
+  expect(screen.getByTestId('loc').textContent).toContain('w=')
+})

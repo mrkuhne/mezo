@@ -103,6 +103,18 @@ describe('usePlannedSkips', () => {
     expect(result.current.skips.find((s) => s.kind === 'GYM')?.freePass).toBe(true)
   })
 
+  it('mock mode: re-upserting a MEAL skip without plannedKcal keeps the stored snapshot', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper: makeHookWrapper() })
+    const key = { kind: 'MEAL' as const, date: '2026-09-28', sessionKey: 'snack#1' }
+    act(() => result.current.skip(key, undefined, 420))
+    await waitFor(() => expect(result.current.skips).toHaveLength(1))
+    act(() => result.current.setReason(key, 'NOT_HUNGRY'))
+    await waitFor(() => expect(result.current.skips[0]?.reasonCategory).toBe('NOT_HUNGRY'))
+    expect(result.current.skips).toHaveLength(1)
+    expect(result.current.skips[0]).toMatchObject({ plannedKcal: 420 })
+  })
+
   it('real mode: plannedKcal is sent for a MEAL skip only', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'false')
     const bodies: Record<string, unknown>[] = []

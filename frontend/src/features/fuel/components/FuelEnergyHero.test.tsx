@@ -310,3 +310,48 @@ test('heti kártya nélkül az Alap sor változatlan (nem gomb)', async () => {
   expect(base.tagName).toBe('DIV')
   expect(base.querySelector('small')!.textContent).toBe('az alapanyagcseréd és az életmódod')
 })
+
+// ── Kihagyás S3 (mezo-q4xt2.3): the neutral skipped segment ────────────────────────────────────
+const skipVm = (over: Partial<ReturnType<typeof vm>> = {}) => ({
+  ...vm(),
+  consumedKcal: 650, remainingKcal: 670, skippedKcal: 420, skippedLabels: ['Uzsonna'], ...over,
+}) as ReturnType<typeof vm>
+
+test('skippedKcal draws the muted .ring-skip after the eaten arc; the remaining numeral and label stay calm', () => {
+  const { container } = render(<FuelEnergyHero vm={skipVm()} />)
+  const seg = container.querySelector('circle.ring-skip') as SVGCircleElement
+  expect(seg).not.toBeNull()
+  // 650/2400 = 27.1 % eaten; 420/2400 = 17.5 % skipped → dash 16.0, offset −(27.1+1.5)
+  expect(seg.style.strokeDasharray).toBe('16.0 100')
+  expect(Number(seg.style.strokeDashoffset.replace('px', ''))).toBeCloseTo(-(650 / 2400 * 100 + 1.5), 1)
+  expect(container.querySelector('.fmx-hero-remaining')).toHaveTextContent('670')
+  expect(container).toHaveTextContent('MÉG BELEFÉR')
+  expect(container.querySelector('.fmx-gauge')).toHaveAttribute('aria-label', '650 / 2 400 kcal, ebből 420 kcal kihagyva')
+  expect(container.querySelector('[class*="over"], [class*="warn"]')).toBeNull()
+})
+
+test('no skipped kcal → no segment and no chip', () => {
+  const { container } = render(<FuelEnergyHero vm={vm()} />)
+  expect(container.querySelector('.ring-skip')).toBeNull()
+  expect(container.querySelector('.fmx-skline')).toBeNull()
+  expect(container.querySelector('.fmx-gauge')!.getAttribute('aria-label')).not.toMatch(/kihagyva/)
+})
+
+test('a segment of 1.5 % or less is not drawn', () => {
+  const { container } = render(<FuelEnergyHero vm={skipVm({ skippedKcal: 30 })} />)
+  expect(container.querySelector('.ring-skip')).toBeNull()
+})
+
+test('the chip names the skipped windows and opens the equation box with a „Kihagyva" row before „Marad"', async () => {
+  render(<FuelEnergyHero vm={skipVm()} />)
+  const chip = screen.getByRole('button', { name: /Uzsonna kihagyva · 420 kcal kiesett a napból/ })
+  await userEvent.click(chip)
+  const box = screen.getByRole('dialog')
+  expect(within(box).getByText('Kihagyva')).toBeInTheDocument()
+  expect(box).toHaveTextContent('kihagyott étkezés · nem kerül át máshová')
+  expect(box).toHaveTextContent('− 420')
+  const names = Array.from(box.querySelectorAll('.fmx-node strong')).map(n => n.textContent)
+  expect(names.indexOf('Kihagyva')).toBe(names.length - 2)
+  expect(box.querySelector('.fmx-gb-skip')).not.toBeNull()
+  expect(box.textContent).not.toMatch(/elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
+})

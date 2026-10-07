@@ -30775,3 +30775,39 @@ main.settings-page {
   outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .uvx-cw-chev, .uvx-cw-sw, .uvx-cw-sw::after { transition: none; } }
 /* ── /uveg sajat edzes ── */
+
+/* ── Kihagyás S3 (mezo-q4xt2.3) · étkezés kihagyása — prototype elo/fuel.html `Kihagyás S3` ──
+   Egy kihagyás sosem mulasztás: semmi piros/borostyán, a hue végig a levendula (--dv-lav).
+   A „Miért marad ki?" ablak a train `.trm-*` stílusait használja (portal, nincs scope). */
+.fmx-frow { display: flex; gap: 8px; align-items: stretch; }
+.fmx-frow .fmx-block-log { flex: 1; min-width: 0; width: auto; }
+.fmx-fskip { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; min-width: 74px; min-height: 44px; margin: 8px 0 8px; padding: 6px 10px; border: 0; border-radius: 16px;
+  font: inherit; font-size: 11.5px; font-weight: 600; color: var(--text-secondary); cursor: pointer;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-fskip .t-ico { width: 22px; height: 22px; filter: none; opacity: 0.85; }
+.fmx-fskip:focus-visible, .fmx-skact:focus-visible, .fmx-skline:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: 2px; }
+.fmx-block.is-skipped { border: 1.5px dashed rgba(245, 239, 230, 0.14); }
+.fmx-block.is-skipped .fmx-block-art, .fmx-block.is-skipped .fmx-block-name,
+.fmx-block.is-skipped .fmx-mclock { opacity: 0.5; }
+.fmx-bskip { padding: 4px 10px; border-radius: 999px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.3px;
+  color: #C9BDF0; background: rgba(171, 159, 210, 0.1); box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.35); }
+.fmx-skipd { --c: var(--dv-lav); display: flex; align-items: center; gap: 12px; margin: 2px 0 0; padding: 10px 12px;
+  border-radius: 14px; text-align: left; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-skipd > .t-ico { width: 28px; height: 28px; flex: 0 0 auto; filter: none; }
+.fmx-skipd > span { flex: 1; min-width: 0; }
+.fmx-skipd b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; color: var(--text-primary); overflow-wrap: anywhere; }
+.fmx-skipd small { display: block; margin-top: 2px; font-size: 12px; line-height: 1.35; color: var(--text-secondary); }
+.fmx-skacts { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 8px; }
+.fmx-skact { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; min-height: 36px; padding: 8px 14px; border: 0;
+  border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+.fmx-skact .t-ico { width: 18px; height: 18px; filter: none; }
+.fmx-gauge-rings .ring-skip { stroke: rgba(201, 189, 240, 0.42); stroke-linecap: butt; }
+.fmx-skline { display: flex; align-items: center; gap: 8px; margin: 8px auto 0; max-width: calc(100% - 32px);
+  padding: 7px 14px 7px 9px; border: 0; border-radius: 999px; font: inherit; font-size: 12px; text-align: left;
+  color: var(--text-secondary); background: rgba(171, 159, 210, 0.08); box-shadow: inset 0 0 0 1px rgba(171, 159, 210, 0.3); cursor: pointer; }
+.fmx-skline .t-ico { width: 20px; height: 20px; flex: 0 0 auto; filter: none; }
+.fmx-skline b { color: var(--text-primary); font-weight: 600; }
+.fmx-glass-bar .fmx-gb-skip { position: absolute; top: 0; bottom: 0; left: var(--l); width: var(--w); border-radius: 4px;
+  background: repeating-linear-gradient(135deg, rgba(201, 189, 240, 0.55) 0 4px, rgba(201, 189, 240, 0.2) 4px 8px); }
