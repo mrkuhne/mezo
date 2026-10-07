@@ -23,6 +23,11 @@ only "new" marker (rewritten by every change; its "ÚJ" badges expire after 14 d
 editing the kit run `node docs/design_2.0/prototypes/elo/_inject-panel-kit.mjs`. All five files
 were converted on 2026-10-07; in `mezo.html` the two duplicate news links (`#rolad`, `#tenyek`
 in the Üzenőfal list) moved into the block.
+Republished to the fixed Artifact URLs on 2026-10-07: Nap, Edzés, Mezo, Én. **Fuel was not
+republished**: its link currently shows the unmerged Kihagyás S3 prototype (`feat/kihagyas-s3`),
+which must not be rolled back. When that branch merges, keep the panel-kit frame in `fuel.html`
+(resolve the side-panel conflict towards the grouped structure), rewrite the "Legutóbb változott"
+block for S3, then publish.
 
 The shared voice kit lives in `_hang-kit.html`; after editing it run `node docs/design_2.0/prototypes/elo/_inject-hang-kit.mjs` to refresh the copy in all five files.
 
