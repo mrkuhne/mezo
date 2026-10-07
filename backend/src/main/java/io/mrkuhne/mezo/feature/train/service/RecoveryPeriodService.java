@@ -52,6 +52,25 @@ public class RecoveryPeriodService {
      */
     @Transactional(readOnly = true)
     public Map<LocalDate, RecoveryPeriodEntity> protectedDays(UUID user, LocalDate from, LocalDate to) {
+        Map<LocalDate, RecoveryPeriodEntity> days = fuelDays(user, from, to);
+        if (days.isEmpty()) {
+            return days;
+        }
+        List<UUID> periodIds = days.values().stream().map(RecoveryPeriodEntity::getId).distinct().toList();
+        for (RecoveryDayReleaseEntity r : releases.findByCreatedByAndPeriodIdInAndDeletedFalse(user, periodIds)) {
+            days.remove(r.getDate());
+        }
+        return days;
+    }
+
+    /**
+     * The period covering each date of [from, to] for the Fuel mode (Kihagyás S3): the same
+     * {@code startDate … endedOn−1} span as {@link #protectedDays} but day releases are IGNORED —
+     * "Ma mégis edzek" is a training choice, the body is still recovering, so Fuel stays in the
+     * mode. The later-started period wins an overlapping date.
+     */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, RecoveryPeriodEntity> fuelDays(UUID user, LocalDate from, LocalDate to) {
         Map<LocalDate, RecoveryPeriodEntity> days = new HashMap<>();
         if (from.isAfter(to)) {
             return days;
@@ -59,9 +78,6 @@ public class RecoveryPeriodService {
         List<RecoveryPeriodEntity> overlapping = overlapping(user, from, to).stream()
             .sorted(Comparator.comparing(RecoveryPeriodEntity::getStartDate))
             .toList();
-        if (overlapping.isEmpty()) {
-            return days;
-        }
         for (RecoveryPeriodEntity p : overlapping) {
             LocalDate first = p.getStartDate().isAfter(from) ? p.getStartDate() : from;
             LocalDate last = p.getEndedOn() == null || p.getEndedOn().minusDays(1).isAfter(to)
@@ -69,10 +85,6 @@ public class RecoveryPeriodService {
             for (LocalDate d = first; !d.isAfter(last); d = d.plusDays(1)) {
                 days.put(d, p);
             }
-        }
-        for (RecoveryDayReleaseEntity r : releases.findByCreatedByAndPeriodIdInAndDeletedFalse(
-            user, overlapping.stream().map(RecoveryPeriodEntity::getId).toList())) {
-            days.remove(r.getDate());
         }
         return days;
     }

@@ -8230,6 +8230,17 @@ export interface components {
             consumed: components["schemas"]["MacroSet"];
             meals: components["schemas"]["MealResponse"][];
             energy?: components["schemas"]["FuelDayEnergy"];
+            /**
+             * @description Kímélő-mód Fuel behaviour of the date (Kihagyás S3); null outside a recovery period.
+             * @enum {string|null}
+             */
+            fuelMode?: "GUIDANCE" | "MAINTENANCE" | "ESTIMATE" | null;
+            /** @enum {string|null} */
+            recoveryCategory?: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | null;
+            /** @description 1-based day of the recovery period. */
+            recoveryDay?: number | null;
+            /** @description Σ planned kcal of the date's skipped meal slots, clamped to the target; 0 when none and always 0 in GUIDANCE. */
+            skippedKcal?: number;
         };
         FuelDayRollup: {
             /** Format: date */
@@ -8237,6 +8248,17 @@ export interface components {
             targets: components["schemas"]["MacroSet"];
             consumed: components["schemas"]["MacroSet"];
             energy?: components["schemas"]["FuelDayEnergy"];
+            /**
+             * @description Kímélő-mód Fuel behaviour of the date (Kihagyás S3); null outside a recovery period.
+             * @enum {string|null}
+             */
+            fuelMode?: "GUIDANCE" | "MAINTENANCE" | "ESTIMATE" | null;
+            /** @enum {string|null} */
+            recoveryCategory?: "ILLNESS" | "STOMACH" | "INJURY" | "TRAVEL" | null;
+            /** @description 1-based day of the recovery period. */
+            recoveryDay?: number | null;
+            /** @description Σ planned kcal of the date's skipped meal slots, clamped to the target; 0 when none and always 0 in GUIDANCE. */
+            skippedKcal?: number;
         };
         /** @description The served target's equation (mezo-32m82, mezo-tb3s2): baseKcal (BMR × NEAT) + plannedMovementKcal (the LOGGED planned sessions' net kcal) + extraMovementKcal (unplanned logged movement, net) + balanceKcal (goal deficit/surplus; also absorbs the BMR floor) = targetKcal. pendingMovementKcal is display only and never part of the sum. Null on the static path (no goal or no biometric snapshot). */
         FuelDayEnergy: {

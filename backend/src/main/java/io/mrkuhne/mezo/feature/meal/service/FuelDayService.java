@@ -22,6 +22,11 @@ import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -71,6 +76,8 @@ public class FuelDayService {
     private final DietPreferencesResolver dietPreferences;
     private final WeightLogRepository weightLogRepository;
     private final WorkoutWindowQueryService workoutWindowQueryService;
+    private final RecoveryPeriodService recoveryPeriods;
+    private final PlannedSkipService plannedSkips;
 
     // Annotated by exception: the meal mapper walks LAZY items with open-in-view false (spring_patterns.md).
     @Transactional(readOnly = true)
@@ -81,13 +88,21 @@ public class FuelDayService {
             .toList();
         int water = waterLogService.sumForDay(userId, date);
         int waterMl = dietPreferences.resolve(userId).waterMl();
-        DailyTargets t = project(activeGoal(userId), userId, date);
+        RecoveryPeriodEntity period = recoveryPeriods.fuelDays(userId, date, date).get(date);
+        RecoveryFuelMode mode = modeOf(period);
+        DailyTargets t = project(activeGoal(userId), date,
+            () -> workoutWindowQueryService.movementOn(userId, date), mode == RecoveryFuelMode.MAINTENANCE);
         return FuelDayResponse.builder()
             .date(date)
             .targets(targetSet(t, waterMl))
             .energy(energy(t))
             .consumed(consumed(meals, water))
             .meals(meals)
+            .fuelMode(mode == null ? null : FuelDayResponse.FuelModeEnum.fromValue(mode.name()))
+            .recoveryCategory(period == null ? null
+                : FuelDayResponse.RecoveryCategoryEnum.fromValue(period.getCategory().name()))
+            .recoveryDay(recoveryDay(period, date))
+            .skippedKcal(skippedKcal(mode, plannedSkips.mealSkipsOn(userId, date), t))
             .build();
     }
 
@@ -119,15 +134,26 @@ public class FuelDayService {
         // actually needs it (the config path pays nothing).
         Supplier<Map<LocalDate, WorkoutWindowQueryService.DayMovement>> weekMovement =
             memoize(() -> workoutWindowQueryService.movementBetween(userId, start, end));
+        // ONE read each for the week's recovery days and meal skips (no per-day query).
+        Map<LocalDate, RecoveryPeriodEntity> weekPeriods = recoveryPeriods.fuelDays(userId, start, end);
+        Map<LocalDate, List<PlannedSkipPolicy.Row>> weekSkips = plannedSkips.mealSkipsBetween(userId, start, end);
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> {
+                RecoveryPeriodEntity period = weekPeriods.get(d);
+                RecoveryFuelMode mode = modeOf(period);
                 DailyTargets t = project(goal, d, () -> weekMovement.get()
-                    .getOrDefault(d, WorkoutWindowQueryService.DayMovement.NONE));
+                    .getOrDefault(d, WorkoutWindowQueryService.DayMovement.NONE),
+                    mode == RecoveryFuelMode.MAINTENANCE);
                 return FuelDayRollup.builder()
                     .date(d)
                     .targets(targetSet(t, waterMl))
                     .energy(energy(t))
                     .consumed(consumedFor(userId, d))
+                    .fuelMode(mode == null ? null : FuelDayRollup.FuelModeEnum.fromValue(mode.name()))
+                    .recoveryCategory(period == null ? null
+                        : FuelDayRollup.RecoveryCategoryEnum.fromValue(period.getCategory().name()))
+                    .recoveryDay(recoveryDay(period, d))
+                    .skippedKcal(skippedKcal(mode, weekSkips.getOrDefault(d, List.of()), t))
                     .build();
             })
             .toList();
@@ -256,11 +282,38 @@ public class FuelDayService {
 
     private DailyTargets project(GoalEntity goal, LocalDate date,
         Supplier<WorkoutWindowQueryService.DayMovement> movement) {
+        return project(goal, date, movement, false);
+    }
+
+    private DailyTargets project(GoalEntity goal, LocalDate date,
+        Supplier<WorkoutWindowQueryService.DayMovement> movement, boolean dropDeficit) {
         return DayTargetProjector.project(
             segmentFor(goal, date),
             EnergyBase.of(goal == null ? null : goal.getTdeeBootstrap()),
             movement,
-            targets);
+            targets,
+            dropDeficit);
+    }
+
+    private static RecoveryFuelMode modeOf(RecoveryPeriodEntity period) {
+        return period == null ? null : RecoveryFuelMode.of(period.getCategory());
+    }
+
+    /** 1-based day of the recovery period; null outside one. */
+    private static Integer recoveryDay(RecoveryPeriodEntity period, LocalDate date) {
+        return period == null ? null : (int) ChronoUnit.DAYS.between(period.getStartDate(), date) + 1;
+    }
+
+    /**
+     * Σ planned kcal of the day's skipped meal slots, clamped to the served target — 0 in GUIDANCE
+     * (no kcal judgement there). A null snapshot counts 0.
+     */
+    private static int skippedKcal(RecoveryFuelMode mode, List<PlannedSkipPolicy.Row> skips, DailyTargets t) {
+        if (mode == RecoveryFuelMode.GUIDANCE) {
+            return 0;
+        }
+        int sum = skips.stream().mapToInt(r -> r.plannedKcal() == null ? 0 : r.plannedKcal()).sum();
+        return Math.min(sum, t.kcal());
     }
 
     /** A supplier that runs {@code source} at most once, on first use. */

@@ -46,11 +46,24 @@ public final class DayTargetProjector {
      */
     public static DailyTargets project(GoalPrescriptionJson.Segment seg, EnergyBase base,
         Supplier<WorkoutWindowQueryService.DayMovement> movement, NutritionTargetsProperties fallback) {
+        return project(seg, base, movement, fallback, false);
+    }
+
+    /**
+     * As above; {@code dropDeficit} (a kímélő-mód MAINTENANCE day, Kihagyás S3) clamps the goal
+     * balance at 0 — a deficit is not served while recovering, a surplus is kept.
+     */
+    public static DailyTargets project(GoalPrescriptionJson.Segment seg, EnergyBase base,
+        Supplier<WorkoutWindowQueryService.DayMovement> movement, NutritionTargetsProperties fallback,
+        boolean dropDeficit) {
         if (seg == null || seg.kcal() == null) {
             return seg == null ? DailyTargets.fromConfig(fallback) : legacy(seg, fallback);
         }
         WorkoutWindowQueryService.DayMovement m = movement.get();
         int segBalance = seg.dailyEnergyBalanceKcal() != null ? seg.dailyEnergyBalanceKcal() : 0;
+        if (dropDeficit) {
+            segBalance = Math.max(segBalance, 0);
+        }
         int kcal;
         if (base != null) {
             int baseKcal = base.neatBaselineKcal().setScale(0, RoundingMode.HALF_UP).intValueExact();
