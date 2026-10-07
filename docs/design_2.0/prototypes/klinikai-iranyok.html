@@ -113,6 +113,35 @@ svg.ic.td{stroke:none;width:26px;height:26px;filter:drop-shadow(0 4px 5px rgba(0
 .phone[data-v="hibrid"] .qa button svg.ic,.phone[data-v="hibrid"] .pair button svg.ic{color:var(--ink)}
 .phone[data-v="hibrid"] .qa button{background:rgba(240,233,223,.035);border-color:rgba(240,233,223,.08)}
 
+
+/* ══ AJÁNLOTT — Klinikai sötét + mostani 3D ikonok + egy üveg hangsúlykártya oldalanként ══ */
+.phone[data-v="ajanlott"]{
+  --page:#0F1214; --ink:#E6E9EA; --sub:#9AA3A8; --faint:#6B757B; --hair:rgba(230,233,234,.09);
+  --card:#161B1E; --card2:#1C2226; --acc:#7FB2D0; --acc-ink:#0F1214;
+  --ok:#5FA98A; --warn:#CFA14A; --bad:#CF6B5E; --info:#7FB2D0;
+  --disp:var(--ff); --dispw:600; --dispt:-.6px; --r:16px;
+}
+.phone[data-v="ajanlott"] .aurora i{opacity:.10;filter:blur(70px)}
+.phone[data-v="ajanlott"] .aurora i:nth-child(1){background:#2F6B7A}
+.phone[data-v="ajanlott"] .aurora i:nth-child(2){background:#3B5A8A}
+.phone[data-v="ajanlott"] .aurora i:nth-child(3){background:#2E6B5E}
+.phone[data-v="ajanlott"] .aurora i:nth-child(4){background:#3B5A8A}
+.phone[data-v="ajanlott"] .card{background:rgba(230,233,234,.035);border-color:rgba(230,233,234,.08)}
+.phone[data-v="ajanlott"] .nav{left:10px;right:10px;bottom:12px;border-radius:26px;border:1px solid rgba(230,233,234,.12);background:rgba(22,27,30,.78);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:0 16px 30px -16px rgba(0,0,0,.75)}
+.phone[data-v="ajanlott"] .scroll{padding-bottom:120px}
+.phone[data-v="ajanlott"] .hd{border-bottom:0;background:linear-gradient(180deg,rgba(15,18,20,.92) 60%,rgba(15,18,20,.5))}
+.phone[data-v="ajanlott"] .tb.on{background:radial-gradient(80% 90% at 50% 20%,color-mix(in srgb,var(--acc) 20%,transparent),transparent 70%)}
+.phone[data-v="ajanlott"] .hg{--c:var(--acc);position:relative;isolation:isolate;border:0;border-radius:20px;
+  background:radial-gradient(120% 90% at 0% 0%,color-mix(in srgb,var(--c) 20%,transparent),transparent 62%),linear-gradient(160deg,rgba(38,46,52,.78),rgba(22,27,30,.66));
+  box-shadow:0 16px 30px -16px rgba(0,0,0,.75),0 0 26px -6px color-mix(in srgb,var(--c) 28%,transparent),inset 0 1px 0 rgba(230,240,255,.10),inset 0 -14px 26px -18px color-mix(in srgb,var(--c) 50%,transparent)}
+.phone[data-v="ajanlott"] .hg::before{content:'';position:absolute;inset:0;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--c) 80%,transparent) 0%,rgba(230,240,255,.16) 30%,color-mix(in srgb,var(--c) 18%,transparent) 62%,color-mix(in srgb,var(--c) 60%,transparent) 100%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+.phone[data-v="ajanlott"] .hg.hero{margin:6px 16px 10px;padding:16px 16px 14px}
+.phone[data-v="ajanlott"] .ring .p{filter:drop-shadow(0 0 6px color-mix(in srgb,var(--c) 70%,transparent))}
+.phone[data-v="ajanlott"] .btn{box-shadow:0 10px 22px -10px color-mix(in srgb,var(--acc) 80%,transparent)}
+.phone[data-v="ajanlott"] svg.ic.td{filter:drop-shadow(0 4px 6px rgba(0,0,0,.5)) drop-shadow(0 0 8px color-mix(in srgb,var(--acc) 30%,transparent))}
+
 /* ── header ── */
 .hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
 .wm{flex:1;font-family:var(--disp);font-weight:var(--dispw);font-size:21px;letter-spacing:var(--dispt)}
@@ -1387,6 +1416,7 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
     <button data-v="sotet">Klinikai sötét</button>
     <button data-v="vilagos">Lelet világos</button>
     <button data-v="hibrid">Hibrid meleg</button>
+    <button data-v="ajanlott">Ajánlott</button>
   </div>
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap · Mai</button>
@@ -1406,7 +1436,7 @@ const $=s=>document.querySelector(s);
 /* line icon → current production icon (Titanium t-* / clay c-i-*) */
 const TD={'i-gear':'c-i-beallitas','i-mail':'c-i-level','i-bell':'c-i-ertesites','i-sun':'c-i-nap','i-cal':'c-i-heti','i-chat':'c-i-mezo','i-list':'c-i-rend','i-dumb':'t-dumbbell','i-layers':'c-i-retegek','i-bars':'c-i-meso','i-book':'c-i-naplo','i-pulse':'t-checkin','i-plus':'t-quick','i-pen':'t-journal','i-steps':'t-steps','i-bowl':'t-bowl','i-check':'t-tick','i-flame':'t-flame','i-muscle':'t-muscle','i-run':'t-run','i-ball':'t-volley','i-clock':'t-clock','i-skip':'t-skip','i-warn':'t-pain','i-bed':'t-sleep','i-mood':'t-mood','i-bolt':'t-bolt','i-moon':'t-moon','i-grid':'t-stack'};
 let IK3D=false;
-const I=(n,cls='')=>IK3D&&TD[n]?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${TD[n]}"/></svg>`:`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
+const I=(n,cls='')=>(IK3D||V==='ajanlott')&&TD[n]?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${TD[n]}"/></svg>`:`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
 const circ=r=>2*Math.PI*r;
 const ring=(p,c,r=38)=>`<div class="ring" style="--c:${c}"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="${r}"/><circle class="p" cx="44" cy="44" r="${r}" style="--d:${circ(r)*p/100}"/></svg><div class="c"><span><b>${p}%</b><small>ÉLETJELEK</small></span></div></div>`;
 
@@ -1526,6 +1556,10 @@ const NOTES={
   <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
   <h2>Mi változott</h2><ul><li>A Boop helyén a Nap oldalon egy állapot-gyűrű és egy mondat áll: hogy vagy ma, mi van még hátra.</li><li>Az öt lebegő gomb egy sor kis, egyforma műveletté lett.</li><li>A makró-reaktor három vékony sáv lett, számmal és céllal.</li><li>Vékony vonalas ikonok a 3D helyett. Az alsó menüben a Boop helyén a terület jele áll.</li><li>Számok és címkék műszer-betűvel (egyforma szélességű számjegyek), mint egy leletben.</li></ul>
   <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
+  ajanlott:`<h2>Ajánlott</h2><p>Ez a három kör összegzése: a <b>Klinikai sötét</b> hűvös grafit alapja és fegyelme, a <b>mostani 3D ikonok</b> mint az app lelke, és oldalanként <b>egy</b> üveg hangsúlykártya (a Nap oldalon a mai állapotod, az Edzésen a mai edzés). A háttérben egészen halvány, hűvös derengés, narancs nélkül.</p>
+  <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
+  <h2>A szabályok</h2><ul><li>Egy kiemelő szín (acélkék) az egész appban; a terület nem kap saját színt. A többi szín csak állapot: zöld jó, borostyán figyelj, vörös baj.</li><li>Üveg = rangsor: oldalanként egy kártya, amelyik a legfontosabb. Minden más lapos, vékony kerettel.</li><li>Az ikonkészlet marad, nem kell újrarajzolni; csak a figurák (Boop) cserélődnek később.</li><li>Számok és címkék műszer-betűvel, egyforma számjegy-szélességgel.</li></ul>
+  <h2>Hangulat</h2><p>Oura fegyelme a mostani app ikonjaival: komoly, de nem száraz.</p>`,
   hibrid:`<h2>Hibrid meleg</h2><p>A mostani meleg grafit alap és a halvány színes derengés marad, az ikonok és figurák helyett viszont vonalas jelek. Az üveg nem tűnik el: <b>egy</b> hangsúlyos kártya viseli oldalanként (a Nap oldalon a mai állapotod, az Edzésen a mai edzés), a többi kártya nyugodt, lapos, vékony kerettel.</p>
   <div class="pal"><span><i class="sw" style="background:#141210"></i>alap</span><span><i class="sw" style="background:#E0A95A"></i>Nap-szín</span><span><i class="sw" style="background:#E8785A"></i>Edzés-szín</span><span><i class="sw" style="background:#8FB49A"></i>jó</span><span><i class="sw" style="background:#E0A95A"></i>figyelj</span><span><i class="sw" style="background:#E8785A"></i>baj</span></div>
   <h2>Mi változott</h2><ul><li>Egy terület-szín oldalanként (Nap: borostyán, Edzés: korall), a többi szín csak állapot. Nincs öt pasztell egyszerre.</li><li>Az üveg a rangsor eszköze: ami a legfontosabb, az üvegben van és világít; minden más csendes.</li><li>A fejléc, az alsó menü és a derengés a mostani appból ismerős, így nem idegen.</li></ul>
@@ -1536,7 +1570,7 @@ const NOTES={
   <h2>Hangulat</h2><p>Function Health és az Apple Egészség világa: a legunisexebb és a legfelnőttebb. Ez a legnagyobb váltás: az egész app megfordul sötétről világosra.</p>`};
 
 /* ── router ── */
-let V='hibrid',D='nap';
+let V='ajanlott',D='nap';
 function render(){
   const ph=$('#phone');
   if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${D}.html#mai"></iframe>`}
@@ -1546,7 +1580,7 @@ function render(){
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
   history.replaceState(null,'',`#${V}-${D}`);
 }
-function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid)-(nap|edzes)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
+function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid|ajanlott)-(nap|edzes)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
 document.addEventListener('click',e=>{
   const v=e.target.closest('#vseg button');if(v){V=v.dataset.v;render();return}
   const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;render();return}
