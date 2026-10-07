@@ -290,6 +290,54 @@ svg.ic.td{stroke:none;width:26px;height:26px;filter:drop-shadow(0 4px 5px rgba(0
 .phone[data-v="ajanlott"][data-t="light"]:not(.warm) svg.ic.td{filter:grayscale(.75) sepia(.6) hue-rotate(165deg) saturate(1.5) brightness(.96) drop-shadow(0 3px 5px rgba(21,34,44,.25))}
 .phone[data-v="ajanlott"]:not(.warm) .hero .art.td{filter:grayscale(.75) sepia(.6) hue-rotate(165deg) saturate(1.35) drop-shadow(0 10px 14px rgba(0,0,0,.55))}
 
+
+/* ── 7. kör: MacroFactor / BWS minták ── */
+/* heti makró-sávok: 7 nap, 3 szegmens; teljesült nap = semleges */
+.phone[data-v="ajanlott"] .wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:84px;margin:12px 0 6px;position:relative}
+.phone[data-v="ajanlott"] .wk::before{content:'';position:absolute;left:0;right:0;top:18%;border-top:1px dashed var(--hair)}
+.phone[data-v="ajanlott"] .wk .d{display:flex;flex-direction:column-reverse;gap:1px;height:var(--h);border-radius:4px;overflow:hidden;position:relative}
+.phone[data-v="ajanlott"] .wk .d i{display:block;flex:var(--f)}
+.phone[data-v="ajanlott"] .wk .d .p{background:var(--protein)}.phone[data-v="ajanlott"] .wk .d .c{background:var(--carb)}.phone[data-v="ajanlott"] .wk .d .f{background:var(--fat)}
+.phone[data-v="ajanlott"] .wk .d.met i{background:rgba(230,233,234,.22)}
+.phone[data-v="ajanlott"][data-t="light"] .wk .d.met i{background:rgba(21,34,44,.18)}
+.phone[data-v="ajanlott"] .wk .d.today{outline:1.5px solid var(--acc);outline-offset:2px;border-radius:4px}
+.phone[data-v="ajanlott"] .wk .d.empty{background:repeating-linear-gradient(135deg,var(--hair) 0 2px,transparent 2px 6px)}
+.phone[data-v="ajanlott"] .wkl{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center;font-family:var(--mono);font-size:9.5px;color:var(--faint)}
+.phone[data-v="ajanlott"] .wkl b{color:var(--acc);font-weight:500}
+.phone[data-v="ajanlott"] .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);margin-left:6px;vertical-align:1px;box-shadow:0 0 8px color-mix(in srgb,var(--acc) 70%,transparent)}
+/* edzés közben: szett-sorok (BWS: súly · ism · erő → pihenő) */
+.phone[data-v="ajanlott"] .pb{display:flex;gap:3px;height:3px;margin:0 16px 10px}
+.phone[data-v="ajanlott"] .pb i{flex:1;background:var(--hair);border-radius:2px;position:relative;overflow:hidden}
+.phone[data-v="ajanlott"] .pb i b{position:absolute;inset:0;width:var(--w);background:var(--acc)}
+.phone[data-v="ajanlott"] .ex{padding:14px 16px 12px;border-top:1px solid var(--hair)}
+.phone[data-v="ajanlott"] .ex.hg{border-top:0;margin:4px 16px 10px;padding:14px 14px 12px}
+.phone[data-v="ajanlott"] .exh{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.phone[data-v="ajanlott"] .exh .g{flex:1;min-width:0}
+.phone[data-v="ajanlott"] .exh strong{display:block;font-size:15px;font-weight:600}
+.phone[data-v="ajanlott"] .exh small{display:block;font-family:var(--mono);font-size:11px;color:var(--sub);margin-top:2px}
+.phone[data-v="ajanlott"] .exh small b{color:var(--acc);font-weight:500}
+.phone[data-v="ajanlott"] .sets{display:grid;grid-template-columns:22px 1fr 1fr 1fr 34px;gap:6px 8px;align-items:center;font-variant-numeric:tabular-nums}
+.phone[data-v="ajanlott"] .sets .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;color:var(--faint);text-transform:uppercase;padding-bottom:2px}
+.phone[data-v="ajanlott"] .sets .n{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.phone[data-v="ajanlott"] .sets .v{font-family:var(--mono);font-size:13.5px;color:var(--ink)}
+.phone[data-v="ajanlott"] .sets .v.done{color:var(--sub)}
+.phone[data-v="ajanlott"] .sets .in{font-family:var(--mono);font-size:13.5px;padding:8px 8px;border-radius:7px;background:var(--card2);border:1px solid var(--hair);color:var(--ink)}
+.phone[data-v="ajanlott"] .sets .in.ph{color:var(--faint)}
+.phone[data-v="ajanlott"] .sets .tk{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;color:var(--ok)}
+.phone[data-v="ajanlott"] .sets .tk svg.ic{width:16px;height:16px;stroke-width:2.2}
+.phone[data-v="ajanlott"] .sets .tk.go{background:var(--acc);color:var(--acc-ink)}
+.phone[data-v="ajanlott"] .sets .up{font-family:var(--mono);font-size:13.5px;color:var(--faint)}
+.phone[data-v="ajanlott"] .tech{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--hair);font-size:12.5px;color:var(--sub)}
+.phone[data-v="ajanlott"] .tech .g{flex:1}
+.phone[data-v="ajanlott"] .tech b{color:var(--ink);font-weight:500}
+.phone[data-v="ajanlott"] .rest{position:absolute;left:10px;right:10px;bottom:92px;z-index:25;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:16px;background:color-mix(in srgb,var(--card) 92%,transparent);border:1px solid var(--hair);backdrop-filter:blur(14px);box-shadow:0 16px 30px -16px rgba(0,0,0,.6)}
+.phone[data-v="ajanlott"] .rest .ring{--c:var(--acc)}
+.phone[data-v="ajanlott"] .rest .ring.sm{width:44px;height:44px}.phone[data-v="ajanlott"] .rest .ring.sm svg{width:44px;height:44px}.phone[data-v="ajanlott"] .rest .ring.sm circle{stroke-width:4}
+.phone[data-v="ajanlott"] .rest strong{display:block;font-family:var(--mono);font-size:20px;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.phone[data-v="ajanlott"] .rest small{display:block;font-size:11.5px;color:var(--sub)}
+.phone[data-v="ajanlott"] .rest .g{flex:1}
+.phone[data-v="ajanlott"] .rest button.pill{font-family:var(--mono);font-size:11.5px;padding:7px 10px;border-radius:8px;border:1px solid var(--hair);color:var(--ink)}
+
 /* ── header ── */
 .hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
 .wm{flex:1;font-family:var(--disp);font-weight:var(--dispw);font-size:21px;letter-spacing:var(--dispt)}
@@ -1570,6 +1618,7 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap · Mai</button>
     <button data-d="edzes">Edzés · Mai</button>
+    <button data-d="session">Edzés · közben</button>
     <button data-d="jelek">Jelek</button>
   </div>
   <label><input type="checkbox" id="vilagos"> világos (fehér)</label>
@@ -1870,13 +1919,16 @@ function nap2(){
       <p class="txt sub">Nyugodt ébredés, 7 ó 40 p alvás. Két check-in még hátravan.</p></div>
   </section>
   <div class="qrow rise" style="--i:2"><button data-toast="Check-in">${I('i-pulse')}Check-in</button><button data-toast="Gyors logolás">${I('i-plus')}Logolás</button><button data-toast="Napló">${I('i-pen')}Napló</button><button class="more" data-toast="Aktivitás · Chat · Életjelek">Több ›</button></div>
-  <section class="open rise" style="--i:3"><span class="eb">Üzemanyag</span>
-    <div class="big"><span class="num">2 060</span><span class="v">/ 3 100 kcal · 1 040 van még</span></div>
-    <div class="bar q" style="margin:10px 0 12px"><b style="--w:66%"></b></div>
+  <section class="open rise" style="--i:3"><span class="eb">Üzemanyag · a hét</span>
+    <div class="big"><span class="num">2 060</span><span class="v">/ 3 100 kcal ma · 1 040 van még</span></div>
+    ${wkBars()}
+    <p class="fn" style="margin-top:4px">Egy oszlop egy nap, a három szín a három makró. Ha a nap célja megvan, az oszlop elhallgat: szürke lesz. A szaggatott vonal a napi keret.</p>
+    <div style="height:6px"></div>
     <div class="ln"><span class="g">Fehérje</span><span class="v"><b>148</b> / 220 g</span><div class="bar" style="--c:var(--protein)"><b style="--w:67%"></b></div></div>
     <div class="ln"><span class="g">Szénhidrát</span><span class="v"><b>224</b> / 380 g</span><div class="bar" style="--c:var(--carb)"><b style="--w:59%"></b></div></div>
     <div class="ln"><span class="g">Zsír</span><span class="v"><b>58</b> / 95 g</span><div class="bar" style="--c:var(--fat)"><b style="--w:61%"></b></div></div>
   </section>
+  <section class="open rise" style="--i:4;padding-top:12px;padding-bottom:12px"><div class="ln" style="border-top:0;padding:4px 0">${I('i-cal')}<span class="g">Heti egyeztetés<span class="dot"></span><small>vasárnap · 1 javaslat vár · 3 lépés, kb. 2 perc</small></span>${I('i-chev','chev')}</div></section>
   <section class="open rise" style="--i:4"><span class="eb">Megfigyelés</span>
     <p class="txt">Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, még kevés. Figyeljem tovább?</p>
     <div class="act"><button class="btn sm" data-toast="Megjegyeztem: figyelem tovább">Igen, figyeld</button><button class="lk" data-toast="Megjegyeztem">Nem stimmel</button><button class="lk" data-toast="Mezo · Chat">Mesélj erről</button></div>
@@ -1922,6 +1974,44 @@ function edzes2(){
   </div>${nav('edzes')}<div class="toast" id="toast"></div>`;
 }
 
+
+/* ── MacroFactor-minta: heti makró-oszlopok; teljesült nap semleges ── */
+function wkBars(){
+  const W=[['H',[.26,.52,.22],.98,1],['K',[.28,.5,.22],.9,0],['Sze',[.24,.54,.22],1.02,1],['Cs',[.27,.51,.22],.72,0],['P',[.3,.48,.22],.66,0,'today'],['Szo',null,0,0],['V',null,0,0]];
+  return `<div class="wk">${W.map(([l,m,h,met,t])=>m?`<span class="d ${met?'met':''} ${t||''}" style="--h:${Math.round(h*82)}%"><i class="p" style="--f:${m[0]}"></i><i class="c" style="--f:${m[1]}"></i><i class="f" style="--f:${m[2]}"></i></span>`:`<span class="d empty" style="--h:82%"></span>`).join('')}</div>
+  <div class="wkl">${W.map(([l,,,,t])=>`<span>${t?`<b>${l}</b>`:l}</span>`).join('')}</div>`;
+}
+/* ── BWS-minta: edzés közben — súly · ism · erő, javaslat a sorban, automatikus pihenő ── */
+function session2(){
+  const row=(n,kg,r,e,st)=>st==='done'?`<span class="n">${n}</span><span class="v done">${kg}</span><span class="v done">${r}</span><span class="v done">${e}</span><span class="tk">${I('i-check')}</span>`
+    :st==='cur'?`<span class="n">${n}</span><span class="in ph">${kg}</span><span class="in ph">${r}</span><span class="in ph">${e}</span><button class="tk go" data-toast="Szett kész · a pihenő indul" aria-label="Szett kész">${I('i-check')}</button>`
+    :`<span class="n">${n}</span><span class="up">${kg}</span><span class="up">${r}</span><span class="up">${e}</span><span></span>`;
+  const head=`<span class="h">#</span><span class="h">kg</span><span class="h">ism</span><span class="h">erő</span><span></span>`;
+  return `<div class="aurora"><i></i><i></i><i></i><i></i></div><div class="scroll" style="padding-bottom:170px">${header()}
+  <div class="sec rise" style="padding-bottom:6px"><span class="eb">Pull Day · 3. hét / 6</span><span class="eb">7 / 16 szett · 31 perc</span></div>
+  <div class="pb rise">${[1,1,.5,0,0].map((w,i)=>`<i><b style="--w:${w*100}%"></b></i>`).join('')}</div>
+  <section class="ex hg rise" style="--i:1"><div class="exh">${mchp('back-wide')}<span class="g"><strong>Húzódzkodás (súlyozott)</strong><small>múlt hét 10 kg × 8 · ma a javaslat <b>12,5 kg × 8</b></small></span></div>
+    <div class="sets">${head}${row(1,'12,5','8','7','done')}${row(2,'12,5','8','8','done')}${row(3,'12,5','8','8','cur')}${row(4,'12,5','7–8','8–9','up')}</div>
+    <div class="tech">${I('i-book')}<span class="g"><b>Technika</b> · Beállás · Végrehajtás · Gyakori hibák</span>${I('i-chev','chev')}</div>
+  </section>
+  <section class="ex rise" style="--i:2"><div class="exh">${mchp('back-mid','sm')}<span class="g"><strong>Döntött törzsű evezés</strong><small>múlt hét 70 kg × 10 · ma <b>72,5 kg × 10</b></small></span></div>
+    <div class="sets">${head}${row(1,'72,5','10','8','up')}${row(2,'72,5','10','8','up')}${row(3,'72,5','10','9','up')}</div>
+  </section>
+  <section class="ex rise" style="--i:3"><div class="exh">${mchp('shoulder-rear','sm')}<span class="g"><strong>Rear Delt Fly</strong><small>könnyítve a váll miatt · <b>10 kg × 12</b>, a múlt heti 12,5 helyett</small></span></div>
+    <div class="sets">${head}${row(1,'10','12','7','up')}${row(2,'10','12','7','up')}${row(3,'10','12','8','up')}</div>
+  </section>
+  <section class="ex rise" style="--i:4"><div class="exh">${mchp('biceps-brachialis','sm')}<span class="g"><strong>Kalapácsbicepsz</strong><small>múlt hét 16 kg × 12 · ma <b>16 kg × 13</b></small></span></div>
+    <div class="sets">${head}${row(1,'16','13','8','up')}${row(2,'16','13','8','up')}${row(3,'16','12–13','9','up')}</div>
+  </section>
+  <section class="ex rise" style="--i:5"><div class="exh">${mchp('traps','sm')}<span class="g"><strong>Vállemelés</strong><small>múlt hét 30 kg × 15 · ma <b>30 kg × 15</b></small></span></div>
+    <div class="sets">${head}${row(1,'30','15','8','up')}${row(2,'30','15','8','up')}${row(3,'30','15','9','up')}</div>
+  </section>
+  <p class="fn p16 rise" style="--i:6;padding:0 16px">A harmadik mező beírásakor a pihenő magától indul. A javaslat a múlt hetedből jön; felülírhatod.</p>
+  </div>
+  <div class="rest rise" style="--i:2"><div class="ring sm" style="--c:var(--acc)"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="38"/><circle class="p" cx="44" cy="44" r="38" style="--d:${(circ(38)*.62).toFixed(1)}"/></svg></div><span class="g"><strong>01:12</strong><small>pihenő · 90 mp az ajánlott</small></span><button class="pill" data-toast="+15 mp">+15</button><button class="pill" data-toast="Pihenő átugorva">Tovább</button></div>
+  ${nav('edzes')}<div class="toast" id="toast"></div>`;
+}
+
 /* ── notes column (owner-facing, Hungarian) ── */
 const NOTES={
   jelenlegi:`<h2>Jelenlegi · Üveg</h2><p>Az élő prototípus, változtatás nélkül, összehasonlításnak. Üvegdobozok színes kerettel, fénylő glória, színes köd a háttérben, 3D ikonok, Boop a Nap oldal közepén és az alsó menüben.</p>
@@ -1932,6 +2022,7 @@ const NOTES={
   <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
   ajanlott:`<h2>Ajánlott</h2><p>Ez a három kör összegzése: a <b>Klinikai sötét</b> hűvös grafit alapja és fegyelme, a <b>mostani 3D ikonok</b> mint az app lelke, és oldalanként <b>egy</b> üveg hangsúlykártya (a Nap oldalon a mai állapotod, az Edzésen a mai edzés). A háttérben egészen halvány, hűvös derengés, narancs nélkül.</p>
   <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
+  <h2>7. kör · MacroFactor és Built With Science minták</h2><ul><li><b>Heti makró-oszlopok</b> (MacroFactor): hét nap egymás mellett, a három makró színe; ha a nap célja megvan, az oszlop elhallgat (szürke). Nincs pipa, nincs ítélet.</li><li><b>Heti egyeztetés</b> sor kis ponttal (MacroFactor): heti, lépésekre bontott, kihagyható beszélgetés a napi pontszám helyett.</li><li><b>Edzés · közben</b> fül (Built With Science): súly · ismétlés · erő egy sorban, a javasolt súly a sorban, a harmadik mező után magától induló pihenő; technika-lap fix szerkezettel (Beállás · Végrehajtás · Gyakori hibák). Az aktuális gyakorlat üvegben, a többi nyitott.</li></ul>
   <h2>6. kör · acél ikonok + tiszta fehér</h2><p>A 3D ikonok megmaradnak, de az egész készlet <b>egy hűvös acélkék családba</b> van hangolva: ugyanaz a forma és fény, csak nem tarka. Így illeszkednek a klinikai alaphoz, sötéten és fehéren is. Az <b>eredeti ikonszínek</b> pipával összehasonlíthatod. Az izomtérkép és a csepp megtartja a saját színét, mert ott a szín jelentés. A világos mód alapja most <b>tiszta fehér</b>, a kártyák alig szürkék.</p>
   <h2>5. kör · világos pár + makrószínek</h2><p>Fent a <b>világos</b> pipával az Ajánlott világos párja: fehér alap, tinta-kék szöveg, mély kék kiemelés, ugyanazok az állapot- és kategóriaszínek sötétebben. A makrók visszakapták a saját színüket, tompítva: a kategória színe állandó jelentés, nem dísz.</p>
   <h2>4. kör · csend</h2><ul><li><b>Négy szövegszerep:</b> cím, szöveg, kis műszer-címke, nagy szám. Chip és lábjegyzet csak ahol pótolhatatlan.</li><li><b>Doboz csak az üvegnek:</b> a hős-kártyák keretben, minden más nyitott lista vékony vonallal.</li><li><b>Két árnyalat:</b> alap és vonalszín.</li><li><b>Szín = jelentés:</b> ami rendben van, szürke sáv; színt csak az kap, ami figyelmet kér. Acélkék csak a fő gombon.</li><li><b>Egy dolgot egyszer:</b> a csepp maga „a napod”, a cím eltűnt.</li></ul>
@@ -1952,15 +2043,15 @@ const NOTES={
 let V='ajanlott',D='nap';
 function render(){
   const ph=$('#phone');
-  if(D==='jelek'&&V==='jelenlegi')V='ajanlott';
+  if((D==='jelek'||D==='session')&&V==='jelenlegi')V='ajanlott';
   if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${D}.html#mai"></iframe>`}
-  else{ph.dataset.v=V;ph.dataset.d=D==='jelek'?'nap':D;if(V==='ajanlott'&&LIGHT)ph.dataset.t='light';else ph.removeAttribute('data-t');ph.classList.toggle('warm',WARM);ph.innerHTML=D==='jelek'?jelek():V==='ajanlott'?(D==='nap'?nap2():edzes2()):(D==='nap'?nap():edzes())}
+  else{ph.dataset.v=V;ph.dataset.d=D==='jelek'?'nap':D==='session'?'edzes':D;if(V==='ajanlott'&&LIGHT)ph.dataset.t='light';else ph.removeAttribute('data-t');ph.classList.toggle('warm',WARM);ph.innerHTML=D==='jelek'?jelek():D==='session'?(V==='ajanlott'?session2():edzes()):V==='ajanlott'?(D==='nap'?nap2():edzes2()):(D==='nap'?nap():edzes())}
   $('#notes').innerHTML=NOTES[V];
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
   history.replaceState(null,'',`#${V}-${D}`);
 }
-function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid|ajanlott)-(nap|edzes|jelek)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
+function fromHash(){const m=/^#(jelenlegi|sotet|vilagos|hibrid|ajanlott)-(nap|edzes|jelek|session)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
 document.addEventListener('click',e=>{
   const v=e.target.closest('#vseg button');if(v){V=v.dataset.v;render();return}
   const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;render();return}
