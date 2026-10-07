@@ -7,6 +7,8 @@ import type {
   MealBreakdown, MealDimension, MicroStatus, ToolType, FuelDayEnergy,
 } from '@/data/types'
 import type { NovaGroup } from '@/data/nova'
+import type { FuelMode } from '@/features/fuel/logic/fuelMode'
+import type { SkipReason } from '@/features/train/logic/plannedSkips'
 
 type MealRequest = components['schemas']['MealRequest']
 type MealItemRequest = components['schemas']['MealItemRequest']
@@ -128,6 +130,11 @@ export interface FuelDayData {
   meals: FuelMeal[]
   /** The served energy breakdown (mezo-32m82); null on the static path. */
   energy?: FuelDayEnergy | null
+  /** Kímélő-mód Fuel behaviour (Kihagyás S3) — served by the real API, derived in mock mode. */
+  fuelMode?: FuelMode | null
+  recoveryCategory?: SkipReason | null
+  recoveryDay?: number | null
+  skippedKcal?: number
 }
 
 /** One day of the 7-day rollup (`GET /api/fuel/week/{start}`) — no meal bodies. */
@@ -135,6 +142,8 @@ export interface FuelWeekDay {
   date: string
   targets: MacroSet
   consumed: MacroSet
+  /** The day's kímélő-mód Fuel behaviour (Kihagyás S3); null/absent outside a recovery period. */
+  fuelMode?: FuelMode | null
 }
 export interface FuelWeekData {
   start: string
@@ -221,6 +230,10 @@ function fromDayResponse(d: FuelDayResponse): FuelDayData {
     consumed: d.consumed,
     meals: d.meals.map(fromResponse),
     energy: d.energy ?? null,
+    fuelMode: d.fuelMode ?? null,
+    recoveryCategory: d.recoveryCategory ?? null,
+    recoveryDay: d.recoveryDay ?? null,
+    skippedKcal: d.skippedKcal ?? 0,
   }
 }
 
@@ -262,7 +275,7 @@ export const mealApi = {
   getWeek: (start: string): Promise<FuelWeekData> =>
     apiFetch<FuelWeekResponse>(`/api/fuel/week/${start}`).then((w) => ({
       start: w.start,
-      days: (w.days ?? []).map((d) => ({ date: d.date, targets: d.targets, consumed: d.consumed })),
+      days: (w.days ?? []).map((d) => ({ date: d.date, targets: d.targets, consumed: d.consumed, fuelMode: d.fuelMode ?? null })),
       // `?? null` (not `|| null`): a legitimate 0 average must survive as 0, only
       // null/undefined collapse to the honest null.
       mealScoreAvg: w.mealScoreAvg ?? null,

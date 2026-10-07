@@ -7,6 +7,12 @@ import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { fuelDay } from '@/data/fuel/fuel'
+import { recoveryEmpty } from '@/data/train/recoveryMock'
+import { recoveryKey } from '@/data/train/recoveryHooks'
+import { plannedSkipsQueryKey } from '@/data/train/skipHooks'
+import { recoveryFuelFields, skippedKcalOn } from '@/features/fuel/logic/fuelMode'
+import type { RecoveryState } from '@/data/train/recoveryApi'
+import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 import { ingredients, recipes as mockRecipes, MOCK_AI_MEAL_DRAFT } from '@/data/fuel/pantry'
 import { computeRecipeMacrosWithOverrides } from '@/data/fuel/recipeMacros'
 import { EXPENDITURE_WEEKLY_CARD_KEY, INTAKE_DAYS_ROOT, PANTRY_KEY, RECIPES_KEY } from '@/data/fuel/queryKeys'
@@ -36,7 +42,26 @@ const FUELDAY_EMPTY: FuelDayData = { date: '', targets: ZERO_MACROS, consumed: Z
  * public return keeps the full FuelDay shape verbatim. Mock cache is client-owned (useMealActions
  * mutates via setQueryData) → never background-refetch in mock.
  */
+/** Mock mode ONLY: subscribes to the client-owned recovery + planned-skips caches so the Fuel day
+ *  derives its `fuelMode` / `skippedKcal` from them (real mode serves them — and these queries are
+ *  disabled there, so no extra fetch). Both caches are seeded exactly as `useRecovery` /
+ *  `usePlannedSkips` seed them. */
+export function useMockFuelModeSources(): { recovery: RecoveryState; skips: PlannedSkip[] } {
+  const mock = isMockMode()
+  const { data: recovery } = useQuery<RecoveryState>({
+    queryKey: recoveryKey(), queryFn: async () => recoveryEmpty, enabled: mock,
+    initialData: mock ? recoveryEmpty : undefined, staleTime: Infinity,
+  })
+  const { data: skips } = useQuery<PlannedSkip[]>({
+    queryKey: plannedSkipsQueryKey(), queryFn: async () => [], enabled: mock,
+    initialData: mock ? [] : undefined, staleTime: Infinity,
+  })
+  return { recovery: recovery ?? recoveryEmpty, skips: skips ?? [] }
+}
+
 export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; isPending: boolean; isError: boolean; refetch: () => void } {
+  const mock = isMockMode()
+  const { recovery, skips } = useMockFuelModeSources()
   const { data, isPending, isError, refetch } = useDualQuery({
     queryKey: fuelDayKey(date),
     mockData: seedDayData,
@@ -49,11 +74,22 @@ export function useFuelDay(date: string = localDateString()): { fuel: FuelDay; i
     consumed: data.consumed,
     meals: data.meals,
     energy: data.energy ?? null,
+    ...(mock ? mockFuelModeFields(recovery, skips, date, data.targets.kcal) : {
+      fuelMode: data.fuelMode ?? null,
+      recoveryCategory: data.recoveryCategory ?? null,
+      recoveryDay: data.recoveryDay ?? null,
+      skippedKcal: data.skippedKcal ?? 0,
+    }),
     pacing: fuelDay.pacing,
     micronutrients: fuelDay.micronutrients,
     supplements: fuelDay.supplements,
   }
   return { fuel, isPending, isError, refetch }
+}
+
+function mockFuelModeFields(recovery: RecoveryState, skips: PlannedSkip[], date: string, targetKcal: number) {
+  const f = recoveryFuelFields(recovery, date)
+  return { ...f, skippedKcal: skippedKcalOn(skips, date, f.fuelMode, targetKcal) }
 }
 
 /** log/update/delete on the ['fuelDay', date] cache. Real writes invalidate fuelDay + recipes +

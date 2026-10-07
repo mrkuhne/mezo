@@ -27,6 +27,8 @@ import {
 } from '@/data/fuel/fuelWeek'
 import { volleyballSessions as mockVolleyball } from '@/data/today/today'
 import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
+import { useMockFuelModeSources } from '@/data/fuel/fuelHooks'
+import { recoveryFuelFields } from '@/features/fuel/logic/fuelMode'
 import { useTrain } from '@/data/train/trainHooks'
 import { useMedication } from '@/data/fuel/medicationHooks'
 import { DAY_ORDER } from '@/data/train/train'
@@ -161,6 +163,7 @@ export interface FuelWeekRollupView {
  */
 export function useFuelWeekRollup(start: string): FuelWeekRollupView {
   const mock = isMockMode()
+  const { recovery } = useMockFuelModeSources()
   const { data: week, isPending } = useQuery({
     queryKey: ['fuelWeek', start],
     queryFn: mock ? async () => null : () => mealApi.getWeek(start),
@@ -170,7 +173,7 @@ export function useFuelWeekRollup(start: string): FuelWeekRollupView {
   if (mock) {
     const rollup = mockWeekRollup(start, start < mondayIso() ? 'past' : 'current')
     return {
-      weekDays: rollup.days,
+      weekDays: rollup.days.map((d) => ({ ...d, fuelMode: recoveryFuelFields(recovery, d.date).fuelMode })),
       mealScoreAvg: rollup.mealScoreAvg,
       weightAvgKg: rollup.weightAvgKg,
       isPending: false,

@@ -7,6 +7,11 @@ import { useFuelDay, useMealActions, useWaterActions } from '@/data/fuel/fuelHoo
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { fuelDayEnergy } from '@/data/fuel/fuel'
+import { recoveryKey } from '@/data/train/recoveryHooks'
+import { plannedSkipsQueryKey } from '@/data/train/skipHooks'
+import { recoveryEmpty } from '@/data/train/recoveryMock'
+import { localDateString } from '@/shared/lib/dates'
+import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 import type { MealInput } from '@/data/types'
 
 function sharedWrapper() {
@@ -31,11 +36,32 @@ describe('useFuelDay (mock mode)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })
     expect(Object.keys(result.current.fuel).sort()).toEqual(
-      ['consumed', 'energy', 'meals', 'micronutrients', 'pacing', 'supplements', 'targets'],
+      ['consumed', 'energy', 'fuelMode', 'meals', 'micronutrients', 'pacing', 'recoveryCategory', 'recoveryDay', 'skippedKcal', 'supplements', 'targets'],
     )
     expect(result.current.fuel.targets.kcal).toBe(fuelDayEnergy.targetKcal)
     expect(result.current.fuel.meals.length).toBeGreaterThan(0)
     expect(result.current.fuel.micronutrients.length).toBeGreaterThan(0)
+  })
+
+  it('derives fuelMode / skippedKcal from the mock recovery + planned-skips caches', async () => {
+    const { qc, Wrapper } = sharedWrapper()
+    const today = localDateString()
+    const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })
+    expect(result.current.fuel).toMatchObject({ fuelMode: null, recoveryDay: null, skippedKcal: 0 })
+    const meal: PlannedSkip = { id: 'm', kind: 'MEAL', date: today, sessionKey: 'lunch#1', reasonCategory: 'NONE',
+      source: 'USER', serious: false, freePass: false, excused: true, plannedKcal: 600 }
+    act(() => { qc.setQueryData(plannedSkipsQueryKey(), [meal]) })
+    await waitFor(() => expect(result.current.fuel.skippedKcal).toBe(600))
+    act(() => {
+      qc.setQueryData(recoveryKey(), { ...recoveryEmpty, period: { id: 'p', category: 'INJURY', estimate: 'WEEK',
+        startDate: today, dayIndex: 1, estimateExpired: false, checkedInToday: false, releasedDates: [today], releasedUnlightened: [] } })
+    })
+    await waitFor(() => expect(result.current.fuel).toMatchObject({ fuelMode: 'MAINTENANCE', recoveryCategory: 'INJURY', recoveryDay: 1, skippedKcal: 600 }))
+    act(() => {
+      qc.setQueryData(recoveryKey(), { ...recoveryEmpty, period: { id: 'p', category: 'STOMACH', estimate: 'WEEK',
+        startDate: today, dayIndex: 1, estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [] } })
+    })
+    await waitFor(() => expect(result.current.fuel).toMatchObject({ fuelMode: 'GUIDANCE', skippedKcal: 0 }))
   })
 
   it('logMeal appends a meal with whole-number contribution into the SAME ["fuelDay"] cache', async () => {
@@ -123,6 +149,17 @@ describe('useFuelDay (real mode)', () => {
     expect(result.current.fuel.meals).toEqual([])
     // the static legs still compose in (they are not query-driven)
     expect(result.current.fuel.pacing).toBeDefined()
+  })
+
+  it('maps the served fuelMode / recoveryCategory / recoveryDay / skippedKcal', async () => {
+    server.use(http.get(`${API_BASE}/api/fuel/day/:date`, () => HttpResponse.json({
+      date: '2026-09-28', targets: { kcal: 2400, p: 1, c: 1, f: 1, water: 1 }, consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+      meals: [], fuelMode: 'ESTIMATE', recoveryCategory: 'TRAVEL', recoveryDay: 2, skippedKcal: 500,
+    })))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.fuel.fuelMode).toBe('ESTIMATE'))
+    expect(result.current.fuel).toMatchObject({ recoveryCategory: 'TRAVEL', recoveryDay: 2, skippedKcal: 500 })
   })
 
   it('loads targets/consumed/meals from the API, keeps static pacing/micronutrients/supplements', async () => {

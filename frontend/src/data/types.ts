@@ -3,6 +3,8 @@ import type { Tool } from '@/shared/ui/ToolChip'
 import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
+import type { FuelMode } from '@/features/fuel/logic/fuelMode'
+import type { SkipReason } from '@/features/train/logic/plannedSkips'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 
 export type DayState = 'good' | 'medium' | 'rough'
@@ -345,6 +347,13 @@ export interface FuelDay {
   targets: MacroSet; consumed: MacroSet
   /** The served energy breakdown (mezo-32m82); absent/null → static target, no equation chips. */
   energy?: FuelDayEnergy | null
+  /** Kímélő-mód Fuel behaviour of the date (Kihagyás S3); null outside a recovery period. */
+  fuelMode: FuelMode | null
+  recoveryCategory: SkipReason | null
+  /** 1-based day of the recovery period. */
+  recoveryDay: number | null
+  /** Σ planned kcal of the date's skipped meal slots (clamped; 0 in GUIDANCE). */
+  skippedKcal: number
   meals: FuelMeal[]
   pacing: { msg: string }
   micronutrients: Micronutrient[]

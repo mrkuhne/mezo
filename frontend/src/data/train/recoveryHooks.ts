@@ -25,7 +25,7 @@ export { RECOVERY_QUERY_KEY } from '@/data/train/queryKeys'
 
 /** The date-scoped key: the server's protected window is today-relative, so a session left open
  *  past midnight fetches a fresh window instead of serving yesterday's (the skip-window precedent). */
-const recoveryKey = () => [...RECOVERY_QUERY_KEY, localDateString()] as const
+export const recoveryKey = () => [...RECOVERY_QUERY_KEY, localDateString()] as const
 
 /**
  * Kímélő mód state (Kihagyás S2, mezo-q4xt2.2) — the open (or today-ended) period, the protected

@@ -34,6 +34,7 @@ const NO_BREAKDOWN: FuelMeal = { ...SCORED, id: 'meal-no-breakdown', breakdown: 
 const DAY: FuelDay = {
   targets: fuelDay.targets,
   consumed: fuelDay.consumed,
+  fuelMode: null, recoveryCategory: null, recoveryDay: null, skippedKcal: 0,
   meals: [SCORED, DEGRADED, NO_BREAKDOWN],
   pacing: { msg: '' },
   micronutrients: [],

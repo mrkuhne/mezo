@@ -12,6 +12,7 @@ const NOW = new Date(`${TODAY}T20:00:00`)
 const emptyFuel = (): FuelDay => ({
   targets: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
   consumed: { kcal: 0, p: 0, c: 0, f: 0, water: 0 },
+  fuelMode: null, recoveryCategory: null, recoveryDay: null, skippedKcal: 0,
   meals: [],
   pacing: { msg: '' },
   micronutrients: [],

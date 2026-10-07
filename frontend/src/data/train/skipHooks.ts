@@ -21,6 +21,9 @@ export const PLANNED_SKIPS_QUERY_KEY = ['train', 'plannedSkips'] as const
  * (progression profile), the meso close report's adherence, the daily quests and the Fuel day's
  * workout windows — all by prefix.
  */
+/** The date-scoped planned-skips key for today's window (mock fuel derivation reads the same cache). */
+export const plannedSkipsQueryKey = () => [...PLANNED_SKIPS_QUERY_KEY, skipWindow().fromIso] as const
+
 export function invalidateAfterWrite(qc: QueryClient): void {
   void qc.invalidateQueries({ queryKey: PLANNED_SKIPS_QUERY_KEY })
   void qc.invalidateQueries({ queryKey: WORKOUT_TODAY_QUERY_KEY })
@@ -42,6 +45,7 @@ function toPlannedSkip(r: PlannedSkipResponse): PlannedSkip {
     sessionKey: r.sessionKey ?? null,
     reasonCategory: r.reasonCategory,
     reasonText: r.reasonText ?? null,
+    plannedKcal: r.plannedKcal ?? null,
     source: r.source,
     serious: r.serious,
     freePass: r.freePass,
@@ -58,7 +62,7 @@ function newMockId(): string {
   return `mock-skip-${mockIdCounter}`
 }
 
-type UpsertVars = { target: PlannedSkipKey; reason: SkipReason; text?: string | null }
+type UpsertVars = { target: PlannedSkipKey; reason: SkipReason; text?: string | null; plannedKcal?: number | null }
 
 /** The stored free text, mirroring the backend: only for OTHER, trimmed, blank → null. */
 function otherText(reason: SkipReason, text?: string | null): string | null {
@@ -77,6 +81,7 @@ function mockUpsert(prev: PlannedSkip[], vars: UpsertVars): PlannedSkip[] {
     id: existing?.id ?? newMockId(),
     reasonCategory: vars.reason,
     reasonText: otherText(vars.reason, vars.text),
+    ...(vars.target.kind === 'MEAL' ? { plannedKcal: vars.plannedKcal ?? null } : {}),
     source: 'USER',
     serious: false,
     freePass: false,
@@ -135,6 +140,8 @@ export function usePlannedSkips() {
         sessionKey: vars.target.sessionKey ?? null,
         reasonCategory: vars.reason,
         reasonText: otherText(vars.reason, vars.text),
+        // The slot's planned kcal snapshot — a MEAL skip only (Kihagyás S3).
+        ...(vars.target.kind === 'MEAL' ? { plannedKcal: vars.plannedKcal ?? null } : {}),
       }
       return { row: toPlannedSkip(await skipApi.upsert(req)) }
     },
@@ -164,12 +171,13 @@ export function usePlannedSkips() {
 
   // `onDone` runs only on success (a failure is toasted by the global mutation cache).
   const setReason = useCallback(
-    (t: PlannedSkipKey, reason: SkipReason, text?: string | null, onDone?: (s: PlannedSkip) => void) =>
-      upsertMutate({ target: t, reason, text }, { onSuccess: ({ row }) => onDone?.(row) }),
+    (t: PlannedSkipKey, reason: SkipReason, text?: string | null, onDone?: (s: PlannedSkip) => void, plannedKcal?: number | null) =>
+      upsertMutate({ target: t, reason, text, plannedKcal }, { onSuccess: ({ row }) => onDone?.(row) }),
     [upsertMutate],
   )
   const skip = useCallback(
-    (t: PlannedSkipKey, onDone?: (s: PlannedSkip) => void) => setReason(t, 'NONE', undefined, onDone),
+    (t: PlannedSkipKey, onDone?: (s: PlannedSkip) => void, plannedKcal?: number | null) =>
+      setReason(t, 'NONE', undefined, onDone, plannedKcal),
     [setReason],
   )
   const undo = useCallback(

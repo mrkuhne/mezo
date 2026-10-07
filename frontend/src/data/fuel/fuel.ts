@@ -465,6 +465,10 @@ export const fuelDay: FuelDay = {
     water: 4000,
   },
   energy: fuelDayEnergy,
+  fuelMode: null,
+  recoveryCategory: null,
+  recoveryDay: null,
+  skippedKcal: 0,
   // MOCK_NOW_HHMM is 13:30 (mezo-1oy5), so "partial day" describes the CLOCK, not the meal list:
   // breakfast 09:15 + lunch 13:00 are logged before `now`, and — since fix-round-1 F1
   // (mezo-jcpt.3) added the coherent late-miss dinner fixture `m4` (logged 23:35, after `now`) —
