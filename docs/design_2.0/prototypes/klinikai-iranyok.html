@@ -1761,7 +1761,7 @@ const $=s=>document.querySelector(s);
 const circ=r=>2*Math.PI*r;
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const TD={'i-gear':'c-i-beallitas','i-mail':'c-i-level','i-bell':'c-i-ertesites','i-sun':'c-i-nap','i-cal':'c-i-heti','i-chat':'c-i-mezo','i-list':'c-i-rend','i-dumb':'t-dumbbell','i-layers':'c-i-retegek','i-bars':'c-i-meso','i-book':'c-i-naplo','i-pulse':'t-checkin','i-plus':'t-quick','i-pen':'t-journal','i-steps':'t-steps','i-bowl':'t-bowl','i-check':'t-tick','i-flame':'t-flame','i-muscle':'t-muscle','i-run':'t-run','i-ball':'t-volley','i-clock':'t-clock','i-skip':'t-skip','i-warn':'t-pain','i-bed':'t-sleep','i-mood':'t-mood','i-bolt':'t-bolt','i-moon':'t-moon','i-grid':'t-stack'};
-const I=(n,cls='')=>(V==='ajanlott')&&TD[n]?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${TD[n]}"/></svg>`:`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
+const I=(n,cls='')=>/^(t|c-i)-/.test(n)?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`:(V==='ajanlott')&&TD[n]?`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${TD[n]}"/></svg>`:`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
 /* direct Titanium / clay symbol by id, e.g. T('t-avocado'), T('c-i-fuel') */
 const T=(id,cls='')=>`<svg class="ic td ${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
 const ring=(p,c,r=38)=>`<div class="ring" style="--c:${c}"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="${r}"/><circle class="p" cx="44" cy="44" r="${r}" style="--d:${circ(r)*p/100}"/></svg><div class="c"><span><b>${p}%</b><small>ÉLETJELEK</small></span></div></div>`;
