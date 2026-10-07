@@ -259,17 +259,7 @@ svg{overflow:visible}
 .toast{position:absolute;left:50%;bottom:170px;z-index:60;transform:translate(-50%,20px);opacity:0;padding:10px 16px;border-radius:999px;background:rgba(43,33,24,.86);color:#fff;font-size:12.5px;white-space:nowrap;transition:.3s var(--ease);pointer-events:none}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ── Side notes (desktop) ────────────────────── */
-.notes{width:300px;padding-top:30px}
-.notes h1{font-size:28px;font-weight:600;letter-spacing:-1px}
-.notes .ov{font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
-.notes p{font-size:13.5px;line-height:1.55;color:var(--sub);margin:10px 0 18px}
-.notes nav{display:grid;gap:8px;margin-bottom:22px}
-.notes nav a{--c:var(--sage);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:16px;text-decoration:none;color:var(--ink);font-size:13.5px;font-weight:500}
-.notes nav a .icon{width:28px;height:28px}
-.notes nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 55%,transparent)}
-.notes ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding-left:16px;display:grid;gap:4px}
-.toggle{display:flex;align-items:center;gap:8px;margin-top:18px;font-size:12.5px;color:var(--sub)}
+/* ── Side panel (desktop): styles and behaviour come from the panel-kit block ── */
 @media(max-width:780px){.notes{display:none}}
 
 
@@ -1588,7 +1578,6 @@ svg{overflow:visible}
 .legend .icon{width:20px;height:20px}
 
 .poster p .icon,.icon.inl{width:18px;height:18px;display:inline-block;vertical-align:-4px;filter:none!important}
-.notes ul a{color:var(--sky)}
 /* Kamra tile */
 .tile{--c:var(--sage);display:flex;flex-direction:column;gap:6px;padding:14px 13px 13px;border-radius:20px;width:100%;min-height:176px}
 .tile-top{display:flex;justify-content:space-between;align-items:flex-start}
@@ -2183,47 +2172,169 @@ body.still .switch,body.still .switch i{transition:none}
     <div class="sheet glass" id="sheet"></div>
     <div class="toast" id="toast" role="status"></div>
   </div>
-  <aside class="notes">
-    <span class="ov">FUEL · ÉLŐ PROTOTÍPUS</span>
-    <h1>A Fuel, ahogy most élesben van</h1>
-    <p>Mind a négy fül (Mai, Kiegészítők, Trendek, Konyha) és a fontos lapjaik, üvegben. Minden Fuel-változás ezt a fájlt szerkeszti, és ugyanarra a linkre kerül ki.</p>
-    <nav id="jump">
-      <a href="#mai" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-plate"/></svg>Mai</a>
-      <a href="#mai?d=2026-09-26" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-history"/></svg>Mai · egy korábbi nap</a>
-      <a href="#meal/reggeli" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-bowl"/></svg>Étkezés részletei</a>
-      <a href="#score/reggeli" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>AI értékelés</a>
-      <a href="#log" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-camera"/></svg>Logolás</a>
-      <a href="#stack" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-supps"/></svg>Kiegészítők</a>
-      <a href="#gyogyszer" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-syringe"/></svg>Gyógyszer</a>
-      <a href="#trendek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-trend"/></svg>Trendek</a>
-      <a href="#konyha" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pot"/></svg>Konyha</a>
-      <a href="#kamra" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-stack"/></svg>Kamra</a>
-      <a href="#receptek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Receptek</a>
-      <a href="#muhely" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chef"/></svg>Receptműhely</a>
-      <a href="#beallitas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gear"/></svg>Fuel beállítások</a>
-      <a href="#tanulas" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-lens"/></svg>Hogy tanultam? · ÚJ</a>
-    </nav>
-    <span class="ov">LAPOK, AMIK ALULRÓL JÖNNEK</span>
-    <ul>
-      <li>Mai: „Miből jön össze?” → az egyenlet, onnan „Részletesen” → <b>Honnan jön a napi cél?</b> lap, benne a „Hogy tanultam?” magyarázattal</li>
-      <li>Mai: a víz-kör → Víz lap</li>
-      <li>Kamra: Import, Közös, ＋ Új tétel, Szűrők</li>
-      <li>Kiegészítők: koppints egy tételre · Trendek: koppints egy napra</li>
-    </ul>
-    <span class="ov">ÚJ · MAGÁTÓL TANULÓ ENERGIAIGÉNY, 2. RÉSZ</span>
-    <ul>
-      <li>Mai (ma): a heti tanulást egy <b>izzó pötty</b> jelzi a „Miből jön össze?” mellett (kevés adatnál borostyán). A sor az egyenlet-dobozt nyitja; ott a kiemelt <b>Alap</b> sor nyitja alulról a „Heti tanulás” lapot. Állapotok: <a href="#mai?kartya=lepett">lépett</a> · <a href="#mai?kartya=kizart">kizárt nap</a> · <a href="#mai?kartya=kevesadat">kevés adat</a> · <a href="#mai?kartya=nincs">nincs</a></li>
-      <li>Harang → „Heti tanulás: +60 kcal” → a tanulás oldala; ott az állapot-sor (pöttyel, „· heti összegző ›”) nyitja ugyanazt a lapot</li>
-      <li><a href="#tanulas">Hogy tanultam?</a> oldal: <a href="#tanulas?allapot=tanul">tanul</a> · <a href="#tanulas?allapot=ures">még nincs adat</a> · <a href="#tanulas?allapot=ki">kikapcsolva</a></li>
-      <li>A napló alján: „Ez a nap számít…” sor — lapozz vissza napokat (szept. 27: hiányosnak tűnt, 23: hiányosnak tűnt, 22: te jelölted teljesnek, 25: nincs felírva → nincs sor)</li>
-      <li>Honnan jön a napi cél? lap: az Alap sor most egy összefoglaló + Részletek</li>
-      <li><a href="#beallitas">Fuel beállítások</a> → Finomhangolás: a tanulás kapcsolója, majd Mentés</li>
-      <li>A szaggatott „PROTOTÍPUS” sorok csak a bemutató állapotváltói. Új ikon nem kellett: minden a meglévő 3D készletből jön.</li>
-    </ul>
+  <aside class="notes" id="notes" style="--dc:var(--sage)">
+    <div class="nhead">
+      <span class="ov">FUEL · ÉLŐ PROTOTÍPUS</span>
+      <div class="nnow"><small>MOST ITT</small><strong id="nnow"></strong></div>
+      <div class="ntabs" id="ntabs"><button type="button" data-ngrp="Mai">Mai</button><button type="button" data-ngrp="Kiegészítők">Kiegészítők</button><button type="button" data-ngrp="Trendek">Trendek</button><button type="button" data-ngrp="Konyha">Konyha</button></div>
+    </div>
+    <!-- The ONLY "new" marker of the prototype. Every change rewrites this block (date, title, one sentence, links). -->
+    <section class="recent glass" data-uj="2026-10-01" style="--c:var(--gold)">
+      <span class="ov">LEGUTÓBB VÁLTOZOTT</span>
+      <strong>Étkezés időpontja a logolásnál</strong>
+      <p>Alapból összecsukva a mostani időt mutatja. Kinyitva átírható, és jelzi, melyik étkezési ablakba esik.</p>
+      <div class="rlinks"><a href="#log">Logolás</a></div>
+    </section>
+    <div id="jump">
+    <details class="grp" data-grp="Mai" style="--c:var(--sage)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-tanyer"/></svg><strong>Mai</strong><em>7 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#mai" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-plate"/></svg>Mai</a>
+        <a href="#mai?d=2026-09-26" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-history"/></svg>Mai · egy korábbi nap</a>
+        <a href="#meal/reggeli" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-bowl"/></svg>Étkezés részletei</a>
+        <a href="#score/reggeli" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>AI értékelés</a>
+        <a href="#log" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-camera"/></svg>Logolás</a>
+        <a href="#beallitas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gear"/></svg>Fuel beállítások</a>
+        <a href="#tanulas" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-lens"/></svg>Hogy tanultam?</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Mai: „Miből jön össze?” → az egyenlet, onnan „Részletesen” → <b>Honnan jön a napi cél?</b> lap, benne a „Hogy tanultam?” magyarázattal</li>
+        <li>Mai: a víz-kör → Víz lap</li>
+        <li>Mai (ma): a heti tanulást egy <b>izzó pötty</b> jelzi a „Miből jön össze?” mellett (kevés adatnál borostyán). A sor az egyenlet-dobozt nyitja; ott a kiemelt <b>Alap</b> sor nyitja alulról a „Heti tanulás” lapot. Állapotok: <a href="#mai?kartya=lepett">lépett</a> · <a href="#mai?kartya=kizart">kizárt nap</a> · <a href="#mai?kartya=kevesadat">kevés adat</a> · <a href="#mai?kartya=nincs">nincs</a></li>
+        <li>Harang → „Heti tanulás: +60 kcal” → a tanulás oldala; ott az állapot-sor (pöttyel, „· heti összegző ›”) nyitja ugyanazt a lapot</li>
+        <li><a href="#tanulas">Hogy tanultam?</a> oldal: <a href="#tanulas?allapot=tanul">tanul</a> · <a href="#tanulas?allapot=ures">még nincs adat</a> · <a href="#tanulas?allapot=ki">kikapcsolva</a></li>
+        <li>A napló alján: „Ez a nap számít…” sor — lapozz vissza napokat (szept. 27: hiányosnak tűnt, 23: hiányosnak tűnt, 22: te jelölted teljesnek, 25: nincs felírva → nincs sor)</li>
+        <li>Honnan jön a napi cél? lap: az Alap sor most egy összefoglaló + Részletek</li>
+        <li><a href="#beallitas">Fuel beállítások</a> → Finomhangolás: a tanulás kapcsolója, majd Mentés</li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Kiegészítők" style="--c:var(--sage)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-kiegeszito"/></svg><strong>Kiegészítők</strong><em>2 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#stack" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-supps"/></svg>Kiegészítők</a>
+        <a href="#gyogyszer" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-syringe"/></svg>Gyógyszer</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Kiegészítők: koppints egy tételre · Trendek: koppints egy napra</li>
+      </ul>
+    </details>
+    <details class="grp" data-grp="Trendek" style="--c:var(--sage)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-trend"/></svg><strong>Trendek</strong><em>1 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#trendek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-trend"/></svg>Trendek</a>
+      </nav>
+    </details>
+    <details class="grp" data-grp="Konyha" style="--c:var(--gold)">
+      <summary><svg class="icon" aria-hidden="true"><use href="#c-i-fazek"/></svg><strong>Konyha</strong><em>4 képernyő</em><i aria-hidden="true">›</i></summary>
+      <nav>
+        <a href="#konyha" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-pot"/></svg>Konyha</a>
+        <a href="#kamra" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-stack"/></svg>Kamra</a>
+        <a href="#receptek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-book"/></svg>Receptek</a>
+        <a href="#muhely" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chef"/></svg>Receptműhely</a>
+      </nav>
+      <span class="ov">ÁLLAPOTOK ÉS RÉSZLETEK</span>
+      <ul>
+        <li>Kamra: Import, Közös, ＋ Új tétel, Szűrők</li>
+      </ul>
+    </details>
+    </div>
+    <details class="about">
+      <summary>Mi van ebben a prototípusban?</summary>
+      <p>Mind a négy fül (Mai, Kiegészítők, Trendek, Konyha) és a fontos lapjaik, üvegben. Minden Fuel-változás ezt a fájlt szerkeszti, és ugyanarra a linkre kerül ki.</p>
+      <ul>
+        <li>A szaggatott „PROTOTÍPUS” sorok csak a bemutató állapotváltói. Új ikon nem kellett: minden a meglévő 3D készletből jön.</li>
+      </ul>
+    </details>
     <label class="toggle"><input type="checkbox" id="still"> Mozgás kikapcsolása</label>
   </aside>
 </div>
 
+<!-- panel-kit:start — generated from elo/_panel-kit.html by elo/_inject-panel-kit.mjs; edit the source, not this copy -->
+<style>
+/* ── Panel-kit (mezo-eitra): the shared desktop frame of every living prototype ──
+   The phone stays put and always fits the window; the side panel scrolls on its own.
+   Screens are grouped by the app's tabs in collapsible groups that follow the route.
+   The ONLY thing marked new is what the "Legutóbb változott" block names (see README). */
+.notes{width:360px}
+.notes .ov{display:block;font-size:10px;font-weight:600;letter-spacing:1.6px;color:var(--faint)}
+.notes p{font-size:13px;line-height:1.55;color:var(--sub);margin:0}
+.nhead{position:sticky;top:0;z-index:5;padding:4px 0 12px;background:linear-gradient(var(--page) 82%,transparent)}
+.nnow{display:flex;align-items:baseline;gap:8px;margin:6px 0 10px}
+.nnow small{font-size:10px;font-weight:600;letter-spacing:1.4px;color:var(--faint);flex:0 0 auto}
+.nnow strong{font-size:22px;font-weight:600;letter-spacing:-.6px;line-height:1.15}
+.ntabs{display:flex;gap:6px;flex-wrap:wrap}
+.ntabs button{padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:500;color:var(--sub);background:rgba(245,239,230,.05);box-shadow:inset 0 0 0 1px var(--hair)}
+.ntabs button.on{color:var(--ink);background:color-mix(in srgb,var(--dc) 22%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 55%,transparent)}
+.recent{padding:13px 14px 14px;margin:2px 0 14px}
+.recent strong{display:block;font-size:15px;font-weight:600;margin:5px 0 3px}
+.recent p{font-size:12.5px;margin:0 0 9px}
+.rlinks{display:flex;flex-wrap:wrap;gap:6px}
+.rlinks a{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:500;color:var(--ink);text-decoration:none;background:rgba(245,239,230,.07);box-shadow:inset 0 0 0 1px var(--hair)}
+.rlinks a[aria-current="true"]{box-shadow:inset 0 0 0 1.5px var(--gold)}
+.grp{border-top:1px solid var(--hair)}
+.grp summary{display:flex;align-items:center;gap:10px;padding:11px 2px;cursor:pointer;list-style:none;user-select:none}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary .icon{width:24px;height:24px}
+.grp summary strong{font-size:15px;font-weight:600}
+.grp summary em{font-style:normal;font-size:11.5px;color:var(--faint);margin-left:auto}
+.grp summary i{font-style:normal;font-size:16px;color:var(--faint);transition:transform .2s var(--ease)}
+.grp[open] summary i{transform:rotate(90deg)}
+.grp.cur summary strong{color:var(--dc)}
+.grp nav{display:grid;gap:6px;margin:0 0 14px}
+.grp nav a{--c:var(--sage);display:flex;align-items:center;gap:9px;padding:7px 11px;border-radius:14px;text-decoration:none;color:var(--ink);font-size:13px;font-weight:500}
+.grp nav a .icon{width:24px;height:24px}
+.grp nav a::after{display:none}
+.grp nav a[aria-current="true"]{outline:2px solid color-mix(in srgb,var(--c) 70%,transparent);outline-offset:1px}
+.ujb{margin-left:auto;padding:2px 7px;border-radius:999px;font-size:9.5px;font-weight:700;letter-spacing:1px;color:#2B2118;background:var(--gold)}
+.grp ul,.about ul{font-size:12.5px;line-height:1.55;color:var(--sub);padding:6px 0 16px 16px;display:grid;gap:5px}
+.grp ul a,.about a{color:var(--sky)}
+.about{border-top:1px solid var(--hair);padding:11px 2px 0}
+.about summary{font-size:12.5px;color:var(--sub);cursor:pointer}
+.about p{margin:8px 0 0}
+.about .ov{margin-top:12px}
+.toggle{display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12.5px;color:var(--sub)}
+@media(min-width:781px){
+  html,body{height:100%;overflow:hidden}
+  .stage{height:100vh;padding:24px 16px 0}
+  .notes{height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(245,239,230,.16) transparent;padding:0 10px 40px 2px}
+}
+</style>
+<script>
+(function(){
+  const q=s=>document.querySelector(s), qa=s=>[...document.querySelectorAll(s)];
+  const notes=q('#notes'), base=h=>h.slice(1).split(/[/?]/)[0], NEW_DAYS=14;
+  let cur=null;
+  function group(g,toTop){qa('#jump .grp').forEach(d=>{const on=d.dataset.grp===g;d.open=on;d.classList.toggle('cur',on)});
+    qa('#ntabs button').forEach(b=>b.classList.toggle('on',b.dataset.ngrp===g));
+    if(toTop){const d=q(`#jump .grp[data-grp="${g}"]`);notes.scrollTop+=d.getBoundingClientRect().top-notes.getBoundingClientRect().top-q('.nhead').offsetHeight}}
+  /* mark the screen you are on, open its group, keep it in view — the page's render() calls this */
+  window.panelSync=function(){
+    const nav=qa('#jump nav a'), all=[...nav,...qa('.rlinks a')], h=location.hash||nav[0].getAttribute('href'), r=base(h);
+    const exact=all.filter(a=>a.getAttribute('href')===h), fam=nav.filter(a=>a.getAttribute('href').startsWith('#')&&base(a.getAttribute('href'))===r);
+    const parent=fam.find(a=>a.getAttribute('href')==='#'+r)||fam[0];
+    const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...(parent?[parent]:[])];
+    all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
+    const main=hit.find(a=>a.closest('.grp')), g=main?main.closest('.grp').dataset.grp:cur;
+    if(main)q('#nnow').textContent=main.firstChild.nextSibling?main.childNodes[1].textContent.trim():main.textContent.trim();
+    if(g&&g!==cur){cur=g;group(g,false);notes.scrollTop=0}
+    if(main&&main.closest('.grp').open){const a=main.getBoundingClientRect(),b=notes.getBoundingClientRect(),top=b.top+q('.nhead').offsetHeight;
+      if(a.top<top)notes.scrollTop-=top-a.top+8;else if(a.bottom>b.bottom)notes.scrollTop+=a.bottom-b.bottom+12}
+  };
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-ngrp]');if(b){cur=b.dataset.ngrp;group(cur,true)}});
+  /* "new" is only what the Legutóbb változott block names, and only for NEW_DAYS days */
+  const rec=q('.recent[data-uj]');
+  if(rec){const d=new Date(rec.dataset.uj+'T00:00:00'), M=['JAN','FEBR','MÁRC','ÁPR','MÁJ','JÚN','JÚL','AUG','SZEPT','OKT','NOV','DEC'];
+    rec.querySelector('.ov').textContent=`LEGUTÓBB VÁLTOZOTT · ${M[d.getMonth()]}. ${d.getDate()}.`;
+    if(Date.now()-d<NEW_DAYS*864e5)qa('.rlinks a').forEach(l=>{const a=q(`#jump nav a[href="${l.getAttribute('href')}"]`);
+      if(a&&!a.querySelector('.ujb'))a.insertAdjacentHTML('beforeend','<b class="ujb">ÚJ</b>')})}
+  /* the phone always fits the window height */
+  const fit=()=>{q('#phone').style.zoom=innerWidth>780?Math.min(1,Math.max(.5,(innerHeight-58)/844)):''};
+  addEventListener('resize',fit);fit();
+})();
+</script>
+<!-- panel-kit:end -->
 <!-- hang-kit:start — generated from elo/_hang-kit.html by elo/_inject-hang-kit.mjs; edit the source, not this copy -->
 <style>
 /* ── Hang-kit (mezo-voice-everywhere): ONE voice field + the Hallgató Boop bubble ──
@@ -3276,7 +3387,7 @@ function render(){
   $('#fab').style.display=r==='log'?'none':'';
   tabbar(TAB[r]||'Mai');
   afterRender(r);
-  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').split('?')[0]==='#'+r)));
+  window.panelSync&&panelSync();
 }
 function afterRender(){}
 let toastT;
