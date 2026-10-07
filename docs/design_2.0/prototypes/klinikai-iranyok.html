@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Klinikai irányok</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Új UI irány · Nap és Edzés — három változat egymás mellett
+   Jelenlegi (Üveg, az élő prototípus beágyazva) · Klinikai sötét · Lelet világos
+   Layout: fixed phone (390×844) with a notes column; stacks under 900px.
+   ───────────────────────────────────────────────────────────── */
+:root{
+  --bg:#F2F3F1; --fg:#1C2126; --mute:#6B737A; --line:rgba(28,33,38,.12); --card:#FFFFFF; --acc:#1F6F6A;
+  --ff:'Geist',system-ui,-apple-system,sans-serif; --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace; --serif:'Fraunces',Georgia,serif;
+  --ease:cubic-bezier(.2,.78,.24,1);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121517;--fg:#E7E9E6;--mute:#8E959B;--line:rgba(231,233,230,.12);--card:#1A1E21;--acc:#6FB3AC;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121517;--fg:#E7E9E6;--mute:#8E959B;--line:rgba(231,233,230,.12);--card:#1A1E21;--acc:#6FB3AC;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{font-family:var(--ff);color:var(--fg);-webkit-font-smoothing:antialiased;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:left}
+a{color:inherit}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+svg.ic{width:22px;height:22px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── page chrome (outside the phone) ─────────────── */
+.top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:18px 16px 10px;border-bottom:1px solid var(--line)}
+.top h1{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.top h1 small{display:block;font-weight:400;color:var(--mute);font-size:12px;margin-top:2px}
+.seg{display:flex;gap:2px;padding:3px;border-radius:10px;background:var(--line)}
+.seg button{padding:6px 12px;border-radius:8px;font-size:12.5px;font-weight:500;color:var(--mute)}
+.seg button.on{background:var(--card);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.top label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute);margin-left:auto}
+.stage{display:flex;gap:36px;align-items:flex-start;justify-content:center;padding:26px 16px 60px}
+.notes{max-width:360px;min-width:0;font-size:13.5px;line-height:1.5;color:var(--fg)}
+.notes h2{font-size:13px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--mute);margin:18px 0 8px}
+.notes h2:first-child{margin-top:4px}
+.notes p{margin-bottom:8px}
+.notes ul{padding-left:18px;display:grid;gap:5px}
+.notes .sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
+.notes .pal{display:flex;flex-wrap:wrap;gap:6px 12px;margin:6px 0 10px}
+.notes .pal span{font-size:12px;color:var(--mute)}
+@media(max-width:900px){.stage{flex-direction:column;align-items:center}.notes{max-width:420px}}
+
+/* ── phone frame ─────────────────────────────── */
+.phone{position:relative;width:390px;max-width:100%;height:844px;border-radius:44px;overflow:hidden;background:var(--page);color:var(--ink);
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.55),0 0 0 10px #26292B,0 0 0 11px rgba(255,255,255,.08)}
+.phone iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#141210}
+@media(max-width:440px){.stage{padding:0 0 40px}.phone{width:100vw;height:100vh;border-radius:0;box-shadow:none}}
+.scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;z-index:1;padding-bottom:110px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+
+/* ══ KLINIKAI SÖTÉT — grafit alap, egy acélkék akcentus, jelentéses státuszszínek ══ */
+.phone[data-v="sotet"]{
+  --page:#0F1214; --ink:#E6E9EA; --sub:#9AA3A8; --faint:#6B757B; --hair:rgba(230,233,234,.09);
+  --card:#161B1E; --card2:#1C2226; --acc:#7FB2D0; --acc-ink:#0F1214;
+  --ok:#5FA98A; --warn:#CFA14A; --bad:#CF6B5E; --info:#7FB2D0;
+  --disp:var(--ff); --dispw:600; --dispt:-.6px; --r:14px;
+}
+/* ══ LELET VILÁGOS — papírfehér alap, tinta, egy mély klinikai zöldeskék ══ */
+.phone[data-v="vilagos"]{
+  --page:#F7F7F4; --ink:#1B2024; --sub:#5F6A70; --faint:#8F999F; --hair:rgba(27,32,36,.12);
+  --card:#FFFFFF; --card2:#EFF1EE; --acc:#1F6F6A; --acc-ink:#FFFFFF;
+  --ok:#2E8A68; --warn:#B07A1E; --bad:#B5473B; --info:#1F6F6A;
+  --disp:var(--serif); --dispw:500; --dispt:-.3px; --r:10px;
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.35),0 0 0 10px #FFFFFF,0 0 0 11px rgba(0,0,0,.1);
+}
+.phone[data-v="vilagos"] .scroll{background:
+  linear-gradient(var(--page),var(--page)) padding-box}
+
+/* ── header ── */
+.hd{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:14px 14px 10px;background:color-mix(in srgb,var(--page) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--hair)}
+.wm{flex:1;font-family:var(--disp);font-weight:var(--dispw);font-size:21px;letter-spacing:var(--dispt)}
+.phone[data-v="vilagos"] .wm{font-size:23px}
+.hb{position:relative;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:var(--sub);border:1px solid var(--hair);background:var(--card);flex:0 0 auto}
+.hb svg.ic{width:18px;height:18px}
+.hb.q{font-weight:600;font-size:14px;color:var(--ink)}
+.hb .n{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;font-weight:500;color:var(--acc-ink);background:var(--acc)}
+.dayring{width:38px;height:38px;position:relative;flex:0 0 auto}
+.dayring svg{width:38px;height:38px;transform:rotate(-90deg)}
+.dayring circle{fill:none;stroke-width:3}
+.dayring .t{stroke:var(--hair)}
+.dayring .p{stroke:var(--acc);stroke-linecap:round;stroke-dasharray:var(--d) 100}
+.dayring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;color:var(--sub)}
+
+/* ── bottom nav ── */
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:stretch;padding:6px 8px calc(10px + env(safe-area-inset-bottom,0px));background:color-mix(in srgb,var(--page) 94%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--hair)}
+.dmark{display:grid;place-items:center;width:58px;margin-right:4px;border-right:1px solid var(--hair);position:relative}
+.dmark i{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,transparent);border:1px solid color-mix(in srgb,var(--acc) 35%,transparent)}
+.dmark i svg.ic{width:20px;height:20px}
+.dmark small{position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);display:flex;gap:2px}
+.dmark small b{width:3px;height:3px;border-radius:50%;background:var(--faint)}
+.dmark small b.on{background:var(--acc)}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0 4px;font-size:10px;font-weight:500;color:var(--faint);border-radius:10px}
+.tb svg.ic{width:22px;height:22px}
+.tb.on{color:var(--ink)}
+.tb.on svg.ic{color:var(--acc)}
+
+/* ── content primitives ── */
+.p16{padding:0 16px}
+.eb{display:block;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:1.2px;text-transform:uppercase;color:var(--faint)}
+h1.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt);font-size:30px;line-height:1.05;text-wrap:balance}
+.phone[data-v="vilagos"] h1.t{font-size:34px}
+h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt);font-size:17px;line-height:1.2}
+.phone[data-v="vilagos"] h2.t{font-size:19px}
+.lead{font-size:13.5px;line-height:1.5;color:var(--sub)}
+.card{background:var(--card);border:1px solid var(--hair);border-radius:var(--r);padding:14px 14px 12px;margin:0 16px 10px}
+.phone[data-v="vilagos"] .card{box-shadow:0 1px 2px rgba(27,32,36,.05)}
+.card .hrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.card .hrow a{font-size:11.5px;color:var(--acc);text-decoration:none;font-weight:500}
+.sec{display:flex;align-items:baseline;justify-content:space-between;padding:14px 16px 8px}
+.num{font-family:var(--disp);font-weight:var(--dispw);font-variant-numeric:tabular-nums;letter-spacing:-1px;font-size:40px;line-height:1}
+.num small{font-family:var(--mono);font-size:12px;letter-spacing:0;color:var(--sub);margin-left:6px;font-weight:400}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:6px;font-family:var(--mono);font-size:10.5px;color:var(--sub);border:1px solid var(--hair);background:var(--card2)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.st{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:5px;font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;font-weight:500}
+.st::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.st.plan{color:var(--info);background:color-mix(in srgb,var(--info) 12%,transparent)}
+.st.ok{color:var(--ok);background:color-mix(in srgb,var(--ok) 12%,transparent)}
+.st.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.st.bad{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:9px;font-size:14px;font-weight:600;color:var(--acc-ink);background:var(--acc)}
+.btn.ghost{color:var(--ink);background:transparent;border:1px solid var(--hair)}
+.btn.sm{padding:8px 12px;font-size:12.5px;font-weight:500;border-radius:7px}
+.btn.wide{width:100%}
+.btn svg.ic{width:18px;height:18px}
+.link{font-size:12.5px;color:var(--sub);text-decoration:underline;text-underline-offset:3px}
+.bar{height:4px;border-radius:2px;background:var(--hair);overflow:hidden}
+.bar b{display:block;height:100%;width:var(--w);background:var(--c,var(--acc));border-radius:2px}
+.bar b.sec2{background:color-mix(in srgb,var(--c,var(--acc)) 35%,transparent)}
+.row{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--hair)}
+.row:first-of-type{border-top:0}
+.row .g{flex:1;min-width:0}
+.row strong{display:block;font-size:13.5px;font-weight:500}
+.row small{display:block;font-size:12px;color:var(--sub);margin-top:1px}
+.row time{font-family:var(--mono);font-size:11px;color:var(--faint);width:40px;flex:0 0 auto}
+.row svg.ic{color:var(--sub)}
+.row .chev{color:var(--faint);width:16px;height:16px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;align-items:center}
+.kv .l{font-size:13px}
+.kv .v{font-family:var(--mono);font-size:12px;color:var(--sub);text-align:right}
+.kv .v b{color:var(--ink);font-weight:500}
+.kv .bar{grid-column:1/-1;margin-bottom:4px}
+.fn{font-size:11.5px;color:var(--faint);line-height:1.45;margin-top:10px}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+
+/* ring (readiness / életjelek) */
+.ring{position:relative;width:88px;height:88px;flex:0 0 auto}
+.ring svg{width:88px;height:88px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:6}
+.ring .t{stroke:var(--hair)}
+.ring .p{stroke:var(--c,var(--acc));stroke-linecap:round;stroke-dasharray:var(--d) 1000}
+.ring .c{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .c b{font-family:var(--disp);font-weight:var(--dispw);font-size:22px;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1}
+.ring .c small{display:block;font-family:var(--mono);font-size:8.5px;letter-spacing:.8px;color:var(--faint);margin-top:3px}
+
+/* quick actions */
+.qa{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:0 16px 12px}
+.qa button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 2px 8px;border-radius:var(--r);background:var(--card);border:1px solid var(--hair);font-size:10px;font-weight:500;color:var(--sub);text-align:center}
+.qa button svg.ic{color:var(--acc)}
+
+/* day strip (Edzés) */
+.ds{display:flex;gap:4px;padding:10px 16px 6px}
+.ds button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0 6px;border-radius:9px;border:1px solid transparent}
+.ds small{font-family:var(--mono);font-size:8.5px;letter-spacing:.6px;color:var(--faint)}
+.ds b{font-family:var(--mono);font-weight:500;font-size:13px}
+.ds i{font-style:normal;font-size:9px;color:var(--faint);height:12px;display:grid;place-items:center}
+.ds i svg.ic{width:11px;height:11px;stroke-width:2.2}
+.ds i.ok{color:var(--ok)}
+.ds button.on{background:var(--card);border-color:var(--hair)}
+.ds button.on b{color:var(--acc)}
+.ds button.rest{opacity:.55}
+
+/* hero (Edzés) */
+.hero{padding:10px 16px 14px}
+.hero .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0;border:0;margin-bottom:8px}
+.hero .top .eb{margin:0}
+.hero h1.t{margin:6px 0 4px}
+.hero .chips{margin:10px 0 12px}
+.mus{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.mus span{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:5px;color:var(--sub);background:var(--card2);border:1px solid var(--hair)}
+.cta{display:flex;align-items:center;gap:10px;margin-top:10px}
+
+/* observation evidence */
+.ev{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.obs .q{font-size:13.5px;line-height:1.5;margin-top:8px}
+.obs p{font-size:13.5px;line-height:1.5}
+.conf{display:flex;align-items:center;gap:8px;margin-top:8px}
+.conf .bar{flex:1}
+.conf small{font-family:var(--mono);font-size:10.5px;color:var(--faint);white-space:nowrap}
+
+/* energy split */
+.split{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--hair);margin:8px 0 6px}
+.split b{background:var(--acc)}
+.split i{background:color-mix(in srgb,var(--acc) 30%,transparent)}
+.leg{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--sub)}
+.leg b{color:var(--ink);font-weight:500}
+
+/* pair */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px 10px}
+.pair button{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:var(--r);background:var(--card);border:1px solid var(--hair)}
+.pair button small{font-family:var(--mono);font-size:9.5px;letter-spacing:.8px;color:var(--faint)}
+.pair button strong{font-size:13.5px;font-weight:500}
+.pair button svg.ic{color:var(--acc)}
+.lrow{display:flex;align-items:center;gap:10px;margin:0 16px;padding:12px 0;border-top:1px solid var(--hair);font-size:13.5px}
+.lrow .g{flex:1}
+.lrow svg.ic{color:var(--sub)}
+.lrow .chev{width:16px;height:16px;color:var(--faint)}
+.dashadd{display:block;margin:10px 16px 0;padding:11px;border-radius:9px;border:1px dashed var(--hair);text-align:center;font-size:13px;color:var(--sub);width:calc(100% - 32px)}
+.warnl{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:9px;background:color-mix(in srgb,var(--warn) 10%,transparent);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);font-size:12.5px;line-height:1.45;margin-top:10px}
+.warnl svg.ic{color:var(--warn);width:18px;height:18px;margin-top:1px}
+.toast{position:absolute;left:50%;bottom:110px;transform:translateX(-50%) translateY(10px);z-index:50;padding:9px 14px;border-radius:9px;background:var(--ink);color:var(--page);font-size:12.5px;opacity:0;pointer-events:none;transition:.25s var(--ease);white-space:nowrap;max-width:90%;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translateX(-50%)}
+
+/* ── motion: one-shot rise, reduced-motion branch ── */
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .rise{animation:rise .6s var(--ease) both;animation-delay:calc(var(--i,0)*60ms)}
+  body:not(.still) .ring .p,body:not(.still) .dayring .p{animation:ringin 1s var(--ease) both .15s}
+  body:not(.still) .bar b{animation:grow .9s var(--ease) both .25s}
+}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+@keyframes ringin{from{stroke-dasharray:0 1000}}
+@keyframes grow{from{width:0}}
+</style>
+</head>
+<body>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M4 7.5l8 5.5 8-5.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 1.5h-14z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 3.5V16A2.5 2.5 0 0 1 4 13.5z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6.5h12M8 12h12M8 17.5h12"/><circle cx="4.5" cy="6.5" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="17.5" r="1"/></symbol>
+  <symbol id="i-dumb" viewBox="0 0 24 24"><path d="M3 10v4M6 8v8M18 8v8M21 10v4M6 12h12"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4"/></symbol>
+  <symbol id="i-bars" viewBox="0 0 24 24"><path d="M5 19V13M10 19V7M15 19v-4M20 19V9"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H5zM19 4.5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6h5"/></symbol>
+  <symbol id="i-bowl" viewBox="0 0 24 24"><path d="M3.5 11h17a8.5 8.5 0 0 1-17 0z"/><path d="M8 19h8M12 4v3M9 6l1 2M15 6l-1 2"/></symbol>
+  <symbol id="i-steps" viewBox="0 0 24 24"><path d="M4 20h4a2 2 0 0 0 2-2v-2H4zM14 16h4a2 2 0 0 0 2-2v-2h-6zM6 16l1-6 3 1 1 5M16 12l1-6 3 1 1 5"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M13.5 7.5l3 3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5.3 1.5 1 2.5 2 3 .5-3.5-.5-6 1-8.5z"/></symbol>
+  <symbol id="i-muscle" viewBox="0 0 24 24"><path d="M6 19c0-6 2-9 6-9 1.5 0 2.5-1 2.5-2.5V5h3v5c0 3-2 5-5 5.5V19"/><path d="M6 19h11"/></symbol>
+  <symbol id="i-run" viewBox="0 0 24 24"><circle cx="15" cy="4.5" r="1.6"/><path d="M6 21l4-6 3 2 1-5-3-2-3 3M11 8l4 1 2 4h3"/></symbol>
+  <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M4 10c4 0 7 2 10 7M12 3.5c-1 4 0 8 5 11M20 9c-4 1-7 0-10-4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 6l7 6-7 6M13 6l7 6-7 6"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19 14.5A8 8 0 0 1 9.5 5a8 8 0 1 0 9.5 9.5z"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M3 18v-8h18v8M3 14h18M6 10V7h6v3"/></symbol>
+  <symbol id="i-mood" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01M9 14.5c1.5 1.5 4.5 1.5 6 0"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 9-12h-6z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+</svg>
+
+<div class="top">
+  <h1>Új UI irány · Nap és Edzés<small>három változat, ugyanaz a tartalom</small></h1>
+  <div class="seg" id="vseg" role="tablist" aria-label="Változat">
+    <button data-v="jelenlegi">Jelenlegi (Üveg)</button>
+    <button data-v="sotet">Klinikai sötét</button>
+    <button data-v="vilagos">Lelet világos</button>
+  </div>
+  <div class="seg" id="dseg" role="tablist" aria-label="Terület">
+    <button data-d="nap">Nap · Mai</button>
+    <button data-d="edzes">Edzés · Mai</button>
+  </div>
+  <label><input type="checkbox" id="still"> mozgás nélkül</label>
+</div>
+
+<div class="stage">
+  <div class="phone" id="phone"></div>
+  <aside class="notes" id="notes"></aside>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const I=(n,cls='')=>`<svg class="ic ${cls}" aria-hidden="true"><use href="#${n}"/></svg>`;
+const circ=r=>2*Math.PI*r;
+const ring=(p,c,r=38)=>`<div class="ring" style="--c:${c}"><svg viewBox="0 0 88 88"><circle class="t" cx="44" cy="44" r="${r}"/><circle class="p" cx="44" cy="44" r="${r}" style="--d:${circ(r)*p/100}"/></svg><div class="c"><span><b>${p}%</b><small>ÉLETJELEK</small></span></div></div>`;
+
+/* ── chrome (same content as production: wordmark · ? · beállítások · üzenetek · értesítések · nap-kör) ── */
+const header=()=>`<header class="hd"><span class="wm">boop</span>
+  <button class="hb q" data-toast="Kalauz ehhez az oldalhoz">?</button>
+  <button class="hb" data-toast="Beállítások" aria-label="Beállítások">${I('i-gear')}</button>
+  <button class="hb" data-toast="Mezo üzenetei" aria-label="Mezo üzenetei">${I('i-mail')}<b class="n">2</b></button>
+  <button class="hb" data-toast="Értesítések" aria-label="Értesítések">${I('i-bell')}<b class="n">3</b></button>
+  <button class="dayring" data-toast="A mai napod · 4 a 7 jelből megvan" aria-label="A mai napod"><svg viewBox="0 0 38 38"><circle class="t" cx="19" cy="19" r="15"/><circle class="p" cx="19" cy="19" r="15" style="--d:${(circ(15)*4/7).toFixed(1)}"/></svg><b>4/7</b></button>
+</header>`;
+const NAV={nap:['i-sun',[['Mai','i-sun'],['A napom','i-cal'],['Beszélgetés','i-chat'],['Rutin','i-list']]],
+           edzes:['i-dumb',[['Mai','i-dumb'],['Terv','i-layers'],['Terhelés','i-bars'],['Gyakorlatok','i-book']]]};
+const nav=d=>{const [mark,tabs]=NAV[d];const idx=d==='nap'?0:1;
+  return `<nav class="nav"><button class="dmark" data-toast="Területváltó: Nap · Edzés · Fuel · Mezo · Én" aria-label="Területváltó"><i>${I(mark)}</i><small>${[0,1,2,3,4].map(i=>`<b class="${i===idx?'on':''}"></b>`).join('')}</small></button>
+  ${tabs.map(([l,ic],i)=>`<button class="tb ${i===0?'on':''}" data-toast="${l}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`};
+
+/* ── NAP · MAI ── */
+function nap(){
+  return `<div class="scroll">${header()}
+  <div class="sec rise"><span class="eb">Szerda · október 7.</span><span class="eb">Napközpont</span></div>
+  <div class="p16 rise" style="--i:1"><h1 class="t">A napod</h1></div>
+  <section class="card rise" style="--i:2;display:flex;gap:14px;align-items:center">${ring(72,'var(--ok)')}
+    <div style="flex:1;min-width:0"><span class="eb">Mai állapot</span><h2 class="t" style="margin:4px 0 6px">Nyugodt ébredés, pihenve</h2>
+      <p class="lead">Két check-in még hátravan. Az alvásod a 7 napos átlag fölött van.</p>
+      <div class="chips" style="margin-top:8px"><span class="chip">${I('i-bed')}7 ó 40 p</span><span class="chip">${I('i-mood')}nyugodt</span><span class="chip">${I('i-bolt')}energia 6/10</span></div></div>
+  </section>
+  <div class="qa rise" style="--i:3">
+    <button data-toast="Check-in">${I('i-pulse')}Check-in</button>
+    <button data-toast="Gyors logolás">${I('i-plus')}Logolás</button>
+    <button data-toast="Napló">${I('i-pen')}Napló</button>
+    <button data-toast="Aktivitás">${I('i-steps')}Aktivitás</button>
+    <button data-toast="Beszélgetés">${I('i-chat')}Chat</button>
+  </div>
+  <section class="card rise" style="--i:4"><div class="hrow"><h2 class="t">Üzemanyag</h2><a href="#" data-toast="Fuel · Mai">Fuel · ma ›</a></div>
+    <div style="display:flex;align-items:baseline;gap:10px"><span class="num">2 060<small>kcal</small></span><span class="mono" style="font-size:12px;color:var(--sub)">/ 3 100 keret</span></div>
+    <div class="bar" style="margin:10px 0 14px;--c:var(--acc)"><b style="--w:66%"></b></div>
+    <div class="kv">
+      <span class="l">Fehérje</span><span class="v"><b>148</b> / 220 g</span><div class="bar" style="--c:var(--ok)"><b style="--w:67%"></b></div>
+      <span class="l">Szénhidrát</span><span class="v"><b>224</b> / 380 g</span><div class="bar" style="--c:var(--warn)"><b style="--w:59%"></b></div>
+      <span class="l">Zsír</span><span class="v"><b>58</b> / 95 g</span><div class="bar" style="--c:var(--info)"><b style="--w:61%"></b></div>
+    </div>
+    <p class="fn"><b style="color:var(--ink);font-weight:500">1 040 kcal</b> a napi keretig. A három sáv a saját célodhoz viszonyít.</p>
+  </section>
+  <section class="card obs rise" style="--i:5"><div class="hrow"><span class="eb">Megfigyelés · Mezo</span><a href="#" data-toast="Összes észrevétel">Összes ›</a></div>
+    <h2 class="t" style="margin:4px 0 8px">Anna és az alvásod</h2>
+    <p>Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol.</p>
+    <div class="conf"><div class="bar" style="--c:var(--warn)"><b style="--w:30%"></b></div><small>4 nap · alacsony bizonyosság</small></div>
+    <div class="ev"><span class="chip">4 hála-bejegyzés</span><span class="chip">4 éjszaka</span><span class="chip">+1 nap eltolás</span></div>
+    <p class="q">Ez még kevés ahhoz, hogy biztosat mondjak. Figyeljem tovább?</p>
+    <div class="acts"><button class="btn sm" data-toast="Megjegyeztem: figyelem tovább">Igen, figyeld</button><button class="btn sm ghost" data-toast="Megjegyeztem">Nem stimmel</button><button class="btn sm ghost" data-toast="Mezo · Chat">Mesélj erről</button></div>
+  </section>
+  <div class="sec rise" style="--i:6"><h2 class="t">Mai pillanatok</h2><span class="eb">5 bejegyzés</span></div>
+  <section class="card rise" style="--i:7;padding-top:4px;padding-bottom:4px">
+    <div class="row"><time>13:00</time>${I('i-bowl')}<span class="g"><strong>Étkezés</strong><small>Csirke · édesburgonya · spenót</small></span>${I('i-chev','chev')}</div>
+    <div class="row"><time>09:15</time>${I('i-bowl')}<span class="g"><strong>Étkezés</strong><small>Túrós zabkása · áfonyával</small></span>${I('i-chev','chev')}</div>
+    <div class="row"><time>07:10</time>${I('i-pulse')}<span class="g"><strong>Check-in · reggel</strong><small>Nyugodt ébredés · pihenve</small></span>${I('i-chev','chev')}</div>
+    <div class="row"><time>23:35</time>${I('i-bowl')}<span class="g"><strong>Étkezés · tegnap</strong><small>Lazac · barna rizs · brokkoli</small></span>${I('i-chev','chev')}</div>
+  </section>
+  </div>${nav('nap')}<div class="toast" id="toast"></div>`;
+}
+
+/* ── EDZÉS · MAI ── */
+function edzes(){
+  const D=[['HÉT',21,'ok'],['KEDD',22,'ok'],['SZE',23,'–'],['MA',24,'•','on'],['PÉN',25,'•'],['SZO',26,'pihenő','rest'],['VAS',27,'pihenő','rest']];
+  const MUS=[['Hát (széles)',6,0,'erős'],['Hát (közép)',4,3,'közepes'],['Váll (hátsó)',3,0,'enyhe'],['Kar',3,0,'enyhe']];
+  return `<div class="scroll">${header()}
+  <section class="ds rise">${D.map(([l,n,m,k])=>`<button class="${k||''}" data-toast="${l} · szept ${n}."><small>${l}</small><b>${n}</b><i class="${m==='ok'?'ok':''}">${m==='ok'?I('i-check'):m}</i></button>`).join('')}</section>
+  <section class="hero rise" style="--i:1"><div class="top"><span class="eb">Ma 07:30 · MAV · Gym</span><span class="st plan">Betervezve</span></div>
+    <h1 class="t">Pull Day</h1><p class="lead">Hypertrophy 04 · 3. hét / 6</p>
+    <div class="chips"><span class="chip">5 gyakorlat</span><span class="chip">16 szett</span><span class="chip">~78 perc</span><span class="chip">Húzás</span></div>
+    <div class="mus"><span>Hát · széles</span><span>Hát · közép</span><span>Váll · hátsó</span><span>Kar</span><span>Trapéz</span></div>
+    <div class="cta"><button class="btn" style="flex:1" data-toast="Eligazítás">${I('i-dumb')}Indítsuk ${I('i-chev')}</button><button class="link" data-toast="Kihagyom">Kihagyom</button></div>
+  </section>
+  <section class="card rise" style="--i:2"><span class="eb">Mai állapot · a reggeli check-inből</span><h2 class="t" style="margin:4px 0 8px">Könnyebb nap javasolt</h2>
+    <div class="kv">
+      <span class="l">Kipihentség</span><span class="v"><b>4</b> / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:40%"></b></div>
+      <span class="l">Izomláz</span><span class="v"><b>7</b> / 10</span><div class="bar" style="--c:var(--bad)"><b style="--w:70%"></b></div>
+      <span class="l">Kedv</span><span class="v"><b>5</b> / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:50%"></b></div>
+    </div>
+    <div class="warnl">${I('i-warn')}<span><b>Rear Delt Fly</b> · fáj a vállad (5/10). Ma óvatosan: könnyebb súly, vagy hagyd ki.</span></div>
+    <div class="acts"><button class="btn sm" data-toast="Könnyítve: a múlt heti súly marad">Könnyítsük</button><button class="btn sm ghost" data-toast="Marad a terv">Maradjon a terv</button></div>
+    <p class="fn">Csak javaslat. Magától nem változtat semmit.</p>
+  </section>
+  <div class="sec rise" style="--i:3"><h2 class="t">Ma még jön</h2><span class="eb">További ma</span></div>
+  <section class="card rise" style="--i:4"><div class="hrow"><span class="eb">Röpi · 18:00</span><span class="st plan">Tervezett</span></div>
+    <div class="row" style="padding-top:4px">${I('i-ball')}<span class="g"><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó · BVSC csarnok</small></span></div>
+    <div class="acts" style="margin-top:6px"><button class="btn sm ghost" data-toast="Kihagyom">${I('i-skip')}Kihagyom</button><button class="btn sm" data-toast="Sport logolása">Logold a session-t ›</button></div>
+  </section>
+  <section class="card rise" style="--i:5"><div class="hrow"><span class="eb">Futás · tegnap 18:00</span><span class="st bad">Elmaradt</span></div>
+    <div class="row" style="padding-top:4px">${I('i-run')}<span class="g"><strong>Sprint-intervallum</strong><small>RPE 9–10 · 6 kör</small></span></div>
+    <div class="acts" style="margin-top:6px"><button class="btn sm ghost" data-toast="Kihagytam">${I('i-skip')}Kihagytam</button><button class="btn sm" data-toast="Futás pótlása">Pótold ›</button></div>
+  </section>
+  <section class="card rise" style="--i:6"><div class="hrow"><span class="eb">A mai keretedhez</span></div><h2 class="t" style="margin:2px 0 6px">Amit a mozgásod hozzáad</h2>
+    <span class="num">+0<small>kcal</small></span>
+    <div class="split"><b style="width:0%"></b><i style="flex:1"></i></div>
+    <div class="leg"><span><b>0 kcal</b> már a keretedben</span><span><b>+650 kcal</b> még jön, ha megcsinálod</span></div>
+    <p class="fn">Ugyanez a szám áll a Fuel keretében. Becslés, nem mérés.</p>
+  </section>
+  <section class="card rise" style="--i:7"><div class="hrow"><span class="eb">Hatás az izomzatodra</span></div><h2 class="t" style="margin:2px 0 8px">Mit terhel a mai mozgásod</h2>
+    <div class="kv">${MUS.map(([l,p,d,w])=>`<span class="l">${l}</span><span class="v">${w} · <b>${d}</b> / ${p}</span><div class="bar" style="--c:var(--acc)"><b class="sec2" style="--w:${p/6*100}%;position:relative"></b></div>`).join('')}</div>
+    <p class="fn">A halvány sáv a tervezett terhelés, a teli a már megszolgált. Becslés, nem mérés.</p>
+  </section>
+  <div class="sec rise" style="--i:8"><h2 class="t">Vagy inkább</h2></div>
+  <div class="pair rise" style="--i:9"><button data-toast="Egyedi edzés">${I('i-dumb')}<small>GYORS INDÍTÁS</small><strong>Egyedi edzés</strong></button><button data-toast="Sport naplózása">${I('i-ball')}<small>GYORS INDÍTÁS</small><strong>Sport naplózása</strong></button></div>
+  <button class="lrow rise" style="--i:10;width:calc(100% - 32px)" data-toast="Mezociklus">${I('i-layers')}<span class="g">Hypertrophy 04 · MAV · 3/6</span>${I('i-chev','chev')}</button>
+  <button class="lrow rise" style="--i:11;width:calc(100% - 32px)" data-toast="Sportjaid">${I('i-ball')}<span class="g">Sportjaid és szezonod</span>${I('i-chev','chev')}</button>
+  <button class="dashadd rise" style="--i:12" data-toast="Saját edzés">+ Saját edzés</button>
+  </div>${nav('edzes')}<div class="toast" id="toast"></div>`;
+}
+
+/* ── notes column (owner-facing, Hungarian) ── */
+const NOTES={
+  jelenlegi:`<h2>Jelenlegi · Üveg</h2><p>Az élő prototípus, változtatás nélkül, összehasonlításnak. Üvegdobozok színes kerettel, fénylő glória, színes köd a háttérben, 3D ikonok, Boop a Nap oldal közepén és az alsó menüben.</p>
+  <h2>Ami játékossá teszi</h2><ul><li>Öt pasztellszín egyszerre (korall, zsálya, levendula, rózsa, borostyán), díszként, nem jelentésként.</li><li>Fényes, 3D, játékszerű ikonok és figurák.</li><li>Puha, kerek, lebegő formák, csillogás.</li></ul>`,
+  sotet:`<h2>Klinikai sötét</h2><p>A mostani sötét alap marad, de hűvös grafit lesz, üveg és köd nélkül. A kártyák laposak, vékony kerettel. <b>Egy</b> kiemelő szín van (acélkék), a többi szín csak állapotot jelent: zöld jó, borostyán figyelj, vörös baj.</p>
+  <div class="pal"><span><i class="sw" style="background:#0F1214"></i>alap</span><span><i class="sw" style="background:#161B1E"></i>kártya</span><span><i class="sw" style="background:#7FB2D0"></i>kiemelés</span><span><i class="sw" style="background:#5FA98A"></i>jó</span><span><i class="sw" style="background:#CFA14A"></i>figyelj</span><span><i class="sw" style="background:#CF6B5E"></i>baj</span></div>
+  <h2>Mi változott</h2><ul><li>A Boop helyén a Nap oldalon egy állapot-gyűrű és egy mondat áll: hogy vagy ma, mi van még hátra.</li><li>Az öt lebegő gomb egy sor kis, egyforma műveletté lett.</li><li>A makró-reaktor három vékony sáv lett, számmal és céllal.</li><li>Vékony vonalas ikonok a 3D helyett. Az alsó menüben a Boop helyén a terület jele áll.</li><li>Számok és címkék műszer-betűvel (egyforma szélességű számjegyek), mint egy leletben.</li></ul>
+  <h2>Hangulat</h2><p>Whoop és Oura világa: sportos, precíz, csendes. Férfiasabb, mint a világos, de nem harsány.</p>`,
+  vilagos:`<h2>Lelet világos</h2><p>Papírfehér alap, tinta-szürke szöveg, egyetlen mély zöldeskék kiemelés. A címek komoly talpas betűvel, a számok és címkék műszer-betűvel: olyan, mint egy jól szedett orvosi lelet.</p>
+  <div class="pal"><span><i class="sw" style="background:#F7F7F4"></i>alap</span><span><i class="sw" style="background:#FFFFFF"></i>kártya</span><span><i class="sw" style="background:#1F6F6A"></i>kiemelés</span><span><i class="sw" style="background:#2E8A68"></i>jó</span><span><i class="sw" style="background:#B07A1E"></i>figyelj</span><span><i class="sw" style="background:#B5473B"></i>baj</span></div>
+  <h2>Mi változott</h2><ul><li>Ugyanaz az elrendezés és tartalom, mint a sötét klinikainál, csak a világos alapon.</li><li>A talpas címbetű adja a felnőtt, „rendelő" hangot; minden más vonalas és visszafogott.</li><li>A kártyáknak alig van árnyéka; a hierarchiát a betűméret és a vékony vonalak adják.</li></ul>
+  <h2>Hangulat</h2><p>Function Health és az Apple Egészség világa: a legunisexebb és a legfelnőttebb. Ez a legnagyobb váltás: az egész app megfordul sötétről világosra.</p>`};
+
+/* ── router ── */
+let V='sotet',D='nap';
+function render(){
+  const ph=$('#phone');
+  if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${D}.html#mai"></iframe>`}
+  else{ph.dataset.v=V;ph.innerHTML=D==='nap'?nap():edzes()}
+  $('#notes').innerHTML=NOTES[V];
+  document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
+  document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
+  history.replaceState(null,'',`#${V}-${D}`);
+}
+function fromHash(){const m=/^#(jelenlegi|sotet|vilagos)-(nap|edzes)$/.exec(location.hash);if(m){V=m[1];D=m[2]}}
+document.addEventListener('click',e=>{
+  const v=e.target.closest('#vseg button');if(v){V=v.dataset.v;render();return}
+  const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;render();return}
+  const t=e.target.closest('[data-toast]');if(t){e.preventDefault();toast(t.dataset.toast)}
+});
+let tt;function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),1800)}
+$('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
+if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
+window.addEventListener('hashchange',()=>{fromHash();render()});
+fromHash();render();
+</script>
+</body>
+</html>
