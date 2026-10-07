@@ -5235,7 +5235,7 @@ function panelGrp(g,scroll){document.querySelectorAll('#jump .grp').forEach(d=>{
   if(scroll){const d=document.querySelector(`#jump .grp[data-grp="${g}"]`),n=$('#notes');n.scrollTop+=d.getBoundingClientRect().top-n.getBoundingClientRect().top-$('.nhead').offsetHeight}}
 function panelSync(h,r){
   const all=[...document.querySelectorAll('#jump nav a,.rlinks a')], exact=all.filter(a=>a.getAttribute('href')===h);
-  const hit=exact.length?exact:all.filter(a=>a.getAttribute('href')==='#'+r);
+  const hit=exact.some(a=>a.closest('.grp'))?exact:[...exact,...all.filter(a=>a.closest('.grp')&&a.getAttribute('href')==='#'+r)];
   all.forEach(a=>a.setAttribute('aria-current',String(hit.includes(a))));
   const main=hit.find(a=>a.closest('.grp'))||document.querySelector(`#jump nav a[href="#${r}"]`), g=main?main.closest('.grp').dataset.grp:(TAB[r]||'Mai');
   $('#nnow').textContent=main?main.textContent.trim():g;
