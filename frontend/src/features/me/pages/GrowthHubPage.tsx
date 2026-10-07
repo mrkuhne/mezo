@@ -23,7 +23,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
 export const TAB_REDIRECT: Record<string, string> = {
-  skills: '/me/growth/skillek', routines: '/me/rutin', journal: '/me/growth/naplo', awards: '/me/growth/kituntetesek',
+  skills: '/me/growth/skillek', routines: '/nap/rutin/epites', journal: '/me/growth/naplo', awards: '/me/growth/kituntetesek',
 }
 const MILESTONES = Object.keys(STREAK_MILESTONE_COINS).map(Number).sort((a, b) => a - b)
 const PULSE_WINDOW_DAYS = 10
@@ -62,7 +62,7 @@ export function GrowthHubPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate('/me')} label="‹ Én" />
+      <PageHead glass onBack={() => navigate('/me')} label="Hol tartok" />
       <PageBody>
         <EntranceGroup>
           <GrowthHero totalXp={stats.totalXp} level={level} disciplinePct={profile.traits?.disciplinePct ?? null}
@@ -73,15 +73,15 @@ export function GrowthHubPage() {
                 tile top). Their art is 3D since U11 (mezo-me75u.11): the sprout (the old s-hajtas
                 spot, a skill growing — t-quest would read as the küldetés chips above) and
                 t-record (the Kitüntetések page's own hero). */}
-            <button type="button" className="mz-tile mz-w-lav rise" style={{ '--d': '170ms' } as CSSProperties}
+            <button type="button" className="mz-tile glass gr-tile rise" style={{ '--d': '170ms', '--c': 'var(--dv-lav)' } as CSSProperties}
               aria-label="Skillek" onClick={() => navigate('/me/growth/skillek')}>
               <div className="mz-tile-top"><span className="mz-eyebrow">Skillek</span></div>
               <div className="mz-spotwrap"><Icon3D name="t-sprout" size={50} /></div>
               {skillLine !== undefined && <div className="mz-tile-line gr-tile-line">{skillLine}</div>}
             </button>
-            <Tile wash="sky" art="t-journal" iconSize={47} eyebrow="Napló" delayMs={270} className="gr-tile-line"
-              line={naploLine} onClick={() => navigate('/me/growth/naplo')} aria-label="Napló" />
-            <button type="button" className="mz-tile mz-w-sage rise" style={{ '--d': '320ms' } as CSSProperties}
+            <Tile wash="sky" art="t-journal" iconSize={47} eyebrow="Tevékenységek" delayMs={270} className="glass gr-tile gr-tile-line gr-tile-sky"
+              line={naploLine} onClick={() => navigate('/me/growth/naplo')} aria-label="Tevékenységek" />
+            <button type="button" className="mz-tile glass gr-tile rise" style={{ '--d': '320ms', '--c': 'var(--dv-sage)' } as CSSProperties}
               aria-label="Kitüntetések" onClick={() => navigate('/me/growth/kituntetesek')}>
               <div className="mz-tile-top"><span className="mz-eyebrow">Kitüntetések</span>{pulse && <span className="gr-pulse" aria-hidden="true" />}</div>
               <div className="mz-spotwrap"><Icon3D name="t-record" size={52} /></div>

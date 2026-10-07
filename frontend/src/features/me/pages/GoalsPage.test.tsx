@@ -83,6 +83,14 @@ test('renders the layout-aware skeleton while the overview is loading', () => {
   expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
 })
 
+test('back chip says Célok and goes to the goals tab', () => {
+  render(<GoalsPage />, { wrapper: Wrapper })
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveTextContent('Célok')
+  back.click()
+  expect(mocks.navigate).toHaveBeenCalledWith('/me/goals')
+})
+
 test('renders the creation CTA when there is no active goal', () => {
   mocks.useGoal.mockReturnValue({ goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: false })
   mocks.useGoalOverview.mockReturnValue({ overview: null, pending: false })

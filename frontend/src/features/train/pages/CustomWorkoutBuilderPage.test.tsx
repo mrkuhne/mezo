@@ -37,8 +37,8 @@ test('the picker adds a catalog exercise as a recipe row', () => {
   // "STIM" is present on every row and unique from the sheet's "Kész"/"Bezárás"
   // buttons, so it reliably targets a catalog row without depending on flash state.
   fireEvent.click(screen.getAllByRole('button', { name: /STIM/ })[0])
-  // The picked exercise lands as an ExerciseRecipeRow (recipe steppers appear).
-  expect(screen.getAllByText('Work').length).toBeGreaterThan(0)
+  // The picked exercise lands as an OPEN ExerciseRecipeRow (its recipe steppers appear).
+  expect(screen.getAllByText('Munka').length).toBeGreaterThan(0)
 })
 
 test('editing an existing custom workout prefills name + exercises', () => {
@@ -48,16 +48,11 @@ test('editing an existing custom workout prefills name + exercises', () => {
   expect(screen.getByText('Lateral Raise')).toBeInTheDocument()
 })
 
-// Reads the numeric value shown by an ExerciseRecipeRow stepper. Anchored on the
-// field's own "növelése" (increase) button, which carries a name-scoped
-// `${exerciseName} · ${field}` aria-label — stable regardless of duplicate visible
-// text elsewhere (e.g. the picker sheet still shows the same exercise name). The
-// value <span> is the increase button's own row-sibling (see ExerciseRecipeRow's
-// RecipeStepper: <div row>[<span value>, <div buttons>[dec, inc]]).
+// Reads the numeric value shown by an ExerciseRecipeRow stepper — the value <b> carries a
+// name-scoped test id (`${exerciseName} · ${field} érték`). A freshly picked exercise opens its
+// own row (mezo-7ugb5), so the steppers are mounted right after the pick.
 function stepperValue(exerciseName: string, field: string): string | null {
-  const incBtn = screen.getByRole('button', { name: `${exerciseName} · ${field} növelése` })
-  const valueSpan = incBtn.parentElement?.previousElementSibling
-  return valueSpan?.textContent ?? null
+  return screen.getByTestId(`${exerciseName} · ${field} érték`).textContent
 }
 
 test('mezo-szsi item 1: adding a plyo via the picker yields the fixed weightless PLYO scheme (3x5 RIR0, 0 warmup)', async () => {
@@ -86,4 +81,38 @@ test('mezo-szsi item 1: a compound pick still gets the shared hypertrophy scheme
   expect(stepperValue('Chest Supported Row', 'Rep min')).toBe('8')
   expect(stepperValue('Chest Supported Row', 'Rep max')).toBe('10')
   expect(stepperValue('Chest Supported Row', 'RIR')).toBe('1')
+})
+
+test('edit: rows start collapsed with a summary; tapping one opens it and closes the other', () => {
+  renderAt('/train/custom/custom-1')
+  // SortableList's drag handle + ▲▼ buttons also carry the exercise name — the row head is the
+  // one with aria-expanded.
+  const head = (name: RegExp) => screen.getAllByRole('button', { name }).find((b) => b.hasAttribute('aria-expanded'))!
+  const lateral = head(/Lateral Raise/)
+  expect(lateral).toHaveAttribute('aria-expanded', 'false')
+  fireEvent.click(lateral)
+  expect(lateral).toHaveAttribute('aria-expanded', 'true')
+  const incline = head(/Incline DB Press/)
+  fireEvent.click(incline)
+  expect(incline).toHaveAttribute('aria-expanded', 'true')
+  expect(lateral).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('the hint names what is missing', () => {
+  renderAt('/train/custom/new')
+  expect(screen.getByText('Adj nevet az edzésnek.')).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Edzés neve'), { target: { value: 'X' } })
+  expect(screen.getByText('Adj hozzá legalább egy gyakorlatot.')).toBeInTheDocument()
+})
+
+test('an unknown id shows not-found instead of an empty new form', () => {
+  renderAt('/train/custom/nincs-ilyen')
+  expect(screen.getByText(/nem található/)).toBeInTheDocument()
+  expect(screen.queryByLabelText('Edzés neve')).toBeNull()
+})
+
+test('new composer title and the empty lead', () => {
+  renderAt('/train/custom/new')
+  expect(screen.getByText('Új saját edzés')).toBeInTheDocument()
+  expect(screen.getByText(/Még nincs gyakorlat/)).toBeInTheDocument()
 })

@@ -27,7 +27,7 @@ export function GrowthAwardsPage() {
   const next = nearestMilestone([...(profile.life ?? []), ...(profile.athletic ?? []), ...(profile.muscle ?? [])].map((s) => ({ name: nameOf(s.skillKey), level: s.level })))
   return (
     <MozaikPage tone="sage" className="gra-page">
-      <PageHead glass onBack={() => navigate('/me/growth')} label="Growth" />
+      <PageHead glass onBack={() => navigate('/me/growth')} label="Fejlődés" />
       <PageHero art="t-record" accent="var(--dv-sage)" name="Kitüntetések" big={<>{done}<small> / {data.badges.length} jelvény</small></>} />
       <PageBody principle="Az érme itt költhető el — címre vagy sorozat-mentőre. Semmi más nem vásárolható, és semmi nem jár le.">
         <EntranceGroup>

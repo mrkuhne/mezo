@@ -8,8 +8,8 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
-// Súly re-face (mezo-d20.6.3) — MozaikPage subpage scaffold (‹ Én back chip,
-// page-head CTA, hero, stat strip, trend chart, weekly tiles). Behavior is
+// Súly re-face (mezo-d20.6.3) — MozaikPage scaffold (no back chip since mezo-lhqw7: it is
+// the Test TAB page with the Súly | Alvás switch; page-head CTA, hero, stat strip, trend chart, weekly tiles). Behavior is
 // unchanged: same hooks, same honest states, same log-sheet cascade.
 
 function renderPage() {
@@ -38,12 +38,13 @@ test('the Súly body staggers — stat strip, chips, chart, section label and th
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('renders the ‹ Én back chip, hero, stat strip, trend chart, weekly history, and opens the log sheet', () => {
+test('renders the Test tab head, hero, stat strip, trend chart, weekly history, and opens the log sheet', () => {
   renderPage()
-  // Üveg (mezo-me75u.6): the glass back pill reads „‹ Én" (arrow in its own aria-hidden <b>)
-  const back = screen.getByRole('button', { name: 'Vissza' })
-  expect(back).toHaveClass('glass')
-  expect(back).toHaveTextContent('‹Én')
+  // mezo-lhqw7: Test tab head — no back chip, the Súly | Alvás switch with Súly pressed, bio row below
+  expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Súly' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Alvás' })).toHaveAttribute('aria-pressed', 'false')
+  expect(document.querySelector('.ent-bio')).not.toBeNull()
   expect(screen.getByText('Napi súly')).toBeInTheDocument()
   expect(screen.getByText('Jelenleg')).toBeInTheDocument()
   expect(screen.getByText('Heti előzmény')).toBeInTheDocument()

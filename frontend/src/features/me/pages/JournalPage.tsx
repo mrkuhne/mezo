@@ -1,9 +1,8 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { MozaikPage, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { isDecisionDue, useDecisionActions, useDecisions, useGratitudeEntries, useJournalNotes } from '@/data/hooks'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
@@ -34,8 +33,8 @@ function windowFrom(monthsBack: number, todayIso: string): string {
 }
 
 // /me/naplo (Journal, mezo-d20.6.6 Mozaik re-face) — the read surface for free-prose journal
-// notes: the Hálanapló streak tile, the GOLD decision card (the "tile → own page" pattern's ‹ Én
-// back chip, source: en-body.html #page-naplo), and a month-grouped note list over a widening
+// notes: the Hálanapló streak tile, the GOLD decision card (source: en-body.html #page-naplo;
+// since mezo-lhqw7 this is the Én domain's Napló TAB page, so it has no back chip), and a month-grouped note list over a widening
 // date window (mem-daycard idiom, reused verbatim from the Memória Napló segment).
 //
 // Behavior stays the prior sheet-based page's, verbatim: mock+real dual mode, honest states
@@ -61,7 +60,6 @@ function windowFrom(monthsBack: number, todayIso: string): string {
 // notes as flat cells, the empty window dashed. CSS: `── uveg en2 naplo (` in prototype.css, all
 // scoped to `.mzj-page` — the old `mzh-*`/`mzp-*`/`mem-*` classes serve the Mezo pages too.
 export function JournalPage() {
-  const navigate = useNavigate()
   const [monthsBack, setMonthsBack] = useState(3)
   const [addOpen, setAddOpen] = useState(false)
   const [editNote, setEditNote] = useState<JournalNote | null>(null)
@@ -105,11 +103,12 @@ export function JournalPage() {
 
   return (
     <MozaikPage tone="sage" className="mzj-page">
-      <PageHead glass onBack={() => navigate(-1)} label="Én">
+      <div className="ent-head">
+        <span />
         <button type="button" className="mz-pgact mzj-newbtn" onClick={() => setAddOpen(true)}>
           <Icon3D name="t-note" size={18} /> Új bejegyzés
         </button>
-      </PageHead>
+      </div>
 
       <PageHero
         art="t-journal"

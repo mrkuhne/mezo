@@ -61,6 +61,24 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 
 ## Milestone log
 
+- **2026-10-06 — Saját edzés összerakása üvegben (`mezo-7ugb5`).** Az egyedi edzés összerakó oldala
+  megkapta az Üveg kinézetet; a gyakorlatok tömör összefoglaló sorok, koppintásra helyben nyílnak
+  (párba rendezett számlálók, volumen-kapcsoló, Feljebb/Lejjebb/Kivesz). Ismeretlen edzésnél
+  „nem található” jelzés az üres űrlap helyett. [Terv](../superpowers/plans/2026-10-01-sajat-edzes-uveg.md).
+- **2026-10-06 — Én — Hol tartok: heti hős Mezo „Jól ment / Figyelj rá” soraival, Életvonal, Célok állása (`mezo-lhqw7`, S1–S4 — az Én IA kész).**
+  Az Én fül kezdőlapja most azt mutatja, hol tartasz: vékony azonosító sáv (egy koppintás a
+  Fejlődésre), „A heted” az utolsó lezárt hét pontszámával, változásával és Mezo két sorával
+  (Jól ment · Figyelj rá), az Életvonal — a súlyod 12 hete, arany állomásokkal, alvássávval és
+  csak akkor szaggatott vonallal a cél felé, ha a trend tényleg oda tart —, majd a Célok állása
+  (súlycél százalékkal, aktív életcélok irányszóval). Ha kevés a mérés, a kártya ezt mondja ki, és
+  „Mérj most”-ra visz; sosem rajzol kitalált görbét. A Heti elemzés ismét elérhető a hőskártyáról.
+  A növekedés neve mindenhol „Fejlődés”, a naplóé „Tevékenységek”, üveg csempékkel. A súlycél (S3) egyenrangú
+  célként az első csempe a Célok oldalon, nem külön sor a célok mögött. Az S4-gyel a rutin
+  építése a Napba költözött: a Nap · Rutin lap alján „Rutinok szerkesztése ›” sor visz a láncokhoz,
+  szokásokhoz és az új szokás varázslóhoz (minden építő oldal a Rutin fület világítja), az Én hub
+  Rutin csempéje megszűnt (két csempe maradt: Fejlődés · Emberek), a régi `/me/rutin…` linkek
+  átirányítanak. **Az Én IA (`mezo-lhqw7`) kész.** [Terv](../superpowers/plans/2026-10-05-en-ia.md),
+  [`me.md`](../features/me.md).
 - **2026-10-01 — Étkezés tényleges ideje (`mezo-yhhvg`).** Az új naplózásban a mentés előtt
   becsukott „Mikor ettél?” sor mutatja az aktuális időt; átírva a kiválasztott napra és az
   evési időhöz tartozó tervezett ablakba könyvel. A mező helyben nyílik, a piszkozatot és a

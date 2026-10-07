@@ -22,7 +22,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon3D } from '@/shared/ui/clay'
 import { ScoreRing } from '@/shared/ui/ScoreRing'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { MozaikPage, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useSleep, useSleepGoal } from '@/data/hooks'
 import {
@@ -33,6 +33,8 @@ import {
   EFFICIENCY_TARGET_PCT,
 } from '@/features/me/logic/sleepStats'
 import { DEEP_REF, parseHypnogram, phaseBreakdown, phasePct, REM_REF } from '@/features/me/logic/sleepPhases'
+import { TestViewSwitch } from '@/features/me/components/TestViewSwitch'
+import { BioRow } from '@/features/me/components/BioRow'
 import { PhaseRail } from '@/features/me/components/PhaseRail'
 import { PhaseReferenceRow } from '@/features/me/components/PhaseReferenceRow'
 import { SleepLogRow } from '@/features/me/components/SleepLogRow'
@@ -80,11 +82,11 @@ export function SleepPage() {
 
   return (
     <MozaikPage tone="lav" className="alv-page">
-      <PageHead glass onBack={() => navigate(-1)} label="Én">
+      <TestViewSwitch view="alvas">
         <button type="button" className="pgact alv-log" onClick={() => setLogOpen(true)}>
           <span aria-hidden="true">＋</span> Log
         </button>
-      </PageHead>
+      </TestViewSwitch>
 
       <EntranceGroup>
         <PageHero
@@ -297,6 +299,7 @@ export function SleepPage() {
             </span>
             <span className="alv-night-chev" aria-hidden="true">›</span>
           </Link>
+          <BioRow />
         </PageBody>
       </EntranceGroup>
 

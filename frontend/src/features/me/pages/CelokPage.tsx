@@ -2,15 +2,14 @@ import { useNavigate } from 'react-router-dom'
 import { ContentIcon, Icon3D } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { MozaikPage, PageHead, PageBody, Mosaic } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, Mosaic } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useLifeGoals, useLifeGoalMutations, useLifeGoalToday, useSignalCatalog, useGoal } from '@/data/hooks'
 import type { LifeGoalDimension, TrendArrow } from '@/data/lifegoal/lifegoalApi'
 import { DIMENSIONS, DIMENSION_ORDER, STATUS_LABEL } from '@/features/me/logic/lifegoalLabels'
-import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
-import { hu1 } from '@/shared/lib/huNum'
 import { PermahRing } from '@/features/me/components/PermahRing'
 import { LifeGoalTile } from '@/features/me/components/LifeGoalTile'
+import { WeightGoalTile } from '@/features/me/components/WeightGoalTile'
 
 // Célok hub (mezo-iizd.1, prototype celok.html #panel): hero ring + companion line, the PERMAH
 // chip band, one tile per active goal and the parked list.
@@ -27,7 +26,13 @@ export function CelokPage() {
   // lezárt cél eltűnt minden felületről, pedig a GET /api/life-goals visszaadja (mezo-iizd.4).
   // Külön szekció, nem a mozaikban: a mozaik az ÉLŐ célok tere, egy kész cél emlék.
   const done = goals.filter((g) => g.status === 'done')
+  // The weight goal is the FIRST goal tile (owner 2026-09-28: a goal like the others, not a setting
+  // behind them). Four honest states: pending → inert skeleton tile, error → no tile + a quiet line
+  // under the mosaic, none → a dashed „＋ Súlycél" door, present → WeightGoalTile.
   const { goal: weightGoal, goalResponse, pending: weightPending, isError: weightIsError } = useGoal()
+  const hasWeightGoal = !weightPending && !weightIsError && weightGoal != null && goalResponse != null
+  const noWeightGoal = !weightPending && !weightIsError && !hasWeightGoal
+  const lifeShift = weightIsError ? 0 : 40
   const counts = Object.fromEntries(DIMENSION_ORDER.map((d) => [d, active.filter((g) => g.dimension === d).length])) as Record<LifeGoalDimension, number>
   const summaryByGoalId = new Map(today.goals.map((s) => [s.goalId, s]))
   // `insufficient` is excluded from the hero counters on purpose — same guardrail as the tile/
@@ -57,7 +62,7 @@ export function CelokPage() {
   if (isError && goals.length === 0) {
     return (
       <MozaikPage tone="sage" className="enc-page enc-celok">
-        <PageHead glass onBack={() => navigate('/me')} label="Én" />
+        <div className="ent-head" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a célokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -67,20 +72,21 @@ export function CelokPage() {
 
   return (
     <MozaikPage tone="sage" className="enc-page enc-celok">
-      <PageHead glass onBack={() => navigate('/me')} label="Én">
+      <div className="ent-head">
+        <span />
         <button type="button" className="enc-pill" onClick={() => navigate('/me/goals/new')}>＋ Új cél</button>
-      </PageHead>
+      </div>
       <PageBody principle="Ami nincs naplózva, az nem nulla — az üres.">
         <EntranceGroup>
           <div className="enc-title rise" style={{ '--d': '0ms' } as React.CSSProperties}>
             <span className="nm">Célok</span>
-            <div className="mz-eyebrow">{active.length} aktív · {parked.length} parkol</div>
+            <div className="mz-eyebrow">{active.length + (hasWeightGoal ? 1 : 0)} aktív · {parked.length} parkol</div>
           </div>
           <div className="enc-hero uv-halo rise" style={{ '--d': '40ms' } as React.CSSProperties}>
             <PermahRing counts={counts} total={active.length} />
             <div className="enc-hero-copy">
               {active.length === 0
-                ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
+                ? <>Még nincs aktív életcélod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
                 : todayIsPending
                   ? <>A pillérek a meglévő naplódból számolnak. <strong>A heti irány most töltődik</strong> — a célok és pilléreik addig is itt élnek.</>
                   : todayIsError
@@ -96,16 +102,31 @@ export function CelokPage() {
             ))}
           </div>
           <Mosaic>
+            {weightPending && <div className="mz-tile enc-tile enc-wgoal enc-wgoal-skel glass rise" aria-hidden="true" style={{ '--c': 'var(--dv-coral)', '--d': '130ms' } as React.CSSProperties} />}
+            {hasWeightGoal && <WeightGoalTile delayMs={130} onClick={() => navigate('/me/goals/weight')} />}
+            {noWeightGoal && (
+              <button type="button" className="mz-tile enc-newtile uv-empty rise" style={{ '--c': 'var(--dv-coral)', '--d': '130ms' } as React.CSSProperties}
+                onClick={() => navigate('/me/goals/weight/new')} aria-label="Új súlycél">
+                <Icon3D name="t-weight" size={40} />
+                <b>＋ Súlycél</b>
+                <small>Tervezd meg a tempót</small>
+              </button>
+            )}
             {active.map((g, i) => (
-              <LifeGoalTile key={g.id} goal={g} summary={summaryByGoalId.get(g.id)} delayMs={130 + i * 40} onClick={() => navigate(`/me/goals/${g.id}`)} />
+              <LifeGoalTile key={g.id} goal={g} summary={summaryByGoalId.get(g.id)} delayMs={130 + lifeShift + i * 40} onClick={() => navigate(`/me/goals/${g.id}`)} />
             ))}
-            <button type="button" className="mz-tile enc-newtile uv-empty rise" style={{ '--d': `${130 + active.length * 40}ms` } as React.CSSProperties}
+            <button type="button" className="mz-tile enc-newtile is-wide uv-empty rise" style={{ '--d': `${130 + lifeShift + active.length * 40}ms` } as React.CSSProperties}
               onClick={() => navigate('/me/goals/new')} aria-label="Új cél">
               <Icon3D name="t-ring" size={40} />
-              <b>＋ Új cél</b>
-              <small>Mezo pilléreket javasol</small>
+              <span className="enc-newtile-txt">
+                <b>＋ Új cél</b>
+                <small>Mezo pilléreket javasol</small>
+              </span>
             </button>
           </Mosaic>
+          {weightIsError && (
+            <p className="enc-quiet rise" style={{ '--d': '170ms' } as React.CSSProperties}>a súlycél most nem elérhető</p>
+          )}
           {parked.map((g, i) => (
             <div key={g.id} className={`lg-parkrow rise ${DIMENSIONS[g.dimension].cls}`} style={{ '--d': `${300 + i * 40}ms` } as React.CSSProperties}>
               <button type="button" className="lg-parkrow-nav" onClick={() => navigate(`/me/goals/${g.id}`)} aria-label={`${g.title} · parkol`}>
@@ -129,31 +150,6 @@ export function CelokPage() {
             </div>
             <span className="chev" aria-hidden="true">›</span>
           </button>
-          {/* Súlycél (mezo-iizd.4): a spec D5 szerint a súlycél a Célok alá költözött, és a
-              .4 óta az Én-hub heroja életcél-összegzés — tehát a /me/goals/weight bejárata
-              ITT van, különben a súly-parancsnokság elárvul. */}
-          <button type="button" className="enc-xrow glass rise"
-            style={{ '--d': `${340 + parked.length * 40}ms`, '--c': 'var(--dv-coral)' } as React.CSSProperties}
-            onClick={() => navigate('/me/goals/weight')} aria-label="Súlycél">
-            <span className="uv-well"><Icon3D name="t-weight" size={34} /></span>
-            <div className="grow">
-              <div className="nm">Súlycél</div>
-              <div className="sb">
-                {/* Három állapot, nem kettő: egy ELHASALT /api/goals olvasás ugyanabba az üres
-                    alakba esik, mint a „nincs célod", tehát az `isError` nélkül a sor egy
-                    hálózati hibát mért hiányként jelentett (mezo-iizd.4 final review, 4. lelet). */}
-                {weightPending
-                  ? 'töltöm…'
-                  : weightIsError
-                    ? 'a súlycél most nem elérhető'
-                    : goalResponse != null && weightGoal != null
-                      ? `${TRAJECTORY_LABEL[goalResponse.trajectory]} · ${hu1(weightGoal.currentWeight)} → ${hu1(weightGoal.targetWeight)} kg`
-                      : 'nincs aktív súlycél'}
-              </div>
-            </div>
-            <span className="chev" aria-hidden="true">›</span>
-          </button>
-
           {done.length > 0 && (
             <>
               <div className="mz-eyebrow enc-sec rise" style={{ '--d': '380ms' } as React.CSSProperties}>Lezárt célok</div>

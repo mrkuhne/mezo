@@ -4791,29 +4791,10 @@ button.mz-tile:active { transform: scale(0.96); }
 /* ── Mezo · Memória observatory (mezo-d20.5.7) — the observatory moved to the U8 `mmr-` rules;
    its pre-üveg `.mem-*` rules left in U11 (mezo-wqzx8). ── */
 
-/* ── Én hub (mezo-d20.6.1) — prototype en-body.html hub section ×1.18 (330→390px).
-   Anatomy: identity hero (conic in-level XP ring around the initial, name, equipped
-   title chip, Lv · XP · 🔥 · 🪙 row, bio line that vanishes when empty) → the
-   coral-ringed GOAL CARD (trajectory eyebrow, animated track with indulás/most/cél
-   labels, Hátra · Tempó · ETA mini-cells; a maintain goal drops the track and reads
-   „tartás") → the 9-tile mosaic → the Beállítások band. Every surface is --mz-*. ── */
+/* ── Én hub (mezo-d20.6.1) — the pre-Üveg skeleton of /me. Only the layout bones that the
+   Üveg block (`── uveg en hub (`, where the anatomy is described) still builds on live here:
+   the page stack, the goal card's button reset + head row, and the empty goal door. ── */
 .enh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
-
-.enh-idhero { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 9px 14px 12px; }
-.enh-idring { width: 78px; height: 78px; border-radius: 50%; display: grid; place-items: center; flex: none;
-  background: conic-gradient(#FF6B4A calc(var(--xp, 0) * 1%), var(--mz-gbar-bg) 0); }
-.enh-idring i { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
-  font-style: normal; font-size: 26px; font-weight: 700;
-  background: var(--mz-wash-coral); color: var(--mz-cell-coral-ink); }
-.enh-nm { font-size: 19px; font-weight: 700; margin-top: 3px; }
-.enh-titlech { font-size: 9.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-  background: var(--mz-titlech-bg); color: var(--mz-titlech-ink); border-radius: 999px; padding: 4px 12px; }
-.enh-idstats { display: flex; gap: 12px; margin-top: 6px; font-size: 10.5px; font-weight: 700;
-  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
-.enh-bio { border: none; background: none; font-family: inherit; cursor: pointer;
-  min-height: 44px; padding: 4px 12px; font-size: 10px; color: var(--mz-ink-mut);
-  font-variant-numeric: tabular-nums; }
-.enh-bio:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 2px; }
 
 .enh-goalcard { border: 1px solid #FF6B4A; border-radius: 21px; background: var(--mz-stripbg);
   padding: 13px 15px 14px; width: 100%; text-align: left; font-family: inherit; color: var(--text-primary);
@@ -4821,10 +4802,8 @@ button.mz-tile:active { transform: scale(0.96); }
   transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
 .enh-goalcard:active { transform: scale(0.97); }
 .enh-goalhead { display: flex; align-items: center; gap: 8px; }
-.enh-goalhead .mz-eyebrow { color: var(--mz-cell-coral-ink); }
 .enh-stch { margin-left: auto; flex: none; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
   border-radius: 7px; padding: 3px 9px; background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
-.enh-goalcard .mz-mcells { margin-top: 11px; }
 .enh-newgoal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   min-height: 44px; border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 20px;
   padding: 14px 0; font-family: inherit; font-size: 12.5px; font-weight: 700;
@@ -6632,23 +6611,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .mzh-ghost[aria-pressed="true"] { background: var(--mz-stch-prop-bg); color: var(--mz-stch-prop-ink); }
 .mzh-ghost.is-no[aria-pressed="true"] { background: var(--mz-stch-mut-bg); color: var(--mz-no-ink); }
 
-/* ── Én hub · a coin-sink és a sorozat ajtaja (mezo-d20.11, PROVIZÓRIKUS az F7.4-ig) ──
-   Az AppHero törlésével a TitleShopSheet és a StreakSheet gazdátlan maradt, az érme
-   így csak gyűlt. Az identitás-hero cím-chipje és a számláló-sora most maguk a kapuk:
-   a cím-chip + az érme-statisztika a cím-boltot, a láng a sorozat-lapot nyitja.
-   A prototípus geometriája változatlan (en-body `.titlech` / `.idstats`) — a 44pt-os
-   érintőfelület egy kiterjesztett ::after találati zónából jön, hogy a szöveg mérete
-   és a sor magassága 1:1 maradjon. ── */
-.enh-titlech { border: none; font-family: inherit; cursor: pointer; position: relative; }
-.enh-titlech.is-none { background: var(--mz-stch-mut-bg); color: var(--mz-stch-mut-ink); }
-.enh-idstats button.enh-idstat { border: none; background: none; padding: 0; margin: 0;
-  font: inherit; color: inherit; cursor: pointer; position: relative;
-  font-variant-numeric: tabular-nums; }
-.enh-titlech::after, .enh-idstats button.enh-idstat::after {
-  content: ''; position: absolute; left: -6px; right: -6px; top: 50%;
-  height: 44px; transform: translateY(-50%); }
-.enh-titlech:focus-visible, .enh-idstats button.enh-idstat:focus-visible {
-  outline: 2px solid var(--primary-deep); outline-offset: 3px; }
 
 /* ── Én · hűség-audit pótlások (mezo-d20.11) — prototype en-body.html
       #page-emberek `.chiprow`/`.fchip` és #page-naplo `.decrow` alatti `.foot9`,
@@ -7050,10 +7012,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .lg-donerow { opacity: 0.72; }
 .lg-donetick { margin-left: auto; flex: none; font-size: 12px; font-weight: 700; color: var(--lg-arrow-up); }
 
-/* Én-hub életcél-hero (mezo-iizd.4): az `.enh-goalcard` váza, súly-track nélkül — a helyére
-   a célok dimenzió-chipjei kerülnek. */
-.enh-lgcard .mz-eyebrow { display: inline-flex; align-items: center; gap: 5px; }
-.enh-lgdims { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 10px; }
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
@@ -7250,7 +7208,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .srt-chev-focus { width: 0; overflow: hidden; opacity: 0; transition: opacity 0.15s ease; }
 .srt-chev-focus:focus-within { width: auto; overflow: visible; opacity: 1; }
 
-/* ===== Rutin wizard — /me/rutin/uj (mezo-3zue.4) =====
+/* ===== Rutin wizard — /nap/rutin/uj (mezo-3zue.4) =====
    docs/design_2.0/prototypes/src/rutin-epito-head.html `.sentence` / `.fwcard` / `.tip` /
    `.commit` + the form language (`.fcard`/`.flabel`/`.fin`/`.chips`/`.stepin`/`.lifegrid`),
    ×1.18 (330 → 390px frame). Every prototype hex is substituted by the nearest existing
@@ -7335,7 +7293,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .rt-commit small { font-size: 10px; color: var(--text-secondary); }
 .rt-wnav .cta-primary:disabled { opacity: 0.4; pointer-events: none; }
 
-/* ===== Szokás-oldal — /me/rutin/szokas/:habitKey (mezo-3zue.4) =====
+/* ===== Szokás-oldal — /nap/rutin/szokas/:habitKey (mezo-3zue.4) =====
    docs/design_2.0/prototypes/src/rutin-epito-head.html `.fwband` / `.hist` / `.danger`,
    ×1.18 (330 → 390px frame). The prototype's per-framework wash+shadow pair (set inline by
    `openEdit`) becomes three modifier classes on tokens: sage for Fogg, lavender for Clear,
@@ -16406,6 +16364,18 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   box-shadow: 0 0 8px color-mix(in srgb, var(--dv-amber) 60%, transparent);
 }
 .nr-page .nr-pct { flex: 0 0 auto; width: 36px; text-align: right; font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; color: #FFD99A; }
+/* „Rutinok szerkesztése" (mezo-lhqw7): the door to /nap/rutin/epites — a quiet FLAT row (no glass),
+   so it never out-shouts the ticking cards; the page's own bottom padding clears the bar + the + button */
+.nr-page .nr-edit {
+  display: flex; align-items: center; gap: 12px; min-height: 44px; margin: 16px 0 0; padding: 11px 13px 11px 11px;
+  border-radius: 20px; color: var(--text-primary); text-decoration: none;
+  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.nr-page .nr-edit .nr-edit-tx { flex: 1; min-width: 0; }
+.nr-page .nr-edit .nr-edit-tx b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -0.2px; }
+.nr-page .nr-edit .nr-edit-tx small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--text-secondary); }
+.nr-page .nr-edit > span[aria-hidden] { font-size: 18px; color: var(--text-muted); }
+.nr-page .nr-edit:focus-visible { outline: 2px solid var(--dv-amber); outline-offset: 2px; }
 
 /* ── Intention / Reflect sheets: ONE floating amber glass each (bible U2 rule 15) ── */
 .sheet.glass.nap-glass-sheet {
@@ -20884,7 +20854,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .tv-tpls { --c: var(--dv-sage); }
 .tv-tpl { --c: var(--dv-sage); }
 .tv-wizard { --c: var(--dv-lav); }
-.tv-custom { --c: var(--dv-coral); }
 
 .tv-tpls .pl-lib-card.glass {
   background:
@@ -20946,17 +20915,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     inset 0 1px 0 rgba(255, 244, 230, 0.1);
 }
 
-/* the custom composer is a FORM: its head and save bar sit on the app ground, its recipe
-   rows are flat cells. The only lit control is „Indítás ma" — the one constructive CTA. */
-.tv-custom .card {
-  background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.tv-custom .np-cta {
-  color: #191614; background: var(--c); border: 0;
-  box-shadow:
-    0 12px 26px -14px color-mix(in srgb, var(--c) 90%, transparent),
-    0 0 18px -4px color-mix(in srgb, var(--c) 60%, transparent);
-}
 /* ── /uveg edzes2 sablonok ── */
 
 /* ── uveg edzes2 het (mezo-me75u.5) ── /train/week/terkep, /train/week/jelek, /train/week/mozgas ── */
@@ -21011,81 +20969,220 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /uveg edzes2 het ── */
 
-/* ── uveg en hub (mezo-me75u.6) ── /me: identity hero, goal card, the tile mosaic ── */
-/* Ranking (bible §3.4, prototype uveg-en.html#en): the identity hero is THE loud thing — no card,
-   a frameless rose→gold halo, the XP ring glowing around the monogram, a lit Lv pill, a lit-gold
-   flat title chip, flat stat pills with 3D icons. The goal card is ONE coral glass with flat
-   dimension chips and three lit mini-cells inside; its empty door is dashed. Every mosaic tile is
-   glass in its own accent. Everything is scoped to `.enh-hub` — `.mz-tile`/`.mz-mcells`/
-   `.lg-goalchip` serve other surfaces (U2 rule 13). */
+/* ── uveg en hub (mezo-me75u.6 → mezo-lhqw7) ── /me „Hol tartok": identity strip, week hero, Életvonal, goal standing, tiles ── */
+/* Ranking (bible §3.4, prototype elo/en.html `hub()`): the WEEK HERO is THE loud thing — no card,
+   a frameless lavender→gold halo around the score ring. The identity strip above it is a thin
+   FLAT row (never glass). Életvonal is ONE sky glass (curve, gold stations, lavender sleep band);
+   Célok állása is ONE coral glass with flat rows in their own accents; its empty door and the
+   empty Életvonal are dashed. Every tile is glass in its own accent. Everything is scoped to
+   `.enh-hub` — `.mz-tile` / `.wk-ring` / `.wk-delta` serve other surfaces (U2 rule 13). */
 .enh-hub { --c: var(--dv-rose); }
+.enh-hub .enh-chev { flex: none; color: var(--text-muted); }
 
-/* the identity hero: frameless halo (kit .uv-halo), clipped at 320px (U2 rule 12) */
-.enh-hub .enh-idhero.uv-halo {
-  --c: var(--dv-rose); --c2: var(--dv-amber);
-  overflow-x: clip; gap: 0; padding: 8px 20px 6px;
+/* the identity strip: thin, flat, one door to Fejlődés */
+.enh-hub .enh-idstrip {
+  --c: var(--dv-rose);
+  display: flex; align-items: center; gap: 11px; width: 100%; min-width: 0; margin-top: 2px;
+  padding: 8px 12px 8px 8px; border: 0; border-radius: 18px; text-align: left; cursor: pointer;
+  font: inherit; color: var(--text-primary);
+  background: rgba(245, 239, 230, 0.035); box-shadow: inset 0 0 0 1px var(--divider);
 }
-.enh-hub .enh-idhero.uv-halo::before { top: 40%; width: 360px; }
-.enh-hub .enh-idring {
-  position: relative; width: 128px; height: 128px; background: none;
-}
-.enh-hub .enh-idring svg {
-  position: absolute; inset: 0; width: 128px; height: 128px; overflow: visible; transform: rotate(-90deg);
-}
-.enh-hub .enh-idring .uv-ring-track, .enh-hub .enh-idring .uv-ring-prog { stroke-width: 6; --c: var(--dv-rose); }
-.enh-hub .enh-idring i {
-  position: absolute; inset: 14px; width: auto; height: auto; border-radius: 50%;
-  display: grid; place-items: center; font-style: normal;
-  font-family: var(--ff-display); font-size: 44px; font-weight: 300; letter-spacing: -2px;
-  color: var(--text-primary);
+.enh-hub .enh-idmono {
+  width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center;
+  font-size: 18px; font-weight: 400; color: var(--text-primary);
   background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--dv-rose) 16%, #1E1B18));
-  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.1),
-    inset 0 -10px 18px -10px color-mix(in srgb, var(--dv-rose) 70%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dv-rose) 65%, transparent), 0 0 12px -3px var(--dv-rose);
 }
-.enh-hub .enh-lv {
-  position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
-  padding: 3px 10px; border-radius: 999px; white-space: nowrap;
-  font-size: 11px; font-weight: 700; color: var(--text-inverse); background: var(--dv-rose);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-rose) 60%, transparent), 0 0 0 2px var(--canvas);
-}
-.enh-hub .enh-nm {
-  margin-top: 16px; font-size: 28px; font-weight: 600; letter-spacing: -0.8px; color: var(--text-primary);
-  max-width: 100%; overflow-wrap: anywhere;
-}
+.enh-hub .enh-idgrow { flex: 1; min-width: 0; }
+.enh-hub .enh-idnm { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.enh-hub .enh-idnm strong { font-size: 15px; font-weight: 600; letter-spacing: -0.2px; overflow-wrap: anywhere; }
 /* the title chip: lit gold, FLAT (a chip, never glass) */
-.enh-hub .enh-titlech, .enh-hub .enh-titlech.is-none {
-  margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%;
-  padding: 5px 12px; border-radius: 999px;
-  font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none;
+.enh-hub .enh-idtitle {
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0; padding: 2px 8px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 600;
   color: color-mix(in srgb, var(--dv-amber) 72%, var(--text-primary));
   background: color-mix(in srgb, var(--dv-amber) 8%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-amber) 30%, transparent);
 }
-.enh-hub .enh-titlech.is-none { color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
-.enh-hub .enh-titlech .t-ico { width: 18px; height: 18px; }
-/* the stat row: flat pills, wrapping (U2 rule 14) */
-.enh-hub .enh-idstats {
-  display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 12px;
-  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+.enh-hub .enh-idln {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 3px;
+  font-size: 11.5px; color: var(--text-secondary);
 }
-.enh-hub .enh-idstats .enh-flat, .enh-hub .enh-idstats button.enh-idstat.enh-flat {
-  display: inline-flex; align-items: center; gap: 6px; min-width: 0;
-  padding: 6px 11px; border-radius: 999px; white-space: nowrap;
-  font: inherit; color: var(--text-secondary);
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-}
-.enh-hub .enh-idstats .enh-flat.is-lv {
-  color: color-mix(in srgb, var(--dv-rose) 78%, var(--text-primary));
-  background: color-mix(in srgb, var(--dv-rose) 10%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-rose) 30%, transparent);
-}
-.enh-hub .enh-idstats .t-ico { width: 18px; height: 18px; }
-.enh-hub .enh-bio { margin-top: 4px; font-size: 12.5px; color: var(--text-secondary); }
+.enh-hub .enh-idln span { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+.enh-hub .enh-idln b { color: var(--text-primary); font-weight: 600; }
+.enh-hub .enh-idstrip .t-ico { width: 14px; height: 14px; }
 
-/* the goal card: ONE coral glass; restate the body over the old skin (U2 rule 11) */
+/* the week hero: frameless halo (kit .uv-halo), clipped at 320px (U2 rule 12) */
+.enh-hub .enh-wkhero.uv-halo {
+  --c: var(--dv-lav); --c2: var(--dv-amber);
+  overflow-x: clip; display: flex; flex-direction: column; align-items: center; text-align: center;
+  margin-top: 6px; padding: 2px 18px 4px;
+}
+.enh-hub .enh-wkhero.uv-halo::before { top: 44%; width: 360px; height: 280px; }
+.enh-hub .enh-wkeb { letter-spacing: 1.3px; color: color-mix(in srgb, var(--dv-lav) 72%, var(--text-primary)); }
+/* the score ring (WeekScoreRing's svg) on the hub: the heti hub's recipe at 138px */
+.enh-hub .enh-wkhero .wk-ring { position: relative; width: 138px; height: 138px; margin-top: 12px; background: none; }
+.enh-hub .enh-wkhero .wk-ring-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; transform: rotate(-90deg);
+}
+.enh-hub .enh-wkhero .wk-ring .uv-ring-track, .enh-hub .enh-wkhero .wk-ring .uv-ring-prog { stroke-width: 5.5; }
+.enh-hub .enh-wkhero .wk-ring .uv-ring-prog {
+  stroke: var(--dv-lav); filter: drop-shadow(0 0 5px color-mix(in srgb, var(--dv-lav) 60%, transparent));
+}
+.enh-hub .enh-wkhero .wk-ring .in { position: relative; width: auto; height: auto; background: none; box-shadow: none; gap: 2px; }
+.enh-hub .enh-wkhero .wk-ring b {
+  font-family: var(--ff-display); font-size: 56px; font-weight: 300; letter-spacing: -3px; line-height: 1;
+  background: linear-gradient(180deg, var(--text-primary), #CFC6EE 60%, #FFD08A);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 0 12px rgba(171, 159, 210, 0.45));
+}
+.enh-hub .enh-wkhero .wk-ring b.is-learning {
+  font-size: 22px; font-weight: 500; letter-spacing: -0.4px; background: none; color: var(--text-secondary); filter: none;
+}
+.enh-hub .enh-wkhero .wk-ring small {
+  font-size: 11px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--text-muted);
+}
+.enh-hub .enh-wkhero .wkh-skel.ring {
+  width: 138px; height: 138px; margin: 12px auto 0;
+  background: linear-gradient(100deg, rgba(245, 239, 230, 0.04) 30%, rgba(245, 239, 230, 0.09) 50%, rgba(245, 239, 230, 0.04) 70%);
+  background-size: 300% 100%;
+}
+.enh-hub .enh-wkhero .card { width: 100%; margin-top: 12px; }
+/* the delta pill: sage up, amber down (never red), flat on ±0 */
+.enh-hub .enh-wkdelta { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+.enh-hub .enh-wkdelta .wk-delta {
+  padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--canvas);
+  background: var(--dv-sage); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-sage) 55%, transparent);
+}
+.enh-hub .enh-wkdelta .wk-delta.is-down {
+  background: var(--dv-amber); box-shadow: 0 0 10px color-mix(in srgb, var(--dv-amber) 55%, transparent);
+}
+.enh-hub .enh-wkdelta .wk-delta.is-flat {
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+/* the lines: a lit dot + one sentence; sage = went well, gold = watch out (never red) */
+.enh-hub .enh-wklines { display: grid; gap: 5px; margin-top: 12px; max-width: 330px; text-align: left; }
+.enh-hub .enh-wkline {
+  --c: var(--dv-lav);
+  display: flex; gap: 8px; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text-secondary);
+}
+.enh-hub .enh-wkline.is-well { --c: var(--dv-sage); }
+.enh-hub .enh-wkline.is-watch { --c: var(--dv-amber); }
+.enh-hub .enh-wkline::before {
+  content: ''; flex: 0 0 7px; height: 7px; margin-top: 6px; border-radius: 50%;
+  background: var(--c); box-shadow: 0 0 6px var(--c);
+}
+.enh-hub .enh-wkline span { min-width: 0; overflow-wrap: anywhere; }
+.enh-hub .enh-wkline b { color: var(--text-primary); font-weight: 600; }
+/* the lit pills: the week CTA (lavender) and the empty Életvonal's „Mérj most" (sky) */
+.enh-hub .enh-wkcta, .enh-hub .enh-elv-pill {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 0; border-radius: 999px;
+  font: inherit; font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: pointer;
+  color: var(--canvas); background: var(--c); box-shadow: 0 0 14px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.enh-hub .enh-wkcta { --c: var(--dv-lav); margin-top: 12px; }
+/* 44px touch targets without changing the drawn size: an invisible hit zone over each small
+   control (the idiom the retired title chip used) */
+.enh-hub .enh-wkcta, .enh-hub .enh-elv-pill, .enh-hub .enh-elv-next { position: relative; }
+.enh-hub .enh-wkcta::after, .enh-hub .enh-elv-pill::after, .enh-hub .enh-elv-next::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%);
+}
+.enh-hub .enh-elv-pill { --c: var(--dv-sky); }
+.enh-hub .enh-elv-pill .t-ico { width: 18px; height: 18px; filter: none; }
+
+/* Életvonal: ONE sky glass, one accent */
+.enh-hub .enh-elv { --c: var(--dv-sky); display: block; width: 100%; min-width: 0; margin-top: 8px; padding: 14px 14px 12px; border-radius: 22px; color: var(--text-primary); }
+.enh-hub .enh-elv-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.enh-hub .enh-elv-eb { display: block; letter-spacing: 1.3px; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.enh-hub .enh-elv-big {
+  margin-top: 4px; font-family: var(--ff-display); font-size: 40px; font-weight: 300; letter-spacing: -2px; line-height: 1;
+  color: var(--text-primary); text-shadow: 0 0 18px color-mix(in srgb, var(--c) 45%, transparent);
+}
+.enh-hub .enh-elv-big small { margin-left: 3px; font-size: 15px; letter-spacing: 0; color: var(--text-muted); }
+.enh-hub .enh-elv-side { font-size: 11.5px; line-height: 1.35; text-align: right; color: var(--text-secondary); }
+.enh-hub .enh-elv-side b { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); }
+/* the plot: the svg scales with the card; the stations are real buttons laid over it */
+.enh-hub .enh-elv-plot { position: relative; margin-top: 8px; }
+.enh-hub .enh-elv-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.enh-hub .enh-elv-grid { stroke: rgba(245, 239, 230, 0.06); stroke-width: 1; }
+.enh-hub .enh-elv-gl { font-size: 8.5px; fill: var(--text-muted); }
+.enh-hub .enh-elv-curve {
+  fill: none; stroke: var(--c); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 60%, transparent));
+}
+.enh-hub .enh-elv-area { stroke: none; }
+.enh-hub .enh-elv-proj {
+  fill: none; stroke: color-mix(in srgb, var(--c) 70%, var(--text-primary)); stroke-width: 1.8;
+  stroke-dasharray: 1.5 4.5; stroke-linecap: round; opacity: 0.85;
+}
+.enh-hub .enh-elv-tgt { fill: none; stroke: color-mix(in srgb, var(--dv-sage) 55%, transparent); stroke-width: 1.2; stroke-dasharray: 5 5; }
+.enh-hub .enh-elv-tgl { font-size: 9px; font-weight: 600; fill: #BFE0A8; }
+.enh-hub .enh-elv-endp { pointer-events: none; fill: var(--text-primary); stroke: var(--c); stroke-width: 2.4; filter: drop-shadow(0 0 7px var(--c)); }
+/* a station: a 44×44 hit area centred on its point, the gold dot inside */
+.enh-hub .enh-elv-stn {
+  position: absolute; z-index: 2; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; background: none; cursor: pointer;
+  transform: translate(-50%, calc(-50% - var(--stack, 0) * 16px));
+}
+.enh-hub .enh-elv-stn i {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--dv-amber);
+  box-shadow: 0 0 0 1px #FFE7B8, 0 0 7px var(--dv-amber);
+}
+/* on the latest point the station is a gold halo around the endpoint, not a second dot */
+.enh-hub .enh-elv-stn.is-end i { width: 19px; height: 19px; background: none; box-shadow: 0 0 0 1.8px var(--dv-amber), 0 0 7px var(--dv-amber); }
+.enh-hub .enh-elv-stn.is-on i {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 5px rgba(30, 27, 24, 0.5),
+    0 0 0 6.2px color-mix(in srgb, var(--dv-amber) 60%, transparent), 0 0 10px var(--dv-amber);
+}
+.enh-hub .enh-elv-stn.is-end.is-on i { box-shadow: 0 0 0 2.4px #fff, 0 0 10px var(--dv-amber); }
+/* the sleep band: one lavender bar per week; a week without a logged night is a faint stub */
+.enh-hub .enh-elv-sleep { display: grid; gap: 4px; align-items: end; height: 22px; margin-top: 6px; }
+.enh-hub .enh-elv-sleep i {
+  border-radius: 3px 3px 1px 1px; opacity: 0.8;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dv-lav) 55%, #fff), var(--dv-lav));
+  box-shadow: 0 0 6px -2px var(--dv-lav);
+}
+.enh-hub .enh-elv-sleep i.is-none { background: rgba(245, 239, 230, 0.1); box-shadow: none; opacity: 1; }
+.enh-hub .enh-elv-sleepleg { display: flex; justify-content: space-between; margin-top: 4px; font-size: 9.5px; color: var(--text-muted); }
+.enh-hub .enh-elv-sleepleg span { display: inline-flex; align-items: center; gap: 4px; }
+.enh-hub .enh-elv-sleepleg i { width: 7px; height: 7px; border-radius: 2px; background: var(--dv-lav); }
+/* the caption: what the tapped station was */
+.enh-hub .enh-elv-cap {
+  display: flex; align-items: flex-start; gap: 8px; min-height: 36px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--divider); font-size: 12.5px; line-height: 1.4; color: var(--text-secondary);
+}
+.enh-hub .enh-elv-cap i { flex: 0 0 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: var(--dv-amber); opacity: 0.45; }
+.enh-hub .enh-elv-cap.is-on i { opacity: 1; box-shadow: 0 0 6px var(--dv-amber); }
+.enh-hub .enh-elv-cap span { min-width: 0; overflow-wrap: anywhere; }
+.enh-hub .enh-elv-cap b { color: var(--text-primary); font-weight: 600; }
+/* the footer: the door to the Test tab */
+.enh-hub .enh-elv-next {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; min-height: 32px;
+  margin-top: 8px; padding: 0; border: 0; background: none; cursor: pointer; text-align: left;
+  font: inherit; font-size: 12px; color: var(--text-secondary);
+}
+.enh-hub .enh-elv-next span { min-width: 0; }
+.enh-hub .enh-elv-next b { color: var(--text-primary); font-weight: 600; }
+/* loading: a quiet block of the card's height (no copy, no jump when the curve lands);
+   a failed read: the house retryable error on the bare ground */
+.enh-hub .enh-elv.enh-elv-skel {
+  min-height: 372px; padding: 0;
+  background: linear-gradient(100deg, rgba(245, 239, 230, 0.03) 30%, rgba(245, 239, 230, 0.06) 50%, rgba(245, 239, 230, 0.03) 70%);
+  background-size: 300% 100%;
+}
+.enh-hub .enh-elv.enh-elv-err { padding: 0; }
+/* too few measurements: free space — dashed, no glass (bible §3 rank 4) */
+.enh-hub .enh-elv.enh-elv-empty.uv-empty { padding: 18px 16px; border-radius: 20px; text-align: center; }
+.enh-hub .enh-elv-empty > .t-ico {
+  margin: 0 auto 4px;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 14px color-mix(in srgb, var(--c) 40%, transparent));
+}
+.enh-hub .enh-elv-empty p { margin: 6px 0 12px; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+
+/* Célok állása: ONE coral glass; restate the body over the old skin (U2 rule 11) */
 .enh-hub .enh-goalcard.glass {
   --c: var(--dv-coral);
-  border: 0; border-radius: 22px; padding: 14px 15px; margin-top: 6px;
+  display: block; border: 0; border-radius: 22px; padding: 14px 15px; margin-top: 6px;
   color: var(--text-primary);
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
@@ -21104,49 +21201,31 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   background: color-mix(in srgb, var(--c) 11%, rgba(245, 239, 230, 0.03));
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent);
 }
-/* the dimension chips: flat, in their own dimension colour */
-.enh-hub .enh-lgdims { gap: 6px; margin: 10px 0 0; }
-.enh-hub .enh-lgdims .lg-goalchip {
-  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  padding: 4px 9px; gap: 5px; font-size: 11px; font-weight: 600;
-  color: color-mix(in srgb, var(--dc) 75%, var(--text-primary));
-  background: color-mix(in srgb, var(--dc) 11%, rgba(245, 239, 230, 0.03));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dc) 30%, transparent);
-}
-.enh-hub .enh-lgdims .lg-goalchip i { box-shadow: 0 0 6px var(--dc); }
-/* the three mini-cells: lit flat cells (never glass inside glass, U1 rule 5) */
-.enh-hub .enh-goalcard .mz-mcells { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; margin-top: 12px; }
-.enh-hub .enh-goalcard .mz-mcells span {
-  padding: 5px 0 4px; border-radius: 10px; color: var(--text-secondary);
-  background: color-mix(in srgb, var(--c) 10%, rgba(245, 239, 230, 0.03));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent);
-}
-.enh-hub .enh-goalcard .mz-mcells .mz-c-sage  { --c: var(--dv-sage); }
-.enh-hub .enh-goalcard .mz-mcells .mz-c-lav   { --c: var(--dv-lav); }
-.enh-hub .enh-goalcard .mz-mcells .mz-c-coral { --c: var(--dv-coral); }
-.enh-hub .enh-goalcard .mz-mcells b { font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--c) 85%, var(--text-primary)); }
-.enh-hub .enh-goalcard .mz-mcells small {
-  font-size: 9px; font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 1; color: var(--text-muted);
-}
-/* no active goal: the ＋ Új cél door is free space — dashed, no glass (bible §3 rank 4) */
+/* the rows: flat, each in its own accent (never glass inside glass, U1 rule 5) */
+.enh-hub .enh-goalcard .enh-grows { display: grid; gap: 10px; margin-top: 12px; }
+.enh-hub .enh-goalcard .enh-grow { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.enh-hub .enh-goalcard .enh-grow .t-ico { width: 28px; height: 28px; }
+.enh-hub .enh-gbody { flex: 1; min-width: 0; display: grid; gap: 4px; }
+.enh-hub .enh-gline { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.enh-hub .enh-gline strong { min-width: 0; font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere; }
+.enh-hub .enh-gline b { flex: none; font-size: 13px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.enh-hub .enh-gline b.enh-garr { font-size: 17px; font-weight: 400; }
+.enh-hub .enh-gbody small { font-size: 11px; color: var(--text-secondary); }
+/* no goal at all: the ＋ Első cél door is free space — dashed, no glass (bible §3 rank 4) */
 .enh-hub .enh-newgoal.uv-empty {
-  --c: var(--dv-coral); margin-top: 6px; border-radius: 20px;
+  --c: var(--dv-coral); display: block; margin-top: 6px; padding: 14px; border-radius: 20px; text-align: center;
   border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent);
   background: rgba(245, 239, 230, 0.025); box-shadow: none;
-  font-size: 15px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary));
 }
+.enh-hub .enh-newgoal strong { font-size: 15px; font-weight: 600; color: color-mix(in srgb, var(--c) 75%, var(--text-primary)); }
+.enh-hub .enh-newgoal small { display: block; margin-top: 4px; font-size: 11px; font-weight: 500; color: var(--text-muted); }
 
-/* the mosaic: every tile is glass in its own accent (--c on the tile itself, U1 rule 4) */
-.enh-hub .mz-mosaic { gap: 10px; }
-.enh-hub .enh-t-celok   { --c: var(--dv-coral); --i: 2; }
-.enh-hub .enh-t-suly    { --c: var(--dv-sky);   --i: 3; }
-.enh-hub .enh-t-alvas   { --c: var(--dv-lav);   --i: 4; }
-.enh-hub .enh-t-growth  { --c: var(--dv-lav);   --i: 5; }
-.enh-hub .enh-t-naplo   { --c: var(--text-secondary); --i: 6; }
-.enh-hub .enh-t-emberek { --c: var(--dv-rose);  --i: 7; }
-.enh-hub .enh-t-rutin   { --c: var(--dv-amber); --i: 8; }
+/* the tiles: glass in their own accent (--c on the tile itself, U1 rule 4) */
+.enh-hub .mz-mosaic { gap: 10px; margin-top: 4px; }
+.enh-hub .enh-t-growth  { --c: var(--dv-lav); }
+.enh-hub .enh-t-emberek { --c: var(--dv-rose); }
 .enh-hub .mz-tile.enh-tile.glass {
-  border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 128px; gap: 4px;
+  border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 112px; gap: 4px;
   align-items: flex-start; text-align: left; color: var(--text-primary);
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
@@ -21164,25 +21243,36 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
 }
 .enh-hub .enh-tile .mz-tile-line {
-  text-align: left; font-size: 14px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3;
+  text-align: left; font-size: 13px; font-weight: 600; letter-spacing: -0.2px; line-height: 1.3;
   color: var(--text-primary); overflow-wrap: anywhere;
 }
-/* Rutin: the wide row tile */
-.enh-hub .mz-tile.enh-tile.mz-tile-row.glass { flex-direction: row; align-items: center; gap: 12px; min-height: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-spotwrap { order: 0; margin: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-top { margin-top: 0; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-line { margin-top: 2px; font-size: 14px; }
-.enh-hub .enh-tile.mz-tile-row .mz-tile-line small {
-  display: block; margin: 2px 0 0; font-size: 10.5px; font-weight: 500; color: var(--text-muted);
-}
-.enh-hub .enh-tile.mz-tile-row .mz-chev { font-size: 20px; color: var(--text-muted); }
-.enh-hub .enh-tile:focus-visible, .enh-hub .enh-goalcard:focus-visible, .enh-hub .enh-newgoal:focus-visible {
+.enh-hub .enh-tile:focus-visible, .enh-hub .enh-goalcard:focus-visible, .enh-hub .enh-newgoal:focus-visible,
+.enh-hub .enh-idstrip:focus-visible, .enh-hub .enh-wkcta:focus-visible, .enh-hub .enh-elv-pill:focus-visible,
+.enh-hub .enh-elv-stn:focus-visible, .enh-hub .enh-elv-next:focus-visible {
   outline: 2px solid var(--c); outline-offset: 2px;
 }
 
+/* One-shot entrance (bible §6): the curve is drawn, then its furniture fades in and the sleep
+   bars grow. Armed by the entrance group (`.mz-play`), so a back-navigation — like reduced
+   motion — shows the final frame: the static rules above ARE the final frame. */
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes enh-xp-fill { from { stroke-dasharray: 0 100; } }
-  .enh-hub .enh-xpprog { animation: enh-xp-fill 1.1s var(--uv-ease) 0.2s both; }
+  @keyframes enh-elv-draw {
+    from { stroke-dasharray: 100 100; stroke-dashoffset: 100; }
+    to { stroke-dasharray: 100 100; stroke-dashoffset: 0; }
+  }
+  @keyframes enh-elv-fade { from { opacity: 0; } }
+  @keyframes enh-elv-grow { from { transform: scaleY(0); } }
+  .enh-hub .enh-elv-skel { animation: wkh-shim 1.2s linear infinite; }
+  .mz-play .enh-elv-curve { animation: enh-elv-draw 1.6s var(--uv-ease) 0.2s both; }
+  .mz-play .enh-elv-area { animation: enh-elv-fade 0.8s ease 1.2s both; }
+  .mz-play .enh-elv-tgt, .mz-play .enh-elv-proj, .mz-play .enh-elv-tgl, .mz-play .enh-elv-endp {
+    animation: enh-elv-fade 0.6s ease 1.6s both;
+  }
+  .mz-play .enh-elv-stn { animation: enh-elv-fade 0.6s ease both; animation-delay: calc(1.5s + var(--i, 0) * 90ms); }
+  .mz-play .enh-elv-sleep i {
+    transform-origin: bottom; animation: enh-elv-grow 0.7s var(--uv-ease) both;
+    animation-delay: calc(0.3s + var(--i, 0) * 40ms);
+  }
 }
 
 /* ── /uveg en hub ── */
@@ -21314,8 +21404,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
   min-height: 170px; border-radius: 20px; text-align: center; color: var(--text-primary);
 }
+.enc-celok .enc-newtile.is-wide { grid-column: 1 / -1; flex-direction: row; gap: 12px; min-height: 84px; }
+.enc-celok .enc-newtile.is-wide .enc-newtile-txt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
 .enc-celok .enc-newtile b { font-size: 15px; font-weight: 600; }
 .enc-celok .enc-newtile small { font-size: 10.5px; color: var(--text-muted); }
+/* the weight goal: the first tile, same size as a life-goal tile; the percentage takes the arrow's slot */
+.enc-celok .enc-wgoal-pct { font-size: 22px; font-weight: 600; letter-spacing: -0.6px; color: color-mix(in srgb, var(--c) 80%, var(--text-primary)); }
+.enc-celok .enc-wgoal .uv-bar { margin-top: 6px; }
+.enc-celok .enc-wgoal-pace { margin-top: auto; font-size: 11px; color: var(--text-secondary); }
+/* pending: an inert tile of the same size, no text, no sweep */
+.enc-celok .enc-wgoal-skel.glass { min-height: 170px; border-radius: 20px; opacity: 0.55; pointer-events: none; }
+.enc-celok .enc-quiet { margin: 0; padding: 6px 2px 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); }
 /* parked / draft / done rows: flat cells */
 .enc-celok .lg-parkrow {
   display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 11px 13px 11px 11px;
@@ -22767,6 +22866,32 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 
 /* ── /uveg en alvas ── */
 
+/* ── uveg en test (mezo-lhqw7) ── /me/weight + /me/sleep: the Test tab head and the bio row ── */
+.ent-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 16px 0; }
+.ent-seg {
+  display: flex; width: fit-content; max-width: 100%; padding: 3px; gap: 2px;
+  border-radius: 999px; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+}
+.ent-seg-btn {
+  min-width: 0; min-height: 36px; padding: 7px 15px; border: 0; border-radius: 999px; cursor: pointer;
+  font: 600 12.5px/1 var(--ff-body); color: var(--text-secondary); background: none;
+}
+.ent-seg-btn.is-on {
+  color: #191614; background: var(--dv-sky);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dv-sky) 45%, transparent);
+}
+.ent-seg-btn:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+/* 44px touch target without changing the drawn 36px pill: an invisible hit zone (the hub pills' idiom) */
+.ent-seg-btn { position: relative; }
+.ent-seg-btn::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.ent-bio {
+  display: block; margin: 18px auto 0; border: none; background: none; font-family: inherit; cursor: pointer;
+  min-height: 44px; padding: 4px 12px; font-size: 12px; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums;
+}
+.ent-bio:focus-visible { outline: 2px solid var(--dv-sky); outline-offset: 2px; }
+/* ── /uveg en test ── */
+
 /* ── uveg en het (mezo-me75u.6) ── /me/week(+/elemzes,/napok,/felfedezesek,/tanulsagok) ── */
 /* Reference: docs/design_2.0/prototypes/src/uveg-en-body.html `het()`, `elemzes()`, `napok()`,
    `felfedezesek()`, `tanulsagok()` (owner OK). Every rule is scoped to a page root — `.wkh-page`
@@ -23893,9 +24018,33 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 @media (prefers-reduced-motion: reduce) {
   .gra-page .gr-streak .gr-flame { animation: none; }
 }
+/* Fejlődés hub tiles (mezo-lhqw7 Task 8): the three hand/kit tiles are glass siblings of the Én hub
+   tiles — one `--c` each (lav / sky / sage), the glass body restated so `.mz-tile` / `.mz-w-*` cannot
+   win (rule 11). Everything inside (art, eyebrow, line, pulse dot) stays flat. */
+.gr-tile-sky { --c: var(--dv-sky); }
+.mz-tile.gr-tile.glass {
+  border: 0; border-radius: 20px; padding: 13px 13px 12px; min-height: 112px; gap: 4px;
+  align-items: flex-start; text-align: left; color: var(--text-primary);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
+    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.6));
+  box-shadow:
+    0 16px 30px -16px rgba(0, 0, 0, 0.75),
+    0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
+    inset 0 1px 0 rgba(255, 244, 230, 0.1),
+    inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
+}
+.gr-tile .mz-tile-top { width: 100%; }
+.gr-tile .mz-eyebrow {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1.3px;
+  color: color-mix(in srgb, var(--c) 70%, var(--text-primary));
+}
+.gr-tile .mz-tile-line { text-align: left; color: var(--text-primary); overflow-wrap: anywhere; }
+.gr-tile .gr-pulse { background: var(--c); box-shadow: 0 0 8px color-mix(in srgb, var(--c) 70%, transparent); }
+.gr-tile:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 /* ── /uveg en2 novekedes ── */
 
-/* ── uveg en2 rutin (mezo-me75u.7) ── /me/rutin(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) + rutin sheets ── */
+/* ── uveg en2 rutin (mezo-me75u.7) ── /nap/rutin/epites(+/uj,/lanc/:key,/szokasok,/szokas/:key(+/szerkesztes)) (moved from /me/rutin, mezo-lhqw7) + rutin sheets ── */
 /* Ranking (bible §3.4, prototype uveg-en2.html #rutin/#lanc/#szokasok/#szokas/#szerk/#uj, sheets
    `ai`/`chain`/`anchor`). Every rule is scoped to a page root — `.rt-uv` plus one of `.rt-hub`,
    `.rt-lanc`, `.rt-szokasok`, `.rt-szokas`, `.rt-szerk`, `.rt-wiz` — or to the rutin sheets
@@ -30089,7 +30238,6 @@ main.settings-page {
 .ld-sport-note em { color: var(--text-muted); }
 .ld-map-sides span { color: var(--text-muted); }
 .mm-region-head span { color: var(--text-muted); }
-.tv-custom .eyebrow { color: var(--text-muted); }
 .uvs-sheet .label-mono { color: var(--text-muted); }
 
 /* 2 · lit coral controls: accent fill, dark ink, accent glow */
@@ -30163,7 +30311,7 @@ main.settings-page {
 /* /me/goals/weight: the lit suggestion-count badge carries dark ink (bible U5 rule 36) */
 .goal-hub-page .goal-hub-mosaic .goal-tile-badged .mz-badge { color: #191614; }
 
-/* /me/rutin/szokasok: a stage with no habit yet — muted numeral + dim dots, legible label */
+/* /nap/rutin/szokasok: a stage with no habit yet — muted numeral + dim dots, legible label */
 .rt-szokasok .rt-ftile.is-zero { opacity: 1; }
 .rt-szokasok .rt-ftile.is-zero:not(.on) { background: transparent; }
 .rt-szokasok .rt-ftile.is-zero:not(.on) b { color: var(--text-muted); }
@@ -30568,3 +30716,62 @@ main.settings-page {
 .tud9 .th-merge-strip { display: flex; align-items: center; gap: 8px; margin: 6px 16px 8px; padding: 10px 12px; border-radius: 14px; font-size: 12.5px; line-height: 1.4; color: var(--text-primary);
   background: color-mix(in srgb, var(--dv-sage) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--dv-sage) 30%, transparent); }
 .tud9 .th-merge-strip .th-link { margin-left: auto; white-space: nowrap; color: var(--dv-sage); font-weight: 650; text-decoration: none; }
+
+/* ── uveg sajat edzes (mezo-7ugb5) ── /train/custom/new, /train/custom/:id ── */
+/* The composer is a FORM: only the name card wears glass; the recipe rows are flat hairline
+   cells that expand in place; the only lit control is Indítás ma (rule 29). */
+.uvx-cw { --c: var(--dv-coral); overflow-x: clip; }
+.uvx-cw-name { display: block; margin: 0 16px; padding: 13px 15px; border-radius: 20px; }
+.uvx-cw-name .uv-eyebrow { color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); }
+.uvx-cw-name .uvs-inp { margin-top: 6px; font-size: 16px; font-weight: 600; }
+.uvx-cw-h { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 18px 10px; }
+.uvx-cw-h em { font-style: normal; font-size: 11.5px; color: var(--text-muted); }
+.uvx-cw-list { padding: 0 16px; }
+.uvx-cw-row { border-radius: 18px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); min-width: 0; }
+.uvx-cw-row.is-open { background: rgba(245, 239, 230, 0.06); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 38%, transparent); }
+.uvx-cw-head { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%;
+  padding: 11px 13px; text-align: left; background: none; border: 0; color: inherit; cursor: pointer; }
+.uvx-cw-nm { min-width: 0; }
+.uvx-cw-nm strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.uvx-cw-nm small { display: block; margin-top: 2px; font-size: 11px; color: var(--text-secondary); }
+.uvx-cw-chev { font-size: 16px; color: var(--text-secondary); transition: transform 0.25s; }
+.uvx-cw-row.is-open .uvx-cw-chev { transform: rotate(90deg); }
+.uvx-cw-warn { display: flex; align-items: center; gap: 6px; margin: 0 13px 8px 51px; font-size: 11px; line-height: 1.35; color: #FFB39C; }
+.uvx-cw-panel { display: grid; gap: 10px; padding: 2px 13px 13px; }
+.uvx-cw-grp .uv-eyebrow { display: block; margin-bottom: 5px; font-size: 9.5px; color: var(--text-secondary); }
+.uvx-cw-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.uvx-cw-st { display: grid; grid-template-columns: 28px minmax(0, 1fr) 28px; align-items: center; gap: 2px; padding: 5px;
+  border-radius: 13px; background: rgba(245, 239, 230, 0.04); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvx-cw-st button { width: 28px; height: 28px; border-radius: 50%; border: 0; display: grid; place-items: center; font-size: 16px;
+  color: color-mix(in srgb, var(--c) 75%, #fff); background: rgba(245, 239, 230, 0.06); cursor: pointer; }
+.uvx-cw-st span { min-width: 0; text-align: center; }
+.uvx-cw-st b { display: block; font-size: 16px; font-weight: 600; line-height: 1.1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.uvx-cw-st b.is-auto { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+.uvx-cw-st small { display: block; font-size: 9.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.uvx-cw-vol { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font-size: 12.5px; color: var(--text-secondary); cursor: pointer; text-align: left; }
+.uvx-cw-sw { position: relative; flex: none; width: 38px; height: 22px; border-radius: 11px; background: rgba(245, 239, 230, 0.1); transition: background 0.2s; }
+.uvx-cw-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #F5EFE6; transition: transform 0.2s; }
+.uvx-cw-vol.is-on { color: var(--text-primary); }
+.uvx-cw-vol.is-on .uvx-cw-sw { background: var(--c); }
+.uvx-cw-vol.is-on .uvx-cw-sw::after { transform: translateX(16px); }
+.uvx-cw-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.uvx-cw-act { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 6px; border: 0; border-radius: 999px; font-size: 12px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.uvx-cw-act:disabled { opacity: 0.35; cursor: default; }
+.uvx-cw-act.is-warn { margin-left: auto; color: #FFB39C; background: rgba(255, 126, 92, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 126, 92, 0.35); }
+.uvx-cw-empty { margin: 0 16px; padding: 14px; border-radius: 18px; font-size: 12.5px; text-align: center; color: var(--text-secondary);
+  background: rgba(245, 239, 230, 0.02); box-shadow: inset 0 0 0 1px var(--divider); }
+.uvx-cw-add { display: flex; align-items: center; justify-content: center; gap: 8px; width: calc(100% - 32px); margin: 12px 16px 0; padding: 14px;
+  border-radius: 20px; border: 1.5px dashed color-mix(in srgb, var(--c) 45%, transparent); background: rgba(245, 239, 230, 0.02);
+  font-size: 14px; font-weight: 600; color: color-mix(in srgb, var(--c) 70%, var(--text-primary)); cursor: pointer; }
+.uvx-cw-cta { display: flex; gap: 9px; padding: 16px 16px 4px; }
+.uvx-cw-cta > * { flex: 1; justify-content: center; min-height: 48px; }
+.uvx-cw-save { flex: 0.8 !important; display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 999px; font-size: 14px; font-weight: 600;
+  color: var(--text-secondary); background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); cursor: pointer; }
+.uvx-cw-save:disabled { opacity: 0.45; cursor: default; }
+.uvx-cw-hint { margin: 6px 16px 0; font-size: 11.5px; text-align: center; color: var(--text-secondary); }
+.uvx-cw-ghost { margin: 24px 16px; padding: 22px; border-radius: 20px; text-align: center; font-size: 13px; color: var(--text-secondary); }
+:is(.uvx-cw-head, .uvx-cw-st button, .uvx-cw-vol, .uvx-cw-act, .uvx-cw-add, .uvx-cw-save):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--c) 70%, var(--text-primary)); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .uvx-cw-chev, .uvx-cw-sw, .uvx-cw-sw::after { transition: none; } }
+/* ── /uveg sajat edzes ── */

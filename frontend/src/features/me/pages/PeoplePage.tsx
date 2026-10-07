@@ -7,7 +7,7 @@
 // feed is GONE from here — those live in the sibling "A köröm" / "Említések" pages Task
 // 3–5 own. This page is only a hero + 3-cell stat strip + 4 navigation tiles (each its
 // own route, `navigate()`, never a local show/hide) + the Mezo-band chat handoff. ADR 0032
-// still applies: this page owns its own header (‹ Én back chip + Log/Új személy actions),
+// still applies: this page owns its own header (‹ Hol tartok back chip + Log/Új személy actions),
 // unchanged from the pre-hub PeoplePage (same PersonLogSheet/PersonEditSheet wiring).
 //
 // Honest states (per handoff and Task 1's `hubLines`): a null down/up person renders
@@ -53,7 +53,7 @@ export function PeoplePage() {
 
   return (
     <MozaikPage tone="rose" className="ppl-page ppl-hub">
-      <PageHead glass onBack={() => navigate('/me')} label="Én">
+      <PageHead glass onBack={() => navigate('/me')} label="Hol tartok">
         {/* mezo-06o0.12 — the back chip alone on the left, BOTH actions against the right edge,
             Log first (the `margin-left: auto` on the first action). Üveg: Log is the lit rose
             pill, „＋ Új személy" the flat one — neither paints itself in the page wash

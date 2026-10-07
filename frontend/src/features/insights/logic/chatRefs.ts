@@ -40,7 +40,7 @@ const KIND_LABELS: Record<string, string> = {
   Protocol: 'Stack',
   Goal: 'Cél',
   LifeGoal: 'Életcél',
-  Growth: 'Growth',
+  Growth: 'Fejlődés',
   Practice: 'Gyakorlat',
   TrainingPlan: 'Edzésterv',
   ExerciseRecord: 'Rekord',

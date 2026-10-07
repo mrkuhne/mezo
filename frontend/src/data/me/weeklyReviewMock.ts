@@ -41,6 +41,8 @@ export function mockWeeklyReview(startIso: string): WeeklyReview | null {
     highlights: HIGHLIGHTS.map((h) => ({ ...h })),
     generatedAt: `${addDays(startIso, 7)}T06:15:00Z`,
     stale: false,
+    wentWell: 'A fehérjecélt öt napon tartottad, és a legjobb alvásod az edzésnappal esett egybe.',
+    watchOut: 'Két késői vacsora után felszínesebb volt az alvásod.',
   }
 }
 

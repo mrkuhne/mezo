@@ -250,7 +250,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
         voice: 'A medál a lelogolt szettekből születik, és XP-ként a szintedben is megjelenik.',
         links: [
           { to: '/train/week', label: 'Heti', icon: 'i-heti', effect: 'a lezárt alkalmakból' },
-          { to: '/me/growth', label: 'Growth', icon: 'i-growth', effect: 'XP-ként is számít' },
+          { to: '/me/growth', label: 'Fejlődés', icon: 'i-growth', effect: 'XP-ként is számít' },
           { to: '/train/mai', label: 'Mai nap', icon: 'i-edzes' },
         ],
       },

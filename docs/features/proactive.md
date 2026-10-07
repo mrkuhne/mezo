@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-29
+updated: 2026-10-06
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -643,7 +643,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 **generated narrative** on top of that data, which IS proactive-owned.
 
 - **An eighth owned table** — `weekly_review` (UUID PK, `created_by`, soft-delete; `week_start
-  date` = the ISO Monday the review is FOR, `summary text` = the review prose, `day_notes jsonb` =
+  date` = the ISO Monday the review is FOR, `summary text` = the review prose, **`went_well text` / `watch_out text`** (nullable, `mezo-lhqw7` — the two one-sentence hero lines, see the guard below; rows generated before that slice carry null), `day_notes jsonb` =
   a typed envelope of short per-day comments, `highlights jsonb` = a typed envelope of
   code-collected, model-selected refs (the `memoir.anchors` idiom — since `mezo-d20.7.7` each entry
   also carries a nullable `refId`, the id of the pattern/fact/life-event/memoir it was collected
@@ -659,7 +659,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   confirmed/reinforced pattern events + newly-created knowledge facts + active `LIFE_EVENT` graph
   nodes + the week's own memoir (if any) + its predictions, plus a **numbered anchor-candidate
   list** → **ONE smart-tier `CompanionLlm.completeSmart` call** answering strict JSON
-  `{summary, dayNotes, anchorIndexes}` (marker `HETI-ELEMZES-FELADAT`) → defensive parse →
+  `{summary, dayNotes, anchorIndexes, candidateFacts, wentWell?, watchOut?}` (marker `HETI-ELEMZES-FELADAT`) → defensive parse →
   **bounds-checked, deduped index→highlight resolution** (anchors are model-SELECTED, never
   invented — the memoir/prediction ref rule) + day-notes filtered to dates inside the week.
   **Empty week (no day carries ANY logged data) or an unusable answer (blank/null summary) ⇒ NO
@@ -689,8 +689,22 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   the two are deliberately separate jobs (one narrates the past, one plans the future). Gated on a
   THIRD switch `mezo.techcore.cron.weekly-review-job.enabled` (`WEEKLY_REVIEW_JOB_SWITCH`) on top
   of the dual companion+proactive gate; idempotent, per-user failures isolated, no backfill.
-- **Three reads/writes** (`api/feature/proactive/proactive.yml`, `WeeklyReviewController`) — all
-  three share the SAME `requireMonday` 400 guard (`WEEKLY_REVIEW_START_NOT_MONDAY`), deliberately
+- **Hero lines `wentWell` / `watchOut` (`mezo-lhqw7`)** — two optional one-sentence lines the
+  Én hub's week hero will show; `WeeklyReviewResponse` carries both as nullable strings. Each
+  passes `WeeklyReviewGenerator.heroLine`/`heroLineOf` before persisting: stripped; blank ⇒ null;
+  longer than **160** chars ⇒ null; a non-string JSON value ⇒ null (only that line); and **a
+  numeral that does not occur in the narrow `weekFacts` grounding text ⇒ null**
+  (`ProseNumberGuard`). `weekFacts` is built in `gather` from the week's own day lines, pattern
+  events, new facts, life events and the wider this-week context sections, with ISO dates
+  stripped; it deliberately EXCLUDES the header, the character dossier, the memoir title, the
+  predictions, the long-term memory block and the anchor-candidate numbering, so a number can only
+  be grounded in this week's own data. A rejected line never drops the review. Because that guard
+  only knows raw per-day tokens (a legitimate aggregate like „5 napon" or „átlag 7,5 óra" would be
+  nulled and the hero would fall back), the prompt asks for both lines **without digits** — numbers
+  spelled out or avoided; the guard remains the net for an answer that ignores it.
+- **Four operations** (`api/feature/proactive/proactive.yml`, served by `ProactiveController` —
+  there is no `WeeklyReviewController`; only the test class is `WeeklyReviewControllerIT`) — all
+  four (GET, regenerate, digest, lessons) share the SAME `requireMonday` 400 guard (`WEEKLY_REVIEW_START_NOT_MONDAY`), deliberately
   **NOT lazy** on the primary GET (a change from most proactive reads): `GET
   /api/proactive/weekly-review/{start}` returns the row **as-is**, `404 RESOURCE_NOT_FOUND` when
   the job hasn't produced one yet (the job owns generation — a lazy GET here would let a client
@@ -813,7 +827,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   already depends on companion elsewhere in this doc; a direct `companion.service →
   proactive.repository` import would close a NEW slice cycle, `ArchitectureTest.
   feature_slices_are_cycle_free`).
-- **The FE surface (`/me/week`'s `WeekReviewCard`/`WeekDiscoveries`, `mezo-p2tr`)** — this is a
+- **The FE surface (`/me/week`'s hub and view-pages — `WeekHubPage`, `WeekAnalysisPage`, `WeekDaysPage`, `WeekDiscoveriesPage` — `mezo-p2tr`; `WeekReviewCard` is dead code)** — this is a
   **`me`-owned page**, not an Insights tab (unlike every other proactive surface in this doc): it
   RETIRES the old Insights „Heti" tab outright (`useWeekly`/`WeeklyPage` deleted,
   `/insights/weekly` now redirects to `/me/week`, [`insights.md` §2.2](insights.md)) rather than
@@ -841,7 +855,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 | Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); `ChallengeGenerator` (00:05 pre-generate cron for the planned day, lazy-on-prep fallback); deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` 00:05 pre-generate + outcome-cron backstop (three-switch). |
 | Weekly review (table + generator + Monday-06:50 backward job + read/regenerate/digest) | 🟢 WR (`mezo-p2tr`) | `weekly_review` table (ISO-Monday identity, partial unique, jsonb day-notes + highlights); smart-tier `WeeklyReviewGenerator` (gather = `MeWeekService` day lines + confirmed patterns + new facts + life events + memoir + predictions → ONE `completeSmart`, model-selected highlights, honest-empty); `WeeklyReviewJob` (Mon 06:50, backward — the JUST-FINISHED week, three-switch); `GET/POST` read/regenerate/digest (never lazy on the primary GET, 409 while the week is in progress). `WEEKLY_REVIEW_READY` app-notification + `WEEKLY_REVIEW` Monday-10:00 push (retires the old `WEEKLY` category, kept `@Deprecated`). |
 | Anchored chat conversations (`ai_conversation.context_kind/.context_date`) | 🟢 WR (`mezo-p2tr`) | Companion-owned: `WeekContextRenderer`'s `[Heti adatok]` block (via the `WeekReviewSource` port this doc's `WeekReviewSourceAdapter` implements) + `ChatService.openingTurn`'s assistant-only server-generated first turn. Full detail: [companion.md](companion.md). |
-| Frontend (`/me/week`'s `WeekReviewCard`/`WeekDiscoveries`, chat handoff) | 🟢 WR (`mezo-p2tr`) | `useWeeklyReview()` (review + digest + regenerate) + `useChatHandoff()`; RETIRES the old Insights „Heti" tab (`/insights/weekly` → `/me/week` redirect) rather than un-ghosting a new one. Full anatomy: [me.md](me.md) `Heti` §2. |
+| Frontend (`/me/week`'s `WeekHubPage`/`WeekAnalysisPage`/`WeekDaysPage`/`WeekDiscoveriesPage`, chat handoff) | 🟢 WR (`mezo-p2tr`) | `useWeeklyReview()` (review + digest + regenerate) + `useChatHandoff()`; RETIRES the old Insights „Heti" tab (`/insights/weekly` → `/me/week` redirect) rather than un-ghosting a new one. Full anatomy: [me.md](me.md) `Heti` §2. |
 | Frontend (ActiveWorkoutPage challenge surface) | 🟢 HBWI | `useChallenges()`/`useChallengeActions()` (`data/train/challengeHooks.ts`); `ActiveWorkoutPage` prep feeds the live list into `ChallengesCarousel`, accepted map + `decide()` from server status in live (local toggle in mock, byte-parity); `ChallengeCard` honest states — „tanulom" on null confidence, tools hidden in live, `hit/miss/inconclusive` outcome chip + line with the accept/skip row hidden. |
 | **Epic status** | ✅ COMPLETE | Original 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29); **`mezo-gst9` (2026-08-15) then redesigned B1.1/B1.2/H1 into the unified companion feed above** (W1/W2/P1/P2/HBWI unaffected); **`mezo-p2tr` (2026-08-27) then added WR — the backward-looking weekly review** (a post-epic addition, the HBWI precedent: a new proactive-idiom surface layered on top of a finished epic, this one riding the `me`-owned `/me/week` page rather than an Insights tab). Every prose/forecast Insights + Today + `/me/week` surface is honest and real — and reaches the lock screen too. |
 
@@ -3270,7 +3284,12 @@ per subscore over the engine's **six** dimensions (`nutrition`/`quality`/`traini
 MeWeekControllerIT.java` covers the 7-day shape + the `ME_WEEK_START_NOT_MONDAY` 400 +
 weekly-aggregate math. `feature/proactive/service/WeeklyReviewGeneratorIT.java` covers the empty-week
 no-row gate, the idempotent existing-row short-circuit, bounds-checked anchor resolution, and the
-`WEEKLY_REVIEW_READY` notification emission. `feature/proactive/controller/WeeklyReviewControllerIT.java`
+`WEEKLY_REVIEW_READY` notification emission; since `mezo-lhqw7` also the hero-line guard
+(`answerWithoutHeroLinesLeavesThemNull`, `aBlankHeroLineIsDroppedButTheReviewStays`,
+`heroLineCapsAtOneHundredSixtyCharacters`, `aNonStringHeroValueDropsOnlyThatLine`,
+`heroLineGroundsOnNumeralsOfTheGivenFacts`, `weekFactsExcludeDatesAnchorIndexesAndMemoirNumbers`,
+`anUngroundedNumeralInAHeroLineIsRejected`). FE: `weeklyReviewHooks.test.ts` asserts the fields
+come through in real mode and are `undefined` on a row payload that omits them. `feature/proactive/controller/WeeklyReviewControllerIT.java`
 covers the never-lazy 404, the `stale` probe (re-probed on `regenerate` too, not hardcoded), the
 regenerate 409/404, and the digest's 400-on-non-Monday + otherwise-always-200 contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
 assistant-only opening turn, and its swallow-and-log failure path. FE: `frontend/src/data/me/
@@ -4124,7 +4143,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 
 **Weekly review — WR (`mezo-p2tr`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{WeeklyReviewEntity,WeeklyReviewDayNotesEnvelope,WeeklyReviewHighlightsEnvelope}.java` — the owned entity (`weekStart`/`summary`/`generatedAt` + two typed jsonb envelopes).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes, candidateFacts}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`; hands `candidateFacts` to `WeeklyLessonService` (mezo-d20.7.6). **Memória mindenhol S8** (`mezo-eq85.8`) added a `DailySummaryRepository` dependency (new — this class had none before) + `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryHighlightCandidates`/`firstChars` so the gather appends a `[Hosszú távú memória]` block and its ref candidates (UUID-parsed, unparseable ids skipped) into the numbered HORGONY-JELÖLTEK list.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java` — pure-code `gather` (the week's `MeWeekService.renderDayLine`s + confirmed pattern events + new facts + life events + memoir + predictions + a numbered anchor-candidate list) + one `CompanionLlm.completeSmart` + strict-JSON `{summary, dayNotes, anchorIndexes, candidateFacts, wentWell?, watchOut?}` parse + bounds-checked/deduped highlight resolution; `WEEKLY_REVIEW_MARKER = "HETI-ELEMZES-FELADAT"` + `PROMPT`; hands `candidateFacts` to `WeeklyLessonService` (mezo-d20.7.6); `heroLine`/`heroLineOf` + `HERO_LINE_MAX` + the `weekFacts` grounding text guard `wentWell`/`watchOut` (mezo-lhqw7). **Memória mindenhol S8** (`mezo-eq85.8`) added a `DailySummaryRepository` dependency (new — this class had none before) + `ObjectProvider<MemoryContextBlock>` + `memoryBlock`/`memoryHighlightCandidates`/`firstChars` so the gather appends a `[Hosszú távú memória]` block and its ref candidates (UUID-parsed, unparseable ids skipped) into the numbered HORGONY-JELÖLTEK list.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyLessonService.java` (mezo-d20.7.6) — „A hét tanulságai": `propose` (bounds-check + normalised dedupe against confirmed facts and EVERY existing candidate + the reused `max-candidates-per-turn` cap, writing `learned_fact` rows with `source=weekly_review`/`week_start`/`evidence`, no notification), `list` (the week's candidates WITH their decisions) and `archiveOpen` (the regenerate policy: decided candidates survive, open ones are archived with the review).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewJob.java` — the backward-looking Monday-06:50 `@Scheduled` cron (`weekStart = previousOrSame(MONDAY).minusWeeks(1)`, three-switch-gated `WEEKLY_REVIEW_JOB_SWITCH`, no backfill).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewService.java` — the read/regenerate service (`find`/`getResponse` with the `stale` best-effort probe; `regenerate` soft-delete + re-generate + RE-PROBES `stale` against the fresh row, 409 while the week is in progress).

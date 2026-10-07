@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-28
+updated: 2026-10-06
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -21,7 +21,7 @@ related: [goal-engine, growth, companion, me, today, train, ../research/entities
 
 # Life goals — Feature Documentation
 
-> One-line: general-purpose life goals ("Célok") at route `/me/goals` (tab "Én"), tagged to a
+> One-line: general-purpose life goals ("Célok") at route `/me/goals` (the Én **Célok** tab since `mezo-lhqw7` — a tab page: no back chip, an `.ent-head` row; the weight-goal `/me/goals/weight` page's back chip is „Célok” → `/me/goals`), tagged to a
 > PERMAH dimension and measured by 1–5 pillars drawn from a closed signal catalog.
 > **Status: slice 3 (`mezo-iizd.5`–`.7` engine, `.9`/`.4`/`.12` embedding) — ✅ backend CRUD/lifecycle/
 > catalog/AI-propose (slice 1) ✅ scorer core: `LifeGoalScorer` + 5 `SignalSource` adapters +
@@ -102,14 +102,14 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
 
 - **`/me/goals` → `CelokPage`** (`frontend/src/features/me/pages/CelokPage.tsx`) — the Célok
   hub. Hero: a six-arc `PermahRing` (`components/PermahRing.tsx`, one arc per dimension, lit
-  where an active goal exists, center = active-goal count) + one Hungarian line driven by
+  where an active goal exists, center = active life-goal count, captioned „életcél”) + one Hungarian line driven by
   `useLifeGoalToday()` — "A pillérek a meglévő naplódból számolnak. **{up}↗ · {flat}→ ·
   {down}↘** ezen a héten." with an `up`/`flat`/`down` tally over the active goals'
   `LifeGoalTodaySummary.arrow`s (an `insufficient` arrow is deliberately excluded from all three
   buckets rather than defaulting into `flat` — too little data must never masquerade as a
   direction), and the pre-existing empty-state copy when there are no active goals.
   A dimension-chip band (`DIMENSION_ORDER`, empty dimensions render grey — no fabricated value).
-  A `Mosaic` of one `LifeGoalTile` per **active** goal (`components/LifeGoalTile.tsx`, now showing
+  A `Mosaic` whose FIRST tile is the body-weight goal (`components/WeightGoalTile.tsx`, `mezo-lhqw7` S3; see the weight-goal entry below), then one `LifeGoalTile` per **active** goal (`components/LifeGoalTile.tsx`, now showing
   the goal's `today` dots) plus a dashed "＋ Új cél" tile. A parked-goals row below
   (`status='parked'` or `'draft'`) with a one-tap "Vissza" button that reactivates
   (`changeStatus(id, 'active')`). A "Jelek · mit figyel a rendszer" row at the bottom
@@ -188,15 +188,19 @@ every one of them renders NOTHING rather than a fabricated number when its sourc
   gate is `WeekHubPage`'s existing `running` boolean, the same one `WeekNextCard` uses.
 - **Weekly-review prompt · `ÉLETCÉLOK · A HÉT IRÁNYA`** — backend, see §5 and
   [`proactive.md`](proactive.md) §3.
-- **Célok hub · closed goals + Súlycél row** (`CelokPage`, `mezo-iizd.4`) — a `done` goal used to
+- **Célok hub · closed goals + the weight goal's entry** (`CelokPage`, `mezo-iizd.4`) — a `done` goal used to
   vanish from every surface even though `GET /api/life-goals` returns it; it now gets its own
   "Lezárt célok" section BELOW the mosaic (the mosaic is the tense of LIVE goals; a finished goal
-  is a memory), each row dimmed with a `✓`. Beneath the Jelek row, a **Súlycél** row carries the
-  body-weight goal's entry point (`{trajectory} · {current} → {target} kg`), since the Én-hub hero
-  stopped being that door — three honest states, `töltöm…` / `a súlycél most nem elérhető` (a
-  FAILED `/api/goals` read) / `nincs aktív súlycél`, never a network error reported as an absence.
+  is a memory), each row dimmed with a `✓`. The body-weight goal's entry point (`{trajectory} ·
+  {current} → {target} kg`) was a **Súlycél** row beneath the Jelek row; since `mezo-lhqw7` S3 it is
+  the **first goal tile** of the mosaic (`WeightGoalTile`) and the row is gone. Its honest states
+  survive: pending → an inert skeleton tile / a FAILED `/api/goals` read → no tile + a quiet „a
+  súlycél most nem elérhető” line / no goal → a dashed „＋ Súlycél” tile; never a network error
+  reported as an absence. The PERMAH centre caption is „életcél” (life goals only) and the header
+  count includes the weight goal.
   The hub hero's own sentence likewise splits loading from failure („A heti irány most töltődik"
-  vs „A heti irányt most nem sikerült lekérni").
+  vs „A heti irányt most nem sikerült lekérni"). With no active LIFE goal it reads „Még nincs aktív
+  életcélod. …” (`mezo-lhqw7` final review) — the header may still say „1 aktív” for the weight goal.
 - **Én hub · life-goal hero** (`EnHubPage`, `mezo-iizd.4`) — the coral weight track is retired; the
   hero is now the active goals' dimension chips + an `MCells` trio `emelkedik ↗ / tartja → /
   csúszik ↘` off `useLifeGoalToday`, opening `/me/goals`. An unresolved/failed `today` collapses

@@ -12,7 +12,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 function renderHub() {
   return render(<QueryWrapper><MemoryRouter initialEntries={['/me/goals']}>
-    <Routes><Route path="/me/goals" element={<CelokPage />} /><Route path="/me/goals/:id" element={<div>GOAL PAGE</div>} /><Route path="/me/goals/new" element={<div>WIZARD</div>} /><Route path="/me/goals/signals" element={<div>SIGNALS PAGE</div>} /><Route path="/me/goals/weight" element={<div>SULYCEL</div>} /></Routes>
+    <Routes><Route path="/me/goals" element={<CelokPage />} /><Route path="/me/goals/:id" element={<div>GOAL PAGE</div>} /><Route path="/me/goals/new" element={<div>WIZARD</div>} /><Route path="/me/goals/signals" element={<div>SIGNALS PAGE</div>} /><Route path="/me/goals/weight" element={<div>SULYCEL</div>} /><Route path="/me/goals/weight/new" element={<div>WEIGHT WIZARD</div>} /></Routes>
   </MemoryRouter></QueryWrapper>)
 }
 
@@ -22,8 +22,13 @@ test('renders the three active goals as tiles, Spanyol B2 parked, three live dim
   expect(screen.getByRole('button', { name: 'Side hustle' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Az utolsó barátnő' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Spanyol B2 · parkol/ })).toBeInTheDocument()
-  expect(screen.getByRole('img', { name: '3 aktív cél' })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: '3 életcél' })).toBeInTheDocument()
   expect(document.querySelectorAll('.lg-dimchip:not(.empty)')).toHaveLength(3)
+})
+
+test('is a tab page: no back chip', () => {
+  renderHub()
+  expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
 })
 
 test('hub shows arrow counters and live tile dots', async () => {
@@ -63,7 +68,7 @@ test('the parked row exposes two distinct focusable buttons — navigate and Vis
 test('Vissza on a parked goal re-activates it without navigating', async () => {
   renderHub()
   fireEvent.click(screen.getByRole('button', { name: 'Spanyol B2 · vissza aktívra' }))
-  await waitFor(() => expect(screen.getByRole('img', { name: '4 aktív cél' })).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByRole('img', { name: '4 életcél' })).toBeInTheDocument())
   expect(screen.queryByText('GOAL PAGE')).not.toBeInTheDocument()
 })
 
@@ -76,7 +81,7 @@ describe('real mode', () => {
     server.use(http.get(`${API_BASE}/api/life-goals`, () => new Promise(() => {})))
     renderHub()
     expect(screen.queryByText(/0 aktív/)).not.toBeInTheDocument()
-    expect(screen.queryByRole('img', { name: /aktív cél/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: /életcél/ })).not.toBeInTheDocument()
   })
 
   /**
@@ -114,30 +119,60 @@ describe('real mode', () => {
 
   /**
    * mezo-iizd.4 final review, finding 4: a FAILED /api/goals read reduces to the same empty shape
-   * as "no weight goal yet" — without `useGoal().isError` the row reported a network error as a
-   * measured „nincs aktív súlycél".
+   * as "no weight goal yet" — the error keeps its own quiet line, and no tile (not even the
+   * „＋ Súlycél" door) is offered for a goal that may well exist.
    */
-  test('a Súlycél sor egy elhasalt /api/goals olvasást NEM mond „nincs aktív súlycél"-nak', async () => {
+  test('an elhasalt /api/goals olvasás csendes sort kap — nem „nincs súlycél", nem csempe', async () => {
     server.use(http.get(`${API_BASE}/api/goals`, () => new HttpResponse(null, { status: 500 })))
     renderHub()
-    const row = await screen.findByRole('button', { name: /Súlycél/ })
-    await waitFor(() => expect(row).toHaveTextContent('a súlycél most nem elérhető'))
-    expect(row).not.toHaveTextContent('nincs aktív súlycél')
+    expect(await screen.findByText('a súlycél most nem elérhető')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Súlycél' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Új súlycél' })).toBeNull()
+    expect(screen.getByText('3 aktív · 1 parkol')).toBeInTheDocument()
   })
 
-  /**
-   * mezo-9r85, 2. tétel: a sor NEGYEDIK állapota — üres cél-lista. Mock módban a `useGoal`
-   * populált célt és hardcode-olt `isError: false`-t ad (goalHooks.ts), tehát ez az ág CSAK
-   * valós módban, üres listával mérhető — enélkül a „present" és az „error" ág futott, a
-   * „nincs aktív súlycél" pedig sosem.
-   */
-  test('a Súlycél sor „nincs aktív súlycél"-t mond üres cél-listára — nem hibát, nem töltést', async () => {
+  test('üres cél-lista → szaggatott „＋ Súlycél" csempe az első helyen', async () => {
     server.use(http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])))
     renderHub()
-    const row = await screen.findByRole('button', { name: /Súlycél/ })
-    await waitFor(() => expect(row).toHaveTextContent('nincs aktív súlycél'))
-    expect(row).not.toHaveTextContent('a súlycél most nem elérhető')
-    expect(row).not.toHaveTextContent('töltöm…')
+    const door = await screen.findByRole('button', { name: 'Új súlycél' })
+    expect(door).toHaveTextContent('＋ Súlycél')
+    expect(door).toHaveTextContent('Tervezd meg a tempót')
+    expect(document.querySelector('.mz-mosaic')!.firstElementChild).toBe(door)
+    expect(screen.queryByText('a súlycél most nem elérhető')).toBeNull()
+    expect(screen.getByText('3 aktív · 1 parkol')).toBeInTheDocument()
+    fireEvent.click(door)
+    expect(screen.getByText('WEIGHT WIZARD')).toBeInTheDocument()
+  })
+
+  test('töltő /api/goals → üres, szöveg nélküli váz-csempe az első helyen', async () => {
+    server.use(http.get(`${API_BASE}/api/goals`, () => new Promise(() => {})))
+    renderHub()
+    await screen.findByText('Célok')
+    const first = document.querySelector('.mz-mosaic')!.firstElementChild!
+    expect(first).toHaveClass('enc-wgoal-skel')
+    expect(first).toBeEmptyDOMElement()
+    expect(screen.getByText('3 aktív · 1 parkol')).toBeInTheDocument()
+    expect(screen.queryByText('a súlycél most nem elérhető')).toBeNull()
+  })
+
+  // final review (mezo-lhqw7): the eyebrow counts the weight goal, so with ONLY a weight goal
+  // the hero must not say „nincs aktív célod" right under „1 aktív".
+  test('only a weight goal: „1 aktív · 0 parkol" and the hero speaks of LIFE goals', async () => {
+    const weightGoal = {
+      id: 'g1', title: 'Nyári cut', trajectory: 'cut', guards: [], status: 'active',
+      startDate: '2026-06-01', targetDate: '2026-07-27', startWeightKg: 84.2, targetWeightKg: 80,
+      rateTargetPctPerWeek: 0.7, identityFrame: 'x',
+    }
+    server.use(
+      http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([weightGoal])),
+    )
+    renderHub()
+    expect(await screen.findByText('1 aktív · 0 parkol')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Súlycél' })).toBeInTheDocument()
+    expect(document.querySelector('.enc-hero-copy')).toHaveTextContent(
+      'Még nincs aktív életcélod. Egy cél, két-három pillér — a többit a naplód hozza.')
+    expect(screen.queryByText(/Még nincs aktív célod/)).toBeNull()
   })
 
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
@@ -145,7 +180,7 @@ describe('real mode', () => {
     server.use(http.get(`${API_BASE}/api/life-goals`, () => { calls += 1; return new HttpResponse(null, { status: 500 }) }))
     renderHub()
     expect(await screen.findByText('Nem sikerült betölteni a célokat.')).toBeInTheDocument()
-    expect(screen.queryByText(/Még nincs aktív célod/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Még nincs aktív (élet)?célod/)).not.toBeInTheDocument()
     const before = calls
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     await waitFor(() => expect(calls).toBeGreaterThan(before))
@@ -165,8 +200,20 @@ test('a lezárt cél a saját szekciójában jelenik meg, nem a mozaikban (mezo-
   expect(screen.queryByRole('button', { name: 'Félmaraton' })).toBeNull()
 })
 
-test('a súlycél sora a Célok hubról nyílik (mezo-iizd.4)', async () => {
+test('a súlycél csempéje a Célok hubról nyílik (mezo-iizd.4)', async () => {
   renderHub()
   fireEvent.click(await screen.findByRole('button', { name: /Súlycél/ }))
   expect(screen.getByText('SULYCEL')).toBeInTheDocument()
+})
+
+test('a súlycél az ELSŐ csempe, a fejléc beleszámolja, a Súlycél sor nincs többé a Jelek alatt', async () => {
+  renderHub()
+  const tile = await screen.findByRole('button', { name: 'Súlycél' })
+  expect(document.querySelector('.mz-mosaic')!.firstElementChild).toBe(tile)
+  expect(tile).toHaveClass('enc-wgoal')
+  expect(screen.getByText('4 aktív · 1 parkol')).toBeInTheDocument()
+  expect(document.querySelectorAll('.enc-xrow')).toHaveLength(1)
+  expect(screen.getByRole('img', { name: '3 életcél' })).toHaveTextContent('életcél')
+  const wide = screen.getByRole('button', { name: 'Új cél' })
+  expect(wide).toHaveClass('is-wide')
 })

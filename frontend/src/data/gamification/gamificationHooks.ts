@@ -23,8 +23,8 @@ const EMPTY_DAY = (date: string): GamificationDay => ({
   streakAlive: false,
 })
 
-export function useGamification(): { profile: GamificationProfile; isPending: boolean } {
-  const { data, isPending } = useDualQuery<GamificationProfile>({
+export function useGamification(): { profile: GamificationProfile; isPending: boolean; isError: boolean } {
+  const { data, isPending, isError } = useDualQuery<GamificationProfile>({
     queryKey: [...GAMIFICATION_KEY],
     mockData: gamificationProfileMock,
     realFetch: async () => {
@@ -39,7 +39,8 @@ export function useGamification(): { profile: GamificationProfile; isPending: bo
     realEmpty: GHOST_GAMIFICATION,
     realStaleTime: 60_000,
   })
-  return { profile: data, isPending }
+  // `isError` is a failed read (a 404 resolves to the ghost above, so it is never an error).
+  return { profile: data, isPending, isError }
 }
 
 export function useTitles(): { titles: Title[] } {

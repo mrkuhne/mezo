@@ -407,6 +407,20 @@ svg{overflow:visible}
 @keyframes float{0%,100%{transform:translateY(2px) rotate(-3deg)}50%{transform:translateY(-4px) rotate(1deg)}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 6px 14px rgba(155,143,196,.28))}50%{filter:drop-shadow(0 6px 26px rgba(155,143,196,.55))}}
 @keyframes breathe{0%,100%{box-shadow:0 18px 32px -18px rgba(155,143,196,.8),inset 0 1px 0 #fff}50%{box-shadow:0 18px 40px -14px rgba(155,143,196,1),0 0 22px rgba(155,143,196,.45),inset 0 1px 0 #fff}}
+
+/* súlycél = első, egyenrangú cél (owner 2026-09-28) */
+.mosaic .lgtile.wide{grid-column:1/-1;min-height:84px;flex-direction:row;gap:12px}
+.lgtile.wgoal2 .pct{font-size:22px;font-weight:600;letter-spacing:-.6px;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.lgtile.wgoal2 .bar{margin-top:6px}
+.goalcard .grows{display:grid;gap:10px;margin-top:12px}
+.goalcard .grw{display:flex;align-items:center;gap:10px}
+.goalcard .grw .icon{width:28px;height:28px}
+.goalcard .grw .grow{flex:1;min-width:0;display:grid;gap:4px}
+.goalcard .grw .gl{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.goalcard .grw strong{font-size:13.5px;font-weight:600}
+.goalcard .grw b{font-size:13px;color:color-mix(in srgb,var(--c) 80%,var(--ink))}
+.goalcard .grw b.arr{font-size:17px;font-weight:400}
+.goalcard .grw small{font-size:11px;color:var(--sub)}
 </style>
 </head>
 <body>
@@ -1358,7 +1372,7 @@ svg{overflow:visible}
 <symbol id="t-run" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M13 25c5-2 10 0 13 4l7 8 14 4c6 2 9 5 9 10v3H13Z" fill="url(#tg-titanium)" stroke="#c3bdd6" stroke-width=".8"/><path d="M14 48h41" stroke="url(#tg-blue)" stroke-width="5" stroke-linecap="round"/><path d="M23 32l6 7M29 30l6 7" stroke="#eae6f8" stroke-width="2" stroke-linecap="round" opacity=".8"/><path d="M3 21h11M1 30h8M5 39h7" stroke="#9fe0f2" stroke-width="2.6" stroke-linecap="round" opacity=".65"/></g></symbol>
 <symbol id="t-history" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="34" cy="33" r="22" fill="url(#tg-titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="34" cy="33" r="15" fill="#0d1016" opacity=".55"/><path d="M34 23v11l8 5" fill="none" stroke="url(#tg-blue)" stroke-width="3.4" stroke-linecap="round"/><path d="M13 20a22 22 0 0 1 8-8" fill="none" stroke="url(#tg-blue)" stroke-width="3.4" stroke-linecap="round"/><path d="M10 9v11h11" fill="none" stroke="url(#tg-blue)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></g></symbol>
 <symbol id="t-play" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="32" r="24" fill="url(#tg-titanium)" stroke="#cdc7de" stroke-width=".8"/><circle cx="32" cy="32" r="17" fill="#0e1218" opacity=".5"/><path d="M26 22.5 44 32 26 41.5Z" fill="url(#tg-lime)" stroke="#eaffc4" stroke-width="1" stroke-linejoin="round"/></g></symbol>
-<symbol id="t-note" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M14 10h26l10 10v34H14Z" fill="url(#tg-titanium)" stroke="#c4bed7" stroke-width=".8"/><path d="M40 10v10h10" fill="none" stroke="#e6e1f4" stroke-width="2"/><path d="M21 30h20M21 38h16M21 46h10" stroke="#a9a3bd" stroke-width="2.6" stroke-linecap="round"/><path d="M45 33 55 43l-4 5-10-10Z" fill="url(#tg-gold)" stroke="#ffeec4" stroke-width=".8"/></g></symbol>
+<symbol id="t-pencil" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><g transform="rotate(45 32 32)"><rect x="25" y="3" width="14" height="41" rx="2.5" fill="url(#tg-gold)" stroke="#ffebbe" stroke-width=".8"/><rect x="25" y="3" width="14" height="8" rx="2.5" fill="url(#tg-red)" stroke="#ffd2c2" stroke-width=".5"/><rect x="25" y="10.5" width="14" height="4.5" fill="url(#tg-titanium)"/><path d="M25 44L32 58L39 44Z" fill="#f0dcbc" stroke="#ffebbe" stroke-width=".6"/><path d="M30 54L32 58L34 54Z" fill="#3a2e22"/><path d="M29 17V41" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".6"/></g></g></symbol><symbol id="t-note" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M14 10h26l10 10v34H14Z" fill="url(#tg-titanium)" stroke="#c4bed7" stroke-width=".8"/><path d="M40 10v10h10" fill="none" stroke="#e6e1f4" stroke-width="2"/><path d="M21 30h20M21 38h16M21 46h10" stroke="#a9a3bd" stroke-width="2.6" stroke-linecap="round"/><path d="M45 33 55 43l-4 5-10-10Z" fill="url(#tg-gold)" stroke="#ffeec4" stroke-width=".8"/></g></symbol>
 <symbol id="t-up" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M10 46 26 30l10 9 18-20" fill="none" stroke="url(#tg-lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 17h13v13" fill="none" stroke="url(#tg-lime)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 56h44" stroke="#ffffff1f" stroke-width="3" stroke-linecap="round"/></g></symbol>
 <symbol id="t-down" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><path d="M10 20 26 36l10-9 18 20" fill="none" stroke="url(#tg-gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M42 47h13V34" fill="none" stroke="url(#tg-gold)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 8h44" stroke="#ffffff1f" stroke-width="3" stroke-linecap="round"/></g></symbol>
 <symbol id="t-hold" viewBox="0 0 64 64"><g filter="url(#tg-shadow)"><circle cx="32" cy="32" r="23" fill="none" stroke="url(#tg-blue)" stroke-width="5"/><circle cx="32" cy="32" r="13" fill="none" stroke="url(#tg-blue)" stroke-width="4" opacity=".7"/><circle cx="32" cy="32" r="5" fill="url(#tg-blue)"/></g></symbol>
@@ -2364,6 +2378,9 @@ svg{overflow:visible}
 .idstats .flat.dead{opacity:.45}
 .bio{margin-top:10px;font-size:12.5px;color:var(--sub)}
 .bio b{color:var(--ink);font-weight:600}
+.bodyrow{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:18px 16px 4px;padding:11px 14px;border-radius:14px;font-size:12.5px;color:var(--sub);background:rgba(245,239,230,.03);box-shadow:inset 0 0 0 1px var(--hair)}
+.bodyrow b{color:var(--ink);font-weight:600}
+.bodyrow i{font-style:normal;color:var(--faint);font-size:16px}
 .goalcard{--c:var(--coral);display:block;width:100%;padding:14px 15px;border-radius:22px;margin:16px 0 0}
 .goalcard .ct{display:flex;align-items:center;gap:10px}
 .goalcard .ct .icon{width:36px;height:36px}
@@ -3122,6 +3139,137 @@ svg{overflow:visible}
 .bc{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 0}
 .bc .tag{font-size:9.5px;font-weight:600;letter-spacing:1.3px;color:var(--faint)}
 @media(max-width:360px){.ftiles{grid-template-columns:repeat(2,1fr)}.rate{grid-template-columns:repeat(4,1fr)}.rate button.cta{grid-column:1/-1}.domt{min-height:150px}.sthero .boop{width:72px;height:72px}}
+/* ══ Én IA (mezo-lhqw7, 2026-09-28) — Hol tartok · Test · Célok · Napló ══ */
+/* identitás-sáv: vékony, lapos, NEM üveg */
+.idstrip{--c:var(--rose);display:flex;align-items:center;gap:11px;width:calc(100% - 32px);margin:2px 16px 0;padding:8px 12px 8px 8px;border-radius:18px;text-align:left;background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+.idstrip .mono{width:40px;height:40px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;font-size:18px;font-weight:400;
+  background:radial-gradient(circle at 35% 28%,#3A332D,color-mix(in srgb,var(--rose) 16%,#1E1B18));box-shadow:0 0 0 2px color-mix(in srgb,var(--rose) 65%,transparent),0 0 12px -3px var(--rose)}
+.idstrip .grow{flex:1;min-width:0}
+.idstrip .nm{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.idstrip .nm strong{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.idstrip .titlechip{margin:0;padding:2px 8px;font-size:10.5px}
+.idstrip .titlechip .icon{width:14px;height:14px}
+.idstrip .ln{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:3px;font-size:11.5px;color:var(--sub)}
+.idstrip .ln span{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.idstrip .ln .icon{width:14px;height:14px;filter:none}
+.idstrip .ln b{color:var(--ink);font-weight:600}
+.idstrip .chev{color:var(--faint)}
+/* Heted hős: keret nélküli halo, a leghangosabb */
+.wkhero{margin-top:6px;padding-bottom:4px;cursor:pointer}
+.wkhero .wring{width:138px;height:138px}
+.wkhero .wring svg{width:138px;height:138px}
+.wklines{display:grid;gap:5px;margin-top:12px;max-width:330px;text-align:left}
+.wklines p{display:flex;gap:8px;font-size:12.5px;line-height:1.45;color:var(--sub)}
+.wklines p i{flex:0 0 7px;height:7px;margin-top:6px;border-radius:50%;background:var(--c);box-shadow:0 0 6px var(--c)}
+.wklines p b{color:var(--ink);font-weight:600}
+.wkcta{margin-top:12px}
+/* Életvonal: egy üvegkártya, egy akcentus */
+.elv{--c:var(--sky);display:block;width:100%;padding:14px 14px 12px;border-radius:22px;cursor:pointer}
+.elv .top{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.elv .eb{color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.elv .big{font-size:40px;font-weight:300;letter-spacing:-2px;line-height:1;margin-top:4px;color:var(--ink);text-shadow:0 0 18px color-mix(in srgb,var(--c) 45%,transparent)}
+.elv .big small{font-size:15px;letter-spacing:0;color:var(--faint);margin-left:3px}
+.elv .sub{font-size:11.5px;color:var(--sub);text-align:right;line-height:1.35}
+.elv .sub b{display:block;font-size:15px;color:var(--ink);font-weight:600}
+.elvsvg{display:block;width:100%;height:auto;margin-top:8px;overflow:visible}
+.elvsvg .grid{stroke:rgba(245,239,230,.06);stroke-width:1}
+.elvsvg .gl{font-size:8.5px;fill:#8A7A6A}
+.elvsvg .curve{fill:none;stroke:var(--c);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px color-mix(in srgb,var(--c) 60%,transparent))}
+.elvsvg .area{fill:url(#elvfill);stroke:none}
+.elvsvg .proj{fill:none;stroke:color-mix(in srgb,var(--c) 70%,var(--ink));stroke-width:1.8;stroke-dasharray:1.5 4.5;stroke-linecap:round;opacity:.85}
+.elvsvg .tgt{fill:none;stroke:color-mix(in srgb,var(--sage) 55%,transparent);stroke-width:1.2;stroke-dasharray:5 5}
+.elvsvg .tgl{font-size:9px;font-weight:600;fill:#BFE0A8}
+.elvsvg .endp{pointer-events:none;fill:#F5EFE6;stroke:var(--c);stroke-width:2.4;filter:drop-shadow(0 0 7px var(--c))}
+.elvsvg .stn{cursor:pointer}
+.elvsvg .stn .hit{fill:transparent}
+.elvsvg .stn .dot{fill:var(--gold);stroke:#FFE7B8;stroke-width:1;filter:drop-shadow(0 0 5px var(--gold))}
+.elvsvg .stn .dot.halo{fill:none;stroke:var(--gold);stroke-width:1.8}
+.elvsvg .stn.on .dot{stroke:#fff;stroke-width:2;filter:drop-shadow(0 0 9px var(--gold))}
+.elvsvg .stn.on .ring2{fill:none;stroke:color-mix(in srgb,var(--gold) 60%,transparent);stroke-width:1.2}
+.slband{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:22px;margin:6px 0 0}
+.slband i{border-radius:3px 3px 1px 1px;background:linear-gradient(180deg,color-mix(in srgb,var(--lav) 55%,#fff),var(--lav));opacity:.8;box-shadow:0 0 6px -2px var(--lav)}
+.slleg{display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;color:var(--faint)}
+.slleg span{display:inline-flex;align-items:center;gap:4px}
+.slleg span i{width:7px;height:7px;border-radius:2px;background:var(--lav)}
+.elvcap{display:flex;align-items:flex-start;gap:8px;min-height:36px;margin-top:10px;padding-top:10px;border-top:1px solid var(--hair);font-size:12.5px;line-height:1.4;color:var(--sub)}
+.elvcap i{flex:0 0 8px;height:8px;margin-top:5px;border-radius:50%;background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.elvcap b{color:var(--ink);font-weight:600}
+.elvnext{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:12px;color:var(--sub)}
+.elvnext b{color:var(--ink);font-weight:600}
+.elvnext .chev{color:var(--faint)}
+.elvempty{--c:var(--sky);text-align:center;padding:18px 16px}
+.elvempty .icon{width:64px;height:64px;margin:0 auto 4px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.5)) drop-shadow(0 0 14px color-mix(in srgb,var(--c) 40%,transparent))}
+.elvempty p{font-size:13px;line-height:1.5;color:var(--sub);margin:6px 0 12px}
+@media (prefers-reduced-motion:no-preference){
+  body:not(.still) .elvsvg .curve{animation:elvdraw 1.6s var(--ease) .2s both}
+  body:not(.still) .elvsvg .area{animation:elvfade .8s ease 1.2s both}
+  body:not(.still) .elvsvg .proj,body:not(.still) .elvsvg .endp,body:not(.still) .elvsvg .stn,body:not(.still) .elvsvg .tgl{animation:elvfade .6s ease both;animation-delay:calc(1.5s + var(--i,0)*90ms)}
+  body:not(.still) .slband i{animation:elvgrow .7s var(--ease) both;animation-delay:calc(.3s + var(--i,0)*40ms);transform-origin:bottom}
+}
+@keyframes elvdraw{from{stroke-dasharray:100 100;stroke-dashoffset:100}to{stroke-dasharray:100 100;stroke-dashoffset:0}}
+@keyframes elvfade{from{opacity:0}}
+@keyframes elvgrow{from{transform:scaleY(0)}}
+/* Célok állása: a súlycél sora */
+.goalcard .wgrow{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid var(--hair);font-size:12px;color:var(--sub)}
+.goalcard .wgrow .icon{width:26px;height:26px}
+.goalcard .wgrow .grow{flex:1;min-width:0}
+.goalcard .wgrow .grow>span{display:flex;justify-content:space-between;gap:8px}
+.goalcard .wgrow .grow>span b{color:var(--ink);font-weight:600}
+.goalcard .wgrow .bar{margin-top:6px}
+.duoen{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-top:10px}
+.duoen .entile{min-height:112px}
+.duoen .entile strong{font-size:13px}
+/* tab-oldal fejsor: nincs vissza gomb */
+.tabhead{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 16px 0;min-height:42px}
+.tabhead .seg{margin:0}
+.tabhead .seg button{padding:8px 18px;font-size:13px}
+/* Növekedés hub (az utolsó régi oldal, most üvegben) */
+/* Fejlődés hub (mezo-lhqw7 S2): the growth hero + Ma strip stay; the three tiles are a glass mosaic */
+.grhero{display:grid;gap:6px;padding:4px 21px 2px}
+.grhero .ttl{font-size:20px;font-weight:700;letter-spacing:-.01em;text-align:center}
+.grhero .row{display:flex;align-items:center;justify-content:center;gap:12px}
+.grhero .row .icon{width:54px;height:54px}
+.grhero .numl{font-size:45px;font-weight:200;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
+.grhero .unit{font-size:13px;font-weight:700;color:var(--gold);margin-left:5px;letter-spacing:.04em}
+.grtraits{display:grid;gap:7px;padding:6px 4px 0}
+.grtr{display:grid;grid-template-columns:68px 1fr 64px;align-items:center;gap:9px}
+.grtr .lb{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.grtr .val{font-size:11px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.grtr .val small{font-weight:500;color:var(--sub);font-size:9.5px}
+.grtr .bar{height:7px}
+.wdots{display:flex;gap:5px;align-items:center}
+.wdots i{flex:1;height:8px;border-radius:5px;background:rgba(245,239,230,.07)}
+.wdots i.on{background:var(--sage)}
+.wdots i.now{box-shadow:0 0 0 1.5px var(--sage)}
+.grma{margin:12px 16px 0;padding:6px 12px 11px;border-radius:19px;background:rgba(245,239,230,.035);box-shadow:inset 0 0 0 1px var(--hair)}
+.grma .head{display:flex;align-items:center;gap:7px;width:100%;min-height:44px;padding:0 2px;text-align:left}
+.grma .head .eb{color:var(--gold)}
+.grma .xpp{margin-left:auto;font-size:9.5px;font-weight:800;color:var(--sage);background:color-mix(in srgb,var(--sage) 14%,transparent);border-radius:7px;padding:2px 8px;font-variant-numeric:tabular-nums}
+.grma .chev{color:var(--faint);font-size:14px}
+.grma .head .eb+.chev{margin-left:auto}
+.grma .empty{font-size:11px;font-weight:300;color:var(--sub);padding:0 2px 6px;line-height:1.5}
+.grma .empty b{color:var(--ink);font-weight:600}
+.grchips{display:flex;flex-wrap:wrap;gap:6px}
+.grchip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:7px 12px 7px 9px;min-height:34px;font-size:10.5px;font-weight:600;color:var(--sub);box-shadow:inset 0 0 0 1px var(--hair);background:rgba(245,239,230,.03)}
+.grchip .icon{width:17px;height:17px}
+.grchip.done{color:var(--sage);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sage) 55%,transparent);background:color-mix(in srgb,var(--sage) 10%,transparent)}
+.grchip.gone{opacity:.5;box-shadow:inset 0 0 0 1px var(--hair);border:1px dashed var(--faint)}
+.grchip.act{color:var(--lav);background:color-mix(in srgb,var(--lav) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--lav) 45%,transparent)}
+.grchip.add{color:var(--gold);font-weight:700;background:color-mix(in srgb,var(--gold) 10%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 50%,transparent)}
+.grsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.entile .pulse{position:absolute;top:13px;right:13px;width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 70%,transparent)}
+.entile{position:relative}
+.entile strong .inl{width:15px;height:15px;vertical-align:-3px;margin-left:2px}
+.entile strong .mut{font-weight:400;color:var(--sub)}
+.grtiles{display:grid;gap:10px;padding:0 16px}
+.grtile{--c:var(--lav);display:flex;align-items:center;gap:13px;width:100%;padding:13px 14px 13px 12px;border-radius:22px;text-align:left}
+.grtile .well{width:56px;height:56px}
+.grtile .well .icon{width:38px;height:38px}
+.grtile .grow{flex:1;min-width:0}
+.grtile .eb{color:color-mix(in srgb,var(--c) 70%,var(--ink))}
+.grtile strong{display:block;font-size:16px;font-weight:600;letter-spacing:-.3px;margin-top:2px}
+.grtile small{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
+.grtile .chev{color:var(--faint)}
 </style>
 <div class="stage">
   <div class="phone" id="phone">
@@ -3137,43 +3285,43 @@ svg{overflow:visible}
     <div class="toast" id="toast"></div>
   </div>
   <aside class="notes">
-    <span class="ov">ÉN · ÉLŐ PROTOTÍPUS</span>
-    <h1>Az Én, egyben</h1>
-    <p>Az Én teljes köre egy helyen, az Üveg anyagban: az áttekintő oldal, a céljaid és egy cél oldala, az új cél varázslója, a jelek, a súlycél és az aloldalai, a napi súly, az alvás és az éjszakai mód, a heted az elemzéssel, a napokkal, a felfedezésekkel és a tanulságokkal; a növekedés (képességek, napló, kitüntetések), a rutin és a szokások, a napló, az emberek, az értesítések teljes listája és a beállítások minden oldala.</p>
-    <p class="abnote">Minden képernyőn <em>egy dolog a leghangosabb</em>: az Énen te magad (a szinted gyűrűje), a Célokon a hat életterület köre, a Súlyon a változás, az Alváson a tegnap éjjel, a Héten a heti pontszám, a rutinon a következő lépés, egy szokáson az ereje, az embereknél a kör, a beállításokon a terület.</p>
+    <span class="ov">ÉN · ÉLŐ PROTOTÍPUS · ÚJ FELÉPÍTÉS</span>
+    <h1>Én: Hol tartok · Test · Célok · Napló</h1>
+    <p>Az Én négy fülre rendeződik. A <b>Hol tartok</b> a heted, alatta az <b>Életvonal</b> (12 hét súlya egy vonalon, alvás-sávval és állomásokkal), a célok állása, a Fejlődés és az Emberek. A <b>Test</b> egy helyen mutatja a súlyt és az alvást, a <b>Célok</b> és a <b>Napló</b> saját fület kapott. A rutin építése a Nap · Rutin fülre költözött.</p>
+    <p class="abnote">Minden képernyőn <em>egy dolog a leghangosabb</em>: a Hol tartokon a heted pontszáma, az Életvonalon a görbe, a Célokon a hat életterület köre, a Súlyon a változás, az Alváson a tegnap éjjel. A többi üvegkártya vagy lapos sor alatta.</p>
     <nav id="jump">
-      <a href="#en" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Én · áttekintés</a>
-      <a href="#celok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-ring"/></svg>Céljaid</a>
+      <span class="ov" style="margin:10px 0 4px">HOL TARTOK</span>
+      <a href="#en" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Hol tartok</a>
+      <a href="#het" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>A heted</a>
+      <a href="#elemzes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Heti elemzés</a>
+      <a href="#napok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sun"/></svg>A hét napjai</a>
+      <a href="#felfedezesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-lens"/></svg>Heti felfedezések</a>
+      <a href="#tanulsagok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gem"/></svg>A hét tanulságai</a>
+      <a href="#novekedes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Növekedés</a>
+      <a href="#skillek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Képességek</a>
+      <a href="#kitunt" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-record"/></svg>Kitüntetések</a>
+      <a href="#tevekenysegek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>Tevékenységek</a>
+      <a href="#emberek" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>Emberek</a>
+      <a href="#jeloltek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-lens"/></svg>Jelöltek</a>
+      <a href="#kor" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>A köröm</a>
+      <a href="#emlitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-chat"/></svg>Említések</a>
+      <a href="#heti" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>Heti kép (emberek)</a>
+      <a href="#ember" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Egy ember</a>
+      <span class="ov" style="margin:10px 0 4px">TEST</span>
+      <a href="#test" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-weight"/></svg>Test · Súly</a>
+      <a href="#test/alvas" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-sleep"/></svg>Test · Alvás</a>
+      <a href="#ejszaka/idle" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Éjszakai mód</a>
+      <span class="ov" style="margin:10px 0 4px">CÉLOK</span>
+      <a href="#celok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-ring"/></svg>Célok</a>
       <a href="#cel" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sprout"/></svg>Egy cél oldala</a>
       <a href="#celuj/1" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-ring"/></svg>Új cél varázsló</a>
       <a href="#jelek" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-signal"/></svg>Jelek</a>
       <a href="#sulycel" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-weight"/></svg>Súlycél</a>
       <a href="#sulyresz/diet" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-bowl"/></svg>Súlycél aloldalai</a>
       <a href="#sulyuj/1" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-down"/></svg>Új súlycél</a>
-      <a href="#suly" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-weight"/></svg>Napi súly</a>
-      <a href="#alvas" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-sleep"/></svg>Alvás</a>
-      <a href="#ejszaka/idle" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-moon"/></svg>Éjszakai mód</a>
-      <a href="#het" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>A heted</a>
-      <a href="#elemzes" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-score"/></svg>Heti elemzés</a>
-      <a href="#napok" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-sun"/></svg>A hét napjai</a>
-      <a href="#felfedezesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-lens"/></svg>Heti felfedezések</a>
-      <a href="#tanulsagok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-gem"/></svg>A hét tanulságai</a>
-      <a href="#skillek" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-up"/></svg>Növekedés · képességek</a>
-      <a href="#gnaplo" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-journal"/></svg>Növekedés · napló</a>
-      <a href="#kitunt" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-record"/></svg>Kitüntetések</a>
-      <a href="#rutin" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-dawn"/></svg>Rutin</a>
-      <a href="#lanc" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-chain"/></svg>Egy lánc</a>
-      <a href="#szokasok" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-harvest"/></svg>Szokásaid</a>
-      <a href="#szokas" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-sprout"/></svg>Egy szokás</a>
-      <a href="#szerk" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-book"/></svg>Szokás szerkesztése</a>
-      <a href="#uj/fw" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-anchor"/></svg>Új szokás varázsló</a>
+      <span class="ov" style="margin:10px 0 4px">NAPLÓ</span>
       <a href="#naplo" class="glass" style="--c:var(--sage)"><svg class="icon"><use href="#t-journal"/></svg>Napló</a>
-      <a href="#emberek" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>Emberek</a>
-      <a href="#jeloltek" class="glass" style="--c:var(--gold)"><svg class="icon"><use href="#t-lens"/></svg>Jelöltek</a>
-      <a href="#kor" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-people"/></svg>A köröm</a>
-      <a href="#emlitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-chat"/></svg>Említések</a>
-      <a href="#heti" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-calendar"/></svg>Heti kép</a>
-      <a href="#ember" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-person"/></svg>Egy ember</a>
+      <span class="ov" style="margin:10px 0 4px">ÉRTESÍTÉSEK · BEÁLLÍTÁSOK</span>
       <a href="#ertesitesek" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-bell"/></svg>Értesítések</a>
       <a href="#beall" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-gear"/></svg>Beállítások</a>
       <a href="#b-train" class="glass" style="--c:var(--coral)"><svg class="icon"><use href="#t-dumbbell"/></svg>Edzés beállításai</a>
@@ -3185,11 +3333,12 @@ svg{overflow:visible}
       <a href="#b-ert" class="glass" style="--c:var(--sky)"><svg class="icon"><use href="#t-bell"/></svg>Értesítés-beállítások</a>
       <a href="#b-fiok" class="glass" style="--c:var(--rose)"><svg class="icon"><use href="#t-key"/></svg>Fiókod</a>
       <a href="#b-szemely/about" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-person"/></svg>Rólam · stílus · kontextus</a>
-      <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-compass"/></svg>Új ikonok (U6 + U7)</a>
+      <a href="#ikonok" class="glass" style="--c:var(--lav)"><svg class="icon"><use href="#t-compass"/></svg>Új ikonok</a>
     </nav>
     <span class="ov">ÁLLAPOTOK</span>
     <ul>
-      <li>Én: <a href="#" data-st="hub:full">minden adat</a> · <a href="#" data-st="hub:empty">új felhasználó</a></li>
+      <li>Hol tartok: <a href="#" data-st="hub:full">minden adat</a> · <a href="#" data-st="hub:empty">új felhasználó</a></li>
+      <li>Életvonal: <a href="#" data-st="elv:full">12 hét</a> · <a href="#" data-st="elv:empty">még kevés a mérés</a> · <a href="#" data-st="elv:reached">cél elérve</a></li>
       <li>Célok: <a href="#" data-st="celok:full">3 aktív</a> · <a href="#" data-st="celok:empty">még nincs cél</a> · <a href="#" data-sheet="pillar">pillér-katalógus</a></li>
       <li>Súlycél: <a href="#" data-st="suly:full">aktív cél</a> · <a href="#" data-st="suly:empty">nincs súlycél</a> · <a href="#" data-gbox="gate">„előbb a biometriád”</a></li>
       <li>Súlycél aloldalak: <a href="#sulyresz/diet">étrendi keret</a> · <a href="#sulyresz/segment">szakasz</a> · <a href="#sulyresz/plans">tervkapcsolatok</a> · <a href="#sulyresz/guards">védőkorlátok</a> · <a href="#sulyresz/javaslat">javaslat</a></li>
@@ -3197,10 +3346,6 @@ svg{overflow:visible}
       <li>Éjszaka: <a href="#ejszaka/idle">felébredtél?</a> · <a href="#ejszaka/wait">figyelem az időt</a> · <a href="#ejszaka/legzes">légzés</a> · <a href="#ejszaka/getup">ideje felkelni</a></li>
       <li>Hét: <a href="#" data-st="het:run">a mostani hét</a> · <a href="#" data-st="het:closed">lezárt hét</a></li>
       <li>Felfedezések: <a href="#" data-st="disc:sok">sok (34)</a> · <a href="#" data-st="disc:keves">kevés (5)</a> · <a href="#" data-st="disc:csend">csendes hét</a></li>
-      <li>Rutin: <a href="#" data-st="rutin:full">ma, félúton</a> · <a href="#" data-st="rutin:done">mind megvan</a> · <a href="#" data-st="rutin:past">egy korábbi nap</a> · <a href="#" data-sheet="ai">AI javaslat</a> · <a href="#" data-sheet="chain">új lánc</a></li>
-      <li>Lánc: <a href="#" data-st="lanc:view">nézet</a> · <a href="#" data-st="lanc:edit">szerkesztés</a></li>
-      <li>Varázsló: <a href="#uj/fw">keret</a> · <a href="#uj/anchor">horgony</a> · <a href="#uj/act">tett</a> · <a href="#uj/celeb">ünneplés</a></li>
-      <li>Szokás szerkesztése: <a href="#" data-sheet="anchor">„Mihez kötöd?”</a></li>
       <li>Napló: <a href="#" data-st="dec:open">döntés vár értékelésre</a> · <a href="#" data-st="dec:done">visszanézve</a> · <a href="#" data-sheet="journal">új bejegyzés</a></li>
       <li>Emberek: <a href="#" data-sheet="plog">gyors log</a> · <a href="#" data-sheet="pedit">új személy</a> · <a href="#" data-st="jel:empty">nincs több jelölt</a></li>
       <li>Kitüntetések: <a href="#" data-st="tit:letra">címek · létra</a> · <a href="#" data-st="tit:bolt">bolt</a></li>
@@ -3402,8 +3547,8 @@ const I=(n,c='')=>`<svg class="icon ${c}" aria-hidden="true"><use href="#t-${n}"
 const ring=(p,c,r=34,vb=80)=>`<svg viewBox="0 0 ${vb} ${vb}" aria-hidden="true"><circle class="ring-track" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100"/><circle class="ring-prog" cx="${vb/2}" cy="${vb/2}" r="${r}" pathLength="100" style="--p:${p};--c:${c}"/></svg>`;
 const bar=(w,c,i=0)=>`<span class="bar" style="--c:${c}"><b style="--w:${Math.max(2,Math.min(100,w))}%;--i:${i}"></b></span>`;
 let ntfOpen=false;
-const ST={hub:'full',celok:'full',suly:'full',het:'run',rutin:'full',lanc:'view',dec:'open',jel:'full',tit:'letra',nf:'full',disc:'sok'};
-let sklOpen={life:false}, fwPick='fogg', effort=[1,0,1,2], sklFilter=[true,true,true,false], pplF='mind';
+const ST={hub:'full',elv:'full',celok:'full',suly:'full',het:'closed',dec:'open',jel:'full',tit:'letra',nf:'full',disc:'sok'};
+let sklOpen={life:false}, pplF='mind';
 
 /* ── fejléc + keret (fuel-uveg.html, változatlan; Én akcentus) ── */
 function topbar(){return `<header class="topbar"><span class="wordmark">boop</span>
@@ -3436,42 +3581,96 @@ const GOALS=[
 const dots=a=>`<span class="dots7">${a.map(x=>`<i class="${x}"></i>`).join('')}</span>`;
 
 /* ── ÉN HUB ─────────────────────────────────────────────── */
+const tabhead=(l='',r='')=>`<div class="tabhead rise">${l||'<span></span>'}${r}</div>`;
+/* Életvonal: 12 hét heti átlagsúlya, az alvás heti átlaga, és a tárolt eseményekből jövő állomások */
+const ELV={w:[82.2,81.9,82.0,81.4,81.1,80.6,79.9,80.2,79.7,79.3,78.9,78.4],
+  s:[6.6,6.9,7.0,6.4,7.2,7.1,6.8,7.3,7.0,7.2,6.9,7.1],
+  lab:['júl. 8.','','','','','','aug. 19.','','','','','szept. 24.'],
+  st:[[0,'Tempó átállítva','júl. 8.','Heti −0,4 kg-ra lassítottad a tempót — azóta egyenletes.'],
+      [6,'Új mélypont · 80 kg alatt','aug. 19.','Először mértél 80 kg alatti heti átlagot.'],
+      [8,'Új képesség: Páncélzat','szept. 2.','10 hét töretlen — sérülésállóság nő.'],
+      [11,'Új mélypont','szept. 24.','78,4 kg — a 12 hét legalacsonyabb átlaga.']],
+  target:73.0};
+let stnSel=-1;
+/* „cél elérve": a görbe a cél alatt ér véget, nincs vetítés, a lábléc „Elérted a célod” */
+const ELVR={w:[82.2,81.6,81.0,80.4,79.8,79.2,78.4,77.6,76.5,75.4,74.1,72.9],
+  st:[ELV.st[0],ELV.st[1],ELV.st[2],[11,'Cél elérve','szept. 24.','72,9 kg — a célsáv alá értél.']]};
+const elvD=()=>ST.elv==='reached'?Object.assign({},ELV,ELVR):ELV;
+function elvChart(){
+  const ELV=elvD(), reached=ST.elv==='reached';
+  const W=320,H=128,x0=10,x1=262,xp=306,lo=72.2,hi=82.8;
+  const X=i=>x0+i*(x1-x0)/(ELV.w.length-1), Y=v=>6+(hi-v)/(hi-lo)*(H-14);
+  const P=ELV.w.map((v,i)=>[X(i),Y(v)]);
+  /* Catmull-Rom → Bézier: egy húzott görbe */
+  let d=`M${P[0][0].toFixed(1)} ${P[0][1].toFixed(1)}`;
+  for(let i=0;i<P.length-1;i++){const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2;
+    d+=` C${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`}
+  const last=P[P.length-1], ty=Y(ELV.target);
+  const grid=[82,79,76].map(v=>`<line class="grid" x1="${x0}" x2="${xp+4}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}"/><text class="gl" x="${W+10}" y="${(Y(v)+3).toFixed(1)}" text-anchor="end">${v}</text>`).join('');
+  return `<svg class="elvsvg" viewBox="0 0 ${W+12} ${H+14}" role="img" aria-label="Életvonal: 12 hét, 82,2 kg → ${ELV.w[11].toFixed(1).replace('.',',')} kg${reached?'':'; cél 73,0 kg'}">
+    <defs><linearGradient id="elvfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7FB2DE" stop-opacity=".22"/><stop offset="1" stop-color="#7FB2DE" stop-opacity="0"/></linearGradient></defs>
+    ${grid}
+    <path class="area" d="${d} L${last[0].toFixed(1)} ${H} L${x0} ${H}Z"/>
+    <path class="curve" d="${d}" pathLength="100"/>
+    ${reached?'':`<line class="tgt" x1="${x0}" x2="${W+10}" y1="${ty.toFixed(1)}" y2="${ty.toFixed(1)}" style="--i:1"/>
+    <path class="proj" d="M${last[0].toFixed(1)} ${last[1].toFixed(1)} L${xp} ${ty.toFixed(1)}" style="--i:1"/>
+    <text class="tgl" x="${W+10}" y="${(ty-5).toFixed(1)}" text-anchor="end" style="--i:2">cél 73,0</text>`}
+    ${ELV.st.map((s,k)=>{const p=P[s[0]];return `<g class="stn ${stnSel===k?'on':''}" data-stn="${k}" style="--i:${k+2}" role="button" aria-label="${s[1]} · ${s[2]}"><circle class="hit" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="12"/>${stnSel===k&&s[0]!==11?`<circle class="ring2" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="9"/>`:''}<circle class="dot ${s[0]===11?'halo':''}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${s[0]===11?8.5:4.6}"/></g>`}).join('')}
+    <circle class="endp" cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="5.2" style="--i:6"/>
+    ${ELV.lab.map((l,i)=>l?`<text class="gl" x="${X(i).toFixed(1)}" y="${H+12}" text-anchor="${i===0?'start':i===11?'end':'middle'}">${l}</text>`:'').join('')}
+  </svg>`;
+}
+function elv(){
+  const ELV=elvD(), reached=ST.elv==='reached';
+  if(ST.elv==='empty'||ST.hub==='empty') return `<div class="elv dash elvempty rise" style="--i:2">${I('weight','art')}<span class="eb" style="display:block">ÉLETVONAL</span>
+    <p>Még kevés a mérés — két mérés után rajzolódik ki az életvonalad.</p>
+    <button class="pillx" style="--c:var(--sky)" data-sheet="weight">${I('weight')}Mérj most</button></div>`;
+  const s=stnSel>=0?ELV.st[stnSel]:null;
+  return `<div class="elv glass lift rise" style="--i:2" data-go="#test" role="link" aria-label="Életvonal · a Test oldalra visz">
+    <div class="top"><div><span class="eb">ÉLETVONAL · 12 HÉT</span><div class="big">${reached?'−9,3':'−3,8'}<small>kg</small></div></div>
+      <div class="sub"><b>${reached?'72,9':'78,4'} kg</b>7 napos átlag</div></div>
+    ${elvChart()}
+    <div class="slband" role="img" aria-label="Alvás, heti átlag: 6,4–7,3 óra">${ELV.s.map((h,i)=>`<i style="height:${Math.round((h-5.6)*12)}px;--i:${i}"></i>`).join('')}</div>
+    <div class="slleg"><span><i></i>alvás · heti átlag</span><span>6,4–7,3 ó</span></div>
+    <div class="elvcap">${s?`<i></i><span><b>${s[1]}</b> · ${s[2]} — ${s[3]}</span>`:`<i style="opacity:.45;box-shadow:none"></i><span>Koppints egy arany pontra: mi történt ott.</span>`}</div>
+    <div class="elvnext">${reached?`<span>Elérted a célod: <b>73,0 kg</b></span>`:`<span>A következő állomás: <b>73,0 kg</b> — még 5,4 kg</span>`}<span class="chev">›</span></div>
+  </div>`;
+}
 function hub(){
   const full=ST.hub==='full';
-  const tiles=[
-    ['Célok','3 aktív · 1 parkol','ring','var(--coral)','#celok'],
-    ['Súly','78,4 kg · −0,5 / hét','weight','var(--sky)','#suly'],
-    ['Alvás','7,1 h · Q7','sleep','var(--lav)','#alvas'],
-    ['Growth','82% fegyelem · 6 hét','up','var(--lav)','#skillek'],
-    ['Napló','12 napos hála-sorozat · 2 nyitott döntés','journal','#C9BFB2','#naplo'],
-    ['Emberek','Petra 3× · e héten','people','var(--rose)','#emberek'],
-  ];
   return topbar()+
-  `<section class="idhero rise" data-kalauz-anchor="me-idhero">
-    <div class="xpring" role="img" aria-label="Szint 12 — 12% a következő szintig">${ring(full?12:0,'var(--rose)',58,128)}<span class="mono">D</span><span class="lv">Lv ${full?12:1}</span></div>
-    <h1>Daniel</h1>
-    ${full?`<button class="titlechip" data-go="#kitunt">${I('record')}A kitartó</button>`:`<button class="titlechip" data-go="#kitunt">Válassz címet</button>`}
-    <div class="idstats">
-      <span class="flat" style="--c:var(--rose)">Lv ${full?12:1}</span>
-      <span class="flat">${full?'3 140':'0'} XP</span>
-      <button class="flat ${full?'':'dead'}" data-go="#kitunt">${I('bolt')}${full?6:0} nap</button>
-      <button class="flat" data-go="#kitunt">${I('coin')}${full?240:0}</button>
-    </div>
-    <button class="bio" data-go="#b-me">${full?'<b>34</b> év · <b>180</b> cm · <b>78,4</b> kg · <b>15%</b> testzsír':'Állítsd be a biometriád ›'}</button>
+  `<button class="idstrip rise" data-go="#novekedes" data-kalauz-anchor="me-idhero" aria-label="Daniel · Fejlődés">
+    <span class="mono">D</span>
+    <span class="grow"><span class="nm"><strong>Daniel</strong>${full?`<span class="titlechip">${I('record')}A kitartó</span>`:''}</span>
+      <span class="ln"><span><b>Lv ${full?12:1}</b></span>${full?`<span>3 140 XP</span><span>${I('bolt')}6 nap</span><span>${I('coin')}240</span>`:`<span>az első napjaid</span>`}</span></span>
+    <span class="chev">›</span></button>
+  <section class="whub wkhero rise" style="--i:1" data-go="#het">
+    ${full?`<span class="eb">SZEPT. 21–27. · LEZÁRT HÉT</span>
+    <div class="wring">${ring(78,'var(--lav)',60,138)}<span class="ctr"><b>78</b><small>/ 100</small></span></div>
+    <div class="wdelta"><b>+4</b>az előző héthez</div>
+    <div class="wklines"><p style="--c:var(--sage)"><i></i><span><b>Jól ment:</b> fehérjecél öt napon, stabil alvás.</span></p>
+      <p style="--c:var(--gold)"><i></i><span><b>Figyelj rá:</b> két késői vacsora felszínes alvással.</span></p></div>
+    <button class="pillx wkcta" style="--c:var(--lav)" data-go="#het">A heti elemzés ›</button>`
+    :`<span class="eb">SZEPT. 21–27. · AZ ELSŐ HETED</span>
+    <div class="wring">${ring(0,'var(--lav)',60,138)}<span class="ctr"><b>—</b><small>hétfőn jön</small></span></div>
+    <div class="wklines"><p style="--c:var(--lav)"><i></i><span>Hétfő reggel érkezik az első heti elemzésed — addig elég, ha naplózol.</span></p></div>
+    <button class="pillx wkcta" style="--c:var(--lav)" data-go="#het">A heted ›</button>`}
   </section>
+  <div class="p16" style="margin-top:14px">${elv()}</div>
   <div class="p16">
-  ${full?`<button class="goalcard glass lift rise" style="--i:1" data-go="#celok">
-    <div class="ct">${I('ring')}<strong>Célok · összegzés</strong><span class="flatchip" style="--c:var(--coral)">3 aktív</span></div>
-    <div class="wrapchips">${GOALS.map(g=>fchip(g.t,DIM[g.d[0]][1])).join('')}</div>
-    <div class="mcells"><span class="mcell" style="--c:var(--sage)"><b>↗ 2</b><small>emelkedik</small></span><span class="mcell" style="--c:var(--lav)"><b>→ 1</b><small>tartja</small></span><span class="mcell" style="--c:var(--coral)"><b>↘ 0</b><small>csúszik</small></span></div>
-  </button>`:`<button class="goalcard dash rise" style="--c:var(--coral);text-align:center" data-go="#celuj/1"><strong style="font-size:15px">＋ Új cél</strong><small class="tiny" style="display:block;margin-top:4px">Mezo pilléreket javasol hozzá</small></button>`}
+  ${full?`<button class="goalcard glass lift rise" style="--i:3" data-go="#celok">
+    <div class="ct">${I('ring')}<strong>Célok állása</strong><span class="flatchip" style="--c:var(--coral)">4 aktív</span></div>
+    <div class="grows">
+      <div class="grw" style="--c:var(--coral)">${I('weight')}<span class="grow"><span class="gl"><strong>Súlycél · 78,4 → 73 kg</strong><b>33%</b></span>${bar(33,'var(--coral)',1)}</span></div>
+      ${GOALS.map(g=>{const d=DIM[g.d[0]];return `<div class="grw" style="--c:${d[1]}">${I(d[2])}<span class="grow"><span class="gl"><strong>${g.t}</strong><b class="arr">${g.arrow}</b></span><small>${g.arrow==='↗'?'emelkedik':g.arrow==='→'?'tartja':'figyelmet kér'} · ${g.ma}</small></span></div>`}).join('')}
+    </div>
+  </button>`:`<button class="goalcard dash rise" style="--c:var(--coral);text-align:center;--i:3" data-go="#celuj/1"><strong style="font-size:15px">＋ Első cél</strong><small class="tiny" style="display:block;margin-top:4px">Mezo pilléreket javasol hozzá</small></button>`}
   </div>
-  <div class="mosaic">${tiles.map((t,i)=>{
-    const line=full?t[1]:(t[0]==='Célok'?'':'');
-    return `<button class="entile glass lift rise" style="--c:${t[3]};--i:${i+2}" ${t[4]?`data-go="${t[4]}"`:`data-toast="${t[0]} — az Én II szeletben kap üveget"`}>${I(t[2])}<span class="eb">${t[0].toUpperCase()}</span>${line?`<strong>${line}</strong>`:''}</button>`}).join('')}
-    <button class="entile wide glass lift rise" style="--c:var(--gold);--i:8" data-go="#rutin">${I('chain')}<span class="grow"><span class="eb">RUTIN</span>${full?`<strong>4 / 6 ma</strong><small class="tiny" style="display:block">reggel 80% · este 50%</small>`:''}</span><span class="chev">›</span></button>
+  <div class="duoen">
+    <button class="entile glass lift rise" style="--c:var(--lav);--i:4" data-go="#novekedes">${I('up')}<span class="eb">FEJLŐDÉS</span>${full?'<strong>Lv 12 · 82% fegyelem</strong>':''}</button>
+    <button class="entile glass lift rise" style="--c:var(--rose);--i:5" data-go="#emberek">${I('people')}<span class="eb">EMBEREK</span>${full?'<strong>Petra 3× · e héten</strong>':''}</button>
   </div>
-  ${full?'':'<p class="quiet" style="text-align:center;padding-top:12px">Ahol még nincs adat, ott a csempe csak a nevét mutatja — soha nem nullát.</p>'}`;
+  ${principle('Ahol még nincs adat, ott a kártya csak a nevét mutatja — soha nem nullát. A rutinod építése a Nap · Rutin fülön van.')}`;
 }
 
 /* ── CÉLOK ─────────────────────────────────────────────── */
@@ -3487,22 +3686,25 @@ function celok(){
   const full=ST.celok==='full';
   const active=full?['te','el','eg','ka','er']:[];
   const cnt=k=>full?GOALS.filter(g=>g.d.includes(k)).length:0;
-  return topbar()+back('#en','Én',`<button class="pillx" style="--c:var(--sage)" data-go="#celuj/1">＋ Új cél</button>`)+
-  eyeb(full?'3 AKTÍV · 1 PARKOL':'MÉG NINCS AKTÍV CÉL','Célok')+
-  `<section class="lghero rise" style="--i:1"><div class="permah">${permah(active)}<span class="ctr"><b>${full?3:0}</b><small>aktív cél</small></span></div>
-    <p>${full?'A pillérek a meglévő naplódból számolnak. <b>2↗ · 1→ · 0↘</b> ezen a héten.':'Még nincs aktív célod. <b>Egy cél, két-három pillér</b> — a pillérek abból számolnak, amit már most is naplózol.'}</p></section>
+  return topbar()+tabhead('',`<button class="pillx" style="--c:var(--sage)" data-go="#celuj/1">＋ Új cél</button>`)+
+  eyeb(full?'4 AKTÍV · 1 PARKOL':'MÉG NINCS AKTÍV CÉL','Célok')+
+  `<section class="lghero rise" style="--i:1"><div class="permah">${permah(active)}<span class="ctr"><b>${full?3:0}</b><small>életcél</small></span></div>
+    <p>${full?'A pillérek a meglévő naplódból számolnak. <b>2↗ · 1→ · 0↘</b> ezen a héten.':'Még nincs aktív életcélod. <b>Egy cél, két-három pillér</b> — a többit a naplód hozza.'}</p></section>
   <div class="dimband rise" style="--i:2">${Object.entries(DIM).map(([k,d])=>fchip(`${d[0]} <b style="opacity:.7">${cnt(k)}</b>`,d[1],d[2],cnt(k)?'':'is-dim')).join('')}</div>
-  <div class="mosaic">${full?GOALS.map((g,i)=>{const d=DIM[g.d[0]];return `
-    <button class="lgtile glass lift rise" style="--c:${d[1]};--i:${i+3}" data-go="#cel">
+  <div class="mosaic">${!full?`
+    <button class="lgtile dash rise" style="--c:var(--coral);--i:3;align-items:center;justify-content:center;text-align:center" data-go="#sulycel" aria-label="Új súlycél">${I('weight')}<strong>＋ Súlycél</strong><span class="tiny">Tervezd meg a tempót</span></button>`:''}${full?`
+    <button class="lgtile wgoal2 glass lift rise" style="--c:var(--coral);--i:3" data-go="#sulycel">
+      <span class="top">${I('weight')}<span class="pct">33%</span></span>
+      <span class="eb">SÚLYCÉL · EGÉSZSÉG</span><strong>Fogyás · 78,4 → 73 kg</strong>${bar(33,'var(--coral)',3)}<span class="tiny">−0,5 kg / hét · kb. 11 hét</span></button>`:''}${full?GOALS.map((g,i)=>{const d=DIM[g.d[0]];return `
+    <button class="lgtile glass lift rise" style="--c:${d[1]};--i:${i+4}" data-go="#cel">
       <span class="top">${I(d[2])}<span class="arrow">${g.arrow}</span></span>
       <span class="eb">${d[0].toUpperCase()}</span><strong>${g.t}</strong>${dots(g.dots)}<span class="tiny">${g.ma}</span></button>`}).join(''):''}
-    <button class="lgtile dash rise" style="--c:var(--sage);--i:6" data-go="#celuj/1">${I('ring')}<strong>＋ Új cél</strong><span class="tiny">Mezo pilléreket javasol</span></button>
+    <button class="lgtile dash wide rise" style="--c:var(--sage);--i:7" data-go="#celuj/1">${I('ring')}<strong>＋ Új cél</strong><span class="tiny">Mezo pilléreket javasol</span></button>
   </div>
   ${full?`${h3('PARKOL')}<div class="p16"><div class="xrow flatrow" style="--c:var(--lav)">${I('book')}<span class="grow"><strong>Spanyol B2</strong><small>parkol · Elmélyülés</small></span><button class="mini" data-toast="Újra aktív">Vissza</button></div></div>`:''}
   ${h3('A CÉLOK MÖGÖTT')}
   <div class="p16">
     <button class="xrow glass lift rise" style="--c:var(--sage)" data-go="#jelek"><span class="well" style="--c:var(--sage)">${I('signal')}</span><span class="grow"><strong>Jelek · mit figyel a rendszer</strong><small>28 forrás · 19 él · 9 alszik</small></span><span class="chev">›</span></button>
-    <button class="xrow glass lift rise" style="--c:var(--coral)" data-go="#sulycel"><span class="well" style="--c:var(--coral)">${I('weight')}</span><span class="grow"><strong>Súlycél</strong><small>Fogyás · 78,4 → 73 kg</small></span><span class="chev">›</span></button>
   </div>
   ${full?`${h3('LEZÁRT CÉLOK')}<div class="p16"><div class="xrow flatrow" style="--c:var(--sage)">${I('sprout')}<span class="grow"><strong>Félmaraton</strong><small>kész · Egészség</small></span>${I('tick','okmark')}</div></div>`:''}
   ${principle('Ami nincs naplózva, az nem nulla — az üres.')}`;
@@ -3599,7 +3801,7 @@ function jelek(){
 
 /* ── SÚLYCÉL ───────────────────────────────────────────── */
 function sulycel(){
-  if(ST.suly==='empty') return topbar()+back('#en','Én',`<button class="pillx" style="--c:var(--coral)" data-gbox="gate">＋ Új cél</button>`)+
+  if(ST.suly==='empty') return topbar()+back('#celok','Célok',`<button class="pillx" style="--c:var(--coral)" data-gbox="gate">＋ Új cél</button>`)+
     `<div class="pagehero rise" style="--c:var(--coral)">${I('weight','art')}<h1>Még nincs aktív célod</h1><p>Hozz létre egyet, és a Mezo köré szervezi a terveket.</p></div>
     <div class="p16"><button class="lgtile dash" style="--c:var(--coral);min-height:120px" data-gbox="gate">${I('down')}<strong>＋ Új cél</strong></button></div>`;
   const T=[['diet','MAI ÉTRENDI KERET','2 300 kcal','Edzésnap · P 163 · C 226 · F 66','bowl','var(--sage)'],
@@ -3608,9 +3810,9 @@ function sulycel(){
     ['guards','VÉDŐKORLÁTOK','3/4','Van egy figyelendő jel','shield','var(--lav)'],
     ['javaslat','ÚJ JAVASLAT','1 javaslat','Változások áttekintése','note','var(--coral)'],
     ['settings','CÉL BEÁLLÍTÁSAI','73 kg','Fogyás · W8/20','gear','#C9BFB2']];
-  return topbar()+back('#en','Én',`<button class="pillx" style="--c:var(--coral)" data-gbox="gate">＋ Új cél</button>`)+
+  return topbar()+back('#celok','Célok',`<button class="pillx" style="--c:var(--coral)" data-gbox="gate">＋ Új cél</button>`)+
   eyeb('FOGYÁS · NYÁRI FORMA · AKTÍV','A célod ma')+
-  `<button class="course rise" style="--i:1" data-go="#suly">
+  `<button class="course rise" style="--i:1" data-go="#test">
     <div class="top"><div><span class="eb" style="color:#A9D1B2">JÓ PÁLYÁN</span><h2>Jó úton haladsz</h2><p>A mért ütem a célodhoz beállított biztonságos sávban halad.</p></div>
       <div class="cring">${ring(33,'var(--coral)',50,112)}<b>33%</b></div></div>
     <div class="fromto"><b>78,4</b><small>most · kg</small><i>→</i><b style="color:color-mix(in srgb,var(--coral) 70%,var(--ink))">73</b><small>cél · kg</small></div>
@@ -3692,13 +3894,12 @@ function wchart(){
     <text x="0" y="${H+16}" font-size="9" fill="#8A7A6A">aug. 25.</text><text x="${W}" y="${H+16}" text-anchor="end" font-size="9" fill="#8A7A6A">ma</text></svg>`;
 }
 let wkOpen=0;
-function suly(){
+function sulyBody(){
   const WK=[['szept. 15–21','−0,4 kg','78,6 kg átlag · 5 bejegyzés · min 78,4','↓ lefelé',[78.9,78.7,78.8,78.6,78.5,78.4,78.4]],
     ['szept. 8–14','−0,6 kg','79,0 kg átlag · 6 bejegyzés · min 78,8','↓ lefelé',[79.5,79.3,79.2,79.0,78.9,78.8,78.9]],
     ['szept. 1–7','+0,1 kg','79,6 kg átlag · 4 bejegyzés · min 79,4','→ stabil',[79.5,79.7,79.6,79.4,79.7,79.6,79.6]]];
   const spark=v=>{const lo=Math.min(...v),hi=Math.max(...v);return `<svg viewBox="0 0 78 26">${`<path d="${v.map((a,i)=>`${i?'L':'M'}${(i/6*78).toFixed(1)} ${(22-(a-lo)/((hi-lo)||1)*18).toFixed(1)}`).join('')}" fill="none" stroke="#7FB2DE" stroke-width="2" stroke-linecap="round" style="filter:drop-shadow(0 0 4px rgba(127,178,222,.6))"/>`}</svg>`};
-  return topbar()+back('#en','Én',`<button class="pillx" style="--c:var(--sky)" data-sheet="weight">＋ Súly naplózása</button>`)+
-  `<div class="pagehero rise" style="--c:var(--sky)">${I('weight','art')}<span class="eb">NAPI SÚLY</span>
+  return   `<div class="pagehero rise" style="--c:var(--sky)">${I('weight','art')}<span class="eb">NAPI SÚLY</span>
     <div class="num">−3,0<small>kg</small></div><p>indulás óta · 81,4 → 78,4 · cél 73 kg</p>
     <div class="wrapchips" style="justify-content:center;margin-top:8px">${fchip('33% a célig','var(--sage)','tick')}${fchip('4-hét tempó −0,5 kg/hét','var(--sky)')}</div></div>
   <div class="statstrip rise" style="--i:1"><span class="cell"><small>Jelenleg</small><b>78,4</b></span><span class="cell"><small>7 nap / hét</small><b class="good">−0,4</b></span><span class="cell"><small>Várható cél</small><b>11 hét</b></span></div>
@@ -3715,6 +3916,14 @@ function suly(){
       <button class="askbtn" data-toast="Mezo · diagnózis erre a hétre">${I('score')}Mi történt ezen a héten?</button>`:''}
     </div>`).join('')}
     <button class="xrow flatrow" style="justify-content:center;margin-top:10px" data-toast="Régebbi hetek betöltve"><strong style="font-size:13px">Régebbi hetek ⌄</strong></button></div>`;
+}
+let testView='suly';
+function test(){
+  const v=testView;
+  const sw=`<div class="seg" role="tablist" aria-label="Test nézet">${[['suly','Súly','#test','var(--sky)'],['alvas','Alvás','#test/alvas','var(--lav)']].map(([k,l,go,c])=>`<button class="${v===k?'on':''}" style="--c:${c}" data-go="${go}" role="tab" aria-selected="${v===k}">${l}</button>`).join('')}</div>`;
+  const pill=v==='suly'?`<button class="pillx" style="--c:var(--sky)" data-sheet="weight">＋ Súly</button>`:`<button class="pillx" style="--c:var(--lav)" data-sheet="sleep">＋ Log</button>`;
+  return topbar()+tabhead(sw,pill)+(v==='suly'?sulyBody():alvasBody())+
+    `<button class="bodyrow" data-toast="Beállítások · testadatok"><span><b>34</b> év · <b>180</b> cm · <b>78,4</b> kg · <b>15%</b> testzsír</span><i>›</i></button>`;
 }
 
 /* ── ALVÁS ─────────────────────────────────────────────── */
@@ -3747,11 +3956,10 @@ function scatter(){
     ${P.map(p=>`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="5" fill="${p[0]<7?'#FF7E5C':'#7FB2DE'}" style="filter:drop-shadow(0 0 5px ${p[0]<7?'#FF7E5C':'#7FB2DE'})"/>`).join('')}
     <text x="0" y="${H+14}" font-size="9" fill="#8A7A6A">6 ó</text><text x="${W}" y="${H+14}" text-anchor="end" font-size="9" fill="#8A7A6A">8 ó · REM perc ↑</text></svg>`;
 }
-function alvas(){
+function alvasBody(){
   const LOG=[['09/23','7,1 h','23:20 → 06:30',7,''],['09/22','7,5 h','00:42 → 09:03',9,'Tegnap stabil'],['09/21','6,1 h','01:10 → 07:15',5,'Késő vacsora'],
     ['09/20','7,2 h','23:40 → 06:55',7,''],['09/19','6,8 h','23:55 → 06:45',6,''],['09/18','7,9 h','22:50 → 06:45',8,''],['09/17','7,0 h','23:30 → 06:30',7,'']];
-  return topbar()+back('#en','Én',`<button class="pillx" style="--c:var(--lav)" data-sheet="sleep">＋ Log</button>`)+
-  `<div class="pagehero rise" style="--c:var(--lav)">${I('sleep','art')}<span class="eb">ALVÁS</span>
+  return   `<div class="pagehero rise" style="--c:var(--lav)">${I('sleep','art')}<span class="eb">ALVÁS</span>
     <div class="num">7,1<small>h</small></div><p>tegnap éjjel · 23:20 → 06:30 · Q7</p></div>
   <div class="p16">
     <div class="card glass rise" style="--c:var(--lav);--i:1"><div class="ct">${I('ring')}<strong>Alvás-cél</strong><button class="flatchip" style="--c:var(--lav)" data-toast="Beállítások · alvás-cél">szerkeszt</button></div>
@@ -3790,21 +3998,21 @@ function alvas(){
 /* ── ÉJSZAKAI MÓD (teljes képernyő) ─────────────────────── */
 function ejszaka(ph){
   ph=ph||'idle';
-  const nb=`<button class="nback" data-go="${ph==='idle'?'#alvas':'#ejszaka/wait'}">← vissza</button>`;
+  const nb=`<button class="nback" data-go="${ph==='idle'?'#test/alvas':'#ejszaka/wait'}">← vissza</button>`;
   if(ph==='idle') return `<div class="night">${nb}<span class="eb">ÉJSZAKAI MÓD</span>${I('moon','moonart')}<h1>Felébredtél?</h1>
     <p>Ne nézd meg az órát. Én figyelem helyetted az időt — neked csak pihenned kell.</p><button class="ncta" data-go="#ejszaka/wait">Ébren vagyok</button></div>`;
   if(ph==='wait') return `<div class="night">${nb}<span class="eb">ÉN FIGYELEM AZ IDŐT</span><div class="norb"></div>
     <p>Maradj az ágyban, lazíts. Ha segít, válassz egyet:</p>
     <div class="tools">${[['breath','Légzés','be 5 · tartsd 6 · ki 7 — vezetett ütem','#ejszaka/legzes'],['person','Testpásztázás','fejtől lábujjig, lassú vezetéssel',null],['steps','4K-séta','járj végig fejben egy jól ismert utat',null]].map(t=>`
       <button class="tool" ${t[3]?`data-go="${t[3]}"`:`data-toast="${t[1]} — lassú, sötét kártyák"`}>${I(t[0])}<span><strong>${t[1]}</strong><small>${t[2]}</small></span><em>›</em></button>`).join('')}</div>
-    <button class="quitl" data-go="#alvas">elalszom · kilépek</button>
+    <button class="quitl" data-go="#test/alvas">elalszom · kilépek</button>
     <button class="quitl" style="margin-top:8px" data-go="#ejszaka/getup">(20 perc múlva →)</button></div>`;
   if(ph==='legzes') return `<div class="night">${nb}<span class="eb">LÉGZÉS · 5 – 6 – 7</span><div class="breath">Be…</div>
     <p>Kövesd a kört: ahogy nő, szívd be; ahogy áll, tartsd; ahogy húzódik, fújd ki.</p><button class="quitl" data-go="#ejszaka/wait">megállítom ›</button></div>`;
   return `<div class="night">${nb}<span class="eb">20 PERC ELTELT</span>${I('candle','moonart')}<h1>Ideje felkelni</h1>
     <p>Kelj fel — ez most a jobb út.</p>
     <ul><li>Menj át egy másik, félhomályos szobába.</li><li>Csinálj valami unalmasat, képernyő nélkül.</li><li>Csak akkor feküdj vissza, ha álmos vagy.</li></ul>
-    <button class="ncta" data-go="#alvas">Visszafeküdtem</button></div>`;
+    <button class="ncta" data-go="#test/alvas">Visszafeküdtem</button></div>`;
 }
 
 /* ── A HETED ───────────────────────────────────────────── */
@@ -3813,7 +4021,7 @@ function mbars(){return `<span class="mbars">${DAYSC.map(d=>`<i class="${d[1]?''
 function seg7(){const on=[1,1,1,1,0,0,0];return `<svg class="seg7" viewBox="0 0 44 44" style="transform:rotate(-90deg)">${on.map((o,i)=>`<circle cx="22" cy="22" r="17" pathLength="70" fill="none" stroke-width="5" stroke-linecap="round" stroke="${o?'var(--sage)':'rgba(245,239,230,.08)'}" stroke-dasharray="7 63" stroke-dashoffset="${-i*10}" style="${o?'filter:drop-shadow(0 0 4px var(--sage))':''}"/>`).join('')}</svg>`}
 function het(){
   const run=ST.het==='run';
-  return topbar()+back('#en','Én',`<span class="wnav"><button class="glass" style="--c:var(--lav)" data-toast="Előző hét" aria-label="Előző hét">‹</button><button class="glass" style="--c:var(--lav)" ${run?'disabled':''} aria-label="Következő hét">›</button></span>`)+
+  return topbar()+back('#en','Hol tartok',`<span class="wnav"><button class="glass" style="--c:var(--lav)" data-toast="Előző hét" aria-label="Előző hét">‹</button><button class="glass" style="--c:var(--lav)" ${run?'disabled':''} aria-label="Következő hét">›</button></span>`)+
   `<section class="whub rise"><span class="eb">SZEPT. 21–27.</span><h1>${run?'A visszatérés hete':'Az egyensúly hete'}</h1>
     <div class="wring">${ring(78,'var(--lav)',66,150)}<span class="ctr"><b>78</b><small>/ 100</small></span></div>
     <div class="wdelta"><b>+4</b>előző hét 74</div>
@@ -3952,7 +4160,7 @@ function skl(n,ic,lv,p,c,goal,perk){return `<div class="skl" style="--c:${c}">${
   <div class="grow"><strong>${n}</strong>${bar(p,c)}${perk?`<small>→ ${perk}</small>`:''}${goal?`<span class="gchip"><i></i>${goal}</span>`:''}</div><span class="lvp">Lv ${lv}</span></div>`}
 function skillek(){
   const life=sklOpen.life?LIFE:LIFE.slice(0,4);
-  return topbar()+back('#en','Én')+
+  return topbar()+back('#novekedes','Növekedés')+
   hero('var(--lav)','up','NÖVEKEDÉS','Képességek','14<small> skill</small>')+
   strip([['3,4','LIFE Lv-átlag'],['5','Atléta-szint'],['Lv 7','Izom legjobb','gold']])+
   `<div class="p16" style="margin-top:14px">
@@ -3967,14 +4175,14 @@ function skillek(){
     <button class="skmore" data-toast="Mind a 9 izom">Mind a 9 ▸</button></div>
   </div>`+principle('A szint visszajelzés, nem jutalom — semmi nem nyílik vagy zárul tőle. Az XP-idősort nem rajzoljuk.');
 }
-function gnaplo(){
+function tevekenysegek(){
   const day=(d,dt,xp,rows)=>`<div class="dayh"><strong>${d}</strong><small>${dt}</small><em>+${xp} XP</em></div>
     <div class="p16"><div class="card glass" style="--c:var(--sky);padding:4px 14px">${rows.join('')}</div></div>`;
   const q=(t,m,xp)=>`<div class="jrow">${I('tick')}<div class="grow"><strong>${t}</strong><small>küldetés · ${m} · +${xp}</small></div></div>`;
   const a=(t,sk,ic,xp,ft)=>`<div class="jrow">${I('note')}<div class="grow"><strong>${t}</strong><small>tevékenység · ${sk?`${I(ic)}${sk}`:'besorolatlan'} · +${xp}${ft?` · ${ft}`:''}</small></div></div>`;
   const g=t=>`<div class="jrow gone"><span class="dotgone"><i></i></span><div class="grow"><strong>${t}</strong><small>küldetés · csendben lejárt</small></div></div>`;
-  return topbar()+back('#skillek','Növekedés')+
-  hero('var(--sky)','journal','NÖVEKEDÉS · UTOLSÓ 30 NAP','Napló','23<small> teljesített küldetés</small>')+
+  return topbar()+back('#novekedes','Növekedés')+
+  hero('var(--sky)','journal','NÖVEKEDÉS · UTOLSÓ 30 NAP','Tevékenységek','23<small> teljesített küldetés</small>')+
   `<div class="p16"><div class="u7sec glass rise" style="--c:var(--sky);--i:1"><div class="ct">${I('calendar')}<strong>Ez a hét</strong>${fchip('szept. 21 – szept. 27','var(--sky)')}</div>
     <div class="mcells"><div class="mcell" style="--c:var(--sage)"><b>6</b><small>küldetés</small></div><div class="mcell" style="--c:var(--gold)"><b>2</b><small>lejárt</small></div><div class="mcell" style="--c:var(--lav)"><b>4</b><small>tevékenység</small></div><div class="mcell" style="--c:var(--sky)"><b>+120</b><small>LIFE XP</small></div></div>
     <div class="foot2"><span>Megtakarítás e héten</span><b>8 500 Ft</b></div></div></div>`+
@@ -3988,7 +4196,7 @@ const BADGES=[['flag','Első küldetés',100,'got'],['scroll','10 küldetés',10
 function kitunt(){
   const bolt=ST.tit==='bolt';
   const tit=(n,lv,a)=>`<div class="titrow ${a==='Viselve'?'worn':''}"><strong>${n}</strong>${lv}${a}</div>`;
-  return topbar()+back('#skillek','Növekedés')+
+  return topbar()+back('#novekedes','Növekedés')+
   hero('var(--sage)','record','NÖVEKEDÉS','Kitüntetések','5<small> / 9 jelvény</small>')+
   `<section class="streak rise" style="--i:1">${I('flame')}<div><div class="num">6<small> napos sorozat</small></div>
     ${bar(20,'var(--coral)')}<p>következő mérföldkő: <b style="color:var(--ink)">30 nap</b> — +150 érme. A sorozatot bármilyen mai log életben tartja.</p></div></section>
@@ -4007,132 +4215,40 @@ function kitunt(){
     ${[['Páncélzat','10 hét töretlen — sérülésállóság nő','Maximális erő'],['Tűzhely-mester','heti 3 meal prep — kevesebb döntés','Konyha'],['Csendes óra','reggeli jelenlét — fókusz nő','Tudatosság']].map(p=>`<div class="perk"><span class="lvp" style="--c:var(--gold)">Lv10</span><div class="grow"><strong>${p[0]}</strong><small>${p[1]} · ${p[2]}</small></div></div>`).join('')}
   </div></div>`+principle('Az érme itt költhető el — címre vagy sorozat-mentőre. Semmi más nem vásárolható, és semmi nem jár le.');
 }
-
-/* ═════════ RUTIN ═════════ */
-const CHAIN=[['Ébredés időben','reggel · ébredés',92,'d'],['Reggeli napfény','ébredés után',78,'d'],['50 fekvőtámasz','megvolt a reggeli napfény',48,'now'],['Reggeli videó','fekvőtámasz után',30,''],['Gombakávé','videó után',64,'']];
-function rutin(){
-  const past=ST.rutin==='past', done=ST.rutin==='done';
-  const top=topbar()+back('#en','Én',act('AI javaslat','var(--lav)','spark','data-sheet="ai"'))+
-  hero('var(--gold)','dawn','','Rutin',past?'':`${done?7:3}<small> / 7</small>`,'ma · 2 szokás már magától megy')+
-  strip([['9','tökéletes reggel · 30 n','gold'],['12','tökéletes este · 30 n'],['7','aktív szokás']])+
-  `<div class="daynav2 rise" style="--i:2"><button data-st="rutin:past">‹</button><span>${past?'Kedd, szept. 22':'Ma · csütörtök'}</span><button ${past?'data-st="rutin:full"':'disabled'}>›</button></div>`;
-  if(past) return top+`<p class="lead" style="padding-top:10px">Reggel 4/5 · Este 2/2 · <b style="color:#FFD08A">+45 XP</b></p>
-    <div class="callout" style="--c:var(--lav)"><p>A <b>Reggeli videó</b> kimaradt — a lánc másnap folytatódott, nem szakadt meg.</p></div>
-    <div class="p16" style="margin-top:12px">${[['dawn','Reggeli lánc','4/5',CHAIN.map(c=>c[0])],['moon','Esti lánc','2/2',['Koffein-cutoff','Konyha zárva']]].map(ch=>`<div class="card glass" style="--c:var(--gold)"><div class="ct">${I(ch[0])}<strong>${ch[1]}</strong>${fchip(ch[2],'var(--gold)')}</div>
-      <div style="margin-top:8px">${ch[3].map((n,i)=>`<div class="jrow">${i===3&&ch[1]==='Reggeli lánc'?`<span class="dotgone"><i></i></span>`:I('tick')}<div class="grow"><strong style="${i===3&&ch[1]==='Reggeli lánc'?'opacity:.5':''}">${n}</strong></div></div>`).join('')}</div></div>`).join('')}</div>`;
-  return top+`<div class="p16" style="margin-top:12px">
-    <button class="nextc glass rise" style="--i:3" data-toast="A Nap · Rutin oldalára visz (ott pipálsz)"><div class="grow"><span class="eb">${done?'MIND MEGVAN':'KÖVETKEZIK'}</span><strong>${done?'A mai rutin kész':'50 fekvőtámasz'}</strong><small>${done?'holnap folytatódik':'megvolt a reggeli napfény · Reggeli lánc'}</small></div><span class="bigtick">${I(done?'star':'tick')}</span></button>
-    <div class="gap"></div>
-    <button class="chaint glass rise" style="--i:4" data-go="#lanc">${I('dawn')}<div class="grow"><span class="eb">AKTÍV LÁNC · REGGELI</span><div class="chdots">${CHAIN.map(c=>`<i class="${done?'d':c[3]}"></i>`).join('')}</div></div><span class="ctr2">${done?5:2}<small>/ 5 kész</small></span><span class="chev">›</span></button>
-    <div class="gap"></div>
-    <div class="g2"><button class="entile glass rise" style="--c:var(--lav);--i:5" data-go="#szokasok">${I('harvest')}<span class="eb">SZOKÁSAID</span><strong>7 aktív · 2 beérett</strong></button>
-      <button class="entile glass rise" style="--c:var(--sage);--i:6" data-go="#uj/fw">${I('book')}<span class="eb">ÉPÍTS</span><strong>＋ Új szokás / lánc</strong></button></div>
-    <div class="gap"></div>
-    <button class="btn flatb rise" style="--i:7" data-sheet="chain">＋ Új lánc</button></div>`+
-  principle('Itt építed és szerkeszted a rutint — pipálni a Nap · Rutin oldalon lehet.');
-}
-function lanc(){
-  const ed=ST.lanc==='edit';
-  return topbar()+back('#rutin','Rutin',act(ed?'Kész':'Szerkesztés','var(--lav)','',`data-st="lanc:${ed?'view':'edit'}"`))+
-  hero('var(--lav)','dawn','','Reggeli lánc','2<small> / 5</small>','Ébredés időben → Reggeli napfény → 50 fekvőtámasz → Reggeli videó → Gombakávé')+
-  (ed?`<div class="p16 rise" style="--i:1"><label class="field"><span>A LÁNC NEVE</span><span class="inp">Reggeli lánc</span></label>
-    <div class="field" style="margin-top:12px"><span>NAPSZAK</span><div class="wrapchips"><span class="flat on" style="--c:var(--gold)">${I('dawn')}Reggel</span><span class="flat">${I('sun')}Nap</span><span class="flat">${I('moon')}Este</span></div></div></div><div class="gap"></div>`:'')+
-  `<div class="p16"><div class="stackc glass rise" style="--i:2"><div class="hrow" style="justify-content:space-between;padding:2px 0 4px"><span class="eb">${ed?'SORREND ÉS HORGONYOK':'A LÁNC SORRENDBEN'}</span><span class="tiny">2 / 5 kész</span></div>
-    ${CHAIN.map((c,i)=>`<button class="srow2 ${c[3]==='d'?'done':c[3]} ${i===3?'broken':''}" ${ed?'':'data-go="#szokas"'}><span class="node">${c[3]==='d'?I('tick'):'›'}</span><div class="grow"><strong>${c[0]}</strong><span class="achip">${I(i===4?'note':'anchor')}${c[1]}</span></div>${ed?`<span class="mv"><button>▲</button><button>▼</button></span>`:`<span class="sbar">${bar(c[2],'var(--lav)')}</span>`}</button>`).join('')}
-  </div></div>`+
-  (ed?`<div class="tip warn">${I('info')}<p>A sorrend és a horgony nem ugyanazt mondja: a <b>Gombakávé</b> horgonya „videó után”, de előrébb került.</p></div>`:'')+
-  `<div class="p16" style="margin-top:12px"><button class="btn flatb" data-go="#uj/fw">＋ Új habit ebbe a láncba</button></div>`+
-  (ed?`<div class="danger"><button class="btn warn" data-toast="Szüneteltetve">${I('hold')}Lánc szüneteltetése — a szokások megmaradnak</button><p class="tiny" style="text-align:center">Az alap reggeli és esti lánc nem törölhető.</p></div>`:'')+
-  principle('A horgony mondja meg, mi után jön a szokás — a sorrend ezt követi.');
-}
-const HAB=[['Ébredés időben','magától megy',142,92,'Beérett','','var(--sage)'],['Koffein-cutoff','kezd magától menni',66,78,'~12 ismétlés','3 hét múlva','var(--gold)'],
-  ['Reggeli napfény','kezd magától menni',51,74,'~20 ismétlés','kb. 4 hét','var(--gold)'],['50 fekvőtámasz','épül',24,48,'~41 ismétlés','kb. 7 hét','var(--gold)'],
-  ['Konyha zárva','épül',18,40,'~46 ismétlés','kb. 8 hét','var(--gold)'],['Gombakávé','még tudatos',9,26,'—','még gyűlik az adat','var(--lav)'],['Reggeli videó','még tudatos',4,null,'—','még gyűlik az adat','var(--lav)']];
-function szokasok(){
-  const st=['még tudatos','épül','kezd magától menni','magától megy'];
-  const vis=HAB.filter(h=>sklFilter[st.indexOf(h[1])]);
-  return topbar()+back('#rutin','Rutin')+
-  hero('var(--gold)','harvest','','Szokásaid',`${vis.length}`,'formálódás szerint rendezve')+
-  `<div class="ftiles rise" style="--i:1">${st.map((s,i)=>`<button class="ftile ${sklFilter[i]?'on':''}" data-ft="${i}"><b>${HAB.filter(h=>h[1]===s).length}</b><span class="d4">${[0,1,2,3].map(k=>`<i class="${k<=i?'on':''}"></i>`).join('')}</span><small>${s}</small></button>`).join('')}</div>
-  <div class="gap"></div>`+
-  (vis.length?`<div class="grid2">${vis.map((h,i)=>`<button class="htile glass rise" style="--c:${h[6]};--i:${i+2}" data-go="#szokas"><div class="hrow"><span><strong>${h[0]}</strong><div class="stg">${h[1]}</div></span><span class="rw">${ring(h[3]??0,h[6],19,44)}<span class="ctr"><b>${h[3]??'—'}${h[3]?'%':''}</b></span></span></div>
-    <div class="reps">${h[2]}<small>ismétlés</small></div><div class="eta"><b>${h[4]}</b> · ${h[5]}</div></button>`).join('')}</div>`
-  :`<div class="dash emptyline" style="--c:var(--gold)">Ebben a szakaszban most nincs szokásod.</div>`)+
-  principle('Egy szokás ereje a 28 napos pipáiból jön — nem a sorozatból.');
-}
-function szokas(){
-  return topbar()+back('#rutin','Rutin',act('Szerkesztés','var(--gold)','','data-go="#szerk"'))+
-  hero('var(--gold)','dawn','','50 fekvőtámasz','48<small>%</small>','28 napos erő · 24 pipa · 5 kihagyás')+
-  `<div class="p16"><div class="card glass rise" style="--c:var(--gold);--i:1"><div class="hrow" style="gap:14px"><span class="rw" style="width:74px;height:74px">${ring(48,'var(--gold)',31,74)}<span class="ctr">${I('sprout')}</span></span>
-    <div class="grow"><span class="eb">ÚT AZ AUTOMATIZMUS FELÉ</span><strong style="display:block;font-size:18px;margin-top:3px">Épül</strong><small class="tiny">még ennyi ismétlés: <b style="color:#FFD08A">~41</b> · kb. 7 hét</small></div></div>
-    <div class="msrail"><span class="done">még tudatos</span><span class="on">épül</span><span>kezd magától menni</span><span>magától megy</span></div>
-    <p class="tiny" style="margin-top:10px">A reggeli napfény után a legerősebb — ott szinte sosem marad ki.</p></div></div>`+
-  h3('KONTEXTUS · A LEGERŐSEBB JEL')+
-  `<div class="p16"><div class="card glass rise" style="--c:var(--lav);--i:2"><div class="ctxr">
-    ${[['Napszak','var(--gold)',82,'reggel 7–8 között'],['Horgony','var(--lav)',74,'napfény után'],['Ritmus','var(--sage)',51,'hétköznap erősebb']].map(r=>`<div><span class="rw">${ring(r[2],r[1],27,62)}<span class="ctr"><b>${r[2]}%</b></span></span><strong>${r[0]}</strong><small>${r[3]}</small></div>`).join('')}
-  </div></div></div>`+
-  h3('ELŐZMÉNY · AZ ELSŐ NAPTÓL','29 nap')+
-  `<div class="p16"><div class="card glass rise" style="--c:var(--gold);--i:3"><div class="cal">${Array.from({length:35},(_,i)=>`<i class="${i<6?'x':[9,14,20,23,27].includes(i)?'m':i<34?'p':''}"></i>`).join('')}</div>
-    <div class="calleg"><span><i style="background:var(--gold)"></i>pipa</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--coral)"></i>kimaradt</span><span><i style="background:rgba(245,239,230,.08)"></i>nem volt sor</span></div></div></div>`+
-  h3('A RECEPTED',`<button data-go="#szerk" style="color:#FFD08A;font-weight:600">szerkesztem ›</button>`)+
-  `<div class="p16"><div class="card glass rise" style="--c:var(--gold);--i:4"><p class="sentence">Miután <b>megvolt a reggeli napfény</b>, <b>50 fekvőtámaszt</b> csinálok, és ünneplésül <b>ökölrázás</b>.</p></div></div>`;
-}
-function szerk(){
-  return topbar()+back('#szokas','Szokás',act('Mentés','var(--gold)','tick','data-toast="Mentve"'))+
-  hero('var(--gold)','book','SZERKESZTÉS','50 fekvőtámasz')+
-  `<div class="p16"><div class="card glass rise" style="--c:var(--gold);--i:1"><span class="eb">A RECEPT · EGYÜTT VÁLTOZIK</span><p class="sentence" style="margin-top:8px">Miután <b>megvolt a reggeli napfény</b>, <b>50 fekvőtámaszt</b> csinálok, és ünneplésül <b>ökölrázás</b>.</p></div></div>`+
-  h3('KERET')+`<div class="seg rise" style="--i:2"><button class="on" style="--c:var(--gold)">Szokás-láncolás</button><button>Négy törvény</button></div>
-  <div class="tip warn">${I('info')}<p>Váltásnál elveszik: az ünneplés.</p></div>`+
-  h3('MIUTÁN… · HORGONY')+`<div class="p16"><button class="optrow rise" style="--i:3" data-sheet="anchor">${I('anchor')}<div class="grow"><strong>Reggeli napfény</strong><small>74% erő · 28 nap</small></div><span class="chev">▾</span></button></div>`+
-  `<div class="p16" style="display:grid;gap:12px;margin-top:14px">
-    <label class="field"><span>CÍM · A TETT</span><span class="inp">50 fekvőtámasz</span></label>
-    <label class="field"><span>ÜNNEPLÉSÜL</span><span class="inp">ökölrázás</span></label>
-    <div class="field"><span>MIÉRT</span>${VF('pl. hogy erősebb legyen a vállam','Hogy erősebb legyen a vállam, és ne fájjon a hátam az ülőmunkától.',{rows:1,sm:true})}</div></div>`+
-  h3('HOGYAN PIPÁLÓDIK?')+`<div class="seg"><button class="on" style="--c:var(--gold)">Kézzel pipálom</button><button>Adatból</button></div>`+
-  h3('LÁNC')+`<div class="p16 wrapchips"><span class="flat on" style="--c:var(--gold)">Reggeli lánc</span><span class="flat">Esti lánc</span><span class="flat">Egyik sem</span></div>`+
-  h3('MENNYIBE KERÜL? (ÚJRAÉRTÉKELHETŐ)')+effortCard()+
-  `<div class="danger"><button class="btn warn" data-toast="Szüneteltetve">${I('hold')}Szüneteltetés — a haladás megmarad</button><button class="btn warn" data-toast="Koppints újra a törléshez">${I('trash')}Szokás törlése</button></div>`;
-}
-function effortCard(){
-  const f=['Idő','Fizikai','Fejmunka','Beleillik'], o=[['kevés','közép','sok'],['könnyű','közép','nehéz'],['könnyű','közép','nehéz'],['simán','kicsit','nehezen']];
-  return `<div class="p16"><div class="card glass" style="--c:var(--gold)"><div class="effg">${f.map((n,i)=>`<div class="er"><span>${n}</span><div class="seg">${o[i].map((t,k)=>`<button class="${effort[i]===k?'on':''}" style="--c:var(--gold)" data-eff="${i}:${k}">${t}</button>`).join('')}</div></div>`).join('')}</div>
-    <div class="effout"><b>Közepes</b><small>+10 XP / alkalom</small></div></div></div>`;
-}
-const WZ={fogg:['fw','anchor','act','celeb'],clear:['fw','cue','crave','act','reward']};
-const WT={fw:'Milyen keretre építsük?',anchor:'Mihez horgonyzod?',cue:'Mi a jelzés?',crave:'Miért fogod akarni?',act:'Mi a tett?',celeb:'Hogyan ünnepled?',reward:'Mi teszi kielégítővé?'};
-function uj(step){
-  const steps=WZ[fwPick]||WZ.fogg, i=Math.max(0,steps.indexOf(step)), s=steps[i];
-  const prevT=i?WT[steps[i-1]]:'Rutin', prevGo=i?`#uj/${steps[i-1]}`:'#rutin';
-  let body='';
-  if(s==='fw') body=`<div class="p16">${[['fogg','anchor','Szokás-láncolás','BJ Fogg · Tiny Habits',['Horgony','Pici tett','Ünneplés']],['clear','gem','Négy törvény','James Clear · Atomic Habits',['Jelzés','Vágy','Válasz','Jutalom']],['free','note','Keret nélkül','csak a tett',[]]].map(f=>`<button class="fwc glass ${fwPick===f[0]?'on':''}" data-fw="${f[0]}"><div class="ct">${I(f[1])}<span><strong>${f[2]}</strong><small>${f[3]}</small></span></div>${f[4].length?`<div class="loopl">${f[4].map(x=>`<span>${x}</span>`).join('→')}</div>`:''}</button>`).join('')}</div>
-    <div class="tip">${I('bulb')}<p>Kezdőknek a szokás-láncolás a legkönnyebb: egy meglévő szokásra ülteted az újat.</p></div>`;
-  if(s==='anchor') body=`<div class="p16 wrapchips">${[['Ébredés időben','szokás'],['Reggeli napfény','szokás'],['Kávé után','Mezo-pillanat'],['Edzés vége','Mezo-pillanat']].map((a,k)=>`<span class="flat ${k===1?'on':''}" style="--c:var(--sage)">${a[0]}<b>${a[1]}</b></span>`).join('')}</div>
-    <div class="p16" style="margin-top:12px"><div class="field"><span>VAGY SAJÁT SZAVAKKAL</span>${VF('pl. miután leteszem a telefont','Miután reggel lefőttem a kávét.',{rows:1,sm:true})}</div></div>
-    <div class="tip">${I('anchor')}<p>A jó horgony minden nap biztosan megtörténik, és pontosan tudod, mikor ért véget.</p></div>`;
-  if(s==='act') body=`<div class="p16"><label class="field"><span>ÉN … · A TETT</span><span class="inp">50 fekvőtámaszt csinálok</span></label></div>
-    <div class="tip warn">${I('scissors')}<p>Ez nagynak tűnik. Mi lenne, ha 5-tel kezdenéd? A pici tett ragad meg.</p></div>
-    ${h3('MELYIK LÁNCBA?')}<div class="p16 wrapchips"><span class="flat on" style="--c:var(--gold)">Reggeli lánc</span><span class="flat">Esti lánc</span></div>
-    ${h3('ÉLETTERÜLET')}<div class="p16"><div class="lifeg">${LIFE.map((l,k)=>`<button class="${k===7?'on':''}">${I(l[1])}${l[0]}</button>`).join('')}</div></div>
-    ${h3('MENNYIBE KERÜL?')}${effortCard()}
-    ${h3('HOGYAN PIPÁLÓDIK?')}<div class="seg"><button class="on" style="--c:var(--gold)">Kézzel pipálom</button><button>Adatból</button></div>`;
-  if(s==='celeb') body=`<div class="p16 wrapchips">${['ökölrázás','„Igen!”','mosoly a tükörbe','mély levegő'].map((c,k)=>`<span class="flat ${k===0?'on':''}" style="--c:var(--gold)">${c}</span>`).join('')}</div>
-    <div class="p16" style="margin-top:12px"><div class="field"><span>VAGY SAJÁT</span>${VF('pl. egy kis tánc','Egy kis tánc a konyhában.',{rows:1,sm:true})}</div></div>
-    <div class="tip">${I('anchor')}<p>Az ünneplés azonnal jöjjön, a tett után — ettől ragad meg az érzés.</p></div>
-    <button class="commit on" data-toast="Vállalva"><i>${I('tick')}</i>Vállalom</button>`;
-  if(['cue','crave','reward'].includes(s)) body=`<div class="p16"><div class="field"><span>${s==='cue'?'JELZÉS':s==='crave'?'MIÉRT AKAROD? · VÁGY':'JUTALOM'}</span>${VF('…',s==='cue'?'Amikor este bekapcsolom a vízforralót a teához.':s==='crave'?'Mert utána nyugodtabban alszom el, és ezt nagyon szeretem.':'Utána kipipálom, és megnézem, hány napja tart a sorozat.')}</div></div><div class="tip" style="--c:var(--lav)">${I('gem')}<p>A négy törvény egy-egy lépése.</p></div>`;
-  const last=i===steps.length-1;
-  return topbar()+back(prevGo,prevT,`<button class="pillx ghost" data-go="#rutin">Mégse</button>`)+
-  `<div class="steps rise" style="margin-top:12px">${steps.map((x,k)=>`<span class="${k<i?'done':k===i?'on':''}" style="--c:var(--gold)">${k+1}</span>`).join('')}</div>
-  <div class="eyeb rise" style="padding-top:6px"><span><span class="eb">ÚJ SZOKÁS-RECEPT · ${i+1}/${steps.length}</span><h2>${WT[s]}</h2></span></div>`+
-  (i?`<div class="p16"><div class="card glass rise" style="--c:var(--gold);--i:1"><span class="eb" style="display:flex;align-items:center;gap:6px">${I(fwPick==='clear'?'gem':'anchor','inl')}${fwPick==='clear'?'NÉGY TÖRVÉNY':'SZOKÁS-LÁNCOLÁS'} · ÉPÜL, AHOGY TÖLTÖD</span>
-    <p class="sentence" style="margin-top:8px">Miután <b>megvolt a reggeli napfény</b>, ${i>=2?'<b>50 fekvőtámaszt</b> csinálok':'<span class="blank">…</span>'}, és ünneplésül ${i>=3?'<b>ökölrázás</b>':'<span class="blank">…</span>'}.</p></div></div><div class="gap"></div>`:'')+
-  body+`<div class="wznav">${i?`<button class="pillx ghost" data-go="${prevGo}">‹ Vissza</button>`:'<span></span>'}<button class="pillx" style="--c:var(--gold)" ${last?'data-toast="Mentve · vissza a Rutinra"':`data-go="#uj/${steps[i+1]}"`}>${last?`${I('tick')}Mentés`:'Tovább ›'}</button></div>`;
+function novekedes(){
+  const full=ST.hub==='full';
+  const trait=(lb,w,c,val,i)=>`<div class="grtr"><span class="lb">${lb}</span>${bar(w,c,i)}<span class="val">${val}</span></div>`;
+  const qchip=(t,k)=>k==='done'?`<span class="grchip done">${I('tick')}<span class="grsr">kész: </span>${t}</span>`
+    :k==='gone'?`<span class="grchip gone">${t} · csendben lejárt</span>`:`<button class="grchip open" data-toast="Küldetések · a Nap fülön">${t}</button>`;
+  return topbar()+back('#en','Hol tartok')+
+  `<section class="grhero rise">
+    <div class="ttl">Fejlődés</div>
+    <div class="row">${I('up','art')}<div><span class="numl">${full?'3 140':'0'}</span><span class="unit">XP</span></div></div>
+    <div class="grtraits">${trait('Szint '+(full?12:1),full?12:0,'var(--gold)',full?'420 <small>/ 3 500</small>':'0 <small>/ 100</small>',1)}
+      ${full?trait('Fegyelem',82,'var(--lav)','82%',2):''}
+      <div class="grtr"><span class="lb">Ritmus</span><span class="wdots" aria-hidden="true">${Array.from({length:8},(_,n)=>`<i class="${n>=(full?2:7)?'on':''}${n===7?' now':''}"></i>`).join('')}</span><span class="val">${full?6:1} <small>hét</small></span></div>
+    </div>
+  </section>
+  <section class="grma rise" style="--i:1">
+    <button class="head" data-toast="Küldetések · a Nap fülön" aria-label="Küldetések · a Nap fülön"><span class="eb">MA${full?' · 2/4 küldetés':''}</span>${full?'<span class="xpp">+45 XP</span>':''}<span class="chev">›</span></button>
+    ${full?'':'<p class="empty">Ma még nincs küldetés — <b>a reggeli briefinggel jön.</b> Tevékenységet közben is logolhatsz.</p>'}
+    <div class="grchips">
+      ${full?qchip('Fehérje 150 g','done')+qchip('Reggeli séta','done')+qchip('Esti nyújtás','open')+qchip('Heti meal prep','gone')
+        +`<span class="grchip act">${I('pencil')}Meal prep a hétre · +15</span><span class="grchip act">${I('pencil')}Pénzügyek rendezése · +20</span>`:''}
+      <button class="grchip add" data-toast="Tevékenység naplózása">＋ Tevékenység</button>
+    </div>
+  </section>
+  <div class="duoen">
+    <button class="entile glass lift rise" style="--c:var(--lav);--i:2" data-go="#skillek">${I('sprout')}<span class="eb">SKILLEK</span>${full?'<strong>14 skill · legjobb Lv 7</strong>':''}</button>
+    <button class="entile glass lift rise" style="--c:var(--sky);--i:3" data-go="#tevekenysegek">${I('journal')}<span class="eb">TEVÉKENYSÉGEK</span>${full?`<strong>23${I('tick','inl')} · 9${I('pencil','inl')} <small class="mut">· 30 nap</small></strong>`:''}</button>
+    <button class="entile glass lift rise" style="--c:var(--sage);--i:4" data-go="#kitunt">${I('record')}${full?'<span class="pulse" aria-hidden="true"></span>':''}<span class="eb">KITÜNTETÉSEK</span>${full?'<strong>5 / 9 jelvény · 6 napos sorozat</strong>':''}</button>
+  </div>`+principle('A szint visszajelzés, nem jutalom — semmi nem nyílik vagy zárul tőle.');
 }
 
 /* ═════════ NAPLÓ ═════════ */
 function naplo(){
   const done=ST.dec==='done';
-  return topbar()+back('#en','Én',act('Új bejegyzés','var(--sage)','note','data-sheet="journal"'))+
+  return topbar()+tabhead('',act('Új bejegyzés','var(--sage)','note','data-sheet="journal"'))+
   hero('var(--sage)','journal','','Napló','5<small> napos hála-sorozat</small>','12 bejegyzés')+
   `<div class="p16"><div class="card glass rise" style="--c:var(--sage);--i:1"><div class="ct">${I('heart')}<strong>Hálanapló</strong>${fchip('él a sorozat','var(--sage)','flame')}</div><div class="body">5 napos sorozat · 12 bejegyzés</div></div></div>`+
   h3('DÖNTÉSEK')+
@@ -4158,7 +4274,7 @@ const P=[{id:'petra',n:'Petra',r:'Élettárs · Napi',t:'jo',w:3,all:41,sp:[6,8,
   {id:'anyu',n:'Anya',r:'Család · Heti',t:'jo',w:1,all:12,sp:[7,7,8,7,8,8,8],cx:['var(--gold)']}];
 const av=(p,cls='')=>`<span class="avat ${cls}" style="--c:${TONE[p.t][1]}">${p.n[0]}</span>`;
 function emberek(){
-  return topbar()+back('#en','Én',`<span class="acts">${act('Log','var(--rose)','mic','data-sheet="plog"')}<button class="pillx ghost" data-sheet="pedit">＋ Új személy</button></span>`)+
+  return topbar()+back('#en','Hol tartok',`<span class="acts">${act('Log','var(--rose)','mic','data-sheet="plog"')}<button class="pillx ghost" data-sheet="pedit">＋ Új személy</button></span>`)+
   hero('var(--rose)','people','','Kapcsolatok','6','aktív kör · 8 említés e héten')+
   strip([['8','említés · hét'],['Petra','legtöbbet említett'],['Bence ↘','hangulat-lejtő']])+
   `<div class="grid2" style="margin-top:14px">
@@ -4230,8 +4346,8 @@ function ember(){
 /* ═════════ ÉRTESÍTÉSEK ═════════ */
 function ertesitesek(){
   const row=(ic,c,t,x,tm,u)=>`<button class="nfrow ${u?'unread':''}" data-toast="A kapcsolódó oldalra visz"><span class="well" style="--c:${c}">${I(ic)}</span><div class="grow"><strong>${t}</strong><small>${x}</small></div><em>${tm}</em></button>`;
-  if(ST.nf==='empty') return topbar()+back('#en','Én')+hero('var(--sky)','bell','','Értesítések')+`<div class="p16"><div class="dash emptyline" style="--c:var(--sky)">Még nincs értesítésed.</div></div>`;
-  return topbar()+back('#en','Én')+hero('var(--sky)','bell','','Értesítések','3','11 értesítés')+
+  if(ST.nf==='empty') return topbar()+back('#en','Hol tartok')+hero('var(--sky)','bell','','Értesítések')+`<div class="p16"><div class="dash emptyline" style="--c:var(--sky)">Még nincs értesítésed.</div></div>`;
+  return topbar()+back('#en','Hol tartok')+hero('var(--sky)','bell','','Értesítések','3','11 értesítés')+
   `<div class="nfday">MA</div><div class="p16">${row('pattern','var(--lav)','Új minta vár döntésre','A késői vacsora és a felszínes alvás között erős jel rajzolódik ki…','09:12',1)+row('orb','var(--lav)','Bejött egy előrejelzés','A múlt heti jóslatod a pihenőnapról beigazolódott.','08:40',1)+row('people','var(--rose)','Új arc a szövegeidben','Marci · visszatérő név','07:55',1)}</div>
   <div class="nfday">TEGNAP</div><div class="p16">${row('scroll','var(--gold)','Elkészült a heti memoár','A hét története, hét fejezetben.','21:02')+row('harvest','var(--gold)','Beérett egy szokás','Az „Ébredés időben” már magától megy.','18:30')+row('flask','var(--sage)','Kísérlet: 5. nap','A koffein-cutoff kísérlet félúton jár.','09:00')}</div>
   <div class="nfday">SZEPT 21</div><div class="p16">${row('calendar','var(--gold)','Kész a heti áttekintés','Az egyensúly hete — 72 pont.','20:00')+row('book','var(--sky)','Új tény a tudástárban','Reggel jobban megy a fókusz.','14:12')+row('chat','var(--lav)','A konzílium döntött','A regeneráció most elsőbbséget kap.','11:40')}</div>`+
@@ -4375,7 +4491,7 @@ function ikonokU7(){
   `<div class="p16"><div class="card glass" style="--c:var(--lav)"><div class="wrapchips">${[['pot','Konyha (LIFE)'],['coin','Pénzügyek (LIFE)'],['shield','Streak-mentő'],['gem','Négy törvény'],['hold','Szüneteltetés'],['tick','Megvan'],['note','Tevékenység / keret nélkül'],['harvest','Szokás beérett'],['record','50 küldetés'],['flame','Sorozat'],['peak','10 000 XP'],['repeat','Visszanézés'],['lens','Jelölt'],['breath','Lecsendesítés'],['candle','Napzárás']].map(m=>fchip(m[1],'var(--lav)',m[0])).join('')}</div>
   <p class="quiet" style="padding:10px 2px 0">A régi jelek (🏁 📜 🎖️ ✍️ 🔥 🌈 🧠 🏛️ 💰 💪 🧊 🪙 ✨ ⚓ ◈ 💡 ✂ ⏸ ⚠ ✓ ✎ 🌅 ☀️ 🌙) mind ezekre cserélődnek. A beállítások sorai a kis Boop helyett 3D ikont kapnak; a területek csempéi és a fejlécek megtartják a Boopot.</p></div></div>`;
 }
-function ikonok(){return topbar()+back('#en','Én')+ikonokU6()+`<div class="gap"></div>`+ikonokU7()}
+function ikonok(){return topbar()+back('#en','Hol tartok')+ikonokU6()+`<div class="gap"></div>`+ikonokU7()}
 
 /* ── GlassBox dialógus ───────────────────────────────────── */
 const GB={
@@ -4409,17 +4525,6 @@ const SH={
   stats:['var(--gold)',()=>`<div class="shh">${I('book')}<div class="grow"><span class="eb">A KUTATÁS SZÁMAI</span><h3>Miért számít az alvás?</h3></div><button class="x" data-closesheet aria-label="Bezár">✕</button></div>
     <div class="mrows">${[['A rendszeresség a király','Az azonos lefekvési idő erősebben jár együtt a jó közérzettel, mint az alvás hossza.'],['7 óra alatt','Kevesebb REM és mély alvás — a regeneráció a második felében történik.'],['Az éjszakai ébredés normális','Egy-két rövid ébredés minden éjszaka része.']].map(r=>`<button><span><strong>${r[0]}</strong><small>${r[1]}</small></span></button>`).join('')}</div>`],
   /* ── Én II (U7) lapjai ── */
-  ai:['var(--lav)',()=>`<div class="shh">${I('spark')}<div class="grow"><span class="eb">AI JAVASLAT</span><h3>Milyen szokás segítene?</h3></div>${x}</div>
-    <div class="field"><span>SZÁNDÉK (OPCIONÁLIS)</span>${VF('pl. jobb esti lezárás','Szeretném, ha este hamarabb letenném a telefont és nyugodtabban zárnám a napot.')}</div>
-    <button class="pillx" style="--c:var(--lav);width:100%;justify-content:center;height:44px;margin-top:14px" data-toast="Mezo gondolkodik…">${I('spark')}Javasolj</button>`],
-  chain:['var(--gold)',()=>`<div class="shh">${I('chain')}<div class="grow"><span class="eb">RUTIN</span><h3>Új rutin</h3></div>${x}</div>
-    <label class="field"><span>NÉV</span><span class="inp ph">pl. Ebéd utáni szünet</span></label>
-    <div class="field" style="margin-top:12px"><span>NAPSZAK</span><div class="wrapchips"><span class="flat on" style="--c:var(--gold)">${I('dawn')}Reggel</span><span class="flat">${I('sun')}Napközben</span><span class="flat">${I('moon')}Este</span></div></div>
-    <div class="pair" style="padding:16px 0 0"><button class="pillx ghost" data-closesheet style="justify-content:center">Mégse</button><button class="pillx" style="--c:var(--gold);justify-content:center" data-toast="Mentve">${I('tick')}Mentés</button></div>`],
-  anchor:['var(--gold)',()=>`<div class="shh">${I('anchor')}<div class="grow"><span class="eb">HORGONY</span><h3>Mihez kötöd?</h3></div>${x}</div>
-    <span class="eb">A SZOKÁSAIDBÓL</span><div style="margin:8px 0 14px">${[['Ébredés időben','92% erő · 28 nap',0],['Reggeli napfény','74% erő · 28 nap',1],['Gombakávé','friss szokás',0]].map(o=>`<button class="optrow ${o[2]?'on':''}"><div class="grow"><strong>${o[0]}</strong><small>${o[1]}</small></div><span class="rad"></span></button>`).join('')}</div>
-    <span class="eb">MEZO-ESEMÉNYEK</span><div style="margin:8px 0 14px">${['Edzés vége','Első étkezés'].map(o=>`<button class="optrow"><div class="grow"><strong>${o}</strong></div><span class="rad"></span></button>`).join('')}</div>
-    <span class="eb">EGYÉB</span><div style="margin-top:8px"><button class="optrow">${I('note')}<div class="grow"><strong>Saját szavakkal…</strong></div></button><button class="optrow unlink">${I('skip')}<div class="grow"><strong>Leoldom a horgonyt</strong></div></button></div>`],
   journal:['var(--sage)',()=>`<div class="shh">${I('journal')}<div class="grow"><span class="eb">NAPLÓ</span><h3>Mi jár a fejedben?</h3><small class="tiny">A gondolataidnak itt van helye.</small></div>${x}</div>
     <div class="seg" style="margin:0 0 12px"><button class="on" style="--c:var(--sage)">Napló</button><button>Döntés</button></div>
     ${VF('Írd le, mi jár a fejedben…','Ma reggel sokkal nyugodtabb voltam a meeting előtt, a légzőgyakorlat tényleg segít. Holnap is megcsinálom.',{rows:5})}
@@ -4445,27 +4550,37 @@ function openSheet(k){const [c,f]=SH[k];const sh=$('#sheet');closeGb();sh.style.
 function closeSheet(){$('#sheet').classList.remove('on');if(!$('#gbox').classList.contains('on'))$('#scrim').classList.remove('on')}
 
 /* ── router (U6 + U7 egyben) ─────────────────────────────── */
-const VW={en:hub,celok,cel,celuj,jelek,sulycel,sulyresz,sulyuj,suly,alvas,ejszaka,het,elemzes,napok,felfedezesek,tanulsagok,
-  skillek,gnaplo,kitunt,rutin,lanc,szokasok,szokas,szerk,uj,naplo,emberek,jeloltek,kor,emlitesek,heti,ember,ertesitesek,
+const HT='Hol tartok', TT='Test', CT='Célok';
+const VW={en:hub,celok,cel,celuj,jelek,sulycel,sulyresz,sulyuj,test,suly:test,alvas:test,ejszaka,het,elemzes,napok,felfedezesek,tanulsagok,
+  novekedes,skillek,tevekenysegek,kitunt,naplo,emberek,jeloltek,kor,emlitesek,heti,ember,ertesitesek,
   beall,'b-train':btrain,'b-me':bme,'b-cel':bcel,'b-mezo':bmezo,'b-nap':bnap,'b-alt':balt,'b-ert':bert,'b-fiok':bfiok,'b-szemely':id=>bszemely(id||'about'),ikonok};
-/* A négy fül a navModel 'me' domainje szerint: Áttekintés /me · Súly /me/weight · Alvás /me/sleep · Napló /me/naplo.
-   Minden más Én-útvonal (célok, súlycél, hét, növekedés, rutin, emberek, értesítések) prefix szerint az Áttekintésé;
-   a beállítások (/settings) nem tartoznak területhez, itt az Áttekintés világít. */
-const TAB={suly:'Súly',alvas:'Alvás',ejszaka:'Alvás',naplo:'Napló'};
+/* Négy fül: Hol tartok · Test (Súly + Alvás egy oldalon, kapcsolóval) · Célok · Napló.
+   Minden más Én-útvonal a saját családja fülén világít; az értesítések és a beállítások a Hol tartokon. */
+const TAB={en:HT,het:HT,elemzes:HT,napok:HT,felfedezesek:HT,tanulsagok:HT,ikonok:HT,
+  novekedes:HT,skillek:HT,kitunt:HT,tevekenysegek:HT,emberek:HT,jeloltek:HT,kor:HT,emlitesek:HT,heti:HT,ember:HT,
+  ertesitesek:HT,beall:HT,'b-train':HT,'b-me':HT,'b-cel':HT,'b-mezo':HT,'b-nap':HT,'b-alt':HT,'b-ert':HT,'b-fiok':HT,'b-szemely':HT,
+  test:TT,suly:TT,alvas:TT,ejszaka:TT,
+  celok:CT,cel:CT,celuj:CT,jelek:CT,sulycel:CT,sulyresz:CT,sulyuj:CT,
+  naplo:'Napló'};
 const route=()=>(location.hash||'#en').slice(1).split('/');
-function view(){const [r,id]=route();return (VW[r]||hub)(id)}
+function view(){
+  const [r,id]=route();
+  if(r==='test')testView=id==='alvas'?'alvas':'suly';
+  if(r==='suly')testView='suly';
+  if(r==='alvas')testView='alvas';
+  return (VW[r]||hub)(id)}
 function render(){
   const [r]=route();
   $('#phone').classList.toggle('night',r==='ejszaka');
   $('#scroll').innerHTML=view(); $('#scroll').scrollTop=0; closeSheet(); closeGb();
   ntfOpen=false;$('#ntf').classList.remove('on');$('#switcher').classList.remove('on');
-  tabbar(TAB[r]||'Áttekintés');
-  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href').split('/')[0]==='#'+r)));
+  tabbar(TAB[r]||HT);
+  document.querySelectorAll('#jump a').forEach(a=>a.setAttribute('aria-current',String(a.getAttribute('href')===(location.hash||'#en')||(a.getAttribute('href').split('/')[0]==='#'+r&&!a.getAttribute('href').includes('/')))));
 }
 let toastT;
 function toast(t){clearTimeout(toastT);$('#toast').textContent=t;$('#toast').classList.add('on');toastT=setTimeout(()=>$('#toast').classList.remove('on'),2400)}
 function soft(){const y=$('#scroll').scrollTop;$('#scroll').innerHTML=view();$('#scroll').scrollTop=y}
-const HOME={hub:'#en',celok:'#celok',suly:'#sulycel',het:'#het',rutin:'#rutin',lanc:'#lanc',dec:'#naplo',jel:'#emberek',tit:'#kitunt',nf:'#ertesitesek',disc:'#felfedezesek'};
+const HOME={hub:'#en',elv:'#en',celok:'#celok',suly:'#sulycel',het:'#het',dec:'#naplo',jel:'#emberek',tit:'#kitunt',nf:'#ertesitesek',disc:'#felfedezesek'};
 document.addEventListener('click',e=>{
   const t=e.target, go=t.closest('[data-go]'), tt=t.closest('[data-toast]'), sh=t.closest('[data-sheet]'), gb=t.closest('[data-gbox]');
   if(t.closest('[data-closesheet]')){closeSheet();return}
@@ -4474,6 +4589,7 @@ document.addEventListener('click',e=>{
     const cur=(location.hash||'#en').split('/')[0];
     if(cur!==HOME[k]&&!(k==='jel'&&cur==='#jeloltek')){location.hash=HOME[k]}else{soft()}return}
   /* Én I (U6) nézet-kapcsolók */
+  const sn=t.closest('[data-stn]'); if(sn){e.preventDefault();e.stopPropagation();const i=+sn.dataset.stn;stnSel=stnSel===i?-1:i;soft();return}
   const cv=t.closest('[data-celv]'); if(cv){celView=cv.dataset.celv;soft();return}
   const pr=t.closest('[data-period]'); if(pr){period=pr.dataset.period;soft();return}
   const sw=t.closest('[data-swin]'); if(sw){sleepWin=sw.dataset.swin;soft();return}
@@ -4481,9 +4597,6 @@ document.addEventListener('click',e=>{
   const wk=t.closest('[data-wk]'); if(wk){const i=+wk.dataset.wk;wkOpen=wkOpen===i?-1:i;soft();return}
   /* Én II (U7) nézet-kapcsolók */
   if(t.closest('[data-lifemore]')){sklOpen.life=!sklOpen.life;soft();return}
-  const fw=t.closest('[data-fw]'); if(fw){fwPick=fw.dataset.fw==='free'?'fogg':fw.dataset.fw;if(fw.dataset.fw==='free')toast('Keret nélkül: csak a tett lépése');soft();return}
-  const ef=t.closest('[data-eff]'); if(ef){const [a,b]=ef.dataset.eff.split(':');effort[+a]=+b;soft();return}
-  const ft=t.closest('[data-ft]'); if(ft){sklFilter[+ft.dataset.ft]=!sklFilter[+ft.dataset.ft];soft();return}
   const pf=t.closest('[data-pf]'); if(pf){pplF=pf.dataset.pf;soft();return}
   const tg=t.closest('[data-tgl]'); if(tg){tg.classList.toggle('on');return}
   if(gb){e.preventDefault();openGb(gb.dataset.gbox);return}
@@ -4493,13 +4606,13 @@ document.addEventListener('click',e=>{
   if(tt){e.preventDefault();toast(tt.dataset.toast);return}
   if(t.id==='scrim'){closeSheet();closeGb()}
 });
-addEventListener('hashchange',()=>{drawerOpen={p:false,f:false};render()});
+addEventListener('hashchange',()=>{drawerOpen={p:false,f:false};stnSel=-1;render()});
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
 
 function tabbar(active){
-  const tabs=[['Áttekintés','emberek','#en'],['Súly','suly','#suly'],['Alvás','alvas','#alvas'],['Napló','naplo','#naplo']];
+  const tabs=[['Hol tartok','emberek','#en'],['Test','suly','#test'],['Célok','cel','#celok'],['Napló','naplo','#naplo']];
   $('#tabbar').innerHTML=`<button class="tb-boop" data-switch aria-label="Területváltó: Én">${B('en',true)}</button>`+
-    tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" data-go="${go}">${C(ic)}<span>${l}</span></button>`).join('');
+    tabs.map(([l,ic,go])=>`<button class="tb ${l===active?'on':''}" data-go="${go}" ${l===active?'aria-current="page"':''}>${C(ic)}<span>${l}</span></button>`).join('');
 }
 
 (function chrome(){

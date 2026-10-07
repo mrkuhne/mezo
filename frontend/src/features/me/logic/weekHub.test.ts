@@ -3,7 +3,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   analysisSnippet, dayHasAnyLog, weekHubState, DAY_STATE_COPY, discoverySummary, firstSentence,
-  generationStamp, huDec, loggedDayCount, subscoreCount, resolveWeekStart, weekPhase,
+  generationStamp, huDec, leadSentences, loggedDayCount, subscoreCount, resolveWeekStart, weekPhase,
   weekStatCells, weekSubline,
 } from '@/features/me/logic/weekHub'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
@@ -188,5 +188,35 @@ describe('the nine mini-cells', () => {
   test('huDec keeps the trailing decimal and uses the Unicode minus', () => {
     expect(huDec(7)).toBe('7,0')
     expect(huDec(-0.3, 2)).toBe('−0,30')
+  })
+})
+
+describe('leadSentences — the Én hub week hero on a review without hero lines (mezo-lhqw7)', () => {
+  test('returns the first n sentences, trimmed', () => {
+    expect(leadSentences('A. B. C.', 2)).toEqual(['A.', 'B.'])
+    expect(leadSentences('Erős hét volt: öt napon tartottad. A csütörtök nem tört meg semmit — visszajött a ritmus.', 2))
+      .toEqual(['Erős hét volt: öt napon tartottad.', 'A csütörtök nem tört meg semmit — visszajött a ritmus.'])
+  })
+
+  test('never pads — a one-sentence summary is one line, an empty one is none', () => {
+    expect(leadSentences('Egyetlen mondat pont nélkül', 2)).toEqual(['Egyetlen mondat pont nélkül'])
+    expect(leadSentences('', 2)).toEqual([])
+  })
+
+  test('an abbreviation or a lower-case continuation is not a sentence end', () => {
+    expect(leadSentences('Volt késői étkezés, pl. a szerdai vacsora. Utána felszínes volt az alvás.', 2))
+      .toEqual(['Volt késői étkezés, pl. a szerdai vacsora.', 'Utána felszínes volt az alvás.'])
+    expect(leadSentences('Jött pl. Anna is. Jó este volt.', 2)).toEqual(['Jött pl. Anna is.', 'Jó este volt.'])
+    expect(leadSentences('A 3. napon erős voltál. Utána pihentél.', 1)).toEqual(['A 3. napon erős voltál.'])
+  })
+
+  test('a month abbreviation is not a sentence end, even before a numeral', () => {
+    expect(firstSentence('Szept. 21. után jobb lett. Második.')).toBe('Szept. 21. után jobb lett.')
+    expect(leadSentences('Aug. 3. óta tartod. Szép.', 2)).toEqual(['Aug. 3. óta tartod.', 'Szép.'])
+  })
+
+  test('shares the splitter with firstSentence', () => {
+    const text = 'Volt késői étkezés, pl. a szerdai vacsora. Utána felszínes volt az alvás.'
+    expect(firstSentence(text)).toBe(leadSentences(text, 1)[0])
   })
 })

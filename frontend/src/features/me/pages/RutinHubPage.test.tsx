@@ -10,7 +10,7 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => navigate }
 })
 
-function renderPage(initialEntry = '/me/rutin') {
+function renderPage(initialEntry = '/nap/rutin/epites') {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <RutinHubPage />
@@ -155,7 +155,7 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     expect(tile).toHaveTextContent('Aktív lánc · Reggeli rutin')
     expect(tile).toHaveTextContent('1 / 3')
     fireEvent.click(tile)
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/lanc/MORNING')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/lanc/MORNING')
   })
 
   test('a Szokásaid csempe a saját oldalára visz, a beérett számmal', () => {
@@ -163,13 +163,13 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     const tile = screen.getByRole('button', { name: 'Szokásaid' })
     expect(tile).toHaveTextContent('3 aktív · 1 beérett')
     fireEvent.click(tile)
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokasok')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokasok')
   })
 
   test('az Építs csempe az egy létrehozó folyamot nyitja', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Építs' }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj')
   })
 
   test('a hub nem listáz szokás-sorokat — a lista a saját oldalán él', () => {
@@ -191,10 +191,10 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     expect(screen.getByText('0')).toBeInTheDocument()
   })
 
-  test('goes back to the Én hub, not to Growth', () => {
+  test('goes back to the Nap Rutin tab, not to Én', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(navigate).toHaveBeenCalledWith('/me')
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin')
   })
 
   test('suppresses the hero standing until the day view has something real', () => {
@@ -241,4 +241,10 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
     expect(screen.getByText('Nincs rutinadat erre a napra')).toBeInTheDocument()
   })
+})
+
+// Én IA final review (mezo-lhqw7): the builder's own chip lands on the Rutin TAB, so it says „Rutin".
+test('the builder\'s own back chip says „Rutin" (the tab it lands on), not „Rutinok"', () => {
+  renderPage()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent(/^‹Rutin$/)
 })

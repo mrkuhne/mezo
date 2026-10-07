@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-10-01
+updated: 2026-10-06
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-10-06 — `mezo-lhqw7` (no character change).** The 1.1.0 changelog gained `weekly_review.went_well`/`watch_out` (proactive-owned, [`proactive.md`](proactive.md) weekly review); the character feature reads neither.
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No character-detector change; the 1.1.0 changelog folder gained the `recovery_period`/`recovery_day_release` migration (see [`train.md`](train.md) §2 "Kihagyás S2").
 
@@ -1281,6 +1283,14 @@ investigating.
 
 ## 9. Decisions, gotchas & deferred
 
+- **Team chat quiet window is OFF in integration tests (`mezo-tielp`):** the open path's one
+  wall-clock decision lives in its own bean, `TeamChatQuietHours` (`contains` gates `open` /
+  `releaseOvernight`, `inEvening` gates the push). `AbstractIntegrationTest` imports the `@Primary`
+  `TestTeamChatQuietHours`, which answers "not quiet" unless a test calls `enforce()` (reset before
+  every test). Reason: `TeamChatEventListener` opens at `Instant.now()`, so with the real
+  22:00–07:00 window 21 cases in five classes failed whenever CI ran at night. A test that is ABOUT
+  the window enforces it and passes explicit clock times; the real arithmetic is pinned by
+  `TeamChatQuietHoursTest`. New team-chat ITs need nothing — but must not assume the window blocks.
 - **Team chat catch-up test clock:** `TeamChatServiceIT.catchUp_resolvesAnOpenThreadWhoseLatestTraceIsClear`
   opens its setup thread at a fixed daytime hour. Backdating from `Instant.now()` can land inside
   configured quiet hours (22:00–07:00), where `TeamChatService.open` correctly returns empty and

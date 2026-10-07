@@ -864,3 +864,94 @@ test('train · the exercise swap picker and scope sheet stay contained at 320px'
   await expect(page.getByRole('button', { name: /^Csak ma/ })).toBeInViewport()
   await expect(page.getByRole('button', { name: /^Mezociklusra is/ })).toBeInViewport()
 })
+
+// ── Én · Hol tartok (mezo-lhqw7): the hub's strip, week hero, Életvonal and goal card at 320px ──
+// The Életvonal plot is an svg with absolutely positioned station buttons over it, and the week
+// hero's halo is 360px wide — both are the kind of thing that pushes a narrow phone sideways.
+test('Én hub · Hol tartok stays horizontally contained @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/me')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+  await expect(page.getByRole('button', { name: 'Célok állása' })).toBeVisible()
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+  const box = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    const stations = [...document.querySelectorAll('.enh-elv-stn')].map((e) => e.getBoundingClientRect())
+    return {
+      scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth,
+      stationsInside: stations.every((r) => r.left >= 0 && r.right <= innerWidth),
+    }
+  })
+  expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth + 1)
+  expect(box.stationsInside).toBe(true)
+  // The small controls keep their drawn size but reach a 44px touch target through a hit zone.
+  const hit = await page.evaluate(() => ['.enh-wkcta', '.enh-elv-next'].map((sel) => {
+    const el = document.querySelector(sel)!
+    return Math.max(el.getBoundingClientRect().height, parseFloat(getComputedStyle(el, '::after').height))
+  }))
+  for (const h of hit) expect(h).toBeGreaterThanOrEqual(44)
+})
+
+// ── Én · Test (mezo-lhqw7): the Súly | Alvás switch is a 36px pill with a 44px hit zone ──────
+test('Én Test · the Súly | Alvás switch reaches a 44px touch target @ 320px', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  await page.goto('/me/weight')
+  await page.waitForLoadState('networkidle')
+  await expect(page.getByRole('group', { name: 'Test nézet' })).toBeVisible()
+  const segs = await page.evaluate(() => [...document.querySelectorAll('.ent-seg-btn')].map((el) => {
+    const after = getComputedStyle(el, '::after')
+    return { drawn: el.getBoundingClientRect().height, zone: parseFloat(after.height), position: after.position }
+  }))
+  expect(segs).toHaveLength(2)
+  for (const s of segs) {
+    expect(s.position).toBe('absolute')
+    expect(s.zone).toBeGreaterThanOrEqual(44)
+    expect(s.drawn).toBeLessThan(44) // the drawn pill did not grow
+  }
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320)
+})
+
+// ── Nap · Rutin „Rutinok szerkesztése" entry (mezo-lhqw7), at 320px ──────────────────────────
+// The quiet flat row under the ticking lists is the only door to routine building; it must be
+// reachable above the floating tab bar, and the builder must light the Rutin tab.
+test('Nap Rutin · the „Rutinok szerkesztése" entry clears the tab bar @ 320px, and the builder lights the Rutin tab', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+  await page.goto('/nap/rutin')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => document.fonts.ready)
+
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  const entry = page.getByRole('link', { name: /Rutinok szerkesztése/ })
+  await entry.scrollIntoViewIfNeeded()
+  await page.evaluate(() => {
+    const scroller = document.querySelector('.screen-content') as HTMLElement
+    scroller.style.scrollBehavior = 'auto'
+    scroller.scrollTop = scroller.scrollHeight
+  })
+  await expect(entry).toBeVisible()
+  const spacing = await page.evaluate(() => {
+    const row = Array.from(document.querySelectorAll('a')).find(a => /Rutinok szerkesztése/.test(a.textContent ?? ''))!.getBoundingClientRect()
+    const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+    return { rowBottom: row.bottom, tabbarTop: tabbar.top }
+  })
+  expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
+
+  // ...and it is not covered by the floating + button either (boxes must not intersect)
+  const boxes = await page.evaluate(() => {
+    const row = Array.from(document.querySelectorAll('a')).find(a => /Rutinok szerkesztése/.test(a.textContent ?? ''))!.getBoundingClientRect()
+    const fab = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+    return { row: { top: row.top, bottom: row.bottom, left: row.left, right: row.right },
+      fab: fab ? { top: fab.top, bottom: fab.bottom, left: fab.left, right: fab.right } : null }
+  })
+  expect(boxes.fab, 'the + button should be on the page').not.toBeNull()
+  const f = boxes.fab!, r = boxes.row
+  const intersects = !(r.bottom <= f.top + 1 || f.bottom <= r.top + 1 || r.right <= f.left + 1 || f.right <= r.left + 1)
+  expect(intersects).toBe(false)
+
+  await entry.click()
+  await expect(page).toHaveURL(/\/nap\/rutin\/epites$/)
+  await expect(page.locator('.tab-bar').getByRole('link', { name: /Rutin/ })).toHaveAttribute('aria-current', 'page')
+})

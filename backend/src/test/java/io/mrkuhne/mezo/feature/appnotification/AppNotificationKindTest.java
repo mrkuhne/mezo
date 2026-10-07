@@ -46,7 +46,7 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.GRAPH_CANDIDATE.familyKey()).isNull();
         assertThat(AppNotificationKind.GRAPH_CANDIDATE.deeplink()).isEqualTo("/mezo/rolad");
         assertThat(AppNotificationKind.HABIT_FORMATION.familyKey()).isNull();
-        assertThat(AppNotificationKind.HABIT_FORMATION.deeplink()).isEqualTo("/me/rutin/szokas");
+        assertThat(AppNotificationKind.HABIT_FORMATION.deeplink()).isEqualTo("/nap/rutin/szokas");
         assertThat(AppNotificationKind.CHARACTER_PORTRAIT.familyKey()).isNull();
         assertThat(AppNotificationKind.CHARACTER_PORTRAIT.deeplink()).isEqualTo("/me/karakter");
         assertThat(AppNotificationKind.KONZILIUM_VERDICT.familyKey()).isNull();

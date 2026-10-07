@@ -153,6 +153,9 @@ class WeeklyReviewControllerIT extends ApiIntegrationTest {
         assertThat(response.getHighlights()).hasSize(1);
         assertThat(response.getHighlights().get(0).getKind()).isEqualTo("Memory");
         assertThat(response.getStale()).isFalse();
+        // An "old" row (no model-written lines) reads back as null for both new fields.
+        assertThat(response.getWentWell()).isNull();
+        assertThat(response.getWatchOut()).isNull();
     }
 
     @Test

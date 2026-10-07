@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-29
+updated: 2026-10-06
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -145,7 +145,7 @@ Notification preferences now live at `/settings/notifications`, reached through 
 **In-app toast action contract (`mezo-ubxd`).** The global host also supports an optional action on a simple toast: `SimpleToast.action?: { label: string; onClick: () => void | Promise<void> }`. Stack uses this for the intake confirmation's **Visszavonás** button. It remains a simple success toast — the `RewardToast` shape and progression presentation are unchanged. Invoking the action dismisses that toast immediately; if its Promise rejects, the global TanStack `MutationCache.onError` emits the normal error toast. Queue capacity, kind-specific timers, newest-first order, per-item `role="status"`, close control and live-region behavior are unchanged.
 
 **Route:** `/me/ertesitesek` is now the in-app notification **feed** (`NotificationFeedPage.tsx`,
-§2a) — the settings surface described below moved one level down, to
+§2a; its glass back pill reads „Hol tartok” → `/me`, and the Én tab row files the route under the Hol tartok tab via `owns`, `mezo-lhqw7`) — the settings surface described below moved one level down, to
 `/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`, mezo-nol0). Full page-level description
 (layout, states, copy) is in [`me.md`](me.md) §2 "`Értesítés`" — this doc covers the platform
 mechanics both pages sit on top of.
@@ -898,7 +898,7 @@ either adding a new one or going `null` — see the table row below and §3b.
 | `expenditure_week` | **null** | `/fuel/tanulas` | `mezo-3n2so` — `ExpenditureWeekNotificationListener`, after `AdaptiveReviewJob` publishes an `ExpenditureWeekLearnedEvent` for a worth-saying week with learning on (dedup `expenditure_week:<weekStart>`; never from the rollout runner or a day mark). FE: kind meta sage / `t-lens`, category „cel” |
 | `person_candidate` | **null** | `/me/people/jeloltek` | `mezo-0cbh` — `PersonExtractionService` (the nightly `GraphMaintenanceJob` 4th phase), ONE row per night's whole crop |
 | `graph_candidate` | **null** | `/mezo/rolad` | `mezo-0cbh` — **two producers, one kind** (the `challenge_event` shape): `LifeEventExtractionService` (nightly LIFE_EVENT) and `QuarterlyReviewService` (quarterly SEASON), different dedup keys and different words |
-| `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
+| `habit_formation` | **null** | `/nap/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
 | `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
 | `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
 | `team_edition` | `pattern` | `/mezo` | Csapatfal H2 (`mezo-a9bo7.13`) — `TeamEditionService.run`, right after the 21:00 edition is published. **Only a PUBLISHED edition with at least one post notifies**; a `QUIET` (nothing to show) evening stays silent, and the dedup key `team_edition:<day>` keeps the idempotent 15-minute retries down to one row per day. Rides the `pattern` push family (the `observation_new` precedent — same nightly findings, different surface: the wall, not the Észrevételek tab). |

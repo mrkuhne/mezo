@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · HabitEditPage (mezo-bk26) — /me/rutin/szokas/:habitKey/szerkesztes, prototype
+// Mezo · HabitEditPage (mezo-bk26) — /nap/rutin/szokas/:habitKey/szerkesztes, prototype
 // rutin-formalodas.html `pg-edit` ×1.18. The recipe editor moved to its OWN page (option B of
 // rutin-szerkeszto-valasztas.html): option A (in place) was built first and failed in use —
 // the formation page grew long enough that the in-place editor opened below the fold, so the
@@ -98,7 +98,7 @@ export function HabitEditPage() {
 
   const defs = (catalog?.chains ?? []).flatMap((c) => c.defs)
   const def = defs.find((d) => d.habitKey === habitKey)
-  const backTo = `/me/rutin/szokas/${habitKey}`
+  const backTo = `/nap/rutin/szokas/${habitKey}`
 
   const [seedKey, setSeedKey] = useState<string | null>(null)
   const [framework, setFramework] = useState<HabitFramework | null>(null)
@@ -162,7 +162,7 @@ export function HabitEditPage() {
         </MozaikPage>
       )
     }
-    return <Navigate to="/me/rutin" replace />
+    return <Navigate to="/nap/rutin/epites" replace />
   }
 
   const chains = [...(catalog?.chains ?? [])].sort((a, b) => a.position - b.position)
@@ -235,7 +235,7 @@ export function HabitEditPage() {
 
   const remove = () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
-    deleteDef(def.id).then(() => navigate('/me/rutin'))
+    deleteDef(def.id).then(() => navigate('/nap/rutin/epites'))
   }
 
   const pickAnchor = (next: AnchorState) => {

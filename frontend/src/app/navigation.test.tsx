@@ -74,7 +74,10 @@ test('Me settings: no theme selector under the dark-only lock, the app stays dar
 test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.6.1)', async () => {
   renderApp('/me')
   expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Súly' })).toBeInTheDocument()
+  // mezo-lhqw7: the hub is „Hol tartok" — the Súly tile became the bottom bar's Test tab.
+  expect(await screen.findByRole('button', { name: 'Célok állása' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Súly' })).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Test' })).toHaveAttribute('href', '/me/weight')
   expect(screen.queryByLabelText('Me alnavigáció')).not.toBeInTheDocument()
 })
 
@@ -241,7 +244,7 @@ test('Adatforrások\' Tervezett segment survives a kör round-trip (fix round 1,
 test('/me/people stays a stable full-page sibling of the hub', async () => {
   renderApp('/me/people')
   // Mozaik 2.0 re-face (mezo-d20.11): the `Kapcsolatok` h1 became the prototype's
-  // page hero (and the page finally owns a `‹ Én` back chip) — the route is unchanged.
+  // page hero (and the page owns a back chip — `‹ Hol tartok` since mezo-lhqw7) — the route is unchanged.
   expect(await screen.findByText('Kapcsolatok', { selector: '.mz-hero-nm' })).toBeInTheDocument()
 })
 test('the tab bar stays visible on the regular Train tab', () => {

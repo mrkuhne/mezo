@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, it, test, vi } from 'vitest'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -79,7 +79,8 @@ test('renders the last-night hero', () => {
   renderPage()
   // Mozaik PageHero (mezo-d20.6.4) renders the page name as a styled div, not an <h1> —
   // structural change from the old pghead-np face; the text is still the one assertion.
-  expect(screen.getByText('Alvás')).toBeInTheDocument()
+  // hero name + the Test-tab switch both read „Alvás"
+  expect(screen.getAllByText('Alvás')).toHaveLength(2)
   expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument()
   // hero duration (48px) renders "7.5" — also appears in the log, so assert it is present at least once
   expect(screen.getAllByText('7.5').length).toBeGreaterThan(0)
@@ -155,7 +156,7 @@ it('renders the two score rings with computed values', () => {
 
 it('opens canonical sleep settings from the edit shortcut', async () => {
   renderPage()
-  await userEvent.click(screen.getByRole('button', { name: /szerkeszt/i }))
+  await userEvent.click(screen.getByRole('button', { name: /^szerkeszt$/i }))
   expect(screen.getByTestId('settings-location')).toHaveTextContent('/settings/me/sleep')
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })
@@ -178,18 +179,12 @@ test('renders the night-mode entry row linking to /me/sleep/night', () => {
   expect(link.querySelector('use')).toHaveAttribute('href', '#t-moon')
 })
 
-test('the back chip (Mozaik PageHead) navigates back', async () => {
-  render(
-    <MemoryRouter initialEntries={['/elsewhere', '/me/sleep']} initialIndex={1}>
-      <Routes>
-        <Route path="/elsewhere" element={<div>elsewhere-page</div>} />
-        <Route path="/me/sleep" element={<SleepPage />} />
-      </Routes>
-    </MemoryRouter>,
-    { wrapper: QueryWrapper },
-  )
-  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
-  expect(await screen.findByText('elsewhere-page')).toBeInTheDocument()
+test('the Test tab head: Alvás pressed, no back chip, bio row present (mezo-lhqw7)', async () => {
+  renderPage()
+  expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Alvás' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Súly' })).toHaveAttribute('aria-pressed', 'false')
+  expect(document.querySelector('.ent-bio')).not.toBeNull()
 })
 
 test('the header "＋ Log" action opens the real SleepLogSheet', async () => {

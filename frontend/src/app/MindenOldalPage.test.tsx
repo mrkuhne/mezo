@@ -75,9 +75,10 @@ describe('Minden oldal — az oldal-leltár', () => {
     // is to SHOW it faithfully, not to quietly file pages where they arguably belong.
     const me = DOMAINS.find((d) => d.id === 'me')!
     const groups = groupsForDomain(me, pagesOfDomain('me'))
-    const attekintes = groups.find((g) => g.heading === 'Áttekintés')!
-    expect(attekintes.pages.map((p) => p.route)).toContain('/me/goals/weight/diet')
-    expect(attekintes.pages.length).toBeGreaterThan(20)
+    const holTartok = groups.find((g) => g.heading === 'Hol tartok')!
+    expect(holTartok.pages.length).toBeGreaterThan(5)
+    const celok = groups.find((g) => g.heading === 'Célok')!
+    expect(celok.pages.map((p) => p.route)).toContain('/me/goals/weight')
   })
 
   test('the hash scrolls the matching domain section into view', () => {
