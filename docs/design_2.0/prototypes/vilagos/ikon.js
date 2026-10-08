@@ -16,7 +16,7 @@ const O=C(32,32,24), STAR='M32 6L40 23L58 25L45 38L48 56L32 47L16 56L19 38L6 25L
  MOON='M46 41A21 21 0 1 1 25 11A17 17 0 0 0 46 41Z', BELL='M32 8C42 8 47 16 47 26C47 38 53 42 55 46H9C11 42 17 38 17 26C17 16 22 8 32 8Z',
  PILL='M38.5 9.5A11.5 11.5 0 0 1 54.5 25.5L25.5 54.5A11.5 11.5 0 0 1 9.5 38.5Z', SHIELD='M32 6L54 14V30C54 44 44 53 32 58C20 53 10 44 10 30V14Z',
  CLIP=RR(10,12,44,44,4), DUMB='M8 24A4 4 0 0 1 12 20H16A4 4 0 0 1 20 24V28H44V24A4 4 0 0 1 48 20H52A4 4 0 0 1 56 24V40A4 4 0 0 1 52 44H48A4 4 0 0 1 44 40V36H20V40A4 4 0 0 1 16 44H12A4 4 0 0 1 8 40Z',
- ARM='M10 46C8 34 14 26 22 24L24 10H36L38 22C36 28 32 30 28 30C40 28 54 34 54 46C54 52 46 54 32 54S12 52 10 46Z';
+ ARM='M6 40C14 36 20 36 24 38C26 32 32 28 38 30L34 16C32 10 36 6 42 6H46C50 6 52 9 52 13L56 40C58 50 50 58 38 58H6Z';
 const GLY={
  /* day & sleep */
  dawn:['M12 44A20 20 0 0 1 52 44Z','M5 44H59M32 10V16M12 22L16 26M52 22L48 26M18 53H46'],
@@ -30,14 +30,14 @@ const GLY={
  /* training */
  dumbbell:[DUMB,'M3 28V36M61 28V36'],
  addex:['M6 22A3 3 0 0 1 9 19H12A3 3 0 0 1 15 22V26H33V22A3 3 0 0 1 36 19H39A3 3 0 0 1 42 22V36A3 3 0 0 1 39 39H36A3 3 0 0 1 33 36V32H15V36A3 3 0 0 1 12 39H9A3 3 0 0 1 6 36Z','M48 44V58M41 51H55'],
- kettle:['M32 22C46 22 54 32 54 44C54 52 46 56 32 56S10 52 10 44C10 32 18 22 32 22Z','M22 23C20 8 44 8 42 23'],
- muscle:[ARM,'M30 40C36 38 42 40 44 44'], soreness:[ARM,'M46 6L41 13H50L45 20'],
+ kettle:[C(32,40,18),'M22 25L19 13C18 9 21 6 25 6H39C43 6 46 9 45 13L42 25'],
+ muscle:[ARM,'M38 30C42 32 44 36 44 41M37 17H50'], soreness:[ARM,'M38 30C42 32 44 36 44 41M37 17H50M16 6L11 14H19L14 22'],
  run:['M7 46C7 40 13 39 17 29L29 34C33 41 44 40 52 43C57 44.5 57 50 54 50H11C8 50 7 48.5 7 46Z','M21 31L25 37M3 24H11M2 33H8'],
  steps:['M20 8C27 8 29 18 27 26C26 31 16 31 14 26C11 18 13 8 20 8Z M44 24C51 24 53 34 51 42C50 47 40 47 38 42C35 34 37 24 44 24Z','M15 36C17 40 25 40 26 36M39 52C41 56 49 56 50 52'],
  volley:[O,'M32 8C28 20 30 30 40 38M9 26C20 24 30 28 36 36M22 54C22 44 28 37 40 38C48 39 53 36 55 30'],
  football:[O,'M32 22L41 29L37.5 40H26.5L23 29ZM32 8V22M41 29L54 24M37.5 40L45 52M26.5 40L19 52M23 29L10 24'],
  basket:[O,'M8 32H56M32 8V56M15 15C24 24 24 40 15 49M49 15C40 24 40 40 49 49'],
- tennis:['M26 6C37 6 44 14 44 24S37 42 26 42S8 34 8 24S15 6 26 6Z','M37 37L57 57M14 13L38 34M9 24L27 41M24 7L43 24'],
+ tennis:[C(24,26,17)+' '+C(51,13,6),'M36 38L57 59M12 22L28 38M19 13L37 31M11 31L29 13M18 38L36 20'],
  bike:[C(16,43,11)+' '+C(48,43,11),'M16 43L26 24H42L48 43M26 24L34 43H16M38 15H45L42 24'],
  swim:[C(44,20,6),'M4 46Q11 40 18 46T32 46T46 46T60 46M4 56Q11 50 18 56T32 56T46 56T60 56M12 37L26 24L38 35'],
  hike:['M18 8H32V30L50 38C56 41 56 50 52 50H14C12 50 12 46 12 44Z','M10 57H56M24 18H32M24 26H32'],
@@ -50,7 +50,7 @@ const GLY={
  core:['M20 8H44C50 8 52 14 50 22L46 50C45 55 40 58 32 58S19 55 18 50L14 22C12 14 14 8 20 8Z','M32 10V56M16 26H48M18 41H46'],
  juggle:[C(14,37,7)+' '+C(32,15,7)+' '+C(50,37,7),'M14 54C20 59 44 59 50 54'],
  stretch:[C(32,12,6),'M10 16L32 27L54 16M32 27V42L20 58M32 42L44 58'],
- whistle:['M6 22H44A15 15 0 1 1 29 37L6 30Z','M44 36V37M26 14V7M34 14L38 8'],
+ whistle:['M6 20H42A16 16 0 1 1 27 39L6 31Z',C(42,35,5)+'M14 20V13M30 12L33 6M40 10L45 5'],
  target:[O,C(32,32,12)+'M32 32L55 9M46 9H55V18'],
  hold:['','M8 24H56M8 40H56'],
  record:[C(32,41,15),'M22 6L27 27M42 6L37 27M25 41L30 46L39 36'],
@@ -88,7 +88,7 @@ const GLY={
  chef:['M18 34C8 34 6 20 16 18C18 8 32 6 36 14C44 8 56 14 52 26C56 30 52 36 46 34V48H18Z','M18 56H46'],
  supps:[PILL,'M24 24L40 40'], syringe:['M22 30L38 14L50 26L34 42Z','M34 10L54 30M44 20L52 12M28 36L10 54M30 22L34 26M26 26L30 30'],
  flask:['M26 6H38V24L54 50A4 4 0 0 1 50 56H14A4 4 0 0 1 10 50L26 24Z','M22 6H42'],
- digestion:['M24 6H32V18C32 24 36 26 40 25C48 23 55 30 53 41C50 54 28 60 16 50C6 41 10 22 24 18Z',''],
+ digestion:['M26 6V16C26 20 23 22 19 24C10 29 8 42 15 50C23 59 40 58 48 50C54 44 55 34 50 28C47 24 41 23 37 26C34 28 34 24 34 20V6Z','M48 50C52 55 56 55 59 52M22 36C24 32 28 31 31 33'],
  ill:['M26 12A6 6 0 0 1 38 12V36A12 12 0 1 1 26 36Z','M32 22V44M44 14H50M44 22H50'],
  /* body & mind */
  weight:[RR(9,10,46,44,8),'M21 26A11 11 0 0 1 43 26Z M32 26L36 19'],
@@ -158,7 +158,7 @@ const GLY={
 const defs=document.createElementNS(NS,'defs');sprite.appendChild(defs);
 defs.innerHTML=`<clipPath id="tc-lv"><path d="M-2 37Q6 32 14 37T30 37T46 37T66 37V70H-2Z"/></clipPath><clipPath id="tc-hx"><path d="M0 0H32V64H0Z"/></clipPath>`;
 const LINE='fill="none" style="stroke:var(--ic,var(--dom))" stroke-linejoin="round" stroke-linecap="round"';
-const gsym=(k,[p,x,m])=>`<symbol id="tc-${k}" viewBox="0 0 64 64">${p?`<path d="${p}" style="fill:${m==='none'?'transparent':'color-mix(in srgb,var(--ic,var(--dom)) 11%,var(--icb,#fff))'}"/>${m==='none'?'':m==='full'?`<path d="${p}" style="fill:var(--ic2,var(--dom2))"/>`:`<g clip-path="url(#tc-${m==='half'?'hx':'lv'})"><path d="${p}" style="fill:var(--ic2,var(--dom2))"/></g>`}<path d="${p}" ${LINE} stroke-width="4"/>`:''}${x?`<path d="${x}" ${LINE} stroke-width="${p?3.6:4.4}"/>`:''}</symbol>`;
+const gsym=(k,[p,x,m])=>`<symbol id="tc-${k}" viewBox="0 0 64 64">${p?`<path d="${p}" style="fill:${m==='none'?'transparent':'var(--icf,color-mix(in srgb,var(--ic,var(--dom)) 11%,#fff))'}"/>${m==='none'?'':m==='full'?`<path d="${p}" style="fill:var(--ic2,var(--dom2))"/>`:`<g clip-path="url(#tc-${m==='half'?'hx':'lv'})"><path d="${p}" style="fill:var(--ic2,var(--dom2))"/></g>`}<path d="${p}" ${LINE} stroke-width="4"/>`:''}${x?`<path d="${x}" ${LINE} stroke-width="${p?3.6:4.4}"/>`:''}</symbol>`;
 const tmp=document.createElement('div');tmp.innerHTML=`<svg xmlns="${NS}">${Object.entries(GLY).map(([k,v])=>gsym(k,v)).join('')}</svg>`;[...tmp.firstChild.childNodes].forEach(n=>sprite.appendChild(n));
 const HAS=id=>!!document.getElementById(id);
 /* the clay icons still used in chrome and a few rows */
@@ -167,7 +167,12 @@ const CMAP={ertesites:'bell',beallitas:'gear',emberek:'people',tanyer:'plate',ed
 const variant=(o,m)=>{if(m!=='c')return o;const k=o.startsWith('c-i-')?CMAP[o.slice(4)]:o.startsWith('t-')?o.slice(2):null;return k&&HAS('tc-'+k)?'tc-'+k:o};
 let MODE='c';try{MODE=localStorage.getItem('mezo-ikon2')||'c'}catch(e){}
 if(!/^[0c]$/.test(MODE))MODE='c';
-function swap(){document.querySelectorAll('use').forEach(u=>{if(u.closest('[data-fixic]')||u.closest('symbol'))return;const h=u.getAttribute('href');if(!h)return;const o=u.dataset.o||h.slice(1);if(!/^(t-|c-i-)/.test(o))return;u.dataset.o=o;const w=variant(o,MODE);u.closest('svg').classList.toggle('jel',w!==o);if(h!=='#'+w)u.setAttribute('href','#'+w)})}
+function swap(){document.querySelectorAll('use').forEach(u=>{if(u.closest('[data-fixic]')||u.closest('symbol'))return;const h=u.getAttribute('href');if(!h)return;const o=u.dataset.o||h.slice(1);if(!/^(t-|c-i-)/.test(o))return;u.dataset.o=o;const w=variant(o,MODE);u.closest('svg').classList.toggle('jel',w!==o);if(h!=='#'+w)u.setAttribute('href','#'+w)});tubes()}
+/* a glyph standing in a vial is drawn twice: in the vial's colour, and in white clipped to the liquid — readable at any level */
+function tubes(){document.querySelectorAll('.k2-tube>svg.jel,.phone[data-d="en"] .t>svg.jel').forEach(s=>{const t=s.parentElement;if(t.querySelector(':scope>.jw'))return;
+  const l=t.querySelector(':scope>.l'),i=t.querySelector(':scope>i');const p=l?getComputedStyle(l).getPropertyValue('--p').trim():i?i.style.height:'';if(!p)return;
+  const cs=getComputedStyle(s),w=document.createElement('span');w.className='jw';w.dataset.fixic='1';w.style.clipPath=`inset(calc(100% - ${p}) 0 0 0)`;
+  const c=s.cloneNode(true);c.style.cssText=`position:absolute;left:${cs.left};bottom:${cs.bottom};width:${cs.width};height:${cs.height};transform:${cs.transform};margin:0`;w.appendChild(c);t.appendChild(w)})}
 function apply(){document.documentElement.dataset.ikon=MODE;swap();document.querySelectorAll('#ikseg button').forEach(b=>b.classList.toggle('on',b.dataset.ik===MODE))}
 let busy=false;new MutationObserver(()=>{if(busy)return;busy=true;requestAnimationFrame(()=>{busy=false;swap()})}).observe(document.body,{childList:true,subtree:true});
 window.IKON_SET=m=>{MODE=m;try{localStorage.setItem('mezo-ikon2',m)}catch(e){}apply()};
@@ -183,8 +188,10 @@ ${BUB.map(s=>H+s+' svg.ic.jel').join(',')}{width:62%;height:62%}
 ${BUB.map(s=>H+s+'::after').join(',')}{display:none}
 ${BUB.map(s=>H+s).join(',')}{background:color-mix(in srgb,var(--c,var(--dom)) 8%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--dom)) 16%,#fff)}
 ${H}${Q} .fb{--ic:var(--c);--ic2:color-mix(in srgb,var(--c) 45%,#fff)}
-${H}${Q} .k2-tube svg.ic.jel,${H}${Q}[data-d="en"] .t svg.ic.jel{filter:drop-shadow(0 0 1.6px rgba(10,42,60,.6)) drop-shadow(0 1px 2px rgba(10,42,60,.25))!important}
-${H}${Q}[data-d="en"] .t svg.ic.jel,${H}${Q} .k2-tube svg.ic.jel,${H}${Q} .fh-hero .fh-acts svg.ic.jel,${H}${Q} .btn.pri svg.ic.jel{--ic:#fff;--ic2:rgba(255,255,255,.5);--icb:transparent}
+${H}${Q} .k2-tube>svg.ic.jel,${H}${Q}[data-d="en"] .t>svg.ic.jel{--ic:color-mix(in srgb,var(--c) 78%,var(--ink));--ic2:transparent;--icf:transparent}
+.jw{position:absolute;inset:0;pointer-events:none;z-index:3}.jw svg.ic{--ic:#fff!important;--ic2:rgba(255,255,255,.32)!important;--icf:transparent;filter:none!important}
+html[data-ikon="0"] .jw{display:none}
+${H}${Q} .fh-hero .fh-acts svg.ic.jel,${H}${Q} .btn.pri svg.ic.jel{--ic:#fff;--ic2:rgba(255,255,255,.5);--icf:transparent}
 #ikseg{margin-top:6px}
 .ikg{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;padding:16px 10px}.ikg div{display:grid;justify-items:center;gap:5px;font-size:10.5px;color:var(--sub);text-align:center;line-height:1.15}`;document.head.appendChild(st);
 /* "Új ikonok" review sheet (owner OK needed before they go into the shared sprite) */

@@ -123,6 +123,6 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
   half-filled with the domain liquid (`--ic` line, `--ic2` liquid; white on liquid grounds). It maps
   every `t-*` and the clay icons used in chrome; a MutationObserver swaps `<use>` hrefs.
 - Review sheet for the owner: `#w-nap-ikonok` (all glyphs by group). Panel switch "Új / Régi ikonok".
-- First-pass drawings; weaker ones to refine if he points at them: muscle, soreness, digestion,
-  kettle, tennis, whistle. Muscle-map graphics are untouched (not icons).
+- Redrawn once on request: muscle, soreness, digestion, kettle, tennis, whistle. A glyph in a vial is
+  drawn twice (vial colour + white clipped to the liquid). Muscle-map graphics are untouched.
 - For the build: this becomes the shared sprite; the swap layer is prototype-only scaffolding.
