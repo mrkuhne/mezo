@@ -167,7 +167,11 @@ const CMAP={ertesites:'bell',beallitas:'gear',emberek:'people',tanyer:'plate',ed
 const variant=(o,m)=>{if(m!=='c')return o;const k=o.startsWith('c-i-')?CMAP[o.slice(4)]:o.startsWith('t-')?o.slice(2):null;return k&&HAS('tc-'+k)?'tc-'+k:o};
 let MODE='c';try{MODE=localStorage.getItem('mezo-ikon2')||'c'}catch(e){}
 if(!/^[0c]$/.test(MODE))MODE='c';
-function swap(){document.querySelectorAll('use').forEach(u=>{if(u.closest('[data-fixic]')||u.closest('symbol'))return;const h=u.getAttribute('href');if(!h)return;const o=u.dataset.o||h.slice(1);if(!/^(t-|c-i-)/.test(o))return;u.dataset.o=o;const w=variant(o,MODE);u.closest('svg').classList.toggle('jel',w!==o);if(h!=='#'+w)u.setAttribute('href','#'+w)});tubes()}
+function swap(){document.querySelectorAll('use').forEach(u=>{if(u.closest('[data-fixic]')||u.closest('symbol'))return;const h=u.getAttribute('href');if(!h)return;const o=u.dataset.o||h.slice(1);if(!/^(t-|c-i-)/.test(o))return;u.dataset.o=o;const w=variant(o,MODE);u.closest('svg').classList.toggle('jel',w!==o);if(h!=='#'+w)u.setAttribute('href','#'+w)});tubes();marks()}
+/* the small mark at the top of a vial turns white when the liquid reaches it */
+function marks(){document.querySelectorAll('.k2-tube,.phone[data-d="en"] .t').forEach(t=>{const em=t.querySelector(':scope>em')||(t.previousElementSibling&&t.previousElementSibling.tagName==='EM'?t.previousElementSibling:null);if(!em||!em.textContent.trim())return;
+  const l=t.querySelector(':scope>.l'),i=t.querySelector(':scope>i');const p=parseFloat(l?getComputedStyle(l).getPropertyValue('--p'):i?i.style.height:'');if(!(p>0))return;
+  const tr=t.getBoundingClientRect(),er=em.getBoundingClientRect();if(!er.height||!tr.height)return;const top=tr.bottom-tr.height*p/100,st=top<er.top-5?'onliq':top<er.bottom+1?'edge':'';if((em.dataset.lq||'')!==st){em.dataset.lq=st;em.classList.toggle('onliq',st==='onliq');em.classList.toggle('edge',st==='edge')}})}
 /* a glyph standing in a vial is drawn twice: in the vial's colour, and in white clipped to the liquid — readable at any level */
 function tubes(){document.querySelectorAll('.k2-tube>svg.jel,.phone[data-d="en"] .t>svg.jel').forEach(s=>{const t=s.parentElement;if(t.querySelector(':scope>.jw'))return;
   const l=t.querySelector(':scope>.l'),i=t.querySelector(':scope>i');const p=l?getComputedStyle(l).getPropertyValue('--p').trim():i?i.style.height:'';if(!p)return;
@@ -189,6 +193,9 @@ ${BUB.map(s=>H+s+'::after').join(',')}{display:none}
 ${BUB.map(s=>H+s).join(',')}{background:color-mix(in srgb,var(--c,var(--dom)) 8%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--dom)) 16%,#fff)}
 ${H}${Q} .fb{--ic:var(--c);--ic2:color-mix(in srgb,var(--c) 45%,#fff)}
 ${H}${Q} .k2-tube>svg.ic.jel,${H}${Q}[data-d="en"] .t>svg.ic.jel{--ic:color-mix(in srgb,var(--c) 78%,var(--ink));--ic2:transparent;--icf:transparent}
+em.edge{color:var(--ink)!important;font-weight:700;text-shadow:0 0 3px #fff,0 0 2px #fff,0 0 1px #fff;z-index:4}
+em.onliq{color:#fff!important;text-shadow:0 0 3px rgba(10,42,60,.45),0 1px 1px rgba(10,42,60,.3);z-index:4}
+${H}${Q}[data-d="en"] .c.nd .t>svg.ic.jel{--ic:color-mix(in srgb,var(--c) 55%,var(--ink));opacity:1!important}
 .jw{position:absolute;inset:0;pointer-events:none;z-index:3}.jw svg.ic{--ic:#fff!important;--ic2:rgba(255,255,255,.32)!important;--icf:transparent;filter:none!important}
 html[data-ikon="0"] .jw{display:none}
 ${H}${Q} .fh-hero .fh-acts svg.ic.jel,${H}${Q} .btn.pri svg.ic.jel{--ic:#fff;--ic2:rgba(255,255,255,.5);--icf:transparent}
