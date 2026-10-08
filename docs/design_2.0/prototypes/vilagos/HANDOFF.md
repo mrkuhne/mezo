@@ -113,13 +113,16 @@ Hungarian, business language, no file names or jargon; short; when asking for a 
 situation → problem → 2–3 options in a table with the price → a recommendation. He is a
 non-engineer product owner. Tell him plainly what was verified and what was not.
 
-## Icon round (2026-10-08, open — owner choosing)
+## Icons — decided 2026-10-08: "Folyadék-jel"
 
-Owner: "az ikonkészlet színben, stílusban nem passzol". Audit: the 147 Titanium icons were drawn
-for a dark ground (122 shapes use the graphite `tg-titanium` gradient, purple/gold lights), and
-they carry too much detail for a 26 px slot. `vilagos/ikon.js` adds three switchable families
-without touching the originals (panel switcher "Ikon: …", compare screen `#w-nap-ikonok`):
-A Porcelán (re-lit 3D), B Területszín (3D in the domain's two colours), C Folyadék-jel (new own
-outlined glyph half-filled with liquid; ~45 drawn, the rest fall back to A). Default stays the
-current set until he picks. Whichever wins must then be made the only family and `ikon.js` folded
-into the kit.
+Owner: "az ikonkészlet színben, stílusban nem passzol" → shown three families (re-lit porcelain 3D,
+domain-tinted 3D, own glyph) → **chose the own glyph family and asked for all of them**.
+This supersedes approved decision 6 ("the Titanium 3D icons stay"): the 3D sprite was drawn for a
+dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px slot.
+- `vilagos/ikon.js` holds the whole family: 150 glyphs (`GLY`), each an outline in the domain colour
+  half-filled with the domain liquid (`--ic` line, `--ic2` liquid; white on liquid grounds). It maps
+  every `t-*` and the clay icons used in chrome; a MutationObserver swaps `<use>` hrefs.
+- Review sheet for the owner: `#w-nap-ikonok` (all glyphs by group). Panel switch "Új / Régi ikonok".
+- First-pass drawings; weaker ones to refine if he points at them: muscle, soreness, digestion,
+  kettle, tennis, whistle. Muscle-map graphics are untouched (not icons).
+- For the build: this becomes the shared sprite; the swap layer is prototype-only scaffolding.
