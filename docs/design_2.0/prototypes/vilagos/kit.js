@@ -242,7 +242,8 @@ function top(d,o){const reg=FREG[d]||{tabs:[]};
     <button class="fh-ib" data-toast="Értesítések" aria-label="Értesítések">${I('c-i-ertesites')}<b>3</b></button>
     ${o.back?'':`<button class="fh-ib" data-toast="Beállítások és profil" aria-label="Beállítások">${I('c-i-beallitas')}</button>`}</div>
     ${o.back?'':`<nav class="fh-tabs">${reg.tabs.map(([l,r])=>`<button class="${r===o.tab?'on':''}" data-go="${r}">${l}</button>`).join('')}</nav>`}</header>`}
-const nav=d=>`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`;
+const FILL={nap:70,edzes:34,fuel:62,mezo:50,en:58};
+const nav=d=>window.FH_FOLY?`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${csepp('ok',k===d?86:FILL[k],{s:k===d?40:34,color:c,alive:k===d})}<span>${l}</span></button>`).join('')}</nav>`:`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`;
 /* page(domain, {title, sub, tab | back}, innerHtml, {foot, nonav, pad}) */
 function page(d,o,inner,x={}){
   return `<div class="scroll" ${x.pad?`style="padding-bottom:${x.pad}"`:x.foot?'style="padding-bottom:190px"':''}>${top(d,o)}${inner}</div>${x.foot?`<div class="fh-foot ${x.nonav?'nonav':''}">${x.foot}</div>`:''}${x.nonav?'':nav(d)}<div class="toast" id="toast"></div><div class="sheet" id="sheet"></div><div class="scrim" id="scrim"></div>`}
@@ -262,7 +263,7 @@ const step=o=>`<div class="fh-step ${o.now?'now':''}"${o.right?'':act(o.on)}>${o
 const row=o=>`<${o.on?'button':'div'} class="fh-row"${act(o.on)}>${o.left||''}${o.icon?`<span class="si">${I(o.icon)}</span>`:''}<span class="g"><strong>${o.title}</strong>${o.sub?`<small>${o.sub}</small>`:''}</span>${o.v!=null?`<span class="v">${o.v}</span>`:''}${o.right||''}${o.on&&!o.right?chev():''}</${o.on?'button':'div'}>`;
 const bar=(pct,c='var(--dom)')=>`<div class="bar" style="--c:${c}"><b style="--w:${Math.max(0,Math.min(100,pct))}%"></b></div>`;
 /* stat({k, icon, n, unit, pct, s, sCls, c, on}) — one number tile; put 2 or 4 of them in grid() */
-const stat=o=>`<button class="fh-stat" style="--c:${o.c||'var(--dom)'}"${act(o.on)}>${o.icon?`<span class="ti">${I(o.icon)}</span>`:''}<span class="k">${o.k}</span><div class="n">${o.n}${o.unit?`<small>${o.unit}</small>`:''}</div>${o.pct!=null?`<div class="bar"><b style="--w:${Math.max(0,Math.min(100,o.pct))}%"></b></div>`:''}${o.s?`<span class="s ${o.sCls||''}">${o.s}</span>`:''}</button>`;
+const stat=o=>`<button class="fh-stat" style="--c:${o.c||'var(--dom)'}${o.pct!=null?`;--p:${Math.max(0,Math.min(100,o.pct))}%`:''}"${act(o.on)}>${o.icon?`<span class="ti">${I(o.icon)}</span>`:''}<span class="k">${o.k}</span><div class="n">${o.n}${o.unit?`<small>${o.unit}</small>`:''}</div>${o.pct!=null?`<div class="bar"><b style="--w:${Math.max(0,Math.min(100,o.pct))}%"></b></div>`:''}${o.s?`<span class="s ${o.sCls||''}">${o.s}</span>`:''}</button>`;
 const grid=items=>`<div class="fh-grid">${items.join('')}</div>`;
 const facts=a=>`<div class="fh-facts" style="grid-template-columns:repeat(${a.length},1fr)">${a.map(([b,s])=>`<div><b>${b}</b><small>${s}</small></div>`).join('')}</div>`;
 /* seg([[label, action, on]]) — a segmented control inside a card */
