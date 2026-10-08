@@ -48,6 +48,7 @@ ${Q} .fh-hero .fh-facts,${Q} .fh-hero .fh-chips span{background:#fff}
 ${Q} .btn{border-radius:999px;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 10px 20px -10px var(--liq2)}
 ${Q} .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 4px 10px -6px rgba(10,42,60,.3),inset 0 0 0 1px rgba(10,42,60,.08)}
 ${Q} .btn.sm{border-radius:999px}
+${Q} .btn{white-space:nowrap}${Q} .sheet .fh-acts{row-gap:12px}${Q} .sheet .fh-acts .btn[style*="flex:1"]{flex:1 1 100%!important}
 ${Q} .fh-pill.on,${Q} .fh-seg button.on{color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
 ${Q} .fh-seg{border-radius:999px;padding:4px}${Q} .fh-seg button{border-radius:999px}
 ${Q} .fh-lk{color:color-mix(in srgb,var(--dom) 85%,var(--ink))}
@@ -134,11 +135,14 @@ const area=(v,{w=320,h=130,c='var(--liq1)',c2='var(--liq2)',min,max,dots=null,ta
 /* stream([{time,title,sub,right,now,on}]) — time-ordered pills on a liquid line (the concept's "Most következik") */
 const stream=a=>`<div class="k2-stream">${a.map(o=>`<button class="k2-drop ${o.now?'now':''}"${F.act(o.on||{toast:o.title})}><time>${o.time}</time><span><strong>${o.title}</strong>${o.sub?`<small>${o.sub}</small>`:''}</span>${o.right?`<em>${o.right}</em>`:''}</button>`).join('')}</div>`;
 /* linked(aPct,bPct,{a,b,c}) — two communicating vessels joined by a pipe: a correlation / "this moves with that" graphic */
-const linked=(pa,pb,{a='',b='',c='var(--liq1)',c2='var(--liq2)',s=220}={})=>{const id=uid('fk'),ya=92-cl(pa)*.72,yb=92-cl(pb)*.72;
-  return `<svg class="fl-link" viewBox="0 0 220 120" style="width:${s}px" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient><clipPath id="${id}a"><rect x="16" y="14" width="62" height="82" rx="26"/></clipPath><clipPath id="${id}b"><rect x="142" y="14" width="62" height="82" rx="26"/></clipPath></defs>
-    <rect x="72" y="76" width="76" height="12" rx="6" fill="url(#${id})" opacity=".8"/><rect x="16" y="14" width="62" height="82" rx="26" fill="#fff" stroke="rgba(10,42,60,.10)" stroke-width="2"/><rect x="142" y="14" width="62" height="82" rx="26" fill="#fff" stroke="rgba(10,42,60,.10)" stroke-width="2"/>
-    <g clip-path="url(#${id}a)"><rect x="16" y="${ya}" width="62" height="100" fill="url(#${id})"/></g><g clip-path="url(#${id}b)"><rect x="142" y="${yb}" width="62" height="100" fill="url(#${id})"/></g>
-    <text x="47" y="114" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">${a}</text><text x="173" y="114" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">${b}</text></svg>`};
+const linked=(pa,pb,{a='',b='',c='var(--liq1)',c2='var(--liq2)',s=220,va='',vb=''}={})=>{const id=uid('fk'),ya=96-cl(pa)*.74,yb=96-cl(pb)*.74;
+  const liq=(x,y)=>`<path fill="url(#${id})" d="M${x} ${y} q7.75 -4.5 15.5 0 t15.5 0 t15.5 0 t15.5 0 V112 H${x}Z"/>`;
+  const glass=x=>`<rect x="${x}" y="12" width="62" height="86" rx="28" fill="none" stroke="rgba(10,42,60,.12)" stroke-width="2"/><path d="M${x+11} 34 q2 -11 12 -13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".9"/>`;
+  return `<svg class="fl-link" viewBox="0 0 220 124" style="width:${s}px" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}"/><stop offset="1" stop-color="${c2}"/></linearGradient><clipPath id="${id}a"><rect x="16" y="12" width="62" height="86" rx="28"/></clipPath><clipPath id="${id}b"><rect x="142" y="12" width="62" height="86" rx="28"/></clipPath></defs>
+    <rect x="64" y="80" width="92" height="9" rx="4.5" fill="${c2}" opacity=".35"/><rect x="16" y="12" width="62" height="86" rx="28" fill="#fff"/><rect x="142" y="12" width="62" height="86" rx="28" fill="#fff"/>
+    <g clip-path="url(#${id}a)">${liq(16,ya)}</g><g clip-path="url(#${id}b)">${liq(142,yb)}</g>${glass(16)}${glass(142)}
+    ${va?`<text x="47" y="${Math.max(ya+20,60)}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="var(--disp)">${va}</text>`:''}${vb?`<text x="173" y="${Math.max(yb+20,60)}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="var(--disp)">${vb}</text>`:''}
+    <text x="47" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">${a}</text><text x="173" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">${b}</text></svg>`};
 Object.assign(F,{wave,bub,tank,vial,vials,mini,level,fill,area,stream,linked,uid});
 F.css(`
 /* icons live in bubbles */
