@@ -104,38 +104,98 @@ const cmp=(ph,o={})=>`<div class="fx-cmp">${o.kamra?`<button data-sheet="kamrapi
 const cyc=now=>`<div class="fx-cyc">${['C','C','S','S','S','V','V'].map((g,i)=>`<span class="${i===now?'now':''}">${g}<small>${i+1}</small></span>`).join('')}</div>`;
 const smooth=pts=>pts.map((p,i)=>{if(!i)return `M${p[0].toFixed(1)} ${p[1].toFixed(1)}`;const a=pts[i-2]||pts[i-1],b=pts[i-1],d=pts[i+1]||p;return `C${(b[0]+(p[0]-a[0])/6).toFixed(1)} ${(b[1]+(p[1]-a[1])/6).toFixed(1)} ${(p[0]-(d[0]-b[0])/6).toFixed(1)} ${(p[1]-(d[1]-b[1])/6).toFixed(1)} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`}).join('');
 
+F.css(`
+${P}{--fiber:#5FA05A;--water:#3F8FD6}
+${P} .fm-g{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin:10px 0 14px}
+${P} .fm-n b{display:block;font-family:var(--disp);font-size:30px;font-weight:800;letter-spacing:-1.2px;line-height:1;font-variant-numeric:tabular-nums}
+${P} .fm-n small{display:block;font-size:11px;font-weight:650;letter-spacing:.4px;text-transform:uppercase;color:var(--sub);margin-top:5px}
+${P} .fm-n.r{text-align:right}
+${P} .fm-gauge{position:relative;width:132px;height:132px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.75);box-shadow:0 14px 26px -14px color-mix(in srgb,var(--dom) 70%,transparent),inset 0 0 0 1px rgba(15,30,51,.05)}
+${P} .fm-gauge .fm-mr{position:absolute;inset:0}
+${P} .fm-gauge span svg.ic{width:68px;height:68px;filter:drop-shadow(0 10px 10px rgba(15,30,51,.28))}
+${P} .fm-mac{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+${P} .fm-m{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;min-width:0}
+${P} .fm-m>svg.ic{width:26px;height:26px;filter:drop-shadow(0 4px 5px rgba(15,30,51,.22))}
+${P} .fm-mw{position:relative;width:54px;height:54px;display:grid;place-items:center;margin-top:2px}
+${P} .fm-mw .fm-mr{position:absolute;inset:0}
+${P} .fm-mw b{font-family:var(--disp);font-size:14px;font-weight:800;letter-spacing:-.4px}
+${P} .fm-m strong{font-size:11.5px;font-weight:650;margin-top:2px}
+${P} .fm-m small{font-size:10.5px;color:var(--sub)}
+${P} .fm-blk{padding:14px 16px}
+${P} .fm-blk.open{background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1.5px rgba(15,30,51,.10);border-radius:24px}
+${P} .fm-bh{display:flex;align-items:center;gap:10px}
+${P} .fm-bh .si{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:var(--page);flex:0 0 auto}
+${P} .fm-bh .si svg.ic{width:30px;height:30px;filter:drop-shadow(0 4px 5px rgba(15,30,51,.22))}
+${P} .fm-bh .g{flex:1;min-width:0}
+${P} .fm-bh strong{display:block;font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:-.4px}
+${P} .fm-bh small{display:block;font-size:12px;color:var(--sub)}
+${P} .fm-clock{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--page);flex:0 0 auto}
+${P} .fm-clock svg.ic{width:22px;height:22px}
+${P} .fm-kr{position:relative;width:48px;height:48px;display:grid;place-items:center;flex:0 0 auto}
+${P} .fm-kr .fm-mr{position:absolute;inset:0}
+${P} .fm-kr b{font-family:var(--disp);font-size:12.5px;font-weight:800;letter-spacing:-.3px}
+${P} .fm-meal{margin-top:12px;padding-top:12px;border-top:1px solid var(--hair)}
+${P} .fm-mn{display:block;width:100%;text-align:left}
+${P} .fm-mn strong{display:block;font-size:15px;font-weight:650}
+${P} .fm-mn small{display:block;font-size:12.5px;color:var(--sub);margin-top:1px}
+${P} .fm-mb{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+${P} .fm-cells{display:flex;gap:8px}
+${P} .fm-cell{display:flex;flex-direction:column;align-items:center;gap:2px}
+${P} .fm-cell svg.ic{width:16px;height:16px}
+${P} .fm-cell i{font-style:normal;font-size:10.5px;font-weight:600;color:var(--sub);font-variant-numeric:tabular-nums}
+${P} .fm-chips{display:flex;gap:6px;align-items:center}
+${P} .fm-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12.5px;font-weight:650;color:var(--ok);background:color-mix(in srgb,var(--ok) 10%,#fff)}
+${P} .fm-chip svg:not(.ic){width:22px;height:11px}
+${P} .fm-chip.mid{color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,#fff)}
+${P} .fm-chip.sc{color:var(--ink);background:var(--page);font-family:var(--disp);font-size:14px;font-weight:800}
+${P} .fm-chip.sc svg.ic{width:20px;height:20px}
+${P} .fm-when{font-size:13.5px;color:var(--sub);margin-top:10px}
+${P} .fm-when b{color:var(--ink)}
+@media(max-width:360px){${P} .fm-gauge{width:100px;height:100px}${P} .fm-gauge .fm-mr{width:100px!important;height:100px!important}${P} .fm-gauge span svg.ic{width:52px;height:52px}
+  ${P} .fm-n b{font-size:23px;letter-spacing:-.8px}${P} .fm-n small{font-size:9.5px}${P} .fm-g{gap:4px}
+  ${P} .fm-mw{width:44px;height:44px}${P} .fm-mw .fm-mr{width:44px!important;height:44px!important}${P} .fm-mw b{font-size:12px}${P} .fm-m strong{font-size:10px;letter-spacing:-.2px}${P} .fm-m small{font-size:9.5px}${P} .fm-mac{gap:0}}
+`);
 /* ═══ MAI ════════════════════════════════════════════════════ */
 function mai(arg){
   if(arg==='tegnap'||arg==='ures') return pastDay(arg==='ures');
   if(arg==='het') return het();
-  const rem=DAY.target-DAY.eaten;
-  const open=SLOTS.map((s,i)=>[s,i]).filter(([,i])=>!Object.values(MEALS).some(m=>m.w===i));
+  const rem=DAY.target-DAY.eaten, P100=pc(DAY.eaten,DAY.target);
   const state=s=>DAY.now>=s.from&&DAY.now<=s.to?'most nyitva':DAY.now<s.from?`nyílik ${s.from}-kor`:'még pótolható';
+  const mr=(pct,c,sz=46,w=5)=>{const r=(sz-w)/2,C=2*Math.PI*r;return `<svg class="fm-mr" viewBox="0 0 ${sz} ${sz}" style="width:${sz}px;height:${sz}px"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="rgba(15,30,51,.08)" stroke-width="${w}"/><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-dasharray="${(C*Math.min(100,pct)/100).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 ${sz/2} ${sz/2})"/></svg>`};
+  const MAC=[['Fehérje','t-meat','var(--protein)',DAY.p,'g'],['Szénhidrát','t-carb','var(--carb)',DAY.c,'g'],['Zsír','t-avocado','var(--fat)',DAY.f,'g'],['Rost','t-fiber','var(--fiber)',DAY.fib,'g'],['Víz','t-water','var(--water)',DAY.water,'l']];
+  const GL=['Alacsony','Közepes'];
+  const mealRow=(id,m)=>`<div class="fm-meal"><button class="fm-mn" data-go="meal.${id}"><strong>${m.name}</strong><small>${m.time} · ${kc(m.kcal)} kcal</small></button>
+      <div class="fm-mb"><span class="fm-cells">${[['t-meat','var(--protein)',m.macro[0],45],['t-carb','var(--carb)',m.macro[1],90],['t-avocado','var(--fat)',m.macro[2],25],['t-fiber','var(--fiber)',m.fib,10]].map(([ic,c,v,t])=>`<span class="fm-cell">${I(ic)}${mr(v/t*100,c,30,4)}<i>${v} g</i></span>`).join('')}</span>
+        <span class="fm-chips"><button class="fm-chip ${m.glu?'mid':''}" data-sheet="glu" data-arg="${m.glu}"><svg viewBox="0 0 24 12" aria-hidden="true"><path d="${m.glu?'M1 10 C6 10 7 2 12 2 S18 10 23 10':'M1 9 C7 9 8 5 12 5 S17 9 23 9'}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${GL[m.glu]}</button>
+        <button class="fm-chip sc" data-go="score.${id}" aria-label="Értékelés">${I('t-score')}${fmt(m.score)}</button></span></div></div>`;
+  const blocks=SLOTS.map((s,i)=>{const rows=Object.entries(MEALS).filter(([,m])=>m.w===i), k=rows.reduce((a,[,m])=>a+m.kcal,0);
+    return `<section class="fh-card fm-blk ${rows.length?'':'open'} rise" style="--i:${i+2}"><div class="fm-bh"><span class="si">${I(s.ic)}</span><span class="g"><strong>${s.l}</strong><small>${s.from}–${s.to}</small></span>
+        <button class="fm-clock" data-sheet="ora" aria-label="${s.l} · étkezési óra">${I('t-clock')}</button>
+        <span class="fm-kr">${mr(rows.length?k/s.b*100:0,'var(--dom)',48,5)}<b>${kc(rows.length?k:s.b)}</b></span></div>
+      ${rows.length?rows.map(([id,m])=>mealRow(id,m)).join(''):`<p class="fm-when">Ajánlott <b>${s.from}–${s.to}</b> · ${state(s)}</p>
+        <div class="fh-acts">${btn('+ Logolás ide','log.w'+i,'sm')}${lk('Kihagyom',{toast:s.l+' kihagyva · megadhatod, miért'})}</div>`}</section>`}).join('');
+  const out=Object.entries(MEALS).filter(([,m])=>m.w===-1);
   return page('fuel',{title:'Fuel',sub:'Szerda, október 7.',tab:'mai'},`
-  ${nh({lbl:'Ma eddig',n:kc(DAY.eaten),unit:`/ ${kc(DAY.target)} kcal`,art:'t-bowl',verdict:`${kc(rem)} kcal van még, ${DAY.p[1]-DAY.p[0]} g fehérje hiányzik.`,
-    sub:'Három étkezés van felírva, két ablak még előtted van.',body:bar(pc(DAY.eaten,DAY.target)),
-    acts:btn('Étkezés logolása','log')+lk('Miből jön össze?',{sheet:'eq'})})}
-  ${sec(1,'Most következik',1)}
-  ${card(open.map(([s,i],n)=>step({time:s.from,icon:s.ic,title:`${s.l} · ${s.b} kcal`,sub:`ajánlott ${s.from}–${s.to} · ${state(s)}`,now:n===0,on:'log.w'+i})).join('')
-    +lab('Vagy rögtön így')+pills(RIB.map(([k,l,ic])=>[l,'log.'+k,false,ic]))
-    +acts(lk('Az étkezési óra',{sheet:'ora'})),{i:1})}
-  ${sec(2,'Mai számok',2)}
-  ${card(grid([
-    stat({k:'Fehérje',icon:'t-meat',n:DAY.p[0],unit:`/ ${DAY.p[1]} g`,pct:pc(...DAY.p),s:`${DAY.p[1]-DAY.p[0]} g hiányzik`,sCls:'warn',c:'var(--protein)'}),
-    stat({k:'Szénhidrát',icon:'t-carb',n:DAY.c[0],unit:`/ ${DAY.c[1]} g`,pct:pc(...DAY.c),s:`${DAY.c[1]-DAY.c[0]} g van még`,c:'var(--carb)'}),
-    stat({k:'Zsír',icon:'t-avocado',n:DAY.f[0],unit:`/ ${DAY.f[1]} g`,pct:pc(...DAY.f),s:`${DAY.f[1]-DAY.f[0]} g van még`,c:'var(--fat)'}),
-    stat({k:'Rost',icon:'t-fiber',n:DAY.fib[0],unit:`/ ${DAY.fib[1]} g`,pct:pc(...DAY.fib),s:'a mai étkezésekből',on:{toast:'Rost: a kamra-tételekből számolva'}}),
-    stat({k:'Víz',icon:'t-water',n:fmt(DAY.water[0]),unit:`/ ${fmt(DAY.water[1])} l`,pct:pc(...DAY.water),s:'2 pohár maradt a célig',c:'var(--info)',on:{sheet:'water'}}),
-    stat({k:'Mai keret',icon:'t-flame',n:kc(DAY.target),unit:'kcal',pct:pc(DAY.eaten,DAY.target),s:'Miből jön össze? ›',on:{sheet:'eq'}})]),{i:2})}
-  ${sec(3,'Mai étkezések · 3',3)}
-  ${card(Object.entries(MEALS).map(([id,m])=>step({time:m.time,icon:MIC[id],title:m.name,sub:`${m.w===-1?'ablakon kívül':m.slot} · ${kc(m.kcal)} kcal · ${m.macro[0]} g fehérje · ${fmt(m.score)} pont`,on:'meal.'+id})).join(''),{i:3})}
-  ${sec(4,'A hét és a tanulás',4)}
+  <section class="fh-card fh-hero rise"><span class="lbl">Ma eddig</span>
+    <div class="fm-g"><div class="fm-n"><b>${kc(DAY.eaten)}</b><small>kcal-t ettél</small></div>
+      <button class="fm-gauge" data-sheet="eq" aria-label="${kc(DAY.eaten)} / ${kc(DAY.target)} kcal">${mr(P100,'var(--dom)',132,11)}<span>${I('t-bowl')}</span></button>
+      <div class="fm-n r"><b>${kc(rem)}</b><small>még belefér</small></div></div>
+    <p class="verdict">Egy rendes vacsora még belefér, ${DAY.p[1]-DAY.p[0]} g fehérje hiányzik.</p>
+    <div class="fh-acts">${btn('Étkezés logolása','log')}${lk('Miből jön össze?',{sheet:'eq'})}</div></section>
+  ${sec(1,'Mai makrók',1)}
+  ${card(`<div class="fm-mac">${MAC.map(([l,ic,c,[v,t],u])=>`<button class="fm-m" ${l==='Víz'?'data-sheet="water"':`data-toast="${l}: ${fmt(v)} / ${fmt(t)} ${u}"`}>${I(ic)}<span class="fm-mw">${mr(v/t*100,c,54,5)}<b>${fmt(v)}</b></span><strong>${l}</strong><small>/ ${fmt(t)} ${u}</small></button>`).join('')}</div>`,{i:1})}
+  ${sec(2,`A mai blokkjaid · ${Object.keys(MEALS).length} étkezés`,2)}
+  ${blocks}
+  ${out.length?card(`<div class="fm-bh"><span class="si">${I('t-snack')}</span><span class="g"><strong>Ablakon kívül</strong><small>két étkezés között</small></span></div>`+out.map(([id,m])=>mealRow(id,m)).join(''),{cls:'fm-blk',i:6}):''}
+  ${sec(3,'Logolj bármit',7)}
+  ${card(pills(RIB.map(([k,l,ic])=>[l,'log.'+k,false,ic]))+note('Ablakon kívül is logolhatsz. Az idő alapból a mostani, de átírhatod.')+acts(lk('Az étkezési óra',{sheet:'ora'})),{i:7})}
+  ${sec(4,'A hét és a tanulás',8)}
   ${card(row({icon:'t-calendar',title:'A hét képe',sub:'a hét napjai a keretükhöz mérve',on:'mai.het'})
     +row({icon:'t-compare',title:'Heti egyeztetés',sub:'vasárnap · 3 lépés, kb. 2 perc',right:st('1 javaslat vár','warn')+chev(),on:{sheet:'weekly'}})
     +row({icon:'t-brain',title:'Ez a nap számít a tanulásban',sub:'jövő hétfőn számolom bele · Mit jelent ez?',on:'tanulas'})
     +row({icon:'t-history',title:'Tegnap · 2 ablak pótolható',sub:'kedd, október 6.',on:'mai.tegnap'})
     +row({icon:'t-gear',title:'Fuel beállítások',sub:'ritmus · makrók · célok · ablakok',on:'beallitas'})
-    +acts(btn('Ma hiányos volt a naplóm',{toast:'Hiányosnak jelölve · kihagyom a tanulásból'},'sm ghost')),{i:4})}`);
+    +acts(btn('Ma hiányos volt a naplóm',{toast:'Hiányosnak jelölve · kihagyom a tanulásból'},'sm ghost')),{i:8})}`);
 }
 function het(){
   return page('fuel',{title:'A hét képe',sub:'Fuel · ez a hét',back:'mai'},`

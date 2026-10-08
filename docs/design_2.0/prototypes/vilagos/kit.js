@@ -177,6 +177,7 @@ css(`
 
 /* ── kit additions: sub-pages, rows, segmented control, forms, foot bar, sheets ── */
 .fh-hero:has(.fh-art) .lbl,.fh-hero:has(.fh-art) .verdict{padding-right:92px}
+.fh-hrow.rg{flex-wrap:nowrap;gap:14px;margin-top:10px;align-items:center}.fh-hrow.rg>div{min-width:0}.fh-hrow.rg .fh-ring{--s:84px!important;width:84px!important;height:84px!important;margin:0!important}
 .fh-hrow{flex-wrap:wrap}.fh-hrow>div{min-width:150px}
 .fh-title h1.sm{font-size:24px!important;letter-spacing:-.6px!important}
 .fh-back{font-size:24px;line-height:1;font-weight:500;padding-bottom:3px}
@@ -250,7 +251,8 @@ const card=(inner,{cls='',i=1,style=''}={})=>`<section class="fh-card ${cls} ris
 const head=(icon,t,link='',linkAct=null)=>`<div class="fh-h">${icon?`<span class="tile">${I(icon)}</span>`:''}<h2>${t}</h2>${link?`<button${act(linkAct||{toast:link})}>${link} ›</button>`:''}</div>`;
 /* hero({lbl, verdict, sub, left, art, acts, warn, big}) — the ONE thing to look at; max one (two with a warn hero) per screen */
 const hero=(o,i=0)=>`<section class="fh-card fh-hero ${o.warn?'warn':''} rise" style="--i:${i}">${o.art?`<span class="fh-art">${I(o.art)}</span>`:''}
-  ${o.left?`<div class="fh-hrow">${o.left}<div style="flex:1;min-width:0">`:''}<span class="lbl">${o.lbl||''}</span><p class="verdict" ${o.big?'style="font-size:28px"':''}>${o.verdict}</p>${o.sub?`<p class="sub">${o.sub}</p>`:''}${o.left?`</div></div>`:''}
+  ${o.left&&/fh-ring/.test(o.left)?`<span class="lbl">${o.lbl||''}</span><p class="verdict" ${o.big?'style="font-size:28px"':''}>${o.verdict}</p><div class="fh-hrow rg">${o.left}<div style="flex:1;min-width:0">${o.sub?`<p class="sub">${o.sub}</p>`:''}</div></div>`
+  :`${o.left?`<div class="fh-hrow">${o.left}<div style="flex:1;min-width:0">`:''}<span class="lbl">${o.lbl||''}</span><p class="verdict" ${o.big?'style="font-size:28px"':''}>${o.verdict}</p>${o.sub?`<p class="sub">${o.sub}</p>`:''}${o.left?`</div></div>`:''}`}
   ${o.body||''}${o.acts?`<div class="fh-acts">${o.acts}</div>`:''}</section>`;
 const btn=(l,a,cls='')=>`<button class="btn ${cls}"${act(a)}>${l}</button>`;
 const lk=(l,a)=>`<button class="fh-lk"${act(a)}>${l}</button>`;
