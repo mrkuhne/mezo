@@ -20,7 +20,7 @@ export const DOCTOR_SIGNS: Record<DoctorCategory, readonly string[]> = {
   ILLNESS: [
     'A magas láz 3 napnál tovább tart',
     'Nehezen kapsz levegőt, vagy mellkasi fájdalmad van',
-    'Néhány nap javulás után újra rosszabbul vagy',
+    'Néhány nap javulás után megint romlik az állapotod',
     'Nem tudsz inni, vagy a kiszáradás jeleit érzed',
   ],
 }

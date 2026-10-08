@@ -3165,7 +3165,7 @@ function mealWhy(){
 function orvos(){
   const st=FKM?.cat==='STOMACH';
   const L=st?['Nem marad meg benned a folyadék','Véres a széklet vagy a hányás','A hasmenés 7 napnál, a hányás 2 napnál tovább tart','Kiszáradás jelei: szédülsz, alig van vizeleted','Erős hasi fájdalom vagy magas láz']
-    :['A magas láz 3 napnál tovább tart','Nehezen kapsz levegőt, vagy mellkasi fájdalmad van','Néhány nap javulás után újra rosszabbul vagy','Nem tudsz inni, vagy a kiszáradás jeleit érzed'];
+    :['A magas láz 3 napnál tovább tart','Nehezen kapsz levegőt, vagy mellkasi fájdalmad van','Néhány nap javulás után megint romlik az állapotod','Nem tudsz inni, vagy a kiszáradás jeleit érzed'];
   return `<div class="shh">${I('info')}<span class="grow"><span class="eb">${st?'GYOMORRONTÁS':'BETEGSÉG'}</span><h3>Mikor fordulj orvoshoz?</h3></span>${x}</div>
     <ul class="docl">${L.map(t=>`<li><i></i><span>${t}</span></li>`).join('')}</ul>
     <div class="whynote">${I('info')}<span>Ez nem orvosi tanács. Ha bizonytalan vagy, hívd a háziorvosodat vagy az ügyeletet.</span></div>

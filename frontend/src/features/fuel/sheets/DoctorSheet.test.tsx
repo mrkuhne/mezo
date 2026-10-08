@@ -4,9 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { DoctorSheet } from '@/features/fuel/sheets/DoctorSheet'
 
-// The house guard, with one owner-approved symptom phrase let through: „újra rosszabbul vagy" is a
-// warning sign (prototype copy), not a judgement of the user.
-const SHAME = /elrontott|túlléptél|hiba|rossz(?!abbul)|bukta|kudarc/i
+// The plain house guard (the symptom copy avoids the banned token).
+const SHAME = /elrontott|túlléptél|hiba|rossz|bukta|kudarc/i
 
 test('STOMACH lists five warning signs', () => {
   render(<DoctorSheet category="STOMACH" onClose={vi.fn()} />)

@@ -17,7 +17,7 @@
 // action sits BELOW the blocks, the víz ring opens the water sheet, the energy chip reopens
 // the shared EnergyBreakdownSheet, and the Fuel-beállítások band opens the settings page.
 // ============================================================
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { recoveryKey } from '@/data/train/recoveryHooks'
 import { recoveryEmpty } from '@/data/train/recoveryMock'
@@ -52,7 +52,18 @@ const hoisted = vi.hoisted(() => ({
   consumedKcal: null as number | null,
   dayCalls: [] as string[],
   timelineCalls: [] as string[],
+  undoCalls: 0,
 }))
+vi.mock('@/data/train/skipHooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/train/skipHooks')>()
+  return {
+    ...actual,
+    usePlannedSkips: () => {
+      const real = actual.usePlannedSkips()
+      return { ...real, undo: (id: string, onDone?: () => void) => { hoisted.undoCalls += 1; real.undo(id, onDone) } }
+    },
+  }
+})
 const ZERO = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -532,17 +543,37 @@ test('„Mégis ettem" undoes the skip and goes to log into the window', async (
   expect(screen.getByTestId('loc').textContent).toContain('w=')
 })
 
+test('„Mégis ettem": a double tap withdraws the skip only once', async () => {
+  const user = userEvent.setup()
+  hoisted.undoCalls = 0
+  const { container } = renderView()
+  await user.click(screen.getByRole('button', { name: /Uzsonna kihagyása/ }))
+  await user.click(await screen.findByRole('button', { name: 'Most nem mondom' }))
+  await waitFor(() => expect(screen.queryByRole('heading', { name: 'Miért marad ki?' })).toBeNull())
+  const btn = within(container.querySelector('.fmx-block.is-skipped') as HTMLElement).getByRole('button', { name: 'Mégis ettem' })
+  fireEvent.click(btn)
+  fireEvent.click(btn)
+  await waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/log/uj'))
+  expect(hoisted.undoCalls).toBe(1)
+})
+
+test.each([['INJURY'], ['TRAVEL']] as const)('past %s day with nothing logged stays honestly empty', (category) => {
+  hoisted.emptyDates = [D3]
+  const { container } = renderRecovery(category, `/fuel?d=${D3}`, -5)
+  expect(screen.getByText(/Erre a napra nincs adat/i)).toBeInTheDocument()
+  expect(container.querySelector('.fmx-hero')).toBeNull()
+})
 
 // ── Kihagyás S3 (mezo-q4xt2.3): a négy kímélő arc ───────────────────────────────────────────────
 const SHAME_RX = /elrontott|túlléptél|hiba|rossz|bukta|kudarc/i
 
 /** Mock mód: a kímélő időszak a recovery-cache-ben él, a Fuel-nap ebből származtatja a módot. */
-function renderRecovery(category: SkipReason, path = '/fuel') {
+function renderRecovery(category: SkipReason, path = '/fuel', startOffset = -1) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const today = localDateString()
   client.setQueryData(recoveryKey(), {
     ...recoveryEmpty,
-    period: { id: 'p1', category, estimate: 'WEEK', startDate: addDays(today, -1), dayIndex: 2,
+    period: { id: 'p1', category, estimate: 'WEEK', startDate: addDays(today, startOffset), dayIndex: 2,
       estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [] },
   })
   return render(

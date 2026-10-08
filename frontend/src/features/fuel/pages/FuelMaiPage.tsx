@@ -62,7 +62,7 @@
 // WindowIsland + the `?w=` selection URL state, EmptyDayIsland, the `.mai-logrow`
 // standing row (absorbed by the lane's trailing out-of-window tile), the sky shell.
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import {
@@ -117,7 +117,10 @@ export function FuelMaiPage() {
   const [waterOpen, setWaterOpen] = useState(false)
   // Kihagyás S3 (mezo-q4xt2.3): the meal skip — one tap, an optional reason in a sheet.
   const toast = useToast()
-  const { skips, skip, setReason, undo } = usePlannedSkips()
+  const { skips, skip, setReason, undo, saving } = usePlannedSkips()
+  // „Mégis ettem": a skip is withdrawn once per tap-burst — a double tap must not fire two undos.
+  const ateBusy = useRef(false)
+  useEffect(() => { if (!saving) ateBusy.current = false }, [saving])
   const { recovery } = useRecovery()
   const openRecovery = useOpenRecovery()
   const [whyId, setWhyId] = useState<string | null>(null)
@@ -145,9 +148,9 @@ export function FuelMaiPage() {
   // keret-műszer „még belefér <teljes keret>" olvasata egy lezárt napon valótlan lenne. A
   // blokkok maradnak: a pótlás útja nyitva, szégyenmentes hangon.
   const hasDayData = fuel.meals.length > 0 || fuel.consumed.kcal > 0 || fuel.consumed.water > 0
-  // Kihagyás S3: a kímélő nap (az eddigi napló nélkül is) saját arcot kap — nem „nincs adat".
+  // Kihagyás S3: a GUIDANCE nap (napló nélkül is) saját arcot kap; a többi mód üres múltja őszintén „nincs adat".
   const mode = fuel.fuelMode
-  const emptyPast = past && !hasDayData && mode == null
+  const emptyPast = past && !hasDayData && mode !== 'GUIDANCE'
 
   // ── hub-csali chip: tegnap pótolható ablakok (mezo-1j3z) — past-normalized lane,
   // ONE live door into `/fuel/log?d=<tegnap>`; hides itself when nothing is missed.
@@ -248,7 +251,11 @@ export function FuelMaiPage() {
               onReason: (tile) => tile.skip && setWhyId(tile.skip.id),
               onUndo: (tile) => tile.skip && undo(tile.skip.id, () =>
                 toast.show({ kind: 'success', text: 'Visszavonva · az étkezés visszakerült a napba' })),
-              onAte: (tile) => tile.skip && undo(tile.skip.id, () => logInto(tile)),
+              onAte: (tile) => {
+                if (!tile.skip || ateBusy.current) return
+                ateBusy.current = true
+                undo(tile.skip.id, () => logInto(tile))
+              },
             }}
             onLogInto={logInto}
             onOpenMeal={(mealId) => navigate(`/fuel/etkezes/${mealId}`)}

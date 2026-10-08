@@ -420,3 +420,24 @@ test('no mode: the closed window keeps its „még pótolható" chip (unchanged)
   render(<FuelMealBlocks {...props({ ...skipFixture(), day: { ...day, nowHHmm: '17:30' } })} skipping={skipping()} />)
   expect(screen.getAllByText('még pótolható').length).toBeGreaterThan(0)
 })
+
+// Kihagyás S3: a kímélő napon (MAINTENANCE / ESTIMATE) nincs túllépés-jelzés a gyűrűn.
+test.each([['MAINTENANCE'], ['ESTIMATE'], [null]] as const)('budget ring over-lap and percentage on a %s day', (mode) => {
+  const slots: FuelSlot[] = [
+    slot({ time: '07:40', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'meal-1', kcal: 900, windowFrom: '07:00', windowTo: '09:20', budgetKcal: 400 }),
+  ]
+  const meals = [meal({ kcal: 900 })]
+  const { container } = render(
+    <FuelMealBlocks lane={buildWindowLane({ slots, budget: BUDGET, meals })} meals={doneMealRows(meals, slots)} day={day}
+      fiberTargetG={30} fuelMode={mode} onLogInto={vi.fn()} onOpenMeal={vi.fn()} onOpenScore={vi.fn()} />,
+    { wrapper: QueryWrapper })
+  const ring = container.querySelector('.fmx-budget-ring')!
+  if (mode == null) {
+    expect(container.querySelector('.fmx-br-over')).not.toBeNull()
+    expect(ring.getAttribute('aria-label')).toMatch(/%/)
+  } else {
+    expect(container.querySelector('.fmx-br-over')).toBeNull()
+    expect(ring.getAttribute('aria-label')).not.toMatch(/%/)
+    expect(container.querySelector('.fmx-br-fill')).not.toBeNull()
+  }
+})

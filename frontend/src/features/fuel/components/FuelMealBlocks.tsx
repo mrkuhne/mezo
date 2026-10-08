@@ -131,15 +131,16 @@ const BLOCK_COLOR: Record<MealSlot, string> = {
  * eltaláltad, ami túlfut, egy borostyán második kör (legfeljebb egy extra kör). Logolás előtt a
  * pálya szaggatott, a számjegy a tervezett keret. Ismeretlen kcal/keret → „—" / nincs ív.
  */
-function BudgetRing({ kcal, budgetKcal, logged }: { kcal: number | null; budgetKcal: number | null; logged: boolean }) {
+function BudgetRing({ kcal, budgetKcal, logged, neutral = false }: { kcal: number | null; budgetKcal: number | null; logged: boolean; neutral?: boolean }) {
   const ratio = logged && kcal != null && budgetKcal ? (kcal / budgetKcal) * 100 : null
   const fill = ratio == null ? 0 : Math.min(100, ratio)
-  const over = ratio == null ? 0 : Math.min(100, Math.max(0, ratio - 100))
+  // Kímélő nap (Kihagyás S3): no over/warn state — neither the amber lap nor the percentage.
+  const over = ratio == null || neutral ? 0 : Math.min(100, Math.max(0, ratio - 100))
   const shown = logged ? kcal : budgetKcal
   const aria = shown == null
     ? `${logged ? 'Logolt' : 'Tervezett'} energia: nincs adat`
     : logged
-      ? `Logolva: ${huInt(kcal!)}${budgetKcal ? ` / ${huInt(budgetKcal)} kcal (${Math.round(ratio!)}%)` : ' kcal'}`
+      ? `Logolva: ${huInt(kcal!)}${budgetKcal ? ` / ${huInt(budgetKcal)} kcal${neutral ? '' : ` (${Math.round(ratio!)}%)`}` : ' kcal'}`
       : `Keret: ${huInt(shown)} kcal`
   return (
     <span className={`fmx-budget-ring${logged ? '' : ' is-empty'}`} role="img" aria-label={aria}>
@@ -325,7 +326,7 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, index, skipping, mode, o
             : guidance
               // GUIDANCE: no budget ring — a logged block shows its kcal plain, an empty one nothing.
               ? loggedKcal != null && rows.length > 0 && <span className="fmx-bplain">{huInt(loggedKcal)}<small>kcal</small></span>
-              : <BudgetRing kcal={rows.length ? loggedKcal : tile.budgetKcal ?? tile.kcal} budgetKcal={tile.budgetKcal} logged={rows.length > 0} />}
+              : <BudgetRing kcal={rows.length ? loggedKcal : tile.budgetKcal ?? tile.kcal} budgetKcal={tile.budgetKcal} logged={rows.length > 0} neutral={mode != null} />}
         </span>
       </div>
       {rows.length === 0 && !skipped && guidance && (
