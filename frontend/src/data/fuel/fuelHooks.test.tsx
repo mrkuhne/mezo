@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { usePlannedSkips, invalidateAfterWrite } from '@/data/train/skipHooks'
+import { useRecovery } from '@/data/train/recoveryHooks'
 import { useFuelDay, useMealActions, useWaterActions } from '@/data/fuel/fuelHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -360,5 +362,49 @@ describe('useWaterActions (real mode)', () => {
     await new Promise(r => setTimeout(r, 0))
     expect(deleteCalled).toBe(false)
     expect(result.current.canUndo).toBe(false)
+  })
+})
+
+describe('useFuelDay never owns a shared query in real mode (C1)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('a planned-skips refetch after invalidateAfterWrite still serves the server rows', async () => {
+    let calls = 0
+    server.use(http.get(`${API_BASE}/api/train/skips`, () => {
+      calls += 1
+      return HttpResponse.json([{
+        id: 's1', date: localDateString(), kind: 'GYM', dayOfWeek: null, time: null, sessionKey: null,
+        reasonCategory: 'NONE', reasonText: null, source: 'USER', serious: false, freePass: true, excused: true,
+      }])
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => ({ s: usePlannedSkips(), f: useFuelDay() }), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.s.skips).toHaveLength(1))
+    const before = calls
+    act(() => invalidateAfterWrite(qc))
+    await waitFor(() => expect(calls).toBeGreaterThan(before))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(result.current.s.skips).toHaveLength(1)
+  })
+
+  it('a recovery refetch after the recovery invalidation still serves the server period', async () => {
+    let calls = 0
+    const state = {
+      period: {
+        id: 'p1', category: 'TRAVEL', estimate: 'WEEK', startDate: localDateString(), expectedEnd: localDateString(), endedOn: null,
+        dayIndex: 1, estimateExpired: false, checkedInToday: false, releasedDates: [], releasedUnlightened: [], return: null,
+      },
+      protectedDates: [localDateString()],
+      comeback: null,
+    }
+    server.use(http.get(`${API_BASE}/api/train/recovery`, () => { calls += 1; return HttpResponse.json(state) }))
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => ({ r: useRecovery(), f: useFuelDay() }), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.r.recovery.period).not.toBeNull())
+    const before = calls
+    act(() => { void qc.invalidateQueries({ queryKey: recoveryKey().slice(0, 2) }) })
+    await waitFor(() => expect(calls).toBeGreaterThan(before))
+    await new Promise((r) => setTimeout(r, 30))
+    expect(result.current.r.recovery.period).not.toBeNull()
   })
 })

@@ -46,14 +46,19 @@ const FUELDAY_EMPTY: FuelDayData = { date: '', targets: ZERO_MACROS, consumed: Z
  *  derives its `fuelMode` / `skippedKcal` from them (real mode serves them — and these queries are
  *  disabled there, so no extra fetch). Both caches are seeded exactly as `useRecovery` /
  *  `usePlannedSkips` seed them. */
+const MOCK_ONLY_RECOVERY_KEY = ['mockOnly', 'fuelModeSources', 'recovery'] as const
+const MOCK_ONLY_SKIPS_KEY = ['mockOnly', 'fuelModeSources', 'skips'] as const
+
 export function useMockFuelModeSources(): { recovery: RecoveryState; skips: PlannedSkip[] } {
   const mock = isMockMode()
   const { data: recovery } = useQuery<RecoveryState>({
-    queryKey: recoveryKey(), queryFn: async () => recoveryEmpty, enabled: mock,
+    // Real mode: an INERT mock-namespaced key — a second observer with a stub `queryFn` on the
+    // SHARED key would own its `queryFn` (last-mounted wins) and a refetch would wipe server data.
+    queryKey: mock ? recoveryKey() : MOCK_ONLY_RECOVERY_KEY, queryFn: async () => recoveryEmpty, enabled: mock,
     initialData: mock ? recoveryEmpty : undefined, staleTime: Infinity,
   })
   const { data: skips } = useQuery<PlannedSkip[]>({
-    queryKey: plannedSkipsQueryKey(), queryFn: async () => [], enabled: mock,
+    queryKey: mock ? plannedSkipsQueryKey() : MOCK_ONLY_SKIPS_KEY, queryFn: async () => [], enabled: mock,
     initialData: mock ? [] : undefined, staleTime: Infinity,
   })
   return { recovery: recovery ?? recoveryEmpty, skips: skips ?? [] }
