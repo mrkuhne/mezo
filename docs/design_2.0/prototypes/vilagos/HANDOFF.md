@@ -112,3 +112,14 @@ progress row as slim levels with an orange ring on the current; "te és az app" 
 Hungarian, business language, no file names or jargon; short; when asking for a decision:
 situation → problem → 2–3 options in a table with the price → a recommendation. He is a
 non-engineer product owner. Tell him plainly what was verified and what was not.
+
+## Icon round (2026-10-08, open — owner choosing)
+
+Owner: "az ikonkészlet színben, stílusban nem passzol". Audit: the 147 Titanium icons were drawn
+for a dark ground (122 shapes use the graphite `tg-titanium` gradient, purple/gold lights), and
+they carry too much detail for a 26 px slot. `vilagos/ikon.js` adds three switchable families
+without touching the originals (panel switcher "Ikon: …", compare screen `#w-nap-ikonok`):
+A Porcelán (re-lit 3D), B Területszín (3D in the domain's two colours), C Folyadék-jel (new own
+outlined glyph half-filled with liquid; ~45 drawn, the rest fall back to A). Default stays the
+current set until he picks. Whichever wins must then be made the only family and `ikon.js` folded
+into the kit.
