@@ -176,6 +176,7 @@ css(`
 .phone[data-s="elo"] .toast{bottom:104px}
 
 /* ── kit additions: sub-pages, rows, segmented control, forms, foot bar, sheets ── */
+.fh-hrow{flex-wrap:wrap}.fh-hrow>div{min-width:150px}
 .fh-title h1.sm{font-size:24px!important;letter-spacing:-.6px!important}
 .fh-back{font-size:24px;line-height:1;font-weight:500;padding-bottom:3px}
 .fh-top.sub{padding-bottom:12px}
@@ -258,7 +259,7 @@ const step=o=>`<div class="fh-step ${o.now?'now':''}"${o.right?'':act(o.on)}>${o
 const row=o=>`<${o.on?'button':'div'} class="fh-row"${act(o.on)}>${o.left||''}${o.icon?`<span class="si">${I(o.icon)}</span>`:''}<span class="g"><strong>${o.title}</strong>${o.sub?`<small>${o.sub}</small>`:''}</span>${o.v!=null?`<span class="v">${o.v}</span>`:''}${o.right||''}${o.on&&!o.right?chev():''}</${o.on?'button':'div'}>`;
 const bar=(pct,c='var(--dom)')=>`<div class="bar" style="--c:${c}"><b style="--w:${Math.max(0,Math.min(100,pct))}%"></b></div>`;
 /* stat({k, icon, n, unit, pct, s, sCls, c, on}) — one number tile; put 2 or 4 of them in grid() */
-const stat=o=>`<button class="fh-stat" style="--c:${o.c||'var(--dom)'}"${act(o.on)}>${o.icon?`<span class="ti">${I(o.icon)}</span>`:''}<span class="k">${o.k}</span><div class="n">${o.n}${o.unit?`<small>${o.unit}</small>`:''}</div>${o.pct!=null?bar(o.pct,'var(--c)'):''}${o.s?`<span class="s ${o.sCls||''}">${o.s}</span>`:''}</button>`;
+const stat=o=>`<button class="fh-stat" style="--c:${o.c||'var(--dom)'}"${act(o.on)}>${o.icon?`<span class="ti">${I(o.icon)}</span>`:''}<span class="k">${o.k}</span><div class="n">${o.n}${o.unit?`<small>${o.unit}</small>`:''}</div>${o.pct!=null?`<div class="bar"><b style="--w:${Math.max(0,Math.min(100,o.pct))}%"></b></div>`:''}${o.s?`<span class="s ${o.sCls||''}">${o.s}</span>`:''}</button>`;
 const grid=items=>`<div class="fh-grid">${items.join('')}</div>`;
 const facts=a=>`<div class="fh-facts" style="grid-template-columns:repeat(${a.length},1fr)">${a.map(([b,s])=>`<div><b>${b}</b><small>${s}</small></div>`).join('')}</div>`;
 /* seg([[label, action, on]]) — a segmented control inside a card */
