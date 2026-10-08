@@ -4,7 +4,8 @@
    3 mai számok → 4 napló. The five domains are always visible in the bottom bar. */
 (function(){
 const {I,csepp,mchp,muscleColor,css}=K;
-const DOM=[['nap','Nap','i-sun','#1F6FEB'],['edzes','Edzés','i-dumb','#E2553F'],['fuel','Fuel','i-bowl','#1E9E6A'],['mezo','Mezo','i-chat','#6D5BD0'],['en','Én','i-heart','#0E9AA7']];
+const DOM=[['nap','Nap','i-sun','#1F6FEB','c-i-nap'],['edzes','Edzés','i-dumb','#F26A3D','c-i-edzes'],['fuel','Fuel','i-bowl','#1E9E6A','c-i-tanyer'],['mezo','Mezo','i-chat','#6D5BD0','c-i-mezo'],['en','Én','i-heart','#0E9AA7','c-i-emberek']];
+const L=()=>!!window.FH_LIVE; const ic=(a,b,c='')=>L()&&b?I(b,c):I(a,c);
 const SEARCH=`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`;
 
 css(`
@@ -112,42 +113,106 @@ css(`
 .fh-nav button svg.ic{width:23px;height:23px}
 .fh-nav button.on{color:var(--c);font-weight:700;background:color-mix(in srgb,var(--c) 9%,#fff)}
 .phone[data-v="feher"] .toast{bottom:92px}
+
+.fh-n b{font-weight:650}.fh-n b::after{content:' ·';margin-right:4px}
+.fh-step .si,.fh-stat .ti,.fh-art{display:none}
+/* ══ ÉLŐ réteg: ugyanaz a szerkezet, saját karakterrel ══ */
+.phone[data-s="elo"]{--disp:'Bricolage Grotesque',var(--ff);--acc:var(--dom);--dom2:#19B5A5}
+.phone[data-s="elo"][data-d="edzes"]{--dom:#F26A3D;--dom2:#F2B13D}
+.phone[data-s="elo"][data-d="fuel"]{--dom2:#9BC53D}.phone[data-s="elo"][data-d="mezo"]{--dom2:#E26BA8}.phone[data-s="elo"][data-d="en"]{--dom2:#4D7CFE}
+.phone[data-s="elo"] .scroll{background:radial-gradient(130% 420px at 15% -80px,color-mix(in srgb,var(--dom) 26%,#fff),transparent 70%),radial-gradient(110% 380px at 105% -40px,color-mix(in srgb,var(--dom2) 22%,#fff),transparent 68%),var(--page);padding-bottom:112px}
+.phone[data-s="elo"] .fh-top{background:color-mix(in srgb,#fff 62%,transparent);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border-bottom-color:rgba(15,30,51,.06)}
+.phone[data-s="elo"] .fh-title h1{font-family:var(--disp);font-size:36px;font-weight:800;letter-spacing:-1.4px}
+.phone[data-s="elo"] .fh-title small{font-weight:600;color:color-mix(in srgb,var(--dom) 70%,var(--ink))}
+.phone[data-s="elo"] .fh-ib{background:rgba(255,255,255,.8);box-shadow:0 4px 12px -6px rgba(15,30,51,.25),inset 0 0 0 1px rgba(15,30,51,.05)}
+.phone[data-s="elo"] .fh-ib svg.ic.td{width:24px;height:24px;filter:drop-shadow(0 3px 4px rgba(15,30,51,.25))}
+.phone[data-s="elo"] .fh-tabs button.on{font-weight:700}
+.phone[data-s="elo"] .fh-card{border:0;border-radius:24px;padding:18px;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 14px 30px -20px rgba(15,30,51,.35),0 2px 6px -2px rgba(15,30,51,.08)}
+.phone[data-s="elo"] .fh-hero{position:relative;overflow:hidden;padding:20px;
+  background:radial-gradient(90% 130% at 0% 0%,color-mix(in srgb,var(--dom) 34%,#fff),transparent 62%),radial-gradient(80% 120% at 100% 100%,color-mix(in srgb,var(--dom2) 30%,#fff),transparent 60%),#fff;
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 22px 40px -22px color-mix(in srgb,var(--dom) 60%,transparent),0 2px 6px -2px rgba(15,30,51,.08)}
+.phone[data-s="elo"] .fh-hero.warn{background:radial-gradient(90% 130% at 0% 0%,#FFE2A6,transparent 62%),radial-gradient(80% 120% at 100% 100%,#FFD3C2,transparent 60%),#fff;box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 22px 40px -22px rgba(201,138,18,.6)}
+.phone[data-s="elo"] .fh-hero .lbl{color:color-mix(in srgb,var(--dom) 75%,var(--ink))}
+.phone[data-s="elo"] .fh-hero.warn .lbl{color:#9A6708}
+.phone[data-s="elo"] .fh-hero .verdict{font-family:var(--disp);font-size:24px;font-weight:800;letter-spacing:-.8px;line-height:1.12}
+.phone[data-s="elo"] .fh-hero .sub{color:color-mix(in srgb,var(--ink) 72%,transparent)}
+.phone[data-s="elo"] .fh-art{display:block;position:absolute;right:10px;top:8px;width:96px;height:96px;transform:rotate(8deg)}
+.phone[data-s="elo"] .fh-art svg.ic{width:96px;height:96px;filter:drop-shadow(0 14px 16px rgba(15,30,51,.3))}
+.phone[data-s="elo"] .btn{border-radius:14px;font-weight:700;background:linear-gradient(180deg,color-mix(in srgb,var(--acc) 88%,#fff),var(--acc));box-shadow:0 10px 20px -10px var(--acc),inset 0 1px 0 rgba(255,255,255,.35)}
+.phone[data-s="elo"] .btn.ghost{background:#fff;box-shadow:0 4px 10px -6px rgba(15,30,51,.25),inset 0 0 0 1px rgba(15,30,51,.08);border:0}
+.phone[data-s="elo"] .fh-lk{color:color-mix(in srgb,var(--dom) 80%,var(--ink));font-weight:650}
+.phone[data-s="elo"] .fh-n{display:flex;align-items:center;gap:8px;font-family:var(--disp);font-size:17px;font-weight:700;letter-spacing:-.3px;text-transform:none;color:var(--ink);margin:24px 16px 0}
+.phone[data-s="elo"] .fh-n b{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:#fff;background:var(--dom);box-shadow:0 6px 12px -6px var(--dom)}
+.phone[data-s="elo"] .fh-n b::after{content:none}
+.phone[data-s="elo"] .fh-step{gap:10px}
+.phone[data-s="elo"] .fh-step .si{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:var(--page);flex:0 0 auto}
+.phone[data-s="elo"] .fh-step .si svg.ic{width:28px;height:28px;filter:drop-shadow(0 4px 5px rgba(15,30,51,.22))}
+.phone[data-s="elo"] .fh-step time{width:auto;min-width:40px;font-family:var(--disp);font-size:14px;font-weight:700}
+.phone[data-s="elo"] .fh-step.now{margin:-6px -8px 4px;padding:12px 8px;border-radius:16px;border-top:0;background:color-mix(in srgb,var(--dom) 9%,#fff)}
+.phone[data-s="elo"] .fh-step.now + .fh-step{border-top:0}
+.phone[data-s="elo"] .fh-step.now .si{background:#fff}
+.phone[data-s="elo"] .fh-stat{position:relative;border:0;border-radius:18px;padding:14px;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 15%,#fff),color-mix(in srgb,var(--c) 5%,#fff))}
+.phone[data-s="elo"] .fh-stat .ti{display:block;position:absolute;right:10px;top:10px}
+.phone[data-s="elo"] .fh-stat .ti svg.ic{width:34px;height:34px;filter:drop-shadow(0 5px 6px rgba(15,30,51,.25))}
+.phone[data-s="elo"] .fh-stat .k svg.ic{display:none}
+.phone[data-s="elo"] .fh-stat .k{font-weight:650;color:color-mix(in srgb,var(--c) 55%,var(--ink))}
+.phone[data-s="elo"] .fh-stat .n{font-family:var(--disp);font-size:28px;font-weight:800;letter-spacing:-1px;margin-top:10px}
+.phone[data-s="elo"] .fh-stat .bar{height:8px;border-radius:4px;background:rgba(255,255,255,.75)}
+.phone[data-s="elo"] .fh-stat .bar b{border-radius:4px;box-shadow:0 0 10px -2px var(--c)}
+.phone[data-s="elo"] .fh-h h2{font-family:var(--disp);font-size:18px;font-weight:700;letter-spacing:-.4px}
+.phone[data-s="elo"] .fh-h .tile{width:40px;height:40px;border-radius:13px;background:color-mix(in srgb,var(--dom) 10%,#fff)}
+.phone[data-s="elo"] .fh-h .tile svg.ic.td{width:28px;height:28px;filter:drop-shadow(0 4px 5px rgba(15,30,51,.22))}
+.phone[data-s="elo"] .fh-facts{border:0;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1px rgba(15,30,51,.06)}
+.phone[data-s="elo"] .fh-facts b{font-family:var(--disp);font-size:22px;font-weight:800}
+.phone[data-s="elo"] .fh-chips span{border:0;background:rgba(255,255,255,.8);box-shadow:inset 0 0 0 1px rgba(15,30,51,.06)}
+.phone[data-s="elo"] .fh-pair button{border:0;background:var(--page);font-family:var(--disp);font-size:15px}
+.phone[data-s="elo"] .fh-pair button svg.ic.td{width:36px;height:36px;filter:drop-shadow(0 5px 6px rgba(15,30,51,.25))}
+.phone[data-s="elo"] .ds button{border:0;box-shadow:0 4px 10px -8px rgba(15,30,51,.4)}
+.phone[data-s="elo"] .ds button.on{background:var(--dom);box-shadow:0 10px 18px -10px var(--dom)}
+.phone[data-s="elo"] .ds b{font-family:var(--disp);font-size:17px;font-weight:700}
+.phone[data-s="elo"] .csepp .val b{font-family:var(--disp);font-weight:800}
+.phone[data-s="elo"] .fh-nav{left:10px;right:10px;bottom:10px;padding:6px;border:0;border-radius:26px;background:rgba(255,255,255,.86);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 18px 34px -16px rgba(15,30,51,.45),inset 0 0 0 1px rgba(15,30,51,.06)}
+.phone[data-s="elo"] .fh-nav button{border-radius:20px;padding:7px 0 6px;font-weight:600}
+.phone[data-s="elo"] .fh-nav button svg.ic.td{width:28px;height:28px;filter:grayscale(.7) opacity(.6)}
+.phone[data-s="elo"] .fh-nav button.on svg.ic.td{filter:drop-shadow(0 5px 6px color-mix(in srgb,var(--c) 55%,transparent))}
+.phone[data-s="elo"] .fh-nav button.on{background:color-mix(in srgb,var(--c) 13%,#fff)}
+.phone[data-s="elo"] .toast{bottom:104px}
 `);
 
 const top=(title,sub,tabs)=>`<header class="fh-top"><div class="fh-trow"><div class="fh-title"><small><i></i>${sub}</small><h1>${title}</h1></div>
   <button class="fh-ib" data-toast="Keresés az egész appban: étel, edzés, bejegyzés, beállítás" aria-label="Keresés">${SEARCH}</button>
-  <button class="fh-ib" data-toast="Értesítések" aria-label="Értesítések">${I('i-bell')}<b>3</b></button>
-  <button class="fh-ib" data-toast="Beállítások és profil" aria-label="Beállítások">${I('i-gear')}</button></div>
+  <button class="fh-ib" data-toast="Értesítések" aria-label="Értesítések">${ic('i-bell','c-i-ertesites')}<b>3</b></button>
+  <button class="fh-ib" data-toast="Beállítások és profil" aria-label="Beállítások">${ic('i-gear','c-i-beallitas')}</button></div>
   <nav class="fh-tabs">${tabs.map((t,i)=>`<button class="${i===0?'on':''}" data-toast="${t}">${t}</button>`).join('')}</nav></header>`;
-const nav=d=>`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`;
-const head=(ic,t,link='')=>`<div class="fh-h"><span class="tile">${I(ic)}</span><h2>${t}</h2>${link?`<a href="#" data-toast="${link}">${link} ›</a>`:''}</div>`;
+const nav=d=>`<nav class="fh-nav">${DOM.map(([k,l,a,c,b])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${ic(a,b)}<span>${l}</span></button>`).join('')}</nav>`;
+const head=(a,t,link='',b='')=>`<div class="fh-h"><span class="tile">${ic(a,b)}</span><h2>${t}</h2>${link?`<a href="#" data-toast="${link}">${link} ›</a>`:''}</div>`;
 const wrap=(inner,d)=>`<div class="scroll">${inner}</div>${nav(d)}<div class="toast" id="toast"></div>`;
 
 function nap(){return wrap(`${top('Ma','Nap · szerda, október 7.',['Mai','A napom','Beszélgetés','Rutin'])}
   <section class="fh-card fh-hero rise"><div class="fh-hrow">${csepp('ok',57,{s:104,val:72,label:'MA'})}
     <div style="flex:1;min-width:0"><span class="lbl">Mai állapot</span><p class="verdict">Ma jó nap egy közepes edzéshez.</p><p class="sub">Nyugodt ébredés, 7 ó 40 p alvás. A hét jeledből négy megvan.</p></div></div>
     <div class="fh-acts"><button class="btn" data-toast="Délutáni check-in">Délutáni check-in</button><button class="fh-lk" data-toast="Életjelek · miből áll össze a 72">Miből áll össze?</button></div></section>
-  <p class="fh-n rise" style="--i:1">1 · Most következik</p>
+  <p class="fh-n rise" style="--i:1"><b>1</b>Most következik</p>
   <section class="fh-card rise" style="--i:1">
-    <div class="fh-step now"><time>14:00</time><span class="g"><strong>Délutáni check-in</strong><small>8 koppintás, kb. fél perc</small></span><button class="btn sm" data-toast="Check-in">Kitöltöm</button></div>
-    <div class="fh-step"><time>18:00</time><span class="g"><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó</small></span><button class="btn sm ghost" data-dom="edzes">Megnézem</button></div>
-    <div class="fh-step"><time>19:30</time><span class="g"><strong>Vacsora</strong><small>1 040 kcal van még · 72 g fehérje hiányzik</small></span><button class="btn sm ghost" data-toast="Fuel · Logolás">Logolom</button></div></section>
-  <p class="fh-n rise" style="--i:2">2 · Mai számok</p>
+    <div class="fh-step now"><time>14:00</time><span class="si">${ic('i-pulse','t-checkin')}</span><span class="g"><strong>Délutáni check-in</strong><small>8 koppintás, kb. fél perc</small></span><button class="btn sm" data-toast="Check-in">Kitöltöm</button></div>
+    <div class="fh-step"><time>18:00</time><span class="si">${ic('i-ball','t-volley')}</span><span class="g"><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó</small></span><button class="btn sm ghost" data-dom="edzes">Megnézem</button></div>
+    <div class="fh-step"><time>19:30</time><span class="si">${ic('i-bowl','t-bowl')}</span><span class="g"><strong>Vacsora</strong><small>1 040 kcal van még · 72 g fehérje hiányzik</small></span><button class="btn sm ghost" data-toast="Fuel · Logolás">Logolom</button></div></section>
+  <p class="fh-n rise" style="--i:2"><b>2</b>Mai számok</p>
   <section class="fh-card rise" style="--i:2"><div class="fh-grid">
-    <button class="fh-stat" data-toast="Fuel · Mai"><span class="k">${I('i-flame')}Kalória</span><div class="n">2 060<small>/ 3 100</small></div><div class="bar" style="--c:var(--acc)"><b style="--w:66%"></b></div><span class="s">1 040 kcal van még</span></button>
-    <button class="fh-stat" data-toast="Fuel · Fehérje"><span class="k">${I('i-bowl')}Fehérje</span><div class="n">148<small>/ 220 g</small></div><div class="bar" style="--c:var(--protein)"><b style="--w:67%"></b></div><span class="s">72 g hiányzik</span></button>
-    <button class="fh-stat" data-toast="Én · Alvás"><span class="k">${I('i-bed')}Alvás</span><div class="n">7 ó 40<small>perc</small></div><div class="bar" style="--c:var(--ok)"><b style="--w:92%"></b></div><span class="s ok">a heti átlagod fölött</span></button>
-    <button class="fh-stat" data-dom="edzes"><span class="k">${I('i-dumb')}Mozgás</span><div class="n">0<small>/ 2 alkalom</small></div><div class="bar" style="--c:var(--warn)"><b style="--w:4%"></b></div><span class="s warn">Pull Day még hátravan</span></button>
+    <button class="fh-stat" style="--c:var(--acc)" data-toast="Fuel · Mai"><span class="ti">${I('t-flame')}</span><span class="k">${I('i-flame')}Kalória</span><div class="n">2 060<small>/ 3 100</small></div><div class="bar" style="--c:var(--acc)"><b style="--w:66%"></b></div><span class="s">1 040 kcal van még</span></button>
+    <button class="fh-stat" style="--c:var(--protein)" data-toast="Fuel · Fehérje"><span class="ti">${I('t-meat')}</span><span class="k">${I('i-bowl')}Fehérje</span><div class="n">148<small>/ 220 g</small></div><div class="bar" style="--c:var(--protein)"><b style="--w:67%"></b></div><span class="s">72 g hiányzik</span></button>
+    <button class="fh-stat" style="--c:var(--ok)" data-toast="Én · Alvás"><span class="ti">${I('t-sleep')}</span><span class="k">${I('i-bed')}Alvás</span><div class="n">7 ó 40<small>perc</small></div><div class="bar" style="--c:var(--ok)"><b style="--w:92%"></b></div><span class="s ok">a heti átlagod fölött</span></button>
+    <button class="fh-stat" style="--c:var(--warn)" data-dom="edzes"><span class="ti">${I('t-dumbbell')}</span><span class="k">${I('i-dumb')}Mozgás</span><div class="n">0<small>/ 2 alkalom</small></div><div class="bar" style="--c:var(--warn)"><b style="--w:4%"></b></div><span class="s warn">Pull Day még hátravan</span></button>
   </div></section>
-  <p class="fh-n rise" style="--i:3">3 · Észrevétel</p>
-  <section class="fh-card rise" style="--i:3">${head('i-chat','Anna és az alvásod','Összes')}
+  <p class="fh-n rise" style="--i:3"><b>3</b>Észrevétel</p>
+  <section class="fh-card rise" style="--i:3">${head('i-chat','Anna és az alvásod','Összes','t-pattern')}
     <p class="fh-txt">Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, ez még kevés. Figyeljem tovább?</p>
     <div class="fh-acts"><button class="btn sm" data-toast="Megjegyeztem: figyelem tovább">Igen, figyeld</button><button class="btn sm ghost" data-toast="Megjegyeztem">Nem stimmel</button><button class="fh-lk" data-toast="Miből látom?">Miből látod?</button></div></section>
-  <p class="fh-n rise" style="--i:4">4 · Mai napló</p>
+  <p class="fh-n rise" style="--i:4"><b>4</b>Mai napló</p>
   <section class="fh-card rise" style="--i:4">
-    <div class="fh-step"><time>13:00</time><span class="g"><strong>Ebéd</strong><small>Csirke · édesburgonya · spenót · 760 kcal</small></span>${I('i-chev','chev')}</div>
-    <div class="fh-step"><time>09:15</time><span class="g"><strong>Reggeli</strong><small>Túrós zabkása áfonyával · 420 kcal</small></span>${I('i-chev','chev')}</div>
-    <div class="fh-step"><time>07:10</time><span class="g"><strong>Reggeli check-in</strong><small>Nyugodt ébredés, pihenve</small></span>${I('i-chev','chev')}</div>
+    <div class="fh-step"><time>13:00</time><span class="si">${ic('i-bowl','t-bowl')}</span><span class="g"><strong>Ebéd</strong><small>Csirke · édesburgonya · spenót · 760 kcal</small></span>${I('i-chev','chev')}</div>
+    <div class="fh-step"><time>09:15</time><span class="si">${ic('i-bowl','t-bowl')}</span><span class="g"><strong>Reggeli</strong><small>Túrós zabkása áfonyával · 420 kcal</small></span>${I('i-chev','chev')}</div>
+    <div class="fh-step"><time>07:10</time><span class="si">${ic('i-pulse','t-checkin')}</span><span class="g"><strong>Reggeli check-in</strong><small>Nyugodt ébredés, pihenve</small></span>${I('i-chev','chev')}</div>
     <div class="fh-acts"><button class="btn sm ghost" data-toast="Gyors logolás">+ Új bejegyzés</button></div></section>`,'nap')}
 
 function edzes(){
@@ -156,29 +221,30 @@ function edzes(){
   const LBL={'back-wide':'Hát','back-mid':'Hát közép','shoulder-rear':'Hátsó váll','biceps-brachialis':'Kar','traps':'Trapéz'};
   return wrap(`${top('Edzés','Hypertrophy 04 · 3. hét / 6',['Mai','Terv','Terhelés','Gyakorlatok'])}
   <section class="ds rise">${D.map(([l,n,m,k])=>`<button class="${k||''}" data-toast="${l} · ${n}."><small>${l}</small><b>${n}</b><i class="${m==='ok'?'ok':''}">${m==='ok'?I('i-check'):m}</i></button>`).join('')}</section>
-  <section class="fh-card fh-hero rise" style="--i:1"><span class="lbl">Mai edzés · 07:30 · Gym</span><p class="verdict" style="font-size:26px">Pull Day</p>
+  <section class="fh-card fh-hero rise" style="--i:1"><span class="fh-art">${I('t-dumbbell')}</span><span class="lbl">Mai edzés · 07:30 · Gym</span><p class="verdict" style="font-size:26px">Pull Day</p>
     <div class="fh-facts"><div><b>5</b><small>gyakorlat</small></div><div><b>16</b><small>szett</small></div><div><b>~78</b><small>perc</small></div></div>
     <div class="fh-chips">${Object.keys(LBL).map(k=>`<span>${mchp(k,'sm')}${LBL[k]}</span>`).join('')}</div>
     <div class="fh-acts"><button class="btn" style="flex:1" data-toast="Eligazítás, majd indul az edzés">Edzés indítása</button><button class="fh-lk" data-toast="Kihagyom · megadhatod, miért">Kihagyom</button></div></section>
-  <p class="fh-n rise" style="--i:2">1 · Mielőtt elkezded</p>
+  <p class="fh-n rise" style="--i:2"><b>1</b>Mielőtt elkezded</p>
   <section class="fh-card fh-hero warn rise" style="--i:2"><div class="fh-hrow" style="gap:12px">${csepp('warn',57,{s:60,val:48})}
     <div style="flex:1;min-width:0"><span class="lbl">A reggeli check-inből</span><p class="verdict" style="font-size:18px;margin-bottom:2px">Könnyebb nap javasolt</p><p class="sub">A jobb vállad fáj. A Rear Delt Fly-t könnyebb súllyal, vagy hagyd ki.</p></div></div>
     <div class="fh-why"><span>Kipihentség</span><span class="v">4 / 10</span><div class="bar" style="--c:var(--warn)"><b style="--w:40%"></b></div>
       <span>Izomláz</span><span class="v">7 / 10</span><div class="bar" style="--c:var(--bad)"><b style="--w:70%"></b></div></div>
     <div class="fh-acts"><button class="btn sm" data-toast="Könnyítve: a múlt heti súly marad">Könnyítsük</button><button class="btn sm ghost" data-toast="Marad a terv">Maradjon a terv</button></div></section>
-  <p class="fh-n rise" style="--i:3">2 · Ma még</p>
+  <p class="fh-n rise" style="--i:3"><b>2</b>Ma még</p>
   <section class="fh-card rise" style="--i:3">
-    <div class="fh-step"><time>18:00</time><span class="g"><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó</small></span><span class="st q">Tervezett</span></div>
-    <div class="fh-step"><time>tegnap</time><span class="g"><strong>Sprint-intervallum</strong><small>6 kör · elmaradt</small></span><button class="btn sm ghost" data-toast="Futás pótlása">Pótlom</button></div></section>
-  <p class="fh-n rise" style="--i:4">3 · Mai terhelés</p>
-  <section class="fh-card rise" style="--i:4">${head('i-muscle','Mit terhel a mai mozgásod','Térkép')}
+    <div class="fh-step"><time>18:00</time><span class="si">${ic('i-ball','t-volley')}</span><span class="g"><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó</small></span><span class="st q">Tervezett</span></div>
+    <div class="fh-step"><time>tegnap</time><span class="si">${ic('i-run','t-run')}</span><span class="g"><strong>Sprint-intervallum</strong><small>6 kör · elmaradt</small></span><button class="btn sm ghost" data-toast="Futás pótlása">Pótlom</button></div></section>
+  <p class="fh-n rise" style="--i:4"><b>3</b>Mai terhelés</p>
+  <section class="fh-card rise" style="--i:4">${head('i-muscle','Mit terhel a mai mozgásod','Térkép','t-muscle')}
     ${MUS.map(([k,l,p,d])=>`<div class="fh-mus">${mchp(k,'sm')}<span class="l">${l}</span><span class="v">${d} / ${p} szett</span><div class="bar" style="--c:${muscleColor(k)}"><b style="--w:${Math.max(4,d/p*100)}%"></b></div></div>`).join('')}
     <p class="fh-note">+650 kcal kerül a mai kereted fölé, ha mindent megcsinálsz. Becslés, nem mérés.</p></section>
-  <p class="fh-n rise" style="--i:5">4 · Vagy inkább</p>
-  <section class="fh-card rise" style="--i:5"><div class="fh-pair"><button data-toast="Egyedi edzés">${I('i-dumb')}Egyedi edzés</button><button data-toast="Sport naplózása">${I('i-ball')}Sport naplózása</button></div></section>`,'edzes')}
+  <p class="fh-n rise" style="--i:5"><b>4</b>Vagy inkább</p>
+  <section class="fh-card rise" style="--i:5"><div class="fh-pair"><button data-toast="Egyedi edzés">${ic('i-dumb','t-dumbbell')}Egyedi edzés</button><button data-toast="Sport naplózása">${ic('i-ball','t-volley')}Sport naplózása</button></div></section>`,'edzes')}
 
 const soon=(d,t)=>()=>wrap(`${top(t,'Ez a terület még nincs megrajzolva',['Mai'])}<section class="fh-card"><p class="fh-txt" style="color:var(--sub)">Ebben a körben csak a Nap és az Edzés főoldala készült el, hogy az irányról tudj dönteni. Az alsó sáv és a fenti fülek minden területen így működnének.</p></section>`,d);
 window.FREG={nap:{mai:nap},edzes:{mai:edzes},fuel:{mai:soon('fuel','Fuel')},mezo:{mai:soon('mezo','Mezo')},en:{mai:soon('en','Én')}};
+window.FNOTES_ELO=`<h2>Világos · élő</h2><p>Ugyanaz a szerkezet, mint a Világos klinikai, egy gombbal ott tudod összevetni. Itt karaktert kapott:</p><ul><li><b>Saját címbetű</b> a címeken és a nagy számokon, hogy ne általános sablonnak hasson.</li><li><b>Terület-színvilág:</b> a fejléc és a fő kártya a terület színében dereng (Nap kék-türkiz, Edzés narancs). Ebből is látod, hol vagy; a gombok is a terület színét viselik.</li><li><b>A 3D ikonok visszatértek</b> az eredeti színükben: az alsó sávban, a teendők mellett, a szám-csempéken, és nagyban a fő kártyán.</li><li><b>Mélység:</b> a kártyáknak puha árnyéka van, az alsó sáv lebeg.</li><li><b>Számozott szakaszok</b> színes jelvénnyel; a soron következő teendő kiemelve.</li><li><b>Színes szám-csempék:</b> minden mutató a saját színében.</li></ul><p>A csepp és az izomtérkép-jelek maradtak. <b>Csak a Nap és az Edzés főoldala készült el.</b></p>`;
 window.FNOTES=`<h2>Világos klinikai</h2><p>Új irány a mostani visszajelzésedre: nem a díszítésen változtat, hanem a <b>szerkezeten</b>. Világos, fehér-kék, sötét mód nélkül.</p>
 <h2>Hova nézz</h2><ul>
 <li><b>Legfelül: hol vagy.</b> A terület neve nagy betűvel, alatta a dátum, a terület színes pöttyével. Mellette kereső, értesítések, beállítások.</li>
