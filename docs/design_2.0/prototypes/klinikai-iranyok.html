@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Csepp prototípus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,600&display=swap">
 <style>
 /* ─────────────────────────────────────────────────────────────
    Új UI irány · Nap és Edzés — három változat egymás mellett
@@ -1668,7 +1668,10 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
   <h1>Új UI irány<small>a mostani app és az új irány, minden terület</small></h1>
   <div class="seg" id="vseg" role="tablist" aria-label="Változat">
     <button data-v="jelenlegi">Jelenlegi (Üveg)</button>
-    <button data-v="elo">Új · Világos élő</button>
+    <button data-v="elo">Világos élő</button>
+    <button data-v="k1">1 · Műszer</button>
+    <button data-v="k2">2 · Folyadék</button>
+    <button data-v="k3">3 · Magazin</button>
   </div>
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap</button>
@@ -1862,14 +1865,15 @@ const TISZTA_NOTES=`<h2>Tisztított Üveg</h2><p>A mostani app marad: a meleg s�
 /* ── registry + router ── */
 const REG={};
 function register(d,def){REG[d]=def; if(def.css) css(def.css);}
-let V='elo',D='nap',R='mai',ARG='';
+let V='k2',D='nap',R='mai',ARG='';
 let LIGHT=false,WARM=false,HIST=[];
 function go(route){if(!route)return;HIST.push(R+(ARG?'.'+ARG:''));const [r,...a]=route.split('.');R=r;ARG=a.join('.');render()}
 function goBack(){const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=a.join('.');render()}
 function render(){
   const ph=$('#phone');
   if(D==='jelek'&&V!=='ajanlott')V='ajanlott';
-  if(V==='feher'||V==='elo'){window.FH_LIVE=V==='elo';ph.dataset.v='feher';if(V==='elo')ph.dataset.s='elo';else ph.removeAttribute('data-s');ph.dataset.d=D;ph.removeAttribute('data-t');ph.classList.remove('warm');const f=window.FREG&&FREG[D];const fn=f&&(f.routes[R]||f.routes.mai);ph.innerHTML=fn?fn(ARG):'';if(f&&f.after)f.after(R,ARG);}
+  if(/^k[123]$/.test(V)){ph.dataset.v=V;ph.removeAttribute('data-s');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.innerHTML=window.KONC?KONC[V]():'';}
+  else if(V==='feher'||V==='elo'){window.FH_LIVE=V==='elo';ph.dataset.v='feher';if(V==='elo')ph.dataset.s='elo';else ph.removeAttribute('data-s');ph.dataset.d=D;ph.removeAttribute('data-t');ph.classList.remove('warm');const f=window.FREG&&FREG[D];const fn=f&&(f.routes[R]||f.routes.mai);ph.innerHTML=fn?fn(ARG):'';if(f&&f.after)f.after(R,ARG);}
   else
   if(V!=='ajanlott'){ph.removeAttribute('data-v');ph.removeAttribute('data-s');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.classList.remove('warm');
     const file=D==='jelek'?'nap':D; const dir=V==='tiszta'?'tiszta':'elo'; const r0=(D==='en'&&R==='mai')?'en':(D==='mezo'&&R==='mai')?'fal':R;
@@ -1878,14 +1882,15 @@ function render(){
     const reg=REG[D]; const fnr=reg&&(reg.routes[R]||reg.routes.mai);
     ph.innerHTML=fnr?fnr(ARG):`<div class="scroll">${header()}<p class="p16 txt" style="padding:40px 16px;color:var(--sub)">Ez a terület (${D}) még nincs kidolgozva.</p></div>`;
     if(reg&&reg.after)reg.after(R,ARG);}
-  const reg=REG[D]; $('#notes').innerHTML=V==='elo'?((window.FNOTES_ELO||'')+((window.FREG&&FREG[D]&&FREG[D].notes)||'')):V==='feher'?(window.FNOTES||''):V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
+  const reg=REG[D]; $('#notes').innerHTML=/^k[123]$/.test(V)?((window.KNOTES||{})[V]||''):V==='elo'?((window.FNOTES_ELO||'')+((window.FREG&&FREG[D]&&FREG[D].notes)||'')):V==='feher'?(window.FNOTES||''):V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
+  $('#dseg').hidden=/^k[123]$/.test(V);
   
-  history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':V==='feher'?'f':V==='elo'?'e':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
+  history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':V==='feher'?'f':V==='elo'?'e':/^k/.test(V)?V.slice(1):'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
   $('#phone .scroll')?.scrollTo(0,0);
 }
-function fromHash(){const m=/^#(j|a|t|f|e)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':m[1]==='t'?'tiszta':m[1]==='f'?'feher':m[1]==='e'?'elo':'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
+function fromHash(){const m=/^#(j|a|t|f|e|1|2|3)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':m[1]==='t'?'tiszta':m[1]==='f'?'feher':m[1]==='e'?'elo':/[123]/.test(m[1])?'k'+m[1]:'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
 function openSheet(html){const s=$('#sheet');if(!s)return;s.innerHTML=`<div class="sheet-grab"></div>${html}`;s.classList.add('on');$('#scrim').classList.add('on')}
 function closeSheet(){$('#sheet')?.classList.remove('on');$('#scrim')?.classList.remove('on');$('#swsheet')?.remove()}
 document.addEventListener('click',e=>{
@@ -1915,5 +1920,6 @@ window.addEventListener('DOMContentLoaded',()=>{fromHash();render()});
 <script src="vilagos/fuel.js"></script>
 <script src="vilagos/mezo.js"></script>
 <script src="vilagos/en.js"></script>
+<script src="vilagos/koncepciok.js"></script>
 </body>
 </html>
