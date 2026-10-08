@@ -1665,10 +1665,11 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
 
 
 <div class="top">
-  <h1>Csepp · az új UI irány<small>Jelenlegi (élő) és Ajánlott, minden terület</small></h1>
+  <h1>Új UI irány<small>Jelenlegi · Tisztított Üveg · Klinikai, minden terület</small></h1>
   <div class="seg" id="vseg" role="tablist" aria-label="Változat">
     <button data-v="jelenlegi">Jelenlegi (Üveg)</button>
-    <button data-v="ajanlott">Ajánlott</button>
+    <button data-v="tiszta">Tisztított Üveg</button>
+    <button data-v="ajanlott">Klinikai (csepp)</button>
   </div>
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap</button>
@@ -1851,29 +1852,41 @@ function wkBars(){
   <div class="wkl">${W.map(([l,,,,t])=>`<span>${t?`<b>${l}</b>`:l}</span>`).join('')}</div>`;
 }
 
+const JELEN_NOTES=`<h2>Jelenlegi · Üveg</h2><p>Az élő prototípus, változtatás nélkül. Ez az, ami ma az appban van.</p>`;
+const TISZTA_NOTES=`<h2>Tisztított Üveg</h2><p>A mostani app marad: a meleg sötét alap, a színes derengés, az üveg, a 3D ikonok, minden képernyő és gomb ugyanott. Csak rendet raktunk benne.</p>
+<h2>Mi változott</h2><ul>
+<li><b>Egy fő fókusz képernyőnként.</b> Az első, legfontosabb kártya marad teljes üveg, színes kerettel és fénnyel. Ez mondja meg, mire nézz.</li>
+<li><b>Kevesebb kártya.</b> A többi nagy kártya „kinyílik”: nincs doboza, kerete, fénye, csak egy vékony vonal választja el. A tartalom ugyanaz.</li>
+<li><b>Csendesebb csempék.</b> A kis csempék és sorok halvány alapot kapnak színes keret és ragyogás nélkül.</li>
+<li><b>Kevesebb zaj.</b> Színes ragyogás csak a fókusz-kártyán van; a címkék és az ikonok a helyükön maradnak.</li>
+<li><b>Buborékok a Boopok helyett.</b> Ugyanott, ugyanabban a színben, de arc nélkül: folyadékkal teli, lélegző forma. Területenként más alak.</li>
+</ul>
+<h2>Hogyan nézd</h2><p>Váltogass a <b>Jelenlegi</b> és a <b>Tisztított</b> között ugyanazon a képernyőn. A telefonban minden ugyanúgy kattintható, mint az élő prototípusban. A harmadik gomb a korábbi klinikai kör, összevetésnek.</p>`;
 /* ── registry + router ── */
 const REG={};
 function register(d,def){REG[d]=def; if(def.css) css(def.css);}
-let V='ajanlott',D='nap',R='mai',ARG='';
+let V='tiszta',D='nap',R='mai',ARG='';
 let LIGHT=false,WARM=false,HIST=[];
 function go(route){if(!route)return;HIST.push(R+(ARG?'.'+ARG:''));const [r,...a]=route.split('.');R=r;ARG=a.join('.');render()}
 function goBack(){const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=a.join('.');render()}
 function render(){
   const ph=$('#phone');
-  if(D==='jelek'&&V==='jelenlegi')V='ajanlott';
-  if(V==='jelenlegi'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.classList.remove('warm');
-    const file=D==='jelek'?'nap':D; ph.innerHTML=`<iframe title="Élő prototípus" src="elo/${file}.html#${R}${ARG?'/'+ARG:''}"></iframe>`}
+  if(D==='jelek'&&V!=='ajanlott')V='ajanlott';
+  if(V!=='ajanlott'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.classList.remove('warm');
+    const file=D==='jelek'?'nap':D; const dir=V==='tiszta'?'tiszta':'elo'; const r0=(D==='en'&&R==='mai')?'en':(D==='mezo'&&R==='mai')?'fal':R;
+    ph.innerHTML=`<iframe title="${V==='tiszta'?'Tisztított Üveg':'Élő prototípus'}" src="${dir}/${file}.html#${r0}${ARG?'/'+ARG:''}"></iframe>`}
   else{ph.dataset.v='ajanlott';ph.dataset.d=D==='jelek'?'nap':D;if(LIGHT)ph.dataset.t='light';else ph.removeAttribute('data-t');ph.classList.toggle('warm',WARM);
     const reg=REG[D]; const fnr=reg&&(reg.routes[R]||reg.routes.mai);
     ph.innerHTML=fnr?fnr(ARG):`<div class="scroll">${header()}<p class="p16 txt" style="padding:40px 16px;color:var(--sub)">Ez a terület (${D}) még nincs kidolgozva.</p></div>`;
     if(reg&&reg.after)reg.after(R,ARG);}
-  const reg=REG[D]; $('#notes').innerHTML=(reg&&reg.notes)||'';
+  const reg=REG[D]; $('#notes').innerHTML=V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
-  history.replaceState(null,'',`#${V==='jelenlegi'?'j':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
+  ['vilagos','meleg'].forEach(id=>{const l=$('#'+id).closest('label');if(l)l.hidden=V!=='ajanlott'});
+  history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
   $('#phone .scroll')?.scrollTo(0,0);
 }
-function fromHash(){const m=/^#(j|a)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
+function fromHash(){const m=/^#(j|a|t)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':m[1]==='t'?'tiszta':'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
 function openSheet(html){const s=$('#sheet');if(!s)return;s.innerHTML=`<div class="sheet-grab"></div>${html}`;s.classList.add('on');$('#scrim').classList.add('on')}
 function closeSheet(){$('#sheet')?.classList.remove('on');$('#scrim')?.classList.remove('on');$('#swsheet')?.remove()}
 document.addEventListener('click',e=>{
