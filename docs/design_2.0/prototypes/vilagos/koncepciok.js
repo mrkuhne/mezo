@@ -166,31 +166,34 @@ css(`
 @keyframes k2fillv{from{height:4%}}
 `);
 const NAVC=[['Nap','#1877F2',78],['Edzés','#F2683A',30],['Fuel','#1FA971',66],['Mezo','#7A5CE0',50],['Én','#12A5B5',60]];
-function k2(){
-  const vial=(l,ic,c,p,v,s,mark)=>`<button class="k2-vial" ${t(l)} style="--c:${c}"><span class="k2-tube"><em>${mark}</em><span class="l" style="--p:${p}%">${wave('color-mix(in srgb,'+c+' 70%,#fff)')}</span>${I(ic)}</span><b>${v}</b><small>${l}<i>${s}</i></small></button>`;
-  return `<div class="scroll">
-  <div class="k2-top"><div><small>Szerda, október 7.</small><h1>Ma</h1></div><button class="k2-ib" ${t('Keresés')} aria-label="Keresés"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button><button class="k2-ib" ${t('Értesítések')} aria-label="Értesítések">${I('c-i-ertesites')}<b>3</b></button></div>
-  <nav class="k2-tabs"><button class="on">Mai</button><button ${t('A napom')}>A napom</button><button ${t('Beszélgetés')}>Beszélgetés</button><button ${t('Rutin')}>Rutin</button></nav>
-  <section class="k2-tank rise"><div class="k2-air"><small>Mai állapot</small><p>Ma jó nap egy közepes edzéshez.</p></div>
+function k2inner(){
+  const vial=(l,ic,c,p,v,s,mark,dom)=>`<button class="k2-vial" ${dom?`data-dom="${dom}"`:t(l)} style="--c:${c}"><span class="k2-tube"><em>${mark}</em><span class="l" style="--p:${p}%">${wave('color-mix(in srgb,'+c+' 70%,#fff)')}</span>${I(ic)}</span><b>${v}</b><small>${l}<i>${s}</i></small></button>`;
+  return `  <section class="k2-tank rise"><div class="k2-air"><small>Mai állapot</small><p>Ma jó nap egy közepes edzéshez.</p></div>
     <div class="k2-liq">${wave('#19C7C0',.55,'b')}${wave('#19C7C0')}
       <i class="k2-bub" style="left:62%;bottom:20%;width:12px;height:12px;--d:6s"></i><i class="k2-bub" style="left:78%;bottom:8%;width:7px;height:7px;--d:8s;--dl:2s"></i><i class="k2-bub" style="left:70%;bottom:30%;width:18px;height:18px;--d:9s;--dl:4s"></i><i class="k2-bub" style="left:48%;bottom:12%;width:9px;height:9px;--d:7s;--dl:1s"></i>
       <div class="marks"><span>75</span><span>50</span><span>25</span></div>
       <div class="n"><b>72</b><small>a 100-ból · 4 jel a 7-ből</small></div></div>
-    <button class="k2-cta" ${t('Délutáni check-in')}>Délutáni check-in<i>→</i></button></section>
+    <button class="k2-cta" data-go="checkin" ${t('Délutáni check-in')}>Délutáni check-in<i>→</i></button></section>
   <div class="k2-h rise" style="--i:1"><b>Mai szintek</b><span>hol tartasz a célhoz</span></div>
-  <div class="k2-vials rise" style="--i:1">${vial('Kalória','t-flame','#1877F2',66,'2 060','1 040 van még','3 100')}${vial('Fehérje','t-meat','#E8615C',67,'148 g','72 g hiányzik','220')}${vial('Alvás','t-sleep','#1FA971',92,'7 ó 40','átlag fölött','8 ó')}${vial('Mozgás','t-dumbbell','#E8A21E',6,'0 / 2','Pull Day vár','2')}</div>
+  <div class="k2-vials rise" style="--i:1">${vial('Kalória','t-flame','#1877F2',66,'2 060','1 040 van még','3 100','fuel')}${vial('Fehérje','t-meat','#E8615C',67,'148 g','72 g hiányzik','220','fuel')}${vial('Alvás','t-sleep','#1FA971',92,'7 ó 40','átlag fölött','8 ó','en')}${vial('Mozgás','t-dumbbell','#E8A21E',6,'0 / 2','Pull Day vár','2','edzes')}</div>
   <div class="k2-h rise" style="--i:2"><b>Most következik</b><span>3 teendő</span></div>
   <div class="k2-stream rise" style="--i:2">
-    <button class="k2-drop now" ${t('Check-in')}><time>14:00</time><span><strong>Délutáni check-in</strong><small>8 koppintás, kb. fél perc</small></span><em>Kitöltöm</em></button>
-    <button class="k2-drop" ${t('Edzés')}><time>18:00</time><span><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó</small></span><em>Megnézem</em></button>
-    <button class="k2-drop" ${t('Fuel · logolás')}><time>19:30</time><span><strong>Vacsora</strong><small>72 g fehérje hiányzik</small></span><em>Logolom</em></button></div>
+    <button class="k2-drop now" data-go="checkin" ${t('Check-in')}><time>14:00</time><span><strong>Délutáni check-in</strong><small>8 koppintás, kb. fél perc</small></span><em>Kitöltöm</em></button>
+    <button class="k2-drop" data-dom="edzes"><time>18:00</time><span><strong>Röpi edzés · BVSC</strong><small>90 perc · feladó</small></span><em>Megnézem</em></button>
+    <button class="k2-drop" data-dom="fuel"><time>19:30</time><span><strong>Vacsora</strong><small>72 g fehérje hiányzik</small></span><em>Logolom</em></button></div>
   <div class="k2-h rise" style="--i:3"><b>Észrevétel</b><span>Mezo · 4 nap adata</span></div>
   <div class="k2-note rise" style="--i:3">${csepp('ok',64,{s:44,form:'crystal',color:'#7A5CE0',alive:false})}<div><p>Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Ez még kevés adat. Figyeljem tovább?</p><div><button class="p" ${t('Megjegyeztem: figyelem tovább')}>Igen, figyeld</button><button ${t('Megjegyeztem')}>Nem stimmel</button><button ${t('Miből látom?')}>Miből?</button></div></div></div>
   <div class="k2-h rise" style="--i:4"><b>Mai napló</b><span>+ Új bejegyzés</span></div>
   <div class="k2-stream rise" style="--i:4">
     <button class="k2-drop" ${t('Étkezés')}><time>13:00</time><span><strong>Ebéd</strong><small>Csirke · édesburgonya · spenót</small></span><em>760</em></button>
     <button class="k2-drop" ${t('Étkezés')}><time>09:15</time><span><strong>Reggeli</strong><small>Túrós zabkása áfonyával</small></span><em>420</em></button>
-    <button class="k2-drop" ${t('Check-in')}><time>07:10</time><span><strong>Reggeli check-in</strong><small>Nyugodt ébredés, pihenve</small></span><em>✓</em></button></div>
+    <button class="k2-drop" ${t('Check-in')}><time>07:10</time><span><strong>Reggeli check-in</strong><small>Nyugodt ébredés, pihenve</small></span><em>✓</em></button></div>`}
+function k2(){
+  const vial=(l,ic,c,p,v,s,mark)=>`<button class="k2-vial" ${t(l)} style="--c:${c}"><span class="k2-tube"><em>${mark}</em><span class="l" style="--p:${p}%">${wave('color-mix(in srgb,'+c+' 70%,#fff)')}</span>${I(ic)}</span><b>${v}</b><small>${l}<i>${s}</i></small></button>`;
+  return `<div class="scroll">
+  <div class="k2-top"><div><small>Szerda, október 7.</small><h1>Ma</h1></div><button class="k2-ib" ${t('Keresés')} aria-label="Keresés"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg></button><button class="k2-ib" ${t('Értesítések')} aria-label="Értesítések">${I('c-i-ertesites')}<b>3</b></button></div>
+  <nav class="k2-tabs"><button class="on">Mai</button><button ${t('A napom')}>A napom</button><button ${t('Beszélgetés')}>Beszélgetés</button><button ${t('Rutin')}>Rutin</button></nav>
+  ${k2inner()}
   </div><nav class="k2-nav">${NAVC.map(([l,c,f],i)=>`<button class="${i?'':'on'}" ${i?t(l):''}>${csepp('ok',i?f:86,{s:i?34:40,color:c,alive:!i})}<span>${l}</span></button>`).join('')}</nav><div class="toast" id="toast"></div>`}
 
 /* ═════════ 3 · MAGAZIN — the day as an edited page ═════════ */
@@ -281,7 +284,7 @@ function k3(){return `<div class="scroll">
   <button class="k3-item rise" style="--i:5" ${t('Check-in')}><i style="font-size:22px;line-height:1.3;letter-spacing:0">7:10</i><span><strong style="font-size:19px">Nyugodt ébredés, pihenve</strong><small>Reggeli check-in</small></span></button>
   </div><nav class="k3-nav"><button class="on">Nap</button><button ${t('Edzés')}>Edzés</button><button ${t('Fuel')}>Fuel</button><button ${t('Mezo')}>Mezo</button><button ${t('Én')}>Én</button></nav><div class="toast" id="toast"></div>`}
 
-window.KONC={k1,k2,k3};
+window.KONC={k1,k2,k3};window.K2INNER=k2inner;
 window.KNOTES={
 k1:`<h2>1 · Műszer</h2><p><b>Az ötlet:</b> a szám maga a dísz. Nincs kártya, nincs árnyék, nincs ikon. Fekete, fehér és egyetlen kék.</p><ul><li>A 72 akkora, hogy karnyújtásnyiról is olvasod, alatta egy mérőléc mutatja, hol áll a százból.</li><li>Minden mutató egy teljes sor: nagy szám, alatta vastag sáv. A kék azt jelenti: itt van teendő.</li><li>Az alsó sáv fekete, csak felirat.</li></ul><p><b>Milyen érzés:</b> precíz, magabiztos, felnőtt. Egy jó mérőműszer vagy egy pénzügyi app. <b>Kockázat:</b> rideg lehet, és a 3D ikonok kimaradnak.</p>`,
 k2:`<h2>2 · Folyadék</h2><p><b>Az ötlet:</b> minden egy szint, ami töltődik. Ez a csepp-ötlet végigvíve, ez lenne a leginkább a tiéd.</p><ul><li>A fő kártya egy tartály: a napod 72-ig van töltve, a folyadék hullámzik, buborékok szállnak fel.</li><li>A négy mutató négy kémcső, mindegyik a saját színében, a céljáig töltve. Ránézésre látod, melyik üres.</li><li>A teendők egy folyam mentén sorakoznak, a soron következő van megtöltve.</li><li>Alul az öt terület öt csepp.</li></ul><p><b>Milyen érzés:</b> élő, játékos, de nem gyerekes. <b>Kockázat:</b> a mozgás sok lehet, és bonyolultabb megépíteni. A „mozgás nélkül” pipával megnézheted állóképként.</p>`,
