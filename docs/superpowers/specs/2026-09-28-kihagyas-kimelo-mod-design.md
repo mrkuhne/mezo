@@ -660,3 +660,17 @@ targets raised for illness.
    remaining tasks on sonnet rather than waiting.
 10. **New icon flow held:** `t-kimelo` came from the prototype's "Új ikonok" sheet →
     `titanium-custom.svg` + generator (S1 lesson 6).
+
+### S3 (2026-10-07, `mezo-q4xt2.3`)
+
+1. **`FuelDayService` is the one place consumers get the Fuel mode and the target from.** `getDay`/`getWeek` serve `fuelMode`; the first cut left `dailyTargets` mode-blind, so the meal coach, the meal scorer and `TeamEditionReads` still quoted the deficit target on an injury day. It had to become mode-aware (review fix); a new consumer must call it, never re-derive from the period.
+2. **Mode follows `fuelDays` (period days, releases ignored), protection follows `protectedDays` (minus releases).** Both come out of one span loop in `RecoveryPeriodService`; mixing them up would pause illness guidance on a "Ma mégis edzek" day.
+3. **ArchUnit bans a raw `IllegalArgumentException`.** `RecoveryFuelMode.of` throws `SystemRuntimeErrorException` (400); the brief's IAE could not compile through the architecture gate. Focused ITs do not run ArchUnit or the codemap — always include `ArchitectureTest` and regenerate `docs/CODEMAP.md`.
+4. **The re-upsert snapshot trap.** A reason-only upsert ("Másik ok") sends no `plannedKcal`; storing the null erased the snapshot and the muted segment collapsed. The server keeps the stored value for MEAL unless an explicit one arrives, and the FE mock does the same — check both halves of any "optional field" on an upsert.
+5. **A synthetic recovery `DAY` row must never match a MEAL.** The FE `matches()` is kind-blind on `DAY` rows; without the explicit guard every meal window on a protected day looked skipped. Likewise `bridgedWeeks` and every kind-agnostic `verdictsBetween` caller needed an audit — write the caller table into the report.
+6. **"Split first, mark after" is the whole no-redistribution rule.** Marking a window skipped *before* the budget split renormalises its share onto the others; the order in `buildDayPlan` is pinned by tests (including the reflow chain and a logged-beats-skipped case).
+7. **An unjudged day vanishes from every meal-day-based detector.** Omitting the date in `CharacterSignalReads.gatherMealDays` silences all detectors reading `mealDays`, not just macro adherence; a detector that must still see the day needs its own read. TDEE learning (`GoalDailyIntakeAdapter`) was left reading raw intake and still sees sick days.
+8. **Reviewer-found gaps shipped as fix rounds:** mode-aware `dailyTargets`, the meal-coach `remaining` clamped at 0, the snapshot re-upsert, a closed-window chip surviving in a mode, dead-code carry-overs (`totalCount`, zone `done`) with no UI consumer. Budget one fix round per review pass.
+9. **Layout at 320 px found two things the unit tests could not:** the hero side columns (60 px) clipped "2 060" and "MÉG BELEFÉR", and the hero's 340 px halo pseudo-element pushed the page 10 px sideways. Run `fuel-meal-skip.spec.ts` after any hero or block CSS change; keep slack because CI fonts are wider.
+10. **Banned tokens apply to symptom copy too.** "újra rosszabbul vagy" contained `rossz`; the sheet test had a special-case regex instead of a rewrite. Reword ("megint romlik az állapotod") and keep the plain shame guard everywhere.
+11. **For S4 (AI + memory):** the Egyéb text, the `NOT_HUNGRY`/`OTHER` reasons and the doctor-guidance prompt (fever / chest pain safety question) are the open inputs; consumers already go quiet through the mode, so the classifier must not re-judge a recovery day.

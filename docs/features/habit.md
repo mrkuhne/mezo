@@ -2,7 +2,7 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [today, nap, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
@@ -17,6 +17,8 @@ related: [today, growth, me, fuel, train, intention, _platform-data-layer, _plat
 ---
 
 # Habit — Morning & Evening Routine Engine
+
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** `HabitEvaluator` treats the meal-quality habits `breakfast_protein` and `last_meal_before` as **true** on a `GUIDANCE` Fuel date (illness / stomach bug — nothing is expected to be eaten on target, so the habit neither fails nor breaks the chain); other modes are unchanged. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
 > **2026-10-06 — Én IA, slice S4 (`mezo-lhqw7`): routines are ticked AND built in Nap — one domain.** The routine home left the Én tab: it now lives under **`/nap/rutin/…`** and every page keeps the **Rutin** tab lit (the Nap nav tab `Rutin` owns the whole family). The Én hub lost its wide Rutin tile (it has two tiles now: Fejlődés · Emberek). The door in is a quiet flat row **„Rutinok szerkesztése › / láncok, szokások, új szokás"** at the bottom of `/nap/rutin` (`NapRutinPage`, `.nr-edit`, `<Link to="/nap/rutin/epites">`) — rendered even on a day with no habits, so a brand-new user can reach the builder. Old `/me/rutin…` URLs redirect (table in §2); the stored-notification deep link is `/nap/rutin/szokas`. Behavior of the pages is unchanged; only the URLs, the back chips (now „Rutin" → `/nap/rutin` from the hub, and **„Rutinok"** → `/nap/rutin/epites` from the sub-pages — the chip names where it lands) and the entry changed. Look: living prototype [`elo/nap.html`](../design_2.0/prototypes/elo/nap.html) `#rutin` / `#rutin-epites`.
 

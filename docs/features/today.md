@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
 # 8 load-bearing paths. A napom's entry points are pages (NapomPage), components (napom/*),
 # logic (napom.ts), data/me/liveDay.ts, router.tsx and DayReviewWarmupJob. AppHeader.tsx is
@@ -21,6 +21,8 @@ related: [_platform-data-layer, _platform-design-system, me, insights, companion
 ---
 
 # Today — Feature Documentation
+
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** The Nap Fuel preview (`NapFuelGraphic`) takes a `guidance` prop (`NapHubPage` passes `fuelMode === 'GUIDANCE'`): the glass section keeps its heading but shows one line "Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel" with `t-kimelo`; loading/error still win. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
 > **2026-09-30 — Kímélő mód on the Nap hub (Kihagyás S2, `mezo-q4xt2.2`).** `NapHubPage` renders a `KimeloSlot` right under the heading, above `NapzarasCard`: a quiet **„Nem vagyok jól”** entry opens `NemVagyokJolSheet`; while a recovery period is open the slot becomes the **„Hogy vagy?”** `KimeloCard`. The training logic lives in [`train.md`](train.md) §2 „Kihagyás S2 — kímélő mód”.
 

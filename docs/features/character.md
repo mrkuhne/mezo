@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -16,6 +16,8 @@ related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
 # Karakter (user character dossier) — Feature Documentation
+
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** `CharacterSignalReads.gatherMealDays` reads the Fuel mode per date (`RecoveryPeriodService.fuelDays`): a `GUIDANCE`/`ESTIMATE` day is **omitted from `mealDays` entirely**, so *every* detector built on `mealDays` (macro adherence and the rest, not just one) skips it; a `MAINTENANCE` day is projected against the maintenance target. No detector class changed. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
 > **2026-10-06 — `mezo-lhqw7` (no character change).** The 1.1.0 changelog gained `weekly_review.went_well`/`watch_out` (proactive-owned, [`proactive.md`](proactive.md) weekly review); the character feature reads neither.
 
