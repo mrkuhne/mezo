@@ -94,7 +94,7 @@ ${Q} .ds button{border-radius:999px}
 `);
 /* Nap · Mai is the approved concept screen itself (tank · levels · stream), on the real chrome */
 const reg0=F.register;
-F.register=(d,def)=>{if(d==='nap'&&def.routes&&def.routes.mai){const m0=def.routes.mai;def.routes.mai=a=>(window.FH_FOLY&&!a&&window.K2INNER)?page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},K2INNER()):m0(a)}reg0(d,def)};
+F.register=(d,def)=>{if(d==='nap'&&def.routes&&def.routes.mai){const m0=def.routes.mai;def.routes.mai=a=>{if(!(window.FH_FOLY&&!a&&window.K2INNER))return m0(a);if(F.napMaiState&&F.napMaiState()&&F.napMaiFull)return F.napMaiFull();return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`<div class="k2c">${K2INNER()}${F.napMaiExtra?F.napMaiExtra():''}</div>`)}}reg0(d,def)};
 
 /* ═══ liquid primitives (F.*) — the shared graphic language; use these before drawing your own ═══ */
 let UID=0; const uid=p=>p+(++UID);
@@ -169,6 +169,7 @@ ${Q} .fl-level span{left:10px;color:#fff}${Q} .fl-level b{right:10px;color:var(-
 ${Q} .fl-fill{display:block;height:auto;overflow:visible;filter:drop-shadow(0 14px 16px color-mix(in srgb,var(--liq2) 35%,transparent))}
 ${Q} .fl-link{display:block;height:auto;margin:0 auto}
 ${Q} .k2-vials{padding:0}${Q} .k2-stream{margin:0}
+${Q} .k2c>.k2-vials{padding:0 16px}${Q} .k2c>.k2-stream{margin:0 16px}
 ${Q} .fh-card .k2-tank{margin:0 0 4px}
 @media (prefers-reduced-motion:no-preference){body:not(.still) ${Q} .fl-fill .fl-wv{animation:flw 6s linear infinite}}
 @keyframes flw{to{transform:translateX(12.5%)}}
