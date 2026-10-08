@@ -17,6 +17,16 @@ public final class FuelModeText {
     private FuelModeText() {
     }
 
+    /** The tag a day line carries when its kcal target is not judged (GUIDANCE / ESTIMATE). */
+    public static final String UNJUDGED_TAG = " · kímélő nap (nincs értékelve)";
+
+    /** True when the day's kcal target must not be judged: GUIDANCE or ESTIMATE
+     *  ({@code RecoveryFuelMode.unjudged()}). */
+    public static boolean isUnjudged(FuelDayResponse day) {
+        return day.getFuelMode() == FuelDayResponse.FuelModeEnum.GUIDANCE
+                || day.getFuelMode() == FuelDayResponse.FuelModeEnum.ESTIMATE;
+    }
+
     /** GUIDANCE: no calorie target at all — consumption only, and a coaching instruction. */
     public static String guidanceLine(FuelDayResponse day) {
         MacroSet c = day.getConsumed();
@@ -36,7 +46,7 @@ public final class FuelModeText {
             return " (úton van: a keret csak tájékoztató, becsült nap — ne kérd számon)";
         }
         if (mode == FuelDayResponse.FuelModeEnum.MAINTENANCE) {
-            return " (sérülés: szinten tartó keret, a fogyási hiány szünetel; a fehérje a fő cél)";
+            return " (sérülés: nem kell kevesebbet enned; a fehérje a fő cél)";
         }
         return "";
     }

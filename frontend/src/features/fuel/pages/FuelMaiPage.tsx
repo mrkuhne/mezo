@@ -69,7 +69,7 @@ import {
   useDietSettings, useFuelDay, useFuelTimeline, useWaterActions,
 } from '@/data/hooks'
 import { useExpenditureWeeklyCard } from '@/data/fuel/expenditureHooks'
-import { buildKeretHero, asPastDayHero, doneMealRows } from '@/features/fuel/logic/keretHero'
+import { buildKeretHero, asPastDayHero, deficitDropped, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { buildWindowLane, asPastDayLane, tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { trainingSpan } from '@/features/fuel/logic/mealWindow'
 import { backfillDate, earliestBackfillDate } from '@/features/fuel/logic/backfillWindow'
@@ -220,7 +220,7 @@ export function FuelMaiPage() {
               past={past}
               trajectory={trajectory}
               mode={mode}
-              note={mode === 'MAINTENANCE' || mode === 'ESTIMATE' ? <FuelRecoveryNote mode={mode} /> : null}
+              note={mode === 'MAINTENANCE' || mode === 'ESTIMATE' ? <FuelRecoveryNote mode={mode} deficitDropped={deficitDropped(keretHeroVm, trajectory, mode)} /> : null}
               // A15: the shared sheet, opened at its first section — not the hero's local box.
               onOpenEnergy={() => setEnergyOpen('base')}
               onWater={() => setWaterOpen(true)}

@@ -21,8 +21,16 @@ test('the strip reads „Úton vagy" for travel and survives a missing day', () 
   expect(screen.getByRole('button')).toHaveTextContent('Kímélő mód · Úton vagy')
 })
 
-test('MAINTENANCE note: the injury copy ends with the disclaimer', () => {
+test('MAINTENANCE note without a dropped deficit: neutral copy, no claim about a switched-off deficit', () => {
   const { container } = render(<FuelRecoveryNote mode="MAINTENANCE" />)
+  expect(screen.getByText('Sérülés alatt a fehérje a legfontosabb')).toBeInTheDocument()
+  expect(container.textContent).toContain('Egyél eleget, és figyelj a fehérjére: abból épül vissza a szövet.')
+  expect(container.textContent).not.toMatch(/hiányt|fogyókúr/)
+  expect(container.querySelector('em')).toHaveTextContent('Ez nem orvosi tanács.')
+})
+
+test('MAINTENANCE note with a really dropped deficit: the injury copy ends with the disclaimer', () => {
+  const { container } = render(<FuelRecoveryNote mode="MAINTENANCE" deficitDropped />)
   expect(screen.getByText('Sérülés alatt nem fogyókúrázunk')).toBeInTheDocument()
   expect(container.textContent).toContain('A hiányt kikapcsoltam: szinten tartó keretet látsz. A fehérje most a legfontosabb, abból épül vissza a szövet.')
   expect(container.querySelector('em')).toHaveTextContent('Ez nem orvosi tanács.')
@@ -37,7 +45,7 @@ test('ESTIMATE note: travel copy, no disclaimer needed', () => {
 })
 
 test('no shame vocabulary, nothing glass', () => {
-  for (const ui of [<FuelRecoveryNote key="a" mode="MAINTENANCE" />, <FuelRecoveryNote key="b" mode="ESTIMATE" />, <FuelRecoveryStrip key="c" category="STOMACH" day={1} onTap={vi.fn()} />]) {
+  for (const ui of [<FuelRecoveryNote key="a" mode="MAINTENANCE" />, <FuelRecoveryNote key="a2" mode="MAINTENANCE" deficitDropped />, <FuelRecoveryNote key="b" mode="ESTIMATE" />, <FuelRecoveryStrip key="c" category="STOMACH" day={1} onTap={vi.fn()} />]) {
     const { container, unmount } = render(ui)
     expect(container.textContent).not.toMatch(SHAME)
     expect(container.querySelector('.glass')).toBeNull()

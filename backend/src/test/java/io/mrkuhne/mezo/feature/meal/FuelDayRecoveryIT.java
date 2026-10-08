@@ -200,4 +200,25 @@ class FuelDayRecoveryIT extends AbstractIntegrationTest {
             assertThat(d.getSkippedKcal()).isEqualTo(i == 6 ? 700 : 0);
         }
     }
+
+    @Test
+    void testGetWeek_shouldNotMarkFutureDaysOfAnOpenPeriod_asRecoveryDays() {
+        seed();
+        LocalDate today = LocalDate.now();
+        LocalDate start = today.minusDays(2);
+        periods.open(owner, Reason.INJURY, start, Estimate.WEEK);
+
+        FuelWeekResponse week = fuelDayService.getWeek(owner, start);
+
+        for (int i = 0; i < 7; i++) {
+            FuelDayRollup d = week.getDays().get(i);
+            if (i <= 2) {
+                assertThat(d.getFuelMode()).as("day %d", i).isEqualTo(FuelDayRollup.FuelModeEnum.MAINTENANCE);
+            } else {
+                assertThat(d.getFuelMode()).as("future day %d", i).isNull();
+                assertThat(d.getRecoveryDay()).isNull();
+                assertThat(d.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(DEFICIT_TARGET));
+            }
+        }
+    }
 }

@@ -137,9 +137,14 @@ public class FuelDayService {
         // ONE read each for the week's recovery days and meal skips (no per-day query).
         Map<LocalDate, RecoveryPeriodEntity> weekPeriods = recoveryPeriods.fuelDays(userId, start, end);
         Map<LocalDate, List<PlannedSkipPolicy.Row>> weekSkips = plannedSkips.mealSkipsBetween(userId, start, end);
+        LocalDate today = LocalDate.now();
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> {
-                RecoveryPeriodEntity period = weekPeriods.get(d);
+                RecoveryPeriodEntity found = weekPeriods.get(d);
+                // An OPEN period reaches into the future only as a projection: a day after today is
+                // not (yet) a kímélő day, so the week never paints it as one.
+                RecoveryPeriodEntity period = found != null && found.getEndedOn() == null && d.isAfter(today)
+                    ? null : found;
                 RecoveryFuelMode mode = modeOf(period);
                 DailyTargets t = project(goal, d, () -> weekMovement.get()
                     .getOrDefault(d, WorkoutWindowQueryService.DayMovement.NONE),
@@ -331,6 +336,13 @@ public class FuelDayService {
                 return value;
             }
         };
+    }
+
+    /** Kihagyás S3: true on a kímélő-mód day whose kcal target is not judged (GUIDANCE / ESTIMATE). */
+    @Transactional(readOnly = true)
+    public boolean isUnjudgedDay(UUID userId, LocalDate date) {
+        RecoveryFuelMode mode = modeOf(recoveryPeriods.fuelDays(userId, date, date).get(date));
+        return mode != null && mode.unjudged();
     }
 
     /**

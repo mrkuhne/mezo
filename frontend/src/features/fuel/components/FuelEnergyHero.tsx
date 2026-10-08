@@ -31,7 +31,7 @@ import { Fragment, useId, useState } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { huInt } from '@/shared/lib/huNum'
 import { ContentIcon, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
-import { heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
+import { deficitDropped, heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FuelMacroRings, useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
 import { GlassBox } from '@/features/fuel/components/GlassBox'
 import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
@@ -109,8 +109,9 @@ function EquationBox({ vm, past, trajectory, mode, onClose, onFull, weekly, onWe
   onWeekly?: () => void
 }) {
   const titleId = useId()
-  // Kihagyás S3: with an injury the goal is paused — the Célod row stays, reading 0.
-  const goalPaused = mode === 'MAINTENANCE'
+  // Kihagyás S3: only when the cut's deficit was really dropped does the Célod row say „szünetel";
+  // otherwise it shows the served balance like any other day.
+  const goalPaused = deficitDropped(vm, trajectory, mode)
   const lines = heroEquationLines(vm, trajectory, goalPaused)
   const over = vm.remainingKcal < 0
   // ESTIMATE never says „felett": the keret is only informative on a travel day.

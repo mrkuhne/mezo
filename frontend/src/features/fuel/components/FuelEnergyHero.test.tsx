@@ -394,13 +394,42 @@ test('MAINTENANCE: the protein ring leads (glow + „FŐ CÉL"), the others do n
   expect(container.textContent!.match(/FŐ CÉL/g)).toHaveLength(1)
 })
 
-test('MAINTENANCE: the equation box pauses the Célod row — „szünetel, amíg a sérülés tart · 0"', async () => {
-  render(<FuelEnergyHero vm={vm()} mode="MAINTENANCE" trajectory="maintain" />)
+test('a skipped window never flips the hero to „A KERET FELETT" when eaten is under the target', async () => {
+  const slots = [{ time: '16:30', kind: 'meal', label: 'Uzsonna', slotKey: 'snack', state: 'skipped', budgetKcal: 600 }] as never
+  const { container } = render(<FuelEnergyHero vm={vm({ consumed: { kcal: 2000, p: 1, c: 1, f: 1 }, slots })} />)
+  expect(container.querySelector('.fmx-hero-side.is-lead small')).toHaveTextContent('MÉG BELEFÉR')
+  expect(container.querySelector('.fmx-hero-remaining')).toHaveAttribute('aria-label', '0 kcal fér még bele ma')
+  expect(container.textContent).not.toMatch(/FELETT|felett/)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const box = screen.getByRole('dialog')
+  expect(within(box).getByText('Marad').closest('.fmx-node')!.querySelector('b')).toHaveTextContent(/^0/)
+  expect(box.textContent).not.toMatch(/felett/)
+})
+
+test('eaten 2500 over a 2400 target with a 600 skip: over by exactly 100', () => {
+  const slots = [{ time: '16:30', kind: 'meal', label: 'Uzsonna', slotKey: 'snack', state: 'skipped', budgetKcal: 600 }] as never
+  const { container } = render(<FuelEnergyHero vm={vm({ consumed: { kcal: 2500, p: 1, c: 1, f: 1 }, slots })} />)
+  expect(container.querySelector('.fmx-hero-side.is-lead small')).toHaveTextContent('A KERET FELETT')
+  expect(container.querySelector('.fmx-hero-remaining')).toHaveAttribute('aria-label', '100 kcal a keret felett')
+})
+
+test('MAINTENANCE with a cut whose deficit was dropped: the Célod row says „szünetel, amíg a sérülés tart · 0"', async () => {
+  const dropped = vm({ budget: { ...BUDGET, energy: { ...BUDGET.energy!, balance: 0 } } })
+  render(<FuelEnergyHero vm={dropped} mode="MAINTENANCE" trajectory="cut" />)
   await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
   const box = screen.getByRole('dialog')
   const goal = within(box).getByText('Célod').closest('.fmx-node') as HTMLElement
   expect(goal).toHaveTextContent('szünetel, amíg a sérülés tart')
   expect(goal.querySelector('b')).toHaveTextContent(/^0$/)
+})
+
+test('MAINTENANCE with a bulk surplus: Célod shows the served +250, no „szünetel"', async () => {
+  const surplus = vm({ budget: { ...BUDGET, energy: { ...BUDGET.energy!, balance: 250 } } })
+  render(<FuelEnergyHero vm={surplus} mode="MAINTENANCE" trajectory="bulk" />)
+  await userEvent.click(screen.getByRole('button', { name: /Miből jön össze/ }))
+  const goal = within(screen.getByRole('dialog')).getByText('Célod').closest('.fmx-node') as HTMLElement
+  expect(goal).not.toHaveTextContent('szünetel')
+  expect(goal.querySelector('b')!.textContent).toBe('+ 250')
 })
 
 test('the recovery note slot sits between the chip and the rings; no shame words in any mode', () => {

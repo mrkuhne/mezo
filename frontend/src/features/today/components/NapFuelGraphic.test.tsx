@@ -27,6 +27,24 @@ describe('NapFuelGraphic', () => {
     expect(container.querySelector('[data-macro="p"] .nap-fuel-arc')).toHaveAttribute('stroke-dasharray', '75 100')
   })
 
+  it('a skipped window never makes an under-target day read „felett" (same rule as the Fuel hero)', () => {
+    // target 2200, skipped 600, eaten 1800 → ate under the target → 0 left, not 200 over
+    render(<NapFuelGraphic consumed={{ ...consumed, kcal: 1800 }} targets={targets} skippedKcal={600} fuelMode={null} />)
+    expect(screen.getByText('0 kcal a napi keretig')).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/felett/)
+  })
+
+  it('still says „felett" when the user really ate more than the target, skips or not', () => {
+    render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2300 }} targets={targets} skippedKcal={600} fuelMode={null} />)
+    expect(screen.getByText('100 kcal a napi keret felett')).toBeInTheDocument()
+  })
+
+  it('an ESTIMATE day says „körül" and never „felett"', () => {
+    render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2400 }} targets={targets} fuelMode="ESTIMATE" />)
+    expect(screen.getByText('200 kcal a napi keret körül')).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/felett/)
+  })
+
   it('shows unknown targets without inventing progress or remaining', () => {
     const { container } = render(<NapFuelGraphic consumed={consumed} targets={zero} />)
     fireEvent.click(screen.getByRole('button', { name: /fehérje/i }))

@@ -29,11 +29,19 @@ export function FuelRecoveryStrip({ category, day, onTap }: {
   )
 }
 
-const NOTE: Record<'MAINTENANCE' | 'ESTIMATE', { icon: Icon3DName; title: string; body: string; foot?: string }> = {
+const NOTE: Record<'MAINTENANCE' | 'MAINTENANCE_NEUTRAL' | 'ESTIMATE', { icon: Icon3DName; title: string; body: string; foot?: string }> = {
+  // Only when a cut goal's deficit was really dropped (`deficitDropped`).
   MAINTENANCE: {
     icon: 't-pain',
     title: 'Sérülés alatt nem fogyókúrázunk',
     body: 'A hiányt kikapcsoltam: szinten tartó keretet látsz. A fehérje most a legfontosabb, abból épül vissza a szövet.',
+    foot: 'Ez nem orvosi tanács.',
+  },
+  // Any other goal (bulk / maintain / no energy base): nothing was dropped, so nothing is claimed.
+  MAINTENANCE_NEUTRAL: {
+    icon: 't-pain',
+    title: 'Sérülés alatt a fehérje a legfontosabb',
+    body: 'Egyél eleget, és figyelj a fehérjére: abból épül vissza a szövet.',
     foot: 'Ez nem orvosi tanács.',
   },
   ESTIMATE: {
@@ -43,8 +51,12 @@ const NOTE: Record<'MAINTENANCE' | 'ESTIMATE', { icon: Icon3DName; title: string
   },
 }
 
-export function FuelRecoveryNote({ mode }: { mode: 'MAINTENANCE' | 'ESTIMATE' }) {
-  const n = NOTE[mode]
+export function FuelRecoveryNote({ mode, deficitDropped = false }: {
+  mode: 'MAINTENANCE' | 'ESTIMATE'
+  /** MAINTENANCE only: the cut's deficit was really switched off (see `deficitDropped`). */
+  deficitDropped?: boolean
+}) {
+  const n = NOTE[mode === 'MAINTENANCE' && !deficitDropped ? 'MAINTENANCE_NEUTRAL' : mode]
   return (
     <div className="fmx-kmnote">
       <Icon3D name={n.icon} size={34} />

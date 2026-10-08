@@ -3237,7 +3237,7 @@ function mai(){
   const {q}=HQ(); const iso=q.d&&q.d<TODAY&&q.d>=addDays(TODAY,-7)?q.d:TODAY; const past=iso!==TODAY;
   const demoRow=past?'':kmDemo();                              /* a hash-állapotot a számolás ELŐTT olvassa be */
   const mode=kmMode(iso), log=DAYLOG[iso]||[], eaten=dayTot(iso), tgt=tgtFor(iso), sk=skippedK(iso), skI=skippedIdx(iso);
-  const rem=tgt-eaten-sk, emptyPast=past&&!log.length&&!mode&&!skI.length;
+  const rem=eaten>tgt?tgt-eaten:Math.max(0,tgt-eaten-sk) /* over ONLY when eaten > target; a skip never flips the day */, emptyPast=past&&!log.length&&!mode&&!skI.length;
   const m=macroOf(eaten), wat=past?2.1:1.2, P=Math.round(eaten/tgt*100), SP=Math.max(0,Math.min(100-P,sk/tgt*100));
   const mac=[['meat','var(--protein)',m.p,170,'g'],['carb','var(--carb)',m.c,330,'g'],['avocado','var(--fat)',m.f,85,'g'],['fiber','var(--fiber)',m.fib,30,'g'],['water','var(--water)',fmt(wat),2.5,'l']];
   const y=addDays(TODAY,-1), yMissed=SLOTS.filter((s,i)=>!slotLogged(y,i)&&!MSK[y+'|'+i]).length;
@@ -3272,7 +3272,7 @@ function markSlot(){return ''}
 
 /* „Miből jön össze?" — a hero üvegdoboza (EquationBox) */
 function openEq(iso){
-  const eaten=dayTot(iso), tgt=tgtFor(iso), sk=skippedK(iso), rem=tgt-eaten-sk, past=iso!==TODAY, mode=kmMode(iso);
+  const eaten=dayTot(iso), tgt=tgtFor(iso), sk=skippedK(iso), rem=eaten>tgt?tgt-eaten:Math.max(0,tgt-eaten-sk), past=iso!==TODAY, mode=kmMode(iso);
   const N=[['Alap','flame','var(--gold)',E.learnedServed===false?'az alapanyagcseréd és az életmódod':'a súlytrendedből és az evésedből tanulva',kc(baseNow())],['Mozgás','dumbbell','var(--sage)',(past?'aznap logolt mozgásod':'ma logolt mozgásod')+(MOVE_DAY[E.day].done.some(x=>x[2].startsWith('terven'))?' + terven kívüli':'')+(!past&&E.pend?`<br><small class="pend">még jön +${E.pend}, ha megcsinálod</small>`:''),`+ ${E.move}`],mode==='M'?['Célod','ring','var(--rose)','szünetel, amíg a sérülés tart','0']:['Célod','ring','var(--rose)','a fogyási célod napi része',`− ${Math.abs(balServed())}`],['Étel','bowl','var(--coral)',past?'amit aznap logoltál':'amit ma eddig logoltál',`− ${kc(eaten)}`],...(sk?[['Kihagyva','skip','var(--lav)','kihagyott étkezés · nem kerül át máshová',`− ${kc(sk)}`]]:[]),['Marad','bolt','var(--sky)','a mai kereted maradéka',kc(rem)]];
   const d=$('#dialog'); d.style.setProperty('--c','var(--sky)');
   d.innerHTML=`<div class="eqbox"><div class="eqh">${I('bowl')}<span><strong>${kc(Math.abs(rem))}</strong><small>kcal ${rem<0?'a keret felett':past?'fért még bele':'fér még bele ma'}</small></span></div>

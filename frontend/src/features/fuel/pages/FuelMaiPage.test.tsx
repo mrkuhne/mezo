@@ -615,7 +615,9 @@ test('MAINTENANCE: the strip, the hero on the served keret, the injury note and 
   expect(strip).toHaveTextContent('Kímélő mód · Sérülés · 2. nap')
   expect(container.querySelector('.fmx-hero')).not.toBeNull()
   expect(container.textContent).toContain('MÉG BELEFÉR')
-  expect(screen.getByText('Sérülés alatt nem fogyókúrázunk')).toBeInTheDocument()
+  // the mock goal is no cut, so nothing was dropped: the neutral note, no deficit claim
+  expect(screen.getByText('Sérülés alatt a fehérje a legfontosabb')).toBeInTheDocument()
+  expect(container.textContent).not.toMatch(/hiányt kikapcsoltam/)
   expect(container.querySelector('.fmx-kmnote em')).toHaveTextContent('Ez nem orvosi tanács.')
   const lead = container.querySelectorAll('.fmx-cell.is-lead')
   expect(lead).toHaveLength(1)
@@ -630,10 +632,10 @@ test('MAINTENANCE: the strip, the hero on the served keret, the injury note and 
   expect(screen.getByTestId('loc')).toHaveTextContent(/^\/fuel$/)
 })
 
-test('MAINTENANCE: the equation box pauses the goal', async () => {
+test('MAINTENANCE without a cut goal: the equation box does not claim a paused goal', async () => {
   renderRecovery('INJURY')
   await userEvent.click(await screen.findByRole('button', { name: /Miből jön össze/ }))
-  expect(screen.getByText('szünetel, amíg a sérülés tart')).toBeInTheDocument()
+  expect(screen.queryByText('szünetel, amíg a sérülés tart')).not.toBeInTheDocument()
 })
 
 test('ESTIMATE: the „Úton vagy" strip, the muted hero, „KB. ENNYI FÉR MÉG"; over the keret it says „A KERET KÖRÜL", never „felett"', async () => {

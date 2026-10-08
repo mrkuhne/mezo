@@ -173,7 +173,8 @@ export function useFuelWeekRollup(start: string): FuelWeekRollupView {
   if (mock) {
     const rollup = mockWeekRollup(start, start < mondayIso() ? 'past' : 'current')
     return {
-      weekDays: rollup.days.map((d) => ({ ...d, fuelMode: recoveryFuelFields(recovery, d.date).fuelMode })),
+      // A future day of an open period is not (yet) a kímélő day — clamp to today (backend parity).
+      weekDays: rollup.days.map((d) => ({ ...d, fuelMode: d.date > localDateString() ? null : recoveryFuelFields(recovery, d.date).fuelMode })),
       mealScoreAvg: rollup.mealScoreAvg,
       weightAvgKg: rollup.weightAvgKg,
       isPending: false,
