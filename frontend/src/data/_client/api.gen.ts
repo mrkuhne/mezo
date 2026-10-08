@@ -11079,6 +11079,8 @@ export interface components {
             fatG?: number | null;
             kcalTarget?: number | null;
             proteinTargetG?: number | null;
+            /** @description Kihagyás S3 — true on a kímélő-mód day whose kcal target is not judged (GUIDANCE / ESTIMATE); kcalTarget and proteinTargetG are then null */
+            unjudgedDay?: boolean | null;
             weightKg?: number | null;
             sleepMin?: number | null;
             sleepQuality?: number | null;

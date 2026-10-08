@@ -59,6 +59,7 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
     @Autowired private IntentionPopulator intentionPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private MealPopulator mealPopulator;
+    @Autowired private io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator recoveryPeriodPopulator;
     // mezo-b6zt: the contradiction guard below needs BOTH renderers of the same day
     @Autowired private ContextSnapshotAssembler contextSnapshotAssembler;
 
@@ -74,6 +75,29 @@ class DailySummaryServiceIT extends AbstractIntegrationTest {
         assertThat(summary.getNarrative()).contains("4 étkezés", "breakfast", "lunch", "dinner", "snack");
         assertThat(dailySummaryRepository.findById(summary.getId()).orElseThrow().getNarrative())
                 .contains("breakfast", "lunch", "dinner", "snack");
+    }
+
+    /** Kihagyás S3 review (I2): a GUIDANCE day's digest has no "X/Y kcal" — eaten values and the shared tag only. */
+    @Test
+    void testGenerate_shouldWriteEatenOnly_whenTheDayIsAnUnjudgedKimeloDay() {
+        UUID owner = userPopulator.createUser().getId();
+        recoveryPeriodPopulator.ended(owner, io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.ILLNESS,
+            DAY.minusDays(1), DAY.plusDays(1));
+        mealPopulator.createBareMeal(owner, DAY, "lunch");
+
+        String narrative = dailySummaryService.generate(owner, DAY).getNarrative();
+
+        assertThat(narrative).contains("Étkezés: ").contains("kímélő nap (nincs értékelve)")
+            .doesNotContainPattern("\\d+/\\d+ kcal").doesNotContainPattern("\\d+/\\d+ g");
+    }
+
+    @Test
+    void testGenerate_shouldKeepTheTargetPair_whenTheDayIsNormal() {
+        UUID owner = userPopulator.createUser().getId();
+        mealPopulator.createBareMeal(owner, DAY, "lunch");
+
+        assertThat(dailySummaryService.generate(owner, DAY).getNarrative())
+            .containsPattern("Étkezés: \\S+/\\S+ kcal").doesNotContain("kímélő nap");
     }
 
     @Test

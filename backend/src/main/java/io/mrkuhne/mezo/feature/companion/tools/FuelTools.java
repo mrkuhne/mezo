@@ -154,7 +154,7 @@ public class FuelTools {
                         .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
             }
             b.append(FuelModeText.suffix(day));
-            if (day.getFuelMode() == null) {
+            if (day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE) {
                 b.append(FuelModeText.skips(plannedSkipService.mealSkipsOn(userId, date)));
             }
             b.append("\nVíz (").append(date).append("): ").append(ToolText.num(c.getWater())).append('/')

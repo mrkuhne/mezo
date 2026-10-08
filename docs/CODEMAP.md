@@ -525,7 +525,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/companion`
   - **hooks (via `@/data/hooks`):** `useAccountSettings`, `useCompanionPreferences`, `usePersonalContext`
   - **modules:** preferencesApi.ts, preferencesHooks.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 313 IT + 101 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 313 IT + 102 unit
   - **ITs:** `AboutMeServiceIT`, `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`,
     `AnchoredConversationIT`, `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatForgetRecallIT`,
     `ChatForgetServiceIT`, `ChatForgetTurnIT`, `ChatMemoryBlocksFailOpenIT`, `ChatMemoryBlocksIT`,
@@ -1249,7 +1249,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### proactive
 
 *BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-06, complete)
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-07, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1428,7 +1428,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### ritual
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-09-30, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-10-07, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/ritual`
   - **entities→tables:** `RitualDayEntity`→`ritual_day`
@@ -1484,8 +1484,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-10-07, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-10-07, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-09-28, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-06, complete) ·
-  [docs/features/ritual.md](features/ritual.md) (updated 2026-09-30, done) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-07, complete) ·
+  [docs/features/ritual.md](features/ritual.md) (updated 2026-10-07, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-10-07, mixed)
 
 - **FE data** `frontend/src/data/today`

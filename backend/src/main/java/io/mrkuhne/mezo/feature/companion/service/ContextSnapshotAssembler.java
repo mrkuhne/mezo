@@ -658,7 +658,7 @@ public class ContextSnapshotAssembler {
         b.append("; protokoll: ").append(active == null ? NO_DATA
                 : "v" + active.getVersion() + " aktív (nincs neve — csak a verziószám azonosítja)");
         b.append(", mai bevitel: ").append(intakeService.listForDay(userId, today).getIntakes().size());
-        if (day.getFuelMode() == null) {
+        if (day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE) {
             b.append(FuelModeText.skips(plannedSkipService.mealSkipsOn(userId, today)));
         }
         return b.toString();

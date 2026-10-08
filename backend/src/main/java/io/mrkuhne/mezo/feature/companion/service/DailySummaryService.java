@@ -32,6 +32,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.feature.companion.tools.FuelModeText;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -184,6 +185,13 @@ public class DailySummaryService {
         }
         String titles = day.getMeals().stream().map(MealResponse::getTitle)
                 .collect(Collectors.joining(", "));
+        if (FuelModeText.isUnjudged(day)) {
+            // Kihagyás S3: a kímélő day has no judged target — what was eaten, with the shared tag.
+            blocks.add("Étkezés: " + ToolText.num(day.getConsumed().getKcal()) + " kcal, fehérje "
+                    + ToolText.num(day.getConsumed().getP()) + " g, " + day.getMeals().size() + " étkezés ("
+                    + titles + ")" + FuelModeText.UNJUDGED_TAG);
+            return;
+        }
         blocks.add("Étkezés: " + ToolText.num(day.getConsumed().getKcal()) + "/" + ToolText.num(day.getTargets().getKcal())
                 + " kcal, fehérje " + ToolText.num(day.getConsumed().getP()) + "/" + ToolText.num(day.getTargets().getP())
                 + " g, " + day.getMeals().size() + " étkezés (" + titles

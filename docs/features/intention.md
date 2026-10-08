@@ -15,7 +15,7 @@ related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 
 # Intention — Daily Creed, Foci & Evening Reflection
 
-> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** No intention change; `NapHubPage` only passes the Fuel `guidance` flag to the Fuel preview (see [`today.md`](today.md)).
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** No intention change; `NapHubPage` only passes the Fuel `guidance` flag, `skippedKcal` and `fuelMode` to the Fuel preview (see [`today.md`](today.md)).
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No intention change; `NapHubPage` gained the kímélő mód slot above the Napzárás card ([`today.md`](today.md)).
 

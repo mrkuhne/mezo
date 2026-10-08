@@ -16,7 +16,7 @@ related: [today, habit, growth, intention, proactive, _platform-design-system, n
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
 
-> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** No ritual change; `NapHubPage` only passes the Fuel `guidance` flag to the Fuel preview (see [`today.md`](today.md)).
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** No ritual change; `NapHubPage` only passes the Fuel `guidance` flag, `skippedKcal` and `fuelMode` to the Fuel preview (see [`today.md`](today.md)).
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** No ritual change; `NapHubPage` gained the kímélő mód slot above `NapzarasCard`, whose gym chip reads „edzés · kímélő mód” while a period is open ([`today.md`](today.md)).
 

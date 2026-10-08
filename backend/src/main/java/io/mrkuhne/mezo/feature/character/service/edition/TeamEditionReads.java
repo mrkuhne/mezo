@@ -142,6 +142,12 @@ public class TeamEditionReads {
         return fuelDayService.dailyTargets(owner, day);
     }
 
+    /** Kihagyás S3: a kímélő nap (GUIDANCE / ESTIMATE) kalória-célja nincs értékelve — nem kerül posztba. */
+    @Transactional(readOnly = true)
+    public boolean unjudgedDay(UUID owner, LocalDate day) {
+        return fuelDayService.isUnjudgedDay(owner, day);
+    }
+
     /** H5: a nap edzés-ablakai (ütemezett + {@code done} jelzés). */
     @Transactional(readOnly = true)
     public List<WorkoutWindowQueryService.Window> windows(UUID owner, LocalDate day) {

@@ -957,6 +957,21 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetFuelLog_shouldKeepTheSkippedMeal_whenTheDayIsATravelEstimateDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        plannedSkipPopulator.create(owner, today,
+                io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind.MEAL, null, null, "dinner#1",
+                io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.NO_TIME);
+        recoveryPeriodPopulator.open(owner, io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.TRAVEL,
+                today, io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate.WEEK);
+
+        String out = fuelTools.getFuelLog("day", today.toString(), 1, ctx(owner));
+
+        assertThat(out).contains("kihagyott étkezés: Vacsora (nincs ideje)").contains("úton van");
+    }
+
+    @Test
     void testGetProtocol_shouldRenderPerDayCoverage_whenScopeAdherenceAndProtocolActive() {
         UUID owner = userPopulator.createUser().getId();
         PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");

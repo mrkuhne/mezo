@@ -27576,6 +27576,13 @@ components:
         proteinTargetG:
           type: number
           nullable: true
+        unjudgedDay:
+          type: boolean
+          nullable: true
+          description: >-
+            Kihagyás S3 — true on a kímélő-mód day whose kcal target is not
+            judged (GUIDANCE / ESTIMATE); kcalTarget and proteinTargetG are then
+            null
         weightKg:
           type: number
           nullable: true
