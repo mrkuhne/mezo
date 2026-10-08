@@ -176,6 +176,7 @@ css(`
 .phone[data-s="elo"] .toast{bottom:104px}
 
 /* ── kit additions: sub-pages, rows, segmented control, forms, foot bar, sheets ── */
+.fh-hero:has(.fh-art) .lbl,.fh-hero:has(.fh-art) .verdict{padding-right:92px}
 .fh-hrow{flex-wrap:wrap}.fh-hrow>div{min-width:150px}
 .fh-title h1.sm{font-size:24px!important;letter-spacing:-.6px!important}
 .fh-back{font-size:24px;line-height:1;font-weight:500;padding-bottom:3px}
