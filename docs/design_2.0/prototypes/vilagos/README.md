@@ -116,3 +116,75 @@ Icons available: `grep -o 'id="t-[a-z-]*"\|id="c-i-[a-z]*"' klinikai-iranyok.htm
    horizontal overflow of `.scroll`. Save screenshots to the scratchpad and **look at** the
    main ones: check the skeleton reads top-to-bottom (title → one hero → numbered sections).
 3. Report compactly: routes (all working), parity notes, what you regrouped, open questions.
+
+
+---
+
+# FOLYADÉK — the chosen identity (owner, 2026-10-08) — read this last, it overrides the above where they differ
+
+After the "Világos · élő" round the owner still found it "monotonous, stock". Three bold
+concepts were shown; he chose **Folyadék**: *everything is a level that fills*. It is now
+applied to the whole kit (`vilagos/foly.js`): heroes are vessels whose action row is waving
+liquid, number tiles are levels, time-ordered rows sit on a stream, the five domains are drops.
+The approved reference screen is **Nap · Mai** (`#w-nap-mai`): a tank, four vials, a stream.
+
+Open pages with the **`w`** prefix: `…/klinikai-iranyok.html?v=N#w-<domain>-<route>[.<arg>]`
+(`#j-…` still shows the living prototype). The phone has class `foly`; scope domain CSS as
+`.phone.foly[data-s="elo"][data-d="<domain>"] …` when it must win over the kit.
+
+## What the owner asked for in this round (2026-10-08)
+
+1. **"Minden oldalnak kéne lennie saját egyedi grafikáinak, ami passzol a designhoz."**
+   Every route gets **its own signature graphic in the liquid language, drawn from that
+   page's own data** — not decoration, and not the same hero card with different text.
+   A reader should recognise the page from its graphic alone.
+2. **"A részletgazdagság elveszett csomó helyen, pl. ha megnyitom a vércukor
+   visszajelzést."** The earlier ports thinned the content. Walk **every route and every
+   sheet of the living prototype** (`elo/<domain>.html`, its render functions and dialogs)
+   and restore what is missing: charts, explanations, breakdowns, lists, secondary facts,
+   states. The living prototype is the floor for richness; the skeleton is how it is ordered.
+3. **Icons "nem annyira jók fehér háttérrel".** Icons never float naked on white: they live
+   in glass bubbles (`bub()`, or the kit's `.si` / `.tile` containers, which are bubbles now)
+   or sit in/above liquid. Hero art may stay free-standing.
+4. **Rings look wrong here** (his screenshot: the four macro rings in a meal block).
+   Circular progress rings are the old language. Replace them with levels: `mini()` capsules,
+   `vials()`, `level()`, `fill()` silhouettes. A ring survives only where the thing is
+   genuinely circular (a clock, a timer).
+
+## Liquid primitives (`const {…}=F`) — defined in `vilagos/foly.js`, read their comments there
+
+| Helper | What it draws |
+|---|---|
+| `tank({pct,num,cap,lbl,verdict,marks,cta,ctaAct,h,air,c1,c2})` | the big vessel hero with a huge numeral in the liquid (as on Nap · Mai) |
+| `vials([{l,ic,c,p,v,s,mark,on}],{h})` | 2–5 test tubes side by side (today's levels, macros, week days, sets) |
+| `mini({p,c,ic,v,l})` | a small capsule level (macro cells in a meal row, per-set marks) |
+| `level(pct,{c,h,val,label})` | a horizontal vessel — use instead of `bar()` when the bar is the point |
+| `fill(pathD,{vb,p,c,c2,s,inner})` | **any silhouette filled with liquid to p%** — a bowl, a glass, a moon, a heart, a bottle, a dumbbell plate, a body. Draw the outline as one path; this is the main tool for signature graphics |
+| `area(values,{w,h,c,c2,dots,target,labels})` | a time series as a liquid surface: smoothed trend, faint raw dots, a target waterline |
+| `linked(aPct,bPct,{a,b})` | two communicating vessels joined by a pipe — "this moves with that" (patterns, correlations) |
+| `stream([{time,title,sub,right,now,on}])` | time-ordered pills on a liquid line |
+| `bub(iconId,{s,c})` | an icon in a glass bubble |
+| `wave(color,opacity)` | a wave strip for your own liquid blocks |
+
+Tokens: `--liq1` (top/light) → `--liq2` (bottom/deep) follow the domain; `var(--ok|warn|bad)`,
+`var(--protein|carb|fat)`, `muscleColor(key)` for meaning. Build your own SVG when no
+primitive fits, in the same material: white vessel with a faint ink outline, gradient liquid
+with a wave top, soft coloured shadow, one white highlight. Motion only inside
+`@media (prefers-reduced-motion:no-preference){ body:not(.still) … }`, slow and small.
+
+## How to choose a page's graphic
+
+Ask "what is this page's one quantity or relationship?" and make *that* a liquid thing:
+a remaining budget is a vessel being emptied; a target is a waterline; progress through a
+sequence is a row of vessels filling; a correlation is linked vessels; a forecast is a level
+with a dashed range; a body part's load is that body part filled; time of day is a tide.
+Keep the page skeleton (title → one hero → numbered sections); the graphic usually *is* the
+hero, or the first card. Don't put liquid on everything — one strong graphic per screen, the
+rest quiet rows.
+
+## Verification (same as above, with the `w` prefix)
+
+Playwright over every route/variant/sheet at 390 and 320, reload per route, console/page
+errors, missing `<use>` ids, horizontal overflow (ignore the deliberately wider `.k2-w` wave
+strips, they are clipped). **Look at screenshots of every route**, not a sample: the task is
+visual. In the report list, per route, the graphic you gave it and what you restored.
