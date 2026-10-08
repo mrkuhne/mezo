@@ -16,10 +16,37 @@ import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { ContextDimension, FuelMeal, FuelSlot, MealTiming } from '@/data/types'
 
+/**
+ * The day's „remaining" number (Kihagyás S3 review fix): the day is OVER only when the user ate
+ * more than the target — then the (negative) amount is `target − eaten`, exactly as before skips
+ * existed. Otherwise it is `max(0, target − eaten − skipped)`: a skipped window's share is not
+ * „left to eat", but it can never turn an under-target day into an over-the-keret one.
+ */
+export function remainingAfterSkips(targetKcal: number, eatenKcal: number, skippedKcal: number): number {
+  if (eatenKcal > targetKcal) return targetKcal - eatenKcal
+  return Math.max(0, targetKcal - eatenKcal - skippedKcal)
+}
+
+/** True when the served deficit was really dropped on an injury day: the goal is a CUT and the
+ *  served energy breakdown reads balance 0 (the backend serves `max(balance, 0)`; a bulk/maintain
+ *  goal, or a day with no energy base, keeps whatever it had). */
+export function deficitDropped(
+  vm: Pick<KeretHeroVM, 'chips'>,
+  trajectory: 'cut' | 'bulk' | 'maintain' | null,
+  mode: string | null | undefined,
+): boolean {
+  return mode === 'MAINTENANCE' && trajectory === 'cut' && vm.chips != null && vm.chips.balance === 0
+}
+
 export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: string; pct: number; value: string; target: string; color: string }
 export interface DaySegVM { widthPct: number; toneAlt: boolean }
 export interface KeretHeroVM {
   remainingKcal: number
+  /** Kihagyás S3: the skipped windows' own budget shares — `remainingKcal` already excludes them
+   *  (`remainingAfterSkips`: never negative because of a skip); the hero draws them as their own ring segment. */
+  skippedKcal: number
+  /** Labels of the skipped windows (e.g. 'Uzsonna'), chronological. */
+  skippedLabels: string[]
   consumedKcal: number
   targetKcal: number
   doneCount: number
@@ -74,6 +101,10 @@ export function buildKeretHero(input: {
   // a stack/protocol slot is never an eating window, so it never enters the day-bar or the n/m count).
   const windows = slots.filter(isMealSlot).slice().sort((a, z) => toMin(a.time) - toMin(z.time))
   const doneWindows = windows.filter(s => s.state === 'done')
+  // A skipped window keeps its budget share (no redistribution) but is not "left to eat": the
+  // plan-derived sum, so the ring segment and the slot cards always agree.
+  const skippedWindows = windows.filter(s => s.state === 'skipped')
+  const skippedKcal = skippedWindows.reduce((sum, s) => sum + (s.budgetKcal ?? 0), 0)
 
   const segments: DaySegVM[] = doneWindows.map((s, i) => ({
     // Segments share ONE denominator (budget.kcal) with the track background the component draws
@@ -114,13 +145,16 @@ export function buildKeretHero(input: {
   ]
 
   return {
-    // Honest negative on an overshoot day — no clamp. `KeretHero` already formats a negative
-    // remainingKcal with the Unicode minus (U+2212) via its `fmt` helper.
-    remainingKcal: budget.kcal - consumed.kcal,
+    // Negative ONLY when the user ate over the target (skips never push a day over) — see
+    // `remainingAfterSkips`.
+    remainingKcal: remainingAfterSkips(budget.kcal, consumed.kcal, skippedKcal),
+    skippedKcal,
+    skippedLabels: skippedWindows.map(s => s.label),
     consumedKcal: consumed.kcal,
     targetKcal: budget.kcal,
     doneCount: doneWindows.length,
-    totalCount: windows.length,
+    // A skipped window is resolved, not pending (Kihagyás S3): it leaves the n/m denominator.
+    totalCount: windows.length - skippedWindows.length,
     segments,
     nowFrac,
     // Static-energy days (no served `energy` — no goal / no biometric snapshot) hide the chip row
@@ -245,12 +279,18 @@ export interface EquationLine {
  * Statikus keretnél (nincs cél / biometria) nincs bontás: a sorok `null`-ok maradnak, és a
  * felület gondolatjelet ír, nem nullát (őszinte-null szabály).
  */
-export function heroEquationLines(vm: KeretHeroVM, trajectory: 'cut' | 'bulk' | 'maintain' | null = null): EquationLine[] {
+export function heroEquationLines(
+  vm: KeretHeroVM,
+  trajectory: 'cut' | 'bulk' | 'maintain' | null = null,
+  /** Kímélő mód / sérülés (Kihagyás S3): the deficit was REALLY dropped (`deficitDropped`) — the
+   *  Célod row stays even at 0. The row always shows the SERVED balance. */
+  goalPaused = false,
+): EquationLine[] {
   const balance = vm.chips?.balance ?? null
   // No goal (trajectory null) → no goal row. A zero balance on a maintain goal is "tartás" with
   // nothing to add — the row would only be noise. A goal user's past day (chips null) keeps the
   // row so it honestly reads „—" like its neighbours.
-  const showGoal = trajectory != null && !(balance === 0 && trajectory === 'maintain')
+  const showGoal = goalPaused || (trajectory != null && !(balance === 0 && trajectory === 'maintain'))
   return [
     { key: 'base', label: 'Alap', value: vm.chips?.base ?? null, sign: null },
     { key: 'activity', label: 'Mozgás', value: vm.chips?.activity ?? null, sign: '+' },

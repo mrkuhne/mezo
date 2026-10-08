@@ -550,6 +550,10 @@ components:
         consumed: { $ref: '#/components/schemas/MacroSet' }
         meals: { type: array, items: { $ref: '#/components/schemas/MealResponse' } }
         energy: { $ref: '#/components/schemas/FuelDayEnergy' }
+        fuelMode: { type: string, enum: [GUIDANCE, MAINTENANCE, ESTIMATE], nullable: true, description: 'Kímélő-mód Fuel behaviour of the date (Kihagyás S3); null outside a recovery period.' }
+        recoveryCategory: { type: string, enum: [ILLNESS, STOMACH, INJURY, TRAVEL], nullable: true }
+        recoveryDay: { type: integer, nullable: true, description: '1-based day of the recovery period.' }
+        skippedKcal: { type: integer, description: 'Σ planned kcal of the date''s skipped meal slots, clamped to the target; 0 when none and always 0 in GUIDANCE.' }
     FuelDayRollup:
       type: object
       required: [date, targets, consumed]
@@ -558,6 +562,10 @@ components:
         targets: { $ref: '#/components/schemas/MacroSet' }
         consumed: { $ref: '#/components/schemas/MacroSet' }
         energy: { $ref: '#/components/schemas/FuelDayEnergy' }
+        fuelMode: { type: string, enum: [GUIDANCE, MAINTENANCE, ESTIMATE], nullable: true, description: 'Kímélő-mód Fuel behaviour of the date (Kihagyás S3); null outside a recovery period.' }
+        recoveryCategory: { type: string, enum: [ILLNESS, STOMACH, INJURY, TRAVEL], nullable: true }
+        recoveryDay: { type: integer, nullable: true, description: '1-based day of the recovery period.' }
+        skippedKcal: { type: integer, description: 'Σ planned kcal of the date''s skipped meal slots, clamped to the target; 0 when none and always 0 in GUIDANCE.' }
     FuelDayEnergy:
       type: object
       nullable: true

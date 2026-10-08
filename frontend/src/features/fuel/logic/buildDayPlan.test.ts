@@ -16,6 +16,7 @@ import {
 import type { FuelMeal, FuelPlanToday, MealItemLine, Recipe, SlotTemplate, SlotTemplateRow } from '@/data/types'
 import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
+import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 
 // ── fixture factories ────────────────────────────────────────────────────────
 function meal(over: Partial<FuelMeal> & { slot: string; loggedAt: string }): FuelMeal {
@@ -1101,5 +1102,60 @@ describe('late-log reflow (mezo-9sltu)', () => {
     const after = buildDayPlan(baseInput({ nowHHmm: '18:05', meals: lunch }))
     expect(byLabel(after, 'Uzsonna').state).toBe('now')
     expect(byLabel(after, 'Reggeli').state).toBe('missed')
+  })
+})
+
+// ── Kihagyás S3: a skipped meal window — split first, mark after ─────────────
+describe('meal skips (Kihagyás S3)', () => {
+  const mealSkip = (sessionKey: string): PlannedSkip => ({
+    id: `skip-${sessionKey}`, kind: 'MEAL', date: '2026-07-02', sessionKey,
+    reasonCategory: 'NOT_HUNGRY', source: 'USER', serious: false, freePass: false, excused: true,
+  })
+  const input = baseInput
+  const budgetKcal = (p: FuelPlanToday) => p.slots.filter(s => s.kind === 'meal' || s.kind === 'snack').map(s => s.budgetKcal)
+
+  test('a skipped slot keeps its share and nobody else grows', () => {
+    const base = buildDayPlan(input())
+    const skipped = buildDayPlan(input({ mealSkips: [mealSkip('lunch#1')] }))
+    expect(budgetKcal(skipped)).toEqual(budgetKcal(base))
+    const sk = skipped.slots.find(s => s.skipKey === 'lunch#1')!
+    expect(sk.state).toBe('skipped')
+    expect(sk.skip).toEqual({ id: 'skip-lunch#1', reasonCategory: 'NOT_HUNGRY', reasonText: null })
+  })
+  test('every planned window carries its skipKey', () => {
+    const p = buildDayPlan(input())
+    expect(p.slots.filter(s => s.slotKey).map(s => s.skipKey)).toEqual(['breakfast#1', 'lunch#1', 'snack#1', 'dinner#1'])
+  })
+  test('the skipped slot is never "now" and never "missed"', () => {
+    const p = buildDayPlan(input({ nowHHmm: '13:00', mealSkips: [mealSkip('lunch#1')] }))
+    expect(p.slots.find(s => s.skipKey === 'lunch#1')!.state).toBe('skipped')
+    expect(p.slots.filter(s => s.state === 'now')).toHaveLength(1)
+    expect(p.slots.find(s => s.state === 'now')!.skipKey).not.toBe('lunch#1')
+  })
+  test('when the clock sits on the skipped window the focus moves to the next window', () => {
+    const p = buildDayPlan(input({ nowHHmm: '15:00', mealSkips: [mealSkip('lunch#1')] }))
+    const st = Object.fromEntries(p.slots.filter(s => s.skipKey).map(s => [s.skipKey, s.state]))
+    expect(st).toEqual({ 'breakfast#1': 'missed', 'lunch#1': 'skipped', 'snack#1': 'now', 'dinner#1': 'pending' })
+  })
+  test('a logged meal beats a skip on the same slot', () => {
+    const lunch = meal({ id: 'l1', slot: 'lunch', loggedAt: '2026-07-02T13:00:00' })
+    const p = buildDayPlan(input({ meals: [lunch], mealSkips: [mealSkip('lunch#1')] }))
+    expect(p.slots.find(s => s.skipKey === 'lunch#1')!.state).toBe('done')
+  })
+  test('a skip whose key matches no window is ignored', () => {
+    expect(() => buildDayPlan(input({ mealSkips: [mealSkip('snack#4')] }))).not.toThrow()
+    const p = buildDayPlan(input({ mealSkips: [mealSkip('snack#4')] }))
+    expect(p.slots.some(s => s.state === 'skipped')).toBe(false)
+  })
+  test('a skipped window is outside the late-log reflow: it neither shifts nor counts as the previous meal', () => {
+    // breakfast logged late (13:00) → snack (17:49) stays; lunch (14:08) is pushed to ≥ 14:30 normally.
+    const late = meal({ id: 'b1', slot: 'breakfast', loggedAt: '2026-07-02T13:00:00' })
+    const plain = buildDayPlan(input({ meals: [late] }))
+    const withSkip = buildDayPlan(input({ meals: [late], mealSkips: [mealSkip('lunch#1')] }))
+    const t = (p: FuelPlanToday, k: string) => p.slots.find(s => s.skipKey === k)!
+    expect(t(plain, 'lunch#1').time).toBe('14:30')
+    expect(t(withSkip, 'lunch#1').time).toBe('14:08') // not moved
+    // the snack chain now cascades straight off the logged breakfast, not off the skipped lunch
+    expect(toMin(t(withSkip, 'snack#1').time)).toBeLessThanOrEqual(toMin(t(plain, 'snack#1').time))
   })
 })

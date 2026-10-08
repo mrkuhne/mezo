@@ -69,6 +69,8 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
@@ -155,6 +157,8 @@ public class CharacterSignalReads {
     private final SleepGoalRepository sleepGoalRepository;
     private final TextSignalRepository textSignalRepository;
     private final HabitDayRepository habitDayRepository;
+    /** Kihagyás S3: the one central read of kímélő-mód days (train, never the reverse). */
+    private final RecoveryPeriodService recoveryPeriodService;
 
     /**
      * Round 4 (mezo-1gim.15): {@code gatherChatToolCalls} lazily navigates {@code AiMessageEntity
@@ -773,8 +777,19 @@ public class CharacterSignalReads {
         Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement = goal == null ? Map.of()
                 : workoutWindowQueryService.movementBetween(owner, from, to);
 
+        // Kihagyás S3: a kímélő-mód day is not judged against a kcal target. GUIDANCE (illness,
+        // stomach) and ESTIMATE (travel) days leave the adherence rows entirely; a MAINTENANCE
+        // (injury) day stays, against a target without the goal deficit.
+        Map<LocalDate, RecoveryFuelMode> fuelModes = new HashMap<>();
+        recoveryPeriodService.fuelDays(owner, from, to)
+                .forEach((d, p) -> fuelModes.put(d, RecoveryFuelMode.of(p.getCategory())));
+
         Map<LocalDate, List<MealEntity>> byDate = new LinkedHashMap<>();
         for (MealEntity m : meals) {
+            RecoveryFuelMode mode = fuelModes.get(m.getMealDate());
+            if (mode != null && mode.unjudged()) {
+                continue;
+            }
             byDate.computeIfAbsent(m.getMealDate(), k -> new ArrayList<>()).add(m);
         }
         List<DetectorInput.MealDayPoint> out = new ArrayList<>();
@@ -823,7 +838,9 @@ public class CharacterSignalReads {
             BigDecimal nova4Share = classifiedKcal.signum() == 0 ? null
                     : nova4Kcal.divide(classifiedKcal, 4, RoundingMode.HALF_UP);
             out.add(new DetectorInput.MealDayPoint(date, kcal, protein, carbs, fat,
-                    nova4Share, coverage, kcalTarget(goal, date, movement), proteinTarget(goal, date),
+                    nova4Share, coverage,
+                    kcalTarget(goal, date, movement, fuelModes.get(date) == RecoveryFuelMode.MAINTENANCE),
+                    proteinTarget(goal, date),
                     List.copyOf(mealPoints)));
         }
         return List.copyOf(out);
@@ -837,7 +854,7 @@ public class CharacterSignalReads {
      * is the window's batched {@link WorkoutWindowQueryService#movementBetween} read.
      */
     private BigDecimal kcalTarget(GoalEntity goal, LocalDate date,
-            Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement) {
+            Map<LocalDate, WorkoutWindowQueryService.DayMovement> movement, boolean dropDeficit) {
         if (goal == null) {
             return BigDecimal.valueOf(nutritionTargets.kcal());
         }
@@ -845,7 +862,7 @@ public class CharacterSignalReads {
             segmentFor(goal, date),
             EnergyBase.of(goal.getTdeeBootstrap()),
             () -> movement.getOrDefault(date, WorkoutWindowQueryService.DayMovement.NONE),
-            nutritionTargets).kcal());
+            nutritionTargets, dropDeficit).kcal());
     }
 
     /** {@code FuelDayService#targetSet} precedence: goal-week segment protein, else config. */

@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
+import io.mrkuhne.mezo.feature.companion.tools.FuelModeText;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
@@ -126,6 +127,8 @@ public class MeWeekService {
         boolean loggedFuel = !fuelDay.getMeals().isEmpty();
         MacroSet consumed = fuelDay.getConsumed();
         MacroSet targets = fuelDay.getTargets();
+        // Kihagyás S3: an unjudged kímélő day (GUIDANCE / ESTIMATE) hands no target to the week context.
+        boolean unjudged = FuelModeText.isUnjudged(fuelDay);
         return MeWeekDay.builder()
                 .date(day)
                 .score(score != null ? score.score() : null)
@@ -134,8 +137,9 @@ public class MeWeekService {
                 .proteinG(loggedFuel ? consumed.getP() : null)
                 .carbsG(loggedFuel ? consumed.getC() : null)
                 .fatG(loggedFuel ? consumed.getF() : null)
-                .kcalTarget(targets.getKcal())
-                .proteinTargetG(targets.getP())
+                .kcalTarget(unjudged ? null : targets.getKcal())
+                .proteinTargetG(unjudged ? null : targets.getP())
+                .unjudgedDay(unjudged ? Boolean.TRUE : null)
                 .weightKg(weight != null ? weight.getWeightKg() : null)
                 .sleepMin(sleep != null && sleep.getDurationH() != null
                         ? (int) Math.round(sleep.getDurationH().doubleValue() * 60) : null)
@@ -232,6 +236,7 @@ public class MeWeekService {
      */
     public static String renderDayLine(MeWeekDay day) {
         MeWeekSubscores subscores = day.getSubscores();
+        boolean unjudged = Boolean.TRUE.equals(day.getUnjudgedDay());
         StringBuilder sb = new StringBuilder("- ").append(day.getDate())
                 .append(" (").append(HU_DOW[day.getDate().getDayOfWeek().getValue() - 1]).append("): ")
                 .append("score ").append(orDash(day.getScore()))
@@ -240,8 +245,8 @@ public class MeWeekService {
                 .append(" · checkin ").append(orDash(subscores != null ? subscores.getLogging() : null))
                 .append(" · aktivitás ").append(orDash(subscores != null ? subscores.getTraining() : null))
                 .append(']')
-                .append(", ").append(orDashDecimal(day.getKcal())).append(" kcal / cél ")
-                .append(orDashDecimal(day.getKcalTarget()))
+                .append(", ").append(orDashDecimal(day.getKcal())).append(" kcal")
+                .append(unjudged ? "" : " / cél " + orDashDecimal(day.getKcalTarget()))
                 .append(", fehérje ").append(orDashDecimal(day.getProteinG())).append('g')
                 .append(", súly ").append(orDashDecimal(day.getWeightKg()));
         if (day.getSleepMin() != null) {
@@ -256,6 +261,9 @@ public class MeWeekService {
         sb.append(", ").append(day.getCheckinCount() != null ? day.getCheckinCount() : 0).append(" check-in")
                 .append(", ").append(day.getWorkoutCount() != null ? day.getWorkoutCount() : 0).append(" edzés")
                 .append(", ").append(orDash(day.getXp())).append(" XP");
+        if (unjudged) {
+            sb.append(FuelModeText.UNJUDGED_TAG);
+        }
         return sb.toString();
     }
 

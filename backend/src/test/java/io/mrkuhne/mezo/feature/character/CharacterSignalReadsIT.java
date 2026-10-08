@@ -1,5 +1,12 @@
 package io.mrkuhne.mezo.feature.character;
 
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -78,6 +85,8 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 8, 26);
 
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
+    @Autowired private GoalRepository goalRepository;
     @Autowired private CharacterSignalReads signalReads;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private TrainPopulator trainPopulator;
@@ -809,5 +818,56 @@ class CharacterSignalReadsIT extends ApiIntegrationTest {
         DetectorInput.SleepPoint malformed = sleep.stream().filter(s -> s.date().equals(bad.getDate())).findFirst().orElseThrow();
         assertThat(malformed.bedtime()).isNull();
         assertThat(malformed.wakeup()).isEqualTo(java.time.LocalTime.of(7, 0));
+    }
+
+    /** Kihagyás S3 (mezo-q4xt2.3): a GUIDANCE (illness) or ESTIMATE (travel) day never reaches the adherence detectors. */
+    @Test
+    void gather_omitsUnjudgedFuelDays_fromTheMealRows() {
+        UUID owner = owner();
+        mealPopulator.createMealWithItems(owner, DAY, "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1)));
+        mealPopulator.createMealWithItems(owner, DAY.minusDays(1), "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1)));
+        mealPopulator.createMealWithItems(owner, DAY.minusDays(2), "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1)));
+        recoveryPeriodPopulator.ended(owner, Reason.ILLNESS, DAY, DAY.plusDays(1));
+        recoveryPeriodPopulator.ended(owner, Reason.TRAVEL, DAY.minusDays(1), DAY);
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().mealDays()).extracting(DetectorInput.MealDayPoint::date)
+                .containsExactly(DAY.minusDays(2));
+    }
+
+    /** An injury day (MAINTENANCE) stays in, judged against a target without the goal deficit. */
+    @Test
+    void gather_dropsTheDeficitFromTheTarget_onAMaintenanceDay() {
+        UUID owner = owner();
+        BigDecimal bmr = new BigDecimal("1963");
+        BigDecimal neatBaseline = new BigDecimal("2356");
+        int balance = -327;
+        GoalEntity goal = goalPopulator.createGoalFull(owner, DAY.minusDays(2), DAY.plusWeeks(8),
+                new GoalPrescriptionJson(null, "formula",
+                        List.of(new GoalPrescriptionJson.Segment(1, 12, "vágás", 2600, 180, 250, 80,
+                                null, null, null, balance, null, null, null)),
+                        null, null),
+                4, "06:30", "22:30");
+        goal.setTdeeBootstrap(new TdeeBootstrapJson(bmr, new BigDecimal("1.2"), neatBaseline,
+                new BigDecimal("570"), neatBaseline.add(new BigDecimal("570")), "MSJ",
+                OffsetDateTime.of(2026, 6, 8, 8, 0, 0, 0, ZoneOffset.UTC), 2));
+        goalRepository.saveAndFlush(goal);
+        mealPopulator.createMealWithItems(owner, DAY, "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1)));
+        mealPopulator.createMealWithItems(owner, DAY.minusDays(1), "dinner",
+                List.of(new MealPopulator.Line("Csirke", "600", "50", "10", "20", (short) 1)));
+        recoveryPeriodPopulator.ended(owner, Reason.INJURY, DAY, DAY.plusDays(1));
+
+        DetectorInput input = signalReads.gather(owner, DAY);
+
+        assertThat(input.trend().mealDays()).hasSize(2);
+        assertThat(input.trend().mealDays()).filteredOn(m -> m.date().equals(DAY)).singleElement()
+                .satisfies(m -> assertThat(m.kcalTarget()).isEqualByComparingTo("2356"));
+        assertThat(input.trend().mealDays()).filteredOn(m -> m.date().equals(DAY.minusDays(1))).singleElement()
+                .satisfies(m -> assertThat(m.kcalTarget()).isEqualByComparingTo("2029"));
     }
 }

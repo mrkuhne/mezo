@@ -258,6 +258,65 @@ class DayScoreServiceTest {
             .findFirst().orElseThrow();
     }
 
+    // --- Kihagyás S3: the nutrition inputs honour the fuel mode and skipped meals -------------
+
+    /** A closed day with the given served targets/consumed and Kihagyás S3 mode fields. */
+    private void seedModeDay(LocalDate date, double targetKcal, double eatenKcal,
+                             FuelDayResponse.FuelModeEnum mode, int skippedKcal) {
+        double k = targetKcal / 2400.0;   // macros scale with the kcal target (2400 = 170/310/80 · ~)
+        double eatenK = eatenKcal / 2400.0;
+        fuelDays.put(date, FuelDayResponse.builder().date(date)
+            .targets(macroSet(targetKcal, 170 * k, 310 * k, 80 * k))
+            .consumed(macroSet(eatenKcal, 170 * eatenK, 310 * eatenK, 80 * eatenK))
+            .meals(List.of(meal(date, "lunch", eatenKcal, 0.9, 0.6)))
+            .fuelMode(mode)
+            .skippedKcal(skippedKcal)
+            .build());
+        seedMealRow(date, LocalTime.of(12, 30));
+    }
+
+    @Test
+    void testScores_shouldMakeNutritionNoData_whenTheDayIsAGuidanceDay() {
+        seedModeDay(MONDAY, 2400, 1500, FuelDayResponse.FuelModeEnum.GUIDANCE, 0);
+
+        DayScoreService.DayScore monday = service.scores(USER, MONDAY, MONDAY).get(0);
+
+        assertThat(dimension(monday, "nutrition").status()).isEqualTo("NO_DATA");
+        assertThat(monday.subscores().nutrition()).isNull();
+    }
+
+    @Test
+    void testScores_shouldMakeNutritionNoData_whenTheDayIsAnEstimateDay() {
+        seedModeDay(MONDAY, 2400, 1500, FuelDayResponse.FuelModeEnum.ESTIMATE, 0);
+
+        assertThat(dimension(service.scores(USER, MONDAY, MONDAY).get(0), "nutrition").status())
+            .isEqualTo("NO_DATA");
+    }
+
+    @Test
+    void testScores_shouldJudgeAgainstTheScaledTargets_whenMealsWereSkipped() {
+        seedModeDay(MONDAY, 2400, 1500, null, 900);
+        seedModeDay(MONDAY.plusDays(1), 2400, 1500, null, 0);
+        seedModeDay(MONDAY.plusDays(2), 1500, 1500, null, 0);
+
+        List<DayScoreService.DayScore> days = service.scores(USER, MONDAY, MONDAY.plusDays(2));
+        int skipped = dim(days.get(0), "nutrition");
+        int unskipped = dim(days.get(1), "nutrition");
+        int reference = dim(days.get(2), "nutrition");
+
+        // 1500 eaten of a 2400 target with 900 skipped == 1500 vs 1500 with proportional macros
+        assertThat(skipped).isGreaterThanOrEqualTo(90).isEqualTo(reference);
+        assertThat(skipped).isGreaterThan(unskipped);
+    }
+
+    @Test
+    void testScores_shouldMakeNutritionNoData_whenTheSkipConsumesTheWholeBudget() {
+        seedModeDay(MONDAY, 2400, 0, null, 2400);
+
+        assertThat(dimension(service.scores(USER, MONDAY, MONDAY).get(0), "nutrition").status())
+            .isEqualTo("NO_DATA");
+    }
+
     // --- Tests ----------------------------------------------------------------------------
 
     /**

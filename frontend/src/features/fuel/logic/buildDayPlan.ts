@@ -46,6 +46,8 @@ import type {
   StackZoneKey,
 } from '@/data/types'
 import type { StackDaySlot } from '@/features/fuel/logic/projectStackDay'
+import { mealSkipKeys } from '@/features/fuel/logic/mealSkips'
+import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 
 // ── Public interfaces ────────────────────────────────────────────────────────
 export interface PlannerBlock {
@@ -82,6 +84,9 @@ export interface DayPlanInput {
   /** A per-day-type slot template (mezo-7102) — when present, windows come from `compileTemplate`
    *  + `splitBudgetPct` instead of `placeWindows` + `splitBudget`. Absent/null keeps today's behavior. */
   template?: SlotTemplate | null
+  /** The date's `kind: 'MEAL'` planned skips (Kihagyás S3). A skip marks a window AFTER the budget
+   *  split — the skipped window keeps its share, nobody else grows. A key matching no window is ignored. */
+  mealSkips?: readonly PlannedSkip[]
 }
 
 export type SlotKey = 'breakfast' | 'lunch' | 'dinner' | 'snack'
@@ -373,7 +378,15 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     ? compileTemplate(input.template, { wake, bed, blocks })
     : placeWindows(wake, bed, mealsPerDay, blocks,
         input.restPerHour !== undefined ? input.restPerHour : restKcalPerHour(null, input.weightKg ?? 0))
+  // Kihagyás S3 ORDER (the whole point — never reorder): (1) the budget is split over ALL windows,
+  // skipped ones included, so a skipped meal's share is never redistributed; (2) every window gets
+  // its `skipKey`; (3) logged meals are assigned (a logged meal beats a skip); (4) only then are
+  // still-unlogged windows whose key matches a skip marked `skipped` — and such a window is outside
+  // the late-log reflow chain, the "now" candidates and the missed/pending classification.
   const budgets = input.template ? splitBudgetPct(budget, windows) : splitBudget(budget, windows)
+  const skipKeys = mealSkipKeys(windows)
+  const skipByKey = new Map<string, PlannedSkip>()
+  for (const sk of input.mealSkips ?? []) if (sk.kind === 'MEAL' && sk.sessionKey) skipByKey.set(sk.sessionKey, sk)
 
   // Étkezési óra (mezo-6g52f): az időpontokból ablak + okok — egy forrás a kártyának, az óra-
   // doboznak ÉS a logolásnak (ami ezt küldi a szervernek pontozásra).
@@ -477,6 +490,8 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   const unwrapMin = (t: number) => (span.crossesMidnight && t < span.wakeMin ? t + 1440 : t)
   const wrapMin = (t: number) => ((t % 1440) + 1440) % 1440
   const order = windows.map((_, i) => i).sort((a, z) => unwrapMin(windows[a].time) - unwrapMin(windows[z].time))
+  /** A window is skipped only while it holds no logged meal (a logged meal beats a skip). */
+  const isSkipped = (i: number) => assignedMeal[i] === undefined && skipByKey.has(skipKeys[i])
   const reflow = () => {
     const flow: PlannedWindow[] = windows.map(w => ({ ...w }))
     const after: ({ label: string; at: string } | null | undefined)[] = new Array(windows.length).fill(undefined)
@@ -486,6 +501,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       const doneAt = hhmmFromLoggedAt(assignedMeal[doneIdx]!.loggedAt, toHHmm(windows[doneIdx].time))
       let prev: { t: number; cause: { label: string; at: string } | null } = { t: unwrap(doneAt), cause: { label: windows[doneIdx].label, at: doneAt } }
       for (const i of order.slice(lastDonePos + 1)) {
+        if (isSkipped(i)) continue // a skipped window neither moves nor acts as the "previous meal"
         const w = flow[i]
         const orig = unwrapMin(w.time)
         if (TRAINING_ANCHORED.has(w.rule)) {
@@ -539,6 +555,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         label: w.label,
         slotKey: w.slotKey,
         state: 'done',
+        skipKey: skipKeys[i],
         mealId: logged.id,
         mealName: mealDisplayName(logged),
         plannedTime: toHHmm(w.time),
@@ -559,6 +576,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         label: w.label,
         slotKey: w.slotKey,
         state: 'pending',
+        skipKey: skipKeys[i],
         mealName: rec.name,
         suggestedRecipeId: rec.id,
         kcal: ps.kcal,
@@ -568,7 +586,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         ...windowOf(i),
       }
     }
-    return { time: toHHmm(w.time), kind: w.kind, label: w.label, slotKey: w.slotKey, state: 'pending', kcal: b.kcal, p: b.p, c: b.c, f: b.f, ...windowOf(i) }
+    return { time: toHHmm(w.time), kind: w.kind, label: w.label, slotKey: w.slotKey, state: 'pending', skipKey: skipKeys[i], kcal: b.kcal, p: b.p, c: b.c, f: b.f, ...windowOf(i) }
   })
 
   // 3b. Surplus logged meals — anything of a slotKey beyond that slot's window count (a 2nd snack on
@@ -642,14 +660,30 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //    is bedtime, NOT the 90-min kitchen-planning cutoff: the last window stays "now" until sleep.)
   //    Block slots (end ≤ now → done) and protocol slots keep their own state — no global now-flag.
   //    Classification runs on the unwrapped axis (mezo-9rtw) — see the header note above.
+  //    Skipped windows (Kihagyás S3, step 4 of the order above) are marked first and never classified:
+  //    the "now" pointer is still found over every unlogged window; if it lands on a skipped one the
+  //    focus moves to the next non-skipped unlogged window (none → no "now").
+  mealSlots.forEach((sl, i) => {
+    if (!isSkipped(i)) return
+    const sk = skipByKey.get(skipKeys[i])!
+    sl.state = 'skipped'
+    sl.skip = { id: sk.id, reasonCategory: sk.reasonCategory, reasonText: sk.reasonText ?? null }
+    delete sl.suggestedRecipeId // nothing is suggested for a meal the user skipped
+    delete sl.mealName
+  })
   const unlogged = mealSlots.map((_, i) => i).filter(i => mealSlots[i].state !== 'done')
   let nowWin = -1
   if (unwrappedNow <= span.bedMin && unlogged.length) {
     for (const i of unlogged) if (unwrap(mealSlots[i].time) <= unwrappedNow) nowWin = i
     if (nowWin === -1) nowWin = unlogged[0] // now precedes all meals → first is current
+    if (mealSlots[nowWin].state === 'skipped') {
+      const next = unlogged.find(i => i > nowWin && mealSlots[i].state !== 'skipped')
+      nowWin = next ?? -1
+    }
   }
   const nowTime = nowWin >= 0 ? unwrap(mealSlots[nowWin].time) : unwrappedNow
   for (const i of unlogged) {
+    if (mealSlots[i].state === 'skipped') continue
     if (i === nowWin) mealSlots[i].state = 'now'
     else mealSlots[i].state = unwrap(mealSlots[i].time) < nowTime ? 'missed' : 'pending'
   }

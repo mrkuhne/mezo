@@ -1,4 +1,4 @@
-import { aiAverage, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows, heroEquationLines, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
+import { aiAverage, deficitDropped, remainingAfterSkips, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows, heroEquationLines, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
 import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
@@ -398,4 +398,75 @@ test('doneMealRows carries sugar and resolves fibre from the nutrients envelope'
   expect(doneMealRows([withFacts], [s])[0]).toMatchObject({ fiberG: 7, sugarG: 12 })
   // Őszinte-null: amit a forrás nem adott, az null marad — a sáv ilyenkor becsül, és kimondja.
   expect(doneMealRows([m], [s])[0]).toMatchObject({ sugarG: null })
+})
+
+// ── Kihagyás S3: a skipped window keeps its share, but is not "left to eat" ──
+test('skipped windows: remaining = target − eaten − skipped; the skipped kcal and labels ride along', () => {
+  const vm = build({
+    budget: { ...BUDGET, kcal: 2270 },
+    consumed: { kcal: 1180, p: 90, c: 130, f: 40 },
+    slots: [
+      slot({ state: 'done', time: '07:40' }),
+      slot({ state: 'skipped', time: '16:30', label: 'Uzsonna', slotKey: 'snack', budgetKcal: 420 }),
+    ],
+  })
+  expect(vm.remainingKcal).toBe(670)
+  expect(vm.skippedKcal).toBe(420)
+  expect(vm.skippedLabels).toEqual(['Uzsonna'])
+})
+test('no skipped window → skippedKcal 0 and remaining unchanged', () => {
+  const vm = build({ consumed: { kcal: 500, p: 1, c: 1, f: 1 } })
+  expect(vm.skippedKcal).toBe(0)
+  expect(vm.skippedLabels).toEqual([])
+  expect(vm.remainingKcal).toBe(BUDGET.kcal - 500)
+})
+
+test('a skipped window is resolved: it leaves the n/m denominator (doneCount/totalCount)', () => {
+  const vm = build({
+    slots: [
+      slot({ state: 'done', time: '07:40', slotKey: 'breakfast' }),
+      slot({ state: 'skipped', time: '16:30', label: 'Uzsonna', slotKey: 'snack', budgetKcal: 420 }),
+      slot({ state: 'pending', time: '19:30', slotKey: 'dinner' }),
+    ],
+  })
+  expect(vm.doneCount).toBe(1)
+  expect(vm.totalCount).toBe(2)
+})
+
+test('a skip never turns an under-target day into an over-the-keret one (remainingAfterSkips)', () => {
+  // target 2400, skipped 600, eaten 2000 → ate under the target → remaining 0, not −200
+  expect(remainingAfterSkips(2400, 2000, 600)).toBe(0)
+  const vm = build({
+    budget: BUDGET,
+    consumed: { kcal: 2000, p: 1, c: 1, f: 1 },
+    slots: [slot({ state: 'skipped', time: '16:30', label: 'Uzsonna', slotKey: 'snack', budgetKcal: 600 })],
+  })
+  expect(vm.remainingKcal).toBe(0)
+  // eaten 2500 > target 2400 → over by exactly 100, the skip is irrelevant
+  expect(remainingAfterSkips(2400, 2500, 600)).toBe(-100)
+  expect(remainingAfterSkips(2400, 900, 600)).toBe(900)
+  expect(remainingAfterSkips(2400, 2400, 600)).toBe(0)
+})
+
+test('deficitDropped: only a cut goal with a served balance of 0 on a MAINTENANCE day', () => {
+  const vm = build()
+  const zero = { ...vm, chips: { ...vm.chips!, balance: 0 } }
+  expect(deficitDropped(zero, 'cut', 'MAINTENANCE')).toBe(true)
+  expect(deficitDropped(zero, 'bulk', 'MAINTENANCE')).toBe(false)
+  expect(deficitDropped(zero, 'maintain', 'MAINTENANCE')).toBe(false)
+  expect(deficitDropped(zero, null, 'MAINTENANCE')).toBe(false)
+  expect(deficitDropped(zero, 'cut', 'ESTIMATE')).toBe(false)
+  expect(deficitDropped({ ...vm, chips: { ...vm.chips!, balance: -200 } }, 'cut', 'MAINTENANCE')).toBe(false)
+  expect(deficitDropped({ ...vm, chips: null }, 'cut', 'MAINTENANCE')).toBe(false)
+})
+
+test('heroEquationLines: the Célod row always shows the SERVED balance; paused keeps a 0 row', () => {
+  const vm = build()
+  const surplus = { ...vm, chips: { ...vm.chips!, balance: 250 } }
+  expect(heroEquationLines(surplus, 'bulk', false).find(l => l.key === 'goal')).toMatchObject({ value: 250, sign: '±' })
+  const zero = { ...vm, chips: { ...vm.chips!, balance: 0 } }
+  const lines = heroEquationLines(zero, 'cut', true)
+  expect(lines.find(l => l.key === 'goal')).toMatchObject({ value: 0, sign: '±' })
+  // not paused + maintain + zero balance → no row (unchanged)
+  expect(heroEquationLines({ ...vm, chips: { ...vm.chips!, balance: 0 } }, 'maintain').some(l => l.key === 'goal')).toBe(false)
 })

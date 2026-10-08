@@ -14,6 +14,8 @@ import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MealSlotTemplatePopulator;
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
@@ -36,6 +38,7 @@ class FlagEvaluatorMealRhythmDriftIT extends AbstractIntegrationTest {
     @Autowired private MealPopulator mealPopulator;
     @Autowired private MealSlotTemplatePopulator mealSlotTemplatePopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
 
     private static final LocalDate TODAY = LocalDate.now();
     /** The window is [TODAY-14, TODAY-1]: it ends YESTERDAY, today is still in progress. */
@@ -259,5 +262,30 @@ class FlagEvaluatorMealRhythmDriftIT extends AbstractIntegrationTest {
         FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MEAL_RHYTHM_DRIFT);
 
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+    }
+
+    /**
+     * Kihagyás S3 (mezo-q4xt2.3): dinner drifts late on 10 of 14 days (71% — raised), but four of
+     * those late days were sick days of an ended period. Left out, 6 of 10 remaining days drift
+     * (60%, below the 70% consistency bar), so the plan-drift card must not appear.
+     */
+    @Test
+    void sickDaysAreDroppedFromTheObservationWindow() {
+        UUID withPeriod = plannedOwner();
+        UUID without = plannedOwner();
+        for (UUID owner : List.of(withPeriod, without)) {
+            for (int i = 1; i <= WINDOW; i++) {
+                LocalDate d = TODAY.minusDays(i);
+                mealPopulator.createBareMealAt(owner, d, "breakfast", LocalTime.of(7, 5));
+                mealPopulator.createBareMealAt(owner, d, "lunch", LocalTime.of(13, 10));
+                mealPopulator.createBareMealAt(owner, d, "dinner",
+                    i <= 10 ? LocalTime.of(21, 0) : LocalTime.of(19, 5));
+            }
+        }
+        // ill on yesterday … four days ago (days 1-4)
+        recoveryPeriodPopulator.ended(withPeriod, Reason.STOMACH, TODAY.minusDays(4), TODAY);
+
+        assertThat(keys(without)).contains(FlagKey.MEAL_RHYTHM_DRIFT);
+        assertThat(keys(withPeriod)).doesNotContain(FlagKey.MEAL_RHYTHM_DRIFT);
     }
 }

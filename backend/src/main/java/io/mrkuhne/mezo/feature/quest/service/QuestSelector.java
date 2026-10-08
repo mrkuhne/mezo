@@ -8,6 +8,8 @@ import io.mrkuhne.mezo.feature.quest.config.QuestProperties;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.quest.entity.QuestTargetEnvelope;
 import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
+import io.mrkuhne.mezo.feature.train.service.RecoveryPeriodService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
@@ -47,19 +49,21 @@ public class QuestSelector {
     private final WorkoutService workoutService;
     private final GoalRepository goalRepository;
     private final QuestProperties properties;
+    private final RecoveryPeriodService recoveryPeriodService;
 
     @Transactional
     public List<DailyQuestEntity> generate(UUID userId, LocalDate date) {
         String dayType = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, date).isPresent()
             ? "GYM" : "REST";
         GoalPrescriptionJson.Segment segment = currentSegment(userId, date);
+        boolean guidance = isGuidanceDay(userId, date);
         List<DailyQuestEntity> recent =
             repository.findByCreatedByAndQuestDateGreaterThanEqual(userId, date.minusDays(COOLDOWN_LOOKBACK_DAYS));
 
         List<DailyQuestEntity> out = new ArrayList<>();
         Set<String> usedMetrics = new HashSet<>();
         for (String slot : SLOTS) {
-            pick(userId, date, slot, dayType, segment, recent, usedMetrics, 0)
+            pick(userId, date, slot, dayType, segment, recent, usedMetrics, guidance, 0)
                 .ifPresent(q -> {
                     usedMetrics.add(q.getTarget().metric());
                     out.add(repository.saveAndFlush(q));
@@ -74,6 +78,7 @@ public class QuestSelector {
         String dayType = workoutService.findPlannedTemplateForDateUnlessSkipped(userId, old.getQuestDate()).isPresent()
             ? "GYM" : "REST";
         GoalPrescriptionJson.Segment segment = currentSegment(userId, old.getQuestDate());
+        boolean guidance = isGuidanceDay(userId, old.getQuestDate());
         List<DailyQuestEntity> today =
             repository.findByCreatedByAndQuestDateOrderBySlotAsc(userId, old.getQuestDate());
         Set<String> usedKeys = new HashSet<>();
@@ -84,7 +89,7 @@ public class QuestSelector {
                 usedMetrics.add(q.getTarget().metric());
             }
         }
-        List<QuestCatalog.QuestDef> eligiblePool = eligible(old.getSlot(), dayType, segment, usedMetrics).stream()
+        List<QuestCatalog.QuestDef> eligiblePool = eligible(old.getSlot(), dayType, segment, usedMetrics, guidance).stream()
             .filter(d -> !usedKeys.contains(d.key()))
             .toList();
         if (eligiblePool.isEmpty()) {
@@ -104,10 +109,10 @@ public class QuestSelector {
 
     private Optional<DailyQuestEntity> pick(UUID userId, LocalDate date, String slot, String dayType,
         GoalPrescriptionJson.Segment segment, List<DailyQuestEntity> recent,
-        Set<String> usedMetrics, int salt) {
+        Set<String> usedMetrics, boolean guidance, int salt) {
 
         Set<Integer> allowed = allowedDifficulties(userId, date, slot);
-        List<QuestCatalog.QuestDef> base = eligible(slot, dayType, segment, usedMetrics);
+        List<QuestCatalog.QuestDef> base = eligible(slot, dayType, segment, usedMetrics, guidance);
         List<QuestCatalog.QuestDef> banded = base.stream()
             .filter(d -> allowed.contains(d.difficulty()))
             .toList();
@@ -152,13 +157,21 @@ public class QuestSelector {
     }
 
     private List<QuestCatalog.QuestDef> eligible(String slot, String dayType,
-        GoalPrescriptionJson.Segment segment, Set<String> usedMetrics) {
+        GoalPrescriptionJson.Segment segment, Set<String> usedMetrics, boolean guidance) {
         return catalog.all().stream()
             .filter(d -> d.slot().equals(slot))
             .filter(d -> d.dayTypes().contains("ANY") || d.dayTypes().contains(dayType))
             .filter(d -> !d.requiresGoalPrescription() || segment != null)
             .filter(d -> !usedMetrics.contains(d.metric()))
+            // Kihagyás S3: on a sick day (GUIDANCE) no protein target is set — water stays.
+            .filter(d -> !(guidance && "protein_target".equals(d.metric())))
             .toList();
+    }
+
+    /** The date lies in an illness / stomach-bug recovery period (Fuel mode GUIDANCE). */
+    private boolean isGuidanceDay(UUID userId, LocalDate date) {
+        var period = recoveryPeriodService.fuelDays(userId, date, date).get(date);
+        return period != null && RecoveryFuelMode.of(period.getCategory()) == RecoveryFuelMode.GUIDANCE;
     }
 
     private boolean inCooldown(QuestCatalog.QuestDef d, LocalDate date, List<DailyQuestEntity> recent) {

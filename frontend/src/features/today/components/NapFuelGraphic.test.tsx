@@ -27,6 +27,24 @@ describe('NapFuelGraphic', () => {
     expect(container.querySelector('[data-macro="p"] .nap-fuel-arc')).toHaveAttribute('stroke-dasharray', '75 100')
   })
 
+  it('a skipped window never makes an under-target day read „felett" (same rule as the Fuel hero)', () => {
+    // target 2200, skipped 600, eaten 1800 → ate under the target → 0 left, not 200 over
+    render(<NapFuelGraphic consumed={{ ...consumed, kcal: 1800 }} targets={targets} skippedKcal={600} fuelMode={null} />)
+    expect(screen.getByText('0 kcal a napi keretig')).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/felett/)
+  })
+
+  it('still says „felett" when the user really ate more than the target, skips or not', () => {
+    render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2300 }} targets={targets} skippedKcal={600} fuelMode={null} />)
+    expect(screen.getByText('100 kcal a napi keret felett')).toBeInTheDocument()
+  })
+
+  it('an ESTIMATE day says „körül" and never „felett"', () => {
+    render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2400 }} targets={targets} fuelMode="ESTIMATE" />)
+    expect(screen.getByText('200 kcal a napi keret körül')).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/felett/)
+  })
+
   it('shows unknown targets without inventing progress or remaining', () => {
     const { container } = render(<NapFuelGraphic consumed={consumed} targets={zero} />)
     fireEvent.click(screen.getByRole('button', { name: /fehérje/i }))
@@ -77,5 +95,28 @@ describe('NapFuelGraphic', () => {
     expect(card).toHaveClass('glass')
     rerender(<NapFuelGraphic consumed={zero} targets={targets} isError onRetry={() => {}} />)
     expect(card).toHaveClass('glass')
+  })
+})
+
+// Kihagyás S3 (mezo-q4xt2.3): a GUIDANCE nap nem mér kalóriát — egyetlen nyugodt sor a műszer helyén.
+describe('NapFuelGraphic · kímélő mód', () => {
+  it('shows ONE calm line instead of the macro instrument on a guidance day', () => {
+    const { container } = render(<NapFuelGraphic guidance consumed={consumed} targets={targets} />)
+    expect(screen.getByText('Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).toBeNull()
+    expect(container.querySelector('.nap-fuel-reactor')).toBeNull()
+    expect(container.textContent).not.toMatch(/keret|1 460|2 200|elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
+    expect(container.querySelector('use')).not.toBeNull()
+  })
+
+  it('without guidance the instrument is unchanged', () => {
+    render(<NapFuelGraphic consumed={consumed} targets={targets} />)
+    expect(screen.getByRole('button', { name: /teljes energiabevitel/i })).toBeInTheDocument()
+    expect(screen.queryByText(/ma nincs kalóriacél/)).toBeNull()
+  })
+
+  it('a loading or failed read still wins over the guidance line', () => {
+    render(<NapFuelGraphic guidance consumed={zero} targets={targets} isPending />)
+    expect(screen.getByRole('status')).toHaveTextContent('Táplálkozási adatok betöltése')
   })
 })

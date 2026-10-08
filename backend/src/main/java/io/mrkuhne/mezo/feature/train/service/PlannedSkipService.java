@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -67,11 +68,15 @@ public class PlannedSkipService {
         LocalDate today = LocalDate.now(TZ);
         LocalDate date = req.getDate();
         LocalDate sunday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY));
-        if (date.isBefore(today.minusDays(7)) || date.isAfter(sunday)) {
+        Kind kind = Kind.valueOf(req.getKind().getValue());
+        // A meal slot can only be skipped once it has begun: the window ends today, not on Sunday.
+        LocalDate last = kind == Kind.MEAL ? today : sunday;
+        if (date.isBefore(today.minusDays(7)) || date.isAfter(last)) {
             throw bad("TRAIN_SKIP_DATE_OUT_OF_WINDOW");
         }
-        Kind kind = Kind.valueOf(req.getKind().getValue());
         validateTarget(kind, date, req);
+        Reason reason = Reason.valueOf(req.getReasonCategory().getValue());
+        validateReason(kind, reason);
         lock.lock(user);
         PlannedSkipEntity row = repository.findByCreatedByAndDateBetweenAndDeletedFalse(user, date, date).stream()
             .filter(e -> e.getKind() == kind
@@ -89,8 +94,11 @@ public class PlannedSkipService {
                 e.setSessionKey(req.getSessionKey());
                 return e;
             });
-        Reason reason = Reason.valueOf(req.getReasonCategory().getValue());
         row.setReasonCategory(reason);
+        // A reason-only re-upsert (no plannedKcal) keeps the stored snapshot; only MEAL carries one.
+        if (kind == Kind.MEAL && req.getPlannedKcal() != null) {
+            row.setPlannedKcal(req.getPlannedKcal());
+        }
         String text = req.getReasonText() == null ? null : req.getReasonText().trim();
         row.setReasonText(reason == Reason.OTHER && text != null && !text.isEmpty() ? text : null);
         row.setUpdatedAt(Instant.now());
@@ -165,14 +173,18 @@ public class PlannedSkipService {
         Set<Integer> plannedGymDows = protectedDays.isEmpty() ? Set.of() : plannedGymWeekdays(user);
         List<Row> rows = new ArrayList<>();
         for (PlannedSkipEntity e : userRows) {
+            // A MEAL skip is neutral (Kihagyás S3): never backed by advice or recovery — the policy
+            // already excuses it without a pass.
+            boolean meal = e.getKind() == Kind.MEAL;
             boolean adviceBacked = e.getKind() == Kind.SPORT
                 && adviceSlots.contains(new SlotIdentity(e.getDate(), e.getDayOfWeek(), e.getTime()));
             // A USER skip on a date the recovery period already protects (GYM: a protected planned
             // gym day; SPORT/RUN: any protected date) is excused by the protection — never a pass.
-            boolean recoveryBacked = protectedDays.containsKey(e.getDate())
+            boolean recoveryBacked = !meal && protectedDays.containsKey(e.getDate())
                 && (e.getKind() != Kind.GYM || plannedGymDows.contains(e.getDate().getDayOfWeek().getValue() - 1));
             rows.add(new Row(e.getId(), e.getDate(), e.getKind(), e.getDayOfWeek(), e.getTime(), e.getSessionKey(),
-                e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt(), adviceBacked, recoveryBacked));
+                e.getReasonCategory(), e.getReasonText(), Source.USER, e.getCreatedAt(), adviceBacked, recoveryBacked,
+                e.getPlannedKcal()));
         }
 
         // A USER SPORT skip is authoritative over an ADVICE twin on the same occurrence (same
@@ -321,18 +333,36 @@ public class PlannedSkipService {
         return skippedRuns(user, date, date).contains(date, sessionKey);
     }
 
+    /** The MEAL skips of one day — built on {@link #verdictsBetween}, the one central skip read
+     *  (Kihagyás S3, mezo-q4xt2.3). Never excludes a skip for being "missed": a meal skip is always
+     *  excused. */
+    @Transactional(readOnly = true)
+    public List<Row> mealSkipsOn(UUID user, LocalDate date) {
+        return mealSkipsBetween(user, date, date).getOrDefault(date, List.of());
+    }
+
+    /** The MEAL skips of [from, to] grouped by date (dates without a skip are absent). */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, List<Row>> mealSkipsBetween(UUID user, LocalDate from, LocalDate to) {
+        return verdictsBetween(user, from, to).stream()
+            .map(Verdict::row)
+            .filter(r -> r.kind() == Kind.MEAL)
+            .collect(Collectors.groupingBy(Row::date, TreeMap::new, Collectors.toList()));
+    }
+
     @Transactional(readOnly = true)
     public boolean isGymSkipped(UUID user, LocalDate date) {
         return !skippedDates(user, Kind.GYM, date, date).isEmpty();
     }
 
     /** ISO week keys (see {@link PlannedSkipPolicy#isoWeekKey}) that hold at least one excused
-     *  skip — including a kímélő-mód protected date (its virtual RECOVERY row, S2). */
+     *  training skip (MEAL skips never bridge) — including a kímélő-mód protected date (its virtual RECOVERY row, S2). */
     @Transactional(readOnly = true)
     public Set<Long> bridgedWeeks(UUID user, LocalDate from, LocalDate to) {
         Set<Long> weeks = new HashSet<>();
         for (Verdict v : verdictsBetween(user, from, to)) {
-            if (v.excused()) {
+            // A skipped meal never bridges the training streak (Kihagyás S3).
+            if (v.excused() && v.row().kind() != Kind.MEAL) {
                 weeks.add(PlannedSkipPolicy.isoWeekKey(v.row().date()));
             }
         }
@@ -346,9 +376,24 @@ public class PlannedSkipService {
                 && req.getDayOfWeek() == date.getDayOfWeek().getValue() - 1;
             case RUN -> req.getSessionKey() != null && !req.getSessionKey().isBlank()
                 && req.getDayOfWeek() == null && req.getTime() == null;
+            case MEAL -> req.getSessionKey() != null && req.getSessionKey().matches("(breakfast|lunch|dinner|snack)#[1-9]")
+                && req.getDayOfWeek() == null && req.getTime() == null;
         };
         if (!valid) {
             throw bad("TRAIN_SKIP_TARGET_INVALID");
+        }
+    }
+
+    /** NOT_HUNGRY belongs to MEAL only, and a meal skip takes only the meal-relevant reasons. */
+    private static void validateReason(Kind kind, Reason reason) {
+        boolean valid = kind == Kind.MEAL
+            ? switch (reason) {
+                case NOT_HUNGRY, NO_TIME, STOMACH, ILLNESS, TRAVEL, OTHER, NONE -> true;
+                default -> false;
+            }
+            : reason != Reason.NOT_HUNGRY;
+        if (!valid) {
+            throw bad("TRAIN_SKIP_REASON_INVALID");
         }
     }
 
@@ -370,6 +415,7 @@ public class PlannedSkipService {
             .source(PlannedSkipResponse.SourceEnum.valueOf(r.source().name()))
             .serious(v.serious())
             .freePass(v.freePass())
-            .excused(v.excused());
+            .excused(v.excused())
+            .plannedKcal(r.plannedKcal());
     }
 }

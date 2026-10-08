@@ -50,6 +50,7 @@ class MeWeekControllerIT extends ApiIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitDayRepository habitDayRepository;
+    @Autowired private io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator recoveryPeriodPopulator;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -118,6 +119,27 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         habit.setStatus(HabitDayEntity.STATUS_DONE);
         habit.setXpAwarded(xpAwarded);
         habitDayRepository.saveAndFlush(habit);
+    }
+
+    /** Kihagyás S3 review (I2): an unjudged kímélő day (illness) hands NO target to the week context. */
+    @Test
+    void testWeek_shouldNullTheTargetsAndFlagTheDay_whenIllnessPeriodCoversIt() {
+        UUID owner = ownerId();
+        recoveryPeriodPopulator.ended(owner,
+            io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason.ILLNESS,
+            MONDAY.plusDays(2), MONDAY.plusDays(4));
+
+        MeWeekResponse response = week(MONDAY);
+
+        for (int i : new int[] {2, 3}) {
+            var day = response.getDays().get(i);
+            assertThat(day.getKcalTarget()).as("day %d", i).isNull();
+            assertThat(day.getProteinTargetG()).isNull();
+            assertThat(day.getUnjudgedDay()).isTrue();
+        }
+        var normal = response.getDays().get(1);
+        assertThat(normal.getKcalTarget()).isNotNull();
+        assertThat(normal.getUnjudgedDay()).isNull();
     }
 
     @Test

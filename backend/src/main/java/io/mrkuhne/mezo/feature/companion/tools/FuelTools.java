@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
@@ -64,6 +65,7 @@ public class FuelTools {
     private static final List<String> PROTOCOL_SCOPES = List.of("adherence", "intake", "supplements");
 
     private final FuelDayService fuelDayService;
+    private final PlannedSkipService plannedSkipService;
     private final ProtocolService protocolService;
     private final SupplementIntakeRepository supplementIntakeRepository;
     private final IntakeService intakeService;
@@ -128,10 +130,16 @@ public class FuelTools {
             FuelDayResponse day = fuelDayService.getDay(userId, date);
             MacroSet c = day.getConsumed();
             MacroSet t = day.getTargets();
-            b.append('\n').append(date).append(": ")
-                    .append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
-                    .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
-                    .append(" g; ").append(day.getMeals().size()).append(" étkezés");
+            b.append('\n').append(date).append(": ");
+            if (day.getFuelMode() == FuelDayResponse.FuelModeEnum.GUIDANCE) {
+                // Kihagyás S3: a sick day has no calorie target — same sentence as the coach snapshot.
+                b.append(FuelModeText.guidanceLine(day)).append("; ");
+            } else {
+                b.append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
+                        .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
+                        .append(" g; ");
+            }
+            b.append(day.getMeals().size()).append(" étkezés");
             if (!day.getMeals().isEmpty()) {
                 b.append(" (").append(day.getMeals().stream()
                         .map(MealResponse::getTitle).collect(Collectors.joining(", ")));
@@ -141,8 +149,14 @@ public class FuelTools {
                     ToolContexts.audit(toolContext).addRef("FuelDay", date.toString());
                 }
             }
-            b.append("; CH ").append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC()))
-                    .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
+            if (day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE) {
+                b.append("; CH ").append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC()))
+                        .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
+            }
+            b.append(FuelModeText.suffix(day));
+            if (day.getFuelMode() != FuelDayResponse.FuelModeEnum.GUIDANCE) {
+                b.append(FuelModeText.skips(plannedSkipService.mealSkipsOn(userId, date)));
+            }
             b.append("\nVíz (").append(date).append("): ").append(ToolText.num(c.getWater())).append('/')
                     .append(ToolText.num(t.getWater())).append(" ml");
             day.getMeals().forEach(meal -> appendMeal(details, meal));
@@ -166,13 +180,20 @@ public class FuelTools {
         for (FuelDayRollup day : week.getDays()) {
             MacroSet c = day.getConsumed();
             MacroSet t = day.getTargets();
-            b.append('\n').append(day.getDate()).append(": ")
-                    .append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
-                    .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
-                    .append(" g, víz ").append(ToolText.num(c.getWater())).append('/')
-                    .append(ToolText.num(t.getWater())).append(" ml")
-                    .append("; CH ").append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC()))
-                    .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
+            b.append('\n').append(day.getDate()).append(": ");
+            if (day.getFuelMode() != null && day.getFuelMode() != FuelDayRollup.FuelModeEnum.MAINTENANCE) {
+                // Kihagyás S3: a period day (sick / travelling) is not compared to a target.
+                b.append("kímélő nap (nincs értékelve): ").append(ToolText.num(c.getKcal())).append(" kcal, F ")
+                        .append(ToolText.num(c.getP())).append(" g, víz ").append(ToolText.num(c.getWater()))
+                        .append(" ml");
+            } else {
+                b.append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
+                        .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
+                        .append(" g, víz ").append(ToolText.num(c.getWater())).append('/')
+                        .append(ToolText.num(t.getWater())).append(" ml")
+                        .append("; CH ").append(ToolText.num(c.getC())).append('/').append(ToolText.num(t.getC()))
+                        .append(" g, ZS ").append(ToolText.num(c.getF())).append('/').append(ToolText.num(t.getF())).append(" g");
+            }
             if (refCount < 5) {
                 ToolContexts.audit(toolContext).addRef("FuelDay", day.getDate().toString());
                 refCount++;

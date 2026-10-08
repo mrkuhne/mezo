@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0 → Üveg)
 type: feature-platform
 status: in-progress
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -14,6 +14,8 @@ key_files:
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** Two sprite icons joined the shared set (`t-tea`, `t-nohunger`, via `titanium-custom.svg` + generator); `prototype.css` gained the "Kihagyás S3" blocks (`.fmx-fskip`, `.fmx-skacts`, `.fmx-gcard`, …, lavender only — nothing red/amber on a skip or recovery day) and a ≤360 px fix to the Fuel hero (smaller gauge and side numerals, halo width capped) found by the 320 px layout spec. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
+
 > **2026-10-06 — Én IA final review (`mezo-lhqw7`).** `prototype.css` housekeeping, no new block: the `── uveg en test` block's `.ent-seg-btn` gains a **44px `::after` hit zone** (drawn pill stays 36px; the hub pills' idiom, asserted in `tests/layout/layout.spec.ts`), and the `── uveg en hub` block loses the dead `.enh-t-rutin` accent and the `.enh-tile.mz-tile-row*` wide-row rules (the Rutin tile left the hub in S4).
 >
 > **2026-10-06 — Én IA S1 (`mezo-lhqw7`).** One new `prototype.css` block, `── uveg en test (mezo-lhqw7)` (`.ent-head`, the `.ent-seg`/`.ent-seg-btn` Súly|Alvás segment with the sky `is-on` glow, `.ent-bio`), guarded by `LHQW7_BLOCKS` in `prototypeCssStructure.test.ts`. `app/navModel.ts` gained the Én row `Hol tartok · Test · Célok · Napló` with `owns` (see [`me.md`](me.md)); no sprite, token or shared-kit primitive changed.

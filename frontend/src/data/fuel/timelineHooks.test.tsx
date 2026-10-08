@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useFuelTimeline, deriveBlocks } from '@/data/fuel/timelineHooks'
 import { useFuelPreview } from '@/data/today/todayHooks'
 import { fuelDayEnergy } from '@/data/fuel/fuel'
+import { plannedSkipsQueryKey } from '@/data/train/skipHooks'
+import { localDateString } from '@/shared/lib/dates'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { FuelSlot, SlotTemplate, SportSchedule, VolleyballSession } from '@/data/types'
@@ -166,6 +168,19 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('useFuelTimeline / us
     expect(result.current.visible.length).toBeLessThanOrEqual(3)
     expect(result.current.visible[0].state).toBe('now')
     expect(result.current).toHaveProperty('nextStack')
+  })
+
+  it('a MEAL skip marks its window skipped on the plan and useFuelPreview never offers it (Kihagyás S3)', () => {
+    const { qc, Wrapper } = sharedWrapper()
+    const first = renderHook(() => useFuelTimeline(), { wrapper: Wrapper }).result.current.plan
+    const target = first.slots.find(s => s.state === 'now' && s.skipKey)!
+    qc.setQueryData(plannedSkipsQueryKey(), [{
+      id: 'ms1', kind: 'MEAL', date: localDateString(), sessionKey: target.skipKey,
+      reasonCategory: 'NOT_HUNGRY', source: 'USER', serious: false, freePass: false, excused: true,
+    }])
+    const { result } = renderHook(() => ({ t: useFuelTimeline(), p: useFuelPreview() }), { wrapper: Wrapper })
+    expect(result.current.t.plan.slots.find(s => s.skipKey === target.skipKey)!.state).toBe('skipped')
+    expect(result.current.p.visible.some(s => s.state === 'skipped')).toBe(false)
   })
 
   it('returns the day anchor + injected now so view-side zone math needs no clock (mezo-rrtj)', () => {

@@ -88,7 +88,7 @@ function split(formatted: string): { n: number | null; unit: string; dec: number
   }
 }
 
-function RingCell({ ring, onWater }: { ring: RingVM; onWater?: () => void }) {
+function RingCell({ ring, onWater, lead }: { ring: RingVM; onWater?: () => void; lead?: boolean }) {
   const value = split(ring.value)
   const target = split(ring.target)
   // Unknown TARGET → no denominator, so no percentage either: the arc stays empty.
@@ -116,6 +116,7 @@ function RingCell({ ring, onWater }: { ring: RingVM; onWater?: () => void }) {
           <b aria-hidden="true">/ {target.n == null ? '—' : target.dec > 0 ? hu1(target.n) : huInt(target.n)}{target.unit && <i>{target.unit}</i>}</b>
         </span>
       </div>
+      {lead && <small className="fmx-lead-cap">FŐ CÉL</small>}
     </>
   )
 
@@ -128,13 +129,18 @@ function RingCell({ ring, onWater }: { ring: RingVM; onWater?: () => void }) {
       </button>
     )
   }
-  return <div className="fmx-cell" style={{ '--macro-color': ring.color } as React.CSSProperties}>{body}</div>
+  return <div className={`fmx-cell${lead ? ' is-lead' : ''}`} style={{ '--macro-color': ring.color } as React.CSSProperties}>{body}</div>
 }
 
-export function FuelMacroRings({ rings, onWater }: { rings: RingVM[]; onWater?: () => void }) {
+export function FuelMacroRings({ rings, onWater, leadKey }: {
+  rings: RingVM[]; onWater?: () => void
+  /** Kímélő mód / sérülés (Kihagyás S3): the ring that is the day's main goal — it glows and
+   *  wears a „FŐ CÉL" caption (the protein, which rebuilds the tissue). */
+  leadKey?: RingVM['key']
+}) {
   return (
     <div className="fmx-rings" role="group" aria-label="Makrók, rost és víz">
-      {rings.map(r => <RingCell key={r.key} ring={r} onWater={onWater} />)}
+      {rings.map(r => <RingCell key={r.key} ring={r} onWater={onWater} lead={r.key === leadKey} />)}
     </div>
   )
 }

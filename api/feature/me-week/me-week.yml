@@ -127,6 +127,7 @@ components:
         fatG: { type: number, nullable: true }
         kcalTarget: { type: number, nullable: true }
         proteinTargetG: { type: number, nullable: true }
+        unjudgedDay: { type: boolean, nullable: true, description: "Kihagyás S3 — true on a kímélő-mód day whose kcal target is not judged (GUIDANCE / ESTIMATE); kcalTarget and proteinTargetG are then null" }
         weightKg: { type: number, nullable: true }
         sleepMin: { type: integer, nullable: true }
         sleepQuality: { type: number, nullable: true }

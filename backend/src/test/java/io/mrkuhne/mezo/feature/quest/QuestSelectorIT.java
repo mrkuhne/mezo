@@ -1,5 +1,10 @@
 package io.mrkuhne.mezo.feature.quest;
 
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
@@ -16,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 /** Deterministic catalog selection: slot composition, day-type filter, distinct metrics, cooldown. */
 class QuestSelectorIT extends AbstractIntegrationTest {
 
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
+    @Autowired private GoalPopulator goalPopulator;
     @Autowired private QuestSelector selector;
     @Autowired private UserPopulator userPopulator;
     @Autowired private DailyQuestRepository repository;
@@ -67,5 +74,52 @@ class QuestSelectorIT extends AbstractIntegrationTest {
         String bio1 = day1.stream().filter(k -> k.startsWith("bio_")).findFirst().orElseThrow();
         String bio2 = day2.stream().filter(k -> k.startsWith("bio_")).findFirst().orElseThrow();
         assertThat(bio2).isNotEqualTo(bio1);
+    }
+
+    private void goalWithProteinPrescription(UUID owner) {
+        goalPopulator.createGoalFull(owner, DATE.minusDays(2), DATE.plusWeeks(20),
+            new GoalPrescriptionJson(null, "formula",
+                List.of(new GoalPrescriptionJson.Segment(1, 30, "vágás", 2600, 180, 250, 80,
+                    null, null, null, null, null, null, null)),
+                null, null),
+            4, "06:30", "22:30");
+    }
+
+    private boolean anyDayPicksProtein(UUID owner) {
+        for (int i = 0; i < 40; i++) {
+            LocalDate d = DATE.plusDays(i * 5L); // spaced past the cooldown window
+            if (selector.generate(owner, d).stream().anyMatch(q -> "protein_target".equals(q.getTarget().metric()))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Kihagyás S3 (mezo-q4xt2.3): on a sick day (GUIDANCE) the protein quest is never offered; water stays. */
+    @Test
+    void testGenerate_shouldNeverOfferProteinQuest_onAGuidanceDay() {
+        UUID withPeriod = userPopulator.createUser("sel-g1@test.hu").getId();
+        UUID without = userPopulator.createUser("sel-g2@test.hu").getId();
+        goalWithProteinPrescription(withPeriod);
+        goalWithProteinPrescription(without);
+        recoveryPeriodPopulator.ended(withPeriod, Reason.ILLNESS, DATE.minusDays(1), DATE.plusDays(400));
+
+        // control: without the period the protein quest does come up over the same dates
+        assertThat(anyDayPicksProtein(without)).isTrue();
+        assertThat(anyDayPicksProtein(withPeriod)).isFalse();
+    }
+
+    @Test
+    void testGenerate_shouldKeepWaterQuestEligible_onAGuidanceDay() {
+        UUID owner = userPopulator.createUser("sel-g3@test.hu").getId();
+        goalWithProteinPrescription(owner);
+        recoveryPeriodPopulator.ended(owner, Reason.STOMACH, DATE.minusDays(1), DATE.plusDays(400));
+
+        boolean water = false;
+        for (int i = 0; i < 40 && !water; i++) {
+            water = selector.generate(owner, DATE.plusDays(i * 5L)).stream()
+                .anyMatch(q -> "water_target".equals(q.getTarget().metric()));
+        }
+        assertThat(water).isTrue();
     }
 }

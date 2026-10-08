@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.goal.engine.port.IntakeAdherencePort;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class GoalIntakeAdherenceAdapterIT extends AbstractIntegrationTest {
 
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
     @Autowired private GoalIntakeAdherenceAdapter adapter;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -67,5 +70,32 @@ class GoalIntakeAdherenceAdapterIT extends AbstractIntegrationTest {
         IntakeAdherencePort.IntakeAdherence a = adapter.weekAdherence(userId, monday);
 
         assertThat(a).isEqualTo(new IntakeAdherencePort.IntakeAdherence(0, 0, 0));
+    }
+
+    /** Kihagyás S3 (mezo-q4xt2.3): GUIDANCE days (3 × 900 kcal) are not judged — adherence equals the 4 normal days'. */
+    @Test
+    void excludesRecoveryModeDays() {
+        LocalDate monday = LocalDate.of(2026, 8, 24);
+        for (int i = 0; i < 3; i++) {
+            seedMeal(monday.plusDays(i), "900");
+        }
+        for (int i = 3; i < 7; i++) {
+            seedMeal(monday.plusDays(i), "2500");
+        }
+        recoveryPeriodPopulator.ended(userId, Reason.ILLNESS, monday, monday.plusDays(3));
+
+        IntakeAdherencePort.IntakeAdherence a = adapter.weekAdherence(userId, monday);
+
+        assertThat(a.loggedDays()).isEqualTo(4);
+        assertThat(a.avgIntakeKcal()).isEqualTo(2500);
+    }
+
+    @Test
+    void aWeekOfOnlyRecoveryDaysReturnsTheNoLoggedDaysShape() {
+        LocalDate monday = LocalDate.of(2026, 8, 24);
+        seedMeal(monday, "900");
+        recoveryPeriodPopulator.ended(userId, Reason.STOMACH, monday, monday.plusDays(7));
+
+        assertThat(adapter.weekAdherence(userId, monday)).isEqualTo(new IntakeAdherencePort.IntakeAdherence(0, 0, 0));
     }
 }

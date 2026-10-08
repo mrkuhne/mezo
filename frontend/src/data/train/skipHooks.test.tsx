@@ -92,6 +92,50 @@ describe('usePlannedSkips', () => {
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(2))
     expect(deletedId).toBe('r2')
   })
+  it('mock mode: a MEAL skip keeps plannedKcal, is excused without the free pass and leaves the pass to a GYM skip', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper: makeHookWrapper() })
+    act(() => result.current.skip({ kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#1' }, undefined, 640))
+    await waitFor(() => expect(result.current.skips).toHaveLength(1))
+    act(() => result.current.skip({ kind: 'GYM', date: '2026-09-29' }))
+    await waitFor(() => expect(result.current.skips).toHaveLength(2))
+    expect(result.current.skips.find((s) => s.kind === 'MEAL')).toMatchObject({ plannedKcal: 640, excused: true, freePass: false })
+    expect(result.current.skips.find((s) => s.kind === 'GYM')?.freePass).toBe(true)
+  })
+
+  it('mock mode: re-upserting a MEAL skip without plannedKcal keeps the stored snapshot', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper: makeHookWrapper() })
+    const key = { kind: 'MEAL' as const, date: '2026-09-28', sessionKey: 'snack#1' }
+    act(() => result.current.skip(key, undefined, 420))
+    await waitFor(() => expect(result.current.skips).toHaveLength(1))
+    act(() => result.current.setReason(key, 'NOT_HUNGRY'))
+    await waitFor(() => expect(result.current.skips[0]?.reasonCategory).toBe('NOT_HUNGRY'))
+    expect(result.current.skips).toHaveLength(1)
+    expect(result.current.skips[0]).toMatchObject({ plannedKcal: 420 })
+  })
+
+  it('real mode: plannedKcal is sent for a MEAL skip only', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const bodies: Record<string, unknown>[] = []
+    server.use(
+      http.get(URL, () => HttpResponse.json([])),
+      http.put(URL, async ({ request }) => {
+        bodies.push((await request.json()) as Record<string, unknown>)
+        return HttpResponse.json(serverRow({ kind: 'MEAL', sessionKey: 'lunch#1', plannedKcal: 640 }))
+      }),
+    )
+    const onDone = vi.fn()
+    const { result } = renderHook(() => usePlannedSkips(), { wrapper: makeHookWrapper() })
+    act(() => result.current.skip({ kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#1' }, onDone, 640))
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
+    act(() => result.current.skip({ kind: 'GYM', date: '2026-09-28' }, onDone, 640))
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(2))
+    expect(bodies[0]).toMatchObject({ kind: 'MEAL', plannedKcal: 640 })
+    expect(bodies[1]).not.toHaveProperty('plannedKcal')
+    expect(onDone.mock.calls[0]![0]).toMatchObject({ plannedKcal: 640 })
+  })
+
   it('mock mode: OTHER text is trimmed, blank becomes null, text kept only for OTHER (mirrors the backend)', async () => {
     vi.stubEnv('VITE_USE_MOCK', 'true')
     const t = { kind: 'GYM' as const, date: '2026-09-28' }

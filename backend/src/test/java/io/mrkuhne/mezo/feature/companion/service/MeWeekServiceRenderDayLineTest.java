@@ -61,4 +61,31 @@ class MeWeekServiceRenderDayLineTest {
                 + "– kcal / cél –, fehérje –g, súly –, alvás –, "
                 + "0 check-in, 0 edzés, – XP");
     }
+
+    @Test
+    void unjudgedDayRendersEatenValuesOnlyWithTheKimeloTag() {
+        MeWeekDay day = MeWeekDay.builder()
+                .date(LocalDate.of(2026, 6, 15))
+                .kcal(BigDecimal.valueOf(1200))
+                .proteinG(BigDecimal.valueOf(70))
+                .unjudgedDay(true)
+                .checkinCount(0)
+                .workoutCount(0)
+                .build();
+
+        String line = MeWeekService.renderDayLine(day);
+
+        assertThat(line).contains("1200 kcal, fehérje 70g").doesNotContain("/ cél")
+                .endsWith(" · kímélő nap (nincs értékelve)");
+    }
+
+    @Test
+    void normalDayStillRendersTheTarget() {
+        MeWeekDay day = MeWeekDay.builder()
+                .date(LocalDate.of(2026, 6, 15))
+                .kcal(BigDecimal.valueOf(2500)).kcalTarget(BigDecimal.valueOf(2600))
+                .build();
+
+        assertThat(MeWeekService.renderDayLine(day)).contains("2500 kcal / cél 2600").doesNotContain("kímélő");
+    }
 }

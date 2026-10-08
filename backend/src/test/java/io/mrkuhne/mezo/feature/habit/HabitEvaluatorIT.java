@@ -1,5 +1,8 @@
 package io.mrkuhne.mezo.feature.habit;
 
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.train.entity.RecoveryPeriodEntity.Estimate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.habit.service.HabitEvaluator;
@@ -36,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 class HabitEvaluatorIT extends AbstractIntegrationTest {
 
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
     @Autowired private HabitEvaluator evaluator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
@@ -219,5 +223,27 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
         LocalDate d = LocalDate.now();
         ritualPopulator.openDay(owner, d, "Csak leírtam, még nem zártam le.");
         assertThat(evaluator.satisfied("ritual_closed", owner, d)).isFalse();
+    }
+
+    /** Kihagyás S3 (mezo-q4xt2.3): a sick day (Fuel mode GUIDANCE) must not break the chain. */
+    @Test
+    void testSatisfied_shouldKeepFuelHabitsVacuously_onAGuidanceDay() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        assertThat(evaluator.satisfied("breakfast_protein", owner, d)).isFalse();
+        recoveryPeriodPopulator.open(owner, Reason.ILLNESS, d, Estimate.FEW_DAYS);
+
+        assertThat(evaluator.satisfied("breakfast_protein", owner, d)).isTrue();
+        assertThat(evaluator.satisfied("last_meal_before", owner, d)).isTrue();
+    }
+
+    /** Only GUIDANCE excuses the habits — an INJURY day (MAINTENANCE) still judges breakfast protein. */
+    @Test
+    void testSatisfied_shouldStillJudgeBreakfastProtein_onAMaintenanceDay() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        recoveryPeriodPopulator.open(owner, Reason.INJURY, d, Estimate.WEEK);
+
+        assertThat(evaluator.satisfied("breakfast_protein", owner, d)).isFalse();
     }
 }

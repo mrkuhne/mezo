@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-09-30
+updated: 2026-10-07
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** `train-skip.yml` gains `PlannedSkipKind.MEAL`, `PlannedSkipReason.NOT_HUNGRY` and `plannedKcal`; `meal.yml` gains `fuelMode`, `recoveryCategory`, `recoveryDay`, `skippedKcal` on `FuelDayResponse` and `fuelMode` on `FuelDayRollup` (inline enums generate separate `FuelDayResponse.*`/`FuelDayRollup.*` types). New error message `TRAIN_SKIP_REASON_INVALID` in `messages.properties`. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
 > **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** New fragment `api/feature/train/train-recovery.yml` (tag `TrainRecovery`, `/api/train/recovery*`) registered in `api/generate/merge.yml`; six Hungarian `TRAIN_RECOVERY_*` error keys in `messages.properties`; Liquibase `1.1.0` gains `recovery_period` + `recovery_day_release`. See [`train.md`](train.md) §2 "Kihagyás S2 — kímélő mód".
 

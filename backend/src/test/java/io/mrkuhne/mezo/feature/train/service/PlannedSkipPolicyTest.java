@@ -2,6 +2,11 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Kind;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Row;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Source;
+import io.mrkuhne.mezo.feature.train.service.PlannedSkipPolicy.Verdict;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -305,5 +310,28 @@ class PlannedSkipPolicyTest {
     @Test
     void testIsSerious_noneIsNotSevere() {
         assertThat(PlannedSkipPolicy.isSerious(PlannedSkipEntity.Reason.NONE)).isFalse();
+    }
+
+    @Test
+    void mealSkipIsAlwaysExcusedAndNeverTakesTheWeeklyPass() {
+        Instant t0 = Instant.parse("2026-09-28T08:00:00Z");
+        Row meal = new Row(UUID.randomUUID(), LocalDate.of(2026, 9, 28), Kind.MEAL, null, null, "lunch#1",
+            Reason.NOT_HUNGRY, null, Source.USER, t0);
+        Row gym = new Row(UUID.randomUUID(), LocalDate.of(2026, 9, 29), Kind.GYM, null, null, null,
+            Reason.NO_TIME, null, Source.USER, t0.plusSeconds(3600));
+        List<Verdict> v = PlannedSkipPolicy.judge(List.of(meal, gym));
+        assertThat(v.get(0).excused()).isTrue();
+        assertThat(v.get(0).freePass()).isFalse();
+        assertThat(v.get(1).freePass()).as("the later GYM skip still gets the week's pass").isTrue();
+    }
+
+    @Test
+    void seriousMealSkipIsExcusedWithoutPass() {
+        Row meal = new Row(UUID.randomUUID(), LocalDate.of(2026, 9, 28), Kind.MEAL, null, null, "dinner#1",
+            Reason.STOMACH, null, Source.USER, Instant.parse("2026-09-28T18:00:00Z"));
+        Verdict v = PlannedSkipPolicy.judge(List.of(meal)).get(0);
+        assertThat(v.serious()).isTrue();
+        assertThat(v.excused()).isTrue();
+        assertThat(v.freePass()).isFalse();
     }
 }

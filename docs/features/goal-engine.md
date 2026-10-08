@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal
@@ -138,6 +138,8 @@ Worked examples (`kcalPerKg = 7700` ⇒ ×1100 per kg/week of gap; from `Adaptiv
 **Sleep-adequacy port** (`engine/port/SleepAdequacyPort.java`, impl `feature/biometrics/sleep/service/GoalSleepAdequacyAdapter.java`) — a goal-owned port, **not** a dependency on companion's `FlagEvaluator`: same deficit math (`sleep_log.date` is the WAKE morning so today's row IS last night; a long night never repays a short one; unlogged nights are skipped, never counted debt-free) but over the review's **own** window (`adaptive.sleepDebtNights` = 7 nights, `adaptive.sleepDebtMinNights` = 4 honest small-n gate, `adaptive.sleepDebtDeficitHours` = 5.0 cumulative deficit threshold, goal-hours from `sleep_goal.targetMinutes` else the 8.0h ghost) — independent of whether the companion switch (which owns a *different* 3-night flag variant) is on.
 
 **Intake-adherence port** (`engine/port/IntakeAdherencePort.java`, impl `feature/meal/service/GoalIntakeAdherenceAdapter.java`) — context only, it never gates the correction: averages kcal intake/target over **logged days only** off `FuelDayService.getWeek` (a day counts as logged when its consumed kcal is `> 0`; `kcal ≤ 0` means absence — missing data, not a zero-kcal day — and is skipped rather than dragging the average toward zero).
+
+**Kihagyás S3 (`mezo-q4xt2.3`).** `GoalIntakeAdherenceAdapter` skips any `FuelDayRollup` with a non-null `fuelMode` (a kímélő day), so the adaptive kcal review never learns from illness/injury/travel intake; if none are left it returns `IntakeAdherence(0,0,0)`. `GoalDailyIntakeAdapter` — the raw intake feed for **TDEE learning** — is deliberately untouched, so the expenditure learner still sees sick-day low intake (known limitation, [`fuel.md`](fuel.md) §9).
 
 **Preview-gated accept and `basis="adaptive"`** — every suggestion is reviewed through `GoalSuggestionPreviewService` before it can be applied. The service copies the goal field-by-field into a transient draft, uses the I/O-free `GoalSuggestionDraftApplier` on that draft, and calculates both sides with the shared `GoalPrescriptionCalculator`; the calculator is also the engine's persisted evaluation core but itself never saves, emits events, or proposes. Its `calculate(userId, goal, draftPreferences)` overload (mezo-u2pd) lets a caller substitute UNSAVED diet preferences for what `DietPreferencesPort.resolve` would return — the one calculation path, now shared by the persisted evaluation, the suggestion preview and the diet-settings draft preview. The resulting typed projection exposes trajectory, target/window, kcal/day-type split, macros, segment and guards in deterministic changed/unchanged order. A direction conflict remains inspectable as a blocker and cannot be applied; historical accepted/dismissed/superseded rows remain inspectable without an apply token. For an accepted row the applier reverses the one persisted effect on a transient copy before calculating the historical `current` side, while the live goal is the `proposed` side—so reopening an accepted weekly correction never displays a fictitious second calorie reduction.
 

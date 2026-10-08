@@ -3,6 +3,8 @@ import type { Tool } from '@/shared/ui/ToolChip'
 import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
+import type { FuelMode } from '@/features/fuel/logic/fuelMode'
+import type { SkipReason } from '@/features/train/logic/plannedSkips'
 import type { EvidenceItem } from '@/shared/ui/evidence/observationEvidence'
 
 export type DayState = 'good' | 'medium' | 'rough'
@@ -107,7 +109,13 @@ export interface FuelSlot {
   kind: FuelKind
   label: string
   slotKey?: MealSlot // meal/snack window identity (mezo-53su); absent on block/protocol slots
-  state: 'done' | 'now' | 'pending' | 'missed'
+  /** `skipped` (Kihagyás S3): an unlogged meal window the user skipped — it keeps its budget share
+   *  (no redistribution), is never now/missed/pótolható and sits outside the late-log reflow. */
+  state: 'done' | 'now' | 'pending' | 'missed' | 'skipped'
+  /** `<slotKind>#<n>` identity of a planned meal/snack window (`mealSkipKeys`) — the meal-skip target. */
+  skipKey?: string
+  /** The skip behind a `skipped` slot (id for undo/reason edit). */
+  skip?: { id: string; reasonCategory: SkipReason; reasonText?: string | null }
   mealName?: string
   /** A tervezett ablak HH:mm-je egy DONE meal-sloton (mezo-l2gp0): a `time` done állapotban a
    *  logolás ideje, a terv ideje pedig elveszne — az óra-doboz "Terv szerint" sora innen olvas.
@@ -345,6 +353,13 @@ export interface FuelDay {
   targets: MacroSet; consumed: MacroSet
   /** The served energy breakdown (mezo-32m82); absent/null → static target, no equation chips. */
   energy?: FuelDayEnergy | null
+  /** Kímélő-mód Fuel behaviour of the date (Kihagyás S3); null outside a recovery period. */
+  fuelMode: FuelMode | null
+  recoveryCategory: SkipReason | null
+  /** 1-based day of the recovery period. */
+  recoveryDay: number | null
+  /** Σ planned kcal of the date's skipped meal slots (clamped; 0 in GUIDANCE). */
+  skippedKcal: number
   meals: FuelMeal[]
   pacing: { msg: string }
   micronutrients: Micronutrient[]

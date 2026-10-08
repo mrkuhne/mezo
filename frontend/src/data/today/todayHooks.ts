@@ -206,7 +206,8 @@ export function useFuelPreview() {
   const slots = plan.slots
   const nowIdx = slots.findIndex(s => s.state === 'now')
   const start = Math.max(0, nowIdx)
-  const visible = slots.slice(start, start + 3)
+  // A skipped meal window is not "coming up" (Kihagyás S3) — it never takes one of the three slots.
+  const visible = slots.slice(start).filter(s => s.state !== 'skipped').slice(0, 3)
   const nextStack = slots.find(s => s.state !== 'done' && (s.items ?? []).some(it => !it.done))
   // The full composed plan rides along for the three-islands facts (protein/energy,
   // mezo-euze) — additive, the {visible, nextStack} shape above is untouched.

@@ -12,6 +12,8 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
@@ -35,6 +37,7 @@ class FlagEvaluatorLoggingGapIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
 
     private UUID ownerId() {
         return userPopulator.createUser().getId();
@@ -189,5 +192,29 @@ class FlagEvaluatorLoggingGapIT extends AbstractIntegrationTest {
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
         assertThat(verdict.clear().metric()).isEqualTo("stale_domains");
         assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
+    }
+
+    /**
+     * Kihagyás S3 (mezo-q4xt2.3): the user logged everything 5 days ago, then was ill for the
+     * four days after — the gap lies entirely inside the (ended) kímélő period, so it must not
+     * read as "stopped logging". Without the period the same data raises.
+     */
+    @Test
+    void logging_gap_ignores_a_gap_that_lies_inside_an_ended_recovery_period() {
+        LocalDate today = LocalDate.now();
+        UUID withPeriod = ownerId();
+        UUID without = ownerId();
+        for (UUID owner : List.of(withPeriod, without)) {
+            LocalDate last = today.minusDays(5);
+            checkInPopulator.createCheckIn(owner, last, "08:00", 6, 3, null);
+            sleepLogPopulator.createSleepLog(owner, last, BigDecimal.valueOf(8.0), 4);
+            PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "csirke");
+            mealPopulator.createPantryMeal(owner, item, last, Instant.now().minus(java.time.Duration.ofDays(5)));
+        }
+        // ill on days today-4 … today-1; the user is back today
+        recoveryPeriodPopulator.ended(withPeriod, Reason.ILLNESS, today.minusDays(4), today);
+
+        assertThat(keys(without)).contains(FlagKey.LOGGING_GAP);
+        assertThat(keys(withPeriod)).doesNotContain(FlagKey.LOGGING_GAP);
     }
 }

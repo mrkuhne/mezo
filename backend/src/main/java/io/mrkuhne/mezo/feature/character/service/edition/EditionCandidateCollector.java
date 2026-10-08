@@ -333,7 +333,7 @@ public class EditionCandidateCollector {
 
         // a cél — a napi kcal-cél vs. az eddig bevitt kcal
         DailyTargets targets = reads.targets(owner, day);
-        if (targets != null && targets.kcal() > 0) {
+        if (targets != null && targets.kcal() > 0 && !reads.unjudgedDay(owner, day)) {
             int eaten = meals.stream().map(EditionMeal::kcal).filter(Objects::nonNull)
                     .reduce(BigDecimal.ZERO, BigDecimal::add)
                     .setScale(0, RoundingMode.HALF_UP).intValue();

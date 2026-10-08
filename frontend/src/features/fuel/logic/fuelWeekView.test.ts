@@ -192,3 +192,33 @@ describe('weekDeltas', () => {
     expect(weekDeltas(vm({ mealScoreAvg: 0.78 }), vm({ mealScoreAvg: 0.783 })).quality).toBeUndefined()
   })
 })
+
+// Kihagyás S3 (mezo-q4xt2.3): a kímélő nap nem kerethez mért nap.
+describe('kímélő nap a heti képben', () => {
+  const withRecovery = (): FuelWeekData => {
+    const w = week(KCALS)
+    // 09-09 (szerda, 1180 kcal): betegség — GUIDANCE; 09-12 (szombat, 2740 > keret+60): sérülés.
+    w.days = w.days.map((d, i) => (i === 2 ? { ...d, fuelMode: 'GUIDANCE' as const } : i === 5 ? { ...d, fuelMode: 'MAINTENANCE' as const } : d))
+    return w
+  }
+
+  test('a rollup fuelMode-ja recovery: true-t ad, over: false-szal és pct: null-lal', () => {
+    const vm = buildWeekView(withRecovery(), SCORES, [])
+    expect(vm.days[2]).toMatchObject({ recovery: true, over: false, pct: null, logged: true, kcal: 1180 })
+    // a keret fölé lépő szombat sem „over", ha kímélő nap
+    expect(vm.days[5]).toMatchObject({ recovery: true, over: false, pct: null })
+    expect(vm.days[0]).toMatchObject({ recovery: false })
+    expect(vm.days[6].over).toBe(true)
+  })
+
+  test('a kímélő nap kimarad az átlagokból, de a naplózott napok száma megtartja', () => {
+    const vm = buildWeekView(withRecovery(), SCORES, [])
+    expect(vm.loggedCount).toBe(7)
+    expect(loggedKcalAvg(vm.days)).toBeCloseTo((2115 + 2260 + 2210 + 2050 + 2520) / 5, 5)
+    expect(vm.weekendAvgPct).toBeCloseTo((2520 / WEEKEND_TARGET.kcal) * 100, 5)
+  })
+
+  test('mód nélküli rollup: recovery false mindenhol', () => {
+    expect(buildWeekView(WEEK, SCORES, []).days.every(d => !d.recovery)).toBe(true)
+  })
+})

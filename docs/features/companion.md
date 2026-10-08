@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -16,6 +16,8 @@ related: [insights, proactive, today, me, character, _platform-api-backend, _pla
 ---
 
 # Companion (AI chat brain) — Feature Documentation
+
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** Three more flags go quiet in a kímélő period (`RECOVERY_MODE`: under-eating, logging-gap, meal-rhythm — seven rules silenced in total), and the coach lines stop judging food on a recovery day: `ContextSnapshotAssembler.fuelBlock`, `FuelTools` and `MealCoachPrompt` read the Fuel mode from `FuelDayService` and say a guidance/estimate line instead of "eaten/target" (wording shared in `companion/tools/FuelModeText`); a skipped meal adds "Kihagyott étkezés: <slot> (<ok>)". See [`fuel.md`](fuel.md) §2 "Kihagyás S3" for the per-consumer table.
 
 > **2026-09-30 — Kímélő mód tone + quiet flags (Kihagyás S2, `mezo-q4xt2.2`).** While a recovery period is open `ContextSnapshotAssembler.trainBlock` says so (never in the cached `stableSystemPrompt`) and `FlagEvaluator` silences four training-pressure rules with the new `UnavailableReason.RECOVERY_MODE` — see the two paragraphs in §3 marked „Kihagyás S2”; the lifecycle is in [`train.md`](train.md) §2.
 
@@ -3583,6 +3585,8 @@ can decline to judge, as opposed to judging and finding nothing wrong — new ga
 are impossible now that the verdict is a rule's only return type. The factories
 (`FlagVerdict.raised`/`clear`/`unavailable`) are the only way to build one and each validates its
 own required field is non-null.
+
+**Kihagyás S3 — coach lines and three more quiet flags (`mezo-q4xt2.3`).** `FlagEvaluator` returns `unavailable(RECOVERY_MODE)` for the under-eating, logging-gap and meal-rhythm keys while a period is open (class comment: "seven rules"); `LoadFuelMismatchRule` skips unjudged days in its pairing loop (fewer than the minimum pairs → its existing clear outcome); `LoggingGapRule` shrinks each domain's gap by the recovery dates after its last log (24 h per date for meal/check-in, one morning for sleep); `MealRhythmDriftRule` drops the meals of those dates. `ContextSnapshotAssembler.fuelBlock` keeps the protocol/intake tail but on `GUIDANCE`/`ESTIMATE` replaces the "eaten/target" sentence with the guidance/estimate line, and on `MAINTENANCE` quotes the served maintenance target; `MealCoachPrompt` (`DayFuel` record) and `MealCoachService` read mode + `skippedKcal` from `getDay` and clamp "remaining" at 0; `FuelTools` day/week print "kímélő nap (nincs értékelve)" for GUIDANCE/ESTIMATE week days (MAINTENANCE keeps its vs-target line). `DayScoreService.judgedTargets` makes the nutrition dimension neutral on unjudged days and measures kcal fit against `target − Σ skipped kcal`. The week context (`MeWeekService`: unjudged day → null targets + `unjudgedDay`, line tagged „ · kímélő nap (nincs értékelve)"), the daily digest (`DailySummaryService`: eaten only + the tag) and the edition post (`EditionCandidateCollector`: no „A napi célod …" sentence) never hand an eaten/target judgment on an unjudged day; the skipped-meal line is appended on every day except `GUIDANCE`; the `MAINTENANCE` suffix is goal-neutral („nem kell kevesebbet enned; a fehérje a fő cél"). The meal coach, the meal scorer and `TeamEditionReads` all read the one mode-aware `FuelDayService.dailyTargets`.
 
 **Kihagyás S2 — `RECOVERY_MODE` (`mezo-q4xt2.2`).** `FlagEvaluator.evaluate` asks `RecoveryPeriodService.open(user)` once; while a recovery period is open it does **not run** the four training-pressure rules — `JointOveruseRule`, `MissedWorkoutsRule`, `IgnoredNudgeRule`, `MomentumAtRiskRule` — and records `FlagVerdict.unavailable(<key>, UnavailableReason.RECOVERY_MODE)` for each (a genuinely excused gap must never be read back as a nag). Wellbeing rules (`AcuteBadDayRule`, `PersistentPainRule`, sleep, weight…) keep running. Independently, `MomentumAtRiskRule.missedPlannedGymDays` became skip-aware (excused dates are not missed) — the S1 gap. `FlagEvaluatorRecoveryModeIT` (4 tests) and `MomentumAtRiskRuleTest` cover it.
 

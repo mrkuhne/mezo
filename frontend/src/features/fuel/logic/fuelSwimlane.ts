@@ -22,9 +22,10 @@ import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf, type MealContext } from '@/features/fuel/logic/mealContext'
 import { macroSplit } from '@/features/fuel/logic/macroSplit'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
+import type { SkipReason } from '@/features/train/logic/plannedSkips'
 import type { FuelMeal, FuelSlot, MealSlot, WindowReason } from '@/data/types'
 
-export type WindowTileState = 'done' | 'now' | 'missed' | 'future'
+export type WindowTileState = 'done' | 'now' | 'missed' | 'future' | 'skipped'
 
 /** The clay window icons the iteration log commissioned (`assets/clay-icons.svg`). */
 export type WindowIconName = 'i-reggeli' | 'i-ebed' | 'i-snack' | 'i-vacsora'
@@ -98,6 +99,10 @@ export interface WindowTileVM {
   plannedTime: string
   /** mezo-9sltu: csak eltolt ablakon — ami miatt később került (a 'shifted' ok szövegéhez). */
   shiftedAfter?: { label: string; at: string }
+  /** Kihagyás S3: the `<slotKind>#<n>` meal-skip target of this window; absent on a window-less extra. */
+  skipKey?: string
+  /** Present on a `skipped` tile — the skip's id + reason. */
+  skip?: { id: string; reasonCategory: SkipReason; reasonText?: string | null }
 }
 
 export interface WindowLaneVM {
@@ -208,6 +213,8 @@ export function buildWindowLane(input: {
       budgetKcal: slot.budgetKcal ?? null,
       plannedTime: slot.plannedTime ?? slot.time,
       ...(slot.shiftedAfter ? { shiftedAfter: slot.shiftedAfter } : {}),
+      ...(slot.skipKey ? { skipKey: slot.skipKey } : {}),
+      ...(slot.skip ? { skip: slot.skip } : {}),
     }
   })
 

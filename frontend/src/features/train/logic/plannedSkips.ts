@@ -9,8 +9,8 @@ import { addDays, localDateString } from '@/shared/lib/dates'
 
 /** `DAY` (Kihagyás S2, mezo-q4xt2.2) is the kímélő mód's virtual whole-day row — one per
  *  protected recovery date (`recovery.ts`'s `protectedDayRows`), never written by a skip call. */
-export type SkipKind = 'GYM' | 'SPORT' | 'RUN' | 'DAY'
-export type SkipReason = 'ILLNESS' | 'STOMACH' | 'INJURY' | 'TRAVEL' | 'TIRED' | 'NO_TIME' | 'NO_MOOD' | 'OTHER' | 'NONE'
+export type SkipKind = 'GYM' | 'SPORT' | 'RUN' | 'MEAL' | 'DAY'
+export type SkipReason = 'ILLNESS' | 'STOMACH' | 'INJURY' | 'TRAVEL' | 'TIRED' | 'NO_TIME' | 'NO_MOOD' | 'NOT_HUNGRY' | 'OTHER' | 'NONE'
 
 /** The identity of one planned occurrence a skip can target — matched per `isSkipped` below.
  *  `dayOfWeek`/`time` only matter for SPORT, `sessionKey` only for RUN. */
@@ -29,6 +29,8 @@ export interface PlannedSkip extends PlannedSkipKey {
   id: string
   reasonCategory: SkipReason
   reasonText?: string | null
+  /** MEAL only (Kihagyás S3): the skipped slot's planned kcal, snapshotted when the skip was made. */
+  plannedKcal?: number | null
   /** `RECOVERY` — a virtual DAY row derived from a protected kímélő-mód date (S2), not a stored skip. */
   source: 'USER' | 'ADVICE' | 'RECOVERY'
   serious: boolean
@@ -48,12 +50,14 @@ export const SERIOUS: ReadonlySet<SkipReason> = new Set(['ILLNESS', 'STOMACH', '
 /** Same identity match every skip-aware FE read shares with the backend's own
  *  `WorkoutWindowQueryService.windowsFor` (mezo-cq06, extended for GYM/RUN in S1): `kind` + `date`
  *  always; SPORT also `dayOfWeek` + the unnormalised `"HH:mm"` `time` string compared as-is; RUN
- *  also `sessionKey`. A `DAY` row (kímélő mód, S2) hides EVERY occurrence on its date. */
+ *  also `sessionKey` (MEAL too: `<slotKind>#<n>`). A `DAY` row (kímélő mód, S2) hides every WORKOUT
+ *  occurrence on its date, never a MEAL. */
 function matches(s: PlannedSkipKey, t: PlannedSkipKey): boolean {
-  if (s.kind === 'DAY' && s.date === t.date) return true
+  // A protected day hides every workout — but never a meal: it changes the fuel mode instead (S3).
+  if (s.kind === 'DAY' && s.date === t.date) return t.kind !== 'MEAL'
   if (s.kind !== t.kind || s.date !== t.date) return false
   if (s.kind === 'SPORT') return s.dayOfWeek === t.dayOfWeek && s.time === t.time
-  if (s.kind === 'RUN') return s.sessionKey === t.sessionKey
+  if (s.kind === 'RUN' || s.kind === 'MEAL') return s.sessionKey === t.sessionKey
   return true
 }
 
@@ -98,8 +102,9 @@ function isoWeekKey(dateIso: string): number {
  */
 export function judge(skips: PlannedSkip[]): PlannedSkip[] {
   const passByWeek = new Map<number, string>()
+  // A MEAL skip never races for the pass and is always excused (S3, mirrors the backend).
   const softUser = skips.filter(
-    (s) => s.source === 'USER' && !s.adviceBacked && !SERIOUS.has(s.reasonCategory),
+    (s) => s.source === 'USER' && s.kind !== 'MEAL' && !s.adviceBacked && !SERIOUS.has(s.reasonCategory),
   )
   const sorted = [...softUser].sort((a, b) => {
     const ca = a.createdAt ?? ''
@@ -113,6 +118,7 @@ export function judge(skips: PlannedSkip[]): PlannedSkip[] {
   }
   return skips.map((s) => {
     const serious = SERIOUS.has(s.reasonCategory)
+    if (s.kind === 'MEAL') return { ...s, serious, freePass: false, excused: true }
     const freePass =
       s.source === 'USER' && !s.adviceBacked && !serious && passByWeek.get(isoWeekKey(s.date)) === s.id
     const excused = serious || freePass || s.source === 'ADVICE' || !!s.adviceBacked

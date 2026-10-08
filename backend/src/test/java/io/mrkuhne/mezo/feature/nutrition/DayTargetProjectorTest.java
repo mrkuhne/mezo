@@ -197,4 +197,27 @@ class DayTargetProjectorTest {
         assertThat(t.energy()).isNull();
         assertThat(t.kcal()).isEqualTo(2599);
     }
+
+    @Test
+    void testProject_shouldDropTheDeficit_whenDropDeficitOnADeficitDay() {
+        EnergyBase base = new EnergyBase(new BigDecimal("1900"), new BigDecimal("2480"));
+        GoalPrescriptionJson.Segment cut = segment(2100, 170, 161, 60, null, null, -400);
+
+        DailyTargets t = DayTargetProjector.project(cut, base, mv(190, 0, 0), FALLBACK, true);
+
+        assertThat(t.kcal()).isEqualTo(2480 + 190);
+        assertThat(t.energy().balanceKcal()).isZero();
+        assertThat(t.kcal()).isEqualTo(
+            DayTargetProjector.project(cut, base, mv(190, 0, 0), FALLBACK).kcal() + 400);
+    }
+
+    @Test
+    void testProject_shouldKeepTheSurplus_whenDropDeficitOnABulkDay() {
+        EnergyBase base = new EnergyBase(new BigDecimal("1900"), new BigDecimal("2480"));
+        GoalPrescriptionJson.Segment bulk = segment(2900, 170, 300, 60, null, null, 250);
+
+        assertThat(DayTargetProjector.project(bulk, base, mv(190, 0, 0), FALLBACK, true).kcal())
+            .isEqualTo(DayTargetProjector.project(bulk, base, mv(190, 0, 0), FALLBACK, false).kcal())
+            .isEqualTo(2480 + 190 + 250);
+    }
 }

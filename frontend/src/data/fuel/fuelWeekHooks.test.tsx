@@ -1,8 +1,11 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { useFuelWeek, mondayIso, deriveWeekTitle, toMedCycleCells, withDefaultDuration, deriveWeeklyStats, dropSkippedGymDays } from '@/data/fuel/fuelWeekHooks'
-import { makeHookWrapper } from '@/test/queryWrapper'
+import { useFuelWeekRollup, useFuelWeek, mondayIso, deriveWeekTitle, toMedCycleCells, withDefaultDuration, deriveWeeklyStats, dropSkippedGymDays } from '@/data/fuel/fuelWeekHooks'
+import { makeHookWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
+import { recoveryKey } from '@/data/train/recoveryHooks'
+import { mockOpen, recoveryEmpty } from '@/data/train/recoveryMock'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { medicationFixture } from '@/test/fixtures/medication'
@@ -193,4 +196,17 @@ describe('useFuelWeek (real mode)', () => {
     await waitFor(() => expect(result.current.volleyball.length).toBe(5)) // full fixture, untouched
     expect(result.current.volleyball.some((s) => s.day === 'Hét')).toBe(true)
   })
+})
+
+// Kihagyás S3 review (M6) — an OPEN period's future dates are not kímélő days in the week view.
+test('mock week rollup: only dates up to today of an open period carry the fuelMode', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const today = localDateString()
+  const { wrapper, client } = makeHookWrapperWithClient()
+  client.setQueryData(recoveryKey(), mockOpen(recoveryEmpty, { category: 'INJURY', estimate: 'WEEK', startDate: addDays(today, -2) } as never, today))
+  const { result } = renderHook(() => useFuelWeekRollup(addDays(today, -2)), { wrapper })
+  const modes = result.current.weekDays.map((d) => d.fuelMode)
+  expect(modes.slice(0, 3)).toEqual(['MAINTENANCE', 'MAINTENANCE', 'MAINTENANCE'])
+  expect(modes.slice(3).every((m) => m == null)).toBe(true)
+  vi.unstubAllEnvs()
 })

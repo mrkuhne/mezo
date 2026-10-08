@@ -58,6 +58,20 @@ class FlagEvaluatorRecoveryModeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void quietsTheThreeFuelJudgementRules_whenARecoveryPeriodIsOpen() {
+        UUID owner = ownerId();
+        recoveryPeriodPopulator.open(owner, Reason.ILLNESS, LocalDate.now(), Estimate.FEW_DAYS);
+
+        List<FlagVerdict> verdicts = evaluator.evaluate(owner);
+
+        for (String key : List.of(FlagKey.LOAD_FUEL_MISMATCH, FlagKey.LOGGING_GAP, FlagKey.MEAL_RHYTHM_DRIFT)) {
+            FlagVerdict verdict = verdictFor(verdicts, key);
+            assertThat(verdict.outcome()).as(key).isEqualTo(FlagOutcome.UNAVAILABLE);
+            assertThat(verdict.reason()).as(key).isEqualTo(UnavailableReason.RECOVERY_MODE);
+        }
+    }
+
+    @Test
     void leavesTheOtherRulesUnaffected_whenARecoveryPeriodIsOpen() {
         UUID owner = ownerId();
         recoveryPeriodPopulator.open(owner, Reason.INJURY, LocalDate.now(), Estimate.WEEK);

@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -43,6 +44,38 @@ class MealCoachPromptTest {
 
     private static MealCoachPrompt.MealBlock block(String name, int indexInDay, BigDecimal kcalBefore) {
         return block(UUID.randomUUID(), name, indexInDay, kcalBefore);
+    }
+
+    @Test
+    void testUserMessage_shouldReplaceTheTargetsWithTheGentleBlock_whenTheDayIsGuidance() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Rizs", 1, BigDecimal.ZERO)), null,
+            new MealCoachPrompt.DayFuel(RecoveryFuelMode.GUIDANCE, 0));
+
+        assertThat(msg).contains("KÍMÉLŐ MÓD: ma nincs kalóriacél. Ne számolj hátralévő keretet; "
+                + "könnyű, jól tolerálható ételt javasolj, folyadékkal.")
+            .doesNotContain("NAPI CÉLOK").doesNotContain("marad:");
+    }
+
+    @Test
+    void testUserMessage_shouldKeepTheTargetsAndSayInformative_whenTheDayIsAnEstimate() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Rizs", 1, BigDecimal.ZERO)), null,
+            new MealCoachPrompt.DayFuel(RecoveryFuelMode.ESTIMATE, 0));
+
+        assertThat(msg).contains("NAPI CÉLOK").contains("A keret ma csak tájékoztató (utazás).");
+    }
+
+    @Test
+    void testUserMessage_shouldLowerTheRemainingKcalBySkippedKcal() {
+        String plain = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Ebéd", 2, new BigDecimal("300"))));
+        String skipped = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Ebéd", 2, new BigDecimal("300"))), null,
+            new MealCoachPrompt.DayFuel(null, 900));
+
+        assertThat(plain).contains("(marad: 1200 kcal");   // 1500 − 300
+        assertThat(skipped).contains("(marad: 300 kcal");  // 1500 − 300 − 900
     }
 
     @Test

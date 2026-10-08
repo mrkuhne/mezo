@@ -13,5 +13,10 @@
     "sha256": "7785ca8629848826abed3ee570c173567b4d6150e5025ae3fc9b8ed19dc4349d",
     "allapot": "2026-10-07",
     "published": "2026-10-07"
+  },
+  "fuel": {
+    "sha256": "47870f18c2758d5892737b2fdc639f3bce0ad35f4c0ed10d5b8573e45e6d826f",
+    "allapot": "2026-10-08",
+    "published": "2026-10-08"
   }
 }

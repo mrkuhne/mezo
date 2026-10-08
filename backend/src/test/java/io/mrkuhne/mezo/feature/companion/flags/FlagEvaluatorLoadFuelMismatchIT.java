@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.RecoveryPeriodPopulator;
+import io.mrkuhne.mezo.feature.train.entity.PlannedSkipEntity.Reason;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -37,6 +39,7 @@ class FlagEvaluatorLoadFuelMismatchIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private RecoveryPeriodPopulator recoveryPeriodPopulator;
 
     private UUID ownerId() {
         return userPopulator.createUser().getId();
@@ -353,5 +356,34 @@ class FlagEvaluatorLoadFuelMismatchIT extends AbstractIntegrationTest {
 
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
         assertThat(verdict.reason()).isEqualTo(UnavailableReason.NOT_ENOUGH_LOGGED_DAYS);
+    }
+
+    /**
+     * Kihagyás S3 (mezo-q4xt2.3): a week of 4 sick low-kcal days (an ended ILLNESS period, Fuel
+     * mode GUIDANCE) and 3 normal days at target. The sick days are not judged, so the kcal arm
+     * has only 3 paired days left (below the 4-day minimum) and stays silent — while the very same
+     * data without the period raises.
+     */
+    @Test
+    void sickDaysAreLeftOutOfTheKcalAverage_afterThePeriodEnded() {
+        LocalDate today = LocalDate.now();
+        UUID withPeriod = ownerId();
+        UUID without = ownerId();
+        for (UUID owner : List.of(withPeriod, without)) {
+            highLoadWeek(owner, today);
+            adequateSleepDays(owner, today, 7);
+            PantryItemEntity cheap = pantryItemPopulator.createFood(owner, "sick-low-item", today.plusMonths(1));
+            for (int i = 3; i <= 6; i++) {
+                mealPopulator.createPantryMeal(owner, cheap, today.minusDays(i));
+            }
+            for (int i = 0; i <= 2; i++) {
+                mealPopulator.createMealWithItems(owner, today.minusDays(i), "lunch",
+                    List.of(new MealPopulator.Line("big-meal", "3100", "150", "300", "80", (short) 1)));
+            }
+        }
+        recoveryPeriodPopulator.ended(withPeriod, Reason.ILLNESS, today.minusDays(6), today.minusDays(2));
+
+        assertThat(keys(without)).contains(FlagKey.LOAD_FUEL_MISMATCH);
+        assertThat(keys(withPeriod)).doesNotContain(FlagKey.LOAD_FUEL_MISMATCH);
     }
 }

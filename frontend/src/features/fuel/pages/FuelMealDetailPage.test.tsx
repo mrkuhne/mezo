@@ -81,6 +81,7 @@ const MEAL_NO_LINES: FuelMeal = { ...MEAL, id: 'meal-empty', breakdown: undefine
 const DAY: FuelDay = {
   targets: { kcal: 2400, p: 180, c: 240, f: 72, water: 3000 },
   consumed: { kcal: 430, p: 30, c: 40, f: 12, water: 500 },
+  fuelMode: null, recoveryCategory: null, recoveryDay: null, skippedKcal: 0,
   meals: [MEAL, MEAL_NO_BREAKDOWN, MEAL_ONE_RECIPE, MEAL_NO_LINES],
   pacing: { msg: '' },
   micronutrients: [],

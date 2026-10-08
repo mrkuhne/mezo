@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -109,7 +110,13 @@ public class LoadFuelMismatchRule implements FlagRule {
                 if (day.isBefore(from) || day.isAfter(today)) {
                     continue;
                 }
-                BigDecimal target = dayKcalTarget(userId, day);
+                FuelDayResponse fuelDay = fuelDayService.getDay(userId, day);
+                if (isUnjudged(fuelDay)) {
+                    // Kihagyás S3: a kímélő-mód day (illness / stomach bug / travel) is not an
+                    // under-fuelled training day — leave it out of both averages.
+                    continue;
+                }
+                BigDecimal target = kcalTargetOf(fuelDay);
                 if (target == null) {
                     continue;
                 }
@@ -174,9 +181,14 @@ public class LoadFuelMismatchRule implements FlagRule {
     /** The kcal TARGET for one day — the goal recept segment when one covers the date, else the
      *  configured fallback (day-type adjusted): the same accessor {@link FuelDayService#getDay}
      *  resolves for the Fuel-day MacroHero and {@code ContextSnapshotAssembler#fuelBlock}. */
-    private BigDecimal dayKcalTarget(UUID userId, LocalDate day) {
-        FuelDayResponse response = fuelDayService.getDay(userId, day);
+    private static BigDecimal kcalTargetOf(FuelDayResponse response) {
         MacroSet targets = response.getTargets();
         return targets == null ? null : targets.getKcal();
+    }
+
+    /** The served Fuel mode of the day is GUIDANCE or ESTIMATE ({@link RecoveryFuelMode#unjudged}). */
+    private static boolean isUnjudged(FuelDayResponse response) {
+        return response.getFuelMode() != null
+            && RecoveryFuelMode.valueOf(response.getFuelMode().name()).unjudged();
     }
 }

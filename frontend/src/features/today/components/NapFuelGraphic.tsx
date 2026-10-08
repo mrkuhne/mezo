@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { MacroSet } from '@/data/types'
+import { remainingAfterSkips } from '@/features/fuel/logic/keretHero'
+import type { FuelMode } from '@/features/fuel/logic/fuelMode'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import '@/features/today/components/NapFuelGraphic.css'
 
@@ -10,6 +12,12 @@ interface NapFuelGraphicProps {
   isPending?: boolean
   isError?: boolean
   onRetry?: () => void
+  /** Kímélő mód (Kihagyás S3): a GUIDANCE day has no kalóriacél — one calm line replaces the
+   *  macro instrument. */
+  guidance?: boolean
+  /** The Fuel day's skipped-window kcal and mode — the same rule as the Fuel hero (`remainingAfterSkips`). */
+  skippedKcal?: number
+  fuelMode?: FuelMode | null
 }
 
 // A makró ARCA EGY helyen dől el az egész appban (owner 2026-09-18): ugyanaz a szín és
@@ -29,12 +37,14 @@ const amount = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 
 const hasGoal = (value: number) => Number.isFinite(value) && value > 0
 
 /** A presentational instrument: no estimated macros, mock fallback, or data fetching. */
-export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry }: NapFuelGraphicProps) {
+export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry, guidance, skippedKcal = 0, fuelMode = null }: NapFuelGraphicProps) {
   const [active, setActive] = useState<'p' | 'c' | 'f' | null>(null)
   const selected = macros.find(macro => macro.key === active)
   const kcal = amount(consumed.kcal)
   const energyGoal = hasGoal(targets.kcal)
-  const energyRemaining = targets.kcal - kcal
+  const energyRemaining = remainingAfterSkips(targets.kcal, kcal, skippedKcal)
+  // ESTIMATE (travel): the keret is only a reference, so it is never "felett".
+  const remainingWord = energyRemaining < 0 ? (fuelMode === 'ESTIMATE' ? ' körül' : ' felett') : 'ig'
   const empty = kcal === 0 && macros.every(macro => amount(consumed[macro.key]) === 0)
   let detail = empty ? 'Még nincs rögzített energiabevitel. Az étkezéseid itt rajzolják ki a napod.' : 'A három ív a saját napi célodhoz viszonyít. Érints meg egy makrót a részletekhez.'
   if (selected) {
@@ -48,6 +58,13 @@ export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry 
   // Rangsor (bible §3.4): a kártya ÜVEG, amber akcentussal; az üres nap szabad hely, ezért
   // szaggatott keret üveg nélkül (U1 6. szabály). Töltés és hiba közben az üveg marad.
   const open = empty && !isPending && !isError
+  if (guidance && !isPending && !isError) {
+    return <section className="nap-fuel rise glass" style={{ '--c': 'var(--dv-lav)', '--i': 2 } as CSSProperties}
+      aria-label="Mai energiabevitel és makrotápanyagok">
+      <div className="nap-fuel-heading"><h2>A napod üzemanyaga</h2><span className="nap-fuel-tag"><Icon3D name="t-bowl" size={18} />Fuel · ma</span></div>
+      <p className="nap-fuel-guidance"><Icon3D name="t-kimelo" size={24} /><span>Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel</span></p>
+    </section>
+  }
   return <section className={`nap-fuel rise ${open ? 'uv-empty is-empty' : 'glass'}`} style={{ '--c': 'var(--dv-amber)', '--i': 2 } as CSSProperties}
     aria-label="Mai energiabevitel és makrotápanyagok" data-active={active ?? undefined}>
     <div className="nap-fuel-heading"><h2>A napod üzemanyaga</h2><span className="nap-fuel-tag"><Icon3D name="t-bowl" size={18} />Fuel · ma</span></div>
@@ -69,7 +86,7 @@ export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry 
             <span>{selected?.label ?? 'kcal ma'}</span>
             <small>{selected ? hasGoal(targets[selected.key]) ? `${Math.round(amount(consumed[selected.key]) / targets[selected.key] * 100)}% a napi célból` : 'Nincs beállított cél' : energyGoal ? `${format(targets.kcal)} kcal keret` : 'Nincs beállított keret'}</small>
           </button>
-          <div className="nap-fuel-remaining">{energyGoal ? `${format(Math.abs(energyRemaining))} kcal a napi keret${energyRemaining < 0 ? ' felett' : 'ig'}` : 'A napi energiakeret még nincs beállítva'}</div>
+          <div className="nap-fuel-remaining">{energyGoal ? `${format(Math.abs(energyRemaining))} kcal a napi keret${remainingWord}` : 'A napi energiakeret még nincs beállítva'}</div>
         </div>
         <div className="nap-fuel-choices">{macros.map(macro => <button type="button" key={macro.key} className="nap-fuel-macro" aria-pressed={active === macro.key} style={{ '--fuel-color': macro.color, '--c': macro.color } as CSSProperties} onClick={() => setActive(macro.key)}>
           <i className="nap-fuel-bead" aria-hidden="true"><Icon3D name={macro.icon} size={30} /></i>

@@ -701,6 +701,18 @@ class EditionCandidateCollectorTest {
         assertThat(c.facts()).containsExactly("2400", "1000");
     }
 
+    @Test void falat_unjudgedKimeloDay_omitsTheTargetSentence() {
+        when(reads.meals(OWNER, DAY)).thenReturn(List.of(meal(DINNER, "0.80", "700"), meal(BREAKFAST, "0.70", "450.5")));
+        when(reads.targets(OWNER, DAY)).thenReturn(new DailyTargets(2400, 160, 250, 80, "goal", null));
+        when(reads.unjudgedDay(OWNER, DAY)).thenReturn(true);
+
+        EditionCandidate c = falat().get(0);
+
+        assertThat(c.recordText()).isEqualTo("Eddig ma 2 étkezésed van, átlagosan 75 pontos.")
+                .doesNotContain("napi célod");
+        assertThat(c.facts()).containsExactly("2", "75");
+    }
+
     // ---- H5 (mezo-a9bo7.16): Derű adatkérése — KERES -----------------------------------------
 
     private List<EditionCandidate> deru() {

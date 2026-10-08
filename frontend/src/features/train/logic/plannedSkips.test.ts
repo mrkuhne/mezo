@@ -129,3 +129,23 @@ test('a DAY row (kímélő mód) hides every occurrence on its date, and nothing
   expect(isSportSlotSkipped(skips, 1, '18:00', '2026-09-29')).toBe(true)
   expect(isSkipped(skips, gymKey('2026-09-30'))).toBe(false)
 })
+
+test('a recovery DAY row never hides a meal', () => {
+  const day: PlannedSkipKey = { kind: 'DAY', date: '2026-09-28' }
+  expect(isSkipped([day], { kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#1' })).toBe(false)
+  expect(isSkipped([day], { kind: 'GYM', date: '2026-09-28' })).toBe(true)
+})
+
+test('a MEAL skip matches on sessionKey', () => {
+  const meal: PlannedSkipKey = { kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#1' }
+  expect(isSkipped([meal], { kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#1' })).toBe(true)
+  expect(isSkipped([meal], { kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#2' })).toBe(false)
+})
+
+test('a meal skip neither takes nor needs the weekly pass', () => {
+  const meal = row({ id: 'a', kind: 'MEAL', date: '2026-09-28', sessionKey: 'lunch#1', reasonCategory: 'NONE', source: 'USER', createdAt: '2026-09-28T08:00:00Z' })
+  const gym = row({ id: 'b', date: '2026-09-29', reasonCategory: 'NO_TIME', source: 'USER', createdAt: '2026-09-29T08:00:00Z' })
+  const [m, g] = judge([meal, gym])
+  expect(m).toMatchObject({ excused: true, freePass: false })
+  expect(g.freePass).toBe(true)
+})

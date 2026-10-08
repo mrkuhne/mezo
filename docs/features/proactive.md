@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-10-06
+updated: 2026-10-07
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,6 +13,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
+
+> **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** The three flags `UNDER_EATING`-family keys (under-eating, logging-gap, meal-rhythm) are `unavailable(RECOVERY_MODE)` during a kímélő period, and `LoadFuelMismatchRule` skips unjudged days; the FE only gained a skipped-window filter in the Nap Fuel preview data (`frontend/src/data/today`). See [`companion.md`](companion.md) and [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `ProactiveMemoryBlock`/`ProactiveChallengeService`/`JointOveruseRule` read `findPlannedTemplateForDateUnlessSkipped` instead of the skip-blind lookup, so a skipped gym day never drives a workout-day-shaped advice/challenge/joint-overuse read; the Nap feed's `deriveBlocks` (Fuel, via `frontend/src/data/today`) drops a skipped GYM/RUN block from the day's plan the same way it already dropped a skipped sport slot. See [`train.md`](train.md) "Kihagyás (S1)".
 >

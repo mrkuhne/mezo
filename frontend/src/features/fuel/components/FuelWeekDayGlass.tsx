@@ -79,6 +79,38 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
 
   const dayName = huMonthDayDow(day.date)
 
+  // Kihagyás S3: egy kímélő nap nem a kerethez mért — se pont, se „felett"; a beírt étel megmarad.
+  if (day.recovery) {
+    return (
+      <GlassBox onClose={onClose}
+        className="ftx-glass glass is-recovery"
+        style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
+        labelledBy={titleId}
+      >
+        <div className="ftx-glass-hero">
+          <span aria-hidden="true"><Icon3D name="t-kimelo" size={56} /></span>
+          <div>
+            <strong>Kímélő nap</strong>
+            <small id={titleId}>{dayName}</small>
+          </div>
+        </div>
+        <p className="ftx-glass-honest">
+          <span>
+            <small>ÍGY SZÁMOLOM</small>
+            Amit ezen a napon ettél{day.logged ? ` (${huInt(rollup.consumed.kcal)} kcal)` : ''}, nem mérem a kerethez, és a heti
+            értékelésbe sem számít bele. A beírt étkezéseid megmaradnak.
+          </span>
+        </p>
+        <button type="button" className="ftx-glass-link" onClick={() => { onClose(); navigate(`/fuel?d=${day.date}`) }}>
+          <span aria-hidden="true"><Icon3D name="t-journal" size={28} /></span>
+          <span><strong>Megnézem a napot</strong><small>Az étkezések a nap lapján</small></span>
+          <b aria-hidden="true">›</b>
+        </button>
+        <button type="button" className="ftx-glass-close" onClick={onClose}>Bezárom</button>
+      </GlassBox>
+    )
+  }
+
   if (!day.logged) {
     return (
       <GlassBox onClose={onClose}

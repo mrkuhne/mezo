@@ -24,6 +24,9 @@ public class GoalIntakeAdherenceAdapter implements IntakeAdherencePort {
         BigDecimal intakeSum = BigDecimal.ZERO;
         BigDecimal targetSum = BigDecimal.ZERO;
         for (FuelDayRollup day : week.getDays()) {
+            if (day.getFuelMode() != null) {
+                continue; // Kihagyás S3: a kímélő-mód day is not judged against the prescription
+            }
             BigDecimal kcal = day.getConsumed().getKcal();
             if (kcal == null || kcal.signum() <= 0) {
                 continue; // unlogged day — absence is missing data, not a zero-kcal day

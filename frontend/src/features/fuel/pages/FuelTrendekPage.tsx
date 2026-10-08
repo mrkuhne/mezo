@@ -117,33 +117,38 @@ function StatTile({ kind, value, delta, index }: {
  *  nap AI pontja és a napnév. A magasság a hét legnagyobb értékéhez van skálázva. */
 function WeekDayBar({ day, max, onOpen }: { day: WeekDayVM; max: number; onOpen: () => void }) {
   const h = (v: number) => `${Math.max(4, Math.round((v / max) * 100))}%`
-  const aria = day.logged
+  // Kihagyás S3: a kímélő nap nincs a kerethez mérve — jel a pont helyén, vonal és százalék nélkül.
+  const aria = day.recovery
+    ? `${huMonthDayDow(day.date)}: kímélő nap`
+    : day.logged
     ? `${huMonthDayDow(day.date)}: ${huInt(day.kcal!)} kcal a ${day.targetKcal == null ? 'megadott' : `${huInt(day.targetKcal)} kcal-os`} keretből`
       + `${day.dayScore == null ? ', étkezés-pont még nincs' : `, étkezés-pont ${huScore(day.dayScore)}`}`
     : `${huMonthDayDow(day.date)}: nincs adat`
   return (
     <button
       type="button"
-      className={`ftx-day${day.weekend ? ' is-weekend' : ''}${day.logged ? '' : ' is-empty'}`
-        + `${day.over ? ' is-over' : ''}${day.training ? ' is-train' : ''}`}
+      className={`ftx-day${day.weekend ? ' is-weekend' : ''}${day.logged || day.recovery ? '' : ' is-empty'}`
+        + `${day.over ? ' is-over' : ''}${day.training ? ' is-train' : ''}${day.recovery ? ' is-recovery' : ''}`}
       aria-label={aria}
       onClick={onOpen}
     >
       <span className="ftx-col" aria-hidden="true">
-        {day.targetKcal != null && (
+        {day.targetKcal != null && !day.recovery && (
           <i className="ftx-target" style={{ '--ftx-h': h(day.targetKcal) } as React.CSSProperties} />
         )}
-        {day.logged
+        {day.recovery
+          ? (day.logged ? <i className="ftx-fill is-recovery" style={{ '--ftx-h': h(day.kcal!) } as React.CSSProperties} /> : <i className="ftx-gap" />)
+          : day.logged
           ? <i className="ftx-fill" style={{ '--ftx-h': h(day.kcal!) } as React.CSSProperties} />
           : <i className="ftx-gap" />}
       </span>
       <b className="ftx-day-score" aria-hidden="true">
-        {day.dayScore == null ? '·' : huScore(day.dayScore)}
+        {day.recovery ? <Icon3D name="t-kimelo" size={18} /> : day.dayScore == null ? '·' : huScore(day.dayScore)}
       </b>
       <span className="ftx-day-name" aria-hidden="true">{day.label}</span>
       {/* Őszinte hiány: a „nincs adat" a képernyőolvasóé és a tesztnek is egy valódi szöveg —
           a hét oszlopos rácsban kiírva nem férne el, ezért vizuálisan rejtett. */}
-      {!day.logged && <span className="sr-only">nincs adat</span>}
+      {!day.logged && !day.recovery && <span className="sr-only">nincs adat</span>}
       {day.training && <u className="ftx-train" aria-hidden="true" />}
     </button>
   )
