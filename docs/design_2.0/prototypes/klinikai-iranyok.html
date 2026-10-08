@@ -1665,12 +1665,10 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
 
 
 <div class="top">
-  <h1>Új UI irány<small>Jelenlegi · Világos klinikai · korábbi kör</small></h1>
+  <h1>Új UI irány<small>a mostani app és az új irány, minden terület</small></h1>
   <div class="seg" id="vseg" role="tablist" aria-label="Változat">
     <button data-v="jelenlegi">Jelenlegi (Üveg)</button>
-    <button data-v="elo">Világos · élő</button>
-    <button data-v="feher">Világos klinikai (sima)</button>
-    <button data-v="ajanlott">Klinikai csepp (korábbi)</button>
+    <button data-v="elo">Új · Világos élő</button>
   </div>
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap</button>
@@ -1678,10 +1676,8 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
     <button data-d="fuel">Fuel</button>
     <button data-d="mezo">Mezo</button>
     <button data-d="en">Én</button>
-    <button data-d="jelek">Jelek</button>
   </div>
-  <label><input type="checkbox" id="vilagos"> világos (fehér)</label>
-  <label><input type="checkbox" id="meleg"> eredeti ikonszínek</label>
+  <label hidden><input type="checkbox" id="vilagos"></label><label hidden><input type="checkbox" id="meleg"></label>
   <label><input type="checkbox" id="still"> mozgás nélkül</label>
 </div>
 
@@ -1873,7 +1869,7 @@ function goBack(){const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=
 function render(){
   const ph=$('#phone');
   if(D==='jelek'&&V!=='ajanlott')V='ajanlott';
-  if(V==='feher'||V==='elo'){window.FH_LIVE=V==='elo';ph.dataset.v='feher';if(V==='elo')ph.dataset.s='elo';else ph.removeAttribute('data-s');ph.dataset.d=D;ph.removeAttribute('data-t');ph.classList.remove('warm');const f=window.FREG&&FREG[D];ph.innerHTML=f?(f[R]||f.mai)(ARG):'';}
+  if(V==='feher'||V==='elo'){window.FH_LIVE=V==='elo';ph.dataset.v='feher';if(V==='elo')ph.dataset.s='elo';else ph.removeAttribute('data-s');ph.dataset.d=D;ph.removeAttribute('data-t');ph.classList.remove('warm');const f=window.FREG&&FREG[D];const fn=f&&(f.routes[R]||f.routes.mai);ph.innerHTML=fn?fn(ARG):'';if(f&&f.after)f.after(R,ARG);}
   else
   if(V!=='ajanlott'){ph.removeAttribute('data-v');ph.removeAttribute('data-s');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.classList.remove('warm');
     const file=D==='jelek'?'nap':D; const dir=V==='tiszta'?'tiszta':'elo'; const r0=(D==='en'&&R==='mai')?'en':(D==='mezo'&&R==='mai')?'fal':R;
@@ -1882,10 +1878,10 @@ function render(){
     const reg=REG[D]; const fnr=reg&&(reg.routes[R]||reg.routes.mai);
     ph.innerHTML=fnr?fnr(ARG):`<div class="scroll">${header()}<p class="p16 txt" style="padding:40px 16px;color:var(--sub)">Ez a terület (${D}) még nincs kidolgozva.</p></div>`;
     if(reg&&reg.after)reg.after(R,ARG);}
-  const reg=REG[D]; $('#notes').innerHTML=V==='elo'?(window.FNOTES_ELO||''):V==='feher'?(window.FNOTES||''):V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
+  const reg=REG[D]; $('#notes').innerHTML=V==='elo'?((window.FNOTES_ELO||'')+((window.FREG&&FREG[D]&&FREG[D].notes)||'')):V==='feher'?(window.FNOTES||''):V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
-  ['vilagos','meleg'].forEach(id=>{const l=$('#'+id).closest('label');if(l)l.hidden=V!=='ajanlott'});
+  
   history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':V==='feher'?'f':V==='elo'?'e':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
   $('#phone .scroll')?.scrollTo(0,0);
 }
@@ -1898,7 +1894,7 @@ document.addEventListener('click',e=>{
   const dm=e.target.closest('[data-dom]');if(dm){D=dm.dataset.dom;R='mai';ARG='';HIST=[];render();return}
   if(e.target.closest('[data-switcher]')){e.preventDefault();$('#phone').insertAdjacentHTML('beforeend',switcher());$('#scrim').classList.add('on');return}
   if(e.target.id==='scrim'||e.target.closest('[data-close]')){closeSheet();return}
-  const sh=e.target.closest('[data-sheet]');if(sh){e.preventDefault();const reg=REG[D];const f=reg&&reg.sheets&&reg.sheets[sh.dataset.sheet];if(f)openSheet(f(sh.dataset.arg||''));else toast(sh.dataset.sheet);return}
+  const sh=e.target.closest('[data-sheet]');if(sh){e.preventDefault();const reg=(V==='elo'||V==='feher')?(window.FREG||{})[D]:REG[D];const f=reg&&reg.sheets&&reg.sheets[sh.dataset.sheet];if(f)openSheet(f(sh.dataset.arg||''));else toast(sh.dataset.sheet);return}
   const bk=e.target.closest('[data-back]');if(bk){e.preventDefault();goBack();return}
   const g=e.target.closest('[data-go]');if(g){e.preventDefault();closeSheet();go(g.dataset.go);return}
   const t=e.target.closest('[data-toast]');if(t){e.preventDefault();toast(t.dataset.toast)}
@@ -1913,12 +1909,11 @@ window.addEventListener('hashchange',()=>{fromHash();render()});
 window.K={I,T,ring,csepp,mchp:(...a)=>mchp(...a),muscleColor:(k)=>muscleColor(k),header,nav,back,sec,page,css,wkBars,register,go,toast,openSheet,closeSheet,esc,circ,get D(){return D},get R(){return R},get ARG(){return ARG},get LIGHT(){return LIGHT}};
 window.addEventListener('DOMContentLoaded',()=>{fromHash();render()});
 </script>
-<script src="csepp/nap.js"></script>
-<script src="csepp/edzes.js"></script>
-<script src="csepp/fuel.js"></script>
-<script src="csepp/mezo.js"></script>
-<script src="csepp/en.js"></script>
-<script src="csepp/jelek.js"></script>
-<script src="csepp/feher.js"></script>
+<script src="vilagos/kit.js"></script>
+<script src="vilagos/nap.js"></script>
+<script src="vilagos/edzes.js"></script>
+<script src="vilagos/fuel.js"></script>
+<script src="vilagos/mezo.js"></script>
+<script src="vilagos/en.js"></script>
 </body>
 </html>
