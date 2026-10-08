@@ -298,7 +298,7 @@ function session(arg){const fresh=arg==='uj',d=fresh?0:DONE(),ci=curIdx(fresh),f
     ${extra.map(([ic,x])=>`<p class="vs-xl">${bub(ic,{s:22})}<span>${x}</span></p>`).join('')}
     <div class="vs-sets" style="--c:${dk(e.k)}"><span class="h">#</span><span class="h">kg</span><span class="h">ism</span><span class="h">RIR</span><span></span>${rows.map((s,j)=>setRow(s,j,fi)).join('')}</div>`;
   return page('edzes',{title:'Pull Day',sub:`${d} / ${TOT()} szett kész${fresh?'':' · 31 perc'}`,back:'mai'},`
-  <div class="vs-pv rise">${EX.map((x,i)=>`<button class="${i===fi?'on':''} ${dn(x)===x.sets.length?'full':''}" data-ve="focus:${i}" style="--c:${dk(x.k)};flex:${x.sets.length}" aria-label="${x.n} · ${dn(x)} / ${x.sets.length} szett"><span><i style="height:${dn(x)/x.sets.length*100}%"></i></span><small>${dn(x)}/${x.sets.length}</small></button>`).join('')}</div>
+  <div class="vs-pv rise">${EX.map((x,i)=>`<button class="${i===fi?'on':''} ${dn(x)===x.sets.length?'full':''}" data-ve="focus:${i}" style="--c:${dk(x.k)};flex:${x.sets.length}" aria-label="${x.n} · ${dn(x)} / ${x.sets.length} szett"><span><i style="--pw:${dn(x)/x.sets.length*100}%"></i></span><small>${i+1}. · ${dn(x)}/${x.sets.length}</small></button>`).join('')}</div>
   ${hero({lbl:`${fi===ci?'Most':'Megnyitva'} · ${fi+1}. gyakorlat / ${EX.length} · ${muscleLabel(e.k)}`,verdict:e.n,left:mchp(e.k),body},1)}
   ${sec(1,'A mai sor',2)}
   ${card(ls(EX.map((x,i)=>i===fi?'':rw({m:x.k,title:x.n,sub:x.to?`kész · lecserélve → ${x.to}`:`${x.sets.length} szett · cél ${x.goal}${x.chg?' · '+x.chg:''}`,ve:`focus:${i}`,right:`<span class="vs-rr cl">${i===ci?st('Most','plan'):dn(x)===x.sets.length?st('Kész','ok'):''}${caps(x.sets.length,dn(x),dk(x.k),{cur:i===ci?dn(x):-1})}</span>`})))
@@ -1058,12 +1058,12 @@ ${Q} .vs-qc i{position:absolute;left:0;right:0;bottom:0;height:0;background:line
 ${Q} .vs-qc svg{position:relative;width:15px;height:15px;stroke-width:3.2;color:#fff;opacity:0}${Q} .vs-qc.on svg{opacity:1}
 ${Q} .vs-qt{display:inline-flex;align-items:center;gap:5px;font-weight:650;color:var(--ink);vertical-align:middle}
 /* edzés közben: gyakorlatonként egy edény, a szett sorszáma kapszula, a pihenő kiürül */
-${Q} .vs-pv{display:flex;gap:6px;margin:14px 16px 0}
+${Q} .vs-pv{display:flex;gap:8px;margin:16px 18px 2px}
 ${Q} .vs-pv button{display:flex;flex-direction:column;gap:3px;min-width:0}
-${Q} .vs-pv span{position:relative;display:block;height:36px;border-radius:14px;overflow:hidden;background:#fff;box-shadow:inset 0 0 0 2px rgba(10,42,60,.08),0 10px 14px -12px var(--c)}
-${Q} .vs-pv span i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 50%,#fff),var(--c))}
+${Q} .vs-pv span{position:relative;display:block;height:14px;border-radius:999px;overflow:hidden;background:rgba(10,42,60,.09);box-shadow:inset 0 1px 2px rgba(10,42,60,.10)}
+${Q} .vs-pv span i{position:absolute;left:0;top:0;bottom:0;height:auto!important;width:var(--pw,0%);border-radius:999px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c))}
 ${Q} .vs-pv small{font-size:10.5px;font-weight:700;color:var(--sub);text-align:center}
-${Q} .vs-pv button.on span{box-shadow:inset 0 0 0 2.5px var(--ink),0 10px 14px -12px var(--c)}${Q} .vs-pv button.on small{color:var(--ink)}
+${Q} .vs-pv button.on span{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--dom)}${Q} .vs-pv button.on small{color:var(--ink)}
 ${Q} .vs-sets{grid-template-columns:26px 1fr 1fr 1fr 44px;border-radius:22px}
 ${Q} .vs-sets .n{justify-self:center;width:24px;height:40px;border-radius:999px;display:grid;place-items:center;font-size:12.5px;color:var(--sub);background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.16)}
 ${Q} .vs-sets .n.f{color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 50%,#fff),var(--c));box-shadow:0 6px 8px -6px var(--c)}
