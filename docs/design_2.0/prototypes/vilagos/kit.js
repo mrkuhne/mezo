@@ -182,7 +182,7 @@ css(`
 .fh-back{font-size:24px;line-height:1;font-weight:500;padding-bottom:3px}
 .fh-top.sub{padding-bottom:12px}
 .fh-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid var(--hair);width:100%;text-align:left}
-.fh-row:first-of-type{border-top:0;padding-top:0}.fh-row:last-of-type{padding-bottom:0}
+.fh-row:first-child,:not(.fh-row)+.fh-row{border-top:0;padding-top:0}.fh-row:last-child{padding-bottom:0}
 .fh-h + .fh-row{border-top:0;padding-top:0}
 .fh-row .si{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:var(--page);flex:0 0 auto}
 .fh-row .si svg.ic{width:28px;height:28px;filter:drop-shadow(0 4px 5px rgba(15,30,51,.22))}
