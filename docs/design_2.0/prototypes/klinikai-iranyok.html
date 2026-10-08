@@ -1665,11 +1665,11 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
 
 
 <div class="top">
-  <h1>Új UI irány<small>Jelenlegi · Tisztított Üveg · Klinikai, minden terület</small></h1>
+  <h1>Új UI irány<small>Jelenlegi · Világos klinikai · korábbi kör</small></h1>
   <div class="seg" id="vseg" role="tablist" aria-label="Változat">
     <button data-v="jelenlegi">Jelenlegi (Üveg)</button>
-    <button data-v="tiszta">Tisztított Üveg</button>
-    <button data-v="ajanlott">Klinikai (csepp)</button>
+    <button data-v="feher">Világos klinikai</button>
+    <button data-v="ajanlott">Klinikai csepp (korábbi)</button>
   </div>
   <div class="seg" id="dseg" role="tablist" aria-label="Terület">
     <button data-d="nap">Nap</button>
@@ -1865,13 +1865,15 @@ const TISZTA_NOTES=`<h2>Tisztított Üveg</h2><p>A mostani app marad: a meleg s�
 /* ── registry + router ── */
 const REG={};
 function register(d,def){REG[d]=def; if(def.css) css(def.css);}
-let V='tiszta',D='nap',R='mai',ARG='';
+let V='feher',D='nap',R='mai',ARG='';
 let LIGHT=false,WARM=false,HIST=[];
 function go(route){if(!route)return;HIST.push(R+(ARG?'.'+ARG:''));const [r,...a]=route.split('.');R=r;ARG=a.join('.');render()}
 function goBack(){const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=a.join('.');render()}
 function render(){
   const ph=$('#phone');
   if(D==='jelek'&&V!=='ajanlott')V='ajanlott';
+  if(V==='feher'){ph.dataset.v='feher';ph.dataset.d=D;ph.removeAttribute('data-t');ph.classList.remove('warm');const f=window.FREG&&FREG[D];ph.innerHTML=f?(f[R]||f.mai)(ARG):'';}
+  else
   if(V!=='ajanlott'){ph.removeAttribute('data-v');ph.removeAttribute('data-d');ph.removeAttribute('data-t');ph.classList.remove('warm');
     const file=D==='jelek'?'nap':D; const dir=V==='tiszta'?'tiszta':'elo'; const r0=(D==='en'&&R==='mai')?'en':(D==='mezo'&&R==='mai')?'fal':R;
     ph.innerHTML=`<iframe title="${V==='tiszta'?'Tisztított Üveg':'Élő prototípus'}" src="${dir}/${file}.html#${r0}${ARG?'/'+ARG:''}"></iframe>`}
@@ -1879,14 +1881,14 @@ function render(){
     const reg=REG[D]; const fnr=reg&&(reg.routes[R]||reg.routes.mai);
     ph.innerHTML=fnr?fnr(ARG):`<div class="scroll">${header()}<p class="p16 txt" style="padding:40px 16px;color:var(--sub)">Ez a terület (${D}) még nincs kidolgozva.</p></div>`;
     if(reg&&reg.after)reg.after(R,ARG);}
-  const reg=REG[D]; $('#notes').innerHTML=V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
+  const reg=REG[D]; $('#notes').innerHTML=V==='feher'?(window.FNOTES||''):V==='tiszta'?TISZTA_NOTES:V==='jelenlegi'?JELEN_NOTES:((reg&&reg.notes)||'');
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
   ['vilagos','meleg'].forEach(id=>{const l=$('#'+id).closest('label');if(l)l.hidden=V!=='ajanlott'});
-  history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
+  history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':V==='feher'?'f':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
   $('#phone .scroll')?.scrollTo(0,0);
 }
-function fromHash(){const m=/^#(j|a|t)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':m[1]==='t'?'tiszta':'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
+function fromHash(){const m=/^#(j|a|t|f)-(nap|edzes|fuel|mezo|en|jelek)-([a-z0-9_-]+)(?:\.(.+))?$/.exec(location.hash);if(m){V=m[1]==='j'?'jelenlegi':m[1]==='t'?'tiszta':m[1]==='f'?'feher':'ajanlott';D=m[2];R=m[3];ARG=m[4]||''}}
 function openSheet(html){const s=$('#sheet');if(!s)return;s.innerHTML=`<div class="sheet-grab"></div>${html}`;s.classList.add('on');$('#scrim').classList.add('on')}
 function closeSheet(){$('#sheet')?.classList.remove('on');$('#scrim')?.classList.remove('on');$('#swsheet')?.remove()}
 document.addEventListener('click',e=>{
@@ -1916,5 +1918,6 @@ window.addEventListener('DOMContentLoaded',()=>{fromHash();render()});
 <script src="csepp/mezo.js"></script>
 <script src="csepp/en.js"></script>
 <script src="csepp/jelek.js"></script>
+<script src="csepp/feher.js"></script>
 </body>
 </html>
