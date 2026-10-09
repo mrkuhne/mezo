@@ -116,7 +116,7 @@ export function ChainPage() {
 
   const remove = () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
-    deleteChain(chain.id).then(() => navigate('/nap/rutin/epites'))
+    deleteChain(chain.id).then(() => navigate('/nap/rutin/epites', { replace: true }))
   }
 
   const stackRow = (d: HabitDefInfo, i: number) => {

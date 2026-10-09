@@ -179,7 +179,7 @@ export function FuelStackAddPage() {
     try {
       await addItem(facts.pantryItemId, { slotKey: zone ?? undefined, dose })
       show({ kind: 'success', text: `${facts.name} hozzáadva` })
-      navigate('/fuel/stack/protocol')
+      navigate('/fuel/stack/protocol', { replace: true })
     } catch {
       // A globális MutationCache hozza a hibajelzést.
     }

@@ -159,7 +159,8 @@ export function RecipeDetailPage() {
   const del = () => {
     if (!delArmed) { setDelArmed(true); return }
     remove(recipe.id)
-    navigate('/fuel/recipes')
+    // the deleted recipe must not stay behind the user (history back)
+    navigate('/fuel/recipes', { replace: true })
   }
 
   // The chip's ring value (0..1): the AI fit score when it exists, else the deterministic

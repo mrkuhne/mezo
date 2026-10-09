@@ -170,7 +170,7 @@ export function CelPage() {
             {(goal.status === 'parked' || goal.status === 'draft') && <button type="button" className="is-sage" disabled={pending} onClick={() => changeStatus(goal.id, 'active')}>Aktiválás</button>}
             {(goal.status === 'active' || goal.status === 'parked') && <button type="button" className="is-sage" disabled={pending} onClick={() => changeStatus(goal.id, 'done')}>Lezárás</button>}
             {goal.status !== 'archived' && (
-              <button type="button" className="is-coral" disabled={pending} onClick={() => { changeStatus(goal.id, 'archived'); navigate('/me/goals') }}>Archiválás</button>
+              <button type="button" className="is-coral" disabled={pending} onClick={() => { changeStatus(goal.id, 'archived'); navigate('/me/goals', { replace: true }) }}>Archiválás</button>
             )}
           </div>
         </EntranceGroup>

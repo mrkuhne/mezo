@@ -358,3 +358,52 @@ test('Vissza after an in-page link returns to the page the user came FROM, not t
   await back.click()
   await expect(page).toHaveURL(/\/me$/)
 })
+
+// Final review, I1 — the header back is history-based, so a save / delete must not leave the
+// form (or the deleted record) BEHIND the user: the leave replaces or pops instead of pushing.
+test('Vissza after a save or a delete never walks back into the form or the deleted record', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 852 })
+  await seed(page)
+  const back = page.locator('.fo-top').getByRole('button', { name: 'Vissza' })
+  const idx = () => page.evaluate(() => (history.state as { idx?: number } | null)?.idx)
+  const firstRecipe = page.locator('.screen-content button').filter({ hasText: /kcal/ }).first()
+
+  // 1 · list → recipe → Szerkesztés → Mentés: back on the recipe (popped, not pushed) …
+  await page.goto('/fuel/recipes')
+  await firstRecipe.click()
+  await expect(page).toHaveURL(/\/fuel\/recipes\/[^/]+$/)
+  const recipeUrl = page.url()
+  await page.getByRole('button', { name: 'Szerkesztés' }).click()
+  await expect(page).toHaveURL(/\/edit$/)
+  await page.getByRole('button', { name: /^Mentés/ }).last().click()
+  await expect(page).toHaveURL(recipeUrl)
+  expect(await idx()).toBe(1)
+  // … and ONE Vissza is the list — not the editor, not the recipe a second time
+  await back.click()
+  await expect(page).toHaveURL(/\/fuel\/recipes$/)
+  expect(await idx()).toBe(0)
+
+  // 2 · delete a recipe from its page: the list REPLACES it, Vissza does not reopen it
+  await firstRecipe.click()
+  await expect(page).toHaveURL(recipeUrl)
+  const del = page.locator('.screen-content').getByRole('button', { name: /Törl|Biztos/ })
+  await del.click()
+  await del.click()
+  await expect(page).toHaveURL(/\/fuel\/recipes$/)
+  expect(await idx()).toBe(1)
+  await back.click()
+  await expect(page).not.toHaveURL(/\/fuel\/recipes\/./)
+
+  // 3 · delete a habit from its EDITOR: the habit's own page behind the editor goes too
+  await page.goto('/nap/rutin/szokasok')
+  await page.locator('.screen-content button').filter({ hasText: 'Gombakávé' }).first().click()
+  await expect(page).toHaveURL(/\/nap\/rutin\/szokas\/[^/]+$/)
+  await page.getByRole('button', { name: 'Szerkesztés' }).click()
+  await expect(page).toHaveURL(/\/szerkesztes$/)
+  await page.getByRole('button', { name: 'Szokás törlése' }).click()
+  await page.locator('.screen-content button').filter({ hasText: /Biztosan törlöd/ }).click()
+  await expect(page).toHaveURL(/\/nap\/rutin\/epites$/)
+  expect(await idx()).toBe(1)
+  await back.click()
+  await expect(page).toHaveURL(/\/nap\/rutin\/szokasok$/)
+})

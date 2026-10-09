@@ -100,7 +100,7 @@ describe('RoutineWizardPage', () => {
       framework: 'FOGG', anchorHabitKey: 'sun', celebration: 'ökölrázás',
     })
     expect(createDef).toHaveBeenCalledWith(expect.not.objectContaining({ anchorCopy: expect.anything() }))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites', { replace: true }))
   })
 
   it('sends a free-text Fogg anchor as anchorCopy, never alongside anchorHabitKey', async () => {
@@ -256,7 +256,7 @@ describe('RoutineWizardPage', () => {
       title: 'Napi szándék leírása', xp: 10, framework: 'FOGG',
       anchorCopy: 'letettem a fogkefét', celebration: 'ökölrázás',
     })
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=intent'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=intent', { replace: true }))
   })
 
   it('omits chainKey on the convert path when the habit stayed in its chain', () => {
@@ -304,7 +304,7 @@ describe('RoutineWizardPage', () => {
       title: 'Egy oldal olvasás', xp: 5, framework: 'FOGG',
       anchorCopy: 'letettem a fogkefét', anchorHabitKey: '', celebration: 'ökölrázás',
     })
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=stack'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=stack', { replace: true }))
   })
 
   it('keeps the link — and sends no unlink — when a chip anchor is left alone', () => {
@@ -423,7 +423,7 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
     fireEvent.click(next())
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=custom_ab12'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites?new=custom_ab12', { replace: true }))
   })
 
   it('warns softly when the Fogg behaviour looks too big, without blocking', () => {
@@ -482,7 +482,7 @@ describe('RoutineWizardPage', () => {
       chainKey: 'MORNING', title: 'Hidratálás', mode: 'MANUAL',
       skillKey: 'mindset', xp: 6, framework: null,
     })
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites'))
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites', { replace: true }))
   })
 
   it('a DERIVED pick on the act step requires and sends the metric', () => {

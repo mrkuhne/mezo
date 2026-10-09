@@ -153,7 +153,8 @@ export function KamraItemDetailPage() {
   const remove = () => {
     if (!delArmed) { setDelArmed(true); return }
     deleteItem(backendId)
-    navigate('/fuel/kamra')
+    // the deleted item must not stay behind the user (history back)
+    navigate('/fuel/kamra', { replace: true })
   }
 
   const hasAnyMacro = item.macros != null

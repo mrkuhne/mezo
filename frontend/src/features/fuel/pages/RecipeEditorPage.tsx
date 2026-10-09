@@ -21,6 +21,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput, RecipeRole } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
@@ -101,6 +102,7 @@ function AmountField({ value, onChange, label }: { value: number; onChange: (n: 
 export function RecipeEditorPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const leave = useLeaveAfterMutation()
   const { recipes, categoryMeta } = useRecipes()
   // Resolve picked-line display name + live macro contribution from the SAME
   // unified pickable source the picker draws from (foods + supplement stash) — NOT
@@ -189,10 +191,11 @@ export function RecipeEditorPage() {
     }
     if (isEditMode && editing) {
       update(editing.id, input)
-      navigate(`/fuel/recipes/${editing.id}`)
+      // the editor is only ever opened from this recipe's page: pop back onto it
+      leave.back(`/fuel/recipes/${editing.id}`)
     } else {
       create(input)
-      navigate('/fuel/recipes')
+      leave.to('/fuel/recipes')
     }
   }
 

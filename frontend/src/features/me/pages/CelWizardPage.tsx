@@ -86,12 +86,12 @@ export function CelWizardPage() {
       ifThenPlans: d.plans.filter((p) => p.ha.trim() && p.akkor.trim()).map(({ own: _o, ...rest }) => rest), pillars: activePillars,
     }, {
       onSuccess: (g) => {
-        if (!activate) { navigate('/me/goals'); return }
+        if (!activate) { navigate('/me/goals', { replace: true }); return }
         // Aktiválás-bukás után is a cél-oldalra megyünk: a cél már létezik draftként, a
         // varázslóban maradva egy újrapróba DUPLIKÁLNÁ; a globális toast + a draft állapot mondja el.
         changeStatus(g.id, 'active', {
-          onSuccess: () => navigate(`/me/goals/${g.id}`),
-          onError: () => navigate(`/me/goals/${g.id}`),
+          onSuccess: () => navigate(`/me/goals/${g.id}`, { replace: true }),
+          onError: () => navigate(`/me/goals/${g.id}`, { replace: true }),
         })
       },
       onError: () => setSaveFailed(true),

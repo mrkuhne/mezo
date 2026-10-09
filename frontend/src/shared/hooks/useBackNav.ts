@@ -1,5 +1,8 @@
-import { useLocation, useNavigate } from 'react-router-dom'
-import { canGoBack } from '@/shared/lib/backNav'
+import { useContext } from 'react'
+import { UNSAFE_LocationContext, useLocation, useNavigate } from 'react-router-dom'
+import {
+  canGoBack, leaveAfterMutation, leaveBackAfterMutation, leaveDeletedFromEditor,
+} from '@/shared/lib/backNav'
 
 /**
  * Back to the PREVIOUS in-app page (history pop), with a fallback route for
@@ -47,5 +50,28 @@ export function useBackTo(fallback: string, fallbackLabel: string): BackTarget {
       if (viaHistory) navigate(-1)
       else navigate(fallback)
     },
+  }
+}
+
+/**
+ * Leaving after a successful mutation (see `shared/lib/backNav.ts` for the rule):
+ * - `to(target)` — the destination replaces the form / wizard / deleted record;
+ * - `back(origin)` — an editor entered only from `origin` pops back onto it;
+ * - `pastDetail(list)` — a delete from such an editor also drops the detail entry behind it.
+ * The location key comes through the context (the `HistoryBackButton` idiom), so a page
+ * rendered outside a router in a unit test is treated as a first entry.
+ */
+export function useLeaveAfterMutation(): {
+  to: (target: string) => void
+  back: (origin: string) => void
+  pastDetail: (list: string) => void
+} {
+  const navigate = useNavigate()
+  const key = useContext(UNSAFE_LocationContext)?.location.key ?? 'default'
+  const state = () => (typeof window !== 'undefined' ? window.history.state : null)
+  return {
+    to: (target) => leaveAfterMutation(navigate, target),
+    back: (origin) => leaveBackAfterMutation(navigate, state(), key, origin),
+    pastDetail: (list) => leaveDeletedFromEditor(navigate, state(), list),
   }
 }

@@ -48,7 +48,7 @@ export function GoalSuggestionPage() {
     try {
       await accept(goalId, suggestionId, preview.previewFingerprint)
       show({ kind: 'success', text: 'A cél módosításai alkalmazva.' })
-      navigate('/me/goals/weight')
+      navigate('/me/goals/weight', { replace: true })
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) setStale(true)
     }
@@ -57,7 +57,7 @@ export function GoalSuggestionPage() {
   async function discard() {
     if (!goalId || !suggestionId) return
     await dismiss(goalId, suggestionId)
-    navigate('/me/goals/weight')
+    navigate('/me/goals/weight', { replace: true })
   }
 
   async function refresh() {

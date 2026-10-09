@@ -112,7 +112,7 @@ function GoalWizard() {
       // |startWeightKg − targetWeightKg| / startWeightKg / weeks (G6, mezo-06n).
       ...(identity ? { identityFrame: identity } : {}),
     } satisfies GoalUpsertRequest
-    submit({ goal, activate }, { onSuccess: backToGoals })
+    submit({ goal, activate }, { onSuccess: () => navigate('/me/goals/weight', { replace: true }) })
   }
 
   return (

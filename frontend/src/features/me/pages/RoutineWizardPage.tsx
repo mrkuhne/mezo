@@ -290,7 +290,7 @@ export function RoutineWizardPage() {
   const save = () => {
     if (fwChoice === null) return
     const done = (habitKey: string | undefined) =>
-      navigate(habitKey != null ? `/nap/rutin/epites?new=${encodeURIComponent(habitKey)}` : '/nap/rutin/epites')
+      navigate(habitKey != null ? `/nap/rutin/epites?new=${encodeURIComponent(habitKey)}` : '/nap/rutin/epites', { replace: true })
 
     // Re-framing CONVERTS the definition it was opened with — it must never mint a second one.
     // `updateDef` accepts no `skillKey`, so it is omitted; mode/metric ride the patch since

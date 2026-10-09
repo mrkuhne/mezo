@@ -111,7 +111,8 @@ describe('HabitEditPage — recept és mentés', () => {
     fireEvent.change(screen.getByLabelText(/Jelzés/), { target: { value: '7:20-kor a konyhában' } })
     fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(updateDef).toHaveBeenCalledWith('d-intent', expect.objectContaining({ cue: '7:20-kor a konyhában' }))
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent'))
+    // opened directly (no in-app entry behind): the habit's page REPLACES the editor
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent', { replace: true }))
   })
 
   test('emptying the optional identity CLEARS it on the wire (blank string, mezo-pero)', () => {
