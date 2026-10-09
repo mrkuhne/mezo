@@ -277,7 +277,7 @@ const empty=(icon,t,a='')=>`<div class="fh-empty">${icon?I(icon):''}${t}${a?`<di
 /* the team: sibling forms of the csepp — the form is the sender, the text is the voice */
 const TEAM={szunya:['Alvás','pihenés','#AB9FD2','pebble',62],mocor:['Mozgás','terhelés','#5B9BD5','bean',48],falat:['Étkezés','étrend','#6FB08A','drop',70],deru:['Közérzet','hangulat','#D9A94E','leaf',55],mezo:['Mezo','összkép','#8C97A8','crystal',64]};
 const who=(k,s=36)=>{const t=TEAM[k]||TEAM.mezo;return csepp('ok',t[4],{s,form:t[3],color:t[2],alive:false})};
-const msg=(k,text,meta='')=>{const t=TEAM[k]||TEAM.mezo;return `<div class="fh-msg"><span class="who">${who(k)}</span><div class="b"><span class="nm">${t[0]}<small>${meta||t[1]}</small></span><p class="fh-txt" style="margin-top:2px">${text}</p></div></div>`};
+const msg=(k,text,meta='')=>{const t=TEAM[k]||TEAM.mezo;/* the name already says the field: drop a meta that repeats it */if(meta){const lo=t[0].toLowerCase();const parts=meta.split(' · ').filter(x=>![lo,'étel','kedv','táplálkozás'].includes(x.trim().toLowerCase())||k==='mezo');meta=parts.join(' · ')}return `<div class="fh-msg"><span class="who">${who(k)}</span><div class="b"><span class="nm">${t[0]}<small>${meta||t[1]}</small></span><p class="fh-txt" style="margin-top:2px">${text}</p></div></div>`};
 function register(d,def){FREG[d]=def;if(def.css)css(def.css)}
 window.F={I,csepp,mchp,muscleColor,css,esc,page,sec,card,head,hero,btn,lk,step,row,bar,stat,grid,facts,seg,pills,st,ring,note,txt,empty,TEAM,who,msg,chev,act,register,
   go:(...a)=>K.go(...a),toast:(...a)=>K.toast(...a),openSheet:(...a)=>K.openSheet(...a),closeSheet:(...a)=>K.closeSheet(...a),get R(){return K.R},get ARG(){return K.ARG},get D(){return K.D}};
