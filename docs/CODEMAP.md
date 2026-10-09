@@ -1715,9 +1715,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx, clay/boop/boop.svg,
   clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg, evidence/EvidenceList.tsx,
-  evidence/observationEvidence.ts, kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx,
-  mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css,
-  voice/VoiceBubble.tsx, voice/VoiceField.css, voice/VoiceField.tsx
+  evidence/observationEvidence.ts, folyadek/Area.tsx, folyadek/Badge.tsx, folyadek/Bub.tsx, folyadek/Card.tsx,
+  folyadek/Drop.tsx, folyadek/Fill.tsx, folyadek/Hero.tsx, folyadek/Level.tsx, folyadek/Linked.tsx, folyadek/Mini.tsx,
+  folyadek/PerDay.tsx, folyadek/Row.tsx, folyadek/Section.tsx, folyadek/Stream.tsx, folyadek/Tank.tsx,
+  folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx, folyadek/index.ts, folyadek/util.ts,
+  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
+  mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css, voice/VoiceBubble.tsx, voice/VoiceField.css,
+  voice/VoiceField.tsx
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
