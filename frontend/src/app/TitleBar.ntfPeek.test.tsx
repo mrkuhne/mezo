@@ -1,18 +1,20 @@
 // ============================================================
-// Mezo · AppHeader — az értesítés-panel sorrendje, időbélyege és olvasottság-jelzése
+// Mezo · TitleBar — az értesítés-panel sorrendje, időbélyege és olvasottság-jelzése
 // (mezo-tdzy), majd a görgethető, teljes szélességű panel szűrői és korlátja (mezo-g9fz).
 //
 // A teljes feed oldal (`/me/ertesitesek`) minden sora napcsoportot, időpontot és olvasatlan-
 // pöttyöt kap; a fejléc peekje ezekből EGYET sem adott, ráadásul a nyers érkezési sorrend első
-// hármát vette. A feed hookot mockoljuk (az `AppHeader.dayOrbTone.test.tsx` mintája): a mock
+// hármát vette. A feed hookot mockoljuk (a `TitleBar.dayOrb.test.tsx` mintája): a mock
 // seed három MAI, mind olvasatlan sora nem tudná megkülönböztetni a nap-címkéket egymástól,
 // és az olvasott ág egyáltalán nem szerepelne a panelben.
+// A panel a Folyadék-keretben (mezo-n4wf5.1) VÁLTOZATLANUL költözött át a régi fejlécből
+// a címsorba — ez a fájl ugyanazokat az eseteket őrzi az új gazdán.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { vi } from 'vitest'
-import { AppHeader } from '@/app/AppHeader'
+import { TitleBar } from '@/app/TitleBar'
 import type { AppNotificationView } from '@/data/types'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
@@ -47,7 +49,7 @@ beforeEach(() => {
   localStorage.clear()
   seedAllKalauzSeen()
   vi.useFakeTimers({ shouldAdvanceTime: true })
-  // Ugyanaz a fagyasztott pillanat, mint az `AppHeader.test.tsx`-ben: 13:00 → `nowFace === 'nap'`.
+  // Ugyanaz a fagyasztott pillanat, mint az `TitleBar.test.tsx`-ben: 13:00 → `nowFace === 'nap'`.
   vi.setSystemTime(new Date(2026, 7, 30, 13, 0, 0))
   hoisted.items = [
     row('regi', new Date(2026, 7, 15, 19, 5), '2026-08-15T20:00:00.000Z'),
@@ -67,7 +69,7 @@ async function openPeek() {
       <MemoryRouter initialEntries={['/nap']}>
         <TutorialProvider>
           <MezoThreadProvider>
-            <AppHeader />
+            <TitleBar />
           </MezoThreadProvider>
         </TutorialProvider>
       </MemoryRouter>
@@ -236,7 +238,7 @@ test('a heti tanulás sora a t-lens ikont viszi és a tanulás oldalára navigá
         <TutorialProvider>
           <MezoThreadProvider>
             <Routes>
-              <Route path="/nap" element={<AppHeader />} />
+              <Route path="/nap" element={<TitleBar />} />
               <Route path="/fuel/tanulas" element={<div data-testid="loc">/fuel/tanulas</div>} />
             </Routes>
           </MezoThreadProvider>
