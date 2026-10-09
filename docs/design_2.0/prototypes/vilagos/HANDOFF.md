@@ -146,3 +146,8 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
 - **Open: the team's face.** Owner: the liquid sibling forms do not fit the expert sections (fine in
   the bottom bar). Three directions on `#w-mezo-arcok`: A field glyph badge, B monogram, C colour + name
   only. Waiting for his pick; then replace `who()`/`W()` everywhere outside the bottom bar.
+- **Averages never stand alone** (owner 2026-10-09, post "Mi tolja későbbre az estédet?": the living
+  page had a per-day chart, ours showed only two average vessels). `perday()` in `mezo.js` adds every
+  day as a small vessel (level = value, colour = group, dashed = against). Done for the late-dinner
+  case (`G_VACS`). Still only averages: the other `chain()` comparisons in posts (döntés, kísérlet
+  result, víz sheet, mentett minta) — the pattern detail pages already have the scatter + day list.
