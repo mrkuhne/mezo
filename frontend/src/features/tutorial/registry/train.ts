@@ -31,7 +31,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     // az S3a-lista pedig itt rögzíti a tier-t T2-re — a `/train` route maga elesett Task
     // 2-ben, mert a redirect előtt sosem renderel (lásd a fájl fejléce). A tabsor-tanítás
     // ezért ide, a de facto landolt oldal elé került, a fuel.ts négy-fülű hogyan-idiómáját
-    // követve, `train-tabs` anchorral (TabBar.tsx — a sáv MAGA a négy fül, minden
+    // követve, `train-tabs` anchorral (TopTabs.tsx — a sáv MAGA a négy fül, minden
     // /train/*-on).
     // v4 (final-review fix wave, mezo-88iwa.6 T5): a napsáv kártyája a törölt „‹ Ma gomb"-ot
     // tanította — a page-header (és vele a gomb) a T5 posztererrel megszűnt. Copy-drift,

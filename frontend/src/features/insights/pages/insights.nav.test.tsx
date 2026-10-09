@@ -73,19 +73,22 @@ describe('mezo nav (real mode default)', () => {
 
   // mezo-d20.11 (1:1 fidelity audit, insights.md §9 / ADR 0032): the /mezo siblings shipped
   // WITHOUT a PageHead, so a user who tapped a tile could only leave via the tab bar. Every
-  // sibling now owns the prototype's `‹ Mezo` chip.
+  // sibling hands its back handler to the shell (PageHead → useFrameBack): in the Folyadék frame
+  // (mezo-n4wf5.1) the ONE back control is the title bar's `‹`, and it goes where the page's own
+  // `‹ Mezo` / `‹ Összes funkció` chip went.
   test.each([
-    ['/mezo/memoir', '‹ Mezo'],
-    ['/mezo/experiments', '‹ Összes funkció'],
-    ['/mezo/memoria', '‹ Mezo'],
-  ])('%s owns a back chip that returns to the hub', async (path, label) => {
+    ['/mezo/memoir', '/mezo'],
+    ['/mezo/experiments', '/mezo/karakter/gepterem/osszes'],
+    ['/mezo/memoria', '/mezo'],
+  ])('%s hands its back to the title bar, which returns to %s', async (path, target) => {
     const router = renderApp(path)
     const back = await screen.findByRole('button', { name: 'Vissza' })
-    // the üveg back pill (PageHead glass) draws the ‹ as its own glyph element, so the text reads
-    // „‹Mezo” — match the label, not the exact spacing (mezo-me75u.8)
-    expect(back.textContent?.replace(/\s+/g, '')).toBe(label.replace(/\s+/g, ''))
+    expect(back).toHaveClass('fo-ib', 'fo-back')
+    expect(back).toHaveTextContent('‹')
+    // the page's own chip is not drawn a second time
+    expect(document.querySelector('.mz-backbtn')).toBeNull()
     await userEvent.click(back)
-    await waitFor(() => expect(router.state.location.pathname).toBe(label === '‹ Összes funkció' ? '/mezo/karakter/gepterem/osszes' : '/mezo'))
+    await waitFor(() => expect(router.state.location.pathname).toBe(target))
   })
 
   // /mezo/knowledge wears the csapatfal tf-dhead (üveg U9, mezo-me75u.9): a round glass `‹` disc
@@ -98,13 +101,15 @@ describe('mezo nav (real mode default)', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
   })
 
-  // mezo-me75u.9: Minták + Előrejelzések wear the csapatfal `tf-dhead` — a bare glass ‹ disc
-  // beside the page title; the target stays the Összes funkció grid.
-  test.each([['/mezo/patterns'], ['/mezo/predictions']])('%s owns a glass back disc that returns to Összes funkció', async (path) => {
+  // mezo-me75u.9: Minták + Előrejelzések wear the csapatfal `tf-dhead`. Their glass ‹ disc is
+  // handed to the shell (FrameBack): the title bar's back runs the page's handler; the target
+  // stays the Összes funkció grid.
+  test.each([['/mezo/patterns'], ['/mezo/predictions']])('%s hands its back disc to the title bar, which returns to Összes funkció', async (path) => {
     const router = renderApp(path)
     const back = await screen.findByRole('button', { name: 'Vissza' })
     expect(back).toHaveTextContent('‹')
-    expect(back).toHaveClass('glass', 'tf-back')
+    expect(back).toHaveClass('fo-ib', 'fo-back')
+    expect(document.querySelector('.tf-back')).toBeNull()
     await userEvent.click(back)
     await waitFor(() => expect(router.state.location.pathname).toBe('/mezo/karakter/gepterem/osszes'))
   })
@@ -123,8 +128,9 @@ describe('mezo nav (real mode default)', () => {
   test('the pattern-pair detail goes back to the LIST it was opened from, not the hub', async () => {
     const router = renderApp('/mezo/patterns/late-meal~next-sleep-quality')
     const back = await screen.findByRole('button', { name: 'Vissza' })
-    // a direct open has no in-app history: the pill names and opens the list (mezo-me75u.13)
-    expect(back).toHaveTextContent(/‹\s*Minták/)
+    // a direct open has no in-app history: the page's handler (run by the title bar's back)
+    // opens the list (mezo-me75u.13)
+    expect(back).toHaveClass('fo-back')
     await userEvent.click(back)
     await waitFor(() => expect(router.state.location.pathname).toBe('/mezo/patterns'))
   })
@@ -137,7 +143,8 @@ describe('mezo nav (real mode default)', () => {
 
   test('/mezo/menu redirects to the Gépterem’s „Összes funkció” grid (mezo-a9bo7.10)', async () => {
     const router = renderApp('/mezo/menu')
-    expect(await screen.findByRole('heading', { name: 'Összes funkció' })).toBeInTheDocument()
+    // (the title bar and the page both say it until the page is re-dressed)
+    expect((await screen.findAllByRole('heading', { name: 'Összes funkció' })).length).toBeGreaterThan(0)
     expect(router.state.location.pathname).toBe('/mezo/karakter/gepterem/osszes')
   })
 

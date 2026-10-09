@@ -42,7 +42,7 @@ function Probe() {
       <span data-testid="current">{t.current?.id ?? '-'}</span>
       <span data-testid="unseen">{String(t.isUnseen('fuel'))}</span>
       <button onClick={() => t.open('fuel')}>nyisd</button>
-      {/* Ugyanaz a hívás, mint az AppHeader „?" gombjáé (kalauz.open(kalauz.current.id)) —
+      {/* Ugyanaz a hívás, mint a TitleBar „?" gombjáé (kalauz.open(kalauz.current.id)) —
           a Train-sweep teszt ezzel bizonyítja, hogy a tartalom a fejléc gombjától FÜGGETLENÜL,
           deliberát nyitásra elérhető marad, csak az AUTO-open van a tartományra kikapcsolva. */}
       <button onClick={() => { if (t.current) t.open(t.current.id) }}>nyisd-current</button>
@@ -54,7 +54,7 @@ function Probe() {
       <button onClick={() => navigate('/nap')}>nap</button>
       {/* /me/sleep/night: az éjszakai mód D11 szerint SOSEM kap kalauzt (rituális
           felület) — az S3a óta (mezo-gb1s.5, a /nap/rutin is kalauzt kapott) ez a
-          „kalauz nélküli route" tartós fixture-je, az AppHeader.test.tsx-szel közösen. */}
+          „kalauz nélküli route" tartós fixture-je, az TitleBar.test.tsx-szel közösen. */}
       <button onClick={() => navigate('/me/sleep/night')}>elsewhere</button>
     </div>
   )
@@ -145,7 +145,7 @@ test('kalauz nélküli route-on nincs felugrás és current null', () => {
 
 // ── Train tartomány: a Kalauz sosem ugrik fel magától (mezo-e1ii9, parity matrix §21 sor 8) ──
 // A prototípusnak egyetlen /train/* oldalon sincs auto-nyíló overlaya. A tartalom viszont NEM
-// tűnt el: `t.open(id)` — ugyanaz a hívás, mint az AppHeader „?" gombjáé — a Train minden
+// tűnt el: `t.open(id)` — ugyanaz a hívás, mint a TitleBar „?" gombjáé — a Train minden
 // T2 aloldalán is nyit. A `:workoutId` paraméteres train-review konkrét útvonalat kap, mint
 // minden más útvonal-alapú teszt ebben a fájlban. A `train-konyvtar` (T3) itt is szerepel —
 // nem mert a fixe eddig is auto-open lett volna (a T3-kapu már elnyomta), hanem mert a teljes

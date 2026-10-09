@@ -12,6 +12,10 @@
      indicator's own strip on a Face-ID phone (inset 34px → 20px). The FAB derives from it. */
   --fo-nav-bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) - 14px));
 }
+/* The desktop phone mock draws a fake home indicator at the bottom edge: the bar stands above it. */
+@media (min-width: 520px) and (display-mode: browser) {
+  .phone-screen { --fo-nav-bottom: 20px; }
+}
 
 /* ── 1 · title bar: where am I ── */
 .fo-top {

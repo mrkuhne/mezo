@@ -9,8 +9,8 @@ import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { emitToast } from '@/shared/lib/toastBus'
 
 // The /admin desktop shell (mezo-d5iy.9) — a SIBLING of AppLayout, not a child of it
-// (see adminRoutes.tsx / router.tsx): left rail + Outlet, no PhoneFrame, no TabBar, no
-// QuickLogFab/AppHeader/CircadianTheme/LevelUpProvider/TutorialProvider/MezoThreadProvider —
+// (see adminRoutes.tsx / router.tsx): left rail + Outlet, no PhoneFrame, no BottomBar, no
+// QuickLogFab/TitleBar/CircadianTheme/LevelUpProvider/TutorialProvider/MezoThreadProvider —
 // those are the phone-shell's furniture, and the admin surface is a desktop mosaic instead.
 //
 // Two things AppLayout gets for free that this layout must supply itself, because both are

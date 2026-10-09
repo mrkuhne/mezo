@@ -3,11 +3,11 @@ import { cn } from '@/shared/lib/cn'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
 // Left rail for the admin hub (mezo-d5iy.9) — ported from the prototype's RAIL array
-// (docs/design_2.0/prototypes/src/admin-body.html). No TabBar precedent here: this is a
+// (docs/design_2.0/prototypes/src/admin-body.html). No BottomBar precedent here: this is a
 // desktop-only surface, one icon per section, active state via NavLink's isActive.
 //
 // Üveg (mezo-me75u.10, prototype `uveg-reteg-body.html` `admin()`): the rail is ONE lavender
-// glass panel (no sheen — it is always visible, like the TabBar), the brand is the gradient
+// glass panel (no sheen — it is always visible, like the BottomBar), the brand is the gradient
 // „Mezo” wordmark with an ADMIN eyebrow, and every link wears a Titanium 3D icon. The mapping
 // lives HERE (context-bound meanings, bible U1 rule 7 — not `CLAY_TO_3D`): the old clay glyphs
 // (i-nap, i-minta, i-kristaly, …) mean other things elsewhere in the app.

@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · értesítés-fajták 3D ikonja (mezo-me75u.3 → mezo-me75u.7).
 //
-// A fejléc értesítés-panele (`app/AppHeader.tsx`) és a teljes feed oldal
+// A fejléc értesítés-panele (`app/TitleBar.tsx`) és a teljes feed oldal
 // (`features/me/pages/NotificationFeedPage.tsx`) UGYANAZT a 3D ikont rajzolja egy fajtához —
 // a leképezés ezért itt él egyszer, nem két másolatban, amik szétcsúsznának.
 //

@@ -8,7 +8,7 @@ key_files:
   - frontend/src/features/settings
   - frontend/src/data/companion/preferencesApi.ts
   - frontend/src/data/companion/preferencesHooks.ts
-  - frontend/src/app/AppHeader.tsx
+  - frontend/src/app/TitleBar.tsx
 related: [_platform-design-system, companion, me, fuel, train, insights, _platform-auth-security]
 ---
 

@@ -26,9 +26,11 @@ describe('/me/week/napok/:date redirect (mock mode)', () => {
 
   test('lands on the new /nap/napom/:date address, the ?start= param dropped', async () => {
     const router = renderApp('/me/week/napok/2026-09-23?start=2026-09-21')
-    // The shell around the page (the "A napom" tab lighting up) is the observable proof the
-    // redirect landed.
-    expect(await screen.findByRole('link', { name: 'A napom' })).toHaveAttribute('aria-current', 'page')
+    // The shell around the page is the observable proof the redirect landed: the title bar's
+    // context line names the owning tab (the day page is a sub-page — no tab strip), and the
+    // Nap drop is lit on the bottom bar.
+    expect(await screen.findByText('Nap · A napom')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Nap' })).toHaveAttribute('aria-current', 'true')
     expect(router.state.location.pathname).toBe('/nap/napom/2026-09-23')
   })
 })

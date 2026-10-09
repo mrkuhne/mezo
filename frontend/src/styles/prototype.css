@@ -51,9 +51,6 @@
   --surface-card:     #FFFFFF;
   --surface-elevated: #FFFFFF;
   --surface-recess:   rgba(43, 33, 24, 0.05);
-  /* A fejléc értesítés-paneljének takarója (mezo-g9fz) — tokenizált, mert a két témában
-     nem ugyanaz a sötétítés olvasható. */
-  --mz-ntfscrim:      rgba(43, 33, 24, 0.18);
 
   --text-primary:   #2B2118;
   --text-secondary: #5F5346;
@@ -212,22 +209,6 @@
      trained shape from its neighbors without competing with the heat fill. Dark párja a
      dark blokkban, azonos névvel. */
   --mz-body-outline: #2b21182e;
-  /* ── Fejléc-aurora (mezo-8az6) — napszak-tónusok. A wash a sáv teteje, a foltok
-        adják a mélységet; a réteg alja maszkkal fakul a tartalomba. Dark párjuk a
-        dark blokkban, azonos nevekkel. */
-  --mzh-wash-reggel: linear-gradient(155deg, #FFD9A8 0%, #FFE7CE 55%, #FFF3E6 100%);
-  --mzh-wash-nap:    linear-gradient(155deg, #B9DCF0 0%, #D3E9F6 55%, #EAF4FA 100%);
-  --mzh-wash-este:   linear-gradient(155deg, #D6CDF3 0%, #E4DDF7 55%, #F1EDFB 100%);
-  --mzh-blob1-reggel: #FFC078; --mzh-blob2-reggel: #FF8E6A;
-  --mzh-blob1-nap:    #7FBEE8; --mzh-blob2-nap:    #69CFBD;
-  --mzh-blob1-este:   #A392E4; --mzh-blob2-este:   #E28FBB;
-  --mzh-deco-line: rgba(43, 33, 24, 0.18);
-  --mzh-deco-fill: rgba(43, 33, 24, 0.24);
-  --mzh-glass: rgba(255, 255, 255, 0.6);
-  --mzh-glass-line: rgba(43, 33, 24, 0.08);
-  /* A kompakt fejléc doboz-magassága (4px felső padding + 42px kontrollsor). A lapokon
-     belüli sticky chrome ehhez képest tapad ki, hogy ne csússzon a shell-fejléc alá. */
-  --mzh-head-cond-h: 46px;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
         blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
@@ -514,7 +495,6 @@
   --surface-card:     #221E1B;
   --surface-elevated: #2A2521;
   --surface-recess:   rgba(245, 239, 230, 0.05);
-  --mz-ntfscrim:      rgba(0, 0, 0, 0.42);
 
   --text-primary:   #F5EFE6;
   --text-secondary: #D8CEC2; /* mezo-nn7h0: lifted for legibility (was #B7A899) */
@@ -611,19 +591,6 @@
   --mz-ink-mut: var(--text-muted);
   /* BodyMap/MuscleChip lit-shape hairline (mezo-88iwa.4) — light párja a light blokkban. */
   --mz-body-outline: #ffffff2e;
-  /* ── Fejléc-aurora dark párja (mezo-8az6): mélyebb, tompított tónusok a grafit
-        vászon fölé; a foltok ugyanazok a színek, a wash viszi a sötétítést. */
-  --mzh-wash-reggel: linear-gradient(155deg, #5A4224 0%, #3E2E1C 55%, #241C14 100%);
-  --mzh-wash-nap:    linear-gradient(155deg, #1F4560 0%, #1C3242 55%, #1A2027 100%);
-  --mzh-wash-este:   linear-gradient(155deg, #3A2F63 0%, #2A2444 55%, #1E1A2A 100%);
-  --mzh-blob1-reggel: #FFC078; --mzh-blob2-reggel: #FF8E6A;
-  --mzh-blob1-nap:    #7FBEE8; --mzh-blob2-nap:    #69CFBD;
-  --mzh-blob1-este:   #A392E4; --mzh-blob2-este:   #E28FBB;
-  --mzh-deco-line: rgba(255, 255, 255, 0.2);
-  --mzh-deco-fill: rgba(255, 255, 255, 0.3);
-  --mzh-glass: rgba(24, 19, 15, 0.6);
-  --mzh-glass-line: rgba(255, 255, 255, 0.09);
-  --mzh-head-cond-h: 46px;
   --mz-ink-soft: var(--text-secondary);
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
@@ -1016,17 +983,14 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    while the content scrolls under it, like native app navigation chrome. */
 .sticky-top {
   position: sticky;
-  /* NEM 0 és NEM 54px: a .screen-content padding-topja (54px) továbbra is a fake
-     státuszsáv alá offsetel, de a shell-fejléc (mezo-8az6) mostantól maga is kitapad
-     ugyanoda — a lap chrome-ja ezért a KOMPAKT fejléc magasságával (--mzh-head-cond-h)
-     lejjebb tapad ki, hogy ne csússzon a shell-fejléc alá. Ez CSAK akkor igaz, ha van
-     shell-fejléc: a chrome nélküli oldalakon (AppLayout.tsx hideChrome) nincs mi alá
-     tapadni, ott a 0 a helyes — innen a :has() scope. */
+  /* A chrome nélküli oldalakon (AppLayout.tsx hideChrome) nincs mi alá tapadni: ott a 0 a
+     helyes. Ahol a shell címsora ott van (mezo-n4wf5.1), a lap chrome-ja ALÁ tapad — azt a
+     `.screen-content:has(.fo-top) .sticky-top` szabály adja a folyadek-frame.css-ben, a
+     címsor saját, közölt magasságával (`--fo-top-h`). */
   top: 0;
   z-index: 40;
   background: var(--canvas);
 }
-.screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
 
 /* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
    backdrop is portaled into .phone-screen the same way) is open. GlassBox
@@ -1036,45 +1000,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   overflow: hidden !important;
   touch-action: none;
 }
-
-/* Bottom tab bar */
-.tab-bar {
-  position: absolute; bottom: 0; left: 0; right: 0;
-  height: 88px;
-  padding: 8px 12px 28px;
-  /* Fully opaque + theme-aware (matches .status-bar / .sticky-top) so scrolled
-     content can never bleed through the bar. The old translucent frosted-glass
-     bar (rgba(10,15,20,0.92) + blur) still leaked ~8% and was hardcoded dark, so
-     it broke in light theme too — see mezo-ci5. */
-  background: var(--canvas);
-  border-top: 1px solid var(--border-subtle);
-  display: flex; align-items: stretch; justify-content: space-around;
-  z-index: 40;
-}
-.tab-item {
-  flex: 1;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px;
-  /* Design 2.0 .mtab recipe (mezo-d20.1.1): sentence-case label, clay icon above;
-     active speaks text-safe coral, inactive mutes the clay via filter. */
-  font-family: var(--ff-body);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  transition: color var(--duration-fast) var(--ease-out);
-  position: relative;
-}
-.tab-item.active { color: var(--primary-deep); }   /* text-safe coral (DS active tab) */
-.tab-item .tab-ico { display: grid; place-items: center; }
-.tab-item:not(.active) .tab-ico svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
-.tab-item svg { transition: filter var(--duration-normal) var(--ease-out); }
-
-/* Avatar-only domain switch: keep the companion in full colour. */
-.tab-item.domain-switch {
-  border: none; background: none; cursor: pointer; padding: 0;
-  font: inherit;
-}
-.tab-item.domain-switch .tab-ico svg { filter: none; }
 
 
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
@@ -1201,15 +1126,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .screen-content {
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
-  }
-  /* A shell-fejléc valódi eszközön is kitapad (mezo-8az6), ezért a lap chrome-ja itt sem
-     tapadhat ki 0-nál — ugyanaz a kompakt fejléc-magasság, mint az alapszabályban.
-     Ugyanúgy csak fejléces oldalon: lásd az alapszabály :has() scope-ját. */
-  .screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
-  .tab-bar {
-    height: auto;
-    padding-top: 8px;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
   /* Mobile tab bar is height:auto (~icon+label+pad) + safe area; float above it. */
   .recipe-save-bar {
@@ -1932,37 +1848,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* Transitional shape softening: chamfers become rounded corners app-wide.
    Radii follow spec §3.3 (rows 18-20px, cards 20-28px). */
 
-/* Napív tab bar — frosted floating capsule (supersedes mezo-ci5's opaque bar; blur+tint solves both recorded failure modes) */
-.tab-bar {
-  position: absolute; left: 14px; right: 14px; bottom: 14px;
-  border-radius: 999px; border-top: none;
-  background: color-mix(in srgb, var(--canvas) 66%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  backdrop-filter: blur(20px) saturate(1.5);
-  box-shadow: 0 14px 34px rgba(43,33,24,.16), inset 0 0 0 1px rgba(255,255,255,.55);
-  padding: 10px 18px;
-  display: flex; align-items: center; justify-content: space-around;
-  z-index: 40; height: 64px;
-}
-@supports not (backdrop-filter: blur(1px)) {
-  .tab-bar { background: color-mix(in srgb, var(--canvas) 96%, transparent); }
-}
-/* Floating quick-log FAB (Design 2.0 decision B, mezo-d20.1.1) — bottom-right thumb
-   zone above the tab bar; prototype .floatfab recipe with the DS CTA gradient. */
-.quicklog-fab {
-  position: absolute; right: 14px; bottom: 92px;
-  width: 56px; height: 56px; border-radius: 50%; border: none;
-  background: var(--gradient-cta); color: #fff;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 12px 24px -6px color-mix(in srgb, var(--cta-g2) 65%, transparent);
-  cursor: pointer; z-index: 44;
-  transition: transform var(--duration-fast) var(--ease-out);
-}
-.quicklog-fab:active { transform: scale(0.92); }   /* Rule 21: visible press feedback */
-/* FAB soft glow pulse (prototype fabglow) — motion only under no-preference. */
-@keyframes np-fabglow { 0%,100% { box-shadow: 0 8px 18px -5px color-mix(in srgb, var(--cta-g2) 60%, transparent); }
-  50% { box-shadow: 0 8px 26px -3px color-mix(in srgb, var(--cta-g2) 85%, transparent); } }
-@media (prefers-reduced-motion: no-preference) { .quicklog-fab { animation: np-fabglow 3.2s ease-in-out 1.6s infinite; } }
 /* QuickInputSheet — the FAB's 6-tile quick-log launcher (DS re-dress mezo-setx.5.4) */
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); }
@@ -2149,10 +2034,8 @@ button.donebar { cursor: pointer; }
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-  .tab-bar { bottom: calc(10px + env(safe-area-inset-bottom)); }
   .screen-content { padding-bottom: calc(var(--screen-bottom-pad) + env(safe-area-inset-bottom)); }
   .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
-  .quicklog-fab { bottom: calc(88px + env(safe-area-inset-bottom)); }
   .float-stack { bottom: calc(154px + env(safe-area-inset-bottom)); }
 }
 
@@ -3871,133 +3754,25 @@ button.mz-tile:active { transform: scale(0.96); }
 
 /* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
 .nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
-.nap-head { display: flex; align-items: center; gap: 9px; }
 /* A shell-szintű fejléc (mezo-atry) függőleges ritmusa. Korábban a hub-konténerek
    `padding: 6px 0 8px` + `gap` adta a rést a fejléc alatt — a `.nap-hub`-on pontosan
    13px-et (gap: 13px), a másik négyen (`.eh-hub`/`.fh-hub`/`.mzh-hub`/`.enh-hub`) 11px-et
    (gap: 11px). A fejléc kikerült a konténerekből, a 7px margó pedig szándékosan egységes:
    a Nap 13px-ét pontosan visszaadja, a másik négyet 11-ről 13-ra emeli — egy közös fejléc
    alatt egy közös rés jár, a 2px a megosztásért fizetett ár. */
-/* A fejléc KITAPAD (mezo-8az6): az app egyetlen görgetője a .screen-content, a fejléc
-   benne ül, így `top: 0` a helyes — a scroller padding-top: 54px-je már a fake
-   státuszsáv alá offsetel (ugyanez a logika, mint a .sticky-top-nál). Az értesítés és
-   az üzenetek így egy hosszú lista aljáról is egy koppintásra vannak. */
-.app-head {
-  position: sticky;
-  top: 0;
-  isolation: isolate;
-  /* 46: a lapokon belüli sticky chrome (breadcrumb 40, chat-fejléc 30) FÖLÖTT, de a
-     StatusBar (50) alatt — a shell fejléce mindig a lap saját chrome-ja fölött ül. */
-  z-index: 46;
-  padding-top: 6px;
-  margin-bottom: 7px;
-  transition: padding var(--duration-normal) var(--ease-in-out),
-    margin var(--duration-normal) var(--ease-in-out);
-}
 /* Az aurora full-bleed: a .screen-content --screen-gutter paddingját negatív margóval
    lépi át, hogy a telefon széléig érjen. A fejléc TARTALMA a gutteren belül marad. */
-.app-head-bg {
-  position: absolute;
-  top: 0;
-  left: calc(-1 * var(--screen-gutter));
-  right: calc(-1 * var(--screen-gutter));
-  /* A vezérlősor saját magasságán túl külön fade-tail fut lefelé. Az abszolút
-     háttérréteg így összeolvad a lappal, miközben a fejléc tartalma nincs maszkolva. */
-  height: calc(100% + 18px);
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
-  /* A kontrollsor mögött végig fedett, csak az önálló alsó tail mosódik a canvasba. */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
-}
-.app-head-wash { position: absolute; inset: 0; }
-.app-head-bg[data-face="reggel"] .app-head-wash { background: var(--mzh-wash-reggel); }
-.app-head-bg[data-face="nap"]    .app-head-wash { background: var(--mzh-wash-nap); }
-.app-head-bg[data-face="este"]   .app-head-wash { background: var(--mzh-wash-este); }
-.app-head-blob { position: absolute; border-radius: 50%; filter: blur(30px); opacity: 0.75; }
-.app-head-blob.b1 { width: 190px; height: 190px; left: -56px; top: -84px; }
-.app-head-blob.b2 { width: 150px; height: 150px; right: -34px; top: -66px; opacity: 0.55; }
-.app-head-bg[data-face="reggel"] .b1 { background: var(--mzh-blob1-reggel); }
-.app-head-bg[data-face="reggel"] .b2 { background: var(--mzh-blob2-reggel); }
-.app-head-bg[data-face="nap"]    .b1 { background: var(--mzh-blob1-nap); }
-.app-head-bg[data-face="nap"]    .b2 { background: var(--mzh-blob2-nap); }
-.app-head-bg[data-face="este"]   .b1 { background: var(--mzh-blob1-este); }
-.app-head-bg[data-face="este"]   .b2 { background: var(--mzh-blob2-este); }
-.app-head-deco { position: absolute; inset: 0; }
-.app-head-deco svg { position: absolute; right: 0; top: 0; opacity: 0.9; }
-.app-head-arc { fill: none; stroke: var(--mzh-deco-line); stroke-width: 1.5; }
-.app-head-dfill { fill: var(--mzh-deco-fill); }
 /* A szekció-blokk a fejléc bal oldalán: spot + név, egy sorban, csonkolva. */
-.app-head-sec { display: flex; align-items: center; gap: 8px; }
-.app-head-spot { flex: none; }
-.app-head-title {
-  font-size: 19px; font-weight: 800; letter-spacing: -0.02em;
-  color: var(--text-primary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
 /* Kompakt mód: csak a függőleges ritmus húzódik össze. Az aurora napszak-színe
    változatlan marad, hogy görgetéskor se váltson semleges üvegsávra. */
-/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 42px a
-   .nap-roundbtn kontrollsor magassága, a token a mérvadó (46px mindkét témában) — így
-   nem szakadhat el csendben a kettő egymástól. */
-.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 42px); margin-bottom: 3px; }
 /* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
    gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
    .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
    Jelenleg ez nem okoz ütközést (a menük geometriailag nem lógnak ki később jövő
    testvérek alá), de új fejléc-gyerek hozzáadásakor erre figyelni kell. */
-.app-head > *:not(.app-head-bg) { position: relative; z-index: 1; }
-.nap-head-grow { flex: 1; min-width: 0; }
-.nap-dpwrap { position: relative; }
-.nap-roundbtn { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
-  background: var(--mz-chipbg); display: grid; place-items: center; cursor: pointer;
-  box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
-.nap-offnow { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%;
-  background: var(--dv-amber); box-shadow: 0 0 0 2px var(--canvas); }
-.nap-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; border-radius: 999px;
-  background: var(--gradient-cta); color: #fff; font-size: 10px; font-weight: 800;
-  display: grid; place-items: center; padding: 0 4px; }
-.nap-dpmenu { position: absolute; right: 0; top: 48px; z-index: 30;
-  background: var(--surface-card); border-radius: 18px; padding: 8px;
-  border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 20px 40px -16px rgba(43, 33, 24, 0.4);
-  display: flex; gap: 6px; }
-.nap-dpmenu button { width: 42px; height: 42px; border-radius: 50%; border: none; background: none;
-  display: grid; place-items: center; cursor: pointer; }
-.nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
-.nap-roundbtn.is-open { background: color-mix(in srgb, var(--primary-base) 16%, var(--mz-chipbg));
-  border-color: color-mix(in srgb, var(--primary-base) 30%, transparent); }
 
-/* ── Értesítés-panel (mezo-g9fz) ─────────────────────────────────────────────
-   A csengő panelje 264px-en három ikontalan sort mutatott. Most a fejléc KÉT SZÉLÉHEZ
-   tapad (nem a csengő wrapperéhez — ezért a `<header>` közvetlen gyereke), belül görgethető,
-   és minden sor a típusa clay-ikonját viseli. Az `.app-head > *` szabály minden fejléc-
-   gyerekre `position: relative`-et tesz; ez a szabály KÉSŐBB jön és felülírja — a panelnek
-   abszolútnak kell lennie, hogy a `<header>`-hez, ne magához igazodjon. */
-.app-head > .nap-ntfpanel {
-  position: absolute; left: 0; right: 0; top: calc(100% - 3px); z-index: 2;
-  display: flex; flex-direction: column; max-height: min(600px, 74vh);
-  background: var(--surface-card); border-radius: 24px; overflow: hidden;
-  border: 0.5px solid rgba(43, 33, 24, 0.08);
-  /* kétrétegű, SZÍNES árnyék — a Mozaik 2.0 alapszabálya (docs/design_2.0) */
-  box-shadow: 0 26px 48px -20px rgba(43, 33, 24, 0.5),
-              0 8px 18px -12px color-mix(in srgb, var(--primary-base) 40%, transparent);
-  transform-origin: 88% top; animation: nap-ntfpop 0.26s cubic-bezier(0.2, 0.9, 0.28, 1.06) both;
-}
 /* A takaró a fejléc ALATT ül (a fejléc z-indexe 46), tehát a fejléc gombjai — köztük maga a
    csengő — kattinthatók maradnak, a lap tartalma viszont elhatárolódik. */
-/* `.app-head > ...`, hogy verje az `.app-head > *:not(.app-head-bg)` szabályt (0,2,0), ami
-   különben `position: relative`-re ütné — a takaró ekkor nulla méretű in-flow elem lenne.
-   A `z-index: 0` a fejléc SAJÁT stacking contextjében ül: a gombok (1) és a panel (2) fölötte
-   maradnak (világosak, kattinthatók), az aurora-háttér alatta; a lap tartalmát pedig azért
-   takarja, mert az egész fejléc (46) a lap fölött van. */
-.app-head > .nap-ntfscrim { position: fixed; inset: 0; z-index: 0; background: var(--mz-ntfscrim);
-  animation: nap-ntffade 0.22s ease both; }
-@keyframes nap-ntfpop { from { opacity: 0; transform: translateY(-8px) scale(0.965); } to { opacity: 1; transform: none; } }
-@keyframes nap-ntffade { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  .app-head > .nap-ntfpanel, .app-head > .nap-ntfscrim { animation: none; }
-}
 
 /* fejrész — KITAPAD, nem görög */
 .nap-ntfhd { display: flex; align-items: center; gap: 8px; padding: 13px 14px 9px; flex: none; }
@@ -4069,8 +3844,6 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ntfft button { width: 100%; border: none; background: none; font-family: inherit;
   font-size: 12.5px; font-weight: 800; color: var(--primary-deep); padding: 12px;
   border-radius: 18px; cursor: pointer; }
-.nap-avatar { width: 42px; height: 42px; border-radius: 50%; border: 0; background: none;
-  display: grid; place-items: center; cursor: pointer; }
 
 /* DayOrb (mezo-idz2) — a fejléc napi állapotjelzője. Az alap a `#s-orb` szürkén;
    a kitöltés magassága a `clipPath` rect y-ja, ami új adatnál átcsúszik. */
@@ -4078,10 +3851,15 @@ button.mz-tile:active { transform: scale(0.96); }
 .dayorb-base { filter: grayscale(1) brightness(1.28) contrast(0.55); opacity: 0.55; }
 .dayorb rect { transition: y 0.45s cubic-bezier(0.25, 0.8, 0.35, 1), height 0.45s cubic-bezier(0.25, 0.8, 0.35, 1); }
 @media (prefers-reduced-motion: reduce) { .dayorb rect { transition: none; } }
+/* The orb's glass, liquid and highlight (was in the retired üveg chrome block; DayOrb.tsx). */
+.dayorb-glass { fill: rgba(245, 239, 230, 0.05); stroke: rgba(245, 239, 230, 0.14); stroke-width: 2.5; }
+.dayorb-liquid { filter: drop-shadow(0 0 6px rgba(255, 126, 92, 0.65)); }
+.dayorb-hi { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 5.5; stroke-linecap: round; }
+@keyframes uv-orbwave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-20px); } }
+@media (prefers-reduced-motion: no-preference) {
+  .dayorb-wave { animation: uv-orbwave 3.2s ease-in-out infinite; }
+}
 
-/* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
-.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 21px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
-.nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
 
 /* ── Mezo-kalauz (mezo-gb1s.1) — the page-guide sheet; prototype docs/design_2.0/prototypes/kalauz.html ×1.18 ── */
 .kalauz-sheet { padding: 4px 16px 16px; border-radius: 30px 30px 0 0; }
@@ -10939,22 +10717,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* ── /fuel overflow guard ── */
 
 
-/* ── boop szó-logó a visszaállított fejlécben (mezo-ju4j6.3) ───────────────────
-   A Titánium bőr (owner 2026-09-12) az EGÉSZ fejlécet sötétre festette: elrejtette az
-   aurora három rétegét (`wash`/`blob`/`deco`, mezo-8az6), közel feketére húzta a hátteret,
-   és hideg grafitra hangolta a gombokat és a menüt. A visszaöltöztetés ezt az egy réteget
-   törli — az aurora és a `.nap-roundbtn` alap-recept ÉRINTETLENÜL megvolt alatta, tehát a
-   fejléc magától visszatér a napszak-mosásos, világos-első Mozaik arcára, és a ház dark
-   témájában is a MELEG grafitot kapja, nem a hideget.
-
-   A „boop" szó-logó MARAD (a névváltás funkcionális döntés, nem bőr) — csak a betű színe
-   megy vissza a ház tintájára, hogy a világos auroran is olvasható legyen. Betűméret,
-   vágás és térköz változatlan. */
-.app-head-wordmark {
-  font-family: var(--ff-display), system-ui, sans-serif;
-  font-size: 25px; font-weight: 700; letter-spacing: -0.045em; line-height: 1;
-  color: var(--text-primary);
-}
 /* ── /boop szó-logó ──────────────────────────────────────────────────────────── */
 
 /* ── BodyMap — two-view real-anatomy heat component (mezo-88iwa.4) ──────────────────────── */
@@ -11312,7 +11074,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
     color-mix(in srgb, var(--dv-amber) 8%, var(--surface-page)));
   box-shadow: var(--mz-shadow-gold);
 }
-
 
 
 /* Everything ticked — green, and it earned it. */
@@ -13417,54 +13178,11 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 [data-domain="fuel"] { --nav-accent: var(--nav-fuel); }
 [data-domain="mezo"] { --nav-accent: var(--nav-mezo); }
 [data-domain="me"] { --nav-accent: var(--nav-me); }
-.tab-bar[data-domain] {
-  left: 0; right: 0; bottom: 0; height: 88px;
-  border-radius: 0; border-top: 1px solid var(--nav-line);
-  padding: 12px 8px 24px; gap: 3px;
-  background: linear-gradient(180deg, var(--nav-surface-top), var(--nav-surface) 80%);
-  /* The white inset top edge (§2.2 A) is what lifts the bar off a LIGHT page now that its
-     ground is no longer a hard dark band; on graphite the same line is near-invisible. */
-  box-shadow: 0 -10px 24px -14px var(--nav-shadow), inset 0 1px 0 var(--nav-highlight);
-  align-items: stretch;
-}
-.tab-bar[data-domain] .tab-item {
-  min-width: 0; min-height: 44px; gap: 3px;
-  font-size: 10px; font-weight: 500; color: var(--nav-idle);
-}
-.tab-bar[data-domain] .tab-item > span { white-space: nowrap; }
-.tab-bar[data-domain] .tab-item.active { color: var(--nav-accent); }
-.tab-bar[data-domain] .domain-switch {
-  flex: 0 0 56px; border-right: 1px solid var(--nav-line); padding-right: 5px;
-}
-.tab-bar[data-domain] .domain-switch .tab-ico { width: 40px; height: 40px; }
-.phone-screen:has(.tab-bar[data-domain]) > .home-indicator { background: var(--nav-ink); }
-.tab-bar[data-domain] .tab-item:focus-visible {
-  outline: 2px solid var(--nav-ink); outline-offset: -2px; border-radius: 8px;
-}
-.domain-row:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
 /* Whole-screen overlay owns blur/scroll; its dialog has no enclosing surface. */
-.domain-switcher-overlay {
-  position: absolute; inset: 0; z-index: 250;
-  display: flex; align-items: safe center; justify-content: center;
-  overflow-y: auto; overscroll-behavior: contain;
-  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
-  background: var(--nav-backdrop);
-  backdrop-filter: blur(22px) saturate(.65);
-  -webkit-backdrop-filter: blur(22px) saturate(.65);
-}
-.domain-switcher { width: 100%; max-width: 372px; flex: none; color: var(--text-primary); }
-.domain-list { display: flex; flex-direction: column; gap: 12px; }
 /* The switcher's five cards are §2.2 A wash tiles — one per domain wash, with the
    signature shadow (long hue-tinted drop + contact shadow + white inset top edge).
    The BAR stays graphite (§7.4); the switcher is a page-level surface, so it wears the
    restored world's own material instead of the bar's chrome. */
-.domain-row {
-  display: flex; align-items: center; gap: 14px;
-  width: 100%; min-height: 80px; padding: 16px; text-align: left;
-  border: 0; border-radius: 21px; cursor: pointer;
-  background: var(--surface-1);
-  box-shadow: inset 0 0 0 1px var(--border-subtle);
-}
 /* §3.4 RANGSOR (mezo-ju4j6.19). A 3. fázis ezt a váltót öt EGYFORMA mosott csempeként
    hagyta, azzal az indokkal, hogy az „itt állsz" a pipa dolga, és így az öt kártya egy
    anyagfokozaton marad. A §3.4 azóta pont az ellenkezőjét mondja: az egy fokozat AZ,
@@ -13472,58 +13190,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    hol állsz MOST —, ezért abból az egyből lesz mosott csempe a saját doménszínében, a
    másik négy pedig ház-sor. A szín nem vész el: a Boop-figura viszi tovább mind az
    ötön, és ő a tényleges útjelző. */
-.domain-row.current { border: 0.5px solid rgba(43, 33, 24, 0.06); background: var(--mz-wash-sand); box-shadow: var(--mz-shadow-lav); }
-.domain-row.current[data-domain="nap"]   { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
-.domain-row.current[data-domain="train"] { background: var(--mz-wash-sky);   box-shadow: var(--mz-shadow-sky); }
-.domain-row.current[data-domain="fuel"]  { background: var(--mz-wash-sage);  box-shadow: var(--mz-shadow-sage); }
-.domain-row.current[data-domain="mezo"]  { background: var(--mz-wash-lav);   box-shadow: var(--mz-shadow-lav); }
-.domain-row.current[data-domain="me"]    { background: var(--mz-wash-rose);  box-shadow: var(--mz-shadow-rose); }
-.domain-row-mark { display: grid; place-items: center; flex: none; }
-.domain-row-text { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.domain-row-text strong { font: 500 16px var(--ff-body); color: var(--text-primary); }
-.domain-row-text small { font: 600 10.5px/1.6 var(--ff-body); color: var(--text-secondary); overflow-wrap: anywhere; }
-.domain-row-end { flex: none; font-size: 16px; font-weight: 400; color: var(--text-muted); }
-.domain-row.current .domain-row-end { color: var(--mz-cell-sage-ink); }
 /* Az oldal-leltár bejárata a váltó alján — szándékosan halkabb, mint az öt terület-kártya:
    ez egy szerszám, nem egy hatodik terület. Kontúros, nem washolt (§2.2 B, keret nélküli). */
-.domain-all {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  width: 100%; margin-top: 14px; padding: 13px 16px; cursor: pointer;
-  border: 1px solid var(--divider); border-radius: 999px; background: none;
-  /* `--text-secondary`, NOT `--nav-muted`: the switcher is a light surface now (§7.4), and the
-     bar's muted ink was picked to read against graphite — on this ground it nearly vanishes. */
-  font: 600 12px var(--ff-body); color: var(--text-secondary);
-}
-.domain-all b { font-weight: 400; }
-.domain-all:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 3px; }
-.phone-screen:has(.domain-switcher-overlay) .screen-content { overflow: hidden; }
-@supports not (backdrop-filter: blur(1px)) {
-  .domain-switcher-overlay { background: color-mix(in srgb, var(--nav-surface) 96%, transparent); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .domain-row { animation: domain-menu-rise 260ms cubic-bezier(.2,.7,.3,1) both; }
-  .domain-row:nth-child(2) { animation-delay: 25ms; }
-  .domain-row:nth-child(3) { animation-delay: 50ms; }
-  .domain-row:nth-child(4) { animation-delay: 75ms; }
-  .domain-row:nth-child(5) { animation-delay: 100ms; }
-}
-@keyframes domain-menu-rise {
-  from { opacity: 0; transform: translateY(18px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-  .tab-bar[data-domain] { height: calc(76px + env(safe-area-inset-bottom)); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
-}
-@media (max-width: 360px) {
-  .tab-bar[data-domain] .tab-item { font-size: 9px; }
-  .tab-bar[data-domain] .domain-switch { flex-basis: 48px; }
-  .domain-switcher-overlay { padding-left: 16px; padding-right: 16px; }
-  .domain-row { gap: 10px; padding: 14px 12px; }
-}
-@media (max-height: 560px) {
-  .domain-list { gap: 8px; }
-  .domain-row { min-height: 64px; padding: 10px 14px; }
-}
 
 /* ── oldal-leltár (mezo-ju4j6.17) ──────────────────────────────────────────
    A „Minden oldal" lista: a négy fül átszabása alatti biztonsági háló. Nem díszes —
@@ -13774,204 +13442,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
 
 /* ▲▲ F1:KIT */
-/* ▼▼ F1:CHROME */
-/* ═══════════════════════════════════════════════════════════════════════════
-   ── uveg chrome (mezo-me75u.1) ──────────────────────────────────────────────
-   The app chrome keeps its CONTENT and behavior and wears glass (üveg bible §7,
-   approved on prototypes/fuel-uveg.html 2026-09-23). Built once here; every later
-   slice reuses it untouched. The chrome keeps the live CLAY icons; content wears
-   the Titanium 3D set. No day-part switcher. No sheen on the bottom bar.
-   ═══════════════════════════════════════════════════════════════════════════ */
-/* Shared black canvas (mezo-x4r3c): opaque header, page and status bar agree.
-   Keep the parked light decoration; dark chrome has no colored wash or backdrop. */
-:root[data-theme="dark"] .app-head-bg {
-  background: var(--canvas);
-  /* A világos mód 18px fade-tail-je (height: 100% + 18px) maszk nélkül és fedő canvasszal
-     tömör fekete sávként festett rá minden oldal tetejére (mezo-rqa9s) — sötétben nincs
-     áttűnés, a háttér ott ér véget, ahol a fejléc. */
-  height: 100%;
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-:root[data-theme="dark"] .app-head-bg > * { display: none; }
-.app-head { display: flex; align-items: center; gap: 8px; }
-/* The tallest control is now the 46px orb (was the 42px round button): the condensed rhythm
-   derives from it so the header still lands on --mzh-head-cond-h. */
-.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 46px); }
-.app-head-wordmark {
-  font-size: 27px; letter-spacing: -1.3px;
-  background: linear-gradient(120deg, #F5EFE6 0%, #E6DDFF 55%, #E9C48A 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 14px rgba(171, 159, 210, 0.28));
-}
-/* round glass buttons (40px) — the badge sits OUTSIDE, so is-round keeps overflow visible */
-.nap-roundbtn.glass { width: 40px; height: 40px; border: 0; }
-.nap-roundbtn.glass.is-open {
-  background:
-    radial-gradient(90% 90% at 50% 30%, color-mix(in srgb, var(--c) 36%, transparent), transparent 70%),
-    linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
-  border: 0;
-}
-.nap-q.glass .nap-q-glyph { font-family: var(--ff-body); font-style: normal; font-size: 17px; font-weight: 600; color: #FFD99A; }
-.nap-roundbtn.glass .nap-badge {
-  position: absolute; top: -3px; right: -4px; z-index: 4; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px;
-  font-size: 10px; font-weight: 700; color: #191614;
-  background: linear-gradient(135deg, #FFB39C, #FF7E5C);
-  box-shadow: 0 0 10px rgba(255, 126, 92, 0.7), 0 0 0 2px var(--canvas);
-}
-.nap-roundbtn.glass .nap-offnow {
-  position: absolute; top: 1px; right: 1px; z-index: 4; width: 8px; height: 8px;
-  background: var(--dv-amber); box-shadow: 0 0 8px var(--dv-amber), 0 0 0 2px var(--canvas);
-}
-/* the filling day orb: a 46px glass sphere with the coral liquid (DayOrb) inside */
-.nap-avatar.glass { width: 46px; height: 46px; padding: 0; }
-.nap-avatar.glass .dayorb { overflow: visible; }
-.dayorb-glass { fill: rgba(245, 239, 230, 0.05); stroke: rgba(245, 239, 230, 0.14); stroke-width: 2.5; }
-.dayorb-liquid { filter: drop-shadow(0 0 6px rgba(255, 126, 92, 0.65)); }
-.dayorb-hi { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 5.5; stroke-linecap: round; }
-@keyframes uv-orbwave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-20px); } }
-@media (prefers-reduced-motion: no-preference) {
-  .dayorb-wave { animation: uv-orbwave 3.2s ease-in-out infinite; }
-}
-/* §7.1 notification panel: a .glass card; chips + rows flat, unread = a 2px sky inset edge */
-.app-head > .nap-ntfpanel.glass { border: 0; }
-.nap-ntfpanel.glass .nap-ntfeyebrow { color: var(--text-muted); letter-spacing: 1.3px; }
-.nap-ntfpanel.glass .nap-ntfcnt { color: #191614; background: var(--dv-sky); box-shadow: 0 0 12px rgba(127, 178, 222, 0.5); }
-.nap-ntfpanel.glass .nap-ntfcnt.is-none { color: var(--text-muted); background: rgba(245, 239, 230, 0.05); box-shadow: none; }
-.nap-ntfpanel.glass .nap-ntfallread { color: var(--dv-sky); }
-.nap-ntfpanel.glass .nap-ntftabs button {
-  border: 0; background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-  font-size: 12px; font-weight: 600; padding: 6px 11px;
-}
-.nap-ntfpanel.glass .nap-ntftabs button.on {
-  color: #191614; background: var(--dv-sky); box-shadow: 0 0 12px rgba(127, 178, 222, 0.5);
-}
-.nap-ntfpanel.glass .nap-ntftabs button.on .n { color: #191614; }
-.nap-ntfpanel.glass .nap-ntfday { background: rgba(34, 30, 27, 0.94); box-shadow: 0 6px 8px -6px rgba(34, 30, 27, 0.94); color: var(--text-muted); letter-spacing: 1.3px; }
-.nap-ntfpanel.glass .nap-ntfrow { background: rgba(245, 239, 230, 0.04); margin-bottom: 6px; }
-.nap-ntfpanel.glass .nap-ntfrow.unread { background: rgba(245, 239, 230, 0.04); box-shadow: inset 2px 0 0 var(--dv-sky); }
-.nap-ntfpanel.glass .nap-ntf-dot { background: var(--dv-sky); box-shadow: 0 0 8px var(--dv-sky); }
-.nap-ntfpanel.glass .nap-ntfrow.unread .nap-ntf-when { color: var(--dv-sky); }
-.nap-ntfpanel.glass .nap-ntfico { box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08); }
-.nap-ntfpanel.glass .nap-ntfft { border-top-color: var(--divider); }
-.nap-ntfpanel.glass .nap-ntfft button { color: var(--dv-sky); }
-
-/* §7.2 bottom menu — domain accents for --c (the §2 dark dv values) */
-.tab-bar[data-domain="nap"],   .domain-row[data-domain="nap"]   { --c: var(--dv-amber); }
-.tab-bar[data-domain="train"], .domain-row[data-domain="train"] { --c: var(--dv-coral); }
-.tab-bar[data-domain="fuel"],  .domain-row[data-domain="fuel"]  { --c: var(--dv-sage); }
-.tab-bar[data-domain="mezo"],  .domain-row[data-domain="mezo"]  { --c: var(--dv-lav); }
-.tab-bar[data-domain="me"],    .domain-row[data-domain="me"]    { --c: var(--dv-rose); }
-/* Docked, not floating (owner 2026-09-26, mezo-jubix): the capsule let the page show below and
-   through it. The bar sits flush on the bottom edge, full width, with an OPAQUE warm-graphite
-   ground (the domain tint rides on top), and the gradient glass frame only on its top edge.
-   The items keep their glass dress unchanged. */
-.tab-bar.glass[data-domain] {
-  position: absolute; left: 0; right: 0; bottom: 0; height: auto; z-index: 40;
-  display: flex; align-items: stretch; gap: 2px; padding: 6px 8px 8px;
-  border: 0; border-radius: 22px 22px 0 0;
-  background:
-    radial-gradient(120% 140% at 50% 0%, color-mix(in srgb, var(--c) 14%, transparent), transparent 70%),
-    linear-gradient(180deg, #2A2420, #1C1916);
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-  box-shadow:
-    0 -14px 28px -18px rgba(0, 0, 0, 0.8),
-    0 -6px 22px -10px color-mix(in srgb, var(--c) 28%, transparent),
-    inset 0 1px 0 rgba(255, 244, 230, 0.10);
-}
-.tab-bar.glass[data-domain]::before { padding: 1.3px 0 0; }
-.tab-bar.glass[data-domain] .tab-boop {
-  position: relative; flex: 0 0 62px; width: 62px; height: 58px; margin-right: 4px; padding: 0;
-  display: grid; place-items: center; border: 0; border-radius: 22px;
-  background: radial-gradient(80% 90% at 50% 35%, color-mix(in srgb, var(--c) 22%, transparent), transparent 72%);
-}
-.tab-bar.glass[data-domain] .tab-boop::after {
-  content: ''; position: absolute; right: -4px; top: 12px; bottom: 12px; width: 1px; background: var(--divider);
-}
-.tab-bar.glass[data-domain] .tab-boop .tab-ico { width: 44px; height: 44px; }
-.tab-bar.glass[data-domain] .tab-boop .tab-ico svg {
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 12px color-mix(in srgb, var(--c) 45%, transparent));
-}
-.tab-bar.glass[data-domain] .tab-item:not(.tab-boop) {
-  flex: 1; min-width: 0; gap: 3px; padding: 6px 0 5px; border-radius: 20px;
-  font-size: 10px; font-weight: 500; color: var(--text-muted);
-}
-.tab-bar.glass[data-domain] .tab-item:not(.tab-boop):not(.active) .tab-ico svg { filter: grayscale(0.45) brightness(0.8); }
-.tab-bar.glass[data-domain] .tab-item.active {
-  color: var(--text-primary); font-weight: 600;
-  background: radial-gradient(80% 90% at 50% 20%, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 28%, transparent), 0 0 16px -4px color-mix(in srgb, var(--c) 50%, transparent);
-}
-.tab-bar.glass[data-domain] .tab-item.active .tab-ico svg {
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 60%, transparent));
-}
-.phone-screen:has(.tab-bar.glass[data-domain]) > .home-indicator { background: var(--text-primary); }
-@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
-  /* The full 34px home-indicator inset under the items left a dead band on Face-ID iPhones
-     (owner, iPhone 17 Pro Max). The labels may sit over the upper half of that zone; only the
-     indicator's own ~16px strip stays clear. Non-notched devices (inset 0) keep 8px. */
-  .tab-bar.glass[data-domain] { height: auto; bottom: 0; padding-bottom: max(8px, calc(env(safe-area-inset-bottom) - 16px)); }
-}
-@media (max-width: 360px) {
-  /* 320px: the wordmark + five round controls must share one row without overlapping. */
-  .app-head { gap: 5px; }
-  .app-head-wordmark { font-size: 22px; letter-spacing: -1px; }
-  .nap-roundbtn.glass { width: 36px; height: 36px; }
-  .nap-avatar.glass { width: 42px; height: 42px; }
-  .tab-bar.glass[data-domain] .tab-boop { flex-basis: 50px; width: 50px; }
-  .tab-bar.glass[data-domain] .tab-item:not(.tab-boop) { font-size: 9px; }
-}
-/* §7.2 domain switcher: a glass card above the bar; five living Boops in a row */
-.domain-switcher-overlay {
-  align-items: flex-end; padding: 24px 10px calc(92px + env(safe-area-inset-bottom));
-  background: rgba(0, 0, 0, 0.45);
-  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
-}
-.domain-switcher.glass { --c: var(--dv-sage); max-width: none; padding: 16px 14px 14px; border-radius: 26px; }
-.domain-eyebrow { display: block; margin: 0 4px 10px; }
-.domain-switcher.glass .domain-list { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-.domain-switcher.glass .domain-row {
-  flex-direction: column; justify-content: center; gap: 5px; min-height: 0; padding: 10px 0 8px;
-  border: 0; border-radius: 18px; background: none; box-shadow: none; text-align: center;
-}
-.domain-switcher.glass .domain-row .domain-row-mark svg {
-  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 45%, transparent));
-}
-.domain-switcher.glass .domain-row-text { align-items: center; gap: 0; }
-.domain-switcher.glass .domain-row-text strong { font: 600 11px/1.2 var(--ff-body); color: var(--text-secondary); }
-.domain-switcher.glass .domain-row.current {
-  border: 0;
-  background: radial-gradient(80% 90% at 50% 25%, color-mix(in srgb, var(--c) 26%, transparent), transparent 72%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent);
-}
-.domain-switcher.glass .domain-row.current .domain-row-text strong { color: var(--text-primary); }
-.domain-switcher.glass .domain-all {
-  margin-top: 12px; padding: 11px 16px; border: 0;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
-  color: var(--text-secondary);
-}
-@media (max-width: 360px) {
-  .domain-switcher.glass .domain-row { padding: 8px 0 6px; }
-  .domain-switcher.glass .domain-row-text strong { font-size: 10px; }
-}
-/* §7.2 FAB: a lavender glass rounded square with the breathing glow */
-.quicklog-fab.glass {
-  position: absolute; right: 18px; bottom: calc(96px + env(safe-area-inset-bottom)); width: 58px; height: 58px;
-  border: 0; border-radius: 20px; color: #E6DDFF;
-}
-.quicklog-fab.glass svg { width: 26px; height: 26px; }
-@media (prefers-reduced-motion: no-preference) {
-  .quicklog-fab.glass { animation: uv-breathe 3s ease-in-out infinite; }
-}
-/* ── /uveg chrome ──────────────────────────────────────────────────────────── */
-
 /* ═══════════════════════════════════════════════════════════════════════════
    U2 · Fuel többi (mezo-me75u.2) — the rest of Fuel in the Üveg material.
    Reference: docs/design_2.0/prototypes/uveg-fuel-tobbi.html (owner OK 2026-09-23).
    Uses ONLY the uveg kit above (.glass, .uv-flat, .uv-empty, .uv-well, .uv-halo, rings,
    bars, type); these blocks hold per-surface geometry. Dark only.
    ═══════════════════════════════════════════════════════════════════════════ */
-/* ▲▲ F1:CHROME */
 /* ── uveg fuel konyha (mezo-me75u.2) ── Konyha, Kamra, Kamra item, kamra sheets ── */
 /* Reference: prototypes/uveg-fuel-tobbi.html `konyha()`, `kamra()`, `kamraItem()`, `SH.import/
    add/catalog/catfilter`. Ranking (bible §3.4): the two captures, the three posters, the Kamra
@@ -17111,11 +16587,6 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .nap-obs-quiet { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 12.5px; line-height: 1.4; color: var(--text-secondary); }
 .nap-obs-quiet .t-ico { flex: none; filter: drop-shadow(0 3px 4px rgba(var(--fo-shade), 0.5)); }
 
-/* the header notification panel's CONTENT (§7.1; the panel glass itself is the chrome block's):
-   3D chip icons at 17px with no halo, 3D row icons at 28px with a plain drop, no tint tile */
-.app-head .nap-ntfpanel.glass .nap-ntfico { width: 30px; height: 30px; border-radius: 0; background: none; box-shadow: none; }
-.nap-ntfpanel.glass .nap-ntfico .t-ico { filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.5)); }
-.nap-ntfpanel.glass .nap-ntftabs button .t-ico { filter: none; }
 /* ── /uveg nap uzenetek ── */
 
 /* ── uveg nap napzaras (mezo-me75u.3) ── /ritual: the six acts ── */
@@ -20152,7 +19623,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 /* the block's tints, named once (mezo-yjzhw.7). Light inks of the --dv-* hues for type and
    marks on the dark ground, the lit-well gradient stops, and the dark ink on an accent button.
    Declared on every root this block styles: the page, the Mai napzárás card, the tab bar. */
-.napom-page, .nap-center, .tab-bar {
+.napom-page, .nap-center {
   --napom-lav-ink: color-mix(in srgb, #C9BDF0 var(--fo-pastel), var(--text-primary));
   --napom-lav-hi: color-mix(in srgb, #E6DDFF var(--fo-pastel), var(--text-primary));
   --napom-gold-ink: color-mix(in srgb, #E9C48A var(--fo-pastel), var(--text-primary));
@@ -20440,16 +19911,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   100% { box-shadow: inset 0 0 0 0 color-mix(in srgb, var(--dv-coral) 0%, transparent); }
 }
 
-/* chrome: the A napom tab dot (8px lavender, glow, a canvas ring), top-right of the icon.
-   The dot is decoration (aria-hidden); its meaning is the link's sr-only description. */
-.tab-bar .tab-item .tab-ico { position: relative; }
-.tab-bar.glass .tab-ico > .tb-dot {
-  position: absolute; top: -2px; right: -5px; z-index: 2;
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--napom-lav-ink); box-shadow: 0 0 8px var(--dv-lav), 0 0 0 2px var(--canvas);
-}
 /* rule 2: `.glass > *` would drop the sr-only description into the bar's flex row */
-.tab-bar.glass > .sr-only { position: absolute; }
 
 /* esti napzárás-kártya a Mai oldalon (owner 2026-09-24, mezo-yjzhw.4): from 20:00 local time a
    lavender glass card sits under the "A napod." heading; after closing it shrinks to a flat
@@ -27247,8 +26709,6 @@ main.settings-page {
   position: sticky; top: 0; z-index: 15; margin: 0 -16px; padding: 6px 16px 12px;
   background: linear-gradient(180deg, var(--canvas) 74%, transparent);
 }
-/* the header's background runs an ~18px tail past its box: stick just below it, not under it */
-.screen-content:has(.app-head) .mmr-page .mmr-segbar { top: calc(var(--mzh-head-cond-h) + 12px); }
 .mmr-page .mmr-seg {
   display: flex; gap: 2px; width: 100%; max-width: 420px; margin: 0 auto; padding: 3px;
   border-radius: 999px; background: var(--surface-elevated); box-shadow: inset 0 0 0 1px var(--divider);
@@ -28512,20 +27972,7 @@ main.settings-page {
    and content scrolling underneath melts into a blur instead of colliding with the controls.
    Its bottom edge fades out over 18px so no line marks where the header ends. */
 :root[data-theme="dark"] .status-bar { background: transparent; }
-:root[data-theme="dark"] .app-head-bg {
-  top: -60px;
-  height: calc(100% + 60px + 18px);
-  background: transparent;
-  -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  backdrop-filter: blur(22px) saturate(1.3);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 18px), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 18px), transparent 100%);
-}
 
-/* At rest the veil is fully clear (seamless with the page); once the header condenses on
-   scroll, a light canvas tint joins the blur so the controls stay legible over busy cards. */
-:root[data-theme="dark"] .app-head-bg { transition: background-color 0.3s ease; }
-:root[data-theme="dark"] .app-head.is-cond .app-head-bg { background-color: color-mix(in srgb, var(--canvas) 45%, transparent); }
 /* ────────────────────────────────────────────────────────────────────────────
    ── uveg reteg unnep (mezo-me75u.10) ──
    ──────────────────────────────────────────────────────────────────────────── */

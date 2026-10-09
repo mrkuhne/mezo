@@ -30,7 +30,7 @@ describe('ConferenceArchiveSheet', () => {
   test('évváltásnál év-elválasztó jelenik meg', () => {
     // Sheet portals its content to document.body (no `.phone-screen` in this test), so a
     // sibling of RTL's own `container` div — query the document, not `container` (repo
-    // convention for portaled content, see src/app/AppHeader.test.tsx and friends).
+    // convention for portaled content, see src/app/TitleBar.test.tsx and friends).
     renderSheet()
     const years = Array.from(document.querySelectorAll('.kz-arcyr')).map((el) => el.textContent)
     expect(years).toEqual(['2025'])

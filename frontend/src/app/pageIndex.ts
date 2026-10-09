@@ -8,7 +8,7 @@
 // quietly dropped while the menu around it is redrawn.
 //
 // The grouping is NOT stored here. `MindenOldalPage` derives each page's group by
-// running `activeTabRoute()` — the very rule the TabBar uses — so when a tab's
+// running `activeTabRoute()` — the very rule the top tabs use — so when a tab's
 // route or `owns` list changes, the leltár regroups itself and can never disagree
 // with the bar. A page under no tab lands in "Máshonnan elérhető", which is the
 // honest answer, not a bug.
@@ -182,7 +182,7 @@ export const PAGE_INDEX: IndexedPage[] = [
 export const NOT_INDEXED: Record<string, string> = {
   '/train/gym': 'Nyugdíjazott oldal, csak vékony átirányítás maradt belőle (mezo-d20.3.2).',
   '/me/beallitasok/admin': 'Tulajdonosi admin-felület átirányítása, nem felhasználói oldal.',
-  '/minden': 'Maga a leltár. Nem listázza önmagát — a területváltó alsó sorából nyílik.',
+  '/minden': 'Maga a leltár. Nem listázza önmagát — a fejléc „Minden oldal” gombjáról nyílik.',
 }
 
 /**

@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · FloatingReturnLayer — the way back into a running gym session
 // (mezo-78sd, reshaped by mezo-d20.1.1). Mounted once in AppLayout next to the
-// TabBar; positioning lives in prototype.css (.float-stack / .float-return,
+// BottomBar; positioning lives in prototype.css (.float-stack / .float-return,
 // z-index 45 — above the tab bar (40), below sheets (200+)).
 //
 // Design 2.0 decision B: the lavender chat bubble is retired — Mezo (chat) is a

@@ -96,7 +96,7 @@ export function AdminUserDetailPage() {
           <>
             {/* Fix round 1 (Finding 2): deliberately NOT `PageHero` — `PageHero` is shaped for
                 the mobile app shell's centred tile→full-page stack, and `/admin` is a desktop
-                surface with no `PhoneFrame`/`TabBar`/mobile shell to match. This row-layout hero
+                surface with no `PhoneFrame`/`BottomBar`/mobile shell to match. This row-layout hero
                 (avatar, name, stats, ring) is admin-only and owns its own markup; don't "unify"
                 it with `PageHero` — that would be un-doing a deliberate fork, not a cleanup. */}
             <div className="ad-hero">

@@ -103,13 +103,20 @@ const EXPECTED_SLICES = [
 
 test('hero: "Heti kép" + the week mention bignum', () => {
   renderAt('/me/people/heti')
-  expect(screen.getByText('Heti kép')).toBeInTheDocument()
+  // the hero's name (the shell's title bar says „Heti kép" too until the page is re-dressed)
+  expect(screen.getAllByText('Heti kép').length).toBeGreaterThan(0)
   expect(document.querySelector('.mz-bignum')?.textContent).toBe(String(WEEK_MENTION_COUNT))
 })
 
-test('header back chip reads "‹ Kapcsolatok"', () => {
-  renderAt('/me/people/heti')
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
+// Was: „header back chip reads ‹ Kapcsolatok". In the shell the ONE back control is the title
+// bar's `‹` (Folyadék frame, mezo-n4wf5.1), running the page's own handler — to Kapcsolatok.
+test('the back control is the title bar’s, and it returns to Kapcsolatok', () => {
+  const { router } = renderAt('/me/people/heti')
+  const back = screen.getByRole('button', { name: 'Vissza' })
+  expect(back).toHaveClass('fo-back')
+  expect(document.querySelector('.mz-backbtn')).toBeNull()
+  fireEvent.click(back)
+  expect(router.state.location.pathname).toBe('/me/people')
 })
 
 test('the hub tile\'s "Heti kép" navigation lands here (real router wiring)', () => {

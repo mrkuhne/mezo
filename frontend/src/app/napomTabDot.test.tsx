@@ -1,4 +1,4 @@
-// A napom tab dot is LIVE (mezo-yjzhw.4, review round 1): once yesterday's overnight review is on
+// A napom tab dot (now on the top tabs, TopTabs.tsx) is LIVE (mezo-yjzhw.4, review round 1): once yesterday's overnight review is on
 // screen, `markSeen` fires `napom:seen` and AppLayout's `useMorningMode` drops the dot at once —
 // not on some later, unrelated re-render.
 import { act, render, screen, waitFor } from '@testing-library/react'
@@ -27,6 +27,11 @@ test('the morning dot disappears as soon as yesterday’s scored review has been
   await act(async () => { await router.navigate('/nap/napom/2026-09-23') })
   expect(await screen.findByText('MEZO · A NAPODRÓL')).toBeInTheDocument()
   expect(localStorage.getItem(seenKey('2026-09-23'))).toBe('1')
+  // The day page is a sub-page in the Folyadék frame (mezo-n4wf5.1): it has no tab strip. Back on
+  // a Nap hub the strip is there again — and the dot is gone, although nothing else re-rendered
+  // the shell in between.
+  expect(screen.queryByRole('link', { name: 'A napom' })).not.toBeInTheDocument()
+  await act(async () => { await router.navigate('/nap/rutin') })
   await waitFor(() => expect(screen.getByRole('link', { name: 'A napom' })).not.toHaveAttribute('aria-describedby'))
-  expect(document.querySelector('.tb-dot')).toBeNull()
+  expect(document.querySelector('.fo-tabs .td')).toBeNull()
 })

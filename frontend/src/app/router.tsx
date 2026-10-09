@@ -256,7 +256,7 @@ function TrainIndex() {
 
 export const routes: RouteObject[] = [
   // Registered BEFORE the app root so `/admin` is matched by its own layout (desktop
-  // shell, no PhoneFrame/TabBar) rather than falling into AppLayout's `*` catch-all
+  // shell, no PhoneFrame/BottomBar) rather than falling into AppLayout's `*` catch-all
   // (mezo-d5iy.9). The two trees are otherwise disjoint — no path collides.
   ...adminRoutes,
   {
@@ -286,7 +286,7 @@ export const routes: RouteObject[] = [
       // replaced the original AppHero/SubNavDropdown shell is ITSELF retired now.
       // /train has no face of its own any more — TrainIndex below unconditionally
       // redirects it to /train/mai. Four owner-approved tabs (Mai/Terv/Terhelés/
-      // Gyakorlatok, navModel.ts's `train` row) light the global TabBar; every route
+      // Gyakorlatok, navModel.ts's `train` row) light the global BottomBar; every route
       // below is a full-page sibling reached either as a tab home or via that tab's
       // `owns` deep-route list — see docs/features/train.md for the tab → route map.
       { path: 'train', element: <TrainIndex /> },

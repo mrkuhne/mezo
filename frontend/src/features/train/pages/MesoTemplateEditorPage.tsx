@@ -25,6 +25,7 @@ import { MesoWeekEditor } from '@/features/train/components/MesoWeekEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
+import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek'
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
 // every edit on this page (day plan, rename, tiers) travels through this one helper.
@@ -73,7 +74,11 @@ export function MesoTemplateEditorPage() {
   const { templates, pending, updateTemplate } = useMesoTemplates()
   const template = templates.find((t) => t.id === id)
 
-  const backBar = (
+  // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the back control and runs this
+  // handler; the page keeps its own sticky back bar only where no title bar is mounted.
+  useFrameBack(goBack)
+  const shellHasBack = useHasTitleBar()
+  const backBar = shellHasBack ? null : (
     <div className="sticky-top" style={{ padding: '8px 24px' }}>
       <button type="button" onClick={goBack} className="row gap-sm">
         <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>

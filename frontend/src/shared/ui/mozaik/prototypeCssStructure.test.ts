@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
+import frameCss from '@/styles/folyadek-frame.css?raw'
 
 /**
  * Structural guard for `styles/prototype.css` (mezo-d20.9.1).
@@ -1358,10 +1359,18 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
     expect(banner).not.toMatch(/var\(--(coral|sage|amber)-deep\)/)
   })
 
-  test('the shell: the domain switcher marks WHERE YOU ARE with the only wash tile', () => {
-    expectHouseGrade('.domain-row', 'az a terület, ahol éppen állsz')
-    expect(stripComments(rawCss)).toMatch(/\.domain-row\.current \{[^}]*background: var\(--mz-wash-sand\)/)
-    expect(stripComments(rawCss)).toMatch(/\.domain-row\.current\[data-domain="fuel"\]\s*\{[^}]*var\(--mz-wash-sage\)/)
+  // Was: „the domain switcher marks WHERE YOU ARE with the only wash tile". The switcher is gone
+  // (Folyadék frame, mezo-n4wf5.1); WHERE YOU ARE is said by the bottom bar itself — the active
+  // domain is the only item in ink and bold, the rest stay faint — and by the one filled pill
+  // on the top tabs.
+  test('the shell: the bottom bar and the top tabs mark WHERE YOU ARE with the only lit item', () => {
+    const frame = stripComments(frameCss)
+    expect(frame).toMatch(/\.fo-nav-item \{[^}]*color: var\(--fo-faint\)/)
+    expect(frame).toMatch(/\.fo-nav-item\.on \{[^}]*color: var\(--fo-ink\); font-weight: 800/)
+    expect(frame).toMatch(/\.fo-tabs a\.on \{[^}]*background: linear-gradient\(135deg, var\(--liq1\), var\(--liq2\)\)/)
+    expect(frame).not.toMatch(/\.fo-tabs a \{[^}]*background:/)
+    // no rule of the retired switcher is left in either sheet
+    expect(stripComments(rawCss) + frame).not.toMatch(/\.domain-(row|switcher|list|all|eyebrow)/)
   })
 })
 
@@ -1389,14 +1398,15 @@ describe('the uveg kit section is registered and carries the light card recipe (
     expect(rawCss.indexOf(END_MARKER)).toBeGreaterThan(rawCss.indexOf(START_MARKER))
   })
 
-  test('the F1:KIT markers frame the block, in order, ahead of F1:CHROME', () => {
+  test('the F1:KIT markers frame the block, in order; the F1:CHROME block is gone (task 5)', () => {
     const open = rawCss.indexOf('/* ▼▼ F1:KIT */')
     const close = rawCss.indexOf('/* ▲▲ F1:KIT */')
     expect(open).toBeGreaterThan(-1)
     expect(close).toBeGreaterThan(open)
     expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(open)
     expect(rawCss.indexOf(END_MARKER)).toBeLessThan(close)
-    expect(rawCss.indexOf('/* ▼▼ F1:CHROME */')).toBeGreaterThan(close)
+    // the old glass chrome was replaced by the Folyadék frame (styles/folyadek-frame.css)
+    expect(rawCss).not.toContain('F1:CHROME')
   })
 
   test('the card is white with a soft drop: no frosting, no gradient frame', () => {
@@ -1460,26 +1470,66 @@ describe('the uveg kit section is registered and carries the light card recipe (
   })
 })
 
-describe('the uveg chrome section is registered (mezo-me75u.1, bible §7)', () => {
-  const section = () => stripComments(slice('── uveg chrome (', '── /uveg chrome '))
+// Was: „the uveg chrome section is registered (mezo-me75u.1)". The glass chrome block of
+// prototype.css is gone; the app chrome is the Folyadék frame (mezo-n4wf5.1), in its own sheet.
+describe('the folyadék frame sheet carries the app chrome (mezo-n4wf5.1)', () => {
+  const frame = stripComments(frameCss)
 
-  test('the block exists and styles the header, the bar, the switcher and the FAB', () => {
-    const css = section()
-    for (const sel of ['.nap-roundbtn.glass', '.nap-avatar.glass', '.nap-ntfpanel.glass',
-      '.tab-bar.glass[data-domain]', '.domain-switcher.glass', '.quicklog-fab.glass']) {
-      expect(css, `${sel} missing from the uveg chrome block`).toContain(sel)
+  test('it styles the title bar, the top tabs, the bottom bar and the FAB', () => {
+    for (const sel of ['.fo-top {', '.fo-top.sub {', '.fo-trow.hub', '.fo-eb', '.fo-btns {', '.fo-ib {', '.fo-h {',
+      '.fo-help {', '.fo-tabs {', '.fo-tabs a.on {', '.fo-nav {', '.fo-nav-item {', '.fo-fab {',
+      '.fo-top > .nap-ntfpanel {']) {
+      expect(frame, `${sel} missing from folyadek-frame.css`).toContain(sel)
     }
   })
 
-  test('the orb wave only moves inside the reduced-motion gate', () => {
-    const css = section()
-    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
-    expect(gate).toBeGreaterThan(-1)
-    expect(css.indexOf('.dayorb-wave { animation')).toBeGreaterThan(gate)
+  test('the values are the approved prototype’s (vilagos/kit.js + foly.js)', () => {
+    expect(frame).toMatch(/\.fo-top \{[^}]*padding: 18px 18px 0;[^}]*background: color-mix\(in srgb, #F8FCFD 78%, transparent\)/)
+    expect(frame).toMatch(/\.fo-h \{[^}]*font-size: 36px; font-weight: 800; letter-spacing: -1\.4px/)
+    expect(frame).toMatch(/\.fo-tabs a \{[^}]*padding: 8px 14px; border-radius: 999px/)
+    expect(frame).toMatch(/\.fo-nav \{[^}]*left: 10px; right: 10px;[^}]*border-radius: 30px/)
+    expect(frame).toMatch(/\.fo-fab \{[^}]*width: 54px; height: 54px/)
   })
 
-  test('there is no day-part switcher in the glass chrome', () => {
-    expect(section()).not.toContain('nap-dpmenu')
+  test('at ≤360px the five buttons take their own line above the context line, and titles shrink', () => {
+    const small = frame.slice(frame.indexOf('@media (max-width: 360px)'))
+    expect(small).toContain('.fo-trow.hub { flex-wrap: wrap; row-gap: 8px; }')
+    expect(small).toContain('.fo-trow.hub .fo-btns { margin-left: auto; order: 1; }')
+    expect(small).toContain('.fo-trow.hub .fo-eb { order: 2; flex: 0 0 100%; }')
+    expect(small).toContain('.fo-h:not(.sm) { font-size: 25px;')
+  })
+
+  test('every animation and transition of the frame lives inside the reduced-motion gate', () => {
+    const gate = frame.indexOf('@media (prefers-reduced-motion: no-preference)')
+    expect(gate).toBeGreaterThan(-1)
+    const before = frame.slice(0, gate).replace(/@keyframes [\s\S]*?\}\s*\}/g, '')
+    expect(before).not.toMatch(/\banimation\s*:/)
+    expect(before).not.toMatch(/\btransition\s*:/)
+    expect(frame.slice(gate)).toContain('.fo-top > .nap-ntfpanel { animation: fo-ntfpop')
+  })
+
+  test('there is no day-part switcher in the chrome', () => {
+    expect(frame + stripComments(rawCss)).not.toContain('nap-dpmenu')
+  })
+
+  test('no rule of the retired chrome is left in prototype.css', () => {
+    const css = stripComments(rawCss)
+    const styled = (cls: string) => new RegExp('\\.' + cls.split('.').join('\\.') + '(?![\\w-])').test(css)
+    for (const cls of ['tab-bar', 'tab-item', 'tab-boop', 'tb-dot', 'app-head', 'nap-head', 'nap-roundbtn',
+      'nap-avatar', 'nap-badge', 'nap-offnow', 'nap-q', 'quicklog-fab', 'nap-ntfscrim', 'nap-ntfpanel.glass']) {
+      expect(styled(cls), `.${cls} is still styled in prototype.css`).toBe(false)
+    }
+    expect(css).not.toContain('is-cond')
+    // the check itself can see a class that IS styled
+    expect(styled('nap-ntfrow')).toBe(true)
+  })
+
+  // The day orb's sprite-era drawing (shared/ui/DayOrb) is no longer in the bar, but the
+  // component and its rules stay until its last consumer decision — its wave is still gated.
+  test('the DayOrb wave only moves inside the reduced-motion gate', () => {
+    const css = stripComments(rawCss)
+    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\) \{\s*\.dayorb-wave \{ animation: uv-orbwave/)
+    expect(css.match(/\.dayorb-wave \{ animation/g)).toHaveLength(1)
   })
 })
 
@@ -1584,7 +1634,7 @@ const U3_BLOCKS: Array<[string, string[]]> = [
   ['rogzites', ['.sheet.capture-sheet.glass', '.capture-hero-value', '.capture-scale-cell', '.quicklog-tile.glass',
     '.quicklog-chat.glass', '.quicklog[data-variant="sheet"] .quicklog-chat', '.cta-primary']],
   ['uzenetek', ['.nap-mzmsg.glass', '.nap-mzrow.uv-flat', '.nap-mz-cta.glass', '.nap-ejstrip.glass', '.nap-ejcell',
-    '.nap-obs.glass', '.nap-obs-empty.uv-empty', '.nap-ntfpanel.glass .nap-ntfico .t-ico']],
+    '.nap-obs.glass', '.nap-obs-empty.uv-empty']],
   ['napzaras', ['.rz-screen[data-act=', '.rz-exit', '.rz-cta', '.rz-reflect-box.glass', '.rz-loop.glass',
     '.rz-xp-num', '.rz-skill-row.glass', '.rz-note.glass', '.rz-handoff.glass']],
 ]

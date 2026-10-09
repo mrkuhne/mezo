@@ -61,7 +61,7 @@ export function NotificationFeedPage() {
                   return (
                     <button key={n.id} type="button"
                       className={cn('nf-row', n.readAt === null && 'unread')}
-                      // Védőőr, mint a fejléc peekjében (`AppHeader.tsx`): a backend oszlop non-null,
+                      // Védőőr, mint a fejléc peekjében (`TitleBar.tsx`): a backend oszlop non-null,
                       // de két felület, ami ugyanazt a mezőt olvassa, ne mondjon két különbözőt.
                       onClick={() => {
                         if (n.readAt === null) void markItemRead(n.id).catch(() => {})

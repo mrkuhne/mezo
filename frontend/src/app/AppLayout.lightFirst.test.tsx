@@ -85,6 +85,6 @@ test.each(FORMERLY_TITAN)('%s a világos zár alatt világos, sötét beállít�
 // a strip nem nyúlhatott hozzájuk.
 test('a /train/session továbbra is chrome nélkül fut', () => {
   const { container } = renderAt('/train/session')
-  expect(container.querySelector('.tab-bar')).toBeNull()
-  expect(container.querySelector('.app-head')).toBeNull()
+  expect(container.querySelector('.fo-nav')).toBeNull()
+  expect(container.querySelector('.fo-top')).toBeNull()
 })

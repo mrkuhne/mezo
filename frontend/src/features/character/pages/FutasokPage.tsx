@@ -75,7 +75,7 @@ export function FutasokPage() {
   const goWeek = (iso: string) => { setParams({ start: iso }, { replace: true }); setMenuOpen(false) }
 
   // Fix round 1 (minor): the jump menu had no outside-click/Escape dismissal — the
-  // AppHeader.tsx popover contract (Escape + a "click outside the popover's own root"
+  // TitleBar.tsx popover contract (Escape + a "click outside the popover's own root"
   // listener, subscribed only while open), applied here instead of duplicated ad hoc.
   useEffect(() => {
     if (!menuOpen) return

@@ -1,17 +1,19 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { AppHeader } from '@/app/AppHeader'
+import { BottomBar } from '@/app/BottomBar'
 import { CircadianTheme } from '@/app/CircadianTheme'
 import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
 import { PhoneFrame } from '@/app/PhoneFrame'
 import { QuickLogFab } from '@/app/QuickLogFab'
 import { ScreenContent } from '@/app/ScreenContent'
-import { TabBar } from '@/app/TabBar'
+import { TitleBar } from '@/app/TitleBar'
+import { TopTabs } from '@/app/TopTabs'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { MealCeremonyProvider } from '@/features/fuel/MealCeremonyProvider'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
+import { FrameProvider } from '@/shared/ui/folyadek'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { useTodayScenario, useScheduleSnapshotWriter, useDayEvaluation, normalizeDayEvaluation } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
@@ -44,7 +46,7 @@ export function AppLayout() {
   const anchor = scenario.anchorMode && location.pathname.startsWith('/nap')
   // Full-screen surfaces where the app chrome is dead weight: the active workout session,
   // the extra-dark night page (its light would defeat the <30 lux point), and the
-  // Napzárás ritual flow (mezo-ilsj). No header, no tab bar, no FAB.
+  // Napzárás ritual flow (mezo-ilsj). No title bar, no bottom bar, no FAB.
   // mezo-88iwa.9 (T8 Task 4): `/train/sport/log` is the same kind of surface — a
   // full-screen picker → form → CEREMONY flow with its own back affordance. Measured at
   // 320px the tab bar plus the coral FAB sat on top of the ceremony's close CTA and its
@@ -76,18 +78,25 @@ export function AppLayout() {
   // minden útvonal a felhasználó SAJÁT témabeállítását követi, világos-elsőként.
   // A `useForceTheme` maga megmarad: a Napzárás rituálé (mezo-tr5v) továbbra is használja.
   // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
+  // A FrameProvider (mezo-n4wf5.1) a címsor és az oldal KÖZÖS őse: az oldal ezen át adja át
+  // a saját vissza-kezelőjét és (átöltöztetve) a címét a shellnek.
   const screen = (
+    <FrameProvider>
     <ScreenContent>
       {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden oldalon
           ugyanaz. A scrollerben ÜL, de kitapad (mezo-8az6, position: sticky) — a tartalom
-          görög alatta, ő maga a görgetőport tetején marad. */}
-      {!hideHeader && <AppHeader />}
+          görög alatta, ő maga a görgetőport tetején marad.
+          Folyadék keret (mezo-n4wf5.1): a címsor (TitleBar) és benne az aktív terület négy
+          oldala (TopTabs) — a fülek a címsor gyerekei, hogy a blokk EGYBEN tapadjon ki.
+          A napom pöttye (mezo-yjzhw.4) a fülsoron utazik. */}
+      {!hideHeader && <TitleBar><TopTabs dots={{ '/nap/napom': morning }} /></TitleBar>}
       {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
-          (TabBar) stays usable and navigating away (resetKey) recovers. */}
+          (BottomBar) stays usable and navigating away (resetKey) recovers. */}
       <ErrorBoundary resetKey={location.pathname}>
         <Outlet />
       </ErrorBoundary>
     </ScreenContent>
+    </FrameProvider>
   )
   return (
     <ArrivalProvider>
@@ -107,13 +116,14 @@ export function AppLayout() {
                   a fejléc az Outlet ELŐTTI testvér, tehát a két fogyasztó csak közös
                   ősként osztozhat a szálon — így az olvasatlan-vízjel is közös. */}
               {/* mezo-eekm: a szál-provider a hideChrome kapun BELÜL. A három chrome-mentes
-                  útvonalon nincs fejléc és nincs TabBar, tehát a szálnak nincs fogyasztója —
+                  útvonalon nincs fejléc és nincs alsó sáv, tehát a szálnak nincs fogyasztója —
                   a provider ~15 `useNeeds`-olvasása ott tiszta pazarlás volt. A provider
                   EGYÜTTES őse marad a fejlécnek és az Outlet-nek (mezo-atry), csak épp már
                   nem mountol ott, ahol egyik sincs. */}
               {hideChrome ? screen : <MezoThreadProvider>{screen}</MezoThreadProvider>}
             </TutorialProvider>
-            {!hideChrome && !inSettings && <TabBar dots={{ '/nap/napom': morning }} />}
+            {/* Az alsó sáv az öt terület, mindig (mezo-n4wf5.1) — a területváltó megszűnt. */}
+            {!hideChrome && !inSettings && <BottomBar />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
                 every tab, absent on the chrome-free full-screen flows. */}
             {!hideFab && <QuickLogFab />}

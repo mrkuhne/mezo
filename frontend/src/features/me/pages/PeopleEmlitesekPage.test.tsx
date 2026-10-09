@@ -213,9 +213,14 @@ test('header actions: ‹ Kapcsolatok back chip returns to the real hub route, L
       </ThemeProvider>
     </QueryWrapper>,
   )
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
+  // In the shell the ONE back control is the title bar's `‹` (Folyadék frame, mezo-n4wf5.1); it
+  // runs the page's own handler — the one the `‹ Kapcsolatok` chip carried.
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveClass('fo-back')
+  expect(document.querySelector('.mz-backbtn')).toBeNull()
   fireEvent.click(screen.getByText(/Log/))
   expect(screen.getByText('Mit jegyzünk meg?')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(router.state.location.pathname).toBe('/me/people')
 })
 
 test('the ‹ Kapcsolatok back chip navigates to the real /me/people hub (registered route)', () => {

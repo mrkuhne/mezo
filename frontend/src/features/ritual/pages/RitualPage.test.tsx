@@ -75,7 +75,7 @@ test('act 1 (Megérkezés) renders the fixed arrival line and no tab bar', () =>
   const { container } = renderApp()
   expect(screen.getByText('A nap véget ért.')).toBeInTheDocument()
   expect(screen.getByText('Zárjuk le együtt.')).toBeInTheDocument()
-  expect(container.querySelector('.tab-bar')).toBeNull()
+  expect(container.querySelector('.fo-nav')).toBeNull()
 })
 
 test('clicking Kezdjük advances from act 1 to act 2 (DayStoryStep)', async () => {

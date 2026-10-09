@@ -43,7 +43,7 @@
 // rather than reading „még belefér <a teljes keret>" on a finished day.
 //
 // Anatomy top→bottom:
-//   the shell fejléc (app/AppHeader.tsx, mezo-atry)
+//   the shell fejléc (app/TitleBar.tsx, mezo-atry)
 //   the day pager (DayNavigator, A13)
 //   Titán energia-hero — the remaining-kcal gauge, the tap chip, 5 macro rings (víz = a button)
 //   the day's meal BLOCKS — log into a block, open a logged meal (A10/A14)

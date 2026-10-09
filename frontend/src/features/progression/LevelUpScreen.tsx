@@ -45,7 +45,7 @@ const clampPct = (n: number) => Math.max(0, Math.min(100, n))
  * Full-bleed animated post-workout level-up overlay, in the üveg look (mezo-me75u.10,
  * prototypes/uveg-reteg.html#szint): a frameless gold→lavender halo on the dark ground, a
  * gradient numeral, glass level-up rows, flat cells for the rest. Self-portals into
- * `.phone-screen` (the Sheet technique) so it covers the TabBar. CSS keyframes (no-preference
+ * `.phone-screen` (the Sheet technique) so it covers the BottomBar. CSS keyframes (no-preference
  * branch only) + rAF count-up; reduced motion renders everything in its final state.
  * Always shows something (XP + bars) — the no-level-up case omits the Szintlépés
  * section and adapts the headline; never a dead-end. Single `Tovább` CTA.
