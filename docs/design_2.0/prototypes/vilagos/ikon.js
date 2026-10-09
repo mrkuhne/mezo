@@ -193,6 +193,8 @@ ${BUB.map(s=>H+s+'::after').join(',')}{display:none}
 ${BUB.map(s=>H+s).join(',')}{background:color-mix(in srgb,var(--c,var(--dom)) 8%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c,var(--dom)) 16%,#fff)}
 ${H}${Q} .fb{--ic:var(--c);--ic2:color-mix(in srgb,var(--c) 45%,#fff)}
 ${H}${Q} .k2-tube>svg.ic.jel,${H}${Q}[data-d="en"] .t>svg.ic.jel{--ic:color-mix(in srgb,var(--c) 78%,var(--ink));--ic2:transparent;--icf:transparent}
+${H}${Q} .fb svg.ic.jel{min-width:calc(var(--s)*.6);min-height:calc(var(--s)*.6);flex:none}
+${H}${Q} .fh-pill.on svg.ic.jel,${H}${Q} .fh-seg .on svg.ic.jel{--ic:#fff;--ic2:rgba(255,255,255,.4);--icf:transparent}
 em.edge{color:var(--ink)!important;font-weight:700;text-shadow:0 0 3px #fff,0 0 2px #fff,0 0 1px #fff;z-index:4}
 em.onliq{color:#fff!important;text-shadow:0 0 3px rgba(10,42,60,.45),0 1px 1px rgba(10,42,60,.3);z-index:4}
 ${H}${Q}[data-d="en"] .c.nd .t>svg.ic.jel{--ic:color-mix(in srgb,var(--c) 55%,var(--ink));opacity:1!important}
