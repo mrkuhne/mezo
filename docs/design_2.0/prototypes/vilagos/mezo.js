@@ -123,7 +123,11 @@ const drops=(a,cap='')=>`<div class="gds">${a.map(drop).join('')}${cap?`<small>$
 const tide=(a,{now=null,from='06',to='24'}={})=>`<div class="gt">${wave('var(--liq1)',.5)}<span class="ln"></span>${now!=null?`<span class="nw" style="left:${now}%"></span>`:''}${a.map(o=>`<${o.on?'button':'span'} class="p" style="left:${o.x}%;--c:${o.c||'var(--dom)'}"${o.on?AC(o.on):''}>${drop({k:o.k,c:o.c,s:22,in:o.in})}<b>${o.t}</b>${o.l?`<small>${o.l}</small>`:''}</${o.on?'button':'span'}>`).join('')}<em class="a">${from}</em><em class="b">${to}</em></div>`;
 const gcap=t=>`<p class="gcap">${t}</p>`;
 /* a vacsora-ügy bizonyítéka: a két este-fajta utáni alvás, két edényben — a különbség a lényeg */
-const G_VACS=(small)=>chain([{l:'késői vacsora után',s:'5 ilyen este',v:'6,0',p:42,c:'var(--warn)'},{l:'korai vacsora után',s:'9 ilyen este',v:'7,5',p:80}],[{w:9,cap:'másfél pont',cap2:'11 mellette · 3 ellene'}],{h:small?128:140});
+/* perday(days,{lo,hi,legend}) — every day of a comparison as its own small vessel: level = the measured value,
+   colour = which group the day belongs to, dashed = a day that speaks against the pattern. days=[label,value,group,against] */
+const perday=(days,{lo=4,hi=9,ca='var(--warn)',cb='var(--dom)',legend=''}={})=>`<p class="gpd-h">Napról napra</p>`+rack(days.map(([l,v,g,x])=>({p:Math.round((v-lo)/(hi-lo)*100),c:g?cb:ca,l,top:`<em class="gpd-v">${String(v).replace('.',',')}</em>`,cls:x?"x":""})),{h:54,cls:'tiny gpd'})+(legend?`<p class="gpd-l">${legend}</p>`:'');
+const VACS_DAYS=[['8.',7.9,1],['9.',5.4,0],['10.',8.0,1],['11.',6.1,1,1],['12.',5.9,0],['13.',7.8,1],['14.',7.7,1],['15.',7.3,0,1],['16.',8.1,1],['17.',5.6,0],['18.',6.3,1,1],['19.',7.8,1],['20.',5.8,0],['21.',7.8,1]];
+const G_VACS=(small)=>chain([{l:'késői vacsora után',s:'5 ilyen este',v:'6,0',p:42,c:'var(--warn)'},{l:'korai vacsora után',s:'9 ilyen este',v:'7,5',p:80}],[{w:9,cap:'másfél pont',cap2:'11 mellette · 3 ellene'}],{h:small?128:140})+(small?'':perday(VACS_DAYS,{legend:'<i style="--c:var(--warn)"></i>késői vacsora (21 óra után) <i style="--c:var(--dom)"></i>korai vacsora <i class="d"></i>ellene szól · szept. 8–21., a szám az alvásod aznap éjjel'}));
 /* pontfelhő folyadékban: minden pont egy nap (halvány), a trend a felszín */
 function scat(m){
   const id=uid('gsc'),L=36,R=292,Tp=12,B=108,[x0,x1]=m.xa,[y0,y1,yt]=m.ya,X=v=>(L+(v-x0)/(x1-x0)*(R-L)),Y=v=>cl(B-(v-y0)/(y1-y0)*(B-Tp),Tp,B);
@@ -1211,7 +1215,14 @@ const CSS3=`
 & .gr.days{gap:5px;margin-top:12px}& .gr.days .gv .t{max-width:none;border-radius:13px}& .gr.days .gv small{font-size:10px}
 & .gr.days .gv.now .t{box-shadow:inset 0 0 0 2px var(--c)}& .gr.days .gv.now small{color:var(--ink);font-weight:800}
 & .gr.cat .gv small{font-size:9.5px}
-& .gr.tiny{gap:4px}& .gr.tiny .gv .t{max-width:none;border-radius:9px}
+& .gr.tiny{gap:4px}
+.gpd-h{font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--sub);margin:16px 0 -6px;text-align:left}
+.gr.gpd{gap:3px}.gr.gpd .gv{display:flex;flex-direction:column;align-items:center;min-width:0}.gr.gpd .gv small{font-size:8.5px}
+.gpd-v{font-style:normal;font-family:var(--disp);font-size:9.5px;font-weight:700;color:var(--ink);margin-bottom:2px;letter-spacing:-.3px}
+.gr.gpd .gv.x .t{outline:1.5px dashed color-mix(in srgb,var(--ink) 55%,transparent);outline-offset:1px}
+.gpd-l{font-size:10.5px;line-height:1.7;color:var(--sub);margin-top:8px;text-align:left}
+.gpd-l i{display:inline-block;width:9px;height:9px;border-radius:3px;background:var(--c);margin:0 4px 0 0;vertical-align:-1px}.gpd-l i:not(:first-child){margin-left:8px}
+.gpd-l i.d{background:none;outline:1.5px dashed color-mix(in srgb,var(--ink) 55%,transparent)}& .gr.tiny .gv .t{max-width:none;border-radius:9px}
 & .gc{display:block;width:100%;height:auto;overflow:visible;margin-top:12px;filter:drop-shadow(0 12px 12px color-mix(in srgb,var(--liq2) 20%,transparent))}
 & .gc .sh{fill:#fff;stroke:rgba(10,42,60,.10);stroke-width:2}
 & .gc .hi{fill:none;stroke:rgba(255,255,255,.9);stroke-width:3;stroke-linecap:round}
