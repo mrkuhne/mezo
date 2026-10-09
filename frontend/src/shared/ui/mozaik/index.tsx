@@ -10,7 +10,7 @@
 // ============================================================
 import { useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek/frame'
+import { HistoryBackButton, useFrameBack, useFrameFallback, useHasTitleBar } from '@/shared/ui/folyadek/frame'
 import { ClayIcon, ClaySpot, Icon3D, type ClayIconName, type ClaySpotName, type Icon3DName } from '@/shared/ui/clay'
 
 /** Domain washes — Mozaik 2.0 relaxation: domain color ON the tile (handoff §10). */
@@ -142,30 +142,39 @@ export function MozaikPage({ tone, children, className }: { tone: PageTone; chil
   return <div className={cn('mz-page', `mz-p-${tone}`, className)}>{children}</div>
 }
 
-export function PageHead({ onBack, history = false, label = '‹ vissza', glass = false, children }: {
-  onBack: () => void; label?: string
-  /** `onBack` is plain „go back in history" (`navigate(-1)`): it is NOT handed to the frame, so
-   *  the title bar's default applies (history if there is any, else the page's fallback route —
-   *  never a dead button on a direct deep link). It still drives the page's own button where
-   *  no title bar is mounted. */
+export function PageHead({ onBack, history = false, fallback, label = '‹ vissza', glass = false, children }: {
+  /** A handler that does MORE than navigate (confirm, step back inside a flow, carried state):
+   *  the title bar runs it. A plain „to the parent" back uses `history fallback` instead. */
+  onBack?: () => void; label?: string
+  /** Back is „go back in history" — the owner rule: the header back returns where the user came
+   *  from. Nothing is handed to the frame as a handler, so the title bar's default applies:
+   *  history when there is in-app history, else the fallback route (never a dead button on a
+   *  direct link). */
   history?: boolean
+  /** With `history`: the route a direct link goes back to (the page's „parent"). Absent, the
+   *  frame derives it from the path, and `onBack` drives the page's own button. */
+  fallback?: string
   /** Üveg variant (bible U3 rule 21, mezo-me75u.4): a small glass back pill `‹ <label>`;
    *  pass the label WITHOUT the arrow. */
   glass?: boolean
   children?: ReactNode
 }) {
   // Folyadék frame (mezo-n4wf5.1): the back control belongs to the shell's title bar. The page
-  // hands its handler over, and draws nothing but its own extra controls (`children`).
-  // Where NO title bar is mounted — the chrome-free full-screen routes, the chat (its own
-  // header), a page rendered alone — the page still needs a way back, so it keeps its button.
+  // hands over its handler (or just its fallback route), and draws nothing but its own extra
+  // controls (`children`). Where NO title bar is mounted — the chrome-free full-screen routes,
+  // the chat (its own header), a page rendered alone — the page still needs a way back, so it
+  // keeps its button, following the same history-first rule.
   useFrameBack(history ? undefined : onBack)
+  useFrameFallback(history ? fallback : undefined)
   const shellHasBack = useHasTitleBar()
   if (shellHasBack) return children ? <div className={cn('mz-page-head', glass && 'uv-head')}>{children}</div> : null
+  const cls = cn('mz-backbtn', glass && 'glass uv-back')
+  const face = glass ? <><b aria-hidden="true">‹</b>{label}</> : label
   return (
     <div className={cn('mz-page-head', glass && 'uv-head')}>
-      <button type="button" className={cn('mz-backbtn', glass && 'glass uv-back')} onClick={onBack} aria-label="Vissza">
-        {glass ? <><b aria-hidden="true">‹</b>{label}</> : label}
-      </button>
+      {history && fallback
+        ? <HistoryBackButton fallback={fallback} className={cls}>{face}</HistoryBackButton>
+        : <button type="button" className={cls} onClick={onBack} aria-label="Vissza">{face}</button>}
       {children}
     </div>
   )

@@ -93,3 +93,44 @@ test('useBackTo treats the browser router first entry (idx 0) as a direct open e
     window.history.replaceState(saved, '')
   }
 })
+
+// Fix round 2 (mezo-n4wf5.1): the hooks decide through the SHARED `canGoBack` helper — the browser
+// router's `history.state.idx` outranks the location key, exactly as on the frame's title bar.
+function withHistoryIdx(idx: number, run: () => void) {
+  const prev = window.history.state
+  window.history.replaceState({ ...(prev ?? {}), idx }, '')
+  try { run() } finally { window.history.replaceState(prev, '') }
+}
+function LabelProbe({ fallback }: { fallback: string }) {
+  const back = useBackTo(fallback, 'Minták')
+  return <button type="button" onClick={back.onBack}>{back.label}</button>
+}
+
+test('idx 0 means "opened here": the fallback, even though the location key is not the initial one', () => {
+  withHistoryIdx(0, () => {
+    render(
+      <MemoryRouter initialEntries={['/train/gym', '/train/session']} initialIndex={1}>
+        <Probe />
+        <Routes><Route path="*" element={<><BackButton fallback="/train" /><LabelProbe fallback="/train" /></>} /></Routes>
+      </MemoryRouter>,
+    )
+    // useBackTo names the fallback (no history to pop)
+    expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'vissza' }))
+    expect(screen.getByTestId('path')).toHaveTextContent('/train')
+  })
+})
+
+test('idx > 0 means there is in-app history: both hooks pop it', () => {
+  withHistoryIdx(2, () => {
+    render(
+      <MemoryRouter initialEntries={['/train/gym', '/train/session']} initialIndex={1}>
+        <Probe />
+        <Routes><Route path="*" element={<><BackButton fallback="/train" /><LabelProbe fallback="/train" /></>} /></Routes>
+      </MemoryRouter>,
+    )
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'vissza' }))
+    expect(screen.getByTestId('path')).toHaveTextContent('/train/gym')
+  })
+})

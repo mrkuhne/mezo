@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useMemoryOverview, useMemorySummaries } from '@/data/hooks'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -18,10 +18,9 @@ type MemoryView = 'overview' | 'journal' | 'search' | 'audit'
  *  its eyebrow, and the „47/60" figure INSIDE a big glowing lavender ring on a lit inner disc,
  *  the sub line under it. Without an overview (degraded/loading/error) only the halo + name. */
 function MemFrame({ ring, sub, children }: { ring?: ReactNode; sub?: string; children: ReactNode }) {
-  const navigate = useNavigate()
   return (
     <MozaikPage tone="lav" className="mmr-page">
-      <PageHead glass onBack={() => navigate('/mezo')} label="Mezo" />
+      <PageHead glass history fallback="/mezo" label="Mezo" />
       <PageHero glass accent="var(--dv-lav)" name="Memória">
         {ring}
         {sub && <div className="mz-hero-sb">{sub}</div>}

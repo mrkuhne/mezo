@@ -120,7 +120,7 @@ export function MesoTemplateStoryPage() {
   if (!template) {
     return (
       <MozaikPage tone="gold">
-        <PageHead onBack={goBack} label="‹ Sablonjaid" />
+        <PageHead history fallback="/train/templates" label="‹ Sablonjaid" />
         <PageBody className="tv-tpl">
           <GhostState message="Ez a sablon nem található." />
         </PageBody>
@@ -171,7 +171,7 @@ export function MesoTemplateStoryPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <FrameBack className="mz-backbtn glass uv-back" onBack={goBack}>
+          <FrameBack className="mz-backbtn glass uv-back" history fallback="/train/templates">
             ‹ Sablonjaid
           </FrameBack>
           {muscles.length > 0 && (

@@ -114,7 +114,7 @@ export function RutinHubPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-hub">
-      <PageHead glass onBack={() => navigate('/nap/rutin')} label="Rutin">
+      <PageHead glass history fallback="/nap/rutin" label="Rutin">
         <button type="button" className="mz-pgact rt-act is-lav" onClick={() => setSuggestSheet(true)}>
           <Icon3D name="t-spark" size={18} />AI javaslat
         </button>

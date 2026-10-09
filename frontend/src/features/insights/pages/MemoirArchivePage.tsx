@@ -24,7 +24,7 @@ export function MemoirArchivePage() {
 
   return (
     <MozaikPage tone="lav" className="mmo-page mmo-arch">
-      <PageHead glass onBack={() => navigate('/mezo/memoir')} label="Memoár" />
+      <PageHead glass history fallback="/mezo/memoir" label="Memoár" />
       <PageHero
         art="t-scroll"
         accent="var(--dv-lav)"

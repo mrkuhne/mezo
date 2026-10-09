@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useKnowledgeGraphNodes } from '@/data/hooks'
 import { ROLAD_COPY } from '@/features/insights/logic/roladCopy'
@@ -12,13 +11,12 @@ import { FrameBack } from '@/shared/ui/folyadek'
  * list is a real answer here (`showEmpty`), never a blank page.
  */
 export function RoladLifeEventsPage() {
-  const navigate = useNavigate()
   const { nodes, isError, refetch } = useKnowledgeGraphNodes()
   return (
     <div className="kr9-rolad">
       <EntranceGroup className="kr9-rflow">
         <div className="tf-dhead">
-          <FrameBack className="glass tf-back" onBack={() => navigate('/mezo/rolad')} label="Vissza: Rólad">‹</FrameBack>
+          <FrameBack className="glass tf-back" history fallback="/mezo/rolad" label="Vissza: Rólad">‹</FrameBack>
           <span className="tf-dtitle"><small>Rólad</small><strong>Életesemények</strong></span>
         </div>
         <p className="kr9-quiet">{ROLAD_COPY.lifeEventsLede}</p>

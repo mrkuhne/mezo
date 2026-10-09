@@ -101,7 +101,7 @@ export function FuelMealDetailPage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel')} label="Vissza a Mai oldalra">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
           <span><strong>Ez az étkezés nincs meg</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -151,7 +151,7 @@ export function FuelMealDetailPage() {
   return (
     <div className="fmx-page" style={{ '--block-color': block.color } as React.CSSProperties}>
       <div className="fmx-subhead">
-        <FrameBack className="glass is-round" onBack={() => navigate('/fuel')} label="Vissza a Mai oldalra">‹</FrameBack>
+        <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
         <span>
           <small>{block.label.toLocaleUpperCase('hu-HU')}{ctx && ctx !== 'standard' ? ` · ${MEAL_CONTEXT_LABEL[ctx].toLocaleUpperCase('hu-HU')}` : ''}</small>
           <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>

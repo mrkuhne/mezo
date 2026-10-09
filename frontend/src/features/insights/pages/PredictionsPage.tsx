@@ -12,7 +12,7 @@
 // feedback read for the whole list, FeedbackChips on every card in both modes.
 // ============================================================
 import { useMemo, type CSSProperties, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon3D } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
@@ -37,11 +37,10 @@ export function accuracyOf(predictions: Prediction[], mock: boolean): { pct: num
 
 /** The page frame every branch renders inside — the way back must exist on all of them. */
 function PredFrame({ big, sub, children }: { big?: ReactNode; sub?: string; children: ReactNode }) {
-  const navigate = useNavigate()
   return (
     <div className="tf-page m9e-root">
       <div className="tf-dhead">
-        <FrameBack className="glass tf-back" onBack={() => navigate(ALL_FEATURES_ROUTE)}>‹</FrameBack>
+        <FrameBack className="glass tf-back" history fallback={ALL_FEATURES_ROUTE}>‹</FrameBack>
         <span className="tf-dtitle"><small>Mezo · összes funkció</small><strong>Előrejelzések</strong></span>
       </div>
       {big !== undefined && (

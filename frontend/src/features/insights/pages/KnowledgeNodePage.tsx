@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useKnowledgeGraphActions, useKnowledgeGraphNodes } from '@/data/hooks'
 import { GRAPH_KIND_GROUPS } from '@/data/insights/graph'
 import { KIND_3D, KIND_ACCENT } from '@/features/me/logic/knowledgeNodeVisuals'
@@ -22,7 +22,6 @@ function splitEdge(line: string): [string, string | null] {
 export function KnowledgeNodePage() {
   const { id } = useParams<{ id: string }>()
   const [params] = useSearchParams()
-  const navigate = useNavigate()
   const { nodes, isPending, isError, refetch } = useKnowledgeGraphNodes()
   const { archive, pending } = useKnowledgeGraphActions()
   const node = nodes.find((item) => item.id === id)
@@ -31,7 +30,7 @@ export function KnowledgeNodePage() {
   const accent = node ? KIND_ACCENT[node.kind] : 'var(--dv-lav)'
   return <div className="tud9 tud9-node tf-page" style={{ '--c': accent } as CSSProperties}>
     <div className="tf-dhead">
-      <FrameBack className="glass tf-back" onBack={() => navigate(back)} label="Vissza: Tudástár">‹</FrameBack>
+      <FrameBack className="glass tf-back" history fallback={back} label="Vissza: Tudástár">‹</FrameBack>
       <span className="tf-dtitle">
         <small>{kindLabel ? `${kindLabel} · kapcsolat` : 'Tudástár'}</small>
         <strong>{node?.title ?? 'Tudástár · részlet'}</strong>

@@ -125,7 +125,7 @@ export function DiagnosisDetailPage() {
   if (notFound || (diagnosis == null && !isPending)) {
     return (
       <MozaikPage tone="lav" className="dgx-page">
-        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Kérdezd a csapatot" />
+        <PageHead glass history fallback="/mezo/diagnozis" label="Kérdezd a csapatot" />
         <PageBody>
           <div className="dgx-empty uv-empty">
             <Icon3D name="t-diagnose" size={44} />
@@ -138,7 +138,7 @@ export function DiagnosisDetailPage() {
   if (diagnosis == null) {
     return (
       <MozaikPage tone="lav" className="dgx-page">
-        <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Kérdezd a csapatot" />
+        <PageHead glass history fallback="/mezo/diagnozis" label="Kérdezd a csapatot" />
         <PageBody><div className="dgx-loading" aria-busy="true" /></PageBody>
       </MozaikPage>
     )
@@ -158,7 +158,7 @@ export function DiagnosisDetailPage() {
 
   return (
     <MozaikPage tone="lav" className="dgx-page">
-      <PageHead glass onBack={() => navigate('/mezo/diagnozis')} label="Kérdezd a csapatot" />
+      <PageHead glass history fallback="/mezo/diagnozis" label="Kérdezd a csapatot" />
       <section className="mz-page-hero uv-hero uv-halo kt-hero" style={{ '--c': `var(--dv-${host.accent === 'gold' ? 'amber' : host.accent})` } as CSSProperties}>
         <div className="kt-hosts" aria-label={helpersLine(host.id, guests)}>
           <FeedAvatar id={host.id} size={44} />

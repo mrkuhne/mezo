@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { confidenceWord } from '@/data/character/characterApi'
 import { useCharacterOverview, useMaturityHistory } from '@/data/hooks'
 import { RoomCaseCard } from '@/features/insights/components/feed/RoomCaseCard'
@@ -10,7 +10,8 @@ import {
 } from '@/features/insights/logic/teamRooms'
 import { renderInline } from '@/shared/lib/markdown'
 import { Boop, Icon3D } from '@/shared/ui/clay'
-import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek'
+import { useFrameFallback, useHasTitleBar } from '@/shared/ui/folyadek'
+import { useBackNav } from '@/shared/hooks/useBackNav'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import '@/features/insights/boop-world.css'
 
@@ -22,12 +23,13 @@ const CLAIMS_MAX = 3
 function BackHead({ small, title }: { small: string; title: string }) {
   // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the back control and runs this
   // handler; the page keeps its own link only where no title bar is mounted.
-  const navigate = useNavigate()
-  useFrameBack(() => navigate('/mezo/csapat'))
+  // Back returns where the user came from; `/mezo/csapat` is only where a direct link goes.
+  useFrameFallback('/mezo/csapat')
+  const back = useBackNav('/mezo/csapat')
   const shellHasBack = useHasTitleBar()
   return (
     <div className="tf-dhead">
-      {!shellHasBack && <Link to="/mezo/csapat" className="glass tf-back" aria-label="Vissza a csapathoz">‹</Link>}
+      {!shellHasBack && <Link to="/mezo/csapat" className="glass tf-back" aria-label="Vissza a csapathoz" onClick={(e) => { e.preventDefault(); back() }}>‹</Link>}
       <span className="tf-dtitle"><small>{small}</small><strong>{title}</strong></span>
     </div>
   )

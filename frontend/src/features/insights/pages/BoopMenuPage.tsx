@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import type { MozaikWash } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -34,11 +34,10 @@ const WASH_ACCENT: Record<MozaikWash, string> = {
  *  Üveg re-dress (U9, mezo-me75u.9): `uveg-mezo-teljes-u9.js` `osszes()` — a 2-col grid of glass
  *  tiles, each in its own wash accent with a 3D icon. */
 export function BoopMenuPage() {
-  const navigate = useNavigate()
   return (
     <section className="tf-page gtm-page gtm-menu-page" aria-labelledby="boop-menu-title">
       <GepteremHead small="A Gépterem mellől" title="Összes funkció" titleId="boop-menu-title"
-        onBack={() => navigate('/mezo/karakter/gepterem')} />
+        fallback="/mezo/karakter/gepterem" />
       <p className="gtm-lede">Minden ismerős eszközöd egy helyen, a saját nevén.</p>
       <EntranceGroup className="gtm-menu">
         {BOOP_DESTINATIONS.map((item, index) => {

@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
+import { canGoBack } from '@/shared/lib/backNav'
 
 /**
  * Back to the PREVIOUS in-app page (history pop), with a fallback route for
@@ -11,7 +12,8 @@ export function useBackNav(fallback: string): () => void {
   const navigate = useNavigate()
   const { key } = useLocation()
   return () => {
-    if (key !== 'default') navigate(-1)
+    // the shared decision (shared/lib/backNav.ts) — the same one the frame's title bar uses
+    if (canGoBack(typeof window !== 'undefined' ? window.history.state : null, key)) navigate(-1)
     else navigate(fallback)
   }
 }
@@ -37,9 +39,7 @@ export interface BackTarget {
 export function useBackTo(fallback: string, fallbackLabel: string): BackTarget {
   const navigate = useNavigate()
   const { key } = useLocation()
-  const idx = (typeof window !== 'undefined'
-    ? (window.history.state as { idx?: unknown } | null)?.idx : undefined)
-  const viaHistory = key !== 'default' && !(typeof idx === 'number' && idx === 0)
+  const viaHistory = canGoBack(typeof window !== 'undefined' ? window.history.state : null, key)
   return {
     viaHistory,
     label: viaHistory ? 'Vissza' : fallbackLabel,

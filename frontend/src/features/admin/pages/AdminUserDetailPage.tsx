@@ -88,7 +88,7 @@ export function AdminUserDetailPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead glass label="vissza" onBack={() => navigate('/admin/users')} />
+      <PageHead glass label="vissza" history fallback="/admin/users" />
       <PageBody>
         {notFound ? (
           <p className="ad-mut">Ez a user nem található.</p>

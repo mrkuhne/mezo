@@ -106,7 +106,7 @@ export function PeopleHetiPage() {
 
   return (
     <MozaikPage tone="lav" className="ppl-page ppl-heti">
-      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok" />
+      <PageHead glass history fallback="/me/people" label="Kapcsolatok" />
 
       <PageHero art="t-calendar" accent="var(--dv-lav)" big={weekMentions.length} name="Heti kép" sub="említés e héten" />
 

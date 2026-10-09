@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { useGoal, useGoalOverview } from '@/data/hooks'
 import { GoalSegmentRail } from '@/features/me/components/GoalSegmentRail'
 import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
@@ -8,7 +7,6 @@ import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 export function GoalSegmentPage() {
-  const navigate = useNavigate()
   const { goalId, pending: goalPending } = useGoal()
   const { overview, pending } = useGoalOverview(goalId)
   const loading = goalPending || pending
@@ -16,7 +14,7 @@ export function GoalSegmentPage() {
   const segment = overview?.segment
 
   return <MozaikPage tone="gold" className="goal-detail-page uv-goal goal-detail-segment-page">
-    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
+    <PageHead glass history fallback="/me/goals/weight" label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
       <EntranceGroup><PageHero art="t-peak" accent="var(--dv-amber)" name="Aktuális szakasz" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A szakasz csak koherens célhoz jeleníthető meg.</div></PageBody></EntranceGroup>
     ) : !segment?.available || !segment.label || segment.fromWeek == null || segment.toWeek == null ? (

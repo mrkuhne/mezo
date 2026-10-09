@@ -453,3 +453,22 @@ test('hides the quick-log FAB on the quick-log picker page itself (mezo-mhum)', 
   expect(container.querySelector('.fo-fab')).toBeNull()
   expect(container.querySelector('.fo-nav')).not.toBeNull()
 })
+
+// Fix round 2 (owner rule): the header back returns where the user came from; a page's fixed
+// „parent" route is only the fallback for a direct link. The notification feed names `/me`.
+test('back from the notification feed returns to the page it was opened from, not to its parent', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/fuel'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await userEvent.click(await screen.findByRole('button', { name: /^Értesítések/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
+  expect(router.state.location.pathname).toBe('/me/ertesitesek')
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(router.state.location.pathname).toBe('/fuel')
+})
+
+test('on a direct link the notification feed’s back goes to its fallback, the Én hub', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/me/ertesitesek'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(router.state.location.pathname).toBe('/me')
+})

@@ -36,7 +36,7 @@ export function FuelRecipeScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza a receptekhez">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza a receptekhez">‹</FrameBack>
           <span><small>AI ÉRTÉKELÉS</small><strong>Recept</strong></span>
         </div>
         <p className="fmx-nodata">Ez a recept nincs meg.</p>

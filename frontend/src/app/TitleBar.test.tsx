@@ -406,3 +406,43 @@ test('ugyanez az oldal, ha VAN honnan jönni: oda visz vissza, nem a fülre', as
   await user.click(await screen.findByRole('button', { name: 'Vissza' }))
   expect(screen.getByTestId('loc').textContent).toBe('/me')
 })
+
+// Fix round 2 — the owner rule on pages that name a „parent": `history fallback="/x"`. The fixed
+// route is only where a DIRECT link goes; after in-app navigation back returns to the origin.
+function ParentPage({ kind, to }: { kind: 'head' | 'back'; to: string }) {
+  return kind === 'head' ? <PageHead glass history fallback={to} label="Vissza" /> : <FrameBack history fallback={to}>‹</FrameBack>
+}
+test.each([
+  // the page's own fallback beats the one the frame would derive (/mezo → Üzenőfal tab)
+  ['head', '/mezo/coaching/kartya', '/mezo/coaching'],
+  ['back', '/fuel/recipes', '/fuel/konyha'],
+  ['head', '/me/goals/weight/diet', '/me/goals/weight'],
+] as const)('közvetlen linkről a szülő-útvonalas oldal (%s, %s) vissza gombja a tartalékra visz: %s', async (kind, path, parent) => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt(path, <ParentPage kind={kind} to={parent} />)
+  expect(await screen.findAllByRole('button', { name: 'Vissza' })).toHaveLength(1)
+  await user.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('loc').textContent).toBe(parent)
+})
+
+test.each([['head'], ['back']] as const)('ugyanez az oldal (%s), ha máshonnan jöttél: oda visz vissza, NEM a szülőre', async (kind) => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/mezo/rolad', (
+    <Routes>
+      <Route path="/mezo/rolad" element={<Link to="/mezo/coaching/kartya">kártya</Link>} />
+      <Route path="/mezo/coaching/kartya" element={<ParentPage kind={kind} to="/mezo/coaching" />} />
+    </Routes>
+  ))
+  await user.click(await screen.findByRole('link', { name: 'kártya' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/mezo/coaching/kartya')
+  await user.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/mezo/rolad')
+})
+
+test('a tartalék az oldallal együtt lekerül: a következő oldal megint a keret saját tartalékát kapja', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  // a cold entry whose page names NO fallback, right after... nothing: the derived one applies
+  renderAt('/mezo/coaching/kartya')
+  await user.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/mezo')
+})

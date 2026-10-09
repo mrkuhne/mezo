@@ -98,7 +98,7 @@ export function RunningPage() {
 
   return (
     <MozaikPage tone="sky" className="uvs-page uvs-futas">
-      <PageHead glass onBack={() => navigate('/train')} label="Edzés">
+      <PageHead glass history fallback="/train" label="Edzés">
         {/* `＋ Új terv` lives on the Tervek (blocks) segment — a lit sky pill */}
         {view === 'blocks' && (
           <button type="button" onClick={createBlock} className="mz-pgact uvs-act" style={SKY}>

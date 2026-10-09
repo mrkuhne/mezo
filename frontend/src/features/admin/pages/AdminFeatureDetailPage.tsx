@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useState } from 'react'
 import { useMe } from '@/data/hooks'
 import { useAdminFeatureBoard, useAdminFeatureDetail } from '@/data/admin/adminInsightsHooks'
@@ -31,7 +31,6 @@ const PERIODS: { key: AdminFeaturePeriod; label: string }[] = [
 export function AdminFeatureDetailPage() {
   const { key: rawKey } = useParams()
   const key = rawKey ?? ''
-  const navigate = useNavigate()
   const me = useMe()
   const isOwner = me.data?.role === 'OWNER'
   const [period, setPeriod] = useState<AdminFeaturePeriod>('30d')
@@ -62,7 +61,7 @@ export function AdminFeatureDetailPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead glass onBack={() => navigate('/admin/features')} label="Vissza a funkciókhoz" />
+      <PageHead glass history fallback="/admin/features" label="Vissza a funkciókhoz" />
       <PageBody>
         {notFound ? (
           <p className="ad-mut">Ismeretlen funkció.</p>

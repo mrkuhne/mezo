@@ -34,7 +34,7 @@ export function CoachingHubPage() {
 
   return (
     <MozaikPage tone="gold" className="coach-page coach-hub">
-      <PageHead glass onBack={() => navigate(ALL_FEATURES_ROUTE)} label="Összes funkció" />
+      <PageHead glass history fallback={ALL_FEATURES_ROUTE} label="Összes funkció" />
       {split.total === 0 ? (
         <PageHero art="t-whistle" accent="var(--dv-amber)" eyebrow="Mezo · ma" name="Proaktív coaching"
           sub="a motor döntése, ahogy megszületett" />

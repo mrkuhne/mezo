@@ -217,7 +217,7 @@ export function RoutineWizardPage() {
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
       <MozaikPage tone="gold" className="rt-uv rt-wiz">
-        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+        <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>

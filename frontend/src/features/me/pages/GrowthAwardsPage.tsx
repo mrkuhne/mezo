@@ -6,7 +6,6 @@
 // Üveg re-dress (mezo-me75u.7, prototype uveg-en2.html `kitunt()`): sage halo hero t-record; the
 // skin of every section is scoped to `.gra-page`.
 // ============================================================
-import { useNavigate } from 'react-router-dom'
 import { useAchievements, useProgressionProfile } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { BadgesCard } from '@/features/me/components/BadgesCard'
@@ -20,14 +19,13 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 const nameOf = (key: string) => ATHLETIC_META[key]?.name ?? LIFE_SKILLS.find((s) => s.key === key)?.name ?? MUSCLE_LABELS[key] ?? key
 
 export function GrowthAwardsPage() {
-  const navigate = useNavigate()
   const { data } = useAchievements()
   const { data: profile } = useProgressionProfile()
   const done = data.badges.filter((b) => b.achieved).length
   const next = nearestMilestone([...(profile.life ?? []), ...(profile.athletic ?? []), ...(profile.muscle ?? [])].map((s) => ({ name: nameOf(s.skillKey), level: s.level })))
   return (
     <MozaikPage tone="sage" className="gra-page">
-      <PageHead glass onBack={() => navigate('/me/growth')} label="Fejlődés" />
+      <PageHead glass history fallback="/me/growth" label="Fejlődés" />
       <PageHero art="t-record" accent="var(--dv-sage)" name="Kitüntetések" big={<>{done}<small> / {data.badges.length} jelvény</small></>} />
       <PageBody principle="Az érme itt költhető el — címre vagy sorozat-mentőre. Semmi más nem vásárolható, és semmi nem jár le.">
         <EntranceGroup>

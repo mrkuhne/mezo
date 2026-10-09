@@ -147,7 +147,7 @@ export function HabitEditPage() {
     if (isPending) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szerk">
-          <PageHead glass onBack={() => navigate(backTo)} label="Szokás" />
+          <PageHead glass history fallback={backTo} label="Szokás" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -155,7 +155,7 @@ export function HabitEditPage() {
     if (isError) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szerk">
-          <PageHead glass onBack={() => navigate(backTo)} label="Szokás" />
+          <PageHead glass history fallback={backTo} label="Szokás" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -254,7 +254,7 @@ export function HabitEditPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-szerk">
-      <PageHead glass onBack={() => navigate(backTo)} label="Szokás">
+      <PageHead glass history fallback={backTo} label="Szokás">
         <button type="button" className="mz-pgact rt-act" disabled={!canSave || pending} onClick={save}>
           <Icon3D name="t-tick" size={18} />Mentés
         </button>

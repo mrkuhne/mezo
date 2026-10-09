@@ -36,7 +36,7 @@ export function BoopMemoriesPage() {
   const journal = useMemorySummaries()
   const chapters = !archive.isPending && !archive.isError && archive.data.length > 0 ? `${archive.data.length} fejezet` : undefined
   return <MozaikPage tone="lav" className="eml-page eml-emlekek">
-    <PageHead glass label="Üzenőfal" onBack={() => navigate('/mezo')} />
+    <PageHead glass label="Üzenőfal" history fallback="/mezo" />
     <PageHero art="t-album" accent="var(--dv-lav)" name="Emlékek" sub="A napjaid és a közös történetünk" />
     <PageBody><EntranceGroup className="col gap-md">
       <Link to="/mezo/memoir" className="eml-memo glass rise" style={{ '--c': 'var(--dv-lav)' } as CSSProperties}>

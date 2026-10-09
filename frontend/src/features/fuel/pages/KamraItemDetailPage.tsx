@@ -111,7 +111,7 @@ export function KamraItemDetailPage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/kamra')} label="Vissza">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel/kamra" label="Vissza">‹</FrameBack>
           <span><strong>Nincs ilyen tétel.</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -175,7 +175,7 @@ export function KamraItemDetailPage() {
     <div className="fmx-page fkx-detail fkx-kitem" style={{ '--block-color': face.color } as React.CSSProperties}>
       <EntranceGroup>
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/kamra')} label="Vissza">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel/kamra" label="Vissza">‹</FrameBack>
           <span>
             <small>{(catLabel ?? 'KAMRA').toLocaleUpperCase('hu-HU')}</small>
             <strong>{item.name}</strong>

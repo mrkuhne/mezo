@@ -344,7 +344,7 @@ export function RecipeWorkshopPage() {
     <div className="fmx-page fkx-workshop">
       <EntranceGroup>
           <div className="fmx-subhead rise">
-            <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza">‹</FrameBack>
+            <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
             <span>
               <small>Fuel · Receptek</small>
               <h1 className="fkx-title">Receptműhely</h1>

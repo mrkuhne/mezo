@@ -113,7 +113,7 @@ export function RecipeDetailPage() {
     return (
       <div className="fmx-page fkx-rdetail">
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
           <span><strong>Nincs ilyen recept.</strong></span>
         </div>
         <p className="fmx-block-empty fkx-notfound uv-empty">
@@ -172,7 +172,7 @@ export function RecipeDetailPage() {
     <div className="fmx-page fkx-detail fkx-rdetail" style={{ '--block-color': face.color } as React.CSSProperties}>
       <EntranceGroup>
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
           <span>
             <small>{face.label.toLocaleUpperCase('hu-HU')}-RECEPT</small>
             <strong>{recipe.name}</strong>

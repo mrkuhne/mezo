@@ -8,7 +8,6 @@
 // A navigáció változatlan: a vissza-gomb ugyanoda visz, mint eddig.
 // ============================================================
 import type { ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MozaikPage, PageBody, type PageTone } from '@/shared/ui/mozaik'
@@ -35,12 +34,11 @@ export function StackPageScaffold({
   tone, backTo, backLabel, icon, name, big, sub, accent = 'var(--dv-sage)', variant = 'hero',
   children,
 }: StackPageScaffoldProps) {
-  const navigate = useNavigate()
   const eyebrow = backLabel.replace('‹', '').trim()
   return (
     <MozaikPage tone={tone} className="stk-detail-page">
       <div className="fsx-subhead">
-        <FrameBack className="glass is-round" onBack={() => navigate(backTo)}>‹</FrameBack>
+        <FrameBack className="glass is-round" history fallback={backTo}>‹</FrameBack>
         <span>
           <small>{eyebrow}</small>
           <strong>{name}</strong>

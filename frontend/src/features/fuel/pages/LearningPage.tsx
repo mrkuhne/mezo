@@ -33,7 +33,6 @@ export function LearningPage() {
   const [weeklyOpen, setWeeklyOpen] = useState(false)
   // Back to wherever it was opened from (energy sheet, weekly sheet, bell); a deep link has no
   // in-app history (react-router's `idx` is 0), so it falls back to Fuel Mai.
-  const back = () => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/fuel'))
 
   const weeks = history?.weeks ?? []
   const last = weeks.length > 0 ? weeks[weeks.length - 1] : null
@@ -49,7 +48,7 @@ export function LearningPage() {
     <div className="fmx-page fln-page">
       <EntranceGroup>
         <div className="fmx-subhead rise">
-          <FrameBack className="glass is-round" onBack={back} label="Vissza">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza">‹</FrameBack>
           <span>
             <small>Fuel · energiaigény</small>
             <h1 className="fkx-title">Hogy tanultam?</h1>

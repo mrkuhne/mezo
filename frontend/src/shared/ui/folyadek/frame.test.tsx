@@ -1,4 +1,5 @@
 import { render, screen, act } from '@testing-library/react'
+import { Link, MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { FrameProvider, FrameBack, useFrame, useFrameTitle, useFrameBack, useTitleBarMounted, useHasTitleBar } from './index'
 
 function Reader() {
@@ -88,5 +89,42 @@ describe('frame', () => {
     render(<FrameBack history onBack={back} className="x">‹</FrameBack>)
     screen.getByRole('button', { name: 'Vissza' }).click()
     expect(back).toHaveBeenCalledTimes(1)
+  })
+
+  // The owner rule: back returns where the user came from; a fixed route is only the fallback.
+  describe('FrameBack history + fallback', () => {
+    function Loc() { return <div data-testid="loc">{useLocation().pathname}</div> }
+    function FallbackReader() { const f = useFrame(); return <div data-testid="fb">{f.fallback ?? '-'}|{f.onBack ? 'back' : 'noback'}</div> }
+
+    it('under a title bar: draws nothing, registers the fallback and NO handler', () => {
+      function Bar() { useTitleBarMounted(); return <FallbackReader /> }
+      const { rerender } = render(<MemoryRouter><FrameProvider><Bar /><FrameBack history fallback="/fuel/konyha" className="x">‹</FrameBack></FrameProvider></MemoryRouter>)
+      expect(document.querySelector('.x')).toBeNull()
+      expect(screen.getByTestId('fb').textContent).toBe('/fuel/konyha|noback')
+      rerender(<MemoryRouter><FrameProvider><Bar /></FrameProvider></MemoryRouter>)
+      expect(screen.getByTestId('fb').textContent).toBe('-|noback')
+    })
+
+    it('without a title bar, on a first entry: the page’s own button goes to the fallback', () => {
+      render(<MemoryRouter initialEntries={['/fuel/recipes']}><FrameBack history fallback="/fuel/konyha" label="Vissza a Konyhába" className="x">‹</FrameBack><Loc /></MemoryRouter>)
+      act(() => screen.getByRole('button', { name: 'Vissza a Konyhába' }).click())
+      expect(screen.getByTestId('loc').textContent).toBe('/fuel/konyha')
+    })
+
+    it('without a title bar, after in-app navigation: the same button returns where the user came from', () => {
+      render(
+        <MemoryRouter initialEntries={['/me']}>
+          <Routes>
+            <Route path="/me" element={<Link to="/fuel/recipes">receptek</Link>} />
+            <Route path="/fuel/recipes" element={<FrameBack history fallback="/fuel/konyha">‹</FrameBack>} />
+          </Routes>
+          <Loc />
+        </MemoryRouter>,
+      )
+      act(() => screen.getByRole('link', { name: 'receptek' }).click())
+      expect(screen.getByTestId('loc').textContent).toBe('/fuel/recipes')
+      act(() => screen.getByRole('button', { name: 'Vissza' }).click())
+      expect(screen.getByTestId('loc').textContent).toBe('/me')
+    })
   })
 })

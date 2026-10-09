@@ -19,7 +19,8 @@ import { OfferButtons } from '@/features/insights/components/teamchat/OfferButto
 import { renderInline } from '@/shared/lib/markdown'
 import { huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek'
+import { useFrameFallback, useHasTitleBar } from '@/shared/ui/folyadek'
+import { useBackNav } from '@/shared/hooks/useBackNav'
 import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import '@/features/insights/boop-world.css'
@@ -78,7 +79,9 @@ export function TeamChatPage() {
   const navigate = useNavigate()
   // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the back control and runs this
   // handler; the page keeps its own link only where no title bar is mounted.
-  useFrameBack(() => navigate('/mezo'))
+  // Back returns where the user came from; `/mezo` is only where a direct link goes.
+  useFrameFallback('/mezo')
+  const back = useBackNav('/mezo')
   const shellHasBack = useHasTitleBar()
   const raw = params.get('d')
   const requested = raw && DAY_RE.test(raw) ? raw : undefined
@@ -147,7 +150,7 @@ export function TeamChatPage() {
   return (
     <div className="tf-page">
       <div className="tf-dhead">
-        {!shellHasBack && <Link to="/mezo" className="tf-back tf-chat-back" aria-label="Vissza a falra">‹</Link>}
+        {!shellHasBack && <Link to="/mezo" className="tf-back tf-chat-back" aria-label="Vissza a falra" onClick={(e) => { e.preventDefault(); back() }}>‹</Link>}
         <span className="tf-dtitle"><small>{small}</small><strong>A csapat beszél</strong></span>
       </div>
 

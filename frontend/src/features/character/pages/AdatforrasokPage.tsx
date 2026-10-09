@@ -44,7 +44,7 @@ export function AdatforrasokPage() {
   return (
     <div className="tf-page tf-c-slate gtm-page gtm-adat">
       <GepteremHead small="Gépterem · mit olvas a rendszer ma, és mit tervez" title="Adatforrások"
-        onBack={() => navigate('/mezo/karakter/gepterem')} />
+        fallback="/mezo/karakter/gepterem" />
       <div className="gtm-seg" role="tablist" aria-label="Adatforrások nézet">
         <button
           type="button"

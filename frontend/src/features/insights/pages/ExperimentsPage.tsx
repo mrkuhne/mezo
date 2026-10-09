@@ -13,7 +13,7 @@
 // ============================================================
 import type { CSSProperties, ReactNode } from 'react'
 import { experimentChipOf, type ExperimentChipTone } from '@/features/insights/components/experimentStatus'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
@@ -30,10 +30,9 @@ const TONE_VAR: Record<ExperimentChipTone, string> = {
 
 /** The page frame every branch renders inside — the way back must exist on all of them. */
 function ExpFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
-  const navigate = useNavigate()
   return (
     <MozaikPage tone="gold" className="exl-page">
-      <PageHead glass onBack={() => navigate(ALL_FEATURES_ROUTE)} label="Összes funkció" />
+      <PageHead glass history fallback={ALL_FEATURES_ROUTE} label="Összes funkció" />
       <PageHero art="t-flask" accent="var(--dv-amber)" name="N=1 kísérletek" big={big} sub="a saját testeden bizonyítjuk" />
       <PageBody>{children}</PageBody>
     </MozaikPage>

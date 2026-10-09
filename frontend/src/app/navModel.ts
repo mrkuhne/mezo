@@ -284,15 +284,6 @@ export function frameFor(pathname: string, today: Date): Frame {
   }
 }
 
-/**
- * „Vissza oda, ahonnan jöttél": is there an in-app entry to return to?
- *
- * The browser router keeps the entry index in `history.state.idx`: 0 means the app was opened
- * on this entry (a deep link, or a redirect that REPLACED it) — nothing to return to, so the
- * back button must use the frame's fallback route. A router that keeps no index (memory) tells
- * by the location key instead, which is `'default'` only on the initial entry.
- */
-export function canGoBack(historyState: unknown, locationKey: string): boolean {
-  const idx = (historyState as { idx?: unknown } | null | undefined)?.idx
-  return typeof idx === 'number' ? idx > 0 : locationKey !== 'default'
-}
+// „Vissza oda, ahonnan jöttél": the shared decision lives in shared/lib/backNav.ts (the kit and
+// the back hooks use it too); re-exported here for the frame's consumers.
+export { canGoBack } from '@/shared/lib/backNav'

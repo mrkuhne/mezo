@@ -156,12 +156,12 @@ export function TitleBar({ children }: {
   }, [])
 
   const goBack = () => {
-    // A page with a handler of its own (a fixed target, a confirm, a step back inside a flow)
-    // runs it. Otherwise: back where the user came from, and — when the app was opened right
-    // here — to the tab that owns this page (navModel `canGoBack`).
+    // A page with a handler that does more than navigate (a confirm, a step back inside a flow)
+    // runs it. Otherwise the owner rule: back where the user came from — and only when the app
+    // was opened right here, to the page's own fallback route, else the tab that owns the page.
     if (page.onBack) return page.onBack()
     if (canGoBack(window.history.state, locationKey)) navigate(-1)
-    else navigate(derived.fallback)
+    else navigate(page.fallback ?? derived.fallback)
   }
 
   // Mezo-kalauz (mezo-gb1s.1): az oldal kalauza — csak ott, ahol van (honest state). A cím

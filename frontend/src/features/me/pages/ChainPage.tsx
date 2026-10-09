@@ -65,7 +65,7 @@ export function ChainPage() {
     if (isPending) {
       return (
         <MozaikPage tone="lav" className="rt-uv rt-lanc">
-          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+          <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
           <PageBody><GhostState message="Lánc betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -73,7 +73,7 @@ export function ChainPage() {
     if (isError) {
       return (
         <MozaikPage tone="lav" className="rt-uv rt-lanc">
-          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+          <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a láncot." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -163,7 +163,7 @@ export function ChainPage() {
 
   return (
     <MozaikPage tone="lav" className="rt-uv rt-lanc">
-      <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok">
+      <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok">
         <button
           type="button"
           className="mz-pgact rt-act is-lav"

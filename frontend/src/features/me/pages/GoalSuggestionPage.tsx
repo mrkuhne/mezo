@@ -66,7 +66,7 @@ export function GoalSuggestionPage() {
   }
 
   return <MozaikPage tone="coral" className="goal-suggestion-page uv-goal">
-    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
+    <PageHead glass history fallback="/me/goals/weight" label="Cél" />
     {goalPending || pending ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div>
       : !preview ? <EntranceGroup>
         <PageHero art="t-note" accent="var(--dv-coral)" name="Javaslat" big="Nem található" />

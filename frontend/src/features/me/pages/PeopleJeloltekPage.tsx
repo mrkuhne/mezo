@@ -11,19 +11,17 @@
 // gold glass card (t-lens, the flat JELÖLT chip, the quote, the evidence line) with a flat
 // „Nem ő az / nem kell" and a lit gold „Felveszem" (t-tick); no candidate = the dashed empty line.
 // ============================================================
-import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { Icon3D } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
 
 export function PeopleJeloltekPage() {
-  const navigate = useNavigate()
   const { candidates, decidePerson } = usePeople()
 
   return (
     <MozaikPage tone="gold" className="ppl-page ppl-jel">
-      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok" />
+      <PageHead glass history fallback="/me/people" label="Kapcsolatok" />
       <PageHero art="t-lens" accent="var(--dv-amber)" big={candidates.length} name="Jelöltek" />
       <PageBody>
         <EntranceGroup>

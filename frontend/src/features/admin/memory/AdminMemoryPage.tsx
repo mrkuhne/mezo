@@ -68,7 +68,7 @@ export function AdminMemoryPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead glass label="vissza" onBack={() => navigate(`/admin/users/${userId}`)} />
+      <PageHead glass label="vissza" history fallback={`/admin/users/${userId}`} />
       <PageBody>
         <div className="ad-hero">
           <span className="ad-avatar lg" style={{ background: 'var(--dv-lav)' }}>

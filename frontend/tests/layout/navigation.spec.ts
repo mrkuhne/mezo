@@ -317,3 +317,44 @@ test('Vissza: a cold-loaded deep page goes to its owning tab; after in-app navig
   await back.click()
   await expect(page).toHaveURL(/\/me$/)
 })
+
+// Fix round 2 — the owner's own complaint („Rólad → Tények → vissza a Tudástárra dobott"): the
+// header back ALWAYS returns where the user came from; a page's „parent" route is only the
+// fallback for a direct link.
+test('Vissza after an in-page link returns to the page the user came FROM, not to the deep page’s parent', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 852 })
+  await seed(page)
+  const back = page.locator('.fo-top').getByRole('button', { name: 'Vissza' })
+
+  // 1 · the owner's example: Rólad → „Tények rólad" (a Tudástár view) → Vissza = Rólad
+  await page.goto('/mezo/rolad')
+  await page.getByRole('button', { name: /Tények rólad/ }).click()
+  await expect(page).toHaveURL(/\/mezo\/knowledge\?view=tenyek/)
+  await back.click()
+  await expect(page).toHaveURL(/\/mezo\/rolad$/)
+
+  // 2 · another domain's page through an in-page link: Fuel → bell → „Összes értesítés" (its
+  //     parent is the Én hub) → Vissza = Fuel
+  await page.goto('/fuel')
+  await page.getByRole('button', { name: /^Értesítések/ }).click()
+  await page.getByRole('button', { name: 'Összes értesítés ›' }).click()
+  await expect(page).toHaveURL(/\/me\/ertesitesek$/)
+  await back.click()
+  await expect(page).toHaveURL(/\/fuel$/)
+
+  // 3 · two hops deep, each back undoes ONE hop: Rólad → Dimenziók → a dimension → back, back
+  await page.goto('/mezo/rolad')
+  await page.getByRole('link', { name: /A csapat képe rólad/ }).click()
+  await expect(page).toHaveURL(/\/mezo\/karakter\/dimenziok$/)
+  await page.locator('.screen-content').getByRole('button', { name: /Fizikai/ }).first().click()
+  await expect(page).toHaveURL(/\/mezo\/karakter\/dimenzio\//)
+  await back.click()
+  await expect(page).toHaveURL(/\/mezo\/karakter\/dimenziok$/)
+  await back.click()
+  await expect(page).toHaveURL(/\/mezo\/rolad$/)
+
+  // 4 · and the same pages on a COLD entry fall back to their parent
+  await page.goto('/me/ertesitesek')
+  await back.click()
+  await expect(page).toHaveURL(/\/me$/)
+})

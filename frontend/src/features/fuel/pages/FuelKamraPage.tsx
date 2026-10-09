@@ -132,7 +132,7 @@ export function FuelKamraPage() {
     <div className="fmx-page fkx-library fkx-kamra">
       <EntranceGroup>
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/konyha')} label="Vissza a Konyhába">‹</FrameBack>
+          <FrameBack className="glass is-round" history fallback="/fuel/konyha" label="Vissza a Konyhába">‹</FrameBack>
           <span>
             <small>KONYHA</small>
             <strong>Kamra</strong>

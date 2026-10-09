@@ -122,7 +122,7 @@ export function MesoFutamokPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <FrameBack className="mz-backbtn" onBack={() => navigate('/train/mesocycles/konyvtar')}>
+          <FrameBack className="mz-backbtn" history fallback="/train/mesocycles/konyvtar">
             ‹ Edzéstervek
           </FrameBack>
           <span className="pl-lhero-art" aria-hidden="true">

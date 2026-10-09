@@ -31,7 +31,7 @@ export function MemoirPage() {
   // before this it mounted none, so the Memoár was a navigation dead end.
   const frame = (children: React.ReactNode) => (
     <MozaikPage tone="lav" className="mmo-page mmo-memoar">
-      <PageHead glass onBack={() => navigate('/mezo')} label="Mezo" />
+      <PageHead glass history fallback="/mezo" label="Mezo" />
       <PageHero art="t-scroll" accent="var(--dv-lav)" name="Memoár" sub="a közös történetünk, hétről hétre" />
       <PageBody>{children}</PageBody>
     </MozaikPage>
