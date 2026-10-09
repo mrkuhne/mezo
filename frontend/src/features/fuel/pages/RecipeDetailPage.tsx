@@ -53,6 +53,7 @@ import { mealMacroShare } from '@/features/fuel/logic/mealShare'
 import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
 import { roleLabel } from '@/features/fuel/logic/recipeRole'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 // Build a complete RecipeInput from a Recipe — prefills every field so a star
 // toggle (or the editor) preserves untouched values. The editor reuses this.
@@ -112,7 +113,7 @@ export function RecipeDetailPage() {
     return (
       <div className="fmx-page fkx-rdetail">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza">‹</FrameBack>
           <span><strong>Nincs ilyen recept.</strong></span>
         </div>
         <p className="fmx-block-empty fkx-notfound uv-empty">
@@ -171,7 +172,7 @@ export function RecipeDetailPage() {
     <div className="fmx-page fkx-detail fkx-rdetail" style={{ '--block-color': face.color } as React.CSSProperties}>
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza">‹</FrameBack>
           <span>
             <small>{face.label.toLocaleUpperCase('hu-HU')}-RECEPT</small>
             <strong>{recipe.name}</strong>

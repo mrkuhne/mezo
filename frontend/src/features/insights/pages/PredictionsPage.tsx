@@ -22,6 +22,7 @@ import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { Prediction } from '@/data/types'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The hero's honest accuracy pair: mock keeps the Phase-1 literal (localized view-side);
  *  live derives from CLOSED rows only — null while none exist, so the hero shows NO number
@@ -40,8 +41,7 @@ function PredFrame({ big, sub, children }: { big?: ReactNode; sub?: string; chil
   return (
     <div className="tf-page m9e-root">
       <div className="tf-dhead">
-        <button type="button" className="glass tf-back" aria-label="Vissza"
-          onClick={() => navigate(ALL_FEATURES_ROUTE)}>‹</button>
+        <FrameBack className="glass tf-back" onBack={() => navigate(ALL_FEATURES_ROUTE)}>‹</FrameBack>
         <span className="tf-dtitle"><small>Mezo · összes funkció</small><strong>Előrejelzések</strong></span>
       </div>
       {big !== undefined && (

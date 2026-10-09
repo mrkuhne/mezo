@@ -37,6 +37,7 @@ import { NOVA, FuelMacroShareSection, FuelNutriTiles, type FuelNutriTile }
   from '@/features/fuel/components/FuelQualityBlocks'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
@@ -110,7 +111,7 @@ export function KamraItemDetailPage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/kamra')} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/kamra')} label="Vissza">‹</FrameBack>
           <span><strong>Nincs ilyen tétel.</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -174,7 +175,7 @@ export function KamraItemDetailPage() {
     <div className="fmx-page fkx-detail fkx-kitem" style={{ '--block-color': face.color } as React.CSSProperties}>
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/kamra')} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/kamra')} label="Vissza">‹</FrameBack>
           <span>
             <small>{(catLabel ?? 'KAMRA').toLocaleUpperCase('hu-HU')}</small>
             <strong>{item.name}</strong>

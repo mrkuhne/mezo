@@ -16,6 +16,7 @@ import { huInt } from '@/shared/lib/huNum'
 import { FuelScoreSurface } from '@/features/fuel/components/FuelScoreSurface'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { roleRubricLabel } from '@/features/fuel/logic/recipeRole'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 export function FuelRecipeScorePage() {
   const { id } = useParams<{ id: string }>()
@@ -35,7 +36,7 @@ export function FuelRecipeScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza a receptekhez">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza a receptekhez">‹</FrameBack>
           <span><small>AI ÉRTÉKELÉS</small><strong>Recept</strong></span>
         </div>
         <p className="fmx-nodata">Ez a recept nincs meg.</p>
@@ -49,7 +50,7 @@ export function FuelRecipeScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={back} aria-label="Vissza a recepthez">‹</button>
+          <FrameBack className="glass is-round" onBack={back} label="Vissza a recepthez">‹</FrameBack>
           <span><small>AI ÉRTÉKELÉS</small><strong>{recipe.name}</strong></span>
         </div>
         <p className="fmx-nodata">
@@ -64,7 +65,7 @@ export function FuelRecipeScorePage() {
   return (
     <div className="fmx-page">
       <div className="fmx-subhead">
-        <button type="button" className="glass is-round" onClick={back} aria-label="Vissza a recepthez">‹</button>
+        <FrameBack className="glass is-round" onBack={back} label="Vissza a recepthez">‹</FrameBack>
         <span>
           <small>AI ÉRTÉKELÉS</small>
           <strong>{recipe.name}</strong>

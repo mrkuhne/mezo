@@ -25,6 +25,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
 import { roleLabel } from '@/features/fuel/logic/recipeRole'
 import RecipesSkeleton from '@/features/fuel/pages/RecipesSkeleton'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 type FilterId = 'all' | RecipeCategory | 'starred'
 
@@ -121,7 +122,7 @@ export function FuelRecipesPage() {
     <div className="fmx-page fkx-library fkx-recipes">
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza a Konyhába">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel/konyha')} label="Vissza a Konyhába">‹</FrameBack>
           <span>
             <small>KONYHA</small>
             <strong>Receptek</strong>

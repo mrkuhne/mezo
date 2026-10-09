@@ -11,6 +11,7 @@ import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
 import { LearnedBaseExplainer } from '@/features/fuel/sheets/LearnedBaseExplainer'
 import { WeeklyLearningSheet } from '@/features/fuel/sheets/WeeklyLearningSheet'
 import { CONFIDENCE_WORD, huWeekRange, learningModeOf, nf, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 // ============================================================
 // Mezo · LearningPage — „Hogy tanultam?” at /fuel/tanulas (mezo-3n2so, learned expenditure part 2,
@@ -48,7 +49,7 @@ export function LearningPage() {
     <div className="fmx-page fln-page">
       <EntranceGroup>
         <div className="fmx-subhead rise">
-          <button type="button" className="glass is-round" onClick={back} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={back} label="Vissza">‹</FrameBack>
           <span>
             <small>Fuel · energiaigény</small>
             <h1 className="fkx-title">Hogy tanultam?</h1>

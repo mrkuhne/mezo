@@ -61,6 +61,7 @@ import {
 import { mealMacroShare } from '@/features/fuel/logic/mealShare'
 import { WorkshopIngredientRow } from '@/features/fuel/components/workshop/WorkshopIngredientRow'
 import { WorkshopChatDock, type WorkshopChatMessage } from '@/features/fuel/components/workshop/WorkshopChatDock'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The base fields a workshop draft does NOT model — carried through verbatim from the seed
  *  recipe (or defaults) so a save is never a silent full-replace that drops them. `role` is one
@@ -343,7 +344,7 @@ export function RecipeWorkshopPage() {
     <div className="fmx-page fkx-workshop">
       <EntranceGroup>
           <div className="fmx-subhead rise">
-            <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+            <FrameBack className="glass is-round" onBack={() => navigate('/fuel/recipes')} label="Vissza">‹</FrameBack>
             <span>
               <small>Fuel · Receptek</small>
               <h1 className="fkx-title">Receptműhely</h1>

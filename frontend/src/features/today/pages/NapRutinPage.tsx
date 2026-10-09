@@ -36,6 +36,7 @@ import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import type { HabitDaypart, HabitItem } from '@/data/types'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 // A DAY chain is user-created (the wizard and the chain editor both offer "Napközbeni"), so it
 // gets its own face here — without one it was editable under Én and impossible to tick from the
@@ -202,9 +203,9 @@ export function NapRutinPage() {
   return (
     <MozaikPage tone="gold" className="nr-page nap-oldal">
       <div className="mz-page-head nap-backrow">
-        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+        <FrameBack className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
           <b aria-hidden="true">‹</b> Ma
-        </button>
+        </FrameBack>
       </div>
       <EntranceGroup>
         <div className="nr-daynav">

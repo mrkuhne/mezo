@@ -101,6 +101,7 @@ import { CtaGhost } from '@/shared/ui/Cta'
 import { Spinner } from '@/shared/ui/Spinner'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const fmt = (n: number): string => n.toLocaleString('hu-HU')
 const signed = (n: number): string => `${n > 0 ? '+' : ''}${fmt(n)}`
@@ -380,9 +381,9 @@ export function MesoReportPage() {
             style={{ '--mus-color': 'var(--tag-gym)', '--ld-accent': 'var(--tag-gym)', '--d': '40ms' } as CSSProperties}
           >
             <span className="pl-dhero-wash" aria-hidden="true" />
-            <button type="button" className="mz-backbtn" aria-label="Vissza" onClick={goBack}>
+            <FrameBack className="mz-backbtn" onBack={goBack}>
               Vissza
-            </button>
+            </FrameBack>
             <span className="pl-dhero-tag tr-eyebrow">
               {`Lezárt futam · ${day(report.startDate)}${report.endDate ? ` – ${day(report.endDate)}` : ''}`}
             </span>

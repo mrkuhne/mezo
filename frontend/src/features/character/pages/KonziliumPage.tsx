@@ -25,6 +25,7 @@ import { KonziliumConversationView } from '@/features/character/components/Konzi
 import { expertColor } from '@/features/character/expertColors'
 import { personaName } from '@/features/character/personaCharacter'
 import type { CharacterConferenceSummary, CharacterExpertDto, ConferenceTurn } from '@/data/character/characterApi'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const KIND_WORD: Record<CharacterConferenceSummary['kind'], string> = {
   DAILY: 'napi beszélgetés',
@@ -51,7 +52,7 @@ const HEAD_TITLE = 'Az ülés jegyzőkönyve'
 function KonzHead({ when, onBack }: { when: string | null; onBack: () => void }) {
   return (
     <div className="tf-dhead">
-      <button type="button" className="glass tf-back" aria-label="Vissza" onClick={onBack}>‹</button>
+      <FrameBack className="glass tf-back" onBack={onBack}>‹</FrameBack>
       <span className="tf-dtitle">
         <small><span>Konzílium</span>{when != null && ` · ${when}`}</small>
         <strong>{HEAD_TITLE}</strong>

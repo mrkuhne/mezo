@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom'
 import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MozaikPage, PageBody, type PageTone } from '@/shared/ui/mozaik'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 interface StackPageScaffoldProps {
   tone: PageTone
@@ -39,8 +40,7 @@ export function StackPageScaffold({
   return (
     <MozaikPage tone={tone} className="stk-detail-page">
       <div className="fsx-subhead">
-        <button type="button" className="glass is-round" onClick={() => navigate(backTo)}
-          aria-label="Vissza">‹</button>
+        <FrameBack className="glass is-round" onBack={() => navigate(backTo)}>‹</FrameBack>
         <span>
           <small>{eyebrow}</small>
           <strong>{name}</strong>

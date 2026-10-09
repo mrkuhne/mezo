@@ -47,6 +47,7 @@ import { huDate } from '@/features/train/logic/mesoDates'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import MesoFutamokSkeleton from '@/features/train/pages/MesoFutamokSkeleton'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
@@ -121,14 +122,9 @@ export function MesoFutamokPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <button
-            type="button"
-            className="mz-backbtn"
-            aria-label="Vissza"
-            onClick={() => navigate('/train/mesocycles/konyvtar')}
-          >
+          <FrameBack className="mz-backbtn" onBack={() => navigate('/train/mesocycles/konyvtar')}>
             ‹ Edzéstervek
-          </button>
+          </FrameBack>
           <span className="pl-lhero-art" aria-hidden="true">
             <Icon3D name="t-history" size={60} className="icon" />
             <i />

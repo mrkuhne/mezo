@@ -38,6 +38,7 @@ import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { PatternMonitorPair, PatternStatus } from '@/data/types'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const RING_R = 26
 const RING_C = 2 * Math.PI * RING_R
@@ -149,8 +150,7 @@ function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }
   return (
     <div className="tf-page m9m-root">
       <div className="tf-dhead">
-        <button type="button" className="glass tf-back" aria-label="Vissza"
-          onClick={() => navigate(ALL_FEATURES_ROUTE)}>‹</button>
+        <FrameBack className="glass tf-back" onBack={() => navigate(ALL_FEATURES_ROUTE)}>‹</FrameBack>
         <span className="tf-dtitle"><small>Mezo · a motor</small><strong>Minták</strong></span>
       </div>
       <div className="m9m-big">

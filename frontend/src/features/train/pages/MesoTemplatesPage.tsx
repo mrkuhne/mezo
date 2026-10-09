@@ -39,6 +39,7 @@ import {
 } from '@/features/train/logic/libraryStory'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import MesoTemplatesSkeleton from '@/features/train/pages/MesoTemplatesSkeleton'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
@@ -62,14 +63,9 @@ export function MesoTemplatesPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <button
-            type="button"
-            className="mz-backbtn"
-            aria-label="Vissza"
-            onClick={() => navigate('/train/mesocycles/konyvtar')}
-          >
+          <FrameBack className="mz-backbtn" onBack={() => navigate('/train/mesocycles/konyvtar')}>
             ‹ Edzéstervek
-          </button>
+          </FrameBack>
           <span className="pl-lhero-art" aria-hidden="true">
             <Icon3D name="t-template" size={60} className="icon" />
             <i />

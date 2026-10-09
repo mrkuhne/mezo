@@ -4,6 +4,7 @@ import { useKnowledgeGraphNodes } from '@/data/hooks'
 import { ROLAD_COPY } from '@/features/insights/logic/roladCopy'
 import { RoladTimeline } from '@/features/insights/components/rolad/RoladTimeline'
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /**
  * S6c (mezo-2dfy2, prototype `eletesemenyek6`): the life-event timeline moved off the Rólad page
@@ -17,7 +18,7 @@ export function RoladLifeEventsPage() {
     <div className="kr9-rolad">
       <EntranceGroup className="kr9-rflow">
         <div className="tf-dhead">
-          <button type="button" className="glass tf-back" aria-label="Vissza: Rólad" onClick={() => navigate('/mezo/rolad')}>‹</button>
+          <FrameBack className="glass tf-back" onBack={() => navigate('/mezo/rolad')} label="Vissza: Rólad">‹</FrameBack>
           <span className="tf-dtitle"><small>Rólad</small><strong>Életesemények</strong></span>
         </div>
         <p className="kr9-quiet">{ROLAD_COPY.lifeEventsLede}</p>

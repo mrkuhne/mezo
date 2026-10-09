@@ -10,6 +10,7 @@
 // ============================================================
 import { useId, useState, type CSSProperties, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek/frame'
 import { ClayIcon, ClaySpot, Icon3D, type ClayIconName, type ClaySpotName, type Icon3DName } from '@/shared/ui/clay'
 
 /** Domain washes — Mozaik 2.0 relaxation: domain color ON the tile (handoff §10). */
@@ -148,6 +149,13 @@ export function PageHead({ onBack, label = '‹ vissza', glass = false, children
   glass?: boolean
   children?: ReactNode
 }) {
+  // Folyadék frame (mezo-n4wf5.1): the back control belongs to the shell's title bar. The page
+  // hands its handler over, and draws nothing but its own extra controls (`children`).
+  // Where NO title bar is mounted — the chrome-free full-screen routes, the chat (its own
+  // header), a page rendered alone — the page still needs a way back, so it keeps its button.
+  useFrameBack(onBack)
+  const shellHasBack = useHasTitleBar()
+  if (shellHasBack) return children ? <div className={cn('mz-page-head', glass && 'uv-head')}>{children}</div> : null
   return (
     <div className={cn('mz-page-head', glass && 'uv-head')}>
       <button type="button" className={cn('mz-backbtn', glass && 'glass uv-back')} onClick={onBack} aria-label="Vissza">

@@ -31,6 +31,7 @@ import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
 import { usePickableIngredients, kindLabel } from '@/data/fuel/pantryPickables'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 interface DraftLine { refId: string; amount: number; unit: string; note?: string }
 
@@ -133,7 +134,7 @@ export function RecipeEditorPage() {
     return (
       <div className="fmx-page fkx-reditor">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate(-1)} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
           <span><small>Fuel · Receptek</small></span>
         </div>
         <div className="fkx-notfound uv-empty">Nincs ilyen recept.</div>
@@ -201,7 +202,7 @@ export function RecipeEditorPage() {
     <div className="fmx-page fkx-reditor">
       <EntranceGroup>
         <div className="fmx-subhead rise">
-          <button type="button" className="glass is-round" onClick={() => navigate(-1)} aria-label="Vissza">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
           <span>
             <small>Fuel · Receptek</small>
             <h1 className="fkx-title">{name || (isEditMode ? '—' : 'Új recept')}</h1>

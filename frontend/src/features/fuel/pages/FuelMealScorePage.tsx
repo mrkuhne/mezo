@@ -31,6 +31,7 @@ import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { FuelScoreSurface } from '@/features/fuel/components/FuelScoreSurface'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 export function FuelMealScorePage() {
   const { id } = useParams<{ id: string }>()
@@ -54,7 +55,7 @@ export function FuelMealScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+          <FrameBack className="glass is-round" onBack={() => navigate('/fuel')} label="Vissza a Mai oldalra">‹</FrameBack>
           <span><strong>Ez az étkezés nincs meg</strong></span>
         </div>
         <p className="fmx-block-empty">Lehet, hogy egy másik napon logoltad, vagy közben törölted.</p>
@@ -67,7 +68,7 @@ export function FuelMealScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
+          <FrameBack className="glass is-round" onBack={back} label="Vissza az étkezéshez">‹</FrameBack>
           <span><small>AI ÉRTÉKELÉS</small><strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -84,7 +85,7 @@ export function FuelMealScorePage() {
   return (
     <div className="fmx-page">
       <div className="fmx-subhead">
-        <button type="button" className="glass is-round" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
+        <FrameBack className="glass is-round" onBack={back} label="Vissza az étkezéshez">‹</FrameBack>
         <span>
           <small>AI ÉRTÉKELÉS</small>
           <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>

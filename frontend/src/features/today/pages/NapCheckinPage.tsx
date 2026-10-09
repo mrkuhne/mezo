@@ -25,6 +25,7 @@ import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { localDateString } from '@/shared/lib/dates'
 import type { CheckinSlot } from '@/data/types'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The four canonical slots' daypart names (prototype #page-check rows). */
 const SLOT_NAMES = ['Reggel', 'Délelőtt', 'Délután', 'Este'] as const
@@ -122,9 +123,9 @@ export function NapCheckinPage() {
   return (
     <MozaikPage tone="rose" className="nap-oldal nck-page">
       <div className="mz-page-head nap-backrow">
-        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+        <FrameBack className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
           <b aria-hidden="true">‹</b> Ma
-        </button>
+        </FrameBack>
       </div>
       <section className="nap-hero uv-halo" style={{ '--c': 'var(--dv-rose)', '--c2': 'var(--dv-lav)' } as React.CSSProperties}>
         <Icon3D name="t-checkin" size={86} className="nap-hero-art uv-float" />

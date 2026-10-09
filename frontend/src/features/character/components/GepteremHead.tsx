@@ -7,6 +7,7 @@
 // carries the page's heading role (it was the PageHero name / an <h1> before).
 // ============================================================
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 export function GepteremHead({ small, title, onBack, titleId }: {
   small: string
@@ -17,7 +18,7 @@ export function GepteremHead({ small, title, onBack, titleId }: {
 }) {
   return (
     <div className="tf-dhead gtm-dhead">
-      <button type="button" className="glass tf-back" aria-label="Vissza" onClick={onBack}>‹</button>
+      <FrameBack className="glass tf-back" onBack={onBack}>‹</FrameBack>
       <span className="tf-dtitle">
         <small>{small}</small>
         <strong id={titleId} role="heading" aria-level={1}>{title}</strong>

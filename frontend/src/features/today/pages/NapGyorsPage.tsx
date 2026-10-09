@@ -12,15 +12,16 @@ import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { QuickLogSurface } from '@/features/quickinput/QuickLogSurface'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 export function NapGyorsPage() {
   const navigate = useNavigate()
   return (
     <MozaikPage tone="coral" className="nap-gyors">
       <div className="mz-page-head">
-        <button type="button" className="mz-backbtn glass is-still" onClick={() => navigate(-1)} aria-label="Vissza">
+        <FrameBack className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
           ‹ Ma
-        </button>
+        </FrameBack>
       </div>
       <PageBody>
         <EntranceGroup>
