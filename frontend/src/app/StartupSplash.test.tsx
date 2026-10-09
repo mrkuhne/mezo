@@ -1,11 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { StrictMode } from 'react'
 import { act, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { StartupSplash } from '@/app/StartupSplash'
 
-// Visszaöltöztetés (mezo-ju4j6.3): a jel STATIKUS agyag-gömb, nem élő 3D jelenet, ezért a
-// „készen van-e már" varrat (és a hozzá tartozó 5 másodperces vészkijárat) tárgytalan lett —
-// a StartupSplash.readiness.test.tsx vele együtt szűnt meg. Amit a felhasználó lát, az
+// A jel CSS-idővonal, nem élő jelenet, ezért „készen van-e már" varrat nincs. Amit a felhasználó lát, az
 // VÁLTOZATLAN, és pont az marad itt kikötve: három másodperc, aztán az app.
 
 beforeEach(() => vi.useFakeTimers())
@@ -34,9 +33,9 @@ test('does not replay when the routed content changes', () => {
 
 test('StrictMode still reveals once and unmount clears the pending timer', () => {
   const first = render(<StrictMode><StartupSplash>Dashboard</StartupSplash></StrictMode>)
-  // The startup deadline, PhoneFrame's existing daypart clock and the choreography's next
-  // animation frame (mezo-1dxhp) — StrictMode's double effect run leaves exactly one of each.
-  expect(vi.getTimerCount()).toBe(3)
+  // The startup deadline and PhoneFrame's existing daypart clock — StrictMode's double effect
+  // run leaves exactly one of each (the motion is CSS now, no animation-frame loop).
+  expect(vi.getTimerCount()).toBe(2)
   act(() => vi.advanceTimersByTime(3000))
   expect(screen.queryByRole('status')).not.toBeInTheDocument()
   first.unmount()
@@ -45,44 +44,58 @@ test('StrictMode still reveals once and unmount clears the pending timer', () =>
   expect(vi.getTimerCount()).toBe(0)
 })
 
-// Üveg (mezo-me75u.10): a jel a levendula üveg-gömb, benne a hullámzó folyadék — se emoji, se
-// a Titán 3D jelenet, se a régi agyag `s-orb` folt.
-test('the mark is the lavender glass orb with its liquid, and the wordmark stays "boop"', () => {
+// Folyadék F1 (mezo-n4wf5.1): egy edény, öt réteg, öt csepp — és a szó-logó marad „boop".
+test('one vessel with five layers, five drops in the bar, the wordmark stays "boop"', () => {
   const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
-  expect(container.querySelector('.startup-splash .startup-splash__orb.glass')).not.toBeNull()
-  expect(container.querySelector('.startup-splash .startup-splash__wave .startup-splash__liquid')).not.toBeNull()
-  expect(container.querySelector('.startup-splash use[href="#s-orb"]')).toBeNull()
-  expect(container.querySelector('.startup-splash canvas')).toBeNull()
-  expect(container.querySelector('.startup-splash .titan-svg')).toBeNull()
-  expect(container.querySelector('.startup-splash__wordmark')!.textContent).toBe('boop')
+  const sp = container.querySelector('.fo-sp')!
+  expect(sp.querySelectorAll('.fo-sp-ves')).toHaveLength(1)
+  const layers = [...sp.querySelectorAll<HTMLElement>('.fo-sp-stk > i')]
+  expect(layers.map((l) => l.dataset.layer)).toEqual(['nap', 'train', 'fuel', 'mezo', 'me'])
+  expect(layers.map((l) => l.style.getPropertyValue('--c2'))).toEqual(['#1877F2', '#F2683A', '#149E6E', '#6B4FE0', '#0E94B8'])
+  expect(sp.querySelectorAll('.fo-nav .fo-drop')).toHaveLength(5)
+  expect(sp.querySelector('.fo-sp-wm')!.textContent).toBe('boop')
+  // no old orb / orbit / canvas leftovers
+  expect(container.querySelector('.startup-splash, canvas, .titan-svg')).toBeNull()
 })
 
-// Töltődés + keringés (mezo-1dxhp): öt Titán-ikon a gömb körül, a sprite-ból — se emoji, se
-// kirajzolt pálya; a hurok képkockáról képkockára tölti a gömböt és pörgeti a kört.
-test('five sprite icons orbit the orb while the liquid rises', () => {
+test('the bar of drops is non-interactive and Nap is the active one', () => {
   const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
-  const icons = [...container.querySelectorAll('.startup-splash__orbit-ic use')]
-  expect(icons.map((u) => u.getAttribute('href'))).toEqual(['#t-sun', '#t-dumbbell', '#t-bowl', '#t-water', '#t-moon'])
-  expect(container.querySelector('.startup-splash ellipse')).toBeNull()
-  const level = () => container.querySelector('.startup-splash__level')!.getAttribute('transform')
-  const sun = () => (container.querySelector('.startup-splash__orbit-ic') as HTMLElement).style
-  expect(level()).toBe('translate(0 62)') // empty: surface at y 150
-  expect(sun().opacity).toBe('0')
-  act(() => vi.advanceTimersByTime(1500))
-  expect(sun().opacity).toBe('1')
-  act(() => vi.advanceTimersByTime(1300)) // 2.8 s: the fill has come to rest, the splash is fading
-  expect(level()).toBe('translate(0 -40)') // ~70%: surface at y 48
+  const bar = container.querySelector('.fo-sp .fo-nav')!
+  expect(bar.getAttribute('aria-hidden')).toBe('true')
+  expect(bar.querySelectorAll('a, button, [tabindex]')).toHaveLength(0)
+  const items = [...bar.querySelectorAll('.fo-nav-item')]
+  expect(items.map((i) => i.classList.contains('on'))).toEqual([true, false, false, false, false])
 })
 
-test('reduced motion paints the resting frame: full to ~70%, icons in place', () => {
+test('the timeline numbers reach the stylesheet from the one table', () => {
+  const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
+  const style = (container.querySelector('.fo-sp') as HTMLElement).style
+  expect(['--sp-end', '--sp-fade', '--sp-drop-start', '--sp-stagger', '--sp-fall'].map((v) => style.getPropertyValue(v)))
+    .toEqual(['3000ms', '2400ms', '1080ms', '170ms', '560ms'])
+})
+
+// Reduced motion: the base CSS is the final frame and EVERY animation/transition sits inside the
+// no-preference media block, so nothing runs; the splash just ends at 3 s (the timer test above).
+test('all motion lives inside the no-preference media query', () => {
+  const css = readFileSync('src/app/StartupSplash.css', 'utf8')
+  const start = css.indexOf('@media (prefers-reduced-motion: no-preference)')
+  expect(start).toBeGreaterThan(-1)
+  const end = css.indexOf('\n}\n', start) + 3
+  const outside = css.slice(0, start) + css.slice(end)
+  expect(outside.replace(/@keyframes[\s\S]*$/m, '')).not.toMatch(/animation|transition/)
+})
+
+test('reduced motion still ends at exactly 3 seconds', () => {
   const matchMedia = window.matchMedia
   window.matchMedia = ((query: string) => ({ matches: query.includes('reduce'), media: query,
     addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia
   try {
     const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
-    expect(container.querySelector('.startup-splash__level')!.getAttribute('transform')).toBe('translate(0 -40)')
-    const icons = [...container.querySelectorAll<HTMLElement>('.startup-splash__orbit-ic')]
-    expect(icons.every((ic) => ic.style.opacity === '1')).toBe(true)
+    expect(container.querySelector('.fo-sp')!.getAttribute('data-motion')).toBe('still')
+    act(() => vi.advanceTimersByTime(2999))
+    expect(screen.getByRole('status')).toBeInTheDocument()
+    act(() => vi.advanceTimersByTime(1))
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   } finally {
     window.matchMedia = matchMedia
   }

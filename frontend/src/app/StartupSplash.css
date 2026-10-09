@@ -1,8 +1,8 @@
-/* Indító-képernyő (mezo-qducz; visszaöltöztetve mezo-ju4j6.3).
-   A Titán változat egy WebGL jelenetet tett hideg grafit vászonra, bloom-maszkkal és
-   három fényvillanással. A visszaállított világ hőse a HALO-SÁV (style bible §2.2 C):
-   keret és árnyék nélküli, középre igazított légkör, benne az agyag-gömb és a szó-logó.
-   Se kártya, se keret, se hideg felület — a vászon a ház saját lapja mindkét témában. */
+/* Indító-képernyő — Folyadék F1 (mezo-n4wf5.1): „egy edény, öt csepp".
+   Forrás: docs/design_2.0/prototypes/vilagos/keret.js (`.sp*` + @keyframes sp*). Az alap (mozgás
+   nélküli) szabályok a VÉGKÉPET adják — tele edény, a cseppek a sávban —, ezt látja a csökkentett
+   mozgás is; a mozgás kizárólag a no-preference ágban él. Az időzítések a JS számtáblájából
+   jönnek (startupChoreography.ts → a gyökér --sp-* property-jei), ide nem másolt számként. */
 
 .startup-content { display: contents; }
 
@@ -12,116 +12,58 @@
   z-index: 10000;
 }
 
-.startup-splash {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 18px;
-  overflow: hidden;
-  background: var(--surface-page);
-  touch-action: none;
-  overscroll-behavior: none;
+.fo-sp {
+  position: absolute; inset: 0; z-index: 40; overflow: hidden; container-type: size;
+  background: linear-gradient(180deg, #FBFDFE, #E6F0F6);
+  touch-action: none; overscroll-behavior: none;
+  --dy: calc(-79cqh + 300px); --sw: calc((100cqw - 32px) / 5);
+}
+.fo-sp-wm {
+  position: absolute; left: 0; right: 0; top: 57%; text-align: center;
+  font: 800 56px/1 var(--ff-display), system-ui, sans-serif; letter-spacing: -2.8px; color: var(--fo-ink);
+}
+.fo-sp-w { position: absolute; left: 0; bottom: calc(100% - 1px); width: 400%; height: 9px; }
+.fo-sp-dx, .fo-sp-dr { display: block; }
+.fo-sp-dr { transform-origin: 50% 100%; }
+.fo-sp-ves {
+  position: absolute; z-index: 40; left: 50%; top: 21%; width: 150px; height: 250px; margin-left: -75px;
+  border-radius: 75px; overflow: hidden; isolation: isolate;
+  background: linear-gradient(180deg, #fff, #F4FAFC);
+  box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .07), inset 0 10px 22px -12px rgba(10, 42, 60, .14), 0 34px 50px -30px rgba(24, 119, 242, .55);
+}
+.fo-sp-stk { position: absolute; inset: 0; }
+.fo-sp-stk > i {
+  position: absolute; left: 0; right: 0; bottom: 0; height: var(--lv);
+  background: linear-gradient(180deg, var(--c1), var(--c2)) top/100% 46px no-repeat, var(--c2);
+}
+.fo-sp-ves > em {
+  position: absolute; z-index: 12; left: 22px; top: 26px; width: 16px; height: 64px; border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .85), rgba(255, 255, 255, 0));
 }
 
-/* Üveg (mezo-me75u.10, prototype uveg-reteg `splash()`): a frameless lavender→gold halo behind
-   a 150px lavender GLASS sphere holding a lavender liquid (slow wave, highlight arc), the „boop"
-   gradient wordmark below (the header's recipe). Dark only; motion only in no-preference. */
-.startup-splash__mark {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 150px;
-  aspect-ratio: 1;
-  /* Töltődés + keringés (mezo-1dxhp): the orbit (r 108 + half an icon) reaches 56px past the
-     orb on every side, so the mark reserves that room and the wordmark stays clear of it. */
-  margin-block: 56px;
-}
-/* The halo box is ~3x the sphere so the ellipse fades out well INSIDE it (no straight edge). */
-.startup-splash__mark::before {
-  content: '';
-  position: absolute;
-  left: 50%; top: 50%;
-  width: 460px; height: 420px;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  background: radial-gradient(ellipse, rgba(171, 159, 210, 0.34), rgba(255, 190, 96, 0.14) 42%, transparent 68%);
-}
-.startup-splash__orb.glass {
-  --c: var(--dv-lav);
-  position: relative;
-  width: 150px; height: 150px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-.startup-splash__orb.glass::after { display: none; }
-.startup-splash__orb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.startup-splash__liquid { opacity: 0.85; filter: drop-shadow(0 0 10px rgba(171, 159, 210, 0.7)); }
-.startup-splash__hi { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 5; stroke-linecap: round; }
-.startup-splash__orb.glass { z-index: 2; }
-.startup-splash__bubble { fill: rgba(255, 255, 255, 0.6); }
-
-/* Töltődés + keringés (mezo-1dxhp, prototype indito-animacio.html „D"). Every moving value is
-   written per frame by StartupSplash's rAF loop from `splashFrame`; the CSS only sets the
-   resting geometry. A soft lavender glow behind the orb, the light sheen that crosses the glass
-   at the end, and the five orbit icons centred on the orb. */
-.startup-splash__glow {
-  position: absolute;
-  inset: -18px;
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(circle, rgba(171, 159, 210, 0.55), rgba(171, 159, 210, 0) 68%);
-}
-.startup-splash__sheen {
-  position: absolute;
-  top: -20%; bottom: -20%; left: 0;
-  width: 34%;
-  z-index: 4;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 244, 230, 0.4), transparent);
-}
-.startup-splash__orbit-ic {
-  position: absolute;
-  left: 50%; top: 50%;
-  z-index: 3;
-  width: 46px; height: 46px;
-  margin: -23px 0 0 -23px;
-  opacity: 0;
-  will-change: transform, opacity;
-}
-.startup-splash__orbit-ic .t-ico {
-  display: block;
-  width: 100%; height: 100%;
-  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 10px color-mix(in srgb, var(--c) 55%, transparent));
-}
-
-.startup-splash__wordmark {
-  position: relative;
-  font-family: var(--ff-display), system-ui, sans-serif;
-  font-size: 48px; font-weight: 700; letter-spacing: -2px; line-height: 1;
-  background: linear-gradient(120deg, #F5EFE6 0%, #E6DDFF 55%, #E9C48A 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-  filter: drop-shadow(0 0 18px rgba(171, 159, 210, 0.35));
-}
-
-/* A szó-logó felemelkedése, majd kivezetés — ugyanaz a 3 másodperc, amit a komponens mér. A
-   töltődést és a keringést a rAF-hurok viszi. Csökkentett mozgás mellett a jel nyugalmi
-   kockája áll, és a kivezetés is elmarad. */
 @media (prefers-reduced-motion: no-preference) {
-  .startup-stage { animation: startup-reveal 300ms ease-out 2700ms both; }
-  .startup-splash__wordmark { animation: startup-rise 600ms cubic-bezier(.2, .7, .3, 1) 200ms both; }
+  .fo-sp { animation: fo-sp-out calc(var(--sp-end) - var(--sp-fade)) ease both var(--sp-fade); }
+  .fo-sp-w { animation: fo-sp-w 3.2s linear infinite; }
+  .fo-sp-ves { animation: fo-sp-in .4s ease both; }
+  .fo-sp-wm { animation: fo-sp-in .45s ease both .15s; }
+  .fo-sp-stk > i { animation: fo-sp-rise .42s cubic-bezier(.2, .8, .2, 1) both calc(.12s + var(--i) * .13s); }
+  .fo-sp-stk { animation: fo-sp-drain .9s linear both var(--sp-drop-start); }
+  .fo-sp-dx { animation: fo-sp-dx var(--sp-fall) cubic-bezier(.2, .6, .4, 1) both calc(var(--sp-drop-start) + var(--i) * var(--sp-stagger)); }
+  .fo-sp-dr { animation: fo-sp-drop var(--sp-fall) both calc(var(--sp-drop-start) + var(--i) * var(--sp-stagger)); }
+  .fo-sp-bar .fo-sp-l { animation: fo-sp-in0 .3s ease both calc(var(--sp-drop-start) + .52s + var(--i) * var(--sp-stagger)); }
+  .fo-sp-bar { animation: fo-sp-bar .4s ease both 2s; }
 }
-
-@keyframes startup-rise {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes startup-reveal {
-  from { opacity: 1; }
-  to { opacity: 0; }
+@keyframes fo-sp-out { to { opacity: 0; } }
+@keyframes fo-sp-w { to { transform: translateX(-12.5%); } }
+@keyframes fo-sp-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes fo-sp-in0 { from { opacity: 0; } }
+@keyframes fo-sp-bar { from { background-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+@keyframes fo-sp-rise { from { transform: translateY(102%); } }
+@keyframes fo-sp-drain { to { transform: translateY(96%); } }
+@keyframes fo-sp-dx { from { transform: translateX(calc((2 - var(--i)) * var(--sw))); } }
+@keyframes fo-sp-drop {
+  0% { transform: translateY(var(--dy)) scale(.8, 1.25); animation-timing-function: cubic-bezier(.55, 0, .9, .55); }
+  66% { transform: translateY(0) scale(1.22, .72); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  84% { transform: translateY(-6px) scale(.95, 1.07); animation-timing-function: ease-in; }
+  100% { transform: none; }
 }

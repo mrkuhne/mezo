@@ -20,7 +20,12 @@ export const DOMAIN_COLOR: Record<string, string> = {
   nap: '#1F6FEB', train: '#F26A3D', fuel: '#1E9E6A', mezo: '#6D5BD0', me: '#0E9AA7',
 }
 /** The resting level of each drop (kit.js `FILL`); the active one stands at 86. */
-const REST_FILL: Record<string, number> = { nap: 70, train: 34, fuel: 62, mezo: 50, me: 58 }
+export const REST_FILL: Record<string, number> = { nap: 70, train: 34, fuel: 62, mezo: 50, me: 58 }
+
+/** The drop of one domain in the bar: size + level. ONE recipe — the opening animation reuses it. */
+export function navDropSpec(id: string, active: boolean) {
+  return { pct: active ? 86 : REST_FILL[id], color: DOMAIN_COLOR[id], size: active ? 40 : 34 }
+}
 
 export function BottomBar() {
   const { pathname } = useLocation()
@@ -34,8 +39,7 @@ export function BottomBar() {
         <Link key={d.id} to={routeForDomain(d.id)} className={cn('fo-nav-item', d.id === active && 'on')}
           aria-current={d.id === active ? 'true' : undefined} data-domain={d.id}
           style={{ '--c': DOMAIN_COLOR[d.id] } as CSSProperties}>
-          <Drop pct={d.id === active ? 86 : REST_FILL[d.id]} color={DOMAIN_COLOR[d.id]}
-            size={d.id === active ? 40 : 34} alive={d.id === active} />
+          <Drop {...navDropSpec(d.id, d.id === active)} alive={d.id === active} />
           <span>{d.name}</span>
         </Link>
       ))}
