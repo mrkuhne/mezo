@@ -4,6 +4,21 @@
 
 # Design 2.0 — index and status
 
+> ## 🔄 2026-10-09 — direction change: **Folyadék** (epic `mezo-n4wf5`, in flight)
+>
+> The owner replaced Üveg with **Folyadék**: light only, a structure-first page skeleton, one
+> idea for the look (everything is a level that fills), an own outlined icon family, the team
+> named by field, the bottom bar always the five domains. Driven slice by slice by the
+> `/folyadek` session skill; the app is mixed-look until F9.
+>
+> **Canon, in this order:** (1) [Folyadék style bible](2026-10-09-folyadek-style-bible.md) ·
+> (2) the prototype [prototypes/klinikai-iranyok.html](prototypes/klinikai-iranyok.html) +
+> `prototypes/vilagos/*.js` ([HANDOFF](prototypes/vilagos/HANDOFF.md): state, journey, what was
+> rejected) · (3) spec
+> [2026-10-09-folyadek-irany-design.md](../superpowers/specs/2026-10-09-folyadek-irany-design.md).
+> Everything below describes Üveg and earlier worlds: read it for *what a screen must do* and
+> for structural traps, never for *what it looks like*.
+
 > ## ✅ 2026-09-26 — "Üveg" is DONE and is THE canon (`mezo-me75u` closed)
 >
 > Every surface of the app wears the **Üveg** material: Mozaik colors on the warm-graphite dark

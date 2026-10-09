@@ -1,5 +1,11 @@
 # Élő prototípusok — one living prototype per domain
 
+> **2026-10-09 — frozen during the Folyadék programme (`mezo-n4wf5`).** These five files show
+> the app in the **Üveg** look. The living prototype of every domain is now the Folyadék
+> prototype (`../klinikai-iranyok.html` + `../vilagos/<domain>.js`, Artifact
+> https://claude.ai/artifact/Ax6faqjyEd6Xxw2J7MN45M). Use the files here as parity sources for
+> what a screen must do; they are retired in slice F9. See CLAUDE.md §Living prototypes.
+
 Each bottom-menu domain has one living, clickable prototype that always shows the domain as it
 is in production, in the Üveg look. Every frontend change edits its domain's file instead of
 starting a new prototype. The fixed Artifact URLs below are republished when the publishing tool
