@@ -139,3 +139,7 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
   field: Alvás (pihenés), Mozgás (terhelés), Étkezés (étrend), Közérzet (hangulat), Mezo (a csapat),
   plus the Szkeptikus. Internal keys stay `szunya/mocor/falat/deru/mezo`. "Szobája" is now "oldala".
   This supersedes the names in approved decision 8. Build: the same rename in app copy and prompts.
+- Copy rule after the rename: the field name is a **label** (sender line, eyebrow "Alvás · rád vár"),
+  and in a sentence it takes an article ("az Alvás szerint", "a Mozgás jelezte") or the sentence turns
+  to "we" ("este megnézzük", "rákérdezünk"). Never a bare field name as a person ("Alvás este megnézi").
+  `msg()` drops a meta that only repeats the name. "karakter" for a team member → "terület".
