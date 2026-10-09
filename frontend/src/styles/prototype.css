@@ -13549,6 +13549,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .mno-group a:focus-visible { outline: 2px solid var(--dv-lav); outline-offset: -2px; }
 /* ── /oldal-leltár ─────────────────────────────────────────────────────────── */
 
+/* ▼▼ F1:KIT */
 /* ═══════════════════════════════════════════════════════════════════════════
    ── uveg kit (mezo-me75u.1) ─────────────────────────────────────────────────
    The Üveg material, ONCE, for every slice: Mozaik colors on the warm-graphite
@@ -13766,6 +13767,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 /* ── /uveg kit ─────────────────────────────────────────────────────────────── */
 
+/* ▲▲ F1:KIT */
+/* ▼▼ F1:CHROME */
 /* ═══════════════════════════════════════════════════════════════════════════
    ── uveg chrome (mezo-me75u.1) ──────────────────────────────────────────────
    The app chrome keeps its CONTENT and behavior and wears glass (üveg bible §7,
@@ -13962,6 +13965,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    Uses ONLY the uveg kit above (.glass, .uv-flat, .uv-empty, .uv-well, .uv-halo, rings,
    bars, type); these blocks hold per-surface geometry. Dark only.
    ═══════════════════════════════════════════════════════════════════════════ */
+/* ▲▲ F1:CHROME */
 /* ── uveg fuel konyha (mezo-me75u.2) ── Konyha, Kamra, Kamra item, kamra sheets ── */
 /* Reference: prototypes/uveg-fuel-tobbi.html `konyha()`, `kamra()`, `kamraItem()`, `SH.import/
    add/catalog/catfilter`. Ranking (bible §3.4): the two captures, the three posters, the Kamra
