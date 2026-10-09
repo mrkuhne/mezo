@@ -18,3 +18,13 @@
 }
 /* the warm day-part sky bands do not belong to the Folyadék light world */
 :root:not([data-theme="dark"]) .phone-screen[data-domain] .sky { display: none; }
+
+/* ── Folyadék-jel ikonok (mezo-n4wf5.1, Task 2) ── bible §5 */
+.t-ico { --ic: var(--c, var(--dom)); --ic2: color-mix(in srgb, var(--c, var(--dom2)) 55%, #fff); filter: none; }
+.fo-on-liquid .t-ico, .fo-on-liquid svg { --ic: #fff; --ic2: rgba(255,255,255,.4); --icf: transparent; }
+/* the old sprite-era halo / drop-shadow would smear the outlined glyphs */
+:root:not([data-theme="dark"]) .t-ico,
+:root:not([data-theme="dark"]) .glass .t-ico,
+:root:not([data-theme="dark"]) .uv-well .t-ico { filter: none; }
+/* the two dark pockets: keep the glyphs visible, no white body blobs */
+:root[data-theme="dark"] .t-ico { --icf: transparent; }

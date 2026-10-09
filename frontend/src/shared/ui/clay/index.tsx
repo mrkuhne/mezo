@@ -56,11 +56,12 @@ export type ClaySpotName =
   // Szekció-spotok a shell-fejléchez (mezo-8az6): a Fuel és az Én darabja hiányzott.
   | 's-fuel' | 's-en'
 
-/** The Titanium 3D content icons (üveg style bible §4, mezo-me75u.1): the companion-titanium
- *  sprite's 62 symbols verbatim + the custom icons drawn in its recipe, namespaced `t-*` (defs
- *  `tg-*`) so they share one DOM with the clay set. Source of truth + generator:
- *  docs/design_2.0/assets/titanium-icons.svg ← scripts/gen-titanium-sprite.mjs. CHROME keeps
- *  the clay icons (header, tabs); CONTENT wears these. */
+/** The Folyadék-jel content icons (Folyadék F1, mezo-n4wf5.1): outlined, half-liquid-filled
+ *  glyphs on a 64×64 grid, namespaced `t-*` (clip defs `tc-*`). The ids are the old Titanium
+ *  sprite's, unchanged, so every consumer switched at once. Source of truth + generator:
+ *  docs/design_2.0/assets/folyadek-glyphs.json → scripts/gen-folyadek-sprite.mjs. Colours come
+ *  from `--ic` (line), `--ic2` (liquid), `--icf` (body tint). The mapped clay chrome icons
+ *  (`clay-icons.svg`) reuse these glyphs. */
 export type Icon3DName =
   | 't-sun' | 't-water' | 't-moon' | 't-bolt' | 't-book' | 't-ring' | 't-gem' | 't-heart'
   | 't-dumbbell' | 't-volley' | 't-kettle' | 't-run' | 't-history' | 't-play' | 't-note'
