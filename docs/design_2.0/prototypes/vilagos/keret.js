@@ -1,6 +1,6 @@
 /* vilagos/keret.js — slice F1 (Alap + keret + készlet, mezo-n4wf5.1): the three things the owner decides before code.
-   1 · #w-nap-indito[.a|.b|.c]      the opening animation — three liquid options (3 s, then the app; reduced motion = a still frame)
-   2 · #w-<domain>-atmenet[.sotet]  the new frame around a page that has not been converted yet (the mixed look while F2–F7 run)
+   1 · #w-nap-indito                the opening animation — the owner's pick: one vessel, five drops (3 s, then the app; reduced motion = a still frame)
+   2 · #w-<domain>-atmenet          the new frame around a page that has not been converted yet (the mixed look while F2–F7 run)
    3 · #w-<domain>-mindenoldal      "Minden oldal": the page map behind the header's grid button (the retired domain switcher's link)
    The frame parity itself (kalauz mark, tab marks, the Nap drop's day level, the floating quick-log button) lives in kit.js / foly.js.
    Loaded last. Prototype-only scaffolding is marked "proto"; nothing here is a kit primitive. */
@@ -12,18 +12,12 @@ const NAVC=['#1F6FEB','#F26A3D','#1E9E6A','#6D5BD0','#0E9AA7'];
 const W=(c,o=1,cls='')=>`<svg class="sp-w ${cls}" viewBox="0 0 800 20" preserveAspectRatio="none" aria-hidden="true"><path fill="${c}" opacity="${o}" d="M0 10 Q25 0 50 10 T100 10 T150 10 T200 10 T250 10 T300 10 T350 10 T400 10 T450 10 T500 10 T550 10 T600 10 T650 10 T700 10 T750 10 T800 10 V20 H0Z"/></svg>`;
 
 /* ═══ 1 · the opening animation ═══ */
-const SP={
- /* A — the screen itself is the vessel: the Nap liquid rises through the wordmark, which turns white where it is under */
- a:()=>`<div class="sp sp-a"><b class="sp-wm">boop</b>
-   <div class="sp-fill">${W('#19C7C0',.5,'b')}${W('#19C7C0')}<div class="sp-body"><div class="sp-cnt"><b class="sp-wm">boop</b></div>
-     <i class="sp-bu" style="left:22%;--s:14px;--d:3.4s;--dl:.5s"></i><i class="sp-bu" style="left:71%;--s:9px;--d:2.8s;--dl:.9s"></i><i class="sp-bu" style="left:54%;--s:6px;--d:3s;--dl:1.3s"></i><i class="sp-bu" style="left:38%;--s:10px;--d:3.2s;--dl:1.6s"></i></div></div></div>`,
- /* B — five drops fall into their places and become the bottom bar */
- b:()=>`<div class="sp sp-b"><b class="sp-wm">boop</b><nav class="fh-nav sp-bar" aria-hidden="true">${DOMS.map(([k,l],i)=>`<button tabindex="-1" class="${k==='nap'?'on':''}" style="--c:${NAVC[i]};--i:${i}"><span class="sp-dr">${F.csepp('ok',k==='nap'?72:50,{s:k==='nap'?40:34,color:NAVC[i],alive:false})}</span><span class="sp-l">${l}</span></button>`).join('')}</nav></div>`,
- /* C — one vessel, five layers: the five areas pour in one after the other */
- c:()=>`<div class="sp sp-c"><div class="sp-ves">${DOMS.map(([k,l,c,c2],i)=>`<i style="--i:${i};--c1:${c2};--c2:${c};--lv:${(i+1)*17+4}%;z-index:${9-i}">${W(c2)}</i>`).join('')}<em></em></div><b class="sp-wm">boop</b></div>`};
-const SPN={a:'A · Megtelik',b:'B · Öt csepp',c:'C · Egy edény'};
-function indito(arg){const v=SP[arg]?arg:'a';window.FH_NOFAB=true;let app='';try{app=FREG.nap.routes.mai('')}finally{window.FH_NOFAB=false}
-  return `${app}${SP[v]()}<div class="sp-ctl" data-proto>${Object.keys(SP).map(k=>`<button class="${k===v?'on':''}" data-go="indito.${k}">${SPN[k]}</button>`).join('')}<button data-go="indito.${v}" aria-label="Újra lejátszás">↻</button></div>`}
+/* Owner's choice (2026-10-09): "öt csepp, de az egy edénnyel együtt". One vessel fills with the five areas' liquids,
+   then lets them go one by one: each layer leaves through the bottom as a drop and lands in its place in the bottom bar. */
+const splash=()=>`<div class="sp sp-d"><div class="sp-ves"><div class="sp-stk">${DOMS.map(([k,l,c,c2],i)=>`<i style="--i:${i};--c1:${c2};--c2:${c};--lv:${(i+1)*17+4}%;z-index:${9-i}">${W(c2)}</i>`).join('')}</div><em></em></div><b class="sp-wm">boop</b>
+  <nav class="fh-nav sp-bar" aria-hidden="true">${DOMS.map(([k,l],i)=>`<button tabindex="-1" class="${k==='nap'?'on':''}" style="--c:${NAVC[i]};--i:${i}"><span class="sp-dx"><span class="sp-dr">${F.csepp('ok',k==='nap'?86:[0,34,62,50,58][i],{s:k==='nap'?40:34,color:NAVC[i],alive:false})}</span></span><span class="sp-l">${l}</span></button>`).join('')}</nav></div>`;
+function indito(){window.FH_NOFAB=true;let app='';try{app=FREG.nap.routes.mai('')}finally{window.FH_NOFAB=false}
+  return `${app}${splash()}<div class="sp-ctl" data-proto><button data-go="indito" aria-label="Újra lejátszás">↻ Újra</button></div>`}
 let spT=[];
 function runSplash(){spT.forEach(clearTimeout);spT=[];const sp=document.querySelector('#phone .sp');if(!sp)return;
   spT.push(setTimeout(()=>sp.classList.add('out'),2400),setTimeout(()=>sp.classList.add('gone'),3000))}
@@ -31,8 +25,7 @@ function runSplash(){spT.forEach(clearTimeout);spT=[];const sp=document.querySel
 /* ═══ 2 · the frame around a page that still wears the old look ═══ */
 const HUB={nap:['Ma','mai'],edzes:['Edzés','mai'],fuel:['Fuel','mai'],mezo:['Mezo','fal'],en:['Én','en']};
 function atmenet(arg){const d=K.D,dark=arg==='sotet',[t,r0]=HUB[d];
-  return F.page(d,{title:t,sub:'Szerda, október 7.',tab:'mai'},`<div class="at-sw" data-proto><span>Átmeneti kinézet</span><button class="${dark?'':'on'}" data-go="atmenet">Világosra hangolva</button><button class="${dark?'on':''}" data-go="atmenet.sotet">Sötéten hagyva</button></div>
-   <iframe class="at-if" data-mode="${dark?'sotet':'vilagos'}" title="Még át nem öltöztetett oldal" src="elo/${d}.html#${r0}"></iframe>`,{pad:'0',nofab:false})}
+  return F.page(d,{title:t,sub:'Szerda, október 7.',tab:'mai'},`<iframe class="at-if" data-mode="${dark?'sotet':'vilagos'}" title="Még át nem öltöztetett oldal" src="elo/${d}.html#${r0}"></iframe>`,{pad:'0'})}
 const CL={ertesites:'bell',beallitas:'gear',emberek:'people',tanyer:'plate',edzes:'dumbbell',nap:'sun',mezo:'orb',retegek:'layers',sport:'volley',fuel:'bowl',heti:'calendar',rend:'stack',meso:'trend',naplo:'journal',kiegeszito:'supps',trend:'trend',fazek:'pot',kristaly:'gem',memoar:'album',suly:'weight',cel:'target',level:'send'};
 const AT_BASE=`.topbar,.tabbar,.aurora,.side,.notes,#panel,.panel{display:none!important}html,body{background:transparent!important}.stage{padding:0!important;gap:0!important}.phone{width:100vw!important;height:100vh!important;border-radius:0!important;box-shadow:none!important}`;
 const AT_LIGHT=(c,c2)=>`:root{--page:transparent;--ink:#0A2A3C;--sub:#4E6B7A;--faint:#8AA0AC;--hair:rgba(10,42,60,.09);--protein:#E26B67;--carb:#D49245;--fat:#B8930F;--water:#4F93CF;--fiber:#5B9A3C;--sage:#4E9A6B;--lav:#7C6BC4;--gold:#D9952A;--coral:#E8603C;--rose:#D4637A;--sky:#4F93CF;--dom:${c};--dom2:${c2};--ic:${c};--ic2:${c2};--serif:'Bricolage Grotesque',var(--ff)}
@@ -85,50 +78,38 @@ F.css(`
 .sp-w{position:absolute;left:0;bottom:calc(100% - 1px);width:200%;height:18px}.sp-w.b{height:26px}
 .sp-ctl{position:absolute;z-index:95;left:50%;top:12px;transform:translateX(-50%);display:flex;gap:4px;padding:4px;border-radius:999px;background:rgba(255,255,255,.92);box-shadow:0 0 0 1.5px rgba(10,42,60,.18),0 10px 20px -12px rgba(10,42,60,.5);white-space:nowrap}
 .sp-ctl button{padding:6px 10px;border-radius:999px;font:700 11.5px/1 var(--ff);color:#4E6B7A}.sp-ctl button.on{color:#fff;background:#0A2A3C}
-/* A */
-.sp-a .sp-fill{position:absolute;inset:0;--spy:0%;transform:translateY(var(--spy))}
-.sp-a .sp-body{position:absolute;inset:0;overflow:hidden;background:linear-gradient(180deg,var(--liq1),var(--liq2) 82%)}
-.sp-a .sp-cnt{position:absolute;inset:0;transform:translateY(calc(var(--spy) * -1))}
-.sp-a .sp-cnt .sp-wm{color:#fff}
-.sp-bu{position:absolute;bottom:-20px;width:var(--s);height:var(--s);border-radius:50%;background:rgba(255,255,255,.28);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.5);opacity:0}
-/* B */
-.sp-dr{display:block;transform-origin:50% 100%}
-/* C */
-.sp-ves{position:absolute;left:50%;top:21%;width:150px;height:250px;margin-left:-75px;border-radius:75px;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,#fff,#F4FAFC);box-shadow:inset 0 0 0 2px rgba(10,42,60,.07),inset 0 10px 22px -12px rgba(10,42,60,.14),0 34px 50px -30px rgba(24,119,242,.55)}
-.sp-ves>i{position:absolute;left:0;right:0;bottom:0;height:var(--lv);background:linear-gradient(180deg,var(--c1),var(--c2)) top/100% 46px no-repeat,var(--c2)}
+.sp-dx,.sp-dr{display:block}.sp-dr{transform-origin:50% 100%}
+.sp-d{--dy:calc(-79cqh + 300px);--sw:calc((100cqw - 32px) / 5)}
+.sp-ves{position:absolute;z-index:40;left:50%;top:21%;width:150px;height:250px;margin-left:-75px;border-radius:75px;overflow:hidden;isolation:isolate;background:linear-gradient(180deg,#fff,#F4FAFC);box-shadow:inset 0 0 0 2px rgba(10,42,60,.07),inset 0 10px 22px -12px rgba(10,42,60,.14),0 34px 50px -30px rgba(24,119,242,.55)}
+.sp-stk{position:absolute;inset:0}
+.sp-stk>i{position:absolute;left:0;right:0;bottom:0;height:var(--lv);background:linear-gradient(180deg,var(--c1),var(--c2)) top/100% 46px no-repeat,var(--c2)}
 .sp-ves .sp-w{height:9px;width:400%}
 .sp-ves>em{position:absolute;z-index:12;left:22px;top:26px;width:16px;height:64px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0))}
-.sp-c .sp-wm{top:57%;font-size:56px;letter-spacing:-2.8px}
+.sp-d .sp-wm{top:57%;font-size:56px;letter-spacing:-2.8px}
 @media (prefers-reduced-motion:no-preference){
  body:not(.still) .sp.out{opacity:0;transition:opacity .6s ease}
- body:not(.still) .sp-w{animation:spw 3.2s linear infinite}body:not(.still) .sp-w.b{animation:spw 5s linear infinite reverse}
- body:not(.still) .sp-a .sp-fill{animation:spa 2.3s cubic-bezier(.4,.15,.35,1) both .1s}
- body:not(.still) .sp-bu{animation:spbu var(--d) ease-in infinite var(--dl)}
- body:not(.still) .sp-a>.sp-wm{animation:spin .5s ease both}
- body:not(.still) .sp-b .sp-wm{animation:spin .5s ease both,spfade .35s ease both 2.05s}
- body:not(.still) .sp-b .sp-bar{animation:spbar .45s ease both 1.75s}
- body:not(.still) .sp-dr{animation:spdrop .72s both calc(.3s + var(--i)*.2s)}
- body:not(.still) .sp-bar .sp-l{animation:spin0 .3s ease both calc(.95s + var(--i)*.2s)}
- body:not(.still) .sp-ves>i{animation:sprise .6s cubic-bezier(.2,.8,.2,1) both calc(.25s + var(--i)*.34s)}
- body:not(.still) .sp-ves{animation:spin .45s ease both}
- body:not(.still) .sp-c .sp-wm{animation:spin .5s ease both .2s}
+ body:not(.still) .sp-w{animation:spw 3.2s linear infinite}
+ body:not(.still) .sp-ves{animation:spin .4s ease both}
+ body:not(.still) .sp-d .sp-wm{animation:spin .45s ease both .15s}
+ body:not(.still) .sp-stk>i{animation:sprise .42s cubic-bezier(.2,.8,.2,1) both calc(.12s + var(--i)*.13s)}
+ body:not(.still) .sp-stk{animation:spdrain .9s linear both 1.08s}
+ body:not(.still) .sp-dx{animation:spdx .56s cubic-bezier(.2,.6,.4,1) both calc(1.08s + var(--i)*.17s)}
+ body:not(.still) .sp-dr{animation:spdrop .56s both calc(1.08s + var(--i)*.17s)}
+ body:not(.still) .sp-bar .sp-l{animation:spin0 .3s ease both calc(1.6s + var(--i)*.17s)}
+ body:not(.still) .sp-bar{animation:spbar .4s ease both 2s}
 }
 @keyframes spw{to{transform:translateX(-12.5%)}}
-@keyframes spa{from{--spy:101%}}
-@keyframes spbu{0%{transform:translateY(0);opacity:0}15%{opacity:1}100%{transform:translateY(-70cqh);opacity:0}}
 @keyframes spin{from{opacity:0;transform:translateY(8px)}}
 @keyframes spin0{from{opacity:0}}
-@keyframes spfade{to{opacity:0}}
 @keyframes spbar{from{background-color:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}}
-@keyframes spdrop{0%{transform:translateY(-104cqh) scale(.86,1.2);animation-timing-function:cubic-bezier(.55,0,.9,.55)}62%{transform:translateY(0) scale(1.22,.72);animation-timing-function:cubic-bezier(.2,.7,.3,1)}80%{transform:translateY(-7px) scale(.95,1.07);animation-timing-function:ease-in}100%{transform:none}}
 @keyframes sprise{from{transform:translateY(102%)}}
+@keyframes spdrain{to{transform:translateY(96%)}}
+@keyframes spdx{from{transform:translateX(calc((2 - var(--i)) * var(--sw)))}}
+@keyframes spdrop{0%{transform:translateY(var(--dy)) scale(.8,1.25);animation-timing-function:cubic-bezier(.55,0,.9,.55)}66%{transform:translateY(0) scale(1.22,.72);animation-timing-function:cubic-bezier(.2,.7,.3,1)}84%{transform:translateY(-6px) scale(.95,1.07);animation-timing-function:ease-in}100%{transform:none}}
 /* átmenet */
 ${Q} .scroll:has(.at-if){display:flex;flex-direction:column;overflow:hidden;padding-bottom:0!important}
 .phone .at-if{position:static;flex:1;min-height:0;width:100%;height:auto;border:0;background:transparent}
 .phone .at-if[data-mode="sotet"]{background:#191614}
-.at-sw{display:flex;align-items:center;gap:6px;margin:0 14px 8px;padding:5px 5px 5px 12px;border-radius:999px;background:rgba(255,255,255,.7);box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.18);font:600 11px/1 var(--ff);color:#4E6B7A}
-.at-sw span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.at-sw button{padding:6px 9px;border-radius:999px;font:700 11px/1 var(--ff);color:#4E6B7A;white-space:nowrap}.at-sw button.on{color:#fff;background:#0A2A3C}
 /* minden oldal */
 .mn h3{display:flex;align-items:baseline;gap:8px;margin:18px 0 8px;font:800 13px/1 var(--disp,inherit);letter-spacing:.2px;color:color-mix(in srgb,var(--dom) 80%,var(--ink))}.mn h3:first-child{margin-top:0}
 .mn h3 small{font:600 11px/1 var(--ff);color:var(--faint)}
@@ -140,8 +121,8 @@ ${Q} .scroll:has(.at-if){display:flex;flex-direction:column;overflow:hidden;padd
 
 /* owner-facing notes for the slice (prepended to every domain's panel while F1 is open) */
 const N1=`<h2>F1 · most ezt nézd meg</h2>
-<p><b>1 · Megnyitó animáció</b> — három változat, a telefon tetején váltható:<br><a href="#w-nap-indito.a">A · Megtelik</a> · <a href="#w-nap-indito.b">B · Öt csepp</a> · <a href="#w-nap-indito.c">C · Egy edény</a></p>
-<p><b>2 · Átmeneti kinézet</b> — az új keret egy még át nem öltöztetett oldal körül:<br><a href="#w-nap-atmenet">Nap</a> · <a href="#w-edzes-atmenet">Edzés</a> · <a href="#w-fuel-atmenet">Fuel</a> · <a href="#w-mezo-atmenet">Mezo</a> · <a href="#w-en-atmenet">Én</a></p>
-<p><b>3 · A keret</b> — ami a mai fejlécből átkerült: a <a href="#w-nap-mindenoldal">Minden oldal</a> a négyzetrács gomb mögött, a kalauz „?” a dátum mellett, az olvasatlan üzenetek száma a Beszélgetés fülön, a nap állása a Nap cseppben, és a lebegő + gomb (<a href="#w-fuel-mai">például a Fuelben</a>).</p>`;
+<p><b>1 · Megnyitó animáció</b> — az edény megtelik az öt terület színével, aztán egyenként elengedi őket: öt csepp esik a helyére az alsó sávba. <a href="#w-nap-indito">Lejátszás</a></p>
+<p><b>2 · A fejléc</b> — fent a dátum és öt gomb: Minden oldal, Mezo üzenetei, értesítések, beállítások, a napi gömb. Alatta a cím, mellette a kalauz „?”. Nézd meg <a href="#w-nap-mai">a Napon</a>, <a href="#w-fuel-stack">egy hosszú című oldalon</a> és <a href="#w-fuel-meal.ebed">egy aloldalon</a>. A Mezo üzenetei gomb a <a href="#w-nap-uzenetek">Beszélgetésre</a> visz, a gömb <a href="#w-nap-napom">A napomra</a>.</p>
+<p><b>3 · Átmeneti kinézet</b> (világosra hangolva, ahogy kérted): <a href="#w-nap-atmenet">Nap</a> · <a href="#w-edzes-atmenet">Edzés</a> · <a href="#w-fuel-atmenet">Fuel</a> · <a href="#w-mezo-atmenet">Mezo</a> · <a href="#w-en-atmenet">Én</a></p>`;
 window.FNOTES_FOLY=N1+(window.FNOTES_FOLY||'');
 })();

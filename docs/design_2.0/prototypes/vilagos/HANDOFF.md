@@ -180,3 +180,15 @@ Awaiting the owner's OK; nothing below is decided until he answers.
   copied into the old sprite ids, a readability pass). It is an approximation of what F1's token flip
   gives, not the build. `.sotet` leaves the old page dark (the alternative: dark until its slice).
 - 320 px: header buttons are 38 px so the date line fits beside them.
+
+### Owner's answers, same day (2026-10-09) — these supersede the bullets above where they differ
+
+- **Opening animation: B and C together** ("öt csepp nagyon menő, de az egy edény animációval együtt").
+  Drawn as one story at `#w-nap-indito`: the vessel fills with the five layers, then the stack drains
+  through the bottom and each layer lands as a drop in its place in the bottom bar. A/B/C are gone.
+- **Mixed look: light** ("világosra hangolva"). `#w-<d>-atmenet` shows only that.
+- **The day orb stays a header button; Mezo üzenetei stays too** ("ne veszítsük el azt a funkciót").
+  The hub header is now two lines: context line + five 38 px buttons (Minden oldal · Mezo üzenetei ·
+  értesítések · beállítások · day orb), then the title with the kalauz "?" after it. At ≤360 px the
+  buttons take their own line above the context line. The Nap drop is an ordinary drop again.
+- **The quick-log button floats**, as today ("lebegő marad, tetszik").
