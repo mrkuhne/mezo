@@ -3,8 +3,10 @@
 //
 // „Egy edény, öt csepp": egy fehér kapszula-edény megtelik öt színes folyadék-réteggel (az öt
 // domain), majd a verem kifolyik az alján, és minden réteg cseppként a helyére hullik az alsó
-// sávban; végül a bevezető elhalványul, és ott az app. A felhasználó felé a viselkedés VÁLTOZATLAN:
-// három másodperc, aztán az app; addig a mögötte már mountolt felület inert.
+// sávban; végül a bevezető elhalványul, és ott az app — a színpad ÁTLÁTSZÓ rátét (a saját
+// telefon-kerete semmit nem fest), így a halványulás a mögötte már mountolt appba olvad át.
+// A felhasználó felé a viselkedés VÁLTOZATLAN: három másodperc, aztán az app; addig a mögötte
+// már mountolt felület inert.
 //
 // A mozgás tisztán CSS-idővonal (StartupSplash.css, prototípus: vilagos/keret.js `splash()`); az
 // időzítések a startupChoreography.ts számtáblájából jönnek, a gyökér --sp-* property-jein át.
@@ -13,7 +15,7 @@
 // ============================================================
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { PhoneFrame } from '@/app/PhoneFrame'
-import { DOMAINS } from '@/app/navModel'
+import { DOMAINS, activeDomainId } from '@/app/navModel'
 import { navDropSpec } from '@/app/BottomBar'
 import { Drop } from '@/shared/ui/folyadek'
 import {
@@ -76,6 +78,9 @@ const TIMELINE = {
 
 /** The vessel, the wordmark and the (non-interactive) bar of drops the stack lands in. */
 function SplashScene() {
+  // The drop that lands „on" is the domain the app opens on (read once from the URL — the stage
+  // lives outside the router), so the scene dissolves into the real bar without a size jump.
+  const opening = activeDomainId(typeof window !== 'undefined' ? window.location.pathname : '') ?? 'nap'
   return (
     <div className="fo-sp" role="status" aria-label="Boop betöltése"
       data-motion={prefersStill() ? 'still' : 'play'} style={TIMELINE}>
@@ -93,7 +98,7 @@ function SplashScene() {
       <b className="fo-sp-wm" aria-hidden="true">boop</b>
       <div className="fo-nav fo-sp-bar" aria-hidden="true">
         {DOMAINS.map((d, i) => {
-          const on = d.id === 'nap'
+          const on = d.id === opening
           const spec = navDropSpec(d.id, on)
           return (
             <div key={d.id} className={on ? 'fo-nav-item on' : 'fo-nav-item'} data-domain={d.id}

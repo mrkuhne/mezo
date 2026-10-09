@@ -11,6 +11,22 @@
   inset: 0;
   z-index: 10000;
 }
+/* The stage is an OVERLAY, not a second app: over the phone shell its own phone frame keeps the
+   geometry (so the scene sits exactly on the real screen) but paints nothing — no ground, no
+   bezel, no shadow, no sky. `.fo-sp`'s gradient is then the only opaque layer, and its fade
+   dissolves INTO the app that is already mounted beneath (the drops land on the real bar's
+   drops), not into an empty frame.
+   Scoped to `:has(.phone-screen)`: a surface with no phone frame of its own (login, the admin
+   desk, a lazy chunk still loading) keeps the stage's opaque frame, or the scene would float
+   over a bare desktop page.
+   Specificity: the screen's ground is set by 0,4,0 rules (folyadek.css's cool light ground,
+   prototype.css's dark pockets) — these selectors are heavier. */
+.startup-content:has(.phone-screen) + .startup-stage .app-root,
+.startup-content:has(.phone-screen) + .startup-stage .phone,
+.startup-content:has(.phone-screen) + .startup-stage .phone-screen[data-domain][data-day],
+.startup-content:has(.phone-screen) + .startup-stage .status-bar { background: none; box-shadow: none; }
+.startup-content:has(.phone-screen) + .startup-stage .sky,
+.startup-content:has(.phone-screen) + .startup-stage .uv-aurora { display: none; }
 
 .fo-sp {
   position: absolute; inset: 0; z-index: 40; overflow: hidden; container-type: size;

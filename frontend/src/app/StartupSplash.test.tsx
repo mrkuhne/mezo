@@ -67,6 +67,33 @@ test('the bar of drops is non-interactive and Nap is the active one', () => {
   expect(items.map((i) => i.classList.contains('on'))).toEqual([true, false, false, false, false])
 })
 
+// Final review, I2: the scene dissolves into the real bar, so its active (larger) drop is the
+// domain the app OPENS on — read once from the URL, the stage lives outside the router.
+test('the active drop follows the domain the app opens on', () => {
+  window.history.replaceState(null, '', '/fuel/recipes')
+  try {
+    const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
+    const on = [...container.querySelectorAll('.fo-sp .fo-nav-item.on')]
+    expect(on.map((i) => i.getAttribute('data-domain'))).toEqual(['fuel'])
+  } finally {
+    window.history.replaceState(null, '', '/')
+  }
+})
+
+// Final review, I2: the stage paints no ground of its own — the fading scene is the only opaque
+// layer, so it dissolves into the mounted app instead of an empty frame.
+test('over the phone shell the stage frame is transparent: no ground, no bezel, no sky', () => {
+  const css = readFileSync('src/app/StartupSplash.css', 'utf8')
+  const scope = String.raw`\.startup-content:has\(\.phone-screen\) \+ \.startup-stage `
+  const rule = css.match(new RegExp(String.raw`${scope}\.app-root,[^{]*\{([^}]*)\}`))!
+  expect(rule[0]).toMatch(new RegExp(String.raw`${scope}\.phone,`))
+  expect(rule[0]).toMatch(new RegExp(String.raw`${scope}\.phone-screen\[data-domain\]\[data-day\]`))
+  expect(rule[1]).toMatch(/background:\s*none/)
+  expect(css).toMatch(new RegExp(String.raw`${scope}\.sky,\s*${scope}\.uv-aurora\s*\{\s*display:\s*none`))
+  // a frameless surface (login, admin) keeps the opaque stage: nothing un-scoped strips it
+  expect(css).not.toMatch(/^\.startup-stage \.(app-root|phone)\b/m)
+})
+
 test('the timeline numbers reach the stylesheet from the one table', () => {
   const { container } = render(<StartupSplash>Dashboard</StartupSplash>)
   const style = (container.querySelector('.fo-sp') as HTMLElement).style

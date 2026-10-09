@@ -12,7 +12,8 @@ const DOMAINS = ['nap', 'train', 'fuel', 'mezo', 'me']
 
 async function dropBoxes(page: Page, scope: string) {
   return page.locator(scope).evaluate((root) => ['nap', 'train', 'fuel', 'mezo', 'me'].map((d) => {
-    const r = root.querySelector(`[data-domain="${d}"] .fo-drop`)!.getBoundingClientRect()
+    // `.fo-nav-item[…]`, not a bare `[data-domain]`: the phone screen above carries one too
+    const r = root.querySelector(`.fo-nav-item[data-domain="${d}"] .fo-drop`)!.getBoundingClientRect()
     return { x: r.x, y: r.y, w: r.width, h: r.height }
   }))
 }
@@ -123,4 +124,53 @@ test('asztali szélességen a telefon-képernyőn belül marad, csökkentett moz
   await page.clock.fastForward(3000)
   await expect(splash).toHaveCount(0)
   await expect(page).toHaveURL(/\/nap\/rutin$/)
+})
+
+// Final review, I2 — the stage is a transparent overlay: its fade must reveal the app that is
+// already mounted beneath (the drops over the real bar's drops), never an empty frame.
+test('a nyitány az appba olvad át: halványulás közben a valódi alsó sáv látszik alatta, nem üres keret', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.clock.install({ time: new Date('2026-09-15T12:00:00+02:00') })
+  await page.clock.pauseAt(new Date('2026-09-15T12:00:01+02:00'))
+  // Another domain than Nap: the scene's active drop follows the page the app opens on.
+  await page.goto('/fuel')
+  const splash = page.getByRole('status', { name: 'Boop betöltése' })
+  await expect(splash).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  await seek(page, 2800)
+
+  const opacity = Number(await splash.evaluate((el) => getComputedStyle(el).opacity))
+  expect(opacity).toBeGreaterThan(0)
+  expect(opacity).toBeLessThan(1)
+
+  // The stage's own frame paints nothing: the fading scene is the only layer over the app.
+  const grounds = await page.locator('.startup-stage').evaluate((stage) =>
+    ['.app-root', '.phone', '.phone-screen', '.status-bar'].map((sel) => {
+      const el = stage.querySelector(sel)
+      if (!el) return [sel, 'absent']
+      const s = getComputedStyle(el)
+      return [sel, s.display === 'none' ? 'hidden' : `${s.backgroundColor} ${s.backgroundImage}`]
+    }))
+  for (const [sel, ground] of grounds) {
+    expect(['absent', 'hidden', 'rgba(0, 0, 0, 0) none'], sel).toContain(ground)
+  }
+  for (const sel of ['.sky', '.uv-aurora']) {
+    expect(await page.locator(`.startup-stage ${sel}`).evaluate((el) => getComputedStyle(el).display), sel).toBe('none')
+  }
+
+  // … and beneath it the real bar already stands on screen, its drops under the scene's drops.
+  const bar = page.locator('.startup-content nav[aria-label="Területek"]')
+  const box = (await bar.boundingBox())!
+  expect(box.width).toBeGreaterThan(300)
+  expect(box.y).toBeGreaterThan(700)
+  expect(box.y + box.height).toBeLessThanOrEqual(844)
+  await expect(bar.locator('.fo-nav-item.on')).toHaveAttribute('data-domain', 'fuel')
+  const scene = await dropBoxes(page, '.fo-sp')
+  const real = await dropBoxes(page, '.startup-content .fo-nav')
+  scene.forEach((b, i) => {
+    for (const k of ['x', 'y', 'w', 'h'] as const) expect(Math.abs(b[k] - real[i][k]), `${DOMAINS[i]}.${k}`).toBeLessThanOrEqual(2)
+  })
+  // still inert until the hand-over
+  await expect(page.locator('.startup-content')).toHaveAttribute('inert', '')
 })
