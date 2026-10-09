@@ -135,5 +135,7 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
 - **Back = where you came from** (owner: Rólad → Tények → back landed on Tudástár). The header back
   button now pops the history; its `back:` route is only the fallback for a direct link. Build rule:
   back never jumps to a "parent" the user did not come through.
-- **Open: the team names** (Szunya, Mocor, Falat, Derű, Mezo) read childish to the owner — he wants
-  something professional with broad appeal. Options were put to him; nothing renamed yet.
+- **Team names decided (2026-10-09):** the nicknames read childish, so each member is named by its
+  field: Alvás (pihenés), Mozgás (terhelés), Étkezés (étrend), Közérzet (hangulat), Mezo (a csapat),
+  plus the Szkeptikus. Internal keys stay `szunya/mocor/falat/deru/mezo`. "Szobája" is now "oldala".
+  This supersedes the names in approved decision 8. Build: the same rename in app copy and prompts.

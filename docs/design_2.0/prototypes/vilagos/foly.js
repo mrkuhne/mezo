@@ -151,6 +151,7 @@ ${Q} .fh-hero .verdict{overflow-wrap:break-word;hyphens:auto}
 ${Q} .fh-hero:has(.fh-art) .verdict{font-size:19px}
 .phone.foly .fh-foot .btn,#sheet .btn{white-space:normal;min-width:0;line-height:1.2}
 .phone.foly .fh-foot .btn{padding-inline:10px}
+${Q} .gfm small{font-size:8px;letter-spacing:-.4px}
 ${Q} .gfm button>span:not(.csepp),${Q} .gfm>span>span:not(.csepp){font-size:10px;letter-spacing:-.2px}
 }`);
 Object.assign(F,{wave,bub,tank,vial,vials,mini,level,fill,area,stream,linked,uid});

@@ -785,7 +785,7 @@ const sheets={
     <div class="fu-g2"><div>${lab('Ami emeli')}${lv(D.up,'var(--warn)')}</div><div>${lab('Ami fékezi')}${lv(D.down,'var(--ok)')}</div></div>
     ${lab('Mit tehetsz most')}${D.now.map(([ic,t,s])=>tip(ic,t,s)).join('')}
     ${D.next?`${lab('Legközelebb így lesz laposabb')}${D.next.map(([t,s])=>tip('t-swap',t,s,'var(--ok)')).join('')}<p class="fh-note">${D.promise}</p>`:`${lab('Legközelebb')}${tip('t-repeat','Ugyanígy','Ez a tányér az alacsony sávban van; nincs mit javítani rajta.','var(--ok)')}`}
-    ${lab('Falat szerint, ebből a tányérból')}${msg('falat',D.ai,'étel · a saját tételeidről')}
+    ${lab('Étkezés szerint, ebből a tányérból')}${msg('falat',D.ai,'étel · a saját tételeidről')}
     ${lab('Mivel párosítsd')}<div class="fh-chips fu-chips">${['dió vagy mandula','görög joghurt','főtt tojás','zöldség előre','ecetes saláta'].map(n=>`<span>${n}</span>`).join('')}</div>
     ${D.est?`<p class="fh-note fx-warn">${D.est}</p>`:''}
     ${note('Becslés a hozzávalókból, nem mérés. Sávot mutatok, nem számot: vegyes ételnél a pontos szám félrevezetne. Nem orvosi tanács.')}
