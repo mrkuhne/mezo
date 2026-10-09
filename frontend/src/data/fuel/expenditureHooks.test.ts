@@ -24,11 +24,18 @@ import { addDays } from '@/shared/lib/dates'
 afterEach(() => vi.unstubAllEnvs())
 
 describe('learned-expenditure hooks (mock mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  // The seed is anchored to the last reviewed Monday and leaves both Fridays unlogged, so a test
+  // that marks TODAY threw "No logged intake" every Friday. Pin the clock to a Wednesday the seed
+  // logs — Date only, the timers stay real for `waitFor`.
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 7, 12, 0, 0))
+  })
   // The mock mark/dismiss state lives at module scope (see expenditureLearningSeed.ts) so it
   // stays consistent across every mounted range/QueryClient — which means it ALSO outlives a
   // single test unless reset here.
-  afterEach(() => resetMockLearningState())
+  afterEach(() => { resetMockLearningState(); vi.useRealTimers() })
 
   it('serves the 12-week history with the learning switch on', () => {
     const { result } = renderHook(() => useExpenditureHistory(), { wrapper: makeHookWrapper() })
