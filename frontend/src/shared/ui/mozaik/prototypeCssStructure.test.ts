@@ -1366,28 +1366,71 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
 })
 
 /**
- * Üvegesítés U1 (mezo-me75u.1): the ONE glass recipe every slice reuses (üveg style bible §3).
- * A second glass recipe or palette is the failure mode this guards: the kit lives in one block,
- * carries the glass material, and never runs the retired recurring card sheen.
+ * Üvegesítés U1 (mezo-me75u.1) → Folyadék F1 (mezo-n4wf5.1, Task 3): the ONE card recipe every
+ * slice reuses. The class names are unchanged (361 files wear them) but the material is a LIGHT
+ * card now: white body, soft domain-tinted drop, no frosting, no gradient frame, no aurora. A
+ * second recipe or the dark glass leaking back into the light world is what this guards. The two
+ * dark pockets (/ritual, /me/sleep/night) keep the old glass through weightless `:where()` rules.
  */
-describe('the uveg kit section is registered and carries the §3 recipe (mezo-me75u.1)', () => {
+describe('the uveg kit section is registered and carries the light card recipe (mezo-n4wf5.1)', () => {
   const START_MARKER = '── uveg kit ('
   const END_MARKER = '── /uveg kit '
   const section = () => slice(START_MARKER, END_MARKER)
   const rules = () => stripComments(section())
+  /** One rule's declarations, matched at the line start so the `:where(…dark…) .glass` pocket
+   *  fallback is never mistaken for the light recipe. */
+  const decls = (selector: string) => {
+    const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^${esc} \\{([^}]*)\\}`, 'm').exec(rules())?.[1] ?? null
+  }
 
   test('both markers are present, in order', () => {
     expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(-1)
     expect(rawCss.indexOf(END_MARKER)).toBeGreaterThan(rawCss.indexOf(START_MARKER))
   })
 
-  test('the glass card has its four layers: body, gradient frame, top edge + glow, sheen', () => {
+  test('the F1:KIT markers frame the block, in order, ahead of F1:CHROME', () => {
+    const open = rawCss.indexOf('/* ▼▼ F1:KIT */')
+    const close = rawCss.indexOf('/* ▲▲ F1:KIT */')
+    expect(open).toBeGreaterThan(-1)
+    expect(close).toBeGreaterThan(open)
+    expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(open)
+    expect(rawCss.indexOf(END_MARKER)).toBeLessThan(close)
+    expect(rawCss.indexOf('/* ▼▼ F1:CHROME */')).toBeGreaterThan(close)
+  })
+
+  test('the card is white with a soft drop: no frosting, no gradient frame', () => {
+    const glass = decls('.glass')
+    expect(glass, '.glass rule not found in the kit').not.toBeNull()
+    expect(glass).toContain('background: #fff')
+    expect(glass).toContain('color: var(--fo-ink)')
+    expect(glass).toContain('--c: var(--dom)')
+    expect(glass).not.toContain('backdrop-filter')
+    expect(glass).not.toContain('gradient')
+    expect(decls('.glass::before')).toMatch(/content: none/)
+    // the ::after geometry stays for feature overlays, dormant
+    expect(decls('.glass::after')).toMatch(/opacity: 0/)
+  })
+
+  test('the aurora is retired and the secondary surfaces are light tints of the accent', () => {
+    expect(decls('.uv-aurora')).toMatch(/display: none/)
+    expect(decls('.uv-flat')).toMatch(/background: color-mix\(in srgb, var\(--c, var\(--dom\)\) 7%, #fff\)/)
+    expect(decls('.uv-well')).toMatch(/background: color-mix\(in srgb, var\(--c, var\(--dom\)\) 8%, #fff\)/)
+    expect(decls('.uv-empty')).toMatch(/1\.5px dashed[^;]*;\s*background: transparent; box-shadow: none/)
+    expect(decls('.uv-halo::before')).toMatch(/background: none/)
+  })
+
+  test('the macro band no longer has a dark override in the kit', () => {
+    expect(rules()).not.toMatch(/--macro-(protein|carbs|fat|fiber):/)
+    expect(rules()).toMatch(/^:root \{ --uv-ease:/m)
+  })
+
+  test('the dark pockets keep the old glass through weightless :where() rules only', () => {
     const css = rules()
-    expect(css).toMatch(/\.glass \{[^}]*backdrop-filter: blur\(16px\) saturate\(1\.5\)/)
-    expect(css).toMatch(/\.glass \{[^}]*0 0 26px -6px color-mix\(in srgb, var\(--c\) 30%, transparent\)/)
-    expect(css).toMatch(/\.glass \{[^}]*inset 0 1px 0 rgba\(255, 244, 230, 0\.10\)/)
-    expect(css).toMatch(/\.glass::before \{[^}]*mask-composite: exclude/)
-    expect(css).toMatch(/\.glass::after \{[^}]*skewX\(-20deg\)/)
+    expect(css).toMatch(/^:where\(:root\[data-theme="dark"\]\) \.glass \{[^}]*backdrop-filter: blur\(16px\) saturate\(1\.5\)/m)
+    expect(css).toMatch(/^:where\(:root\[data-theme="dark"\]\) \.glass::before \{[^}]*mask-composite: exclude/m)
+    // never a plain dark-scoped kit rule: that would outrank every page-level override
+    expect(css).not.toMatch(/^:root\[data-theme="dark"\] \.(glass|uv-)/m)
   })
 
   test('there is exactly ONE .glass recipe in the whole stylesheet', () => {

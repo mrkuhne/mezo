@@ -19,6 +19,25 @@
 /* the warm day-part sky bands do not belong to the Folyadék light world */
 :root:not([data-theme="dark"]) .phone-screen[data-domain] .sky { display: none; }
 
+/* ── theme-aware material channels (mezo-n4wf5.1, Task 3) ──
+   The unconverted pages' rules were written with light-on-dark literals (cream films, graphite
+   wells, black drops). They read these channels now, so ONE rule is ink-on-white in the light
+   world and still cream-on-graphite inside the two dark pockets (/ritual, /me/sleep/night). */
+:root {
+  --fo-film: 10, 42, 60;        /* was rgba(245,239,230,α) / rgba(255,244,230,α): hairlines, tracks, flat tints */
+  --fo-body: 255, 255, 255;     /* was rgba(30,27,24,α) / rgba(52,46,41,α): copies of the glass body */
+  --fo-well-lo: #EEF3F6;        /* was #1E1B18: the low stop of a lit well */
+  --fo-well-hi: #fff;           /* was #3A332D: its high stop */
+  --fo-ground: 238, 245, 249;   /* was rgba(25,22,20,α) as a BACKGROUND: sticky bars and recessed wells on the page ground */
+  --fo-shade: 84, 112, 130;     /* was rgba(0,0,0,α) in box-shadow / drop-shadow: a soft cool drop */
+  --fo-scheme: light;           /* was `color-scheme: dark` on fields */
+  --fo-pastel: 58%;             /* how much of a dark-tuned pastel TEXT colour survives; the rest is ink */
+}
+:root[data-theme="dark"] {
+  --fo-film: 245, 239, 230; --fo-body: 30, 27, 24; --fo-well-lo: #1E1B18; --fo-well-hi: #3A332D;
+  --fo-ground: 25, 22, 20; --fo-shade: 0, 0, 0; --fo-scheme: dark; --fo-pastel: 100%;
+}
+
 /* ── Folyadék-jel ikonok (mezo-n4wf5.1, Task 2) ── bible §5 */
 .t-ico { --ic: var(--c, var(--dom)); --ic2: color-mix(in srgb, var(--c, var(--dom2)) 55%, #fff); filter: none; }
 .fo-on-liquid .t-ico, .fo-on-liquid svg { --ic: #fff; --ic2: rgba(255,255,255,.4); --icf: transparent; }

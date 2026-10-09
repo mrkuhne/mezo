@@ -13571,45 +13571,58 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
      .uv-aurora        the blurred color field the glass refracts (§1)
      .t-ico            a Titanium 3D sprite icon (Icon3D); inside .glass it gets a halo (§4)
    ═══════════════════════════════════════════════════════════════════════════ */
-/* §2: the macro band's dark values (the ramp only carried light ones). */
-:root[data-theme="dark"] {
-  --macro-protein: #F07E78;
-  --macro-carbs:   #E3A45A;
-  --macro-fat:     #D8B640;
-  --macro-fiber:   #86BC63;
-  --uv-ease: cubic-bezier(.2, .78, .24, 1);
+/* Folyadék F1 (mezo-n4wf5.1, Task 3): the kit is a LIGHT card now. Class names are unchanged
+   (361 files wear them); each page gets its real Folyadék layout in a later slice. The macro band
+   keeps its light values in both themes. */
+:root { --uv-ease: cubic-bezier(.2, .78, .24, 1); }
+
+/* §1 aurora — retired in the light world (the page ground is the domain tint). */
+.uv-aurora { display: none; }
+
+/* §3 the card */
+.glass {
+  --c: var(--dom);
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: 26px;
+  background: #fff; color: var(--fo-ink);
+  box-shadow: 0 14px 26px -18px color-mix(in srgb, var(--c) 45%, rgba(10, 42, 60, 0.55)), 0 2px 4px -2px rgba(10, 42, 60, 0.06);
+}
+.glass::before { content: none; }
+/* Geometry kept for feature-specific ::after overlays that reuse it (diff flash, focus rings,
+   hit areas); the decorative sweep itself stays dormant app-wide (mezo-ktog6). */
+.glass::after { content: ''; position: absolute; opacity: 0; pointer-events: none; }
+.glass > * { position: relative; z-index: 1; }
+.glass.is-still::after, .glass.is-round::after { display: none; animation: none; }
+.glass.is-round { overflow: visible; border-radius: 50%; box-shadow: 0 6px 14px -8px rgba(10, 42, 60, 0.4); }
+/* §3 rank 3 + 4 */
+.uv-flat {
+  background: color-mix(in srgb, var(--c, var(--dom)) 7%, #fff);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dom)) 14%, #fff);
+}
+.uv-empty {
+  border: 1.5px dashed color-mix(in srgb, var(--c, var(--dom)) 40%, transparent);
+  background: transparent; box-shadow: none;
 }
 
-/* §1 aurora — fixed decoration behind the scroller; no motion, no interaction. */
-.uv-aurora { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-.uv-aurora i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.22; }
-.uv-aurora i:nth-child(1) { width: 300px; height: 300px; left: -90px; top: 60px;   background: #5E8A67; }
-.uv-aurora i:nth-child(2) { width: 260px; height: 260px; right: -100px; top: -40px; background: #C98A3A; }
-.uv-aurora i:nth-child(3) { width: 280px; height: 280px; left: 40px; top: 520px;   background: #6D5FA8; }
-.uv-aurora i:nth-child(4) { width: 220px; height: 220px; right: -80px; top: 760px; background: #B8584A; }
-/* One shared background on every page (mezo-nn7h0, owner pick "3 · Mindkettő egy kicsit"):
-   the near-black ground + this same faint aurora, fixed behind the scroller. The daypart sky
-   stays off; per-page hero halos are muted below so no page paints its own colored ground. */
-:root[data-theme="dark"] .phone-screen .sky { display: none; }
-:root[data-theme="dark"] .uv-aurora i { opacity: 0.16; }
-
-/* §3 the glass card */
-.glass {
-  --c: var(--dv-sage);
-  position: relative; isolation: isolate; overflow: hidden;
+/* The two dark pockets (/ritual, /me/sleep/night run under a force claim until F2/F6) keep the
+   glass they were built on. `:where()` leaves the specificity at the light recipe's, so every
+   page-level override still wins exactly as before. */
+:where(:root[data-theme="dark"]) .uv-aurora { display: block; }
+:where(:root[data-theme="dark"]) .glass {
+  color: inherit;
   border-radius: 22px;
+  -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  backdrop-filter: blur(16px) saturate(1.5);
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 62%),
     linear-gradient(160deg, rgba(52, 46, 41, 0.72), rgba(30, 27, 24, 0.60));
-  -webkit-backdrop-filter: blur(16px) saturate(1.5);
-  backdrop-filter: blur(16px) saturate(1.5);
   box-shadow:
     0 16px 30px -16px rgba(0, 0, 0, 0.75),
     0 0 26px -6px color-mix(in srgb, var(--c) 30%, transparent),
     inset 0 1px 0 rgba(255, 244, 230, 0.10),
     inset 0 -14px 26px -18px color-mix(in srgb, var(--c) 55%, transparent);
 }
-.glass::before {
+:where(:root[data-theme="dark"]) .glass::before {
   content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.3px;
   pointer-events: none; z-index: 2;
   background: linear-gradient(145deg,
@@ -13620,37 +13633,32 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor; mask-composite: exclude;
 }
-/* The decorative sweep stays dormant app-wide (mezo-ktog6). Keep its geometry for
-   feature-specific ::after overlays that reuse it (diff flash, focus rings, hit areas). */
-.glass::after {
-  content: ''; position: absolute; top: -20%; bottom: -20%; left: -40%; width: 28%;
-  pointer-events: none; z-index: 3; opacity: 0;
-  transform: skewX(-20deg) translateX(-120%);
-  background: linear-gradient(90deg, transparent, rgba(255, 244, 230, 0.16), transparent);
+:where(:root[data-theme="dark"]) .glass.is-round { border-radius: 50%; }
+:where(:root[data-theme="dark"]) .uv-flat { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
+:where(:root[data-theme="dark"]) .uv-empty { background: rgba(245, 239, 230, 0.025); }
+:where(:root[data-theme="dark"]) .uv-well {
+  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c, var(--dv-sage)) 14%, #1E1B18));
+  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
+    inset 0 -6px 12px -8px color-mix(in srgb, var(--c, var(--dv-sage)) 70%, transparent),
+    0 0 14px -4px color-mix(in srgb, var(--c, var(--dv-sage)) 50%, transparent);
 }
-.glass > * { position: relative; z-index: 1; }
-.glass.is-still::after, .glass.is-round::after { display: none; animation: none; }
-.glass.is-round { overflow: visible; border-radius: 50%; }
-/* §3 rank 3 + 4 */
-.uv-flat { background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider); }
-.uv-empty {
-  border: 1.5px dashed color-mix(in srgb, var(--c, var(--dv-sage)) 45%, transparent);
-  background: rgba(245, 239, 230, 0.025); box-shadow: none;
+:where(:root[data-theme="dark"]) .uv-halo::before {
+  background: radial-gradient(ellipse at 50% 42%,
+    color-mix(in srgb, var(--c, var(--dv-sky)) 30%, transparent),
+    color-mix(in srgb, var(--c2, var(--dv-amber)) 12%, transparent) 38%, transparent 66%);
 }
 
 /* §4 icons — the Titanium sprite (shared/ui/clay/titanium-icons.svg via Icon3D). */
 .t-ico { display: block; flex: 0 0 auto; overflow: visible; }
 .glass .t-ico {
-  filter: drop-shadow(0 6px 7px rgba(0, 0, 0, 0.55))
+  filter: drop-shadow(0 6px 7px rgba(var(--fo-shade), 0.55))
           drop-shadow(0 0 10px color-mix(in srgb, var(--c) 40%, transparent));
 }
 .uv-well {
   width: 52px; height: 52px; border-radius: 50%; flex: 0 0 auto;
   display: grid; place-items: center;
-  background: radial-gradient(circle at 35% 28%, #3A332D, color-mix(in srgb, var(--c, var(--dv-sage)) 14%, #1E1B18));
-  box-shadow: inset 0 1px 0 rgba(255, 244, 230, 0.08),
-    inset 0 -6px 12px -8px color-mix(in srgb, var(--c, var(--dv-sage)) 70%, transparent),
-    0 0 14px -4px color-mix(in srgb, var(--c, var(--dv-sage)) 50%, transparent);
+  background: color-mix(in srgb, var(--c, var(--dom)) 8%, #fff);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c, var(--dom)) 16%, #fff);
 }
 
 /* §5 data graphics */
@@ -13658,17 +13666,15 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .uv-halo::before {
   content: ''; position: absolute; left: 50%; top: 50%; z-index: -1; pointer-events: none;
   width: 340px; height: 280px; transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse at 50% 42%,
-    color-mix(in srgb, var(--c, var(--dv-sky)) 30%, transparent),
-    color-mix(in srgb, var(--c2, var(--dv-amber)) 12%, transparent) 38%, transparent 66%);
+  background: none;
 }
 .uv-ring { overflow: visible; }
-.uv-ring-track { fill: none; stroke: rgba(245, 239, 230, 0.07); }
+.uv-ring-track { fill: none; stroke: rgba(var(--fo-film), 0.07); }
 .uv-ring-prog {
   fill: none; stroke: var(--c); stroke-linecap: round;
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent));
 }
-.uv-bar { position: relative; display: block; height: 5px; border-radius: 3px; background: rgba(245, 239, 230, 0.07); }
+.uv-bar { position: relative; display: block; height: 5px; border-radius: 3px; background: rgba(var(--fo-film), 0.07); }
 .uv-bar > b {
   position: absolute; inset: 0 auto 0 0; width: var(--w); border-radius: 3px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c));
@@ -13685,8 +13691,8 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
   50% { filter: drop-shadow(0 6px 26px rgba(171, 159, 210, 0.55)); }
 }
 @keyframes uv-breathe {
-  0%, 100% { box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.75), 0 0 18px -6px rgba(171, 159, 210, 0.45), inset 0 1px 0 rgba(255, 244, 230, 0.10); }
-  50% { box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.8), 0 0 26px rgba(171, 159, 210, 0.55), inset 0 1px 0 rgba(255, 244, 230, 0.10); }
+  0%, 100% { box-shadow: 0 16px 30px -16px rgba(var(--fo-shade), 0.75), 0 0 18px -6px rgba(171, 159, 210, 0.45), inset 0 1px 0 rgba(var(--fo-film), 0.10); }
+  50% { box-shadow: 0 16px 34px -14px rgba(var(--fo-shade), 0.8), 0 0 26px rgba(171, 159, 210, 0.55), inset 0 1px 0 rgba(var(--fo-film), 0.10); }
 }
 @keyframes uv-wave { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-8px); } }
 @media (prefers-reduced-motion: no-preference) {
@@ -13708,7 +13714,7 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .mz-page-hero.uv-hero.uv-halo::before { top: 46%; height: 260px; }
 .mz-page-hero.uv-hero .uv-hero-art {
   margin: 0 auto;
-  filter: drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 42%, transparent));
+  filter: drop-shadow(0 12px 14px rgba(var(--fo-shade), 0.5)) drop-shadow(0 0 18px color-mix(in srgb, var(--c) 42%, transparent));
 }
 .mz-page-hero.uv-hero .uv-hero-eb { margin-top: 4px; color: color-mix(in srgb, var(--c, var(--dv-lav)) 70%, var(--text-primary)); }
 .mz-page-hero.uv-hero .mz-hero-nm { margin-top: 4px; font-size: 24px; font-weight: 600; letter-spacing: -0.7px; color: var(--text-primary); }
@@ -13732,17 +13738,17 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 }
 .sheet.glass.uv-sheet::after { display: none; }
 .sheet.glass.uv-sheet .sheet-handle-zone { margin: 0 -18px 2px; }
-.sheet.glass.uv-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(245, 239, 230, 0.22); }
+.sheet.glass.uv-sheet .sheet-handle { width: 40px; height: 5px; background: rgba(var(--fo-film), 0.22); }
 .sheet.glass.uv-sheet .card {
-  background: rgba(245, 239, 230, 0.04); border: 0; border-radius: 14px; filter: none;
+  background: rgba(var(--fo-film), 0.04); border: 0; border-radius: 14px; filter: none;
   box-shadow: inset 0 0 0 1px var(--divider);
 }
 /* The field default is 0,0,1 (U11, mezo-6661l; bible rule 90): `:where()` keeps the scope and the
    type filter weightless, so a wrapper that draws its own field (a search box) wins with a plain
    class instead of a 0,7,1 bare-out. */
 :where(.sheet.glass.uv-sheet) :is(input:where(:not([type="checkbox"], [type="radio"], [type="range"])), textarea, select) {
-  border: 0; border-radius: 13px; color: var(--text-primary); color-scheme: dark;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  border: 0; border-radius: 13px; color: var(--text-primary); color-scheme: var(--fo-scheme);
+  background: rgba(var(--fo-film), 0.05); box-shadow: inset 0 0 0 1px var(--divider);
 }
 :where(.sheet.glass.uv-sheet) :is(input, textarea, select):focus-visible {
   outline: none; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 70%, transparent), 0 0 14px -4px color-mix(in srgb, var(--c) 60%, transparent);
@@ -13752,12 +13758,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
    `--c` (sky by default) when on; a page may restyle it (the tudástár's sage variant). */
 .uv-tgl {
   position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 999px;
-  cursor: pointer; background: rgba(245, 239, 230, 0.1); box-shadow: inset 0 0 0 1px var(--divider);
+  cursor: pointer; background: rgba(var(--fo-film), 0.1); box-shadow: inset 0 0 0 1px var(--divider);
 }
 .uv-tgl-knob {
   position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #B7A899;
 }
-.uv-tgl.is-on { background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, #1E1B18); box-shadow: 0 0 12px -2px var(--c, var(--dv-sky)); }
+.uv-tgl.is-on { background: color-mix(in srgb, var(--c, var(--dv-sky)) 70%, var(--fo-well-lo)); box-shadow: 0 0 12px -2px var(--c, var(--dv-sky)); }
 .uv-tgl.is-on .uv-tgl-knob { left: 21px; background: #FFF6EA; }
 .uv-tgl:disabled { cursor: not-allowed; opacity: 0.45; }
 .uv-tgl:focus-visible { outline: 2px solid var(--c, var(--dv-sky)); outline-offset: 2px; }
