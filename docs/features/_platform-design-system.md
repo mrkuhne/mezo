@@ -10,11 +10,8 @@ key_files:
   - frontend/src/shared/ui/clay
   - frontend/src/shared/ui/folyadek
   - frontend/src/styles/folyadek.css
-  - frontend/src/styles/folyadek-kit.css
   - frontend/src/styles/folyadek-frame.css
-  - frontend/src/shared/ui
   - frontend/src/app
-  - frontend/src/index.css
   - frontend/src/shared/lib/theme.ts
 related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
