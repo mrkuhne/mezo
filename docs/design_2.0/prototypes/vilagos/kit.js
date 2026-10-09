@@ -235,18 +235,30 @@ const chev=()=>I('i-chev','chev');
 const A=o=>o?Object.entries(o).map(([k,v])=>v===true?` ${k}`:v==null||v===false?'':` ${k}="${String(v).replace(/"/g,'&quot;')}"`).join(''):'';
 /* act(o): turns {go,sheet,arg,toast,dom,back} into data-attributes */
 const act=o=>{if(!o)return'';if(typeof o==='string')return ` data-go="${o}"`;return A({'data-go':o.go,'data-sheet':o.sheet,'data-arg':o.arg,'data-toast':o.toast,'data-dom':o.dom,'data-back':o.back})};
-function top(d,o){const reg=FREG[d]||{tabs:[]};
+/* F1 frame parity (2026-10-09): what the live header carries and the first drawing dropped.
+   · kalauz "?" sits after the context line (only where the page has a kalauz; a liquid dot = not yet seen)
+   · the magnifier is gone (the app has no search): its place is the "Minden oldal" map
+   · unread Mezo messages = a count on the Beszélgetés tab (and on the Nap drop from other domains)
+   · the morning dot of "A napom" moves with the tab to the top */
+const TABMARK={nap:{napom:'dot',uzenetek:2}};
+const HELP=d=>`<button class="fh-help${d==='edzes'?' new':''}" data-toast="Kalauz ehhez az oldalhoz" aria-label="Kalauz ehhez az oldalhoz">?</button>`;
+function top(d,o){const reg=FREG[d]||{tabs:[]},tm=TABMARK[d]||{};
   return `<header class="fh-top ${o.back?'sub':''}"><div class="fh-trow">${o.back?`<button class="fh-ib fh-back" data-go="${o.back}" aria-label="Vissza">‹</button>`:''}
-    <div class="fh-title"><small><i></i>${o.sub||''}</small><h1 class="${o.back?'sm':''}">${o.title}</h1></div>
-    ${o.back?'':`<button class="fh-ib" data-toast="Keresés az egész appban: étel, edzés, bejegyzés, beállítás" aria-label="Keresés">${SEARCH}</button>`}
+    <div class="fh-title"><small><i></i><span>${o.sub||''}</span>${o.nohelp?'':HELP(d)}</small><h1 class="${o.back?'sm':''}">${o.title}</h1></div>
+    ${o.back?'':`<button class="fh-ib" data-go="mindenoldal" aria-label="Minden oldal">${I('t-grid')}</button>`}
     <button class="fh-ib" data-toast="Értesítések" aria-label="Értesítések">${I('c-i-ertesites')}<b>3</b></button>
     ${o.back?'':`<button class="fh-ib" data-toast="Beállítások és profil" aria-label="Beállítások">${I('c-i-beallitas')}</button>`}</div>
-    ${o.back?'':`<nav class="fh-tabs">${reg.tabs.map(([l,r])=>`<button class="${r===o.tab?'on':''}" data-go="${r}">${l}</button>`).join('')}</nav>`}</header>`}
-const FILL={nap:70,edzes:34,fuel:62,mezo:50,en:58};
-const nav=d=>window.FH_FOLY?`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${csepp('ok',k===d?86:FILL[k],{s:k===d?40:34,color:c,alive:k===d})}<span>${l}</span></button>`).join('')}</nav>`:`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`;
+    ${o.back?'':`<nav class="fh-tabs">${reg.tabs.map(([l,r])=>`<button class="${r===o.tab?'on':''}" data-go="${r}">${l}${tm[r]==='dot'?'<i class="td" aria-label="kész a tegnapi értékelés"></i>':tm[r]?`<b class="tn">${tm[r]}</b>`:''}</button>`).join('')}</nav>`}</header>`}
+/* the five drops: Nap carries the day's own level (the old header orb: "the csepp means the user's day"), the others
+   rest at half and the active one is fuller. From other domains the Nap drop also carries the unread message count. */
+const DAY=72;
+const nav=d=>window.FH_FOLY?`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}"${k==='nap'?` aria-label="Nap · a mai napod ${DAY}%"`:''}>${csepp('ok',k==='nap'?DAY:k===d?86:50,{s:k===d?40:34,color:c,alive:k===d})}${k==='nap'&&d!=='nap'?'<b class="nb">2</b>':''}<span>${l}</span></button>`).join('')}</nav>`:`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`;
+/* the floating quick-log button: on every page of the live app except full-screen flows, pages with their own
+   bottom action bar, the Nap hub (its hero carries it) and the quick-log page itself */
+const fab=(d,x)=>!window.FH_FOLY||window.FH_NOFAB||x.foot||x.nonav||x.nofab||(d==='nap'&&/^(mai|gyors)$/.test(K.R))?'':`<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>`;
 /* page(domain, {title, sub, tab | back}, innerHtml, {foot, nonav, pad}) */
 function page(d,o,inner,x={}){
-  return `<div class="scroll" ${x.pad?`style="padding-bottom:${x.pad}"`:x.foot?'style="padding-bottom:190px"':''}>${top(d,o)}${inner}</div>${x.foot?`<div class="fh-foot ${x.nonav?'nonav':''}">${x.foot}</div>`:''}${x.nonav?'':nav(d)}<div class="toast" id="toast"></div><div class="sheet" id="sheet"></div><div class="scrim" id="scrim"></div>`}
+  return `<div class="scroll" ${x.pad?`style="padding-bottom:${x.pad}"`:x.foot?'style="padding-bottom:190px"':''}>${top(d,o)}${inner}</div>${x.foot?`<div class="fh-foot ${x.nonav?'nonav':''}">${x.foot}</div>`:''}${x.nonav?'':nav(d)}${fab(d,x)}<div class="toast" id="toast"></div><div class="sheet" id="sheet"></div><div class="scrim" id="scrim"></div>`}
 const sec=(n,t,i=1)=>`<p class="fh-n rise" style="--i:${i}">${n?`<b>${n}</b>`:''}${t}</p>`;
 const card=(inner,{cls='',i=1,style=''}={})=>`<section class="fh-card ${cls} rise" style="--i:${i};${style}">${inner}</section>`;
 const head=(icon,t,link='',linkAct=null)=>`<div class="fh-h">${icon?`<span class="tile">${I(icon)}</span>`:''}<h2>${t}</h2>${link?`<button${act(linkAct||{toast:link})}>${link} ›</button>`:''}</div>`;

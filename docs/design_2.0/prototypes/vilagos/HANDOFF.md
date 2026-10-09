@@ -152,3 +152,31 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
   day as a small vessel (level = value, colour = group, dashed = against). Done for the late-dinner
   case (`G_VACS`), the dinner decision, the carb experiment, the saved sweets pattern and the water
   pattern. Rule for any new comparison: averages + the days behind them.
+
+## 2026-10-09 — F1 prototype round (frame parity, opening animation, the mixed look)
+
+New file `vilagos/keret.js` (loaded last) + frame changes in `kit.js` (`top`, `nav`, `fab`) and `foly.js`.
+Awaiting the owner's OK; nothing below is decided until he answers.
+
+- **Reality pass on the frame.** The live header carries five things (`AppHeader.tsx`): kalauz "?",
+  settings, Mezo messages (unread badge), notifications, the day orb; plus the floating quick-log
+  button (`QuickLogFab.tsx`). The first drawing had search · bell · settings and nothing else. Drawn now:
+  - the **magnifier is gone** — the app has no search. Its place is **Minden oldal** (grid glyph →
+    `#w-<d>-mindenoldal`, the real `pageIndex.ts` inventory grouped by `navModel`), which also answers
+    where the retired domain switcher's link goes;
+  - **kalauz "?"** = a small chip after the context line (hub and sub-page alike; liquid dot = unseen T3);
+  - **messages** = a count on Nap's Beszélgetés tab, and on the Nap drop from the other domains;
+  - **day orb** = the Nap drop's level is the day's own fill (`useDayOrbFill`); the other four rest at
+    half, the active one is fuller;
+  - the **A napom morning dot** moves to the top tab;
+  - the **quick-log button** floats bottom-right as today (hidden on the Nap hub, the quick-log page,
+    full-screen flows and pages with their own bottom action bar). It covers content at rest on some
+    pages (Edzés · Mai's "Kihagyom") — raised with the owner.
+- **Opening animation** — `#w-nap-indito.a|b|c`: A the screen fills and the wordmark turns white under
+  the liquid; B five drops fall into the bottom bar; C one vessel, five layers. 3 s, then the app;
+  the base CSS is the final frame, so reduced motion shows it still. Wordmark unchanged ("boop", F8).
+- **The mixed look** — `#w-<d>-atmenet[.sotet]`: the new frame around `elo/<d>.html` in an iframe,
+  re-dressed by injected CSS (old chrome hidden; light: Folyadék tokens, white cards, the new glyphs
+  copied into the old sprite ids, a readability pass). It is an approximation of what F1's token flip
+  gives, not the build. `.sotet` leaves the old page dark (the alternative: dark until its slice).
+- 320 px: header buttons are 38 px so the date line fits beside them.

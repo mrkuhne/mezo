@@ -147,6 +147,7 @@ const linked=(pa,pb,{a='',b='',c='var(--liq1)',c2='var(--liq2)',s=220,va='',vb='
 F.css(`@media (max-width:360px){
 ${Q} .fh-title h1:not(.sm){font-size:25px;letter-spacing:-.9px}
 ${Q} .fh-title h1.sm{font-size:21px!important}
+${Q} .fh-trow{gap:6px}${Q} .fh-ib{width:38px;height:38px}
 ${Q} .fh-hero .verdict{overflow-wrap:break-word;hyphens:auto}
 ${Q} .fh-hero:has(.fh-art) .verdict{font-size:19px}
 .phone.foly .fh-foot .btn,#sheet .btn{white-space:normal;min-width:0;line-height:1.2}
@@ -154,6 +155,23 @@ ${Q} .fh-hero:has(.fh-art) .verdict{font-size:19px}
 ${Q} .gfm small{font-size:8px;letter-spacing:-.4px}
 ${Q} .gfm button>span:not(.csepp),${Q} .gfm>span>span:not(.csepp){font-size:10px;letter-spacing:-.2px}
 }`);
+/* F1 frame parity: kalauz mark, tab marks, the Nap drop's message count, the floating quick-log button */
+F.css(`
+${Q} .fh-title small{flex-wrap:nowrap}${Q} .fh-title small>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+${Q} .fh-help{position:relative;flex:none;width:20px;height:20px;margin-left:2px;border-radius:50%;display:grid;place-items:center;font:800 12px/1 var(--disp);color:color-mix(in srgb,var(--dom) 80%,var(--ink));background:#fff;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--dom) 30%,#fff)}
+${Q} .fh-help::before{content:'';position:absolute;inset:-12px}
+${Q} .fh-help.new::after{content:'';position:absolute;right:-3px;top:-3px;width:8px;height:9px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2));box-shadow:0 0 0 2px #F8FCFD}
+${Q} .fh-tabs button{position:relative}
+${Q} .fh-tabs .td{display:inline-block;width:7px;height:8px;margin-left:6px;vertical-align:1px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
+${Q} .fh-tabs .on .td{background:#fff}
+${Q} .fh-tabs .tn{display:inline-grid;place-items:center;min-width:18px;height:18px;margin-left:6px;padding:0 5px;border-radius:9px;font:800 10.5px/1 var(--disp);color:#fff;background:var(--liq2);vertical-align:1px}
+${Q} .fh-tabs .on .tn{color:var(--liq2);background:#fff}
+${Q} .fh-nav button{position:relative}
+${Q} .fh-nav .nb{position:absolute;left:calc(50% + 7px);top:-3px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;display:grid;place-items:center;font:800 10px/1 var(--disp);color:#fff;background:var(--c);box-shadow:0 0 0 2px #fff}
+${Q} .fh-fab{position:absolute;right:16px;bottom:96px;z-index:29;width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--liq1),var(--liq2));box-shadow:0 16px 24px -12px var(--liq2),0 4px 8px -4px rgba(10,42,60,.3),inset 0 0 0 1.5px rgba(255,255,255,.35)}
+${Q} .fh-fab svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round}
+${Q} .fh-fab::before{content:'';position:absolute;left:8px;right:8px;top:5px;height:13px;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.4),transparent)}
+`);
 Object.assign(F,{wave,bub,tank,vial,vials,mini,level,fill,area,stream,linked,uid});
 F.css(`
 /* icons live in bubbles */

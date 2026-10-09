@@ -7,7 +7,7 @@ search", and he dislikes the old colour world and dark mode; the plain light ver
 right **structure and cleanliness** but looked "boring and stock"; **this** version ("better")
 keeps that structure and adds character. Do not drift back toward any rejected round.
 
-`klinikai-iranyok.html` is the shell (router, sprites, csepp, anatomy). `vilagos/kit.js` holds
+`klinikai-iranyok.html` is the shell (router, sprites, csepp, anatomy). `vilagos/keret.js` (slice F1) holds the opening-animation options, the mixed-look view and the Minden oldal map; the frame itself (title bar, tab marks, bottom drops, quick-log button) is `top`/`nav`/`fab` in `kit.js`. `vilagos/kit.js` holds
 the look and the helpers (`window.F`). Each domain is **one file**, `vilagos/<domain>.js`.
 One agent owns one file; never edit the shell, the kit or another domain's file. If the kit
 lacks something, add domain CSS through `register({css})` and say so in your report.
