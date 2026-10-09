@@ -13,11 +13,11 @@
 .vmic {
   flex: 0 0 auto; width: 46px; min-height: 46px; display: grid; place-items: center;
   padding: 0; border: 0; border-radius: 13px; cursor: pointer; color: inherit;
-  background: rgba(245, 239, 230, 0.05); box-shadow: inset 0 0 0 1px var(--divider);
+  background: rgba(var(--fo-film), 0.05); box-shadow: inset 0 0 0 1px var(--divider);
   transition: background 0.2s, box-shadow 0.2s;
 }
 .vmic .t-ico { width: 26px; height: 26px; filter: none; }
-.vmic:hover { background: rgba(245, 239, 230, 0.09); }
+.vmic:hover { background: rgba(var(--fo-film), 0.09); }
 .vmic:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 .vmic.is-live {
   background: color-mix(in srgb, var(--c) 14%, transparent);

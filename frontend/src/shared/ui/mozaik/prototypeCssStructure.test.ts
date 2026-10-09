@@ -385,10 +385,10 @@ describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6, widen
 
   test('chips inside a glass card are flat, never glass (bible §3 rank 3)', () => {
     const css = rules()
-    expect(css).toMatch(/\.fmx-glu-chip \{[^}]*background: rgba\(245, 239, 230, 0\.04\)/)
-    expect(css).toMatch(/\.fmx-score \{[^}]*rgba\(245, 239, 230, 0\.05\)/)
+    expect(css).toMatch(/\.fmx-glu-chip \{[^}]*background: rgba\(var\(--fo-film\), 0\.04\)/)
+    expect(css).toMatch(/\.fmx-score \{[^}]*rgba\(var\(--fo-film\), 0\.05\)/)
     expect(css).not.toMatch(/\.fmx-score \{[^}]*backdrop-filter/)
-    expect(css).toMatch(/\.fmx-glass-callout \{[^}]*background: rgba\(245, 239, 230, 0\.05\)/)
+    expect(css).toMatch(/\.fmx-glass-callout \{[^}]*background: rgba\(var\(--fo-film\), 0\.05\)/)
   })
 
   test('empty and unknown states are dashed, with no glass (bible §3 rank 4)', () => {
@@ -568,7 +568,7 @@ describe('the uveg fuel trendek section re-dresses Trendek + Fuel settings (mezo
       '.fset-card.glass', '.fset-goal.glass', '.fset-slots.glass', '.fsl-slotrow.glass', '.fsl-edit.glass']) {
       expect(css, `${sel} missing from the uveg fuel trendek block`).toContain(sel)
     }
-    expect(css).toMatch(/\.ftx-dim \{[^}]*rgba\(245, 239, 230, 0\.04\)/)
+    expect(css).toMatch(/\.ftx-dim \{[^}]*rgba\(var\(--fo-film\), 0\.04\)/)
     expect(css).toMatch(/\.ftx-glass-link \{[^}]*color-mix/)
     expect(css).not.toMatch(/\.ftx-glass-link[^{]*\.glass/)
   })

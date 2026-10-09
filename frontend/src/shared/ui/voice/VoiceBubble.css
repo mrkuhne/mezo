@@ -47,7 +47,7 @@ body > .vb-slot { position: fixed; }
   opacity: .45; transform: scale(.8);
 }
 .vb-ring { position: absolute; inset: 4px; width: calc(100% - 8px); height: calc(100% - 8px); overflow: visible; }
-.vb-track { fill: none; stroke: rgba(245, 239, 230, .07); stroke-width: 2; }
+.vb-track { fill: none; stroke: rgba(var(--fo-film), .07); stroke-width: 2; }
 .vb-arc {
   fill: none; stroke: var(--c); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 46 144;
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--c) 55%, transparent));
@@ -89,10 +89,10 @@ body > .vb-slot { position: fixed; }
 .vb-x {
   flex: none; width: 36px; height: 36px; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer;
-  border: 1px solid var(--divider); background: rgba(245, 239, 230, .05);
+  border: 1px solid var(--divider); background: rgba(var(--fo-film), .05);
   color: var(--text-secondary); font: 400 17px/1 var(--ff-body, inherit);
 }
-.vb-x:hover { color: var(--text-primary); background: rgba(245, 239, 230, .1); }
+.vb-x:hover { color: var(--text-primary); background: rgba(var(--fo-film), .1); }
 
 @keyframes vb-in { from { opacity: 0; transform: translateY(24px) scale(.96); } }
 @keyframes vb-out { to { opacity: 0; transform: translateY(18px) scale(.97); } }
