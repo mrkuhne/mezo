@@ -275,7 +275,7 @@ const note=t=>`<p class="fh-note">${t}</p>`;
 const txt=t=>`<p class="fh-txt">${t}</p>`;
 const empty=(icon,t,a='')=>`<div class="fh-empty">${icon?I(icon):''}${t}${a?`<div class="fh-acts" style="justify-content:center">${a}</div>`:''}</div>`;
 /* the team: sibling forms of the csepp — the form is the sender, the text is the voice */
-const TEAM={szunya:['Szunya','alvás','#AB9FD2','pebble',62],mocor:['Mocor','mozgás','#5B9BD5','bean',48],falat:['Falat','étel','#6FB08A','drop',70],deru:['Derű','kedv','#D9A94E','leaf',55],mezo:['Mezo','összkép','#8C97A8','crystal',64]};
+const TEAM={szunya:['Alvás','pihenés','#AB9FD2','pebble',62],mocor:['Mozgás','terhelés','#5B9BD5','bean',48],falat:['Étkezés','étrend','#6FB08A','drop',70],deru:['Közérzet','hangulat','#D9A94E','leaf',55],mezo:['Mezo','összkép','#8C97A8','crystal',64]};
 const who=(k,s=36)=>{const t=TEAM[k]||TEAM.mezo;return csepp('ok',t[4],{s,form:t[3],color:t[2],alive:false})};
 const msg=(k,text,meta='')=>{const t=TEAM[k]||TEAM.mezo;return `<div class="fh-msg"><span class="who">${who(k)}</span><div class="b"><span class="nm">${t[0]}<small>${meta||t[1]}</small></span><p class="fh-txt" style="margin-top:2px">${text}</p></div></div>`};
 function register(d,def){FREG[d]=def;if(def.css)css(def.css)}
