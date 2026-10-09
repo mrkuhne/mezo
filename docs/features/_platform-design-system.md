@@ -300,6 +300,11 @@ F2–F7 convert the pages per domain, F8 the overlays, F9 the final sweep.
   CSS as `--sp-*`): one vessel fills with five liquid layers, drains, and each layer lands as a drop in the real bottom
   bar; 3000 ms; reduced motion paints the still final frame. The drops reuse `BottomBar`'s `navDropSpec` / `REST_FILL`
   so the hand-off is pixel-exact (asserted under reduced motion in `tests/layout/startup.spec.ts`).
+  The stage is a transparent OVERLAY (final review, 2026-10-09): over the phone shell its own `PhoneFrame` keeps the
+  geometry but paints no ground / bezel / sky (`.startup-content:has(.phone-screen) + .startup-stage …`), so the
+  scene's gradient is the only opaque layer and its 2.4 → 3 s fade dissolves into the mounted app instead of an empty
+  frame; the active drop is the domain the app opens on (read once from the URL). A surface with no phone frame
+  (login, admin) keeps the opaque stage.
 
 ### The shared kit — `shared/ui/folyadek` (+ `styles/folyadek-kit.css`)
 
@@ -344,6 +349,14 @@ recipe for a vessel, a hero or a row; extend the kit. Barrel: `shared/ui/folyade
   `useBackNav` / `useBackTo` use it too. 106 pure fixed-route back handlers were converted to `history` + `fallback`
   in F1; stateful ones (wizards, replace/state navigations, inline closers, the settings sub-pages) keep their own.
   Known gaps: the Tudástár's own in-page back disc (F7) and the settings sub-pages' fixed back (F8).
+- **Leaving after a mutation** (final review, 2026-10-09) — `useLeaveAfterMutation()` (`shared/hooks/useBackNav.ts`; rules
+  `leaveAfterMutation` / `leaveBackAfterMutation` / `leaveDeletedFromEditor` in `shared/lib/backNav.ts`). With a
+  history-based back a save / create / delete must not PUSH its destination on top of the form: `to(target)` replaces
+  the current entry (wizards, create forms, a delete on a detail page); `back(origin)` pops, for an editor entered
+  ONLY from `origin` (a replace would leave that page twice in a row), falling back to a replace on a direct open;
+  `pastDetail(list)` is a delete issued from such an editor — it pops onto the record's page, then replaces it with
+  the list (browser router only: it needs `history.state.idx` and the `popstate` event; elsewhere a plain replace).
+  New editors and wizards use it instead of a bare `navigate(...)` after their mutation.
 
 ### Üveg foundation (`mezo-me75u.1`, 2026-09-23) — *history; the dark ground, glass kit and chrome below are superseded by Folyadék F1 (§ *Folyadék foundation*)*
 
@@ -1018,6 +1031,16 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 ---
 
 ## 9. Decisions, gotchas & deferred
+
+- **Gradient-clipped text is invisible to a colour sweep (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).**
+  A `background-clip: text` numeral or wordmark takes its colour from literal gradient stops, not from `color`, so the
+  light re-skin's token sweep walked past it and pale Üveg stops (cream / lavender / gold) were left on white. Fixed
+  in `prototype.css`: `.auth-mark` and the admin rail brand are plain `--fo-ink` in light; `.fcx-core strong` (meal
+  ceremony score) runs `--dom` → `--fo-ink`; `.lvu-xp`, `.m9e-acc`, both `.wk-ring b`, `.cer-verdict` and
+  `.fcx-verdict` run from their accent mixed into ink. Each keeps its old pastel gradient under
+  `:root[data-theme="dark"]` for the dark pockets (the `.fmx-score-value span` idiom). `.rz-xp-num` is untouched: it
+  only renders inside `/ritual`, a dark pocket. A new gradient-clipped text needs BOTH variants. The root crash
+  fallback in `main.tsx` (inline styles, no stylesheet) is light too.
 
 - **A bare `.sky` class is taken (`mezo-p87ok`, 2026-09-28).** The daypart sky band's dark-theme
   rules are global: `:root[data-theme="dark"] .sky { opacity: .5 }` and
