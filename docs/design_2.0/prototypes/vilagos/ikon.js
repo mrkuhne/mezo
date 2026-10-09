@@ -216,3 +216,33 @@ if(window.FREG&&FREG.nap){const G=[['Nap és alvás','dawn sun moon sleep clock 
   G.map(([t,l],i)=>F.sec(i+1,t)+F.card(`<div class="ikg">${l.split(' ').map(k=>`<div><span class="fb" style="--s:46px;--c:var(--dom)"><svg class="ic td"><use href="#t-${k}"/></svg></span>${k}</div>`).join('')}</div>`)).join(''))}
 apply();
 })();
+
+/* ── team avatars: three directions to replace the liquid sibling forms in the expert sections
+      (owner 2026-10-09: "a buborék ikonok nem passzolnak a szakértő szekciókhoz"). Compare: #w-mezo-arcok ── */
+(function(){
+const F=window.F;if(!(window.FREG&&FREG.mezo))return;
+const T=[['Alvás','pihenés','#8E7FD0','sleep','A'],['Mozgás','terhelés','#3F8FD8','dumbbell','M'],['Étkezés','étrend','#3FA777','bowl','É'],['Közérzet','hangulat','#D69A2D','heart','K'],['Mezo','a csapat','#6B7C93','orb','Me']];
+const av={
+ a:(t,s=40)=>`<span class="arc a" data-fixic="1" style="--c:${t[2]};--s:${s}px"><svg class="ic jel" style="--ic:${t[2]};--ic2:color-mix(in srgb,${t[2]} 45%,#fff)"><use href="#tc-${t[3]}"/></svg></span>`,
+ b:(t,s=40)=>`<span class="arc b" style="--c:${t[2]};--s:${s}px">${t[4]}</span>`,
+ c:()=>''};
+const block=(m,name,desc)=>{const A=av[m];return F.card(`<div class="arcb m-${m}"><h4>${name}</h4><p>${desc}</p>
+ <div class="arcrow">${T.map(t=>`<div>${m==='c'?`<i class="bar" style="--c:${t[2]}"></i>`:A(t,44)}<b>${t[0]}</b><small>${t[1]}</small></div>`).join('')}</div>
+ <div class="arcmsg">${A(T[0],34)}<div style="--c:${T[0][2]}"><span class="nm">${m==='c'?`<i class="dot"></i>`:''}Alvás<small>tegnap 20:30</small></span><p>A késői vacsorák inkább a <b>későn befejezett napok</b> mellé esnek — és utánuk rendre rosszabb az éjszakád.</p></div></div>
+ <div class="arcmsg">${A(T[2],34)}<div style="--c:${T[2][2]}"><span class="nm">${m==='c'?`<i class="dot"></i>`:''}Étkezés<small>20:41</small></span><p>Nálam a <b>23 óra utáni vacsora</b> a vízválasztó: azokon a napokon átlag 380 kcal csúszik este 9 utánra.</p></div></div>
+ <div class="arcln" style="--c:${T[1][2]}">${m==='c'?`<i class="bar v"></i>`:A(T[1],38)}<span>Mozgás · terhelés<small>Most figyeli: a terhelésed · 1 sejtésen dolgozik</small></span><em>60%</em></div></div>`)};
+FREG.mezo.routes.arcok=()=>F.page('mezo',{title:'A csapat arca',sub:'három irány a folyadékformák helyett',back:'csapat'},
+  F.sec(1,'A · Szakterület-jel')+block('a','A · Szakterület-jel','Minden terület a saját ikonját kapja az új készletből, a saját színében. Ugyanaz a nyelv, mint az app többi ikonja.')
+ +F.sec(2,'B · Monogram')+block('b','B · Monogram','Színes jelvény a terület kezdőbetűjével, mint egy munkatárs névjegye. A legkomolyabb, legsemlegesebb.')
+ +F.sec(3,'C · Csak szín és név')+block('c','C · Csak szín és név','Nincs figura: a területet a színe és a neve jelöli. A legcsendesebb, a szöveg viszi.'));
+F.css(`.arcb{padding:16px;display:grid;gap:12px}.arcb h4{font:700 15px var(--disp);margin:0;color:var(--ink)}.arcb>p{margin:-8px 0 0;font-size:12.5px;line-height:1.45;color:var(--sub)}
+.arc{width:var(--s);height:var(--s);flex:none;display:grid;place-items:center;border-radius:50%}
+.arc.a{background:color-mix(in srgb,var(--c) 9%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 28%,#fff)}.arc.a svg{width:58%;height:58%}
+.arc.b{border-radius:32%;background:linear-gradient(160deg,color-mix(in srgb,var(--c) 78%,#fff),var(--c));color:#fff;font:800 calc(var(--s)*.4) var(--disp);letter-spacing:-.5px;box-shadow:0 8px 12px -8px var(--c)}
+.arcrow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;text-align:center}.arcrow div{display:grid;justify-items:center;gap:3px}.arcrow b{font-size:11.5px;color:var(--ink);margin-top:3px}.arcrow small{font-size:10px;color:var(--sub)}
+.arcrow .bar{width:26px;height:5px;border-radius:3px;background:var(--c);margin:8px 0 4px}
+.arcmsg{display:flex;gap:10px;align-items:flex-start;padding-top:12px;border-top:1px solid rgba(10,42,60,.08)}.arcmsg .nm{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:color-mix(in srgb,var(--c) 70%,var(--ink))}.arcmsg .nm small{font-weight:500;font-size:11px;color:var(--sub)}.arcmsg p{margin:3px 0 0;font-size:14px;line-height:1.5;color:var(--ink)}
+.arcmsg .dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.arcln{display:flex;gap:12px;align-items:center;padding-top:12px;border-top:1px solid rgba(10,42,60,.08);font-size:14px;font-weight:650;color:var(--ink)}.arcln>span:not(.arc){flex:1}.arcln small{display:block;font-weight:400;font-size:12px;color:var(--sub)}.arcln em{font:800 15px var(--disp);font-style:normal}
+.arcln .bar.v{width:4px;height:36px;border-radius:2px;background:var(--c)}`);
+})();

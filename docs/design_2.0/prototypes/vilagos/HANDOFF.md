@@ -143,3 +143,6 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
   and in a sentence it takes an article ("az Alvás szerint", "a Mozgás jelezte") or the sentence turns
   to "we" ("este megnézzük", "rákérdezünk"). Never a bare field name as a person ("Alvás este megnézi").
   `msg()` drops a meta that only repeats the name. "karakter" for a team member → "terület".
+- **Open: the team's face.** Owner: the liquid sibling forms do not fit the expert sections (fine in
+  the bottom bar). Three directions on `#w-mezo-arcok`: A field glyph badge, B monogram, C colour + name
+  only. Waiting for his pick; then replace `who()`/`W()` everywhere outside the bottom bar.
