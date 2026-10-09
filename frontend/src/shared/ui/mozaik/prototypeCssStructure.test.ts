@@ -1476,7 +1476,7 @@ describe('the folyadék frame sheet carries the app chrome (mezo-n4wf5.1)', () =
   const frame = stripComments(frameCss)
 
   test('it styles the title bar, the top tabs, the bottom bar and the FAB', () => {
-    for (const sel of ['.fo-top {', '.fo-top.sub {', '.fo-trow.hub', '.fo-eb', '.fo-btns {', '.fo-ib {', '.fo-h {',
+    for (const sel of ['.fo-top {', '.fo-top::before {', '.fo-top.sub {', '.fo-trow.hub', '.fo-eb', '.fo-btns {', '.fo-ib {', '.fo-h {',
       '.fo-help {', '.fo-tabs {', '.fo-tabs a.on {', '.fo-nav {', '.fo-nav-item {', '.fo-fab {',
       '.fo-top > .nap-ntfpanel {']) {
       expect(frame, `${sel} missing from folyadek-frame.css`).toContain(sel)
@@ -1484,7 +1484,8 @@ describe('the folyadék frame sheet carries the app chrome (mezo-n4wf5.1)', () =
   })
 
   test('the values are the approved prototype’s (vilagos/kit.js + foly.js)', () => {
-    expect(frame).toMatch(/\.fo-top \{[^}]*padding: 18px 18px 0;[^}]*background: color-mix\(in srgb, #F8FCFD 78%, transparent\)/)
+    expect(frame).toMatch(/\.fo-top \{[^}]*padding: 18px 18px 0;/)
+    expect(frame).toMatch(/\.fo-top::before \{[^}]*background: color-mix\(in srgb, #F8FCFD 78%, transparent\)/)
     expect(frame).toMatch(/\.fo-h \{[^}]*font-size: 36px; font-weight: 800; letter-spacing: -1\.4px/)
     expect(frame).toMatch(/\.fo-tabs a \{[^}]*padding: 8px 14px; border-radius: 999px/)
     expect(frame).toMatch(/\.fo-nav \{[^}]*left: 10px; right: 10px;[^}]*border-radius: 30px/)

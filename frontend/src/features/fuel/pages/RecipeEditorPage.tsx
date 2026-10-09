@@ -134,7 +134,7 @@ export function RecipeEditorPage() {
     return (
       <div className="fmx-page fkx-reditor">
         <div className="fmx-subhead">
-          <FrameBack className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
+          <FrameBack history className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
           <span><small>Fuel · Receptek</small></span>
         </div>
         <div className="fkx-notfound uv-empty">Nincs ilyen recept.</div>
@@ -202,7 +202,7 @@ export function RecipeEditorPage() {
     <div className="fmx-page fkx-reditor">
       <EntranceGroup>
         <div className="fmx-subhead rise">
-          <FrameBack className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
+          <FrameBack history className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
           <span>
             <small>Fuel · Receptek</small>
             <h1 className="fkx-title">{name || (isEditMode ? '—' : 'Új recept')}</h1>

@@ -203,7 +203,7 @@ export function NapRutinPage() {
   return (
     <MozaikPage tone="gold" className="nr-page nap-oldal">
       <div className="mz-page-head nap-backrow">
-        <FrameBack className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
+        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
           <b aria-hidden="true">‹</b> Ma
         </FrameBack>
       </div>

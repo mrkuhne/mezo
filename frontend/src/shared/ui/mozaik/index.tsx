@@ -142,8 +142,13 @@ export function MozaikPage({ tone, children, className }: { tone: PageTone; chil
   return <div className={cn('mz-page', `mz-p-${tone}`, className)}>{children}</div>
 }
 
-export function PageHead({ onBack, label = '‹ vissza', glass = false, children }: {
+export function PageHead({ onBack, history = false, label = '‹ vissza', glass = false, children }: {
   onBack: () => void; label?: string
+  /** `onBack` is plain „go back in history" (`navigate(-1)`): it is NOT handed to the frame, so
+   *  the title bar's default applies (history if there is any, else the page's fallback route —
+   *  never a dead button on a direct deep link). It still drives the page's own button where
+   *  no title bar is mounted. */
+  history?: boolean
   /** Üveg variant (bible U3 rule 21, mezo-me75u.4): a small glass back pill `‹ <label>`;
    *  pass the label WITHOUT the arrow. */
   glass?: boolean
@@ -153,7 +158,7 @@ export function PageHead({ onBack, label = '‹ vissza', glass = false, children
   // hands its handler over, and draws nothing but its own extra controls (`children`).
   // Where NO title bar is mounted — the chrome-free full-screen routes, the chat (its own
   // header), a page rendered alone — the page still needs a way back, so it keeps its button.
-  useFrameBack(onBack)
+  useFrameBack(history ? undefined : onBack)
   const shellHasBack = useHasTitleBar()
   if (shellHasBack) return children ? <div className={cn('mz-page-head', glass && 'uv-head')}>{children}</div> : null
   return (

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { DOMAINS, activeTabRoute, frameDate, frameFor } from '@/app/navModel'
+import { DOMAINS, activeTabRoute, canGoBack, frameDate, frameFor } from '@/app/navModel'
 
 const me = DOMAINS.find((d) => d.id === 'me')!
 
@@ -73,4 +73,24 @@ test('outside the five domains the frame is a Nap-coloured sub-page', () => {
   expect(settings.domain.id).toBe('nap')
   expect(frameFor('/settings', d)).toMatchObject({ isHub: false, title: 'Beállítások', eyebrow: 'Beállítások' })
   expect(frameFor('/minden', d)).toMatchObject({ isHub: false, title: 'Minden oldal', eyebrow: 'Az app térképe', fallback: '/nap' })
+})
+
+// ── „Vissza oda, ahonnan jöttél": is there an in-app entry to return to? ───────────────────
+// The PRODUCTION branch is the browser router's `history.state.idx`; the location key only
+// decides where a router keeps no index (the memory router of the tests).
+describe('canGoBack', () => {
+  test('idx 0 — the app was opened on this entry (cold deep link): nothing to return to', () => {
+    expect(canGoBack({ idx: 0, key: 'abc', usr: null }, 'abc')).toBe(false)
+    // …even though the location key is not the initial one (a redirect REPLACED the entry)
+    expect(canGoBack({ idx: 0 }, 'k3x9')).toBe(false)
+  })
+  test('idx > 0 — there is in-app history to return to', () => {
+    expect(canGoBack({ idx: 2, key: 'abc', usr: null }, 'abc')).toBe(true)
+    expect(canGoBack({ idx: 1 }, 'default')).toBe(true)
+  })
+  test.each([[null], [undefined], [{}], [{ idx: undefined }], [{ idx: '2' }]])(
+    'no numeric idx (%j) — the location key decides: the initial entry has nowhere to return to', (state) => {
+      expect(canGoBack(state, 'default')).toBe(false)
+      expect(canGoBack(state, 'k3x9')).toBe(true)
+    })
 })

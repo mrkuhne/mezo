@@ -36,7 +36,7 @@ import {
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
-import { frameFor } from '@/app/navModel'
+import { canGoBack, frameFor } from '@/app/navModel'
 
 /** Az értesítés-panel felső korlátja. A többi a teljes feed oldalé (`/me/ertesitesek`) — egy
  *  fejléc-panel nem a feed második példánya, és egy több százas lista görgetése ott a helyes. */
@@ -156,14 +156,11 @@ export function TitleBar({ children }: {
   }, [])
 
   const goBack = () => {
+    // A page with a handler of its own (a fixed target, a confirm, a step back inside a flow)
+    // runs it. Otherwise: back where the user came from, and — when the app was opened right
+    // here — to the tab that owns this page (navModel `canGoBack`).
     if (page.onBack) return page.onBack()
-    // „Vissza oda, ahonnan jöttél." Is there an entry to return to? The browser router keeps the
-    // entry index in history.state (0 = the app was opened here — a deep link, or a redirect that
-    // REPLACED it); a router without it (memory) tells by the location key, which is 'default'
-    // only on the initial entry. Nothing to return to → the tab that owns this page.
-    const idx = (window.history.state as { idx?: unknown } | null)?.idx
-    const canReturn = typeof idx === 'number' ? idx > 0 : locationKey !== 'default'
-    if (canReturn) navigate(-1)
+    if (canGoBack(window.history.state, locationKey)) navigate(-1)
     else navigate(derived.fallback)
   }
 

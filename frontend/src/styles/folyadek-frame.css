@@ -25,9 +25,16 @@
   /* full-bleed: steps over the scroller's --screen-gutter so the bar reaches the screen edges */
   margin-inline: calc(-1 * var(--screen-gutter));
   padding: 18px 18px 0;
+  color: var(--fo-ink); font-family: var(--ff-body);
+}
+/* The bar's ground — the translucent light surface and its blur — is a layer of exactly the
+   bar's own box (inset 0: no tail past the bottom edge). It is NOT on `.fo-top` itself on
+   purpose: a `backdrop-filter` makes its element the containing block of `position: fixed`
+   descendants, and the notification scrim must be fixed to the screen (see below). */
+.fo-top::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background: color-mix(in srgb, #F8FCFD 78%, transparent);
   -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
-  color: var(--fo-ink); font-family: var(--ff-body);
 }
 .fo-top.sub { padding-bottom: 12px; }
 /* The bar's content sits above the notification scrim (0); the panel (2) above both. */
@@ -136,9 +143,10 @@
 }
 .fo-top.sub > .nap-ntfpanel { top: 66px; }
 /* The scrim is the bar's child at z 0: the buttons (1) and the panel (2) stay above it, the page
-   below the bar is veiled because the whole bar (46) is above the page. Absolute, not fixed:
-   the bar's backdrop-filter makes it the containing block of fixed descendants. */
-.fo-top > .nap-ntfscrim { position: absolute; z-index: 0; left: 0; right: 0; top: -60px; height: 130vh; background: rgba(10, 42, 60, .18); }
+   below the bar is veiled because the whole bar (46) is above the page. FIXED to the screen, as
+   in the retired header: an absolutely positioned veil taller than a short page added scrollable
+   overflow to the app's scroller (measured: up to +288px). */
+.fo-top > .nap-ntfscrim { position: fixed; inset: 0; z-index: 0; background: rgba(10, 42, 60, .18); }
 .fo-top .nap-ntfeyebrow { color: var(--fo-sub); }
 .fo-top .nap-ntfcnt { color: #fff; background: var(--liq2); }
 .fo-top .nap-ntfcnt.is-none { color: var(--fo-sub); background: rgba(10, 42, 60, .06); }

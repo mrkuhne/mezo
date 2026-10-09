@@ -75,4 +75,18 @@ describe('frame', () => {
     act(() => screen.getByRole('button', { name: 'shell-back' }).click())
     expect(back).toHaveBeenCalledTimes(1)
   })
+
+  // A plain „go back in history" handler is NOT handed to the frame: the title bar's default
+  // (history, else the fallback route) must apply, or back is dead on a direct deep link.
+  it('FrameBack history: registers nothing with the frame, keeps its own button without a bar', () => {
+    const back = vi.fn()
+    function Bar() { useTitleBarMounted(); return <Reader /> }
+    const shell = render(<FrameProvider><Bar /><FrameBack history onBack={back} className="x">‹</FrameBack></FrameProvider>)
+    expect(document.querySelector('.x')).toBeNull()
+    expect(screen.getByTestId('r').textContent).toBe('-|-|noback')
+    shell.unmount()
+    render(<FrameBack history onBack={back} className="x">‹</FrameBack>)
+    screen.getByRole('button', { name: 'Vissza' }).click()
+    expect(back).toHaveBeenCalledTimes(1)
+  })
 })

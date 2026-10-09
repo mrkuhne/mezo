@@ -76,7 +76,7 @@ export function FuelMedicationPage() {
   if (!med.id) {
     return (
       <MozaikPage tone="lav" className="fmd-page">
-        <PageHead onBack={() => navigate(-1)} label="‹ Fuel" />
+        <PageHead history onBack={() => navigate(-1)} label="‹ Fuel" />
         <PageBody>
           {/* The empty branch is choreographed too — it was the ONLY branch the mock day ever
               reaches, which is why /fuel/gyogyszer measured as "no entrance choreography". */}
@@ -110,7 +110,7 @@ export function FuelMedicationPage() {
 
   return (
     <MozaikPage tone="lav" className="fmd-page">
-      <PageHead onBack={() => navigate(-1)} label="‹ Fuel">
+      <PageHead history onBack={() => navigate(-1)} label="‹ Fuel">
         <button type="button" onClick={() => setLogOpen(true)} className="pgact fmd-act">
           <Icon name="plus" size={12} /> Beadás
         </button>

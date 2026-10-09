@@ -123,7 +123,7 @@ export function NapCheckinPage() {
   return (
     <MozaikPage tone="rose" className="nap-oldal nck-page">
       <div className="mz-page-head nap-backrow">
-        <FrameBack className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
+        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
           <b aria-hidden="true">‹</b> Ma
         </FrameBack>
       </div>

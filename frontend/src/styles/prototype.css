@@ -3754,26 +3754,6 @@ button.mz-tile:active { transform: scale(0.96); }
 
 /* ── Nap hub (mezo-d20.2.1) — header recipe + panel heroes + tile extras ── */
 .nap-hub { display: flex; flex-direction: column; gap: 13px; padding: 6px 0 8px; }
-/* A shell-szintű fejléc (mezo-atry) függőleges ritmusa. Korábban a hub-konténerek
-   `padding: 6px 0 8px` + `gap` adta a rést a fejléc alatt — a `.nap-hub`-on pontosan
-   13px-et (gap: 13px), a másik négyen (`.eh-hub`/`.fh-hub`/`.mzh-hub`/`.enh-hub`) 11px-et
-   (gap: 11px). A fejléc kikerült a konténerekből, a 7px margó pedig szándékosan egységes:
-   a Nap 13px-ét pontosan visszaadja, a másik négyet 11-ről 13-ra emeli — egy közös fejléc
-   alatt egy közös rés jár, a 2px a megosztásért fizetett ár. */
-/* Az aurora full-bleed: a .screen-content --screen-gutter paddingját negatív margóval
-   lépi át, hogy a telefon széléig érjen. A fejléc TARTALMA a gutteren belül marad. */
-/* A szekció-blokk a fejléc bal oldalán: spot + név, egy sorban, csonkolva. */
-/* Kompakt mód: csak a függőleges ritmus húzódik össze. Az aurora napszak-színe
-   változatlan marad, hogy görgetéskor se váltson semleges üvegsávra. */
-/* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
-   gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
-   .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
-   Jelenleg ez nem okoz ütközést (a menük geometriailag nem lógnak ki később jövő
-   testvérek alá), de új fejléc-gyerek hozzáadásakor erre figyelni kell. */
-
-/* A takaró a fejléc ALATT ül (a fejléc z-indexe 46), tehát a fejléc gombjai — köztük maga a
-   csengő — kattinthatók maradnak, a lap tartalma viszont elhatárolódik. */
-
 /* fejrész — KITAPAD, nem görög */
 .nap-ntfhd { display: flex; align-items: center; gap: 8px; padding: 13px 14px 9px; flex: none; }
 .nap-ntfeyebrow { font: 800 10.5px/1 var(--ff-body); letter-spacing: 0.7px; text-transform: uppercase;

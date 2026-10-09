@@ -110,7 +110,7 @@ export default function MindenOldalPage() {
 
   return (
     <MozaikPage tone="lav" className="mno-page mno-u10">
-      <PageHead glass label="Vissza" onBack={() => navigate(-1)} />
+      <PageHead glass history label="Vissza" onBack={() => navigate(-1)} />
       <PageBody>
         <PageHero art="t-grid" accent="var(--dv-amber)" eyebrow="LELTÁR" name="Minden oldal"
           sub={`Az app ${PAGE_INDEX.length} oldala, területenként, a menü szerinti bontásban.`} />

@@ -9,10 +9,10 @@
 // Ami a prototípusból (docs/design_2.0/prototypes/kalauz.html:1158-1265) KIESETT:
 // az 1. „Szia, Mezo vagyok" lépés (a köszönés az 1. lépés címébe olvadt) és az 5. fejléc-
 // lépés (standard minta). A „?" a fejlécben ül; napszak-váltó NINCS (üveg bible §7.1).
-// Üvegesítés U10 (mezo-me75u.10, owner-jóváhagyott szövegcsere): az 1–2. lépés a MAI
-// chrome-ot írja le — a sávban bal lent a terület élő Boopja (koppintásra területváltó),
-// mellette a terület négy füle (app/navModel.ts). A fülek mondatai a navModel négy fülét
-// sorolják; a demó élő Boopokat mutat, nem agyag fül-ikonokat. A „+" gomb mögött a VALÓDI
+// Folyadék keret (mezo-n4wf5.1, owner-jóváhagyott szövegcsere): a 2. lépés a MAI chrome-ot
+// írja le — LENT az öt terület (mindig), FENT az aktív terület négy oldala (app/navModel.ts);
+// területváltó nincs. A fülek mondatai a navModel négy fülét sorolják. A demó grafikája még a
+// régi (élő Boopok) — a kalauz egy későbbi szeletben öltözik át. A „+" gomb mögött a VALÓDI
 // QuickInputSheet anatómiája él: a csempe-rács és a „Mondd el Mezónak" sor.
 // A napszakok és a csempék a Titanium 3D készletet viselik (üveg bible §4).
 // ============================================================
@@ -55,7 +55,7 @@ export const WELCOME: WelcomeGuide = {
     {
       kind: 'tabbar',
       title: 'Öt terület, egy koppintásra.',
-      voice: 'Bal lent a **Boopra** koppintva váltasz területet; mellette a terület négy füle. Koppints a figurákra — mindegyik megmutatja, mi lakik nála.',
+      voice: 'Lent az **öt terület** között váltasz, fent a terület négy oldala van. Koppints a figurákra — mindegyik megmutatja, mi lakik nála.',
       // A navModel DOMAINS sorrendje és négy füle (welcome.test.ts ezt ellenőrzi).
       tabs: [
         { key: 'nap', label: 'Nap', voice: 'A mai nap: a Mai oldal, A napom, a beszélgetés Mezóval és a rutin.' },

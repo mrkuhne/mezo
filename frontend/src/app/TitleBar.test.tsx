@@ -5,7 +5,8 @@ import { TitleBar } from '@/app/TitleBar'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
-import { FrameProvider, useFrameBack, useFrameTitle } from '@/shared/ui/folyadek'
+import { FrameBack, FrameProvider, useFrameBack, useFrameTitle } from '@/shared/ui/folyadek'
+import { PageHead } from '@/shared/ui/mozaik'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 import { localDateString } from '@/shared/lib/dates'
@@ -369,4 +370,39 @@ test.each([
   renderAt(path)
   await user.click(await screen.findByRole('button', { name: 'Vissza' }))
   expect(screen.getByTestId('loc').textContent).toBe(home)
+})
+
+// Fix round 1: a page whose own back is plain `navigate(-1)` used to hand THAT to the bar — and
+// on a direct deep link (nothing in history) the back button did nothing. Such a page marks its
+// handler `history`, registers nothing, and gets the bar's default.
+function HistoryPage({ kind }: { kind: 'head' | 'back' }) {
+  const onBack = vi.fn()
+  return kind === 'head' ? <PageHead glass history label="Vissza" onBack={onBack} /> : <FrameBack history onBack={onBack}>‹</FrameBack>
+}
+test.each([
+  ['head', '/nap/kuldetesek', '/nap'],
+  ['back', '/nap/checkin', '/nap'],
+  ['head', '/fuel/gyogyszer', '/fuel/stack'],
+  ['back', '/fuel/recipes/r1/edit', '/fuel/konyha'],
+] as const)('közvetlen linkről a „csak vissza a történetben" oldal (%s, %s) vissza gombja a birtokló fülre visz: %s', async (kind, path, home) => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt(path, <HistoryPage kind={kind} />)
+  // ONE back control, the bar's
+  expect(await screen.findAllByRole('button', { name: 'Vissza' })).toHaveLength(1)
+  await user.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('loc').textContent).toBe(home)
+})
+
+test('ugyanez az oldal, ha VAN honnan jönni: oda visz vissza, nem a fülre', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/me', (
+    <Routes>
+      <Route path="/me" element={<Link to="/nap/kuldetesek">küldetések</Link>} />
+      <Route path="/nap/kuldetesek" element={<HistoryPage kind="back" />} />
+    </Routes>
+  ))
+  await user.click(await screen.findByRole('link', { name: 'küldetések' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/nap/kuldetesek')
+  await user.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/me')
 })

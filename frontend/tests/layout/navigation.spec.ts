@@ -255,3 +255,65 @@ test('the notification panel opens under the button row, inside the phone, at 32
     await expect(panel).toHaveCount(0)
   }
 })
+
+// The scrim behind the panel (fix round 1): on a SHORT page it must not add scrollable overflow
+// to the app's scroller, it covers the visible page, and a tap on it closes the panel.
+for (const route of ['/nap/gyors', '/settings/account', '/me']) {
+  test(`the notification scrim on ${route}: no extra scroll, covers the page, a tap closes`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await seed(page)
+    await page.goto(route)
+    await page.waitForLoadState('networkidle')
+    const extent = () => page.locator('.screen-content').evaluate(el => ({ h: el.scrollHeight, w: el.scrollWidth }))
+    const before = await extent()
+    await page.getByRole('button', { name: /^Értesítések/ }).click()
+    await expect(page.getByRole('dialog', { name: 'Értesítések' })).toBeVisible()
+    expect(await extent(), 'opening the panel must not grow the scroller').toEqual(before)
+    const phone = (await page.locator('.phone-screen').boundingBox())!
+    const scrim = (await page.locator('.nap-ntfscrim').boundingBox())!
+    expect(scrim.x).toBeLessThanOrEqual(phone.x)
+    expect(scrim.y).toBeLessThanOrEqual(phone.y)
+    expect(scrim.x + scrim.width).toBeGreaterThanOrEqual(phone.x + phone.width)
+    expect(scrim.y + scrim.height).toBeGreaterThanOrEqual(phone.y + phone.height)
+    // a point on the page beside the panel is the scrim; tapping it closes without navigating
+    const point = { x: phone.x + 4, y: phone.y + phone.height * 0.6 }
+    expect(await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.className, point)).toBe('nap-ntfscrim')
+    await page.mouse.click(point.x, point.y)
+    await expect(page.getByRole('dialog', { name: 'Értesítések' })).toHaveCount(0)
+    await expect(page).toHaveURL(new RegExp(`${route}$`))
+  })
+}
+
+// ── Back: where the user came from; a fixed route only for a direct link (fix round 1) ────────
+// Runs in the real browser router, where the decision reads `history.state.idx` — the branch the
+// jsdom suites (memory router) cannot reach.
+test('Vissza: a cold-loaded deep page goes to its owning tab; after in-app navigation, back where it came from', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 852 })
+  await seed(page)
+  const back = page.locator('.fo-top').getByRole('button', { name: 'Vissza' })
+
+  // 1 · cold load of a deep page: nothing to return to → the tab that owns it
+  await page.goto('/fuel/recipes')
+  expect(await page.evaluate(() => (history.state as { idx?: number } | null)?.idx)).toBe(0)
+  await back.click()
+  await expect(page).toHaveURL(/\/fuel\/konyha$/)
+
+  // 2 · a page whose own back is plain "go back in history" (it used to be a dead button here)
+  await page.goto('/nap/kuldetesek')
+  await expect(page.getByRole('button', { name: /^Vissza/ })).toHaveCount(1)
+  await back.click()
+  await expect(page).toHaveURL(/\/nap$/)
+
+  // 3 · hub → deep page → Vissza: back where it came FROM, not the page's owning tab (/nap).
+  // (A page that registers a FIXED target of its own — Receptek → Konyha, step 1 — keeps it.)
+  await page.goto('/me')
+  await page.locator('.fo-top').getByRole('button', { name: 'Minden oldal' }).click()
+  await expect(page).toHaveURL(/\/minden#me$/)
+  await page.getByRole('link', { name: /^Napi küldetések/ }).first().click()
+  await expect(page).toHaveURL(/\/nap\/kuldetesek$/)
+  expect(await page.evaluate(() => (history.state as { idx?: number } | null)?.idx)).toBe(2)
+  await back.click()
+  await expect(page).toHaveURL(/\/minden#me$/)
+  await back.click()
+  await expect(page).toHaveURL(/\/me$/)
+})

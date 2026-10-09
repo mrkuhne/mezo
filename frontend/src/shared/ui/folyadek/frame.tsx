@@ -83,10 +83,16 @@ export function useFrameBack(fn?: () => void): void {
  * (a chrome-free full-screen route, a page rendered alone) the page keeps its button exactly
  * as it was — `className`, label and glyph are the page's.
  */
-export function FrameBack({ onBack, label = 'Vissza', className, children }: {
-  onBack: () => void; label?: string; className?: string; children?: ReactNode
+export function FrameBack({ onBack, history = false, label = 'Vissza', className, children }: {
+  onBack: () => void
+  /** The handler is plain „go back in history" (`navigate(-1)`). It is then NOT handed to the
+   *  frame: the title bar's own default applies — history when there is in-app history, else
+   *  the page's fallback route — so back is never dead on a direct deep link. The handler still
+   *  drives the page's own button where no title bar is mounted. */
+  history?: boolean
+  label?: string; className?: string; children?: ReactNode
 }) {
-  useFrameBack(onBack)
+  useFrameBack(history ? undefined : onBack)
   if (useHasTitleBar()) return null
   return <button type="button" className={className} onClick={onBack} aria-label={label}>{children}</button>
 }

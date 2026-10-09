@@ -382,7 +382,7 @@ export function NapMezoPage() {
       {/* The house PageHead markup (same button, same name), worn as a small still glass pill
           (üveg, mezo-me75u.3) — PageHead itself takes no class. */}
       <div className="mz-page-head">
-        <FrameBack className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
+        <FrameBack history className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
           ‹ Ma
         </FrameBack>
       </div>

@@ -72,8 +72,13 @@ test('a sáv reggel, délben és este ugyanaz — a napszak nem öltözteti át'
 })
 
 test('a sáv háttere egyetlen áttetsző világos felület, elmosással — nem wash és fényfoltok', () => {
-  const rule = frameCss.match(/\.fo-top \{[^}]+\}/)?.[0] ?? ''
+  // the ground is a layer of exactly the bar's own box (so the bar itself stays free of
+  // backdrop-filter, which would capture the fixed notification scrim)
+  const rule = frameCss.match(/\.fo-top::before \{[^}]+\}/)?.[0] ?? ''
+  expect(rule).toContain('position: absolute; inset: 0; z-index: -1')
   expect(rule).toContain('background: color-mix(in srgb, #F8FCFD 78%, transparent)')
   expect(rule).toContain('backdrop-filter: blur(18px) saturate(1.4)')
+  expect(frameCss.match(/\.fo-top \{[^}]+\}/)?.[0] ?? '').not.toContain('backdrop-filter')
+  expect(frameCss).toContain('.fo-top > .nap-ntfscrim { position: fixed; inset: 0;')
   expect(frameCss).not.toMatch(/app-head|data-face/)
 })

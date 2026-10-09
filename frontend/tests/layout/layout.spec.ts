@@ -764,12 +764,15 @@ test('the title bar paints nothing below its own box — the page starts right u
       lowest,
       contentTop: first.getBoundingClientRect().top,
       layers: head.querySelectorAll('.app-head-bg, .nap-ntfscrim, .nap-ntfpanel').length,
-      pseudo: [getComputedStyle(head, '::before').content, getComputedStyle(head, '::after').content],
+      // the ground layer (::before) is exactly the bar's box: inset 0 on every side
+      ground: (({ top, right, bottom, left, position }) => ({ top, right, bottom, left, position }))(getComputedStyle(head, '::before')),
+      after: getComputedStyle(head, '::after').content,
     }
   })
   expect(probe.scrollTop).toBe(0)
   expect(probe.layers, 'no background or overlay layer at rest').toBe(0)
-  expect(probe.pseudo, 'the bar has no pseudo-element tail').toEqual(['none', 'none'])
+  expect(probe.ground, 'the ground layer has no tail past the bar').toEqual({ top: '0px', right: '0px', bottom: '0px', left: '0px', position: 'absolute' })
+  expect(probe.after, 'the bar has no second pseudo-element').toBe('none')
   expect(probe.lowest, `a child of the bar reaches ${probe.lowest}px, past its bottom edge ${probe.headBottom}px`).toBeLessThanOrEqual(probe.headBottom + 0.5)
   expect(probe.contentTop, 'the page starts under the bar, not behind it').toBeGreaterThanOrEqual(probe.headBottom - 0.5)
 })

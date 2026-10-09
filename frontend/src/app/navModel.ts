@@ -1,14 +1,16 @@
 // ============================================================
-// Mezo · Titanium navigation model (mezo-jkh4)
-// The owner-approved companion model: ONE domain-switch mark + the CURRENT
-// domain's four contextual tabs, with per-domain last-tab memory. This module is
-// the single source of truth for the 5×4 matrix (label → route → clay icon), the
+// Mezo · navigation model (mezo-jkh4 → Folyadék frame, mezo-n4wf5.1)
+// The owner-approved model (2026-10-09): the FIVE domains always on the bottom bar, the
+// active domain's four pages as tabs at the top, with per-domain last-tab memory. This
+// module is the single source of truth for the 5×4 matrix (label → route → icon), the
 // active-domain / active-tab derivation, and the in-session `navMemory` store —
-// consumed by the Folyadék frame (mezo-n4wf5.1): BottomBar (the five domains, always),
+// consumed by the frame: BottomBar (the five domains, always),
 // TopTabs (the active domain's four pages as pills) and TitleBar (`frameFor`: what the
 // title bar says for a path — hub or sub-page, title, context line, back fallback).
 //
-// Frozen spec: docs/superpowers/specs/2026-09-11-titanium-nav-design.md
+// The matrix itself dates from the Titanium nav spec (one switch mark + four contextual
+// tabs — that bar and its switcher dialog are retired):
+// docs/superpowers/specs/2026-09-11-titanium-nav-design.md
 // Prior art: docs/design_2.0/prototypes/companion-titanium/navigation.js
 //            (the `domains` object + `rememberRoute`; there memory keyed page
 //             INDEX, here it keys the tab's full ROUTE).
@@ -280,4 +282,17 @@ export function frameFor(pathname: string, today: Date): Frame {
     eyebrow: tab ? `${domain.name} · ${tab.label}` : domain.name,
     fallback: tab?.route ?? domain.tabs[0].route,
   }
+}
+
+/**
+ * „Vissza oda, ahonnan jöttél": is there an in-app entry to return to?
+ *
+ * The browser router keeps the entry index in `history.state.idx`: 0 means the app was opened
+ * on this entry (a deep link, or a redirect that REPLACED it) — nothing to return to, so the
+ * back button must use the frame's fallback route. A router that keeps no index (memory) tells
+ * by the location key instead, which is `'default'` only on the initial entry.
+ */
+export function canGoBack(historyState: unknown, locationKey: string): boolean {
+  const idx = (historyState as { idx?: unknown } | null | undefined)?.idx
+  return typeof idx === 'number' ? idx > 0 : locationKey !== 'default'
 }

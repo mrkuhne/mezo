@@ -19,7 +19,7 @@ export function NapGyorsPage() {
   return (
     <MozaikPage tone="coral" className="nap-gyors">
       <div className="mz-page-head">
-        <FrameBack className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
+        <FrameBack history className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
           ‹ Ma
         </FrameBack>
       </div>
