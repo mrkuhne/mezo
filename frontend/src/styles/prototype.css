@@ -18050,10 +18050,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .cer-screen.is-staged.uv-cer .cer-result { padding: 6px 16px 0; text-align: center; }
 .cer-screen.uv-cer .cer-verdict {
   margin: 18px 0 14px; font-family: var(--ff-body); font-size: 34px; font-weight: 600; letter-spacing: -1.2px; line-height: 1.1;
-  background: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 45%, #fff) 55%, var(--dv-amber));
+  background: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 62%, var(--text-primary)));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 14px color-mix(in srgb, var(--dv-amber) 35%, transparent));
 }
+/* Folyadék I3: the pale amber middle stop washed out on white; kept for the dark pockets. */
+:root[data-theme="dark"] .cer-screen.uv-cer .cer-verdict { background-image: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 45%, #fff) 55%, var(--dv-amber)); }
 .cer-screen.uv-cer .cer-card.glass {
   --c: var(--dv-amber); margin: 0; padding: 14px; border: 0; border-radius: 24px; text-align: left;
 }
@@ -20489,10 +20491,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .enh-hub .enh-wkhero .wk-ring .in { position: relative; width: auto; height: auto; background: none; box-shadow: none; gap: 2px; }
 .enh-hub .enh-wkhero .wk-ring b {
   font-family: var(--ff-display); font-size: 56px; font-weight: 300; letter-spacing: -3px; line-height: 1;
-  background: linear-gradient(180deg, var(--text-primary), #CFC6EE 60%, #FFD08A);
+  background: linear-gradient(180deg, var(--text-primary), color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary)));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 12px rgba(171, 159, 210, 0.45));
 }
+/* Folyadék I3: the pale lavender → gold tail dissolved on white; kept for the dark pockets. */
+:root[data-theme="dark"] .enh-hub .enh-wkhero .wk-ring b { background-image: linear-gradient(180deg, var(--text-primary), #CFC6EE 60%, #FFD08A); }
 .enh-hub .enh-wkhero .wk-ring b.is-learning {
   font-size: 22px; font-weight: 500; letter-spacing: -0.4px; background: none; color: var(--text-secondary); filter: none;
 }
@@ -22472,10 +22476,12 @@ button.am-stat { display: block; width: 100%; border: none; font: inherit; text-
 .wkh-page .wk-ring .in { position: relative; width: auto; height: auto; background: none; box-shadow: none; gap: 2px; }
 .wkh-page .wk-ring b {
   font-family: var(--ff-display); font-size: 56px; font-weight: 300; letter-spacing: -3px; line-height: 1;
-  background: linear-gradient(180deg, var(--text-primary), #CFC6EE 60%, #FFD08A);
+  background: linear-gradient(180deg, var(--text-primary), color-mix(in srgb, var(--dv-lav) 70%, var(--text-primary)));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 12px rgba(171, 159, 210, 0.45));
 }
+/* Folyadék I3: the pale lavender → gold tail dissolved on white; kept for the dark pockets. */
+:root[data-theme="dark"] .wkh-page .wk-ring b { background-image: linear-gradient(180deg, var(--text-primary), #CFC6EE 60%, #FFD08A); }
 .wkh-page .wk-ring b.is-learning {
   font-size: 22px; font-weight: 500; letter-spacing: -0.4px; background: none; color: var(--text-secondary); filter: none;
 }
@@ -27881,9 +27887,12 @@ main.settings-page {
 /* Előrejelzések */
 .m9e-root .m9e-hero { text-align: center; padding: 2px 16px 8px; }
 .m9e-root .m9e-acc { display: inline-block; font-size: 84px; font-weight: 300; letter-spacing: -5px; line-height: 1; font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, var(--dv-sky) 0%, color-mix(in srgb, var(--dv-sky) 28%, #fff) 45%, color-mix(in srgb, var(--dv-amber) 70%, #fff) 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--dv-sky) 80%, var(--fo-ink)) 0%, color-mix(in srgb, var(--dv-sky) 35%, var(--fo-ink)) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 6px 18px color-mix(in srgb, var(--dv-sky) 35%, transparent)); }
+/* Folyadék (mezo-n4wf5.1, final review I3): the pastel stops were tuned for graphite and vanish on
+   white — the light world wears a readable gradient; the dark pockets keep the Üveg one. */
+:root[data-theme="dark"] .m9e-root .m9e-acc { background-image: linear-gradient(135deg, var(--dv-sky) 0%, color-mix(in srgb, var(--dv-sky) 28%, #fff) 45%, color-mix(in srgb, var(--dv-amber) 70%, #fff) 100%); }
 .m9e-root .m9e-acc small { font-size: 30px; letter-spacing: -1px; }
 .m9e-root .m9e-hero > small { display: block; margin-top: 5px; font-size: 11.5px; color: var(--text-secondary); }
 .m9e-root .m9e-note { margin: 0; padding: 4px 18px 10px; font-size: 12.5px; line-height: 1.5; color: var(--text-secondary); }
@@ -28015,9 +28024,12 @@ main.settings-page {
 .fcx-core strong {
   margin-top: 1px; font-family: var(--ff-display); font-size: 36px; font-weight: 300; line-height: 1; letter-spacing: -1.6px;
   font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, #C9BDF0, #E6DDFF 45%, #E9C48A);
+  background: linear-gradient(135deg, var(--dom, var(--fo-ink)), var(--fo-ink));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+/* Folyadék (mezo-n4wf5.1, final review I3): the pastel stops were tuned for graphite and vanish on
+   white — the light world wears a readable gradient; the dark pockets keep the Üveg one. */
+:root[data-theme="dark"] .fcx-core strong { background-image: linear-gradient(135deg, #C9BDF0, #E6DDFF 45%, #E9C48A); }
 .fcx-cap { margin-top: 8px; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-muted); }
 /* the five stars, ONE row: the empty 3D star, the lit one glowing gold */
 .fcx-stars { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
@@ -28032,9 +28044,11 @@ main.settings-page {
 .fcx-result { text-align: center; }
 .fcx-verdict {
   margin: 12px 0 0; font-family: var(--ff-body); font-size: 22px; font-weight: 600; letter-spacing: -0.6px; line-height: 1.2;
-  background: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 45%, #fff) 55%, var(--dv-amber));
+  background: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 62%, var(--text-primary)));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
+/* Folyadék I3: the pale amber middle stop washed out on white; kept for the dark pockets. */
+:root[data-theme="dark"] .fcx-verdict { background-image: linear-gradient(90deg, var(--text-primary), color-mix(in srgb, var(--dv-amber) 45%, #fff) 55%, var(--dv-amber)); }
 /* four FLAT counter cells (never glass in glass) */
 .fcx-counters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .fcx-counters > span.uv-flat {
@@ -28158,10 +28172,13 @@ main.settings-page {
 .lvu-xp {
   display: block; margin-top: 6px; font-family: var(--ff-display); font-size: 92px; font-weight: 300;
   letter-spacing: -5px; line-height: 1.02; font-variant-numeric: tabular-nums;
-  background: linear-gradient(135deg, #FFE9C2 0%, #FFBE60 45%, #C9BDF0 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--dv-amber) 78%, var(--fo-ink)) 0%, color-mix(in srgb, var(--dv-amber) 40%, var(--fo-ink)) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 6px 22px rgba(255, 190, 96, 0.35));
 }
+/* Folyadék (mezo-n4wf5.1, final review I3): the pastel stops were tuned for graphite and vanish on
+   white — the light world wears a readable gradient; the dark pockets keep the Üveg one. */
+:root[data-theme="dark"] .lvu-xp { background-image: linear-gradient(135deg, #FFE9C2 0%, #FFBE60 45%, #C9BDF0 100%); }
 .lvu-xplabel { display: block; letter-spacing: 1.8px; }
 .lvu-seclabel { padding: 18px 2px 8px; text-align: left; }
 .lvu-seclabel .lvu-cnt { color: inherit; }
@@ -28969,7 +28986,11 @@ main.settings-page {
 }
 .auth-mark {
   display: block; font-family: var(--ff-display), var(--ff-body); font-size: 44px; font-weight: 700;
-  letter-spacing: -2px; line-height: 1.1;
+  letter-spacing: -2px; line-height: 1.1; color: var(--fo-ink);
+}
+/* Folyadék (mezo-n4wf5.1, final review I3): the cream → lavender → gold wordmark vanished on the
+   light ground — plain ink there; the gradient stays where the page is dark. */
+:root[data-theme="dark"] .auth-mark {
   background: linear-gradient(120deg, #F5EFE6 0%, #E6DDFF 55%, #E9C48A 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 18px rgba(171, 159, 210, 0.35));
@@ -29189,6 +29210,10 @@ main.settings-page {
 .uv-admin .ad-rail .brand { display: flex; align-items: baseline; gap: 7px; padding: 2px 8px 16px; }
 .uv-admin .ad-rail .brand strong {
   font-family: var(--ff-display); font-size: 22px; font-weight: 700; letter-spacing: -1px; line-height: 1;
+  color: var(--fo-ink);
+}
+/* Folyadék I3: plain ink on the light rail; the pastel wordmark only on a dark one. */
+:root[data-theme="dark"] .uv-admin .ad-rail .brand strong {
   background: linear-gradient(120deg, #F5EFE6, #E6DDFF 55%, #E9C48A);
   -webkit-background-clip: text; background-clip: text; color: transparent;
   filter: drop-shadow(0 0 10px rgba(171, 159, 210, 0.35));
