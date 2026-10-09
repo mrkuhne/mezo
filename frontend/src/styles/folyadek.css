@@ -10,4 +10,11 @@
 .phone-screen[data-domain="fuel"]  { --dom: #149E6E; --dom2: #8FD14F; }
 .phone-screen[data-domain="mezo"]  { --dom: #6B4FE0; --dom2: #E06BB5; }
 .phone-screen[data-domain="me"]    { --dom: #0E94B8; --dom2: #46D3B3; }
-.phone-screen { background: linear-gradient(180deg, color-mix(in srgb, var(--dom) 5%, #FBFDFE), color-mix(in srgb, var(--dom) 12%, #EAF2F6)); }
+/* The cool ground beats prototype.css's warm [data-day] tints (0,2,0) in light: this selector is
+   0,4,0. Under the dark force-claim pockets it does not apply, so
+   `:root[data-theme="dark"] .phone-screen[data-day]` (prototype.css) keeps its graphite canvas. */
+:root:not([data-theme="dark"]) .phone-screen[data-domain] {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dom) 5%, #FBFDFE), color-mix(in srgb, var(--dom) 12%, #EAF2F6));
+}
+/* the warm day-part sky bands do not belong to the Folyadék light world */
+:root:not([data-theme="dark"]) .phone-screen[data-domain] .sky { display: none; }
