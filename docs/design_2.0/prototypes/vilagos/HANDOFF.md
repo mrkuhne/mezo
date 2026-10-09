@@ -143,11 +143,12 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
   and in a sentence it takes an article ("az Alvás szerint", "a Mozgás jelezte") or the sentence turns
   to "we" ("este megnézzük", "rákérdezünk"). Never a bare field name as a person ("Alvás este megnézi").
   `msg()` drops a meta that only repeats the name. "karakter" for a team member → "terület".
-- **Open: the team's face.** Owner: the liquid sibling forms do not fit the expert sections (fine in
-  the bottom bar). Three directions on `#w-mezo-arcok`: A field glyph badge, B monogram, C colour + name
-  only. Waiting for his pick; then replace `who()`/`W()` everywhere outside the bottom bar.
+- **The team's face decided (2026-10-09): the field glyph badge.** `F.badge(k,{s,p,val,label})` in
+  `kit.js` (glyph of the field in its colour; optional level behind it, number chip, or number inside
+  when large). `who()`, and Mezo's `W/WA/forms/bigform` all use it. The liquid sibling forms remain
+  only as the five domain drops in the bottom bar. (`#w-mezo-arcok` still shows the three options.)
 - **Averages never stand alone** (owner 2026-10-09, post "Mi tolja későbbre az estédet?": the living
   page had a per-day chart, ours showed only two average vessels). `perday()` in `mezo.js` adds every
   day as a small vessel (level = value, colour = group, dashed = against). Done for the late-dinner
-  case (`G_VACS`). Still only averages: the other `chain()` comparisons in posts (döntés, kísérlet
-  result, víz sheet, mentett minta) — the pattern detail pages already have the scatter + day list.
+  case (`G_VACS`), the dinner decision, the carb experiment, the saved sweets pattern and the water
+  pattern. Rule for any new comparison: averages + the days behind them.

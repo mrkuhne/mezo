@@ -275,11 +275,23 @@ const note=t=>`<p class="fh-note">${t}</p>`;
 const txt=t=>`<p class="fh-txt">${t}</p>`;
 const empty=(icon,t,a='')=>`<div class="fh-empty">${icon?I(icon):''}${t}${a?`<div class="fh-acts" style="justify-content:center">${a}</div>`:''}</div>`;
 /* the team: sibling forms of the csepp — the form is the sender, the text is the voice */
+css(`.fh-av{position:relative;display:inline-grid;place-items:center;flex:none;width:var(--s);height:var(--s);border-radius:50%;background:color-mix(in srgb,var(--c) 10%,#fff);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--c) 34%,#fff);--ic:color-mix(in srgb,var(--c) 82%,#1B2B3A);--ic2:color-mix(in srgb,var(--c) 50%,#fff);vertical-align:middle}
+.fh-av svg.ic{position:relative;width:58%!important;height:58%!important;filter:none!important}
+.fh-av.lv{background:linear-gradient(to top,color-mix(in srgb,var(--c) 34%,#fff) 0 var(--p),color-mix(in srgb,var(--c) 62%,#fff) var(--p) calc(var(--p) + 1.5px),color-mix(in srgb,var(--c) 8%,#fff) calc(var(--p) + 1.5px))}
+.fh-av>b{position:absolute;right:-5px;bottom:-4px;min-width:20px;padding:1px 5px;border-radius:999px;background:#fff;box-shadow:0 0 0 1.5px color-mix(in srgb,var(--c) 40%,#fff),0 3px 6px -3px rgba(10,42,60,.3);font:800 10.5px var(--disp,inherit);color:#1B2B3A;text-align:center;line-height:1.5}
+.fh-av.big{grid-template-rows:auto auto auto;align-content:center;gap:0}.fh-av.big svg.ic{width:26%!important;height:auto!important;aspect-ratio:1;margin-bottom:2px}
+.fh-av.big strong{position:relative;font:800 calc(var(--s)*.25) var(--disp,inherit);letter-spacing:-.04em;color:#1B2B3A;line-height:1}.fh-av.big small{position:relative;font-size:10.5px;font-weight:700;color:#1B2B3A;opacity:.75;margin-top:2px}`);
 const TEAM={szunya:['Alvás','pihenés','#AB9FD2','pebble',62],mocor:['Mozgás','terhelés','#5B9BD5','bean',48],falat:['Étkezés','étrend','#6FB08A','drop',70],deru:['Közérzet','hangulat','#D9A94E','leaf',55],mezo:['Mezo','összkép','#8C97A8','crystal',64]};
-const who=(k,s=36)=>{const t=TEAM[k]||TEAM.mezo;return csepp('ok',t[4],{s,form:t[3],color:t[2],alive:false})};
+/* badge(k,{s,p,val,label}) — a team member's face: the field's own glyph in the field's colour (owner 2026-10-09;
+   the liquid sibling forms stay only in the bottom bar). p = optional level behind the glyph, val = small number chip,
+   label (with val, large sizes) = number and caption inside the badge. */
+const AVG={szunya:'sleep',mocor:'dumbbell',falat:'bowl',deru:'heart',mezo:'orb',szk:'lens'};
+const badge=(k,{s=36,p=null,val=null,label=null}={})=>{const c=k==='szk'?'#8494A6':(TEAM[k]||TEAM.mezo)[2],big=s>=88;
+  return `<span class="fh-av${big?' big':''}${p!=null?' lv':''}" data-fixic="1" style="--s:${s}px;--c:${c}${p!=null?`;--p:${Math.max(0,Math.min(100,p))}%`:''}"><svg class="ic jel" aria-hidden="true"><use href="#tc-${AVG[k]||'orb'}"/></svg>${big&&val!=null?`<strong>${val}</strong>${label?`<small>${label}</small>`:''}`:val!=null?`<b>${val}</b>`:''}</span>`};
+const who=(k,s=36)=>badge(k,{s});
 const msg=(k,text,meta='')=>{const t=TEAM[k]||TEAM.mezo;/* the name already says the field: drop a meta that repeats it */if(meta){const lo=t[0].toLowerCase();const parts=meta.split(' · ').filter(x=>![lo,'étel','kedv','táplálkozás'].includes(x.trim().toLowerCase())||k==='mezo');meta=parts.join(' · ')}return `<div class="fh-msg"><span class="who">${who(k)}</span><div class="b"><span class="nm">${t[0]}<small>${meta||t[1]}</small></span><p class="fh-txt" style="margin-top:2px">${text}</p></div></div>`};
 function register(d,def){FREG[d]=def;if(def.css)css(def.css)}
-window.F={I,csepp,mchp,muscleColor,css,esc,page,sec,card,head,hero,btn,lk,step,row,bar,stat,grid,facts,seg,pills,st,ring,note,txt,empty,TEAM,who,msg,chev,act,register,
+window.F={I,csepp,mchp,muscleColor,css,esc,page,sec,card,head,hero,btn,lk,step,row,bar,stat,grid,facts,seg,pills,st,ring,note,txt,empty,TEAM,who,badge,msg,chev,act,register,
   go:(...a)=>K.go(...a),toast:(...a)=>K.toast(...a),openSheet:(...a)=>K.openSheet(...a),closeSheet:(...a)=>K.closeSheet(...a),get R(){return K.R},get ARG(){return K.ARG},get D(){return K.D}};
 window.FNOTES_ELO=`<h2>Világos · élő</h2><p>Minden oldal ugyanúgy épül fel: fent a terület neve és a fülek, alatta egy színes fő kártya az állapottal és egy gombbal, aztán számozott szakaszok fehér kártyákban. Alul mindig az öt terület.</p>`;
 })();
