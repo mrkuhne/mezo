@@ -143,6 +143,16 @@ const linked=(pa,pb,{a='',b='',c='var(--liq1)',c2='var(--liq2)',s=220,va='',vb='
     <g clip-path="url(#${id}a)">${liq(16,ya)}</g><g clip-path="url(#${id}b)">${liq(142,yb)}</g>${glass(16)}${glass(142)}
     ${va?`<text x="47" y="${Math.max(ya+20,60)}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="var(--disp)">${va}</text>`:''}${vb?`<text x="173" y="${Math.max(yb+20,60)}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="var(--disp)">${vb}</text>`:''}
     <text x="47" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">${a}</text><text x="173" y="116" text-anchor="middle" font-size="10" font-weight="700" fill="var(--ink)">${b}</text></svg>`};
+/* small phones (320 px): titles clear the header buttons, long labels wrap instead of running out */
+F.css(`@media (max-width:360px){
+${Q} .fh-title h1:not(.sm){font-size:25px;letter-spacing:-.9px}
+${Q} .fh-title h1.sm{font-size:21px!important}
+${Q} .fh-hero .verdict{overflow-wrap:break-word;hyphens:auto}
+${Q} .fh-hero:has(.fh-art) .verdict{font-size:19px}
+.phone.foly .fh-foot .btn,#sheet .btn{white-space:normal;min-width:0;line-height:1.2}
+.phone.foly .fh-foot .btn{padding-inline:10px}
+${Q} .gfm button>span:not(.csepp),${Q} .gfm>span>span:not(.csepp){font-size:10px;letter-spacing:-.2px}
+}`);
 Object.assign(F,{wave,bub,tank,vial,vials,mini,level,fill,area,stream,linked,uid});
 F.css(`
 /* icons live in bubbles */

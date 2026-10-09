@@ -126,3 +126,14 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
 - Redrawn once on request: muscle, soreness, digestion, kettle, tennis, whistle. A glyph in a vial is
   drawn twice (vial colour + white clipped to the liquid). Muscle-map graphics are untouched.
 - For the build: this becomes the shared sprite; the swap layer is prototype-only scaffolding.
+
+## 2026-10-09 — reviewed by eye, and two owner notes
+
+- Every route, every arg variant (202) and every sheet (138) was looked at in screenshots at 390
+  and at 320 px. 320 fixes live in `foly.js` (`@media (max-width:360px)`): smaller page titles so
+  they clear the header buttons, hyphenated hero verdicts, wrapping labels in footers and sheets.
+- **Back = where you came from** (owner: Rólad → Tények → back landed on Tudástár). The header back
+  button now pops the history; its `back:` route is only the fallback for a direct link. Build rule:
+  back never jumps to a "parent" the user did not come through.
+- **Open: the team names** (Szunya, Mocor, Falat, Derű, Mezo) read childish to the owner — he wants
+  something professional with broad appeal. Options were put to him; nothing renamed yet.

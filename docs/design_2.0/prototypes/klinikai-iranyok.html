@@ -1898,6 +1898,8 @@ document.addEventListener('click',e=>{
   if(e.target.id==='scrim'||e.target.closest('[data-close]')){closeSheet();return}
   const sh=e.target.closest('[data-sheet]');if(sh){e.preventDefault();const reg=(V==='elo'||V==='feher'||V==='foly')?(window.FREG||{})[D]:REG[D];const f=reg&&reg.sheets&&reg.sheets[sh.dataset.sheet];if(f)openSheet(f(sh.dataset.arg||''));else toast(sh.dataset.sheet);return}
   const bk=e.target.closest('[data-back]');if(bk){e.preventDefault();goBack();return}
+  /* the header back button returns to where the user came from; its data-go is only the fallback for a direct link */
+  const fb=e.target.closest('.fh-back');if(fb&&HIST.length){e.preventDefault();closeSheet();goBack();return}
   const g=e.target.closest('[data-go]');if(g){e.preventDefault();closeSheet();go(g.dataset.go);return}
   const t=e.target.closest('[data-toast]');if(t){e.preventDefault();toast(t.dataset.toast)}
 });
