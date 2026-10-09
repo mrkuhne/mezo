@@ -16,7 +16,7 @@ memory of that journey. Read it before touching the prototype, the spec or the s
 - **URL scheme:** `#w-<domain>-<route>[.<arg>]` = Folyadék · `#j-…` = the living prototype
   (`elo/<domain>.html`) in the same frame. Domains: `nap edzes fuel mezo en`.
   Serve: `python3 -m http.server 8731 --bind 127.0.0.1` in `docs/design_2.0/prototypes/`.
-- **Tracker:** programme epic `mezo-n4wf5` (children `.1`–`.9` = slices C1–C9, none started).
+- **Tracker:** programme epic `mezo-n4wf5` (children `.1`–`.9` = slices F1–F9, none started).
   Direction issue `mezo-juo1e` is closed.
 - **Verification scripts** (scratchpad, session-local; recreate if gone): a Playwright sweep
   over every route of all five domains at 390 and 320 px (322 loads; console/page errors,
@@ -24,15 +24,15 @@ memory of that journey. Read it before touching the prototype, the spec or the s
   `frontend/node_modules/@playwright/test/index.mjs` (ESM ignores `NODE_PATH`), reload per
   route. Last run: 0 problems.
 
-## STALE — must be rewritten before the build programme starts
+## Build programme (written 2026-10-09)
 
-- `docs/superpowers/specs/2026-10-07-csepp-irany-design.md` and
-  `.claude/skills/cseppesites/SKILL.md` describe the **rejected** "clinical csepp" direction
-  (dark graphite, steel icons, open lists). They are wrong now. The owner said: no skill
-  until the prototype is settled. When he says go: rewrite both for Folyadék (light only,
-  the page skeleton, the liquid language, per-page graphics), then start C1.
-- `CLAUDE.md` §Design direction still says Üveg. Update it with the spec.
-- `csepp/*.js` and `tiszta/*.html` are earlier rounds, kept only as content/parity sources.
+The owner closed the prototype phase ("a mostani design nagyon tetszik … így kell kinéznie").
+Spec: `docs/superpowers/specs/2026-10-09-folyadek-irany-design.md` · style bible:
+`docs/design_2.0/2026-10-09-folyadek-style-bible.md` · driver skill `/folyadek`
+(`.claude/skills/folyadek/SKILL.md`) · slices F1–F9 on epic `mezo-n4wf5` (label `epic:folyadek`).
+`CLAUDE.md` §Design direction now says Folyadék. `csepp/*.js` and `tiszta/*.html` are earlier
+rounds, kept only as content/parity sources. In "Approved decisions" below, 6 and 8 were later
+superseded — the dated sections at the end of this file are authoritative.
 
 ## The journey (what was rejected and why — do not drift back)
 

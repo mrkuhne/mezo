@@ -87,38 +87,38 @@ result:**
 
 ## Design direction (MANDATORY for any UI design/mockup work)
 
-> **Direction change, 2026-09-23 (owner decision, epic `mezo-me75u`, closed; its driver is archived in `docs/archive/skills/`):**
-> the restored Mozaik/Clay world read flat to the owner. The living direction is now **"Üveg"**:
-> the **Mozaik colors** (`--dv-*`, `--macro-*`) on the app's **warm-graphite dark** ground,
-> wearing the **Titanium material**: the 3D icon sprite, glass cards with a colored gradient
-> frame, the periodic light sweep and a soft color glow. **Dark only**; light mode is parked,
-> not deleted. **The app chrome keeps its content and wears glass:** the header (the "boop"
-> wordmark, ?, settings, messages, notifications, the filling day orb; no day-part switcher) and
-> the fixed bottom menu (living Boop + domain switcher, nav tabs). See bible §7.
+> **Direction change, 2026-10-09 (owner decision, epic `mezo-n4wf5`, driver skill `/folyadek`):**
+> the Üveg world (warm dark glass, 3D icons, Boop creatures) read playful and niche to the owner.
+> The living direction is **"Folyadék"**: **light only**, a structure-first page skeleton, and
+> one idea for the look — **everything is a level that fills**. The app is **mixed-look while
+> the programme runs**: surfaces not yet converted still wear Üveg; that is not a licence to
+> add more of it.
 
-Every UI design, mockup, and prototype MUST follow the **Üveg** language. Canon, in order:
+Every UI design, mockup and prototype MUST follow the **Folyadék** language. Canon, in order:
 
-1. **[`docs/design_2.0/2026-09-23-uveg-style-bible.md`](docs/design_2.0/2026-09-23-uveg-style-bible.md)**
-   is the styling reference: ground, palette, the `.glass` recipe, icons, data graphics, motion,
-   what stays untouched, and the slice-lesson appendix.
-2. **[`docs/design_2.0/prototypes/fuel-uveg.html`](docs/design_2.0/prototypes/fuel-uveg.html)**
-   (Sötét) is the owner-approved look in executable form.
-3. **[`docs/design_2.0/2026-09-17-restored-world-style-bible.md`](docs/design_2.0/2026-09-17-restored-world-style-bible.md)**
-   stays canon for everything the üveg bible does not override: card anatomy, **§3.4 ranking**
-   (not everything is glass), data graphics, and the Appendix A–E traps.
-4. The **ceremony pattern** (`docs/design_2.0/2026-09-15-ceremony-pattern.md`): the *pattern*
-   is canon, and its material is glass with a gold glow.
+1. **[`docs/design_2.0/2026-10-09-folyadek-style-bible.md`](docs/design_2.0/2026-10-09-folyadek-style-bible.md)**
+   — the styling reference: skeleton, tokens, liquid primitives, icons, the team, copy rules,
+   traps, slice lessons.
+2. **The Folyadék prototype** — the owner-approved look in executable form:
+   [`docs/design_2.0/prototypes/klinikai-iranyok.html`](docs/design_2.0/prototypes/klinikai-iranyok.html)
+   + `prototypes/vilagos/*.js`; state and journey in `prototypes/vilagos/HANDOFF.md`.
+3. The üveg and restored-world bibles only for structural traps that survive a re-skin (scroll
+   locks, sheet portals, sprite hiding) and the **ceremony pattern**
+   (`docs/design_2.0/2026-09-15-ceremony-pattern.md`); their materials are superseded.
 
-That means: glass cards (one accent per card via `--c`), frameless radial halos for heroes,
-big numerals, rings and bars with an accent glow, **Titanium 3D sprite icons** (NEVER emojis),
-a blurred color aurora behind the content, and one-shot rAF-driven choreography with a
-reduced-motion branch. Do NOT use cold Titanium graphite or neon nav accents, and do NOT put
-glass inside glass. In-app work reuses the shared `mozaik`/`clay` UI kit
-(`frontend/src/shared/ui/mozaik`, `frontend/src/shared/ui/clay`), extended in slice U1, rather
-than inventing a look.
+That means: every screen is title bar → the domain's pages as top tabs → one hero (a vessel
+with a verdict sentence and one primary button on a waving liquid row) → 3–5 numbered white
+card sections → deeper things behind rows; the bottom bar is always the five domains. Numbers
+are levels (tank, vials, capsules, filled silhouettes), time series are liquid surfaces with a
+target waterline, relations are communicating vessels, and a comparison always shows the days
+behind its averages. Icons are the **Folyadék-jel** family (outlined glyph half-filled with the
+domain liquid; NEVER emojis, never the old 3D sprite on a converted surface). The team is named
+by field (Alvás, Mozgás, Étkezés, Közérzet, Mezo) and shown as glyph badges; no Boop, no
+nicknames. Do NOT use progress rings (a circle is a real clock only), dark surfaces, glass
+cards, or a second recipe for something the kit has. In-app work reuses the shared kit built in
+slice F1 (`frontend/src/shared/ui/folyadek`); until a surface is converted it keeps the
+`mozaik`/`clay` kit it has.
 
-The programme `mezo-me75u` is **complete (2026-09-27, U1–U11)**: every surface wears Üveg. New UI work
-follows the üveg bible + the kit; the canon order is in [`docs/design_2.0/README.md`](docs/design_2.0/README.md).
 Any new screen still gets a clickable prototype and the owner's OK before code.
 
 ## Frontend change workflow (MANDATORY for every change the owner will see)
@@ -162,6 +162,15 @@ doubt, prototype.
   questions. Then **stop and wait**.
 
 ### Living prototypes — one per domain, never rebuilt from zero
+
+> **During the Folyadék programme (2026-10-09 →):** the living prototype of **every** domain is
+> the Folyadék prototype — `docs/design_2.0/prototypes/klinikai-iranyok.html` +
+> `vilagos/<domain>.js`, one fixed Artifact for all five domains
+> (https://claude.ai/artifact/Ax6faqjyEd6Xxw2J7MN45M, routes `#w-<domain>-<route>`). A frontend
+> change edits **that** domain file. The `elo/<domain>.html` files below are frozen snapshots of
+> the Üveg look: parity sources for what a screen must do, retired in slice F9. A change to a
+> surface that is not converted yet still updates the Folyadék prototype (the build target),
+> and ships in the look the surface currently has.
 
 Each bottom-menu domain has **one living prototype** that always shows that domain as it is
 now (all four tabs, their sheets), in the approved Üveg look:

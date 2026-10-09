@@ -62,7 +62,7 @@ For a decision, give **A helyzet** (context), **A gond** (user-visible consequen
 
 ## Visible frontend work and design
 
-The owner-approved UI direction is **Üveg**: Mozaik colors on a warm, dark graphite ground with Titanium glass material and custom 3D sprite icons. Follow [`docs/design_2.0/README.md`](docs/design_2.0/README.md) and its canonical style references; reuse the shared UI kit. New screens need a clickable prototype and the owner's approval before implementation.
+The owner-approved UI direction is **Folyadék** (2026-10-09; replaces Üveg, which unconverted surfaces still wear while epic `mezo-n4wf5` runs): light only, a structure-first page skeleton, everything is a level that fills, an own outlined icon family, the bottom bar always the five domains. Follow [`docs/design_2.0/2026-10-09-folyadek-style-bible.md`](docs/design_2.0/2026-10-09-folyadek-style-bible.md) and the prototype `docs/design_2.0/prototypes/klinikai-iranyok.html`; reuse the shared UI kit. New screens need a clickable prototype and the owner's approval before implementation.
 
 For any frontend change the owner will see, use the repo's `owner-visible-frontend` skill in `.agents/skills/` alongside the relevant process and frontend skills. The owner's sequence is: **design/spec approval → clickable prototype approval → implementation-plan approval → build, local gates, merge, push, deploy, live verification, report**. A small change may combine the spec and plan approval; an invisible bug fix may skip the prototype. After the final approval, carry the work through shipping without another visual review. Ask again only when a blocker changes what the owner will see. The skill owns the living-prototype and evidence-based acceptance details.
 
