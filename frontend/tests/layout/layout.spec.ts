@@ -191,60 +191,69 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
   if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
 })
 
-test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)', async ({ page }) => {
-  // Spec §5 (docs/superpowers/specs/2026-09-03-header-aurora-design.md) ígérte ezt a
-  // regressziós tesztet: a shell-fejléc (`.app-head`) kitapad a görgetőport (`.screen-content`)
-  // tetejéhez és a küszöb (14px) fölött kompakt magasságra (--mzh-head-cond-h: 46px) húzódik;
-  // a lap saját sticky chrome-ja (`.sticky-top`) ehhez képest tapad ki, sosem csúszhat a
-  // fejléc alá; a fejléc nélküli oldalakon (AppLayout.tsx hideChrome) viszont nincs mi alá
-  // tapadni, ott a `.sticky-top`-nak a görgetőport tetejéhez KELL tapadnia (top ≈ 0), nem
-  // 46px-cel lejjebb.
-  // /fuel (not /nap): the Nap hub's panel exactly fills a 393×852 viewport with no
-  // overflow, so `.screen-content` cannot be scrolled there — /fuel's longer hub
-  // reliably overflows, which the condensed-header transition needs to trigger.
+// Was: „header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)". The condensed
+// mode is gone with the old header; the title bar (Folyadék frame, mezo-n4wf5.1) pins as ONE
+// block of constant height, and the page's own sticky chrome pins below it by the height the
+// bar itself publishes (`--fo-top-h`). The chrome-free half of the old test is unchanged.
+test('címsor · kitapad, a magassága nem függ a görgetéstől, és a lap-chrome alá tapad', async ({ page }) => {
+  // /fuel (not /nap): the Nap hub's panel can exactly fill the viewport with no overflow, so
+  // `.screen-content` cannot be scrolled there — /fuel's longer hub reliably overflows.
   await page.setViewportSize({ width: 393, height: 852 })
   await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
   await page.goto('/fuel')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
 
-  await page.evaluate(() => {
+  const measure = () => page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
-    sc.scrollTop = 40
-    sc.dispatchEvent(new Event('scroll'))
-  })
-
-  await expect(page.locator('.app-head')).toHaveClass(/is-cond/)
-  // Let the 250ms padding/margin transition (prototype.css `--duration-normal`) settle
-  // before measuring — mid-transition the rect height is neither the expanded nor the
-  // condensed value.
-  await page.waitForTimeout(350)
-
-  const withHead = await page.evaluate(() => {
-    const sc = document.querySelector('.screen-content') as HTMLElement
-    const head = document.querySelector('.app-head') as HTMLElement
+    const head = document.querySelector('.fo-top') as HTMLElement
     const sticky = document.querySelector('.sticky-top') as HTMLElement | null
     const scRect = sc.getBoundingClientRect()
     const headRect = head.getBoundingClientRect()
     return {
       headTop: Math.round(headRect.top - scRect.top),
       headHeight: Math.round(headRect.height),
-      stickyTopBelowHead: sticky
-        ? Math.round(sticky.getBoundingClientRect().top - headRect.bottom)
-        : null,
+      published: sc.style.getPropertyValue('--fo-top-h'),
+      cls: head.className,
+      stickyTopBelowHead: sticky ? Math.round(sticky.getBoundingClientRect().top - headRect.bottom) : null,
     }
   })
-  expect(withHead.headTop, 'a kompakt fejléc a görgetőport tetejéhez tapad').toBe(0)
-  expect(withHead.headHeight, 'a kompakt fejléc magassága a --mzh-head-cond-h token (46px)').toBe(46)
-  if (withHead.stickyTopBelowHead !== null) {
-    expect(
-      withHead.stickyTopBelowHead,
-      'a lap .sticky-top-ja nem csúszhat a fejléc alá'
-    ).toBeGreaterThanOrEqual(0)
+  const atRest = await measure()
+  expect(atRest.headTop, 'a címsor a görgetőport tetején áll').toBe(0)
+  expect(atRest.published, 'a címsor közli a saját magasságát').toBe(`${atRest.headHeight}px`)
+
+  await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    sc.style.scrollBehavior = 'auto'
+    sc.scrollTop = 240
+    sc.dispatchEvent(new Event('scroll'))
+  })
+  await page.waitForTimeout(350)
+  const scrolled = await measure()
+  expect(await page.evaluate(() => (document.querySelector('.screen-content') as HTMLElement).scrollTop)).toBeGreaterThan(40)
+  expect(scrolled.headTop, 'a címsor görgetés után is a görgetőport tetejéhez tapad').toBe(0)
+  expect(scrolled.headHeight, 'a címsor nem húzódik össze görgetésre').toBe(atRest.headHeight)
+  expect(scrolled.cls, 'a címsor nem vált állapotot görgetésre').toBe(atRest.cls)
+  if (scrolled.stickyTopBelowHead !== null) {
+    expect(scrolled.stickyTopBelowHead, 'a lap .sticky-top-ja nem csúszhat a címsor alá').toBeGreaterThanOrEqual(0)
   }
 
-  // Chrome nélküli oldal: nincs .app-head, a .sticky-top a görgetőport tetejéhez tapad,
-  // NEM 46px-cel lejjebb (az 1. finding regressziója: üres sáv a lap tetején).
+  // Aloldal: a sáv alacsonyabb (vissza · cím · csengő), és ugyanúgy kitapad.
+  await page.goto('/fuel/recipes')
+  await page.waitForLoadState('networkidle')
+  await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    sc.style.scrollBehavior = 'auto'
+    sc.scrollTop = 240
+  })
+  await page.waitForTimeout(200)
+  const sub = await measure()
+  expect(sub.headTop).toBe(0)
+  expect(sub.headHeight).toBeLessThan(atRest.headHeight)
+  expect(sub.published).toBe(`${sub.headHeight}px`)
+
+  // Chrome nélküli oldal: nincs címsor, a lap tapadó chrome-ja a görgetőport tetejéhez tapad,
+  // NEM a címsor magasságával lejjebb (üres sáv a lap tetején).
   await page.goto('/train/session')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
@@ -256,13 +265,15 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
     // elfogadjuk, de a NULL-t nem: az üres találat vakon zöld tesztet jelentene.
     const sticky = sc.querySelector('.sticky-top, .wk-top') as HTMLElement | null
     return {
-      hasHead: !!document.querySelector('.app-head'),
+      hasHead: !!document.querySelector('.fo-top'),
+      published: sc.style.getPropertyValue('--fo-top-h'),
       stickyTop: sticky
         ? Math.round(sticky.getBoundingClientRect().top - sc.getBoundingClientRect().top)
         : null,
     }
   })
-  expect(chromeFree.hasHead, '/train/session nem renderel shell-fejlécet').toBe(false)
+  expect(chromeFree.hasHead, '/train/session nem renderel címsort').toBe(false)
+  expect(chromeFree.published, 'címsor nélkül nincs közölt magasság').toBe('')
   expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja létezik (.sticky-top vagy .wk-top)').not.toBeNull()
   expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja tapad, üres sáv nélkül').toBe(0)
 })
@@ -340,12 +351,12 @@ for (const [path, lastSelector] of FUEL_DEPTH) {
 
     const last = page.locator(lastSelector).last()
     await last.scrollIntoViewIfNeeded()
-    // Üveg (mezo-me75u.1): the bottom menu FLOATS now (a glass bar 12px off the edge), so a card
+    // Folyadék frame (mezo-n4wf5.1): the bottom bar FLOATS (a capsule 10px off the edge), so a card
     // can be "in the scroller's viewport" yet under the bar — `scrollIntoViewIfNeeded` then does
     // nothing. Reachability means: the scroller can lift the card's bottom above the bar.
     await last.evaluate(element => {
       const scroller = document.querySelector('.screen-content') as HTMLElement
-      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      const tabbar = document.querySelector('.fo-nav')?.getBoundingClientRect()
       if (!tabbar) return
       const overlap = element.getBoundingClientRect().bottom - tabbar.top
       scroller.style.scrollBehavior = 'auto'
@@ -354,7 +365,7 @@ for (const [path, lastSelector] of FUEL_DEPTH) {
     await expect(last).toBeVisible()
     const reachable = await last.evaluate(element => {
       const scroller = document.querySelector('.screen-content')!.getBoundingClientRect()
-      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      const tabbar = document.querySelector('.fo-nav')?.getBoundingClientRect()
       const card = element.getBoundingClientRect()
       const visibleBottom = Math.min(scroller.bottom, tabbar?.top ?? scroller.bottom)
       return { top: card.top, bottom: card.bottom, viewportTop: scroller.top, visibleBottom }
@@ -412,7 +423,7 @@ test('Cél suggestion primary decision stays clear of the shell tabbar', async (
   await apply.scrollIntoViewIfNeeded()
   const spacing = await page.evaluate(() => {
     const cta = document.querySelector('.gs-apply')!.getBoundingClientRect()
-    const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+    const tabbar = document.querySelector('.fo-nav')!.getBoundingClientRect()
     return { ctaBottom: cta.bottom, tabbarTop: tabbar.top }
   })
   expect(spacing.ctaBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
@@ -652,7 +663,7 @@ for (const [name, path] of NAPOM_ROUTES) {
     await lastRow.scrollIntoViewIfNeeded()
     await lastRow.evaluate(element => {
       const scroller = document.querySelector('.screen-content') as HTMLElement
-      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      const tabbar = document.querySelector('.fo-nav')?.getBoundingClientRect()
       if (!tabbar) return
       const overlap = element.getBoundingClientRect().bottom - tabbar.top
       scroller.style.scrollBehavior = 'auto'
@@ -663,7 +674,7 @@ for (const [name, path] of NAPOM_ROUTES) {
       const rows = document.querySelectorAll('.napom-drow, .napom-sec')
       const last = rows[rows.length - 1] as HTMLElement
       const row = last.getBoundingClientRect()
-      const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+      const tabbar = document.querySelector('.fo-nav')!.getBoundingClientRect()
       return { rowBottom: row.bottom, tabbarTop: tabbar.top }
     })
     expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
@@ -722,54 +733,45 @@ test('Check-in 2.0 · the page cells and the sheet stay contained @ 320px', asyn
   expect(await fits()).toBe(true)
 })
 
-// ── Shell header tail (mezo-rqa9s): the dark chrome made `.app-head-bg` an OPAQUE canvas
-// slab and dropped the fade mask (mezo-x4r3c), but kept the light-mode 18px fade tail
-// (`height: calc(100% + 18px)`). Unmasked and opaque, the tail is a solid bar that
-// overpaints the first ~11px of every page's content at rest. Light mode keeps its tail —
-// there it fades to transparent by design — so the invariant is dark-only: the opaque
-// background ends where the header does, above where content begins.
-test('the dark shell header background does not overpaint the page top at rest', async ({ page }) => {
+// ── Title bar ground (was: „the dark shell header background does not overpaint the page top at
+// rest", mezo-rqa9s). The old header carried a separate background layer with a fade tail that
+// could overpaint the first rows of a page. The title bar (Folyadék frame, mezo-n4wf5.1) has no
+// such layer: its ground is the bar's own box, so the invariant is structural — nothing of the
+// bar reaches below its own bottom edge at rest, and the page's first block starts under it.
+test('the title bar paints nothing below its own box — the page starts right under it', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
   await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
-  await page.addInitScript(() => localStorage.setItem('mezo-theme', 'dark'))
   // Same seed as the A napom specs above: mark yesterday's review seen so the live page
-  // renders (not morning mode) — its week strip sits directly under the header, which is
-  // exactly where the tail bit (user report, 2026-09-25).
+  // renders (not morning mode) — its week strip sits directly under the bar, which is
+  // exactly where the old tail bit (user report, 2026-09-25).
   await page.addInitScript(() => { localStorage.setItem('napom.seen.2026-05-20', '1') })
   await page.goto('/nap/napom')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  // Folyadék light lock: a stored or forced dark never reaches the document on a chrome route.
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme', 'dark')
 
   const probe = await page.evaluate(() => {
     const scroller = document.querySelector('.screen-content') as HTMLElement
-    const head = document.querySelector('.app-head') as HTMLElement
-    const bg = head.querySelector('.app-head-bg') as HTMLElement
+    const head = document.querySelector('.fo-top') as HTMLElement
     const first = head.nextElementSibling as HTMLElement
-    const cs = getComputedStyle(bg)
+    const headBox = head.getBoundingClientRect()
+    // every painted descendant of the bar (the open-only notification layers are not mounted at rest)
+    const lowest = Math.max(...[head, ...head.querySelectorAll('*')].map((el) => el.getBoundingClientRect().bottom))
     return {
       scrollTop: scroller.scrollTop,
-      bgBottom: bg.getBoundingClientRect().bottom,
+      headBottom: headBox.bottom,
+      lowest,
       contentTop: first.getBoundingClientRect().top,
-      fill: cs.backgroundColor,
-      image: cs.backgroundImage,
-      mask: cs.maskImage || cs.getPropertyValue('-webkit-mask-image'),
+      layers: head.querySelectorAll('.app-head-bg, .nap-ntfscrim, .nap-ntfpanel').length,
+      pseudo: [getComputedStyle(head, '::before').content, getComputedStyle(head, '::after').content],
     }
   })
   expect(probe.scrollTop).toBe(0)
-  // mezo-r3s4j (owner, 2026-09-26) made the dark header SEE-THROUGH: at rest `.app-head-bg` paints
-  // no fill at all (a clear frosted veil) and its foot fades out over 18px, so a tail reaching
-  // past the header no longer paints ON the content. The invariant is therefore: either the
-  // layer ends above the content, or at rest it is fully clear and masked out at its foot.
-  const clearAtRest = /rgba\(0, 0, 0, 0\)|transparent/.test(probe.fill) && probe.image === 'none'
-    && /gradient/.test(probe.mask)
-  if (!clearAtRest) {
-    expect(
-      probe.bgBottom,
-      `the opaque header background ends at ${probe.bgBottom}px but content starts at ${probe.contentTop}px — the tail overpaints the page top`,
-    ).toBeLessThanOrEqual(probe.contentTop)
-  }
-  expect(clearAtRest || probe.bgBottom <= probe.contentTop).toBe(true)
+  expect(probe.layers, 'no background or overlay layer at rest').toBe(0)
+  expect(probe.pseudo, 'the bar has no pseudo-element tail').toEqual(['none', 'none'])
+  expect(probe.lowest, `a child of the bar reaches ${probe.lowest}px, past its bottom edge ${probe.headBottom}px`).toBeLessThanOrEqual(probe.headBottom + 0.5)
+  expect(probe.contentTop, 'the page starts under the bar, not behind it').toBeGreaterThanOrEqual(probe.headBottom - 0.5)
 })
 
 // ── Check-in 2.0 · „Mai állapot" on Edzés · Mai (mezo-ck2), at 320px ────────────────────────────
@@ -934,7 +936,7 @@ test('Nap Rutin · the „Rutinok szerkesztése" entry clears the tab bar @ 320p
   await expect(entry).toBeVisible()
   const spacing = await page.evaluate(() => {
     const row = Array.from(document.querySelectorAll('a')).find(a => /Rutinok szerkesztése/.test(a.textContent ?? ''))!.getBoundingClientRect()
-    const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+    const tabbar = document.querySelector('.fo-nav')!.getBoundingClientRect()
     return { rowBottom: row.bottom, tabbarTop: tabbar.top }
   })
   expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
@@ -942,7 +944,7 @@ test('Nap Rutin · the „Rutinok szerkesztése" entry clears the tab bar @ 320p
   // ...and it is not covered by the floating + button either (boxes must not intersect)
   const boxes = await page.evaluate(() => {
     const row = Array.from(document.querySelectorAll('a')).find(a => /Rutinok szerkesztése/.test(a.textContent ?? ''))!.getBoundingClientRect()
-    const fab = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+    const fab = document.querySelector('.fo-fab')?.getBoundingClientRect()
     return { row: { top: row.top, bottom: row.bottom, left: row.left, right: row.right },
       fab: fab ? { top: fab.top, bottom: fab.bottom, left: fab.left, right: fab.right } : null }
   })
@@ -953,5 +955,8 @@ test('Nap Rutin · the „Rutinok szerkesztése" entry clears the tab bar @ 320p
 
   await entry.click()
   await expect(page).toHaveURL(/\/nap\/rutin\/epites$/)
-  await expect(page.locator('.tab-bar').getByRole('link', { name: /Rutin/ })).toHaveAttribute('aria-current', 'page')
+  // The builder is a sub-page of Rutin (Folyadék frame, mezo-n4wf5.1): no tab strip there — the
+  // title bar's context line names the owning tab, and the Nap drop stays lit on the bottom bar.
+  await expect(page.locator('.fo-top .fo-title small')).toHaveText('Nap · Rutin')
+  await expect(page.locator('.fo-nav').getByRole('link', { name: 'Nap' })).toHaveAttribute('aria-current', 'true')
 })
