@@ -192,3 +192,22 @@ Awaiting the owner's OK; nothing below is decided until he answers.
   értesítések · beállítások · day orb), then the title with the kalauz "?" after it. At ≤360 px the
   buttons take their own line above the context line. The Nap drop is an ordinary drop again.
 - **The quick-log button floats**, as today ("lebegő marad, tetszik").
+
+## 2026-10-09 — F1 built: deviations from the prototype
+
+Slice F1 (`mezo-n4wf5.1`: foundation, frame, kit) is built on `feat/folyadek-alap`. The app matches the
+prototype except for these, all small and known:
+
+- **The kit `Drop` has a soft coloured glow** instead of the prototype's dark `0 8px 14px` shadow (the
+  prototype's black shadow was tuned for the dark world; the light layer's shell and liquid values are ported).
+- **The day orb shows the level only.** The old orb's tone (day score, pale to saturated) is gone; the
+  prototype's orb is the shared drop in Nap blue. `useDayOrbFill().intensity` is still computed but nothing draws it.
+- **The splash's active drop does not breathe**, while the real bottom bar's active drop does (`alive`),
+  so in motion mode the hand-off differs by about 1 px; under reduced motion the boxes match within 2 px (tested).
+- **Unconverted pages show their own heading under the frame title**, so some titles appear twice, and an
+  un-indexed parameter page is titled by its tab label until its slice (F2–F7). Their old layouts, rings
+  and Boop mascots remain by design.
+- **Two glyphs were added after the owner's review:** `tea` and `nohunger` (drawn by the controller; the
+  owner has not seen them on the icon sheet `#w-nap-ikonok`). The sprite has 149 glyphs.
+- Also noted: sub-pages have no settings / messages / day-orb / map buttons (back · title · "?" · bell, as
+  approved), and the title bar's back is a bare `‹`, it no longer names its destination.

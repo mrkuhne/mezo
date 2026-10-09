@@ -2,7 +2,7 @@
 title: RAG memory explorer — owner console part 2
 type: feature-domain
 status: done
-updated: 2026-09-28
+updated: 2026-10-09
 tags: [admin, companion, memory, rag, pgvector, knowledge-graph, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin-memory/admin-memory.yml
@@ -354,6 +354,8 @@ erroring).
 scripts/gen-codemap.mjs --check`, `pnpm build`.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **`ScoreBreakdownEnvelope.rerankerScore` is `1 / postRerankRank`, not a model score** —
   `MemoryRetrievalAuditWriter` writes it from the already-reranked list's position, so it restates

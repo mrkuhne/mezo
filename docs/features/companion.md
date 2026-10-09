@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-10-07
+updated: 2026-10-09
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1912,7 +1912,7 @@ The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.
 companion surface since V0.4, dual-mode:
 
 - **One header, not two (`mezo-oq8z`)** — `/mezo/chat` suppresses the generic shell
-  `AppHeader` and keeps the page's orb-led conversation header as the only top bar. Its
+  `TitleBar` (`AppHeader` before Folyadék F1) and keeps the page's orb-led conversation header as the only top bar. Its
   back/thread-picker/new/actions controls remain available and the row sticks at `top: 0`;
   the tab bar remains visible and only the quick-log FAB stays suppressed as before.
 - **Real mode** (default `pnpm dev`, backend on :8090): the page bootstraps the **selected

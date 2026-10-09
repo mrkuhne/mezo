@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-10-06
+updated: 2026-10-09
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -79,11 +79,11 @@ The registry points persistent preferences to the central `/settings` menu. Trai
   the guide opens itself ~600 ms after the route settles (0 ms under `prefers-reduced-motion`),
   once per app session per guide (a session-guard survives the delayed timer even if the user
   navigates away before it fires).
-- **The header "?"** (`.nap-roundbtn.nap-q`, `AppHeader.tsx`) — renders **only** when the current
-  route has a registry entry (honest state: no dead button on guide-less pages), always first in
-  the button row. The header has **no daypart switch** any more (üveg bible §7.1). Opens the current route's guide
-  on tap; carries `.is-open` while its sheet is open and `.nap-offnow` when it is a `T3` guide not
-  yet seen.
+- **The title bar "?"** (`.fo-help` in `TitleBar.tsx`; the `AppHeader` button of the same name before
+  Folyadék F1, `mezo-n4wf5.1`) — renders **only** when the current route has a registry entry (honest
+  state: no dead button on guide-less pages), right after the page title on a hub and after the title on a
+  sub-page. Opens the current route's guide on tap; carries `.is-open` while its sheet is open and a liquid
+  dot when it is a `T3` guide not yet seen.
 - **The sheet** (`KalauzSheet`) — up to five cards, one question type each (`Mi ez?` / `Mire jó?` /
   `Hogyan használjuk?` / `Mikor nézzük?` / `Mivel függ össze?`), a step dot-row, Vissza/Tovább
   navigation, and on the last card a `"Kihagyom"` link and `"Értem, kezdjük"` CTA. A `hogyan` card
@@ -112,9 +112,10 @@ The registry points persistent preferences to the central `/settings` menu. Trai
 - **`WELCOME`** (`frontend/src/features/tutorial/registry/welcome.ts`) — `WELCOME_ID = 'welcome'`,
   `WELCOME_VERSION = 1`, four steps: `napszak` (the day's three stages — reggel indítunk, napközben
   logolunk és edzünk, este lezárjuk — shown as three glass tiles with 3D icons under the living
-  Mezo Boop), `tabbar` (today's bottom menu: the living Boop bottom-left opens the domain switcher,
-  beside it the domain's four tabs; the demo shows the five domains as living Boops and each one's
-  sentence lists its four `navModel` tabs), `log` (the real quick-log tile grid + "Mondd el
+  Mezo Boop), `tabbar` (today's menu, reworded in Folyadék F1: the **five domains always sit at the bottom**, the
+  active domain's **four pages are at the top** — „Lent az **öt terület** között váltasz, fent a terület négy oldala van"; there
+  is no domain switcher. The demo still draws the five domains as living Boops until a later slice re-dresses it, and each
+  one's sentence lists its four `navModel` tabs), `log` (the real quick-log tile grid + "Mondd el
   Mezónak" row behind the `+`), `sugo` (a pointer to the header "?"). The U10 copy rewrite kept
   `WELCOME_VERSION` at 1 on purpose, so the welcome does not re-open for anyone who has seen it.
   The Mai page does **not** re-arrange itself by daypart (only the evening Napzárás card appears in
@@ -210,9 +211,11 @@ Gated by the switch `mezo.feature.tutorial.enabled`
 
 ## 5. Integrations
 
-- **`AppHeader`** (`frontend/src/app/AppHeader.tsx`) — reads `useTutorial().current`/`.openId`/
+- **`TitleBar`** (`frontend/src/app/TitleBar.tsx`, formerly `AppHeader`) — reads `useTutorial().current`/`.openId`/
   `.isUnseen()` to render the "?" button (only when a guide exists for the route), its `.is-open`
-  state, and the `.nap-offnow` dot for unseen `T3` guides.
+  state, and the dot for unseen `T3` guides. **`TopTabs`** (`frontend/src/app/TopTabs.tsx`) carries the
+  `train-tabs` anchor (the Edzés strip IS the négy fül; the train guide's tab-row card now says „Fent ez a négy fül visz
+  mindenhová", it said „Lent").
 - **`AppLayout`** (`frontend/src/app/AppLayout.tsx`) — mounts `TutorialProvider` once, around
   `MezoThreadProvider`, so every route inside the shell shares one guide-engine instance.
 - **Five page seams**, one `data-kalauz-anchor` DOM hook per tab-root guide's `hogyan` card
@@ -323,7 +326,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   `frontend/src/features/tutorial/registry/welcome.test.ts` (the same hang-lint, over `WELCOME`'s
   steps, via the shared `registry/lint.ts` primitives),
   `frontend/src/shared/ui/kalauz/KalauzWelcome.test.tsx` (steps, focus contract, Escape). Header
-  tests that render a route with a registry hit (`frontend/src/app/AppHeader.test.tsx`,
+  tests that render a route with a registry hit (`frontend/src/app/TitleBar.test.tsx`,
   `frontend/src/app/hubHeaders.test.tsx`) seed **every** guide as already-seen via
   `seedAllKalauzSeen()` (`frontend/src/test/kalauz.ts`) before rendering, so the header's own
   assertions aren't flaked by the 600 ms auto-open — not `writeLocalProgress()` directly (that was
@@ -374,7 +377,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - **Spec §13.1 resolved (S3a, mezo-gb1s.5): the daypart switch stays on every route** — the code
   is the design now, not the handoff's Nap-only wish. Rationale: since the unified shell header
   (`mezo-atry`) the switch is not a Nap-state display but a **navigation affordance** — from any
-  route it jumps to `/nap` at the chosen daypart (`AppHeader.tsx pickFace`), the misleading-state
+  route it jumps to `/nap` at the chosen daypart (`AppHeader.tsx pickFace` — **history: the daypart switch and `pickFace` were deleted with the header in Folyadék F1**), the misleading-state
   risk is already neutralised (`.nap-offnow` is `onNap`-scoped, elsewhere the REAL daypart shows),
   and D10 anchored the "?" to the row's left edge precisely so the switch's presence costs nothing.
   Removing it would add conditional chrome to the one-header contract for no user gain. No guide
@@ -454,7 +457,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/shared/ui/kalauz/KalauzWelcome.tsx` — the `T0` full-screen welcome pager (§2).
 - `frontend/src/shared/ui/Sheet.tsx` — gained `onBackdropClick`/`backdropClassName` for peek.
 - `frontend/src/shared/lib/tutorialSeen.ts` — localStorage mirror + `mergeProgress`.
-- `frontend/src/app/AppHeader.tsx` — the "?" button.
+- `frontend/src/app/TitleBar.tsx` — the "?" button; `frontend/src/app/TopTabs.tsx` — the `train-tabs` anchor.
 - `frontend/src/app/AppLayout.tsx` — `TutorialProvider` mount point.
 - `frontend/src/features/me/pages/BeallitasokPage.tsx` — the "Kalauzok újranézése" reset row (§5).
 - `frontend/src/features/fuel/pages/FuelMaiPage.tsx` — `data-kalauz-anchor="fuel-log"`.

@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-10-06
+updated: 2026-10-09
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -876,6 +876,8 @@ with `reducedMotion: 'reduce'`, which settles the choreography, so a broken entr
 correctly in every golden while being invisible in the app (§9).
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **D1–D10** (spec §1) are the ten binding decisions behind every shape in this doc: D1
   (measurable/visible goals, overriding the old PRD's PERMA-widget prohibition — ADR 0034,

@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-09-30
+updated: 2026-10-09
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -39,7 +39,7 @@ which extends the *Ownership exception* precedent in [`_platform-auth-security.m
 §4.
 
 `/admin` is a **second top-level route entry**, a sibling of the mobile `AppLayout` tree, not a
-child of it — its own `AdminLayout` (left rail, full-width 12-column mosaic, no `TabBar`, no
+child of it — its own `AdminLayout` (left rail, full-width 12-column mosaic, no `BottomBar`, no
 `PhoneFrame`) and its own `React.lazy` chunk (the codebase's first). The mobile PWA never
 downloads it. Everything is gated server-side by the existing `OWNER` role via
 `currentUser.requireOwner()` — no new `ADMIN` role — and the whole slice is feature-flagged off
@@ -59,7 +59,7 @@ reads for `acceptedShare`).
 
 > **2026-09-26 — Üveg U10 (`mezo-me75u.10`).** The whole admin area wears the dark glass material: the rail is one lavender glass panel with 3D icons (Pulzus `t-signal`, Emberek `t-people`, Funkciók `t-grid`, Költés `t-coin`, Memória `t-layers`, Meghívók és fiókok `t-key`, Nyers adatok `t-graph`), every `AdminTile` is a glass tile whose accent follows its `wash`, inner rows/tables are flat, and loading/empty/error states share `AdminLoading`/`AdminErrorCell`. The legacy light-hex `.ad-*` rules are outranked under the `.uv-admin` root scope (block `── uveg reteg admin (`), not deleted. Behaviour unchanged.
 
-Left rail (`AdminRail`, clay icons, one item per section), full-width content, no bottom TabBar.
+Left rail (`AdminRail`, clay icons, one item per section), full-width content, no bottom bar.
 A non-OWNER hitting any `/admin/*` path gets a Hungarian toast (`Ehhez a felülethez nincs
 jogosultságod.`) and is bounced to `/` — cosmetic only, since `currentUser.requireOwner()` on the
 backend is the real gate.
@@ -452,6 +452,8 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
 (`node scripts/gen-codemap.mjs`), visual goldens for the desktop mosaic surfaces.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Hungarian number agreement (Check-in 2.0 follow-up C, 2026-09-28).** The memory explorer's sampled-vector banner no longer prints a fixed „a …-ból": `huArticle`/`huFrom` (`shared/lib/huNum.ts`) pick „a"/„az" and -ból/-ből from how the number is read aloud („az 1842-ből"); see [`admin-memory-explorer.md`](admin-memory-explorer.md). Copy only — no route, hook or contract moved.
 - **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`features/admin`) moved after this doc, in the shell strip re-dress (`mezo-ju4j6.3`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.

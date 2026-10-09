@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-10-07
+updated: 2026-10-09
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -3345,6 +3345,8 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `noQualifyingEffectRowsYieldsNoCandidate`) lives in [`character.md`](character.md) §8.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
   fake dispatches on `MORNING_MARKER_MIRROR` (`"REGGELI-ELIGAZITAS-FELADAT"`), `SLEEP_MARKER_MIRROR`
