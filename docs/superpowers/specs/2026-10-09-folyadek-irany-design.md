@@ -57,14 +57,14 @@ so a slice's prototype step is a parity pass and a reality pass, not a blank pag
 
 | # | Slice | Depends on |
 |---|---|---|
-| F1 | Alap + keret + készlet (light lock, tokens, fonts, shared kit, icon sprite, navigation) | — |
+| F1 | Alap + keret + készlet (light lock, tokens, fonts, shared kit, icon sprite, navigation, opening animation) | — |
 | F2 | Nap | F1 |
 | F3 | Edzés | F1 |
 | F4 | Edzés közben | F1 |
 | F5 | Fuel | F1 |
 | F6 | Én | F1 |
 | F7 | Mezo (incl. the team rename) | F1 |
-| F8 | Átfedők (kalauz, quick input, voice, settings, splash, auth, admin, PWA icon) | F2 |
+| F8 | Átfedők (kalauz, quick input, voice, settings, auth, admin, PWA icon) | F2 |
 | F9 | Záró söprés | all |
 
 The app is mixed-look between F1 and F9. F1 therefore has one design question of its own for
@@ -204,7 +204,7 @@ display fonts), the `TabBar.tsx` header comment, `docs/features/today.md` header
 
 ## 8. Open decisions (to raise at the named slice, never to assume)
 
-- F1: the frame around not-yet-converted pages; where "Minden oldal" goes.
+- F1: the opening animation (not drawn yet: 2–3 distinct liquid options for the owner); the frame around not-yet-converted pages; where "Minden oldal" goes.
 - F3: body silhouette vs. dumbbell on Edzés · Mai; day cards vs. rows on Terv.
 - F6: Én night mode dark or light; the streak.
 - F7: prompt wording under the new names; stored history with old names; the konzílium

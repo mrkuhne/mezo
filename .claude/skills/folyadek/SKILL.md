@@ -150,14 +150,14 @@ more Üveg.
 
 | # | Slice | Scope (details in the bead) |
 |---|---|---|
-| F1 | Alap + keret + készlet | light lock (un-park light, remove dark), tokens + fonts, the shared kit (`shared/ui/folyadek`: skeleton, hero vessel, liquid primitives, badge), the Folyadék-jel sprite replacing the Titanium/clay sprite with ids unchanged, **navigation: bottom bar = five domains, domain pages = top tabs, back = history**, guard tests, feature docs. Owner OK needed only on what the frame looks like around not-yet-converted pages. |
+| F1 | Alap + keret + készlet | light lock (un-park light, remove dark), tokens + fonts, the shared kit (`shared/ui/folyadek`: skeleton, hero vessel, liquid primitives, badge), the Folyadék-jel sprite replacing the Titanium/clay sprite with ids unchanged, **navigation: bottom bar = five domains, domain pages = top tabs, back = history**, guard tests, feature docs; **the opening animation / startup splash** (owner 2026-10-09: moved here from F8 — design 2–3 distinct liquid options on the Artifact first, reduced-motion branch). Owner OK needed on the opening animation and on what the frame looks like around not-yet-converted pages. |
 | F2 | Nap | Mai, A napom, Beszélgetés, Rutin + builder + sheets, check-in, napzárás |
 | F3 | Edzés | Mai, Terv, Terhelés, Gyakorlatok + their sub-pages and sheets |
 | F4 | Edzés közben | eligazítás, session, review, ceremonies |
 | F5 | Fuel | Mai, Kiegészítők, Trendek, Konyha + log flows, kímélő faces |
 | F6 | Én | Hol tartok, Test, Célok, Napló, Emberek, Fejlődés + sheets; night mode decision |
 | F7 | Mezo | Üzenőfal, A csapat, Rólad, Emlékek, Tudástár, chat, gépterem; **the team rename** in copy and, with the owner's OK on the wording, in the prompts |
-| F8 | Átfedők | kalauz, quick input, voice bubble, settings, splash, auth, admin; PWA icon; the name/logo question |
+| F8 | Átfedők | kalauz, quick input, voice bubble, settings, auth, admin; PWA icon; the name/logo question (the splash is in F1) |
 | F9 | Záró söprés | every route audited, dead CSS + Boop + old sprite deleted, old `elo/*.html` retired, bible appendix consolidated, roadmap entry |
 
 ## Open questions to raise at the right slice (never decide silently)
