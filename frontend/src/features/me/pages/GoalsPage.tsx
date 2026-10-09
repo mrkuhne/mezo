@@ -42,7 +42,7 @@ export function GoalsPage() {
   if (!goal || !goalResponse || !goalId || !overview) {
     return (
       <MozaikPage tone="coral" className="goal-hub-page goal-hub-empty">
-        <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
+        <PageHead glass history fallback="/me/goals" label="Célok" />
         <PageBody className="goal-empty-body">
           {/* Üveg empty state (mezo-me75u.6): a frameless halo + ONE dashed free tile — never glass */}
           <div className="goal-empty-hero uv-halo">
@@ -69,7 +69,7 @@ export function GoalsPage() {
 
   return (
     <MozaikPage tone="coral" className="goal-hub-page">
-      <PageHead glass onBack={() => navigate('/me/goals')} label="Célok">
+      <PageHead glass history fallback="/me/goals" label="Célok">
         <button type="button" className="pgact goal-new-pill np-press" onClick={startNewGoal}>＋ Új cél</button>
       </PageHead>
       <EntranceGroup>

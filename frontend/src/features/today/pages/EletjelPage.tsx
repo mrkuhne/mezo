@@ -29,6 +29,7 @@ import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** Prototype #page-vital tile skins, verbatim (eyebrow ink · mini-ring color ·
  *  wash · icon · aria). Labels differ from NEED_META's sheet names on purpose —
@@ -147,9 +148,9 @@ export function EletjelPage() {
   return (
     <MozaikPage tone="rose" className="nap-oldal ej-page">
       <div className="mz-page-head nap-backrow">
-        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
           <b aria-hidden="true">‹</b> Ma
-        </button>
+        </FrameBack>
       </div>
       <EntranceGroup>
         <section className="nap-hero ej-hero uv-halo" data-kalauz-anchor="eletjel-gyuru"

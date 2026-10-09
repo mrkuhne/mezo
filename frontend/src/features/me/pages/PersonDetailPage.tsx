@@ -119,7 +119,7 @@ export function PersonDetailPage() {
 
   return (
     <MozaikPage tone="rose" className="ppl-page ppl-detail">
-      <PageHead glass onBack={() => navigate(-1)} label="Vissza">
+      <PageHead glass history onBack={() => navigate(-1)} label="Vissza">
         <button type="button" className="pgact ppl-act ppl-act-flat" onClick={() => setEditOpen(true)}>
           Szerkesztés
         </button>

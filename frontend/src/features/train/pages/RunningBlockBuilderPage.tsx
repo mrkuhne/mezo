@@ -11,7 +11,8 @@
 // lit sky primary; the ⋯ menu a glass round button over a glass menu card.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
+import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import { useRunning } from '@/data/hooks'
 import type { CSSProperties } from 'react'
 import { Icon3D } from '@/shared/ui/clay'
@@ -24,7 +25,7 @@ const SKY = { '--c': 'var(--dv-sky)' } as CSSProperties
 
 export function RunningBlockBuilderPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
+  const leave = useLeaveAfterMutation()
   const {
     runningBlocks, saveRunningBlock, activateRunningBlock,
     closeRunningBlock, deleteRunningBlock, runningMutationPending,
@@ -64,7 +65,9 @@ export function RunningBlockBuilderPage() {
 
   const backToList = () => {
     if (block && dirty) saveRunningBlock(block.id, draft)
-    navigate('/train/futas')
+    // the builder is only ever opened from the running list: pop back onto it, so a deleted /
+    // closed block (and the builder itself) never stays behind the user
+    leave.back('/train/futas')
   }
 
   const addWeekToDraft = () => setDraft((d) => ({ ...d, weeks: Math.min(8, (d.weeks || 1) + 1), structure: addWeek(d.structure) }))

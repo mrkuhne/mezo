@@ -37,7 +37,7 @@ export function CelPage() {
   if (isError && goalCount === 0) {
     return (
       <MozaikPage tone="sage" className="enc-page enc-cel">
-        <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
+        <PageHead glass history fallback="/me/goals" label="Célok" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a célt." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -47,7 +47,7 @@ export function CelPage() {
   if (!goal) {
     return (
       <MozaikPage tone="sage" className="enc-page enc-cel">
-        <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
+        <PageHead glass history fallback="/me/goals" label="Célok" />
         <PageBody><p className="mz-eyebrow" style={{ padding: 24 }}>Nincs ilyen cél.</p></PageBody>
       </MozaikPage>
     )
@@ -92,7 +92,7 @@ export function CelPage() {
 
   return (
     <MozaikPage tone={dim.wash === 'coral' ? 'coral' : dim.wash === 'white' || dim.wash === 'most' ? 'sage' : dim.wash} className="enc-page enc-cel">
-      <PageHead glass onBack={() => navigate('/me/goals')} label="Célok">
+      <PageHead glass history fallback="/me/goals" label="Célok">
         <button
           type="button"
           className="enc-pill"
@@ -170,7 +170,7 @@ export function CelPage() {
             {(goal.status === 'parked' || goal.status === 'draft') && <button type="button" className="is-sage" disabled={pending} onClick={() => changeStatus(goal.id, 'active')}>Aktiválás</button>}
             {(goal.status === 'active' || goal.status === 'parked') && <button type="button" className="is-sage" disabled={pending} onClick={() => changeStatus(goal.id, 'done')}>Lezárás</button>}
             {goal.status !== 'archived' && (
-              <button type="button" className="is-coral" disabled={pending} onClick={() => { changeStatus(goal.id, 'archived'); navigate('/me/goals') }}>Archiválás</button>
+              <button type="button" className="is-coral" disabled={pending} onClick={() => { changeStatus(goal.id, 'archived'); navigate('/me/goals', { replace: true }) }}>Archiválás</button>
             )}
           </div>
         </EntranceGroup>

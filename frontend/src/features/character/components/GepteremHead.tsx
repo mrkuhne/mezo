@@ -7,17 +7,21 @@
 // carries the page's heading role (it was the PageHero name / an <h1> before).
 // ============================================================
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
-export function GepteremHead({ small, title, onBack, titleId }: {
+export function GepteremHead({ small, title, onBack, fallback, titleId }: {
   small: string
   title: string
-  onBack: () => void
+  /** A back handler that does more than navigate. Most pages pass `fallback` instead. */
+  onBack?: () => void
+  /** Back returns where the user came from; this route is only where a direct link goes. */
+  fallback?: string
   /** For a page root that names itself by its title (`aria-labelledby`). */
   titleId?: string
 }) {
   return (
     <div className="tf-dhead gtm-dhead">
-      <button type="button" className="glass tf-back" aria-label="Vissza" onClick={onBack}>‹</button>
+      <FrameBack className="glass tf-back" {...(fallback ? { history: true, fallback } : { onBack })}>‹</FrameBack>
       <span className="tf-dtitle">
         <small>{small}</small>
         <strong id={titleId} role="heading" aria-level={1}>{title}</strong>

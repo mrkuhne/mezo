@@ -23,7 +23,7 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
   [deployment architecture](../infrastructure/deployment-k3s-argocd.md). Goal doubles as hands-on practice
   with the stack Daniel's clients use.
 
-## Epics in flight (state as of 2026-10-07)
+## Epics in flight (state as of 2026-10-09)
 
 The phase list above is the long arc; this is the **current working set** — the epics that own the
 day-to-day slices. Authoritative status is always `bd show <id>`; this table is the index over it.
@@ -55,11 +55,22 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-ju4j6` — **Boop visszaöltöztetés** | ✅ closed | Titanium visual rollback to Mozaik/Clay, functionality kept. See the milestone log (2026-09-20). |
 | `mezo-a9bo7` / `mezo-ui5by` — **Boop csapat-üzenőfal** | ✅ closed | Social wall + karakter-narratíva; `mezo-ui5by` a duplikátum. See the milestone log (2026-09-27). |
 | `mezo-ck2` — **Check-in 2.0** | ✅ shipped 2026-09-28 | 14-item check-in (5 core + time-of-day items + adaptive „A nap kérdése"), feeding chat, flags, patterns, detectors, life goals, meal coach, training readiness, Napom, ritual, rings. Follow-ups: `persistent_pain` lighten action, day-review reading the day rating. See the milestone log (2026-09-28). [`today.md`](../features/today.md), [`me.md`](../features/me.md). |
+| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ 1/9 slices | Light-only identity, structure-first pages, everything is a level that fills. F1 (foundation + frame + kit) done 2026-10-09; F2–F7 per-domain page conversion, F8 átfedők (overlays), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md). |
 | `mezo-me75u` — **Üvegesítés** | ✅ closed | Whole app onto the dark glass material (U1–U11). See the milestone log (2026-09-27). |
 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
+
+- **2026-10-09 — Folyadék F1 — alap + keret + készlet kész (`mezo-n4wf5.1`).** Az új arculat alapjai
+  felkerültek: az app mostantól csak világos (két sötét zseb marad: a Napzárás és az éjszakai alvás oldal),
+  új színek és betű (Bricolage), a régi 3D ikonkészlet helyett a Folyadék-jel ikonok (ugyanazokkal az
+  azonosítókkal), a kártyák fehérek. Új keret: címsor (kalauz „?”, Minden oldal, Mezo üzenetei, értesítések,
+  beállítások, napi gömb), az aktív terület négy oldala felül fülekként, alul mindig az öt terület csepp
+  formában — területváltó nincs többé. A „vissza” mindig oda visz, ahonnan jöttél. Új megnyitó animáció
+  (egy edény, öt csepp), és a közös készlet (`shared/ui/folyadek`), amelyet az F2–F7 szeletek használnak majd.
+  Az oldalak még a régi felépítésüket viselik. [Terv](../superpowers/plans/2026-10-09-folyadek-f1-alap-keret-keszlet.md),
+  [spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [stílus-biblia](../design_2.0/2026-10-09-folyadek-style-bible.md).
 
 - **2026-10-06 — Saját edzés összerakása üvegben (`mezo-7ugb5`).** Az egyedi edzés összerakó oldala
   megkapta az Üveg kinézetet; a gyakorlatok tömör összefoglaló sorok, koppintásra helyben nyílnak

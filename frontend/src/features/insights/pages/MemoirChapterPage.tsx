@@ -35,7 +35,7 @@ export function MemoirChapterPage() {
 
   const frame = (children: React.ReactNode, hero?: React.ReactNode) => (
     <MozaikPage tone="lav" className="mmo-page mmo-fej">
-      <PageHead glass onBack={() => navigate('/mezo/memoir/archivum')} label="Archívum" />
+      <PageHead glass history fallback="/mezo/memoir/archivum" label="Archívum" />
       {hero}
       <PageBody>{children}</PageBody>
     </MozaikPage>

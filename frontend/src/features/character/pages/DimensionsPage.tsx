@@ -24,7 +24,7 @@ export function DimensionsPage({ embedded = false }: { embedded?: boolean }) {
   if (overview == null) {
     return (
       <div className="kr9-page kr9-dims">
-        {!embedded && <KarakterBackHead small="Karakter" title="Amit eddig tudunk rólad" onBack={() => navigate('/mezo/rolad')} />}
+        {!embedded && <KarakterBackHead small="Karakter" title="Amit eddig tudunk rólad" fallback="/mezo/rolad" />}
         <div className="tf-dash kr9-degraded">
           <Icon3D name="t-info" size={30} />
           <span>A karakter-dosszié jelenleg nem elérhető — ez nem hiba, csak a funkció ki van kapcsolva.</span>
@@ -42,7 +42,7 @@ export function DimensionsPage({ embedded = false }: { embedded?: boolean }) {
       {embedded ? (
         <div className="tf-sec"><h2>Amit eddig tudunk rólad</h2><span className="tf-hint">{countLine}</span></div>
       ) : (
-        <KarakterBackHead small={`Karakter · ${countLine}`} title="Amit eddig tudunk rólad" onBack={() => navigate('/mezo/rolad')} />
+        <KarakterBackHead small={`Karakter · ${countLine}`} title="Amit eddig tudunk rólad" fallback="/mezo/rolad" />
       )}
       <div className="tf-rows kr9-dimrows">
         {overview.dimensions.map((d, i) => {

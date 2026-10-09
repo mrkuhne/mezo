@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useGoal, useGoalActions, useGoalOverview } from '@/data/hooks'
 import { GoalConnectionTimeline } from '@/features/me/components/GoalConnectionTimeline'
 import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
@@ -8,7 +7,6 @@ import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 export function GoalPlansPage() {
-  const navigate = useNavigate()
   const { goalId, pending: goalPending } = useGoal()
   const { overview, pending } = useGoalOverview(goalId)
   const { detachPlan, pending: writePending } = useGoalActions()
@@ -17,7 +15,7 @@ export function GoalPlansPage() {
   const invalid = overview?.courseStatus === 'invalid'
 
   return <MozaikPage tone="sky" className="goal-detail-page uv-goal goal-detail-plans-page">
-    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
+    <PageHead glass history fallback="/me/goals/weight" label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
       <EntranceGroup><PageHero art="t-calendar" accent="var(--dv-sky)" name="Tervkapcsolatok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kapcsolati idővonal a cél javítása után áll helyre.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>

@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-10-06
+updated: 2026-10-09
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -207,7 +207,7 @@ notification's XP total is tracked as a separate follow-up bd issue, not fabrica
 ### 2a. In-app feed: header peek + full feed page (F1, bd `mezo-gzhp.1`; feed page mezo-nol0)
 
 **Two surfaces share one `useNotificationFeed()` cache.** The shell header's bell
-(`app/AppHeader.tsx`, `.nap-ntfpanel`, [today.md](today.md#the-header-is-the-shells-not-the-hubs))
+(`app/TitleBar.tsx` — `AppHeader.tsx` until Folyadék F1, `mezo-n4wf5.1` — `.nap-ntfpanel`, [today.md](today.md#the-header-is-the-shells-not-the-hubs))
 opens a **scrollable, full-width panel** — the newest **30** notifications, day-grouped, filterable,
 each row navigating to its `deeplink`, with an `Összes értesítés ›` foot. That foot is the only route
 the panel needs: it takes the noun and goes to `/me/ertesitesek`, the full-page feed
@@ -1203,7 +1203,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   pre-resolve, the mapped view shape, and optimistic read actions.
 - `features/notification/logic/stamp.test.ts` — `dayLabel` (Ma/Tegnap/dated, and a same-date
   *different-year* day NOT counting as „Ma") and `notificationStamp`'s `nap · óra:perc` join
-- `app/AppHeader.ntfPeek.test.tsx` — the panel's newest-first ordering, its day-group labels + bare
+- `app/TitleBar.ntfPeek.test.tsx` — the panel's newest-first ordering, its day-group labels + bare
   clock stamp, its unread pötty + `sr-only` marker (mezo-tdzy), and the mezo-g9fz behaviours: the
   30-row cap biting AFTER the sort, the chip row drawing only present categories with their counts,
   a category chip narrowing to its own kinds, `Mind olvasott` calling `markAllRead()`, an all-read
@@ -1252,7 +1252,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
     already outranks the page content. Portalling the scrim to `<body>` is the WRONG fix — it lands
     outside the header's context, above the header, and swallows the bell's own click.
 - **The chip fallback must run BEFORE the list renders (mezo-g9fz).** Press `Mind olvasott` while the
-  `Olvasatlan` filter is active and that chip disappears mid-render. `AppHeader` derives
+  `Olvasatlan` filter is active and that chip disappears mid-render. `TitleBar` derives
   `activeNtfFilter` from the chip list (falling back to `all` when the selected id is gone) and the
   rows read `activeNtfFilter`, never the raw `ntfFilter` state — otherwise the panel would empty out
   behind a filter that no longer has a chip to un-press.
@@ -1667,7 +1667,7 @@ cycle, §9)**
   (`Minták`/`Tudás`/`Kísérletek`/`Jóslatok`/`Célok`/`Összegzés`/`Emberek`/`Karakter`), each with
   its clay icon, plus the
   TOTAL `notificationCategory()` reader (unknown kind → `null`, never a wrong category) (mezo-g9fz)
-- `frontend/src/app/AppHeader.tsx` — `.nap-ntfpanel`, the shell header's scrollable full-width panel
+- `frontend/src/app/TitleBar.tsx` — `.nap-ntfpanel`, the shell title bar's scrollable full-width panel (ported unchanged from the retired `AppHeader`; its scrim is `position: fixed`, the bar's blur lives on `::before`)
   into the same feed cache: newest 30, day-grouped, filter chips, `Mind olvasott`, each row carrying
   its kind's clay icon + tint and marked unread when `readAt === null` (mezo-tdzy, mezo-g9fz)
 - `frontend/src/styles/prototype.css` — the `.nap-ntfpanel`/`.nap-ntfscrim`/`.nap-ntfhd`/

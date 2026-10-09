@@ -202,7 +202,7 @@ export function ChatPage() {
   return (
     <div className="col gap-md chat-page mzc-u8">
       {/* mezo-vdf4: orb-led single-row header (ADR 0032 still holds — this IS the page's own
-          header; the shell AppHeader stays above). Status precedence is the audited contract
+          header; the shell TitleBar stays above). Status precedence is the audited contract
           unchanged (degraded → new → mode), with one addition: a streaming turn reads
           `dolgozom rajta…`. */}
       <div className="mzc-chathead">

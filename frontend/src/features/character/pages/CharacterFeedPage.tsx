@@ -34,7 +34,7 @@ export function CharacterFeedPage({ embedded = false }: { embedded?: boolean }) 
     <div className="kr9-page kr9-feed">
       {/* U9 (mezo-me75u.9): the in-page tab strip is gone — the dock owns navigation. A
          standalone feed wears the csapatfal back head; an embedding host owns its heading. */}
-      {!embedded && <KarakterBackHead small="Egyre jobban ismerünk" title="Karakter" onBack={() => navigate('/mezo')} />}
+      {!embedded && <KarakterBackHead small="Egyre jobban ismerünk" title="Karakter" fallback="/mezo" />}
       <CharacterCouncilStatus />
       {!isLoading && !isError && featured && (
         <CharacterMorningStory item={featured} onOpen={() => {

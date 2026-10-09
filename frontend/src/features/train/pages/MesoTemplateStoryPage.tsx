@@ -60,6 +60,7 @@ import { toDayInputs } from '@/features/train/logic/mesoDays'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
@@ -119,7 +120,7 @@ export function MesoTemplateStoryPage() {
   if (!template) {
     return (
       <MozaikPage tone="gold">
-        <PageHead onBack={goBack} label="‹ Sablonjaid" />
+        <PageHead history fallback="/train/templates" label="‹ Sablonjaid" />
         <PageBody className="tv-tpl">
           <GhostState message="Ez a sablon nem található." />
         </PageBody>
@@ -170,9 +171,9 @@ export function MesoTemplateStoryPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <button type="button" className="mz-backbtn glass uv-back" aria-label="Vissza" onClick={goBack}>
+          <FrameBack className="mz-backbtn glass uv-back" history fallback="/train/templates">
             ‹ Sablonjaid
-          </button>
+          </FrameBack>
           {muscles.length > 0 && (
             <span className="pl-lhero-map">
               <BodyMap heat={heat} views="auto" className="pl-lhero-body" ariaLabel={`${template.title} — érintett izmok`} />

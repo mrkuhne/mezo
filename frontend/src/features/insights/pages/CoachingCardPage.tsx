@@ -9,7 +9,6 @@
 // „Miért ez nyert" lapos sorok.
 // ============================================================
 import type { CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Icon3D } from '@/shared/ui/clay'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -19,7 +18,6 @@ import { losersOf, visualOf, winnerRuleOf } from '@/features/insights/logic/coac
 import { localDateString } from '@/shared/lib/dates'
 
 export function CoachingCardPage() {
-  const navigate = useNavigate()
   const date = localDateString()
   const { card, isPending, isError } = useCoachingCard(date)
   const { day } = useCoachingTrace(date)
@@ -34,7 +32,7 @@ export function CoachingCardPage() {
 
   return (
     <MozaikPage tone="gold" className="coach-page coach-card">
-      <PageHead glass onBack={() => navigate('/mezo/coaching')} label="Coaching" />
+      <PageHead glass history fallback="/mezo/coaching" label="Coaching" />
       <PageHero art="t-card" accent="var(--dv-amber)" eyebrow="Coaching" name="A napi kártya"
         sub={coherent ? winner?.label : undefined} />
       <PageBody principle="Egy kártya naponta — itt az is látszik, mi ellen nyert.">

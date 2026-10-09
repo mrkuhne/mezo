@@ -40,23 +40,34 @@ test('the Titanium material is gone from the sprite — no metal ramp, no drop-s
   expect(document.querySelector('#sg-shadow')).toBeNull()
 })
 
-test('every symbol is authored at the clay viewBox — ClayIcon/ClaySpot render 0 0 100 100', () => {
+// Folyadék F1 (mezo-n4wf5.1): a clay id whose meaning has a Folyadék glyph is an alias —
+// a 64-viewBox symbol holding one <use> of the glyph (so ClayIcon's 100-box scales it to fill).
+// Every other i-*/s-* symbol keeps its clay art at 0 0 100 100.
+test('every symbol is clay art at 0 0 100 100, or a 0 0 64 64 alias of exactly one t-* glyph', () => {
   render(<ClaySprites />)
+  let aliases = 0
   for (const sym of document.querySelectorAll('symbol[id^="i-"], symbol[id^="s-"]')) {
-    expect(sym.getAttribute('viewBox'), `${sym.id} viewBox`).toBe('0 0 100 100')
+    const vb = sym.getAttribute('viewBox')
+    if (vb === '0 0 100 100') continue
+    aliases++
+    expect(vb, `${sym.id} viewBox`).toBe('0 0 64 64')
+    const uses = sym.querySelectorAll('use')
+    expect(uses, `${sym.id} alias`).toHaveLength(1)
+    expect(sym.children, `${sym.id} alias`).toHaveLength(1)
+    const target = uses[0].getAttribute('href')!.slice(1)
+    expect(document.querySelector(`symbol#${target}`), `${sym.id} → ${target}`).not.toBeNull()
   }
+  expect(aliases).toBe(64)
 })
 
-// The 13 Titanium-era symbols had no pre-Titanium ancestor, so they are the ONLY ones this
-// task hand-drew — and therefore the only ones that could silently keep a Titanium tell.
-test.each(RESTORED_TITANIUM_ERA)('%s is redrawn in the clay material', id => {
+// The 13 Titanium-era symbols now alias their Folyadék glyph (no clay material left to guard).
+test.each(RESTORED_TITANIUM_ERA)('%s aliases its Folyadék glyph', id => {
   render(<ClaySprites />)
   const sym = document.querySelector(`#${id}`)
   expect(sym, `${id} hiányzik`).not.toBeNull()
   expect(sym!.innerHTML).not.toContain('ig-titanium')
   expect(sym!.innerHTML).not.toContain('ig-shadow')
-  // the upper-left specular is what makes a clay object read as lit volume (§6.1)
-  expect(sym!.querySelector('ellipse[fill^="rgba(255,255,255"]'), `${id} specular`).not.toBeNull()
+  expect(sym!.querySelector('use[href^="#t-"]'), `${id} alias`).not.toBeNull()
 })
 
 // The palette is closed: a redraw may only reach for gradients the sprite actually defines.

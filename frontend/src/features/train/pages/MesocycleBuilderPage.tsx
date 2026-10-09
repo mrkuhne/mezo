@@ -68,7 +68,7 @@ export function MesocycleBuilderPage() {
   if (!meso) {
     return (
       <MozaikPage tone="coral">
-        <PageHead glass onBack={backToLibrary} label="Mezociklus" />
+        <PageHead glass history fallback="/train/mesocycles" label="Mezociklus" />
         <PageBody className="tv-run">
           <p className="text-secondary" style={{ fontSize: 13 }}>
             Ez a mesociklus nem található.
@@ -104,7 +104,7 @@ export function MesocycleBuilderPage() {
 
   return (
     <MozaikPage tone="coral">
-      <PageHead glass onBack={backToLibrary} label="Mezociklus" />
+      <PageHead glass history fallback="/train/mesocycles" label="Mezociklus" />
       <EntranceGroup>
         <PageHero art="t-peak" accent="var(--dv-coral)" name={meso.title} sub={sub} />
         <PageBody className="tv-run">

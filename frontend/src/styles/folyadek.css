@@ -1,0 +1,52 @@
+/* ── folyadék tokens (mezo-n4wf5.1) ── bible §3 */
+:root {
+  --fo-ink: #0A2A3C; --fo-sub: #4E6B7A; --fo-faint: #8AA0AC; --fo-page: #EEF5F9; --fo-card: #fff;
+  --fo-ok: #1E9E6A; --fo-warn: #C98A12; --fo-bad: #D4483B;
+  --dom: #1877F2; --dom2: #19C7C0; --liq1: var(--dom2); --liq2: var(--dom);
+  /* the old ramps the unconverted pages read, re-pointed to the cool light world */
+  --surface-page: var(--fo-page); --text-primary: var(--fo-ink); --text-secondary: var(--fo-sub); --text-muted: var(--fo-faint);
+}
+.phone-screen[data-domain="train"] { --dom: #F2683A; --dom2: #F7B23B; }
+.phone-screen[data-domain="fuel"]  { --dom: #149E6E; --dom2: #8FD14F; }
+.phone-screen[data-domain="mezo"]  { --dom: #6B4FE0; --dom2: #E06BB5; }
+.phone-screen[data-domain="me"]    { --dom: #0E94B8; --dom2: #46D3B3; }
+/* `--liq*` are var() references: declared on :root alone they resolve THERE (to Nap's blue) and
+   inherit as that fixed colour. Re-declared where the domain sets `--dom`, they follow it. */
+.phone-screen[data-domain] { --liq1: var(--dom2); --liq2: var(--dom); }
+/* The cool ground beats prototype.css's warm [data-day] tints (0,2,0) in light: this selector is
+   0,4,0. Under the dark force-claim pockets it does not apply, so
+   `:root[data-theme="dark"] .phone-screen[data-day]` (prototype.css) keeps its graphite canvas. */
+:root:not([data-theme="dark"]) .phone-screen[data-domain] {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dom) 5%, #FBFDFE), color-mix(in srgb, var(--dom) 12%, #EAF2F6));
+}
+/* the warm day-part sky bands do not belong to the Folyadék light world */
+:root:not([data-theme="dark"]) .phone-screen[data-domain] .sky { display: none; }
+
+/* ── theme-aware material channels (mezo-n4wf5.1, Task 3) ──
+   The unconverted pages' rules were written with light-on-dark literals (cream films, graphite
+   wells, black drops). They read these channels now, so ONE rule is ink-on-white in the light
+   world and still cream-on-graphite inside the two dark pockets (/ritual, /me/sleep/night). */
+:root {
+  --fo-film: 10, 42, 60;        /* was rgba(245,239,230,α) / rgba(255,244,230,α): hairlines, tracks, flat tints */
+  --fo-body: 255, 255, 255;     /* was rgba(30,27,24,α) / rgba(52,46,41,α): copies of the glass body */
+  --fo-well-lo: #EEF3F6;        /* was #1E1B18: the low stop of a lit well */
+  --fo-well-hi: #fff;           /* was #3A332D: its high stop */
+  --fo-ground: 238, 245, 249;   /* was rgba(25,22,20,α) as a BACKGROUND: sticky bars and recessed wells on the page ground */
+  --fo-shade: 84, 112, 130;     /* was rgba(0,0,0,α) in box-shadow / drop-shadow: a soft cool drop */
+  --fo-scheme: light;           /* was `color-scheme: dark` on fields */
+  --fo-pastel: 58%;             /* how much of a dark-tuned pastel TEXT colour survives; the rest is ink */
+}
+:root[data-theme="dark"] {
+  --fo-film: 245, 239, 230; --fo-body: 30, 27, 24; --fo-well-lo: #1E1B18; --fo-well-hi: #3A332D;
+  --fo-ground: 25, 22, 20; --fo-shade: 0, 0, 0; --fo-scheme: dark; --fo-pastel: 100%;
+}
+
+/* ── Folyadék-jel ikonok (mezo-n4wf5.1, Task 2) ── bible §5 */
+.t-ico { --ic: var(--c, var(--dom)); --ic2: color-mix(in srgb, var(--c, var(--dom2)) 55%, #fff); filter: none; }
+.fo-on-liquid .t-ico, .fo-on-liquid svg { --ic: #fff; --ic2: rgba(255,255,255,.4); --icf: transparent; }
+/* the old sprite-era halo / drop-shadow would smear the outlined glyphs */
+:root:not([data-theme="dark"]) .t-ico,
+:root:not([data-theme="dark"]) .glass .t-ico,
+:root:not([data-theme="dark"]) .uv-well .t-ico { filter: none; }
+/* the two dark pockets: keep the glyphs visible, no white body blobs */
+:root[data-theme="dark"] .t-ico { --icf: transparent; }

@@ -23,6 +23,7 @@ import { questAction } from '@/features/today/logic/questAction'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import type { DailyQuest, QuestSlot } from '@/data/types'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The slot's 3D icon and glass hue (uveg-nap.html `QUESTS`). */
 const SLOT_ICON: Record<QuestSlot, Icon3DName> = { BODY: 't-dumbbell', FUELBIO: 't-bowl', GROWTH: 't-journal' }
@@ -76,9 +77,9 @@ export function NapKuldetesekPage() {
   return (
     <MozaikPage tone="gold" className="nap-quest-page nap-oldal">
       <div className="mz-page-head nap-backrow">
-        <button type="button" className="mz-backbtn glass nap-back" onClick={() => navigate(-1)} aria-label="Vissza">
+        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
           <b aria-hidden="true">‹</b> Ma
-        </button>
+        </FrameBack>
       </div>
       <section className="nap-hero uv-halo" style={{ '--c': 'var(--dv-amber)', '--c2': 'var(--dv-coral)' } as React.CSSProperties}>
         <Icon3D name="t-quest" size={86} className="nap-hero-art uv-float" />

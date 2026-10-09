@@ -31,7 +31,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     // az S3a-lista pedig itt rögzíti a tier-t T2-re — a `/train` route maga elesett Task
     // 2-ben, mert a redirect előtt sosem renderel (lásd a fájl fejléce). A tabsor-tanítás
     // ezért ide, a de facto landolt oldal elé került, a fuel.ts négy-fülű hogyan-idiómáját
-    // követve, `train-tabs` anchorral (TabBar.tsx — a sáv MAGA a négy fül, minden
+    // követve, `train-tabs` anchorral (TopTabs.tsx — a sáv MAGA a négy fül, minden
     // /train/*-on).
     // v4 (final-review fix wave, mezo-88iwa.6 T5): a napsáv kártyája a törölt „‹ Ma gomb"-ot
     // tanította — a page-header (és vele a gomb) a T5 posztererrel megszűnt. Copy-drift,
@@ -48,7 +48,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-retegek', orb: 's-orb-figyel', anchor: 'train-tabs',
         title: 'Ez az Edzés.',
-        voice: 'A **Mai** a mai edzésed, a sport és az egyedi edzés indítása, a **Terv** a futó terved hétről hétre a sablonjaiddal és az új tervvel, a **Terhelés** azt mutatja, mit kapott a tested a héten izmonként, a **Gyakorlatok** pedig minden mozdulatod a rekordjaiddal. Lent ez a négy fül visz mindenhová.',
+        voice: 'A **Mai** a mai edzésed, a sport és az egyedi edzés indítása, a **Terv** a futó terved hétről hétre a sablonjaiddal és az új tervvel, a **Terhelés** azt mutatja, mit kapott a tested a héten izmonként, a **Gyakorlatok** pedig minden mozdulatod a rekordjaiddal. Fent ez a négy fül visz mindenhová.',
       },
       {
         kind: 'hogyan', spot: 'i-heti', orb: 's-orb-figyel', anchor: 'mai-napsav',

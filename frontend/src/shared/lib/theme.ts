@@ -2,16 +2,17 @@ export type Theme = 'dark' | 'light'
 export const THEME_KEY = 'mezo-theme'
 export const DEFAULT_THEME: Theme = 'light'
 
-/** Üvegesítés dark-only lock (üveg style bible §8, mezo-me75u.1, owner 2026-09-23): the app
- *  resolves to this theme regardless of the stored preference, circadian `auto` or a force
- *  claim. Light mode is PARKED, not deleted — the mode/claim machinery and the light CSS stay,
- *  and setting this to `null` brings them back. index.html's boot script and the manifest in
- *  vite.config.ts carry the same lock (the dark canvas `#141210`). */
-export const THEME_LOCK: Theme | null = 'dark'
+/** Folyadék light lock (Folyadék bible §1.1, mezo-n4wf5.1, owner 2026-10-08): the app resolves
+ *  to this theme regardless of the stored preference or circadian `auto`. A force claim
+ *  (`useForceTheme`) still outranks the lock in F1 — the two dark pockets (the Napzárás ritual and
+ *  the night sleep page) stay dark until F2/F6. The mode/claim machinery and the dark CSS stay;
+ *  setting this to `null` brings the stored/circadian choice back. index.html's `theme-color` and
+ *  the manifest in vite.config.ts carry the same light canvas (`#EEF5F9`). */
+export const THEME_LOCK: Theme | null = 'light'
 
-/** Browser/PWA chrome color per theme — keep in sync with --canvas in prototype.css
+/** Browser/PWA chrome color per theme — keep in sync with --fo-page in folyadek.css
     and with the static meta in index.html / manifest in vite.config.ts. */
-const THEME_COLOR: Record<Theme, string> = { light: '#FBF6EF', dark: '#141210' }
+const THEME_COLOR: Record<Theme, string> = { light: '#EEF5F9', dark: '#141210' }
 
 export function readStoredTheme(): Theme | null {
   try {

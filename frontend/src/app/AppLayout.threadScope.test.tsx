@@ -5,14 +5,14 @@
 //
 // 1. A `MezoThreadProvider` a `hideChrome` kapun BELÜL van. A szándékosan chrome-mentes
 //    útvonalakon (/train/session, /train/sport/log, /me/sleep/night, /ritual) nincs fejléc és
-//    nincs TabBar, tehát a szálnak sincs fogyasztója — a provider ~15 `useNeeds`-olvasása
+//    nincs BottomBar, tehát a szálnak sincs fogyasztója — a provider ~15 `useNeeds`-olvasása
 //    ott tiszta pazarlás volt.
 // 2. A szál-hookok dobása NEM szalad ki az AppLayout-ból az app-szintű main.tsx
-//    fallbackre, hanem egy ErrorBoundary kártyán áll meg, a TabBar-t használhatóan hagyva.
+//    fallbackre, hanem egy ErrorBoundary kártyán áll meg, a BottomBar-t használhatóan hagyva.
 //
 // A provider EGYÜTTES őse marad a fejlécnek és az Outlet-nek (mezo-atry: a két fogyasztó
 // csak közös ősként osztozhat a szálon, különben a badge vízjele sosem talál) — ezt a
-// meglévő AppHeader.test.tsx badge-életciklus tesztje őrzi, ezért itt nem ismételjük.
+// meglévő TitleBar.test.tsx badge-életciklus tesztje őrzi, ezért itt nem ismételjük.
 // Spec: bd mezo-eekm
 // ============================================================
 import { render, screen } from '@testing-library/react'

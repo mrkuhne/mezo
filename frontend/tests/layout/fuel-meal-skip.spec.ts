@@ -112,10 +112,10 @@ test('Fuel Mai · Kihagyom row and the skipped block stay contained, clear of th
   expect(pills.minSlack).toBeGreaterThanOrEqual(0)
   const skd = await insideOf(page, '.fmx-block.is-skipped', '.fmx-skipd')
   expect(skd.leaks).toBe(0)
-  const fab = page.locator('.quicklog-fab')
+  const fab = page.locator('.fo-fab')
   await expect(fab).toBeVisible()
   const overlaps = await page.evaluate(() => {
-    const f = (document.querySelector('.quicklog-fab') as HTMLElement).getBoundingClientRect()
+    const f = (document.querySelector('.fo-fab') as HTMLElement).getBoundingClientRect()
     return Array.from(document.querySelectorAll('.fmx-block.is-skipped .fmx-skact')).filter((el) => {
       const r = el.getBoundingClientRect()
       return r.left < f.right && r.right > f.left && r.top < f.bottom && r.bottom > f.top

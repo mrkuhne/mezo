@@ -22,7 +22,6 @@
 // amber-lit pill; the empty cabinet is the dashed `.uv-empty`. CSS: the
 // `── uveg edzes gyakorlatok (` block of prototype.css, scoped to `.gyx-medals`.
 // ============================================================
-import { useNavigate } from 'react-router-dom'
 import { useMedals } from '@/data/hooks'
 import type { Medal } from '@/data/train/medalTypes'
 import {
@@ -112,7 +111,6 @@ function MedalsLoadingSkeleton() {
 }
 
 export function MedalsPage() {
-  const navigate = useNavigate()
   const { data: medals, isPending } = useMedals()
 
   if (isPending) return <MedalsLoadingSkeleton />
@@ -123,7 +121,7 @@ export function MedalsPage() {
 
   return (
     <MozaikPage tone="gold" className="gyx-page gyx-medals">
-      <PageHead glass onBack={() => navigate('/train')} label="Edzés" />
+      <PageHead glass history fallback="/train" label="Edzés" />
       <EntranceGroup>
         <PageHero
           art="t-record"

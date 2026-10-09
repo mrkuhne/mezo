@@ -139,8 +139,11 @@ test('the Jelöltek tile navigates, through the REAL app router, to the real emp
   )
   fireEvent.click(screen.getByRole('button', { name: 'Jelöltek' }))
   expect(await screen.findByText('Nincs több jelölt — az éjszakai kör hajnalban néz újra.')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹Kapcsolatok')
   expect(router.state.location.pathname).toBe('/me/people/jeloltek')
+  // the ONE back control is the title bar's (Folyadék frame, mezo-n4wf5.1); it runs the page's
+  // own handler — back to Kapcsolatok
+  fireEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(router.state.location.pathname).toBe('/me/people')
 })
 
 test('A köröm / Említések / Heti kép navigate to their exact future sibling paths (Task 3–5 own the pages)', () => {

@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-10-06
+updated: 2026-10-09
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -876,6 +876,10 @@ with `reducedMotion: 'reduce'`, which settles the choreography, so a broken entr
 correctly in every golden while being invisible in the app (§9).
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
+
+- **After a save or a delete the form does not stay behind the user (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).** With a history-based back, a post-mutation `navigate(...)` that PUSHED left the editor — or the deleted record — one Vissza away. The leave now replaces the current entry or pops (`useLeaveAfterMutation` in `shared/hooks/useBackNav.ts`, rules in `shared/lib/backNav.ts`; see [`_platform-design-system.md`](_platform-design-system.md)). Destinations are unchanged. `CelWizardPage` (draft → `/me/goals`, activated → `/me/goals/:id`) and `CelPage`'s Archiválás (→ `/me/goals`) REPLACE the entry they leave. Pinned by `tests/layout/navigation.spec.ts` („Vissza after a save or a delete…").
 
 - **D1–D10** (spec §1) are the ten binding decisions behind every shape in this doc: D1
   (measurable/visible goals, overriding the old PRD's PERMA-widget prohibition — ADR 0034,

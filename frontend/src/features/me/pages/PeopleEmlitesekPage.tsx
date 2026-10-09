@@ -25,7 +25,6 @@
 // the week rhythm as ONE sky glass card (tone-coloured glowing bars), the filter chips flat (the
 // active one lit in its own colour), the mention rows flat tone-edged cells (MentionRow).
 import { useMemo, useState, type CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { Icon3D } from '@/shared/ui/clay'
@@ -87,7 +86,6 @@ function CtxChip({ ctx, active, onClick }: { ctx: MentionContext; active: boolea
 }
 
 export function PeopleEmlitesekPage() {
-  const navigate = useNavigate()
   const { people, mentions, logMention, undoMention } = usePeople()
   const [logOpen, setLogOpen] = useState(false)
   const [filters, setFilters] = useState<Filters>({ scope: 'mind', tone: null, ctx: null })
@@ -119,7 +117,7 @@ export function PeopleEmlitesekPage() {
 
   return (
     <MozaikPage tone="sky" className="ppl-page ppl-eml">
-      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok">
+      <PageHead glass history fallback="/me/people" label="Kapcsolatok">
         <button type="button" className="pgact ppl-act ppl-act-lit" onClick={() => setLogOpen(true)}>
           <Icon3D name="t-mic" size={18} /> Log
         </button>

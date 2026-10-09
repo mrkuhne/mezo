@@ -7,7 +7,6 @@
 // Üveg re-dress (mezo-me75u.7, prototype uveg-en2.html `skillek()`): halo hero t-up, glass bands.
 // ============================================================
 import type { CSSProperties, ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useLifeGoals, useProgressionProfile } from '@/data/hooks'
 import type { SkillLevel } from '@/data/progression/progressionApi'
 import { MUSCLE_LABELS } from '@/data/train/train'
@@ -31,7 +30,6 @@ function toRows(skills: SkillLevel[], iconOf: (key: string, name: string) => Rea
 }
 
 export function GrowthSkillsPage() {
-  const navigate = useNavigate()
   const { data: profile } = useProgressionProfile()
   const life = profile.life ?? [], athletic = profile.athletic ?? [], muscle = profile.muscle ?? []
   const s = growthStats(profile)
@@ -52,7 +50,7 @@ export function GrowthSkillsPage() {
 
   return (
     <MozaikPage tone="lav" className="grs-page">
-      <PageHead glass onBack={() => navigate('/me/growth')} label="Fejlődés" />
+      <PageHead glass history fallback="/me/growth" label="Fejlődés" />
       <PageHero art="t-up" accent="var(--dv-lav)" name="Képességek" big={<>{s.skillCount}<small> skill</small></>} />
       <PageBody principle="A szint visszajelzés, nem jutalom — semmi nem nyílik vagy zárul tőle. Az XP-idősort nem rajzoljuk: a contract nem hordoz sorozatot.">
         <EntranceGroup>

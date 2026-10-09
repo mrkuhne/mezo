@@ -33,6 +33,7 @@ import { CatalogSearchSheet } from '@/features/fuel/sheets/CatalogSearchSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/sheets/CategoryFilterSheet'
 import { pantryProvenance } from '@/features/fuel/logic/pantryProvenance'
 import KamraSkeleton from '@/features/fuel/pages/KamraSkeleton'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const TYPE_FILTERS = [
   { id: 'all', label: 'Mind', color: 'var(--dv-amber)', icon: null },
@@ -131,7 +132,7 @@ export function FuelKamraPage() {
     <div className="fmx-page fkx-library fkx-kamra">
       <EntranceGroup>
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel/konyha')} aria-label="Vissza a Konyhába">‹</button>
+          <FrameBack className="glass is-round" history fallback="/fuel/konyha" label="Vissza a Konyhába">‹</FrameBack>
           <span>
             <small>KONYHA</small>
             <strong>Kamra</strong>

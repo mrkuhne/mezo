@@ -2,12 +2,12 @@ import { render } from '@testing-library/react'
 import { CLAY_TO_3D, ClaySprites, ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import titaniumRaw from './titanium-icons.svg?raw'
 
-// Üveg style bible §4 (mezo-me75u.1): the CONTENT icon set is the Titanium companion sprite,
-// namespaced t-* (symbols) / tg-* (defs) so it shares the DOM with the clay set.
+// Folyadék F1 (mezo-n4wf5.1): the CONTENT icon set is the Folyadék-jel sprite (outlined,
+// half-liquid glyphs), namespaced t-* (symbols) / tc-* (clip defs) so it shares the DOM with the clay set.
 
 const symbolIds = () => Array.from(titaniumRaw.matchAll(/<symbol id="(t-[a-z0-9-]+)"/g), m => m[1])
 
-test('the sprite carries the 62 companion-titanium symbols plus the approved custom ones', () => {
+test('the sprite carries the original 62 symbol ids plus the approved custom ones', () => {
   const ids = symbolIds()
   expect(ids.length).toBeGreaterThanOrEqual(62)
   expect(new Set(ids).size).toBe(ids.length)
@@ -101,10 +101,18 @@ test('the namespace is closed: every url()/href reference resolves inside the sp
   const defined = new Set(Array.from(titaniumRaw.matchAll(/id="([^"]+)"/g), m => m[1]))
   const refs = Array.from(titaniumRaw.matchAll(/(?:url\(#|href="#)([^)"]+)/g), m => m[1])
   expect(refs.filter(r => !defined.has(r))).toEqual([])
-  expect(refs.every(r => r.startsWith('t-') || r.startsWith('tg-'))).toBe(true)
+  expect(refs.every(r => r.startsWith('t-') || r.startsWith('tc-'))).toBe(true)
+  expect(titaniumRaw).not.toMatch(/tg-|feDropShadow|Gradient/)
 })
 
 // Visszaöltöztetés trap: a display:none sprite never resolves its gradients.
+test('every glyph draws with the Folyadék colour variables (--ic line, --ic2 liquid, --icf body)', () => {
+  expect(titaniumRaw).toContain('var(--ic,var(--dom))')
+  expect(titaniumRaw).toContain('var(--ic2,var(--dom2))')
+  expect(titaniumRaw).toContain('var(--icf,')
+  expect(titaniumRaw).not.toMatch(/fill="#[0-9a-fA-F]{3,6}"/)
+})
+
 test('the sprite is hidden by zero size, never display:none', () => {
   expect(titaniumRaw.slice(0, 200)).toContain('position:absolute;width:0;height:0')
   expect(titaniumRaw).not.toMatch(/display:\s*none/)

@@ -1,4 +1,8 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useContext } from 'react'
+import { UNSAFE_LocationContext, useLocation, useNavigate } from 'react-router-dom'
+import {
+  canGoBack, leaveAfterMutation, leaveBackAfterMutation, leaveDeletedFromEditor,
+} from '@/shared/lib/backNav'
 
 /**
  * Back to the PREVIOUS in-app page (history pop), with a fallback route for
@@ -11,7 +15,8 @@ export function useBackNav(fallback: string): () => void {
   const navigate = useNavigate()
   const { key } = useLocation()
   return () => {
-    if (key !== 'default') navigate(-1)
+    // the shared decision (shared/lib/backNav.ts) — the same one the frame's title bar uses
+    if (canGoBack(typeof window !== 'undefined' ? window.history.state : null, key)) navigate(-1)
     else navigate(fallback)
   }
 }
@@ -37,9 +42,7 @@ export interface BackTarget {
 export function useBackTo(fallback: string, fallbackLabel: string): BackTarget {
   const navigate = useNavigate()
   const { key } = useLocation()
-  const idx = (typeof window !== 'undefined'
-    ? (window.history.state as { idx?: unknown } | null)?.idx : undefined)
-  const viaHistory = key !== 'default' && !(typeof idx === 'number' && idx === 0)
+  const viaHistory = canGoBack(typeof window !== 'undefined' ? window.history.state : null, key)
   return {
     viaHistory,
     label: viaHistory ? 'Vissza' : fallbackLabel,
@@ -47,5 +50,28 @@ export function useBackTo(fallback: string, fallbackLabel: string): BackTarget {
       if (viaHistory) navigate(-1)
       else navigate(fallback)
     },
+  }
+}
+
+/**
+ * Leaving after a successful mutation (see `shared/lib/backNav.ts` for the rule):
+ * - `to(target)` — the destination replaces the form / wizard / deleted record;
+ * - `back(origin)` — an editor entered only from `origin` pops back onto it;
+ * - `pastDetail(list)` — a delete from such an editor also drops the detail entry behind it.
+ * The location key comes through the context (the `HistoryBackButton` idiom), so a page
+ * rendered outside a router in a unit test is treated as a first entry.
+ */
+export function useLeaveAfterMutation(): {
+  to: (target: string) => void
+  back: (origin: string) => void
+  pastDetail: (list: string) => void
+} {
+  const navigate = useNavigate()
+  const key = useContext(UNSAFE_LocationContext)?.location.key ?? 'default'
+  const state = () => (typeof window !== 'undefined' ? window.history.state : null)
+  return {
+    to: (target) => leaveAfterMutation(navigate, target),
+    back: (origin) => leaveBackAfterMutation(navigate, state(), key, origin),
+    pastDetail: (list) => leaveDeletedFromEditor(navigate, state(), list),
   }
 }

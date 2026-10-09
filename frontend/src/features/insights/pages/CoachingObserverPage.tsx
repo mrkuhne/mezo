@@ -6,7 +6,7 @@
 // utóbbi csak akkor, ha volt változás (üres doboz helyett semmi).
 // Nulla per-flagKey markup: a szerver tömbjét rendereljük, ahogy jött.
 // ============================================================
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useCoachingTrace } from '@/data/hooks'
@@ -26,7 +26,6 @@ function isValidIsoDate(value: string): boolean {
 }
 
 export function CoachingObserverPage() {
-  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const today = localDateString()
   const asked = params.get('d')
@@ -54,7 +53,7 @@ export function CoachingObserverPage() {
 
   return (
     <MozaikPage tone="lav" className="coach-page coach-obs">
-      <PageHead glass onBack={() => navigate('/mezo/coaching')} label="Coaching" />
+      <PageHead glass history fallback="/mezo/coaching" label="Coaching" />
       <PageHero art="t-eye" iconSize={64} accent="var(--dv-lav)" eyebrow="Coaching" name="Megfigyelő"
         sub={split.total === 0 ? undefined : `${split.raised + split.suppressed} jelzett · ${split.total} szabály`}>
         <div className="mzo-daysw">

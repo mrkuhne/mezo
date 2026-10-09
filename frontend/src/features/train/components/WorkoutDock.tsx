@@ -30,7 +30,7 @@
 // portal unmounts with it.
 //
 // Üvegesítés U4 (mezo-me75u.4): ONE fixed glass bar with NO sheen (`.glass.is-still`, like the
-// TabBar — a sweep through always-visible chrome reads as flicker). Coral while idle; while
+// BottomBar — a sweep through always-visible chrome reads as flicker). Coral while idle; while
 // resting the SAME bar turns sky and the SAME ring fills around a 3D clock. Skin lives in the
 // `uveg edzes session` block of prototype.css.
 // ============================================================

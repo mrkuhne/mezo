@@ -57,7 +57,7 @@ export function HabitPage() {
     if (isPending) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szokas">
-          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+          <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -67,7 +67,7 @@ export function HabitPage() {
     if (isError) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szokas">
-          <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+          <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -87,7 +87,7 @@ export function HabitPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-szokas">
-      <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok">
+      <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok">
         <button type="button" className="mz-pgact rt-act" onClick={toEditor}>Szerkesztés</button>
       </PageHead>
       {/* Honesty rule: a definition with no summary row has no 28-day standing yet — show no

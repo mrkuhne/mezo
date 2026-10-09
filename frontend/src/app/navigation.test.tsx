@@ -7,12 +7,13 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 import rawCss from '@/styles/prototype.css?raw'
+import frameCss from '@/styles/folyadek-frame.css?raw'
 
 // mezo-gb1s.3: a hub-kalauzok 600 ms után felugranának a navigációs asszertek közben.
 beforeEach(() => seedAllKalauzSeen())
 
 // mezo-jkh4: the last-tab memory is a module-level, in-session store — it leaks across
-// tests. Every test here renders the nav (TabBar's effect records the visited tab), so
+// tests. Every test here renders the nav (BottomBar's effect records the visited tab), so
 // without a per-test reset the test order decides what a domain's "first visit" resolves
 // to. Under CI's order a prior test left it dirty and the switcher jumped to a remembered
 // tab instead of tab 1 (the '/nap' vs '/fuel/stack' flake). Reset before EVERY test so
@@ -29,52 +30,65 @@ test('redirects / to Today', async () => {
   // The Nap hub's daypart switch is the face-INDEPENDENT landmark (mezo-d20.2.1).
   expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
 })
-test('switches domains via the switcher, then between tabs by clicking the bottom nav', async () => {
-  renderApp('/today')
-  // Titanium nav (mezo-jkh4): the bar is contextual — Nap's tabs, no cross-domain links.
-  // Reaching another world goes through the domain switcher, which jumps to that domain's
-  // last-visited tab (here, first-visit → Mezo tab 1 = /mezo, the csapat-üzenőfal).
-  await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
-  const switcher = await screen.findByRole('dialog')
-  await userEvent.click(within(switcher).getByRole('button', { name: /^Mezo/ }))
-  expect(await screen.findByRole('heading', { name: 'Üzenőfal' })).toBeInTheDocument()
-  // A csapat → the Gépterem door → the old grid („Összes funkció”) → a list page: the list
-  // page is a post's deep page, so the wall's tab lights (spec §2.5, mezo-a9bo7.10).
+/** The bottom bar's drop of a domain (Folyadék frame, mezo-n4wf5.1). */
+const domainDrop = (name: string) =>
+  within(screen.getByRole('navigation', { name: 'Területek' })).getByRole('link', { name })
+
+test('switches domains on the bottom bar, then between pages on the top tabs', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/today'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  // Folyadék frame (mezo-n4wf5.1): the bottom bar is the five domains, always — reaching
+  // another world is ONE tap on its drop, which jumps to that domain's last-visited tab
+  // (here, first-visit → Mezo tab 1 = /mezo, the csapat-üzenőfal). No switcher dialog.
+  await screen.findByRole('button', { name: 'Beállítások' })
+  await userEvent.click(domainDrop('Mezo'))
+  expect(router.state.location.pathname).toBe('/mezo')
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(await screen.findByRole('link', { name: 'Üzenőfal' })).toHaveAttribute('aria-current', 'page')
+  // A csapat (top tab) → the Gépterem door → the old grid („Összes funkció”) → a list page: the
+  // list page is a post's deep page, so the WALL owns it (spec §2.5, mezo-a9bo7.10) — it is a
+  // sub-page now, and the title bar's context line says where it belongs.
   await userEvent.click(screen.getByRole('link', { name: 'A csapat' }))
   await userEvent.click(await screen.findByRole('link', { name: /Gépterem · Összes funkció/ }))
   await userEvent.click(await screen.findByRole('button', { name: /Összes funkció/ }))
   await userEvent.click(await screen.findByRole('link', { name: 'Előrejelzések' }))
-  expect(screen.getByRole('link', { name: 'Üzenőfal' }).className).toContain('active')
-  // no chip strip (mezo-twizx) — the page's own back chip leads back to the grid
+  expect(router.state.location.pathname).toBe('/mezo/predictions')
+  expect(document.querySelector('.fo-top small')).toHaveTextContent('Mezo · Üzenőfal')
+  expect(domainDrop('Mezo')).toHaveAttribute('aria-current', 'true')
+  // no chip strip (mezo-twizx) — the back button (the title bar's, running the page's own
+  // handler) leads back to the grid
   expect(screen.queryByRole('navigation', { name: 'Boop funkciók' })).not.toBeInTheDocument()
   await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
-  expect(await screen.findByRole('heading', { name: 'Összes funkció' })).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/mezo/karakter/gepterem/osszes')
+  expect((await screen.findAllByRole('heading', { name: 'Összes funkció' })).length).toBeGreaterThan(0)
 })
 // mezo-twizx: the old „Összes funkció” + chip strip (Minták · Előrejelzések · Diagnózis ·
 // Kísérletek · Heti) is gone from every page — the new dock and the approved üzenőfal prototype
 // have none; the Gépterem's „Összes funkció” grid and each page's own back link carry the way.
 test.each(['/mezo/patterns/ref-anna-sleep', '/mezo/patterns', '/me/week'])('%s — no old chip strip', async (path) => {
   renderApp(path)
-  expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
+  // These are sub-pages: the bell is the title bar's face-independent landmark (the settings
+  // button lives on the hubs).
+  expect(await screen.findByRole('button', { name: /^Értesítések/ })).toBeInTheDocument()
   expect(screen.queryByRole('navigation', { name: 'Boop funkciók' })).not.toBeInTheDocument()
   expect(document.querySelector('.boop-world-navigation')).toBeNull()
 })
-// Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the settings page has no theme
-// selector while the lock holds, and a stored light preference does not reach the document.
-test('Me settings: no theme selector under the dark-only lock, the app stays dark', async () => {
-  localStorage.setItem('mezo-theme', 'light')
+// Folyadék (mezo-n4wf5.1): the app is light-locked — the settings page has no theme
+// selector while the lock holds, and a stored dark preference does not reach the document.
+test('Me settings: no theme selector under the light lock, the app stays light', async () => {
+  localStorage.setItem('mezo-theme', 'dark')
   renderApp('/me')
   await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
   await userEvent.click(screen.getByRole('link', { name: /Megjelenés és alkalmazás/ }))
   expect(await screen.findByText('Fiók')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Sötét/ })).toBeNull()
-  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
 })
 
 test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.6.1)', async () => {
   renderApp('/me')
   expect(await screen.findByRole('button', { name: 'Beállítások' })).toBeInTheDocument()
-  // mezo-lhqw7: the hub is „Hol tartok" — the Súly tile became the bottom bar's Test tab.
+  // mezo-lhqw7: the hub is „Hol tartok" — the Súly tile became the Test tab (a top tab now).
   expect(await screen.findByRole('button', { name: 'Célok állása' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Súly' })).not.toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Test' })).toHaveAttribute('href', '/me/weight')
@@ -110,7 +124,8 @@ test('/mezo/karakter is the Karakter dossier hub — reachable as a stable route
 
 test('a saved /mezo/menu link lands on the „Összes funkció” grid, which reaches the Karakter dimensions', async () => {
   renderApp('/mezo/menu')
-  expect(await screen.findByRole('heading', { name: 'Összes funkció' })).toBeInTheDocument()
+  // (the title bar and the page both say „Összes funkció” until the page is re-dressed)
+  expect((await screen.findAllByRole('heading', { name: 'Összes funkció' })).length).toBeGreaterThan(0)
   await userEvent.click(await screen.findByRole('link', { name: 'Karakter' }))
   expect(await screen.findByText('Amit eddig tudunk rólad')).toBeInTheDocument()
 })
@@ -127,25 +142,24 @@ test('/me/karakter redirects to /mezo/karakter (legacy link)', async () => {
 test('/me/karakter/konzilium redirects to /mezo/karakter/konzilium preserving the subpath', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/me/karakter/konzilium'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  await screen.findByText('Konzílium')
+  expect((await screen.findAllByText('Konzílium')).length).toBeGreaterThan(0)
   expect(router.state.location.pathname).toBe('/mezo/karakter/konzilium')
 })
 
-// Last-tab memory (mezo-jkh4): the switcher returns each domain to its last-visited tab.
-test('the domain switcher returns to the last-visited tab (memory)', async () => {
+// Last-tab memory (mezo-jkh4): each domain's drop returns it to its last-visited tab.
+test('a domain drop returns to the last-visited tab (memory)', async () => {
   // navMemory is cleared in beforeEach, so this starts from a clean, order-independent store.
   // mezo-o6uv: the remembered tab is Kiegészítők (`/fuel/stack`) — Receptek left the Fuel row.
   const router = createMemoryRouter(routes, { initialEntries: ['/fuel/stack'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   // Visit a Fuel tab (Kiegészítők) so it is remembered, then leave for another domain.
-  await screen.findByRole('button', { name: 'Területváltó: Fuel' })
-  await userEvent.click(screen.getByRole('button', { name: 'Területváltó: Fuel' }))
-  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^Nap/ }))
+  await screen.findByRole('button', { name: 'Beállítások' })
+  await userEvent.click(domainDrop('Nap'))
   expect(router.state.location.pathname).toBe('/nap')
-  // Re-open the switcher from Nap and pick Fuel — it lands back on Kiegészítők, not Fuel tab 1.
-  await userEvent.click(await screen.findByRole('button', { name: 'Területváltó: Nap' }))
-  await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /^Fuel/ }))
+  // From Nap, the Fuel drop lands back on Kiegészítők, not Fuel tab 1.
+  await userEvent.click(domainDrop('Fuel'))
   expect(router.state.location.pathname).toBe('/fuel/stack')
+  expect(await screen.findByRole('link', { name: 'Kiegészítők' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('/mezo/karakter/dimenziok is the Dimenziók list — a stable full-page sibling (mezo-1gim.13, Task 4)', async () => {
@@ -169,8 +183,11 @@ test('/mezo/karakter/feed opens the feed with its filters — no in-page tab str
 })
 
 test('/mezo/karakter/csapat redirects to A csapat — the 9-expert roster retired (mezo-me75u.9)', async () => {
-  renderApp('/mezo/karakter/csapat')
-  expect(await screen.findByRole('heading', { name: 'A csapat' })).toBeInTheDocument()
+  const router = createMemoryRouter(routes, { initialEntries: ['/mezo/karakter/csapat'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  expect((await screen.findAllByRole('heading', { name: 'A csapat' })).length).toBeGreaterThan(0)
+  expect(router.state.location.pathname).toBe('/mezo/csapat')
+  expect(screen.getByRole('link', { name: 'A csapat' })).toHaveAttribute('aria-current', 'page')
 })
 
 test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
@@ -179,7 +196,7 @@ test('/mezo/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w,
   // stable full-page sibling — not the decision-first content, which KonziliumPage.test.tsx
   // already covers against the mock fixtures.
   renderApp('/mezo/karakter/konzilium')
-  expect(await screen.findByText('Konzílium')).toBeInTheDocument()
+  expect((await screen.findAllByText('Konzílium')).length).toBeGreaterThan(0)
 })
 
 test('/mezo/karakter/gepterem is the geek-transparency hub — a stable full-page sibling (mezo-1gim.14, Task 4)', async () => {
@@ -247,9 +264,9 @@ test('/me/people stays a stable full-page sibling of the hub', async () => {
   // page hero (and the page owns a back chip — `‹ Hol tartok` since mezo-lhqw7) — the route is unchanged.
   expect(await screen.findByText('Kapcsolatok', { selector: '.mz-hero-nm' })).toBeInTheDocument()
 })
-test('the tab bar stays visible on the regular Train tab', () => {
+test('the bottom bar stays visible on the regular Train tab', () => {
   const { container } = renderApp('/train')
-  expect(container.querySelector('.tab-bar')).toBeTruthy()
+  expect(container.querySelector('.fo-nav')).toBeTruthy()
 })
 
 // The six-tile Edzés hub retired in Train Titanium T4 (mezo-88iwa.5) — /train forwards
@@ -271,20 +288,27 @@ test('/train/sport stays a stable full-page sibling of the hub', async () => {
   // page hero — the route itself is unchanged.
   expect(await screen.findByText('Sport', { selector: '.mz-hero-nm' })).toBeInTheDocument()
 })
-test('the tab bar hides on the full-screen active-workout session (mezo-8141)', () => {
+test('the bottom bar hides on the full-screen active-workout session (mezo-8141)', () => {
   const { container } = renderApp('/train/session')
-  expect(container.querySelector('.tab-bar')).toBeNull()
+  expect(container.querySelector('.fo-nav')).toBeNull()
 })
-test('the tab bar hides on the full-screen Napzárás ritual flow (mezo-ilsj)', () => {
+test('the bottom bar hides on the full-screen Napzárás ritual flow (mezo-ilsj)', () => {
   const { container } = renderApp('/ritual')
-  expect(container.querySelector('.tab-bar')).toBeNull()
+  expect(container.querySelector('.fo-nav')).toBeNull()
+})
+// The settings centre keeps the title bar but not the bottom bar — the gate the old tab bar had.
+test.each(['/settings', '/settings/fuel'])('the bottom bar hides under %s, the title bar stays', (path) => {
+  const { container } = renderApp(path)
+  expect(container.querySelector('.fo-nav')).toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
+  expect(container.querySelector('.fo-top')).not.toBeNull()
 })
 // T8 Task 4 final review (mezo-88iwa.9): the sport flow is full-screen too — measured at
 // 320px the tab bar and the coral FAB covered the ceremony's close CTA and honesty line.
-test('the tab bar and the FAB hide on the full-screen sport log flow (mezo-88iwa.9)', () => {
+test('the bottom bar and the FAB hide on the full-screen sport log flow (mezo-88iwa.9)', () => {
   const { container } = renderApp('/train/sport/log')
-  expect(container.querySelector('.tab-bar')).toBeNull()
-  expect(container.querySelector('.quicklog-fab')).toBeNull()
+  expect(container.querySelector('.fo-nav')).toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
 })
 
 
@@ -314,7 +338,7 @@ test('/nap renders the day spine (Today content) and /today redirects to it', as
 })
 
 // Titanium rebuild (mezo-mhum): /nap/gyors is the FAB's full-page picker destination
-// (TabBar.test.tsx proves the FAB navigates here from /nap exactly) — this is the
+// (BottomBar.test.tsx proves the FAB navigates here from /nap exactly) — this is the
 // router-config-level half, proving `routes` itself resolves the path to NapGyorsPage.
 test('/nap/gyors resolves from the router config to the full-page quick-log picker', async () => {
   const router = createMemoryRouter(routes, { initialEntries: ['/nap/gyors'] })
@@ -324,9 +348,14 @@ test('/nap/gyors resolves from the router config to the full-page quick-log pick
 })
 
 // A napom (mezo-yjzhw.4): its route sits deeper than the tab itself (`/nap/napom/:date`),
-// so the longest-prefix rule (navModel.activeTabRoute) needs to still land on the tab.
-test('/nap/napom/2026-09-23 lights the „A napom" tab', async () => {
+// so the longest-prefix rule (navModel.activeTabRoute) needs to still land on the tab. In the
+// Folyadék frame the day page is a sub-page: the owning tab shows as the title bar's context
+// line and the back button's fallback, not as a lit pill.
+test('/nap/napom/2026-09-23 belongs to the „A napom" tab', async () => {
   renderApp('/nap/napom/2026-09-23')
+  expect(await screen.findByText('Nap · A napom')).toBeInTheDocument()
+  expect(document.querySelector('.fo-tabs')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('link', { name: 'A napom' })).toHaveAttribute('aria-current', 'page')
 })
 
@@ -341,9 +370,9 @@ test('/insights/chat redirects into the Mezo tab preserving the subpath', async 
 
 test('the floating quick-log FAB is present on tabs and hidden on full-screen flows', () => {
   const { container } = renderApp('/train')
-  expect(container.querySelector('.quicklog-fab')).not.toBeNull()
+  expect(container.querySelector('.fo-fab')).not.toBeNull()
   const ritual = renderApp('/ritual')
-  expect(ritual.container.querySelector('.quicklog-fab')).toBeNull()
+  expect(ritual.container.querySelector('.fo-fab')).toBeNull()
 })
 
 test('the floating chat bubble is retired — Mezo is a first-class tab now (decision B)', () => {
@@ -351,48 +380,49 @@ test('the floating chat bubble is retired — Mezo is a first-class tab now (dec
   expect(screen.queryByRole('button', { name: 'Beszélgetés a társsal' })).not.toBeInTheDocument()
 })
 
-test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
+test('hides the quick-log FAB on the chat page but keeps the bottom bar', () => {
   const { container } = renderApp('/mezo/chat')
-  expect(container.querySelector('.quicklog-fab')).toBeNull()
-  expect(container.querySelector('.tab-bar')).not.toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
+  expect(container.querySelector('.fo-nav')).not.toBeNull()
 })
 
 // mezo-7flr: the companion-first /nap has a bottom composer that owns the thumb zone, so the
 // coral FAB (which would overlap the send button) is hidden there — same call as the chat page.
-test('hides the quick-log FAB on the companion-first /nap but keeps the tab bar', () => {
+test('hides the quick-log FAB on the companion-first /nap but keeps the bottom bar', () => {
   const { container } = renderApp('/nap')
-  expect(container.querySelector('.quicklog-fab')).toBeNull()
-  expect(container.querySelector('.tab-bar')).not.toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
+  expect(container.querySelector('.fo-nav')).not.toBeNull()
 })
 
-test('the sticky header keeps its compact aurora without covering content or doubling the chat header', async () => {
-  const auroraRule = rawCss.match(/\.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
-  const condensedAuroraRule = rawCss.match(/\.app-head\.is-cond \.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
-  const roundButtonRule = rawCss.match(/\.nap-roundbtn\s*\{[^}]+\}/)?.[0] ?? ''
+// Replaces „the sticky header keeps its compact aurora …": the aurora and the condensed mode are
+// gone with the old header. What the case protected still holds on the title bar — it pins, its
+// controls keep their sizes, and the chat (its own header) does not get a second one.
+test('the sticky title bar keeps its controls without doubling the chat header', async () => {
+  const barRule = frameCss.match(/\.fo-top \{[^}]+\}/)?.[0] ?? ''
+  const buttonRule = frameCss.match(/\.fo-ib \{[^}]+\}/)?.[0] ?? ''
+  const hubButtonRule = frameCss.match(/\.fo-trow\.hub \.fo-ib \{[^}]+\}/)?.[0] ?? ''
 
-  expect.soft(auroraRule).toContain('height: calc(100% + 18px)')
-  expect.soft(auroraRule).toContain('black 70%')
-  expect.soft(condensedAuroraRule).not.toContain('opacity: 0')
-  expect.soft(rawCss).not.toMatch(/\.app-head\.is-cond::before\s*\{/)
-  expect.soft(rawCss).toContain('--mzh-head-cond-h: 46px')
-  expect.soft(roundButtonRule).toContain('width: 42px')
-  expect.soft(roundButtonRule).toContain('height: 42px')
+  expect.soft(barRule).toContain('position: sticky; top: 0')
+  expect.soft(barRule).toContain('padding: 18px 18px 0')
+  expect.soft(frameCss).not.toMatch(/is-cond|app-head/)
+  expect.soft(buttonRule).toContain('width: 42px; height: 42px')
+  expect.soft(hubButtonRule).toContain('width: 38px; height: 38px')
 
   const nap = renderApp('/nap')
-  const napHeader = nap.container.querySelector('.app-head')!
-  expect.soft(napHeader.querySelector('.app-head-wordmark')?.textContent).toBe('boop')
-  expect.soft(screen.getByLabelText('Beállítások').querySelector('svg')).toHaveAttribute('width', '24')
-  expect.soft(screen.getByLabelText(/Mezo üzenetei/).querySelector('svg')).toHaveAttribute('width', '23')
-  expect.soft(screen.getByLabelText(/Értesítések/).querySelector('svg')).toHaveAttribute('width', '23')
-  // Üveg (bible §7.1, mezo-me75u.1): the day orb is a 46px glass sphere holding a 38px liquid.
-  expect.soft(napHeader.querySelector('.nap-avatar svg')).toHaveAttribute('width', '38')
-  expect.soft(napHeader.querySelector('.nap-avatar')).toHaveClass('glass', 'is-round')
-  for (const btn of napHeader.querySelectorAll('.nap-roundbtn')) expect.soft(btn).toHaveClass('glass', 'is-round')
+  const bar = nap.container.querySelector('.fo-top')!
+  expect.soft(bar.querySelector('.fo-h h1')?.textContent).toBe('Ma')
+  expect.soft(bar.querySelector('.app-head-wordmark')).toBeNull()
+  for (const name of ['Minden oldal', 'Beállítások', /Mezo üzenetei/, /Értesítések/]) {
+    expect.soft(screen.getByRole('button', { name }).querySelector('svg')).toHaveAttribute('width', '24')
+  }
+  // The day orb is the shared 30px Drop inside a round button.
+  expect.soft((bar.querySelector('.fo-day .fo-drop') as HTMLElement).style.getPropertyValue('--s')).toBe('30px')
+  expect.soft(bar.querySelectorAll('.fo-btns > .fo-ib')).toHaveLength(5)
   nap.unmount()
 
   const { container } = renderApp('/mezo/chat')
   await screen.findByLabelText('Küldés')
-  expect.soft(container.querySelector('.app-head')).toBeNull()
+  expect.soft(container.querySelector('.fo-top')).toBeNull()
   expect.soft(container.querySelectorAll('.mzc-chathead')).toHaveLength(1)
   expect.soft(rawCss.match(/\.mzc-chathead\s*\{[^}]+\}/)?.[0] ?? '').toContain('top: 0')
 })
@@ -406,13 +436,13 @@ test('/fuel/log/uj is a stable full-page sibling — the logging page (mezo-bq2t
   expect(container.querySelector('.mz-page.flognew-page')).toBeInTheDocument()
 })
 
-test('hides the quick-log FAB on the logging page but keeps the tab bar (mezo-bq2t)', async () => {
+test('hides the quick-log FAB on the logging page but keeps the bottom bar (mezo-bq2t)', async () => {
   // The sticky save bar owns the thumb zone there (measured: the FAB sat right on top of it),
   // and a "quick log" FAB on the logging page itself is redundant — the /mezo/chat precedent.
   const { container } = renderApp('/fuel/log/uj')
   await screen.findByText('Ablakon kívül')
-  expect(container.querySelector('.quicklog-fab')).toBeNull()
-  expect(container.querySelector('.tab-bar')).not.toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
+  expect(container.querySelector('.fo-nav')).not.toBeNull()
 })
 
 test('hides the quick-log FAB on the quick-log picker page itself (mezo-mhum)', async () => {
@@ -420,6 +450,25 @@ test('hides the quick-log FAB on the quick-log picker page itself (mezo-mhum)', 
   // own destination and open the modal sheet duplicate on top of the full-page picker.
   const { container } = renderApp('/nap/gyors')
   await screen.findByText('Mi érkezett?')
-  expect(container.querySelector('.quicklog-fab')).toBeNull()
-  expect(container.querySelector('.tab-bar')).not.toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
+  expect(container.querySelector('.fo-nav')).not.toBeNull()
+})
+
+// Fix round 2 (owner rule): the header back returns where the user came from; a page's fixed
+// „parent" route is only the fallback for a direct link. The notification feed names `/me`.
+test('back from the notification feed returns to the page it was opened from, not to its parent', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/fuel'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await userEvent.click(await screen.findByRole('button', { name: /^Értesítések/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
+  expect(router.state.location.pathname).toBe('/me/ertesitesek')
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(router.state.location.pathname).toBe('/fuel')
+})
+
+test('on a direct link the notification feed’s back goes to its fallback, the Én hub', async () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/me/ertesitesek'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza' }))
+  expect(router.state.location.pathname).toBe('/me')
 })

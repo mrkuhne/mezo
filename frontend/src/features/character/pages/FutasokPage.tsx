@@ -75,7 +75,7 @@ export function FutasokPage() {
   const goWeek = (iso: string) => { setParams({ start: iso }, { replace: true }); setMenuOpen(false) }
 
   // Fix round 1 (minor): the jump menu had no outside-click/Escape dismissal — the
-  // AppHeader.tsx popover contract (Escape + a "click outside the popover's own root"
+  // TitleBar.tsx popover contract (Escape + a "click outside the popover's own root"
   // listener, subscribed only while open), applied here instead of duplicated ad hoc.
   useEffect(() => {
     if (!menuOpen) return
@@ -108,7 +108,7 @@ export function FutasokPage() {
   return (
     <div className="tf-page tf-c-slate gtm-page gtm-futasok">
       <GepteremHead small="Gépterem · a pipeline futásai, hetekre bontva" title="Futások"
-        onBack={() => navigate('/mezo/karakter/gepterem')} />
+        fallback="/mezo/karakter/gepterem" />
       <div className="gtm-week">
         <button type="button" className="gtm-wstep" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
         {/* Fix round 1 (a11y): no `aria-label` override on the week button — its own text (the

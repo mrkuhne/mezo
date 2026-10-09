@@ -30,7 +30,7 @@ function renderApp(path: string) {
 // (router.trainIndexRedirect.test.tsx covers the redirect itself). The hub-tile
 // navigation test that lived here (rendering /train and tapping its Sport/Medálok/
 // Mesociklus tiles) went with it — those destinations are still reached directly by
-// their own routes below and via the four-tab bar (TabBar.test.tsx).
+// their own routes below and via the four top tabs (TopTabs.test.tsx).
 
 // The Gym muscle-zone view folds into Heti in the new IA (handoff §10) — its route stays
 // reachable and keeps its own face until the F2.2 slice absorbs it.

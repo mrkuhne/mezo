@@ -132,7 +132,7 @@ test('a Fuel kalauz minden horgonya szerepel a fenti körben', () => {
 })
 
 // A18/E11 lint, Fuel-idiom átvéve a Train Titanium T4 kalauzára (mezo-88iwa.5, final-
-// review fix wave): a fenti S3a-kör (a `/train/*` sorok) + a `train-tabs` (TabBar.tsx,
+// review fix wave): a fenti S3a-kör (a `/train/*` sorok) + a `train-tabs` (TopTabs.tsx,
 // minden /train/*-on) fedi le a TRAIN_KALAUZ MINDEN „hogyan" horgonyát.
 test('az Edzés kalauz minden horgonya szerepel a fenti körben', () => {
   const covered = new Set(['train-tabs', 'mai-napsav', 'heti-terheles', 'sport-tabs',

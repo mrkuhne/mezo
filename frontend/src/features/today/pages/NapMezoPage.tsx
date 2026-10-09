@@ -50,6 +50,7 @@ import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { localDateString } from '@/shared/lib/dates'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The message head's art (üveg, mezo-me75u.3): a nudge carries its need's own clay icon (it
  *  renders through `CLAY_TO_3D`); a companion message carries a KIND, mapped here onto the 3D
@@ -381,9 +382,9 @@ export function NapMezoPage() {
       {/* The house PageHead markup (same button, same name), worn as a small still glass pill
           (üveg, mezo-me75u.3) — PageHead itself takes no class. */}
       <div className="mz-page-head">
-        <button type="button" className="mz-backbtn glass is-still" onClick={() => navigate(-1)} aria-label="Vissza">
+        <FrameBack history className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
           ‹ Ma
-        </button>
+        </FrameBack>
       </div>
       {/* Hero (rank 1): no card — a frameless lavender + gold halo around the living Mezo Boop,
           then name → sub (no bignum). */}

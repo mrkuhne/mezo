@@ -36,7 +36,7 @@ function stubReduced() {
   }))
 }
 
-// The force-claim stack is parked behind the dark-only lock (üveg bible §8, mezo-me75u.1):
+// The force-claim stack is parked behind the light lock (Folyadék bible §1.1, mezo-n4wf5.1):
 // these tests exercise it with the lock lifted.
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')

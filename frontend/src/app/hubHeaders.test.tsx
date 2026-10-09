@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
@@ -26,25 +26,35 @@ const renderAt = (path: string) => {
 }
 
 // Design 2.0 endgame (mezo-d20.9.1) óta minden tab-gyökér SAJÁT `.nap-head` blokkot vitt —
-// öt másolat, eltérő tartalommal. mezo-atry ezt megfordítja: a fejléc a SHELL-é (AppLayout),
-// tehát egyetlen példány van belőle, minden oldalon ugyanaz, ugyanabban a sorrendben.
+// öt másolat, eltérő tartalommal. mezo-atry ezt megfordította: a fejléc a SHELL-é (AppLayout),
+// tehát egyetlen példány van belőle. A Folyadék-keret (mezo-n4wf5.1) ezt a szerződést viszi
+// tovább az új címsoron (`.fo-top`, TitleBar): egy példány, minden hubon ugyanaz a sorrend.
 //   /nap — mezo-d20.2.1  /train — mezo-d20.3.1  /fuel — mezo-d20.4.1
 //   /mezo — mezo-d20.5.1 (a /insights route ide irányít át)   /me — mezo-d20.6.1
-test.each(['/nap', '/train', '/fuel', '/mezo', '/me'])('a %s tab-gyökéren PONTOSAN egy .nap-head van', (path) => {
+test.each(['/nap', '/train', '/fuel', '/mezo', '/me'])('a %s tab-gyökéren PONTOSAN egy címsor van', (path) => {
   renderAt(path)
-  expect(document.querySelectorAll('.nap-head')).toHaveLength(1)
+  expect(document.querySelectorAll('.fo-top')).toHaveLength(1)
+  // a régi fejléc egyik másolata sem maradt
+  expect(document.querySelector('.nap-head, .app-head')).toBeNull()
 })
 
-const BASE_CONTROLS = [
-  'Beállítások',
+const barLabels = (container: HTMLElement) =>
+  [...container.querySelectorAll('.fo-top button')].map((b) => b.getAttribute('aria-label'))
+
+// A hub öt kerek gombja, a jóváhagyott sorrendben (Folyadék-keret, owner 2026-10-09).
+const HUB_CONTROLS = [
+  'Minden oldal',
   expect.stringMatching(/^Mezo üzenetei/),
   expect.stringMatching(/^Értesítések/),
-  // mezo-idz2: a jobb szélső gomb már nem a profilra visz (azt az alsó „Én" fül adja),
+  'Beállítások',
+  // mezo-idz2: a jobb szélső gomb nem a profilra visz (azt az alsó „Én" csepp adja),
   // hanem a mai nap-oldalra, és a napi töltöttséget is kimondja.
   expect.stringMatching(/^A mai napod/),
 ]
+// Az aloldal sávja: vissza · (kalauz) · csengő.
+const SUB_CONTROLS = ['Vissza', expect.stringMatching(/^Értesítések/)]
 
-// mezo-gb1s.1/.3: a „?" a gombsor ELEJÉN áll, de csak ott, ahol van registry-találat.
+// mezo-gb1s.1/.3: a „?" csak ott áll, ahol van registry-találat — az új keretben a cím UTÁN.
 // Az elvárás KÉZZEL írt tábla, nem a registryből származtatott: az utóbbi akkor is zöld
 // maradna, ha egy kalauz kiesne a registryből (a teszt a kód alól kérdezné az igazságot).
 // A teljes gomblistát nézzük, nem prefixet — így egy oda nem illő extra gomb is kibukik.
@@ -56,47 +66,66 @@ test.each([
   ['/train/mai', 'train-mai'],
   ['/fuel', 'fuel'],
   ['/me', 'me'],
-])('a %s fejléce a kalauz-gombot (%s) + a négy alap-kontrollt viseli', (path, id) => {
+])('a %s címsora az öt alap-kontrollt + a kalauz-gombot (%s) viseli', (path, id) => {
   expect(findKalauz(path)?.id).toBe(id)
   const { container } = renderAt(path)
-  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
-  expect(labels).toEqual(['Kalauz ehhez az oldalhoz', ...BASE_CONTROLS])
+  expect(barLabels(container)).toEqual([...HUB_CONTROLS, 'Kalauz ehhez az oldalhoz'])
 })
 
-// A kalauz nélküli route-on nincs „?" — a négy alap-kontroll marad. A fixture S3a óta
-// (mezo-gb1s.5: minden Nap/Edzés T2 aloldal kalauzos) egy T3-váró heti alnézet; az S4
-// (mezo-gb1s.9) ezt is kalauzossá teszi majd — akkor a fixture-t újra költöztetni
-// (vagy a tesztet kivezetni: chrome-os, kalauz nélküli route nem marad).
 // A /mezo kalauza kivezetve (mezo-a9bo7.10): a csapat-üzenőfal posztokban mutatkozik be.
-test('a /mezo fejlécén nincs „?" gomb — a fal maga mutatkozik be', () => {
+test('a /mezo címsorán nincs „?" gomb — a fal maga mutatkozik be', () => {
   expect(findKalauz('/mezo')).toBeNull()
   const { container } = renderAt('/mezo')
-  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
-  expect(labels).toEqual(BASE_CONTROLS)
+  expect(barLabels(container)).toEqual(HUB_CONTROLS)
 })
 
-test('a kalauz nélküli aloldal fejlécén nincs „?" gomb', () => {
+// A kalauz nélküli route-on nincs „?". A fixture egy T3-váró heti alnézet — aloldal, tehát a
+// sávja a vissza és a csengő (a hub öt gombja az aloldalon nincs ott).
+test('a kalauz nélküli aloldal címsorán nincs „?" gomb — vissza és csengő', () => {
   expect(findKalauz('/me/week/napok')).toBeNull()
   const { container } = renderAt('/me/week/napok')
-  const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
-  expect(labels).toEqual(BASE_CONTROLS)
+  expect(barLabels(container)).toEqual(SUB_CONTROLS)
 })
 
-// A fejléc nem áll meg a tab-gyökereknél — az aloldalakon is ott van (D1).
-test('az aloldalakon is ott a fejléc', () => {
-  renderAt('/nap/rutin')
-  expect(document.querySelectorAll('.nap-head')).toHaveLength(1)
+test('a kalauzos aloldal címsorán a „?" a vissza és a csengő között áll', () => {
+  expect(findKalauz('/nap/checkin')).not.toBeNull()
+  const { container } = renderAt('/nap/checkin')
+  expect(barLabels(container)).toEqual(['Vissza', 'Kalauz ehhez az oldalhoz', expect.stringMatching(/^Értesítések/)])
 })
 
-// A chrome-mentes teljes képernyős flow-k: ahol a TabBar sem látszik, a fejléc sem.
-test.each(['/train/session', '/train/sport/log', '/me/sleep/night', '/ritual'])('a %s chrome-mentes felületen nincs fejléc', (path) => {
+// A címsor nem áll meg a tab-gyökereknél — a többi fülön és az aloldalakon is ott van (D1).
+test.each(['/nap/rutin', '/nap/checkin', '/fuel/recipes', '/settings', '/minden'])('a %s oldalon is ott a címsor', (path) => {
   renderAt(path)
-  expect(document.querySelector('.nap-head')).not.toBeInTheDocument()
+  expect(document.querySelectorAll('.fo-top')).toHaveLength(1)
+})
+
+// A fülsor a hubé: a terület négy oldala a cím alatt. Aloldalon nincs fülsor.
+test.each([
+  ['/nap', 'Nap'], ['/nap/rutin', 'Nap'], ['/train/mai', 'Edzés'], ['/fuel/stack', 'Fuel'], ['/mezo', 'Mezo'], ['/me', 'Én'],
+])('a %s hub címsorában ott a(z) %s terület négy füle', (path, name) => {
+  renderAt(path)
+  const strip = screen.getByRole('navigation', { name: `${name} oldalai` })
+  expect(strip.closest('header')).toHaveClass('fo-top')
+  expect(within(strip).getAllByRole('link')).toHaveLength(4)
+  expect(document.querySelector('.fo-top')).not.toHaveClass('sub')
+})
+
+test.each(['/nap/checkin', '/fuel/recipes', '/me/week/napok', '/settings', '/minden'])('a %s aloldalon nincs fülsor', (path) => {
+  renderAt(path)
+  expect(document.querySelector('.fo-top')).toHaveClass('sub')
+  expect(document.querySelector('.fo-tabs')).toBeNull()
+})
+
+// A chrome-mentes teljes képernyős flow-k: ahol az alsó sáv sem látszik, a címsor sem.
+test.each(['/train/session', '/train/sport/log', '/me/sleep/night', '/ritual'])('a %s chrome-mentes felületen nincs címsor', (path) => {
+  renderAt(path)
+  expect(document.querySelector('.fo-top')).not.toBeInTheDocument()
+  expect(document.querySelector('.fo-nav')).not.toBeInTheDocument()
 })
 
 // A Nap hub fejlécéből az ✨ Insights link már a Design 2.0 körben eltűnt (a Mezo első-
-// osztályú tab, B döntés) — ez a pin marad.
-test('a Nap fejléce nem visz ✨ Insights linket', () => {
+// osztályú terület, B döntés) — ez a pin marad.
+test('a Nap címsora nem visz ✨ Insights linket', () => {
   renderAt('/nap')
   expect(document.querySelector('a[aria-label="Insights"]')).not.toBeInTheDocument()
 })

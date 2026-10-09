@@ -111,15 +111,15 @@ export function MesocyclePlannerPage() {
       // proposal — start (below) is irrelevant to this signal, so it fires unconditionally here.
       resolvePending(state.dirty ? 'edited' : 'accepted')
       if (!alsoStart) {
-        navigate('/train/mesocycles/konyvtar')
+        navigate('/train/mesocycles/konyvtar', { replace: true })
         return
       }
       try {
         await startTemplate(tpl.id, { startDate: todayIso, status: 'active' })
-        navigate('/train/gym')
+        navigate('/train/gym', { replace: true })
       } catch {
         // The template IS saved; only the run stamping died — the library is where it lives.
-        navigate('/train/mesocycles/konyvtar')
+        navigate('/train/mesocycles/konyvtar', { replace: true })
       }
     } catch {
       setSaving(false)

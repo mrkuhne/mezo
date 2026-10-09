@@ -49,9 +49,9 @@ export default defineConfig({
         name: 'Boop',
         short_name: 'Boop',
         description: 'Holistic AI performance & health companion',
-        // Dark-only lock (üveg bible §8, mezo-me75u.1): the near-black graphite canvas (mezo-nn7h0).
-        theme_color: '#141210',
-        background_color: '#141210',
+        // Folyadék light lock (bible §1.1, mezo-n4wf5.1): the cool light page colour.
+        theme_color: '#EEF5F9',
+        background_color: '#EEF5F9',
         display: 'standalone',
         orientation: 'portrait',
         icons: [

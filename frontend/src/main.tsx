@@ -21,21 +21,23 @@ createRoot(document.getElementById('root')!).render(
     <ErrorBoundary
       fallback={() => (
         // Inline on purpose (mezo-me75u.10): this renders when the stylesheet itself may be the
-        // casualty. The dark lock's black ground + ink, one faint glass-ish cell, a lit pill.
+        // casualty. The Folyadék light identity by literal (mezo-n4wf5.1): the page ground
+        // #EEF5F9, ink #0A2A3C (secondary #4E6B7A for the cell's hairline), one white cell, and
+        // the action pill in the Nap blue #1877F2.
         <div role="alert" style={{
           minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24,
-          background: '#000', color: '#F5EFE6', fontFamily: 'system-ui, sans-serif',
+          background: '#EEF5F9', color: '#0A2A3C', fontFamily: 'system-ui, sans-serif',
         }}>
           <div style={{
             width: '100%', maxWidth: 320, textAlign: 'center', padding: '22px 18px', borderRadius: 22,
-            background: 'linear-gradient(160deg, rgba(52,46,41,.72), rgba(30,27,24,.60))',
-            boxShadow: 'inset 0 0 0 1px rgba(245,239,230,.10), 0 0 26px -6px rgba(171,159,210,.35)',
+            background: '#fff',
+            boxShadow: 'inset 0 0 0 1px rgba(78,107,122,.18), 0 18px 30px -22px rgba(10,42,60,.45)',
           }}>
             <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Valami elromlott.</p>
             <button type="button" onClick={() => window.location.reload()} style={{
               marginTop: 16, padding: '11px 22px', border: 0, borderRadius: 999, cursor: 'pointer',
-              font: 'inherit', fontSize: 14, fontWeight: 700, color: '#191614', background: '#AB9FD2',
-              boxShadow: '0 0 14px rgba(171,159,210,.55)',
+              font: 'inherit', fontSize: 14, fontWeight: 700, color: '#fff', background: '#1877F2',
+              boxShadow: '0 10px 18px -10px rgba(24,119,242,.7)',
             }}>
               Újratöltés
             </button>

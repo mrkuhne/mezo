@@ -1,0 +1,191 @@
+/* ── folyadék frame (mezo-n4wf5.1, Task 5) ── the app chrome: title bar, top tabs, five-drop bottom
+   bar, the floating quick-log button. Owner-approved 2026-10-09.
+   Ported verbatim in values from docs/design_2.0/prototypes/vilagos/kit.js (`.fh-top .fh-trow
+   .fh-title .fh-ib .fh-tabs .fh-nav`, base + the "élő" layer) and vilagos/foly.js (the `Q`-scoped
+   overrides, the "F1 frame parity" block, `.fh-fab`, the `@media (max-width:360px)` rules),
+   classes renamed `.fh-*` → `.fo-*`. Components: app/TitleBar.tsx, app/TopTabs.tsx,
+   app/BottomBar.tsx, app/QuickLogFab.tsx.
+   The base rules are the still frame; all motion lives in the no-preference block at the end. */
+
+.phone-screen {
+  /* Where the floating bottom bar stands: 10px off the edge, lifted clear of the home
+     indicator's own strip on a Face-ID phone (inset 34px → 20px). The FAB derives from it. */
+  --fo-nav-bottom: max(10px, calc(env(safe-area-inset-bottom, 0px) - 14px));
+}
+/* The desktop phone mock draws a fake home indicator at the bottom edge: the bar stands above it. */
+@media (min-width: 520px) and (display-mode: browser) {
+  .phone-screen { --fo-nav-bottom: 20px; }
+}
+
+/* ── 1 · title bar: where am I ── */
+.fo-top {
+  position: sticky; top: 0; isolation: isolate;
+  /* 46: above the pages' own sticky chrome (breadcrumb 40, chat header 30), below the StatusBar (50). */
+  z-index: 46;
+  /* full-bleed: steps over the scroller's --screen-gutter so the bar reaches the screen edges */
+  margin-inline: calc(-1 * var(--screen-gutter));
+  padding: 18px 18px 0;
+  color: var(--fo-ink); font-family: var(--ff-body);
+}
+/* The bar's ground — the translucent light surface and its blur — is a layer of exactly the
+   bar's own box (inset 0: no tail past the bottom edge). It is NOT on `.fo-top` itself on
+   purpose: a `backdrop-filter` makes its element the containing block of `position: fixed`
+   descendants, and the notification scrim must be fixed to the screen (see below). */
+.fo-top::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: color-mix(in srgb, #F8FCFD 78%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+}
+.fo-top.sub { padding-bottom: 12px; }
+/* The bar's content sits above the notification scrim (0); the panel (2) above both. */
+.fo-top > * { position: relative; z-index: 1; }
+.fo-trow { display: flex; align-items: center; gap: 8px; }
+.fo-trow.hub { gap: 6px; }
+/* the context line: a drop dot + the date (hub) / „Terület · Fül" (sub-page) */
+.fo-eb, .fo-title small { display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; font-size: 12px; font-weight: 600; line-height: 16px; color: var(--fo-sub); }
+.fo-eb { flex: 1; min-width: 0; }
+.fo-eb i, .fo-title small i { flex: none; width: 8px; height: 10px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: linear-gradient(160deg, var(--liq1), var(--liq2)); }
+.fo-eb > span, .fo-title small > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fo-btns { display: flex; gap: 6px; flex: none; }
+/* the round buttons */
+.fo-ib {
+  position: relative; flex: 0 0 auto; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; font-family: inherit;
+  color: var(--fo-ink); background: #fff; box-shadow: 0 6px 14px -8px rgba(10, 42, 60, .4);
+}
+.fo-trow.hub .fo-ib { width: 38px; height: 38px; }
+.fo-ib.is-open { box-shadow: 0 6px 14px -8px rgba(10, 42, 60, .4), inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 45%, #fff); }
+.fo-ib:focus-visible, .fo-help:focus-visible, .fo-tabs a:focus-visible, .fo-nav-item:focus-visible, .fo-fab:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fo-ib .fo-badge-n {
+  position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+  display: grid; place-items: center; font-size: 10px; font-weight: 700; line-height: 1; color: #fff;
+  background: var(--liq2); box-shadow: 0 0 0 2px #F8FCFD;
+}
+.fo-back { font-size: 24px; line-height: 1; font-weight: 500; padding-bottom: 3px; }
+.fo-day .fo-drop .body { filter: none; }
+/* the title + the kalauz mark after it */
+.fo-title { flex: 1; min-width: 0; }
+.fo-trow.hub + .fo-title { margin-top: 6px; }
+.fo-h { font-family: var(--ff-display); font-size: 36px; font-weight: 800; letter-spacing: -1.4px; line-height: 1.1; margin-top: 2px; color: var(--fo-ink); }
+.fo-h.sm { font-size: 24px; letter-spacing: -.6px; }
+.fo-h h1 { display: inline; margin: 0; font: inherit; letter-spacing: inherit; color: inherit; }
+.fo-help {
+  position: relative; width: 22px; height: 22px; margin-left: 8px; padding: 0; border: 0; vertical-align: middle; border-radius: 50%;
+  display: inline-grid; place-items: center; cursor: pointer; font: 800 12.5px/1 var(--ff-display); letter-spacing: 0;
+  color: color-mix(in srgb, var(--dom) 80%, var(--fo-ink)); background: #fff; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 30%, #fff);
+}
+.fo-help::before { content: ''; position: absolute; inset: -11px; }   /* a 44px tap target around the 22px mark */
+.fo-help.is-open { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 70%, #fff); }
+/* a liquid dot = a guide not yet seen */
+.fo-help.new::after { content: ''; position: absolute; right: -3px; top: -3px; width: 8px; height: 9px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: linear-gradient(160deg, var(--liq1), var(--liq2)); box-shadow: 0 0 0 2px #F8FCFD; }
+
+/* ── 2 · top tabs: the domain's four pages ── */
+.fo-tabs { display: flex; gap: 6px; margin: 14px -2px 0; padding-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+.fo-tabs::-webkit-scrollbar { display: none; }
+.fo-tabs a {
+  position: relative; flex: none; padding: 8px 14px; border-radius: 999px; text-decoration: none; white-space: nowrap;
+  font-size: 13.5px; font-weight: 600; line-height: 18px; color: var(--fo-sub);
+}
+.fo-tabs a.on { color: #fff; font-weight: 700; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 16px -8px var(--liq2); }
+/* the „A napom" morning dot and the „Beszélgetés" unread count */
+.fo-tabs .td { display: inline-block; width: 7px; height: 8px; margin-left: 6px; vertical-align: 1px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: linear-gradient(160deg, var(--liq1), var(--liq2)); }
+.fo-tabs .on .td { background: #fff; }
+.fo-tabs .tn { display: inline-grid; place-items: center; min-width: 18px; height: 18px; margin-left: 6px; padding: 0 5px; border-radius: 9px; font: 800 10.5px/1 var(--ff-display); color: #fff; background: var(--liq2); vertical-align: 1px; }
+.fo-tabs .on .tn { color: var(--liq2); background: #fff; }
+.fo-tabs > .sr-only { position: absolute; }
+
+/* ── 3 · bottom bar: the five domains, always ── */
+.fo-nav {
+  position: absolute; left: 10px; right: 10px; bottom: var(--fo-nav-bottom); z-index: 40;
+  display: flex; padding: 8px 6px 6px; border: 0; border-radius: 30px;
+  background: rgba(255, 255, 255, .86);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+  box-shadow: 0 18px 34px -16px rgba(15, 30, 51, .45), inset 0 0 0 1px rgba(15, 30, 51, .06);
+}
+.fo-nav-item {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border-radius: 20px;
+  text-decoration: none; font-family: var(--ff-body); font-size: 11px; font-weight: 600; line-height: 14px; color: var(--fo-faint);
+  /* the row is as tall as the ACTIVE item (40px drop); a resting one keeps the same box */
+  min-height: 57px;
+}
+.fo-nav-item.on { background: none; color: var(--fo-ink); font-weight: 800; }
+.fo-nav .fo-drop .body { filter: none; }
+/* the fake home indicator of the desktop phone mock reads on the light ground */
+.phone-screen:has(.fo-nav) > .home-indicator { background: var(--fo-ink); }
+
+/* ── 4 · the floating quick-log button ── */
+.fo-fab {
+  position: absolute; right: 16px; bottom: calc(var(--fo-nav-bottom) + 86px); z-index: 44;
+  width: 54px; height: 54px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+  color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2));
+  box-shadow: 0 16px 24px -12px var(--liq2), 0 4px 8px -4px rgba(10, 42, 60, .3), inset 0 0 0 1.5px rgba(255, 255, 255, .35);
+}
+.fo-fab svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; }
+.fo-fab::before { content: ''; position: absolute; left: 8px; right: 8px; top: 5px; height: 13px; border-radius: 50%; background: linear-gradient(180deg, rgba(255, 255, 255, .4), transparent); }
+
+/* ── the page's own sticky chrome pins BELOW the title bar ──
+   The bar publishes its height (`--fo-top-h`, TitleBar.tsx): it differs by face (hub with tabs /
+   sub-page) and by width. Only where a title bar exists: on the chrome-free routes there is
+   nothing to pin under, and `.sticky-top` keeps its `top: 0`. */
+.screen-content:has(.fo-top) .sticky-top { top: var(--fo-top-h, 74px); }
+.screen-content:has(.fo-top) .mmr-page .mmr-segbar { top: calc(var(--fo-top-h, 74px) + 12px); }
+
+/* ── the notification panel under the bell ──
+   Behaviour and content are the retired header's, unchanged (mezo-g9fz, mezo-tdzy). The panel
+   hangs from the bar's two edges (it is the `<header>`'s child), under the button row; inside
+   it scrolls. Here: its place under the new bar and its light dress — a white card. */
+.fo-top > .nap-ntfpanel {
+  position: absolute; left: 12px; right: 12px; top: 62px; z-index: 2;
+  display: flex; flex-direction: column; max-height: min(600px, 74vh);
+  background: #fff; border: 0; border-radius: 24px; overflow: hidden; color: var(--fo-ink);
+  box-shadow: 0 26px 48px -20px rgba(10, 42, 60, .5), 0 8px 18px -12px color-mix(in srgb, var(--dom) 40%, transparent);
+  transform-origin: 88% top;
+}
+.fo-top.sub > .nap-ntfpanel { top: 66px; }
+/* The scrim is the bar's child at z 0: the buttons (1) and the panel (2) stay above it, the page
+   below the bar is veiled because the whole bar (46) is above the page. FIXED to the screen, as
+   in the retired header: an absolutely positioned veil taller than a short page added scrollable
+   overflow to the app's scroller (measured: up to +288px). */
+.fo-top > .nap-ntfscrim { position: fixed; inset: 0; z-index: 0; background: rgba(10, 42, 60, .18); }
+.fo-top .nap-ntfeyebrow { color: var(--fo-sub); }
+.fo-top .nap-ntfcnt { color: #fff; background: var(--liq2); }
+.fo-top .nap-ntfcnt.is-none { color: var(--fo-sub); background: rgba(10, 42, 60, .06); }
+.fo-top .nap-ntfallread, .fo-top .nap-ntfft button { color: color-mix(in srgb, var(--dom) 80%, var(--fo-ink)); }
+.fo-top .nap-ntftabs button { border: 0; color: var(--fo-sub); background: rgba(10, 42, 60, .05); font-size: 12px; font-weight: 600; padding: 6px 11px; }
+.fo-top .nap-ntftabs button .n { color: var(--fo-faint); }
+.fo-top .nap-ntftabs button.on { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); }
+.fo-top .nap-ntftabs button.on .n { color: #fff; }
+.fo-top .nap-ntftabs button.on .t-ico { --ic: #fff; --ic2: rgba(255, 255, 255, .4); }
+.fo-top .nap-ntfday { background: #fff; color: var(--fo-sub); box-shadow: 0 6px 8px -6px #fff; }
+.fo-top .nap-ntfrow { background: rgba(10, 42, 60, .03); margin-bottom: 6px; }
+.fo-top .nap-ntfrow.unread { background: color-mix(in srgb, var(--dom) 7%, #fff); box-shadow: inset 2px 0 0 var(--liq2); }
+.fo-top .nap-ntf-t { color: var(--fo-ink); }
+.fo-top .nap-ntf-x { color: var(--fo-sub); }
+.fo-top .nap-ntf-when { color: var(--fo-faint); }
+.fo-top .nap-ntfrow.unread .nap-ntf-when { color: color-mix(in srgb, var(--dom) 80%, var(--fo-ink)); }
+.fo-top .nap-ntf-dot { background: var(--liq2); }
+/* the row icon is the outlined mark alone — no tint tile behind it */
+.fo-top .nap-ntfico { width: 30px; height: 30px; border-radius: 0; background: none; box-shadow: none; }
+.fo-top .nap-ntfft { border-top-color: rgba(10, 42, 60, .08); }
+.fo-top .nap-ntfempty { color: var(--fo-sub); }
+
+/* ── small phones (≤360px): the five buttons take their own line ABOVE the context line; titles shrink ── */
+@media (max-width: 360px) {
+  .fo-h:not(.sm) { font-size: 25px; letter-spacing: -.9px; }
+  .fo-h.sm { font-size: 21px; }
+  .fo-trow.hub { flex-wrap: wrap; row-gap: 8px; }
+  .fo-trow.hub .fo-btns { margin-left: auto; order: 1; }
+  .fo-trow.hub .fo-eb { order: 2; flex: 0 0 100%; }
+  .fo-trow.hub .fo-ib { width: 36px; height: 36px; }
+  .fo-top > .nap-ntfpanel { top: 60px; }
+}
+
+/* ── motion: only for those who did not ask for less ── */
+@keyframes fo-ntfpop { from { opacity: 0; transform: translateY(-8px) scale(.965); } to { opacity: 1; transform: none; } }
+@keyframes fo-ntffade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) {
+  .fo-top > .nap-ntfpanel { animation: fo-ntfpop .26s cubic-bezier(.2, .9, .28, 1.06) both; }
+  .fo-top > .nap-ntfscrim { animation: fo-ntffade .22s ease both; }
+  .fo-ib, .fo-fab, .fo-nav-item, .fo-tabs a { transition: transform .12s ease; }
+  .fo-ib:active, .fo-fab:active, .fo-tabs a:active { transform: scale(.94); }
+}

@@ -117,7 +117,7 @@ test('unmounting removes the portalled dock from the frame', () => {
   document.querySelector('.phone-screen')!.remove()
 })
 
-// U4 (mezo-me75u.4): the dock is always-visible chrome like the TabBar — one glass bar with NO
+// U4 (mezo-me75u.4): the dock is always-visible chrome like the BottomBar — one glass bar with NO
 // sheen (`.glass.is-still`, bible §7.2), and resting shows the 3D stopwatch inside the ring.
 test('the dock is one no-sheen glass bar; resting puts the 3D clock in the ring', () => {
   const { rerender } = render(<WorkoutDock {...idleProps()} />)

@@ -138,7 +138,7 @@ test('Edzés Mai · kímélő mód return: Üdv újra!, the comeback note, Kikap
     await link.scrollIntoViewIfNeeded()
     const hit = await link.evaluate((el) => {
       // worst case: scroll the link level with the FAB's own centre line
-      const fabBox = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+      const fabBox = document.querySelector('.fo-fab')?.getBoundingClientRect()
       if (fabBox) {
         const now = el.getBoundingClientRect()
         const sc = document.querySelector('.screen-content') as HTMLElement
@@ -146,7 +146,7 @@ test('Edzés Mai · kímélő mód return: Üdv újra!, the comeback note, Kikap
       }
       const r = el.getBoundingClientRect()
       const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)
-      const fab = document.querySelector('.quicklog-fab')?.getBoundingClientRect()
+      const fab = document.querySelector('.fo-fab')?.getBoundingClientRect()
       return { onLink: Boolean(top && el.contains(top)), right: r.right, fabLeft: fab ? fab.left : Infinity }
     })
     expect(hit.onLink, name).toBe(true)

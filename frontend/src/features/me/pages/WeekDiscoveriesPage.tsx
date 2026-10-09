@@ -15,7 +15,7 @@
 // plain centred lead instead of the lav head card, glass tiles (WeekDiscoveries), and the
 // quiet week / error states dashed.
 // ============================================================
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
@@ -24,7 +24,6 @@ import { resolveWeekStart, weekHubPath } from '@/features/me/logic/weekNav'
 import { WeekDiscoveries, countDiscoveries } from '@/features/me/components/WeekDiscoveries'
 
 export function WeekDiscoveriesPage() {
-  const navigate = useNavigate()
   const [params] = useSearchParams()
   const start = resolveWeekStart(params.get('start'))
   const { digest, isPending, isError, refetch } = useWeeklyReview(start)
@@ -32,7 +31,7 @@ export function WeekDiscoveriesPage() {
   const empty = count === 0
 
   const head = (
-    <PageHead glass label="Heti" onBack={() => navigate(weekHubPath(start))}>
+    <PageHead glass label="Heti" history fallback={weekHubPath(start)}>
       <span className="mz-eyebrow wkl-wk">{deriveWeekTitle(start)}</span>
     </PageHead>
   )

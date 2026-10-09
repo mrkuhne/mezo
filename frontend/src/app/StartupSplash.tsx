@@ -1,31 +1,42 @@
 // ============================================================
-// Mezo · Indító-képernyő (mezo-qducz; visszaöltöztetve mezo-ju4j6.3).
+// Mezo · Indító-képernyő (Folyadék F1, mezo-n4wf5.1).
 //
-// A Titán változat egy ÉLŐ 3D jelenetet (TitanArtwork/WebGL) mutatott hideg grafit
-// vásznon, és épp ezért kellett neki egy „készen van-e már" varrat: a három látható
-// másodperc csak az első kirajzolt kockától indult, egy beragadt chunkra pedig 5
-// másodperces vészkijárat vigyázott. A visszaállított világ jele STATIKUS agyag-gömb
-// (`s-orb`) borostyán halo-sávon (style bible §2.2 C + §6) — az első kockán ott van,
-// tehát a készültség-varrat tárgytalan, és vele a vészidőzítő is. A felhasználó felé a
-// viselkedés VÁLTOZATLAN: három másodperc, aztán az app; addig a mögötte már mountolt
-// felület inert.
+// „Egy edény, öt csepp": egy fehér kapszula-edény megtelik öt színes folyadék-réteggel (az öt
+// domain), majd a verem kifolyik az alján, és minden réteg cseppként a helyére hullik az alsó
+// sávban; végül a bevezető elhalványul, és ott az app — a színpad ÁTLÁTSZÓ rátét (a saját
+// telefon-kerete semmit nem fest), így a halványulás a mögötte már mountolt appba olvad át.
+// A felhasználó felé a viselkedés VÁLTOZATLAN: három másodperc, aztán az app; addig a mögötte
+// már mountolt felület inert.
 //
-// Üveg (mezo-me75u.10): a jel egy 150px-es levendula ÜVEG-GÖMB, benne levendula folyadék lassú
-// hullámmal és egy fény-ívvel (a fejléc napi gömbjének rokona), levendula→arany halón, alatta a
-// „boop" gradiens szó-logó. Mozgás csak a no-preference ágban; időzítés és viselkedés változatlan.
-//
-// Töltődés + keringés (mezo-1dxhp, prototípus indito-animacio.html „D"): a gömb a három
-// másodperc alatt végig töltődik ~70%-ig, közben öt ikon egyesével felvillan körülötte és
-// kering, a végén fénycsík söpör át az üvegen. A képkockákat a tiszta `splashFrame` adja, egy
-// rAF-hurok írja a ref-ekre; csökkentett mozgásnál a nyugalmi kocka áll, semmi sem mozog.
+// A mozgás tisztán CSS-idővonal (StartupSplash.css, prototípus: vilagos/keret.js `splash()`); az
+// időzítések a startupChoreography.ts számtáblájából jönnek, a gyökér --sp-* property-jein át.
+// A cseppek a VALÓDI alsó sáv jelölését és receptjét használják (BottomBar: navDropSpec), így
+// pixelre ott érnek földet, ahol a sáv cseppjei állnak.
 // ============================================================
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { PhoneFrame } from '@/app/PhoneFrame'
-import { Icon3D } from '@/shared/ui/clay'
+import { DOMAINS, activeDomainId } from '@/app/navModel'
+import { navDropSpec } from '@/app/BottomBar'
+import { Drop } from '@/shared/ui/folyadek'
 import {
-  BUBBLE_COUNT, ORBIT_ICONS, SPLASH_DURATION_MS, splashFrame,
+  DROP_FALL_MS, DROP_START_MS, DROP_STAGGER_MS, FADE_AT_MS, SPLASH_DURATION_MS,
 } from '@/app/startupChoreography'
 import '@/app/StartupSplash.css'
+
+/** The vessel's five liquid layers, bottom → top = Nap, Edzés, Fuel, Mezo, Én (keret.js `DOMS`: top, body). */
+const LAYERS = [
+  ['#19C7C0', '#1877F2'], ['#F7B23B', '#F2683A'], ['#8FD14F', '#149E6E'], ['#E06BB5', '#6B4FE0'], ['#46D3B3', '#0E94B8'],
+] as const
+
+/** A wave strip (keret.js `W`): a tiled sine, drifting sideways in the no-preference branch. */
+function Wave({ color }: { color: string }) {
+  return (
+    <svg className="fo-sp-w" viewBox="0 0 800 20" preserveAspectRatio="none" aria-hidden="true">
+      <path fill={color}
+        d={`M0 10 Q25 0 50 10 ${Array.from({ length: 15 }, (_, i) => `T${100 + i * 50} 10`).join(' ')} V20 H0Z`} />
+    </svg>
+  )
+}
 
 /**
  * Harness-varrat (mezo-u1n6l): a layout-teszt minden route-ot HIDEG betöltéssel jár be, és a
@@ -56,98 +67,47 @@ function prefersStill(): boolean {
   }
 }
 
-/** The glass orb with the fill + orbit choreography, driven by one rAF loop for the 3 s. */
-function SplashMark() {
-  const root = useRef<HTMLDivElement>(null)
+/** The CSS timeline's numbers, handed to the stylesheet from the one table (no copies in CSS). */
+const TIMELINE = {
+  '--sp-end': `${SPLASH_DURATION_MS}ms`,
+  '--sp-fade': `${FADE_AT_MS}ms`,
+  '--sp-drop-start': `${DROP_START_MS}ms`,
+  '--sp-stagger': `${DROP_STAGGER_MS}ms`,
+  '--sp-fall': `${DROP_FALL_MS}ms`,
+} as CSSProperties
 
-  useLayoutEffect(() => {
-    const el = root.current
-    if (!el) return
-    const q = <T extends Element>(sel: string) => el.querySelector<T>(sel)!
-    const level = q<SVGGElement>('.startup-splash__level')
-    const slosh = q<SVGGElement>('.startup-splash__slosh')
-    const wave = q<SVGGElement>('.startup-splash__wave')
-    const back = q<SVGPathElement>('.startup-splash__back')
-    const sheen = q<HTMLElement>('.startup-splash__sheen')
-    const glow = q<HTMLElement>('.startup-splash__glow')
-    const bubbles = [...el.querySelectorAll<SVGCircleElement>('.startup-splash__bubble')]
-    const icons = [...el.querySelectorAll<HTMLElement>('.startup-splash__orbit-ic')]
-
-    const paint = (t: number, still: boolean) => {
-      const f = splashFrame(t, still)
-      level.setAttribute('transform', `translate(0 ${f.level - 88})`)
-      slosh.setAttribute('transform', `rotate(${f.slosh} 75 88)`)
-      wave.setAttribute('transform', `translate(${f.wave} 0)`)
-      back.setAttribute('transform', `translate(${f.backWave} -3)`)
-      back.setAttribute('opacity', String(f.backOpacity))
-      f.bubbles.forEach((b, i) => {
-        bubbles[i].setAttribute('cx', String(b.x))
-        bubbles[i].setAttribute('cy', String(b.y))
-        bubbles[i].setAttribute('opacity', String(b.opacity))
-      })
-      f.icons.forEach((ic, i) => {
-        const node = icons[i]
-        node.style.transform = `translate(${ic.x}px, ${ic.y}px) scale(${ic.scale})`
-        node.style.opacity = String(ic.opacity)
-        node.style.filter = ic.flash > 0 ? `brightness(${1 + ic.flash})` : ''
-      })
-      sheen.style.opacity = f.sheenOn ? '1' : '0'
-      sheen.style.transform = `skewX(-20deg) translateX(${f.sheen}%)`
-      glow.style.opacity = String(f.glow)
-    }
-
-    if (prefersStill()) {
-      paint(0, true)
-      return
-    }
-    let raf = 0
-    const start = performance.now()
-    const tick = (now: number) => {
-      const t = now - start
-      paint(t, false)
-      if (t < SPLASH_DURATION_MS) raf = requestAnimationFrame(tick)
-    }
-    paint(0, false)
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
+/** The vessel, the wordmark and the (non-interactive) bar of drops the stack lands in. */
+function SplashScene() {
+  // The drop that lands „on" is the domain the app opens on (read once from the URL — the stage
+  // lives outside the router), so the scene dissolves into the real bar without a size jump.
+  const opening = activeDomainId(typeof window !== 'undefined' ? window.location.pathname : '') ?? 'nap'
   return (
-    <div className="startup-splash__mark" aria-hidden="true" ref={root}>
-      <div className="startup-splash__glow" />
-      {ORBIT_ICONS.map((icon) => (
-        <span key={icon.id} className="startup-splash__orbit-ic" style={{ '--c': icon.c } as React.CSSProperties}>
-          <Icon3D name={icon.id} size={46} />
-        </span>
-      ))}
-      <div className="startup-splash__orb glass">
-        <svg viewBox="0 0 150 150">
-          <defs>
-            <clipPath id="ss-orb-clip"><circle cx="75" cy="75" r="68" /></clipPath>
-            <linearGradient id="ss-orb-liquid" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#E6DDFF" />
-              <stop offset=".55" stopColor="#AB9FD2" />
-              <stop offset="1" stopColor="#5E4F9A" />
-            </linearGradient>
-          </defs>
-          <g clipPath="url(#ss-orb-clip)">
-            <g className="startup-splash__level">
-              <g className="startup-splash__slosh">
-                <path className="startup-splash__back" fill="#5E4F9A" opacity="0"
-                  d="M-20 88 Q0 98 20 88 T60 88 T100 88 T140 88 T180 88 V220 H-20Z" />
-                <g className="startup-splash__wave">
-                  <path className="startup-splash__liquid" fill="url(#ss-orb-liquid)"
-                    d="M-20 88 Q0 78 20 88 T60 88 T100 88 T140 88 T180 88 V220 H-20Z" />
-                </g>
-              </g>
-            </g>
-            {Array.from({ length: BUBBLE_COUNT }, (_, i) => (
-              <circle key={i} className="startup-splash__bubble" r={1.4 + (i % 3) * 0.7} opacity="0" />
-            ))}
-          </g>
-          <path className="startup-splash__hi" d="M34 44 A48 48 0 0 1 62 26" />
-        </svg>
-        <i className="startup-splash__sheen" />
+    <div className="fo-sp" role="status" aria-label="Boop betöltése"
+      data-motion={prefersStill() ? 'still' : 'play'} style={TIMELINE}>
+      <div className="fo-sp-ves" aria-hidden="true">
+        <div className="fo-sp-stk">
+          {LAYERS.map(([top, body], i) => (
+            <i key={i} data-layer={DOMAINS[i].id}
+              style={{ '--i': i, '--c1': top, '--c2': body, '--lv': `${(i + 1) * 17 + 4}%`, zIndex: 9 - i } as CSSProperties}>
+              <Wave color={top} />
+            </i>
+          ))}
+        </div>
+        <em />
+      </div>
+      <b className="fo-sp-wm" aria-hidden="true">boop</b>
+      <div className="fo-nav fo-sp-bar" aria-hidden="true">
+        {DOMAINS.map((d, i) => {
+          const on = d.id === opening
+          const spec = navDropSpec(d.id, on)
+          return (
+            <div key={d.id} className={on ? 'fo-nav-item on' : 'fo-nav-item'} data-domain={d.id}
+              style={{ '--c': spec.color, '--i': i } as CSSProperties}>
+              <span className="fo-sp-dx"><span className="fo-sp-dr"><Drop {...spec} /></span></span>
+              <span className="fo-sp-l">{d.name}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -159,7 +119,7 @@ export function StartupSplash({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!visible) return
-    const timeout = window.setTimeout(() => setVisible(false), 3000)
+    const timeout = window.setTimeout(() => setVisible(false), SPLASH_DURATION_MS)
     return () => window.clearTimeout(timeout)
   }, [visible])
 
@@ -171,10 +131,7 @@ export function StartupSplash({ children }: { children: ReactNode }) {
       {visible && (
         <div className="startup-stage">
           <PhoneFrame>
-            <div className="startup-splash" role="status" aria-label="Boop betöltése">
-              <SplashMark />
-              <span className="startup-splash__wordmark" aria-hidden="true">boop</span>
-            </div>
+            <SplashScene />
           </PhoneFrame>
         </div>
       )}

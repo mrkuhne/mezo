@@ -2,7 +2,7 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-10-07
+updated: 2026-10-09
 tags: [today, me, train, fuel, intention, ritual, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
@@ -192,6 +192,8 @@ await categorize(entryId, 'learning')                                  // pick/o
 - **Backend — gamification ledger (`feature/gamification/`, `mezo-huzd`):** `GamificationEntityIT` (DDL/soft-delete for the 3 tables), `AccountLevelCurveTest` (the `80+40·(n−1)` curve, pure unit), `TitleCatalogIT` (fail-fast load + the FE-catalog parity check), `GamificationApiIT` (HTTP: profile/day reads, buy/equip/saver mutations, 404/409 error codes), `GamificationCoinIT` (the `AccountProgressPort` fan-out — quest/all3/level-up coin math, idempotency), `GamificationStreakIT` (rollover gap math, saver auto-consume, milestone coins, the `{today,yesterday}` honest-alive projection), `GamificationSwitchOffIT` (switch off → `/api/gamification/*` 404s, `AccountProgressPort` bean absent). Data via `support/populator/GamificationPopulator`; `ArchitectureTest`'s fail-fast-catalog allowlist gained `TitleCatalog`. Progression-side: `ProgressionHabitIT`/`ProgressionQuestIT`/`ProgressionActivityIT` extended for the `occurred_on` business-date threading (§2). Run: `./mvnw clean test -Dtest='Gamification*IT,Progression*IT,QuestApiIT,Habit*IT' -DargLine=-Xmx3g`.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Mock fidelity note (mezo-rmhr fix wave):** `progressionProfileMock.athletic` carries the full 12-entry band (incl. `robustness`) to mirror the real profile response, so all-band row counts and FE-summed XP literals match between modes.
 - **Gotcha — the account-progression total (`mezo-k7rn`/`mezo-huzd`) is NOT this doc's "Össz XP" in mock mode.** Real mode derives the `AppHero` account total from the same server-summed skill XP this doc's Skillek tab sums (so they agree), and since `mezo-huzd` real-mode coins/streak ALSO respond to quest/activity/habit completions (§2, `AccountProgressPort`). Mock mode does not: the account total is a separate seeded counter (`gamificationProfileMock.totalXp`) advanced only by the ten flat-XP mock mutations listed in §2's "Account progression" subsection (incl. the habit manual check) — quest/activity completions still do not feed it in mock mode. This is now a **permanent** mock/real divergence, not a deferred one: `mezo-huzd` rewired the backend + real-mode FE hooks only, and there is no plan to instrument the mock ledger's call-site list further. Don't expect the two numbers to match in a mock-mode demo.

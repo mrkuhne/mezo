@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { useLlmCall } from '@/data/hooks'
 import { AiCallUsage } from '@/features/me/components/AiCallUsage'
 import { AiPayloadBlock } from '@/features/me/components/AiPayloadBlock'
@@ -32,7 +32,6 @@ function Cell({ label, value, wide }: { label: string; value: string; wide?: boo
 
 export function AdminCostDetailPage() {
   const { id = '' } = useParams()
-  const navigate = useNavigate()
   const { data, isPending, isError, refetch } = useLlmCall(id)
 
   if (isError) {
@@ -52,7 +51,7 @@ export function AdminCostDetailPage() {
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): sky shell, hero = feature·operation,
     // stat strip with the three headline numbers, then the existing cards on mz-qcard.
     <MozaikPage tone="sky">
-      <PageHead glass onBack={() => navigate('/admin/cost')} label="AI-használat" />
+      <PageHead glass history fallback="/admin/cost" label="AI-használat" />
       <EntranceGroup>
       <PageBody className="col gap-md">
       <div className="rise" style={{ padding: '2px 2px 0' }}>

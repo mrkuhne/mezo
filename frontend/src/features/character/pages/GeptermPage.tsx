@@ -44,7 +44,7 @@ export function GeptermPage() {
 
   return (
     <div className="tf-page tf-c-slate gtm-page gtm-hub">
-      <GepteremHead small="Dev-ajtó · a motorháztető alatt" title="Gépterem" onBack={() => navigate('/mezo/csapat')} />
+      <GepteremHead small="Dev-ajtó · a motorháztető alatt" title="Gépterem" fallback="/mezo/csapat" />
       <p className="gtm-lede">
         Boop működése · források, memória és futások
         {lastLine != null && <>. Legutóbb: <b className="gtm-last">{lastLine}</b>.</>}

@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
@@ -18,14 +17,13 @@ const GROUP_ICON: Record<string, Icon3DName> = {
 }
 
 export default function JelekPage() {
-  const navigate = useNavigate()
   const { entries = [], isPending, isError, refetch } = useSignalCatalog()
 
   if (isPending) return <ScreenSkeleton />
   if (isError && entries.length === 0) {
     return (
       <MozaikPage tone="sage" className="enc-page enc-jelek">
-        <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
+        <PageHead glass history fallback="/me/goals" label="Célok" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a jeleket." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -53,7 +51,7 @@ export default function JelekPage() {
 
   return (
     <MozaikPage tone="sage" className="enc-page enc-jelek">
-      <PageHead glass onBack={() => navigate('/me/goals')} label="Célok" />
+      <PageHead glass history fallback="/me/goals" label="Célok" />
       <PageBody principle="Nincs külső forrás — se naptár, se időjárás, se GitHub. Ami itt nincs, azt a rendszer nem tudja.">
         <EntranceGroup>
           <PageHero

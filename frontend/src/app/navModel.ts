@@ -1,17 +1,22 @@
 // ============================================================
-// Mezo · Titanium navigation model (mezo-jkh4)
-// The owner-approved companion model: ONE domain-switch mark + the CURRENT
-// domain's four contextual tabs, with per-domain last-tab memory. This module is
-// the single source of truth for the 5×4 matrix (label → route → clay icon), the
+// Mezo · navigation model (mezo-jkh4 → Folyadék frame, mezo-n4wf5.1)
+// The owner-approved model (2026-10-09): the FIVE domains always on the bottom bar, the
+// active domain's four pages as tabs at the top, with per-domain last-tab memory. This
+// module is the single source of truth for the 5×4 matrix (label → route → icon), the
 // active-domain / active-tab derivation, and the in-session `navMemory` store —
-// consumed by TabBar (the bar) and DomainSwitcher (the dialog).
+// consumed by the frame: BottomBar (the five domains, always),
+// TopTabs (the active domain's four pages as pills) and TitleBar (`frameFor`: what the
+// title bar says for a path — hub or sub-page, title, context line, back fallback).
 //
-// Frozen spec: docs/superpowers/specs/2026-09-11-titanium-nav-design.md
+// The matrix itself dates from the Titanium nav spec (one switch mark + four contextual
+// tabs — that bar and its switcher dialog are retired):
+// docs/superpowers/specs/2026-09-11-titanium-nav-design.md
 // Prior art: docs/design_2.0/prototypes/companion-titanium/navigation.js
 //            (the `domains` object + `rememberRoute`; there memory keyed page
 //             INDEX, here it keys the tab's full ROUTE).
 // ============================================================
 import type { BoopDomain, ClayIconName } from '@/shared/ui/clay'
+import { PAGE_INDEX } from '@/app/pageIndex'
 
 export interface NavTab {
   label: string
@@ -26,6 +31,10 @@ export interface NavTab {
    * should say where it belongs; this is where it says it.
    */
   owns?: string[]
+  /** The page TITLE in the title bar when it differs from the tab label (Folyadék frame,
+   *  mezo-n4wf5.1): a domain's first tab is labelled „Mai" but its page is titled „Ma" /
+   *  „Edzés" / „Fuel". Absent = the label is the title. */
+  title?: string
 }
 
 export interface NavDomain {
@@ -46,7 +55,7 @@ export const DOMAINS: NavDomain[] = [
     id: 'nap',
     name: 'Nap',
     tabs: [
-      { label: 'Mai', route: '/nap', icon: 'i-nap' },
+      { label: 'Mai', route: '/nap', icon: 'i-nap', title: 'Ma' },
       // A napom (mezo-yjzhw.4, owner decision 2026-09-24): replaces the retired Napzárás
       // tab — the day's own reading + next action, not just the evening close. `/ritual`
       // itself survives as a reachable page (Rutin's evening row, the leltár, later a
@@ -62,7 +71,7 @@ export const DOMAINS: NavDomain[] = [
     tabs: [
       // Owner-approved four tabs (2026-09-12): sport/running are not a tab — logging
       // lives on Mai, plans on Terv, history beside the volume on Terhelés.
-      { label: 'Mai', route: '/train/mai', icon: 'i-edzes',
+      { label: 'Mai', route: '/train/mai', icon: 'i-edzes', title: 'Edzés',
         // `/train/sport` covers the full-screen sport-logging flow at `/train/sport/log`
         // too — `isPrefix` matches everything under the owned route (T8 Task 4).
         owns: ['/train/session', '/train/review', '/train/sport', '/train/custom'] },
@@ -86,7 +95,7 @@ export const DOMAINS: NavDomain[] = [
     tabs: [
       // A Fuel mély oldalai nem a fülük útvonala ALATT élnek (történeti route-ok), ezért
       // mindegyik megmondja, melyik fülhöz tartozik — különben a Mai gyullad ki alattuk.
-      { label: 'Mai', route: '/fuel', icon: 'i-tanyer',
+      { label: 'Mai', route: '/fuel', icon: 'i-tanyer', title: 'Fuel',
         owns: ['/fuel/log', '/fuel/etkezes', '/fuel/settings', '/fuel/slots'] },
       { label: 'Kiegészítők', route: '/fuel/stack', icon: 'i-kiegeszito',
         owns: ['/fuel/gyogyszer'] },
@@ -103,7 +112,7 @@ export const DOMAINS: NavDomain[] = [
       // Emlékek. „A kijelölés nem ugrál": every page a POST opens into (records, their lists,
       // the reply chat) stays under Üzenőfal; the team's own rooms and the machinery behind
       // them (konzílium, Gépterem + its „Összes funkció” grid, memória) stay under A csapat.
-      { label: 'Üzenőfal', route: '/mezo', icon: 'i-mezo',
+      { label: 'Üzenőfal', route: '/mezo', icon: 'i-mezo', title: 'Üzenőfal',
         owns: ['/mezo/karakter/feed', '/mezo/patterns', '/mezo/predictions', '/mezo/experiments',
           '/mezo/coaching', '/mezo/chat'] },
       { label: 'A csapat', route: '/mezo/csapat', icon: 'i-emberek',
@@ -121,7 +130,7 @@ export const DOMAINS: NavDomain[] = [
       // Én IA (mezo-lhqw7, owner 2026-09-28): the hub answers „Hol tartok"; the week family,
       // Fejlődés and Emberek are its deep pages. `/me/ertesitesek` is entered from the header
       // bell only — it is filed here so the lit tab is a statement, not a prefix guess.
-      { label: 'Hol tartok', route: '/me', icon: 'i-emberek',
+      { label: 'Hol tartok', route: '/me', icon: 'i-emberek', title: 'Én',
         owns: ['/me/week', '/me/growth', '/me/people', '/me/ertesitesek'] },
       // Test = Súly + Alvás under one tab. The two pages keep their URLs (deep links from
       // habitAction/questAction/push stay valid); the tab home is Súly (owner decision 6).
@@ -131,12 +140,6 @@ export const DOMAINS: NavDomain[] = [
     ],
   },
 ]
-
-/** A sáv váltó-gombjának jele. Visszaöltöztetés (mezo-ju4j6.15): a jel BOOP, az aktuális
- *  terület színében — a `TabBar` a domain id-ből választ változatot, ezért itt nincs több
- *  fix ikonnév. A konstans azért marad, mert a régi Mezo-jel a NÉVSORBAN (Beszélgetés fül)
- *  továbbra is él, és több teszt erre a névre hivatkozik. */
-export const SWITCH_MARK: ClayIconName = 'i-mezo'
 
 /** `route` is a prefix of `pathname` iff they're equal or `pathname` sits under `route/`. */
 function isPrefix(route: string, pathname: string): boolean {
@@ -218,3 +221,69 @@ export function routeForDomain(domainId: string): string {
 export function resetNavMemory(): void {
   navMemory.clear()
 }
+
+// --- The Folyadék frame (mezo-n4wf5.1): what the title bar says for a path ---
+
+export interface Frame {
+  /** The domain whose colour the frame wears (Nap outside the five domains). */
+  domain: NavDomain
+  /** The tab that owns the path, or null (outside the domains, or a path no tab owns). */
+  tab: NavTab | null
+  /** A hub = the path IS one of the domain's four tab routes: big title, five buttons, top tabs.
+   *  Everything else is a sub-page: back · title · bell, no top tabs. */
+  isHub: boolean
+  title: string
+  /** The context line above the title: the date on a hub, „Terület · Fül" on a sub-page. */
+  eyebrow: string
+  /** Where the back button goes when there is no history to go back to. */
+  fallback: string
+}
+
+const HU_LONG_DATE = new Intl.DateTimeFormat('hu-HU', { weekday: 'long', month: 'long', day: 'numeric' })
+
+/** „Szerda, október 7." — the hub's context line. */
+export function frameDate(today: Date): string {
+  const s = HU_LONG_DATE.format(today) // „október 7., szerda"
+  const [monthDay, weekday] = s.split(', ')
+  const text = weekday ? `${weekday}, ${monthDay}` : s
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** The leltár label of the page whose route is the LONGEST prefix of the path, if any. */
+function indexedLabel(pathname: string): string | null {
+  let best: { route: string; label: string } | null = null
+  for (const page of PAGE_INDEX) {
+    if (isPrefix(page.route, pathname) && (best === null || page.route.length > best.route.length)) best = page
+  }
+  return best?.label ?? null
+}
+
+export function frameFor(pathname: string, today: Date): Frame {
+  const domain = domainById(activeDomainId(pathname))
+  if (!domain) {
+    // Outside the five domains the frame wears Nap's colour and is always a sub-page.
+    const map = isPrefix('/minden', pathname)
+    return {
+      domain: DOMAINS[0], tab: null, isHub: false,
+      title: indexedLabel(pathname) ?? (map ? 'Minden oldal' : 'Beállítások'),
+      eyebrow: map ? 'Az app térképe' : 'Beállítások',
+      fallback: '/nap',
+    }
+  }
+  const tabRoute = activeTabRoute(domain, pathname)
+  const tab = domain.tabs.find((t) => t.route === tabRoute) ?? null
+  const isHub = domain.tabs.some((t) => t.route === pathname)
+  if (isHub && tab) {
+    return { domain, tab, isHub: true, title: tab.title ?? tab.label, eyebrow: frameDate(today), fallback: tab.route }
+  }
+  return {
+    domain, tab, isHub: false,
+    title: indexedLabel(pathname) ?? tab?.label ?? domain.name,
+    eyebrow: tab ? `${domain.name} · ${tab.label}` : domain.name,
+    fallback: tab?.route ?? domain.tabs[0].route,
+  }
+}
+
+// „Vissza oda, ahonnan jöttél": the shared decision lives in shared/lib/backNav.ts (the kit and
+// the back hooks use it too); re-exported here for the frame's consumers.
+export { canGoBack } from '@/shared/lib/backNav'

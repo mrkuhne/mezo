@@ -50,7 +50,7 @@ export function KarakterHubPage({ embedded = false }: { embedded?: boolean }) {
   // own); an embedding host owns the heading, so `embedded` suppresses it.
   const face = (children: ReactNode) => (
     <div className="kr9-page kr9-hub">
-      {!embedded && <KarakterBackHead small="Egyre jobban ismerünk" title="Karakter" onBack={() => navigate('/mezo')} />}
+      {!embedded && <KarakterBackHead small="Egyre jobban ismerünk" title="Karakter" fallback="/mezo" />}
       {children}
     </div>
   )

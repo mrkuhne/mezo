@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { useGoal, useGoalOverview } from '@/data/hooks'
 import { GoalGuardCard } from '@/features/me/components/GoalGuardCard'
 import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
@@ -14,7 +13,6 @@ const ISSUE: Record<string, string> = {
 }
 
 export function GoalGuardsPage() {
-  const navigate = useNavigate()
   const { goalId, pending: goalPending } = useGoal()
   const { overview, pending } = useGoalOverview(goalId)
   const loading = goalPending || pending
@@ -22,7 +20,7 @@ export function GoalGuardsPage() {
   const status = overview?.guards.status
 
   return <MozaikPage tone="lav" className="goal-detail-page uv-goal goal-detail-guards-page">
-    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
+    <PageHead glass history fallback="/me/goals/weight" label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
       <EntranceGroup><PageHero art="t-shield" accent="var(--dv-lav)" name="Védőkorlátok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A védőkorlátok a cél javítása után értékelhetők újra.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>

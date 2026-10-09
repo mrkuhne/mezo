@@ -10,10 +10,10 @@ import { AdminLayout } from '@/features/admin/AdminLayout'
 import { useArrival } from '@/shared/ui/mozaik/arrival'
 
 // AdminLayout's own <nav> carries a real accessible name ("Admin navigáció" — see
-// AdminRail.tsx). TabBar (frontend/src/app/TabBar.tsx) carries NO aria-label at all, so
+// AdminRail.tsx). the phone shell's BottomBar (frontend/src/app/BottomBar.tsx) is a `nav` too, so
 // there is no accessible name to assert against for "the app tab bar is absent" — instead
-// we assert that AdminLayout never renders the TabBar's `.tab-bar` DOM at all, which is the
-// only way to genuinely distinguish the two layouts (TabBar is not even imported here, so
+// we assert that AdminLayout never renders the BottomBar's `.fo-nav` DOM at all, which is the
+// only way to genuinely distinguish the two layouts (BottomBar is not even imported here, so
 // this doubles as a smoke check that no other test pollutes the tree).
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
@@ -49,7 +49,7 @@ describe('AdminLayout (mock mode)', () => {
   it('never renders the app tab bar', async () => {
     const { container } = renderLayout()
     await screen.findByText('admin content')
-    expect(container.querySelector('.tab-bar')).not.toBeInTheDocument()
+    expect(container.querySelector('.fo-nav')).not.toBeInTheDocument()
   })
 
   it('renders the reworked rail: renames + Nyers adatok in the Eszközök group', async () => {

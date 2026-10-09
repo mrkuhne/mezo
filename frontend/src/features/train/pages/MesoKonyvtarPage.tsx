@@ -45,6 +45,7 @@ import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
 import { huDate } from '@/features/train/logic/mesoDates'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
@@ -85,14 +86,9 @@ export function MesoKonyvtarPage() {
           style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
         >
           <span className="pl-dhero-wash" aria-hidden="true" />
-          <button
-            type="button"
-            className="mz-backbtn"
-            aria-label="Vissza"
-            onClick={() => navigate('/train/mesocycles')}
-          >
+          <FrameBack className="mz-backbtn" history fallback="/train/mesocycles">
             ‹ A terved
-          </button>
+          </FrameBack>
           <span className="pl-lhero-art" aria-hidden="true">
             <Icon3D name="t-stack" size={60} className="icon" />
             <i />

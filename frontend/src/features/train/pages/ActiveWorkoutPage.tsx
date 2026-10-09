@@ -881,11 +881,11 @@ function ActiveWorkoutSession({
         onNote={setClosingNote}
         onClose={() => {
           persistClosingNote()
-          navigate('/train/mai')
+          navigate('/train/mai', { replace: true })
         }}
         onGoFuel={() => {
           persistClosingNote()
-          navigate('/fuel')
+          navigate('/fuel', { replace: true })
         }}
       />
     )

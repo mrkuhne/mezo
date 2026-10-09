@@ -1,8 +1,28 @@
-// Global header: settings entry keeps the originating page for return navigation.
-import { useEffect, useMemo, useRef, useState } from 'react'
+// ============================================================
+// Mezo · Folyadék frame — the title bar (mezo-n4wf5.1, owner-approved 2026-10-09)
+//
+// ONE instance, in the shell, on every chrome route. It answers „hol vagyok": the context line
+// and the page title, derived from the path (navModel `frameFor`) and overridable by the page
+// (`useFrameTitle`). Two faces:
+//   · HUB (the path is one of the domain's four tab routes): line 1 = context line + five round
+//     buttons — Minden oldal · Mezo üzenetei · Értesítések · Beállítások · the day orb; line 2 =
+//     the title with the kalauz „?" after it; then the top tabs (the `children` slot).
+//   · SUB-PAGE: back · context line + title + „?" · the bell.
+// The back button runs the page's own handler when it registered one (`useFrameBack`, which
+// `PageHead` does), else it returns where the user came from, else to the owning tab.
+//
+// Every control of the old header is here: the kalauz „?" (only where the page has one; a
+// liquid dot = an unseen T3 guide), settings with its `state.from` return logic, Mezo's
+// messages with the unread badge, the notification bell + panel (ported UNCHANGED from the
+// retired AppHeader), and the filling day orb.
+//
+// Look: docs/design_2.0/prototypes/vilagos/kit.js `top(d,o)`; CSS `.fo-top` in
+// styles/folyadek-frame.css.
+// ============================================================
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ClayIcon, ContentIcon, type ClayIconName } from '@/shared/ui/clay'
-import { DayOrb } from '@/shared/ui/DayOrb'
+import { ContentIcon, Icon3D, type ClayIconName } from '@/shared/ui/clay'
+import { Drop, useFrame, useTitleBarMounted } from '@/shared/ui/folyadek'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { notificationKindMeta } from '@/data/types'
@@ -13,12 +33,10 @@ import { ntfIcon } from '@/features/notification/logic/kindIcon'
 import {
   NOTIFICATION_CATEGORIES, notificationCategory, type NotificationCategoryId,
 } from '@/features/notification/logic/category'
-import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
-import { HeaderAurora } from '@/app/HeaderAurora'
-import { useCondensedHeader } from '@/app/useCondensedHeader'
+import { canGoBack, frameFor } from '@/app/navModel'
 
 /** Az értesítés-panel felső korlátja. A többi a teljes feed oldalé (`/me/ertesitesek`) — egy
  *  fejléc-panel nem a feed második példánya, és egy több százas lista görgetése ott a helyes. */
@@ -30,13 +48,22 @@ type NtfFilter = 'all' | 'unread' | NotificationCategoryId
 // call-site meanings (`NTF_3D`/`ntfIcon`) are shared with the full feed page since U7
 // (mezo-me75u.7), so both surfaces draw the same icon per kind.
 
-export function AppHeader() {
-  const navigate = useNavigate()
-  const { pathname, search, state } = useLocation()
+/** The day orb's liquid (kit.js `top`): the Nap blue, on every domain. */
+const DAY_ORB_COLOR = '#1877F2'
 
-  const { face } = useDayFace()
-  // A bal oldal a szekciót mutatja („hol vagyok"); a pontos oldalcím a lapok PageHead-jéé.
-  const condensed = useCondensedHeader()
+export function TitleBar({ children }: {
+  /** The top-tabs slot: rendered under the title on a hub, so the whole block pins as one. */
+  children?: ReactNode
+}) {
+  const navigate = useNavigate()
+  const { pathname, search, state, key: locationKey } = useLocation()
+  // The page may override what the path says (a converted page names itself) and hands over its
+  // own back handler; everything else is derived from the path.
+  const page = useFrame()
+  const derived = frameFor(pathname, new Date())
+  const title = page.title ?? derived.title
+  const eyebrow = page.eyebrow ?? derived.eyebrow
+  useTitleBarMounted()
 
   const { items: notifications } = useNotificationFeed()
   const { markAllRead, markItemRead } = useNotificationFeedActions()
@@ -112,65 +139,100 @@ export function AppHeader() {
     }
   }, [anyOpen])
 
+
+  // The page's sticky chrome (`.sticky-top`) pins BELOW the title bar, whose height differs by
+  // face (hub with tabs / sub-page) and by width — so the bar publishes its own height to the
+  // scroller instead of a hand-kept token.
+  useEffect(() => {
+    const el = rootRef.current
+    const scroller = el?.closest<HTMLElement>('.screen-content')
+    if (!el || !scroller) return
+    const publish = () => scroller.style.setProperty('--fo-top-h', `${Math.round(el.getBoundingClientRect().height)}px`)
+    publish()
+    if (typeof ResizeObserver === 'undefined') return () => scroller.style.removeProperty('--fo-top-h')
+    const ro = new ResizeObserver(publish)
+    ro.observe(el)
+    return () => { ro.disconnect(); scroller.style.removeProperty('--fo-top-h') }
+  }, [])
+
+  const goBack = () => {
+    // A page with a handler that does more than navigate (a confirm, a step back inside a flow)
+    // runs it. Otherwise the owner rule: back where the user came from — and only when the app
+    // was opened right here, to the page's own fallback route, else the tab that owns the page.
+    if (page.onBack) return page.onBack()
+    if (canGoBack(window.history.state, locationKey)) navigate(-1)
+    else navigate(page.fallback ?? derived.fallback)
+  }
+
+  // Mezo-kalauz (mezo-gb1s.1): az oldal kalauza — csak ott, ahol van (honest state). A cím
+  // UTÁN áll; a folyadék-pötty = T3 oldal még nem látott kalauzzal (T1/T2 magától felugrik,
+  // ott a pont fölösleges).
+  const help = kalauz.current && (
+    <button type="button" className={cn('fo-help', qUnseenDot && 'new', kalauz.openId === kalauz.current.id && 'is-open')}
+      aria-label="Kalauz ehhez az oldalhoz" aria-haspopup="dialog"
+      onClick={() => { setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
+      ?
+    </button>
+  )
+
+  // A csengő panelje nem a gomb alá tapad, hanem a fejléc két széléhez (`.nap-ntfpanel`, a
+  // `<header>` gyereke) — ez adja a teljes szélességet, amiben egy cím és két sor törzs is
+  // kifér (mezo-g9fz).
+  const bell = (
+    <button type="button" className={cn('fo-ib', ntfOpen && 'is-open')}
+      aria-haspopup="dialog" aria-expanded={ntfOpen}
+      aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
+      onClick={() => { setNtfOpen((o) => !o) }}>
+      <Icon3D name="t-bell" size={24} />
+      {unreadNtf > 0 && <b className="fo-badge-n">{unreadNtf}</b>}
+    </button>
+  )
+
   return (
-    <header className={cn('nap-head app-head', condensed && 'is-cond')} ref={rootRef}>
-      <HeaderAurora face={face} />
-      {/* Bal felső sarok: a „boop" szó-logó (owner 2026-09-12, az új márkanév), a korábbi
-          szekció-jel + név helyett. A fejléc sötét bőrt visel minden oldalon. */}
-      <div className="nap-head-grow app-head-sec">
-        <span className="app-head-wordmark">boop</span>
-      </div>
-
-      {/* Mezo-kalauz (mezo-gb1s.1): az oldal kalauza — csak ott, ahol van (honest state).
-          A gombsor BAL szélén, minden oldalon ugyanott; arany pont = T3 oldal még nem látott
-          kalauzzal (T1/T2 magától felugrik, ott a pont fölösleges). */}
-      {kalauz.current && (
-        // Üveg (bible §7.1, mezo-me75u.1): every round header button is a `.glass is-round`
-        // — overflow visible so the badge is not clipped, no sheen — tinted through `--c`.
-        <button type="button" className={cn('nap-roundbtn', 'nap-q', 'glass', 'is-round', kalauz.openId === kalauz.current.id && 'is-open')}
-          style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}
-          aria-label="Kalauz ehhez az oldalhoz" aria-haspopup="dialog"
-          onClick={() => { setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
-          <span className="nap-q-glyph" aria-hidden="true">?</span>
-          {qUnseenDot && <span className="nap-offnow" aria-hidden="true" />}
-        </button>
+    <header className={cn('fo-top', !derived.isHub && 'sub')} ref={rootRef}>
+      {derived.isHub ? <>
+        <div className="fo-trow hub">
+          <small className="fo-eb"><i aria-hidden="true" /><span>{eyebrow}</span></small>
+          <div className="fo-btns">
+            {/* Az oldal-leltár bejárata (mezo-ju4j6.17): a nyugdíjazott területváltó alsó sora
+                ide költözött. A horgony a JELENLEGI területre nyitja a listát. */}
+            <button type="button" className="fo-ib" aria-label="Minden oldal"
+              onClick={() => navigate(`/minden#${derived.domain.id}`)}>
+              <Icon3D name="t-grid" size={24} />
+            </button>
+            <button type="button" className="fo-ib"
+              aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}
+              onClick={() => navigate('/nap/uzenetek')}>
+              <Icon3D name="t-chat" size={24} />
+              {unreadMsgs > 0 && <b className="fo-badge-n">{unreadMsgs}</b>}
+            </button>
+            {bell}
+            <button type="button" className="fo-ib" aria-label="Beállítások"
+              onClick={() => navigate('/settings', { state: { from: pathname.startsWith('/settings') ? state?.from : pathname + search } })}>
+              <Icon3D name="t-gear" size={24} />
+            </button>
+            {/* mezo-idz2: a nap állapotjelzője — alulról fölfelé telik a rögzített jelek
+                szerint, és a mai nap-oldalra visz. A töltöttség maga a jelzés, nincs badge. */}
+            <button type="button" className="fo-ib fo-day" aria-label={dayOrb.label}
+              onClick={() => navigate(`/nap/napom/${localDateString()}`)}>
+              <Drop pct={dayOrb.pct} color={DAY_ORB_COLOR} size={30} />
+            </button>
+          </div>
+        </div>
+        <div className="fo-title"><div className="fo-h"><h1>{title}</h1>{help}</div></div>
+        {children}
+      </> : (
+        <div className="fo-trow">
+          <button type="button" className="fo-ib fo-back" aria-label="Vissza" onClick={goBack}>
+            <span aria-hidden="true">‹</span>
+          </button>
+          <div className="fo-title">
+            <small><i aria-hidden="true" /><span>{eyebrow}</span></small>
+            <div className="fo-h sm"><h1>{title}</h1>{help}</div>
+          </div>
+          {bell}
+        </div>
       )}
-
-      <button type="button" className="nap-roundbtn glass is-round" aria-label="Beállítások"
-        style={{ '--c': 'var(--text-muted)' } as React.CSSProperties}
-        onClick={() => navigate('/settings', { state: { from: pathname.startsWith('/settings') ? state?.from : pathname + search } })}>
-        <ClayIcon name="i-beallitas" size={24} />
-      </button>
-
-      <button type="button" className="nap-roundbtn glass is-round"
-        style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
-        aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}
-        onClick={() => navigate('/nap/uzenetek')}>
-        <ClayIcon name="i-level" size={23} />
-        {unreadMsgs > 0 && <span className="nap-badge">{unreadMsgs}</span>}
-      </button>
-
-      {/* A csengő wrapperének NINCS `nap-dpwrap`-ja: a panel nem a gomb alá tapad, hanem a
-          fejléc két széléhez (`.nap-ntfpanel`, a `<header>` gyereke) — ez adja a teljes
-          szélességet, amiben egy cím és két sor törzs is kifér (mezo-g9fz). */}
-      <button type="button" className={cn('nap-roundbtn', 'glass', 'is-round', ntfOpen && 'is-open')}
-        style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}
-        aria-haspopup="dialog" aria-expanded={ntfOpen}
-        aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-        onClick={() => { setNtfOpen((o) => !o) }}>
-        <ClayIcon name="i-ertesites" size={23} />
-        {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-      </button>
-
-      {/* mezo-idz2: a jobb szélső orb korábban a profilra vitt — ugyanoda, ahova az alsó
-          „Én" fül, tehát duplikátum volt. Most a nap állapotjelzője: alulról fölfelé telik
-          a rögzített jelek szerint, és a mai nap-oldalra visz. A töltöttség maga a jelzés,
-          ezért nincs rajta badge. */}
-      <button type="button" className="nap-avatar glass is-round" aria-label={dayOrb.label}
-        style={{ '--c': 'var(--dv-coral)' } as React.CSSProperties}
-        onClick={() => navigate(`/nap/napom/${localDateString()}`)}>
-        <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={38} />
-      </button>
 
       {ntfOpen && <>
         {/* A takaró a fejléc gyereke, `z-index: 0`-val — a fejléc `isolation: isolate`-je
@@ -183,8 +245,7 @@ export function AppHeader() {
         <div className="nap-ntfscrim" aria-hidden="true" onClick={() => setNtfOpen(false)} />
         {/* `dialog`, nem `menu`: a panel szűrő-chipeket és egy „Mind olvasott" gombot is
             tartalmaz, amik nem `menuitem`-ek — egy `role="menu"` alattuk hazug fa lenne. */}
-        <div className="nap-ntfpanel glass" role="dialog" aria-label="Értesítések"
-          style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
+        <div className="nap-ntfpanel" role="dialog" aria-label="Értesítések">
           <div className="nap-ntfhd">
             <span className="nap-ntfeyebrow">Értesítések</span>
             <span className={cn('nap-ntfcnt', unreadNtf === 0 && 'is-none')}>

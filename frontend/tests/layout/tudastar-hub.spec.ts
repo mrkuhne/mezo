@@ -32,7 +32,7 @@ for (const [name, path, rows] of HUB_ROUTES) {
     await last.scrollIntoViewIfNeeded()
     await last.evaluate((element) => {
       const scroller = document.querySelector('.screen-content') as HTMLElement
-      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      const tabbar = document.querySelector('.fo-nav')?.getBoundingClientRect()
       if (!tabbar) return
       const overlap = element.getBoundingClientRect().bottom - tabbar.top
       scroller.style.scrollBehavior = 'auto'
@@ -43,7 +43,7 @@ for (const [name, path, rows] of HUB_ROUTES) {
       const matches = document.querySelectorAll(selector)
       const lastEl = matches[matches.length - 1] as HTMLElement
       const row = lastEl.getBoundingClientRect()
-      const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+      const tabbar = document.querySelector('.fo-nav')!.getBoundingClientRect()
       return { rowBottom: row.bottom, tabbarTop: tabbar.top }
     }, rows)
     expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
@@ -65,6 +65,6 @@ test('Tudástár · the undo bar floats above the tab bar', async ({ page }) => 
   await page.getByRole('button', { name: 'További műveletek' }).first().click()
   await page.getByRole('button', { name: /Elfelejtem/ }).click()
   const bar = await page.locator('.th-undo').boundingBox()
-  const tab = await page.locator('.tab-bar').boundingBox()
+  const tab = await page.locator('.fo-nav').boundingBox()
   expect(bar!.y + bar!.height).toBeLessThanOrEqual(tab!.y)
 })

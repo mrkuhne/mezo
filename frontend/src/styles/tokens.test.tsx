@@ -40,3 +40,22 @@ test('legacy names are aliases onto DS tokens (the P1 bridge)', () => {
   expect(s.getPropertyValue('--canvas').trim()).toBe('var(--surface-page)')
   expect(s.getPropertyValue('--coral').trim()).toBe('var(--primary-base)')
 })
+
+test('folyadék tokens live on bare :root (mezo-n4wf5.1, bible §3)', async () => {
+  const css = (await import('@/styles/folyadek.css?raw')).default
+  const root = css.match(/(?:^|\n):root\s*\{([^}]*)\}/)![1]
+  for (const t of ['--fo-ink', '--fo-sub', '--fo-faint', '--fo-page', '--fo-card', '--dom', '--dom2', '--liq1', '--liq2']) {
+    expect(root).toContain(`${t}:`)
+  }
+  for (const d of ['train', 'fuel', 'mezo', 'me']) {
+    expect(css).toContain(`.phone-screen[data-domain="${d}"]`)
+  }
+})
+
+test('the folyadék ground beats the warm day-part tints in light only, and hides .sky (mezo-n4wf5.1)', async () => {
+  const css = (await import('@/styles/folyadek.css?raw')).default
+  const ground = css.match(/([^{}]*)\{\s*background:\s*linear-gradient[^}]*\}/)![1].trim()
+  expect(ground).toContain(':not([data-theme="dark"])')
+  expect(ground).toContain('[data-domain]')
+  expect(css).toMatch(/:not\(\[data-theme="dark"\]\)\s+\.phone-screen\[data-domain\]\s+\.sky\s*\{\s*display:\s*none/)
+})

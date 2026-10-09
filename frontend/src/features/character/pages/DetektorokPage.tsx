@@ -62,7 +62,6 @@
 // ONE flat `tf-tlist` (sentence, monospace key chip, the owner as the csapatfal character's name
 // in its accent — `who` itself stays the real persona key), principle footer.
 // ============================================================
-import { useNavigate } from 'react-router-dom'
 import '@/features/insights/boop-world.css'
 import { GepteremHead } from '@/features/character/components/GepteremHead'
 import { personaName } from '@/features/character/personaCharacter'
@@ -131,7 +130,6 @@ const PRINCIPLE = 'A kód csak észlel — az értelmezés mindig az adott szak�
   + 'Egy detektor sosem ítél, csak jelez.'
 
 export function DetektorokPage() {
-  const navigate = useNavigate()
   // The expert catalog still gates the first paint (unchanged); the owner shown is the
   // csapatfal character the persona folds into (U9, owner 2026-09-25) — `personaName(who)`.
   const { isLoading } = useCharacterExperts()
@@ -141,7 +139,7 @@ export function DetektorokPage() {
   return (
     <div className="tf-page tf-c-slate gtm-page gtm-detektorok">
       <GepteremHead small="Gépterem · a ma aktív katalógus, egy mondatban" title="Detektorok"
-        onBack={() => navigate('/mezo/karakter/gepterem')} />
+        fallback="/mezo/karakter/gepterem" />
       <div className="tf-tlist gtm-dets">
         {DETECTORS.map((d) => (
           <div className="tf-trow gtm-detrow" key={d.key}>

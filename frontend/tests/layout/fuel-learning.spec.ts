@@ -16,7 +16,9 @@ test('Hogy tanultam? stays contained at 320px and its last day row clears the ta
   await page.goto('/fuel/tanulas')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
-  await expect(page.getByRole('heading', { name: 'Hogy tanultam?' })).toBeVisible()
+  // the page's own heading (the shell's title bar names the page too, until the page is re-dressed)
+  await expect(page.locator('h1.fkx-title', { hasText: 'Hogy tanultam?' })).toBeVisible()
+  await expect(page.locator('.fo-top h1')).toHaveText('Hogy tanultam?')
   await expect(page.getByRole('img', { name: /A keret alapja hétről hétre/ })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   // the harness runs with reduced motion: the chart's one-shot draw is never armed
@@ -31,7 +33,7 @@ test('Hogy tanultam? stays contained at 320px and its last day row clears the ta
   await last.scrollIntoViewIfNeeded()
   await last.evaluate((element) => {
     const scroller = document.querySelector('.screen-content') as HTMLElement
-    const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+    const tabbar = document.querySelector('.fo-nav')?.getBoundingClientRect()
     if (!tabbar) return
     const overlap = element.getBoundingClientRect().bottom - tabbar.top
     scroller.style.scrollBehavior = 'auto'
@@ -41,7 +43,7 @@ test('Hogy tanultam? stays contained at 320px and its last day row clears the ta
   const spacing = await page.evaluate(() => {
     const rows = document.querySelectorAll('.fln-day')
     const row = rows[rows.length - 1].getBoundingClientRect()
-    const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+    const tabbar = document.querySelector('.fo-nav')!.getBoundingClientRect()
     return { rowBottom: row.bottom, tabbarTop: tabbar.top }
   })
   expect(spacing.rowBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)

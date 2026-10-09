@@ -21,6 +21,7 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput, RecipeRole } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
@@ -31,6 +32,7 @@ import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
 import { usePickableIngredients, kindLabel } from '@/data/fuel/pantryPickables'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 interface DraftLine { refId: string; amount: number; unit: string; note?: string }
 
@@ -100,6 +102,7 @@ function AmountField({ value, onChange, label }: { value: number; onChange: (n: 
 export function RecipeEditorPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const leave = useLeaveAfterMutation()
   const { recipes, categoryMeta } = useRecipes()
   // Resolve picked-line display name + live macro contribution from the SAME
   // unified pickable source the picker draws from (foods + supplement stash) — NOT
@@ -133,7 +136,7 @@ export function RecipeEditorPage() {
     return (
       <div className="fmx-page fkx-reditor">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate(-1)} aria-label="Vissza">‹</button>
+          <FrameBack history className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
           <span><small>Fuel · Receptek</small></span>
         </div>
         <div className="fkx-notfound uv-empty">Nincs ilyen recept.</div>
@@ -188,10 +191,11 @@ export function RecipeEditorPage() {
     }
     if (isEditMode && editing) {
       update(editing.id, input)
-      navigate(`/fuel/recipes/${editing.id}`)
+      // the editor is only ever opened from this recipe's page: pop back onto it
+      leave.back(`/fuel/recipes/${editing.id}`)
     } else {
       create(input)
-      navigate('/fuel/recipes')
+      leave.to('/fuel/recipes')
     }
   }
 
@@ -201,7 +205,7 @@ export function RecipeEditorPage() {
     <div className="fmx-page fkx-reditor">
       <EntranceGroup>
         <div className="fmx-subhead rise">
-          <button type="button" className="glass is-round" onClick={() => navigate(-1)} aria-label="Vissza">‹</button>
+          <FrameBack history className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
           <span>
             <small>Fuel · Receptek</small>
             <h1 className="fkx-title">{name || (isEditMode ? '—' : 'Új recept')}</h1>

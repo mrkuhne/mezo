@@ -13,7 +13,7 @@
 // dashed not-found line; the populated face is the same flat `tf-tlist` idiom as Adatforrások
 // (the ÉRZÉKENY dot stays lavender — never a red flag).
 // ============================================================
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import '@/features/insights/boop-world.css'
 import { Icon3D } from '@/shared/ui/clay'
 import { GepteremHead } from '@/features/character/components/GepteremHead'
@@ -37,15 +37,13 @@ function ItemRow({ item }: { item: InventoryItem }) {
 
 export function KorPage() {
   const { n } = useParams<{ n: string }>()
-  const navigate = useNavigate()
   const round = INVENTORY_ROUNDS.find((r) => r.n === Number(n))
 
-  const goBack = () => navigate('/mezo/karakter/gepterem/adatforrasok')
 
   if (round == null) {
     return (
       <div className="tf-page tf-c-slate gtm-page gtm-kor">
-        <GepteremHead small="Adatforrások" title="Egy kör" onBack={goBack} />
+        <GepteremHead small="Adatforrások" title="Egy kör" fallback="/mezo/karakter/gepterem/adatforrasok" />
         <div className="tf-dash gtm-notfound" data-state="not-found">
           <Icon3D name="t-info" size={26} /><span>Ez a kör nem található.</span>
         </div>
@@ -55,7 +53,7 @@ export function KorPage() {
 
   return (
     <div className="tf-page tf-c-slate gtm-page gtm-kor">
-      <GepteremHead small="Adatforrások" title={`${round.n}. KÖR`} onBack={goBack} />
+      <GepteremHead small="Adatforrások" title={`${round.n}. KÖR`} fallback="/mezo/karakter/gepterem/adatforrasok" />
       <p className="gtm-lede">{`${round.title} · ${round.items.length} tétel`}</p>
       <div className="tf-tlist gtm-items">
         {round.items.map((item) => (

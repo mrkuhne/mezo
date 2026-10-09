@@ -12,7 +12,7 @@
 // - a kör-térkép 4. cellája a `deliberation`-ből — ezek a tanácskozás DÖNTÉSEI.
 // ============================================================
 import { useEffect, useState } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import '@/features/character/character.css'
 import '@/features/insights/boop-world.css'
 import { Icon3D } from '@/shared/ui/clay'
@@ -25,6 +25,7 @@ import { KonziliumConversationView } from '@/features/character/components/Konzi
 import { expertColor } from '@/features/character/expertColors'
 import { personaName } from '@/features/character/personaCharacter'
 import type { CharacterConferenceSummary, CharacterExpertDto, ConferenceTurn } from '@/data/character/characterApi'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const KIND_WORD: Record<CharacterConferenceSummary['kind'], string> = {
   DAILY: 'napi beszélgetés',
@@ -48,10 +49,10 @@ const HEAD_TITLE = 'Az ülés jegyzőkönyve'
 
 /** Üvegesítés U9 (mezo-me75u.9): a csapatfal D5 „jegyzőkönyv” fejléce — üveg vissza-gomb, alatta
  *  kis sor (Konzílium · dátum · fajta) és a cím. Ez a lap EGYETLEN visszalépő vezérlője. */
-function KonzHead({ when, onBack }: { when: string | null; onBack: () => void }) {
+function KonzHead({ when, fallback }: { when: string | null; fallback: string }) {
   return (
     <div className="tf-dhead">
-      <button type="button" className="glass tf-back" aria-label="Vissza" onClick={onBack}>‹</button>
+      <FrameBack className="glass tf-back" history fallback={fallback}>‹</FrameBack>
       <span className="tf-dtitle">
         <small><span>Konzílium</span>{when != null && ` · ${when}`}</small>
         <strong>{HEAD_TITLE}</strong>
@@ -108,7 +109,6 @@ function buildBlocks(turns: ConferenceTurn[], experts: CharacterExpertDto[]): Bl
 }
 
 export function KonziliumPage() {
-  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const { conferences, isLoading: listLoading } = useCharacterConferences()
   const { experts, isLoading: expertsLoading } = useCharacterExperts()
@@ -157,7 +157,7 @@ export function KonziliumPage() {
   if (conferences.length === 0) {
     return (
       <div className="kz-page tf-page">
-        <KonzHead when={null} onBack={() => navigate('/mezo/karakter')} />
+        <KonzHead when={null} fallback="/mezo/karakter" />
         <div className="tf-dash kz-empty">
           <Icon3D name="t-council" size={30} />
           <span>Egyelőre nincs konzílium — a csapat hetente tanácskozik, ez az első hét még nem zajlott le.</span>
@@ -185,7 +185,7 @@ export function KonziliumPage() {
     <div className="kz-page tf-page">
       <KonzHead
         when={summary != null ? `${headerDate(summary.generatedAt)} · ${KIND_WORD[summary.kind]}` : null}
-        onBack={() => navigate('/mezo/karakter')}
+        fallback="/mezo/karakter"
       />
       {summary != null && (
         <div className="kz-step">

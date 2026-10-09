@@ -66,6 +66,8 @@ const GLY={
  bowl:['M7 30H57C57 44 47 54 32 54S7 44 7 30Z','M22 21C19 16 25 14 22 9M34 21C31 16 37 14 34 9M44 21C42 17 46 15 44 12'],
  pot:['M12 26H52V46A8 8 0 0 1 44 54H20A8 8 0 0 1 12 46Z','M4 32H12M52 32H60M10 18H54M32 18V12'],
  plate:[C(32,32,22),C(32,32,12)],
+ tea:['M12 26H44V40A14 14 0 0 1 30 54H26A14 14 0 0 1 12 40Z','M44 30H48A6 6 0 0 1 48 42H44M22 8C20 12 26 14 24 18M32 8C30 12 36 14 34 18'],
+ nohunger:[C(32,32,16),'M6 12V52M2 12V24A4 4 0 0 0 10 24V12M58 52V12C52 16 52 30 58 32M13 11L51 53','none'],
  hunger:[C(32,32,16),'M6 12V52M2 12V24A4 4 0 0 0 10 24V12M58 52V12C52 16 52 30 58 32'],
  craving:[O,C(32,32,8)+'M16 22L19 25M44 14L46 18M48 36L52 37M22 46L25 48'],
  meat:['M10 30C10 16 24 8 38 10C50 12 58 22 54 34C50 48 34 56 22 52C14 49 10 40 10 30Z',C(36,30,6)],
@@ -206,7 +208,7 @@ ${H}${Q} .fh-hero .fh-acts svg.ic.jel,${H}${Q} .btn.pri svg.ic.jel{--ic:#fff;--i
 /* "Új ikonok" review sheet (owner OK needed before they go into the shared sprite) */
 if(window.FREG&&FREG.nap){const G=[['Nap és alvás','dawn sun moon sleep clock history calendar day candle breath'],
  ['Edzés','dumbbell addex kettle muscle soreness run steps volley football basket tennis bike swim hike trx crossfit peak motivation jump sprint core juggle stretch whistle target hold record play skip repeat swap other rested pain bandage kimelo'],
- ['Étkezés','bowl pot plate hunger craving meat protein carb avocado fat fiber sprout harvest water glucose sugar salt snack ultra processing macro micro portion chef supps syringe flask digestion ill'],
+ ['Étkezés','bowl pot plate hunger nohunger tea craving meat protein carb avocado fat fiber sprout harvest water glucose sugar salt snack ultra processing macro micro portion chef supps syringe flask digestion ill'],
  ['Test és fej','weight heart mood brain eye flame bolt shield'],
  ['Napló és jegyzet','journal book scroll note source protocol checkin tick info quick template card album camera pencil eraser trash scissors'],
  ['Minta és adat','pattern graph spark bulb lens diagnose trend up down compare radar grid stack layers signal cowave compass orb gem ring'],

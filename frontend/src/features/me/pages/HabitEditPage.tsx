@@ -16,7 +16,8 @@
 // The page NEVER ticks a habit (ADR — ticking lives on /nap/rutin).
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
+import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import { useHabitCatalog, useHabitCatalogActions, useHabitSummary } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import type { HabitFramework, HabitMode } from '@/data/types'
@@ -90,7 +91,7 @@ interface AnchorState {
 }
 
 export function HabitEditPage() {
-  const navigate = useNavigate()
+  const leave = useLeaveAfterMutation()
   const { habitKey = '' } = useParams<{ habitKey: string }>()
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { data: summary } = useHabitSummary()
@@ -147,7 +148,7 @@ export function HabitEditPage() {
     if (isPending) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szerk">
-          <PageHead glass onBack={() => navigate(backTo)} label="Szokás" />
+          <PageHead glass history fallback={backTo} label="Szokás" />
           <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
         </MozaikPage>
       )
@@ -155,7 +156,7 @@ export function HabitEditPage() {
     if (isError) {
       return (
         <MozaikPage tone="gold" className="rt-uv rt-szerk">
-          <PageHead glass onBack={() => navigate(backTo)} label="Szokás" />
+          <PageHead glass history fallback={backTo} label="Szokás" />
           <PageBody>
             <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
           </PageBody>
@@ -226,16 +227,17 @@ export function HabitEditPage() {
     if (mode !== def.mode) patch.mode = mode
     if (mode === 'DERIVED' && (mode !== def.mode || metric !== def.metric)) patch.metric = metric
     patch.linkUrl = linkUrl.trim()
-    updateDef(def.id, patch).then(() => navigate(backTo))
+    updateDef(def.id, patch).then(() => leave.back(backTo))
   }
 
   const togglePause = () => {
-    updateDef(def.id, { isActive: !def.isActive }).then(() => navigate(backTo))
+    updateDef(def.id, { isActive: !def.isActive }).then(() => leave.back(backTo))
   }
 
   const remove = () => {
     if (!confirmDelete) { setConfirmDelete(true); return }
-    deleteDef(def.id).then(() => navigate('/nap/rutin/epites'))
+    // the habit's own page sits right behind this editor: it goes too
+    deleteDef(def.id).then(() => leave.pastDetail('/nap/rutin/epites'))
   }
 
   const pickAnchor = (next: AnchorState) => {
@@ -254,7 +256,7 @@ export function HabitEditPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-szerk">
-      <PageHead glass onBack={() => navigate(backTo)} label="Szokás">
+      <PageHead glass history fallback={backTo} label="Szokás">
         <button type="button" className="mz-pgact rt-act" disabled={!canSave || pending} onClick={save}>
           <Icon3D name="t-tick" size={18} />Mentés
         </button>

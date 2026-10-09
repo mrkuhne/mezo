@@ -1,4 +1,3 @@
-import { useNavigate } from 'react-router-dom'
 import { useGoal, useGoalOverview } from '@/data/hooks'
 import { GoalDietWeekCard } from '@/features/me/components/GoalDietWeekCard'
 import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
@@ -18,14 +17,13 @@ const DAY_COPY = {
 const BASIS_LABEL: Record<string, string> = { adaptive: 'Adaptív terv', learned: 'Tanult alap' }
 
 export function GoalDietPage() {
-  const navigate = useNavigate()
   const { goalId, pending: goalPending } = useGoal()
   const { overview, pending } = useGoalOverview(goalId)
   const loading = goalPending || pending
   const invalid = overview?.courseStatus === 'invalid' || overview?.diet.todayDayType === 'unavailable'
 
   return <MozaikPage tone="sage" className="goal-detail-page uv-goal goal-detail-diet-page">
-    <PageHead glass onBack={() => navigate('/me/goals/weight')} label="Cél" />
+    <PageHead glass history fallback="/me/goals/weight" label="Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
       <EntranceGroup><PageHero art="t-bowl" accent="var(--dv-sage)" name="Mai étrendi keret" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kalóriakeret csak koherens célból számolható újra.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>

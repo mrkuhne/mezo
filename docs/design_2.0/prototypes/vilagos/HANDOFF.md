@@ -152,3 +152,62 @@ dark ground (graphite bodies, purple/gold light) and is too detailed for a 26 px
   day as a small vessel (level = value, colour = group, dashed = against). Done for the late-dinner
   case (`G_VACS`), the dinner decision, the carb experiment, the saved sweets pattern and the water
   pattern. Rule for any new comparison: averages + the days behind them.
+
+## 2026-10-09 — F1 prototype round (frame parity, opening animation, the mixed look)
+
+New file `vilagos/keret.js` (loaded last) + frame changes in `kit.js` (`top`, `nav`, `fab`) and `foly.js`.
+Awaiting the owner's OK; nothing below is decided until he answers.
+
+- **Reality pass on the frame.** The live header carries five things (`AppHeader.tsx`): kalauz "?",
+  settings, Mezo messages (unread badge), notifications, the day orb; plus the floating quick-log
+  button (`QuickLogFab.tsx`). The first drawing had search · bell · settings and nothing else. Drawn now:
+  - the **magnifier is gone** — the app has no search. Its place is **Minden oldal** (grid glyph →
+    `#w-<d>-mindenoldal`, the real `pageIndex.ts` inventory grouped by `navModel`), which also answers
+    where the retired domain switcher's link goes;
+  - **kalauz "?"** = a small chip after the context line (hub and sub-page alike; liquid dot = unseen T3);
+  - **messages** = a count on Nap's Beszélgetés tab, and on the Nap drop from the other domains;
+  - **day orb** = the Nap drop's level is the day's own fill (`useDayOrbFill`); the other four rest at
+    half, the active one is fuller;
+  - the **A napom morning dot** moves to the top tab;
+  - the **quick-log button** floats bottom-right as today (hidden on the Nap hub, the quick-log page,
+    full-screen flows and pages with their own bottom action bar). It covers content at rest on some
+    pages (Edzés · Mai's "Kihagyom") — raised with the owner.
+- **Opening animation** — `#w-nap-indito.a|b|c`: A the screen fills and the wordmark turns white under
+  the liquid; B five drops fall into the bottom bar; C one vessel, five layers. 3 s, then the app;
+  the base CSS is the final frame, so reduced motion shows it still. Wordmark unchanged ("boop", F8).
+- **The mixed look** — `#w-<d>-atmenet[.sotet]`: the new frame around `elo/<d>.html` in an iframe,
+  re-dressed by injected CSS (old chrome hidden; light: Folyadék tokens, white cards, the new glyphs
+  copied into the old sprite ids, a readability pass). It is an approximation of what F1's token flip
+  gives, not the build. `.sotet` leaves the old page dark (the alternative: dark until its slice).
+- 320 px: header buttons are 38 px so the date line fits beside them.
+
+### Owner's answers, same day (2026-10-09) — these supersede the bullets above where they differ
+
+- **Opening animation: B and C together** ("öt csepp nagyon menő, de az egy edény animációval együtt").
+  Drawn as one story at `#w-nap-indito`: the vessel fills with the five layers, then the stack drains
+  through the bottom and each layer lands as a drop in its place in the bottom bar. A/B/C are gone.
+- **Mixed look: light** ("világosra hangolva"). `#w-<d>-atmenet` shows only that.
+- **The day orb stays a header button; Mezo üzenetei stays too** ("ne veszítsük el azt a funkciót").
+  The hub header is now two lines: context line + five 38 px buttons (Minden oldal · Mezo üzenetei ·
+  értesítések · beállítások · day orb), then the title with the kalauz "?" after it. At ≤360 px the
+  buttons take their own line above the context line. The Nap drop is an ordinary drop again.
+- **The quick-log button floats**, as today ("lebegő marad, tetszik").
+
+## 2026-10-09 — F1 built: deviations from the prototype
+
+Slice F1 (`mezo-n4wf5.1`: foundation, frame, kit) is built on `feat/folyadek-alap`. The app matches the
+prototype except for these, all small and known:
+
+- **The kit `Drop` has a soft coloured glow** instead of the prototype's dark `0 8px 14px` shadow (the
+  prototype's black shadow was tuned for the dark world; the light layer's shell and liquid values are ported).
+- **The day orb shows the level only.** The old orb's tone (day score, pale to saturated) is gone; the
+  prototype's orb is the shared drop in Nap blue. `useDayOrbFill().intensity` is still computed but nothing draws it.
+- **The splash's active drop does not breathe**, while the real bottom bar's active drop does (`alive`),
+  so in motion mode the hand-off differs by about 1 px; under reduced motion the boxes match within 2 px (tested).
+- **Unconverted pages show their own heading under the frame title**, so some titles appear twice, and an
+  un-indexed parameter page is titled by its tab label until its slice (F2–F7). Their old layouts, rings
+  and Boop mascots remain by design.
+- **Two glyphs were added after the owner's review:** `tea` and `nohunger` (drawn by the controller; the
+  owner has not seen them on the icon sheet `#w-nap-ikonok`). The sprite has 149 glyphs.
+- Also noted: sub-pages have no settings / messages / day-orb / map buttons (back · title · "?" · bell, as
+  approved), and the title bar's back is a bare `‹`, it no longer names its destination.

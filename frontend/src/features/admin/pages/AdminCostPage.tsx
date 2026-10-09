@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
 import { useLlmUsageBreakdown, useLlmUsageSummary, useLlmCalls } from '@/data/me/llmUsageHooks'
 import { useAdminCostMatrix, useAdminOverview, useAdminUserInsights } from '@/data/admin/adminInsightsHooks'
@@ -106,7 +106,6 @@ function userEntries(groups: { userId?: string | null; name?: string | null; cos
 }
 
 export function AdminCostPage() {
-  const navigate = useNavigate()
   const me = useMe()
   const isOwner = me.data?.role === 'OWNER'
   const [searchParams, setSearchParams] = useSearchParams()
@@ -195,7 +194,7 @@ export function AdminCostPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead glass onBack={() => navigate('/admin')} label="Admin" />
+      <PageHead glass history fallback="/admin" label="Admin" />
       <EntranceGroup>
         <PageHero glass eyebrow="Admin" name="Költés" sub="AI-hívások havi költése és mintázatai" />
 

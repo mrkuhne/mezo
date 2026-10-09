@@ -36,6 +36,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import { useQuery } from '@tanstack/react-query'
 import type { Recipe, RecipeRole, WorkshopDraft, WorkshopGoal, WorkshopLine } from '@/data/types'
 import { useFuelDay, useRecipes, useRecipeActions, useWorkshop } from '@/data/hooks'
@@ -61,6 +62,7 @@ import {
 import { mealMacroShare } from '@/features/fuel/logic/mealShare'
 import { WorkshopIngredientRow } from '@/features/fuel/components/workshop/WorkshopIngredientRow'
 import { WorkshopChatDock, type WorkshopChatMessage } from '@/features/fuel/components/workshop/WorkshopChatDock'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The base fields a workshop draft does NOT model — carried through verbatim from the seed
  *  recipe (or defaults) so a save is never a silent full-replace that drops them. `role` is one
@@ -101,6 +103,7 @@ const GATE_NOTE = 'becslés-sorok: cseréld kamra-itemre vagy töröld a mentés
 
 export function RecipeWorkshopPage() {
   const navigate = useNavigate()
+  const leave = useLeaveAfterMutation()
   const [params] = useSearchParams()
   const seedId = params.get('recipeId')
   const fromMealId = seedId ? null : params.get('fromMeal')
@@ -312,11 +315,12 @@ export function RecipeWorkshopPage() {
     if (sourceRecipeId) {
       update(sourceRecipeId, input)
       show({ kind: 'success', text: 'Recept frissítve.' })
-      navigate(`/fuel/recipes/${sourceRecipeId}`)
+      // `?recipeId=` is only ever opened from that recipe's page: pop back onto it
+      leave.back(`/fuel/recipes/${sourceRecipeId}`)
     } else {
       create(input)
       show({ kind: 'success', text: 'Recept mentve a Receptkönyvbe.' })
-      navigate('/fuel/recipes')
+      navigate('/fuel/recipes', { replace: true })
     }
   }
 
@@ -343,7 +347,7 @@ export function RecipeWorkshopPage() {
     <div className="fmx-page fkx-workshop">
       <EntranceGroup>
           <div className="fmx-subhead rise">
-            <button type="button" className="glass is-round" onClick={() => navigate('/fuel/recipes')} aria-label="Vissza">‹</button>
+            <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
             <span>
               <small>Fuel · Receptek</small>
               <h1 className="fkx-title">Receptműhely</h1>

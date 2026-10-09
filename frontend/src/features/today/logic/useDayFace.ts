@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · useDayFace — a napszak-feloldás EGYETLEN helye (mezo-atry). A shell fejléce
-// (`app/AppHeader.tsx`) és a Nap oldal (`NapHubPage`) korábban külön-külön másolta ide az
+// (`app/TitleBar.tsx`) és a Nap oldal (`NapHubPage`) korábban külön-külön másolta ide az
 // `isFace` őrt, a `dayFace(tick, sleepGoal)` hívást és a `?dp=`-vagy-óra szabályt; két
 // másolat két igazságot jelent, ezért a szabály innen jön mindkettőnek.
 //

@@ -23,7 +23,7 @@
 // nulla pont; a hero száma mellől a „/10" elmarad (owner); és egy alacsony pontszám sosem
 // kudarc-hangon szólal meg.
 // ============================================================
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useFeedback, useFuelDay, useMealCoachFor } from '@/data/hooks'
 import { huInt } from '@/shared/lib/huNum'
 import { breakdownTotalPct } from '@/features/fuel/logic/scoreArithmetic'
@@ -31,11 +31,11 @@ import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { FuelScoreSurface } from '@/features/fuel/components/FuelScoreSurface'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 export function FuelMealScorePage() {
   const { id } = useParams<{ id: string }>()
   const [search] = useSearchParams()
-  const navigate = useNavigate()
   const day = search.get('d')
   const { fuel } = useFuelDay(day ?? undefined)
   const meal = fuel.meals.find(m => m.id === id) ?? null
@@ -48,13 +48,14 @@ export function FuelMealScorePage() {
   // van-e breakdown vagy próza — a chipek maguk renderelnek csak akkor, ha van miről szavazni.
   const feedback = useFeedback('meal_coach', summary && meal ? [meal.id] : [])
 
-  const back = () => navigate(meal ? `/fuel/etkezes/${meal.id}${day ? `?d=${day}` : ''}` : '/fuel')
+  // Back returns where the user came from; this route is only where a direct link goes.
+  const backTo = meal ? `/fuel/etkezes/${meal.id}${day ? `?d=${day}` : ''}` : '/fuel'
 
   if (!meal) {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+          <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
           <span><strong>Ez az étkezés nincs meg</strong></span>
         </div>
         <p className="fmx-block-empty">Lehet, hogy egy másik napon logoltad, vagy közben törölted.</p>
@@ -67,7 +68,7 @@ export function FuelMealScorePage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
+          <FrameBack className="glass is-round" history fallback={backTo} label="Vissza az étkezéshez">‹</FrameBack>
           <span><small>AI ÉRTÉKELÉS</small><strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -84,7 +85,7 @@ export function FuelMealScorePage() {
   return (
     <div className="fmx-page">
       <div className="fmx-subhead">
-        <button type="button" className="glass is-round" onClick={back} aria-label="Vissza az étkezéshez">‹</button>
+        <FrameBack className="glass is-round" history fallback={backTo} label="Vissza az étkezéshez">‹</FrameBack>
         <span>
           <small>AI ÉRTÉKELÉS</small>
           <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>

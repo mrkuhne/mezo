@@ -10,6 +10,8 @@ import {
 } from '@/features/insights/logic/teamRooms'
 import { renderInline } from '@/shared/lib/markdown'
 import { Boop, Icon3D } from '@/shared/ui/clay'
+import { useFrameFallback, useHasTitleBar } from '@/shared/ui/folyadek'
+import { useBackNav } from '@/shared/hooks/useBackNav'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import '@/features/insights/boop-world.css'
 
@@ -19,9 +21,15 @@ const CASES_MAX = 5
 const CLAIMS_MAX = 3
 
 function BackHead({ small, title }: { small: string; title: string }) {
+  // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the back control and runs this
+  // handler; the page keeps its own link only where no title bar is mounted.
+  // Back returns where the user came from; `/mezo/csapat` is only where a direct link goes.
+  useFrameFallback('/mezo/csapat')
+  const back = useBackNav('/mezo/csapat')
+  const shellHasBack = useHasTitleBar()
   return (
     <div className="tf-dhead">
-      <Link to="/mezo/csapat" className="glass tf-back" aria-label="Vissza a csapathoz">‹</Link>
+      {!shellHasBack && <Link to="/mezo/csapat" className="glass tf-back" aria-label="Vissza a csapathoz" onClick={(e) => { e.preventDefault(); back() }}>‹</Link>}
       <span className="tf-dtitle"><small>{small}</small><strong>{title}</strong></span>
     </div>
   )

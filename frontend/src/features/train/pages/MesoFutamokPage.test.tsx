@@ -43,9 +43,11 @@ test('mounted at /train/mesocycles/futamok via the router, with a back pill to t
   const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/futamok'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   expect(await screen.findByRole('heading', { name: 'Amit lezártál' })).toBeInTheDocument()
-  expect(screen.getByText('Lezárt futamaid')).toBeInTheDocument() // the hero's eyebrow
+  // the hero's eyebrow — and the shell's title bar, which names the page the same way
+  expect(screen.getAllByText('Lezárt futamaid')).toHaveLength(2)
   await user.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
+  expect(router.state.location.pathname).toBe('/train/mesocycles/konyvtar')
 })
 
 test('the hero states only what the closed runs themselves carry: their count and their weeks', () => {

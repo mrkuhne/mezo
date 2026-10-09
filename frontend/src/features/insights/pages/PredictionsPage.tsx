@@ -12,7 +12,7 @@
 // feedback read for the whole list, FeedbackChips on every card in both modes.
 // ============================================================
 import { useMemo, type CSSProperties, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon3D } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
@@ -22,6 +22,7 @@ import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import type { Prediction } from '@/data/types'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The hero's honest accuracy pair: mock keeps the Phase-1 literal (localized view-side);
  *  live derives from CLOSED rows only — null while none exist, so the hero shows NO number
@@ -36,12 +37,10 @@ export function accuracyOf(predictions: Prediction[], mock: boolean): { pct: num
 
 /** The page frame every branch renders inside — the way back must exist on all of them. */
 function PredFrame({ big, sub, children }: { big?: ReactNode; sub?: string; children: ReactNode }) {
-  const navigate = useNavigate()
   return (
     <div className="tf-page m9e-root">
       <div className="tf-dhead">
-        <button type="button" className="glass tf-back" aria-label="Vissza"
-          onClick={() => navigate(ALL_FEATURES_ROUTE)}>‹</button>
+        <FrameBack className="glass tf-back" history fallback={ALL_FEATURES_ROUTE}>‹</FrameBack>
         <span className="tf-dtitle"><small>Mezo · összes funkció</small><strong>Előrejelzések</strong></span>
       </div>
       {big !== undefined && (

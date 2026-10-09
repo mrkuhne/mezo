@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
+import { Link, useParams, useLocation } from 'react-router-dom'
 import { useMemorySummaries } from '@/data/hooks'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { Icon3D } from '@/shared/ui/clay'
@@ -7,7 +7,6 @@ import { GhostState } from '@/shared/ui/GhostState'
 
 export function MemoryDayPage() {
   const { date } = useParams<{ date: string }>()
-  const navigate = useNavigate()
   const { search } = useLocation()
   const back = `/mezo/emlekek${search}`
   const { summaries, isPending, isError, degraded, refetch } = useMemorySummaries()
@@ -16,7 +15,7 @@ export function MemoryDayPage() {
   const earlier = index >= 0 ? summaries[index + 1] : undefined
   const later = index > 0 ? summaries[index - 1] : undefined
   return <MozaikPage tone="gold" className="eml-page eml-emlek">
-    <PageHead glass label="Emlékek" onBack={() => navigate(back)} />
+    <PageHead glass label="Emlékek" history fallback={back} />
     <PageHero art="t-album" accent="var(--dv-amber)" name="Napi emlék" sub={date} />
     <PageBody>
       {isPending ? <div className="eml-ghost"><GhostState message="A napi emlék betöltése…" /></div>

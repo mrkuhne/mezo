@@ -45,12 +45,14 @@ test('a tabbar-lépés az öt VALÓDI területet hordozza, a navModel sorrendjé
   expect(step.tabs.map((t) => t.label)).toEqual(DOMAINS.map((d) => d.name))
 })
 
-test('a tabbar-lépés a MAI chrome-ot írja le: Boop-váltó + négy fül, fülenként a navModel füleivel', () => {
+// Folyadék keret (mezo-n4wf5.1): lent az öt terület (mindig), fent a terület négy oldala;
+// Boop-váltó nincs — a szöveg ezt mondja, nem a nyugdíjazott sávot.
+test('a tabbar-lépés a MAI chrome-ot írja le: lent öt terület + fent négy oldal, fülenként a navModel füleivel', () => {
   const step = WELCOME.steps.find((s) => s.kind === 'tabbar')
   if (step?.kind !== 'tabbar') throw new Error('nincs tabbar-lépés')
   expect(step.title).toBe('Öt terület, egy koppintásra.')
-  expect(step.voice).toMatch(/Boop/)
-  expect(step.voice).toMatch(/négy füle/)
+  expect(step.voice).toBe('Lent az **öt terület** között váltasz, fent a terület négy oldala van. Koppints a figurákra — mindegyik megmutatja, mi lakik nála.')
+  expect(step.voice).not.toMatch(/Boopra|Bal lent|területváltó/i)
   const voice = (k: string) => step.tabs.find((t) => t.key === k)!.voice
   expect(voice('nap')).toMatch(/Mai oldal.*A napom.*beszélgetés.*rutin/)
   expect(voice('train')).toMatch(/terv.*terhelés.*gyakorlatok/)

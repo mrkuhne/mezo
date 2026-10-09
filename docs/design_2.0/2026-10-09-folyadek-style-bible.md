@@ -164,4 +164,58 @@ rest timer) · the ceremony *pattern* (its material becomes liquid).
 
 ## Appendix — slice lessons
 
-Numbered rules appended by each build slice (F1, F2, …). Empty until F1 lands.
+Numbered rules appended by each build slice (F1, F2, …). Each was paid for in the build.
+
+**F1 — foundation, frame, kit (`mezo-n4wf5.1`, 2026-10-09)**
+
+- **F1.1 — The ground rule must out-specify the `[data-day]` tints and hide `.sky`.** The circadian
+  `.phone-screen[data-day]` washes (specificity 0,2,0) painted over a plain `.phone-screen[data-domain]`
+  ground; the ground is `:root:not([data-theme="dark"]) .phone-screen[data-domain]` (0,4,0) and the
+  `.sky` band is `display: none` under it. Verify by reading the computed background at all three day parts.
+- **F1.2 — A `var()` chain declared only on `:root` resolves on `:root`.** `--liq1: var(--dom2)` on `:root`
+  gave Nap blue in every domain. Redeclare `--liq1/--liq2` in each domain scope
+  (`.phone-screen[data-domain] { --liq1: var(--dom2); --liq2: var(--dom) }`), and test one non-Nap domain.
+- **F1.3 — Page rules are shared with the dark pockets; re-tint through theme-aware channel tokens, never
+  fixed ink literals.** About a thousand un-scoped rules carry light-on-dark literals and `/ritual` and
+  the night page read the same rules. Replace the colour value with a channel (`rgba(var(--fo-film), α)`,
+  `--fo-body`, `--fo-ground`, `--fo-shade`, `--fo-pastel`) whose dark value is the old literal; delete the
+  channels together with the pockets, not before.
+- **F1.4 — A registered back handler outranks the frame default.** Pure navigations must not register one:
+  pass `history` + `fallback` (`FrameBack`, `PageHead`) so back means „vissza oda, ahonnan jöttél". Only
+  stateful backs (wizard steps, replace/state navigations, inline closers) register `useFrameBack`.
+  A bare `navigate(-1)` or a hard-coded route in a page defeats the rule.
+- **F1.5 — „Has history" is `history.state.idx > 0`, not `location.key !== 'default'`.** On a first entry
+  reached through a `replace` redirect the key is non-default while `idx` is 0, so back popped out of the app. One
+  shared `canGoBack()` (`shared/lib/backNav.ts`) serves the title bar, the kit and the back hooks (a memory
+  router has no `idx` and falls back to the key). Test it with a real router (`idx` 0 and 2 asserted in the Playwright navigation spec), not a stub.
+- **F1.6 — The notification scrim is `position: fixed`.** An absolute 130vh scrim added scrollable
+  overflow on short pages (+119 px at 390). A `backdrop-filter` on the sticky bar captures fixed
+  descendants, so the bar's blur and tint live on `::before` (`inset: 0; z-index: -1`).
+- **F1.7 — The splash drops reuse the bottom bar's own markup and constants.** `navDropSpec` / `REST_FILL`
+  feed both, the timing constants are written to the CSS as `--sp-*`, and base rules are the final frame so
+  reduced motion is just „no animation". Assert the hand-off (drop boxes within 2 px) under reduced motion;
+  the live bar's active drop breathes, so motion mode differs by about 1 px.
+- **F1.8 — A clay alias symbol needs its own `viewBox="0 0 64 64"`.** `<symbol id="i-…"><use href="#t-…"/></symbol>`
+  without a `viewBox` renders the glyph at the wrong scale; the clay ids that mean something no glyph
+  says (`i-mezo i-sport i-growth i-lombik i-retegek i-termes`) stay clay art rather than aliasing a near-miss.
+- **F1.9 — Re-tint in loops: route list × contrast script.** Measure 35 routes at 390 and 320 px
+  (text luminance against the effective background, missing `<use>` targets, overflow, console errors), fix a
+  class of literal, re-measure; 18/35 → 28 → 32 → 34 clean. Known false-positive classes: the script
+  must parse `color(srgb …)` (a `color-mix()` gradient ground is reported that way, not as `rgb()`), text
+  absolutely positioned outside its coloured parent (`/train/mesocycles` `b.<is-now`), and
+  `background-clip: text` gradient numerals. Also look at tall screenshots: a translucent dark
+  `rgba(25,22,20,.82)` sticky bar was invisible to the detector.
+- **F1.10 — Kalauz copy that describes chrome must change with the chrome.** The welcome step and the train
+  tab-row card still said „bal lent a Boop" / „lent a négy fül" after the frame moved; greps for the
+  component names miss copy. Grep the registry for the old words when a frame changes.
+- **F1.11 — A global lock hides who relied on it.** The dark lock was what kept the night page dark; lifting it
+  turned the page light until `NightPage` got its own `useForceTheme('dark')`. List every surface that
+  depends on a lock before you move it, and give each pocket an explicit claim.
+- **F1.12 — Port the prototype's light values, not just its markup.** The kit's `Drop` came out with the
+  prototype's dark base (`.csepp` white .04 shell); the light layer sits in a separate part of `kit.js`.
+  Compare computed styles per element against the prototype, not screenshots.
+- **F1.13 — Delete dead chrome with proof.** About 570 lines of the old chrome CSS went with a brace-aware
+  script that removed a rule only when every selector named a dead class (zero usage in `src` and `tests`),
+  logged each rule, and ran the CSS structure test and the build afterwards.
+- **F1.14 — Flip a global default, then run the layout specs.** Forty-odd Playwright specs asserted
+  `html[data-theme=dark]` and went red with the light lock; they are part of the change, not noise.

@@ -217,7 +217,7 @@ export function RoutineWizardPage() {
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
       <MozaikPage tone="gold" className="rt-uv rt-wiz">
-        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+        <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
         <PageBody>
           <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
         </PageBody>
@@ -290,7 +290,7 @@ export function RoutineWizardPage() {
   const save = () => {
     if (fwChoice === null) return
     const done = (habitKey: string | undefined) =>
-      navigate(habitKey != null ? `/nap/rutin/epites?new=${encodeURIComponent(habitKey)}` : '/nap/rutin/epites')
+      navigate(habitKey != null ? `/nap/rutin/epites?new=${encodeURIComponent(habitKey)}` : '/nap/rutin/epites', { replace: true })
 
     // Re-framing CONVERTS the definition it was opened with — it must never mint a second one.
     // `updateDef` accepts no `skillKey`, so it is omitted; mode/metric ride the patch since

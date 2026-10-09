@@ -54,6 +54,7 @@ import { mealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import { GlycemicGlassFor } from '@/features/fuel/components/GlycemicGlass'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 /** Blokk-arc: hue + clay ikon + magyar név. A hue a ház tokenjeiből (lásd a prototype.css
  *  `fuel-mai` blokk fejlécét: a beégetett prototípus-hexeket nem vesszük át). */
@@ -100,7 +101,7 @@ export function FuelMealDetailPage() {
     return (
       <div className="fmx-page">
         <div className="fmx-subhead">
-          <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+          <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
           <span><strong>Ez az étkezés nincs meg</strong></span>
         </div>
         <p className="fmx-block-empty">
@@ -150,7 +151,7 @@ export function FuelMealDetailPage() {
   return (
     <div className="fmx-page" style={{ '--block-color': block.color } as React.CSSProperties}>
       <div className="fmx-subhead">
-        <button type="button" className="glass is-round" onClick={() => navigate('/fuel')} aria-label="Vissza a Mai oldalra">‹</button>
+        <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
         <span>
           <small>{block.label.toLocaleUpperCase('hu-HU')}{ctx && ctx !== 'standard' ? ` · ${MEAL_CONTEXT_LABEL[ctx].toLocaleUpperCase('hu-HU')}` : ''}</small>
           <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>

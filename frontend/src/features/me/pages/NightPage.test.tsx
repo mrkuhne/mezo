@@ -1,12 +1,13 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { ThemeProvider } from '@/app/ThemeProvider'
 import { NightPage } from '@/features/me/pages/NightPage'
 import { NIGHT_WATCHDOG_MIN, WATCHDOG_TICK_MS } from '@/features/me/logic/nightFlow'
 import { userScopedKey } from '@/shared/lib/userScope'
 
 const renderPage = () =>
-  render(<MemoryRouter initialEntries={['/me/sleep/night']}><NightPage /></MemoryRouter>)
+  render(<ThemeProvider><MemoryRouter initialEntries={['/me/sleep/night']}><NightPage /></MemoryRouter></ThemeProvider>)
 
 describe('NightPage', () => {
   beforeEach(() => {
@@ -15,6 +16,11 @@ describe('NightPage', () => {
     vi.setSystemTime(new Date('2026-07-24T03:00:00'))
   })
   afterEach(() => vi.useRealTimers())
+
+  test('claims dark over the light lock (one of the two dark pockets, F1)', () => {
+    renderPage()
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  })
 
   test('idle: intro copy + Ébren vagyok CTA, no clock anywhere', () => {
     renderPage()

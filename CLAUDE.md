@@ -147,11 +147,11 @@ still stands on its own). A pure bug fix with no visible change skips the protot
 doubt, prototype.
 
 **Prototype rules** (the full recipe is [`docs/design_2.0/prototype-recipe.md`](docs/design_2.0/prototype-recipe.md)):
-- Realistic: built on the app's real chrome (header, bottom menu, domain switcher, copied from
-  `fuel-uveg.html`), real-looking Hungarian content of the real record types (read the page
+- Realistic: built on the app's real chrome (title bar with the top tabs, the five-drop bottom bar, copied from
+  the Folyadék prototype's frame), real-looking Hungarian content of the real record types (read the page
   components; never invent features), clickable with a hash router, sheets and back buttons.
-- **Custom icons, always.** Every icon on the screen maps to the Titanium 3D sprite; where
-  nothing fits, draw a new one in the üveg bible §4 recipe — never an emoji, never a near-miss
+- **Custom icons, always.** Every icon on the screen maps to the Folyadék-jel sprite; where
+  nothing fits, draw a new one in the Folyadék bible §5 recipe — never an emoji, never a near-miss
   glyph. New icons go on an **"Új ikonok"** sheet in the prototype for the owner's OK; after the
   OK they go into the shared sprite.
 - Verify it yourself before handing it over: serve over HTTP

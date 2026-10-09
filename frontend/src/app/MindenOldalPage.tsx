@@ -3,7 +3,7 @@
 //
 // The safety net for the tab restructuring (mezo-ju4j6 phases 5–7): every surface in
 // the app, grouped the way the menu groups it, so a function cannot be lost while the
-// menu around it is redrawn. Reached from the DomainSwitcher's bottom row, NOT from a
+// menu around it is redrawn. Reached from the title bar's „Minden oldal" button (TitleBar.tsx), NOT from a
 // fifth tab — the owner chose that placement (2026-09-18) so the four tabs keep their
 // full width exactly while he is judging whether they are well divided.
 //
@@ -11,7 +11,7 @@
 // only inputs are `navModel` (the menu) and `pageIndex` (the leltár), and it must not
 // acquire a dependency on any one feature.
 //
-// The grouping is DERIVED, never stored: `activeTabRoute()` is the same rule the TabBar
+// The grouping is DERIVED, never stored: `activeTabRoute()` is the same rule the top tabs
 // uses to light a tab, so the leltár's headings and the bar can never disagree. Move a
 // route between tabs and this page follows on the next render. A page under no tab lands
 // in „Máshonnan elérhető" — the honest answer, and itself a useful signal while
@@ -24,7 +24,7 @@ import { Boop, Icon3D } from '@/shared/ui/clay'
 import { DOMAINS, activeTabRoute, type NavDomain } from '@/app/navModel'
 import { PAGE_INDEX, type IndexedPage } from '@/app/pageIndex'
 
-/** The §2.1 wash each domain's section wears — the same ramp the switcher cards use. */
+/** The §2.1 wash each domain's section wears — the same ramp the retired switcher cards used. */
 const DOMAIN_WASH: Record<string, string> = {
   nap: 'gold', train: 'coral', fuel: 'sage', mezo: 'lav', me: 'rose',
 }
@@ -99,7 +99,7 @@ export default function MindenOldalPage() {
   const navigate = useNavigate()
   const { hash } = useLocation()
 
-  // The switcher links here with the current domain as the hash, so the page opens where
+  // The title bar's grid button links here with the current domain as the hash, so the page opens where
   // the reader already was instead of at the top of a ~100-item list.
   useEffect(() => {
     if (!hash) return
@@ -110,7 +110,7 @@ export default function MindenOldalPage() {
 
   return (
     <MozaikPage tone="lav" className="mno-page mno-u10">
-      <PageHead glass label="Vissza" onBack={() => navigate(-1)} />
+      <PageHead glass history label="Vissza" onBack={() => navigate(-1)} />
       <PageBody>
         <PageHero art="t-grid" accent="var(--dv-amber)" eyebrow="LELTÁR" name="Minden oldal"
           sub={`Az app ${PAGE_INDEX.length} oldala, területenként, a menü szerinti bontásban.`} />

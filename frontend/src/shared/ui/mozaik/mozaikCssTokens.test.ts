@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
+import folyadekCss from '@/styles/folyadek.css?raw'
+import frameCss from '@/styles/folyadek-frame.css?raw'
 
 /**
  * Guard (mezo-d20.1.5): the Mozaik section must be theme-ready at the TOKEN level —
@@ -39,7 +41,7 @@ function mozaikSection(css: string): string {
 }
 
 describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () => {
-  test('every --mz-* token the Mozaik section reads is declared in :root AND overridden for dark', () => {
+  test('every --mz-* token the Mozaik section reads is declared in :root', () => {
     const section = mozaikSection(rawCss)
     const used = new Set(
       [...section.matchAll(/var\(\s*(--mz-[a-zA-Z0-9-]+)/g)].map(m => m[1]).filter(p => !LOCAL_PROPS.has(p)),
@@ -47,12 +49,10 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
     expect(used.size).toBeGreaterThan(10) // the section really is tokenized
 
     const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
-    const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
 
+    // Folyadék (mezo-n4wf5.1): the app is light-locked, so the dark value is no longer required.
     const missingLight = [...used].filter(p => !light.has(p)).sort()
-    const missingDark = [...used].filter(p => !dark.has(p)).sort()
     expect(missingLight).toEqual([])
-    expect(missingDark).toEqual([])
   })
 
   test('the Mozaik section carries no hardcoded light-surface hexes outside :root token definitions', () => {
@@ -95,14 +95,12 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
 // `.rt-hrow`'s `color: var(--mz-ink)` (a token that never existed) shipped. While the end marker
 // was missing this scan happened to reach those blocks by accident; now it does so on purpose.
 describe('every --mz-* token read anywhere in the stylesheet is declared (mezo-sm21)', () => {
-  test('light AND dark both declare every --mz-* the stylesheet consumes', () => {
+  test('the light :root declares every --mz-* the stylesheet consumes', () => {
     const used = new Set(
       [...rawCss.matchAll(/var\(\s*(--mz-[a-zA-Z0-9-]+)/g)].map(m => m[1]).filter(p => !LOCAL_PROPS.has(p)),
     )
     const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
-    const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
     expect([...used].filter(p => !light.has(p)).sort()).toEqual([])
-    expect([...used].filter(p => !dark.has(p)).sort()).toEqual([])
   })
 })
 
@@ -128,15 +126,27 @@ describe('the Mozaik panel rhythm is declared once (mezo-d20.11.2)', () => {
   })
 })
 
-// mezo-8az6: a fejléc aurora tokenjei ugyanezt a szabályt követik.
-test('minden --mzh-* fejléc-token deklarált light-ban ÉS dark-ban', () => {
-  const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
-  const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
-  const used = new Set([...rawCss.matchAll(/var\(\s*(--mzh-[a-zA-Z0-9-]+)/g)].map(m => m[1]))
+// mezo-8az6 → mezo-n4wf5.1: a fejléc-aurora `--mzh-*` tokenjei a régi fejléccel együtt mentek el
+// (ez a teszt korábban azt őrizte, hogy light-ban ÉS dark-ban deklaráltak). Ami a helyükre
+// lépett: a Folyadék-keret a saját, egyszer deklarált tokenjeiből él — és a régi készletből
+// se használat, se árva deklaráció nem maradt.
+test('a nyugdíjazott fejléc-aurora egyetlen --mzh-* tokent sem hagyott hátra', () => {
+  const live = rawCss.replace(/\/\*[\s\S]*?\*\//g, '')
+  expect([...live.matchAll(/var\(\s*(--mzh-[a-zA-Z0-9-]+)/g)].map(m => m[1])).toEqual([])
+  expect([...live.matchAll(/(--mzh-[a-zA-Z0-9-]+)\s*:/g)].map(m => m[1])).toEqual([])
+})
+
+test('a keret minden --fo-* / folyadék tokenje deklarált ott, ahol a keret CSS-e használja', () => {
+  const frame = frameCss.replace(/\/\*[\s\S]*?\*\//g, '')
+  const tokens = folyadekCss + frameCss
+  const used = new Set([...frame.matchAll(/var\(\s*(--(?:fo|dom|liq)[a-zA-Z0-9-]*)/g)].map(m => m[1]))
   expect(used.size).toBeGreaterThan(3)
+  // `--fo-top-h` is the one runtime token: the title bar measures itself and writes it onto the
+  // scroller (TitleBar.tsx); the sheet reads it with a fallback.
+  expect(frame).toContain('var(--fo-top-h, 74px)')
+  used.delete('--fo-top-h')
   for (const token of used) {
-    expect(light.has(token), `${token} hiányzik a light :root-ból`).toBe(true)
-    expect(dark.has(token), `${token} hiányzik a dark blokkból`).toBe(true)
+    expect(new RegExp(`${token}\\s*:`).test(tokens), `${token} nincs deklarálva`).toBe(true)
   }
 })
 

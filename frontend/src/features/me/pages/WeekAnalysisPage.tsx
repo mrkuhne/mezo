@@ -65,7 +65,7 @@ export function WeekAnalysisPage() {
 
   return (
     <MozaikPage tone="lav" className="wk-analysis-page">
-      <PageHead glass label="Heti" onBack={() => navigate(weekHubPath(start))}>
+      <PageHead glass label="Heti" history fallback={weekHubPath(start)}>
         <span className="mz-eyebrow wka-headwk">{deriveWeekTitle(start)}</span>
       </PageHead>
 

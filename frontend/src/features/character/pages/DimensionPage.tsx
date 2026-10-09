@@ -33,12 +33,11 @@ export function DimensionPage() {
   // catalogue exactly as before, so the owner line never flashes a fallback for one paint.
   if (isLoading || expertsLoading) return null
 
-  const back = () => navigate('/mezo/karakter/dimenziok')
 
   if (dimension == null) {
     return (
       <div className="kr9-page kr9-dimpage">
-        <KarakterBackHead small="Karakter" title="Dimenzió" onBack={back} />
+        <KarakterBackHead small="Karakter" title="Dimenzió" fallback="/mezo/karakter/dimenziok" />
         <div className="tf-dash kr9-degraded">
           <Icon3D name="t-info" size={30} />
           <span>Ez a dimenzió jelenleg nem elérhető.</span>
@@ -57,7 +56,7 @@ export function DimensionPage() {
 
   return (
     <div className={`kr9-page kr9-dimpage tf-c-${who.accent}`}>
-      <KarakterBackHead small="Dimenzió" title={dimension.title} onBack={back} />
+      <KarakterBackHead small="Dimenzió" title={dimension.title} fallback="/mezo/karakter/dimenziok" />
       <section className="tf-rhero kr9-rhero">
         {dimension.expertKey != null
           ? <PersonaOrb expertKey={dimension.expertKey} size={92} className="kr9-rfig" />

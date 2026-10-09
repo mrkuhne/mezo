@@ -35,7 +35,7 @@ export function PeopleKorPage() {
 
   return (
     <MozaikPage tone="rose" className="ppl-page ppl-kor">
-      <PageHead glass onBack={() => navigate('/me/people')} label="Kapcsolatok">
+      <PageHead glass history fallback="/me/people" label="Kapcsolatok">
         <button type="button" className="pgact ppl-act ppl-act-flat" onClick={() => setEditOpen(true)}>
           ＋ Új személy
         </button>

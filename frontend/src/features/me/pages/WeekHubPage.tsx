@@ -113,7 +113,7 @@ export function WeekHubPage() {
   const goPage = (slug: string) => navigate(`/me/week/${slug}?start=${start}`)
 
   const head = (
-    <PageHead glass label="Hol tartok" onBack={() => navigate('/me')}>
+    <PageHead glass label="Hol tartok" history fallback="/me">
       <div className="wkh-nav">
         <button type="button" className="glass is-round" aria-label="Előző hét" onClick={() => goWeek(prevMonday(start))}>‹</button>
         <button type="button" className="glass is-round" aria-label="Következő hét" disabled={isCurrentWeek(start)}

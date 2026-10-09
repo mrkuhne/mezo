@@ -2,7 +2,7 @@
 // Mezo · EnHubPage — „Hol tartok", the Én tab's hub (mezo-lhqw7; was the identity-hero +
 // 6-tile mosaic face of mezo-d20.6.1 / mezo-me75u.6)
 // Source of truth: docs/design_2.0/prototypes/elo/en.html `hub()`.
-// Anatomy, top to bottom: the shell fejléc (app/AppHeader.tsx) → the IDENTITY STRIP (flat row:
+// Anatomy, top to bottom: the shell fejléc (app/TitleBar.tsx) → the IDENTITY STRIP (flat row:
 // monogram, name, title chip, Lv · XP · streak · coin → /me/growth) → the WEEK HERO (the last
 // closed week's score ring, delta, „Jól ment / Figyelj rá", → /me/week) → ÉLETVONAL (the
 // 12-week weight curve with stations and the sleep band → /me/weight) → CÉLOK ÁLLÁSA (the

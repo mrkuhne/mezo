@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useAdminActions, useAdminInvites, useAdminUsers, useMe } from '@/data/hooks'
 import { AdminInviteRow } from '@/features/me/components/AdminInviteRow'
 import { AdminUserRow } from '@/features/me/components/AdminUserRow'
@@ -22,7 +21,6 @@ const TABS: { key: Tab; label: string }[] = [
 // page's one lit primary pill (`.ad-primary`), the tabs are the admin chip vocabulary.
 
 export function AdminAccountsPage() {
-  const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('invites')
   const [label, setLabel] = useState('')
   const [reset, setReset] = useState<{ name: string; password: string } | null>(null)
@@ -45,7 +43,7 @@ export function AdminAccountsPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead glass onBack={() => navigate('/admin')} label="Admin" />
+      <PageHead glass history fallback="/admin" label="Admin" />
       <PageHero glass eyebrow="Admin" name="Beta admin" sub="meghívók · felhasználók" />
       <PageBody>
         <EntranceGroup className="col gap-md">

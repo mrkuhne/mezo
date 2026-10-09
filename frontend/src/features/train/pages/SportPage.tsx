@@ -112,7 +112,7 @@ export function SportPage() {
 
   return (
     <MozaikPage tone="rose" className="uvs-page uvs-sport">
-      <PageHead glass onBack={() => navigate('/train')} label="Edzés">
+      <PageHead glass history fallback="/train" label="Edzés">
         {/* The header's own log CTA opens the full-screen sport flow (mezo-88iwa.9, T8
             Task 4) — pick the sport, then only the fields that sport actually asks. The
             inline "Logold ›" on a SCHEDULED slot still opens the sheet below: it carries

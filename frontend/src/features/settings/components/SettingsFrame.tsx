@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Boop, type BoopDomain } from '@/shared/ui/clay/boop/Boop'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek'
 import '@/features/settings/settings.css'
 
 export function useSettingsOrigin() {
@@ -19,8 +20,14 @@ export function SettingsFrame({ title, subtitle, domain = 'mezo', parent = '/set
   title: string; subtitle: string; domain?: BoopDomain; parent?: string | null; children: ReactNode
 }) {
   const origin = useSettingsOrigin()
+  // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the ONE back control and runs
+  // this handler — the same target and the same carried origin as the page's own pill, which
+  // stays only where no title bar is mounted.
+  const navigate = useNavigate()
+  useFrameBack(() => navigate(parent ?? origin.from, { state: origin.state }))
+  const shellHasBack = useHasTitleBar()
   return <main className={`settings-page settings-${domain}`}>
-    <nav className="settings-breadcrumb"><Link className="settings-back glass is-still" to={parent ?? origin.from} state={origin.state} aria-label={parent ? 'Vissza a beállításokhoz' : 'Vissza az oldalra'}><b aria-hidden="true">‹</b>{parent ? 'Beállítások' : 'Vissza'}</Link><span>SAJÁT RITMUSODRA</span></nav>
+    <nav className="settings-breadcrumb">{!shellHasBack && <Link className="settings-back glass is-still" to={parent ?? origin.from} state={origin.state} aria-label={parent ? 'Vissza a beállításokhoz' : 'Vissza az oldalra'}><b aria-hidden="true">‹</b>{parent ? 'Beállítások' : 'Vissza'}</Link>}<span>SAJÁT RITMUSODRA</span></nav>
     <header className="settings-hero"><div><span className="settings-kicker">MEZO · BEÁLLÍTÁSOK</span><h1>{title}</h1><p>{subtitle}</p></div><Boop domain={domain} size={92} /></header>
     {children}
   </main>

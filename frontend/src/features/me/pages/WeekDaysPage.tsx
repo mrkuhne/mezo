@@ -48,7 +48,7 @@ export function WeekDaysPage() {
 
   return (
     <MozaikPage tone="sage" className="wkd-page">
-      <PageHead glass label="Heti" onBack={() => navigate(`/me/week?start=${start}`)}>
+      <PageHead glass label="Heti" history fallback={`/me/week?start=${start}`}>
         <span className="mz-eyebrow wkd-headtitle">{title}</span>
       </PageHead>
       <PageHero

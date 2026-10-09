@@ -6,7 +6,6 @@
 // Üveg re-dress (mezo-me75u.7, prototype uveg-en2.html `gnaplo()`): halo hero t-journal, sky glass.
 // ============================================================
 import type { CSSProperties } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useActivityHistory, useGrowthWeek, useQuestHistory } from '@/data/hooks'
 import { GrowthJournalCard } from '@/features/me/components/GrowthJournalCard'
 import { buildGrowthJournal } from '@/features/me/logic/growthJournal'
@@ -17,7 +16,6 @@ import { addDays, huMonthDay, localDateString, mondayOf } from '@/shared/lib/dat
 import { huInt } from '@/shared/lib/huNum'
 
 export function GrowthNaploPage() {
-  const navigate = useNavigate()
   const today = localDateString()
   const from = addDays(today, -29)
   const { data: quests } = useQuestHistory(from, today)
@@ -29,7 +27,7 @@ export function GrowthNaploPage() {
 
   return (
     <MozaikPage tone="sky" className="grn-page">
-      <PageHead glass onBack={() => navigate('/me/growth')} label="Fejlődés" />
+      <PageHead glass history fallback="/me/growth" label="Fejlődés" />
       <PageHero art="t-journal" accent="var(--dv-sky)" name="Tevékenységek" big={<>{completed}<small> teljesített küldetés</small></>} />
       <PageBody principle="Utolsó 30 nap · a teljesített küldetések és tevékenységek itt gyűlnek. A csendben lejárt küldetés nem hiba — ajánlat volt.">
         <EntranceGroup>

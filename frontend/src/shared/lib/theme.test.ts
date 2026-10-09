@@ -4,7 +4,7 @@ import { DEFAULT_MODE, readStoredMode, writeStoredMode } from '@/shared/lib/them
 beforeEach(() => {
   localStorage.clear()
   document.querySelector('meta[name="theme-color"]')?.remove()
-  document.head.insertAdjacentHTML('beforeend', '<meta name="theme-color" content="#FBF6EF">')
+  document.head.insertAdjacentHTML('beforeend', '<meta name="theme-color" content="#EEF5F9">')
 })
 
 test('DEFAULT_THEME is light', () => {
@@ -30,7 +30,7 @@ test('applyTheme syncs the browser-chrome theme-color meta', () => {
   applyTheme('dark')
   expect(meta.getAttribute('content')).toBe('#141210')
   applyTheme('light')
-  expect(meta.getAttribute('content')).toBe('#FBF6EF')
+  expect(meta.getAttribute('content')).toBe('#EEF5F9')
 })
 
 describe('theme mode storage (mezo-d71m)', () => {

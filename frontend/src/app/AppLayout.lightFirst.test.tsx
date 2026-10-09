@@ -29,7 +29,7 @@ afterEach(() => {
   document.documentElement.removeAttribute('data-theme')
 })
 
-function renderAt(path: string, lock: 'dark' | null = null) {
+function renderAt(path: string, lock: 'light' | null = null) {
   return render(
     <QueryWrapper>
       {/* `lock={null}`: the parked light path — AppLayout itself must never force a theme. */}
@@ -73,18 +73,18 @@ test.each(FORMERLY_TITAN)('%s a felhasználó világos beállítását tartja, n
   expect(document.documentElement.getAttribute('data-theme')).not.toBe('dark')
 })
 
-// Üvegesítés (mezo-me75u.1): a sötét zár az app ALAPÁLLAPOTA — a tárolt világos beállítás
+// Folyadék (mezo-n4wf5.1): a VILÁGOS zár az app alapállapota — a tárolt sötét beállítás
 // megmarad, de nem érvényesül. A zár a téma-szolgáltatóé, nem a shellé (a fenti teszt).
-test.each(FORMERLY_TITAN)('%s a sötét zár alatt sötét, világos beállítás mellett is', path => {
-  localStorage.setItem('mezo-theme', 'light')
-  renderAt(path, 'dark')
-  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+test.each(FORMERLY_TITAN)('%s a világos zár alatt világos, sötét beállítás mellett is', path => {
+  localStorage.setItem('mezo-theme', 'dark')
+  renderAt(path, 'light')
+  expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
 })
 
 // A chrome-kapuk (hideChrome/hideFab) FÜGGETLENEK a bőrtől, és a keep-listán vannak —
 // a strip nem nyúlhatott hozzájuk.
 test('a /train/session továbbra is chrome nélkül fut', () => {
   const { container } = renderAt('/train/session')
-  expect(container.querySelector('.tab-bar')).toBeNull()
-  expect(container.querySelector('.app-head')).toBeNull()
+  expect(container.querySelector('.fo-nav')).toBeNull()
+  expect(container.querySelector('.fo-top')).toBeNull()
 })

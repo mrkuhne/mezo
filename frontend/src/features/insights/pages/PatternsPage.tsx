@@ -13,7 +13,7 @@
 // (mezo-tk88.5), domain filter + sort + page in the URL, `?pair=` redirect.
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from 'react'
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
@@ -38,6 +38,7 @@ import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { PatternMonitorPair, PatternStatus } from '@/data/types'
 import { ALL_FEATURES_ROUTE } from '@/features/insights/logic/boopNavigation'
 import '@/features/insights/boop-world.css'
+import { FrameBack } from '@/shared/ui/folyadek'
 
 const RING_R = 26
 const RING_C = 2 * Math.PI * RING_R
@@ -145,12 +146,10 @@ function Lsec({ title, art, count, countTestId, delayMs }: {
 /** A Minták oldal kerete — a vissza-út MINDEN ágon (ADR 0032 / mezo-d20.11): a `tf-dhead`
  *  (‹ → Összes funkció) + a hero: a megerősített összefüggések nagy, könnyű száma. */
 function MintakFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
-  const navigate = useNavigate()
   return (
     <div className="tf-page m9m-root">
       <div className="tf-dhead">
-        <button type="button" className="glass tf-back" aria-label="Vissza"
-          onClick={() => navigate(ALL_FEATURES_ROUTE)}>‹</button>
+        <FrameBack className="glass tf-back" history fallback={ALL_FEATURES_ROUTE}>‹</FrameBack>
         <span className="tf-dtitle"><small>Mezo · a motor</small><strong>Minták</strong></span>
       </div>
       <div className="m9m-big">

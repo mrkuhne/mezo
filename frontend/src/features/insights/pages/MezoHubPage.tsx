@@ -3,7 +3,7 @@
 // Source of truth: docs/design_2.0/prototypes/src/mezo-body.html hub section
 // (values ×1.18). The Insights shell (AppHero + SubNavDropdown) dissolves:
 // this page IS the /mezo index, the former sub-tabs are full-page siblings.
-// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → breathing orb hero (the
+// Anatomy: the shell fejléc (app/TitleBar.tsx, mezo-atry) → breathing orb hero (the
 // spot ALONE — tile-header-layout dropped the name, the companion sentence and the
 // status line so the composer sits right under the icon) → composer-shaped
 // chat opener → the motor's SINGLE decision card in a gold ring (the same

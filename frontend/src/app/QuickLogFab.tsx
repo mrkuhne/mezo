@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { QuickInputSheet } from '@/features/quickinput/sheets/QuickInputSheet'
 
-// Design 2.0 decision B (mezo-d20.1.1): the quick log lives on a floating coral FAB
+// Design 2.0 decision B (mezo-d20.1.1): the quick log lives on a floating FAB
 // bottom-right — the thumb zone on every tab. The sheet's flat 3×3 tile grid is
 // mezo-7lst. From /nap EXACTLY the FAB instead navigates to the full-page Titanium
 // picker (mezo-mhum) — everywhere else (including /nap's own subpages) it still opens
@@ -16,13 +16,12 @@ export function QuickLogFab() {
     <>
       <button
         type="button"
-        // Üveg (bible §7.2, mezo-me75u.1): a lavender `.glass` rounded square, breathing glow.
-        className="quicklog-fab glass np-press"
-        style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}
+        // Folyadék (mezo-n4wf5.1): a round drop of the active domain's liquid (kit.js `fab`).
+        className="fo-fab"
         aria-label="Gyors logolás"
         onClick={() => (onNapHub ? navigate('/nap/gyors') : setOpen(true))}
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
         </svg>
       </button>

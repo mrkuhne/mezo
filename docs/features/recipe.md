@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-28
+updated: 2026-10-09
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -90,6 +90,10 @@ Contract-first as always. A new line field = migration + `RecipeIngredientEntity
 Backend: `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`, `RecipeMapperTest`, `RecipeMapperOverrideRollupTest`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeBreakdownProseServiceTest`, `RecipeWorkshopApiIT` (+ `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`), `RecipeWorkshopValidatorTest`. FE: `recipeHooks.test.tsx`, `recipeApi.test.ts`, `recipeMacros.test.ts`, plus the four page tests. Both frontend modes must stay green (`VITE_USE_MOCK=false pnpm test` and `VITE_USE_MOCK=true pnpm test`).
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
+
+- **After a save or a delete the form does not stay behind the user (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).** With a history-based back, a post-mutation `navigate(...)` that PUSHED left the editor — or the deleted record — one Vissza away. The leave now replaces the current entry or pops (`useLeaveAfterMutation` in `shared/hooks/useBackNav.ts`, rules in `shared/lib/backNav.ts`; see [`_platform-design-system.md`](_platform-design-system.md)). Destinations are unchanged. `RecipeEditorPage` edit-save and `RecipeWorkshopPage` „Recept frissítése" POP back onto the recipe's page they are only ever opened from (`leave.back`), so one Vissza from there is the list; the create-saves and `RecipeDetailPage`'s delete REPLACE the current entry with `/fuel/recipes`. Pinned by `tests/layout/navigation.spec.ts` („Vissza after a save or a delete…").
 
 - **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`FuelRecipesPage.tsx` + `RecipeWorkshopPage.tsx`) moved after this doc, in the Konyha family re-dress (`mezo-ju4j6.9`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 

@@ -79,7 +79,7 @@ export function SzokasaidPage() {
   if (defs.length === 0) {
     return (
       <MozaikPage tone="gold" className="rt-uv rt-szokasok">
-        <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+        <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
         <PageBody>
           {isPending ? <GhostState message="Szokások betöltése…" lines={3} />
             : isError ? <GhostState message="Nem sikerült betölteni a szokásokat." ctaLabel="Újra" onCta={refetch} />
@@ -151,7 +151,7 @@ export function SzokasaidPage() {
 
   return (
     <MozaikPage tone="gold" className="rt-uv rt-szokasok">
-      <PageHead glass onBack={() => navigate('/nap/rutin/epites')} label="Rutinok" />
+      <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
       <PageHero art="t-harvest" accent="var(--dv-amber)" big={`${visible.length}`} name="Szokásaid" sub="formálódás szerint rendezve" />
       <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={[...filter].join('-')}>

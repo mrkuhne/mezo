@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-09-28
+updated: 2026-10-09
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -364,6 +364,8 @@ await useRitualActions(date).close(ringsOf(states))   // rings is optional — c
   `cd backend && ./mvnw clean test -Dtest='Needs*IT'` locally, full suite in CI.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
 
 - **Decision — architecture "hybrid": one pure engine, a thin real backend slice now.** The
   decay/refill model lives in exactly one place (mock mode needs it anyway; real mode needs

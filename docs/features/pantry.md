@@ -2,7 +2,7 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-09-23
+updated: 2026-10-09
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
@@ -193,6 +193,10 @@ Backend: `PantryCatalogMigrationIT` (standalone Liquibase run against a throwawa
 Commands: backend focused `./mvnw clean test -Dtest='Pantry*,...' -Dmezo.test.use-testcontainers=true`; frontend `pnpm build && VITE_USE_MOCK=false pnpm test && VITE_USE_MOCK=true pnpm test`.
 
 ## 9. Decisions, gotchas & deferred
+
+- **Back control = „vissza oda, ahonnan jöttél" (Folyadék F1, `mezo-n4wf5.1`, 2026-10-09).** This area's pure-navigation back handlers (`PageHead` / `FrameBack`) now pass `history` + a `fallback` route (the route the page used to hard-code): inside the app frame the shell title bar draws the back control and it pops history when there is in-app history, else goes to the fallback; the page draws its own button only where no title bar is mounted, so back-chip labels in this doc describe that fallback button. Stateful backs (wizards, replace/state navigations, inline closers) keep their own handler. See [`_platform-design-system.md`](_platform-design-system.md) §3 *The frame*.
+
+- **After a save or a delete the form does not stay behind the user (Folyadék F1 final review, `mezo-n4wf5.1`, 2026-10-09).** With a history-based back, a post-mutation `navigate(...)` that PUSHED left the editor — or the deleted record — one Vissza away. The leave now replaces the current entry or pops (`useLeaveAfterMutation` in `shared/hooks/useBackNav.ts`, rules in `shared/lib/backNav.ts`; see [`_platform-design-system.md`](_platform-design-system.md)). Destinations are unchanged. `KamraItemDetailPage`'s delete REPLACES the deleted item's entry with `/fuel/kamra`. Pinned by `tests/layout/navigation.spec.ts` („Vissza after a save or a delete…").
 
 - **Re-dress review (visszaöltöztetés close-out, `mezo-ju4j6.16`, 2026-09-21).** A tracked path (`FuelKamraPage.tsx` + `KamraItemDetailPage.tsx`) moved after this doc, in the Konyha family re-dress (`mezo-ju4j6.9`). Reviewed: the change is **skin only** — no route, hook, contract, mutation or state machine moved, and the slice closed with a reverse parity checklist on its own bead. Nothing in §§1–8 needed a correction; for how these screens now LOOK, the canon is the [restored-world style bible](../design_2.0/2026-09-17-restored-world-style-bible.md), not this doc.
 

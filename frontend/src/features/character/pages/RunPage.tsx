@@ -108,12 +108,11 @@ export function RunPage() {
 
   if (isLoading || expertsLoading) return null
 
-  const goFutasok = () => navigate('/mezo/karakter/gepterem/futasok')
 
   if (run == null) {
     return (
       <div className="tf-page tf-c-slate gtm-page gtm-run-page">
-        <GepteremHead small="Futás" title="Futás" onBack={goFutasok} />
+        <GepteremHead small="Futás" title="Futás" fallback="/mezo/karakter/gepterem/futasok" />
         <div className="tf-dash gtm-notfound" data-state="not-found">
           <Icon3D name="t-info" size={26} /><span>Ez a futás nem található.</span>
         </div>
@@ -130,7 +129,7 @@ export function RunPage() {
 
   return (
     <div className="tf-page tf-c-slate gtm-page gtm-run-page">
-      <GepteremHead small={small} title={KIND_LABEL[summary.kind]} onBack={goFutasok} />
+      <GepteremHead small={small} title={KIND_LABEL[summary.kind]} fallback="/mezo/karakter/gepterem/futasok" />
       <p className="gtm-lede gtm-runlede">{runHeroLede(summary, expertName)}</p>
 
       {steps != null && <RunFlowStrip steps={steps} />}

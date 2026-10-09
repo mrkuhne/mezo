@@ -2,13 +2,13 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-10-06
+updated: 2026-10-09
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
   - frontend/src/data/companion/preferencesApi.ts
   - frontend/src/data/companion/preferencesHooks.ts
-  - frontend/src/app/AppHeader.tsx
+  - frontend/src/app/TitleBar.tsx
 related: [_platform-design-system, companion, me, fuel, train, insights, _platform-auth-security]
 ---
 
@@ -30,7 +30,7 @@ related: [_platform-design-system, companion, me, fuel, train, insights, _platfo
 
 > **2026-09-29 (`mezo-xojq8`, `mezo-d5y2m`):** the Mezo personal-context textarea (`MezoPersonalPage`, about-me / custom instructions) is wrapped in the shared `VoiceField` (mic tile, dictation appended within the 4000-char cap). Tapping a row in the header's notification panel now marks that item read (`markItemRead`, only if still unread) before following its deeplink; the panel and the full feed both show the live `readAt`.
 >
-> **2026-09-24 (`mezo-yjzhw.4`):** the header's day orb (`AppHeader.tsx`, the filling coral
+> **2026-09-24 (`mezo-yjzhw.4`):** the header's day orb (`AppHeader.tsx` — the `TitleBar` day orb since Folyadék F1, `mezo-n4wf5.1`, level only — the filling coral
 > `nap-avatar` button) now opens `/nap/napom/<today>` — A napom, the day's own reading — instead
 > of the retired `/me/week/napok/<today>` single-day route. Everything else about the header
 > (badges, the gear, the "boop" wordmark) is unchanged. See [ritual.md](ritual.md) and
@@ -109,6 +109,8 @@ Shell/navigation tests cover global entry and redirects. Backend context tests c
 preview with real sync/SSE chat input across conversation-first and rollback paths.
 
 ## 9. Decisions & limits
+
+- **Chrome (Folyadék F1, `mezo-n4wf5.1`).** `/settings/*` hides the bottom bar; the `TitleBar` is the only shell chrome. The settings button lives on the hubs' title bar only (sub-pages are back · title · „?" · bell), so deep pages reach `/settings` via a hub. The settings sub-pages keep their fixed `navigate('/settings…', { state })` back (origin-state return); converting them to „vissza oda, ahonnan jöttél" is slice F8.
 
 There is no independent editable goal date. Maintenance has no invented arrival date. The
 personal preview is not the whole system prompt. Context edits apply on the next chat turn.
