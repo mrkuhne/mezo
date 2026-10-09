@@ -159,8 +159,8 @@
   --z-toast: 70;
   --z-tooltip: 80;
 
-  /* ─── Fonts (ADR 0018 D2: Geist + Fraunces; Bricolage/Jakarta retired) ─── */
-  --ff-display: 'Geist', system-ui, sans-serif;
+  /* ─── Fonts (ADR 0018 D2, display face superseded by ADR 0057: Bricolage returns) ─── */
+  --ff-display: 'Bricolage Grotesque', 'Geist', system-ui, sans-serif;
   --ff-body:    'Geist', -apple-system, system-ui, sans-serif;
   --ff-serif:   'Fraunces', Georgia, serif;
   --ff-mono:    'Geist Mono', monospace;
@@ -1543,7 +1543,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   margin-bottom: 6px; padding-right: 26px;
 }
 .t-title {
-  font-family: 'Fraunces', 'Crimson Pro', serif;
+  font-family: var(--ff-display);
   font-size: 16px; font-weight: 500; line-height: 1.25; letter-spacing: -0.005em;
 }
 .t-meta { font-style: italic; font-weight: 400; color: rgba(255,255,255,0.72); }

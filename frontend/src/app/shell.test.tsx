@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { StatusBar } from '@/app/StatusBar'
 import { PhoneFrame } from '@/app/PhoneFrame'
 import { daypartNow } from '@/shared/lib/daypart'
@@ -17,4 +18,13 @@ test('PhoneFrame carries the current daypart and renders the sky band', () => {
   const screenEl = container.querySelector('.phone-screen')!
   expect(screenEl.getAttribute('data-day')).toBe(daypartNow())
   expect(screenEl.querySelector('.sky')).not.toBeNull()
+})
+
+test('PhoneFrame outside a router falls back to the nap domain palette', () => {
+  const { container } = render(<PhoneFrame><div /></PhoneFrame>)
+  expect(container.querySelector('.phone-screen')!.getAttribute('data-domain')).toBe('nap')
+})
+test('PhoneFrame inside a router carries the active domain', () => {
+  const { container } = render(<MemoryRouter initialEntries={['/fuel/stack']}><PhoneFrame><div /></PhoneFrame></MemoryRouter>)
+  expect(container.querySelector('.phone-screen')!.getAttribute('data-domain')).toBe('fuel')
 })

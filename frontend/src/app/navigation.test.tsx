@@ -59,16 +59,16 @@ test.each(['/mezo/patterns/ref-anna-sleep', '/mezo/patterns', '/me/week'])('%s �
   expect(screen.queryByRole('navigation', { name: 'Boop funkciók' })).not.toBeInTheDocument()
   expect(document.querySelector('.boop-world-navigation')).toBeNull()
 })
-// Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the settings page has no theme
-// selector while the lock holds, and a stored light preference does not reach the document.
-test('Me settings: no theme selector under the dark-only lock, the app stays dark', async () => {
-  localStorage.setItem('mezo-theme', 'light')
+// Folyadék (mezo-n4wf5.1): the app is light-locked — the settings page has no theme
+// selector while the lock holds, and a stored dark preference does not reach the document.
+test('Me settings: no theme selector under the light lock, the app stays light', async () => {
+  localStorage.setItem('mezo-theme', 'dark')
   renderApp('/me')
   await userEvent.click(await screen.findByRole('button', { name: 'Beállítások' }))
   await userEvent.click(screen.getByRole('link', { name: /Megjelenés és alkalmazás/ }))
   expect(await screen.findByText('Fiók')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Sötét/ })).toBeNull()
-  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
 })
 
 test('the Én tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20.6.1)', async () => {

@@ -1,5 +1,7 @@
 import { cn } from '@/shared/lib/cn'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useState, type ReactNode } from 'react'
+import { UNSAFE_LocationContext } from 'react-router-dom'
+import { activeDomainId } from '@/app/navModel'
 import { StatusBar } from '@/app/StatusBar'
 import { daypartNow, type Daypart } from '@/shared/lib/daypart'
 
@@ -12,10 +14,13 @@ export function PhoneFrame({ children, anchor = false, clock }: { children: Reac
     const id = setInterval(() => setDaypart(daypartNow()), 60_000)
     return () => clearInterval(id)
   }, [])
+  // StartupSplash renders PhoneFrame outside the router: the location context is then null, so
+  // the frame falls back to the Nap palette (the router-less default).
+  const pathname = useContext(UNSAFE_LocationContext)?.location.pathname ?? ''
   return (
     <div className="app-root">
       <div className="phone">
-        <div className={cn('phone-screen', anchor && 'anchor')} data-day={daypart}>
+        <div className={cn('phone-screen', anchor && 'anchor')} data-day={daypart} data-domain={activeDomainId(pathname) ?? 'nap'}>
           <div className="sky" aria-hidden="true" />
           {/* Üveg (bible §1, mezo-me75u.1): the blurred color field the glass refracts. */}
           <div className="uv-aurora" aria-hidden="true"><i /><i /><i /><i /></div>

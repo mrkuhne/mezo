@@ -43,14 +43,15 @@ function renderPage() {
   )
 }
 
-// Üvegesítés (mezo-me75u.1, bible §8): the app is dark-only — the theme picker is hidden
-// (its code is parked) and the page renders dark whatever the stored preference says.
-test('a sötét zár alatt nincs Téma választó, és az oldal sötét', async () => {
+// Folyadék (mezo-n4wf5.1): the app is light-locked — the theme picker is hidden
+// (its code is parked) and the page renders light whatever the stored preference says.
+test('a világos zár alatt nincs Téma választó, és az oldal világos', async () => {
+  localStorage.setItem('mezo-theme', 'dark')
   renderPage()
   expect(await screen.findByText('Fiók')).toBeInTheDocument()
   expect(screen.queryByText('Téma')).toBeNull()
   expect(screen.queryByRole('button', { name: /Sötét/ })).toBeNull()
-  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
+  expect(document.documentElement.hasAttribute('data-theme')).toBe(false)
 })
 
 test('az Értesítések sor a kapcsolók oldalára navigál', async () => {

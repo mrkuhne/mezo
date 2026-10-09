@@ -26,8 +26,8 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function ThemeProvider({ children, lock = THEME_LOCK }: {
   children: ReactNode
-  /** The dark-only lock (bible §8). Defaults to the app-wide `THEME_LOCK`; `null` runs the
-   *  parked light/auto/claim machinery (its own tests pass `null`). */
+  /** The app theme lock (Folyadék bible §1.1). Defaults to the app-wide `THEME_LOCK`; `null` runs the
+   *  stored/circadian machinery (its own tests pass `null`). */
   lock?: Theme | null
 }) {
   const [mode, setModeState] = useState<ThemeMode>(() => readStoredMode() ?? DEFAULT_MODE)
@@ -41,11 +41,10 @@ export function ThemeProvider({ children, lock = THEME_LOCK }: {
   // holds its own id, releases only its own entry, and the topmost live claim wins.
   const [claims, setClaims] = useState<ForceClaim[]>([])
   const resolved: Theme = mode === 'auto' ? autoTheme : mode
-  // The topmost claim wins when any is held; otherwise the normal mode/circadian resolution.
-  const claimed: Theme = claims.length > 0 ? claims[claims.length - 1].theme : resolved
-  // The dark-only lock outranks everything: the stored mode is still read and persisted (so
-  // lifting the lock restores each user's own choice), it just isn't applied.
-  const theme: Theme = lock ?? claimed
+  // The app lock decides the base theme (the stored mode is still read and persisted, so lifting
+  // the lock restores each user's own choice). A live force claim outranks the lock (Folyadék F1:
+  // the two dark pockets), the topmost claim winning.
+  const theme: Theme = claims.length > 0 ? claims[claims.length - 1].theme : (lock ?? resolved)
 
   // Persist only the real preference — the transient override must never be written to storage.
   useEffect(() => { writeStoredMode(mode) }, [mode])

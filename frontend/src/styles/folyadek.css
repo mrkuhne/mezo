@@ -1,0 +1,13 @@
+/* ── folyadék tokens (mezo-n4wf5.1) ── bible §3 */
+:root {
+  --fo-ink: #0A2A3C; --fo-sub: #4E6B7A; --fo-faint: #8AA0AC; --fo-page: #EEF5F9; --fo-card: #fff;
+  --fo-ok: #1E9E6A; --fo-warn: #C98A12; --fo-bad: #D4483B;
+  --dom: #1877F2; --dom2: #19C7C0; --liq1: var(--dom2); --liq2: var(--dom);
+  /* the old ramps the unconverted pages read, re-pointed to the cool light world */
+  --surface-page: var(--fo-page); --text-primary: var(--fo-ink); --text-secondary: var(--fo-sub); --text-muted: var(--fo-faint);
+}
+.phone-screen[data-domain="train"] { --dom: #F2683A; --dom2: #F7B23B; }
+.phone-screen[data-domain="fuel"]  { --dom: #149E6E; --dom2: #8FD14F; }
+.phone-screen[data-domain="mezo"]  { --dom: #6B4FE0; --dom2: #E06BB5; }
+.phone-screen[data-domain="me"]    { --dom: #0E94B8; --dom2: #46D3B3; }
+.phone-screen { background: linear-gradient(180deg, color-mix(in srgb, var(--dom) 5%, #FBFDFE), color-mix(in srgb, var(--dom) 12%, #EAF2F6)); }

@@ -1,6 +1,7 @@
 @import "./styles/fonts.css";
 @import "tailwindcss";
 @import "./styles/prototype.css";
+@import "./styles/folyadek.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
    `inline` => utilities emit var(--…) refs, so [data-theme="dark"] flips them live. */

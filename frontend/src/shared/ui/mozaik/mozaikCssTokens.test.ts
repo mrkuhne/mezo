@@ -39,7 +39,7 @@ function mozaikSection(css: string): string {
 }
 
 describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () => {
-  test('every --mz-* token the Mozaik section reads is declared in :root AND overridden for dark', () => {
+  test('every --mz-* token the Mozaik section reads is declared in :root', () => {
     const section = mozaikSection(rawCss)
     const used = new Set(
       [...section.matchAll(/var\(\s*(--mz-[a-zA-Z0-9-]+)/g)].map(m => m[1]).filter(p => !LOCAL_PROPS.has(p)),
@@ -47,12 +47,10 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
     expect(used.size).toBeGreaterThan(10) // the section really is tokenized
 
     const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
-    const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
 
+    // Folyadék (mezo-n4wf5.1): the app is light-locked, so the dark value is no longer required.
     const missingLight = [...used].filter(p => !light.has(p)).sort()
-    const missingDark = [...used].filter(p => !dark.has(p)).sort()
     expect(missingLight).toEqual([])
-    expect(missingDark).toEqual([])
   })
 
   test('the Mozaik section carries no hardcoded light-surface hexes outside :root token definitions', () => {
@@ -95,14 +93,12 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
 // `.rt-hrow`'s `color: var(--mz-ink)` (a token that never existed) shipped. While the end marker
 // was missing this scan happened to reach those blocks by accident; now it does so on purpose.
 describe('every --mz-* token read anywhere in the stylesheet is declared (mezo-sm21)', () => {
-  test('light AND dark both declare every --mz-* the stylesheet consumes', () => {
+  test('the light :root declares every --mz-* the stylesheet consumes', () => {
     const used = new Set(
       [...rawCss.matchAll(/var\(\s*(--mz-[a-zA-Z0-9-]+)/g)].map(m => m[1]).filter(p => !LOCAL_PROPS.has(p)),
     )
     const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
-    const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
     expect([...used].filter(p => !light.has(p)).sort()).toEqual([])
-    expect([...used].filter(p => !dark.has(p)).sort()).toEqual([])
   })
 })
 
