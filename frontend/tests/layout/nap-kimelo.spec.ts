@@ -5,9 +5,11 @@ import { seedSplashSkipped } from './splashSeed'
 import { brokenChipWords } from './wordWrap'
 
 /**
- * Kímélő mód S2 (mezo-q4xt2.2) — the Nap hub at the narrowest phone: the „Nem vagyok jól" pill,
+ * Kímélő mód S2 (mezo-q4xt2.2) — the Nap hub at the narrowest phone: the „Nem vagyok jól" entry,
  * the „Mi történt?" sheet (four serious reasons + „Meddig tarthat?"), the „Hogy vagy?" card, its
- * in-card „Tévedés volt" confirm and the slim line must all stay horizontally contained. Mock mode
+ * in-card „Tévedés volt" confirm and the slim line must all stay horizontally contained.
+ * Folyadék F2 (mezo-n4wf5.2): the entry is a ROW at the bottom of the page (was a pill at the top),
+ * the card is a kit Hero (`.nm-km`), the sheet a kit sheet with four reason tiles (`.nm-opt4`). Mock mode
  * keeps the state in the query cache, so every step is an in-app tap on ONE loaded page.
  * `KIMELO_SHOTS_DIR` (optional) saves a screenshot per state as evidence.
  */
@@ -49,8 +51,19 @@ test('Nap · kímélő mód: Nem vagyok jól → Mi történt? → the Hogy vagy
   await page.evaluate(() => document.fonts.ready)
 
   const pill = page.getByRole('button', { name: 'Nem vagyok jól' })
+  // the entry is the last row of the page: it must be reachable by scrolling, clear of the bottom bar
+  await pill.scrollIntoViewIfNeeded()
   await expect(pill).toBeVisible()
-  await expectContained(page, '.nap-kmentry')
+  await expect(pill).toBeInViewport()
+  await expectContained(page, '.nm-rows, .nm-rows .fo-row')
+  const entry = await page.evaluate(() => {
+    const sc = document.querySelector('.screen-content') as HTMLElement
+    sc.style.scrollBehavior = 'auto'
+    sc.scrollTop = sc.scrollHeight
+    const row = document.querySelector('.nm-rows .fo-row')!.getBoundingClientRect()
+    return { rowBottom: row.bottom, navTop: document.querySelector('.fo-nav')!.getBoundingClientRect().top }
+  })
+  expect(entry.rowBottom).toBeLessThanOrEqual(entry.navTop - 1)
   await shot(page, '01-entry-pill')
 
   await pill.click()
@@ -61,23 +74,25 @@ test('Nap · kímélő mód: Nem vagyok jól → Mi történt? → the Hogy vagy
   await dialog.getByRole('button', { name: '2–3 nap' }).click()
   const sheet = await dialog.evaluate((el) => {
     const r = el.getBoundingClientRect()
-    const out = Array.from(el.querySelectorAll('.trm-kmdc button, .trm-whyc')).filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length
+    const out = Array.from(el.querySelectorAll('.trm-kmdc button, .nm-opt4 button')).filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length
     return { out, scroll: el.scrollWidth, width: el.clientWidth }
   })
+  await expect(dialog.locator('.nm-opt4 button')).toHaveCount(4)
   expect(sheet.out).toBe(0)
   // every reason label keeps its words whole (no „Gyomorront / ás") and inside its chip
-  expect(await brokenChipWords(page, '.nap-kmsheet .trm-whyc > span, .nap-kmsheet .trm-kmdc > button')).toEqual([])
+  expect(await brokenChipWords(page, '.nm-kmsheet .nm-opt4 button > span:last-child, .nm-kmsheet .trm-kmdc > button')).toEqual([])
   expect(sheet.scroll).toBeLessThanOrEqual(sheet.width + 1)
   await shot(page, '02-sheet-picked')
   await dialog.getByRole('button', { name: 'Kímélő mód bekapcsolása' }).click()
   await expect(dialog).toBeHidden({ timeout: 5000 })
 
-  const card = page.locator('.nap-kmcard')
+  const card = page.locator('.nm-km')
   await expect(card.getByText('Hogy vagy?')).toBeVisible()
-  await expect(card.getByText('KÍMÉLŐ MÓD · BETEG VAGYOK')).toBeVisible()
-  await expect(card.getByText('Kímélő mód · 1. nap · becslés: 2–3 nap')).toBeVisible()
-  // the card clips its corner halo (scrollWidth counts it), so measure its rows and its own box
-  await expectContained(page, '.nap-kmtop, .nap-kmtwo, .nap-kmoops')
+  // the label line carries the mode + the reason (CSS upper-cases it), the sub line the day + estimate
+  await expect(card.locator('.fo-hero-lbl')).toHaveText('Kímélő mód · Beteg vagyok')
+  await expect(card.locator('.fo-hero-sub')).toHaveText('1. nap · becslés: 2–3 nap')
+  // measure the card's rows (text row + action row) and its own box
+  await expectContained(page, '.nm-km .fo-hero-row, .nm-km .fo-hero-tx, .nm-km .fo-hero-acts, .nm-km .fo-hero-acts > button')
   const box = await card.boundingBox()
   expect(box!.x).toBeGreaterThanOrEqual(0)
   expect(box!.x + box!.width).toBeLessThanOrEqual(320.5)
@@ -85,14 +100,14 @@ test('Nap · kímélő mód: Nem vagyok jól → Mi történt? → the Hogy vagy
 
   await card.getByRole('button', { name: 'Tévedés volt' }).click()
   await expect(card.getByText('Töröljem a kímélő módot?')).toBeVisible()
-  await expectContained(page, '.nap-kmask, .nap-kmbtns')
+  await expectContained(page, '.nm-km-ask, .nm-km .fo-hero-acts, .nm-km .fo-hero-acts > button')
   await shot(page, '04-card-confirm')
   await card.getByRole('button', { name: 'Mégse' }).click()
 
   await card.getByRole('button', { name: 'Még nem' }).click()
-  const slim = page.locator('.nap-kmslim')
+  const slim = page.locator('.nm-kmslim')
   await expect(slim.getByText('Kímélő mód · 1. nap')).toBeVisible()
-  await expectContained(page, '.nap-kmslim')
+  await expectContained(page, '.nm-kmslim, .nm-kmslim .fo-row')
   await shot(page, '05-slim-line')
 
   // day 1: Befejezem (= Jobban) ends it without a return

@@ -175,6 +175,9 @@ button.fo-vial { cursor: pointer; }
    the page steps over the gutter so `.fo-card`'s own 14px margins are the side rhythm, as in the prototype's `.scroll`. */
 .fo-page { margin-inline: calc(-1 * var(--screen-gutter, 0px)); color: var(--fo-ink); font-family: var(--ff-body); font-size: 16px; line-height: normal; }
 .fo-page > * { min-width: 0; flex-shrink: 0; }
+/* The floating quick-log button stands 14px into the last row at the end of a page: the page ends that much later
+   (+ breathing room), so the last row's chevron is never under it (F2 layout spec, mezo-n4wf5.2). */
+.fo-page:not(.has-foot) { padding-bottom: 28px; }
 .fo-dusk { --liq1: color-mix(in srgb, var(--dom) 72%, var(--fo-ink)); --liq2: color-mix(in srgb, var(--dom) 26%, var(--fo-ink)); }
 .fo-page > .fo-seg { margin: 12px 14px 0; background: rgba(255, 255, 255, .75); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); }
 .fo-page > .fo-dots, .fo-page > .fo-pills, .fo-page > .fo-acts { margin: 12px 14px 0; }
