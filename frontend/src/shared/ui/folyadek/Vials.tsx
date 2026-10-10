@@ -1,9 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Wave } from './Wave'
-import { clamp } from './util'
+import { clamp, cx } from './util'
 
-export interface VialItem { label: string; value: ReactNode; pct: number; color?: string; icon?: Icon3DName; mark?: ReactNode; note?: string; onClick?: () => void }
+export interface VialItem { label: string; value: ReactNode; pct: number; color?: string; icon?: Icon3DName; mark?: ReactNode; note?: ReactNode; onClick?: () => void }
 
 function Vial({ it, height }: { it: VialItem; height?: number }) {
   const c = it.color ?? 'var(--dom)'
@@ -27,10 +27,10 @@ function Vial({ it, height }: { it: VialItem; height?: number }) {
     : <div className="fo-vial" style={style}>{inner}</div>
 }
 
-/** 2–5 test tubes side by side. */
-export function Vials(p: { items: VialItem[]; height?: number }) {
+/** 2–6 test tubes side by side. `size`: sm = inside a hero or card, xs = six across. */
+export function Vials(p: { items: VialItem[]; height?: number; size?: 'md' | 'sm' | 'xs'; className?: string }) {
   return (
-    <div className="fo-vials" style={{ gridTemplateColumns: `repeat(${p.items.length},1fr)` }}>
+    <div className={cx('fo-vials', p.size === 'sm' && 'sm', p.size === 'xs' && 'sm xs', p.className)} style={{ gridTemplateColumns: `repeat(${p.items.length},1fr)` }}>
       {p.items.map((it, i) => <Vial key={i} it={it} height={p.height} />)}
     </div>
   )

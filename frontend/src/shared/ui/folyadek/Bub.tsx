@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 
-/** An icon inside a glass bubble: the way icons live on white. */
+/** An icon in its flat tinted chip: the way icons live on white (bible §5). */
 export function Bub(p: { icon: Icon3DName; size?: number; color?: string }) {
   const s = p.size ?? 44
   return (

@@ -28,7 +28,7 @@
 .fo-hero-acts .btn, .fo-hero-acts > button { border-radius: 999px; white-space: nowrap; }
 .fo-hero-acts .btn { background: #fff; color: var(--fo-ink); box-shadow: 0 12px 22px -12px rgba(10, 42, 60, .6); }
 .fo-hero-acts .btn.ghost { background: rgba(255, 255, 255, .2); color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .65); }
-.fo-hero-acts > button:not(.btn), .fo-hero-acts > a { color: #fff; font-weight: 700; }
+.fo-hero-acts > button:not(.btn):not(.fo-btn), .fo-hero-acts > a { color: #fff; font-weight: 700; }
 
 .fo-sec { display: flex; align-items: center; gap: 8px; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.6px; color: var(--fo-ink); margin: 26px 18px 0; }
 .fo-sec b { width: 22px; height: 26px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff;
@@ -39,9 +39,7 @@
 .fo-row:first-child, :not(.fo-row) + .fo-row { border-top: 0; padding-top: 0; }
 .fo-row:last-child { padding-bottom: 0; }
 .fo-row .si { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
-  background: radial-gradient(circle at 30% 24%, #fff 0 16%, color-mix(in srgb, var(--dom) 9%, #fff) 58%, color-mix(in srgb, var(--dom) 24%, #fff));
-  box-shadow: inset 0 -7px 10px -6px color-mix(in srgb, var(--dom) 50%, transparent), inset 0 0 0 1.5px rgba(255, 255, 255, .95), 0 10px 16px -10px color-mix(in srgb, var(--dom) 65%, rgba(10, 42, 60, .5)); }
-.fo-row .si::after { content: ''; position: absolute; left: 18%; top: 12%; width: 26%; height: 14%; border-radius: 50%; background: rgba(255, 255, 255, .9); transform: rotate(-28deg); }
+  background: color-mix(in srgb, var(--dom) 8%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 16%, #fff); }
 .fo-row .si svg { width: 62%; height: 62%; }
 .fo-row .g { flex: 1; min-width: 0; }
 .fo-row strong { display: block; font-size: 14.5px; font-weight: 600; }
@@ -49,11 +47,11 @@
 .fo-row .v { font-family: var(--ff-display); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fo-row .chev { width: 18px; height: 18px; color: var(--fo-faint); flex: 0 0 auto; }
 
-/* ── icons live in bubbles ── */
+/* ── icons live in chips ── the flat tinted chip of the Folyadék-jel family (bible §5; vilagos/ikon.js is the
+   computed look: 8% tint, 1.5px inner line, no highlight). F2 corrected the F1 port, which carried foly.js's glass bubble. */
 .fo-bub { position: relative; display: inline-grid; place-items: center; width: var(--s); height: var(--s); border-radius: 50%; flex: 0 0 auto;
-  background: radial-gradient(circle at 30% 24%, #fff 0 16%, color-mix(in srgb, var(--c) 9%, #fff) 58%, color-mix(in srgb, var(--c) 26%, #fff));
-  box-shadow: inset 0 -7px 10px -6px color-mix(in srgb, var(--c) 55%, transparent), inset 0 0 0 1.5px rgba(255, 255, 255, .95), 0 10px 16px -10px color-mix(in srgb, var(--c) 70%, rgba(10, 42, 60, .5)); }
-.fo-bub::after { content: ''; position: absolute; left: 18%; top: 12%; width: 26%; height: 14%; border-radius: 50%; background: rgba(255, 255, 255, .9); transform: rotate(-28deg); filter: blur(.4px); }
+  background: color-mix(in srgb, var(--c) 8%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 16%, #fff); }
+.fo-bub .t-ico { --ic: var(--c); --ic2: color-mix(in srgb, var(--c) 45%, #fff); flex: none; }
 
 /* ── team badge ── */
 .fo-badge { position: relative; display: inline-grid; place-items: center; flex: none; width: var(--s); height: var(--s); border-radius: 50%; vertical-align: middle;
@@ -160,6 +158,246 @@
 .fo-drop .hi { fill: none; stroke: rgba(255, 255, 255, .45); stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .fo-drop .body { filter: drop-shadow(0 8px 14px color-mix(in srgb, var(--c) 35%, transparent)); transform-origin: 50% 60%; transform-box: fill-box; }
 
+/* ══ F2 additions (mezo-n4wf5.2) ══ the generic pieces every converted page builds from. Ported in values from
+   vilagos/kit.js (base + "élő" layer), vilagos/foly.js (`Q` scope) and the `.np-*` rules of vilagos/nap.js;
+   `.fh-*` / `.np-*` / `.btn` / `.st` → `.fo-*`. */
+:root { --fo-info: #1F6FEB; --fo-line: rgba(15, 30, 51, .10); }
+
+/* ── page root · floating foot · two-up ── the app scroller already keeps a 12px gutter and the bottom-bar clearance;
+   the page steps over the gutter so `.fo-card`'s own 14px margins are the side rhythm, as in the prototype's `.scroll`. */
+.fo-page { margin-inline: calc(-1 * var(--screen-gutter, 0px)); color: var(--fo-ink); font-family: var(--ff-body); font-size: 16px; line-height: normal; }
+.fo-page > * { min-width: 0; flex-shrink: 0; }
+.fo-dusk { --liq1: color-mix(in srgb, var(--dom) 72%, var(--fo-ink)); --liq2: color-mix(in srgb, var(--dom) 26%, var(--fo-ink)); }
+.fo-page > .fo-seg { margin: 12px 14px 0; background: rgba(255, 255, 255, .75); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); }
+.fo-page > .fo-dots, .fo-page > .fo-pills, .fo-page > .fo-acts { margin: 12px 14px 0; }
+.fo-page > .fo-note, .fo-page > .fo-txt { margin: 14px 18px 0; }
+/* A page with a foot gives the scroller's bottom clearance (`--fo-pad`) back and keeps exactly the foot's own distance
+   from the screen edge (`--fo-foot-b`), so the bar rests where it sticks (no jump at the end of the scroll) and a short
+   page still reaches the bottom. A sticky offset is measured from the scroller's CONTENT box, so the bar's `bottom` is
+   its distance minus that clearance (measured: `bottom: 86px` stood 118px too high). */
+.fo-page, .fo-foot { --fo-pad: calc(var(--screen-bottom-pad, 0px) + env(safe-area-inset-bottom, 0px)); --fo-foot-b: calc(var(--fo-nav-bottom, 10px) + 76px); }
+.fo-page.nonav, .fo-foot.nonav { --fo-foot-b: max(12px, env(safe-area-inset-bottom, 0px)); }
+.fo-page.has-foot { display: flex; flex-direction: column; margin-bottom: calc(-1 * var(--fo-pad)); padding-bottom: var(--fo-foot-b);
+  min-height: calc(100% + var(--fo-pad) - var(--fo-top-h, 0px)); }
+.fo-foot { font-size: 16px; line-height: normal; position: sticky; bottom: calc(var(--fo-foot-b) - var(--fo-pad)); z-index: 28; margin: 0 10px; display: flex; flex-wrap: nowrap; gap: 8px; align-items: center; padding: 10px; border-radius: 28px;
+  background: rgba(255, 255, 255, .9); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  box-shadow: 0 18px 34px -16px rgba(15, 30, 51, .45), inset 0 0 0 1px rgba(15, 30, 51, .06); }
+.fo-page.has-foot > .fo-foot { margin-top: auto; }
+.fo-page.has-foot > :nth-last-child(2) { margin-bottom: 16px; }
+.fo-foot .fo-btn { padding-left: 12px; padding-right: 12px; min-width: 0; }
+.fo-foot .fo-lk { padding: 0 6px; white-space: nowrap; }
+.fo-two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fo-two.three { grid-template-columns: repeat(3, 1fr); }
+.fo-two .fo-btn { padding-left: 8px; padding-right: 8px; }
+
+/* ── buttons · link · action row ── */
+.fo-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border: 0; border-radius: 999px; cursor: pointer;
+  font-family: var(--ff-body); font-size: 15px; font-weight: 700; line-height: normal; white-space: nowrap; color: #fff;
+  background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 10px 20px -10px var(--liq2); }
+.fo-btn.ghost { background: #fff; color: var(--fo-ink); box-shadow: 0 4px 10px -6px rgba(10, 42, 60, .3), inset 0 0 0 1px rgba(10, 42, 60, .08); }
+.fo-btn.sm { padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
+.fo-btn.wide { display: flex; width: 100%; }
+.fo-btn.grow { flex: 1; }
+.fo-btn:disabled { cursor: default; }
+.fo-btn .t-ico { width: 18px; height: 18px; flex: 0 0 auto; }
+.fo-btn:not(.ghost) .t-ico { --ic: #fff; --ic2: rgba(255, 255, 255, .4); --icf: transparent; }
+.fo-btn:focus-visible, .fo-lk:focus-visible, .fo-pill:focus-visible, .fo-seg button:focus-visible, .fo-scale button:focus-visible, .fo-tk:focus-visible,
+.fo-dr:focus-visible, .fo-row-main:focus-visible, button.fo-row:focus-visible, button.fo-step:focus-visible, button.fo-tank-air:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fo-lk { padding: 0; border: 0; background: none; cursor: pointer; font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; line-height: normal; text-align: left; color: color-mix(in srgb, var(--dom) 85%, var(--fo-ink)); }
+.fo-acts { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+.fo-acts.center { justify-content: center; }
+/* on the hero's liquid row the primary is white, the ghost is see-through */
+.fo-hero-acts .fo-btn { background: #fff; color: var(--fo-ink); box-shadow: 0 12px 22px -12px rgba(10, 42, 60, .6); }
+.fo-hero-acts .fo-btn.ghost { background: rgba(255, 255, 255, .2); color: #fff; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .65); }
+.fo-hero-acts .fo-btn:not(.ghost) .t-ico { --ic: var(--dom); --ic2: color-mix(in srgb, var(--dom2) 55%, #fff); --icf: initial; }
+.fo-hero-acts .fo-btn.ghost .t-ico { --ic: #fff; --ic2: rgba(255, 255, 255, .4); --icf: transparent; }
+.fo-hero-acts .fo-lk { color: #fff; font-weight: 700; }
+.fo-hero .fo-facts, .fo-hero .fo-chips span { background: #fff; }
+.fo-hero .fo-dots { margin-top: 12px; }
+
+/* ── pills · segmented control ── */
+.fo-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.fo-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 0; border-radius: 999px; cursor: pointer; font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal; color: var(--fo-ink); background: var(--fo-page); }
+.fo-pill.on { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 14px -8px var(--liq2); }
+.fo-pill .t-ico { width: 18px; height: 18px; flex: 0 0 auto; }
+.fo-pill small { font-weight: 500; opacity: .7; }
+.fo-seg { display: flex; gap: 3px; padding: 4px; border-radius: 999px; background: var(--fo-page); margin: 0 0 12px; }
+.fo-seg button { position: relative; flex: 1; min-width: 0; padding: 8px 6px; border: 0; border-radius: 999px; cursor: pointer; font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal; color: var(--fo-sub); background: none; text-align: center; white-space: nowrap; }
+.fo-seg button.on { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 14px -8px var(--liq2); }
+.fo-seg-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dom); margin-left: 5px; vertical-align: 2px; }
+.fo-seg .on .fo-seg-dot { background: #fff; }
+
+/* ── status pill · quiet chips · facts ── */
+.fo-st { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; font-family: var(--ff-body); font-size: 11px; font-weight: 650; line-height: normal; letter-spacing: .2px; }
+.fo-st.q { color: var(--fo-sub); background: var(--fo-page); }
+.fo-st.plan { color: var(--fo-info); background: color-mix(in srgb, var(--fo-info) 12%, transparent); }
+.fo-st.ok { color: var(--fo-ok); background: color-mix(in srgb, var(--fo-ok) 12%, transparent); }
+.fo-st.warn { color: var(--fo-warn); background: color-mix(in srgb, var(--fo-warn) 14%, transparent); }
+.fo-st.bad { color: var(--fo-bad); background: color-mix(in srgb, var(--fo-bad) 12%, transparent); }
+.fo-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+.fo-chips span { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.2; color: var(--fo-ink); background: color-mix(in srgb, var(--dom) 9%, #fff); }
+.fo-chips span::before { content: ''; width: 6px; height: 8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: linear-gradient(160deg, var(--liq1), var(--liq2)); margin-right: 6px; flex: 0 0 auto; }
+.fo-chips b { font-size: 12px; font-weight: 700; color: var(--fo-sub); }
+.fo-facts { display: grid; margin: 12px 0 4px; border-radius: 20px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); }
+.fo-facts div { padding: 10px 8px; text-align: center; border-left: 1px solid var(--fo-line); min-width: 0; }
+.fo-facts div:first-child { border-left: 0; }
+.fo-facts b { display: block; font-family: var(--ff-display); font-size: 22px; font-weight: 800; letter-spacing: -.3px; font-variant-numeric: tabular-nums; }
+.fo-facts small { font-size: 11.5px; color: var(--fo-sub); }
+
+/* ── text roles · callout · label · empty · card head · team message ── */
+.fo-note { font-size: 12px; color: var(--fo-faint); line-height: 1.45; margin-top: 10px; }
+.fo-txt { font-size: 14.5px; line-height: 1.5; }
+.fo-why { display: flex; gap: 4px; align-items: flex-start; margin-top: 12px; font-size: 13.5px; line-height: 1.45; padding: 10px 12px; border-radius: 18px; background: color-mix(in srgb, var(--dom) 7%, #fff); }
+.fo-why > .fo-bub { margin-right: 6px; }
+.fo-why > span:last-child { flex: 1; min-width: 0; }
+.fo-lab { display: block; font-size: 12.5px; font-weight: 650; color: var(--fo-sub); margin: 14px 0 6px; }
+.fo-card > .fo-lab:first-child, .sheet-scroll > .fo-lab:first-child, .fo-shh + .fo-lab { margin-top: 0; }
+.fo-two .fo-lab:first-child { margin-top: 14px; }
+.fo-empty { padding: 26px 10px; text-align: center; color: var(--fo-sub); font-size: 14px; line-height: 1.5; border: 1.5px dashed var(--fo-line); border-radius: 26px; }
+.fo-empty > .t-ico { width: 44px; height: 44px; margin: 0 auto 10px; display: block; }
+.fo-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.fo-head h3 { flex: 1; min-width: 0; margin: 0; font-family: var(--ff-display); font-size: 18px; font-weight: 700; letter-spacing: -.4px; color: var(--fo-ink); }
+.fo-head .fo-lk, .fo-head-link { font-size: 13px; flex: 0 0 auto; }
+.fo-head-link { font-weight: 600; color: var(--fo-sub); }
+.fo-msg { display: flex; gap: 10px; align-items: flex-start; }
+.fo-msg .who { flex: 0 0 auto; }
+.fo-msg .b { flex: 1; min-width: 0; }
+.fo-msg .nm { font-size: 12.5px; font-weight: 700; }
+.fo-msg .nm small { display: inline; font-size: .8333em; font-weight: 500; color: var(--fo-sub); margin: 0 0 0 6px; }
+.fo-msg .fo-txt { margin-top: 2px; }
+
+/* ── row: states, the title-part button, things inside ── */
+.fo-row-main { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+button.fo-row, button.fo-step { cursor: pointer; }
+.fo-row.now { margin: 0 -8px; width: calc(100% + 16px); padding: 12px 8px; border-radius: 16px; border-top-color: transparent; background: color-mix(in srgb, var(--dom) 9%, #fff); }
+.fo-row.now + .fo-row { border-top-color: transparent; }
+.fo-row.done strong { color: var(--fo-sub); font-weight: 500; }
+.fo-row.dim { opacity: .5; }
+.fo-row .v small { display: inline; font-family: var(--ff-body); font-size: 11.5px; font-weight: 500; color: var(--fo-sub); margin: 0 0 0 2px; }
+.fo-row .g .fo-level { margin-top: 7px; }
+.fo-row .g .fo-chips { margin-top: 8px; }
+.fo-row > .fo-mini { margin-right: 2px; }
+
+/* ── step: a row on the stream ── a card of steps draws the flow line, the next one is filled */
+.fo-card:has(> .fo-step) { position: relative; padding-left: 40px; }
+.fo-card:has(> .fo-step)::before { content: ''; position: absolute; left: 20px; top: 28px; bottom: 28px; width: 4px; border-radius: 2px; background: linear-gradient(180deg, var(--liq1), color-mix(in srgb, var(--liq2) 22%, transparent)); }
+.fo-step { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 0; border: 0; background: none; color: inherit; text-align: left; }
+.fo-step::before { content: ''; position: absolute; left: -28px; top: 50%; width: 16px; height: 18px; margin-top: -9px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: #fff; box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--liq2) 32%, transparent); }
+.fo-step:first-child { padding-top: 0; }
+.fo-step:last-child { padding-bottom: 0; }
+.fo-step time { min-width: 40px; flex: 0 0 auto; font-family: var(--ff-display); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.fo-step .si { position: relative; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; flex: 0 0 auto;
+  background: color-mix(in srgb, var(--dom) 8%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 16%, #fff); }
+.fo-step .si svg { width: 62%; height: 62%; }
+.fo-step .g { flex: 1; min-width: 0; }
+.fo-step strong { display: block; font-size: 14.5px; font-weight: 600; }
+.fo-step small { display: block; font-size: 12.5px; color: var(--fo-sub); margin-top: 2px; line-height: 1.35; }
+.fo-step .chev { width: 18px; height: 18px; color: var(--fo-faint); flex: 0 0 auto; }
+.fo-step.now { margin: 0 -6px 6px -2px; padding: 12px; border-radius: 24px; color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 16px 24px -16px var(--liq2); }
+button.fo-step { width: 100%; }
+button.fo-step.now { width: calc(100% + 8px); }
+.fo-step.now::before { left: -26px; background: var(--liq1); box-shadow: 0 0 0 5px color-mix(in srgb, var(--liq1) 28%, transparent); }
+.fo-step.now time, .fo-step.now strong { color: #fff; }
+.fo-step.now small { color: rgba(255, 255, 255, .85); }
+.fo-step.now .fo-btn { background: #fff; color: var(--fo-ink); box-shadow: none; }
+.fo-step.now .chev { color: #fff; }
+
+/* ── jar · drop chain ── */
+.fo-jar { flex: 0 0 auto; }
+.fo-jar-t { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+.fo-drops { display: flex; align-items: flex-start; margin-top: 16px; }
+.fo-dr { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; }
+button.fo-dr { cursor: pointer; }
+.fo-dr::before { content: ''; position: absolute; top: 11px; right: 50%; width: 100%; height: 4px; border-radius: 2px; background: rgba(10, 42, 60, .10); }
+.fo-dr:first-child::before { display: none; }
+.fo-dr.d::before, .fo-dr.now::before { background: linear-gradient(90deg, var(--liq1), var(--liq2)); }
+.fo-dr i { position: relative; z-index: 1; display: block; width: 20px; height: 25px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .16); }
+.fo-dr.d i { background: linear-gradient(160deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 12px -6px var(--liq2); }
+.fo-dr.now i { box-shadow: inset 0 0 0 3px var(--liq2), 0 0 0 5px color-mix(in srgb, var(--liq1) 30%, transparent); }
+.fo-dr.x i { box-shadow: none; border: 2px dashed rgba(10, 42, 60, .28); }
+.fo-dr small { font-size: 9.5px; font-weight: 600; letter-spacing: -.2px; color: var(--fo-sub); text-align: center; line-height: 1.15; white-space: nowrap; }
+.fo-drops.big .fo-dr i { width: 24px; height: 30px; }
+.fo-drops.big .fo-dr::before { top: 13px; }
+.fo-hero .fo-drops.big { margin-bottom: 8px; }
+
+/* ── the 1–10 scale = ten small vials · step dots ── */
+.fo-scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 10px; }
+.fo-scale button { position: relative; overflow: hidden; height: 66px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; text-align: center;
+  background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--dom) 5%, #fff)); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .10);
+  font-family: var(--ff-display); font-size: 13px; font-weight: 700; color: var(--fo-sub); }
+.fo-scale button::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(24px + var(--k) * 4.2px); background: linear-gradient(180deg, var(--liq1), var(--liq2)); opacity: 0; }
+.fo-scale button span { position: absolute; left: 0; right: 0; bottom: 7px; z-index: 1; }
+.fo-scale button.f { color: var(--fo-ink); }
+.fo-scale button.f::before { opacity: .42; }
+.fo-scale button.a { background: #fff; color: #fff; box-shadow: inset 0 0 0 2px var(--liq2), 0 10px 14px -8px var(--liq2); }
+.fo-scale button.a::before { opacity: 1; }
+.fo-ends { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--fo-faint); margin-top: 6px; }
+.fo-dots { display: flex; gap: 5px; margin: 2px 0 0; }
+.fo-dots i { flex: 1; height: 5px; border-radius: 3px; background: var(--fo-line); }
+.fo-dots i.on { background: var(--dom); }
+.fo-dots i.core { background: color-mix(in srgb, var(--dom) 30%, #fff); }
+.fo-sheet .fo-dots { margin-bottom: 6px; }
+
+/* ── tick button · status node ── */
+.fo-tk { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid rgba(15, 30, 51, .22); display: grid; place-items: center; color: transparent; flex: 0 0 auto; background: #fff; cursor: pointer; }
+.fo-tk.on { background: var(--fo-ok); border-color: var(--fo-ok); color: #fff; box-shadow: 0 6px 12px -6px var(--fo-ok); }
+.fo-tk svg { width: 15px; height: 15px; }
+.fo-mk { width: 24px; height: 24px; border-radius: 50%; border: 2px dashed rgba(15, 30, 51, .22); display: grid; place-items: center; flex: 0 0 auto; color: #fff; }
+.fo-mk.d { border: 0; background: var(--fo-ok); }
+.fo-mk.now { border-style: solid; border-color: var(--dom); }
+.fo-mk svg { width: 13px; height: 13px; }
+
+/* ── the light sheet: `<Sheet className="fo-sheet">` ── white, big top radius, a grab handle; no glass */
+.sheet.fo-sheet { background: #fff; border-top: 0; border-radius: 36px 36px 0 0; max-height: 86%; padding: 8px 18px calc(22px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -24px 50px -20px rgba(15, 30, 51, .4); color: var(--fo-ink); font-family: var(--ff-body); font-size: 16px; line-height: normal; }
+.sheet.fo-sheet .sheet-handle-zone { margin: -8px -18px 0; padding: 12px 0 14px; }
+.sheet.fo-sheet .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--fo-line); }
+.sheet-backdrop:has(+ .fo-sheet) { background: rgba(15, 30, 51, .35); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.fo-sheet .fo-acts { row-gap: 12px; }
+.fo-sheet .fo-acts .fo-btn.grow { flex: 1 1 100%; }
+.fo-shh { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+.fo-shh .g { flex: 1; min-width: 0; }
+.fo-shh h2 { margin: 0; font-family: var(--ff-display); font-size: 22px; font-weight: 800; letter-spacing: -.6px; line-height: normal; color: var(--fo-ink); }
+.fo-shh p { font-size: 13px; line-height: 1.4; color: var(--fo-sub); margin-top: 3px; }
+.fo-shh .fo-x { font-size: 22px; line-height: 1; color: var(--fo-sub); }
+
+/* ── tank: the quiet air line, the base-level mark ── */
+.fo-tank-air { display: block; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; }
+button.fo-tank-air { cursor: pointer; width: calc(100% - 44px); }
+.fo-tank-air .v { display: block; font-family: var(--ff-display); font-size: 23px; font-weight: 800; letter-spacing: -.8px; line-height: 1.1; margin-top: 4px; text-wrap: balance; }
+.fo-tank-airs { display: block; font-size: 13px; font-weight: 500; line-height: 1.4; color: var(--fo-sub); margin-top: 6px; max-width: 250px; }
+.fo-tank-shift { position: absolute; left: 20px; right: 20px; bottom: calc(var(--fo-tank-lv, 66%) + 24px); z-index: 4; display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; padding: 0 2px 4px;
+  border: 0; border-bottom: 2px dashed color-mix(in srgb, var(--liq2) 60%, transparent); background: none; cursor: pointer; font-family: var(--ff-body); font-size: 12px; font-weight: 600; color: var(--fo-sub); }
+.fo-tank-shift b { color: var(--fo-ink); font-weight: 800; }
+
+/* ── vials inside a hero or card (sm) · six across (xs) ── */
+.fo-card .fo-vials { padding: 0; }
+.fo-card .fo-stream { margin: 0; }
+.fo-vials.sm { gap: 8px; margin-top: 14px; }
+.fo-vials.sm .fo-vial { gap: 6px; }
+.fo-vials.sm .fo-vial b { font-size: 16px; }
+.fo-vials.sm .fo-vial small { font-size: 11px; }
+.fo-vials.sm .fo-tube-ic, .fo-vials.sm .fo-tube-ic svg { width: 28px; height: 28px; }
+.fo-vials.sm .fo-tube-ic { bottom: 10px; }
+.fo-vials.sm .fo-tube em { top: 11px; font-size: 9.5px; }
+.fo-vials.xs { gap: 5px; }
+.fo-vials.xs .fo-vial small { font-size: 10px; letter-spacing: -.2px; white-space: nowrap; }
+.fo-vials.xs .fo-vial b { font-size: 15px; }
+.fo-vials.xs .fo-tube-ic, .fo-vials.xs .fo-tube-ic svg { width: 22px; height: 22px; }
+.fo-vials.xs .fo-tube-ic { bottom: 8px; }
+.fo-vials.xs .fo-tube em { font-size: 8px; top: 10px; color: var(--fo-warn); font-weight: 700; }
+
+/* ── small phones ── (foly.js ≤360, nap.js ≤350) */
+@media (max-width: 360px) {
+  .fo-foot .fo-btn, .fo-sheet .fo-btn { white-space: normal; min-width: 0; line-height: 1.2; }
+  .fo-foot .fo-btn { padding-inline: 10px; }
+}
+@media (max-width: 350px) {
+  .fo-vials.xs .fo-vial small { font-size: 9px; }
+  .fo-scale { gap: 3px; }
+  .fo-tank-airs { max-width: 210px; }
+}
+
 /* ── motion: only for people who accept it; the rules above are the final frame ── */
 @media (prefers-reduced-motion: no-preference) {
   .fo-hero-acts::before { animation: fo-fw 5s linear infinite; }
@@ -174,6 +412,9 @@
   .fo-fill-wv { animation: fo-flw 6s linear infinite; }
   .fo-drop.alive .body { animation: fo-breathe 4.6s ease-in-out infinite; }
   .fo-drop.alive .wave { animation: fo-dropwave 3.6s ease-in-out infinite; }
+  .fo-scale button::before { transition: opacity .15s; }
+  .fo-btn, .fo-pill, .fo-tk { transition: transform .12s ease; }
+  .fo-btn:active:not(:disabled), .fo-pill:active, .fo-tk:active { transform: scale(.96); }
 }
 @keyframes fo-fw { to { -webkit-mask-position: 90px 0; mask-position: 90px 0; } }
 @keyframes fo-fw2 { to { -webkit-mask-position: -130px 0; mask-position: -130px 0; } }

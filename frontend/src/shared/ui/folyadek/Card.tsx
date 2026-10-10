@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes } from 'react'
+import { cx } from './util'
 
-export function Card(p: { className?: string; children: ReactNode }) {
-  return <section className={p.className ? `fo-card ${p.className}` : 'fo-card'}>{p.children}</section>
+/** A white section card. Passes `id`, `data-*`, `aria-*` through. */
+export function Card({ className, ...rest }: HTMLAttributes<HTMLElement>) {
+  return <section className={cx('fo-card', className)} {...rest} />
 }
