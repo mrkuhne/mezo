@@ -64,7 +64,7 @@ export function AppLayout() {
   // a helyzet, mint a chat/`/fuel/log/uj` composerénél, mezo-vdf4/bq2t) — a korall FAB rálógna a
   // küldés gombra, ezért itt is elmarad; a gyors-naplózó a navigációból érhető el.
   const inSettings = location.pathname.startsWith('/settings')
-  const hideFab = hideChrome || inSettings || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap'].includes(location.pathname)
+  const hideFab = hideChrome || inSettings || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap', '/nap/rutin/uj'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.

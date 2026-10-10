@@ -117,7 +117,7 @@ export function RitualPage() {
             prepStartsAt={data.window.prepStartsAt}
             bedTime={data.window.bedTime}
             closingNote={closingNote}
-            onFinish={() => navigate('/nap')}
+            onFinish={() => navigate('/nap/rutin?dp=este')}
           />
         )}
       </Page>
