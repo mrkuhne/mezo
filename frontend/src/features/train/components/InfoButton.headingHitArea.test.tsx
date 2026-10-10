@@ -8,10 +8,10 @@
 // live page. What IS assertable here, in jsdom, is the EVENT WIRING: a click that
 // lands on the heading's own text must reach the heading's own handler once — not be
 // swallowed by an intervening element, and not emitted as a click on the explain
-// button (which would open the glass). Several screens have handlers that fire on a
+// button (which would open the sheet). Several screens have handlers that fire on a
 // tap anywhere on the page or on the heading itself (MesoTemplateStoryPage's
 // „arming Törlés then tapping anything else disarms it" test taps the heading TEXT),
-// so a misrouted click here would open the glass over them.
+// so a misrouted click here would open the sheet over them.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -23,7 +23,7 @@ const TITLE = 'Mit jelent a szám?'
 const COPY = 'Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz.'
 
 test.each(['pl-h3', 'ld-h3'])(
-  'a tap on a %s heading’s own text reaches the heading and never opens the explain glass',
+  'a tap on a %s heading’s own text reaches the heading and never opens the explain sheet',
   async (headingClass) => {
     const user = userEvent.setup()
     const onHeadingClick = vi.fn()

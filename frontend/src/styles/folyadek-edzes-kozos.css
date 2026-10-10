@@ -1,2 +1,75 @@
 /* ── Folyadék · Edzés · kozos (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.ex-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the muscle chip on white (`Mchp`) ── edzes.js `.mchp` under `Q`: the kept MuscleChip crop in a tinted round chip.
+   The chip's own SVG is re-coloured from here (MuscleChip.tsx stays as it is): faint silhouette, the muscle in its
+   deepened colour, no glow. Only chips wrapped by `Mchp` are touched, so unconverted screens keep their look. */
+.ex-mchp { --c: #78cfe7; width: var(--s, 40px); height: var(--s, 40px); border-radius: 50%; flex: 0 0 auto; display: grid; place-items: center; overflow: hidden;
+  background: radial-gradient(circle at 30% 24%, #fff 0 14%, color-mix(in srgb, var(--c) 22%, #fff) 60%, color-mix(in srgb, var(--c) 46%, #fff));
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--c) 82%, #fff), inset 0 -6px 8px -6px color-mix(in srgb, var(--c) 70%, transparent), 0 8px 12px -8px color-mix(in srgb, var(--c) 80%, rgba(10, 42, 60, .6)); }
+.ex-mchp .muscle-chip { display: block !important; width: 100% !important; height: 100% !important; filter: none; }
+.ex-mchp svg > g:first-child { fill: #BFB4A8; opacity: .5; }
+.ex-mchp svg > g + g { fill: color-mix(in srgb, var(--c) 66%, #0A2A3C); stroke: color-mix(in srgb, var(--c) 66%, #0A2A3C); stroke-linejoin: round; stroke-width: calc(var(--s, 40px) / 40); opacity: 1; filter: none !important; }
+.ex-mchp svg > g + g path { vector-effect: non-scaling-stroke; }
+/* in a tube the chip stands on white */
+.fo-tube-nd .ex-mchp { --s: 28px; background: #fff; }
+.ex-stk { display: inline-flex; flex: 0 0 auto; }
+.ex-stk .ex-mchp + .ex-mchp { margin-left: -13px; }
+.ex-stk .ex-mchp { outline: 2px solid #fff; }
+
+/* ── the body as a vessel (`BodyLiq`, `DuoBody`) ── */
+.ex-body { display: block; flex: 0 0 auto; width: var(--w, 84px); aspect-ratio: 647 / 1293; }
+.ex-body svg { display: block; width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 10px 9px rgba(10, 42, 60, .16)); }
+.ex-body .sil { fill: color-mix(in srgb, var(--fo-ink) 13%, #fff); stroke: rgba(10, 42, 60, .34); stroke-width: 3; }
+.ex-body .sh { fill: color-mix(in srgb, var(--c) 16%, #fff); stroke: color-mix(in srgb, var(--c) 70%, #0A2A3C); stroke-width: 3.5; stroke-linejoin: round; }
+.ex-body .pl { fill: color-mix(in srgb, var(--c) 82%, #fff); }
+.ex-body .dn { fill: var(--cd); }
+.ex-body.off { opacity: .6; }
+.ex-hb { --w: 96px; display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 0 0 auto; width: var(--w); }
+.ex-hb small { font-size: 10.5px; font-weight: 650; color: var(--fo-sub); text-align: center; line-height: 1.2; }
+.ex-hb.off .ex-body { opacity: .6; }
+.ex-duo { display: flex; gap: 18px; justify-content: center; margin-top: 14px; }
+.ex-duo .ex-body { --w: 96px; }
+.ex-duo.md .ex-body { --w: 108px; }
+.ex-duo.xl .ex-body { --w: 132px; }
+.ex-duo.sm { gap: 6px; margin: 0; flex: 0 0 auto; }
+.ex-duo.sm .ex-body { --w: 46px; }
+
+/* ── a muscle's line (`MuscleRow`) · record capsule · day number ── */
+.ex-mus { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 0; border: 0; border-top: 1px solid var(--fo-hair); background: none; color: inherit; font: inherit; text-align: left; }
+.ex-mus:first-of-type { border-top: 0; }
+button.ex-mus { cursor: pointer; min-height: 44px; }
+button.ex-mus:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.ex-mus .l { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; }
+.ex-mus .l small { display: block; font-size: 11px; font-weight: 500; color: var(--fo-sub); }
+.ex-mus .v { font-size: 12.5px; color: var(--fo-sub); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ex-mus .fo-level, .ex-mus .fo-split { width: 84px; flex: 0 0 auto; }
+.ex-rc { position: relative; display: block; flex: 0 0 auto; width: 26px; height: 44px; border-radius: 999px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .10), 0 8px 12px -8px var(--c); }
+.ex-rc i { position: absolute; left: 0; right: 0; bottom: 0; height: 94%; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 45%, #fff), var(--c)); }
+.ex-rc u { position: absolute; left: 0; right: 0; border-top: 2px dashed #fff; }
+.ex-day { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; flex: 0 0 auto; background: var(--fo-page); font-family: var(--ff-display); font-size: 12.5px; font-weight: 700; color: var(--fo-ink); }
+/* a muscle chip standing in a kit row's `left` slot */
+.fo-row > .ex-mchp { margin-right: 0; }
+
+/* ── the page-level segmented control of Edzés (edzes.js `.vs-seg`) ── a darker well than Nap's */
+.phone-screen[data-domain="train"] .fo-page > .fo-seg { margin: 14px 14px 0; background: rgba(15, 30, 51, .07); box-shadow: none; }
+.phone-screen[data-domain="train"] .fo-seg button { overflow: hidden; text-overflow: ellipsis; }
+
+/* ── the ⓘ of the explain layer (`InfoButton`) ── a 22px flat round chip; as a link it is the kit's `Lk`.
+   `.pl-info` stays on the element for the layout probe (tests/layout/layout.spec.ts) and keeps its left-anchored 44px
+   `::after` hit box from prototype.css; these rules neutralise the old `.pl-info` look (opacity .75, bare glyph) and the
+   `.tw-load .pl-info` re-dress. Delete the pair together when the old Edzés skin goes. */
+.pl-info.ex-info, .tw-load .pl-info.ex-info { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; opacity: 1; vertical-align: middle;
+  background: color-mix(in srgb, var(--dom) 8%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 16%, #fff); }
+.pl-info.ex-info .t-ico, .pl-info.ex-info svg, .tw-load .pl-info.ex-info svg { width: 14px; height: 14px; display: block; filter: none; }
+.pl-info.ex-info:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+@media (max-width: 360px) {
+  .ex-hb { --w: 78px; }
+  .ex-duo .ex-body { --w: 80px; }
+  .ex-duo.md .ex-body { --w: 88px; }
+  .ex-duo.xl .ex-body { --w: 104px; }
+  .ex-duo.sm .ex-body { --w: 38px; }
+  .ex-mus .fo-level, .ex-mus .fo-split { width: 54px; }
+  .fo-tube-nd .ex-mchp { --s: 24px; }
+}

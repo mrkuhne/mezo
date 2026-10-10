@@ -1,11 +1,11 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useNavigate } from 'react-router-dom'
-import { InfoButton, INFO_TINT } from '@/features/train/components/InfoButton'
+import { InfoButton } from '@/features/train/components/InfoButton'
 
 // InfoButton (mezo-b516k, Task 1) — the Train explain layer's one primitive.
-// Ports the prototype's `info()` helper + `infoGlass()` (companion-titanium:
-// plan-pages.js:130-131, navigation.js:88-101) onto the shipped GlassBox.
+// Since Folyadék F3 (mezo-n4wf5.3) it is the prototype's `info()` + `tinfo` sheet
+// (docs/design_2.0/prototypes/vilagos/edzes.js): a flat round ⓘ opening the kit's light InfoSheet.
 
 const TITLE = 'Mit mutat a sáv?'
 const COPY =
@@ -19,94 +19,88 @@ function trigger() {
   return screen.getByRole('button', { name: `${TITLE} — mit jelent?` })
 }
 
-test('renders an icon-only button carrying the prototype aria-label verbatim', () => {
+test('renders an icon-only button carrying the aria-label verbatim', () => {
   renderButton()
   const btn = trigger()
-  expect(btn).toHaveClass('pl-info')
+  // `pl-info` stays for the layout probe's hit-box check; `ex-info` is the Folyadék chip
+  expect(btn).toHaveClass('pl-info', 'ex-info')
   expect(btn).toHaveAttribute('type', 'button')
-  // Icon-only: no visible text at all, only the aria-label (the prototype inlines it
-  // inside an <h3>, where any rendered text would read as part of the heading).
+  // Icon-only: no visible text at all, only the aria-label (it sits inside an <h3>, where
+  // any rendered text would read as part of the heading).
   expect(btn.textContent).toBe('')
-  // U11 (mezo-me75u.11): the default trigger glyph is the Titanium 3D `t-info`, not clay.
   expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-info')
 })
 
-test('the glass is closed until the button is tapped', () => {
+test('the sheet is closed until the button is tapped', () => {
   renderButton()
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   expect(screen.queryByText(COPY)).not.toBeInTheDocument()
 })
 
-test('tapping it opens a GlassBox whose label is the title, tinted the fixed explain-layer accent', async () => {
+test('tapping it opens the light info sheet named by the title — no glass, no tint', async () => {
   const user = userEvent.setup()
   renderButton()
   await user.click(trigger())
 
   const dialog = screen.getByRole('dialog', { name: TITLE })
-  expect(dialog).toHaveClass('gl-card')
-  // ONE fixed tint for EVERY info glass, never the section's own tint — since the üveg
-  // re-dress (U10) it is Edzés coral, the area every InfoButton lives in.
-  expect(INFO_TINT).toBe('var(--dv-coral)')
-  expect(dialog.getAttribute('style')).toContain(INFO_TINT)
+  expect(dialog).toHaveClass('sheet', 'fo-sheet')
+  expect(dialog).not.toHaveClass('gl-card')
+  expect(dialog).not.toHaveClass('glass')
+  expect(document.querySelector('.gl-backdrop')).not.toBeInTheDocument()
 })
 
-test('the open glass carries the eyebrow, the title and the copy paragraph', async () => {
+test('the open sheet carries the info bubble, the title and the copy paragraph', async () => {
   const user = userEvent.setup()
   renderButton()
   await user.click(trigger())
 
   const dialog = screen.getByRole('dialog')
-  // Fix round 1 (mezo-b516k): the eyebrow + title now render through GlassBox's own
-  // `.gl-head` (its `art`/`eyebrow` props) rather than InfoButton's own header block —
-  // `.pl-info-head` is gone.
-  expect(dialog.querySelector('.pl-info-head')).not.toBeInTheDocument()
-  expect(within(dialog).getByText('MEZO · RÉSZLET')).toBeInTheDocument()
-  expect(within(dialog).getByText(TITLE, { selector: 'strong' })).toBeInTheDocument()
-  const copy = within(dialog).getByText(COPY)
-  expect(copy).toHaveClass('pl-info-copy')
+  const head = dialog.querySelector('.fo-shh')!
+  expect(head.querySelector('.fo-bub use')?.getAttribute('href')).toBe('#t-info')
+  expect(within(dialog).getByRole('heading', { name: TITLE })).toBeInTheDocument()
+  expect(within(dialog).queryByText('MEZO · RÉSZLET')).not.toBeInTheDocument()
+  expect(within(dialog).getByText(COPY)).toHaveClass('fo-txt')
 })
 
-test('the leading clay icon renders inside GlassBox\'s own .gl-head, not a separate header', async () => {
+test('`eyebrow` puts the context line above the title; `link` shows the title as a text link with the same name', async () => {
   const user = userEvent.setup()
-  renderButton()
-  await user.click(trigger())
-
-  const dialog = screen.getByRole('dialog')
-  const head = dialog.querySelector('.gl-head')!
-  expect(head.querySelector('svg, .icon')).toBeInTheDocument()
-  expect(head.textContent).toContain('MEZO · RÉSZLET')
-  expect(head.textContent).toContain(TITLE)
+  renderButton(<InfoButton title={TITLE} copy={COPY} eyebrow="Izomcsoportok" link />)
+  const btn = trigger()
+  expect(btn).toHaveClass('fo-lk')
+  expect(btn).not.toHaveClass('pl-info')
+  expect(btn.textContent).toBe(TITLE)
+  await user.click(btn)
+  expect(screen.getByRole('dialog', { name: TITLE }).querySelector('.fo-she span')?.textContent).toBe('Izomcsoportok')
 })
 
-test('Escape closes the glass', async () => {
+test('Escape closes the sheet', async () => {
   const user = userEvent.setup()
   renderButton()
   await user.click(trigger())
   expect(screen.getByRole('dialog')).toBeInTheDocument()
   await user.keyboard('{Escape}')
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 })
 
-test('a backdrop click closes the glass', async () => {
+test('a backdrop click closes the sheet', async () => {
   const user = userEvent.setup()
   renderButton()
   await user.click(trigger())
-  await user.click(document.querySelector('.gl-backdrop')!)
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await user.click(document.querySelector('.sheet-backdrop')!)
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 })
 
-test('the ✕ closes the glass', async () => {
+test('the × closes the sheet', async () => {
   const user = userEvent.setup()
   renderButton()
   await user.click(trigger())
   await user.click(screen.getByRole('button', { name: 'Bezárás' }))
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 })
 
-// The prototype auto-closes the info layer on `hashchange` (navigation.js:100).
-// GlassBox itself listens for nothing of the sort — this primitive owns it, so a
-// client-side route change leaves no orphaned glass hanging over the next screen.
-test('a ROUTE CHANGE closes the glass', async () => {
+// The sheet itself listens for Escape / backdrop / × only — this primitive owns the
+// route-change close, so a client-side navigation leaves no orphaned sheet over the next screen.
+test('a ROUTE CHANGE closes the sheet', async () => {
   function Harness() {
     const navigate = useNavigate()
     return (
