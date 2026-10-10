@@ -2,7 +2,7 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-10-09
+updated: 2026-10-10
 tags: [today, me, train, fuel, intention, ritual, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
@@ -17,6 +17,8 @@ related: [today, me, train, fuel, habit, intention, ritual, _platform-data-layer
 ---
 
 # Growth — Daily Quests, Activity Log & Gamified Progression
+
+> **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** The quest page `/nap/kuldetesek` (`NapKuldetesekPage`) is rebuilt on the Folyadék kit: one vial per quest in the hero — **full when completed, a sliver while offered**, because a quest is offered or done and has no partial progress, so no percentage is shown — and the offers as rows with the state line, the smart action and `Csere`. It is reached from Mai's „Több" sheet and from deep links. Quest data, selection, rerolls and XP are unchanged; the Growth hub's own `MaStrip` is not converted yet. See [`today.md`](today.md) §2.
 
 > **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** `QuestSelector` (now injecting `RecoveryPeriodService`) filters the `protein_target` metric out of the eligible set on a `GUIDANCE` Fuel date (generate and replacement) — no protein quest while the owner is ill; the water quest stays. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 

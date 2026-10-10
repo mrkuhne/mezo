@@ -2,11 +2,12 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-10-09
+updated: 2026-10-10
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
   - frontend/src/features/today/logic/needsInputs.ts
+  - frontend/src/features/today/logic/needsAverage.ts
   - frontend/src/features/today/pages/EletjelPage.tsx
   - frontend/src/data/needs
   - api/feature/needs/needs.yml
@@ -16,14 +17,17 @@ related: [today, ritual, _platform-data-layer, growth]
 
 # Needs — Életjel-ringek (Sims-style Needs)
 
+> **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** No ring is drawn anywhere any more (bible §1.4): each need is a **level in a vessel**. The Életjelek page (`/nap/eletjel`) is six vials + six rows with a level; the Beszélgetés tab „Életjelek" opens with the same six vials (`EletjelStrip`); and **Mai's big number is the average of the six** (`needsAverage`, `frontend/src/features/today/logic/needsAverage.ts` — owner decision 2026-10-10). Only a need in the red / critical band takes the warn colour and the „figyelj" mark. Nudge copy says „szint" instead of „ring", and a nudge speaks in the field of its need (Étkezés, Alvás, Mozgás, Közérzet, Mezo). The engine (`needs.ts`, `needsInputs.ts`, `useNeeds.ts`), the day-close backend and the XP rule are unchanged. Look: [Folyadék style bible](../design_2.0/2026-10-09-folyadek-style-bible.md); build target [`vilagos/nap.js`](../design_2.0/prototypes/vilagos/nap.js) `eletjel()`.
+
 > **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The Lélek („Kapcsolat") ring no longer refills a flat `+20` for every done check-in: a check-in that answered the evening **„Kapcsolódás"** item refills `connection × NEEDS_TUNING.refill.connectionPerPoint` (10 per point, the engine clamps at 100); a check-in without it (quick exit, morning slot) keeps the flat `+20` so the ring does not starve. `needsInputs.ts` + `needs.ts` (`connectionPerPoint`), tests `needsInputs.test.ts`. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.8b.
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The Életjelek page and strip wear glass (six need-hue tiles, segmented hero ring, 3D need icons). The unused `emoji` field was dropped from `NEED_META` / `NeedState` (mezo-z5lov). The needs engine is unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 
-> Six real-time decaying "life-sign" rings. Since the Design 2.0 re-face (mezo-d20.2.6) the Nap
-> hub carries them as ONE segmented six-arc ring tile, which opens the **Életjel page**
-> (`/nap/eletjel`) with a need tile per ring — plus a thin day-close backend slice.
+> Six real-time decaying "life-sign" levels (the name „ring" is historical — since Folyadék F2
+> each need is a vessel). They surface as the **Életjelek page** (`/nap/eletjel`), the Életjelek
+> tab of Beszélgetés and the average in Mai's tank — plus a thin day-close backend slice.
 > **Status: ✅ done** (FE pure engine + UI + nudges; backend day-close/summary + progression XP).
+
 
 ## 1. Summary
 
@@ -40,7 +44,7 @@ Driving design spec (the WHY + every tuning number):
 Driving bd issue: `mezo-dhzk`.
 
 Status per layer: **FE pure engine + UI ✅** (deterministic, portable-to-Java-later `needs.ts`
-+ `NeedsRow`/`NeedRingSheet` + nudges), **FE real ✅** (`useNeeds` composes existing app hooks,
++ the Életjelek page, the strip, Mai's average + nudges), **FE real ✅** (`useNeeds` composes existing app hooks,
 no new reads except the needs-summary/close pair), **FE mock ✅** (same engine, mock inputs),
 **Backend ✅** (`feature/needs/` — day-close snapshot + award + streak, gated
 `mezo.feature.needs.enabled`). **Deliberately deferred:** a Java port of the decay model +
@@ -48,40 +52,15 @@ server-evaluated push nudges (§9).
 
 ## 2. User-facing behavior
 
-- **`NeedsRow`** (`frontend/src/features/today/components/NeedsRow.tsx`) — a frameless row of
-  six ring buttons directly under `MezoChip` — the ring's visible outer diameter is 46px, drawn
-  into a `PAD`-larger SVG box (`RING`/`PAD` in the component) so neither the stroke's outer edge
-  nor the critical halo lands on the viewBox boundary, where antialiasing clipped them flat
-  (mezo-1bu2). Wired at
-  `frontend/src/features/today/pages/TodayPage.tsx:449`. Renders on **every** daypart, unaffected
-  by which daypart is selected — the ring state is daypart-independent, like the message thread.
-  No numeric labels on the row itself; each ring's arc = `pct`, color = the ring's own token
-  (`NEED_META`, `needs.ts:94-101`), track `var(--divider)`. **Critical band** (`pct < 15`): the
-  arc switches to `var(--error-base)` plus a soft pulsing halo (`.td-need-halo`, neutralized
-  under the house `todayReducedMotion` pattern — static halo, no pulse). Recomputes on a
-  60-second ticker (`useMinuteTick`, §3) — the arc itself animates between recomputes via a CSS
-  `stroke-dashoffset` transition, so it never looks like it "jumps."
-- **Tap a ring → `NeedRingSheet`** (`frontend/src/features/today/sheets/NeedRingSheet.tsx`,
-  opened via `setNeedSheet`/`needSheet` state, `TodayPage.tsx:161,491-497`) — the house `Sheet`,
-  identical skeleton for all six rings: a large ring + name + last-fill line + current `%` +
-  `−N%/óra`; a forecast strip ("Így **18:10 körül nullázódik**. Egy pohár víz (+12%) ~2 órát ad
-  hozzá.", `forecastText`, `NeedRingSheet.tsx:70-80`); a primary CTA — the ring's fastest refill
-  action, dispatched by `TodayPage`'s `onNeedCta` (`TodayPage.tsx:189-198`): 🍽️ Energia →
-  `LogMealSheet`, 💧 Hidratáció → an immediate `+250 ml` water log, 😴 Pihenés → `SleepLogSheet`,
-  💪 Mozgás → `navigate('/train')`, 💗 Lélek → the first fillable check-in slot, ⚡ Rend → **no
-  CTA** (`CTA_LABEL` has no `rend` entry — nothing on Today shortcuts a habit tick directly); a
-  "MI TÖLTI?" static list of every counting log type + its `%`; a "MA" timeline of today's fill
-  events plus a "most" (now) marker, placed proportionally across the day's own wake→bed span.
-- **Mezo thread nudges** — a ring crossing into red/critical appends a templated Hungarian bubble
-  (`NUDGE_COPY`, `needsNudges.ts:17-24`) to the end of the `MezoChip` thread (`buildMezoMessages`'s
-  `nudges` param, `TodayPage.tsx:418-420`) with eyebrow "Életjel" and meta "Életjel-figyelő" —
-  same visual family as the demo briefing card, kind `needs-nudge`, no `RefTag` refs. A fresh
-  nudge is a **new message id**, so it re-arms the chip's unread coral dot exactly like a new
-  briefing/feed message would.
-- **Rough day (`?day=rough`)** — the anchor melt hides `NeedsRow` along with the rest of the
-  normal panel (anchor mode's early return in `TodayPage` renders before the row).
-- **Napzárás recap** — `RitualPage`'s Harvest act (act 5 since `mezo-b3pp.2`, act 4 before it) shows "🛟 N napja életben" from
-  `useNeedsSummary()` when the needs streak is > 0 (`HarvestStep.tsx:155-159`) — see §5.
+The six needs, as the pages name them (`VITAL_TILE`, `frontend/src/features/today/pages/EletjelPage.tsx`): **Étel** (`energia`), **Víz** (`hidratacio`), **Alvás** (`pihenes`), **Mozgás** (`mozgas`), **Kapcsolat** (`lelek`), **Rend** (`rend`). Everywhere a need is a level 0–100 in a vessel; colour is meaning — only a need in the **red or critical band** takes the warn colour and the „figyelj" mark (`needsAttention`). Levels recompute on the shared 60-second ticker (`useMinuteTick`, §3).
+
+- **Életjelek page** (`/nap/eletjel`, `EletjelPage`) — the hero is labelled „A hat jel · átlag N" and holds six `Vials`; its verdict is read from the bands („Egy jel kér figyelmet: a mozgás." / „N jel kér figyelmet." / „Mind a hat jel rendben van.") and its one button is the action of the lowest need that asks for attention and has one. Under it „A hat jel egyenként": six rows with the `%` and a `Level`. Each vial and row performs the need's fastest refill action: Étel → the unified `LogFlowPage`, Víz → an immediate `+250 ml` water log, Alvás → `SleepLogSheet`, Mozgás → `navigate('/train')`, Kapcsolat → the first fillable check-in slot, Rend → **nothing** (no surface shortcuts a habit tick; „magától töltődik a rutinból"). While the needs read is pending nothing numeric renders — empty vials, dim rows, no average. The kalauz anchor keeps its old id, `eletjel-gyuru`.
+- **Beszélgetés · Életjelek tab** (`/nap/uzenetek?tab=eletjelek`, `NapMezoPage`) — the hero „Életjelek · ma · átlag N" with the six vials as one strip (`EletjelStrip`; every vial opens `/nap/eletjel`) and a verdict from the bands („Az alvás az egyetlen, ami figyelmet kér." / „N jel kér figyelmet." / „Minden jel rendben — ma nincs teendő."), then „Amit a csapat mond" with the day's nudge cards. The verdict reads the bands, not the nudge list: `deriveNudges` gives no card at night and in the first hour after waking, yet the need still asks for attention (`mezo-z4h4`).
+- **Mai's tank** (`/nap`, `NapHubPage`) — the big number is `needsAverage(states)`, the rounded mean of the six levels, captioned „a 100-ból · hat életjel átlaga"; „…" while pending (owner decision 2026-10-10: there is no served day score before the overnight close). A tap on the tank's air opens the Életjelek page; the „Továbbiak" card repeats the average on the „Életjelek" row, with „{need} kér figyelmet" when exactly one need is low (`needsAttentionLine`). It is a client mean of client-simulated levels — not the day score ([today.md](today.md) §3).
+- **Thread nudges** — a need crossing into red/critical appends a templated Hungarian message (`NUDGE_COPY`, `frontend/src/features/today/logic/needsNudges.ts:19` — „… az Étel szintje leapadt.", „… megemeli a Víz szintjét.") to the day's thread (`buildMezoMessages`'s `nudges` param, driven by `MezoThreadProvider`), `source: 'eletjel'`, so it lands on the Életjelek tab. Its card is signed by the field of its need (`needMemberForIcon`, `components/EletjelStrip.tsx`: étel and víz → Étkezés, alvás → Alvás, mozgás → Mozgás, kapcsolat → Közérzet, rend → Mezo) and carries no action button. A fresh nudge is a **new message id**, so it re-arms the unread badge and the tab dot like any new message.
+- **Napzárás** — `RitualPage`'s Harvest act (act 5) shows a „N napja életben" row from `useNeedsSummary()` when the needs streak is > 0 — see §5.
+- **Gone with the earlier skins:** the frameless ring row (`NeedsRow`), the per-ring detail sheet with its forecast strip, „MI TÖLTI?" list and day timeline (`NeedRingSheet`), the segmented six-arc hero ring and the mini conic rings. The engine still computes the forecast (`zeroAt`), the rate and the day's fills; no surface draws them today.
+
 
 ## 3. Architecture & data flow
 
@@ -89,16 +68,16 @@ server-evaluated push nudges (§9).
 1:1 to Java later if push-nudges are ever server-evaluated (§9's deferred item).
 
 ```
-TodayPage (composition root)
+The pages (each holds its own hooks — there is no single composition root)
   ├─ useMinuteTick()                 — a `Date` that re-renders once/minute (useMinuteTick.ts)
   ├─ useNeeds(tick)                  — composes existing app hooks → RawNeedsData → needsAt()
   │     ├─ buildNeedsEvents(raw)     — needsInputs.ts: RawNeedsData → Record<NeedKey, NeedEvent[]>
   │     └─ needsAt(now, inputs)      — needs.ts: pure decay/refill/carryover simulation → NeedState[]
-  ├─ NeedsRow(states, onOpen)        — presentational, one SVG ring per NeedState
-  ├─ NeedRingSheet(state, ...)       — presentational, tap-opened detail
+  ├─ EletjelPage / EletjelStrip / NapHubPage — NeedState[] as vials, levels and one average (needsAverage.ts)
+  ├─ MezoThreadProvider              — the one caller of the nudge derivation below
   ├─ deriveNudges(states, ...)       — needsNudges.ts: red/critical crossing → thread bubbles
   │     └─ nudgeSeen.ts              — localStorage "shown today" guard (`shownNudges`/`markNudgeShown`)
-  └─ onEnteringRitualAct4: RitualPage calls
+  └─ on entering the Harvest act (5): RitualPage calls
         useRitualActions(date).close(ringsOf(states))   — needsInputs.ts's ringsOf(): NeedState[] → wire shape
               mock: applyMockNeedsClose (data/needs/needsHooks.ts)
               real: POST /api/needs/day-close → NeedsController → NeedsService → NeedsDayRepository
@@ -137,15 +116,15 @@ TodayPage (composition root)
   a **single module-level clock** behind `useSyncExternalStore`, not a per-mount `setInterval`: one
   60s interval runs while at least one subscriber is mounted, and every consumer gets the SAME
   `Date` instance (so memos over it are stable, and two live consumers can no longer sit up to 60s
-  out of phase). Consumers today: `EletjelPage`, `NapHubPage`, `useDayFace` (the shell header) and
+  out of phase). Consumers today: `EletjelPage`, `NapHubPage`, `NapMezoPage` and
   `MezoThreadProvider`.
 - **`needsNudges.ts`** (`frontend/src/features/today/logic/needsNudges.ts`) — pure derivation,
-  `deriveNudges(states, now, wakeTime, bedTime, shown)` (`needsNudges.ts:65`): the day's shown
+  `deriveNudges(states, now, wakeTime, bedTime, shown)` (`needsNudges.ts:67`): the day's shown
   nudges (from `nudgeSeen.ts`) pass through unchanged (`fresh: false`), newly red/critical rings
   not yet shown join as `fresh: true`, unless the current moment is "quiet" (`isQuiet`,
-  `needsNudges.ts:50-57`: inside the sleep window, wrap-aware, OR within the first hour after
+  `needsNudges.ts:52`: inside the sleep window, wrap-aware, OR within the first hour after
   wake — a local re-implementation of the wrap-aware minute-of-day check, not exported from
-  `needs.ts`, per the brief). The caller (`TodayPage`) persists fresh entries once
+  `needs.ts`, per the brief). The caller (`MezoThreadProvider`) persists fresh entries once
   (`markNudgeShown`) and appends `toNudgeMessage(n)` items to the thread via
   `buildMezoMessages`'s `nudges` param.
 - **`nudgeSeen.ts`** (`frontend/src/shared/lib/nudgeSeen.ts`) — the localStorage seen-guard,
@@ -263,12 +242,13 @@ tuning changes (§7).
 - **→ Growth/Progression** — day-close XP always lands on the **`recovery`** LIFE skill
   (`ProgressionService.applyNeeds`, hardcoded target, not per-ring) through the shared idempotent
   award tail (source `NEEDS`) — see [growth.md](growth.md) for the LIFE skill band this feeds.
-- **→ Today** — `NeedsRow` mounts under `MezoChip` on every daypart; nudges append to the same
-  thread `MezoChip`/`MezoMessagesSheet` render — see [today.md §1](today.md#1-summary)/
-  [§2](today.md#2-user-facing-behavior).
-- **Shared UI consumed:** the house `Sheet` (`NeedRingSheet`), `--dv-*`/`--accent-base` data-viz
-  color tokens (`NEED_META`), `--error-base` (critical band), the `todayReducedMotion` guard
-  pattern (critical-band halo).
+- **→ Today / Nap** — the Életjelek page, the Beszélgetés tab's strip and Mai's tank all read
+  `useNeeds(tick).states`; nudges append to the day's one thread (`MezoThreadProvider`) — see
+  [today.md §2](today.md#2-user-facing-behavior).
+- **Shared UI consumed:** the Folyadék kit (`Hero`, `Vials`, `Row`, `Level`, `Msg` —
+  `frontend/src/shared/ui/folyadek`); the warn colour (`--fo-warn`) for a need that asks for
+  attention. `NEED_META`'s colour tokens are no longer painted on these surfaces.
+
 
 ## 6. How to use it (consume)
 
@@ -293,8 +273,9 @@ import { ringsOf } from '@/features/today/logic/needsInputs'
 await useRitualActions(date).close(ringsOf(states))   // rings is optional — close() alone still closes the day
 ```
 
-`NeedsRow`/`NeedRingSheet` are pure presentational components — pass them `NeedState[]`/
-`NeedState` plus callbacks, no hooks inside either (mirrors `MezoChip`'s doctrine). Never import
+`EletjelStrip` is a pure presentational component — pass it `NeedState[]` plus one callback, no
+hooks inside. For the one number of the six use `needsAverage(states)` (`null` when there is nothing
+to average — render „…", never 0); for „does this need ask for attention" use `needsAttention`. Never import
 `needsApi`/`needsHooks` internals directly from a component — go through `@/data/hooks` for
 `useNeedsSummary`; `ringsOf`/`buildNeedsEvents` are logic helpers, imported directly from
 `features/today/logic/needsInputs`, same as any other pure `logic/` module.
@@ -338,10 +319,12 @@ await useRitualActions(date).close(ringsOf(states))   // rings is optional — c
   sources never throw" suite (the defensive-adapter contract).
 - **Live-composition test** (`frontend/src/features/today/logic/useNeeds.test.tsx`) — mock-mode
   hook composition end to end.
-- **Component tests** — `frontend/src/features/today/components/NeedsRow.test.tsx` (6 rings
-  render, correct arcs/colors, critical pulse + reduced-motion static fallback, tap opens the
-  right sheet) and `frontend/src/features/today/sheets/NeedRingSheet.test.tsx` (CTA routing per
-  ring, forecast strip, MI TÖLTI?/MA sections).
+- **Page and helper tests** — `frontend/src/features/today/pages/EletjelPage.test.tsx` (six vials
+  and six rows, „no ring, no glass, no tile", the band verdicts, the hero acting on the lowest
+  need, each vial performing its row's action, honest pending),
+  `frontend/src/features/today/pages/NapMezoPage.test.tsx` (the Életjelek tab) and
+  `frontend/src/features/today/logic/needsAverage.test.ts` (the mean and the attention line).
+
 - **Nudge tests** (`frontend/src/features/today/logic/needsNudges.test.ts`) — threshold crossing,
   the shown-set passthrough, quiet-window suppression (sleep + first hour after wake),
   `toNudgeMessage` shape.
@@ -391,8 +374,7 @@ await useRitualActions(date).close(ringsOf(states))   // rings is optional — c
   server-evaluated push nudges (waits for tuning to settle); a streak-saver integration for the
   needs streak (any close below all-green resets to 0 today, no grace); any avatar visual beyond
   the six rings (a plumbob-style avatar was explored and not chosen); AI-generated nudge copy
-  (Phase 3 can take over `needsNudges.ts`'s trigger point without touching `NeedsRow`/
-  `NeedRingSheet`).
+  (Phase 3 can take over `needsNudges.ts`'s trigger point without touching the pages).
 
 ## 10. Key files
 
@@ -400,9 +382,13 @@ await useRitualActions(date).close(ringsOf(states))   // rings is optional — c
   `NEEDS_TUNING`) · `needsInputs.ts` (`buildNeedsEvents`/`ringsOf`, the app-data adapter) ·
   `useNeeds.ts` (live composition) · `useMinuteTick.ts` (the 60s ticker) · `needsNudges.ts`
   (`deriveNudges`/`toNudgeMessage`).
-- **FE UI:** `frontend/src/features/today/components/NeedsRow.tsx` ·
-  `frontend/src/features/today/sheets/NeedRingSheet.tsx` · `frontend/src/shared/lib/nudgeSeen.ts`
-  (the localStorage seen-guard).
+- **FE UI:** `frontend/src/features/today/pages/EletjelPage.tsx` (the page + `VITAL_TILE`,
+  `NEED_KEYS`) · `frontend/src/features/today/components/EletjelStrip.tsx` (the six-vial strip +
+  `needMemberForIcon`) · `frontend/src/features/today/logic/needsAverage.ts` (the average and the
+  attention helpers) · `frontend/src/features/today/pages/NapHubPage.tsx` (Mai's tank) ·
+  `frontend/src/features/today/MezoThreadProvider.tsx` (the nudge caller) ·
+  `frontend/src/features/today/logic/nudgeSeen.ts` (the localStorage seen-guard). CSS: `.nb-*` in
+  `frontend/src/styles/folyadek-nap-beszelgetes.css`.
 - **FE data** (`frontend/src/data/needs/`): `needsApi.ts` (REST client) · `needsHooks.ts`
   (`useNeedsSummary`, `applyMockNeedsClose`) — barrel-exported from `data/hooks.ts`.
 - **Contract:** `api/feature/needs/needs.yml` (tag `Needs`, 2 endpoints, `NeedsRings`/
@@ -423,8 +409,8 @@ await useRitualActions(date).close(ringsOf(states))   // rings is optional — c
   `frontend/src/data/ritual/ritualHooks.ts` (`close(rings?)`) ·
   `frontend/src/features/ritual/components/HarvestStep.tsx` (`useNeedsSummary` recap line).
 - **Tests:** `frontend/src/features/today/logic/{needs,needsInputs,useNeeds,needsNudges}.test.{ts,tsx}`
-  · `frontend/src/features/today/components/NeedsRow.test.tsx` ·
-  `frontend/src/features/today/sheets/NeedRingSheet.test.tsx` ·
+  · `frontend/src/features/today/logic/needsAverage.test.ts` ·
+  `frontend/src/features/today/pages/EletjelPage.test.tsx` ·
   `frontend/src/data/needs/needsHooks.test.tsx` ·
   `backend/src/test/java/io/mrkuhne/mezo/feature/needs/{NeedsApiIT,NeedsEntityIT}.java` ·
   `backend/src/test/java/io/mrkuhne/mezo/support/populator/NeedsPopulator.java`.

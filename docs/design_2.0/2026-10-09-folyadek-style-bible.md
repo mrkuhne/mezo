@@ -219,3 +219,57 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
   logged each rule, and ran the CSS structure test and the build afterwards.
 - **F1.14 — Flip a global default, then run the layout specs.** Forty-odd Playwright specs asserted
   `html[data-theme=dark]` and went red with the light lock; they are part of the change, not noise.
+
+**F2 — Nap (`mezo-n4wf5.2`, 2026-10-10)**
+
+- **F2.1 — Reality pass before the OK: every graphic names the real field that feeds it.** The approved
+  Mai hero showed „72 of 100", and nothing in the app produces that number during the day (the day score
+  exists only after the overnight close). Walk the prototype screen by screen and write the hook and field
+  beside every number, level and sentence; where there is none, ask the owner what the number should mean
+  (here: the average of the six életjel) — never keep an invented one, and never pick a stand-in yourself.
+- **F2.2 — A prototype-only demo gets built unless it leaves the build target.** The „Mit táplál?" page, the
+  check-in slot tester and a „Próbáld ki: írj be valamit" field existed to show the idea to the owner. Remove
+  them (or mark them unmistakably) before the OK; a builder reads a route in the prototype as a screen to ship.
+  The same pass removed what was simply invented: a „Heti egyeztetés" entry, per-weekday macro vessels, a
+  28-day grid on Rutin, quest progress percentages, linked vessels on observations.
+- **F2.3 — Parallel builders: one stylesheet per area, with its own class prefix, planted before dispatch.**
+  Six areas were built at once (`folyadek-nap-{mai,napom,beszelgetes,rutin,rogzites,epites}.css`, prefixes
+  `.nm- .nn- .nb- .nr2-/.nck2- .nqk-/.nrz- .rb-`). The empty files and their imports were committed first;
+  a builder never touches `prototype.css`, the kit or the shell. The controller deletes the old CSS
+  afterwards, rule by rule, with the zero-usage proof of F1.13.
+- **F2.4 — Extend the kit BEFORE the parallel builders, with the generic pieces.** Buttons, pills, the
+  sheet head, a text field, a big numeral, a hero left slot: whatever the kit lacked was re-invented in each
+  area and had to be consolidated at the end (`.nck2-in` / `.rb-in` / `.nqk-in` / `.nrz-in` → one `.fo-in`;
+  three copies of a big numeral → `Big`; four hero-left layout hacks → `Hero left`). List the prototype's
+  repeating pieces first; anything that appears on two screens is a kit piece.
+- **F2.5 — The kit owns the hit area.** A kit button drawn under 44 px made every page add its own hit-area
+  rule (`::after` insets, `min-height` overrides per area). Give the kit piece the 44 px target once — the
+  drawn pill may stay smaller — and delete the per-page hacks.
+- **F2.6 — A shared sheet's title is asserted far from the sheet.** The check-in sheet opens from six places;
+  changing its title from „Hogy vagyunk?" to „Hogy vagy?" broke suites of pages that had not been touched.
+  When a shared sheet's copy changes, grep the old words across `src` and `tests` first.
+- **F2.7 — A legacy class kept „for the layout spec" needs an interim override, and both go together.** The
+  quick-log root keeps `.quicklog` because `tests/layout/quicklog.spec.ts` keys on it, so the old
+  `.quicklog` padding and heading rules still matched the new markup; `.quicklog.nqk` switches them off.
+  Write next to the override which old rule it neutralises, and delete the pair in one change.
+- **F2.8 — A hub page with a parameterised child needs an explicit frame rule, in one place.** `/nap/napom/:date`
+  is the same hub page showing another day, but the frame read it as a sub-page: back button, no top tabs.
+  The title bar and the top tabs each had their own copy of „is this a hub"; the rule is now one function
+  (`isHubPath`, with `NavTab.hubChild`) that both read.
+- **F2.9 — Removing a dark lock is a decision, not a refactor.** `/ritual` forced the dark theme and a
+  regression test pinned it. The owner decided that Napzárás is light (the evening is the dusk liquid);
+  the test was then rewritten to pin the new truth, not deleted and not left red. A guard that protects a
+  decision changes only with the decision.
+- **F2.10 — A level is not always proportional.** On A napom the tank's liquid has to leave room for the
+  verdict sentence above it; a level proportional to the score collided with the text at high values. Band
+  the level (44–66 % for the live day, 56–66 % for a score) and let the numeral carry the value. A vessel
+  that holds text is a stage first and a gauge second.
+- **F2.11 — The field-name copy rule reaches the nudges and the sender badges.** Nudges and labels that said
+  „ring" now say „szint" or „jel". A message that carries no character is signed by a rule, not by a
+  default face: a nudge by the need that raised it, a feed row by its kind, everything else Mezo.
+- **F2.12 — Another domain's shared piece stays in its old look until its own slice.** A converted page
+  opens sheets and embeds components that belong elsewhere (`JournalSheet`, `SleepLogSheet`, `WeightLogSheet`,
+  `WaterLogSheet`, `LogFlowPage`, `SportLogSheet`, `WelcomeBackSheet`, `RecoveryDurationRow`, `GratitudeRows`,
+  `FeedbackChips`, `RefChips`, `AskTeamRow`, `EvidenceList`, the `VoiceField` mic tile). Record the list in
+  the hand-off and leave them: converting one ad hoc changes every other page that uses it, outside the
+  slice's prototype and its tests.

@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-10-07
+updated: 2026-10-10
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -14,6 +14,8 @@ related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
 
 # Intention — Daily Creed, Foci & Evening Reflection
+
+> **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** `IntentionSheet` („Mi ma a fókuszod?") and `ReflectSheet` („Szándékkal élted a napot?") are light `fo-sheet`s with the shared `FoSheetHead`; they open from the Rutin page's intention rows and its hero button („Leírom" / „Válaszolok"). **Mai no longer opens `IntentionSheet`:** the companion block and its creed line went with the old hub, so the surfaces of this feature are `/nap/rutin` and Napzárás act 4 (the inline `Igen` / `Részben` / `Nem` pills). Data, contract and XP rules are unchanged. See [`today.md`](today.md), [`habit.md`](habit.md).
 
 > **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** No intention change; `NapHubPage` only passes the Fuel `guidance` flag, `skippedKcal` and `fuelMode` to the Fuel preview (see [`today.md`](today.md)).
 

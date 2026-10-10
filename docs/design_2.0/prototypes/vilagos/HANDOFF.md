@@ -211,3 +211,62 @@ prototype except for these, all small and known:
   owner has not seen them on the icon sheet `#w-nap-ikonok`). The sprite has 149 glyphs.
 - Also noted: sub-pages have no settings / messages / day-orb / map buttons (back · title · "?" · bell, as
   approved), and the title bar's back is a bare `‹`, it no longer names its destination.
+
+## 2026-10-10 — F2 · Nap: reality pass, owner answers, built — deviations from the prototype
+
+Slice F2 (`mezo-n4wf5.2`) converted the whole Nap domain on `feat/folyadek-nap`: Mai, A napom, Beszélgetés,
+Rutin, Check-in, Életjelek, Küldetések, Gyors logolás, the routine builder and Napzárás. Build target:
+`vilagos/nap.js`.
+
+### What the reality pass changed in the prototype (before the OK)
+
+Every graphic was matched to the field that feeds it; what had no source was removed or redrawn.
+
+- **Mai:** the tank shows the average of the six életjel with the day's one-line reading (`dayReading`),
+  not „72 of 100". The invented **„Heti egyeztetés"** entry is gone (no such feature). The per-weekday
+  macro vessels are gone (the app has no per-day macro split); „A napod üzemanyaga" is the real macro
+  sheet (kcal and three macros against their targets).
+- **Beszélgetés:** a thread hero (message count, new count, the last messages as a row of drops), the
+  team row, the advice action; on observations the linked vessels were replaced by the **evidence tally**
+  (`evidenceHits` / `evidenceMisses` / `minN`).
+- **Rutin:** every chain group is shown, not only one; the 28-day grid is gone (there is no per-day chain
+  history to draw).
+- **Check-in:** the **„Mit táplál?"** page and the slot tester were prototype-only demos and were removed.
+- **Küldetések:** no progress percentage — a quest is offered or done.
+- **New states drawn:** empty, error and loading faces.
+- **Builder:** the „Keret nélkül" path, identity, link and metric fields, the weekday strength, the AI
+  suggestion results.
+
+### The owner's two answers (2026-10-10)
+
+- **Mai's big number is the average of the six életjel.** During the day the app has no day score; the
+  number on the drawing had nothing behind it.
+- **Napzárás is light**, in the Folyadék look. The evening mood is the deeper „dusk" liquid, not a dark
+  screen. (With it `/ritual` stopped forcing the dark theme; the night sleep page is the one dark pocket.)
+
+Also decided with the build, following the approved prototype: a day picked on A napom's week strip
+(`/nap/napom/:date`) keeps the hub face with the top tabs.
+
+### Deviations from the prototype
+
+- **Mai.** The Alvás vial has no goal mark and no „N perc a célig" (the hub reads no sleep goal; its level
+  is the sleep dimension's score). The Mozgás note is „megvolt / még hátravan" (no workout-name source).
+  There is no „Vacsora" row in „Most következik" (nothing says when the next meal is due). The „Esti rutin"
+  row has no second line.
+- **A napom.** The tank level is banded (44–66 % live, 56–66 % scored), not proportional: a proportional
+  level collided with the verdict. Status words are lower-case (kész · úton · nyitva). „A napod · te és az
+  app" sits after the six rows in the scored layout too. The chat hand-off button shows on every scored day.
+- **Beszélgetés.** The thread verdict uses digits („5 üzenet, 2 új."). Nudge cards have no action button
+  (a nudge carries none). The empty Észrevételek tab is the hero sentence only.
+- **Rutin.** No primary button when the next habit has no surface. The yesterday hero and the empty-day
+  hero are new copy („Tegnap kimaradt: …", „Mára nincs rutinod.").
+- **Napzárás.** No title bar (the route is chrome-free). Act 2's surface is the day arc's own shape. The
+  confetti is dropped. Act 6's jar has no text.
+- **Builder.** Past days are reached by links (the calendar-popover jump is gone). The effort grid's label
+  sits above the segmented control. The habit page has an extra „Így épült" section. Several principle
+  paragraphs were dropped.
+- **Not converted in this slice** — pieces other domains own that open from Nap keep their previous look
+  until their slice: `JournalSheet`, `SleepLogSheet`, `WeightLogSheet` (Én, F6); `WaterLogSheet`,
+  `LogFlowPage` (Fuel, F5); `SportLogSheet`, `WelcomeBackSheet`, `RecoveryDurationRow` (Edzés, F3);
+  `GratitudeRows` (F6); `FeedbackChips`, `RefChips`, `AskTeamRow`, `EvidenceList` (Mezo, F7); the
+  `VoiceField` mic tile (F8).
