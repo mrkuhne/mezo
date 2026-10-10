@@ -757,6 +757,9 @@ function dayCard(d){
   if(ST.km&&DAYS.includes(d)&&!d.done&&d.id!=='pen'&&DAYS.indexOf(d)>=DAYS.findIndex(x=>x.id===TODAY)&&!(d.id===TODAY&&ST.km.released))return `<div class="vs-dc quiet">${bub('t-kimelo',{s:34})}<span class="g"><small>${d.full}${d.id===TODAY?' · ma':''}</small><strong>Kímélő mód · ${d.t} kimarad</strong></span></div>`;
   const s=DAYS.includes(d)?dayState(d):'jön',part=d.done&&d.done.sets<d.sets,done=s==='megvolt';
   const f=done?[[part?`${d.done.sets}/${d.sets}`:d.done.sets,'szett'],[d.done.min??'–','perc'],[d.ex.length,'gyakorlat']]:[[d.sets,'szett'],[s==='ma'?d.min:'~'+d.min,'perc'],[d.ex.length,'gyakorlat']];
+  /* owner 2026-10-10: only today is a full card; every other training day is one row that opens the day's page */
+  if(s!=='ma')return `<button class="vs-dc row ${done?'done':'next'}" data-go="nap.${d.id}" aria-label="${d.full} · ${d.t}${done?(part?' · részben megvolt':' · megvolt'):''}">
+    <span class="vs-hd"><span class="g"><small>${d.full}</small><strong>${d.t}</strong><em>${f.map(([v,l])=>`${v} ${l}`).join(' · ')}</em></span>${done?st(part?'Részben':'Megvolt',part?'warn':'ok'):st('Jön')}${chev()}</span></button>`;
   return `<button class="vs-dc ${s==='ma'?'now':done?'done':'next'}" data-go="nap.${d.id}" aria-label="${d.full} · ${d.t}${done?(part?' · részben megvolt':' · megvolt'):s==='ma'?' · ma':''}">
     <span class="vs-hd"><span class="g"><small>${d.full}</small><strong>${d.t}</strong></span>${done?st(part?'Részben':'Megvolt',part?'warn':'ok'):s==='ma'?st('Ma','plan'):st('Jön')}${chev()}</span>
     <span class="vs-ct">${dayBody(d)}<span class="vs-cl"><span class="f3">${f.map(([v,l])=>`<i><b>${v}</b><small>${l}</small></i>`).join('')}</span><span class="chs">${d.mus.map(([k,n])=>`<span>${mchp(k,'sm')}<b>${n}</b></span>`).join('')}</span></span></span></button>`}
@@ -1642,6 +1645,7 @@ ${Q} .vs-dcs{display:flex;flex-direction:column;gap:10px;margin:12px 14px 0}
 ${Q} .vs-dc{display:block;width:100%;text-align:left;padding:14px 16px;border-radius:26px;background:#fff;box-shadow:0 14px 24px -18px color-mix(in srgb,var(--dom) 50%,rgba(10,42,60,.55)),0 2px 4px -2px rgba(10,42,60,.06)}
 ${Q} .vs-dc.now{box-shadow:inset 0 0 0 2.5px var(--dom),0 18px 26px -18px var(--dom)}
 ${Q} .vs-dc.next{background:rgba(255,255,255,.6);box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.09)}
+${Q} .vs-dc.row{padding:11px 16px;border-radius:22px}${Q} .vs-dc.row .g strong{font-size:16px}${Q} .vs-dc.row .g em{display:block;font-style:normal;font-size:12.5px;color:var(--sub);margin-top:1px}
 ${Q} .vs-dc.quiet{display:flex;align-items:center;gap:10px;padding:9px 16px;background:none;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.07)}
 ${Q} .vs-dc .vs-hd,${Q} .vs-tpl .vs-hd{display:flex;align-items:center;gap:8px}${Q} .vs-dc .g,${Q} .vs-tpl .g{flex:1;min-width:0}
 ${Q} .vs-dc .g small{display:block;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--sub)}${Q} .vs-dc .g strong{display:block;font-family:var(--disp);font-size:18px;font-weight:800;letter-spacing:-.4px}${Q} .vs-dc.quiet .g strong{font-family:var(--ff);font-size:14px;font-weight:600;letter-spacing:0;color:var(--sub)}
