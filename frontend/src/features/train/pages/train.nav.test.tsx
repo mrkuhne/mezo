@@ -90,15 +90,16 @@ test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/mesocycles/new')
   expect(container.querySelector('.np-pills')).toBeNull()
   expect(screen.getByText('Mikor edzel — és mire gyúrsz?')).toBeInTheDocument()
-  expect(screen.getByText('Új blokk · interjú')).toBeInTheDocument()
+  // Folyadék F3 (mezo-n4wf5.3): the interview opens with its hero vessel on the Folyadék page.
+  expect(container.querySelector('.ew-page .fo-hero')).not.toBeNull()
 })
 
 // The template editor moved off the pre-redesign DS page shell onto the same Mozaik
 // scaffold the wizard's editor uses (mezo-yty6 Task 10) — one editor, one face.
-test('the template editor is a full-screen Mozaik flow without the sub-nav', async () => {
+test('the template editor is a full-screen flow without the sub-nav', async () => {
   const { container } = renderApp('/train/mesocycles/templates/b20f0000-0000-4000-8000-000000000000')
-  expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Upper/Lower Power')
-  expect(container.querySelector('.mz-page')).not.toBeNull()
+  expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toHaveValue('Upper/Lower Power')
+  expect(container.querySelector('.ew-page')).not.toBeNull()
   expect(container.querySelector('.np-pills')).toBeNull()
   expect(container.querySelector('.pghead-np')).toBeNull()
 })

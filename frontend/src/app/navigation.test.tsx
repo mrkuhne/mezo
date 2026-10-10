@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
@@ -284,9 +284,10 @@ test('the Edzés tab lands on Mai — no subnav dropdown (mezo-88iwa.5)', async 
 
 test('/train/sport stays a stable full-page sibling of the hub', async () => {
   renderApp('/train/sport')
-  // Mozaik 2.0 re-face (mezo-d20.11): the `Röplabda` h1 became the prototype's
-  // page hero — the route itself is unchanged.
-  expect(await screen.findByText('Sport', { selector: '.mz-hero-nm' })).toBeInTheDocument()
+  // Folyadék F3 (mezo-n4wf5.3): the page name lives in the title bar, the page opens with
+  // its hero vessel — the route itself is unchanged.
+  await waitFor(() => expect(document.querySelector('.es-page .fo-hero')).not.toBeNull())
+  expect(document.querySelector('.fo-title')).toHaveTextContent('Sport')
 })
 test('the bottom bar hides on the full-screen active-workout session (mezo-8141)', () => {
   const { container } = renderApp('/train/session')

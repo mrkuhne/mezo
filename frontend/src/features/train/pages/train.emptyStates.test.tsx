@@ -73,11 +73,11 @@ test('SportPage ghosts the weekly plan and shows an empty log message', async ()
   await waitFor(() =>
     expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument(),
   )
-  expect(container.querySelector('.mz-bignum')).toHaveTextContent('—')
-  expect(container.querySelectorAll('.mz-statstrip .mz-statcell b')).toHaveLength(3)
-  container.querySelectorAll('.mz-statstrip .mz-statcell b').forEach((b) => {
-    expect(b).toHaveTextContent('—')
-  })
+  // Folyadék F3 (mezo-n4wf5.3): no schedule → the hero says so and the three facts stay `—`.
+  expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('Még nincs heti sport-rended.')
+  const facts = container.querySelectorAll('.fo-hero .fo-facts b')
+  expect(facts).toHaveLength(3)
+  facts.forEach((b) => expect(b).toHaveTextContent('—'))
   await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
   expect(await screen.findByText(/Még nincs logolt session/i)).toBeInTheDocument()
 })
