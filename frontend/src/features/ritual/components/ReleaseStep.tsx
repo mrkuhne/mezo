@@ -2,7 +2,7 @@
  * Napzárás act 6 — Elengedés (mezo-ilsj, spec §4; Folyadék mezo-n4wf5.2, prototype `napzaras.6`).
  * The day's jar is full and gets its lid, the fixed release line, an optional closing note from
  * Mezo, then the evening handoff read straight from the ritual window — no new data, just the two
- * remaining stops (prep + bed). `onFinish` navigates to `/nap`, where the evening routine owns the
+ * remaining stops (prep + bed). `onFinish` navigates to the evening routine (`/nap/rutin?dp=este`), which owns the
  * sleep-prep phase from there on (integration, not duplication — this component never renders
  * prep-step UI itself).
  */
