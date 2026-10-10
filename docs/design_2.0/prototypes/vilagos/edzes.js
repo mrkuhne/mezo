@@ -82,7 +82,7 @@ const SH_FLASK='M40 7 H60 V36 L87 82 C90 88 86 95 78 95 H22 C14 95 10 88 13 82 L
 const SH_CUP='M20 9 H80 V34 C80 55 67 67 55 70 V81 H70 V93 H30 V81 H45 V70 C33 67 20 55 20 34Z';
 
 /* ── adatok (az élő mock alapján, a mai Pull Day gyakorlataival) ── */
-const MESO={name:'Hypertrophy 04',week:3,of:6,phase:'MAV',curve:['MEV','MEV','MAV','MAV','MRV','Deload'],from:'Máj 1',to:'Jún 12',split:'Pull / Push / Legs · 5×/hét'};
+const MESO={name:'Hypertrophy 04',week:3,of:6,phase:'MAV',curve:['MEV','MEV','MAV','MAV','MRV','Deload'],from:'szept 7.',to:'okt 18.',split:'Pull / Push / Legs · 5×/hét'};
 const PHASE={MEV:'Emelkedés',MAV:'Emelkedés',MRV:'Csúcshét',Deload:'Pihenőhét'};
 const PH_H={MEV:34,MAV:66,MRV:100,Deload:26};
 const WEEK_SETS=[52,61,75,75,84,38];
@@ -120,11 +120,13 @@ const DAYS=[
  {id:'pen',d:'Pén',full:'Péntek',t:'Push · light',sets:12,min:46,mus:[['chest-upper',3],['chest-mid',3],['shoulder-side',3],['triceps-long',3]],ex:[['Ferde kézisúlyzós nyomás','chest-upper',3,'10–12',2,2,26],['Kábeles tárogatás','chest-mid',3,'12–15',1,2,14],['Oldalemelés','shoulder-side',3,'12–15',1,2,9],['Tricepsz nyújtás fej fölött','triceps-long',3,'10–12',1,2,25]]},
  {id:'szo',d:'Szo',full:'Szombat',t:'Röplabda · meccs',sport:true},
  {id:'vas',d:'Vas',full:'Vasárnap',t:'Pihenőnap',rest:true}];
-const WMUS=[['Hát','back-wide',10,10,14,20],['Váll','shoulder-side',12,8,14,20],['Comb','quad',13,8,14,20],['Lábhajlító','ham',9,6,12,16],['Mell','chest-mid',13,8,12,18],['Tricepsz','triceps-medial',6,6,10,14],['Vádli','calf',6,6,10,14],['Far','glute',3,8,12,18],['Bicepsz','biceps-brachialis',3,8,12,16]];
+/* a futó terv heti szettjei izomcsoportonként: [név, színkulcs, e heti szett, ennyitől fejlődik, közép, legfeljebb] — meso.volumePerMuscle (current · mev · mav · mrv) */
+const WMUS=[['Hát','back-wide',10,8,12,14],['Váll','shoulder-side',12,8,12,16],['Comb','quad',13,8,14,20],['Lábhajlító','ham',9,6,12,16],['Mell','chest-mid',13,8,13,18],['Tricepsz','triceps-medial',6,6,10,14],['Vádli','calf',6,6,10,14],['Far','glute',3,3,8,12],['Bicepsz','biceps-brachialis',3,3,8,12]];
 const WTOTAL=WMUS.reduce((s,m)=>s+m[2],0),ROLL=['Hát','Váll','Comb'];
-const RUNS=[{n:'Hypertrophy 04 · Tavasz',st:'fut',weeks:6,wk:3,split:'Pull / Push / Legs · 5×/hét',from:'Máj 1',to:'Jún 12'},{n:'Strength 02 · Nyár',st:'következik',weeks:7,split:'Upper / Lower · 4×/hét',from:'Jún 16',to:'Aug 4',days:4},{n:'Pre-cut maintenance · Aug',st:'következik',weeks:3,split:'Full body · 4×/hét',from:'Aug 7',to:'Aug 28',days:4}];
-const CLOSED=[{n:'Recovery rebuild · Tél',weeks:8,from:'Feb 12',to:'Ápr 23',pct:86,rep:true},{n:'Hypertrophy 03 · Ősz',weeks:6,from:'Okt 2',to:'Nov 13',pct:92,rep:true},{n:'Cut prep · Nyár',weeks:6,from:'Jún 4',to:'Júl 16',pct:71,rep:false}];
-const TPL=[{n:'Hypertrophy 04 · Tavasz',split:'Pull / Push / Legs · 5×/hét',weeks:6,days:5,min:58,runs:2,mus:['chest-mid','back-wide','quad','shoulder-side']},{n:'Upper / Lower · alap',split:'Upper / Lower · 4×/hét',weeks:7,days:4,min:65,runs:1,mus:['back-mid','chest-upper','quad','ham']},{n:'Full body · utazós',split:'Full body · 3×/hét',weeks:4,days:3,min:42,runs:0,mus:['quad','back-wide','chest-mid']}];
+const RUNS=[{n:'Hypertrophy 04',st:'fut',weeks:6,wk:3,split:'Pull / Push / Legs · 5×/hét',from:'szept 7.',to:'okt 18.'},{n:'Strength 02',st:'következik',weeks:7,split:'Upper / Lower · 4×/hét',from:'okt 19.',tol:'okt 19-től',to:'dec 6.'},{n:'Pre-cut maintenance',st:'következik',weeks:4,split:'Full body · 3×/hét',from:'dec 7.',tol:'dec 7-től',to:'jan 3.'}];
+/* lezárt futamok: a listán csak az áll, amit a futam maga tud (hetek, dátum, van-e riport, a záró mondat) — a teljesítés a riportban él */
+const CLOSED=[{n:'Recovery rebuild',weeks:8,from:'febr 9.',to:'ápr 5.',rep:true,sum:'Sérülés után vissza a teljes terhelésig.'},{n:'Hypertrophy 03',weeks:6,from:'jún 1.',to:'júl 12.',rep:true,sum:'A láb és a hát vitte, a váll kímélve.'},{n:'Cut prep',weeks:6,from:'júl 20.',to:'aug 30.',rep:false}];
+const TPL=[{n:'Hypertrophy 04',split:'Pull / Push / Legs · 5×/hét',weeks:6,days:5,wd:[0,1,2,3,4],min:58,runs:2,use:'Ebből fut a mostani terved',mus:['chest-mid','back-wide','quad','shoulder-side']},{n:'Upper / Lower · alap',split:'Upper / Lower · 4×/hét',weeks:7,days:4,wd:[0,1,3,4],min:65,runs:1,use:'1 futam indult belőle',mus:['back-mid','chest-upper','quad','ham']},{n:'Full body · utazós',split:'Full body · 3×/hét',weeks:4,days:3,wd:[0,2,4],min:42,runs:0,use:'Még nem indítottál belőle',mus:['quad','back-wide','chest-mid']}];
 /* A hét EGYETLEN számsora (Terhelés = Gym · heti munka = térkép = mozgás), a DAYS napjaiból összeadva: [színkulcs, név, kész szett, tervezett szett, a terv sok ide].
    Élő forrás: weekZoneRows → loadGroups / loadWeekTotals (logic/loadWeek.ts). Kész = hétfő + kedd + szerda (16 + 12 + 17), terv = az öt edzésnap (75). */
 const GR=[['quad','Láb',29,31,1],['chest-mid','Mell',7,13],['shoulder-side','Váll',6,12],['triceps-medial','Kar',3,9],['back-wide','Hát',0,10]];
@@ -133,7 +135,7 @@ const LD_DONE=GR.reduce((s,g)=>s+g[2],0),LD_PLAN=GR.reduce((s,g)=>s+g[3],0);
 const SPL={'shoulder-front':[['Röpi',3,3]],'shoulder-side':[['Röpi',2,3]],quad:[['Röpi',2,3],['Futás',3,2]],ham:[['Futás',3,2]],calf:[['Röpi',2,3],['Futás',2,2]],core:[['Röpi',1,3]]};
 /* a heti rend sport- és futás-eseményei (Minden mozgásod): [címke, név, nap, idő, [[régió-kulcs, név, erősség]]] */
 const EVENTS=[['RÖPI','Röplabda','Kedd','18:00',[['shoulder-front','Váll',3],['quad','Láb',2],['core','Core',1]]],['FUTÁS','Sprint-intervallum','Szerda','18:00',[['quad','Láb',3]]],['RÖPI','Röplabda','Csütörtök','18:00',[['shoulder-front','Váll',3],['quad','Láb',2],['core','Core',1]]],['FUTÁS','Piramis-intervallum','Péntek','17:30',[['quad','Láb',2]]],['RÖPI','Röplabda','Szombat','10:00',[['shoulder-front','Váll',3],['quad','Láb',2],['core','Core',1]]]];
-const GY=[['Fekvenyomás','chest-mid',140,4],['Döntött törzsű evezés','back-mid',140,5],['Húzódzkodás (súlyozott)','back-wide',98,3],['Vállból nyomás','shoulder-front',72,1],['Oldalemelés','shoulder-side',null],['Kalapácsbicepsz','biceps-brachialis',26,1],['Guggolás','quad',150,2],['Román felhúzás','ham',155,0]];
+const GY=[['Fekvenyomás','chest-mid',101.3],['Döntött törzsű evezés','back-mid',98.2],['Húzódzkodás (súlyozott)','back-wide',12.7],['Guggolás','quad',144],['Román felhúzás','ham',133.3],['Lábtolás','quad',252],['Vállból nyomás','shoulder-front',57],['Vállemelés','traps',45],['Tricepsz letolás','triceps-medial',37.8],['Kalapácsbicepsz','biceps-brachialis',22.4],['Oldalemelés','shoulder-side',null],['Face Pull','shoulder-rear',null]];
 /* a tíz sport + a futás csempéje: [ikon, név, szokásos perc, mezők]. Mezők (logic/sports.ts): n = lépegető [kulcs, címke, egység, érték, lépés, csak ebben a módban],
    r = csúszka (RPE 1–10), c = pöttyök [kulcs, címke, lehetőségek, kijelölt], m = mód-váltó [[id, címke]], t = szöveg [címke, példa] */
 const RPE=v=>['r','Megélt terhelés (RPE)',v],MIN=v=>['n','minutes','Időtartam','perc',v,5],TM=['m',[['training','Edzés'],['match','Meccs']]];
@@ -646,257 +648,466 @@ function futasterv(arg){
   ${sesCard('sprint','Sprint-intervallum',R.sprint,ls(stv('kör',R.sprint.rounds,'rbr'),stv('mp pihenő',R.sprint.rest,'rbrest')),ivSprint(R.sprint.rounds,R.sprint.rest),3)}
   ${sesCard('pyr','Piramis-intervallum',R.pyr,`<div class="fh-chips">${R.pyr.work.map((v,i)=>`<span class="tx"><button data-ve="rbpc:${i}" aria-label="${v} mp szakasz váltása">${v} mp</button><button data-ve="rbpx:${i}" aria-label="${v} mp szakasz törlése">×</button></span>`).join('')}<span class="tx add"><button data-ve="rbpa">＋ szakasz</button></span></div>`+note('pihenő = szakasz × 2 · automatikus'),ivPyr(R.pyr.work),4)}`)}
 
+/* ── TERV · GYAKORLATOK közös adatai (F3 parity + reality kör) — minden szám mellett ott az élő forrása ── */
+const TL={maintain:'Tartás',grow:'Építés',emphasize:'Hangsúly'},TLK={maintain:'q',grow:'plan',emphasize:'ok'};
+/* izmonként: fókusz (meso.musclePriorities → tierOf) · a hat hét tervezett szettje (useMesocycleVolumeArc → muscles[].weeks[].planned) ·
+   held = a múlt héten megakadt (volumeRecompute.changes 'tartás') · adj = profile.source.adjustments · base = profile.source.baseline */
+const MW={'back-wide':{t:'emphasize',s:[6,8,10,12,14,5]},'shoulder-side':{t:'emphasize',s:[8,10,12,14,16,6],base:[8,12,18],adj:[['A röplabda a vállat is terheli','a felső érték 2-vel lejjebb']]},quad:{t:'grow',s:[11,12,13,14,14,7]},ham:{t:'grow',s:[7,9,9,9,11,5],held:1},'chest-mid':{t:'grow',s:[11,12,13,13,13,7]},'triceps-medial':{t:'maintain',s:[6,6,6,6,6,3]},calf:{t:'maintain',s:[6,6,6,6,6,3]},glute:{t:'maintain',s:[3,3,3,3,3,2]},'biceps-brachialis':{t:'maintain',s:[3,3,3,3,3,2]}};
+/* egy sor izomcsoport → a hozzá tartozó izomkulcsok (budgetGroup) */
+const GK={'back-wide':['back-wide','back-mid','traps'],'shoulder-side':['shoulder-front','shoulder-side','shoulder-rear'],quad:['quad'],ham:['ham'],'chest-mid':['chest-mid','chest-upper'],'triceps-medial':['triceps-medial','triceps-long'],calf:['calf'],glute:['glute'],'biceps-brachialis':['biceps-brachialis']};
+/* az előző lezárt terv ugyanerre az izomra (previousBlock: start → peak) */
+const PREVB={'back-wide':[6,12],'shoulder-side':[8,14],quad:[10,14],ham:[6,11],'chest-mid':[10,14],'triceps-medial':[6,8],calf:[6,6]};
+const tileOf=m=>{const [n,k,s,mev,mav,mrv]=m,w=MW[k],ceil=w.t==='emphasize'?mrv:w.t==='grow'?mav:mev,room=ceil-s,step=w.held||w.t==='maintain'?0:Math.max(0,Math.min(2,room)),tone=w.t==='maintain'?'mut':(w.held||room<=0)?'gold':'sage';
+  return {n,k,s,mev,mav,mrv,tier:w.t,ceil,room,step,tone,held:w.held,ser:w.s,adj:w.adj||[],base:w.base||[mev,mav,mrv]}};
+const TILES=()=>WMUS.map(tileOf);
+const tVerdict=t=>t.tier==='maintain'?'Ezt most szinten tartod.':t.tone==='gold'&&t.room>0?'Most szinten tartod — múlt héten nehezen ment.':t.room>0?`Még ${t.room} szett fér bele.`:'Elérte a felső értéket ebben a tervben.';
+const rollChips=()=>[...TILES()].sort((a,b)=>b.ceil-a.ceil).map(t=>({tx:t.step>0?`${t.n} +${t.step}`:`${t.n} tart`,up:t.step>0,k:t.k}));
+const WSETS=MESO.curve.map((_,i)=>WMUS.reduce((s,m)=>s+MW[m[1]].s[i],0));
+const curveOf=w=>{const r=Math.max(1,w-1),m=r>=4?2:1;return [...Array.from({length:r},(_,i)=>i===r-1?'MRV':i<m?'MEV':'MAV'),'Deload']};
+const whereWorks=k=>DAYS.filter(d=>d.ex).map(d=>({d,sets:d.mus.filter(([mk])=>GK[k].includes(mk)).reduce((s,x)=>s+x[1],0),ex:d.ex.filter(e=>GK[k].includes(e[1]))})).filter(x=>x.sets>0);
+/* a tervezett (még nem indult) terv hete — a terv saját oldalának „Tervezett” arcához */
+const PDAYS=[
+ {id:'p1',d:'Hét',full:'Hétfő',t:'Upper A',sets:15,min:60,mus:[['chest-mid',4],['back-mid',4],['shoulder-side',3],['biceps-brachialis',2],['triceps-medial',2]],ex:[['Fekvenyomás','chest-mid',4,'4–6',2,3,85],['Döntött törzsű evezés','back-mid',4,'5–7',2,2,75],['Oldalemelés','shoulder-side',3,'10–12',1,1,10],['Kalapácsbicepsz','biceps-brachialis',2,'8–10',1,1,16],['Tricepsz letolás','triceps-medial',2,'8–10',1,1,27]]},
+ {id:'p2',d:'Kedd',full:'Kedd',t:'Lower A',sets:13,min:55,mus:[['quad',4],['ham',4],['glute',3],['calf',2]],ex:[['Guggolás','quad',4,'4–6',2,3,125],['Román felhúzás','ham',4,'5–7',2,2,105],['Csípőemelés','glute',3,'6–8',1,1,115],['Álló vádliemelés','calf',2,'10–12',1,1,60]]},
+ {id:'p3',d:'Sze',full:'Szerda',t:'Pihenőnap',rest:true},
+ {id:'p4',d:'Csü',full:'Csütörtök',t:'Upper B',sets:14,min:56,mus:[['back-wide',4],['chest-upper',4],['shoulder-rear',3],['biceps-brachialis',3]],ex:[['Húzódzkodás (súlyozott)','back-wide',4,'4–6',2,3,15],['Ferde kézisúlyzós nyomás','chest-upper',4,'6–8',2,2,32],['Rear Delt Fly','shoulder-rear',3,'10–12',1,1,12.5],['Kalapácsbicepsz','biceps-brachialis',3,'8–10',1,1,16]]},
+ {id:'p5',d:'Pén',full:'Péntek',t:'Lower B',sets:12,min:50,mus:[['quad',4],['ham',3],['glute',3],['calf',2]],ex:[['Lábtolás','quad',4,'6–8',2,2,190],['Lábhajlítás','ham',3,'8–10',1,1,47.5],['Csípőemelés','glute',3,'6–8',1,1,115],['Álló vádliemelés','calf',2,'10–12',1,1,60]]},
+ {id:'p6',d:'Szo',full:'Szombat',t:'Röplabda · meccs',sport:true},{id:'p7',d:'Vas',full:'Vasárnap',t:'Pihenőnap',rest:true}];
+const DAYX=id=>[...DAYS,...PDAYS].find(x=>x.id===id);
+/* a rövid magyarázó lapok szövege (az élő InfoButton-ok) */
+const TINFO={nyolc:['Mit terhel ez a nap','Miért nyolcnál a jelölés?','Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés, hogy lásd, hol jársz.'],
+  mikor:['A nap gyakorlatai','Mikortól él a változtatás?','Amit itt átírsz, a következő edzésedtől számít. A most futó edzésedet nem írja át — azt végigviszed úgy, ahogy elkezdted.'],
+  jel:['Hol tartasz','Mit jelentenek a jelölések?','Az alsó jelölés alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg.'],
+  rekord:['Rekordjaid','Mi számít rekordnak?','A legjobb szett a legnagyobb súly a hozzá tartozó ismétléssel. A becsült maximum egy képletből jön a szettjeidből — becslés, nem mérés. A volumen egy alkalom összes megmozgatott súlya.'],
+  iv:['Az erőd íve','Mit mutat a vonal?','A becsült egyismétléses maximumod alakulása alkalomról alkalomra. Ahol hosszabb szünetet tartottál, ott a vonal megszakad. Becslés, nem mérés.'],
+  olvasd:['Izmonként','Hogyan olvasd?','Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét.'],
+  szam:['Heti szettek izmonként','Mit jelent a szám?','Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet.']};
+const info=(l,k)=>lk(l,{sheet:'tinfo',arg:k});
+const ghost=(T0,icon,msg,a='')=>page('edzes',T0,card(emptyTank(icon,msg,a)));
+
 /* ── MEDÁLOK · GYAKORLATOK ── */
-function medals(arg){
-  if(arg==='ures')return page('edzes',{title:'Medálok',sub:'Gyakorlatok',back:'exercises'},`${hero({lbl:'Medálok',verdict:'Még nincs medálod.',sub:'Az első megdöntött rekord ide kerül.',body:emptyTank('t-record','Itt gyűlnek majd a rekordjaid, dátum szerint.')})}`);
-  const G=[['Szept 24.',[['r','Húzódzkodás (súlyozott)','Súly-rekord','12,5 kg','előző: 10 kg · szept 17. óta állt',80],['r','Döntött törzsű evezés','Rep-rekord','10 @ 72,5','előző: 9 · szept 10. óta állt',90],['c','Vállemelés','Cél teljesítve','30 × 15','3 célszett']]],['Szept 17.',[['r','Döntött törzsű evezés','1RM-rekord','96,7 kg','előző: 94,0 kg · szept 3. óta állt',97],['r','Kalapácsbicepsz','Súly-rekord','16 kg','előző: 14 kg · jún 22. óta állt',87]]]];
-  return page('edzes',{title:'Medálok',sub:'Gyakorlatok',back:'exercises'},`
-  ${hero({lbl:'Medálok',verdict:'14 medál, ebből 5 e hónapban.',sub:'A medálok visszamenőleg, a korábban logolt szetteid alapján épültek fel — nem mindegyiket élőben szerezted.',
-    body:`<div class="vs-shelf" aria-hidden="true">${Array.from({length:14},(_,i)=>`<i class="${i>=9?'new':''}"></i>`).join('')}</div><div class="vs-lg"><span><i class="a"></i><b>5</b> e hónapban</span><span><i class="g2"></i><b>9</b> korábbról</span></div>`})}
-  ${G.map(([d,rows],gi)=>sec(gi+1,d,gi+1)+card(ls(rows.map(([t,n,l,v,p,w])=>rw({left:t==='c'?rcap(null,'var(--ok)'):rcap(w),title:n,sub:`${l} · ${p}`,v,right:st(t==='c'?'cél':'rekord',t==='c'?'ok':'warn')})))+(gi?'':note('A kapszulán a vonal a régi rekord — a folyadék fölötte áll. A zöld kapszula teljesített cél.')),{i:gi+1})).join('')}`)}
-const RMX=155;
-function exercises(){
-  return page('edzes',{title:'Gyakorlatok',sub:'A mozdulataid',tab:'exercises'},`
-  ${hero({lbl:'A mozdulataid',verdict:'42 gyakorlat, 18 rekorddal.',sub:'Minden gyakorlat egy helyen — a rekordjaiddal, a technikával és a múltjával.',left:fill(SH_KETTLE,{p:43,s:84,inner:'<path d="M40 30 C40 21 60 21 60 30Z" fill="#fff" stroke="rgba(10,42,60,.10)" stroke-width="1.6"/>'}),acts:btn('14 medál','medals')+lk('+ Új gyakorlat',{toast:'Új gyakorlat lap'})})}
+/* useMedals(): [nap, szint r=rekord c=cél, gyakorlat, típus, érték, előző érték, előző dátum, régi/új %] */
+const MEDALS=[['szept 23., szerda','r','Guggolás','Súly-rekord','120 kg × 6','117,5 kg','szept 16.',98],['szept 23., szerda','r','Román felhúzás','Rep-rekord','100 kg × 10','9 rep','szept 9.',90],
+ ['szept 21., hétfő','r','Fekvenyomás','1RM-rekord','101,3 kg','98,2 kg','jún 18.',97],['szept 17., csütörtök','c','Vállemelés','Cél teljesítve','30 kg × 15'],
+ ['aug 28., péntek','r','Döntött törzsű evezés','Súly-rekord','77,5 kg × 8','75 kg','aug 13.',97],['aug 28., péntek','r','Döntött törzsű evezés','1RM-rekord','98,2 kg','96,7 kg','aug 13.',98],['aug 28., péntek','r','Kalapácsbicepsz','Súly-rekord','16 kg × 12','14 kg','jún 22.',88],
+ ['aug 13., csütörtök','r','Húzódzkodás (súlyozott)','Súly-rekord','10 kg × 8','7,5 kg','júl 9.',75],['aug 13., csütörtök','r','Döntött törzsű evezés','Volumen-rekord','2 175 kg','2 050 kg','júl 23.',94],
+ ['júl 9., csütörtök','r','Fekvenyomás','Súly-rekord','80 kg × 6','77,5 kg','jún 18.',97],['júl 9., csütörtök','r','Guggolás','1RM-rekord','139,2 kg','135 kg','jún 11.',97],['júl 9., csütörtök','r','Húzódzkodás (súlyozott)','Rep-rekord','7,5 kg × 9','8 rep','jún 25.',89],
+ ['jún 18., csütörtök','r','Fekvenyomás','Rep-rekord','77,5 kg × 8','7 rep','jún 4.',88],['jún 18., csütörtök','r','Döntött törzsű evezés','Rep-rekord','72,5 kg × 10','9 rep','jún 4.',90]];
+const medalRow=(m,withName=true)=>rw({left:m[1]==='c'?rcap(null,'var(--ok)'):rcap(m[7]),title:`${withName?m[2]:m[3]} ${st(m[1]==='c'?'CÉL':'REKORD',m[1]==='c'?'ok':'warn')}`,sub:(withName?m[3]:m[0].split(',')[0])+(m[5]?`<br>Előző: ${m[5]} · ${m[6]} óta állt`:''),v:m[4]});
+function medals(arg){const T0={title:'Medálok',sub:'Edzés',back:'exercises'};
+  if(arg==='tolt')return skel(T0,[230,64,150,150]);
+  if(arg==='ures')return page('edzes',T0,`${hero({lbl:'Medálok',verdict:'Még nincs medálod.',sub:'Az első megdöntött rekord ide kerül.',body:emptyTank('t-record','Még nincs medálod — az első megdöntött rekord ide kerül.')})}`);
+  const mon=MEDALS.filter(m=>m[0].startsWith('szept')).length,grp=list=>[...new Set(list.map(m=>m[0]))].map(d=>lab(d)+ls(list.filter(m=>m[0]===d).map(m=>medalRow(m)))).join('');
+  return page('edzes',T0,`
+  ${hero({lbl:'Medálok',verdict:`${MEDALS.length} medál, ebből ${mon} e hónapban.`,sub:'A medálok visszamenőleg, a korábban logolt szetteid alapján épültek fel — nem mindegyiket élőben szerezted.',
+    body:`<div class="vs-shelf" aria-hidden="true">${MEDALS.map((_,i)=>`<i class="${i<mon?'new':''}"></i>`).join('')}</div><div class="vs-lg"><span><i class="a"></i><b>${mon}</b> e hónapban</span><span><i class="g2"></i><b>${MEDALS.length-mon}</b> korábbról</span></div><div class="fh-chips"><span class="ic">${bub('t-record',{s:28})}${MEDALS.length} medál</span></div>`})}
+  ${sec(1,'E hónapban',1)}
+  ${card(grp(MEDALS.filter(m=>m[0].startsWith('szept')))+note('A kapszulán a vonal a régi rekord — a folyadék fölötte áll. A zöld kapszula teljesített cél.'),{i:1})}
+  ${sec(2,'Korábbról',2)}
+  ${card(grp(MEDALS.filter(m=>!m[0].startsWith('szept'))),{i:2})}`)}
+/* useTrain().exerciseLibrary + exerciseRecords: [név, izom, legjobb becsült 1RM] — a medálszám a MEDALS-ból jön (buildLibraryRows) */
+const GYM=n=>MEDALS.filter(m=>m[2]===n).length;
+const GYL=()=>GY.filter(([n,k])=>(!ST.gy.f||regionOf(k)===ST.gy.f)&&(!ST.gy.q||(n+' '+muscleLabel(k)).toLowerCase().includes(ST.gy.q.toLowerCase())));
+const gyList=()=>{const a=GYL(),mx=Math.max(...GY.map(g=>g[2]||0));return a.length?ls(a.map(([n,k,rm])=>{const m=GYM(n);return rw({m:k,title:n,sub:`${muscleLabel(k)}${rm?` · becsült 1RM${m?` · ${m} medál`:''}`:' · még nincs naplózva'}${rm?`<span class="vs-rowbar">${lv(rm/mx*100,dk(k),10)}</span>`:''}`,v:rm?`${kg(rm)} kg`:null,on:n==='Döntött törzsű evezés'?'exercise':rm?'exercise.kozos':'exercise.uj'})})):`<p class="fh-note" style="margin:0">Nincs ilyen gyakorlat a tárban.</p>`};
+function exercises(arg){const T0={title:'Gyakorlatok',sub:'A mozdulataid',tab:'exercises'};
+  if(arg==='tolt')return skel(T0,[210,110,64,64,64,64]);
+  if(!ST.gy||arg!=='szurt')ST.gy={q:arg==='nincs-talalat'?'kettlebell swing':'',f:null};
+  const logged=GY.filter(g=>g[2]).length;
+  return page('edzes',T0,`
+  ${hero({lbl:'A mozdulataid',verdict:`${GY.length} gyakorlat, ${logged} rekorddal.`,sub:'Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.',left:fill(SH_KETTLE,{p:logged/GY.length*100,s:84,inner:'<path d="M40 30 C40 21 60 21 60 30Z" fill="#fff" stroke="rgba(10,42,60,.10)" stroke-width="1.6"/>'}),acts:btn(`${MEDALS.length} medál`,'medals')+lk('＋ Új gyakorlat',{sheet:'cat',arg:'uj'})})}
   ${sec(1,'Keresés és szűrés',1)}
-  ${card(`<div class="fh-in vs-fld ph" data-toast="Keresés">Keresés névre vagy izomra…</div><div style="margin-top:12px">${chips(['Mind','Mell','Hát','Váll','Kar','Láb','Core'],0)}</div>`,{i:1})}
-  ${sec(2,'Lista · a szint a becsült 1RM',2)}
-  ${card(ls(GY.map(([n,k,rm,m])=>rw({m:k,title:n,sub:`${muscleLabel(k)}${rm?(m?` · ${m} medál`:''):' · még nincs naplózva'}${rm?`<span class="vs-rowbar">${lv(rm/RMX*100,dk(k),10)}</span>`:''}`,v:rm?`${rm} kg <small>1RM</small>`:null,on:'exercise'})))+note('A kettlebell a főkártyán annyira van tele, ahány gyakorlatodnak már van rekordja: 18 a 42-ből.'),{i:2})}`)}
-function exercise(){
-  const sim=LIB.filter(x=>x[1]==='back-mid').slice(0,3),c=dk('back-mid');
-  return page('edzes',{title:'Döntött törzsű evezés',sub:'Hát (közép) · saját',back:'exercises'},`
-  ${hero({lbl:'Következő cél',verdict:'77,5 kg × 8 — a legjobb szetted, most RIR 2-vel.',sub:'24 alkalom · márc 4. óta · 12,4 t összsúly',left:mchp('back-mid'),
-    body:`<div class="vs-hg ar">${areaM([80,83,86,84,89,92,94,96.7],{h:140,labels:['márc','máj','júl','szept'],target:99,min:76,max:101,c:muscleColor('back-mid'),c2:c},[[4,'89','pr'],[6,'94','pr'],[7,'96,7','now']])}</div>`+note('Az erőd íve: becsült 1RM, márc → szept. A cseppek a rekordok, a szaggatott vonal a következő cél.')})}
+  ${card(`<input class="fh-in" id="gy-q" type="search" value="${ST.gy.q}" placeholder="Keresés névre vagy izomra…" aria-label="Keresés a gyakorlatok között" autocomplete="off"><div class="fh-pills" style="margin-top:12px" role="group" aria-label="Izomcsoport-szűrő"><button class="fh-pill ${ST.gy.f?'':'on'}" data-ve="gyf:">Mind</button>${REGIONS.filter(r=>GY.some(g=>regionOf(g[1])===r.key)).map(r=>`<button class="fh-pill ${ST.gy.f===r.key?'on':''}" data-ve="gyf:${r.key}">${r.label}</button>`).join('')}</div>`,{i:1})}
+  ${sec(2,'Lista',2)}
+  ${card(`<div id="gy-list">${gyList()}</div>`+acts(lk('＋ Új gyakorlat',{sheet:'cat',arg:'uj'})),{i:2})}`)}
+/* egy gyakorlat: exerciseRecords[key] (e1rmSeries, bestE1rm, bestSet, bestSessionVolume, sessionCount, totalVolume) + medalsForExercise + whereUsed */
+const E1=[80,83,86,84,89,92,94,96.7,98.2,93.3];
+function exercise(arg){const k='back-mid',c=dk(k),T0={title:'Döntött törzsű evezés',sub:'Gyakorlatok',back:'exercises'};
+  if(arg==='tolt')return skel(T0,[260,78,78,78]);
+  if(arg==='nincs')return ghost({...T0,title:'Gyakorlat'},'t-other','Ez a gyakorlat nincs a tárban.');
+  const none=arg==='uj',ro=arg==='kozos',one=arg==='egy',nm=none?'Face Pull':ro?'Fekvenyomás':'Döntött törzsű evezés',mk=none?'shoulder-rear':ro?'chest-mid':k,my=none?[]:MEDALS.filter(m=>m[2]===nm);
+  const manage=ro?'':`${sec(4,'Gyakorlat kezelése',4)}${card(ls(rw({icon:'t-note',title:'Szerkesztés',sub:'Név, izom, típus — és a törlés',on:{sheet:'cat',arg:'szerk'}}),rw({icon:'t-camera',title:'Demó videó',sub:none?'Még nincs videó — tegyél fel egyet':'Csere vagy eltávolítás',on:{sheet:'video',arg:none?'':'van'}})),{i:4})}`;
+  const used=none?`<p class="fh-note" style="margin:0">Ez a gyakorlat most egyetlen tervedben és sablonodban sem szerepel.</p>`:ls(rw({icon:'t-peak',title:ro?'Push':'Pull',sub:`A futó tervedben · ${ro?'Hét':'Csü'}`,on:ro?'nap.het':'nap.csu'}),rw({icon:'t-stack',title:'Upper / Lower · alap',sub:'Sablon a polcodon',on:'sablon'}));
+  const med=`${sec(none?1:2,'Medáljaid',2)}${card(my.length?ls(my.map(m=>medalRow(m,false))):`<p class="fh-note" style="margin:0">Ezen a gyakorlaton még nincs medálod.</p>`,{i:2})}${sec(none?2:3,'Hol szerepel',3)}${card(used,{i:3})}`;
+  if(none)return page('edzes',{...T0,title:nm},`${hero({lbl:`${muscleLabel(mk)} · Saját`,verdict:'Ezzel a gyakorlattal még nincs naplózott alkalmad.',sub:'Az első edzés után itt gyűlnek a rekordjaid.',left:mchp(mk),body:emptyTank('t-ring','Ehhez a gyakorlathoz még nincs becsülhető maximumod — az ív az első terhelt szettjeid után rajzolódik ki.')})}${med}${manage.replace(/>4</,'>3<')}`);
+  const best=ro?101.3:98.2,last=ro?101.3:93.3,ser=ro?[88,90,93,95,96,98.2,99,101.3]:E1;
+  return page('edzes',{...T0,title:nm},`
+  ${hero({lbl:`${muscleLabel(mk)} · ${ro?'Közös · Bence':'Saját'}`,verdict:ro?'Következő cél: 80 kg × 9.':'Következő cél: 77,5 kg × 9.',sub:`Ugyanaz a súly, egy ismétléssel több. · ${ro?'31 alkalom · febr 12. óta · 19,8 t összsúly':'24 alkalom · márc 4. óta · 12,4 t összsúly'}`,left:mchp(mk),
+    body:one?`<p class="fh-note">Egyetlen becslésed van eddig (márc 4. · 80 kg) — a vonal a másodiktól kezd ívelni.</p>`:`<p class="fh-big" style="margin-top:14px">${kg(last)}<small>kg most</small></p><div class="vs-hg ar">${areaM(ser,{h:140,labels:ro?['febr','ápr','júl','szept']:['márc','máj','júl','szept'],min:Math.min(...ser)-4,max:best+4,c:muscleColor(mk),c2:dk(mk)},ro?[[ser.length-1,kg(last),'now']]:[[8,'98,2','pr'],[ser.length-1,kg(last),'now']])}</div><div class="vs-ft"><span>ami eddig megtörtént · ${ro?'febr 12.':'márc 4.'} óta</span><span>becslés, nem mérés</span></div>`,
+    acts:info('Mit mutat a vonal?','iv')})}
   ${sec(1,'Rekordjaid',1)}
-  ${card(ls(rw({icon:'t-ring',title:'Becsült 1RM',sub:'becslés, nem mérés · márc 4. óta emelkedik',v:'96,7 kg',right:lv(97,c)}),rw({icon:'t-weight',title:'Legjobb szett',sub:'aug 28.',v:'77,5×8',right:lv(88,c)}),rw({icon:'t-protocol',title:'Legtöbb volumen',sub:'szept 24. a csúcs · 12,4 t összesen',v:'2 175 kg',right:lv(100,c)}))+acts(lk('Mi ez?',{toast:'A rekordok magyarázata'})),{i:1})}
-  ${sec(2,'Technika és alternatívák',2)}
-  ${card(ls(rw({icon:'t-book',title:'Beállás · Végrehajtás · Gyakori hibák',sub:'a mozdulat három lépésben',on:{sheet:'tech',arg:'1'}}),rw({icon:'t-camera',title:'Demó videó',on:{toast:'Demó videó'}}),
-    sim.map(([n,k,t,last])=>rw({m:k,title:n,sub:`ugyanarra az izomra · ${t==='compound'?'összetett':'izolált'}${last?` · múltkor ${last}`:' · még nem csináltad'}`,on:{toast:`${n} — csere az edzés közben a ⋮ menüből`}}))),{i:2})}
-  ${sec(3,'Medáljaid',3)}
-  ${card(ls(rw({left:rcap(90),title:'Rep-rekord',sub:'szept 24.',v:'10 @ 72,5'}),rw({left:rcap(97),title:'1RM-rekord',sub:'szept 17.',v:'96,7 kg'})),{i:3})}
-  ${sec(4,'Hol szerepel · kezelés',4)}
-  ${card(ls(rw({icon:'t-peak',title:'A futó tervedben · csütörtök',on:'nap.csu'}),rw({icon:'t-stack',title:'Sablon a polcodon',on:'sablon'}),rw({icon:'t-note',title:'Szerkesztés',sub:'név, izom, típus — és a törlés',on:{toast:'Szerkesztés lap'}})),{i:4})}`)}
+  ${card(ls(rw({icon:'t-ring',title:'Becsült 1RM',sub:`${ro?'+3,1':'+1,5'} kg a korábbi csúcsod óta · Becslés, nem mérés<span class="vs-rowbar">${lv(last/best*100,dk(mk),10)}</span>`,v:`${kg(best)} kg`}),rw({icon:'t-weight',title:'Legjobb szett',sub:ro?'szept 21.':'aug 28.',v:ro?'80 kg × 8':'77,5 kg × 8'}),rw({icon:'t-protocol',title:'Legtöbb volumen',sub:ro?'szept 21. a csúcs · 19,8 t összesen':'aug 13. a csúcs · 12,4 t összesen',v:ro?'2 480 kg × rep':'2 175 kg × rep'}))+acts(info('Mi számít rekordnak?','rekord')),{i:1})}
+  ${med}${manage}`)}
 
 /* ── TERV ── */
-const kgTxt=v=>v===0?'saját testsúly':kg(v)+' kg';
+const kgTxt=v=>v===0?'saját testsúly':v==null?'—':kg(v);
 const repTxt=r=>r==='0'?'tartás':r;
-const dayState=d=>d.d==='Csü'?'ma':d.done?'megvolt':'jön';
+const dayState=d=>d.id===TODAY?'ma':d.done?'megvolt':'jön';
 const BACKSIDE=['ham','glute','calf','back-mid','back-wide','back-lower','traps','shoulder-rear'];
 const dayView=d=>d.mus.filter(([k])=>BACKSIDE.includes(k)).length>d.mus.length/2?'back':'front';
 const shortM=k=>{const m=/^(.*?) \((.*?)\)$/.exec(muscleLabel(k));return !m?muscleLabel(k):/fej$/.test(m[2])?m[1]:`${m[1]} ${m[2]}`};
 const dayBody=(d,cls='')=>bodyLiq(dayView(d),d.mus.map(([k,s])=>[k,d.done&&d.id!==TODAY?s/7:0,s/7]),cls);
-const PH_S={MEV:'emelkedés',MAV:'emelkedés',MRV:'csúcs',Deload:'pihenő'};
-/* a mesociklus hat hete hat edény: a múlt tele, a mostani félig, a jövő szaggatott vonal — a pihenőhéten leapad */
-function mesoTubes(vals,{now=MESO.week,nowDone=null,h=104,max}={}){const mx=max||Math.max(...vals);
-  return tubes(vals.map((s,i)=>{const past=i+1<now,cur=i+1===now,dl=MESO.curve[i]==='Deload';
-    return {l:`${i+1}. hét`,v:cur&&nowDone!=null?`${nowDone}<u>/${s}</u>`:s,s:cur?'most':dl?'pihenő':MESO.curve[i]==='MRV'?'csúcs':'',p:past?s/mx*94:cur?(nowDone!=null?nowDone:s)/mx*94:0,wl:past?null:s/mx*94,now:cur,ghost:!past&&!cur,hatch:dl,c:'var(--dom)',mark:MESO.curve[i]==='Deload'?'↓':MESO.curve[i]==='MRV'?'▲':'',t:`${i+1}. hét · ${s} szett · ${PHASE[MESO.curve[i]]}`}}),{h,cls:'wk',gap:6})}
-/* a nap kártyája: mit dolgoztat meg ez a nap (a test a fő rajz), három tény, és az izmok szettszámmal */
+/* a terv hetei edények: a múlt tele, a mostani félig, a jövő szaggatott vonal — a pihenőhéten leapad.
+   Számokkal a volume arc-ból (useMesocycleVolumeArc); plain = az első edzés előtt, amikor csak a terv íve (meso.phaseCurve) ismert */
+function mesoTubes(vals,{now=MESO.week,nowDone=null,h=104,max,plain=false,curve=MESO.curve}={}){const mx=max||Math.max(...vals),sh=vals.length>6;
+  return tubes(vals.map((s,i)=>{const past=i+1<now,cur=i+1===now,ph=curve[i],dl=ph==='Deload',pk=ph==='MRV',lvl=plain?PH_H[ph]*.94:s/mx*94;
+    return {l:sh?`${i+1}.`:`${i+1}. hét`,v:plain?null:cur&&nowDone!=null?`${nowDone}<u>/${s}</u>`:s,s:cur?'most':dl?'pihenő':pk?'csúcs':'',p:past?lvl:cur?(plain||nowDone==null?lvl:nowDone/mx*94):0,wl:past?null:lvl,now:cur,ghost:!past&&!cur,hatch:dl,c:'var(--dom)',mark:dl?'↓':pk?'▲':'',t:`${i+1}. hét${plain?'':` · ${s} szett`} · ${PHASE[ph]}`}}),{h,cls:'wk',gap:sh?4:6})}
+/* a nap kártyája (MesoDayCard): a test, három tény, az izmok szettszámmal. A megvolt nap számai a hét kész edzéseiből jönnek (useWeekMuscleLog → doneByDay) */
 function dayCard(d){
   if(d.rest||d.sport)return `<div class="vs-dc quiet">${bub(d.sport?'t-volley':'t-moon',{s:34})}<span class="g"><small>${d.full}</small><strong>${d.sport?'röplabda · meccs':'pihenőnap'}</strong></span></div>`;
-  if(ST.km&&!d.done&&d.id!=='pen'&&DAYS.indexOf(d)>=DAYS.findIndex(x=>x.id===TODAY)&&!(d.id===TODAY&&ST.km.released))return `<div class="vs-dc quiet">${bub('t-kimelo',{s:34})}<span class="g"><small>${d.full}${d.id===TODAY?' · ma':''}</small><strong>Kímélő mód · ${d.t} kimarad</strong></span></div>`;
-  const s=dayState(d),part=d.done&&d.done.sets<d.sets,done=s==='megvolt';
-  const f=done?[[part?`${d.done.sets}/${d.sets}`:d.done.sets,'szett'],[d.done.min,'perc'],[d.done.rec,'rekord']]:[[d.sets,'szett'],[s==='ma'?d.min:'~'+d.min,'perc'],[d.ex.length,'gyakorlat']];
-  return `<button class="vs-dc ${s==='ma'?'now':done?'done':'next'}" data-go="nap.${d.id}" aria-label="${d.full} · ${d.t}">
+  if(ST.km&&DAYS.includes(d)&&!d.done&&d.id!=='pen'&&DAYS.indexOf(d)>=DAYS.findIndex(x=>x.id===TODAY)&&!(d.id===TODAY&&ST.km.released))return `<div class="vs-dc quiet">${bub('t-kimelo',{s:34})}<span class="g"><small>${d.full}${d.id===TODAY?' · ma':''}</small><strong>Kímélő mód · ${d.t} kimarad</strong></span></div>`;
+  const s=DAYS.includes(d)?dayState(d):'jön',part=d.done&&d.done.sets<d.sets,done=s==='megvolt';
+  const f=done?[[part?`${d.done.sets}/${d.sets}`:d.done.sets,'szett'],[d.done.min??'–','perc'],[d.ex.length,'gyakorlat']]:[[d.sets,'szett'],[s==='ma'?d.min:'~'+d.min,'perc'],[d.ex.length,'gyakorlat']];
+  return `<button class="vs-dc ${s==='ma'?'now':done?'done':'next'}" data-go="nap.${d.id}" aria-label="${d.full} · ${d.t}${done?(part?' · részben megvolt':' · megvolt'):s==='ma'?' · ma':''}">
     <span class="vs-hd"><span class="g"><small>${d.full}</small><strong>${d.t}</strong></span>${done?st(part?'Részben':'Megvolt',part?'warn':'ok'):s==='ma'?st('Ma','plan'):st('Jön')}${chev()}</span>
     <span class="vs-ct">${dayBody(d)}<span class="vs-cl"><span class="f3">${f.map(([v,l])=>`<i><b>${v}</b><small>${l}</small></i>`).join('')}</span><span class="chs">${d.mus.map(([k,n])=>`<span>${mchp(k,'sm')}<b>${n}</b></span>`).join('')}</span></span></span></button>`}
-const dayCards=(i=1)=>`<div class="vs-dcs rise" style="--i:${i}">${DAYS.map(dayCard).join('')}</div>`;
+const dayCards=(i=1,days=DAYS)=>`<div class="vs-dcs rise" style="--i:${i}">${days.map(dayCard).join('')}</div>`;
 const NDAYS=()=>DAYS.filter(x=>!x.rest&&!x.sport).length;
-const demoT=()=>note(`Demó: <button class="fh-lk" data-go="terv.fut">futó terv</button> · <button class="fh-lk" data-go="terv.ures">még nincs terv</button> · <button class="fh-lk" data-go="terv.nincs">nem fut terv</button>`);
-function terv(arg){
-  if(arg==='ures'||arg==='nincs')ST.terv=arg;else if(arg==='fut')ST.terv='run';
-  if(ST.terv!=='run'){const e=ST.terv==='ures';return page('edzes',{title:'Terv',sub:e?'Még nincs terved':'Most nem fut terv',tab:'terv'},`
-    ${hero({lbl:'Terv',verdict:e?'Még nincs edzésterved.':'Most nem fut terv.',sub:e?'Itt fognak élni a terveid — egy terv megmondja, melyik nap mit edzel, és hétről hétre mennyit.':'A terveid az Edzéstervek mögött várnak, és bármikor indíthatsz egy újat.',
-      body:emptyTank('t-peak',e?'Állíts össze egyet — végigkérdezem, mi fér bele a hetedbe.':'Válassz a terveid közül, vagy csinálj újat.'),acts:btn('Új terv összeállítása','ujterv')})}
-    ${sec(1,'Amiből indíthatsz',1)}
-    ${card(ls(rw({icon:'t-stack',title:'Edzéstervek',sub:'amiből indíthatsz',on:'konyvtar'}),rw({icon:'t-run',title:'Futás',sub:'Robbanékonyság 01 · 3. hét / 8',on:'futas'}))+note('A Terv fülön az Edzéstervek mögött van minden: ami fut, ami következik, és amit lezártál.')+demoT(),{i:1})}`)}
-  const toDeload=MESO.curve.indexOf('Deload')+1-MESO.week,rest=toDeload===0?' — és ez a hét maga a pihenőhét':toDeload===1?' — a jövő hét már pihenőhét':` — ${toDeload} hét múlva jön a pihenőhét`,ph=MESO.curve[MESO.week-1];
-  return page('edzes',{title:'Terv',sub:`${MESO.week}. hét a ${MESO.of}-ból`,tab:'terv'},`
-  ${hero({lbl:`${MESO.name} · Tavasz · ${PHASE[ph]}`,verdict:`A ${MESO.of} hétből a ${MESO.week}. héten jársz.`,sub:`${WTOTAL} szett, ${NDAYS()} edzésnapra osztva${rest}.`,
-    body:`<div class="vs-hg">${mesoTubes(WEEK_SETS,{nowDone:LD_DONE})}</div><div class="vs-ft"><span>${MESO.from}</span><span>heti szettszám</span><span>${MESO.to}</span></div>`,acts:btn('A terv oldala','run')})}
+const closeRow=sub=>rw({icon:'t-coin',title:'Edzésterv lezárása',sub,on:{sheet:'close'}});
+function terv(arg){const T0={title:'Terv',sub:'Edzés',tab:'terv'};
+  if(arg==='tolt')return skel(T0,[330,170,170,120]);
+  if(arg==='ures'||arg==='nincs')ST.terv=arg;else if(arg==='fut'||arg==='elso')ST.terv='run';
+  if(ST.terv!=='run'){const e=ST.terv==='ures';return page('edzes',{...T0,sub:e?'Még nincs terved':'Most nem fut terv'},
+    hero({lbl:'Terv',verdict:e?'Még nincs edzésterved.':'Most nem fut terv.',sub:e?'Itt fognak élni a terveid.':'A terveid az Edzéstervek mögött várnak.',body:emptyTank('t-peak',e?'Még nincs edzésterved — itt fognak élni a terveid.':'Most nem fut terv — a terveid az Edzéstervek mögött várnak.'),acts:btn('Edzéstervek','konyvtar')}))}
+  const first=arg==='elso',toDeload=MESO.curve.indexOf('Deload')+1-MESO.week,rest=toDeload===0?' — és ez a hét maga a pihenőhét':toDeload===1?' — a jövő hét már pihenőhét':` — ${toDeload} hét múlva jön a pihenőhét`,ph=MESO.curve[MESO.week-1],up=rollChips().filter(c=>c.up).length;
+  return page('edzes',{...T0,sub:`${MESO.week}. hét a ${MESO.of}-ból`},`
+  ${hero({lbl:`${MESO.name} · ${PHASE[ph]}`,verdict:`A ${MESO.of} hétből a ${MESO.week}. héten jársz.`,sub:`${WTOTAL} szett, ${NDAYS()} edzésnapra osztva${rest}.`,
+    body:`<div class="vs-hg">${first?mesoTubes(WSETS,{plain:true}):mesoTubes(WSETS,{nowDone:LD_DONE})}</div><div class="vs-ft"><span>${MESO.from}</span><span>${first?'a terv íve':'heti szettszám'}</span><span>${MESO.to}</span></div>${first?note('A hetek szettszáma az első edzésed után jelenik meg — addig a terv íve látszik.'):''}`,acts:btn('A terv oldala',first?'run.elso':'run')})}
   ${sec(1,`A heted · ${NDAYS()} edzésnap`,1)}
-  ${dayCards(1)}<p class="fh-note vs-dn">Egy nap kártyája a nap saját oldalára visz. A testen az izom annyira telik, amennyi szettet aznap kap; a megvolt napokon sötétebb.</p>
+  ${dayCards(1)}
   ${sec(2,'Az izmaid',2)}
-  ${card(ls(rw({icon:'t-muscle',title:'Melyik izmod hol tart',sub:`${ROLL.length} izom kap többet hétfőtől`,on:'het'})),{i:2})}
+  ${card(ls(rw({icon:'t-muscle',title:'Melyik izmod hol tart',sub:up>0?`${up} izom kap többet hétfőtől`:'Hétfőtől minden izom tart',on:first?'het.elso':'het'})),{i:2})}
   ${sec(3,'Terveid',3)}
-  ${card(ls(rw({icon:'t-stack',title:'Edzéstervek',sub:'amiből indíthatsz',on:'konyvtar'}),rw({icon:'t-run',title:'Futás',sub:'Robbanékonyság 01 · 3. hét / 8',on:'futas'}),rw({icon:'t-coin',title:'Edzésterv lezárása',sub:`ha ezt a ${MESO.of} hetet végigcsináltad`,on:{sheet:'close'}}))+demoT(),{i:3})}`)}
-function run(){const ph=MESO.curve[MESO.week-1];
-  return page('edzes',{title:`${MESO.name} · Tavasz`,sub:`Aktív · ${MESO.week} / ${MESO.of}. hét · ${PHASE[ph]} · vége ${MESO.to}`,back:'terv'},`
-  ${hero({lbl:`A terv íve · ${MESO.split}`,verdict:'Az 5. hét a csúcs, a 6. a pihenőhét.',sub:'Akkor szándékosan kevesebbet kérek tőled.',
-    body:`<div class="vs-hg ar">${areaM(WEEK_SETS,{h:150,labels:WEEK_SETS.map((s,i)=>i===5?'6. hét':`${i+1}.`),min:20,max:92},[[MESO.week-1,'most · 75','now'],[4,'csúcs · 84','pr']])}</div>`+tags([['t-play','Aktív'],['t-calendar',`${MESO.week} / ${MESO.of}. hét`],['t-up',PHASE[ph]],['t-clock',`vége ${MESO.to}`]])+note('A felszín a heti szettszám: emelkedik, az 5. héten tetőzik, a 6.-on leapad.'),acts:btn('Heti vizsgálat','het')})}
+  ${card(ls(rw({icon:'t-stack',title:'Edzéstervek',sub:'Amiből indíthatsz',on:'konyvtar'}),closeRow(`Ha ezt a ${MESO.of} hetet végigcsináltad`)),{i:3})}`)}
+/* a terv saját oldala (MesocycleBuilderPage): aktív · tervezett · nem található */
+function run(arg){const ph=MESO.curve[MESO.week-1],pkW=MESO.curve.indexOf('MRV')+1,dlW=MESO.curve.indexOf('Deload')+1;
+  if(arg==='nincs')return ghost({title:'Edzésterv',sub:'Terv',back:'terv'},'t-other','Ez az edzésterv nem található.',btn('Edzéstervek','konyvtar','sm'));
+  if(arg==='tervezett'){const r=RUNS[1],cv=curveOf(r.weeks);return page('edzes',{title:r.n,sub:`Tervezett · ${r.weeks} hét · indul ${r.from}`,back:'konyvtar'},`
+    ${hero({lbl:`Tervezett terv · ${r.split}`,verdict:'Ez a terv még nem indult el.',sub:`${r.from} indul, és ${r.weeks} hétig tart: az utolsó előtti hét a csúcs, az utolsó a pihenőhét.`,body:`<div class="vs-hg">${mesoTubes(cv.map(()=>0),{now:0,plain:true,curve:cv,h:92})}</div><div class="vs-ft"><span>${r.from}</span><span>a terv íve</span><span>${r.to}</span></div>`,acts:ve(`Aktiválás · ${r.from}`,'activate')})}
+    ${sec(1,'A heted · koppints egy napra a szerkesztéshez',1)}
+    ${dayCards(1,PDAYS)}`)}
+  const first=arg==='elso',T=TILES(),bands=[...T].sort((a,b)=>b.ceil-a.ceil),ramp=T.filter(t=>t.tier!=='maintain'&&t.s<t.ceil).length,chipsR=rollChips(),held=T.find(t=>t.held);
+  return page('edzes',{title:MESO.name,sub:`Aktív · ${MESO.week}/${MESO.of} hét · ${PHASE[ph]} · vége ${MESO.to}`,back:'terv'},`
+  ${hero({lbl:`A terv íve · ${MESO.split}`,verdict:`Az ${pkW}. hét a csúcs, a ${dlW}. a pihenőhét.`,sub:first?`Most a ${MESO.week}. héten jársz.`:`Most a ${MESO.week}. héten jársz: ${WTOTAL} szett.`,
+    body:first?`<div class="vs-hg">${mesoTubes(WSETS,{plain:true})}</div>${note('A hetek szettszáma az első edzésed után jelenik meg — addig a terv íve látszik.')}`
+      :`<div class="vs-hg ar">${areaM(WSETS,{h:150,labels:WSETS.map((s,i)=>i===WSETS.length-1?`${i+1}. hét`:`${i+1}.`),min:20,max:Math.max(...WSETS)+8},[[MESO.week-1,`most · ${WTOTAL}`,'now'],[pkW-1,`csúcs · ${WSETS[pkW-1]}`,'pr']])}</div>`,acts:btn('Heti vizsgálat',first?'het.elso':'het')})}
   ${sec(1,'Mezo jegyzete',1)}
-  ${card(msg('mezo','„A hátad bírta a múlt heti emelést, ezért kapott még két szettet. A vállad marad, amíg a jobb oldali nyilallás el nem múlik.”'),{i:1})}
+  ${card(msg('mezo',`A ${held.n.toLowerCase()} a múlt héten nehezen ment, ezért most tartjuk a ${held.s} szettet — az emelés folytatódik, amint visszaáll a tempó.`),{i:1})}
   ${sec(2,'Hol tartasz',2)}
-  ${card(ls(rw({icon:'t-muscle',title:'Heti vizsgálat',sub:'melyik izmod hol tart',right:`<span class="vs-mini">${WMUS.slice(0,7).map(m=>`<i style="--c:${dk(m[1])}"><b style="height:${clamp(m[2]/m[5]*100,14,100)}%"></b></i>`).join('')}</span>`,on:'het'}),
-    rw({icon:'t-calendar',title:'Hétfőn jön · előrejelzés',sub:'nem kell rákattintani'}))+`<div class="fh-chips">${ROLL.map(n=>{const m=WMUS.find(x=>x[0]===n);return `<span>${mchp(m[1],'sm')}${n} +2 szett</span>`}).join('')}</div>`,{i:2})}
-  ${sec(3,`A heted · ${NDAYS()} edzésnap`,3)}
+  ${card(ls(rw({icon:'t-muscle',title:'Heti vizsgálat',sub:`${WTOTAL} szett · ${ramp} emelkedik · ${T.length-ramp} tart`,right:`<span class="vs-mini">${bands.slice(0,5).map(t=>`<i style="--c:${dk(t.k)}"><b style="height:${clamp(t.s/bands[0].ceil*100,15,100)}%"></b></i>`).join('')}</span>`,on:first?'het.elso':'het'}),
+    rw({icon:'t-calendar',title:'Hétfőn jön',sub:'A heti váltás hajnalban magától lefut.'}))+`<div class="fh-chips">${chipsR.slice(0,5).map(c=>`<span>${mchp(c.k,'sm')}${c.up?`<b>${c.tx}</b>`:c.tx}</span>`).join('')}${chipsR.length>5?`<span class="tx">+${chipsR.length-5}</span>`:''}</div>`,{i:2})}
+  ${sec(3,'A heted · koppints egy napra a szerkesztéshez',3)}
   ${dayCards(3)}
   ${sec(4,'Lezárás',4)}
-  ${card(ls(rw({icon:'t-coin',title:'Edzésterv lezárása',sub:'lezárás után riportot kapsz róla',on:{sheet:'close'}}))+note('A terv oldala állapot-első: mit mutat a terv most. A szerkesztés egy szinttel lejjebb, a napoknál van.'),{i:4})}`)}
-function nap(id){const d=DAYS.find(x=>x.id===id)||DAYS.find(x=>x.id===TODAY);
-  if(d.rest||d.sport)return page('edzes',{title:d.t,sub:d.full,back:'terv'},`
-    ${hero({lbl:d.full,verdict:d.sport?'Ezen a napon sportolsz, nem a terv szerint edzel.':'Ezen a napon nem kérek tőled semmit.',sub:d.sport?'A meccs a Mai fülön naplózható.':'A pihenés is a terv része.',art:d.sport?'t-volley':'t-moon',body:`<div class="vs-hg">${weekTubes('plan')}</div>`})}
-    ${card(`<p class="fh-note" style="margin:0">Egy hét a pihenőnapjaival együtt egész — ezért látszanak itt is.</p>`,{i:1})}`);
-  const share=Math.round(d.sets/WTOTAL*100);
-  return page('edzes',{title:d.t,sub:`Terv · ${d.full}`,back:'terv'},`
-  ${hero({lbl:d.full,verdict:`${d.sets} munkaszett, ${d.ex.length} gyakorlat.`,sub:`${d.min} perc · a heted ${share}%-a`,left:`<span class="vs-hb">${dayBody({...d,done:null},'')}<small>${dayView(d)==='back'?'hátulról':'elölről'}</small></span>`,
-    body:`<div class="vs-hg">${tubes(d.mus.map(([k,s])=>({m:k,l:shortM(k),v:s,s:'szett',p:s/Math.max(...d.mus.map(m=>m[1]))*90,c:dk(k),on:`izom.${(WMUS.find(m=>m[1]===k)||WMUS.find(m=>byKey[m[1]].region===byKey[k].region)||WMUS[0])[1]}`})),{h:92,cls:'sm',gap:6})}</div>`,acts:btn('A nap szerkesztése','napszerk')})}
-  ${sec(1,'A gyakorlatok · olvasható előírás',1)}
-  ${card(d.ex.map(([n,k,ws,rep,rir,wu,w,warn],i)=>`<div class="vs-ex"><div class="eh"><span class="ix">${i+1}</span>${mchp(k,'sm')}<strong>${n}</strong>${caps(ws,0,dk(k))}</div>
-      <div class="eg"><span><b class="t">${ws}×${repTxt(rep)}</b><small>szett × ism.</small></span><span><b>${rir}</b><small>RIR</small></span><span><b>${kgTxt(w)}</b><small>induló</small></span><span><b>${wu}</b><small>bemelegítő</small></span></div>${warn?`<span class="vs-warn">${warn}</span>`:''}</div>`).join('')
-    +acts(lk('+ Gyakorlat hozzáadása','napszerk')),{i:1})}
-  ${sec(2,'Szerkesztés',2)}
-  ${card(ls(rw({icon:'t-note',title:'A nap szerkesztése',sub:'sorrend, ismétlés-sáv, RIR, súly',on:'napszerk'}))+note('Ez az oldal csak olvas. Minden szerkesztés a nap saját szerkesztőjében történik.'),{i:2})}`)}
-const edRow=(n,k,ws,rep,rir,w)=>rw({left:`<span class="vs-grip">⠿</span>`,m:k,title:n,sub:`${ws} szett · ${repTxt(rep)} ism. · RIR ${rir} · ${kgTxt(w)}`,right:`<button class="vs-rb" data-toast="Sor műveletei" aria-label="Sor műveletei">⋮</button>`});
-const pourLg=ex=>`<div class="vs-lg">${ex.map(([n,k,ws])=>`<span><i style="background:${dk(k)}"></i>${n.split(' ')[0]} <b>${ws}</b></span>`).join('')}</div>`;
-function napszerk(){const d=DAYS.find(x=>x.id===TODAY);
-  return page('edzes',{title:'A nap szerkesztése',sub:`${d.full} · ${d.t} · ${d.sets} szett`,back:'nap.'+d.id},`
-  ${hero({lbl:`${d.full} · ${d.t}`,verdict:`${d.ex.length} gyakorlat, ${d.sets} szett.`,sub:'Húzd a sorokat a sorrendhez. Minden változás azonnal mentődik.',body:pour(d.ex.map(e=>[e[1],e[2]]))+pourLg(d.ex),acts:btn('+ Gyakorlat hozzáadása',{toast:'Gyakorlat-választó'})})}
+  ${card(ls(closeRow('A lezáráskor riport készül róla')),{i:4})}`)}
+/* egy nap olvasható oldala (MesoDayPage) */
+function nap(id){const T0={title:'A nap',sub:'A terved',back:'terv'};ST.edAdd=false;
+  if(id==='tolt')return skel(T0,[250,170,330]);
+  if(id==='nincs-terv')return ghost(T0,'t-other','Ez az edzésterv nem található.');
+  const d=id?DAYX(id):DAYX(TODAY);
+  if(!d||d.rest||d.sport)return ghost(T0,'t-other','Ez a nap nincs a tervedben.');
+  const own=DAYS.includes(d),wk=(own?DAYS:PDAYS).reduce((s,x)=>s+(x.sets||0),0),share=Math.round(d.sets/wk*100),cap=8;
+  return page('edzes',{title:`${d.t} nap`,sub:own?`${d.full} · a terv ${MESO.week}. hete`:`${d.full} · tervezett terv`,back:own?'terv':'run.tervezett'},`
+  ${hero({lbl:own?`${d.full} · a terv ${MESO.week}. hete`:`${d.full} · tervezett terv`,verdict:`${d.sets} szett, ${d.ex.length} gyakorlat.`,sub:`${d.min} perc · a heted ${share}%-a`,left:`<span class="vs-hb">${dayBody({...d,done:null})}<small>${dayView(d)==='back'?'hátulról':'elölről'}</small></span>`,
+    body:`<div class="vs-rowbar" style="margin-top:14px">${level(share,{h:20,label:'a heted',val:share+'%'})}</div>`,acts:btn('A nap szerkesztése',own?`napszerk.${d.id}`:'napszerk')})}
+  ${sec(1,'Mit terhel ez a nap',1)}
+  ${card(ls(d.mus.map(([k,s])=>rw({m:k,title:shortM(k),sub:`<span class="vs-rowbar">${wlv(s/(cap+1)*100,dk(k),[[cap/(cap+1)*100]],14)}</span>`,v:`${s} <small>szett</small>`})))+`<div class="vs-wlk" style="margin:12px 0 0"><span><u></u>nyolc szett: fölötte már nem hoz többet</span></div>`+acts(info('Miért nyolcnál a jelölés?','nyolc')),{i:1})}
+  ${sec(2,'A nap gyakorlatai',2)}
+  ${card(d.ex.map(([n,k,ws,rep,rir,wu,w],i)=>`<div class="vs-ex"><div class="eh"><span class="ix">${String(i+1).padStart(2,'0')}</span>${mchp(k,'sm')}<strong>${n}<small>${muscleLabel(k)}</small></strong>${caps(ws,0,dk(k))}</div>
+      <div class="eg"><span><b class="t">${ws} × ${repTxt(rep)}</b><small>szett × ismétlés</small></span><span><b>${rir}</b><small>RIR</small></span><span><b>${kgTxt(w)}</b><small>kg induló</small></span><span><b>${wu||'—'}</b><small>bemelegítő</small></span></div></div>`).join('')
+    +acts(lk('＋ Gyakorlat hozzáadása',own&&d.id===TODAY?'napszerk.add':own?`napszerk.${d.id}`:'napszerk'),info('Mikortól él a változtatás?','mikor')),{i:2})}`)}
+/* a futó terv napjának szerkesztője (MesoDayEditPage → MesoEditor): összegző, a mai és a heti izomterhelés, két ellenőrzés, lenyíló sorok */
+const edNew=id=>{const d=DAYX(id);return {id,open:-1,fine:false,col:null,ex:d.ex.map(([n,k,w,rep,rir,bem,kgv,warn])=>{const [lo,hi]=String(rep).split('–').map(Number);return {n,k,w,lo,hi:hi||lo,rir,bem,kg:kgv,vol:true,warn}})}};
+const libEx=i=>{const [n,k,tp]=LIB[i],c=tp==='compound';return {n,k,bem:c?2:1,w:c?4:3,lo:c?8:10,hi:c?10:15,rir:c?1:2,kg:null,vol:true}};
+const edMus=ex=>{const m={};ex.forEach(e=>{if(e.vol)m[e.k]=(m[e.k]||0)+e.w});return Object.entries(m)};
+const warmSug=(ex,i)=>ex.findIndex(e=>regionOf(e.k)===regionOf(ex[i].k))===i?2:1;
+const stL=(lbl,val,cmd,{lo=false,hi=false,auto=false}={})=>`<div class="vs-sjl"><span>${lbl}</span><span class="vs-stp"><button data-ve="${cmd}|-1" ${lo?'disabled':''} aria-label="${lbl} csökkentése">−</button><b class="${auto?'auto':''}">${val}</b><button data-ve="${cmd}|1" ${hi?'disabled':''} aria-label="${lbl} növelése">+</button></span></div>`;
+const fv=(e,cmd)=>`<div class="fh-pills"><button class="fh-pill ${e.rir===0?'on':''}" data-ve="${cmd}|0" aria-pressed="${e.rir===0}">Failure</button><button class="fh-pill ${e.rir===0?'':'on'}" data-ve="${cmd}|2" aria-pressed="${e.rir!==0}">Volume</button></div>`;
+function edStep(e,f,d){if(f==='kg'){if(e.kg==null){if(d>0)e.kg=20}else{const n=Math.round((e.kg+d*2.5)*100)/100;e.kg=n<2.5?null:Math.min(999,n)}}
+  else if(f==='rng'){if((d<0&&e.lo>1)||(d>0&&e.hi<100)){e.lo+=d;e.hi+=d}}
+  else{const lim={bem:[0,10],w:[1,10],lo:[1,e.hi],hi:[e.lo,100],rir:[0,5]}[f];e[f]=Math.min(lim[1],Math.max(lim[0],e[f]+d))}}
+function edRow(e,i,ex){const o=ST.ed.open===i,sug=warmSug(ex,i),auto=e.kg==null;
+  return rw({left:`<span class="vs-grip" aria-hidden="true">⠿</span>`,m:e.k,title:e.n,sub:`${muscleLabel(e.k)} · ${e.w}×${e.lo}–${e.hi} · ${e.rir===0?'Failure':'Volume'}<span class="vs-rowbar">${caps(e.bem,0,'var(--faint)',{cls:'bem'})}${caps(e.w,e.w,dk(e.k))}</span>${e.warn?`<span class="vs-warn">${e.warn}</span>`:''}`,ve:`edopen:${i}`,cls:o?'open':''})
+  +(o?`<div class="vs-sjp">${fv(e,`edfv:${i}`)}${stL('Munkaszett',e.w,`edst:${i}|w`,{lo:e.w<=1,hi:e.w>=10})}${stL('Rep tartomány',`${e.lo}–${e.hi}`,`edst:${i}|rng`,{lo:e.lo<=1,hi:e.hi>=100})}${stL('Kiinduló kg',auto?'auto':kg(e.kg),`edst:${i}|kg`,{lo:auto,auto})}${stL('Bemelegítő',e.bem,`edst:${i}|bem`,{lo:e.bem<=0,hi:e.bem>=10})}
+    ${sug!==e.bem?`<div class="vs-sjl"><span></span>${vl(`↺ javaslat: ${sug}`,`edwarm:${i}|${sug}`)}</div>`:''}
+    <div class="vs-sjl"><span>Számít a volumenbe</span><button class="vs-sw ${e.vol?'on':''}" data-ve="edvol:${i}" role="switch" aria-checked="${e.vol}" aria-label="${e.n} · számít a volumenbe"></button></div>
+    <div class="vs-sjl">${vl(`Finomhangolás ${ST.ed.fine?'▴':'▾'}`,'edfine')}</div>
+    ${ST.ed.fine?stL('RIR',e.rir,`edst:${i}|rir`,{lo:e.rir<=0,hi:e.rir>=5})+stL('Rep min',e.lo,`edst:${i}|lo`,{lo:e.lo<=1,hi:e.lo>=e.hi})+stL('Rep max',e.hi,`edst:${i}|hi`,{lo:e.hi<=e.lo,hi:e.hi>=100}):''}
+    ${acts(vl('Törlés',`eddel:${i}`,'bad'))}</div>`:'')}
+function napszerk(arg){const T0={title:'A nap szerkesztése',sub:'A nap',back:'nap.'+TODAY};
+  if(arg==='tolt')return skel(T0,[200,64,64,64,64,150]);
+  if(arg==='nincs')return ghost(T0,'t-other','Ez a nap nincs a tervedben.');
+  if(arg==='pihen'){const d=DAYS.find(x=>x.rest);return page('edzes',{...T0,sub:`${d.full} · ${d.t}`,back:'terv'},hero({lbl:`${d.full} · a nap szerkesztése`,verdict:'Ez pihenőnap.',sub:'Ezen a napon nincs gyakorlat a tervben.',body:emptyTank('t-moon','Pihenőnap'),acts:btn('＋ Edzéssé alakít',{toast:'Edzéssé alakít'})}))}
+  const add=arg==='add',id=!add&&DAYX(arg)&&DAYX(arg).ex?arg:TODAY;if(!ST.ed||ST.ed.id!==id)ST.ed=edNew(id);
+  if(add&&!ST.edAdd){ST.edAdd=true;setTimeout(()=>{if(mine()&&F.R==='napszerk')resheet('xpick','day')},140)}if(!add)ST.edAdd=false;
+  const d=DAYX(id),ex=ST.ed.ex,sets=ex.reduce((a,e)=>a+e.w,0),mus=edMus(ex),over=mus.filter(([,s])=>s>8),min=Math.round(sets*4),wk=WTOTAL-d.sets+sets,col=ST.ed.col,T=[...TILES()].sort((a,b)=>b.ceil-a.ceil),other=DAYS.find(x=>x.ex&&x.id!==id);
+  return page('edzes',{title:'A nap szerkesztése',sub:`${d.full} · ${d.t}`,back:'nap.'+id},`
+  ${hero({lbl:`${d.full} · ${d.t} · a nap szerkesztése`,verdict:`${sets} szett ma, ${ex.length} gyakorlat.`,sub:`~${min} perc · Heti terhelés: ${wk} szett · ${NDAYS()} edzésnap`,
+    body:(ex.length?pour(ex.map(e=>[e.k,e.w]))+`<div class="vs-lg">${ex.map(e=>`<span><i style="background:${dk(e.k)}"></i>${e.n.split(' ')[0]} <b>${e.w}</b></span>`).join('')}</div>`:`<div class="vs-pour e"><i style="flex:1"><b>üres — ide töltődnek a gyakorlatok</b></i></div>`)
+      +`<div class="fh-chips">${over.length?`<span class="ic">${bub('t-info',{s:28,c:'var(--warn)'})}${over.length} jelzés</span>`:`<span class="ic">${bub('t-tick',{s:28,c:'var(--ok)'})}kereten belül</span>`}</div>`,acts:ve('＋ Gyakorlat hozzáadása','xpick:day')})}
   ${sec(1,'Sorrend és előírás',1)}
-  ${card(ls(d.ex.map(([n,k,ws,rep,rir,wu,w])=>edRow(n,k,ws,rep,rir,w)))+note('A terv heti szett-számai automatikusan követik, amit itt átírsz — a „Melyik izmod hol tart” oldal ugyanabból olvas. Ugyanez a szerkesztő nyílik a sablonok napjainál is.'),{i:1})}`)}
-function het(){const rows=[...WMUS].sort((a,b)=>(b[5]-b[2])-(a[5]-a[2])),under=WMUS.filter(m=>m[2]<m[3]).length,top=WMUS.filter(m=>m[2]>=m[5]).length,growing=WMUS.length-under-top,ent=WMUS.map(m=>[m[1],clamp(m[2]/m[5],.12,1),0]);
-  return page('edzes',{title:'Heti vizsgálat',sub:'Melyik izmod hol tart',back:'terv'},`
-  ${hero({lbl:`Ezen a héten · ${WTOTAL} szett`,verdict:`${growing} izmod fejlődik, ${under} még kevés munkát kap.`,sub:`${top?top+' a felső értékén jár':'Egy sincs a felső értékén'}. A múlt héthez képest 14 szettel több.`,body:duo(ent,'md')+note('Minden izom a saját felső értékéig tölthető: minél teltebb, annál közelebb jár hozzá.')})}
+  ${card((ex.length?ls(ex.map((e,i)=>edRow(e,i,ex))):`<p class="fh-note" style="margin:0">Ezen a napon még nincs gyakorlat.</p>`)+note('Húzd a sorokat a sorrendhez, koppints egyre az átíráshoz. Minden változás azonnal mentődik.'),{i:1})}
+  ${sec(2,'Ma · izmonként',2)}
+  ${card(`<div class="vs-wlk"><span><u></u>max 8 szett/izom</span></div>`+ls(mus.map(([k,s])=>rw({m:k,title:shortM(k),sub:`<span class="vs-rowbar">${wlv(s/9*100,s>8?'var(--warn)':dk(k),[[8/9*100]],14)}</span>`,v:`${s} / 8`})))
+    +over.map(([k,s])=>box('t-info',`${shortM(k)}: ma ${s} szett`,`<p>8 fölött nincs kimutatható plusz.${other?` Vigyél át szettet egy másik napra (pl. ${other.d})!`:''}</p>`,'var(--warn)')).join(''),{i:2})}
+  ${sec(3,'Heti szettek · izmonként',3)}
+  ${card(ls(T.map(t=>rw({m:t.k,title:`${t.n} ${st(TL[t.tier],TLK[t.tier])}`,sub:(t.tier==='maintain'?'':(t.room>0?'▲ +2 / hét':'a felső értéken'))+(t.tier==='maintain'?'':`<span class="vs-rowbar">${lv(t.s/t.ceil*100,dk(t.k),10)}</span>`),v:t.tier==='maintain'?`${t.s} szett · tart`:`${t.s} → ${t.ceil}`})))+note('Az 1. héttől a felső értékig. A hangsúlyos izmok kapják a legtöbbet.'),{i:3})}
+  ${sec(4,'Ellenőrzés',4)}
+  ${card(ls(rw({icon:'t-clock',title:'Csúcshét · időbecslés',right:st('1 nap','warn')+`<span class="vs-cv">${col==='peak'?'▲':'▼'}</span>`,ve:'edcol:peak',nochev:true}))+(col==='peak'?`<div class="vs-in col"><p>Sze: csúcshéten ~84 perc — vegyél el, vagy tedd át.</p></div>`:'')
+    +ls(rw({icon:'t-shield',title:'Struktúra',right:st('✓ rendben','ok')+`<span class="vs-cv">${col==='lint'?'▲':'▼'}</span>`,ve:'edcol:lint',nochev:true}))+(col==='lint'?`<div class="vs-in col"><p>✓ A terv strukturálisan rendben — gyakorlat/izom, frekvencia és balansz a sávban.</p></div>`:''),{i:4})}`)}
+/* heti vizsgálat (MesoWeekPage): useMesocycleVolumeArc + muscleTiles + weekSummary */
+function het(arg){const T0={title:'Heti vizsgálat',sub:'A terved',back:'terv'};
+  if(arg==='tolt')return skel(T0,[330,74,74,74,74,74]);
+  if(arg==='nincs')return ghost(T0,'t-other','Ez az edzésterv nem található.');
+  if(arg==='elso')return ghost(T0,'t-muscle','A heti vizsgálat a terv első edzése után jelenik meg.');
+  if(arg==='hiba')return ghost(T0,'t-info','Nem sikerült betölteni a heti vizsgálatot — próbáld újra.',btn('Újra','het','sm'));
+  const T=TILES(),rows=[...T].sort((a,b)=>b.room-a.room||b.ceil-a.ceil),g=T.filter(t=>t.tone==='sage').length,mx=T.filter(t=>t.tone==='gold').length,hd=T.filter(t=>t.tone==='mut').length,delta=WSETS[MESO.week-1]-WSETS[MESO.week-2],ch=rollChips();
+  const parts=[g?`${g} izomban van még hova nőni`:'',mx?`${mx} elérte a felső értéket`:'',hd?`${hd} izmot csak szinten tartasz`:''].filter(Boolean).join(', ');
+  return page('edzes',{...T0,sub:`${MESO.week}. hét`},`
+  ${hero({lbl:`Heti vizsgálat · ${MESO.week}. hét`,verdict:`${T.length} izomcsoportot edzel ezen a héten.`,sub:`${parts}. ${delta>0?`${delta} szettel több a múlt héthez képest.`:delta<0?`${-delta} szettel kevesebb a múlt héthez képest.`:'Pont annyi, mint a múlt héthez képest.'}`,
+    body:`<p class="fh-big" style="margin-top:14px">${WTOTAL}<small>szett ezen a héten</small></p>`+duo(T.map(t=>[t.k,clamp(t.s/t.ceil,.12,1),0]),'md')})}
   ${sec(1,'Hétfőtől változik',1)}
-  ${card(ls(rw({icon:'t-calendar',title:`${ROLL.join(', ')} kap még két-két szettet`,sub:'A többi marad.'})),{i:1})}
-  ${sec(2,'Izmonként · ami még fér bele, elöl',2)}
-  ${card(`<div class="vs-wlk"><span><u></u>ennyitől fejlődik</span><span><u class="d"></u>innen hangsúly</span><span><i></i>az edény széle a felső érték</span></div>`+ls(rows.map(m=>{const [n,k,s,mev,mav,mrv]=m,room=mrv-s,tier=s<mev?'Építés':s>=mav?'Hangsúly':'Tartás';const say=s<mev?`Még nem éri el azt a szintet, ahonnan fejlődik — ${mev-s} szett hiányzik.`:room<=0?'Elérte a felső értéket ebben a tervben.':s>=mav?`Még ${room} szett fér bele.`:`Szinten tartod — még ${room} szett fér bele.`;
-    return rw({m:k,title:`${n} ${st(tier,s<mev?'warn':s>=mav?'plan':'q')}`,sub:say+`<span class="vs-rowbar">${wlv(clamp(s/mrv*100,4,100),dk(k),[[mev/mrv*100],[mav/mrv*100,'d']],16)}</span>`,v:`${s} / ${mrv}`,on:`izom.${k}`})}))
-    +note('Százalékot nem írunk ki: a hely szettben van megmondva, és rajzban megmutatva.'),{i:2})}`)}
-function izom(key){const m=WMUS.find(x=>x[1]===key)||WMUS[0],[n,k,s,mev,mav,mrv]=m,c=dk(k),pos=v=>clamp(v/mrv*100,0,100),days=DAYS.filter(d=>!d.rest&&!d.sport&&d.mus.some(([mk])=>mk===k)),a=[Math.round(s*.72),Math.round(s*.82),s,s,Math.round(s*1.15),Math.round(s*.5)],merged=Math.abs(mev-mrv)<2,v=TOKEN_SHAPES[k][0][0];
-  return page('edzes',{title:n,sub:'Heti vizsgálat · izom',back:'het'},`
-  ${hero({lbl:`${s} szett / hét`,verdict:s<mev?'Ennyiből még nem fejlődik.':s>=mrv?'A felső értéken jár.':'Fejlődő tartományban van.',sub:`${s<mev?'Kevesebb, mint amennyitől elindul.':s>=mrv?'Ebben a tervben ennél többet nem kérek tőle.':''} Hétfőtől ${ROLL.includes(n)?'+2 szettet kap.':'marad ennyi.'}`,
+  ${card(ls(rw({icon:'t-calendar',title:'A következő heti váltás hétfő hajnalban',sub:ch.slice(0,5).map(c=>c.tx).join(' · ')+(ch.length>5?` · +${ch.length-5}`:'')})),{i:1})}
+  ${sec(2,'Izmonként · ahol a legtöbb hely van, elöl',2)}
+  ${card(`<div class="vs-wlk"><span><u></u>ennyitől fejlődik</span><span><i></i>az edény széle: eddig mész el</span></div>`+ls(rows.map(t=>rw({m:t.k,title:`${t.n} ${st(TL[t.tier],TLK[t.tier])}`,sub:tVerdict(t)+`<span class="vs-rowbar">${wlv(clamp(t.s/t.ceil*100,4,100),dk(t.k),t.mev<t.ceil?[[t.mev/t.ceil*100]]:[],16)}</span>`,v:`${t.s} <small>szett</small>`,on:`izom.${t.k}`})))
+    +note('A sáv azt mutatja, hol tartasz ahhoz képest, ameddig ebben a tervben elmész. Koppints egy izomra, ha érdekel, miért pont ennyi.'),{i:2})}`)}
+/* egy izom (MesoMusclePage): muscleTiles().find + whereItWorks + DerivationSteps + previousBlock */
+function izom(key){const T0={title:'Izom',sub:'Heti vizsgálat',back:'het'};
+  if(key==='tolt')return skel(T0,[330,64,120,72,72,72]);
+  if(key==='elso')return ghost(T0,'t-muscle','A heti vizsgálat a terv első edzése után jelenik meg.');
+  if(key==='hiba')return ghost(T0,'t-info','Nem sikerült betölteni a heti vizsgálatot — próbáld újra.');
+  const m=WMUS.find(x=>x[1]===key)||(key?null:WMUS[0]);
+  if(!m)return ghost(T0,'t-other','Ez az izom nincs a heti vizsgálatban.');
+  const t=tileOf(m),{n,k,s,mev,ceil,room,ser}=t,c=dk(k),lo=n.toLowerCase(),w1=ser[0],top=Math.max(...ser.slice(0,-1)),scale=Math.max(t.mrv,top)||1,pos=v=>clamp(v/scale*100,0,100),merged=mev===ceil,rows=whereWorks(k),nx=ser[MESO.week],dlNext=MESO.curve[MESO.week]==='Deload',v=TOKEN_SHAPES[k][0][0],prev=PREVB[k],lastDl=MESO.curve[MESO.of-1]==='Deload';
+  const say=t.tier==='maintain'?`Ez így is marad: most máshol építesz — ez az izom közben megtartja, amit tud.`:room>0?`Még ${room} fér bele, aztán a terv végéig ${ceil} marad a felső érték.`:'Ennél többet ez a terv már nem ad. A következő tervben indulsz majd magasabbról.';
+  const next=nx==null?'Ez a terv utolsó hete — hétfőn már nem változik.':dlNext?`Hétfőtől pihenőhét: ${nx} szettre esik vissza.`:t.step>0?`Hétfőn ${t.step} szettel többet kapsz.`:'Hétfőn nem változik.';
+  const stepTx=t.step>0?`+${t.step}`:'=';
+  return page('edzes',{title:n,sub:'Heti vizsgálat',back:'het'},`
+  ${hero({lbl:`${MESO.week}. hét · ${TL[t.tier]}`,verdict:`A ${lo} hetente ${s} szettet kap.`,sub:`${say} ${next}`,
     body:`<div class="vs-cylw"><div class="vs-cyl" style="--c:${c}"><span class="tb"><span class="l ${pos(s)<28?'lo':''}" style="height:${clamp(pos(s)*.9,3,90)}%">${wave(`color-mix(in srgb,${c} 70%,#fff)`)}<b>${s}</b></span></span>
-        <i class="wl" style="bottom:90%"><em>felső érték · ${mrv}</em></i>${merged?'':`<i class="wl d" style="bottom:${pos(mav)*.9}%"><em>hangsúly · ${mav}</em></i>`}<i class="wl" style="bottom:${pos(mev)*.9}%"><em>${merged?'ennyitől fejlődik — és itt tartod':'ennyitől fejlődik'} · ${mev}</em></i></div>
-      <span class="vs-hb">${bodyLiq(v,[[k,clamp(s/mrv,.1,1),0]])}<small>${v==='back'?'hátulról':'elölről'}</small></span></div>`})}
-  ${sec(1,'Hol tart',1)}
-  ${card(facts([[days.length,'edzés / hét'],[a[0],'az első héten'],[Math.max(...a),'a legtöbb a tervben']])+note(`A mérőhenger három vonala: ${mev} szettől fejlődik, ${mav}-től kap hangsúlyt, ${mrv} a felső érték — most ${s} szettnél áll.`),{i:1})}
-  ${sec(2,'A terv íve erre az izomra',2)}
-  ${card(mesoTubes(a,{h:84,max:Math.max(...a)}),{i:2,style:`--dom:${c};--liq1:color-mix(in srgb,${c} 60%,#fff);--liq2:${c}`})}
-  ${sec(3,'Hol dolgozik',3)}
-  ${card(ls(days.map(d=>{const n2=d.mus.find(([mk])=>mk===k)[1];return rw({m:k,title:`${d.full} · ${d.t}`,sub:d.ex.filter(e=>e[1]===k).map(e=>e[0]).join(' · '),right:`<span class="vs-rr cl"><span class="v">${n2} <small>szett</small></span>${caps(n2,d.done?n2:0,c)}</span>`,on:`nap.${d.id}`})})),{i:3})}
+        <i class="wl" style="bottom:${pos(ceil)*.9}%"><em>${merged?'ennyitől fejlődik — és itt tartod':'eddig mész el'} · ${ceil}</em></i>${merged?'':`<i class="wl d" style="bottom:${pos(mev)*.9}%"><em>ennyitől fejlődik · ${mev}</em></i>`}</div>
+      <span class="vs-hb">${bodyLiq(v,[[k,clamp(s/ceil,.1,1),0]])}<small>${v==='back'?'hátulról':'elölről'}</small></span></div>`,acts:info('Mit jelentenek a jelölések?','jel')})}
+  ${sec(1,'Hol tartasz',1)}
+  ${card(facts([[rows.length,'edzés hetente'],[w1,'szett az 1. héten'],[top,'a legtöbb lesz']]),{i:1})}
+  ${sec(2,`A ${MESO.of} hét`,2)}
+  ${card(mesoTubes(ser,{h:84,max:Math.max(...ser)})+note(lastDl?`Az utolsó hét pihenőhét — ott ${ser[ser.length-1]} szettre esik vissza, hogy kipihend a ${MESO.of} hetet.`:`A terv ${MESO.of} hete végig dolgoztatja ezt az izmot — nincs a végén pihenőhét.`),{i:2,style:`--dom:${c};--liq1:color-mix(in srgb,${c} 60%,#fff);--liq2:${c}`})}
+  ${sec(3,'Hol edzed',3)}
+  ${card(rows.length?ls(rows.map(r=>rw({left:num(r.d.d),m:k,title:`${r.d.t} nap`,sub:r.ex.map(e=>e[0]).join(', '),v:`${r.sets} <small>szett</small>`,on:`nap.${r.d.id}`}))):`<p class="fh-note" style="margin:0">Ezen a héten nincs olyan nap, amelyik ezt az izmot dolgoztatná.</p>`,{i:3})}
   ${sec(4,'Honnan jön ez a szám',4)}
-  ${card(ls([['Alap ajánlás',`RP guidelines · haladó: ${mev}–${mrv} szett hetente`],['A terv íve',`a ${MESO.week}. hét ${PHASE[MESO.curve[MESO.week-1]].toLowerCase()}-szakasza`],['A te visszajelzéseid',`a múlt heti szett-visszajelzések alapján ${ROLL.includes(n)?'emelhető':'marad'}`],['A napokra osztás',`${days.length} edzésnapra elosztva`]].map(([t,s2],i)=>rw({left:num(i+1),title:t,sub:s2}))),{i:4})}
-  ${sec(5,'A mostani tervedhez képest',5)}
-  ${card(`<div class="vs-vs">${tubes([{l:'Előző terv',v:Math.round(s*.85),s:'szett / hét',p:pos(Math.round(s*.85))*.94,c:'var(--faint)'},{l:'Most',v:s,s:'szett / hét',p:pos(s)*.94,c,wl:pos(Math.round(s*.85))*.94}],{h:116})}</div>`
-    +note('A kevesebb nem rosszabb: ha egy izom kevesebbet kap, máshová került a hangsúly. Ugyanezt a számot olvassa a terv oldala és a heti vizsgálat is — nem tudnak eltérni egymástól.'),{i:5})}`)}
-/* a tervek sora egy csővezeték: ami fut, félig tele; ami következik, üresen vár mögötte — a hossz a hetek száma */
-const queue=()=>`<div class="vs-queue">${RUNS.map(r=>`<button class="${r.st==='fut'?'now':''}" style="flex:${r.weeks+2}" ${r.st==='fut'?'data-go="run"':`data-toast="${r.n} · ${r.weeks} hét · ${r.from}-tól"`}><span>${r.st==='fut'?`<i style="width:${r.wk/r.weeks*100}%"></i>`:''}<b>${r.st==='fut'?`${r.wk}/${r.weeks}`:r.weeks+' hét'}</b></span><small>${r.n.split(' · ')[0].replace(' maintenance','')}</small></button>`).join('')}</div>`;
-function konyvtar(){const now=RUNS.filter(r=>r.st==='fut'),next=RUNS.filter(r=>r.st==='következik');
-  return page('edzes',{title:'Edzéstervek',sub:`1 fut · ${next.length} következik · ${TPL.length} sablon · ${CLOSED.length} lezárva`,back:'terv'},`
-  ${hero({lbl:'Amiből indíthatsz',verdict:'Itt él minden terved.',sub:'Ami most fut, ami utána következik, a sablonjaid és amit már lezártál.',
-    body:queue()+tags([['t-play','1 fut'],['t-calendar',`${next.length} következik`],['t-template',`${TPL.length} sablon`],['t-history',`${CLOSED.length} lezárva`]]),acts:btn('Új terv összeállítása','ujterv')})}
+  ${card(ls(rw({left:num(1),title:'Kiinduló ajánlás',sub:`ennyitől fejlődik: ${t.base[0]} · közép: ${t.base[1]} · legfeljebb: ${t.base[2]}`}),
+      rw({left:num(2),title:`Fókusz · ${TL[t.tier]}`,sub:t.tier==='maintain'?`tart: ${mev} · hetente +0`:`indul: ${w1} · felső érték: ${ceil} · hetente ${stepTx}`}),
+      rw({left:num(3),title:'Rád szabva',sub:t.adj.length?t.adj.map(a=>`${a[0]} — ${a[1]}`).join('<br>'):'nincs igazítás — a kiinduló ajánlás érvényes'}),
+      rw({left:num(4),title:'Ebben a tervben',sub:ser.slice(0,MESO.week).map((x,i)=>`${i+1}. hét${i===MESO.week-1?' · most':''}: ${x}`).join(' · ')+` · hétfőn: ${stepTx}`}))
+    +`<div class="vs-rowbar" style="margin-top:12px">${level(78,{h:18,label:'Mennyire biztos a sáv',val:'78%'})}</div>`+acts(`<button class="fh-lk" disabled title="hamarosan">Felülír · hamarosan</button>`),{i:4})}
+  ${sec(5,'Az előző tervhez képest',5)}
+  ${card(prev?`<p class="fh-txt">Előző terved: ${CLOSED[1].n}</p><div class="vs-vs">${tubes([{l:'Akkor',v:`${prev[0]} → ${prev[1]}`,s:'szett / hét',p:prev[1]/Math.max(scale,prev[1])*94,c:'var(--faint)'},{l:'Most',v:`${w1} → ${top}`,s:'szett / hét',p:top/Math.max(scale,prev[1])*94,c,wl:prev[1]/Math.max(scale,prev[1])*94}],{h:116})}</div>`
+      +note(top>prev[1]?`Ez a terv ${top-prev[1]} szettel visz magasabbra, mint az előző.`:top===prev[1]?'Ez a terv ugyanoda visz, mint az előző — ez tartás, nem visszaesés.':'Az előző terv magasabbra vitt — most más izom kapja a hangsúlyt.')
+      :`<p class="fh-note" style="margin:0">Ehhez az izomhoz még nincs korábbi terved — ez az első, amiben számon tartjuk.</p>`,{i:5})}`)}
+/* ── EDZÉSTERVEK (MesoKonyvtarPage): a tervek sora egy csővezeték — ami fut, félig tele; ami következik, üresen vár mögötte; a hossz a hetek száma ── */
+const queue=(runs=RUNS)=>`<div class="vs-queue">${runs.map(r=>`<button class="${r.st==='fut'?'now':''}" style="flex:${r.weeks+2}" data-go="${r.st==='fut'?'terv':'run.tervezett'}" aria-label="${r.n}"><span>${r.st==='fut'?`<i style="width:${r.wk/r.weeks*100}%"></i>`:''}<b>${r.st==='fut'?`${r.wk}/${r.weeks}`:r.weeks+' hét'}</b></span><small>${r.n.replace(' maintenance','')}</small></button>`).join('')}</div>`;
+function konyvtar(arg){const T0={title:'Edzéstervek',sub:'A terved',back:'terv'};
+  if(arg==='tolt')return skel(T0,[280,90,170,120]);
+  const e=arg==='ures',runs=e?[]:arg==='nincs-futo'?RUNS.filter(r=>r.st!=='fut'):RUNS,now=runs.find(r=>r.st==='fut'),next=runs.filter(r=>r.st==='következik'),nt=e?0:TPL.length,nc=e?0:CLOSED.length;
+  return page('edzes',T0,`
+  ${hero({lbl:'Edzéstervek',verdict:'Itt élnek a terveid.',sub:'Ami fut, ami jön, és ami már mögötted van.',body:(runs.length?queue(runs):'')+tags([['t-play',`${now?1:0} fut`],['t-calendar',`${next.length} következik`],['t-template',`${nt} sablon`],['t-history',`${nc} lezárva`]]),
+    acts:btn('Új terv összeállítása','ujterv')+`<p class="fh-note" style="margin:0;flex-basis:100%;color:#fff">Sablonból indulsz, vagy nulláról építed</p>`})}
   ${sec(1,'Most fut',1)}
-  ${card(now.map(r=>ls(rw({icon:'t-peak',title:r.n,sub:`${r.split} · ${r.from} – ${r.to}`,v:`${r.wk} / ${r.weeks}. hét`,on:'run'}))+facts([[r.weeks,'hét'],['5','nap / hét'],[WTOTAL,'szett e héten']])).join(''),{i:1})}
-  ${sec(2,`Következnek · ${next.length} terv`,2)}
-  ${card(next.map((r,i)=>`<div class="vs-log">${rw({icon:'t-calendar',title:r.n,sub:`${r.split}${i===0?' · a futó terv után kezdődik':''}`,v:`${r.from}-tól`,on:{toast:'A terv saját oldala — onnan indítható, dátummal'}})}${facts([[r.weeks,'hét'],[r.split.match(/(\d)×/)[1],'nap / hét'],[r.to,'vége']])}</div>`).join('')
-    +note('Egy következő terv nem innen indul: a saját oldalán van a dátumozott indítás, hogy a futó terved ne álljon le véletlenül.'),{i:2})}
-  ${sec(3,'A polcod',3)}
-  ${card(ls(rw({icon:'t-template',title:'Sablonjaid',sub:`${TPL.length} recept, amiből futam indul`,on:'sablonok'}),rw({icon:'t-history',title:'Lezárt futamaid',sub:`${CLOSED.length} befejezett terv`,on:'futamok'})),{i:3})}`)}
-function futamok(){const weeks=CLOSED.reduce((s,r)=>s+r.weeks,0),cm=ST.cmp;
-  return page('edzes',{title:'Lezárt futamaid',sub:`${CLOSED.length} futam · ${weeks} hét${cm?' · összevetés-mód':''}`,back:'konyvtar'},`
-  ${hero({lbl:'Amit már végigcsináltál',verdict:`${CLOSED.length} lezárt terv, összesen ${weeks} hétnyi edzés.`,sub:cm?'Válassz ki kettőt — abban a sorrendben, ahogy összevetnéd őket.':'Mindegyiknek van egy befagyasztott riportja.',
-    body:`<div class="vs-hg">${tubes(CLOSED.map((r,i)=>{const at=ST.cmpSel.indexOf(i);return {l:r.n.split(' · ')[0],v:`${r.pct}%`,s:cm?(at>=0?`${at+1}. kiválasztva`:'kiválaszt'):`${r.weeks} hét`,p:r.pct*.94,wl:94,sel:at>=0,mark:r.n.split(' · ')[1],c:'var(--dom)',...(cm?{ve:`cmpsel:${i}`}:{on:'riport'})}}),{h:132,cls:'n3'})}</div>`+note('Egy edény egy lezárt terv: annyira van tele, amennyi betervezett edzést megcsináltál belőle.'),
-    acts:(cm&&ST.cmpSel.length===2?btn('Összevetés megnyitása','osszevetes'):'')+ve(cm?'Mégsem':'Összevetés','cmp',cm?'ghost':'')})}
+  ${card(now?ls(rw({icon:'t-peak',title:now.n,sub:now.split,v:`${now.wk}. hét a ${now.weeks}-ból`,on:'terv'})):`<p class="fh-note" style="margin:0">Most nem fut terv — indíts egyet alább.</p>`,{i:1})}
+  ${next.length?sec(2,'Következnek',2)+card(next.map(r=>{const [sp,fr]=r.split.split(' · ');return `<div class="vs-log">${rw({icon:'t-calendar',title:r.n,sub:sp,v:r.tol,on:'run.tervezett'})}${facts([[r.weeks,'hét'],...(fr?[[fr.replace('/hét',''),'hetente']]:[])])}<p class="fh-note" style="margin:8px 0 0">${now?'Akkor indul, amikor a mostani terved lezárul.':'Nyisd meg, és onnan indíthatod.'}</p></div>`}).join(''),{i:2}):''}
+  ${sec(next.length?3:2,'A polcod',3)}
+  ${card(ls(rw({icon:'t-template',title:'Sablonjaid',sub:`${nt} sablon, amiből indíthatsz`,on:e?'sablonok.ures':'sablonok'}),rw({icon:'t-history',title:'Lezárt futamaid',sub:`${nc} lezárt terv története`,on:e?'futamok.ures':'futamok'})),{i:3})}`)}
+/* lezárt futamok (MesoFutamokPage): a lista csak azt mutatja, amit a futam maga tud — hetek, dátum, van-e riport. A teljesítés a riportban él */
+function futamok(arg){const T0={title:'Lezárt futamaid',sub:'Edzéstervek',back:'konyvtar'};
+  if(arg==='tolt')return skel(T0,[260,130,130,130]);
+  const list=arg==='ures'?[]:arg==='egy'?CLOSED.slice(1,2):CLOSED,weeks=list.reduce((s,r)=>s+r.weeks,0),cm=ST.cmp&&list.length>=2,sel=ST.cmpSel,mxw=Math.max(1,...list.map(r=>r.weeks));
+  if(!list.length)return page('edzes',T0,hero({lbl:'Lezárt futamaid',verdict:'Még nincs lezárt futamod.',sub:'Az első terved lezárása után itt lesz a története.',body:emptyTank('t-history','Még nincs lezárt futamod — az első terved lezárása után itt lesz a története.')}));
+  return page('edzes',T0,`
+  ${hero({lbl:'Amit lezártál',verdict:`${list.length} lezárt futam, ${weeks} hét összesen.`,sub:cm?`Válassz két lezárt futamot (${sel.length}/2).`:'Minden lezárt terv itt őrzi a történetét — nyisd meg, és megnézheted, mit hozott.',
+    body:`<div class="vs-hg">${tubes(list.map((r,i)=>{const at=sel.indexOf(i);return {l:r.n,v:`${r.weeks} hét`,s:cm?(at>=0?`${at+1}. kiválasztva`:'kiválaszt'):r.rep?'riport':'nincs riport',p:r.weeks/mxw*94,hatch:!r.rep,sel:cm&&at>=0,c:'var(--dom)',...(cm?{ve:`cmpsel:${i}`}:{on:r.rep?'riport':'riport.nincs-riport'})}}),{h:124,cls:'n3'})}</div>`,
+    acts:(cm&&sel.length===2?btn('Összevetés megnyitása','osszevetes'):'')+(list.length>=2?ve(cm?'Mégsem':'Összevetés','cmp',cm&&sel.length===2?'ghost':'',`aria-pressed="${cm}"`):'')+(cm&&sel.length===2?`<p class="fh-note" style="margin:0;flex-basis:100%;color:#fff">A két kiválasztott futam egymás mellett</p>`:'')})}
   ${sec(1,'Futamok',1)}
-  ${card(CLOSED.map((r,i)=>{const at=ST.cmpSel.indexOf(i),sub=`${r.from} – ${r.to} · ${r.weeks} hét`;
+  ${card(list.map((r,i)=>{const at=sel.indexOf(i),sub=`${r.from} – ${r.to} · ${r.weeks} hét`+(r.sum?`<br>${r.sum}`:'');
     return `<div class="vs-log">${cm?rw({left:`<span class="vs-tk ${at>=0?'on':''}">${at>=0?`<b>${at+1}</b>`:' '}</span>`,title:r.n,sub,ve:`cmpsel:${i}`,nochev:true})
-      :rw({icon:'t-scroll',title:r.n,sub,right:st(r.rep?'riport kész':'riport nélkül',r.rep?'ok':'q'),on:'riport'})}${facts([[r.weeks,'hét'],[r.pct+'%','teljesített edzés'],[r.rep?'van':'nincs','riport']])}${cm?'':`<div class="vs-in" style="padding:10px 0 0">${lk('Újrafuttatás',{toast:'Újrafuttatás — ebből a futamból új terv indul'})}${lk('Sablonná',{toast:'Sablonná mentve'})}</div>`}</div>`}).join('')
-    +note('Ami itt nincs kiírva (edzésszám, rekordok), az a riportban él — egy listáért nem kérünk le annyi adatot.'),{i:1})}`)}
-function riport(){const r=CLOSED[1];
-  return page('edzes',{title:r.n,sub:`Lezárt futam · ${r.from} – ${r.to} · ${r.weeks} hét`,back:'futamok'},`
-  ${hero({lbl:'A teljesített edzések aránya',verdict:`A betervezett edzések ${r.pct}%-át megcsináltad.`,sub:'Ez a riport a lezáráskor készült pillanatkép — azóta nem változik.',left:fill(SH_CUP,{p:r.pct*.9,s:86,c:'#F9D06A',c2:'#E9892B'}),body:`<div class="vs-ms">${stars5(r.pct/100)}<span>${r.pct}%</span></div>`,
-    acts:btn('Újrafuttatás',{toast:'Új futam indul ebből'})+lk('Újragenerálás',{toast:'Riport újragenerálása'})})}
-  ${sec(1,'Ami erőben változott',1)}
-  ${card(ls([['Guggolás','quad','+7,5 kg','+4,2%',80],['Döntött törzsű evezés','back-mid','+5 kg','+3,1%',85],['Fekvenyomás','chest-mid','0 kg','+2,4%',88],['Román felhúzás','ham','+10 kg','+5,0%',76]].map(x=>rw({m:x[1],title:x[0],sub:`${x[2]==='0 kg'?'ugyanannyi súly, több ismétlés':'a legnehezebb szett súlya'} · ${x[2]}`,v:x[3],right:rcap(x[4],dk(x[1]))})))
-    +note('A kilogramm a legnehezebb szett súlyának változása, a százalék a becsült maximumé — ezért lehet „ugyanannyi súly” mellett is pluszban. A kapszulán a vonal a futam eleje.'),{i:1})}
-  ${sec(2,'Az izmok útja',2)}
-  ${card(WMUS.slice(0,6).map(m=>mus(m[1],m[0],`${m[2]} szett`,clamp(m[2]/20*100,6,100))).join(''),{i:2})}
-  ${sec(3,'A mostani tervedhez képest',3)}
-  ${card(tubes(WMUS.slice(0,4).map(m=>({m:m[1],l:m[0],v:m[2],s:`akkor ${m[2]-2} · +2`,p:m[2]/20*94,wl:(m[2]-2)/20*94,c:dk(m[1]),t:`${m[0]} · akkor ${m[2]-2}, most ${m[2]} szett`})),{h:96,cls:'sm'})+note('A folyadék a mostani heti szett, a szaggatott vonal az akkori.'),{i:3})}
-  ${sec(4,'Lezáráskor írtad',4)}
-  ${card(txt('„Az utolsó két hét nehéz volt, de a guggolás végre nem fájt. A vállat kímélni kell a következőben.”')+note('Amit a lezáráskor nem mértünk, azt itt nem találjuk ki utólag — inkább nem írjuk ki.'),{i:4})}`)}
-function osszevetes(){const a=CLOSED[1],b=CLOSED[0];
-  return page('edzes',{title:'Összevetés',sub:'Két lezárt futam',back:'futamok'},`
-  ${hero({lbl:'Egymás mellett',verdict:'Két befejezett terv, nem ítélet.',sub:`${a.n} és ${b.n}. A gyengébb oldal nincs megjelölve.`,
-    body:`<div class="vs-vs">${tubes([{l:a.n.split(' · ')[0],v:a.pct+'%',s:`${a.weeks} hét · ${a.n.split(' · ')[1]}`,p:a.pct*.94,c:'var(--dom)',on:'riport'},{l:b.n.split(' · ')[0],v:b.pct+'%',s:`${b.weeks} hét · ${b.n.split(' · ')[1]}`,p:b.pct*.94,c:'#1877F2',on:'riport'}],{h:132})}</div>`})}
-  ${sec(1,'Számok',1)}
-  ${card(`<div class="vs-cmp"><span></span><b class="h">${a.n.split(' · ')[0]}</b><b class="h">${b.n.split(' · ')[0]}</b>
-    ${[['Teljesített edzés',a.pct+'%',b.pct+'%',a.pct,b.pct],['Hossz',a.weeks+' hét',b.weeks+' hét',a.weeks/8*100,b.weeks/8*100],['Heti szett (csúcs)','84','76',100,90],['Rekord','6 db','4 db',100,67],['Erő · guggolás','+4,2%','+2,1%',100,50]].map(r=>`<span>${r[0]}</span><b>${r[1]}${lv(r[3],'var(--dom)',8)}</b><b>${r[2]}${lv(r[4],'#1877F2',8)}</b>`).join('')}</div>`
-    +note('Ahol nincs adat, „–” áll, sosem 0 — a hiányzó mérés nem nulla eredmény. Nincs külön összevetés-adat: a két befagyasztott riportot rakjuk egymás mellé.'),{i:1})}`)}
-/* egy sablon = egy hét receptje: hét kapszula, az edzésnapok tele */
-const weekCaps=n=>{const on=n>=5?[0,1,2,3,4]:n===4?[0,1,3,4]:[0,2,4];return `<span class="vs-caps wide wk" style="--c:var(--dom)">${['H','K','Sze','Cs','P','Szo','V'].map((d,j)=>`<i class="${on.includes(j)?'f':''}"><b>${d}</b></i>`).join('')}</span>`};
-function sablonok(){const runs=TPL.reduce((s,t)=>s+t.runs,0);
-  return page('edzes',{title:'Sablonjaid',sub:`${TPL.length} sablon · ${runs} futam indult belőlük`,back:'konyvtar'},`
-  ${hero({lbl:'A receptjeid',verdict:'Egy sablon egy hét felépítése.',sub:'Ha tetszik, futamot indítasz belőle — a sablon közben érintetlen marad.',art:'t-template',body:tags([['t-template',`${TPL.length} sablon`],['t-play',`${runs} futam indult belőlük`]]),acts:btn('Új sablon összeállítása','ujterv')})}
+      :rw({icon:'t-scroll',title:r.n,sub,right:st(r.rep?'riport':'nincs riport',r.rep?'ok':'q'),on:r.rep?'riport':'riport.nincs-riport'})}${cm?'':`<div class="vs-in" style="padding-bottom:0">${vl('Sablonná','tosabl')}${lk('Újrafuttatás',{sheet:'start',arg:'rerun'})}</div>`}</div>`}).join(''),{i:1})}`)}
+/* egy lezárt futam riportja (MesoReportPage · useMesoReport): adherence, volume, strength, records, selfEval, context, aiEval */
+const REP={title:'Hypertrophy 03',from:'jún 1.',to:'júl 12.',weeks:6,pct:92,done:22,plan:24,wd:6,wp:6,goal:'A láb és a hát jöjjön fel, a vállat közben kímélve.',sum:'A láb és a hát vitte, a váll kímélve.',self:'Az utolsó két hét nehéz volt, de a guggolás végre nem fájt. A vállat kímélni kell a következőben.',
+  bands:[['back-wide','Hát',6,12,14],['shoulder-side','Váll',8,14,16],['quad','Comb',10,14,14],['chest-mid','Mell',10,14,14],['ham','Lábhajlító',6,11,12],['triceps-medial','Tricepsz',6,8,10]],
+  str:[['Guggolás','quad',1,6,110,117.5,6,6,7.5,4.2],['Döntött törzsű evezés','back-mid',1,6,70,75,8,8,5,3.1],['Fekvenyomás','chest-mid',1,6,77.5,77.5,7,8,0,2.4],['Román felhúzás','ham',2,6,90,100,8,8,10,5]],
+  ctx:[['Átlagos alvásidő éjszakánként','7,2 óra'],['Átlagos napi kalóriabevitel','2 840 kcal','A cél 2 900 kcal volt — −60 kcal a célhoz képest.'],['Energiaszint — a napi önértékelések átlaga','6,8'],['Stresszszint — a napi önértékelések átlaga','4,1'],['Testsúlyváltozás a futam alatt, összesítve a mért napokból','+1,2 kg'],['Sportra fordított idő összesen a futam alatt','1 260 perc'],['Sportalkalmak száma összesen a futam alatt','14 alkalom'],['Futások száma összesen a futam alatt','–']],
+  ai:['A hat hétből hatot végigcsináltál, a 24 edzésből 22 megvolt — a két kimaradt alkalom a negyedik hétre esett.','Az erő a lábon mozdult a legtöbbet: a guggolás csúcsszettje 7,5 kg-mal nőtt. A fekvenyomás súlya nem változott, de egy ismétléssel többet bírtál vele.']};
+const runSay=p=>p>=95?'Végigvitted.':p>=75?'Erős futam volt.':p>=50?'A nagyobb fele megvan.':p>0?'Elindult, aztán másfelé vitt az élet.':'Ez a futam nem indult el.';
+const kv=(l,v,n='')=>`<div class="vs-kv"><span>${l}${n?`<small>${n}</small>`:''}</span><b>${v}</b></div>`;
+function riport(arg){const R=REP,T0={title:R.title,sub:'Lezárt futam',back:'futamok'};
+  if(arg==='tolt')return skel(T0,[300,90,200,200]);
+  if(arg==='hiba')return ghost(T0,'t-info','Nem sikerült betölteni a riportot.',btn('Újrapróbálás','riport','sm'));
+  if(arg==='nincs')return ghost({...T0,title:'Futam'},'t-other','Ez a futam nem található.');
+  if(arg==='fut')return ghost({...T0,title:MESO.name},'t-clock','Ez a futam még fut — a riport a lezárás pillanatában készül el.');
+  if(arg==='nincs-riport')return ghost({...T0,title:CLOSED[2].n},'t-scroll','Ehhez a lezárt futamhoz még nincs riport — generáld le a rögzített adatokból.',btn('Riport generálása','riport.keszul','sm'));
+  if(arg==='keszul')return ghost({...T0,title:CLOSED[2].n},'t-flask','Riport készül…');
+  const aiOff=arg==='ai-nincs',aiSt=arg==='ai-keszul'?'pending':arg==='ai-hiba'?'failed':'ready',open=/^(gep|ai-)/.test(arg||''),my=MEDALS.filter(m=>/^(jún|júl)/.test(m[0])),sc=Math.max(...R.bands.map(b=>b[3]));
+  const ai=aiOff?'':`<p class="fh-note">A program írta a futam adataiból — vélemény és becslés, nem mérés. A fenti számok a biztosak.</p>`+(aiSt==='ready'?R.ai.map(p=>txt(p)).join('')+`<div class="vs-in" style="padding:8px 0 0"><span>Generálva · ${R.to}</span>${vl('Újragenerálás','toast:Riport készül…')}</div>`:aiSt==='pending'?`<div class="vs-in" style="padding:0"><span>${bub('t-flask',{s:24})} Az értékelés készül…</span></div>`:`<div class="vs-in" style="padding:0"><span>Nem sikerült az értékelés.</span>${vl('Újrapróbálás','toast:Riport készül…')}</div>`);
+  return page('edzes',{...T0,sub:`Lezárt futam · ${R.from} – ${R.to}`},`
+  ${hero({lbl:`Lezárt futam · ${R.from} – ${R.to}`,verdict:runSay(R.pct),sub:'A teljesített edzések aránya',left:fill(SH_CUP,{p:R.pct*.9,s:86,c:'#F9D06A',c2:'#E9892B'}),
+    body:`<div class="vs-ms">${stars5(R.pct/100)}<span>${R.pct}%</span></div>`+tags([`${R.weeks} hét`,`Lezárva · ${R.to}`]),acts:btn('Újrafuttatás',{sheet:'start',arg:'rerun'})+lk('Sablon megnyitása','sablon')})}
+  ${sec(1,'Hogy ment',1)}
+  ${card(facts([[`${R.done}/${R.plan}`,'Edzés'],[`${R.wd}/${R.wp}`,'Hét']])+lab('Ezt akartad')+txt(`„${R.goal}”`)+note(`— és ez lett: ${R.sum}`),{i:1})}
+  ${sec(2,'Izmonként · indulás → elért csúcs / felső érték',2)}
+  ${card(ls(R.bands.map(([k,l,a,p,c])=>rw({m:k,title:l,sub:`<span class="vs-rowbar">${wlv(p/c*100,dk(k),[[a/c*100,'d']],14)}</span>`,v:`${a} → ${p} / ${c}`})))+`<div class="vs-wlk" style="margin:12px 0 0"><span><u class="d"></u>innen indult</span><span><i></i>az edény széle a felső érték</span></div>`+acts(info('Hogyan olvasd?','olvasd')),{i:2})}
+  ${sec(3,`Erő · ${R.str.length} gyakorlat`,3)}
+  ${card(ls(R.str.map(([n,k,w1,w2,a,b,r1,r2,dkg,pc])=>rw({left:rcap(a/b*92,dk(k)),title:n,sub:`${w1}. hét → ${w2}. hét · ${kg(a)} → ${kg(b)} kg · ${r1} → ${r2} rep<br>${dkg?`+${kg(dkg)} kg · `:''}+${kg(pc)}% becsült 1RM · ${muscleLabel(k)}`,v:dkg?`+${kg(dkg)} kg`:`+${kg(pc)}%`}))),{i:3})}
+  ${sec(4,`Rekordok · ${my.length} medál`,4)}
+  ${card(my.length?ls(my.map(m=>rw({left:rcap(m[7]),title:m[2],sub:`${m[3]} · ${m[0].split(',')[0]}`,v:m[4]}))):`<p class="fh-note" style="margin:0">Ebben a futamban nem született rekord.</p>`,{i:4})}
+  ${sec(5,'A futam után',5)}
+  ${card(lab('Saját értékelés')+txt(R.self)+lab('A mostani tervedhez képest')+`<p class="fh-note" style="margin:0">Ugyanazok az izmok — mennyit bírtak akkor a csúcson, és mennyit kapnak most.</p>`
+    +tubes(R.bands.map(([k,l,,p])=>{const now=WMUS.find(m=>m[1]===k)[2];return {m:k,l,v:now,s:`akkor ${p}`,p:now/sc*94,wl:p/sc*94,c:dk(k),t:`${l} · akkor ${p}, most ${now} szett`}}),{h:92,cls:'sm',gap:6})
+    +`<details class="vs-det"${open?' open':''}><summary>${bub('t-chat',{s:30})}<span>${aiOff?'Életmód a futam alatt':'Mit olvas ki ebből a gép?'}</span><i aria-hidden="true">▾</i></summary><p class="fh-note">A futam napjainak összesítése — nem napi mérés, hanem a teljes ablak átlaga/összege.</p>${R.ctx.map(c=>kv(c[0],c[1],c[2])).join('')}${ai}</details>`
+    +ls(rw({icon:'t-template',title:'Sablon mentése ebből a futamból',ve:'tosabl'}),rw({icon:'t-repeat',title:'Riport újragenerálása',ve:'toast:Riport készül…'})),{i:5})}`)}
+/* két lezárt futam egymás mellett (MesoComparePage): két useMesoReport + focusDiff + peakVolumeRows + sharedStrengthDeltas + contextDiff */
+const CMPB={title:'Recovery rebuild',from:'febr 9.',to:'ápr 5.',weeks:8,pct:88,done:28,plan:32,wd:8,wp:8};
+function osszevetes(arg){const A=REP,B=CMPB,T0={title:'Összevetés',sub:'Két lezárt futam',back:'futamok'};
+  if(arg==='tolt')return skel(T0,[260,110,170,200]);
+  if(arg==='ervenytelen')return ghost(T0,'t-compare','Válassz két lezárt futamot az összevetéshez — a Lezárt futamaid oldal „Összevetés” módjában.',btn('Lezárt futamaid megnyitása','futamok','sm'));
+  const colH=(s,r)=>`<div><small>${s}</small><b>${r.title}</b><span>${r.from} → ${r.to}</span><span>${r.weeks} hét</span></div>`;
+  if(arg==='a-nincs'||arg==='hiba')return page('edzes',T0,hero({lbl:'A · B',verdict:arg==='hiba'?'Az egyik riportot nem sikerült betölteni.':'Az egyik futamnak még nincs riportja.',sub:'A másik futam közben a helyén marad.',
+    body:`<div class="vs-ab">${arg==='hiba'?`<div><small>A</small><span>Nem sikerült betölteni.</span>${lk('Újrapróbálás','osszevetes')}</div>`:`<div><small>A</small><span>Előbb generálj riportot</span>${lk('Riport megnyitása','riport.nincs-riport')}</div>`}${colH('B',B)}</div>`}));
+  const win=A.pct>=B.pct?A:B,los=win===A?B:A,ROWS=[['Hát',12,14,10],['Váll',14,16,10],['Comb',14,14,12],['Mell',14,14,12],['Lábhajlító',11,12,9],['Tricepsz',8,10,null]];
+  const STR=[['Guggolás','quad',7.5,4.2,12.5,9.8],['Döntött törzsű evezés','back-mid',5,3.1,2.5,1.6],['Fekvenyomás','chest-mid',0,2.4,5,3.3]];
+  const CTX=[['Alvás','7,2 h','6,9 h'],['Kcal','2 840 kcal','2 610 kcal'],['Energia','6,8','6,1'],['Stressz','4,1','5,2'],['Súlyváltozás','+1,2 kg','−0,4 kg'],['Sport','1 260 perc','–']];
+  const sd=(dkg,pc,w)=>`<span>${dkg==null?'–':`${dkg>0?'+':''}${kg(dkg)} kg`}</span><b class="${w?'win':''}">${pc>0?'+':''}${kg(pc)}%</b>`;
+  return page('edzes',T0,`
+  ${hero({lbl:'A · B',verdict:`A ${win.title} futamból csináltál meg többet: ${win.pct}% a ${los.pct}% mellett.`,sub:'A betervezett edzések mekkora részét csináltad meg.',
+    body:`<div class="vs-vs">${tubes([{l:`A · ${A.title}`,v:A.pct+'%',s:`${A.done}/${A.plan} edzés · ${A.wd}/${A.wp} hét`,p:A.pct*.94,c:'var(--dom)',on:'riport'},{l:`B · ${B.title}`,v:B.pct+'%',s:`${B.done}/${B.plan} edzés · ${B.wd}/${B.wp} hét`,p:B.pct*.94,c:'#1877F2',on:'riport'}],{h:132})}</div><div class="vs-ab">${colH('A',A)}${colH('B',B)}</div>`,
+    acts:btn('A riportja','riport')+lk('B riportja','riport')})}
+  ${sec(1,'Fókusz-különbség',1)}
+  ${card(`<div class="vs-kv"><span>A</span><span class="fh-chips" style="margin:0"><span class="tx"><b>Hát ★</b></span><span class="tx"><b>Comb ★</b></span><span class="tx add">Váll</span></span></div><div class="vs-kv"><span>B</span><span class="fh-chips" style="margin:0"><span class="tx add">régi modell · címke</span></span></div>`+note('★ = hangsúlyos izom · szaggatott = csak szinten tartott. Ha nincs jelölés: minden izom Építés.'),{i:1})}
+  ${sec(2,'Csúcs-volumen · szett/hét',2)}
+  ${card(`<div class="vs-cmp c4"><span>Izom</span><b class="h">A csúcs</b><b class="h">A felső érték</b><b class="h">B csúcs</b>${ROWS.map(r=>`<span>${r[0]}</span><b>${r[1]}</b><b>${r[2]}</b><b>${r[3]??'–'}</b>`).join('')}</div>`,{i:2})}
+  ${sec(3,`Közös gyakorlatok · ${STR.length}`,3)}
+  ${card(STR.map(([n,k,ak,ap,bk,bp])=>`<div class="vs-log"><div class="vs-kv" style="border:0;padding:0 0 8px"><span><b style="font-family:var(--ff);font-weight:650;color:var(--ink)">${n}</b><small>${muscleLabel(k)}</small></span></div><div class="vs-ab sd"><div><small>A</small>${sd(ak,ap,ap>bp)}</div><div><small>B</small>${sd(bk,bp,bp>ap)}</div></div></div>`).join('')
+    +note('kg = a csúcsszett terhelésének változása · % = a becsült 1RM változása (ugyanaz a súly több ismétléssel 0 kg, de valós %). A jobbik oldal zölddel áll.'),{i:3})}
+  ${sec(4,'Kontextus-átlagok',4)}
+  ${card(`<div class="vs-cmp"><span>Mutató</span><b class="h">A</b><b class="h">B</b>${CTX.map(r=>`<span>${r[0]}</span><b>${r[1]}</b><b>${r[2]}</b>`).join('')}</div>`+note('Súlyváltozás (mért napok) — a mért, egymást követő napok változásainak összege. Ahol nincs adat, „–” áll, sosem 0.'),{i:4})}`)}
+/* sablonok (MesoTemplatesPage · useMesoTemplates): egy sablon = egy hét receptje — hét kapszula, az edzésnapok tele */
+const weekCaps=on=>`<span class="vs-caps wide wk" style="--c:var(--dom)">${['H','K','Sze','Cs','P','Szo','V'].map((d,j)=>`<i class="${on.includes(j)?'f':''}"><b>${d}</b></i>`).join('')}</span>`;
+function sablonok(arg){const T0={title:'Sablonjaid',sub:'Edzéstervek',back:'konyvtar'},list=arg==='ures'?[]:TPL,runs=list.reduce((s,t)=>s+t.runs,0);
+  if(arg==='tolt')return skel(T0,[230,170,170,170]);
+  return page('edzes',T0,`
+  ${hero({lbl:'Sablonjaid',verdict:list.length?`${list.length} sablonból indíthatsz.`:'Még nincs sablonod.',sub:'Egy sablon a recept — futamot indítasz belőle, és az már a te terved.',art:'t-template',body:tags([['t-template',`${list.length} sablon`],['t-play',`${runs} futam indult belőlük`]]),
+    acts:btn('Új terv összeállítása','ujterv')+`<p class="fh-note" style="margin:0;flex-basis:100%;color:#fff">Sablonból indulsz, vagy nulláról építed</p>`})}
   ${sec(1,'Sablonok · egy kapszula egy nap',1)}
-  ${card(TPL.map(t=>`<button class="vs-tpl" data-go="sablon"><span class="vs-hd"><span class="g"><strong>${t.n}</strong><small>${t.split}</small></span>${st(t.runs?`${t.runs} futam`:'még nem futott',t.runs?'plan':'q')}${chev()}</span>
-      <span class="wkc">${weekCaps(t.days)}<span class="vs-stk">${t.mus.map(k=>mchp(k,'sm')).join('')}</span></span>${facts([[t.weeks,'hét'],[t.days,'nap / hét'],['~'+t.min,'perc / edzés']])}</button>`).join('')
-    +note('A listán nincs törlés: a sablon saját oldalán van, ahol látod is, mit törölnél.'),{i:1})}`)}
-function sablon(){const t=TPL[0];
-  return page('edzes',{title:t.n,sub:`Sablon · ${t.split}`,back:'sablonok'},`
-  ${hero({lbl:'Sablon',verdict:`${t.weeks} hét × ${t.days} edzésnap.`,sub:'Ez a hét felépítése — a futam ebből készül.',body:`<div class="vs-hg">${weekTubes('plan')}</div><div class="fh-chips">${t.mus.map(k=>`<span>${mchp(k,'sm')}${muscleLabel(k)}</span>`).join('')}</div>`,acts:btn('Futam indítása ebből',{sheet:'start'})})}
-  ${sec(1,`A hét felépítése · ${t.days} edzésnap`,1)}
-  ${card(DAYS.map(d=>d.rest||d.sport?`<div class="vs-tday muted"><div class="dh"><b>${d.full}</b><span>${d.sport?'röplabda · meccs':'pihenőnap'}</span></div></div>`
-    :`<div class="vs-tday"><div class="dh"><b>${d.full} · ${d.t}</b><span>${d.sets} szett · ~${d.min} perc</span></div>${d.ex.map(e=>`<div class="ex">${mchp(e[1],'sm')}<span class="g">${e[0]}</span><span class="v"><b>${e[2]}×${repTxt(e[3])}</b> · ${kgTxt(e[6])}</span></div>`).join('')}</div>`).join(''),{i:1})}
-  ${sec(2,'Heti szettek izmonként',2)}
-  ${card(WMUS.slice(0,6).map(m=>mus(m[1],m[0],`${m[2]} szett`,clamp(m[2]/13*100,6,100))).join(''),{i:2})}
-  ${sec(3,'Futamok ebből a sablonból',3)}
-  ${card(ls(rw({icon:'t-peak',title:'Hypertrophy 04 · Tavasz',sub:'most fut · 3 / 6. hét',right:caps(6,2,'var(--dom)',{cur:2}),on:'run'}),rw({icon:'t-scroll',title:'Hypertrophy 03 · Ősz',sub:'lezárva · Nov 13',right:caps(6,6,'var(--faint)'),on:'riport'})),{i:3})}
-  ${sec(4,'A sablon kezelése',4)}
-  ${card(ls(rw({icon:'t-pencil',title:'Szerkesztés',on:'sablonszerk'}),rw({icon:'t-repeat',title:'Másolat',on:{toast:'Másolat készült — a másolat szerkesztője nyílik'}}),rw({icon:'t-trash',title:'<span style="color:var(--bad)">Sablon törlése</span>',on:{sheet:'tdel'}}))
-    +note('A törlés a korábbi futamokat és a riportjaikat nem bántja — azok megmaradnak.'),{i:4})}`)}
-function sablonszerk(){const d=DAYS[0];
-  return page('edzes',{title:'Hétfő · Push',sub:'Sablon szerkesztése · Hypertrophy 04 · Tavasz',back:'sablon'},`
-  ${hero({lbl:'Sablon szerkesztése',verdict:'Ugyanaz a szerkesztő, mint a futó terv napjainál.',sub:'Minden változás azonnal mentődik.',
-    body:`<div class="fh-pills" style="margin-top:12px">${DAYS.map((x,i)=>`<button class="fh-pill ${i===0?'on':''}" data-toast="${x.full} · ${x.t}">${x.d}</button>`).join('')}</div>${pour(d.ex.map(e=>[e[1],e[2]]))}${pourLg(d.ex)}`,acts:btn('+ Gyakorlat hozzáadása',{toast:'Gyakorlat-választó'})})}
-  ${sec(1,'Sorrend és előírás',1)}
-  ${card(ls(d.ex.map(e=>edRow(e[0],e[1],e[2],e[3],e[4],e[6])))+note('Egy feladatra egy felület: a sablon napja és a futó terv napja ugyanígy néz ki.'),{i:1})}`)}
-/* az új terv előnézete: ahány hetet kérsz, annyi edény — emelkedik, tetőzik, a végén leapad */
-const WZW=[4,5,6,7,8];
-function wzArc(){const n=WZW[ST.wz],v=Array.from({length:n},(_,i)=>i===n-1?40:Math.round(55+45*i/(n-2)));
-  return tubes(v.map((p,i)=>({l:`${i+1}.`,p:0,wl:p*.94,ghost:true,hatch:i===n-1,mark:i===n-1?'↓':i===n-2?'▲':'',c:'var(--dom)',t:`${i+1}. hét${i===n-1?' · pihenőhét':i===n-2?' · csúcshét':''}`})),{h:64,cls:'wk',gap:5})}
-function ujterv(stepArg){
-  if(stepArg==='gen')return page('edzes',{title:'Új terv',sub:'Összeállítás',back:'konyvtar'},`
-    ${hero({lbl:'Összeállítás',verdict:'Rakom össze a heted.',sub:'Kiszámolom, melyik nap mit edzel, és hétről hétre mennyit.',left:fill(SH_FLASK,{p:58,s:84,cls:'bubl'}),acts:btn('Kész — mutasd a vázlatot','ujterv.kesz')})}
-    ${card(ls(rw({icon:'t-flask',title:'Dolgozom rajta…',sub:'kb. 10 másodperc · nem kell itt maradnod'}))+`<div class="vs-rowbar" style="margin-top:12px">${level(58,{h:16,label:'napok',val:'hetek'})}</div>`,{i:1})}`);
-  if(stepArg==='kesz')return page('edzes',{title:'A vázlatod',sub:'Új terv · még nincs mentve',back:'konyvtar'},`
-    ${hero({lbl:'Még nincs mentve',verdict:'Nézd át, írd át.',sub:'Ami nem stimmel, azt írd át — csak utána mentsük el. A vázlat a memóriában él, amíg el nem mented — ki-be lépkedhetsz benne.',body:`<div class="vs-hg">${wzArc()}</div>`,acts:btn('Mentés',{toast:'Elmentve — a terv a Következnek listába került'})+lk('Újra kérdezz','ujterv')})}
-    ${sec(1,'A hét',1)}
-    ${dayCards(1)}`);
-  const q=(n,t,h,opts,on,i,cmd)=>sec(n,t,i)+card(`<p class="fh-txt" style="margin-bottom:10px">${h}</p>`+(Array.isArray(on)?`<div class="vs-wd">${opts.map((o,j)=>`<button class="${on.includes(j)?'on':''}" data-ve="multi"><i></i><b>${o}</b></button>`).join('')}</div>`:chips(opts,on,cmd)),{i});
-  return page('edzes',{title:'Új terv',sub:'Pár kérdés, és összerakom',back:'konyvtar'},`
-  ${hero({lbl:'Új terv',verdict:'Pár kérdés, és összerakom.',sub:'Csak azt kérdezem meg, amit nem tudok kitalálni helyetted.',body:`<div class="vs-hg">${wzArc()}</div>`+note(`Ilyen íve lesz ${WZW[ST.wz]} hétre: emelkedik, az utolsó előtti héten tetőzik, a végén pihenőhét.`)})}
-  ${q(1,'Mennyi időre','Hány hét legyen?',WZW.map(n=>n+' hét'),ST.wz,1,i=>`wzw:${i}`)}
-  ${q(2,'Mikor érsz rá','Mely napokon edzel?',['H','K','Sze','Cs','P','Szo','V'],[0,1,2,3,4],2)}
-  ${q(3,'Mi a cél','Mire menjen ki a terv?',['Izomépítés','Erő','Fogyás mellett tartás'],0,3)}
-  ${q(4,'Mit kíméljünk','Van, ami most fáj?',['Semmi','Váll','Térd','Hát'],1,4)}
-  ${card(`<p class="fh-note" style="margin:0">Az edzőtermi időpontjaidhoz nem nyúlok — azokat te állítod be, és nem találom ki helyetted.</p>`,{i:5})}`,
-  {foot:`<button class="btn" style="flex:1" data-go="ujterv.gen">Rakd össze</button>`})}
+  ${card(list.length?list.map((t,i)=>`<button class="vs-tpl" data-go="${i?'sablon.ures':'sablon'}" aria-label="Sablon · ${t.n}"><span class="vs-hd"><span class="g"><strong>${t.n}</strong><small>${t.split}</small></span>${chev()}</span>
+      <span class="wkc">${weekCaps(t.wd)}<span class="vs-stk">${t.mus.map(k=>mchp(k,'sm')).join('')}</span></span>${facts([[t.weeks,'hét'],[t.days,'nap hetente'],['~'+t.min,'perc']])}<small class="vs-use">${t.use}</small></button>`).join(''):`<p class="fh-note" style="margin:0">Még nincs sablonod — az elsőt fent állíthatod össze.</p>`,{i:1})}`)}
+const tplTubes=()=>tubes(DAYS.map(d=>d.ex?{l:d.d,v:d.sets,p:d.sets/19*94,c:dk(d.mus[0][0]),mark:d.t.split(' ')[0],t:`${d.full} · ${d.t} · ${d.sets} szett`}:{l:d.d,v:'–',p:0,hatch:true,ic:d.sport?'t-volley':'t-moon',mark:'',t:`${d.full} · ${d.sport?d.t:'Pihenő'}`}),{h:96,cls:'wk',gap:6});
+/* egy sablon története (MesoTemplateStoryPage): templateWeekSets, templateSessionMinutes, templateRuns */
+function sablon(arg){const t=TPL[0],T0={title:t.n,sub:'Sablonjaid',back:'sablonok'};
+  if(arg==='tolt')return skel(T0,[300,150,150,120]);
+  if(arg==='nincs')return ghost({...T0,title:'Sablon'},'t-other','Ez a sablon nem található.');
+  const e=arg==='ures',tt=e?TPL[2]:t,T=TILES(),top=Math.max(...T.map(x=>x.s)),del=ST.tdel||arg==='torol';
+  return page('edzes',{...T0,title:tt.n},`
+  ${hero({lbl:`Sablon · ${tt.split.split(' · ')[0]}`,verdict:`${tt.weeks} hét, hetente ${tt.days} edzésnap.`,sub:e?'Ennek a sablonnak még nincs heti beosztása.':'Ez a hét felépítése — a futam ebből készül.',
+    body:e?emptyTank('t-template','Ennek a sablonnak még nincs heti beosztása.'):`<div class="vs-hg">${tplTubes()}</div><div class="fh-chips">${T.slice(0,5).map(x=>`<span>${mchp(x.k,'sm')}${x.n}</span>`).join('')}</div>`+tags([`~${tt.min} perc egy edzés`,`${T.length} izomcsoport`]),acts:btn('Futam indítása ebből',{sheet:'start'})+`<p class="fh-note" style="margin:0;flex-basis:100%;color:#fff">A sablon marad, a terv a tiéd lesz</p>`})}
+  ${e?'':sec(1,'A hét felépítése',1)+card(DAYS.map(d=>d.rest||d.sport?`<div class="vs-tday muted"><div class="dh"><b>${d.d}</b><span>${d.sport?d.t:'Pihenő'}</span></div></div>`
+    :`<div class="vs-tday"><div class="dh"><b>${d.d} · ${d.t}</b><span>${d.ex.length} gyakorlat · ${d.sets} szett · ~${d.min} perc</span></div>${d.ex.map(x=>`<div class="ex">${mchp(x[1],'sm')}<span class="g">${x[0]}</span><span class="v"><b>${x[2]}×${repTxt(x[3])}</b> · ${x[6]===0?'saját testsúly':x[6]==null?'—':kg(x[6])+' kg'}</span></div>`).join('')}</div>`).join(''),{i:1})
+    +sec(2,'Heti szettek izmonként',2)+card(T.map(x=>mus(x.k,x.n,`${x.s} szett`,clamp(x.s/top*100,6,100))).join('')+acts(info('Mit jelent a szám?','szam')),{i:2})}
+  ${sec(e?1:3,'Futamok ebből a sablonból',3)}
+  ${card(e?`<p class="fh-note" style="margin:0">Még nem indult futam ebből.</p>`:ls(rw({icon:'t-peak',title:MESO.name,sub:`Most fut — ${MESO.week}. hét a ${MESO.of}-ból`,right:caps(MESO.of,MESO.week-1,'var(--dom)',{cur:MESO.week-1}),on:'terv'}),rw({icon:'t-scroll',title:CLOSED[1].n,sub:`Lezárva · ${CLOSED[1].weeks} hét`,on:'riport'})),{i:3})}
+  ${sec(e?2:4,'A sablon kezelése',4)}
+  ${card(ls(rw({icon:'t-pencil',title:'Szerkesztés',sub:'A napok és a gyakorlatok átírása',on:'sablonszerk'}),rw({icon:'t-repeat',title:'Másolat készítése',sub:'Egy saját változat, amit szabadon átírhatsz',ve:'tcopy'}),
+    rw({icon:'t-trash',title:`<span style="color:var(--bad)">${del?'Biztos? Törlés':'Sablon törlése'}</span>`,sub:'A már elindult futamok és a riportjaik megmaradnak',ve:del?'tdelgo':'tdelask'}))+(del?acts(vl('Mégsem','tdelno')):''),{i:4})}`)}
+/* a sablon / vázlat szerkesztője (MesoWeekEditor → MesoDayEditor → DayLoadPanel / WeekLoadPanel) — MÁS felület, mint a futó terv napszerkesztője.
+   r = 'sablonszerk' (mentett sablon, 400 ms-os automata mentés) vagy 'ujterv' (a kérdések utáni vázlat, két mentési úttal) */
+const tdNew=()=>edNew('het').ex;
+const conflict=()=>box('t-info','Láb egymást követő napokon','<p>(Kedd Legs A → Sze Legs) — pihenőnap ajánlott közéjük.</p>','var(--warn)');
+function tdCard(e,i,n){return `<div class="vs-ex"><div class="eh">${mchp(e.k,'sm')}<strong>${e.n}<small>${muscleLabel(e.k)}</small></strong><span class="vs-mv"><button data-ve="tdmv:${i}|-1" aria-label="${e.n} feljebb" ${i===0?'disabled':''}>▲</button><button data-ve="tdmv:${i}|1" aria-label="${e.n} lejjebb" ${i===n-1?'disabled':''}>▼</button><button data-ve="tddel:${i}" aria-label="${e.n} törlése">✕</button></span></div>
+  <div class="eg in"><span><input value="${e.w}" inputmode="numeric" aria-label="Munkaszettek"><small>Munkaszettek</small></span><span class="rp"><input value="${e.lo}" inputmode="numeric" aria-label="Rep minimum"><i>–</i><input value="${e.hi}" inputmode="numeric" aria-label="Rep maximum"><small>Rep</small></span><span><input value="${e.kg==null?'':kg(e.kg)}" placeholder="auto" inputmode="decimal" aria-label="Kiinduló súly (kg)"><small>Kiinduló súly (kg)</small></span><span><input value="${e.rir}" inputmode="numeric" aria-label="Cél RIR"><small>Cél RIR</small></span></div>
+  <div class="vs-sjl">${fv(e,`tdfv:${i}`)}<label class="vs-bem"><input value="${e.bem}" inputmode="numeric" aria-label="Bemelegítő szettek"><small>Bemelegítő szettek</small></label></div>
+  <p class="fh-note" style="margin:6px 0 0">Hozzájárulás · <b style="color:${dk(e.k)}">${shortM(e.k)} +${e.w}</b></p></div>`}
+function weekEd(r,face){const dr=r==='ujterv',wkR=dr?'ujterv.kesz':'sablonszerk',d=DAYS[0],T=TILES();
+  const T0={title:dr?'A vázlatod':'Szerkesztés',sub:dr?'Új terv · még nincs mentve':`Sablon · ${MESO.name}`,back:dr?'ujterv':'sablon'};
+  if(!ST.td)ST.td=tdNew();
+  const ex=ST.td,sets=ex.reduce((a,e)=>a+e.w,0),min=Math.round(sets*3.9),mus=edMus(ex);
+  if(face==='nap')return page('edzes',{...T0,title:`${d.full} · ${d.t}`,back:wkR},`
+    ${hero({lbl:dr?'Vázlat · egy nap':'Sablon · egy nap',verdict:`${sets} szett, ~${min} perc, ${ex.length} gyakorlat.`,sub:'Minden mező közvetlenül írható. Átrendezés a ▲▼ nyilakkal, törlés az ✕-szel.',
+      body:lab('A nap neve')+`<input class="fh-in" value="${d.t}" aria-label="${d.d} nap neve">`+note('✎ koppints a névre az átnevezéshez')+`<div class="vs-hg">${tubes(mus.slice(0,3).map(([k,s])=>({m:k,l:shortM(k),v:s,s:'/ ~8',p:s/9*94,wl:8/9*94,c:dk(k)})),{h:86,cls:'sm n3'})}</div>`,acts:btn(`Napi terhelés · ${d.d}`,`${r}.nap-terh`)+ve('＋ Gyakorlat','xpick:tpl','ghost')})}
+    ${sec(1,`Gyakorlatok · ${ex.length} gyakorlat · ${sets} szett`,1)}
+    ${card(ex.length?ex.map((e,i)=>tdCard(e,i,ex.length)).join(''):`<p class="fh-note" style="margin:0">Ezen a napon még nincs gyakorlat.</p>`,{i:1})}`);
+  if(face==='nap-terh'){const near=mus.filter(([,s])=>s>=7).length;return page('edzes',{...T0,title:'Napi terhelés',sub:`${d.d} · ${d.t}`,back:`${r}.nap`},`
+    ${hero({lbl:`Napi terhelés · ${d.d} · ${d.t}`,verdict:near?`${near} izom közel jár a napi határhoz.`:'Egy izom sincs a napi határ közelében.',sub:`${sets} szett · ~${min} perc · ${ex.length} gyakorlat`,
+      body:`<div class="vs-hg">${tubes(mus.map(([k,s])=>({m:k,l:shortM(k),v:s,s:'/ ~8',p:s/9*94,wl:8/9*94,c:dk(k),over:s>8})),{h:92,cls:'sm',gap:6})}</div>`+facts([[sets,'szett'],[`~${min}`,'perc'],[mus.length,'izom'],[near||'✓','határ-közel']])})}
+    ${sec(1,'Izmonként · a kb. 8 szett/edzés határhoz mérve',1)}
+    ${card(ls(mus.map(([k,s])=>rw({m:k,title:`${shortM(k)}${s>8?' '+st('a határ fölött','warn'):s>=7?' '+st('közel a határhoz','warn'):''}`,sub:`<span class="vs-rowbar">${wlv(s/9*100,dk(k),[[8/9*100]],14)}</span><span class="fh-chips">${ex.filter(e=>e.k===k).map(e=>`<span class="tx">${e.n} +${e.w}</span>`).join('')}</span>`,v:`${s} <small>/ ~8</small>`})))+note('A határ nem tiltás — ha átléped, a rendszer átosztást javasol egy másik napra.'),{i:1})}`)}
+  if(face==='het-terh'){const rows=[...T].sort((a,b)=>b.s-a.s),peak=T.reduce((s,t)=>s+Math.max(t.s,t.ceil),0),mov=T.filter(t=>t.s!==t.ceil).length;
+    return page('edzes',{...T0,title:'Heti terhelés',sub:'Izmonként',back:wkR},`
+    ${hero({lbl:'Heti terhelés · izmonként',verdict:`${WTOTAL} szett az 1. héten, a csúcson ${peak}.`,sub:`${NDAYS()} edzésnap · ${mov} izom még a célja felé tart, ${T.length-mov} a célon van.`,body:duo(T.map(t=>[t.k,clamp(t.s/t.mrv,.12,1),clamp(t.ceil/t.mrv,.12,1)]),'md')+facts([[WTOTAL,'szett · 1. hét'],[peak,'szett · csúcs'],[mov,'mozog'],[T.length-mov,'célon']])})}
+    ${sec(1,'Csökkenő sorrendben · koppints a lebontásért',1)}
+    ${card(`<div class="vs-wlk"><span><u></u>ennyitől fejlődik</span><span><u class="d"></u>a cél a fókusz szerint</span><span><i></i>az edény széle: legfeljebb</span></div>`+rows.map(t=>{const o=ST.wlo===t.k,dir=t.s<t.ceil?'▲':t.s>t.ceil?'▼':'=',w=whereWorks(t.k);
+      return `<div class="vs-log">`+ls(rw({m:t.k,title:`${t.n} ${st(TL[t.tier],TLK[t.tier])}`,sub:`${w.length} nap / hét · ${t.s<t.ceil?`még ${t.ceil-t.s} szett a célig`:t.s>t.ceil?`${t.s-t.ceil} szettel a cél fölött`:'a célon'}<span class="vs-rowbar">${wlv(t.s/t.mrv*100,dk(t.k),[[t.mev/t.mrv*100],[t.ceil/t.mrv*100,'d']],14)}</span>`,v:`${t.s} ${dir} ${t.ceil} <small>cél</small>`,ve:`wlopen:${t.k}`,cls:o?'open':'',nochev:true}))+(o?`<div class="vs-sjp">${w.map(x=>`<div class="vs-sjl"><b>${x.d.d}</b><span class="fh-chips" style="margin:0;justify-content:flex-end">${x.ex.map(e=>`<span class="tx">${e[0]} +${e[2]}</span>`).join('')}</span></div>`).join('')}</div>`:'')+`</div>`}).join('')
+      +note('A hangsúlyos izom a legfelső értékig megy, az épülő a középsőig, a tartott az alsón marad. A jelzés sosem tilt.'),{i:1})}
+    ${sec(2,'Jelzések',2)}
+    ${card(conflict()+box('t-tick','A csúcshét is elfér','<p>Az edzésidő minden napon a sávon belül marad.</p>','var(--ok)'),{i:2})}`)}
+  const fail=face==='hiba',conf=face==='megerosit'||ST.wzConf;
+  return page('edzes',T0,`
+  ${hero({lbl:dr?'Vázlat · még nincs mentve':'Sablon · mentve',verdict:`${WTOTAL} szett az első héten, ${NDAYS()} edzésnapra.`,sub:dr?`${MESO.of} hét · 5 nap → U/L + PPL · minden izom 2×/hét`:`${MESO.of} hét · ${MESO.split} · 2× futtatva`,
+    body:lab('A terv neve')+`<input class="fh-in" value="${dr?'Új terv · szept 24.':MESO.name}" aria-label="A terv neve">`+(dr?msg('mezo','Öt napra osztottam: a hát és a váll kapja a hangsúlyt, a láb két rövidebb napra került a szombati röplabda miatt.'):box('t-note','A sablon célja','<p>Izomépítés — a hát és a váll hangsúlyával.</p>'))
+      +`<div class="vs-hg">${tubes([...T].sort((a,b)=>b.s-a.s).slice(0,5).map(t=>({m:t.k,l:t.n,v:t.s,s:`/ ${t.mrv}`,p:t.s/t.mrv*94,c:dk(t.k),on:`${r}.het-terh`})),{h:86,cls:'sm',gap:6})}</div>`,
+    acts:dr?ve('✓ Mentés + indítás','wzsave:1')+vl('Mentés sablonként','wzsave:0'):btn('Heti terhelés · izmonként',`${r}.het-terh`)})}
+  ${sec(1,'A heted · koppints egy napra',1)}
+  ${card(ls(DAYS.filter(x=>x.ex||!dr).map(x=>x.ex?rw({left:num(x.d),title:x.t,sub:`${x.sets} szett · ~${x.min}′<span class="vs-pour sm">${x.mus.map(([k,n])=>`<i style="flex:${n};--c:${dk(k)}"></i>`).join('')}</span>`,right:/Legs/.test(x.t)?st('átfedés','warn'):'',on:`${r}.nap`}):rw({left:num(x.d),title:x.sport?x.t:'Pihenőnap',cls:'muted'}))),{i:1})}
+  ${sec(2,'Heti terhelés · izmonként',2)}
+  ${card(ls(rw({icon:'t-muscle',title:'Heti terhelés · izmonként',sub:`${WTOTAL} szett · 1. hét`,right:st('1 jelzés','warn'),on:`${r}.het-terh`}))+conflict(),{i:2})}
+  ${dr?sec(3,'Újragenerálás',3)+card((fail?box('t-info','Nem sikerült az újragenerálás — a korábbi program megmaradt.',acts(vl('Újra','wzregen:1'),vl('Mégse','wzregen:0')),'var(--warn)'):'')
+    +(conf?box('t-info','Kézzel szerkesztett napjaid vannak — az újragenerálás felülírja őket.',acts(vl('Újragenerálás','wzregen:1'),vl('Mégse','wzregen:0')),'var(--warn)'):'')
+    +ls(rw({icon:'t-repeat',title:'↺ Újragenerálás',sub:'Új programot kérsz ugyanazokkal a válaszokkal',ve:'wzregen:ask'})),{i:3}):''}`)}
+const sablonszerk=arg=>arg==='tolt'?skel({title:'Szerkesztés',sub:'Sablon betöltése…',back:'sablon'},[300,64,64,64,64,64]):arg==='nincs'?ghost({title:'Sablon',sub:'Sablonjaid',back:'sablonok'},'t-other','Ez a sablon nem található.',btn('Sablonjaid','sablonok','sm')):weekEd('sablonszerk',arg||'het');
+/* új terv (MesocyclePlannerPage): az interjú (InterviewStep) → generálás → a vázlat szerkesztője */
+const WZW=[4,5,6,7,8],WZN=[[2,'full body'],[3,'full body'],[4,'upper/lower'],[5,'U/L + PPL'],[6,'PPL ×2']],WZDEF={2:[0,3],3:[0,2,4],4:[0,1,3,4],5:[0,1,2,3,4],6:[0,1,2,3,4,5]};
+function wzArc(){const n=WZW[ST.wz],cv=curveOf(n);return mesoTubes(cv.map(()=>0),{now:0,plain:true,curve:cv,h:64})}
+function ujterv(a){
+  if(/^(kesz|nap|nap-terh|het-terh)$/.test(a||''))return weekEd('ujterv',a==='kesz'?'het':a);
+  if(a==='kesz-megerosit')return weekEd('ujterv','megerosit');if(a==='kesz-hiba')return weekEd('ujterv','hiba');
+  if(ST.wzArg!==a||!ST.wzd){ST.wzArg=a;ST.wzd=a==='kapu'?[0]:[0,1,2,3,4]}
+  if(!ST.pr)ST.pr=Object.fromEntries(WMUS.map(m=>[m[1],MW[m[1]].t]));
+  const gen=a==='gen',fail=a==='hiba',dys=ST.wzd,n=dys.length,ok=n>=2&&n<=6,w=WZW[ST.wz],emph=Object.values(ST.pr).filter(t=>t==='emphasize').length;
+  const w1=WMUS.reduce((s,m)=>s+m[3],0),pk=WMUS.reduce((s,m)=>s+(ST.pr[m[1]]==='emphasize'?m[5]:ST.pr[m[1]]==='grow'?m[4]:m[3]),0),cl=Math.min(6,Math.max(2,n)),spl=WZN.find(x=>x[0]===cl)[1];
+  return page('edzes',{title:'Új terv',sub:'Pár kérdés',back:'konyvtar'},`
+  ${hero({lbl:'Új terv',verdict:'Mikor edzel — és mire gyúrsz?',sub:'Csak ennyit kérdezünk — a többit Mezo rakja össze, és a szerkesztőben bármit átírhatsz.',body:(fail?box('t-info','Nem sikerült a generálás — próbáld újra.',acts(vl('↺ Újrapróbálom','wzgen')),'var(--warn)'):'')+`<div class="vs-hg">${wzArc()}</div>`+note(`${w} hét = ${w-1} emelkedő hét + 1 pihenőhét`)})}
+  ${sec(1,`Edzésnapok · ${n} nap`,1)}
+  ${card(`<div class="vs-cnt">${WZN.map(([c,s])=>`<button class="${n===c?'on':''}" data-ve="wzn:${c}" aria-label="${c} nap / hét" aria-pressed="${n===c}"><b>${c}</b><small>${s}</small></button>`).join('')}</div>
+    <div class="vs-wd" style="margin-top:12px">${['H','K','Sze','Cs','P','Szo','V'].map((o,j)=>`<button class="${dys.includes(j)?'on':''}" data-ve="wzday:${j}" aria-pressed="${dys.includes(j)}"><i></i><b>${o}</b></button>`).join('')}</div>`+box('t-calendar',`${cl} nap → ${spl}`,`<p>minden izom ${cl<=3?cl:2}×/hét</p>`),{i:1})}
+  ${sec(2,'Hossz',2)}
+  ${card(`<p class="fh-txt" style="margin-bottom:10px">${w} hét = ${w-1} emelkedő + 1 pihenőhét</p>`+chips(WZW.map(x=>`${x} hét`),ST.wz,i=>`wzw:${i}`),{i:2})}
+  ${sec(3,'A célod · opcionális',3)}
+  ${card(`<div class="vs-tam"><textarea class="fh-in" rows="3" maxlength="400" aria-label="Mit szeretnél ebben a tervben?" placeholder="pl. röplabda szezon mellett, a vállam kímélve — de a hát és a váll nagyon jöhet"></textarea><button data-toast="Diktálás" aria-label="Diktálás">${bub('t-mic',{s:32})}</button></div>`+note('Üresen is teljes program készül — a szöveg a gyakorlatválasztást és a napok hangolását befolyásolja.'),{i:3})}
+  ${sec(4,'Fókusz · max 2 hangsúly',4)}
+  ${card(`<p class="fh-txt"><b>Mire gyúr ez a terv?</b></p><p class="fh-note" style="margin:2px 0 12px">Válassz 1–2 hangsúlyt — a többi magától nő, a Tartás szinten tart.</p>`
+    +WMUS.map(m=>`<div class="vs-pr">${mchp(m[1],'sm')}<span>${m[0]}</span><span class="vs-tri" role="group" aria-label="${m[0]} prioritás">${['emphasize','grow','maintain'].map(t=>`<button class="${ST.pr[m[1]]===t?'on':''}" data-ve="wzpr:${m[1]}|${t}" aria-pressed="${ST.pr[m[1]]===t}" ${t==='emphasize'&&ST.pr[m[1]]!==t&&emph>=2?'disabled':''}>${TL[t]}</button>`).join('')}</span></div>`).join('')
+    +facts([[w1,'szett · 1. hét'],[pk,'szett · csúcshét']]),{i:4})}
+  ${sec(5,'Ami magától megy',5)}
+  ${card(facts([[`${w-1} + 1`,'emelkedő + pihenőhét'],['+2','szett / hét / izom'],['~8','szett-határ / edzés']])+note('A szerkesztőben bármit átírhatsz — de e nélkül is kész, működő tervet kapsz.')+(ok?'':`<p class="fh-note" style="color:var(--warn)">Válassz 2–6 edzésnapot a folytatáshoz.</p>`),{i:5})}`,
+  {foot:`<button class="btn" style="flex:1" data-ve="wzgen" ${!ok||gen?'disabled style="flex:1;opacity:.5"':''}>${gen?'Mezo dolgozik…':'Program generálása'}</button>`})}
 
-/* ── SAJÁT EDZÉS ── */
+/* ── SAJÁT EDZÉS (CustomWorkoutBuilderPage) ── */
 const sjKg=v=>v==null?'auto kg':`${kg(v)} kg`;
 const sjSum=e=>`${e.w} szett · ${e.lo}–${e.hi} ism. · RIR ${e.rir} · ${sjKg(e.kg)}`;
 function sjStep(i,f,lbl,v,min,max){const auto=f==='kg'&&v==null;
   return `<div class="vs-sjl"><span>${lbl}</span><span class="vs-stp"><button data-ve="sjst:${i}|${f}|-1" ${f==='kg'?(auto?'disabled':''):(v<=min?'disabled':'')}>−</button><b class="${auto?'auto':''}">${auto?'auto':kg(v)}</b><button data-ve="sjst:${i}|${f}|1" ${f!=='kg'&&v>=max?'disabled':''}>+</button></span></div>`}
 function sjRow(e,i){const o=ST.sj.open===i;
-  return rw({left:`<span class="vs-grip">⠿</span>`,m:e.k,title:e.n,sub:`${muscleLabel(e.k)} · ${sjSum(e)}<span class="vs-rowbar">${caps(e.bem,0,'var(--faint)',{cls:'bem'})}${caps(e.w,e.w,dk(e.k))}</span>${e.warn?`<span class="vs-warn">${e.warn}</span>`:''}`,ve:`sjopen:${i}`,cls:o?'open':''})
+  return rw({left:`<span class="vs-grip" aria-hidden="true">⠿</span>`,m:e.k,title:e.n,sub:`${muscleLabel(e.k)} · ${sjSum(e)}<span class="vs-rowbar">${caps(e.bem,0,'var(--faint)',{cls:'bem'})}${caps(e.w,e.w,dk(e.k))}</span>${e.warn?`<span class="vs-warn">${e.warn}</span>`:''}`,ve:`sjopen:${i}`,cls:o?'open':''})
   +(o?`<div class="vs-sjp">${lab('Szettek')}${sjStep(i,'bem','Bemelegítő',e.bem,0,10)}${sjStep(i,'w','Munka',e.w,1,10)}${lab('Ismétlés')}${sjStep(i,'lo','Tól',e.lo,1,e.hi)}${sjStep(i,'hi','Ig',e.hi,e.lo,100)}${lab('Nehézség és súly')}${sjStep(i,'rir','Tartalék (RIR)',e.rir,0,5)}${sjStep(i,'kg','Kiinduló kg',e.kg)}
-    <div class="vs-sjl"><span>Számít a heti volumenbe</span><button class="vs-sw ${e.vol?'on':''}" data-ve="sjvol:${i}" role="switch" aria-checked="${e.vol}" aria-label="Számít a heti volumenbe"></button></div>
+    <div class="vs-sjl"><span>Számít a heti volumenbe</span><button class="vs-sw ${e.vol?'on':''}" data-ve="sjvol:${i}" role="switch" aria-checked="${e.vol}" aria-label="${e.n} · számít a volumenbe"></button></div>
     ${acts(vl('Feljebb',`sjmv:${i}|-1`,'',i===0?'disabled':''),vl('Lejjebb',`sjmv:${i}|1`,'',i===ST.sj.ex.length-1?'disabled':''),vl('Kivesz',`sjdel:${i}`,'bad'))}</div>`:'')}
-function sajat(id){
-  const demo=note(`Állapotok a demóhoz: <button class="fh-lk" data-go="sajat.uj">új, üres</button> · <button class="fh-lk" data-go="sajat">szerkesztés</button> · <button class="fh-lk" data-go="sajat.betolt">betöltés</button> · <button class="fh-lk" data-go="sajat.nincs">nem található</button>`);
-  if(id==='betolt')return page('edzes',{title:'Saját edzés',sub:'Betöltés',back:'mai'},card(emptyTank('t-clock','Betöltés…')+demo));
-  if(id==='nincs')return page('edzes',{title:'Saját edzés',sub:'Nem található',back:'mai'},card(emptyTank('t-other','Ez a saját edzés nem található — lehet, hogy törölted.',btn('Új összeállítása','sajat.uj','sm'))+demo));
+function sajat(id){const T0={title:'Saját edzés',sub:'Edzés',back:'mai'};
+  if(id==='betolt')return ghost(T0,'t-clock','Betöltés…');
+  if(id==='nincs')return ghost(T0,'t-other','Ez a saját edzés nem található — lehet, hogy törölted.');
   const mode=id==='uj'?'new':'edit';if(mode!==ST.sjmode){ST.sjmode=mode;ST.sj=mode==='new'?{name:'',open:-1,ex:[]}:SJ0()}
   const sets=ST.sj.ex.reduce((a,e)=>a+e.w,0),ok=ST.sj.name.trim()&&ST.sj.ex.length,dis=ok?'':'disabled style="opacity:.45"';
-  return page('edzes',{title:mode==='new'?'Új saját edzés':'Saját edzés',sub:'Összerakod, amit ma csinálni akarsz',back:'mai'},`
-  ${hero({lbl:'Saját edzés',verdict:'Rakd össze, amit ma csinálni akarsz.',sub:'Elmentheted későbbre, vagy egyből elindíthatod.',
+  return page('edzes',{...T0,title:mode==='new'?'Új saját edzés':'Saját edzés'},`
+  ${hero({lbl:'Saját edzés',verdict:'Összerakod, amit ma csinálni akarsz.',sub:'Elmentheted későbbre, vagy egyből elindíthatod.',
     body:`${lab('Edzés neve')}<input class="fh-in" id="sj-name" value="${ST.sj.name.replace(/"/g,'&quot;')}" placeholder="pl. Pihenőnapi felső" maxlength="120">${ST.sj.ex.length?pour(ST.sj.ex.map(e=>[e.k,e.w]))+`<div class="vs-lg">${ST.sj.ex.map(e=>`<span><i style="background:${dk(e.k)}"></i>${e.n.split(' ')[0]} <b>${e.w}</b></span>`).join('')}</div>`:`<div class="vs-pour e"><i style="flex:1"><b>üres — ide töltődnek a gyakorlatok</b></i></div>`}`,
     acts:ve('Indítás ma','sjgo','',dis)+ve('Mentés','sjsave','ghost',dis)+(ok?'':`<p class="fh-note" id="sj-hint" style="margin:0;flex-basis:100%;color:#fff">${ST.sj.name.trim()?'Adj hozzá legalább egy gyakorlatot.':'Adj nevet az edzésnek.'}</p>`)})}
   ${sec(1,`Gyakorlatok · ${ST.sj.ex.length} gyakorlat · ${sets} szett`,1)}
-  ${card((ST.sj.ex.length?ls(ST.sj.ex.map(sjRow)):emptyTank('t-dumbbell','Még nincs gyakorlat. Add hozzá az elsőt — kap egy jó alapbeállítást, amit utána finomíthatsz.'))
-    +acts(lk('+ Gyakorlat hozzáadása',{sheet:'sjpick'}))+demo,{i:1})}`)}
-function sjStepApply(i,f,d){const e=ST.sj.ex[i];if(f==='kg'){if(e.kg==null){if(d>0)e.kg=20}else{const n=Math.round((e.kg+d*2.5)*100)/100;e.kg=n<2.5?null:Math.min(999,n)}}else{const lim={bem:[0,10],w:[1,10],lo:[1,e.hi],hi:[e.lo,100],rir:[0,5]}[f];e[f]=Math.min(lim[1],Math.max(lim[0],e[f]+d))}}
+  ${card((ST.sj.ex.length?ls(ST.sj.ex.map(sjRow))+note('Húzd a sorokat a sorrendhez, koppints egyre a beállításaihoz.'):emptyTank('t-dumbbell','Még nincs gyakorlat. Add hozzá az elsőt — kap egy jó alapbeállítást, amit utána finomíthatsz.'))
+    +acts(lk('＋ Gyakorlat hozzáadása',{sheet:'sjpick'})),{i:1})}`)}
+function sjStepApply(i,f,d){edStep(ST.sj.ex[i],f,d)}
 
 /* ── TERHELÉS ── */
 /* ── TERHELÉS (= Gym · heti munka: az élő /train/week és /train/gym ugyanaz az oldal) ── */
@@ -1032,13 +1243,6 @@ const SHEETS={
     return `${shm(k,`${l} · ezen a héten`,`${d} / ${p} szett`,wordFor(d,p))}<div class="vs-rowbar">${wlv(p?clamp(d/p*100,d?3:0,100):0,dk(k),[],20)}</div>
     ${ms.length?`<div class="vl" style="margin-top:18px">${ms.map(o=>rw({m:o.k,title:muscleLabel(o.k),sub:`${o.sets} szett · ${o.lo}–${o.hi} ismétlés · ${o.days.size}×/hét — a heti tervből${SPL[o.k]?`<span class="vs-evc">${SPL[o.k].map(([s,n,c])=>`<em>${drops(n,3,dk(o.k))} ${s}${c>1?` ×${c}`:''}</em>`).join('')}</span>`:''}`,v:`+~${xp(o)} <small>XP</small>`})).join('')}</div>`:txt('Ezen a héten nincs rá külön gyakorlat a tervben.')}
     ${note(gx>0?`A tervezett hét ~${gx} XP-t hoz ennek a csoportnak — becslés; a valós XP a logolt munkából számolódik.`:'XP-előrejelzés ehhez a csoporthoz még nincs — ahhoz súly-alap kell a tervben.')}${any?note('A cseppek a sport és a futás plusz-terhelését jelzik — becslés, a szettszámokba nem számít bele.'):''}`},
-  tdel:()=>`${shm('t-trash','Törlés','Törlöd a sablont?','Hypertrophy 04 · Tavasz. A korábbi futamok és a riportjaik megmaradnak — csak a recept tűnik el a listádból.')}${acts(ve('Törlés','toastclose:Törölve','bad','style="flex:1"'),`<button class="fh-lk" data-close>Mégsem</button>`)}`,
-  close:()=>`${shm('t-coin','Lezárás','Edzésterv lezárása','Lezárás után riportot kapsz róla: mennyit csináltál meg belőle, mi változott erőben, és hogyan mozdultak az izmaid.')}
-    <div class="vs-shg">${caps(6,2,'var(--dom)',{cur:2,cls:'big'})}<small>most a 3. hétnél tartasz a 6-ból</small></div>
-    ${lab('Hogy érezted magad benne?')}${chips(['Nagyon jól','Jól','Vegyesen','Nehezen'],1)}
-    ${lab('Jegyzet (nem kötelező)')}<div class="fh-in vs-fld ph"><span>Mit vinnél tovább a következőbe?</span>${bub('t-mic',{s:30})}</div>${acts(`<button class="btn" style="flex:1" data-go="riport">Lezárás</button>`,`<button class="fh-lk" data-close>Mégsem</button>`)}`,
-  start:()=>`${shm('t-play','Futam indítása','Hypertrophy 04 · Tavasz','6 hét · 5 edzésnap hetente. A futó terved ettől nem áll le — ez a sorba kerül mögé.')}${queue()}
-    ${lab('Mikor kezdődjön?')}${chips(['Jún 16','Jún 23','Más dátum'],0)}${acts(ve('Indítás','toastclose:Elindítva — a Következnek listába került','','style="flex:1"'),`<button class="fh-lk" data-close>Mégsem</button>`)}`,
   sportlog:()=>{const K=['Röpi','Cross','TRX'],v=ST.slk===0;return `${shm(['t-volley','t-crossfit','t-trx'][ST.slk],`Sport log · ${K[ST.slk]}`,'Hogy ment?','Az idő, a terhelés és a saját élményed.')}
     <div class="fh-pills" role="group" aria-label="Sport típus">${K.map((l,i)=>`<button class="fh-pill ${i===ST.slk?'on':''}" data-ve="slk:${i}">${l}</button>`).join('')}</div>
     <div class="vl" style="margin-top:12px">${stp('Idő · perc',90)}${v?stp('Setek · összesen',5):stp('Körök · összesen',6)}</div>
@@ -1057,10 +1261,95 @@ const SHEETS={
     ${lab('Jegyzet')}<div class="fh-in vs-fld ph"><span>opcionális</span>${bub('t-mic',{s:30})}</div>${two('Mentés','runsave')}`},
   blkmenu:()=>`${shm('t-run','Futóterv','További műveletek')}${ls(rw({icon:'t-repeat',title:'Duplikálás',ve:'rbmenu:Duplikálva'}),rw({icon:'t-trash',title:'<span style="color:var(--bad)">Törlés</span>',ve:'rbmenu:Törölve'}))}`,
   custom:(a)=>`${shm('t-dumbbell','Saját edzés','Mit nyomunk ma?')}${a==='ures'?txt('Még nincs mentett saját edzésed — rakd össze az elsőt.'):ls(rw({icon:'t-dumbbell',title:'Pihenőnapi felső',sub:`3 gyakorlat · 10 szett<span class="vs-rowbar">${caps(4,0,dk('chest-mid'))} ${caps(3,0,dk('back-wide'))} ${caps(3,0,dk('shoulder-side'))}</span>`,right:`<button class="fh-lk" data-go="sajat" aria-label="Pihenőnapi felső szerkesztése">szerkesztés</button>`,on:'session.uj'}))}${acts(btn('+ Új összeállítása','sajat.uj','sm'))}`,
-  sjpick:()=>`${shm('t-addex','Gyakorlat hozzáadása','Mit teszünk bele?','Koppints egyre — alapbeállítással kerül be, és rögtön kinyílik.')}
-    ${ls(LIB.map((Lb,i)=>[Lb,i]).filter(([Lb])=>!ST.sj.ex.some(e=>e.n===Lb[0])).slice(0,8).map(([[n,k,t,last],i])=>rw({m:k,title:n,sub:`${muscleLabel(k)} · ${t==='compound'?'összetett':'izolált'}${last?` · múltkor ${last}`:' · még nem csináltad'}`,right:bub('t-addex',{s:30}),ve:`sjadd:${i}`,nochev:true})))}`
 };
 const resheet=(name,arg)=>openSheet(SHEETS[name](arg));
+/* ── a Terv / Gyakorlatok lapjai (F3 parity kör): magyarázó lap, zárás, indítás, a tervező felületek gyakorlat-választója, katalógus-gyakorlat, demó videó ── */
+const TYP={compound:'összetett',isolation:'izolált',plyo:'plyo'};
+const STH=['Most kezdem — a heted ettől a tervtől fut.','Csak beütemezem — később aktiválom.'];
+const xpList=()=>ST.xp.ctx==='sajat'?ST.sj.ex:ST.xp.ctx==='day'?(ST.ed||(ST.ed=edNew(TODAY))).ex:(ST.td||(ST.td=tdNew()));
+const xpLabel=c=>{if(c==='sajat')return 'Saját edzés';const d=c==='day'?DAYX(ST.ed?.id||TODAY):DAYS[0];return `${d.d} · ${d.t}`};
+/* ExercisePickerSheet: kereső, régió- és izomszűrő, soronként inger-szint és demó, több gyakorlat is felvehető egymás után */
+function xpBody(){const X=ST.xp,q=X.q.trim().toLowerCase(),subs=X.f!=='all'&&X.f!=='plyo'?MUSCLES.filter(m=>m.region===X.f):[];
+  const rows=LIB.map((L,i)=>[L,i]).filter(([[n,k,t]])=>(X.f==='all'||(X.f==='plyo'?t==='plyo':X.sub?k===X.sub:regionOf(k)===X.f))&&(!q||n.toLowerCase().includes(q)));
+  return `<div class="fh-pills">${[['all','Összes'],['plyo','Plyo'],...REGIONS.map(r=>[r.key,r.label])].map(([k,l])=>`<button class="fh-pill ${X.f===k?'on':''}" data-ve="xpf:${k}" aria-pressed="${X.f===k}">${l}</button>`).join('')}</div>
+  ${subs.length>1?`<div class="fh-pills" style="margin-top:8px">${subs.map(m=>`<button class="fh-pill ${X.sub===m.key?'on':''}" data-ve="xps:${m.key}" aria-pressed="${X.sub===m.key}">${m.label}</button>`).join('')}</div>`:''}
+  ${rows.length?ls(rows.map(([[n,k,t],i])=>rw({m:k,title:n,sub:`${muscleLabel(k)} · ${TYP[t]}<span class="vs-rowbar vs-stim"><em>STIM</em>${drops(3+(i%3),5,dk(k))}${i%4===0?vl('▶ Demo',`xpvid:${i}`):''}</span>`,right:X.flash===i?st('Hozzáadva','ok'):`<span class="vs-plus" aria-hidden="true">+</span>`,ve:`xpadd:${i}`,nochev:true})+(X.vid===i?`<div class="vs-vid">${bub('t-play',{s:44})}<small>Demo videó</small></div>`:''))):`<p class="fh-note" style="margin-top:14px">Nincs találat ezzel a szűrővel.</p>`}`}
+const xpSheet=c=>{const [ctx,q='']=String(c||'sajat').split(':');ST.xp={ctx,f:'all',sub:null,q,n:0,flash:-1,vid:-1};
+  return `${shm('t-dumbbell',`Gyakorlat választás · ${xpLabel(ctx)}`,'Mit pakolunk be?')}<div class="vs-xph"><span id="xp-n"></span><button class="btn sm" data-close id="xp-done">Kész</button></div><input id="xp-q" class="fh-in" type="search" value="${q}" placeholder="Keresés · pl. row, curl, press" autocomplete="off" aria-label="Keresés"><div id="xp-body">${xpBody()}</div>`};
+Object.assign(SHEETS,{
+  tinfo:(a)=>{const [l,t,c]=TINFO[a]||TINFO.nyolc;return `${shm('t-info',l,t)}${txt(c)}`},
+  /* MesoCloseSheet: megerősítés + a nem kötelező saját értékelés; a Lezárás a riportra visz */
+  close:()=>`${shm('t-coin','Edzésterv · zárás','Futam lezárása',`A(z) ${MESO.name} futam lezárul — a riport a zárás pillanatának állapotát rögzíti.`)}
+    <div class="vs-shg">${caps(MESO.of,MESO.week-1,'var(--dom)',{cur:MESO.week-1,cls:'big'})}<small>most a ${MESO.week}. hétnél tartasz a ${MESO.of}-ból</small></div>
+    ${lab('Saját értékelés')}<div class="vs-tam"><textarea class="fh-in" rows="4" placeholder="Hogy sikerült a terv? (opcionális)" aria-label="Saját értékelés"></textarea><button data-toast="Diktálás" aria-label="Diktálás">${bub('t-mic',{s:32})}</button></div>
+    ${acts(`<button class="btn bad" style="flex:1" data-go="riport">Lezárás</button>`,`<button class="fh-lk" data-close>Mégse</button>`)}`,
+  /* MesoStartSheet: kezdés dátuma + Aktív / Tervezett; sablonból és újrafuttatásból is ez nyílik */
+  start:(a)=>{ST.startSt=0;return `${shm('t-play','Edzésterv · indítás','Mikor kezdjük?',a==='rerun'?CLOSED[1].n:MESO.name)}
+    ${lab('Kezdés')}<input class="fh-in" type="date" value="2026-09-24" aria-label="Kezdés dátuma">
+    ${lab('Állapot')}<div class="fh-pills" role="group" aria-label="Futam állapota"><button class="fh-pill on" data-ve="startst:0" aria-pressed="true">Aktív</button><button class="fh-pill" data-ve="startst:1" aria-pressed="false">Tervezett</button></div><p class="fh-note" id="start-hint">${STH[0]}</p>
+    ${acts(ve('Indítás','startgo','','style="flex:1"'),`<button class="fh-lk" data-close>Mégse</button>`)}`},
+  xpick:xpSheet,sjpick:()=>xpSheet('sajat'),
+  /* CatalogExerciseSheet: új gyakorlat (uj) vagy szerkesztés a törléssel (szerk) */
+  cat:(a)=>{const ed=a==='szerk';return `${shm('t-muscle','Gyakorlat · Katalógus',ed?'Gyakorlat szerkesztése':'Új gyakorlat')}
+    ${lab('Név')}<input class="fh-in" value="${ed?'Döntött törzsű evezés':''}" placeholder="pl. Cable Pull-Around" aria-label="Név">
+    ${lab('Izomcsoport')}<div class="vs-catm" role="group" aria-label="Izomcsoport">${REGIONS.map(r=>`<small>${r.label}</small><div class="fh-pills">${MUSCLES.filter(m=>m.region===r.key).map(m=>`<button class="fh-pill ${m.key==='back-mid'?'on':''}" data-ve="catm">${m.label}</button>`).join('')}</div>`).join('')}</div>
+    ${lab('Típus')}${chips(['összetett','izolált','plyo'],0)}
+    <div class="vs-sjl" style="margin-top:12px"><span>Stim</span><span class="vs-stp"><button data-ve="catst:cat-stim|-1" aria-label="Stim csökkentése">−</button><b id="cat-stim">0,70</b><button data-ve="catst:cat-stim|1" aria-label="Stim növelése">+</button></span></div>
+    <div class="vs-sjl"><span>Fáradtság</span><span class="vs-stp"><button data-ve="catst:cat-fat|-1" aria-label="Fáradtság csökkentése">−</button><b id="cat-fat">0,30</b><button data-ve="catst:cat-fat|1" aria-label="Fáradtság növelése">+</button></span></div>
+    ${lab('Videó URL')}<input class="fh-in" value="${ed?'https://youtu.be/9efgcAjQe7E':''}" placeholder="https://youtu.be/…" aria-label="Videó URL">
+    ${ed?acts(vl('Gyakorlat törlése','catdel','bad')):''}${two('Mentés','toastclose:Mentve')}`},
+  /* VideoUrlSheet: a demó videó linkje; ha már van, eltávolítható */
+  video:(a)=>{const has=a==='van';return `${shm('t-play','Videó · Döntött törzsű evezés','Demo videó')}
+    ${lab('Videó URL')}<input class="fh-in" value="${has?'https://youtu.be/9efgcAjQe7E':''}" placeholder="https://youtu.be/… vagy https://instagram.com/reel/…" aria-label="Videó URL">
+    ${acts(ve('Mentés','toastclose:Mentve','','style="flex:1"'),has?vl('Eltávolítás','toastclose:Videó eltávolítva','bad'):`<button class="fh-lk" data-close>Mégse</button>`)}`}
+});
+document.addEventListener('click',e=>{
+  if(!mine())return;const t=e.target,ez=t.closest('[data-ve]');if(!ez)return;
+  const inner=t.closest('[data-toast],[data-go],[data-sheet],[data-close]');if(inner&&inner!==ez&&ez.contains(inner))return;
+  const [cmd,...rest]=ez.dataset.ve.split(':'),a=rest.join(':');
+  const xr=()=>{const b=$('#xp-body');if(b)b.innerHTML=xpBody();const n=$('#xp-n'),dn=$('#xp-done');if(n)n.textContent=ST.xp.n?`${ST.xp.n} hozzáadva`:'';if(dn)dn.textContent=ST.xp.n?`Kész · ${ST.xp.n}`:'Kész'};
+  switch(cmd){
+    case 'toast':toast(a);break;
+    case 'activate':toast('Aktiválva — ez lett a futó terved');F.go('terv.fut');break;
+    case 'tosabl':toast('Sablon készült a futamból — megnyílik a szerkesztője');F.go('sablonszerk');break;
+    case 'tcopy':toast('Másolat készült — megnyílik a szerkesztője');F.go('sablonszerk');break;
+    case 'tdelask':ST.tdel=true;repaint();break;
+    case 'tdelno':ST.tdel=false;repaint();break;
+    case 'tdelgo':ST.tdel=false;toast('Sablon törölve');F.go('sablonok');break;
+    case 'gyf':ST.gy.f=a||null;ez.parentNode.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===ez));$('#gy-list').innerHTML=gyList();break;
+    case 'edopen':ST.ed.open=ST.ed.open===+a?-1:+a;repaint();break;
+    case 'edst':{const [i,f,d]=a.split('|');edStep(ST.ed.ex[+i],f,+d);repaint();break}
+    case 'edfv':{const [i,r]=a.split('|').map(Number);ST.ed.ex[i].rir=r;repaint();break}
+    case 'edvol':ST.ed.ex[+a].vol=!ST.ed.ex[+a].vol;repaint();break;
+    case 'edfine':ST.ed.fine=!ST.ed.fine;repaint();break;
+    case 'edwarm':{const [i,v]=a.split('|').map(Number);ST.ed.ex[i].bem=v;repaint();break}
+    case 'eddel':{const n=ST.ed.ex[+a].n;ST.ed.ex.splice(+a,1);ST.ed.open=-1;repaint();toast(`${n} kivéve`);break}
+    case 'edcol':ST.ed.col=ST.ed.col===a?null:a;repaint();break;
+    case 'tdmv':{const [i,d]=a.split('|').map(Number),j=i+d;[ST.td[i],ST.td[j]]=[ST.td[j],ST.td[i]];repaint();break}
+    case 'tddel':ST.td.splice(+a,1);repaint();break;
+    case 'tdfv':{const [i,r]=a.split('|').map(Number);ST.td[i].rir=r;repaint();break}
+    case 'wlopen':ST.wlo=ST.wlo===a?null:a;repaint();break;
+    case 'wzn':ST.wzd=[...WZDEF[+a]];repaint();break;
+    case 'wzday':{const j=+a;ST.wzd=ST.wzd.includes(j)?ST.wzd.filter(x=>x!==j):[...ST.wzd,j].sort();repaint();break}
+    case 'wzpr':{const [k,tr]=a.split('|');ST.pr[k]=tr;repaint();break}
+    case 'wzgen':F.go('ujterv.gen');setTimeout(()=>{if(mine()&&F.R==='ujterv'&&F.ARG==='gen')F.go('ujterv.kesz')},1600);break;
+    case 'wzsave':ST.wzConf=false;if(a==='1'){toast('Elmentve, és el is indult');F.go('terheles')}else{toast('Elmentve sablonként');F.go('konyvtar')}break;
+    case 'wzregen':if(a==='ask'){ST.wzConf=true;repaint()}else{ST.wzConf=false;if(a==='1'){ST.td=null;toast('Új program készült')}if(F.ARG!=='kesz')F.go('ujterv.kesz');else repaint()}break;
+    case 'xpick':resheet('xpick',a);break;
+    case 'xpf':ST.xp.f=a;ST.xp.sub=null;xr();break;
+    case 'xps':ST.xp.sub=ST.xp.sub===a?null:a;xr();break;
+    case 'xpvid':ST.xp.vid=ST.xp.vid===+a?-1:+a;xr();break;
+    case 'xpadd':{const i=+a,L=xpList();L.push(libEx(i));if(ST.xp.ctx==='sajat')ST.sj.open=L.length-1;if(ST.xp.ctx==='day')ST.ed.open=L.length-1;ST.xp.n++;ST.xp.flash=i;xr();repaint();setTimeout(()=>{if(ST.xp&&ST.xp.flash===i){ST.xp.flash=-1;xr()}},900);break}
+    case 'startst':{ST.startSt=+a;ez.parentNode.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b===ez);b.setAttribute('aria-pressed',b===ez)});$('#start-hint').textContent=STH[+a];break}
+    case 'startgo':closeSheet();if(ST.startSt)toast('Beütemezve — a Következnek közé került');else{toast('Elindítva — ez lett a futó terved');F.go('terheles')}break;
+    case 'catm':ez.closest('.vs-catm').querySelectorAll('.fh-pill').forEach(b=>b.classList.toggle('on',b===ez));break;
+    case 'catst':{const [id,d]=a.split('|'),b=$('#'+id),v=clamp(Math.round((parseFloat(b.textContent.replace(',','.'))+d*.05)*100)/100,0,1);b.textContent=v.toFixed(2).replace('.',',');break}
+    case 'catdel':if(ez.dataset.sure){closeSheet();toast('Gyakorlat törölve')}else{ez.dataset.sure='1';ez.textContent='Biztos? Koppints a törléshez'}break;
+  }
+});
+document.addEventListener('input',e=>{if(!mine())return;
+  if(e.target.id==='gy-q'){ST.gy.q=e.target.value;$('#gy-list').innerHTML=gyList()}
+  if(e.target.id==='xp-q'){ST.xp.q=e.target.value;$('#xp-body').innerHTML=xpBody()}});
 
 /* ── interakciók (a shell data-go/-sheet/-toast/-close mellé) ── */
 const mine=()=>F.D==='edzes'&&$('#phone')?.dataset.v==='feher';
@@ -1126,7 +1415,7 @@ document.addEventListener('click',e=>{
     case 'multi':ez.classList.toggle('on');break;
     case 'scale':{const n=+a;ez.parentNode.querySelectorAll('button').forEach((b,i)=>{b.className=i+1<n?'f':i+1===n?'a':''});break}
     case 'cmp':ST.cmp=!ST.cmp;ST.cmpSel=[];repaint();break;
-    case 'cmpsel':{const i=+a,at=ST.cmpSel.indexOf(i);if(at>=0)ST.cmpSel.splice(at,1);else if(ST.cmpSel.length<2)ST.cmpSel.push(i);else ST.cmpSel=[ST.cmpSel[1],i];repaint();break}
+    case 'cmpsel':{const i=+a,at=ST.cmpSel.indexOf(i);if(at>=0)ST.cmpSel.splice(at,1);else if(ST.cmpSel.length<2)ST.cmpSel.push(i);repaint();break}
     case 'sjopen':ST.sj.open=ST.sj.open===+a?-1:+a;repaint();break;
     case 'sjst':{const [i,f,d]=a.split('|');sjStepApply(+i,f,+d);repaint();break}
     case 'sjvol':ST.sj.ex[+a].vol=!ST.sj.ex[+a].vol;repaint();break;
@@ -1437,6 +1726,45 @@ ${Q} .vs-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 ${Q} .vs-wks{gap:5px}${Q} .vs-wks .fh-pill{min-width:30px;padding:7px 0;justify-content:center}${Q} .vs-wks .fh-pill.pm{background:none;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.14);color:var(--sub)}
 ${Q} .fh-chips span.tx button+button{margin-left:6px}
 ${Q} .fh-hero .sub .st{margin-right:4px}
+/* ── F3 parity kör · Terv és Gyakorlatok: a két szerkesztő, az interjú, a riport lenyíló része, az összevetés, a választó lap ── */
+${Q} .fh-row.muted{opacity:.55}${Q} .fh-row .v small{font-family:var(--ff);font-size:11px;font-weight:500;color:var(--sub);letter-spacing:0}
+${Q} .vs-pour.sm{height:10px;margin-top:7px;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.07)}${Q} .vs-pour.sm i{border-right-width:1.5px}
+${Q} .vs-ex .ix{width:20px}${Q} .vs-ex .eh strong small{display:block;font-size:11.5px;font-weight:500;color:var(--sub);margin-top:1px}
+${Q} .vs-ex .eg input,${Q} .vs-bem input{width:100%;min-width:0;border:0;background:none;text-align:center;font-family:var(--disp);font-size:14.5px;font-weight:800;color:var(--ink);padding:0;outline:0}
+${Q} .vs-ex .eg input::placeholder{color:var(--faint);font-family:var(--ff);font-size:12px;font-weight:500}
+${Q} .vs-ex .eg .rp{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline}${Q} .vs-ex .eg .rp input{width:38%}${Q} .vs-ex .eg .rp i{font-style:normal;font-weight:700;color:var(--sub)}${Q} .vs-ex .eg .rp small{flex-basis:100%}
+${Q} .vs-ex .eg.in span:focus-within{box-shadow:inset 0 0 0 2px var(--dom)}
+${Q} .vs-ex .vs-sjl{margin-top:8px}${Q} .vs-ex .vs-sjl .fh-pills{flex:1;min-width:0}
+${Q} .vs-bem{display:block;width:84px;flex:0 0 auto;padding:7px 4px;border-radius:14px;background:var(--page);text-align:center}${Q} .vs-bem small{display:block;font-size:10px;color:var(--sub);line-height:1.15}
+${Q} .vs-mv{display:inline-flex;gap:4px;flex:0 0 auto}${Q} .vs-mv button{width:30px;height:30px;border-radius:10px;background:var(--page);display:grid;place-items:center;font-size:11px;color:var(--sub)}${Q} .vs-mv button:disabled{opacity:.3}
+${Q} .vs-cv{color:var(--sub);font-size:10px;margin-left:8px;flex:0 0 auto}${Q} .vs-dt{font-size:11.5px;color:var(--sub);flex:0 0 auto;margin-left:8px}
+${Q} .vs-in.col{padding-left:50px}${Q} .vs-in.col p{margin:0}
+${Q} .vs-use{display:block;margin-top:8px;font-size:12.5px;color:var(--sub)}
+${Q} .vs-ab{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}${Q} .vs-ab>div{padding:10px 12px;border-radius:18px;background:#fff;box-shadow:inset 0 0 0 1px rgba(15,30,51,.06);min-width:0;display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+${Q} .vs-ab small{font-size:11px;font-weight:700;color:var(--sub);letter-spacing:.5px}${Q} .vs-ab b{font-size:14px;font-weight:650;overflow-wrap:anywhere}${Q} .vs-ab span{font-size:12px;color:var(--sub)}
+${Q} .vs-ab.sd{margin-top:0}${Q} .vs-ab.sd>div{background:var(--page);box-shadow:none}${Q} .vs-ab.sd b{font-family:var(--disp);font-size:16px;font-weight:800}${Q} .vs-ab.sd b.win,${Q} .vs-cmp b.win{color:var(--ok)}
+${Q} .vs-cmp.c4{grid-template-columns:minmax(0,1.15fr) .8fr 1fr .8fr}${Q} .vs-cmp.c4>*:nth-child(4){border-top:0;padding-top:0}${Q} .vs-cmp b.h{line-height:1.2}
+${Q} .vs-kv{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--hair);font-size:13px}${Q} .vs-kv:first-of-type{border-top:0}
+${Q} .vs-kv>span:first-child{color:var(--sub);min-width:0;line-height:1.35}${Q} .vs-kv small{display:block;font-size:11.5px;color:var(--faint);margin-top:2px}${Q} .vs-kv>b{white-space:nowrap;font-family:var(--disp);font-weight:700}
+${Q} .vs-det{margin:14px 0 4px;padding:12px 14px;border-radius:20px;background:var(--page)}${Q} .vs-det summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:650}
+${Q} .vs-det summary::-webkit-details-marker{display:none}${Q} .vs-det summary span{flex:1;min-width:0}${Q} .vs-det summary i{font-style:normal;color:var(--faint);transition:transform .2s}${Q} .vs-det[open] summary i{transform:rotate(180deg)}
+${Q} .vs-det .fh-txt{margin-top:8px}${Q} .vs-det .fb{flex:0 0 auto}
+${Q} .vs-cnt{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}${Q} .vs-cnt button{padding:9px 2px 8px;border-radius:18px;background:var(--page);text-align:center;min-width:0}
+${Q} .vs-cnt b{display:block;font-family:var(--disp);font-size:21px;font-weight:800;line-height:1.1}${Q} .vs-cnt small{display:block;font-size:9.5px;color:var(--sub);line-height:1.15;margin-top:2px;overflow-wrap:anywhere}
+${Q} .vs-cnt button.on{background:linear-gradient(180deg,var(--liq1),var(--liq2));color:#fff;box-shadow:0 12px 16px -12px var(--liq2)}${Q} .vs-cnt button.on small{color:#fff}
+${Q} .vs-tam{position:relative}${Q} .vs-tam textarea{display:block;width:100%;min-height:84px;resize:none;font:inherit;line-height:1.45;padding-right:48px}${Q} .vs-tam>button{position:absolute;right:8px;bottom:8px}
+${Q} input.fh-in[type=date]{font:inherit;width:100%}
+${Q} .vs-pr{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--hair);flex-wrap:wrap}${Q} .vs-pr:first-of-type{border-top:0}${Q} .vs-pr>span:nth-child(2){flex:1;min-width:64px;font-size:14px;font-weight:600}
+${Q} .vs-tri{display:inline-flex;border-radius:999px;background:var(--page);padding:3px;flex:0 0 auto}${Q} .vs-tri button{padding:6px 9px;border-radius:999px;font-size:12px;font-weight:650;color:var(--sub)}
+${Q} .vs-tri button.on{background:#fff;color:var(--ink);box-shadow:0 2px 6px -2px rgba(10,42,60,.3)}${Q} .vs-tri button:disabled{opacity:.35}
+${Q} .vs-xph{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 10px}${Q} .vs-xph span{font-size:12.5px;font-weight:650;color:var(--ok)}
+${Q} #xp-q{margin-bottom:10px}${Q} #xp-body .vl{margin-top:8px}
+${Q} .vs-plus{width:30px;height:30px;border-radius:50%;background:var(--page);display:grid;place-items:center;font-size:18px;font-weight:600;color:var(--dom);flex:0 0 auto}
+${Q} .vs-stim{display:flex;align-items:center;gap:6px}${Q} .vs-stim em{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.5px;color:var(--faint)}${Q} .vs-stim .fh-lk{margin-left:8px;font-size:12px}
+${Q} .vs-vid{aspect-ratio:16/9;border-radius:18px;background:var(--page);display:grid;place-items:center;align-content:center;gap:6px;margin:0 0 10px;font-size:12px;color:var(--sub)}
+${Q} .vs-catm small{display:block;margin:10px 0 6px;font-size:11.5px;font-weight:650;color:var(--sub)}${Q} .vs-catm small:first-child{margin-top:0}
+@media (max-width:360px){${Q} .vs-tri button{padding:6px 7px;font-size:11.5px}${Q} .vs-cnt small{font-size:9px}${Q} .vs-cmp.c4>*{font-size:12.5px}${Q} .vs-bem{width:72px}}
+${Q} .fh-row .g strong .st{margin-left:4px;vertical-align:1px}
 `;
 const NL=(r,l)=>`<a href="#w-edzes-${r}">${l||r}</a>`;
 register('edzes',{title:'Edzés',
@@ -1450,8 +1778,8 @@ register('edzes',{title:'Edzés',
   <h2>Mit érdemes megnézni</h2>
   <p><b>Mai</b> · ${NL('mai.alap','a mai nap')}: a Pull Day mellett a hátad, a mai izmok annyira telnek, amennyit ma kapnak. A sárga kártyán a reggeli három érték három kémcső. Lejjebb visszajött a „mit ad a mozgásod a keretedhez” kártya. A napsáv minden napja megnyitható (${NL('mai.kedd','kedd')} · ${NL('mai.sze','szerda')} · ${NL('mai.pen','péntek')} · ${NL('mai.szo','szombat')} · ${NL('mai.vas','vasárnap')}). Állapotok: ${NL('mai.folyamatban','folyamatban')} · ${NL('mai.kesz','kész')} · ${NL('mai.kihagyva','kihagyva')} · ${NL('mai.tanacs','az edző javaslatára kihagyva')} · ${NL('mai.konnyitve','könnyítve')} · ${NL('mai.kimelo','kímélő mód')} · ${NL('mai.kimelo3','letelt a becslés')} · ${NL('mai.kimelo-edz','kímélő mód közben edzel')} · ${NL('mai.vissza','visszatérő edzés')} · ${NL('mai.vissza2','második visszatérő')} · ${NL('mai.sajat-kesz','saját edzés és plusz sport megvolt')} · ${NL('mai.reggel','reggeli edzés-ablak')} · ${NL('mai.pihen','pihenőnap')} · ${NL('mai.pihen-sport','pihenőnap sporttal')} · ${NL('mai.pihen-sajat','pihenőnap, futó saját edzés')} · ${NL('mai.ures','nincs terv')} · ${NL('mai.tolt','betöltés')}.</p>
   <p><b>Az edzés útja</b> · ${NL('indulas','eligazítás')}: a várható idő egy sáv 70 és 85 perc között, a küldetések kapszulái annyira telnek, amennyire biztosak. ${NL('session.uj','Edzés közben')}: a szerkezet maradt (egy gyakorlat nagyban, a többi sor, felül Rekordok · Technika · Műveletek); fent gyakorlatonként egy kis edény, a szettek sorszáma kapszula, a pihenő egy edény, ami valóban kiürül. ${NL('cer','Lezárás')}: a kehely megtelik a csillagokkal együtt, a rekord kicsordul. ${NL('cer.reszletek','Részletek')} · ${NL('review','összegzés')} (izmonként a mai szettek a múlt heti vonalhoz) · ${NL('review.gyak','egy gyakorlat')}.</p>
-  <p><b>Terv</b> · ${NL('terv','a futó terv')}: a hat hét hat edény, a pihenőhéten leapad; a nap kártyáin újra ott a test, a három szám és az izmok szettszámmal. ${NL('run','A terv oldala')} (az ív mint hullám) · ${NL('nap.csu','egy nap')} · ${NL('napszerk','szerkesztő')} · ${NL('het','heti vizsgálat')} (vízvonalak: mettől fejlődik, mettől hangsúly) → ${NL('izom.back-wide','egy izom')} (mérőhenger) · ${NL('konyvtar','edzéstervek')} (csővezeték) · ${NL('futamok','lezárt futamok')} → ${NL('riport','riport')} · ${NL('osszevetes','összevetés')} · ${NL('sablonok','sablonok')} → ${NL('sablon','egy sablon')} → ${NL('sablonszerk','szerkesztő')} · ${NL('ujterv','új terv')} (a hetek számára koppintva változik az előnézet; ${NL('ujterv.gen','készül')} · ${NL('ujterv.kesz','vázlat')}) · ${NL('futas','futás')} (${NL('futas.naplo','napló')} · ${NL('futas.tervek','tervek')} · ${NL('futas.nincs','nincs aktív terv')}) → ${NL('futasterv','futóterv')} (${NL('futasterv.tervezett','tervezett')} · ${NL('futasterv.archiv','archív')}).</p>
-  <p><b>Terhelés</b> · ${NL('terheles','a hét')} (tartály: 45 a 75-ből; ${NL('terheles.elotte','még előtted')} · ${NL('terheles.megvan','letudva')} · ${NL('terheles.ures','nincs terv')} · ${NL('terheles.tolt','betöltés')}) · ${NL('terkep','izomtérkép')} (${NL('terkep.terv','a heti terv')} · ${NL('terkep.megvan','minden sorra került')}) · ${NL('jelek','minden izomjel')} (${NL('jelek.ures','üresen')}) · ${NL('mozgas','minden mozgásod')} (${NL('mozgas.nulla','még semmi')} · ${NL('mozgas.kcal-nincs','kalória nélkül')}). <b>Gyakorlatok</b> · ${NL('exercises','lista')} · ${NL('exercise','egy gyakorlat')} (az erő íve, rajta a rekordok cseppjei) · ${NL('medals','medálok')} (${NL('medals.ures','üresen')}). <b>Egyéb</b> · ${NL('sport','sport')} (${NL('sport.naplo','napló')} · ${NL('sport.cross','cross-load')} · ${NL('sport.nincs','nincs heti rend')} · ${NL('sport.naplo-ures','üres napló')}) · ${NL('sportlog','sport naplózása')} → ${NL('sportlog.0','röplabda')} · ${NL('sportlog.3','kerékpár')} · ${NL('sportlog.9','egyéb')} · ${NL('sportlog.hiba','mentési hiba')} · ${NL('sajat','saját edzés')} (${NL('sajat.uj','új')} · ${NL('sajat.betolt','betöltés')} · ${NL('sajat.nincs','nem található')}).</p>
+  <p><b>Terv</b> · ${NL('terv','a futó terv')}: a hat hét hat edény, a pihenőhéten leapad (${NL('terv.elso','az első edzés előtt')} · ${NL('terv.ures','még nincs terv')} · ${NL('terv.nincs','nem fut terv')} · ${NL('terv.tolt','betöltés')}). ${NL('run','A terv oldala')} (${NL('run.tervezett','tervezett terv, aktiválással')} · ${NL('run.elso','számok nélkül')} · ${NL('run.nincs','nem található')}) · ${NL('nap.csu','egy nap')} (${NL('nap.nincs','nincs a tervben')} · ${NL('nap.tolt','betöltés')}) · ${NL('napszerk','a nap szerkesztője')} (${NL('napszerk.add','választóval nyílik')} · ${NL('napszerk.pihen','pihenőnap')} · ${NL('napszerk.tolt','betöltés')}) · ${NL('het','heti vizsgálat')} (${NL('het.elso','még nincs adat')} · ${NL('het.hiba','hiba')} · ${NL('het.tolt','betöltés')}) → ${NL('izom.back-wide','egy izom')} (${NL('izom.triceps-medial','szinten tartott')} · ${NL('izom.glute','előző terv nélkül')} · ${NL('izom.nincs','nincs a vizsgálatban')}) · ${NL('konyvtar','edzéstervek')} (${NL('konyvtar.nincs-futo','nem fut terv')} · ${NL('konyvtar.ures','üresen')}) · ${NL('futamok','lezárt futamok')} (${NL('futamok.egy','egy futam')} · ${NL('futamok.ures','üresen')}) → ${NL('riport','riport')} (${NL('riport.gep','a gép olvasata nyitva')} · ${NL('riport.ai-keszul','készül')} · ${NL('riport.ai-hiba','nem sikerült')} · ${NL('riport.ai-nincs','gépi olvasat nélkül')} · ${NL('riport.nincs-riport','még nincs riport')} · ${NL('riport.fut','még fut')} · ${NL('riport.hiba','hiba')}) · ${NL('osszevetes','összevetés')} (${NL('osszevetes.a-nincs','hiányzó riport')} · ${NL('osszevetes.ervenytelen','nincs kiválasztva')}) · ${NL('sablonok','sablonok')} (${NL('sablonok.ures','üresen')}) → ${NL('sablon','egy sablon')} (${NL('sablon.torol','törlés megerősítése')} · ${NL('sablon.ures','üres sablon')}) → ${NL('sablonszerk','a sablon szerkesztője')} (${NL('sablonszerk.nap','egy nap')} · ${NL('sablonszerk.nap-terh','napi terhelés')} · ${NL('sablonszerk.het-terh','heti terhelés')}) · ${NL('ujterv','új terv')} (${NL('ujterv.kapu','kevés nap')} · ${NL('ujterv.gen','készül')} · ${NL('ujterv.hiba','nem sikerült')} · ${NL('ujterv.kesz','vázlat')} · ${NL('ujterv.kesz-megerosit','felülírás előtt')}) · ${NL('futas','futás')} (${NL('futas.naplo','napló')} · ${NL('futas.tervek','tervek')} · ${NL('futas.nincs','nincs aktív terv')}) → ${NL('futasterv','futóterv')} (${NL('futasterv.tervezett','tervezett')} · ${NL('futasterv.archiv','archív')}).</p>
+  <p><b>Terhelés</b> · ${NL('terheles','a hét')} (tartály: 45 a 75-ből; ${NL('terheles.elotte','még előtted')} · ${NL('terheles.megvan','letudva')} · ${NL('terheles.ures','nincs terv')} · ${NL('terheles.tolt','betöltés')}) · ${NL('terkep','izomtérkép')} (${NL('terkep.terv','a heti terv')} · ${NL('terkep.megvan','minden sorra került')}) · ${NL('jelek','minden izomjel')} (${NL('jelek.ures','üresen')}) · ${NL('mozgas','minden mozgásod')} (${NL('mozgas.nulla','még semmi')} · ${NL('mozgas.kcal-nincs','kalória nélkül')}). <b>Gyakorlatok</b> · ${NL('exercises','lista')} (${NL('exercises.nincs-talalat','nincs találat')} · ${NL('exercises.tolt','betöltés')}) · ${NL('exercise','egy gyakorlat')} (az erő íve, rajta a rekord cseppje; ${NL('exercise.uj','még nincs naplózva')} · ${NL('exercise.kozos','közös gyakorlat')} · ${NL('exercise.egy','egyetlen becslés')}) · ${NL('medals','medálok')} (${NL('medals.ures','üresen')} · ${NL('medals.tolt','betöltés')}). <b>Egyéb</b> · ${NL('sport','sport')} (${NL('sport.naplo','napló')} · ${NL('sport.cross','cross-load')} · ${NL('sport.nincs','nincs heti rend')} · ${NL('sport.naplo-ures','üres napló')}) · ${NL('sportlog','sport naplózása')} → ${NL('sportlog.0','röplabda')} · ${NL('sportlog.3','kerékpár')} · ${NL('sportlog.9','egyéb')} · ${NL('sportlog.hiba','mentési hiba')} · ${NL('sajat','saját edzés')} (${NL('sajat.uj','új')} · ${NL('sajat.betolt','betöltés')} · ${NL('sajat.nincs','nem található')}).</p>
   <h2>Ami visszajött az élő appból</h2>
   <p>A mozgás kalória-kártyája a Mai oldalon · a nap kártyái testtel és számokkal · a gyakorlatok négycellás előírása a nap oldalán · a tervek és futamok három-három ténye · az izomtérkép jelmagyarázata · a Gym-nézet testtérkép-kártyája · a futás szakaszai · az ítélet-jelek magyarázata az edzés közben. Az ikonok mindenhol buborékban ülnek, gyűrű sehol nincs.</p>
   <h2>Amit csak kinézetre csinál</h2>
