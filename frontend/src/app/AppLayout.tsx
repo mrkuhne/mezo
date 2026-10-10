@@ -76,7 +76,7 @@ export function AppLayout() {
   // Mindkét fél EGYÜTT hal meg — a bőr félig levéve (kényszerített sötét téma, scope
   // nélkül) meleg grafitban landolna, ami nem a visszaállított alapállapot. Innentől
   // minden útvonal a felhasználó SAJÁT témabeállítását követi, világos-elsőként.
-  // A `useForceTheme` maga megmarad: a Napzárás rituálé (mezo-tr5v) továbbra is használja.
+  // A `useForceTheme` maga megmarad: az éjszakai alvás-oldal használja (a Napzárás az F2 óta világos, mezo-n4wf5.2).
   // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
   // A FrameProvider (mezo-n4wf5.1) a címsor és az oldal KÖZÖS őse: az oldal ezen át adja át
   // a saját vissza-kezelőjét és (átöltöztetve) a címét a shellnek.

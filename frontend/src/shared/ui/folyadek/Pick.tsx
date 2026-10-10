@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, KeyboardEvent, ReactNode } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { cx } from './util'
+import { cx, type PassProps } from './util'
 
 /** A filter chip: pressed = filled with the liquid. */
 export function Pill({ on, icon, className, type = 'button', children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { on?: boolean; icon?: Icon3DName }) {
@@ -20,7 +20,8 @@ export function Pills({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
 export interface SegItem<K extends string = string> { key: K; label: ReactNode; dot?: boolean }
 
 /** A segmented control. With `tabs` it is a tablist (arrow keys move the selection); otherwise a group of pressed buttons. */
-export function Seg<K extends string>(p: { items: SegItem<K>[]; value: K; onChange: (key: K) => void; tabs?: boolean; className?: string; 'aria-label'?: string }) {
+export function Seg<K extends string>({ items, value, onChange, tabs, className, ...rest }: PassProps & { items: SegItem<K>[]; value: K; onChange: (key: K) => void; tabs?: boolean; className?: string }) {
+  const p = { items, value, onChange, tabs }
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!p.tabs || (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft')) return
     const i = p.items.findIndex((it) => it.key === p.value)
@@ -32,7 +33,7 @@ export function Seg<K extends string>(p: { items: SegItem<K>[]; value: K; onChan
     btns[p.items.indexOf(next)]?.focus()
   }
   return (
-    <div className={cx('fo-seg', p.className)} role={p.tabs ? 'tablist' : 'group'} aria-label={p['aria-label']} onKeyDown={onKey}>
+    <div className={cx('fo-seg', className)} role={p.tabs ? 'tablist' : 'group'} {...rest} onKeyDown={onKey}>
       {p.items.map((it) => {
         const on = it.key === p.value
         const a11y = p.tabs ? { role: 'tab', 'aria-selected': on, tabIndex: on ? 0 : -1 } : { 'aria-pressed': on }

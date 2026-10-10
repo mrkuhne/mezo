@@ -1,4 +1,5 @@
 import { render } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import * as K from './index'
 
 it('renders every export once with realistic props and logs no console error', () => {
@@ -6,9 +7,10 @@ it('renders every export once with realistic props and logs no console error', (
   const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
   const D = 'M50 8C70 8 92 24 92 48 92 76 72 94 50 94 28 94 8 76 8 48 8 24 30 8 50 8Z'
   const { container } = render(
-    <K.FrameProvider>
+    <MemoryRouter><K.FrameProvider>
       <K.Hero label="Mai állapot" verdict="Ma jó nap egy közepes edzéshez." sub="Hét óra negyven alvás." actions={<button className="btn">Check-in</button>} />
       <K.Hero verdict="Nincs adat." warn />
+      <K.Hero label="Mezo" verdict="Három új üzenet." sub="Kettő választ vár." left={<K.Badge member="mezo" size={64} />} role="group" aria-label="Üzenetek" />
       <K.Section n={1} title="Mai szintek" link="Mind" />
       <K.Card><K.Row icon="t-flame" title="Kalória" sub="1 040 van még" value="2 060" onClick={() => {}} right={<K.Mini pct={66} />} /></K.Card>
       <K.Tank pct={68} num="68" cap="pont" label="Mai állapot" verdict="Jó nap" marks={[100, 50, 0]} cta="Délutáni check-in" onCta={() => {}} />
@@ -36,7 +38,8 @@ it('renders every export once with realistic props and logs no console error', (
           <K.Row left={<K.Tick on label="Ébredés időben · kész" onClick={() => {}} />} title="Ébredés időben" sub="6:35" state="done" as="div" onClick={() => {}} right={<K.St tone="ok">kész</K.St>} />
           <K.Row left={<K.Mark state="now" />} title="Reggeli napfény" state="now" more={<K.Level pct={40} height={12} />} value={<>4<small>perc</small></>} />
           <K.Row left={<K.Mark state="done" label="kész" />} icon="t-water" title="Egy pohár víz" state="dim" />
-          <K.Row left={<K.Mark state="empty" />} title="Gombakávé" right={<K.Mini pct={30} value="30%" />} />
+          <K.Row left={<K.Mark state="empty" size="tick" />} title="Gombakávé" right={<K.Mini pct={30} value="30%" />} data-testid="row" />
+          <K.Row to="/nap/rutin/epites" icon="t-chain" title="Rutinok szerkesztése" right={<K.Chev />} />
           <K.ErrorRow message="A rutint most nem sikerült betölteni." onRetry={() => {}} retryLabel="Újrapróbálom" />
           <K.Note>A sorrendet a Rutin szerkesztésénél állítod.</K.Note>
         </K.Card>
@@ -50,6 +53,11 @@ it('renders every export once with realistic props and logs no console error', (
           <K.Scale aria-labelledby="q" value={7} onPick={() => {}} />
           <K.Ends low="Üres" high="Tele" />
           <K.Lab htmlFor="f">Megjegyzés</K.Lab>
+          <K.Input id="f" placeholder="pl. nyugodt tempó" />
+          <K.TextArea aria-label="Jegyzet" rows={2} />
+          <K.Select aria-label="Napszak"><option>Reggel</option></K.Select>
+          <K.Big value="7" unit="/ 10" note="energia" left={<K.Jar pct={70} size={66} />} right={<K.Bub icon="t-bolt" size={52} />} />
+          <K.Big value="2 060" unit="kcal ma" aria-label="Összkép" onClick={() => {}} />
           <K.Pills><K.Pill on icon="t-bolt">Energia</K.Pill><K.Pill>Hangulat <small>· új</small></K.Pill></K.Pills>
           <K.Why icon="t-info">A nap kérdése.</K.Why>
           <K.Txt>Három területről van adat.</K.Txt>
@@ -69,13 +77,13 @@ it('renders every export once with realistic props and logs no console error', (
         <K.FoSheetHead icon="t-sleep" title="Alvás" titleId="sh" sub="Tegnap éjjel" onBack={() => {}} onClose={() => {}} />
         <K.Foot><K.Btn grow>Kész</K.Btn></K.Foot>
       </K.Page>
-    </K.FrameProvider>,
+    </K.FrameProvider></MemoryRouter>,
   )
   expect(container.querySelectorAll('svg').length).toBeGreaterThan(10)
   // every kit export is a component or a constant this gallery knows: a new export must be rendered above
   const rendered = ['Hero', 'Section', 'Card', 'Row', 'Tank', 'Vials', 'Mini', 'Level', 'Fill', 'Area', 'Linked', 'Stream', 'PerDay', 'Bub', 'Badge', 'Drop',
     'Page', 'Foot', 'TwoBtn', 'Btn', 'Lk', 'Acts', 'Pill', 'Pills', 'Seg', 'St', 'Chips', 'Facts', 'Note', 'Txt', 'Why', 'Lab', 'Empty', 'ErrorRow', 'Head',
-    'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider']
+    'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big']
   const known = [...rendered, 'Wave', 'MEMBER_LABEL', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar']
   expect(Object.keys(K).filter((k) => !known.includes(k))).toEqual([])
   expect(container.querySelector('[data-testid="pg"]')).toHaveClass('fo-page', 'fo-dusk', 'has-foot', 'nonav')

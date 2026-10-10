@@ -80,7 +80,7 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
               <VoiceField domain="me" size="sm" onTranscript={(t) => setHint(appendDictation(hint, t, HINT_MAX))}>
                 <textarea
                   id="rb-ai-hint"
-                  className="rb-in"
+                  className="fo-in"
                   rows={2}
                   aria-label="Szándék"
                   value={hint}

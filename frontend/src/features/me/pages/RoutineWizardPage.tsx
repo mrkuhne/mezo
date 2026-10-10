@@ -419,7 +419,7 @@ export function RoutineWizardPage() {
             <VoiceField domain="me" size="sm" onTranscript={(t) => { setAnchorLabel(appendDictation(anchorLabel, t)); setAnchorHabitKey(null) }}>
               <input
                 id="rb-wz-anchor"
-                className="rb-in"
+                className="fo-in"
                 aria-label="Horgony"
                 value={anchorLabel}
                 onChange={(e) => { setAnchorLabel(e.target.value); setAnchorHabitKey(null) }}
@@ -438,7 +438,7 @@ export function RoutineWizardPage() {
             <VoiceField domain="me" size="sm" onTranscript={(t) => setCue(appendDictation(cue, t))}>
               <input
                 id="rb-wz-cue"
-                className="rb-in"
+                className="fo-in"
                 aria-label="Jelzés"
                 value={cue}
                 onChange={(e) => setCue(e.target.value)}
@@ -458,7 +458,7 @@ export function RoutineWizardPage() {
             <VoiceField domain="me" size="sm" onTranscript={(t) => setCraving(appendDictation(craving, t))}>
               <input
                 id="rb-wz-crave"
-                className="rb-in"
+                className="fo-in"
                 aria-label="Vágy"
                 value={craving}
                 onChange={(e) => setCraving(e.target.value)}
@@ -469,7 +469,7 @@ export function RoutineWizardPage() {
             <VoiceField domain="me" size="sm" onTranscript={(t) => setIdentity(appendDictation(identity, t))}>
               <input
                 id="rb-wz-identity"
-                className="rb-in"
+                className="fo-in"
                 aria-label="Identitás"
                 value={identity}
                 onChange={(e) => setIdentity(e.target.value)}
@@ -491,7 +491,7 @@ export function RoutineWizardPage() {
             <Lab htmlFor="rb-wz-title">Én … · {framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}</Lab>
             <input
               id="rb-wz-title"
-              className="rb-in"
+              className="fo-in"
               aria-label={framework === 'CLEAR' ? 'Válasz' : 'Pici tett'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -540,7 +540,7 @@ export function RoutineWizardPage() {
                 <select
                   id="rb-wz-metric"
                   aria-label="Metrika"
-                  className="rb-in"
+                  className="fo-in"
                   value={metric}
                   onChange={(e) => setMetric(e.target.value)}
                 >
@@ -560,7 +560,7 @@ export function RoutineWizardPage() {
             <Lab htmlFor="rb-wz-celeb">Vagy saját</Lab>
             <input
               id="rb-wz-celeb"
-              className="rb-in"
+              className="fo-in"
               aria-label="Ünneplés"
               value={celebration}
               onChange={(e) => setCelebration(e.target.value)}
@@ -579,7 +579,7 @@ export function RoutineWizardPage() {
             <Lab htmlFor="rb-wz-reward">Vagy saját</Lab>
             <input
               id="rb-wz-reward"
-              className="rb-in"
+              className="fo-in"
               aria-label="Jutalom"
               value={reward}
               onChange={(e) => setReward(e.target.value)}

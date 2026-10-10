@@ -17,9 +17,7 @@ export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
 }) {
   return (
     <>
-      <Hero label="Napzárás · kész" verdict="A nap le van zárva." sub="Elengedheted. Az edény tele van, a fedél rajta.">
-        <span className="nrz-hjar"><Jar size={92} pct={100} lid /></span>
-      </Hero>
+      <Hero left={<Jar size={92} pct={100} lid />} label="Napzárás · kész" verdict="A nap le van zárva." sub="Elengedheted. Az edény tele van, a fedél rajta." />
       {closingNote != null && (
         <>
           <Section n={1} title="Mezo üzeni" />

@@ -19,7 +19,7 @@ import { PainStep } from '@/features/today/sheets/checkin/PainStep'
 import { CravingStep, CRAVING_KINDS_FROM } from '@/features/today/sheets/checkin/CravingStep'
 import { CheckInSummary } from '@/features/today/sheets/checkin/CheckInSummary'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Btn, Dots, ErrorRow, FoSheetHead, Lab, Lk, Note, Why } from '@/shared/ui/folyadek'
+import { Btn, Dots, ErrorRow, FoSheetHead, Lab, Lk, Note, TextArea, Why } from '@/shared/ui/folyadek'
 import { localDateString } from '@/shared/lib/dates'
 import type { CheckinItemId, CheckinSlot, CheckinValues } from '@/data/types'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
@@ -218,9 +218,8 @@ export function CheckInSheet({
           {/* Optional free note; the mic is the shared voice field (mezo-xojq8) */}
           <Lab htmlFor="checkin-note">Gondolatok · opcionális</Lab>
           <VoiceField domain="nap" onTranscript={t => setNote(d => appendDictation(d, t))}>
-            <textarea
+            <TextArea
               id="checkin-note"
-              className="nck2-in"
               rows={3}
               value={note}
               onChange={e => setNote(e.target.value)}

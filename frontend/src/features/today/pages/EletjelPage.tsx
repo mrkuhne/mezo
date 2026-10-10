@@ -15,7 +15,8 @@ import { useNavigate } from 'react-router-dom'
 import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import { useCheckins, useSleep, useWaterActions } from '@/data/hooks'
-import { NEED_ICON, type NeedKey, type NeedState } from '@/features/today/logic/needs'
+import { NEED_ICON, type NeedKey } from '@/features/today/logic/needs'
+import { needNameInSentence, needsAttention, needsAverage } from '@/features/today/logic/needsAverage'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
@@ -41,20 +42,6 @@ export const VITAL_TILE: Record<NeedKey, {
 
 /** The six needs in the page's fixed order — also the vessels drawn while the sim is pending. */
 export const NEED_KEYS = Object.keys(VITAL_TILE) as NeedKey[]
-
-/** A need asks for attention in the red and the critical band — the one rule every Életjel surface reads. */
-export const needsAttention = (s: Pick<NeedState, 'band'>): boolean => s.band === 'red' || s.band === 'critical'
-
-/** The need's name inside a sentence, with its article: „az étel”, „a mozgás”. */
-export function needNameInSentence(key: NeedKey): string {
-  const name = VITAL_TILE[key].eyebrow.toLowerCase()
-  return `${/^[aáeéiíoóöőuúüű]/.test(name) ? 'az' : 'a'} ${name}`
-}
-
-/** The client mean of the needs, as a whole number; `null` when there is nothing to average. */
-export function needsAverage(states: NeedState[]): number | null {
-  return states.length === 0 ? null : Math.round(states.reduce((s, n) => s + n.pct, 0) / states.length)
-}
 
 export function EletjelPage() {
   const navigate = useNavigate()
@@ -113,16 +100,15 @@ export function EletjelPage() {
   return (
     <Page className="nb-page">
       <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
-      <div data-kalauz-anchor="eletjel-gyuru">
-        <Hero
+      <Hero
+          data-kalauz-anchor="eletjel-gyuru"
           label={avg == null ? 'A hat jel' : `A hat jel · átlag ${avg}`}
           verdict={verdict}
           sub={attention.length > 0 ? 'Egy rövid lépés már megmozdítja.' : undefined}
           actions={lowest && lowestCta ? <Btn onClick={() => onTile(lowest.key)}>{lowestCta}</Btn> : undefined}
         >
-          <Vials size="xs" height={132} className="nb-vials" items={vials} />
-        </Hero>
-      </div>
+          <Vials size="xs" height={132} items={vials} />
+      </Hero>
       <Section n={1} title="A hat jel egyenként" />
       <Card>
         {needs.isPending

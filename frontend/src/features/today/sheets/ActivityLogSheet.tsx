@@ -4,7 +4,7 @@ import { useActivityActions } from '@/data/hooks'
 import { buildQuestRewardToast } from '@/features/progression/logic/rewardToast'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { ContentIcon } from '@/shared/ui/clay'
-import { Btn, Chips, FoSheetHead, Jar, Note, Pill, Pills, TwoBtn, Txt, Why } from '@/shared/ui/folyadek'
+import { Big, Btn, Chips, FoSheetHead, Jar, Note, Pill, Pills, TextArea, TwoBtn, Txt, Why } from '@/shared/ui/folyadek'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import type { ActivityEntry, DailyQuest, LifeSkillKey } from '@/data/types'
@@ -86,7 +86,7 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
             <>
               <div className="nqk-field">
                 <VoiceField domain="nap" onTranscript={t => setText(d => appendDictation(d, t, 500))}>
-                  <textarea className="nqk-in" value={text} maxLength={500} onChange={e => setText(e.target.value.slice(0, 500))}
+                  <TextArea value={text} maxLength={500} onChange={e => setText(e.target.value.slice(0, 500))}
                     aria-labelledby="activity-log-title"
                     placeholder="pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…" />
                 </VoiceField>
@@ -115,15 +115,9 @@ export function ActivityLogSheet({ onClose, onBack, quest, entry }: ActivityLogS
 
           {done && result && (
             <>
-              <div className="nqk-bigrow">
-                <Jar pct={75} size={74} text={`+${result.entry.xpAwarded}`} />
-                <div className="nqk-big">
-                  <span className="nqk-xp">+{result.entry.xpAwarded}<small>XP</small></span>
-                  {doneMeta
-                    ? <Chips items={[doneMeta.name]} />
-                    : <span className="nqk-entry">{result.entry.text}</span>}
-                </div>
-              </div>
+              <Big left={<Jar pct={75} size={74} text={`+${result.entry.xpAwarded}`} />}
+                value={`+${result.entry.xpAwarded}`} unit="XP"
+                note={doneMeta ? <Chips items={[doneMeta.name]} /> : result.entry.text} />
               {result.completedQuest && (
                 <Why icon="t-quest">
                   Küldetés teljesítve: {result.completedQuest.title} (+{result.completedQuest.xp} XP)

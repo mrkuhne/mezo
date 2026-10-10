@@ -4,10 +4,8 @@
 // that carries attributes the kit's `Row` does not pass through. Look: prototypes/vilagos/nap.js
 // (`recG`, `recept`); CSS `.rb-*` in styles/folyadek-nap-epites.css.
 // ============================================================
-import type { ReactNode } from 'react'
 import type { HabitFramework } from '@/data/types'
 import { routineSentenceParts, type RoutineRecipe } from '@/features/me/logic/routineSentence'
-import { cn } from '@/shared/lib/cn'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { FrameBack } from '@/shared/ui/folyadek'
 
@@ -69,11 +67,4 @@ export function RbBack({ label, fallback, onBack }: { label: string; fallback?: 
   return onBack
     ? <FrameBack className="rb-back" onBack={onBack}>{face}</FrameBack>
     : <FrameBack className="rb-back" history fallback={fallback}>{face}</FrameBack>
-}
-
-/** A kit `Row` (or anything) with its own attributes; the wrapper keeps the row rhythm of the card. */
-export function RowItem({ testId, className, children, ...rest }: {
-  testId?: string; className?: string; children: ReactNode; [data: `data-${string}`]: string | undefined
-}) {
-  return <div className={cn('rb-it', className)} data-testid={testId} {...rest}>{children}</div>
 }

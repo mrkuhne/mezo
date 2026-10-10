@@ -14,9 +14,9 @@ export function Tick(p: { on: boolean; label: string; onClick?: () => void; disa
 }
 
 /** A non-interactive status node: done (green tick), now (domain ring), empty (dashed). */
-export function Mark(p: { state: 'done' | 'now' | 'empty'; label?: string }) {
+export function Mark(p: { state: 'done' | 'now' | 'empty'; label?: string; /** `tick` = the size of a `Tick`, for a column that mixes the two. */ size?: 'tick' }) {
   return (
-    <span className={cx('fo-mk', p.state === 'done' && 'd', p.state === 'now' && 'now')} role={p.label ? 'img' : undefined} aria-label={p.label}>
+    <span className={cx('fo-mk', p.state === 'done' && 'd', p.state === 'now' && 'now', p.size === 'tick' && 'tk')} role={p.label ? 'img' : undefined} aria-label={p.label}>
       {p.state === 'done' && <Check />}
     </span>
   )

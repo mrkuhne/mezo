@@ -19,16 +19,9 @@
 .nn-week button:focus-visible { outline: 0; }
 .nn-week button:focus-visible .t { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 
-/* The hero. The tank is the kit's; the page only adds the line under it and the jar heroes' two-column layout. */
+/* The hero. The tank and the jar heroes (`Hero left`) are the kit's; the page only adds the line under the tank. */
 .nn-under { margin: 12px 22px 0; font-size: 12.5px; line-height: 1.45; color: var(--fo-sub); }
 .nn-hero .fo-tank-shift > span { white-space: nowrap; }
-.nn-hero .fo-tank-cta { border: 0; font-family: var(--ff-body); cursor: pointer; white-space: nowrap; }
-/* Jar on the left, label + verdict + sub on the right (prototype `hero({left})`); the liquid row spans both. */
-.nn-jhero .fo-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: start; }
-.nn-jhero .fo-hero > * { grid-column: 2; }
-.nn-jhero .fo-hero > .fo-jar { grid-column: 1; grid-row: 1 / span 3; align-self: center; }
-.nn-jhero .fo-hero > .fo-hero-acts, .nn-jhero .fo-hero[data-closed="true"]::after { grid-column: 1 / -1; }
-.nn-jhero .fo-hero-sub { overflow-wrap: break-word; }
 
 /* The six areas. */
 .nn-drow { position: relative; }

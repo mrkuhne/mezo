@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import type { MacroSet } from '@/data/types'
 import { remainingAfterSkips } from '@/features/fuel/logic/keretHero'
 import type { FuelMode } from '@/features/fuel/logic/fuelMode'
 import type { Icon3DName } from '@/shared/ui/clay'
-import { Acts, Btn, ErrorRow, Note, Vials, Why } from '@/shared/ui/folyadek'
+import { Acts, Big, Btn, ErrorRow, Note, Vials, Why } from '@/shared/ui/folyadek'
 
 interface NapFuelGraphicProps {
   consumed: MacroSet
@@ -38,7 +38,6 @@ const hasGoal = (value: number) => Number.isFinite(value) && value > 0
  *  összképhez. Presentational: no estimated macros, mock fallback, or data fetching. */
 export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry, guidance, skippedKcal = 0, fuelMode = null, onOpenFuel }: NapFuelGraphicProps) {
   const [active, setActive] = useState<'p' | 'c' | 'f' | null>(null)
-  const vialsRef = useRef<HTMLDivElement>(null)
   const selected = macros.find(macro => macro.key === active)
   const kcal = amount(consumed.kcal)
   const energyGoal = hasGoal(targets.kcal)
@@ -58,27 +57,18 @@ export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry,
       : `Nincs beállított ${selected.goalName}. Ma ${format(value)} g-ot rögzítettél.`
   }
   const instrument = !isError && !isPending && !guidance
-  // The kit's vial is a plain button: the selected state is announced here (aria-pressed), next to the „✓" mark.
-  useEffect(() => {
-    vialsRef.current?.querySelectorAll('button.fo-vial').forEach((button, i) => {
-      button.setAttribute('aria-pressed', String(macros[i]?.key === active))
-    })
-  }, [active, instrument])
-
   const open = onOpenFuel && <Btn sm onClick={onOpenFuel}>Fuel megnyitása</Btn>
   return <section className="nm-fuel" aria-label="Mai energiabevitel és makrotápanyagok" data-active={active ?? undefined}>
     {isError ? <ErrorRow message="Az üzemanyagot most nem sikerült betölteni." onRetry={onRetry} />
       : isPending ? <Note role="status">Táplálkozási adatok betöltése…</Note>
       : guidance ? <Why icon="t-kimelo">Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel</Why>
       : <>
-        <button type="button" className="nm-big" aria-label="Teljes energiabevitel megjelenítése" onClick={() => setActive(null)}>
-          <b>{selected ? `${format(amount(consumed[selected.key]))} g` : format(kcal)}</b>
-          <small>{selected
+        <Big aria-label="Teljes energiabevitel megjelenítése" onClick={() => setActive(null)}
+          value={selected ? `${format(amount(consumed[selected.key]))} g` : format(kcal)}
+          unit={selected
             ? `${selected.label.toLocaleLowerCase('hu')} · ${hasGoal(targets[selected.key]) ? `${Math.round(amount(consumed[selected.key]) / targets[selected.key] * 100)}% a napi célból` : 'nincs beállított cél'}`
-            : `kcal ma · ${energyGoal ? `${format(targets.kcal)} kcal keret` : 'nincs beállított keret'}`}</small>
-        </button>
-        <div ref={vialsRef}>
-          <Vials size="sm" height={124} items={macros.map(macro => {
+            : `kcal ma · ${energyGoal ? `${format(targets.kcal)} kcal keret` : 'nincs beállított keret'}`} />
+        <Vials size="sm" height={124} items={macros.map(macro => {
             const goal = targets[macro.key]
             return {
               label: macro.label, icon: macro.icon, color: macro.color,
@@ -86,10 +76,10 @@ export function NapFuelGraphic({ consumed, targets, isPending, isError, onRetry,
               pct: hasGoal(goal) ? amount(consumed[macro.key]) / goal * 100 : 0,
               note: hasGoal(goal) ? `/ ${format(goal)} g cél` : 'nincs beállított cél',
               mark: active === macro.key ? '✓' : undefined,
+              pressed: active === macro.key,
               onClick: () => setActive(macro.key),
             }
           })} />
-        </div>
         <Note role="status" aria-live="polite">{detail}</Note>
       </>}
     {(open || (instrument && selected)) && <Acts>

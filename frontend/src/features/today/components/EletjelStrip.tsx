@@ -8,7 +8,8 @@
 import type { ClayIconName } from '@/shared/ui/clay'
 import { Vials, type Member } from '@/shared/ui/folyadek'
 import type { NeedKey, NeedState } from '@/features/today/logic/needs'
-import { NEED_KEYS, VITAL_TILE, needsAttention } from '@/features/today/pages/EletjelPage'
+import { needsAttention } from '@/features/today/logic/needsAverage'
+import { NEED_KEYS, VITAL_TILE } from '@/features/today/pages/EletjelPage'
 
 /** Melyik szakterület szól egy jelről (bible §6): az étel és a víz az Étkezésé, az alvás az
  *  Alvásé, a mozgás a Mozgásé, a kapcsolat a Közérzeté; a rend az összképé (Mezo). */
@@ -27,7 +28,7 @@ export function needMemberForIcon(icon: ClayIconName | undefined): Member | unde
 export function EletjelStrip({ states, onOpen }: { states: NeedState[]; onOpen: () => void }) {
   return (
     <div className="nb-strip" role="group" aria-label="Életjelek részletei">
-      <Vials size="xs" height={104} className="nb-vials" items={states.map((s) => {
+      <Vials size="xs" height={104} items={states.map((s) => {
         const warn = needsAttention(s)
         return {
           label: VITAL_TILE[s.key].eyebrow, icon: VITAL_TILE[s.key].glyph, value: s.pct, pct: s.pct,

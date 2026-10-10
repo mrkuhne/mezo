@@ -27,14 +27,11 @@ export function ArrivalStep({ onNext, checkinsDone, checkinsTotal }: {
   return (
     <>
       <Hero
+        left={<Jar size={88} pct={known ? (checkinsDone / checkinsTotal) * 100 : 0} text={known ? `${checkinsDone}/${checkinsTotal}` : undefined} />}
         label="Napzárás"
         verdict={<span className="nrz-vbig">A nap véget ért.</span>}
         sub="Zárjuk le együtt. Amit ma összegyűjtöttél, edénybe kerül, a végén fedelet kap. Kb. 3 perc."
-      >
-        <span className="nrz-hjar">
-          <Jar size={88} pct={known ? (checkinsDone / checkinsTotal) * 100 : 0} text={known ? `${checkinsDone}/${checkinsTotal}` : undefined} />
-        </span>
-      </Hero>
+      />
       <Section n={1} title="Ez jön" />
       <Card>
         {AHEAD.map((a, i) => <Step key={a.title} time={`${i + 2}.`} icon={a.icon} title={a.title} sub={a.sub} />)}

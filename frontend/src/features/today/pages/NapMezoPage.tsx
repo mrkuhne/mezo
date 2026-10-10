@@ -18,7 +18,7 @@
 // marad (a kivezetés átfedő napja); a chat töltése alatt egyik sem. A kérdés-kártya és a deeplink-cél
 // sosem rejtődik el.
 // ============================================================
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon3D } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
@@ -27,7 +27,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
 import { EletjelStrip, needMemberForIcon } from '@/features/today/components/EletjelStrip'
-import { needNameInSentence, needsAttention, needsAverage } from '@/features/today/pages/EletjelPage'
+import { needNameInSentence, needsAttention, needsAverage } from '@/features/today/logic/needsAverage'
 import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply, useTeamChat } from '@/data/hooks'
 import type { TeamCharacterId } from '@/features/insights/logic/team'
 import { stripText, talkedFlagKeys } from '@/features/insights/logic/teamChat'
@@ -41,7 +41,7 @@ import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { localDateString } from '@/shared/lib/dates'
 import {
   Acts, Badge, Btn, Card, DropChain, ErrorRow, FrameBack, Hero, Lab, Lk, MEMBER_LABEL, Msg, Note, Page, Row, Section, Seg, Txt,
-  type Member,
+  type HeroProps, type Member,
 } from '@/shared/ui/folyadek'
 
 /** Ki szól egy üzenetben (bible §6: a csapat szakterület szerint). A nudge a kiváltó jel
@@ -62,24 +62,8 @@ const teamMember = (id: TeamCharacterId): Member => (id === 'szkeptikus' ? 'szk'
 /** Az üzenet fejsora: „HH:mm · fajta”. */
 const messageHead = (m: MezoMessageItem): string => (m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow)
 
-/** Hős, bal oldalán egy arccal (prototípus `hero({left})`): a kit hősének nincs bal helye, ezért a
- *  címke, a mondat és az alcím egy sorban ül az arc mellett, a hős mondat-helyén. */
-function FaceHero(p: { label: string; verdict: string; sub?: string; children?: ReactNode; actions?: ReactNode }) {
-  return (
-    <Hero actions={p.actions} verdict={(
-      <span className="nb-hrow">
-        <Badge member="mezo" size={64} />
-        <span className="nb-htx">
-          <span className="fo-hero-lbl">{p.label}</span>
-          <span className="nb-hv">{p.verdict}</span>
-          {p.sub && <span className="nb-hs">{p.sub}</span>}
-        </span>
-      </span>
-    )}>
-      {p.children}
-    </Hero>
-  )
-}
+/** Hős, bal oldalán Mezo arcával (prototípus `hero({left})`, a kit `Hero left`). */
+const FaceHero = (p: Omit<HeroProps, 'left'>) => <Hero left={<Badge member="mezo" size={64} />} {...p} />
 
 export function NapMezoPage() {
   const navigate = useNavigate()
@@ -419,13 +403,11 @@ export function NapMezoPage() {
   return (
     <Page className="nb-page">
       <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
-      <div className="nb-pre" data-kalauz-anchor="uzenetek-tabs">
-        <Seg tabs aria-label="Mezo tartalom" value={tab} onChange={setTab} items={[
+      <Seg tabs className="nb-pre" data-kalauz-anchor="uzenetek-tabs" aria-label="Mezo tartalom" value={tab} onChange={setTab} items={[
           { key: 'uzenetek', label: 'Üzenetek', dot: !!dots?.uzenetek && tab !== 'uzenetek' },
           { key: 'eletjelek', label: 'Életjelek', dot: !!dots?.eletjelek && tab !== 'eletjelek' },
           { key: 'eszrevetelek', label: 'Észrevételek', dot: unansweredObservations > 0 && tab !== 'eszrevetelek' },
         ]} />
-      </div>
       {tab === 'uzenetek' && (
         <>
           <FaceHero label="Mezo · ma" verdict={threadVerdict}
@@ -459,16 +441,12 @@ export function NapMezoPage() {
                     <Lk aria-label="Összecsukás" aria-expanded={true} onClick={() => collapse(m.id)}>Összecsukom</Lk>
                   </div>
                 ) : (
-                  <button type="button" key={m.id} className="fo-row nb-oldrow" aria-expanded="false" onClick={() => expand(m.id)}>
-                    <Badge member={messageMember(m)} size={36} />
-                    <span className="g">
-                      <strong>{MEMBER_LABEL[messageMember(m)]}</strong>
-                      <small>{messageHead(m)}</small>
-                      {m.meta && <small className="nb-mt">{m.meta}</small>}
-                      <small className="nb-pv">{m.paragraphs[0]}</small>
-                    </span>
-                    <span className="chev" aria-hidden="true"><Icon name="chevron-down" size={14} /></span>
-                  </button>
+                  <Row key={m.id} className="nb-oldrow" aria-expanded={false} onClick={() => expand(m.id)}
+                    left={<Badge member={messageMember(m)} size={36} />}
+                    title={MEMBER_LABEL[messageMember(m)]}
+                    sub={messageHead(m)}
+                    more={<>{m.meta && <small className="nb-mt">{m.meta}</small>}<small className="nb-pv">{m.paragraphs[0]}</small></>}
+                    right={<span className="chev" aria-hidden="true"><Icon name="chevron-down" size={14} /></span>} />
                 )))}
               </Card>
             </>

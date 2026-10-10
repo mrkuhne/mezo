@@ -186,7 +186,7 @@ describe('HabitEditPage — keretváltás előre kimondott adatvesztéssel', () 
 describe('HabitEditPage — horgony-választó', () => {
   test('a chip-linked anchor opens the picker instead of locking the field', () => {
     renderPage('stretch')
-    fireEvent.click(within(screen.getByTestId('anchor-pick')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('anchor-pick'))
     const sheet = within(screen.getByTestId('anchor-sheet'))
     expect(sheet.getByText('Mihez kötöd?')).toBeInTheDocument()
     // own habits (self excluded), mezo moments, free text and unlink are all offered
@@ -199,7 +199,7 @@ describe('HabitEditPage — horgony-választó', () => {
 
   test('picking another habit saves its anchorHabitKey', () => {
     renderPage('stretch')
-    fireEvent.click(within(screen.getByTestId('anchor-pick')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('anchor-pick'))
     fireEvent.click(screen.getByRole('button', { name: /napi szándékot/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(updateDef).toHaveBeenCalledWith('d-stretch', expect.objectContaining({ anchorHabitKey: 'intent' }))
@@ -207,7 +207,7 @@ describe('HabitEditPage — horgony-választó', () => {
 
   test('picking a mezo-moment unlinks the habit anchor and stores the clause as free text', () => {
     renderPage('stretch')
-    fireEvent.click(within(screen.getByTestId('anchor-pick')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('anchor-pick'))
     fireEvent.click(screen.getByRole('button', { name: /befejeztem az edzést/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     // '' is the contract's unlink sentinel — a moment is not a def, so it cannot be a link.
@@ -218,7 +218,7 @@ describe('HabitEditPage — horgony-választó', () => {
 
   test('Leoldom on a FOGG recipe empties the anchor and gates the save until a new one is given', () => {
     renderPage('stretch')
-    fireEvent.click(within(screen.getByTestId('anchor-pick')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('anchor-pick'))
     fireEvent.click(screen.getByRole('button', { name: /Leoldom/ }))
     // FOGG needs SOME anchor (the validator's rule) — the save waits for free text or a pick.
     expect(screen.getByRole('button', { name: 'Mentés' })).toBeDisabled()
@@ -231,7 +231,7 @@ describe('HabitEditPage — horgony-választó', () => {
 
   test('Leoldom on a legacy (frameworkless) def truly clears the stored anchor copy', () => {
     renderPage('water')
-    fireEvent.click(within(screen.getByTestId('anchor-pick')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('anchor-pick'))
     fireEvent.click(screen.getByRole('button', { name: /Leoldom/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
     expect(updateDef).toHaveBeenCalledWith('d-water', expect.objectContaining({ anchorCopy: '' }))
@@ -239,7 +239,7 @@ describe('HabitEditPage — horgony-választó', () => {
 
   test('a picker row shows the candidate habit standing (strength), never a bare title', () => {
     renderPage('stretch')
-    fireEvent.click(within(screen.getByTestId('anchor-pick')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('anchor-pick'))
     const sheet = within(screen.getByTestId('anchor-sheet'))
     const row = sheet.getByRole('button', { name: /Reggeli fény/ })
     expect(within(row).getByText(/91%/)).toBeInTheDocument()

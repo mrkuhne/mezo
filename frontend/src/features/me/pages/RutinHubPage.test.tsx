@@ -168,13 +168,13 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     const tile = screen.getByTestId('chain-tile')
     expect(tile).toHaveTextContent('Aktív lánc · Reggeli rutin')
     expect(tile).toHaveTextContent('1 / 3 kész · 3 szokás, horgonyokkal összekötve')
-    fireEvent.click(within(tile).getByRole('button'))
+    fireEvent.click(tile)
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/lanc/MORNING')
   })
 
   test('every running chain has its own row to its page', () => {
     renderPage()
-    fireEvent.click(within(screen.getByTestId('chain-row-EVENING')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('chain-row-EVENING'))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/lanc/EVENING')
   })
 

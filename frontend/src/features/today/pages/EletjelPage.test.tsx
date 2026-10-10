@@ -94,7 +94,7 @@ test('sanity: the demo pcts really average to the prototype hero 58%', () => {
 test('the hero carries the ‹ Ma back control, the six vials and the average in its label', async () => {
   renderPage()
   expect(await screen.findByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Ma')
-  const hero = document.querySelector('[data-kalauz-anchor="eletjel-gyuru"] .fo-hero') as HTMLElement
+  const hero = document.querySelector('.fo-hero[data-kalauz-anchor="eletjel-gyuru"]') as HTMLElement
   expect(hero).not.toBeNull()
   // the six-need client mean, as a plain number in the label
   expect(within(hero).getByText('A hat jel · átlag 58')).toBeInTheDocument()

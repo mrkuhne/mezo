@@ -54,7 +54,7 @@ export function ChainEditSheet({ chain, onClose }: { chain?: HabitChainInfo; onC
           <Lab htmlFor="rb-chain-title">Név</Lab>
           <input
             id="rb-chain-title"
-            className="rb-in"
+            className="fo-in"
             aria-label="Rutin neve"
             value={title}
             onChange={(e) => setTitle(e.target.value)}

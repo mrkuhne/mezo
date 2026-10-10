@@ -11,7 +11,7 @@
 // „A lánc ereje" facts, and the door to routine building.
 // ============================================================
 import { Fragment, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ContentIcon } from '@/shared/ui/clay'
 import { useCountUpOnChange } from '@/shared/ui/mozaik/motion'
 import { addDays, localDateString } from '@/shared/lib/dates'
@@ -272,7 +272,7 @@ export function NapRutinPage() {
                   left={<>
                     {act
                       ? <Tick on={done} label={h.title} disabled={pending} onClick={act} />
-                      : <span className="nr2-mk" aria-hidden="true"><Mark state={done ? 'done' : 'empty'} /></span>}
+                      : <Mark size="tick" state={done ? 'done' : 'empty'} />}
                     {/* the habit's OWN icon in the row's chip (a clay name goes through ContentIcon) */}
                     <span className="si" aria-hidden="true"><ContentIcon name={icon} size={26} /></span>
                   </>}
@@ -311,10 +311,7 @@ export function NapRutinPage() {
           brand-new user with an empty day can still reach the builder */}
       <Section n={groups.length + (hero ? 2 : 1)} title="Szerkesztés" />
       <Card>
-        <Link to="/nap/rutin/epites" className="nr2-edit">
-          <Row icon="t-chain" title="Rutinok szerkesztése" sub="láncok, szokások, új szokás"
-            right={<svg className="chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>} />
-        </Link>
+        <Row to="/nap/rutin/epites" icon="t-chain" title="Rutinok szerkesztése" sub="láncok, szokások, új szokás" />
       </Card>
 
       {mealOpen && <LogFlowPage initialSlot="breakfast" onClose={() => setMealOpen(false)} />}

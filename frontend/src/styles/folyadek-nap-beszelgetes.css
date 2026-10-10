@@ -8,21 +8,10 @@
   font-family: var(--ff-body); font-size: 14px; font-weight: 650; color: var(--fo-ink); background: var(--fo-card); box-shadow: inset 0 0 0 1px var(--fo-hair); }
 
 /* ── the three-way tab strip under the top tabs (.np-pre) ── */
-.nb-pre { margin: 12px 14px 0; }
-.nb-pre .fo-seg { margin: 0; background: rgba(255, 255, 255, .75); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); }
-.nb-pre .fo-seg button { min-height: 44px; }
-
-/* ── hero with a face on the left (kit.js `hero({left})`, .fh-hrow) ── the row sits in the verdict slot */
-.nb-hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
-.nb-htx { display: block; flex: 1; min-width: 150px; }
-.nb-htx .fo-hero-lbl { font-family: var(--ff-body); line-height: normal; }
-.nb-hv { display: block; margin: 4px 0 6px; }
-.nb-hs { display: block; font-family: var(--ff-body); font-size: 13.5px; font-weight: 400; letter-spacing: 0; line-height: 1.45; color: color-mix(in srgb, var(--fo-ink) 72%, transparent); }
+.fo-seg.nb-pre button { min-height: 44px; }
 
 /* ── the six vials: one group, every vial a 44px+ target ── */
 .nb-strip { display: block; }
-/* a mark on a FULL vessel sits on the liquid, so it is drawn above it in white */
-.nb-vials .fo-tube em:has(.nb-full) { z-index: 2; color: #fff; }
 
 /* ── team row: overlapping faces (.np-duo) ── */
 .nb-duo { display: inline-flex; flex: 0 0 auto; }
@@ -92,12 +81,9 @@
 
 /* ── tap targets ── the kit's pills keep their size; the touch area around them reaches 44px */
 .nb-page button.fo-row { min-height: 44px; }
-.nb-page .fo-btn { position: relative; }
-.nb-page .fo-btn::after { content: ''; position: absolute; inset: -1px 0; }
-.nb-page .fo-btn.sm::after { inset: -4px 0; }
 .nb-obs .fo-acts > a.fo-lk { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
 
 @media (max-width: 340px) {
-  .nb-pre .fo-seg button { padding-inline: 2px; font-size: 12.5px; }
-  .nb-pre .fo-seg .fo-seg-dot { margin-left: 3px; }
+  .fo-seg.nb-pre button { padding-inline: 2px; font-size: 12.5px; }
+  .fo-seg.nb-pre .fo-seg-dot { margin-left: 3px; }
 }

@@ -10,12 +10,7 @@
 .nm-pad { padding: 0 16px; }
 .nm-hero > .fo-tank:first-child { margin-top: 14px; }
 
-/* kímélő mód — the warn hero with the category's glyph on the left (prototype `kmCard`, `.fh-hrow`) */
-.nm-km { margin: 12px 14px 0; }
-.nm-km > .fo-hero { margin: 0; }
-.nm-km .fo-hero-lbl, .nm-km .fo-hero-verdict, .nm-km .fo-hero-sub { margin-left: 80px; }
-.nm-km .fo-hero-sub { min-height: 20px; }
-.nm-km-art { position: absolute; left: 20px; top: 22px; display: block; }
+/* kímélő mód — the warn hero with the category's glyph on the left (prototype `kmCard`; the kit Hero's `left`) */
 .nm-nw { white-space: nowrap; }
 .nm-km-ask { margin-top: 12px; }
 .nm-km-ask b { display: block; }
@@ -23,7 +18,6 @@
 .nm-kmslim .fo-lk { flex: 0 0 auto; }
 
 /* the four levels sit on the page, not in a card */
-.nm-levels .fo-vial { cursor: pointer; }
 .nm-levels + .fo-note { text-align: center; }
 
 /* Mai napló: a long note stays two lines in its pill */
@@ -42,14 +36,9 @@
 .nm-rows { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--fo-hair); }
 .nm-sheetrows .fo-row { min-height: 44px; }
 
-/* „A napod üzemanyaga" lap: the big number is the reset button (prototype `.np-bigrow` + `.fh-big`) */
+/* „A napod üzemanyaga" lap: the big number (kit `Big`) is the reset button */
 .nm-fuel .fo-vials { padding: 0; }
-.nm-fuel .fo-vial { cursor: pointer; }
-.nm-fuel .fo-vial[aria-pressed="true"] .fo-tube { box-shadow: inset 0 0 0 2px var(--c); }
-.nm-big { display: block; width: 100%; min-height: 44px; margin: 12px 0 4px; padding: 0; border: 0; background: none; color: var(--fo-ink); text-align: left; cursor: pointer; }
-.nm-big b { font-family: var(--ff-display); font-size: 40px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; font-variant-numeric: tabular-nums; }
-.nm-big small { font-family: var(--ff-body); font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); margin-left: 6px; }
-.nm-big:focus-visible, .nm-opt4 button:focus-visible, .nm-kmdur .trm-kmdc > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.nm-opt4 button:focus-visible, .nm-kmdur .trm-kmdc > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 
 /* „Mi történt?" lap (prototype `kmSheet`, `.np-opt4`) */
 .nm-opt4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -69,13 +58,3 @@
 .nm-kmcta { margin-top: 14px; }
 .nm-kmcta:disabled { opacity: .4; }
 
-/* tap targets: the kit's small pill (36px) and text link keep their look; the hit area reaches 44px */
-.nm-page .fo-btn.sm, .nm-page .fo-lk, .nm-fuel .fo-btn.sm { position: relative; }
-.nm-page .fo-btn.sm::after, .nm-fuel .fo-btn.sm::after { content: ''; position: absolute; inset: -4px 0; }
-.nm-page .fo-lk::after { content: ''; position: absolute; inset: -14px -6px; }
-
-/* 320px: the tank's caption keeps clear of the level marks on the right */
-@media (max-width: 340px) {
-  .nm-hero .fo-tank-n small { font-size: 10.5px; letter-spacing: .4px; }
-  .nm-km .fo-hero-lbl, .nm-km .fo-hero-verdict, .nm-km .fo-hero-sub { margin-left: 76px; }
-}

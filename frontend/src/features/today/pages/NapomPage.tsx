@@ -156,56 +156,46 @@ export function NapomPage() {
   const hero = (() => {
     if (loading) {
       return (
-        <div className="nn-hero" role="group" aria-label="számolom · egy pillanat">
-          <Tank pct={44} height={400} num="…" cap="számolom · egy pillanat" label={dayLabel} verdict="Összeszedem a napodat." />
-        </div>
+        <Tank className="nn-hero" role="group" aria-label="számolom · egy pillanat"
+          pct={44} height={400} num="…" cap="számolom · egy pillanat" label={dayLabel} verdict="Összeszedem a napodat." />
       )
     }
     if (failed) {
       return (
-        <div className="nn-jhero" role="alert">
-          <Hero
-            warn
-            label={dayLabel}
-            verdict="Nem sikerült betölteni a napot."
-            sub="A többi oldal működik. Próbáld újra egy pillanat múlva."
-            actions={<Btn onClick={() => evalQuery.refetch()}>Próbáld újra</Btn>}
-          >
-            <Jar pct={0} size={80} text="?" />
-          </Hero>
-        </div>
+        <Hero
+          role="alert"
+          warn
+          left={<Jar pct={0} size={80} text="?" />}
+          label={dayLabel}
+          verdict="Nem sikerült betölteni a napot."
+          sub="A többi oldal működik. Próbáld újra egy pillanat múlva."
+          actions={<Btn onClick={() => evalQuery.refetch()}>Próbáld újra</Btn>}
+        />
       )
     }
     if (!evaluation) return null
     if (state === 'future') {
       return (
-        <div className="nn-jhero">
-          <Hero label={dayLabel} verdict="Még előtted." sub={DAY_COPY.futurePage} actions={toToday}>
-            <Jar pct={0} size={80} />
-          </Hero>
-        </div>
+        <Hero left={<Jar pct={0} size={80} />} label={dayLabel} verdict="Még előtted." sub={DAY_COPY.futurePage} actions={toToday} />
       )
     }
     if (state === 'thin' || state === 'empty') {
       return (
-        <div className="nn-jhero">
-          <Hero
-            label={live ? dayLabel : closedLabel}
-            verdict="Erre a napra kevés az adat."
-            sub={state === 'empty' ? DAY_COPY.emptyPage : DAY_COPY.thinPage}
-            actions={toToday}
-          >
-            <Jar pct={state === 'empty' ? 0 : 7} size={80} text="–" />
-          </Hero>
-        </div>
+        <Hero
+          left={<Jar pct={state === 'empty' ? 0 : 7} size={80} text="–" />}
+          label={live ? dayLabel : closedLabel}
+          verdict="Erre a napra kevés az adat."
+          sub={state === 'empty' ? DAY_COPY.emptyPage : DAY_COPY.thinPage}
+          actions={toToday}
+        />
       )
     }
     if (open) {
       const done = doneCount(evaluation)
       const updated = evalQuery.dataUpdatedAt > 0 ? ` · ${hhmm(evalQuery.dataUpdatedAt)}` : ''
       return (
-        <div className={cn('nn-hero', fresh.has(CENTER) && 'is-fresh')} role="group" aria-label={`${done} / 6 terület kész`}>
-          <Tank
+        <Tank
+          className={cn('nn-hero', fresh.has(CENTER) && 'is-fresh')} role="group" aria-label={`${done} / 6 terület kész`}
             // The vessel keeps room for the three-line reading above the liquid: 0–6 done areas
             // move the level inside the tank's 44–66% band (the prototype's live tank stands at 57).
             pct={44 + (done / 6) * 22}
@@ -216,8 +206,7 @@ export function NapomPage() {
             verdict={isToday ? dayReading(evaluation, day) : undefined}
             cta={action ? CTA_LABEL[action.kind] : undefined}
             onCta={action ? () => navigate(action.to) : undefined}
-          />
-        </div>
+        />
       )
     }
     // Scored. The verdict is the week's own sentence about the day; without the week's data the
@@ -226,8 +215,8 @@ export function NapomPage() {
       ? dayVerdict(day, days, today)
       : evaluation.highlights.find((h) => h.kind === 'key')?.label ?? null
     return (
-      <div className="nn-hero" role="group" aria-label={`Pontszám: ${evaluation.score} / 100`}>
-        <Tank
+      <Tank
+        className="nn-hero" role="group" aria-label={`Pontszám: ${evaluation.score} / 100`}
           // The base line stands 24px above the liquid, under the verdict: the score moves the
           // level inside the 56–66% band (the prototype's 87 stands at 66), the number says the rest.
           pct={56 + (evaluation.score ?? 0) / 10}
@@ -238,15 +227,15 @@ export function NapomPage() {
           verdict={verdict ? asSentence(verdict) : undefined}
           marks={[75, 50, 25]}
           cta={chat.pending ? 'Indítás…' : 'Beszélgess a napról'}
-          onCta={() => { if (!chat.pending) chat.open({ kind: 'day', date }) }}
+          ctaDisabled={chat.pending}
+          onCta={() => chat.open({ kind: 'day', date })}
           extra={adjustment && evaluation.base != null ? (
             <button type="button" className="fo-tank-shift" aria-expanded={adjOpen} onClick={() => setAdjOpen((o) => !o)}>
               <span>alap {evaluation.base}</span>
               <span>a Mezo szerint <b>{fmtDelta(adjustment.delta)}</b> <span aria-hidden="true">{adjOpen ? '▴' : '▾'}</span></span>
             </button>
           ) : undefined}
-        />
-      </div>
+      />
     )
   })()
 

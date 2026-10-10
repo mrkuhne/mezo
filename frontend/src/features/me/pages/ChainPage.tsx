@@ -13,7 +13,7 @@ import { useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions, useHabitDay, useHabitSummary } from '@/data/hooks'
 import type { HabitDaypart, HabitDefInfo } from '@/data/types'
-import { RbBack, RowItem } from '@/features/me/components/routineBits'
+import { RbBack } from '@/features/me/components/routineBits'
 import { ropeKindOf, stackAnchorOf } from '@/features/me/logic/chainStacking'
 import { localDateString } from '@/shared/lib/dates'
 import { huArticle, huFrom } from '@/shared/lib/huNum'
@@ -131,10 +131,8 @@ export function ChainPage() {
       label: d.title,
       pct: strength ?? 0,
       value: strength != null ? `${strength}%` : '—',
-      // The mark turns white once the liquid covers it (bible §5).
-      mark: status === 'done' || next?.habitKey === d.habitKey
-        ? <span className={(strength ?? 0) >= 78 ? 'rb-on' : undefined}>{status === 'done' ? '✓' : 'most'}</span>
-        : undefined,
+      // The kit turns the mark white once the liquid stands behind it (bible §5).
+      mark: status === 'done' ? '✓' : next?.habitKey === d.habitKey ? 'most' : undefined,
       color: status === 'done' ? 'var(--fo-ok)' : undefined,
       onClick: editing ? undefined : () => toHabit(d.habitKey),
     }
@@ -171,8 +169,8 @@ export function ChainPage() {
     const isNext = next?.habitKey === d.habitKey
     const strength = strengthOf(d.habitKey)
     return (
-      <RowItem key={d.id} testId={`stack-${d.habitKey}`} data-rope={rope ?? undefined}>
         <Row
+          key={d.id} data-testid={`stack-${d.habitKey}`} data-rope={rope ?? undefined}
           as={editing ? 'div' : undefined}
           state={d.isActive ? undefined : 'dim'}
           // Read-only status node — never a tick control (ADR: ticking lives on /nap/rutin).
@@ -196,7 +194,6 @@ export function ChainPage() {
           onClick={() => toHabit(d.habitKey)}
           aria-label={`${d.title} · ${status === 'done' ? 'kész' : status === 'missed' ? 'kimaradt' : 'nyitott'}`}
         />
-      </RowItem>
     )
   }
 
@@ -228,7 +225,7 @@ export function ChainPage() {
             <Lab htmlFor="rb-chain-name">A lánc neve</Lab>
             <input
               id="rb-chain-name"
-              className="rb-in"
+              className="fo-in"
               aria-label="A lánc neve"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -250,13 +247,11 @@ export function ChainPage() {
         {defs.map((d, i) => stackRow(d, i))}
         {defs.length === 0 && <Empty icon={DAYPART_ART[chain.daypart]}>Ez a lánc még üres.</Empty>}
         {editing && brokenRows.length > 0 && (
-          <div data-testid="stack-warn">
-            <Why icon="t-info">
+            <Why icon="t-info" data-testid="stack-warn">
               <b>A sorrend és a horgony nem ugyanazt mondja:</b>{' '}
               {brokenRows.map((d) => d.title).join(', ')} nem az előző eleméhez kötődik. Sorrendezéssel
               vagy a horgony cseréjével simítható ki.
             </Why>
-          </div>
         )}
         <Note>A horgony mondja meg, mi után jön a szokás — a sorrend ezt követi.</Note>
       </Card>

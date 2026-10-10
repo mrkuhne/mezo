@@ -48,9 +48,9 @@ describe('KimeloCard — the open period (mock mode)', () => {
     const { container } = renderSlot(openState('ILLNESS', 'FEW_DAYS', 1))
     const card = container.querySelector('.nm-km') as HTMLElement
     // the one hero of the state: a warn vessel, the category's glyph in its chip, no glass
-    expect(card.querySelector('.fo-hero')).toHaveClass('warn')
+    expect(card).toHaveClass('fo-hero', 'warn')
     expect(card.querySelector('.glass')).toBeNull()
-    expect(card.querySelector('.nm-km-art .fo-bub use')?.getAttribute('href')).toBe('#t-ill')
+    expect(card.querySelector('.fo-hero-left .fo-bub use')?.getAttribute('href')).toBe('#t-ill')
     expect(within(card).getByText('Kímélő mód · Beteg vagyok')).toBeInTheDocument()
     expect(within(card).getByText('Hogy vagy?')).toBeInTheDocument()
     expect(subLine()).toBe('2. nap · becslés: 2–3 nap')

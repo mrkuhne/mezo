@@ -151,7 +151,7 @@ describe('SzokasaidPage — a lista saját oldala (mezo-mgpr)', () => {
 
   test('a csempe a szokás oldalára visz, és sehol nincs pipa', () => {
     renderPage()
-    fireEvent.click(within(screen.getByTestId('habit-tile-epul')).getByRole('button'))
+    fireEvent.click(screen.getByTestId('habit-tile-epul'))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/epul')
     expect(screen.queryByRole('checkbox')).toBeNull()
   })

@@ -2,9 +2,9 @@ import type { HTMLAttributes, ReactNode } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Acts, Btn, Lk } from './Btn'
 import { Bub } from './Bub'
-import { cx } from './util'
+import { cx, type PassProps } from './util'
 
-/** A status pill. q = quiet, plan = planned, ok / warn / bad = state. */
+/** A status pill with its leading dot. q = quiet, plan = planned, ok / warn / bad = state. */
 export function St(p: { tone?: 'q' | 'ok' | 'warn' | 'bad' | 'plan'; className?: string; children: ReactNode }) {
   return <span className={cx('fo-st', p.tone ?? 'q', p.className)}>{p.children}</span>
 }
@@ -39,8 +39,8 @@ export function Txt({ className, ...rest }: HTMLAttributes<HTMLParagraphElement>
 }
 
 /** The "why" callout: a tinted line with a small bubble icon in front. */
-export function Why(p: { icon: Icon3DName; className?: string; children: ReactNode }) {
-  return <p className={cx('fo-txt fo-why', p.className)}><Bub icon={p.icon} size={24} /><span>{p.children}</span></p>
+export function Why({ icon, className, children, ...rest }: PassProps & { icon: Icon3DName; className?: string; children: ReactNode }) {
+  return <p className={cx('fo-txt fo-why', className)} {...rest}><Bub icon={icon} size={24} /><span>{children}</span></p>
 }
 
 /** A field label (a real `<label>` when `htmlFor` is given). */

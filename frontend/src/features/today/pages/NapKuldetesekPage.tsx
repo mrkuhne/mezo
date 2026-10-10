@@ -115,11 +115,11 @@ export function NapKuldetesekPage() {
         verdict={`${done} kész a ${quests.length} ajánlatból.`}
         sub="A többi magától telik, ahogy a napod halad."
         actions={firstOpen && heroLabel ? <Btn onClick={() => actQuest(firstOpen)}>{heroLabel}</Btn> : undefined}>
-        <Vials size="sm" height={116} className="nb-vials" items={quests.map((q) => {
+        <Vials size="sm" height={116} items={quests.map((q) => {
           const isDone = q.status === 'completed'
           return {
             label: SLOT_LABEL[q.slot], note: VIAL_NOTE[q.status], icon: SLOT_ICON[q.slot], value: `+${q.xp} XP`,
-            pct: isDone ? 100 : OPEN_PCT, mark: isDone ? <span className="nb-full">kész</span> : undefined, color: isDone ? 'var(--fo-ok)' : undefined,
+            pct: isDone ? 100 : OPEN_PCT, mark: isDone ? 'kész' : undefined, color: isDone ? 'var(--fo-ok)' : undefined,
           }
         })} />
       </Hero>

@@ -4,7 +4,7 @@ import { GratitudeRows } from '@/features/me/components/GratitudeRows'
 import { localDateString } from '@/shared/lib/dates'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
-import { Btn, Card, Hero, Jar, Note, Section } from '@/shared/ui/folyadek'
+import { Btn, Card, Hero, Jar, Note, Section, TextArea } from '@/shared/ui/folyadek'
 import { RitualFoot } from '@/features/ritual/components/RitualFoot'
 
 /**
@@ -97,21 +97,19 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
   return (
     <>
       <Hero
+        left={dayRating != null ? <Jar size={84} pct={dayRating * 10} text={dayRating} /> : undefined}
         label="Ma milyen volt"
         verdict="Milyen volt a napod valójában?"
         sub={dayRating != null
           ? <>Az esti check-inben <b>{dayRating}/10</b>-re értékelted a napot. Ide már csak a szavaid kellenek.</>
           : undefined}
-      >
-        {dayRating != null && <span className="nrz-hjar"><Jar size={84} pct={dayRating * 10} text={dayRating} /></span>}
-      </Hero>
+      />
 
       <Section n={1} title="A szavaid" />
       <Card>
         {/* the shared voice field (mezo-xojq8): dictation appends to what's typed */}
         <VoiceField domain="nap" onTranscript={(t) => setText((d) => appendDictation(d, t))}>
-          <textarea
-            className="nrz-in"
+          <TextArea
             value={text}
             onChange={(e) => setText(e.target.value)}
             aria-label="Milyen volt a napod valójában?"

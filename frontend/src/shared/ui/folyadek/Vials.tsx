@@ -3,15 +3,19 @@ import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Wave } from './Wave'
 import { clamp, cx } from './util'
 
-export interface VialItem { label: string; value: ReactNode; pct: number; color?: string; icon?: Icon3DName; mark?: ReactNode; note?: ReactNode; onClick?: () => void }
+export interface VialItem { label: string; value: ReactNode; pct: number; color?: string; icon?: Icon3DName; mark?: ReactNode; note?: ReactNode; onClick?: () => void
+  /** A vial that is a toggle: `aria-pressed` on its button. */
+  pressed?: boolean }
 
 function Vial({ it, height }: { it: VialItem; height?: number }) {
   const c = it.color ?? 'var(--dom)'
   const pct = clamp(it.pct)
+  // the small mark at the top turns white once the liquid stands behind it (bible §5)
+  const covered = (1 - pct / 100) * (height ?? 168) <= 22
   const inner = (
     <>
       <span className="fo-tube" style={height ? { height } : undefined}>
-        {it.mark != null && <em>{it.mark}</em>}
+        {it.mark != null && <em className={covered ? 'on' : undefined}>{it.mark}</em>}
         <span className="l" style={{ '--p': `${pct}%` } as CSSProperties}>
           <Wave color={`color-mix(in srgb,${c} 70%,#fff)`} />
         </span>
@@ -23,7 +27,7 @@ function Vial({ it, height }: { it: VialItem; height?: number }) {
   )
   const style = { '--c': c } as CSSProperties
   return it.onClick
-    ? <button type="button" className="fo-vial" style={style} onClick={it.onClick}>{inner}</button>
+    ? <button type="button" className="fo-vial" style={style} onClick={it.onClick} aria-pressed={it.pressed}>{inner}</button>
     : <div className="fo-vial" style={style}>{inner}</div>
 }
 

@@ -115,7 +115,7 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
 
   test('a sor navigál a szokás oldalára, és sehol nincs pipa-kontroll (ADR)', () => {
     renderPage('MORNING')
-    fireEvent.click(within(screen.getByTestId('stack-feny')).getByRole('button', { name: /Reggeli fény/ }))
+    fireEvent.click(screen.getByTestId('stack-feny'))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/feny')
     // the row's status node is a read-only mark, not a tick button
     expect(screen.getByTestId('stack-viz').querySelector('.fo-mk')).toHaveClass('d')

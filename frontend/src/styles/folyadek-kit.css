@@ -15,8 +15,12 @@
 .fo-hero-lbl { display: block; font-size: 11px; font-weight: 650; letter-spacing: .6px; text-transform: uppercase; color: var(--fo-sub); }
 .fo-hero.warn .fo-hero-lbl { color: #9A6708; }
 .fo-hero-verdict { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.8px; line-height: 1.12; margin: 4px 0 6px; text-wrap: balance; overflow-wrap: break-word; hyphens: auto; }
-.fo-hero-sub { font-size: 13.5px; line-height: 1.45; color: color-mix(in srgb, var(--fo-ink) 72%, transparent); }
-.fo-hero-acts { position: relative; margin: 22px -20px 0; padding: 26px 20px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+.fo-hero-sub { font-size: 13.5px; line-height: 1.45; color: color-mix(in srgb, var(--fo-ink) 72%, transparent); overflow-wrap: break-word; }
+/* a graphic on the left (a Badge, a Jar, a Bub) beside label + verdict + sub: kit.js `hero({left})`, `.fh-hrow` */
+.fo-hero-row { display: flex; align-items: center; gap: 16px; }
+.fo-hero-left { display: grid; place-items: center; flex: 0 0 auto; }
+.fo-hero-tx { flex: 1; min-width: 0; }
+.fo-hero-acts { position: relative; margin: 22px -20px 0; padding: 26px 20px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px;
   background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
 .fo-hero-acts::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; height: 13px; background: var(--liq1);
   -webkit-mask: var(--fo-wave-mask) repeat-x 0 0/90px 13px; mask: var(--fo-wave-mask) repeat-x 0 0/90px 13px; }
@@ -46,6 +50,7 @@
 .fo-row small { display: block; font-size: 12.5px; color: var(--fo-sub); margin-top: 2px; line-height: 1.35; }
 .fo-row .v { font-family: var(--ff-display); font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .fo-row .chev { width: 18px; height: 18px; color: var(--fo-faint); flex: 0 0 auto; }
+a.fo-row { text-decoration: none; }
 
 /* ── icons live in chips ── the flat tinted chip of the Folyadék-jel family (bible §5; vilagos/ikon.js is the
    computed look: 8% tint, 1.5px inner line, no highlight). F2 corrected the F1 port, which carried foly.js's glass bubble. */
@@ -81,8 +86,9 @@
 .fo-tank-marks { position: absolute; right: 16px; top: 8px; bottom: 84px; display: flex; flex-direction: column; justify-content: space-between; font-family: var(--ff-mono); font-size: 10px; color: rgba(255, 255, 255, .75); text-align: right; }
 .fo-tank-marks span::after { content: ''; display: inline-block; width: 10px; height: 1px; background: rgba(255, 255, 255, .7); margin-left: 6px; vertical-align: middle; }
 .fo-tank-bub { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .35); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); }
-.fo-tank-cta { position: absolute; left: 16px; right: 16px; bottom: 16px; z-index: 4; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-radius: 999px;
+.fo-tank-cta { position: absolute; left: 16px; right: 16px; bottom: 16px; z-index: 4; display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border: 0; border-radius: 999px; cursor: pointer; font-family: var(--ff-body); white-space: nowrap;
   background: #fff; color: var(--fo-ink); font-size: 15.5px; font-weight: 700; box-shadow: 0 14px 26px -12px rgba(10, 42, 60, .6); }
+.fo-tank-cta:disabled { opacity: .55; cursor: default; }
 .fo-tank-cta i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); }
 
 /* ── vials ── */
@@ -93,7 +99,9 @@
 .fo-tube .l { position: absolute; left: 0; right: 0; bottom: 0; height: var(--p); background: linear-gradient(180deg, color-mix(in srgb, var(--c) 70%, #fff), var(--c)); }
 .fo-tube .l .fo-wave { height: 10px; }
 .fo-tube-ic { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); display: block; width: 34px; height: 34px; }
-.fo-tube em { position: absolute; left: 0; right: 0; top: 14px; font-style: normal; font-family: var(--ff-mono); font-size: 10px; color: var(--fo-sub); }
+.fo-tube em { position: absolute; z-index: 2; left: 0; right: 0; top: 14px; font-style: normal; font-family: var(--ff-mono); font-size: 10px; color: var(--fo-sub); }
+button.fo-vial { cursor: pointer; }
+.fo-vial[aria-pressed="true"] .fo-tube { box-shadow: inset 0 0 0 2px var(--c); }
 .fo-vial b { font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.6px; line-height: 1; }
 .fo-vial small { font-size: 11.5px; font-weight: 600; color: var(--fo-sub); line-height: 1.25; }
 .fo-vial small i { display: block; font-style: normal; font-weight: 500; font-size: 10.5px; }
@@ -191,19 +199,25 @@
 .fo-two .fo-btn { padding-left: 8px; padding-right: 8px; }
 
 /* ── buttons · link · action row ── */
-.fo-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border: 0; border-radius: 999px; cursor: pointer;
+.fo-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 12px 18px; border: 0; border-radius: 999px; cursor: pointer;
   font-family: var(--ff-body); font-size: 15px; font-weight: 700; line-height: normal; white-space: nowrap; color: #fff;
   background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 10px 20px -10px var(--liq2); }
 .fo-btn.ghost { background: #fff; color: var(--fo-ink); box-shadow: 0 4px 10px -6px rgba(10, 42, 60, .3), inset 0 0 0 1px rgba(10, 42, 60, .08); }
-.fo-btn.sm { padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
+.fo-btn.sm { min-height: 0; padding: 9px 14px; font-size: 13.5px; font-weight: 600; }
 .fo-btn.wide { display: flex; width: 100%; }
 .fo-btn.grow { flex: 1; }
 .fo-btn:disabled { cursor: default; }
 .fo-btn .t-ico { width: 18px; height: 18px; flex: 0 0 auto; }
 .fo-btn:not(.ghost) .t-ico { --ic: #fff; --ic2: rgba(255, 255, 255, .4); --icf: transparent; }
 .fo-btn:focus-visible, .fo-lk:focus-visible, .fo-pill:focus-visible, .fo-seg button:focus-visible, .fo-scale button:focus-visible, .fo-tk:focus-visible,
-.fo-dr:focus-visible, .fo-row-main:focus-visible, button.fo-row:focus-visible, button.fo-step:focus-visible, button.fo-tank-air:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fo-dr:focus-visible, .fo-row-main:focus-visible, button.fo-row:focus-visible, a.fo-row:focus-visible, button.fo-step:focus-visible, .fo-in:focus-visible, button.fo-big:focus-visible, button.fo-tank-air:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 .fo-lk { padding: 0; border: 0; background: none; cursor: pointer; font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; line-height: normal; text-align: left; color: color-mix(in srgb, var(--dom) 85%, var(--fo-ink)); }
+/* tap targets (bible: 44px): the small controls keep their look; an invisible, centred extension makes the touch area
+   at least 44 × 44. It never grows past 44px on a control that is already that big, so it cannot reach over a neighbour. */
+.fo-btn.sm, .fo-lk, .fo-pill, .fo-tk, .fo-shh .fo-ib, button.fo-row, a.fo-row { position: relative; }
+.fo-btn.sm::after, .fo-lk::after, .fo-pill::after, .fo-tk::after, .fo-shh .fo-ib::after, .fo-seg button::after, button.fo-row::after, a.fo-row::after, .fo-tank-shift::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+a.fo-lk { text-decoration: none; }
 .fo-acts { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
 .fo-acts.center { justify-content: center; }
 /* on the hero's liquid row the primary is white, the ghost is see-through */
@@ -229,6 +243,7 @@
 
 /* ── status pill · quiet chips · facts ── */
 .fo-st { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; font-family: var(--ff-body); font-size: 11px; font-weight: 650; line-height: normal; letter-spacing: .2px; }
+.fo-st::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: 0 0 auto; }
 .fo-st.q { color: var(--fo-sub); background: var(--fo-page); }
 .fo-st.plan { color: var(--fo-info); background: color-mix(in srgb, var(--fo-info) 12%, transparent); }
 .fo-st.ok { color: var(--fo-ok); background: color-mix(in srgb, var(--fo-ok) 12%, transparent); }
@@ -259,6 +274,19 @@
 .fo-head h3 { flex: 1; min-width: 0; margin: 0; font-family: var(--ff-display); font-size: 18px; font-weight: 700; letter-spacing: -.4px; color: var(--fo-ink); }
 .fo-head .fo-lk, .fo-head-link { font-size: 13px; flex: 0 0 auto; }
 .fo-head-link { font-weight: 600; color: var(--fo-sub); }
+/* ── the text field (kit.js `.fh-in`): input, textarea, select ── 16px, so iOS does not zoom on focus */
+.fo-in { display: block; width: 100%; min-height: 46px; padding: 12px 14px; border-radius: 13px; border: 1px solid var(--fo-hair); background: #fff; font-family: var(--ff-body); font-size: 16px; font-weight: 400; line-height: normal; color: var(--fo-ink); }
+.fo-in::placeholder { color: var(--fo-faint); }
+textarea.fo-in { resize: none; line-height: 1.45; }
+.fo-in + .fo-pills, .fo-pills + .fo-in, .fo-pills + .vfield { margin-top: 10px; }
+/* ── the big numeral (kit.js `.fh-big`, nap.js `.np-bigrow`) ── */
+.fo-bigrow { display: flex; align-items: center; gap: 14px; margin: 12px 0 4px; }
+.fo-big { min-width: 0; font-family: var(--ff-display); font-size: 40px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.fo-big small { display: inline; font-family: var(--ff-body); font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); margin-left: 6px; }
+.fo-big em { display: block; font-style: normal; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; line-height: 1.35; letter-spacing: 0; color: var(--fo-sub); margin-top: 6px; }
+.fo-big em .fo-chips { margin-top: 0; }
+button.fo-big { flex: 1; min-height: 44px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
+.fo-big-end { margin-left: auto; flex: 0 0 auto; }
 .fo-msg { display: flex; gap: 10px; align-items: flex-start; }
 .fo-msg .who { flex: 0 0 auto; }
 .fo-msg .b { flex: 1; min-width: 0; }
@@ -308,6 +336,8 @@ button.fo-step.now { width: calc(100% + 8px); }
 .fo-drops { display: flex; align-items: flex-start; margin-top: 16px; }
 .fo-dr { flex: 1; position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; }
 button.fo-dr { cursor: pointer; }
+/* a drop that is a button answers on a 44px-tall area */
+button.fo-dr::after { content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 46px; }
 .fo-dr::before { content: ''; position: absolute; top: 11px; right: 50%; width: 100%; height: 4px; border-radius: 2px; background: rgba(10, 42, 60, .10); }
 .fo-dr:first-child::before { display: none; }
 .fo-dr.d::before, .fo-dr.now::before { background: linear-gradient(90deg, var(--liq1), var(--liq2)); }
@@ -340,12 +370,17 @@ button.fo-dr { cursor: pointer; }
 
 /* ── tick button · status node ── */
 .fo-tk { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 2px solid rgba(15, 30, 51, .22); display: grid; place-items: center; color: transparent; flex: 0 0 auto; background: #fff; cursor: pointer; }
+
+.fo-tk:disabled { cursor: default; }
 .fo-tk.on { background: var(--fo-ok); border-color: var(--fo-ok); color: #fff; box-shadow: 0 6px 12px -6px var(--fo-ok); }
 .fo-tk svg { width: 15px; height: 15px; }
 .fo-mk { width: 24px; height: 24px; border-radius: 50%; border: 2px dashed rgba(15, 30, 51, .22); display: grid; place-items: center; flex: 0 0 auto; color: #fff; }
 .fo-mk.d { border: 0; background: var(--fo-ok); }
 .fo-mk.now { border-style: solid; border-color: var(--dom); }
 .fo-mk svg { width: 13px; height: 13px; }
+/* in a column that mixes it with ticks, the node takes the tick's size */
+.fo-mk.tk { width: 30px; height: 30px; }
+.fo-mk.tk svg { width: 15px; height: 15px; }
 
 /* ── the light sheet: `<Sheet className="fo-sheet">` ── white, big top radius, a grab handle; no glass */
 .sheet.fo-sheet { background: #fff; border-top: 0; border-radius: 36px 36px 0 0; max-height: 86%; padding: 8px 18px calc(22px + env(safe-area-inset-bottom, 0px));
@@ -386,6 +421,8 @@ button.fo-tank-air { cursor: pointer; width: calc(100% - 44px); }
 .fo-vials.xs .fo-tube-ic, .fo-vials.xs .fo-tube-ic svg { width: 22px; height: 22px; }
 .fo-vials.xs .fo-tube-ic { bottom: 8px; }
 .fo-vials.xs .fo-tube em { font-size: 8px; top: 10px; color: var(--fo-warn); font-weight: 700; }
+/* the mark of a vessel whose liquid stands behind it is white (bible §5) */
+.fo-tube em.on, .fo-vials.xs .fo-tube em.on { color: #fff; }
 
 /* ── small phones ── (foly.js ≤360, nap.js ≤350) */
 @media (max-width: 360px) {
@@ -396,6 +433,14 @@ button.fo-tank-air { cursor: pointer; width: calc(100% - 44px); }
   .fo-vials.xs .fo-vial small { font-size: 9px; }
   .fo-scale { gap: 3px; }
   .fo-tank-airs { max-width: 210px; }
+  .fo-bigrow { gap: 10px; }
+  /* a numeral with a vessel on one side and a chip on the other gives way */
+  .fo-bigrow:has(> .fo-big-end) .fo-big { font-size: 34px; }
+}
+@media (max-width: 340px) {
+  /* the tank's caption keeps clear of the level marks on the right */
+  .fo-tank-n.has-marks small { font-size: 10.5px; letter-spacing: .4px; }
+  .fo-hero-row { gap: 12px; }
 }
 
 /* ── motion: only for people who accept it; the rules above are the final frame ── */

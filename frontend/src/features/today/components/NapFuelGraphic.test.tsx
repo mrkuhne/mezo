@@ -104,7 +104,7 @@ describe('NapFuelGraphic · kímélő mód', () => {
     const { container } = render(<NapFuelGraphic guidance consumed={consumed} targets={targets} />)
     expect(screen.getByText('Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel')).toBeInTheDocument()
     expect(screen.queryByRole('button')).toBeNull()
-    expect(container.querySelector('.fo-vials, .nm-big')).toBeNull()
+    expect(container.querySelector('.fo-vials, .fo-big')).toBeNull()
     expect(container.textContent).not.toMatch(/keret|1 460|2 200|elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
     expect(container.querySelector('use')).not.toBeNull()
   })

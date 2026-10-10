@@ -52,8 +52,8 @@ test('the full morning: 10 steps (plan + question of the day), pain Igen, nothin
   expect(screen.getByTestId('ck-value')).toHaveTextContent('–')
   expect(screen.queryByRole('radio', { checked: true })).toBeNull()
   // the answer is a jar you fill, the item's icon sits in its chip
-  expect(document.querySelector('.nck2-bigrow .fo-jar')).not.toBeNull()
-  expect(document.querySelector('.nck2-bigrow .fo-bub use')?.getAttribute('href')).toBe('#t-bolt')
+  expect(document.querySelector('.fo-bigrow .fo-jar')).not.toBeNull()
+  expect(document.querySelector('.fo-bigrow .fo-bub use')?.getAttribute('href')).toBe('#t-bolt')
 
   await tap(7) // energy
   expect(stepLabel()).toBe('02 / 10 · Hangulat · alap')

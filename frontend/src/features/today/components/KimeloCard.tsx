@@ -44,8 +44,9 @@ export function KimeloCard({ period, busy, onNotYet, onBetter, onDiscard }: {
     )
   }
   return (
-    <div className="nm-km" role="group" aria-label={ask ? KIMELO_NAP.confirm : undefined} aria-labelledby={ask ? undefined : 'nap-km-title'}>
-      <Hero warn label={`Kímélő mód · ${label}`} verdict={<span id="nap-km-title">{KIMELO_NAP.title}</span>}
+    <Hero warn className="nm-km" role="group" aria-label={ask ? KIMELO_NAP.confirm : undefined} aria-labelledby={ask ? undefined : 'nap-km-title'}
+        left={<Bub icon={icon} size={64} />}
+        label={`Kímélő mód · ${label}`} verdict={<span id="nap-km-title">{KIMELO_NAP.title}</span>}
         sub={<>{sub.lead.replace(LABEL_PREFIX, '')}{sub.estimate && <span className="nm-nw">{sub.estimate}</span>}</>}
         actions={ask ? (
           <>
@@ -59,10 +60,8 @@ export function KimeloCard({ period, busy, onNotYet, onBetter, onDiscard }: {
             <Lk disabled={busy} onClick={() => setAsk(true)}>{KIMELO_NAP.oops}</Lk>
           </>
         )}>
-        <span className="nm-km-art" aria-hidden="true"><Bub icon={icon} size={64} color="var(--fo-warn)" /></span>
         {ask && <Txt className="nm-km-ask"><b>{KIMELO_NAP.confirm}</b><span>{KIMELO_NAP.confirmSub}</span></Txt>}
-      </Hero>
-    </div>
+    </Hero>
   )
 }
 

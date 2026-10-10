@@ -9,21 +9,12 @@
   font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; color: var(--fo-sub); }
 .rb-back:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 
-/* ── a row that carries its own attributes (test id, rope kind): the wrapper keeps the kit's row rhythm ── */
-.rb-it + .rb-it > .fo-row { border-top: 1px solid var(--fo-hair); padding-top: 12px; }
-.rb-it:not(:last-child) > .fo-row { padding-bottom: 12px; }
-.rb-it + .fo-note, .rb-it + .fo-why { margin-top: 12px; }
 .fo-row.rb-armed strong { color: var(--fo-bad); }
 .rb-anc { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
 .rb-anc > span:last-child { min-width: 0; overflow-wrap: anywhere; }
 .rb-card-why > .fo-why:first-child { margin-top: 0; }
 
-/* ── fields ── */
-.rb-in { display: block; width: 100%; min-height: 46px; padding: 12px 14px; border-radius: 13px; border: 1px solid var(--fo-hair); background: #fff; font: inherit; font-size: 15px; color: var(--fo-ink); }
-.rb-in::placeholder { color: var(--fo-faint); }
-.rb-in:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
-textarea.rb-in { resize: none; line-height: 1.45; font-family: inherit; }
-.rb-in + .fo-pills, .fo-pills + .rb-in, .fo-pills + .vfield { margin-top: 10px; }
+/* ── fields are the kit's `.fo-in` ── */
 .fo-lab .rb-opt { font-weight: 500; color: var(--fo-faint); }
 .rb-save { margin-top: 16px; }
 
@@ -41,8 +32,9 @@ textarea.rb-in { resize: none; line-height: 1.45; font-family: inherit; }
 .rb-pipe .fo-tube { z-index: 1; }
 .rb-pipe .fo-vial b { font-size: 14px; }
 .rb-pipe .fo-vials .fo-vial small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; overflow-wrap: anywhere; }
-.rb-pipe .fo-vials .fo-tube em { z-index: 2; font-size: 9px; font-weight: 700; color: var(--fo-sub); }
-.rb-pipe .fo-tube em .rb-on { color: #fff; }
+.rb-pipe .fo-vials .fo-tube em { font-size: 9px; font-weight: 700; }
+/* six across, the kit colours the mark as a warning; here it is a plain status (the kit still turns it white on the liquid) */
+.rb-pipe .fo-vials .fo-tube em:not(.on) { color: var(--fo-sub); }
 .rb-pipe .fo-vials.xs .fo-vial small { font-size: 9.5px; }
 .rb-pipe.many .fo-vials { grid-template-columns: repeat(6, 1fr) !important; }
 .rb-mv { display: flex; gap: 4px; flex: 0 0 auto; }

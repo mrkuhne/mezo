@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { useState } from 'react'
-import { DropChain, Jar, Msg, Pill, Row, Scale, Seg, Step, Tank, Tick } from './index'
+import { createRef, useState } from 'react'
+import { MemoryRouter } from 'react-router-dom'
+import { Badge, Big, Card, DropChain, Hero, Input, Jar, Mark, Msg, Pill, Row, Scale, Seg, Select, St, Step, Tank, TextArea, Tick, Vials, Why } from './index'
 
 describe('folyadék kit · F2 pieces', () => {
   it('Seg as tabs: a tablist, one selected tab, click and arrow keys move the selection', () => {
@@ -183,5 +184,137 @@ describe('folyadék kit · F2 pieces', () => {
     expect(tank.querySelector('.fo-tank-airs')).toHaveTextContent('Hajnalban megírom.')
     fireEvent.click(screen.getByRole('button', { name: 'Részletek' }))
     expect(on).toHaveBeenCalledTimes(1)
+  })
+
+  it('Hero: `left` puts a graphic beside label + verdict + sub; the body and the liquid row stay full width; rest props reach the section', () => {
+    const { container, rerender } = render(
+      <Hero className="x" role="group" aria-label="Kímélő mód" data-kalauz-anchor="h" data-testid="hero" warn left={<Badge member="mezo" size={64} />}
+        label={<>Mezo · <b>ma</b></>} verdict="Három új üzenet." sub="Kettő választ vár." actions={<button type="button">Megnyitom</button>}>
+        <i data-testid="body" />
+      </Hero>,
+    )
+    const hero = screen.getByTestId('hero')
+    expect(hero).toHaveClass('fo-card', 'fo-hero', 'warn', 'x')
+    expect(hero).toHaveAttribute('data-kalauz-anchor', 'h')
+    expect(screen.getByRole('group', { name: 'Kímélő mód' })).toBe(hero)
+    const row = hero.firstElementChild!
+    expect(row).toHaveClass('fo-hero-row')
+    expect(row.querySelector('.fo-hero-left .fo-badge')).not.toBeNull()
+    expect([...row.querySelector('.fo-hero-tx')!.children].map((c) => c.className)).toEqual(['fo-hero-lbl', 'fo-hero-verdict', 'fo-hero-sub'])
+    expect(row.querySelector('.fo-hero-lbl b')).toHaveTextContent('ma')
+    expect(row.nextElementSibling).toHaveAttribute('data-testid', 'body')
+    expect(hero.lastElementChild).toHaveClass('fo-hero-acts')
+    rerender(<Hero verdict="Nincs adat." />)
+    expect(container.querySelector('.fo-hero-row')).toBeNull()
+    expect(container.querySelector('.fo-hero > .fo-hero-verdict')).not.toBeNull()
+    expect(container.querySelector('.fo-hero')).toHaveAttribute('data-closed', 'true')
+  })
+
+  it('Card hands a ref and its attributes to the section', () => {
+    const ref = createRef<HTMLElement>()
+    render(<Card ref={ref} id="c" data-testid="card" />)
+    expect(ref.current).toBe(screen.getByTestId('card'))
+    expect(ref.current?.tagName).toBe('SECTION')
+  })
+
+  it('Row passes data-* / id to its root and aria-* to the interactive element', () => {
+    const { rerender } = render(<Row title="Korábbi üzenet" onClick={() => {}} data-testid="r" id="row1" aria-expanded={false} aria-describedby="d" aria-pressed />)
+    const row = screen.getByTestId('r')
+    expect(row.tagName).toBe('BUTTON')
+    expect(row).toHaveAttribute('id', 'row1')
+    expect(row).toHaveAttribute('aria-expanded', 'false')
+    expect(row).toHaveAttribute('aria-describedby', 'd')
+    expect(row).toHaveAttribute('aria-pressed', 'true')
+    rerender(<Row as="div" title="Reggeli fény" onClick={() => {}} data-testid="r" data-rope="linked" aria-label="Reggeli fény · kész" right={<i />} />)
+    const div = screen.getByTestId('r')
+    expect(div.tagName).toBe('DIV')
+    expect(div).toHaveAttribute('data-rope', 'linked')
+    expect(div).not.toHaveAttribute('aria-label')
+    expect(screen.getByRole('button', { name: 'Reggeli fény · kész' })).toHaveClass('fo-row-main')
+    rerender(<Row title="Sima sor" data-testid="r" role="listitem" />)
+    expect(screen.getByRole('listitem')).toHaveAttribute('data-testid', 'r')
+  })
+
+  it('Row with `to` is a real link with the chevron', () => {
+    render(<MemoryRouter><Row to="/nap/rutin/epites" icon="t-chain" title="Rutinok szerkesztése" sub="láncok, szokások" data-testid="r" /></MemoryRouter>)
+    const link = screen.getByRole('link', { name: /Rutinok szerkesztése/ })
+    expect(link).toHaveAttribute('href', '/nap/rutin/epites')
+    expect(link).toHaveClass('fo-row')
+    expect(link).toHaveAttribute('data-testid', 'r')
+    expect(link.querySelector('.chev')).not.toBeNull()
+    expect(link.querySelector('button')).toBeNull()
+  })
+
+  it('Why, Seg, Step and Tank hand their attributes on', () => {
+    render(
+      <>
+        <Why icon="t-info" data-testid="why" role="note">Váltásnál elveszik.</Why>
+        <Seg data-testid="seg" data-kalauz-anchor="tabs" aria-label="Fülek" items={[{ key: 'a', label: 'A' }]} value="a" onChange={() => {}} />
+        <Step data-testid="step" title="Lecsendesítés" aria-current="step" />
+        <Tank data-testid="tank" role="group" aria-label="Pontszám: 87 / 100" pct={66} num="87" marks={[75, 50, 25]} cap="a 100-ból" />
+      </>,
+    )
+    expect(screen.getByTestId('why')).toHaveClass('fo-why')
+    expect(screen.getByRole('note')).toBe(screen.getByTestId('why'))
+    expect(screen.getByRole('group', { name: 'Fülek' })).toHaveAttribute('data-kalauz-anchor', 'tabs')
+    expect(screen.getByTestId('step')).toHaveAttribute('aria-current', 'step')
+    expect(screen.getByRole('group', { name: 'Pontszám: 87 / 100' })).toHaveClass('fo-tank')
+    expect(screen.getByTestId('tank').querySelector('.fo-tank-n')).toHaveClass('has-marks')
+  })
+
+  it('Tank: a disabled CTA stays in place and does not answer', () => {
+    const on = vi.fn()
+    render(<Tank pct={60} num="87" cta="Indítás…" onCta={on} ctaDisabled />)
+    const cta = screen.getByRole('button', { name: /Indítás/ })
+    expect(cta).toBeDisabled()
+    fireEvent.click(cta)
+    expect(on).not.toHaveBeenCalled()
+  })
+
+  it('Vials: `pressed` is announced on the vial button; a mark the liquid stands behind turns white', () => {
+    const { container } = render(
+      <Vials height={100} items={[
+        { label: 'Fehérje', value: '148 g', pct: 100, mark: 'kész', pressed: true, onClick: () => {} },
+        { label: 'Szénhidrát', value: '210 g', pct: 78, mark: '✓', pressed: false, onClick: () => {} },
+        { label: 'Zsír', value: '60 g', pct: 77, mark: 'most', onClick: () => {} },
+        { label: 'Rost', value: '12 g', pct: 100 },
+      ]} />,
+    )
+    const vials = [...container.querySelectorAll('.fo-vial')]
+    expect(vials.map((v) => v.getAttribute('aria-pressed'))).toEqual(['true', 'false', null, null])
+    expect(vials.map((v) => v.querySelector('em')?.className ?? null)).toEqual(['on', 'on', '', null])
+  })
+
+  it('the text field is one recipe for input, textarea and select', () => {
+    const ref = createRef<HTMLTextAreaElement>()
+    render(<><Input aria-label="Név" className="x" defaultValue="Gombakávé" /><TextArea ref={ref} aria-label="Jegyzet" rows={3} /><Select aria-label="Napszak"><option>Reggel</option></Select></>)
+    expect(screen.getByRole('textbox', { name: 'Név' })).toHaveClass('fo-in', 'x')
+    expect(screen.getByRole('textbox', { name: 'Jegyzet' })).toHaveClass('fo-in')
+    expect(ref.current).toBe(screen.getByRole('textbox', { name: 'Jegyzet' }))
+    expect(screen.getByRole('combobox', { name: 'Napszak' })).toHaveClass('fo-in')
+  })
+
+  it('Big: the numeral with its unit and note; a button when clickable; the side slots', () => {
+    const on = vi.fn()
+    const { container, rerender } = render(<Big data-testid="v" value="7" unit="/ 10" left={<Jar pct={70} />} right={<i data-testid="end" />} />)
+    const row = container.querySelector('.fo-bigrow')!
+    expect(row.firstElementChild).toHaveClass('fo-jar')
+    expect(screen.getByTestId('v').tagName).toBe('SPAN')
+    expect(screen.getByTestId('v')).toHaveClass('fo-big')
+    expect(screen.getByTestId('v')).toHaveTextContent('7/ 10')
+    expect(row.querySelector('.fo-big-end [data-testid="end"]')).not.toBeNull()
+    rerender(<Big value="2 060" unit="kcal ma" note="1,2 l a 2,5 l-ből" aria-label="Teljes energiabevitel megjelenítése" onClick={on} />)
+    const b = screen.getByRole('button', { name: 'Teljes energiabevitel megjelenítése' })
+    expect(b).toHaveClass('fo-big')
+    expect(b.querySelector('small')).toHaveTextContent('kcal ma')
+    expect(b.querySelector('em')).toHaveTextContent('1,2 l a 2,5 l-ből')
+    fireEvent.click(b)
+    expect(on).toHaveBeenCalledTimes(1)
+  })
+
+  it('Mark can take the size of a tick; St keeps its tone class', () => {
+    const { container } = render(<><Mark state="done" size="tick" /><Mark state="empty" /><St tone="ok">Kész</St></>)
+    expect([...container.querySelectorAll('.fo-mk')].map((m) => m.className)).toEqual(['fo-mk d tk', 'fo-mk'])
+    expect(screen.getByText('Kész')).toHaveClass('fo-st', 'ok')
   })
 })

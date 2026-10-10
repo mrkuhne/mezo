@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Btn, FoSheetHead, Note, TwoBtn, Why } from '@/shared/ui/folyadek'
+import { Btn, FoSheetHead, Note, TextArea, TwoBtn, Why } from '@/shared/ui/folyadek'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
@@ -19,7 +19,7 @@ export function IntentionSheet({ creed, onSave, onClose }:
           <FoSheetHead titleId="focus-title" title="Mi ma a fókuszod?" sub="Rutin · reggel · a mai szándék" icon="t-ring" onClose={close} />
           {creed && <Why icon="t-compass">„{creed}”</Why>}
           <VoiceField domain="nap" className="nck2-field" onTranscript={(t) => setText((d) => appendDictation(d, t, 200))}>
-            <textarea className="nck2-in" value={text} onChange={(e) => setText(e.target.value)}
+            <TextArea value={text} onChange={(e) => setText(e.target.value)}
               maxLength={200} rows={2} autoFocus aria-labelledby="focus-title"
               placeholder="pl. nyugodt tempó" />
           </VoiceField>

@@ -4,9 +4,7 @@
    `.np-strata`, `.np-arcw`, `.np-inacts`). The base rules are the final (still) frame; all motion is in the no-preference block. */
 
 /* ── quick log · the vessel (page variant) ── */
-/* `.quicklog` stays on the root as the surface's stable hook (tests/layout/quicklog.spec.ts). Until the old `.quicklog*` blocks
-   leave prototype.css their `padding` and `.quicklog h2` rules still match — these two lines keep them off the new markup. */
-.quicklog.nqk { padding: 0; }
+/* `.quicklog` stays on the root as the surface's stable hook (tests/layout/quicklog.spec.ts); its old rules are gone from prototype.css. */
 .quicklog.nqk .fo-shh h2 { margin: 0; font-family: var(--ff-display); font-size: 22px; font-weight: 800; letter-spacing: -.6px; line-height: normal; color: var(--fo-ink); }
 .quicklog.nqk.fo-card { padding: 18px; }
 .nqk-tank { position: relative; margin: 14px 14px 0; border-radius: 44px; overflow: hidden; color: var(--fo-ink);
@@ -48,26 +46,15 @@
 .nqk-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 18px 0; }
 
 /* ── the activity log sheet ── */
-.nqk-in, .nrz-in, .nrz-grat textarea { display: block; width: 100%; min-height: 90px; padding: 12px 14px; border-radius: 13px; border: 1px solid var(--fo-hair); background: #fff; resize: none;
-  font-family: var(--ff-body); font-size: 16px; line-height: 1.45; color: var(--fo-ink); }
-.nqk-in::placeholder, .nrz-in::placeholder, .nrz-grat textarea::placeholder { color: var(--fo-faint); }
+/* the free-text fields are the kit's `.fo-in`; here they only stand taller */
+.nqk-field .fo-in, .nrz textarea.fo-in { min-height: 90px; }
 .nqk-field { margin-top: 10px; }
 .nqk-quoted { margin-top: 10px; padding: 10px 12px; border-radius: 18px; background: var(--fo-page); color: var(--fo-sub); }
 .nqk-acts { margin-top: 16px; }
-.nqk-bigrow { display: flex; align-items: center; gap: 14px; margin: 12px 0 4px; }
-.nqk-big { min-width: 0; font-family: var(--ff-display); font-size: 40px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
-.nqk-big small { font-family: var(--ff-body); font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); margin-left: 6px; }
-.nqk-big .fo-chips { margin-top: 6px; font-family: var(--ff-body); letter-spacing: 0; }
-.nqk-entry { display: block; margin-top: 6px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; line-height: 1.35; letter-spacing: 0; color: var(--fo-sub); }
 
 /* ── Napzárás ── light, with the deeper „dusk" liquid (kit `.fo-dusk`); no chrome, so the page pads its own top */
 .nrz { min-height: 100%; padding-top: max(10px, env(safe-area-inset-top, 0px)); }
 .nrz > .fo-dots { margin-top: 12px; }
-/* a jar to the left of the hero's label + verdict + sub (prototype `hero({left})`; the kit Hero has no left slot) */
-.nrz .fo-hero:has(> .nrz-hjar) { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: center; }
-.nrz .fo-hero:has(> .nrz-hjar) > * { grid-column: 2; }
-.nrz .fo-hero > .nrz-hjar { grid-column: 1; grid-row: 1 / span 3; display: grid; place-items: center; }
-.nrz .fo-hero:has(> .nrz-hjar)::after { grid-column: 1 / -1; }
 .nrz-vbig { font-size: 28px; }
 .nrz .fo-hero-sub b { color: var(--fo-ink); font-weight: 700; }
 .nrz-arc { margin-top: 12px; }
@@ -94,7 +81,9 @@
    are flattened to the Folyadék field, small ghost button and pill (same values as the kit's). */
 .nrz-grat { display: flex; flex-direction: column; gap: 8px; }
 .nrz-grat > .card { margin: 0; padding: 0 !important; border: 0; border-radius: 0; background: none; box-shadow: none; }
-.nrz-grat textarea { min-height: 60px; box-shadow: none; }
+.nrz-grat textarea { display: block; width: 100%; min-height: 60px; padding: 12px 14px; border-radius: 13px; border: 1px solid var(--fo-hair); background: #fff; resize: none; box-shadow: none;
+  font-family: var(--ff-body); font-size: 16px; line-height: 1.45; color: var(--fo-ink); }
+.nrz-grat textarea::placeholder { color: var(--fo-faint); }
 .nrz-grat > .cta-ghost { align-self: flex-start; min-height: 44px; padding: 9px 14px; border: 0; border-radius: 999px; background: #fff; color: var(--fo-ink);
   font-family: var(--ff-body); font-size: 13.5px !important; font-weight: 600;
   box-shadow: 0 4px 10px -6px rgba(10, 42, 60, .3), inset 0 0 0 1px rgba(10, 42, 60, .08); }
@@ -102,12 +91,9 @@
   font-family: var(--ff-body); font-size: 13px !important; font-weight: 600; }
 .nrz-grat .chip.chip-active { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 14px -8px var(--liq2); }
 
-/* tap targets: every control of this area answers on at least 44px. The full-size buttons grow to it; the small ones (the
-   kit's 36px `sm` button, the life-area chips, the foot's text link) keep their look and get an invisible taller hit area. */
-.nrz .fo-foot .fo-btn, .nqk-acts .fo-btn, .fo-btn.nqk-acts { min-height: 44px; }
-.nrz .fo-btn.sm, .nrz-grat .chip, .nrz .fo-foot .fo-lk { position: relative; }
-.nrz .fo-btn.sm::after, .nrz-grat .chip::after { content: ''; position: absolute; inset: -4px 0; }
-.nrz .fo-foot .fo-lk::after { content: ''; position: absolute; inset: -13px -4px; }
+/* tap targets: the kit's controls answer on 44px themselves; the foreign life-area chips get the same invisible extension */
+.nrz-grat .chip { position: relative; }
+.nrz-grat .chip::after { content: ''; position: absolute; inset: -4px 0; }
 
 @media (max-width: 350px) {
   .nqk-say { font-size: 21px; }

@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useHabitCatalog, useHabitFormations } from '@/data/hooks'
 import type { HabitDefInfo, HabitFormation } from '@/data/types'
-import { RbBack, RowItem } from '@/features/me/components/routineBits'
+import { RbBack } from '@/features/me/components/routineBits'
 import { etaPhrase, FORMATION_STAGES, stageIndexOf } from '@/features/me/logic/habitFormation'
 import { cn } from '@/shared/lib/cn'
 import { Btn, Card, Empty, ErrorRow, Hero, Mini, Note, Page, Row, Section, useFrameTitle } from '@/shared/ui/folyadek'
@@ -107,8 +107,8 @@ export function SzokasaidPage() {
         : settled ? 'a küszöb fölött — jó horgony egy új szokásnak'
           : eta != null ? 'van hátra ebben a tempóban' : 'nincs friss ismétlés — tempó nélkül nincs becslés'
     return (
-      <RowItem key={d.habitKey} testId={`habit-tile-${d.habitKey}`}>
         <Row
+          key={d.habitKey} data-testid={`habit-tile-${d.habitKey}`}
           left={(
             <Mini
               pct={enough ? f.automaticityPct : 0}
@@ -127,7 +127,6 @@ export function SzokasaidPage() {
           right=""
           onClick={() => navigate(`/nap/rutin/szokas/${d.habitKey}`)}
         />
-      </RowItem>
     )
   }
 

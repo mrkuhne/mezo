@@ -13,7 +13,7 @@ import { Fragment, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitDay, useHabitFormations, useHabitSummary } from '@/data/hooks'
 import type { HabitChainInfo, HabitDaypart, HabitItem } from '@/data/types'
-import { RbBack, RowItem } from '@/features/me/components/routineBits'
+import { RbBack } from '@/features/me/components/routineBits'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
 import { addDays, huMonthDayDow, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
@@ -109,8 +109,8 @@ export function RutinHubPage() {
     <>
       {/* The hero NAVIGATES to /nap/rutin (the ADR's logging home); its button is a door, not a tick.
           Honesty rule: while the day view is unresolved there is no standing — no „0 / 0". */}
-      <div data-testid="next-card">
         <Hero
+          data-testid="next-card"
           label={next != null ? `Következik${totalToday > 0 ? ` · ${doneToday} / ${totalToday} ma` : ''}` : 'Mind megvan'}
           verdict={next != null ? `${next.title}.` : 'A mai rutin kész.'}
           // The anchor copy is the user's own clause („kávé után", „megvolt a napfény") — it stands on
@@ -134,7 +134,6 @@ export function RutinHubPage() {
             [activeDefs.length, 'aktív szokás'],
           ]} />
         </Hero>
-      </div>
 
       <Section n={1} title="Amid most van" />
       <Card>
@@ -142,24 +141,21 @@ export function RutinHubPage() {
           const items = itemsOf(c)
           const count = c.defs.filter((d) => d.isActive).length
           return (
-            <RowItem key={c.id} testId={c.id === activeChain?.id ? 'chain-tile' : `chain-row-${c.chainKey}`}>
               <Row
+                key={c.id} data-testid={c.id === activeChain?.id ? 'chain-tile' : `chain-row-${c.chainKey}`}
                 icon={DAYPART_ART[c.daypart]}
                 title={`Aktív lánc · ${c.title}`}
                 sub={count === 0 ? 'még nincs benne szokás'
                   : `${items.length > 0 ? `${doneOf(items)} / ${items.length} kész · ` : ''}${count} szokás, horgonyokkal összekötve`}
                 onClick={() => navigate(`/nap/rutin/lanc/${encodeURIComponent(c.chainKey)}`)}
               />
-            </RowItem>
           )
         })}
-        <RowItem>
-          <Row
-            icon="t-harvest" title="Szokásaid"
-            sub={`${activeDefs.length} aktív${settled > 0 ? ` · ${settled} beérett` : ''}`}
-            onClick={() => navigate('/nap/rutin/szokasok')}
-          />
-        </RowItem>
+        <Row
+          icon="t-harvest" title="Szokásaid"
+          sub={`${activeDefs.length} aktív${settled > 0 ? ` · ${settled} beérett` : ''}`}
+          onClick={() => navigate('/nap/rutin/szokasok')}
+        />
       </Card>
 
       <Section n={2} title="Építs újat" />
@@ -183,8 +179,8 @@ export function RutinHubPage() {
     <Card><Empty icon="t-calendar" actions={pastNav}>Nincs rutinadat erre a napra</Empty></Card>
   ) : (
     <>
-      <div data-testid="past-day">
         <Hero
+          data-testid="past-day"
           label={`${dayName} · +${earnedXp} XP`}
           verdict={`Reggel ${doneOf(morning)}/${morning.length} · Este ${doneOf(evening)}/${evening.length}`}
           sub={missed.length > 0
@@ -194,7 +190,6 @@ export function RutinHubPage() {
         >
           {chainDrops}
         </Hero>
-      </div>
       {/* The day's rows, read-only (history, not the live catalog). */}
       {dayChains.map(({ chain, items }, k) => (
         <Fragment key={chain.id}>

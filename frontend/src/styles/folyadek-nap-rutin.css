@@ -3,23 +3,13 @@
 /* ════ Rutin (/nap/rutin) · prefix nr2- ════ (prototype vilagos/nap.js `rutin()`, `.np-now` `.np-tl`) */
 .nr2-now { color: var(--dom); font-weight: 700; }
 .nr2-tl { font: inherit; font-weight: 600; color: var(--dom); text-decoration: underline; text-underline-offset: 3px; text-align: left; }
-/* the habit's own icon chip sits in the row's `left` slot, next to the tick: same chip as `.fo-row .si` */
-.nr2-mk { display: grid; place-items: center; width: 30px; height: 30px; flex: 0 0 auto; }
 /* the value column: the count-up never shifts the row */
 .nr2-page .fo-row .v { min-width: 44px; text-align: right; }
-/* 44px tap targets around the 30px tick and the hero drops (the visible shape stays the kit's) */
-.nr2-page .fo-tk { position: relative; }
-.nr2-page .fo-tk::after { content: ''; position: absolute; inset: -9px; border-radius: 50%; }
-.nr2-page button.fo-dr::after { content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 46px; }
-.nr2-page .fo-tk:disabled { cursor: default; }
 /* the page's own back button, drawn only where no title bar is mounted */
 .nr2-back, .nck2-back { margin: 12px 14px 0; }
 /* the day links of the hero's liquid row */
 .nr2-day { min-height: 44px; padding: 0 4px; white-space: nowrap; }
 .nr2-day:disabled { opacity: .35; cursor: default; }
-/* „Rutinok szerkesztése": the whole row is one link */
-.nr2-edit { display: block; color: inherit; text-decoration: none; border-radius: 16px; }
-.nr2-edit:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 4px; }
 
 /* ════ Check-in page (/nap/checkin) · prefix nck2- ════ (prototype `checkin()`, `.np-slot` `.np-slh` `.np-cells`) */
 .nck2-slot { padding: 14px 0; border-top: 1px solid var(--fo-hair); }
@@ -41,10 +31,6 @@
 
 /* ════ Check-in sheet + the two Rutin sheets ════ (prototype `ckSheet()`, `SHEETS.reflect`, `SHEETS.intention`) */
 .nck2-q { font-family: var(--ff-display); font-size: 19px; font-weight: 700; letter-spacing: -.4px; line-height: 1.25; margin: 2px 0 4px; color: var(--fo-ink); }
-.nck2-bigrow { display: flex; align-items: center; gap: 14px; margin: 12px 0 4px; }
-.nck2-big { font-family: var(--ff-display); font-size: 40px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; font-variant-numeric: tabular-nums; }
-.nck2-big small { font-family: var(--ff-body); font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); margin-left: 6px; }
-.nck2-end { margin-left: auto; }
 .nck2-okline { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 13.5px; font-weight: 600; color: var(--fo-ok); }
 .nck2-okline svg { width: 16px; height: 16px; flex: 0 0 auto; }
 .nck2-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
@@ -67,10 +53,6 @@
 .nck2-sil { fill: var(--fo-page); stroke: var(--fo-line); }
 .nck2-dot { fill: var(--fo-card); stroke: var(--fo-faint); stroke-width: 1.4; cursor: pointer; }
 .nck2-dot.on { fill: var(--fo-warn); stroke: var(--fo-warn); }
-/* the free-text field of a light sheet (the kit has no field yet) */
-.nck2-in { display: block; width: 100%; padding: 12px 14px; border-radius: 13px; border: 1px solid var(--fo-hair); background: var(--fo-card); font: inherit; font-size: 16px; line-height: 1.45; color: var(--fo-ink); resize: vertical; }
-.nck2-in::placeholder { color: var(--fo-faint); }
-.nck2-in:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 .nck2-field { margin-top: 10px; }
 /* the three answers of the evening reflection: a capsule each */
 .nck2-ref { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -82,8 +64,6 @@
 @media (max-width: 350px) {
   .nck2-slh { gap: 8px; }
   .nck2-slh time { min-width: 42px; font-size: 14px; }
-  .nck2-big { font-size: 34px; }
-  .nck2-bigrow { gap: 10px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

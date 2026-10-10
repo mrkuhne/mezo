@@ -24,7 +24,7 @@ import { useHabitCatalog, useHabitCatalogActions, useHabitSummary } from '@/data
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import type { HabitFramework, HabitMode } from '@/data/types'
 import { EffortGrid } from '@/features/me/components/EffortGrid'
-import { RbBack, RecipeSentence, RecipeVessels, RowItem, recipeParts } from '@/features/me/components/routineBits'
+import { RbBack, RecipeSentence, RecipeVessels, recipeParts } from '@/features/me/components/routineBits'
 import { MEZO_EVENT_ANCHORS } from '@/features/me/logic/habitAnchors'
 import { EMPTY_EFFORT, effortRated, effortXp, type EffortState } from '@/features/me/logic/habitEffort'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
@@ -56,8 +56,8 @@ function Field({ id, label, name, opt, value, onChange, placeholder, hint, voice
   area?: boolean
 }) {
   const input = area
-    ? <textarea id={id} className="rb-in" rows={2} aria-label={name ?? label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
-    : <input id={id} className="rb-in" aria-label={name ?? label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+    ? <textarea id={id} className="fo-in" rows={2} aria-label={name ?? label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+    : <input id={id} className="fo-in" aria-label={name ?? label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
   return (
     <>
       <Lab htmlFor={id}>{label}{opt && <span className="rb-opt"> · opcionális</span>}</Lab>
@@ -266,33 +266,30 @@ export function HabitEditPage() {
           onChange={(k) => setFramework(k as HabitFramework)}
         />
         {lostOnSwitch.length > 0 && (
-          <div data-testid="fw-warn">
-            <Why icon="t-info">
+            <Why icon="t-info" data-testid="fw-warn">
               <b>Váltásnál elveszik:</b> {lostOnSwitch.join(', ')}.
               {' '}Az új keret mezői üresen indulnak — a Mentésig semmi nem vész el.
             </Why>
-          </div>
         )}
 
         {showAnchor && (
           <>
             <Lab>Miután… · horgony</Lab>
-            <RowItem testId="anchor-pick">
               <Row
+                data-testid="anchor-pick"
                 icon="t-anchor"
                 title={anchor.label.trim() !== '' ? anchor.label : '— nincs horgony —'}
                 sub={anchor.key == null ? undefined : anchorStrength != null ? `${anchorStrength}% erő · 28 nap` : 'friss szokás'}
                 more={anchorStrength != null ? <Level pct={anchorStrength} height={8} /> : undefined}
                 onClick={() => setAnchorPickerOpen(true)}
               />
-            </RowItem>
             {anchor.key == null && (
               <>
                 <Lab htmlFor="rb-ed-anchor">Saját szavakkal</Lab>
                 <VoiceField domain="me" size="sm" onTranscript={(t) => setAnchor({ key: null, label: appendDictation(anchor.label, t) })}>
                   <input
                     id="rb-ed-anchor"
-                    className="rb-in"
+                    className="fo-in"
                     aria-label="Saját horgony"
                     value={anchor.label}
                     placeholder="pl. „letettem a fogkefét”"
@@ -354,7 +351,7 @@ export function HabitEditPage() {
             <select
               id="rb-ed-metric"
               aria-label="Metrika"
-              className="rb-in"
+              className="fo-in"
               value={metric}
               onChange={(e) => setMetric(e.target.value)}
             >

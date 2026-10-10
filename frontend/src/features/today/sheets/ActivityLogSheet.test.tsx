@@ -60,7 +60,7 @@ describe('ActivityLogSheet', () => {
     await waitFor(() => expect(logActivity).toHaveBeenCalledWith('Olvastam 30 percet'))
     expect(await screen.findByText('Tanulás')).toBeInTheDocument()
     // the earned XP: the big number beside the jar, and the jar's own label
-    expect(document.querySelector('.nqk-xp')).toHaveTextContent('+15XP')
+    expect(document.querySelector('.fo-big')).toHaveTextContent('+15XP')
     expect(document.querySelector('.fo-jar text')).toHaveTextContent('+15')
   })
 
