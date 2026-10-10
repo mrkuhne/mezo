@@ -1,14 +1,28 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
+import { cx } from './util'
 
-/** The ONE thing to look at: a vessel whose action row (or closing strip) is the liquid. */
-export function Hero(p: { label?: string; verdict: ReactNode; sub?: ReactNode; warn?: boolean; children?: ReactNode; actions?: ReactNode }) {
+export interface HeroProps extends Omit<HTMLAttributes<HTMLElement>, 'children'> {
+  label?: ReactNode; verdict: ReactNode; sub?: ReactNode; warn?: boolean; children?: ReactNode; actions?: ReactNode
+  /** A graphic (Badge / Jar / Bub) beside label + verdict + sub (prototype `hero({left})`). */
+  left?: ReactNode
+}
+
+/** The ONE thing to look at: a vessel whose action row (or closing strip) is the liquid. Passes `id`, `role`, `data-*`, `aria-*` through. */
+export function Hero({ label, verdict, sub, warn, left, children, actions, className, ...rest }: HeroProps) {
+  const text = (
+    <>
+      {label != null && label !== '' && <span className="fo-hero-lbl">{label}</span>}
+      <p className="fo-hero-verdict">{verdict}</p>
+      {sub != null && sub !== false && sub !== '' && <p className="fo-hero-sub">{sub}</p>}
+    </>
+  )
   return (
-    <section className={p.warn ? 'fo-card fo-hero warn' : 'fo-card fo-hero'} data-closed={p.actions ? 'false' : 'true'}>
-      {p.label && <span className="fo-hero-lbl">{p.label}</span>}
-      <p className="fo-hero-verdict">{p.verdict}</p>
-      {p.sub && <p className="fo-hero-sub">{p.sub}</p>}
-      {p.children}
-      {p.actions && <div className="fo-hero-acts">{p.actions}</div>}
+    <section className={cx('fo-card fo-hero', warn && 'warn', className)} data-closed={actions ? 'false' : 'true'} {...rest}>
+      {left != null && left !== false
+        ? <div className="fo-hero-row"><span className="fo-hero-left">{left}</span><div className="fo-hero-tx">{text}</div></div>
+        : text}
+      {children}
+      {actions && <div className="fo-hero-acts">{actions}</div>}
     </section>
   )
 }

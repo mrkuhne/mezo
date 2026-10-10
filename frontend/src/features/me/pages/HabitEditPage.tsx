@@ -1,9 +1,11 @@
 // ============================================================
-// Mezo · HabitEditPage (mezo-bk26) — /nap/rutin/szokas/:habitKey/szerkesztes, prototype
-// rutin-formalodas.html `pg-edit` ×1.18. The recipe editor moved to its OWN page (option B of
-// rutin-szerkeszto-valasztas.html): option A (in place) was built first and failed in use —
-// the formation page grew long enough that the in-place editor opened below the fold, so the
-// header button read as doing nothing. HabitPage is the details surface; every WRITE lives here.
+// Mezo · HabitEditPage (mezo-bk26; Folyadék F2 mezo-n4wf5.2) —
+// /nap/rutin/szokas/:habitKey/szerkesztes, prototype vilagos/nap.js `szerk`. The recipe editor on
+// its OWN page (option B of rutin-szerkeszto-valasztas.html): option A (in place) was built first
+// and failed in use — the formation page grew long enough that the in-place editor opened below
+// the fold, so the header button read as doing nothing. HabitPage is the details surface; every
+// WRITE lives here. The hero is the recipe itself, changing as you type, with „Mentés" on its
+// liquid row.
 //
 // Three things this page fixes over the old in-place form:
 //  - the anchor is a PICKER (your habits + mezo-moments + free text + „Leoldom"), never a
@@ -15,71 +17,54 @@
 //
 // The page NEVER ticks a habit (ADR — ticking lives on /nap/rutin).
 // ============================================================
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Navigate, useParams } from 'react-router-dom'
 import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import { useHabitCatalog, useHabitCatalogActions, useHabitSummary } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import type { HabitFramework, HabitMode } from '@/data/types'
 import { EffortGrid } from '@/features/me/components/EffortGrid'
+import { RbBack, RecipeSentence, RecipeVessels, recipeParts } from '@/features/me/components/routineBits'
 import { MEZO_EVENT_ANCHORS } from '@/features/me/logic/habitAnchors'
 import { EMPTY_EFFORT, effortRated, effortXp, type EffortState } from '@/features/me/logic/habitEffort'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
-import { routineSentenceParts, titlePlaceholder } from '@/features/me/logic/routineSentence'
-import { recipeFromDef } from '@/features/me/logic/routineSentence'
-import { cn } from '@/shared/lib/cn'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { GhostState } from '@/shared/ui/GhostState'
+import { recipeFromDef, titlePlaceholder } from '@/features/me/logic/routineSentence'
 import { Sheet } from '@/shared/ui/Sheet'
-import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import {
+  Btn, Card, ErrorRow, FoSheetHead, Hero, Lab, Level, Mark, Note, Page, Pill, Pills, Row, Section, Seg, Why,
+  useFrameTitle,
+} from '@/shared/ui/folyadek'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 const XP_MIN = 5
 const XP_MAX = 15
 
-const PRINCIPLE = 'A recept a tiéd: minden mező a te szavaiddal él. A keretváltás előre megmondja, '
-  + 'mi vész el — semmi nem tűnik el némán.'
-
-function rise(delayMs: number): CSSProperties {
-  return { '--d': `${delayMs}ms` } as CSSProperties
-}
-
-/** A form section. Üveg (mezo-me75u.7): sections are bare (flat controls on the ground); only the
- *  effort card is a glass object (prototype uveg-en2.html `szerk`). */
-function FieldCard({ children, delayMs, glass = false }: { children: ReactNode; delayMs: number; glass?: boolean }) {
-  return <div className={cn('rt-fcard rise', glass && 'glass')} style={rise(delayMs)}>{children}</div>
-}
-
-function Field({ label, opt, value, onChange, placeholder, hint, voice = false }: {
+/** One labelled field. A sentence field gets the shared mic tile (mezo-xojq8); names and links do not. */
+function Field({ id, label, name, opt, value, onChange, placeholder, hint, voice = false, area = false }: {
+  id: string
+  /** The visible label. */
   label: string
+  /** The accessible name (defaults to the label). */
+  name?: string
   opt?: boolean
   value: string
   onChange: (v: string) => void
   placeholder?: string
   hint?: string
-  /** A sentence field gets the shared mic tile (mezo-xojq8); names and links do not. */
   voice?: boolean
+  area?: boolean
 }) {
-  const input = (
-    <input
-      className="rt-fin"
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-    />
-  )
+  const input = area
+    ? <textarea id={id} className="fo-in" rows={2} aria-label={name ?? label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
+    : <input id={id} className="fo-in" aria-label={name ?? label} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
   return (
     <>
-      <span className="rt-flabel">
-        {label}{opt && <> <span className="rt-opt">opcionális</span></>}
-      </span>
+      <Lab htmlFor={id}>{label}{opt && <span className="rb-opt"> · opcionális</span>}</Lab>
       {voice
         ? <VoiceField domain="me" size="sm" onTranscript={(t) => onChange(appendDictation(value, t))}>{input}</VoiceField>
         : input}
-      {hint && <div className="rt-hint">{hint}</div>}
+      {hint && <Note>{hint}</Note>}
     </>
   )
 }
@@ -120,6 +105,7 @@ export function HabitEditPage() {
   // stored value — re-rating is an explicit act, not a side effect of opening the editor.
   const [eff, setEff] = useState<EffortState>(EMPTY_EFFORT)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  useFrameTitle({ title: 'Szerkesztés', eyebrow: def != null ? `Szokás · ${def.title}` : undefined })
 
   // Every controlled field seeds ONCE from the definition (the HabitPage idiom): a background
   // catalog refetch must not stomp an edit in progress.
@@ -147,20 +133,18 @@ export function HabitEditPage() {
   if (def == null) {
     if (isPending) {
       return (
-        <MozaikPage tone="gold" className="rt-uv rt-szerk">
-          <PageHead glass history fallback={backTo} label="Szokás" />
-          <PageBody><GhostState message="Szokás betöltése…" lines={3} /></PageBody>
-        </MozaikPage>
+        <Page>
+          <RbBack label="Szokás" fallback={backTo} />
+          <Card><Note>Szokás betöltése…</Note></Card>
+        </Page>
       )
     }
     if (isError) {
       return (
-        <MozaikPage tone="gold" className="rt-uv rt-szerk">
-          <PageHead glass history fallback={backTo} label="Szokás" />
-          <PageBody>
-            <GhostState message="Nem sikerült betölteni a szokást." ctaLabel="Újra" onCta={refetch} />
-          </PageBody>
-        </MozaikPage>
+        <Page>
+          <RbBack label="Szokás" fallback={backTo} />
+          <Card><ErrorRow message="Nem sikerült betölteni a szokást." onRetry={refetch} /></Card>
+        </Page>
       )
     }
     return <Navigate to="/nap/rutin/epites" replace />
@@ -231,10 +215,12 @@ export function HabitEditPage() {
   }
 
   const togglePause = () => {
+    if (pending) return
     updateDef(def.id, { isActive: !def.isActive }).then(() => leave.back(backTo))
   }
 
   const remove = () => {
+    if (pending) return
     if (!confirmDelete) { setConfirmDelete(true); return }
     // the habit's own page sits right behind this editor: it goes too
     deleteDef(def.id).then(() => leave.pastDetail('/nap/rutin/epites'))
@@ -245,291 +231,218 @@ export function HabitEditPage() {
     setAnchorPickerOpen(false)
   }
 
-  const anchorNote: { sign: Icon3DName; text: ReactNode } = anchor.key != null
-    ? { sign: 't-anchor', text: <>A <b>{defs.find((d) => d.habitKey === anchor.key)?.title ?? anchor.key}</b> szokásodhoz kötve — koppints a cseréhez.</> }
+  const anchorDef = anchor.key != null ? defs.find((d) => d.habitKey === anchor.key) : undefined
+  const strengthOf = (key: string) => summary.habits.find((h) => h.key === key)?.strengthPct ?? null
+  const anchorStrength = anchor.key != null ? strengthOf(anchor.key) : null
+  const anchorNote: ReactNode = anchor.key != null
+    ? <>A <b>{anchorDef?.title ?? anchor.key}</b> szokásodhoz kötve — koppints a cseréhez.</>
     : anchor.label.trim() !== ''
-      ? { sign: 't-note', text: <>Szabad szöveg — nem kötődik szokáshoz, ezért a lánc nem tudja követni.</> }
-      : { sign: 't-info', text: <>Horgony nélkül a szokás nehezebben formálódik: a kontextus-állandóság esik.</> }
+      ? 'Szabad szöveg — nem kötődik szokáshoz, ezért a lánc nem tudja követni.'
+      : 'Horgony nélkül a szokás nehezebben formálódik: a kontextus-állandóság esik.'
 
   const showAnchor = framework !== 'CLEAR'
   const candidates = defs.filter((d) => d.habitKey !== def.habitKey && d.isActive)
+  const storedXp = Math.min(XP_MAX, Math.max(XP_MIN, def.xp))
 
   return (
-    <MozaikPage tone="gold" className="rt-uv rt-szerk">
-      <PageHead glass history fallback={backTo} label="Szokás">
-        <button type="button" className="mz-pgact rt-act" disabled={!canSave || pending} onClick={save}>
-          <Icon3D name="t-tick" size={18} />Mentés
-        </button>
-      </PageHead>
-      <PageHero art="t-book" accent="var(--dv-amber)" name={def.title}>
-        <span className="mz-eyebrow rt-hero-eb">Szerkesztés</span>
-      </PageHero>
-      <PageBody principle={PRINCIPLE}>
-        <EntranceGroup replayKey={def.id}>
-          <div
-            className={cn('rt-sentence glass rise', framework === 'CLEAR' && 'is-clear')}
-            style={rise(40)}
-            data-testid="edit-sentence"
-          >
-            <span className="rt-sentence-lb">
-              <Icon3D name={framework === 'CLEAR' ? 't-gem' : framework === 'FOGG' ? 't-anchor' : 't-note'} size={18} />
-              {framework === 'CLEAR' ? 'Négy törvény' : framework === 'FOGG' ? 'Szokás-láncolás' : 'Keret nélkül'}
-              <span className="rt-sentence-lb-sub">· együtt változik</span>
-            </span>
-            <p className="rt-sentence-tx">
-              {routineSentenceParts(recipe).map((part, i) => (
-                part.slot === undefined
-                  ? <span key={i}>{part.text}</span>
-                  : <span key={i} className={cn('rt-blank', part.filled && 'is-filled')}>{part.text}</span>
-              ))}
-            </p>
-          </div>
+    <Page>
+      <RbBack label="Szokás" fallback={backTo} />
+      <Hero
+        label="A recept · együtt változik"
+        verdict={title.trim() !== '' ? title : def.title}
+        actions={<Btn disabled={!canSave || pending} onClick={save}>Mentés</Btn>}
+      >
+        <RecipeVessels parts={recipeParts(recipe)} />
+        <RecipeSentence recipe={recipe} testId="edit-sentence" />
+      </Hero>
 
-          <FieldCard delayMs={60}>
-            <span className="rt-flabel">Keret</span>
-            <div className="rt-swseg">
-              <button
-                type="button"
-                className={cn(framework === 'FOGG' && 'on')}
-                onClick={() => setFramework('FOGG')}
-              >
-                <Icon3D name="t-anchor" size={20} />Szokás-láncolás
-              </button>
-              <button
-                type="button"
-                className={cn(framework === 'CLEAR' && 'on is-clear')}
-                onClick={() => setFramework('CLEAR')}
-              >
-                <Icon3D name="t-gem" size={20} />Négy törvény
-              </button>
-            </div>
-            {lostOnSwitch.length > 0 && (
-              <div className="rt-warn" data-testid="fw-warn">
-                <Icon3D name="t-info" size={26} />
-                <span>
-                  <b>Váltásnál elveszik:</b> {lostOnSwitch.join(', ')}.
-                  {' '}Az új keret mezői üresen indulnak — a Mentésig semmi nem vész el.
-                </span>
-              </div>
-            )}
-          </FieldCard>
+      <Section n={1} title={showAnchor ? 'Keret és horgony' : 'Keret'} />
+      <Card>
+        <Lab>Keret</Lab>
+        <Seg
+          aria-label="Keret"
+          items={[{ key: 'FOGG', label: 'Szokás-láncolás' }, { key: 'CLEAR', label: 'Négy törvény' }]}
+          value={framework ?? ''}
+          onChange={(k) => setFramework(k as HabitFramework)}
+        />
+        {lostOnSwitch.length > 0 && (
+            <Why icon="t-info" data-testid="fw-warn">
+              <b>Váltásnál elveszik:</b> {lostOnSwitch.join(', ')}.
+              {' '}Az új keret mezői üresen indulnak — a Mentésig semmi nem vész el.
+            </Why>
+        )}
 
-          {showAnchor && (
-            <FieldCard delayMs={80}>
-              <span className="rt-flabel">
-                Miután… <span className="rt-opt">horgony</span>
-              </span>
-              <button
-                type="button"
-                className="rt-pickrow"
+        {showAnchor && (
+          <>
+            <Lab>Miután… · horgony</Lab>
+              <Row
                 data-testid="anchor-pick"
+                icon="t-anchor"
+                title={anchor.label.trim() !== '' ? anchor.label : '— nincs horgony —'}
+                sub={anchor.key == null ? undefined : anchorStrength != null ? `${anchorStrength}% erő · 28 nap` : 'friss szokás'}
+                more={anchorStrength != null ? <Level pct={anchorStrength} height={8} /> : undefined}
                 onClick={() => setAnchorPickerOpen(true)}
-              >
-                <Icon3D name="t-anchor" size={28} />
-                <span className="rt-pickrow-gr">{anchor.label.trim() !== '' ? anchor.label : '— nincs horgony —'}</span>
-                <span className="rt-pickrow-cv" aria-hidden="true">▾</span>
-              </button>
-              {anchor.key == null && (
+              />
+            {anchor.key == null && (
+              <>
+                <Lab htmlFor="rb-ed-anchor">Saját szavakkal</Lab>
                 <VoiceField domain="me" size="sm" onTranscript={(t) => setAnchor({ key: null, label: appendDictation(anchor.label, t) })}>
                   <input
-                    className="rt-fin"
+                    id="rb-ed-anchor"
+                    className="fo-in"
                     aria-label="Saját horgony"
                     value={anchor.label}
                     placeholder="pl. „letettem a fogkefét”"
                     onChange={(e) => setAnchor({ key: null, label: e.target.value })}
                   />
                 </VoiceField>
-              )}
-              <div className="rt-lockline">
-                <Icon3D name={anchorNote.sign} size={16} />
-                <span>{anchorNote.text}</span>
-              </div>
-            </FieldCard>
-          )}
-
-          <FieldCard delayMs={100}>
-            <Field
-              label={framework === null ? 'Cím' : `Cím · ${framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}`}
-              value={title}
-              onChange={setTitle}
-            />
-            {framework === 'FOGG' && (
-              <Field label="Ünneplésül … · shine" voice value={celebration} onChange={setCelebration} />
-            )}
-            {framework === 'CLEAR' && (
-              <>
-                <Field label="Jelzés" voice value={cue} onChange={setCue} />
-                <Field label="Vágy" voice value={craving} onChange={setCraving} />
-                <Field label="Jutalom" voice value={reward} onChange={setReward} />
-                <Field label="Identitás" opt voice value={identity} onChange={setIdentity} />
               </>
             )}
-            {framework === null && (
-              <Field label="Miért" opt voice value={why} onChange={setWhy} placeholder="…" />
-            )}
-            <Field
-              label="Link"
-              opt
-              value={linkUrl}
-              onChange={setLinkUrl}
-              placeholder="https://…"
-              hint="A Nap tabon a szokás címe erre a linkre mutat."
-            />
-          </FieldCard>
+            <Note>{anchorNote}</Note>
+          </>
+        )}
+      </Card>
 
-          <FieldCard delayMs={130}>
-            <span className="rt-flabel">Hogyan pipálódik?</span>
-            <div className="rt-swseg">
-              <button
-                type="button"
-                className={cn(mode === 'MANUAL' && 'on')}
-                onClick={() => setMode('MANUAL')}
-              >
-                <Icon3D name="t-tick" size={20} />Kézzel pipálom
-              </button>
-              <button
-                type="button"
-                className={cn(mode === 'DERIVED' && 'on')}
-                onClick={() => setMode('DERIVED')}
-              >
-                <Icon3D name="t-signal" size={20} />Adatból
-              </button>
-            </div>
-            {mode === 'DERIVED' && (
-              <>
-                <span className="rt-flabel" style={{ marginTop: 10 }}>Metrika</span>
-                <select
-                  aria-label="Metrika"
-                  className="rt-fin"
-                  value={metric}
-                  onChange={(e) => setMetric(e.target.value)}
-                >
-                  {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
-                </select>
-                <div className="rt-hint">Adatból pipálódó szokást nem kell kézzel jelölnöd — a forrás-log dönt.</div>
-              </>
-            )}
-          </FieldCard>
+      <Section n={2} title="A szokás" />
+      <Card>
+        <Field
+          id="rb-ed-title"
+          label={framework === null ? 'Cím' : `Cím · ${framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}`}
+          value={title}
+          onChange={setTitle}
+        />
+        {framework === 'FOGG' && (
+          <Field id="rb-ed-celeb" label="Ünneplésül" voice value={celebration} onChange={setCelebration} />
+        )}
+        {framework === 'CLEAR' && (
+          <>
+            <Field id="rb-ed-cue" label="Jelzés" voice value={cue} onChange={setCue} />
+            <Field id="rb-ed-crave" label="Vágy" voice value={craving} onChange={setCraving} />
+            <Field id="rb-ed-reward" label="Jutalom" voice value={reward} onChange={setReward} />
+            <Field id="rb-ed-identity" label="Identitás" opt voice value={identity} onChange={setIdentity} />
+          </>
+        )}
+        {framework === null && (
+          <Field id="rb-ed-why" label="Miért" opt voice area value={why} onChange={setWhy} placeholder="…" />
+        )}
+        <Field
+          id="rb-ed-link"
+          label="Link"
+          opt
+          value={linkUrl}
+          onChange={setLinkUrl}
+          placeholder="https://…"
+          hint="A Rutin fülön a szokás címe erre a linkre mutat."
+        />
+      </Card>
 
-          <FieldCard delayMs={160}>
-            <span className="rt-flabel">Lánc</span>
-            <div className="rt-chips is-gold">
-              {chains.map((c) => (
-                <button
-                  key={c.chainKey}
-                  type="button"
-                  className={cn(chainKey === c.chainKey && 'on')}
-                  onClick={() => setChainKey(c.chainKey)}
-                >
-                  {c.title}
-                </button>
-              ))}
-            </div>
-          </FieldCard>
+      <Section n={3} title="Pipálás és lánc" />
+      <Card>
+        <Lab>Hogyan pipálódik?</Lab>
+        <Seg
+          aria-label="Hogyan pipálódik?"
+          items={[{ key: 'MANUAL', label: 'Kézzel pipálom' }, { key: 'DERIVED', label: 'Adatból' }]}
+          value={mode}
+          onChange={(k) => setMode(k as HabitMode)}
+        />
+        {mode === 'DERIVED' && (
+          <>
+            <Lab htmlFor="rb-ed-metric">Metrika</Lab>
+            <select
+              id="rb-ed-metric"
+              aria-label="Metrika"
+              className="fo-in"
+              value={metric}
+              onChange={(e) => setMetric(e.target.value)}
+            >
+              {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
+            </select>
+            <Note>Adatból pipálódó szokást nem kell kézzel jelölnöd — a forrás-log dönt.</Note>
+          </>
+        )}
+        <Lab>Lánc</Lab>
+        <Pills>
+          {chains.map((c) => (
+            <Pill key={c.chainKey} on={chainKey === c.chainKey} onClick={() => setChainKey(c.chainKey)}>{c.title}</Pill>
+          ))}
+        </Pills>
+      </Card>
 
-          <FieldCard delayMs={175} glass>
-            <span className="rt-flabel">Mennyibe kerül? <span className="rt-opt">újraértékelhető</span></span>
-            <EffortGrid
-              value={eff}
-              onChange={setEff}
-              xpOverride={effortRated(eff) ? undefined : Math.min(XP_MAX, Math.max(XP_MIN, def.xp))}
-            />
-            <div className="rt-lockline">
-              <Icon3D name="t-info" size={16} />
-              <span>A nehézség <b>változik</b>, ahogy a szokás automatizálódik — érdemes újraértékelni, ha már könnyebben megy. Az XP a nehézségből számolódik (6–14).</span>
-            </div>
-          </FieldCard>
+      <Section n={4} title="Mennyibe kerül? · újraértékelhető" />
+      <Card>
+        <EffortGrid value={eff} onChange={setEff} xpOverride={effortRated(eff) ? undefined : storedXp} />
+        <Note>
+          A nehézség változik, ahogy a szokás automatizálódik — érdemes újraértékelni, ha már könnyebben megy.
+          Az XP a nehézségből számolódik (6–14).
+        </Note>
+      </Card>
 
-          <button type="button" className="rt-danger rise" style={rise(190)} disabled={pending} onClick={togglePause}>
-            <Icon3D name={def.isActive ? 't-hold' : 't-play'} size={22} />
-            {def.isActive ? 'Szüneteltetés — a haladás megmarad' : 'Folytatás — a haladás megmaradt'}
-          </button>
-          <button
-            type="button"
-            className={cn('rt-danger is-hard rise', confirmDelete && 'is-armed')}
-            style={rise(210)}
-            disabled={pending}
-            onClick={remove}
-          >
-            <Icon3D name="t-trash" size={22} />
-            {confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Szokás törlése'}
-          </button>
-        </EntranceGroup>
-      </PageBody>
+      <Section n={5} title="Szünet vagy törlés" />
+      <Card>
+        <Row
+          icon={def.isActive ? 't-hold' : 't-play'}
+          title={def.isActive ? 'Szüneteltetés' : 'Folytatás'}
+          sub={def.isActive ? 'a haladás megmarad' : 'a haladás megmaradt'}
+          onClick={togglePause}
+        />
+        <Row
+          icon="t-trash"
+          className={confirmDelete ? 'rb-armed' : undefined}
+          title={confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Szokás törlése'}
+          sub={confirmDelete ? undefined : 'két koppintás kell hozzá'}
+          aria-label={confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Szokás törlése'}
+          onClick={remove}
+        />
+      </Card>
 
       {anchorPickerOpen && (
-        <Sheet className="glass rt-sheet" onClose={() => setAnchorPickerOpen(false)} labelledBy="anchor-picker-title">
-          {() => (
-            <div className="col" data-testid="anchor-sheet">
-              <div className="rt-shh">
-                <Icon3D name="t-anchor" size={46} />
-                <span className="rt-shh-t">
-                  <span className="rt-shh-eb">Horgony</span>
-                  <h2 id="anchor-picker-title">Mihez kötöd?</h2>
-                  <p className="rt-hint">A legerősebb horgony egy szokás, ami már magától megy.</p>
-                </span>
-              </div>
-              <div className="rt-optgrp">A szokásaidból</div>
+        <Sheet className="fo-sheet" onClose={() => setAnchorPickerOpen(false)} labelledBy="anchor-picker-title">
+          {(close) => (
+            <div data-testid="anchor-sheet">
+              <FoSheetHead titleId="anchor-picker-title" icon="t-anchor" title="Mihez kötöd?" sub="Horgony" onClose={close} />
+              <Lab>A szokásaidból</Lab>
               {candidates.map((d) => {
-                const row = summary.habits.find((h) => h.key === d.habitKey)
+                const strength = strengthOf(d.habitKey)
                 return (
-                  <button
+                  <Row
                     key={d.habitKey}
-                    type="button"
-                    className={cn('rt-optrow', anchor.key === d.habitKey && 'on')}
+                    left={<Mark state={anchor.key === d.habitKey ? 'done' : 'empty'} />}
+                    title={d.title}
+                    sub={strength != null ? `${strength}% erő · 28 nap` : 'friss szokás'}
+                    more={strength != null ? <Level pct={strength} height={8} /> : undefined}
+                    right=""
                     onClick={() => pickAnchor({ key: d.habitKey, label: `kész a ${d.title}` })}
-                  >
-                    <span className="rt-optrow-nm">
-                      {d.title}
-                      <small>{row?.strengthPct != null ? `${row.strengthPct}% erő · 28 nap` : 'friss szokás'}</small>
-                    </span>
-                    <span className="rt-optrow-rad" aria-hidden="true" />
-                  </button>
+                  />
                 )
               })}
-              <div className="rt-optgrp">Mezo-események</div>
+              <Lab>Mezo-események</Lab>
               {/* The wizard's own moment list (habitAnchors.MEZO_EVENT_ANCHORS) — still free
                   text on the wire: a moment is not a def, so it cannot be an anchorHabitKey
                   link (event binding tracked as mezo-t45n). */}
               {MEZO_EVENT_ANCHORS.map((m) => (
-                <button
+                <Row
                   key={m.label}
-                  type="button"
-                  className="rt-optrow"
+                  left={<Mark state={anchor.key == null && anchor.label === m.label ? 'done' : 'empty'} />}
+                  title={m.label}
+                  sub="Mezo-esemény · szabad szövegként tárolva"
+                  right=""
                   onClick={() => pickAnchor({ key: null, label: m.label })}
-                >
-                  <span className="rt-optrow-nm">{m.label}<small>mezo-esemény · szabad szövegként tárolva</small></span>
-                  <span className="rt-optrow-rad" aria-hidden="true" />
-                </button>
+                />
               ))}
-              <div className="rt-optgrp">Egyéb</div>
-              <button
-                type="button"
-                className="rt-optrow"
+              <Lab>Egyéb</Lab>
+              <Row
+                icon="t-note" title="Saját szavakkal…" sub="szabad szöveg, nem kötődik szokáshoz" right=""
                 onClick={() => pickAnchor({ key: null, label: anchor.key != null ? '' : anchor.label })}
-              >
-                <Icon3D name="t-note" size={26} />
-                <span className="rt-optrow-nm">
-                  Saját szavakkal…
-                  <small>szabad szöveg, nem kötődik szokáshoz</small>
-                </span>
-                <span className="rt-optrow-rad" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                className="rt-optrow is-unlink"
+              />
+              <Row
+                icon="t-skip" title="Leoldom a horgonyt" sub="a szokás marad, csak nem kötődik semmihez" right=""
                 onClick={() => pickAnchor({ key: null, label: '' })}
-              >
-                <Icon3D name="t-skip" size={26} />
-                <span className="rt-optrow-nm">
-                  Leoldom a horgonyt
-                  <small>a szokás marad, csak nem kötődik semmihez</small>
-                </span>
-              </button>
+              />
+              <Note>A legerősebb horgony egy szokás, ami már magától megy.</Note>
             </div>
           )}
         </Sheet>
       )}
-    </MozaikPage>
+    </Page>
   )
 }

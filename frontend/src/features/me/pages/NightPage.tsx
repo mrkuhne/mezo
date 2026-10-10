@@ -19,8 +19,8 @@ import { recordNightWake } from '@/features/me/logic/nightTrace'
  * 3D sprite art (t-moon · t-breath · t-person · t-steps · t-candle), `── uveg en alvas (`.
  */
 export function NightPage() {
-  // Folyadék F1 (mezo-n4wf5.1): the app is light-locked; the night surface is one of the two
-  // dark pockets (with the Napzárás ritual) until F2/F6, so it claims dark over the lock.
+  // Folyadék F1 (mezo-n4wf5.1): the app is light-locked; the night surface is the one
+  // dark pocket left (the Napzárás ritual went light in F2) until F6, so it claims dark over the lock.
   useForceTheme('dark')
   const [phase, setPhase] = useState<NightPhase>('idle')
   const [tool, setTool] = useState<NightTool>(null)

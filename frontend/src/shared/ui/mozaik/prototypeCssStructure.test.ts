@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
 import frameCss from '@/styles/folyadek-frame.css?raw'
+import napEpitesCss from '@/styles/folyadek-nap-epites.css?raw'
 
 /**
  * Structural guard for `styles/prototype.css` (mezo-d20.9.1).
@@ -1620,25 +1621,68 @@ describe('the uveg fuel stack section carries the glass ranking (mezo-me75u.2)',
 })
 
 /**
- * Üvegesítés U3 (mezo-me75u.3) — the Nap area (prototypes/uveg-nap.html). One block per surface
- * group so five builders could work in parallel: the Mai hub, the four sub-pages, the quick-log +
- * capture sheets, the Mezo messages + notification panel, and the Napzárás acts. Heroes are
- * frameless halos; primary objects glass in ONE accent; rows, chips and cells inside them flat or
- * lit; free space dashed; never glass in glass.
+ * Üvegesítés U3 (mezo-me75u.3) — the Nap area (prototypes/uveg-nap.html). It had one block per
+ * surface group: the Mai hub, the four sub-pages, the quick-log + capture sheets, the Mezo messages
+ * + notification panel, and the Napzárás acts.
+ *
+ * Folyadék F2 (mezo-n4wf5.2) converted the whole Nap domain to the Folyadék kit (`fo-*` + the
+ * `nm- nn- nb- nr2- nck2- nqk- nrz- rb-` families in styles/folyadek-nap-*.css), and the Üveg rules
+ * nothing renders any more were deleted with a zero-usage proof. Two blocks survive, cut down to
+ * what OTHER domains still wear: the shared capture sheets (water, weight, sleep, sport, run,
+ * journal) and the shared evidence list. The three that are gone are pinned as gone below
+ * (`RETIRED_NAP_BLOCKS`), so the old skin cannot be pasted back.
  */
 const U3_BLOCKS: Array<[string, string[]]> = [
-  ['mai', ['.nap-hub .nap-center-orbit', '.nap-hub .nap-fuel.glass', '.nap-hub .nap-fuel.uv-empty',
-    '.nap-hub .nap-fuel-macro', '.nap-hub .nap-personal.glass', '.nap-hub .nap-personal.uv-empty',
-    '.nap-hub .nap-center-timeline .nap-moment-ico']],
-  ['oldalak', ['.nck-card.glass', '.nck-row.nck-hot', '.ej-tile.glass', '.ej-tile.glass.ej-warn', '.nq-card.glass',
-    '.nq-empty.uv-empty', '.nr-vcard.glass', '.nr-row.now', '.sheet.glass.nap-glass-sheet']],
-  ['rogzites', ['.sheet.capture-sheet.glass', '.capture-hero-value', '.capture-scale-cell', '.quicklog-tile.glass',
-    '.quicklog-chat.glass', '.quicklog[data-variant="sheet"] .quicklog-chat', '.cta-primary']],
-  ['uzenetek', ['.nap-mzmsg.glass', '.nap-mzrow.uv-flat', '.nap-mz-cta.glass', '.nap-ejstrip.glass', '.nap-ejcell',
-    '.nap-obs.glass', '.nap-obs-empty.uv-empty']],
-  ['napzaras', ['.rz-screen[data-act=', '.rz-exit', '.rz-cta', '.rz-reflect-box.glass', '.rz-loop.glass',
-    '.rz-xp-num', '.rz-skill-row.glass', '.rz-note.glass', '.rz-handoff.glass']],
+  ['rogzites', ['.sheet.capture-sheet.glass', '.capture-hero-value', '.capture-scale-cell', '.capture-rating-scale',
+    '.cta-primary']],
+  ['uzenetek', ['.nap-obs-evid', '.nap-ev-row', '.nap-ev-shift', '.nap-sh-h']],
 ]
+
+/**
+ * The Üveg Nap skin retired in Folyadék F2 (mezo-n4wf5.2). Each entry: the block's marker name
+ * and the selectors the old guard used to REQUIRE there — now each must be absent from the
+ * rules of the whole stylesheet (comments stripped: the surviving prose may still name them).
+ * `uveg nap rogzites` / `uveg nap uzenetek` survive as blocks, so only their retired selectors
+ * are listed (marker: null).
+ */
+const RETIRED_NAP_BLOCKS: Array<[string | null, string, string[]]> = [
+  ['uveg nap mai', 'Nap · Mai hub', ['.nap-hub', '.nap-center', '.nap-fuel', '.nap-personal', '.nap-moment-',
+    '.nap-companion', '.nap-hero', '.nap-node-']],
+  ['uveg nap oldalak', 'Check-in · Életjel · Küldetések · Rutin', ['.nck-', '.ej-tile', '.ej-warn', '.ej-rr', '.nq-card',
+    '.nq-empty', '.nr-vcard', '.nr-row', '.nr-str', '.nap-glass-sheet', '.reflect-opt', '.shcreed', '.creedchip']],
+  ['uveg nap napzaras', 'Napzárás', ['.rz-screen', '.rz-exit', '.rz-cta', '.rz-reflect-box', '.rz-loop', '.rz-xp-num',
+    '.rz-skill-row', '.rz-note', '.rz-handoff', '--rz-sky-2', '@keyframes rz-']],
+  ['uveg napom', 'A napom', ['.napom-page', '.napom-wd', '.napom-tick', '.napom-hero', '.napom-drow',
+    '@keyframes napom-', '.nap-zcard', '.nap-zdone']],
+  ['uveg en2 rutin', 'Rutin építése', ['.rt-hub', '.rt-nextcard', '.rt-bigtick', '.rt-chaintile', '.rt-door', '.rt-lanc',
+    '.rt-macard', '.rt-szokasok', '.rt-htile', '.rt-szokas', '.rt-poster', '.rt-ctxgrid', '.rt-wiz', '.rt-fwcard',
+    '.rt-sheet', '.rt-cal', '.gr-chain']],
+  [null, 'gyors rögzítés + check-in lap (az `uveg nap rogzites` blokkból)', ['.quicklog', '.nap-gyors', '.ck-chips',
+    '.ck-sum', '.capture-tone-checkin', '.capture-check-', '.capture-stepl', '.capture-stepnav', '.capture-quest',
+    '.capture-gotit', '.capture-skillchip', '.capture-xp']],
+  [null, 'Üzenetek · Életjelek · Észrevételek (az `uveg nap uzenetek` blokkból)', ['.nap-mzmsg', '.nap-mzrow',
+    '.nap-mz-cta', '.nap-ejstrip', '.nap-ejcell', '.nap-obs.glass', '.nap-obs-empty']],
+]
+
+describe.each(RETIRED_NAP_BLOCKS)('the retired Üveg Nap skin stays out: %s — %s (Folyadék F2, mezo-n4wf5.2)', (marker, _what, sels) => {
+  test('its marker pair is gone (or, for a surviving block, still paired)', () => {
+    if (marker) {
+      expect(rawCss).not.toContain(`── ${marker} (`)
+      expect(rawCss).not.toContain(`── /${marker} `)
+    } else {
+      for (const name of ['rogzites', 'uzenetek']) {
+        expect(rawCss.split(`── uveg nap ${name} (mezo-`).length - 1).toBe(1)
+        expect(rawCss.split(`── /uveg nap ${name} ──`).length - 1).toBe(1)
+      }
+    }
+  })
+
+  test('none of its selectors has a rule left anywhere in the stylesheet', () => {
+    const rules = stripComments(rawCss)
+    const left = sels.filter((sel) => rules.includes(sel))
+    expect(left, `retired Üveg Nap selectors are back in prototype.css: ${left.join(', ')}`).toEqual([])
+  })
+})
 
 describe.each(U3_BLOCKS)('the uveg nap %s section carries the glass ranking (mezo-me75u.3)', (name, sels) => {
   const section = () => stripComments(slice(`── uveg nap ${name} (`, `── /uveg nap ${name} `))
@@ -1817,9 +1861,8 @@ const U7_BLOCKS: Array<[string, string[]]> = [
   ['novekedes', ['.grs-page .gr-band.glass', '.grs-page .gr-skl-ic.mono', '.grs-page .gr-skl-lv', '.grn-page .gr-day.glass',
     '.grn-page .gr-jrow .gr-jdot i', '.gra-page .gr-streak.gr-band::before', '.gra-page .gr-titcard.glass',
     '.gra-page .gr-bdg .gr-ring svg', '.gra-page .gr-perks.glass', '.mz-tile.gr-tile.glass']],
-  ['rutin', ['.rt-hub .rt-nextcard.glass', '.rt-hub .rt-nextcard .rt-bigtick', '.rt-hub .rt-chaintile.glass',
-    '.rt-hub .mz-tile.glass.rt-door', '.rt-lanc .rt-macard.glass', '.rt-szokasok .rt-htile.glass',
-    '.rt-szokas .rt-poster.glass', '.rt-szokas .rt-ctxgrid.glass', '.rt-wiz .rt-fwcard.glass', '.sheet.glass.rt-sheet']],
+  // 'rutin' left in Folyadék F2 (mezo-n4wf5.2): the routine builder wears `.rb-*`
+  // (styles/folyadek-nap-epites.css); the block's absence is pinned in RETIRED_NAP_BLOCKS above.
   ['naplo', ['.mzj-page .mz-pgact.mzj-newbtn', '.mzj-page .mzj-grat.glass', '.mzj-page .mzj-deccard.glass',
     '.mzj-page .mzj-rate .mzj-rate-cta', '.mzj-page .mzj-decdone', '.mzj-page .mzj-note', '.mzj-page .mzj-empty.uv-empty',
     '.mzj-decsheet .mzj-dsh-head']],
@@ -1853,10 +1896,14 @@ describe.each(U7_BLOCKS)('the uveg en2 %s section carries the glass ranking (mez
   })
 })
 
+// Re-pointed in Folyadék F2 (mezo-n4wf5.2): the habit history is the `.rb-g28` vial grid in
+// styles/folyadek-nap-epites.css now (`HabitFormationHistory`: `i.p` done · `i.m` missed · `i.s` not due).
 test('a missed habit day stays neutral, never failure-red (ADR 0010)', () => {
-  const css = stripComments(slice('── uveg en2 rutin (', '── /uveg en2 rutin '))
-  const rule = css.slice(css.indexOf('.rt-szokas .rt-cal i.is-miss'))
-  expect(rule.slice(0, rule.indexOf('}'))).not.toContain('coral')
+  const css = stripComments(napEpitesCss)
+  const at = css.indexOf('.rb-g28 i.m')
+  expect(at, 'the missed-day cell rule (.rb-g28 i.m) is gone from folyadek-nap-epites.css').toBeGreaterThan(-1)
+  const rule = css.slice(at, css.indexOf('}', at))
+  expect(rule).not.toMatch(/coral|--error|--danger|\bred\b/)
 })
 
 // U8 · Mezo I (mezo-me75u.8, prototypes/uveg-mezo.html): seven parallel builders, one block each. The key
@@ -2001,7 +2048,8 @@ const U11_BLOCKS: Array<[string, string[]]> = [
   ['edzes', ['.pl-poster .pl-week small', '.tw-move .ld-move-box em', '.tv-wizard .mz-wfoot .cta-primary',
     '.tv-dayrest .tv-day-stamp.is-today', ".tv-wizard .mz-daypick button[aria-pressed='true']", '.tv-wizard .mz-dct small']],
   ['egyeb', ['.alv-page .alv-sec-head .eyebrow', '.gr-ma .gr-chip .gr-chip-mk.gr-mk3d', '.enc-celok .lg-dimchip.empty',
-    '.napom-page .napom-wd.is-fut', '.napom-page .t-ico.napom-tick', '.fsx-band.glass .fsx-check > span .t-ico']],
+    // the two `.napom-page` fixes left with the page's Üveg skin (Folyadék F2, mezo-n4wf5.2)
+    '.fsx-band.glass .fsx-check > span .t-ico']],
 ]
 
 describe.each(U11_BLOCKS)('the uveg lezaras %s section (mezo-me75u.11)', (name, sels) => {

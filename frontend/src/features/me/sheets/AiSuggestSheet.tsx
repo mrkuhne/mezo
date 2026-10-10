@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Chip } from '@/shared/ui/Chip'
-import { Icon3D } from '@/shared/ui/clay'
+import { Acts, Btn, Chips, Empty, FoSheetHead, Lab, Lk, Note } from '@/shared/ui/folyadek'
 import { useHabitAiSuggest, useHabitCatalog } from '@/data/hooks'
 import type { HabitSuggestion } from '@/data/types'
+import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
@@ -22,6 +21,9 @@ const SUGGESTION_KEY = 'mezo.routineWizard.suggestion'
  * degraded-card style instead of the form; an empty (but resolved) result shows a quiet ghost
  * instead of implying a failure.
  *
+ * FOLYADÉK (mezo-n4wf5.2, prototypes/vilagos/nap.js `SHEETS.ai`): a light sheet — head with the
+ * icon chip, the hint field, „Javasolj", then one block per suggestion.
+ *
  * Accepting no longer WRITES a definition (mezo-3zue.4): it hands the proposal to the recipe
  * wizard, which is where a habit gains a framework and where the user's "Vállalom" tick is the
  * human pass ADR 0019's propose-only rule requires. The sheet is therefore write-free.
@@ -34,6 +36,7 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
   const [cards, setCards] = useState<HabitSuggestion[] | null>(null)
 
   const chainTitle = (key: string) => catalog.chains.find((c) => c.chainKey === key)?.title ?? key
+  const skillName = (key: string) => LIFE_SKILLS.find((s) => s.key === key)?.name ?? key
 
   const run = () => {
     suggest({ chainKey, hint: hint.trim() || undefined })
@@ -64,86 +67,47 @@ export function AiSuggestSheet({ chainKey, onClose }: { chainKey?: string; onClo
   }
 
   return (
-    <Sheet className="glass rt-sheet is-lav" onClose={onClose} labelledBy="ai-suggest-title">
+    <Sheet className="fo-sheet" onClose={onClose} labelledBy="ai-suggest-title">
       {(close) => (
-        <div className="col gap-sm">
-          <div className="rt-shh">
-            <Icon3D name="t-spark" size={46} />
-            <span className="rt-shh-t">
-              <span className="rt-shh-eb">Rutin</span>
-              <h2 id="ai-suggest-title">AI javaslat</h2>
-            </span>
-            <button className="chip rt-shx" aria-label="Bezárás" onClick={close}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
+        <>
+          <FoSheetHead titleId="ai-suggest-title" icon="t-spark" title="Milyen szokás segítene?" sub="AI javaslat" onClose={close} />
 
           {unavailable ? (
-            <div className="card rt-aicard is-off">
-              <p>Az AI-javasló most nem elérhető — próbáld később.</p>
-            </div>
+            <Empty icon="t-info">Az AI-javasló most nem elérhető — próbáld később.</Empty>
           ) : (
             <>
-              <label className="rt-field">
-                <span className="rt-flabel">Szándék (opcionális)</span>
-                <VoiceField domain="me" size="sm" onTranscript={(t) => setHint(appendDictation(hint, t, HINT_MAX))}>
-                <input
-                  className="rt-fin"
+              <Lab htmlFor="rb-ai-hint">Szándék (opcionális)</Lab>
+              <VoiceField domain="me" size="sm" onTranscript={(t) => setHint(appendDictation(hint, t, HINT_MAX))}>
+                <textarea
+                  id="rb-ai-hint"
+                  className="fo-in"
+                  rows={2}
                   aria-label="Szándék"
                   value={hint}
                   maxLength={HINT_MAX}
                   onChange={(e) => setHint(e.target.value)}
                   placeholder="pl. jobb esti lezárás"
                 />
-                </VoiceField>
-              </label>
+              </VoiceField>
 
-              <button
-                type="button"
-                className="cta-primary rt-litpill"
-                disabled={suggestPending}
-                onClick={run}
-              >
-                <Icon3D name="t-spark" size={20} />Javasolj
-              </button>
+              <Btn wide className="rb-save" disabled={suggestPending} onClick={run}>Javasolj</Btn>
 
-              {cards && cards.length === 0 && (
-                <span className="rt-emptyline uv-empty">
-                  Nincs javaslat — próbálj pontosabb szándékkal.
-                </span>
-              )}
+              {cards && cards.length === 0 && <Note>Nincs javaslat — próbálj pontosabb szándékkal.</Note>}
 
               {cards?.map((s, i) => (
-                <div key={`${s.chainKey}-${s.title}-${i}`} className="card rt-aicard">
-                  <div className="rt-aicard-t">{s.title}</div>
-                  <p className="rt-aicard-why">{s.why}</p>
-                  <div className="rt-aicard-chips">
-                    <Chip>{s.anchorCopy}</Chip>
-                    <Chip>{s.skillKey}</Chip>
-                    <Chip>{s.xp} XP</Chip>
-                    <Chip>{chainTitle(s.chainKey)}</Chip>
-                  </div>
-                  <div className="rt-aicard-acts">
-                    <button
-                      type="button"
-                      className="chip rt-aicard-ok"
-                      onClick={() => accept(s, close)}
-                    >
-                      Megnyitom a varázslóban
-                    </button>
-                    <button
-                      type="button"
-                      className="chip rt-aicard-no"
-                      onClick={() => dismiss(s)}
-                    >
-                      Elvetem
-                    </button>
-                  </div>
+                <div key={`${s.chainKey}-${s.title}-${i}`} className="rb-sug">
+                  <strong>{s.title}</strong>
+                  <small>{s.why}</small>
+                  <Chips items={[s.anchorCopy, skillName(s.skillKey), `+${s.xp} XP`, chainTitle(s.chainKey)].filter(Boolean)} />
+                  <Acts>
+                    <Btn sm onClick={() => accept(s, close)}>Megnyitom a varázslóban</Btn>
+                    <Lk onClick={() => dismiss(s)}>Elvetem</Lk>
+                  </Acts>
                 </div>
               ))}
             </>
           )}
-        </div>
+        </>
       )}
     </Sheet>
   )

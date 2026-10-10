@@ -1,60 +1,38 @@
 // ============================================================
-// Mezo · ObservationCard — az Észrevételek fül kártyája (Reflexió S5, mezo-eq85.5)
-// Vizuális igazság: docs/design_2.0/prototypes/eszrevetelek.html #obsScreen (`.obs`).
-// Poszter-anatómia: eyebrow + clay-korong + EGY dőlt mondat + chipek; a `watching`
-// kártyán a próza helyett a SZÁMOK beszélnek (tally + haladás-sáv + Laborfüzet-link).
-// A chipek a slice 4 `POST /api/companion/pattern/{id}/reply` végpontjára felelnek.
-// Üveg (mezo-me75u.3, prototypes/uveg-nap.html#uzenetek/eszrevetelek): a kártya egy `.glass`
-// (fresh/return lavender, watching sky, confirmed sage), a forrás 3D-ikonja egy lit wellben,
-// a válasz-pillek laposak (az igen lit), a tally jelei 3D pipa/kihagyás + lapos pötty.
-// Újragondolva (mezo-me75u.12, prototypes/uveg-eszrevetel.html): Mezo mondata EGYENES Geist
-// (bible U3/23 — bekezdés-prózán nincs dőlt serif), a bizonyíték tagolt sorok (forrás-ikon +
-// nap, címkézett értékek, a saját jegyzet idézetként; két+ check-in egy közös „Változás”
-// grafikon), a kérdés pedig közvetlenül a válasz-pillek fölött ül. A bizonyíték nyitva indul,
-// megválaszolt kártyán csukva — egy koppintással nyílik.
+// Mezo · ObservationCard — az Észrevételek fül kártyája (Reflexió S5, mezo-eq85.5; Folyadék
+// mezo-n4wf5.2, prototípus vilagos/nap.js `obsCard` + `tally`).
+// Egy fehér kártya: fej (a forrás jele + cím), állapot-pill, a `watching` kártyán a
+// bizonyíték-edények (ami egybevág, tele; ami ellene szól, szaggatott; ami még hiányzik, üres),
+// Mezo mondata, a „Miből látom” bizonyíték (tagolt sorok, `EvidenceList`), a kérdés a
+// válasz-gombok fölött, végül a Laborfüzet-link. A bizonyíték nyitva indul, megválaszolt
+// kártyán csukva — egy koppintással nyílik.
+// A gombok a slice 4 `POST /api/companion/pattern/{id}/reply` végpontjára felelnek.
 // ============================================================
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ContentIcon, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
+import { CLAY_TO_3D, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { cn } from '@/shared/lib/cn'
 import { dayLabel, timeLabel } from '@/features/notification/logic/stamp'
-import { Boop } from '@/shared/ui/clay/boop/Boop'
 import { localDateString } from '@/shared/lib/dates'
 import { EvidenceList } from '@/shared/ui/evidence/EvidenceList'
+import { Acts, Badge, Btn, Card, Head, Lk, Msg, St, Txt } from '@/shared/ui/folyadek'
 import type { Observation, ObservationCardKind, ObservationChoice } from '@/data/types'
 
-/** A prototípus négy kártya-modifikátora — a wire kártyanevek NEM egyeznek vele 1:1. */
-const CARD_CLASS: Record<ObservationCardKind, string> = {
-  fresh: 'nap-obs-fresh',
-  return: 'nap-obs-return',
-  watching: 'nap-obs-watch',
-  confirmed: 'nap-obs-done',
+/** A forrás jele. Az `i-mezo` (Mezo saját ötlete) kétértelmű a `CLAY_TO_3D`-ben, ezért itt kap
+ *  nevet: az észrevétel jele (`t-score`). A többi a közös térképen megy (i-naplo → t-journal,
+ *  i-alvas → t-sleep, i-edzes → t-dumbbell, …); ami ott sincs, a minta jelét kapja. */
+function sourceArt(icon: ClayIconName): Icon3DName {
+  return icon === 'i-mezo' ? 't-score' : CLAY_TO_3D[icon] ?? 't-pattern'
 }
 
-/** A kártya egyetlen üveg-akcentusa (`--c`, bible §2). */
-const CARD_HUE: Record<ObservationCardKind, string> = {
-  fresh: 'var(--dv-lav)',
-  return: 'var(--dv-lav)',
-  watching: 'var(--dv-sky)',
-  confirmed: 'var(--dv-sage)',
-}
-
-/** A forrás-ikon 3D-arca. Az `i-mezo` (Mezo saját ötlete) kétértelmű a `CLAY_TO_3D`-ben, ezért
- *  itt, a hívásnál kap nevet: a prototípus észrevétel-art-ja (`t-score`). A többi a közös
- *  térképen megy (i-naplo → t-journal, i-alvas → t-sleep, i-edzes → t-dumbbell, …). */
-function sourceArt(icon: ClayIconName): ClayIconName | Icon3DName {
-  return icon === 'i-mezo' ? 't-score' : icon
-}
-
-/** A tally-slot elérhető szövege — a korábbi ✓/✕/· glifák jelentése, most hangban. */
+/** A bizonyíték-edény elérhető szövege. */
 const SLOT_TEXT = { hit: 'bejött', miss: 'nem jött be', none: 'még nincs adat' } as const
 
-const STATE_PILL: Record<ObservationCardKind, string> = {
-  fresh: 'ÚJ',
-  return: 'FIGYELEM',
-  watching: 'GYŰLIK',
-  confirmed: 'BEÉPÜLT',
+const STATE_PILL: Record<ObservationCardKind, { label: string; tone: 'plan' | 'warn' | 'ok' }> = {
+  fresh: { label: 'ÚJ', tone: 'plan' },
+  return: { label: 'FIGYELEM', tone: 'warn' },
+  watching: { label: 'GYŰLIK', tone: 'plan' },
+  confirmed: { label: 'BEÉPÜLT', tone: 'ok' },
 }
 
 /** A felhasználó tapasztalata külön marad a mért bizonyítéktól. */
@@ -73,7 +51,8 @@ function chipsFor(card: ObservationCardKind): { label: string; choice: Observati
   ]
 }
 
-function eyebrow(item: Observation): string {
+/** A kártya fajta-címkéje az idővel — a hívó oldal szakaszcíme is ez. */
+export function observationEyebrow(item: Observation): string {
   // A dróton UTC-ben jön (`…T12:12:00Z`) — a nyers karakterlánc-szeletelés az UTC órát írná ki,
   // ezért a közös, helyi idejű `timeLabel` formázza (ugyanaz, amit a fejléc és az értesítés-feed használ).
   const time = `${dayLabel(item.occurredAt)} ${timeLabel(item.occurredAt)}`
@@ -86,10 +65,10 @@ function eyebrow(item: Observation): string {
 
 export function ObservationCard({ item, onReply, pending = false }: {
   item: Observation
-  /** A chip-válasz. A `talk` ág visszaadhat egy beszélgetés-azonosítót — arra navigálunk. */
+  /** A válasz. A `talk` ág visszaadhat egy beszélgetés-azonosítót — arra navigálunk. */
   onReply: (patternId: string, choice: ObservationChoice) => void | Promise<{ conversationId?: string } | void>
   /** Igaz, amíg ENNEK a sornak a válasza úton van — a szerver oldali válasz nem idempotens,
-   *  ezért a chip-csoport ilyenkor tiltott (kettős koppintás = két válasz). */
+   *  ezért a gomb-csoport ilyenkor tiltott (kettős koppintás = két válasz). */
   pending?: boolean
 }) {
   const navigate = useNavigate()
@@ -109,7 +88,7 @@ export function ObservationCard({ item, onReply, pending = false }: {
   const records = item.evidence.filter((e) => e.kind === 'record').length
 
   // Optimista nyugtázás, VISSZAGÖRGETÉSSEL: a kártya azonnal átvált, de ha a hívás elbukik,
-  // a chipek visszajönnek egy hibasorral. Nyugtázva hagyni egy el nem küldött választ hazugság
+  // a gombok visszajönnek egy hibasorral. Nyugtázva hagyni egy el nem küldött választ hazugság
   // lenne — a felhasználó azt hinné, Mezo megjegyezte.
   const answer = async (choice: ObservationChoice) => {
     setJustAnswered(choice)
@@ -130,78 +109,76 @@ export function ObservationCard({ item, onReply, pending = false }: {
   const slots: (keyof typeof SLOT_TEXT)[] = Array.from({ length: Math.max(need, seen) }, (_, i) =>
     i < item.evidenceHits ? 'hit' : i < seen ? 'miss' : 'none',
   )
+  const pill = STATE_PILL[item.card]
+  const label = observationEyebrow(item)
 
   return (
-    <article className={cn('nap-obs', 'glass', CARD_CLASS[item.card], answered && 'answered')}
-      style={{ '--c': CARD_HUE[item.card] } as React.CSSProperties}>
-      <div className="nap-obs-top">
-        <span className="nap-obs-disc uv-well"><ContentIcon name={sourceArt(item.sourceIcon)} size={30} /></span>
-        <div>
-          <div className="eb">{eyebrow(item)}</div>
-          <div className="ttl">{item.title}</div>
-        </div>
-        <span className="nap-obs-pill">{STATE_PILL[item.card]}</span>
+    <Card className={answered ? 'nb-obs answered' : 'nb-obs'} data-card={item.card}>
+      <Head icon={sourceArt(item.sourceIcon)} title={item.title} />
+      <div className="nb-obst">
+        <St tone={pill.tone}>{pill.label}</St>
+        {/* A `watching` kártyán nincs mondat, ezért a fajta-címke itt áll, nem Mezo neve mellett. */}
+        {item.text === '' && <span className="nb-obeb">{label}</span>}
       </div>
 
+      {item.card === 'watching' && item.kind !== 'statistical' && item.minN != null && (
+        <>
+          <div className="nb-tally" aria-label="Napok: bejött, nem jött be, még nincs adat">
+            {slots.map((s, i) => (
+              <i key={i} className={s} data-slot={s}><span className="sr-only">{SLOT_TEXT[s]}</span></i>
+            ))}
+          </div>
+          <div className="nb-leg">
+            <b>{`Bizonyíték · ${seen} / ${need} nap`}</b>
+            <span><i className="hit" />egybevág</span>
+            <span><i className="miss" />ellene szól</span>
+            <span><i className="none" />még hiányzik</span>
+          </div>
+        </>
+      )}
+
       {/* A `watching` kártyán a wire `text` ÜRES — ott nincs mondat, a számok beszélnek. */}
-      {item.text !== '' && <p className="nap-obs-say"><SafeMarkdown text={item.text} /></p>}
+      {item.text !== '' && (
+        <Msg member="mezo" meta={label.toLowerCase()}><p className="nb-say"><SafeMarkdown text={item.text} /></p></Msg>
+      )}
       {/* A nem-kérdező kártyák (figyelt / megerősített) kérdés-sora a mondat alatt marad. */}
-      {item.question && !asks && <p className="nap-obs-ask"><SafeMarkdown text={item.question} /></p>}
+      {item.question && !asks && <Txt className="nb-ask"><SafeMarkdown text={item.question} /></Txt>}
 
       {item.evidence.length > 0 && (
         <>
-          <div className="nap-obs-evh">
+          <div className="nb-evh">
             <span>Miből látom{records > 0 ? ` · ${records} bejegyzés` : ''}</span>
-            <button type="button" aria-expanded={evidenceOpen} onClick={() => setEvOpen(!evidenceOpen)}>
+            <Lk aria-expanded={evidenceOpen} onClick={() => setEvOpen(!evidenceOpen)}>
               {evidenceOpen ? 'Elrejtem' : 'Megnézem ›'}
-            </button>
+            </Lk>
           </div>
           {evidenceOpen && <EvidenceList evidence={item.evidence} today={today} />}
         </>
       )}
 
-      {item.card === 'watching' && item.kind !== 'statistical' && item.minN != null && (
-        <>
-          <div className="nap-obs-tally" aria-label="Napok: bejött, nem jött be, még nincs adat">
-            {slots.map((s, i) => (
-              <i key={i} className={s} data-slot={s}>
-                {s === 'hit' ? <Icon3D name="t-tick" size={17} /> : s === 'miss' ? <Icon3D name="t-skip" size={17} /> : null}
-                <span className="sr-only">{SLOT_TEXT[s]}</span>
-              </i>
-            ))}
-          </div>
-          <div className="nap-obs-progcopy"><span>Bizonyíték</span><strong>{seen} / {need} nap</strong></div>
-          <div className="nap-obs-prog" aria-label={`${seen} a szükséges ${need} napból`}>
-            <i style={{ '--w': `${Math.min(100, (seen / need) * 100)}%` } as React.CSSProperties} />
-          </div>
-
-        </>
-      )}
-
-      {item.card === 'watching' && item.hypothesisKey && (
-        <Link className="nap-obs-more" to={`/mezo/patterns/${item.hypothesisKey}`}>Laborfüzet ›</Link>
-      )}
-
       {chips.length > 0 && (
-        <div className="nap-obs-q">
-          <span className="nap-obs-qeb"><Boop domain="mezo" size={18} />Mezo kérdezi</span>
-          {item.question && <p className="nap-obs-ask"><SafeMarkdown text={item.question} /></p>}
-          <div className="nap-obs-chips" role="group" aria-label="Válaszod az észrevételre">
-            {chips.map((c) => (
-              <button key={c.choice} type="button" className={cn('chip', c.tone)}
-                disabled={pending} onClick={() => { void answer(c.choice) }}>
+        <div className="nb-q">
+          <span className="nb-qeb"><Badge member="mezo" size={24} />Mezo kérdezi</span>
+          {item.question && <Txt className="nb-ask"><SafeMarkdown text={item.question} /></Txt>}
+          <Acts className="nb-chips" role="group" aria-label="Válaszod az észrevételre">
+            {chips.map((c, i) => (
+              <Btn key={c.choice} sm ghost={i > 0} disabled={pending} onClick={() => { void answer(c.choice) }}>
                 {c.label}
-              </button>
+              </Btn>
             ))}
-          </div>
+          </Acts>
         </div>
       )}
       {failed && !answered && (
-        <div className="nap-obs-err" role="alert">Nem sikerült elküldeni — próbáld újra.</div>
+        <div className="nb-err" role="alert">Nem sikerült elküldeni — próbáld újra.</div>
       )}
       {answered && (
-        <div className="nap-obs-ack"><Icon3D name="t-tick" size={24} /><span>{ackLine(answered)}</span></div>
+        <div className="nb-okline nb-ack"><Icon3D name="t-tick" size={18} /><span>{ackLine(answered)}</span></div>
       )}
-    </article>
+
+      {item.card === 'watching' && item.hypothesisKey && (
+        <Acts><Link className="fo-lk" to={`/mezo/patterns/${item.hypothesisKey}`}>Laborfüzet ›</Link></Acts>
+      )}
+    </Card>
   )
 }

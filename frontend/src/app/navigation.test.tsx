@@ -349,14 +349,13 @@ test('/nap/gyors resolves from the router config to the full-page quick-log pick
 
 // A napom (mezo-yjzhw.4): its route sits deeper than the tab itself (`/nap/napom/:date`),
 // so the longest-prefix rule (navModel.activeTabRoute) needs to still land on the tab. In the
-// Folyadék frame the day page is a sub-page: the owning tab shows as the title bar's context
-// line and the back button's fallback, not as a lit pill.
+// Folyadék frame (F2, mezo-n4wf5.2) a day picked on A napom is the SAME hub page showing another
+// day (`hubChild`): the top tabs stay and „A napom" is the lit pill; there is no back button.
 test('/nap/napom/2026-09-23 belongs to the „A napom" tab', async () => {
   renderApp('/nap/napom/2026-09-23')
-  expect(await screen.findByText('Nap · A napom')).toBeInTheDocument()
-  expect(document.querySelector('.fo-tabs')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByRole('link', { name: 'A napom' })).toHaveAttribute('aria-current', 'page')
+  expect(document.querySelector('.fo-tabs')).not.toBeNull()
+  expect(screen.queryByRole('button', { name: 'Vissza' })).toBeNull()
 })
 
 test('/insights/chat redirects into the Mezo tab preserving the subpath', async () => {

@@ -1,0 +1,74 @@
+/* ── Folyadék · Nap · rutin (mezo-n4wf5.2, slice F2) ── page-level rules of this area only; shared pieces live in folyadek-kit.css. */
+
+/* ════ Rutin (/nap/rutin) · prefix nr2- ════ (prototype vilagos/nap.js `rutin()`, `.np-now` `.np-tl`) */
+.nr2-now { color: var(--dom); font-weight: 700; }
+.nr2-tl { font: inherit; font-weight: 600; color: var(--dom); text-decoration: underline; text-underline-offset: 3px; text-align: left; }
+/* the value column: the count-up never shifts the row */
+.nr2-page .fo-row .v { min-width: 44px; text-align: right; }
+/* the page's own back button, drawn only where no title bar is mounted */
+.nr2-back, .nck2-back { margin: 12px 14px 0; }
+/* the day links of the hero's liquid row */
+.nr2-day { min-height: 44px; padding: 0 4px; white-space: nowrap; }
+.nr2-day:disabled { opacity: .35; cursor: default; }
+
+/* ════ Check-in page (/nap/checkin) · prefix nck2- ════ (prototype `checkin()`, `.np-slot` `.np-slh` `.np-cells`) */
+.nck2-slot { padding: 14px 0; border-top: 1px solid var(--fo-hair); }
+.nck2-slot:first-child { border-top: 0; padding-top: 0; }
+.nck2-slot.now { margin: 0 -8px; padding: 14px 8px; border-radius: 22px; border-top-color: transparent; background: color-mix(in srgb, var(--dom) 9%, var(--fo-card)); }
+.nck2-slot.now + .nck2-slot { border-top-color: transparent; }
+.nck2-slot.later { opacity: .6; }
+.nck2-slh { display: flex; align-items: center; gap: 10px; }
+.nck2-slh time { font-family: var(--ff-display); font-size: 15px; font-weight: 800; min-width: 46px; font-variant-numeric: tabular-nums; }
+.nck2-slh .g { flex: 1; min-width: 0; }
+.nck2-slh strong { display: block; font-size: 14.5px; font-weight: 650; }
+.nck2-slh small { display: block; font-size: 12.5px; color: var(--fo-sub); margin-top: 2px; line-height: 1.35; }
+.nck2-slh .fo-btn, .nck2-slh .fo-st { flex: 0 0 auto; }
+.nck2-slh .fo-btn { min-height: 44px; white-space: nowrap; }
+.nck2-cells { display: flex; flex-wrap: wrap; gap: 12px 4px; margin-top: 12px; }
+.nck2-cells .fo-mini { width: 46px; min-width: 0; }
+.nck2-cells .fo-mini b { font-size: 11.5px; white-space: nowrap; }
+.nck2-cells .fo-mini small { font-size: 9.5px; white-space: nowrap; }
+
+/* ════ Check-in sheet + the two Rutin sheets ════ (prototype `ckSheet()`, `SHEETS.reflect`, `SHEETS.intention`) */
+.nck2-q { font-family: var(--ff-display); font-size: 19px; font-weight: 700; letter-spacing: -.4px; line-height: 1.25; margin: 2px 0 4px; color: var(--fo-ink); }
+.nck2-okline { display: flex; align-items: center; gap: 6px; margin-top: 12px; font-size: 13.5px; font-weight: 600; color: var(--fo-ok); }
+.nck2-okline svg { width: 16px; height: 16px; flex: 0 0 auto; }
+.nck2-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.nck2-nav .fo-lk { min-height: 44px; padding: 0 2px; white-space: nowrap; }
+.nck2-yn { margin-top: 12px; }
+.nck2-next { margin-top: 14px; }
+.nck2-next:disabled { opacity: .4; }
+.nck2-save { margin-top: 16px; }
+.nck2-alert { margin-top: 12px; font-size: 13.5px; font-weight: 600; line-height: 1.4; color: var(--fo-bad); }
+/* the summary rows: a smaller chip, the answer may wrap */
+.nck2-sum { margin-top: 10px; }
+.nck2-sum .fo-row .v { font-size: 13.5px; white-space: normal; text-align: right; max-width: 48%; }
+.nck2-none { color: var(--fo-faint); font-weight: 600; }
+.nck2-sum .fo-row .si { width: 34px; height: 34px; }
+/* the pain figure: a faint body, the chosen regions in the warn colour */
+.nck2-fig { display: flex; gap: 18px; justify-content: center; margin: 4px 0 10px; }
+.nck2-fig figure { text-align: center; margin: 0; }
+.nck2-fig svg { width: 78px; height: 147px; }
+.nck2-fig figcaption { font-size: 11.5px; font-weight: 600; color: var(--fo-sub); }
+.nck2-sil { fill: var(--fo-page); stroke: var(--fo-line); }
+.nck2-dot { fill: var(--fo-card); stroke: var(--fo-faint); stroke-width: 1.4; cursor: pointer; }
+.nck2-dot.on { fill: var(--fo-warn); stroke: var(--fo-warn); }
+.nck2-field { margin-top: 10px; }
+/* the three answers of the evening reflection: a capsule each */
+.nck2-ref { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.nck2-ref button { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; padding: 16px 6px 12px; border: 0; border-radius: 24px; cursor: pointer; color: var(--fo-ink); font: inherit; background: color-mix(in srgb, var(--dom) 6%, var(--fo-card)); }
+.nck2-ref button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.nck2-ref .fo-mini .t { width: 34px; height: 64px; }
+.nck2-ref b { font-family: var(--ff-display); font-size: 15px; font-weight: 800; }
+
+@media (max-width: 350px) {
+  .nck2-slh { gap: 8px; }
+  .nck2-slh time { min-width: 42px; font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the strength level glides to its new width after a tick; `NrPct` counts for the same NR_GLIDE_MS (nrStrTransitionGuard.test.ts) */
+  .nr2-page .fo-row .fo-level i { transition: width 380ms cubic-bezier(.2, .8, .2, 1); }
+  .nck2-ref button { transition: transform .12s ease; }
+  .nck2-ref button:active { transform: scale(.97); }
+}

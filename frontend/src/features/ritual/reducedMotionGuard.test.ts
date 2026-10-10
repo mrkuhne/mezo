@@ -1,40 +1,37 @@
 import { describe, expect, it } from 'vitest'
 // Vite `?raw` import — the CSS source as a string, resolved via the `@/` alias (no fs/path,
 // cwd-independent, works identically in vitest and the browser build).
-import rawCss from '@/styles/prototype.css?raw'
+import rawCss from '@/styles/folyadek-nap-rogzites.css?raw'
 
 /**
- * Reduced-motion guard audit (mezo-mzbz, R4 — spec §9). The Napzárás `/ritual` flow and its
- * Today entry card lean heavily on CSS animation (the `rz-*`, `.ritcard*`, and shared
- * `.np-anim` families in `prototype.css`). ADR-0010-tone accessibility requires every one of
- * those animations to be neutralised under `@media (prefers-reduced-motion: reduce)`.
+ * Reduced-motion guard audit (mezo-mzbz, R4 — spec §9; re-pointed in Folyadék F2, mezo-n4wf5.2).
+ * The Napzárás `/ritual` flow and the quick-log surfaces carry their page-level rules in
+ * `folyadek-nap-rogzites.css` (the `.nrz-*` and `.nqk-*` families). The Folyadék rule (style bible
+ * §8, builder rule 5) is stricter than the old one: the BASE rule is the final, still frame, and
+ * every animation and transition is OPT-IN inside `@media (prefers-reduced-motion: no-preference)`
+ * — so under `reduce` nothing has to be switched off, because nothing was ever switched on.
  *
- * This is the executable form of that audit: it parses `prototype.css`, finds every
- * ritual-family selector that declares an ACTIVE animation outside a reduced-motion media
- * query, and asserts each is neutralised under reduce by one of three sanctioned mechanisms:
- *   (a) an explicit `animation: none` on the same selector inside a `prefers-reduced-motion:
- *       reduce` block (the dominant pattern);
- *   (b) the animation is declared inside a `prefers-reduced-motion: no-preference` block, so it
- *       is opt-in and simply never runs under reduce (`.ritcard-moon`'s breathing);
- *   (c) the selector is in the explicit ANCESTOR_NEUTRALISED allowlist — its animation is killed
- *       by an ANCESTOR set to `display: none` under reduce, not by an `animation: none` on itself
- *       (`.rz-conf i` confetti, whose `.rz-conf` container is hidden). Each allowlist entry is
- *       re-verified below so it cannot rot silently.
+ * This is the executable form of that audit: it parses the stylesheet and asserts that
+ *   (a) no rule OUTSIDE a `no-preference` block declares an active `animation` or a `transition`;
+ *   (b) the file does carry opt-in motion (so the check cannot pass vacuously on a parser regression);
+ *   (c) every `@keyframes` the opt-in rules name is defined in the file.
+ * The kit's own motion (`.fo-*`: the waves, the filling vials) is guarded the same way in
+ * `folyadek-kit.css` and is not this test's subject.
  *
- * A future dev adding an unguarded `rz-*`/`ritcard`/`np-anim` animation fails this test in the
- * normal `pnpm test` gate (both modes).
+ * A future dev adding an unguarded `.nrz-*` / `.nqk-*` animation fails this test in the normal
+ * `pnpm test` gate (both modes).
  *
- * Limitation (documented, not present in the current file): a ritual animation nested inside a
- * non-`@media` block at-rule (`@supports`, `@layer`) would be skipped by the parser. If that
- * ever gets introduced, extend `parseRules` to treat it as a context push.
+ * Limitation (documented, not present in the current file): a rule nested inside a non-`@media`
+ * block at-rule (`@supports`, `@layer`) would be skipped by the parser. If that ever gets
+ * introduced, extend `parseRules` to treat it as a context push.
  */
 
 type MediaCtx = 'reduce' | 'no-preference' | 'other'
 type Rule = { selector: string; body: string; media: MediaCtx | null }
 
-/** True if a selector targets a ritual-surface family (`.rz-*`, `.ritcard*`, `.np-anim`). */
-function isRitualSelector(sel: string): boolean {
-  return sel.includes('.rz-') || sel.includes('.ritcard') || sel.includes('.np-anim')
+/** True if a selector targets this area's families (`.nrz-*` Napzárás, `.nqk-*` quick log). */
+function isAreaSelector(sel: string): boolean {
+  return sel.includes('.nrz') || sel.includes('.nqk')
 }
 
 /** The animation value if the body starts an ACTIVE animation (shorthand or `animation-name`),
@@ -46,8 +43,10 @@ function activeAnimation(body: string): string | null {
   return /^none\b/.test(value) ? null : value
 }
 
-function bodyHas(body: string, prop: 'animation' | 'display', value: 'none'): boolean {
-  return new RegExp(`${prop}\\s*:\\s*${value}\\b`).test(body)
+/** True if the body declares a `transition` that is not `none`. */
+function hasTransition(body: string): boolean {
+  const m = body.match(/(?:^|[;\s])transition\s*:\s*([^;]+)/)
+  return !!m && !/^none\b/.test(m[1].trim())
 }
 
 function splitSelectorList(selectorList: string): string[] {
@@ -112,85 +111,49 @@ function parseRules(css: string): Rule[] {
   return rules
 }
 
-// Selectors whose animation is killed by an ANCESTOR `display: none` under reduce (mechanism c),
-// each with the ancestor that does it. Re-verified below so a stale entry fails the test.
-const ANCESTOR_NEUTRALISED: Array<{ selector: string; ancestor: string }> = [
-  // Confetti particles animate (rz-fall), but `.rz-conf` (their container) is display:none under
-  // reduce — they never render, so no per-particle `animation: none` is needed.
-  { selector: '.rz-conf i', ancestor: '.rz-conf' },
-]
-
 const rules = parseRules(rawCss)
 
-// Individual selectors set to `animation: none` inside a reduce block (mechanism a).
-const reduceAnimationNone = new Set<string>()
-// Individual selectors set to `display: none` inside a reduce block (verifies mechanism c).
-const reduceDisplayNone = new Set<string>()
+// Rules that move OUTSIDE the opt-in block: each one is a violation.
+const unguarded: Array<{ selector: string; what: string }> = []
+// Rules that move INSIDE it: the sanctioned place.
+const optIn: Array<{ selector: string; animation: string | null }> = []
 for (const rule of rules) {
-  if (rule.media !== 'reduce') continue
-  if (bodyHas(rule.body, 'animation', 'none')) splitSelectorList(rule.selector).forEach((s) => reduceAnimationNone.add(s))
-  if (bodyHas(rule.body, 'display', 'none')) splitSelectorList(rule.selector).forEach((s) => reduceDisplayNone.add(s))
-}
-
-// Ritual-family selectors with an ACTIVE animation OUTSIDE any reduced-motion media query
-// (null or a non-reduced-motion `@media`). `no-preference` and `reduce` contexts are excluded:
-// the former is opt-in (mechanism b), the latter is the guard itself.
-const animatingRitualSelectors: Array<{ selector: string; animation: string }> = []
-for (const rule of rules) {
-  if (rule.media === 'reduce' || rule.media === 'no-preference') continue
   const animation = activeAnimation(rule.body)
-  if (!animation) continue
-  for (const sel of splitSelectorList(rule.selector)) {
-    if (isRitualSelector(sel)) animatingRitualSelectors.push({ selector: sel, animation })
+  const transition = hasTransition(rule.body)
+  if (!animation && !transition) continue
+  for (const selector of splitSelectorList(rule.selector)) {
+    if (rule.media === 'no-preference') optIn.push({ selector, animation })
+    else unguarded.push({ selector, what: animation ? `animation: ${animation}` : 'transition' })
   }
 }
 
-// Ritual-family selectors whose animation is opt-in under `no-preference` (mechanism b). Since the
-// Üveg re-dress (mezo-me75u.3, bible §6) every LOOP (twinkle, float, breathing glow) lives here;
-// only one-shot reveals stay outside a media query.
-const optInRitualSelectors: string[] = []
-for (const rule of rules) {
-  if (rule.media !== 'no-preference' || !activeAnimation(rule.body)) continue
-  optInRitualSelectors.push(...splitSelectorList(rule.selector).filter(isRitualSelector))
-}
+const keyframes = new Set([...rawCss.matchAll(/@keyframes\s+([\w-]+)/g)].map((m) => m[1]))
 
-describe('reduced-motion guard — ritual animation families (mezo-mzbz)', () => {
-  it('parses a non-trivial set of ritual animations (guards against a vacuous pass)', () => {
-    // The file has ~8 unconditional one-shot ritual animations plus ~5 opt-in loops; a parser
-    // regression that found far fewer would make the coverage assertion below pass vacuously.
-    expect(animatingRitualSelectors.length).toBeGreaterThanOrEqual(6)
-    expect(animatingRitualSelectors.length + optInRitualSelectors.length).toBeGreaterThanOrEqual(10)
+describe('reduced-motion guard — Napzárás + quick log motion (mezo-mzbz, Folyadék F2)', () => {
+  it('parses the stylesheet and finds this area\'s rules (guards against a vacuous pass)', () => {
+    expect(rules.filter((r) => splitSelectorList(r.selector).some(isAreaSelector)).length).toBeGreaterThanOrEqual(30)
+    expect(optIn.filter((o) => o.animation).length).toBeGreaterThanOrEqual(1)
+    expect(optIn.every((o) => isAreaSelector(o.selector))).toBe(true)
   })
 
-  it('neutralises every ritual-family animation under prefers-reduced-motion: reduce', () => {
-    const unguarded = animatingRitualSelectors.filter(({ selector }) => {
-      if (reduceAnimationNone.has(selector)) return false // (a) explicit animation: none
-      if (ANCESTOR_NEUTRALISED.some((e) => e.selector === selector)) return false // (c) ancestor display:none
-      return true
-    })
+  it('declares every animation and transition inside prefers-reduced-motion: no-preference', () => {
     expect(
       unguarded,
-      `Ritual animation(s) with no reduced-motion guard: ${unguarded
-        .map((u) => `${u.selector} (animation: ${u.animation})`)
-        .join('; ')}. Add an \`animation: none\` for the selector inside the ` +
-        '`@media (prefers-reduced-motion: reduce)` block at the tail of prototype.css, ' +
-        'declare it under `no-preference`, or (if an ancestor hides it) add it to ' +
-        'ANCESTOR_NEUTRALISED.',
+      `Motion outside the opt-in block: ${unguarded.map((u) => `${u.selector} (${u.what})`).join('; ')}. ` +
+        'Move it into the `@media (prefers-reduced-motion: no-preference)` block at the tail of ' +
+        'folyadek-nap-rogzites.css — the base rule must be the final, still frame.',
     ).toEqual([])
   })
 
-  it('keeps the ancestor-neutralised allowlist honest (each ancestor is display:none under reduce)', () => {
-    for (const { selector, ancestor } of ANCESTOR_NEUTRALISED) {
-      expect(
-        reduceDisplayNone.has(ancestor),
-        `${selector} is allowlisted as ancestor-neutralised, but its ancestor ${ancestor} is not ` +
-          'set to `display: none` under prefers-reduced-motion: reduce.',
-      ).toBe(true)
-      // The allowlist entry must correspond to a real active animation (no stale entries).
-      expect(
-        animatingRitualSelectors.some((a) => a.selector === selector),
-        `${selector} is in ANCESTOR_NEUTRALISED but no longer declares an active animation — remove the stale allowlist entry.`,
-      ).toBe(true)
+  it('never needs a reduce block: nothing is switched on outside the opt-in', () => {
+    expect(rules.filter((r) => r.media === 'reduce')).toEqual([])
+  })
+
+  it('defines every keyframes animation the opt-in rules name', () => {
+    for (const { selector, animation } of optIn) {
+      if (!animation) continue
+      const name = animation.split(/\s+/)[0]
+      expect(keyframes.has(name), `${selector} runs \`${name}\`, which this file does not define`).toBe(true)
     }
   })
 })

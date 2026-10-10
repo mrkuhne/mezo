@@ -65,7 +65,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   // ── Nap ──────────────────────────────────────────────────────────────────
   { route: '/nap', label: 'Mai', hint: 'A napod központja: mit csináltál, mi van hátra, hogy vagy.' },
   { route: '/nap/napom', label: 'A napom', hint: 'A mai napod olvasata és a legjobb következő lépés.' },
-  { route: '/nap/uzenetek', label: 'Beszélgetés', hint: 'Boop üzenetei és a válaszaid egy szálon.' },
+  { route: '/nap/uzenetek', label: 'Beszélgetés', hint: 'A csapat üzenetei és a válaszaid egy szálon.' },
   { route: '/nap/rutin', label: 'Rutin', hint: 'A mai szokásaid: mit pipáltál ki, mi maradt.' },
   { route: '/nap/rutin/epites', label: 'Rutinok szerkesztése', hint: 'A szokás-láncaid: láncok, szokások, új szokás.' },
   { route: '/nap/rutin/uj', label: 'Új rutin', hint: 'Szokás-lánc összeállítása.' },
@@ -73,7 +73,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/nap/kuldetesek', label: 'Napi küldetések', hint: 'A mai apró feladatok és a jutalmuk.' },
   { route: '/nap/checkin', label: 'Check-in', hint: 'Hogy vagy most — pár koppintás, fél perc.' },
   { route: '/nap/gyors', label: 'Gyors logolás', hint: 'Egy mozdulattal rögzíthető dolgok rácsa.' },
-  { route: '/nap/eletjel', label: 'Életjel', hint: 'A mai alapjeleid egy helyen.' },
+  { route: '/nap/eletjel', label: 'Életjelek', hint: 'A mai alapjeleid egy helyen.' },
   { route: '/ritual', label: 'Napzárás', hint: 'Az esti zárókör: mit hoztál ma, mi jön holnap.', group: 'Napzárás' },
 
   // ── Edzés ────────────────────────────────────────────────────────────────

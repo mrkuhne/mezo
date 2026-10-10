@@ -19,29 +19,30 @@ describe('NapFuelGraphic', () => {
     expect(core).toHaveTextContent('1 460')
   })
 
-  it('shows an over-target amount without negative remaining and caps arcs', () => {
+  it('shows an over-target amount without negative remaining and caps the level', () => {
     const { container } = render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2400, p: 190 }} targets={targets} />)
-    expect(screen.getByText('200 kcal a napi keret felett')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('200 kcal a napi keret felett.')
     fireEvent.click(screen.getByRole('button', { name: /fehérje/i }))
     expect(screen.getByRole('status')).toHaveTextContent('40 g a 150 g-os cél felett')
-    expect(container.querySelector('[data-macro="p"] .nap-fuel-arc')).toHaveAttribute('stroke-dasharray', '75 100')
+    // the level is capped at the brim
+    expect((container.querySelector('.fo-vial .fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe('100%')
   })
 
   it('a skipped window never makes an under-target day read „felett" (same rule as the Fuel hero)', () => {
     // target 2200, skipped 600, eaten 1800 → ate under the target → 0 left, not 200 over
     render(<NapFuelGraphic consumed={{ ...consumed, kcal: 1800 }} targets={targets} skippedKcal={600} fuelMode={null} />)
-    expect(screen.getByText('0 kcal a napi keretig')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('0 kcal a napi keretig.')
     expect(document.body.textContent).not.toMatch(/felett/)
   })
 
   it('still says „felett" when the user really ate more than the target, skips or not', () => {
     render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2300 }} targets={targets} skippedKcal={600} fuelMode={null} />)
-    expect(screen.getByText('100 kcal a napi keret felett')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('100 kcal a napi keret felett.')
   })
 
   it('an ESTIMATE day says „körül" and never „felett"', () => {
     render(<NapFuelGraphic consumed={{ ...consumed, kcal: 2400 }} targets={targets} fuelMode="ESTIMATE" />)
-    expect(screen.getByText('200 kcal a napi keret körül')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('200 kcal a napi keret körül.')
     expect(document.body.textContent).not.toMatch(/felett/)
   })
 
@@ -49,7 +50,7 @@ describe('NapFuelGraphic', () => {
     const { container } = render(<NapFuelGraphic consumed={consumed} targets={zero} />)
     fireEvent.click(screen.getByRole('button', { name: /fehérje/i }))
     expect(screen.getByRole('status')).toHaveTextContent('Nincs beállított fehérjecél')
-    expect(container.querySelector('[data-macro="p"] .nap-fuel-arc')).toBeNull()
+    expect((container.querySelector('.fo-vial .fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe('0%')
     expect(container.textContent).not.toMatch(/NaN|Infinity/)
   })
 
@@ -61,40 +62,39 @@ describe('NapFuelGraphic', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Táplálkozási adatok betöltése')
     expect(screen.queryByRole('button', { name: /teljes energiabevitel/i })).not.toBeInTheDocument()
     rerender(<NapFuelGraphic consumed={zero} targets={targets} isError onRetry={retry} />)
-    expect(screen.getByRole('alert')).toHaveTextContent('Nem sikerült betölteni')
+    expect(screen.getByRole('alert')).toHaveTextContent('Az üzemanyagot most nem sikerült betölteni.')
     fireEvent.click(screen.getByRole('button', { name: /újra/i }))
     expect(retry).toHaveBeenCalledOnce()
   })
 
-  it('keeps each mounted graphic self-contained: arcs glow in their own macro colour, no shared gradient ids', () => {
-    // Üveg U3: the per-instance gradients (and their id-collision risk) are gone — every arc
-    // carries its macro accent on its own group (`--c`), so two mounted graphics cannot clash.
+  it('keeps each mounted instrument self-contained: three vials in their own macro colour, no rings, no shared ids', () => {
     const { container } = render(<><NapFuelGraphic consumed={consumed} targets={targets} /><NapFuelGraphic consumed={zero} targets={targets} /></>)
-    expect(container.querySelectorAll('linearGradient')).toHaveLength(0)
-    expect(container.querySelector('[data-macro="p"]')).toHaveStyle({ '--c': 'var(--macro-protein)' })
-    expect(container.querySelector('[data-macro="p"] .nap-fuel-arc')).toHaveClass('uv-ring-prog')
+    expect(container.querySelectorAll('linearGradient, circle, .uv-ring')).toHaveLength(0)
+    expect(container.querySelector('.fo-vial')).toHaveStyle({ '--c': 'var(--macro-protein)' })
     for (const region of screen.getAllByRole('region', { name: /mai energiabevitel/i })) {
+      // the big number (reset) + the three macro vials
       expect(within(region).getAllByRole('button')).toHaveLength(4)
     }
   })
 
-  it('wears the üveg ranking: amber glass with flat 3D macro chips, a dashed card on an empty day', () => {
-    const { container, rerender } = render(<NapFuelGraphic consumed={consumed} targets={targets} />)
+  it('wears the Folyadék kit: the macro glyphs in three vials, the selection marked and announced, a way back', () => {
+    const open = vi.fn()
+    const { container } = render(<NapFuelGraphic consumed={consumed} targets={targets} onOpenFuel={open} />)
     const card = screen.getByRole('region', { name: /mai energiabevitel/i })
-    expect(card).toHaveClass('glass')
-    expect(card).not.toHaveClass('uv-empty')
-    expect(card).toHaveStyle({ '--c': 'var(--dv-amber)' })
-    const icons = [...container.querySelectorAll('.nap-fuel-macro use')].map(u => u.getAttribute('href'))
-    expect(icons).toEqual(['#t-meat', '#t-carb', '#t-avocado'])
-    expect(container.querySelector('.nap-fuel-macro .glass')).toBeNull()
-    rerender(<NapFuelGraphic consumed={zero} targets={targets} />)
-    expect(card).toHaveClass('uv-empty')
+    expect(card.querySelector('.glass, .uv-empty')).toBeNull()
     expect(card).not.toHaveClass('glass')
-    // loading and failure keep the glass (they are not free space)
-    rerender(<NapFuelGraphic consumed={zero} targets={targets} isPending />)
-    expect(card).toHaveClass('glass')
-    rerender(<NapFuelGraphic consumed={zero} targets={targets} isError onRetry={() => {}} />)
-    expect(card).toHaveClass('glass')
+    const icons = [...container.querySelectorAll('.fo-vial use')].map(u => u.getAttribute('href'))
+    expect(icons).toEqual(['#t-meat', '#t-carb', '#t-avocado'])
+    expect(screen.getByRole('button', { name: /szénhidrát/i })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: /zsír/i })).toHaveTextContent('/ 60 g cél')
+    expect(screen.queryByRole('button', { name: 'Vissza az összképhez' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /zsír/i }))
+    expect(screen.getByRole('button', { name: /zsír/i }).querySelector('.fo-tube em')).toHaveTextContent('✓')
+    expect(screen.getByRole('button', { name: /teljes energiabevitel/i })).toHaveTextContent('zsír · 67% a napi célból')
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza az összképhez' }))
+    expect(screen.getByRole('button', { name: /teljes energiabevitel/i })).toHaveTextContent('kcal ma · 2 200 kcal keret')
+    fireEvent.click(screen.getByRole('button', { name: 'Fuel megnyitása' }))
+    expect(open).toHaveBeenCalledOnce()
   })
 })
 
@@ -104,7 +104,7 @@ describe('NapFuelGraphic · kímélő mód', () => {
     const { container } = render(<NapFuelGraphic guidance consumed={consumed} targets={targets} />)
     expect(screen.getByText('Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel')).toBeInTheDocument()
     expect(screen.queryByRole('button')).toBeNull()
-    expect(container.querySelector('.nap-fuel-reactor')).toBeNull()
+    expect(container.querySelector('.fo-vials, .fo-big')).toBeNull()
     expect(container.textContent).not.toMatch(/keret|1 460|2 200|elrontott|túlléptél|hiba|rossz|bukta|kudarc/i)
     expect(container.querySelector('use')).not.toBeNull()
   })

@@ -64,7 +64,7 @@ export function AppLayout() {
   // a helyzet, mint a chat/`/fuel/log/uj` composerénél, mezo-vdf4/bq2t) — a korall FAB rálógna a
   // küldés gombra, ezért itt is elmarad; a gyors-naplózó a navigációból érhető el.
   const inSettings = location.pathname.startsWith('/settings')
-  const hideFab = hideChrome || inSettings || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap'].includes(location.pathname)
+  const hideFab = hideChrome || inSettings || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap', '/nap/rutin/uj'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.
@@ -76,7 +76,7 @@ export function AppLayout() {
   // Mindkét fél EGYÜTT hal meg — a bőr félig levéve (kényszerített sötét téma, scope
   // nélkül) meleg grafitban landolna, ami nem a visszaállított alapállapot. Innentől
   // minden útvonal a felhasználó SAJÁT témabeállítását követi, világos-elsőként.
-  // A `useForceTheme` maga megmarad: a Napzárás rituálé (mezo-tr5v) továbbra is használja.
+  // A `useForceTheme` maga megmarad: az éjszakai alvás-oldal használja (a Napzárás az F2 óta világos, mezo-n4wf5.2).
   // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
   // A FrameProvider (mezo-n4wf5.1) a címsor és az oldal KÖZÖS őse: az oldal ezen át adja át
   // a saját vissza-kezelőjét és (átöltöztetve) a címét a shellnek.

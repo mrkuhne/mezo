@@ -344,6 +344,28 @@ describe('HabitEditPage — kilépések', () => {
     expect(updateDef).toHaveBeenCalledWith('d-intent', expect.objectContaining({ xp: 9 })) // 6 + 2 + 1
   })
 
+  test('the hero is the recipe itself: vessels per part, the live title, and Mentés on its liquid row', () => {
+    const { container } = renderPage('intent')
+    const hero = container.querySelector('.fo-hero') as HTMLElement
+    expect(hero).toHaveTextContent('A recept · együtt változik')
+    expect(within(hero).getByRole('button', { name: 'Mentés' })).toBeInTheDocument()
+    expect([...hero.querySelectorAll('.rb-rec span')].map((p) => p.textContent)).toEqual(['Jelzés', 'Vágy', 'Válasz', 'Jutalom'])
+    fireEvent.change(screen.getByLabelText(/Jelzés/), { target: { value: '' } })
+    expect(hero.querySelectorAll('.rb-rec .f')).toHaveLength(3)
+    expect(hero.querySelector('.rb-blank')).toHaveTextContent('jelzés')
+  })
+
+  test('the effort outcome is a level naming the difficulty and the XP per occasion', () => {
+    renderPage('intent')
+    const out = screen.getByTestId('effort-out')
+    expect(out.querySelector('.fo-level')).not.toBeNull()
+    expect(out).toHaveTextContent(/XP \/ alkalom/)
+    fireEvent.click(screen.getByRole('button', { name: '15 percnél több' }))
+    expect(screen.getByRole('button', { name: '15 percnél több' })).toHaveAttribute('aria-pressed', 'true')
+    expect(out).toHaveTextContent('+8 XP / alkalom')
+    expect(screen.getByTestId('effort-tiny')).toHaveTextContent(/két perces/)
+  })
+
   test('an unknown habit key bounces back to the rutin hub', () => {
     renderPage('nincs-ilyen')
     expect(screen.getByText('RUTIN HUB')).toBeInTheDocument()

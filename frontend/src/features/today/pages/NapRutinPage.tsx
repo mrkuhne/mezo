@@ -1,24 +1,19 @@
 // ============================================================
-// Mezo · NapRutinPage — the hub's habit tile → own page (mezo-d20.2.3)
-// Source of truth: docs/design_2.0/prototypes/src/nap-body.html #page-hab
-// (p-gold tone; hero = chain-group spot + done/total + name; stat strip;
-// habrow list with tick buttons; quiet lánc-erő principle). ?dp=reggel|este
-// preselects the chain group shown first; the other group follows below.
+// Mezo · NapRutinPage — the day's routine (mezo-d20.2.3). ?dp=reggel|napkozben|este picks the
+// chain group shown first (the lead); the other groups follow below.
 // Tick semantics are the Today feature's, verbatim (ADR 0010): MANUAL rows
 // check/uncheck through useHabitActions, DERIVED rows open their log
 // surface via logic/habitAction — nothing here self-completes a derivation.
-// ÜVEG (mezo-me75u.3, prototypes/uveg-nap.html `rutin()`): flat round day arrows, a frameless
-// halo hero (3D dawn / sun / moon), three flat stat cells with gold numerals, and each chain
-// group as ONE amber glass card of flat rows: a round tick (done = lit 3D t-tick), the habit's
-// 3D icon, a gold strength bar; the "Most jön" row lights up inside the card (no nested glass).
+// FOLYADÉK (mezo-n4wf5.2, prototypes/vilagos/nap.js `rutin()`): the chain is a row of linked
+// drops that fill as you tick. Hero = the lead group (verdict „Most jön: …", one drop per habit,
+// the primary button acts on the next habit, the day links on the liquid row); then one numbered
+// card per group (tick · the habit's own icon · anchor line · the 28-day strength as a level),
+// „A lánc ereje" facts, and the door to routine building.
 // ============================================================
-import { useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { DayNavigator } from '@/shared/ui/DayNavigator'
-import { EntranceGroup, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
-import { MozaikPage, PageBody, StatCell, StatStrip } from '@/shared/ui/mozaik'
-import { cn } from '@/shared/lib/cn'
+import { Fragment, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ContentIcon } from '@/shared/ui/clay'
+import { useCountUpOnChange } from '@/shared/ui/mozaik/motion'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import {
@@ -31,12 +26,16 @@ import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { daypartMilestone } from '@/features/today/logic/chainMilestone'
 import { nextInChain } from '@/features/today/logic/chainPrompt'
 import { habitContentIcon } from '@/features/today/logic/habitClayIcon'
+import { NR_GLIDE_MS } from '@/features/today/nrGlide'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import type { HabitDaypart, HabitItem } from '@/data/types'
-import { FrameBack } from '@/shared/ui/folyadek'
+import {
+  Btn, Card, DropChain, Facts, FrameBack, Hero, Level, Lk, Mark, Note, Page, Row, Section, Tick,
+  type DropChainItem,
+} from '@/shared/ui/folyadek'
 
 // A DAY chain is user-created (the wizard and the chain editor both offer "Napközbeni"), so it
 // gets its own face here — without one it was editable under Én and impossible to tick from the
@@ -45,9 +44,6 @@ import { FrameBack } from '@/shared/ui/folyadek'
 type Face = 'reggel' | 'napkozben' | 'este'
 const FACE_ORDER: Face[] = ['reggel', 'napkozben', 'este']
 const FACE_DAYPART: Record<Face, HabitDaypart> = { reggel: 'MORNING', napkozben: 'DAY', este: 'EVENING' }
-const FACE_ART: Record<Face, Icon3DName> = { reggel: 't-dawn', napkozben: 't-sun', este: 't-moon' }
-// the hero halo's second hue (uveg-nap.html `rutin()`): coral by day, lavender at night
-const FACE_HALO2: Record<Face, string> = { reggel: 'var(--dv-coral)', napkozben: 'var(--dv-coral)', este: 'var(--dv-lav)' }
 const FACE_TITLE: Record<Face, string> = { reggel: 'Reggeli rutin', napkozben: 'Napközbeni rutin', este: 'Esti rutin' }
 // Only the two seeded dayparts have a 30-day perfect counter in the summary contract — the DAY
 // face therefore shows no such cell at all rather than a fabricated zero (honesty rule).
@@ -59,13 +55,21 @@ interface Group {
   done: number
 }
 
-/** A sor lánc-erő százaléka. A `.nr-str` csík a pipa után 380 ms-ig CSÚSZIK az új
- *  szélességre — a címke ugyanannyi idő alatt fut oda, hogy a kettő egy mozdulat legyen
- *  (mezo-apwd). Mountoláskor a szám a helyén ül: ott a csík a belépő fill-koreográfiát
- *  futja, nem a width-transitiont. */
+/** A sor lánc-erő százaléka. A szint a pipa után NR_GLIDE_MS-ig CSÚSZIK az új szélességre — a
+ *  szám ugyanannyi idő alatt fut oda, hogy a kettő egy mozdulat legyen (mezo-apwd). */
 function NrPct({ pct }: { pct: number }) {
-  const shown = useCountUpOnChange(pct, 380)
-  return <span className="nr-pct">{shown}%</span>
+  const shown = useCountUpOnChange(pct, NR_GLIDE_MS)
+  return <>{shown}<small>%</small></>
+}
+
+/** The primary button's label for the next habit: what tapping it will do. */
+function nextLabel(h: HabitItem): string {
+  if (h.mode === 'MANUAL') return 'Megvan, pipálom'
+  const ha = habitAction(h)
+  if (ha.kind === 'intention-reflect') return 'Válaszolok'
+  if (ha.kind === 'intention-sheet') return 'Leírom'
+  if (ha.kind === 'nav' && ha.to === '/ritual') return 'Napzárás indítása'
+  return 'Megnyitom'
 }
 
 export function NapRutinPage() {
@@ -200,103 +204,122 @@ export function NapRutinPage() {
     ? habits.find((h) => h.key === promptKey && h.status === 'pending') ?? null
     : null
 
+  // The lead group's next habit: the one a just-ticked anchor prompts, else the first open row.
+  const next = hero
+    ? hero.items.find((h) => h.key === promptRow?.key) ?? hero.items.find((h) => h.status !== 'done') ?? null
+    : null
+  const nextAct = next ? tickAction(next) : null
+  const drops: DropChainItem[] = hero
+    ? hero.items.map((h) => ({
+        state: h.status === 'done' ? 'done' : h.key === next?.key ? 'now' : h.status === 'missed' ? 'missed' : 'empty',
+        ariaLabel: h.title,
+        onClick: (!pending && tickAction(h)) || undefined,
+      }))
+    : []
+  // Tegnapra visszalapozás (mezo-x9c2): ma ↔ tegnap, semmi több — a két link a régi nap-léptető
+  // két nyila, ugyanazokkal a nevekkel.
+  const dayLinks = (
+    <>
+      <Lk className="nr2-day" aria-label="Előző nap" disabled={!isToday} onClick={() => setDate(yesterday)}>‹ Tegnap</Lk>
+      <Lk className="nr2-day" aria-label="Következő nap" disabled={isToday} onClick={() => setDate(today)}>
+        {isToday ? 'Holnap ›' : 'Ma ›'}
+      </Lk>
+    </>
+  )
+  const dayWord = isToday ? '' : 'Tegnap · '
+
   return (
-    <MozaikPage tone="gold" className="nr-page nap-oldal">
-      <div className="mz-page-head nap-backrow">
-        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
-          <b aria-hidden="true">‹</b> Ma
-        </FrameBack>
-      </div>
-      <EntranceGroup>
-        <div className="nr-daynav">
-          <DayNavigator date={date} onChange={setDate} maxDate={today} minDate={yesterday} />
-        </div>
-        {hero && (
-          <section className="nap-hero uv-halo"
-            style={{ '--c': 'var(--dv-amber)', '--c2': FACE_HALO2[hero.face] } as React.CSSProperties}>
-            <Icon3D name={FACE_ART[hero.face]} size={86} className="nap-hero-art uv-float" />
-            <div className="nap-hero-num">{hero.done}<small>/{hero.items.length}</small></div>
-            <div className="nap-hero-nm">{FACE_TITLE[hero.face]}</div>
-            <div className="nap-hero-sb">{`${hero.items.length} elem · lánc`}</div>
-          </section>
-        )}
-        <PageBody principle="A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.">
-          {hero && (
-            <StatStrip className="rise nr-stats">
-              {perfectDays !== null && perfectLabel && <StatCell value={`${perfectDays}/30`} label={perfectLabel} />}
-              {chainStrength !== null && <StatCell value={`${chainStrength}%`} label="lánc-erő · 28 nap" />}
-              <StatCell value={`+${xpToday}`} label={isToday ? 'XP ma' : 'XP tegnap'} />
-            </StatStrip>
-          )}
-          {groups.map((g, gi) => (
-            <div key={g.face} className="rise" data-kalauz-anchor={gi === 0 ? 'rutin-lista' : undefined} style={{ '--d': `${100 + gi * 60}ms` } as React.CSSProperties}>
-              {gi > 0 && (
-                <div className="nr-group">
-                  <span className="mz-eyebrow">{FACE_TITLE[g.face]}</span>
-                  <span className="nr-groupcount">{g.done}/{g.items.length}</span>
-                </div>
-              )}
-              <div className="nr-vcard glass" style={{ '--c': 'var(--dv-amber)', '--i': gi } as React.CSSProperties}>
-                {g.items.map((h, ri) => {
-                  const act = tickAction(h)
-                  const done = h.status === 'done'
-                  const hint = habitHint(h)
-                  const chain = catalog.chains.find((c) => c.chainKey === h.chain)
-                  const icon = habitContentIcon(h.key, chain, FACE_DAYPART[g.face])
-                  const isNow = promptRow?.key === h.key
-                  return (
-                    <div key={h.key} className={cn('nr-row', isNow && 'now', done && 'is-done')}>
-                      {act ? (
-                        <button type="button" className="nr-tickbtn" aria-label={h.title}
-                          disabled={pending} onClick={act}>
-                          <span className={cn('nr-tick', done && 'f')}>{done && <Icon3D name="t-tick" size={30} />}</span>
-                        </button>
-                      ) : (
-                        <span className="nr-tickbtn" aria-hidden="true">
-                          <span className={cn('nr-tick', done && 'f')}>{done && <Icon3D name="t-tick" size={30} />}</span>
-                        </span>
-                      )}
-                      {/* prototype #page-hab habrow: tick · the habit's OWN icon (3D) · name+bar · % */}
-                      <span className="nr-ic" aria-hidden="true"><ContentIcon name={icon} size={30} /></span>
-                      <div className="nr-grow">
-                        {isNow && <span className="mz-eyebrow nr-nowtag">Most jön</span>}
-                        {/* a row carrying its own external content (linkUrl — e.g. `morning_video`)
-                            renders the title as that link; the tick stays the separate control, so
-                            the anchor never sits inside a button (mezo-d20.11 restore). */}
-                        {h.linkUrl ? (
-                          <a className={cn('nr-nm', done && 'done')} href={h.linkUrl}
-                            target="_blank" rel="noopener noreferrer">{h.title} ↗</a>
-                        ) : (
-                          <div className={cn('nr-nm', done && 'done')}>{h.title}</div>
-                        )}
-                        <div className="nr-anchor">{hint ?? h.anchorCopy}</div>
-                        {h.strengthPct != null && (
-                          <div className="nr-str">
-                            <div style={{ width: `${h.strengthPct}%`, '--d': `${350 + ri * 60}ms` } as React.CSSProperties} />
-                          </div>
-                        )}
-                      </div>
-                      {h.strengthPct != null && <NrPct pct={h.strengthPct} />}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
-          {/* the door to routine building (mezo-lhqw7): outside every "has habits" branch, so a
-              brand-new user with an empty day can still reach the builder */}
-          <Link to="/nap/rutin/epites" className="nr-edit rise" style={{ '--d': '420ms' } as React.CSSProperties}>
-            <Icon3D name="t-chain" size={30} />
-            <span className="nr-edit-tx"><b>Rutinok szerkesztése</b><small>láncok, szokások, új szokás</small></span>
-            <span aria-hidden="true">›</span>
-          </Link>
-        </PageBody>
-      </EntranceGroup>
+    <Page className="nr2-page">
+      <FrameBack history className="fo-ib fo-back nr2-back" onBack={() => navigate(-1)}>‹</FrameBack>
+      {hero ? (
+        <Hero
+          label={`${dayWord}${FACE_TITLE[hero.face]} · ${hero.done}/${hero.items.length} kész`}
+          verdict={next ? `${isToday ? 'Most jön' : 'Tegnap kimaradt'}: ${next.title}.` : 'Mind megvan. Szép munka.'}
+          sub={next
+            ? `${hero.items.length} elem · lánc · ${habitHint(next) ?? next.anchorCopy}`
+            : isToday ? 'Holnap ugyanitt folytatódik.' : undefined}
+          actions={<>
+            {next && nextAct && <Btn disabled={pending} onClick={nextAct}>{nextLabel(next)}</Btn>}
+            {dayLinks}
+          </>}
+        >
+          <DropChain big items={drops} aria-label={`${FACE_TITLE[hero.face]}: ${hero.done} / ${hero.items.length} kész`} />
+        </Hero>
+      ) : (
+        // Honest empty day: no routine rows, so no chain to draw — the day links and the door to
+        // routine building (below) stay reachable.
+        <Hero
+          label={`${dayWord}Rutin`}
+          verdict={isToday ? 'Mára nincs rutinod.' : 'Tegnapra nem volt rutinod.'}
+          sub="Lent, a Szerkesztésnél építhetsz egyet."
+          actions={dayLinks}
+        />
+      )}
+
+      {groups.map((g, gi) => (
+        <Fragment key={g.face}>
+          <Section n={gi + 1} title={`${FACE_TITLE[g.face]} · ${g.done}/${g.items.length}`} />
+          <Card data-kalauz-anchor={gi === 0 ? 'rutin-lista' : undefined}>
+            {g.items.map((h) => {
+              const act = tickAction(h)
+              const done = h.status === 'done'
+              const hint = habitHint(h)
+              const chain = catalog.chains.find((c) => c.chainKey === h.chain)
+              const icon = habitContentIcon(h.key, chain, FACE_DAYPART[g.face])
+              const isNow = promptRow?.key === h.key
+              return (
+                <Row key={h.key} as="div" state={isNow ? 'now' : done ? 'done' : undefined}
+                  left={<>
+                    {act
+                      ? <Tick on={done} label={h.title} disabled={pending} onClick={act} />
+                      : <Mark size="tick" state={done ? 'done' : 'empty'} />}
+                    {/* the habit's OWN icon in the row's chip (a clay name goes through ContentIcon) */}
+                    <span className="si" aria-hidden="true"><ContentIcon name={icon} size={26} /></span>
+                  </>}
+                  // a row carrying its own external content (linkUrl — e.g. `morning_video`) renders
+                  // the title as that link; the tick stays the separate control, so the anchor never
+                  // sits inside a button (mezo-d20.11 restore).
+                  title={h.linkUrl
+                    ? <a className="nr2-tl" href={h.linkUrl} target="_blank" rel="noopener noreferrer">{h.title} ↗</a>
+                    : h.title}
+                  sub={<>{isNow && <><b className="nr2-now">Most jön</b>{' · '}</>}{hint ?? h.anchorCopy}</>}
+                  value={h.strengthPct != null ? <NrPct pct={h.strengthPct} /> : undefined}
+                  more={h.strengthPct != null ? <Level pct={h.strengthPct} height={8} /> : undefined}
+                />
+              )
+            })}
+            {gi === 0 && <Note>A sor végén a szám a szokás 28 napos ereje.</Note>}
+          </Card>
+        </Fragment>
+      ))}
+
+      {hero && (
+        <>
+          <Section n={groups.length + 1} title="A lánc ereje" />
+          <Card>
+            <Facts items={[
+              ...(perfectDays !== null && perfectLabel ? [[`${perfectDays}/30`, perfectLabel] as [string, string]] : []),
+              ...(chainStrength !== null ? [[`${chainStrength}%`, 'lánc-erő · 28 nap'] as [string, string]] : []),
+              [`+${xpToday}`, isToday ? 'XP ma' : 'XP tegnap'],
+            ]} />
+            <Note>A lánc-erő az elmúlt 28 nap következetessége: egy kihagyás nem nulláz, csak halványít.</Note>
+          </Card>
+        </>
+      )}
+
+      {/* the door to routine building (mezo-lhqw7): outside every "has habits" branch, so a
+          brand-new user with an empty day can still reach the builder */}
+      <Section n={groups.length + (hero ? 2 : 1)} title="Szerkesztés" />
+      <Card>
+        <Row to="/nap/rutin/epites" icon="t-chain" title="Rutinok szerkesztése" sub="láncok, szokások, új szokás" />
+      </Card>
 
       {mealOpen && <LogFlowPage initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
-      {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
-    </MozaikPage>
+      {reflectOpen && (
+        <ReflectSheet foci={intention.foci.map((f) => f.text)} onReflect={reflect} onClose={() => setReflectOpen(false)} />
+      )}
+    </Page>
   )
 }

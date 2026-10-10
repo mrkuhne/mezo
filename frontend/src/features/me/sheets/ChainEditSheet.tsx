@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
+import type { Icon3DName } from '@/shared/ui/clay'
+import { Btn, FoSheetHead, Lab, Note, Pill, Pills, TwoBtn } from '@/shared/ui/folyadek'
 import { useHabitCatalogActions } from '@/data/hooks'
 import type { HabitChainInfo, HabitDaypart } from '@/data/types'
 
-// Üveg (mezo-me75u.7): the daypart emoji became Titanium sprite icons (bible §4, no emoji).
+// The daypart wears its glyph (no emoji).
 const DAYPART_OPTIONS: { id: HabitDaypart; label: string; art: Icon3DName }[] = [
   { id: 'MORNING', label: 'Reggel', art: 't-dawn' },
   { id: 'DAY', label: 'Napközben', art: 't-sun' },
@@ -22,7 +22,9 @@ const SEED_CHAIN_KEYS = new Set(['MORNING', 'EVENING'])
 
 /** Chain create/edit sheet (routine editor, mezo-n5e9.2). Delete is offered only for an
  *  EDITABLE existing chain — a custom (non-seed) chain with no defs left; otherwise an
- *  explainer replaces the button so nothing dead-ends into a 409 the user can't see coming. */
+ *  explainer replaces the button so nothing dead-ends into a 409 the user can't see coming.
+ *  FOLYADÉK (mezo-n4wf5.2, prototypes/vilagos/nap.js `SHEETS.chain`): a light sheet — head with
+ *  the icon chip, name, daypart pills, Mégse / Mentés. */
 export function ChainEditSheet({ chain, onClose }: { chain?: HabitChainInfo; onClose: () => void }) {
   const { createChain, updateChain, deleteChain, pending } = useHabitCatalogActions()
   const [title, setTitle] = useState(chain?.title ?? '')
@@ -41,71 +43,46 @@ export function ChainEditSheet({ chain, onClose }: { chain?: HabitChainInfo; onC
   }
 
   return (
-    <Sheet className="glass rt-sheet" onClose={onClose} labelledBy="chain-edit-title">
+    <Sheet className="fo-sheet" onClose={onClose} labelledBy="chain-edit-title">
       {(close) => (
-        <div className="col gap-sm">
-          <div className="rt-shh">
-            <Icon3D name="t-chain" size={46} />
-            <span className="rt-shh-t">
-              <span className="rt-shh-eb">Rutin</span>
-              <h2 id="chain-edit-title">{chain ? 'Rutin szerkesztése' : 'Új rutin'}</h2>
-            </span>
-          </div>
+        <>
+          <FoSheetHead
+            titleId="chain-edit-title" icon="t-chain"
+            title={chain ? 'Rutin szerkesztése' : 'Új rutin'} sub="Rutin · lánc" onClose={close}
+          />
 
-          <label className="rt-field">
-            <span className="rt-flabel">Név</span>
-            <input
-              className="rt-fin"
-              aria-label="Rutin neve"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="pl. Ebéd utáni szünet"
-            />
-          </label>
+          <Lab htmlFor="rb-chain-title">Név</Lab>
+          <input
+            id="rb-chain-title"
+            className="fo-in"
+            aria-label="Rutin neve"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="pl. Ebéd utáni szünet"
+          />
 
-          <div className="rt-field">
-            <span className="rt-flabel">Napszak</span>
-            <div className="rt-chips is-gold">
-              {DAYPART_OPTIONS.map((o) => (
-                <button
-                  key={o.id}
-                  type="button"
-                  className={cn(daypart === o.id && 'on')}
-                  aria-pressed={daypart === o.id}
-                  onClick={() => setDaypart(o.id)}
-                >
-                  <Icon3D name={o.art} size={18} />{o.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <Lab>Napszak</Lab>
+          <Pills>
+            {DAYPART_OPTIONS.map((o) => (
+              <Pill key={o.id} on={daypart === o.id} icon={o.art} onClick={() => setDaypart(o.id)}>{o.label}</Pill>
+            ))}
+          </Pills>
 
           {chain && (
             canDelete ? (
-              <button
-                type="button"
-                className="rt-danger"
-                disabled={pending}
-                onClick={() => remove(close)}
-              >
-                <Icon3D name="t-trash" size={22} />Rutin törlése
-              </button>
+              <Btn ghost wide icon="t-trash" className="rb-save" disabled={pending} onClick={() => remove(close)}>
+                Rutin törlése
+              </Btn>
             ) : (
-              <span className="rt-hint">
-                {isSeed ? 'Az alap rutinok nem törölhetők.' : 'Csak üres rutin törölhető.'}
-              </span>
+              <Note>{isSeed ? 'Az alap rutinok nem törölhetők.' : 'Csak üres rutin törölhető.'}</Note>
             )
           )}
 
-          <button
-            type="button"
-            className="cta-primary rt-litpill"
-            disabled={pending || title.trim().length === 0}
-            onClick={() => save(close)}
-          >
-            <Icon3D name="t-tick" size={20} />Mentés
-          </button>
-        </div>
+          <TwoBtn className="rb-save">
+            <Btn ghost onClick={close}>Mégse</Btn>
+            <Btn disabled={pending || title.trim().length === 0} onClick={() => save(close)}>Mentés</Btn>
+          </TwoBtn>
+        </>
       )}
     </Sheet>
   )

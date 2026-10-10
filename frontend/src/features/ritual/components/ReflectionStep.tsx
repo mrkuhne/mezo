@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { useCheckins, useGratitudeActions, useGratitudeEntries, useRitualActions, useRitualDay } from '@/data/hooks'
 import { GratitudeRows } from '@/features/me/components/GratitudeRows'
-import { Icon3D } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { Btn, Card, Hero, Jar, Note, Section, TextArea } from '@/shared/ui/folyadek'
+import { RitualFoot } from '@/features/ritual/components/RitualFoot'
 
 /**
- * Napzárás act 3 — „Ma milyen volt" (Phase 5 W1.2, mezo-b3pp.2, spec §5.2). The one act that
+ * Napzárás act 3 — „Ma milyen volt" (Phase 5 W1.2, mezo-b3pp.2, spec §5.2; Folyadék mezo-n4wf5.2,
+ * prototype `napzaras.3`: the evening verdict as a jar, the words and the gratitude lines as two
+ * numbered cards, „Ma nem írok" + „Tovább" in the foot). The one act that
  * writes BEFORE the close: `PUT /api/ritual/reflection` upserts the day's prose onto the
  * `(created_by, ritual_date)` row, which is why `closed` now means `closed_at is not null`
  * rather than "a row exists" (see ritual.md §4).
@@ -92,63 +95,72 @@ export function ReflectionStep({ onNext }: { onNext: () => void }) {
   }
 
   return (
-    <div className="rz-act rz-reflect">
-      <div className="rz-story-eyebrow">Ma milyen volt</div>
-      <h2 className="rz-reflect-title">Milyen volt a napod valójában?</h2>
-      {dayRating != null && (
-        <div className="rz-day">
-          <Icon3D name="t-day" size={26} />
-          <span>Az esti check-inben <b>{dayRating}/10</b>-re értékelted a napot. Ide már csak a szavaid kellenek.</span>
-        </div>
-      )}
-      <div className="rz-reflect-box glass">
+    <>
+      <Hero
+        left={dayRating != null ? <Jar size={84} pct={dayRating * 10} text={dayRating} /> : undefined}
+        label="Ma milyen volt"
+        verdict="Milyen volt a napod valójában?"
+        sub={dayRating != null
+          ? <>Az esti check-inben <b>{dayRating}/10</b>-re értékelted a napot. Ide már csak a szavaid kellenek.</>
+          : undefined}
+      />
+
+      <Section n={1} title="A szavaid" />
+      <Card>
         {/* the shared voice field (mezo-xojq8): dictation appends to what's typed */}
         <VoiceField domain="nap" onTranscript={(t) => setText((d) => appendDictation(d, t))}>
-          <textarea
-            className="rz-reflect-input"
+          <TextArea
             value={text}
             onChange={(e) => setText(e.target.value)}
             aria-label="Milyen volt a napod valójában?"
             placeholder="Írd le, ahogy volt — senki más nem olvassa…"
           />
         </VoiceField>
-      </div>
+      </Card>
+
       {!savedPending && (
-        <div className="rz-reflect-gratitude glass">
-          <div className="rz-story-eyebrow">Amiért hálás vagy</div>
-          {savedErrored ? (
-            // No input rows here either — see the `slots` comment above for why an errored
-            // read can't be trusted to open slots. This line is what keeps that "render
-            // nothing" from reading as "there's simply no gratitude section today".
-            <p className="rz-reflect-hint">A mai hálabejegyzéseid most nem érhetők el.</p>
-          ) : (
-            <>
-              {saved.length > 0 && (
-                <ul className="rz-gratitude-saved" aria-label="Ma már elmentett hálabejegyzések">
-                  {saved.map((g) => <li key={g.id}>{g.text}</li>)}
-                </ul>
-              )}
-              {slots > 0 ? (
-                <div className="col gap-sm">
-                  <GratitudeRows
-                    rows={rows}
-                    onRowsChange={setRows}
-                    lifeArea={lifeArea}
-                    onLifeAreaChange={setLifeArea}
-                    max={slots}
-                    hint={`Legfeljebb ${slots} sor — teljesen opcionális.`}
-                    voiceDomain="nap"
-                  />
-                </div>
-              ) : (
-                <p className="rz-reflect-hint">Ma már mind a három hálabejegyzésed megvan.</p>
-              )}
-            </>
-          )}
-        </div>
+        <>
+          <Section n={2} title="Amiért hálás vagy" />
+          <Card>
+            {savedErrored ? (
+              // No input rows here either — see the `slots` comment above for why an errored
+              // read can't be trusted to open slots. This line is what keeps that "render
+              // nothing" from reading as "there's simply no gratitude section today".
+              <Note>A mai hálabejegyzéseid most nem érhetők el.</Note>
+            ) : (
+              <>
+                {saved.length > 0 && (
+                  <ul className="nrz-saved" aria-label="Ma már elmentett hálabejegyzések">
+                    {saved.map((g) => <li key={g.id}>{g.text}</li>)}
+                  </ul>
+                )}
+                {slots > 0 ? (
+                  <>
+                    <div className="nrz-grat">
+                      <GratitudeRows
+                        rows={rows}
+                        onRowsChange={setRows}
+                        lifeArea={lifeArea}
+                        onLifeAreaChange={setLifeArea}
+                        max={slots}
+                        voiceDomain="nap"
+                      />
+                    </div>
+                    <Note>{slots === 3 ? 'Legfeljebb három sor, és teljesen opcionális.' : `Legfeljebb ${slots} sor, és teljesen opcionális.`}</Note>
+                  </>
+                ) : (
+                  <Note>Ma már mind a három hálabejegyzésed megvan.</Note>
+                )}
+              </>
+            )}
+          </Card>
+        </>
       )}
-      <button className="rz-cta" onClick={advance}>Tovább</button>
-      <button className="rz-skip" onClick={onNext}>Ma nem írok</button>
-    </div>
+
+      <RitualFoot>
+        <Btn ghost onClick={onNext}>Ma nem írok</Btn>
+        <Btn grow onClick={advance}>Tovább</Btn>
+      </RitualFoot>
+    </>
   )
 }

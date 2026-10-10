@@ -16,9 +16,12 @@ import { describe, expect, test } from 'vitest'
  * vakon zöld guard rosszabb a semminél, ezért az ItemRow-határ két tesztje itt megszűnt.
  *
  * Ami megmarad — és amiért a fájl él —, az a harmadik teszt eredeti munkája: a nyugdíjazott
- * felületek tényleg ne szivárogjanak vissza. A lista most a Design 2.0 takarításával törölt
- * nézetekkel bővül; ha valaki visszahozza valamelyiket, azt tudatos döntésként kell megtennie
- * (a fájl innen kivéve), nem véletlen resurrectionként.
+ * felületek tényleg ne szivárogjanak vissza. A lista körönként bővül (Design 2.0, Titánium,
+ * Visszaöltöztetés, Folyadék F2); ha valaki visszahozza valamelyiket, azt tudatos döntésként kell
+ * megtennie (a fájl innen kivéve), nem véletlen resurrectionként.
+ *
+ * A „sanity" teszt a mappa FELSŐ szintjének `.tsx` komponenseit sorolja fel (az almappák —
+ * `components/napom/` — és a `logic/`, `pages/`, `sheets/` nem tartoznak a hatókörébe).
  */
 const DIR = join(process.cwd(), 'src/features/today/components')
 
@@ -40,14 +43,18 @@ const RETIRED_DESIGN_20 = [
 const RETIRED_TITANIUM = ['LifeGoalTodayTile.tsx']
 
 /** Visszaöltöztetés (mezo-ju4j6.10): a Titán-kori jelenlét-jel és az ÉLŐ three.js jelenete.
- *  A Nap/Mai középpontján ma az agyag Mezo-szimbólum áll (`NapCompanion.tsx`) — ez egyben a
- *  Boop-avatar foglalt helye. A `TitanScene` volt a fa EGYETLEN three.js-fogyasztója, ezért a
- *  csomag is kikerült a `package.json`-ból: ha valaki visszahozza a fájlt, a hiányzó függőség
- *  azonnal megbuktatja a buildet — ez a teszt viszont hamarabb és beszédesebben szól. */
+ *  A `TitanScene` volt a fa EGYETLEN three.js-fogyasztója, ezért a csomag is kikerült a
+ *  `package.json`-ból: ha valaki visszahozza a fájlt, a hiányzó függőség azonnal megbuktatja a
+ *  buildet — ez a teszt viszont hamarabb és beszédesebben szól. */
 const RETIRED_VISSZAOLTOZTETES = ['TitanCompanion.tsx', 'TitanScene.tsx']
 
+/** Folyadék F2 (mezo-n4wf5.2): a Nap/Mai középpontján álló agyag Mezo-szimbólum (a Boop-avatar
+ *  foglalt helye) a Folyadék nyitóoldallal megszűnt — a hős ott a kit tartálya, a csapat
+ *  jelvényként jelenik meg. */
+const RETIRED_FOLYADEK = ['NapCompanion.tsx']
+
 describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
-  test.each([...RETIRED_EARLIER, ...RETIRED_DESIGN_20, ...RETIRED_TITANIUM, ...RETIRED_VISSZAOLTOZTETES])('%s nincs a fában', (file) => {
+  test.each([...RETIRED_EARLIER, ...RETIRED_DESIGN_20, ...RETIRED_TITANIUM, ...RETIRED_VISSZAOLTOZTETES, ...RETIRED_FOLYADEK])('%s nincs a fában', (file) => {
     expect(readdirSync(DIR)).not.toContain(file)
   })
 
@@ -58,10 +65,11 @@ describe('a nyugdíjazott Today-felületek tényleg eltűntek', () => {
       'DailyQuestsSheet.tsx', 'EletjelStrip.tsx',
       // Kímélő mód S2 (mezo-q4xt2.2) — a „Hogy vagy?" kártya és a „Nem vagyok jól" lap.
       'KimeloCard.tsx',
-      // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája.
-      // Visszaöltöztetés (mezo-ju4j6.10): a nyitóoldal jelenlét-jele — agyag Mezo-szimbólum
-      // a szükséglet-színek haloja előtt, a Boop-avatar foglalt helyén.
-      'MezoMessagesSheet.tsx', 'NapCompanion.tsx', 'NapFuelGraphic.tsx',
+      // Folyadék F2 (mezo-n4wf5.2): a nyitóoldal jelenlét-jele (`NapCompanion.tsx`) a Titán-kori
+      // elődeihez került a nyugdíjasok közé — a Mai hőse a kit tartálya. Az üzemanyag-kártya
+      // részletei a `NapFuelSheet.tsx` lapra költöztek.
+      'MezoMessagesSheet.tsx', 'NapFuelGraphic.tsx', 'NapFuelSheet.tsx',
+      // Reflexió S5 (mezo-eq85.5) — az Észrevételek fül kártyája: `ObservationCard.tsx`.
       'NapPersonalInsight.tsx', 'NapzarasCard.tsx', 'NemVagyokJolSheet.tsx', 'ObservationCard.tsx',
     ])
   })

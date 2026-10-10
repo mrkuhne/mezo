@@ -140,7 +140,8 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
   const m = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
     // Design 2.0 (mezo-d20.2.1): the day spine's panel is the Nap hub now — same invariant.
-    const dayview = document.querySelector('.nap-hub') as HTMLElement | null
+    // Folyadék F2 (mezo-n4wf5.2): the hub's panel is the kit page `.fo-page.nm-page`.
+    const dayview = document.querySelector('.nm-page') as HTMLElement | null
 
     // Walk from `.dayview` up to (not including) the app's own scroller, looking for an
     // ancestor that is ACTIVELY clipping its content — `overflow: hidden`/`-y: hidden` AND
@@ -179,7 +180,7 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
     }
   })
 
-  expect(m.hasDayview, 'the nap daypart renders its .nap-hub panel').toBe(true)
+  expect(m.hasDayview, 'the nap daypart renders its .nm-page panel').toBe(true)
   expect(m.buttonCount, 'the day view renders at least one control').toBeGreaterThan(0)
   expect(m.clipped, `an ancestor between .dayview and .screen-content clips ${m.clipped}px of content`).toBeLessThanOrEqual(0)
   expect(
@@ -652,14 +653,17 @@ for (const [name, path] of NAPOM_ROUTES) {
     await page.goto(path)
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
-    if (path === '/nap/napom') await expect(page.locator('.napom-hero h1')).toContainText('Csütörtök')
+    // Folyadék F2 (mezo-n4wf5.2): the hero is a Tank; the weekday sits in its label line.
+    if (path === '/nap/napom') await expect(page.locator('.nn-hero .fo-tank-air small')).toContainText('Csütörtök')
 
     // No horizontal scroll at the app's hardest width (U1 rule 8).
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
 
     // The last dimension row (or, on a thin/empty day, the last rendered section) clears the
     // floating glass tab bar's top — the same lift-above-the-bar probe the Fuel/Cél specs use.
-    const lastRow = page.locator('.napom-drow, .napom-sec').last()
+    // (`.nn-drow` rows live in the page's last card on a live day; on a scored day more cards
+    // follow, so the page's own last child is in the set — whichever comes last in the document.)
+    const lastRow = page.locator('.nn-drow, .nn-page > :last-child').last()
     await lastRow.scrollIntoViewIfNeeded()
     await lastRow.evaluate(element => {
       const scroller = document.querySelector('.screen-content') as HTMLElement
@@ -671,7 +675,7 @@ for (const [name, path] of NAPOM_ROUTES) {
     })
     await expect(lastRow).toBeVisible()
     const spacing = await page.evaluate(() => {
-      const rows = document.querySelectorAll('.napom-drow, .napom-sec')
+      const rows = document.querySelectorAll('.nn-drow, .nn-page > :last-child')
       const last = rows[rows.length - 1] as HTMLElement
       const row = last.getBoundingClientRect()
       const tabbar = document.querySelector('.fo-nav')!.getBoundingClientRect()
@@ -694,10 +698,11 @@ test('Check-in 2.0 · the page cells and the sheet stay contained @ 320px', asyn
   await page.evaluate(() => document.fonts.ready)
   const fits = () => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
 
-  await expect(page.locator('.nck-cells').first()).toBeVisible()
+  // Folyadék F2 (mezo-n4wf5.2): the answered cells are capsules (`.nck2-cells > .fo-mini`) in a kit card.
+  await expect(page.locator('.nck2-cells').first()).toBeVisible()
   expect(await fits()).toBe(true)
-  const cellsInside = await page.evaluate(() => Array.from(document.querySelectorAll('.nck-cells')).every((row) => {
-    const card = row.closest('.nck-card')!.getBoundingClientRect()
+  const cellsInside = await page.evaluate(() => Array.from(document.querySelectorAll('.nck2-cells')).every((row) => {
+    const card = row.closest('.fo-card')!.getBoundingClientRect()
     return Array.from(row.children).every((c) => {
       const r = c.getBoundingClientRect()
       return r.left >= card.left - 0.5 && r.right <= card.right + 0.5
@@ -706,30 +711,41 @@ test('Check-in 2.0 · the page cells and the sheet stay contained @ 320px', asyn
   expect(cellsInside).toBe(true)
   await expect(page.getByText('Most csak ennyi · az alap megvan')).toBeVisible()
 
-  await page.getByRole('button', { name: 'Kitöltöm' }).click()
-  await expect(page.getByText('01 / 09 · ENERGIA · ALAP')).toBeVisible()
+  // Two „Kitöltöm" doors now (the hero's and the due row's) — both must be there; the hero's opens.
+  await expect(page.getByRole('button', { name: 'Kitöltöm' })).toHaveCount(2)
+  await page.locator('.fo-hero').getByRole('button', { name: 'Kitöltöm' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('heading', { name: 'Hogy vagy?' })).toBeVisible()
+  await expect(dialog.getByText('Check-in · Délután · 14:00')).toBeVisible()
+  await expect(dialog.getByText('01 / 09 · Energia · alap')).toBeVisible()
+  // the 1–10 scale is a radiogroup of ten radios named „1"…„10"
+  await expect(dialog.getByRole('radiogroup').getByRole('radio')).toHaveCount(10)
   for (let i = 0; i < 6; i++) {
-    const label = await page.locator('.capture-stepl').textContent()
-    await page.getByRole('button', { name: '5', exact: true }).click()
-    await expect(page.locator('.capture-stepl')).not.toHaveText(label ?? '')
+    const label = await page.locator('.nck2-stepl').textContent()
+    await dialog.getByRole('radio', { name: '5', exact: true }).click()
+    await expect(page.locator('.nck2-stepl')).not.toHaveText(label ?? '')
   }
-  await page.getByRole('button', { name: '6', exact: true }).click()
+  await dialog.getByRole('radio', { name: '6', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Bármit' })).toBeVisible()
   expect(await fits()).toBe(true)
   const sheetInside = async (selector: string) => page.evaluate((sel) => {
-    const sheet = document.querySelector('.capture-sheet')!.getBoundingClientRect()
-    return Array.from(document.querySelectorAll(sel)).every((el) => {
+    const sheetEl = document.querySelector('.fo-sheet.nck2-sheet')!
+    const sheet = sheetEl.getBoundingClientRect()
+    const hits = Array.from(sheetEl.querySelectorAll(sel))
+    return hits.length > 0 && hits.every((el) => {
       const r = el.getBoundingClientRect()
       return r.left >= sheet.left - 0.5 && r.right <= sheet.right + 0.5
     })
   }, selector)
-  expect(await sheetInside('.ck-chips .chip, .capture-scale-cell, .capture-stepnav button')).toBe(true)
+  expect(await sheetInside('.fo-pill')).toBe(true)
+  expect(await sheetInside('.fo-scale [role="radio"]')).toBe(true)
+  expect(await sheetInside('.nck2-nav button')).toBe(true)
   await page.getByRole('button', { name: /Tovább/ }).click()
   while (!(await page.getByText(/Mentés · 14:00/).isVisible())) {
     await page.getByRole('button', { name: /Kihagyom/ }).click()
   }
-  await expect(page.locator('.ck-sum')).toHaveCount(9)
-  expect(await sheetInside('.ck-sum')).toBe(true)
+  await expect(page.locator('.nck2-sum .fo-row')).toHaveCount(9)
+  expect(await sheetInside('.nck2-sum .fo-row')).toBe(true)
   expect(await fits()).toBe(true)
 })
 

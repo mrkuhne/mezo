@@ -1,14 +1,16 @@
 // ============================================================
 // Mezo · CheckInSheet — Check-in 2.0 (mezo-ck2, spec §2 + §5)
-// Source of truth: docs/design_2.0/prototypes/elo/nap.html `SH.checkin` (owner OK 2026-09-27).
+// Flow source: docs/design_2.0/prototypes/elo/nap.html `SH.checkin` (owner OK 2026-09-27).
+// FOLYADÉK (mezo-n4wf5.2, prototypes/vilagos/nap.js `ckSheet()`): a light sheet; every answer is a
+// vessel you fill: the jar and the ten vials of a scale step, the level under each summary row.
 // The slot's question plan (server config: the five core items, the time-of-day items, then the
 // question of the day) one item per step. Nothing is pre-selected: a tap selects and advances
 // after 200 ms, „Kihagyom" stores the item as skipped (NULL), and from the sixth step
 // „Most csak ennyi" jumps to the summary — the not-yet-asked items stay empty and the check-in
 // still counts. Pain and craving have their own steps (sheets/checkin/*). The summary shows every
-// step as a cell (tap to edit), the optional note, and „Mentés · HH:mm".
+// step as a row (tap to edit), the optional note, and „Mentés · HH:mm".
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCheckInPlan } from '@/data/hooks'
 import { CORE_ITEMS, planSteps } from '@/data/today/checkinPlan'
 import { CHECKIN_LOOK } from '@/features/today/logic/checkinItems'
@@ -16,9 +18,8 @@ import { ScaleStep } from '@/features/today/sheets/checkin/ScaleStep'
 import { PainStep } from '@/features/today/sheets/checkin/PainStep'
 import { CravingStep, CRAVING_KINDS_FROM } from '@/features/today/sheets/checkin/CravingStep'
 import { CheckInSummary } from '@/features/today/sheets/checkin/CheckInSummary'
-import { Icon3D } from '@/shared/ui/clay'
 import { Sheet } from '@/shared/ui/Sheet'
-import { CaptureHeader } from '@/shared/ui/CaptureHeader'
+import { Btn, Dots, ErrorRow, FoSheetHead, Lab, Lk, Note, TextArea, Why } from '@/shared/ui/folyadek'
 import { localDateString } from '@/shared/lib/dates'
 import type { CheckinItemId, CheckinSlot, CheckinValues } from '@/data/types'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
@@ -104,21 +105,13 @@ export function CheckInSheet({
     }
   }
 
-  const prog = plan && (
-    <div className="ck-prog" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${steps.length + 1}, 1fr)` }}>
-      {Array.from({ length: steps.length + 1 }, (_, i) => (
-        <i key={i} className={i <= step ? 'on' : i < coreCount ? 'core' : undefined} />
-      ))}
-    </div>
-  )
-
   const stepBody = () => {
     if (!item) return null
     const id = item.id as CheckinItemId
     const look = CHECKIN_LOOK[id]
     const isAd = adaptiveId != null && step === steps.length - 1
     const s = step
-    const tag = s < coreCount ? ' · ALAP' : isAd ? '' : ` · ${slotName.toUpperCase()}`
+    const tag = s < coreCount ? 'alap' : isAd ? 'a nap kérdése' : slotName
     let body
     if (item.kind === 'PAIN') {
       body = (
@@ -136,11 +129,11 @@ export function CheckInSheet({
       body = (
         <CravingStep
           icon={look.icon}
-          color={look.color}
           value={answers.craving}
           options={item.options}
           low={item.low}
           high={item.high}
+          labelledBy="checkin-q"
           onPick={(n) => {
             setAnswer('craving', { value: n, kinds: answers.craving?.kinds ?? [] })
             if (n < CRAVING_KINDS_FROM) advanceFrom(s)
@@ -155,78 +148,64 @@ export function CheckInSheet({
       body = (
         <ScaleStep
           icon={look.icon}
-          color={look.color}
           value={typeof v === 'number' ? v : null}
           low={item.low}
           high={item.high}
+          labelledBy="checkin-q"
           onPick={(n) => { setAnswer(id, n); advanceFrom(s) }}
         />
       )
     }
     return (
-      <div className="col capture-step" style={{ '--c': look.color } as CSSProperties}>
-        <span className="capture-stepl">
-          {pad2(s + 1)} / {pad2(steps.length)} · {item.label.toUpperCase()}{tag}
-        </span>
+      <>
+        <Lab className="nck2-stepl">
+          {pad2(s + 1)} / {pad2(steps.length)} · {item.label}{tag ? ` · ${tag}` : ''}
+        </Lab>
         {isAd && plan?.adaptive && (
-          <div className="ck-callout ck-ad" style={{ '--c': 'var(--dv-lav)' } as CSSProperties}>
-            <span className="ck-callout-eb"><Icon3D name="t-orb" size={14} className="ck-inl" /> A nap kérdése</span>
-            <p>{plan.adaptive.why}</p>
-          </div>
+          <Why icon="t-orb"><b>A nap kérdése.</b> {plan.adaptive.why}</Why>
         )}
-        <p className="ck-q">{item.question}</p>
+        <p className="nck2-q" id="checkin-q">{item.question}</p>
         {body}
         {s === coreCount && (
-          <div className="ck-coremsg"><Icon3D name="t-tick" size={18} />Az alap megvan. Innen bármikor kiléphetsz.</div>
+          <p className="nck2-okline">
+            <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+            Az alap megvan. Innen bármikor kiléphetsz.</p>
         )}
         {/* typographic arrows (aria-hidden); the names stay „Vissza" / „Kihagyom" */}
-        <div className="capture-stepnav ck-stepnav">
+        <div className="nck2-nav">
           {s > 0 ? (
-            <button type="button" onClick={() => goTo(s - 1)}>
-              <span aria-hidden="true">‹</span> Vissza
-            </button>
+            <Lk onClick={() => goTo(s - 1)}><span aria-hidden="true">‹</span> Vissza</Lk>
           ) : <span />}
           {s >= coreCount && (
-            <button type="button" className="ck-quick" onClick={() => { setQuick(true); goTo(steps.length) }}>
-              Most csak ennyi
-            </button>
+            <Lk onClick={() => { setQuick(true); goTo(steps.length) }}>Most csak ennyi</Lk>
           )}
-          <button type="button" onClick={() => { setAnswer(id, null); goTo(s + 1) }}>
-            Kihagyom <span aria-hidden="true">›</span>
-          </button>
+          <Lk onClick={() => { setAnswer(id, null); goTo(s + 1) }}>Kihagyom <span aria-hidden="true">›</span></Lk>
         </div>
-      </div>
+      </>
     )
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="checkin-title" className="capture-sheet capture-tone-checkin glass">
+    <Sheet onClose={onClose} labelledBy="checkin-title" className="fo-sheet nck2-sheet">
       {(close) => (
       <>
-      <CaptureHeader id="checkin-title" title="Hogy vagyunk?" eyebrow={`Heartbeat · ${slotName ? `${slotName} · ` : ''}${slot.time}`}
-        kind="checkin" onClose={close} />
+      <FoSheetHead titleId="checkin-title" title="Hogy vagy?" icon="t-checkin"
+        sub={`Check-in · ${slotName ? `${slotName} · ` : ''}${slot.time}`} onClose={close} />
 
       {!plan && (isError ? (
-        <div className="col gap-sm">
-          <p role="alert" className="ck-q">Nem sikerült betölteni a kérdéseket.</p>
-          <button type="button" className="cta-ghost" onClick={refetch}>Újra</button>
-        </div>
+        <ErrorRow message="Nem sikerült betölteni a kérdéseket." onRetry={refetch} />
       ) : (
-        <p className="ck-loading" role="status">Kérdések betöltése…</p>
+        <Note role="status">Kérdések betöltése…</Note>
       ))}
 
-      {prog}
+      {plan && <Dots count={steps.length + 1} at={step} core={coreCount} />}
       {stepBody()}
 
       {/* Summary + note step */}
       {isSummary && (
-        <div className="col gap-lg">
-          <div className="col gap-xs">
-            <span className="capture-sum-eyebrow">Megvan · összegzés</span>
-            <div className="capture-sum-title">
-              Bármi még amit szeretnél?
-            </div>
-          </div>
+        <>
+          <Lab className="nck2-stepl">Megvan · összegzés</Lab>
+          <p className="nck2-q">Bármi még, amit szeretnél?</p>
 
           <CheckInSummary
             steps={steps.map((s) => ({ id: s.id as CheckinItemId, label: s.label }))}
@@ -236,36 +215,24 @@ export function CheckInSheet({
             onEdit={goTo}
           />
 
-          {/* Optional free note */}
-          <div className="col gap-sm">
-            <div className="row" style={{ justifyContent: 'space-between' }}>
-              <label htmlFor="checkin-note" className="label-mono">Gondolatok · opcionális</label>
-            </div>
-            {/* the mic is live again, the shared voice field (mezo-xojq8) */}
-            <div className="card" style={{ padding: 10 }}>
-              <VoiceField domain="nap" onTranscript={t => setNote(d => appendDictation(d, t))}>
-              <textarea
-                id="checkin-note"
-                value={note}
-                onChange={e => setNote(e.target.value)}
-                placeholder='pl. "tegnap volleyball után még izomláz" · "fejes meeting előtt"'
-                style={{
-                  flex: 1, minHeight: 120, resize: 'vertical',
-                  fontSize: 16, color: 'var(--text-primary)',
-                  lineHeight: 1.45,
-                }}
-              />
-              </VoiceField>
-            </div>
-          </div>
+          {/* Optional free note; the mic is the shared voice field (mezo-xojq8) */}
+          <Lab htmlFor="checkin-note">Gondolatok · opcionális</Lab>
+          <VoiceField domain="nap" onTranscript={t => setNote(d => appendDictation(d, t))}>
+            <TextArea
+              id="checkin-note"
+              rows={3}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="pl. „tegnap röpi után még izomláz” · „fejes meeting előtt”"
+            />
+          </VoiceField>
 
           {/* Save */}
-          {saveError && <p role="alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}
-          <button className="cta-primary capture-save" disabled={saving} onClick={() => { void save(close) }}>
-            <Icon3D name="t-tick" size={22} />
-            <span>{saving ? 'Mentés…' : `Mentés · ${slot.time}`}</span>
-          </button>
-        </div>
+          {saveError && <p role="alert" className="nck2-alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}
+          <Btn wide className="nck2-save" disabled={saving} onClick={() => { void save(close) }}>
+            {saving ? 'Mentés…' : `Mentés · ${slot.time}`}
+          </Btn>
+        </>
       )}
       </>
       )}

@@ -25,13 +25,10 @@ test('the morning dot disappears as soon as yesterday’s scored review has been
   expect(tab).toHaveAccessibleDescription('kész a tegnapi értékelés')
 
   await act(async () => { await router.navigate('/nap/napom/2026-09-23') })
-  expect(await screen.findByText('MEZO · A NAPODRÓL')).toBeInTheDocument()
+  expect(await screen.findByText('Mezo a napodról')).toBeInTheDocument()
   expect(localStorage.getItem(seenKey('2026-09-23'))).toBe('1')
-  // The day page is a sub-page in the Folyadék frame (mezo-n4wf5.1): it has no tab strip. Back on
-  // a Nap hub the strip is there again — and the dot is gone, although nothing else re-rendered
-  // the shell in between.
-  expect(screen.queryByRole('link', { name: 'A napom' })).not.toBeInTheDocument()
-  await act(async () => { await router.navigate('/nap/rutin') })
+  // The day page keeps the hub face (F2, mezo-n4wf5.2): the tab strip stays, and the dot is gone
+  // the moment the review is on screen, although nothing else re-rendered the shell.
   await waitFor(() => expect(screen.getByRole('link', { name: 'A napom' })).not.toHaveAttribute('aria-describedby'))
   expect(document.querySelector('.fo-tabs .td')).toBeNull()
 })

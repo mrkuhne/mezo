@@ -58,7 +58,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### activity
 
-*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-09, done)
+*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/activity`
   - **entities→tables:** `ActivityLogEntity`→`activity_log`
@@ -370,7 +370,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-10-09, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-10-09, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -713,7 +713,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### gamification
 
-*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-09, done) ·
+*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-10, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
@@ -792,7 +792,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### habit
 
-*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-10-09, done)
+*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
@@ -878,7 +878,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### intention
 
-*BE + API + FE-data* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-10-07, done)
+*BE + API + FE-data* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/intention`
   - **entities→tables:** `DailyIntentionEntity`→`daily_intention`, `IntentionCreedEntity`→`intention_creed`,
@@ -1002,12 +1002,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### me
 
-*FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-09, done) ·
-  [docs/features/habit.md](features/habit.md) (updated 2026-10-09, done) ·
+*FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-10, done) ·
+  [docs/features/habit.md](features/habit.md) (updated 2026-10-10, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-10-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-10-09, mixed) ·
+  [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-06, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-10-09, mixed)
 
@@ -1051,7 +1051,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekHeroCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
     WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx,
     WeightGoalTile.tsx, WeightHero.tsx, WeightTrendChart.tsx, goalSettingsEditor.css, hubTestKit.tsx,
-    lifelineGeometry.ts
+    lifelineGeometry.ts, routineBits.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, chainStacking.ts, discoveryDrawers.ts, effectCopy.ts,
     goalLabels.ts, goalOverviewCopy.ts, goalSettings.ts, goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts,
     gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts, habitEffort.ts, habitFormation.ts,
@@ -1113,7 +1113,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### needs
 
-*BE + API + FE-data* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-10-09, done)
+*BE + API + FE-data* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/needs`
   - **entities→tables:** `NeedsDayEntity`→`needs_day`
@@ -1340,7 +1340,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### progression
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-09, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/progression`
   - **sub-features:** `activity`, `gym`, `habit`, `lifegoal`, `needs`, `quest`, `run`, `sport`
@@ -1376,7 +1376,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quest
 
-*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-09, done)
+*BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/quest`
   - **entities→tables:** `DailyQuestEntity`→`daily_quest`
@@ -1400,11 +1400,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quickinput
 
-*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-10-09, mixed)
+*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed)
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
-  - **root:** QuickLogSurface.css, QuickLogSurface.tsx
+  - **root:** QuickLogSurface.tsx
 
 ### recipe
 
@@ -1428,7 +1428,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### ritual
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-10-09, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-10-10, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/ritual`
   - **entities→tables:** `RitualDayEntity`→`ritual_day`
@@ -1444,7 +1444,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE ui** `frontend/src/features/ritual`
   - **pages:** RitualPage.tsx
   - **components:** ArrivalStep.tsx, DayStoryStep.tsx, HarvestStep.tsx, LoopsStep.tsx, ReflectionStep.tsx,
-    ReleaseStep.tsx
+    ReleaseStep.tsx, RitualFoot.tsx
   - **logic:** harvestStages.ts, openLoops.ts, ritualWindow.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/ritual` — 6 IT + 0 unit
   - **ITs:** `RitualApiCompanionOffIT`, `RitualApiIT`, `RitualDayEntityIT`, `RitualReflectionEmbeddingIT`,
@@ -1481,12 +1481,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### today
 
-*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-10-09, done) ·
-  [docs/features/intention.md](features/intention.md) (updated 2026-10-07, done) ·
-  [docs/features/needs.md](features/needs.md) (updated 2026-10-09, done) ·
+*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-10-10, done) ·
+  [docs/features/intention.md](features/intention.md) (updated 2026-10-10, done) ·
+  [docs/features/needs.md](features/needs.md) (updated 2026-10-10, done) ·
   [docs/features/proactive.md](features/proactive.md) (updated 2026-10-09, complete) ·
-  [docs/features/ritual.md](features/ritual.md) (updated 2026-10-09, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-10-09, mixed)
+  [docs/features/ritual.md](features/ritual.md) (updated 2026-10-10, done) ·
+  [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckInPlan`, `useCheckinDayRating`,
@@ -1494,20 +1494,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** adviceApi.ts, adviceHooks.ts, checkinHooks.ts, checkinPlan.ts, checkins.ts, feedApi.ts, feedHooks.ts,
     today.ts, todayHooks.ts
 - **FE ui** `frontend/src/features/today`
-  - **pages:** EletjelPage.tsx, NapCheckinPage.tsx, NapGyorsPage.tsx, NapHubPage.css, NapHubPage.tsx,
-    NapKuldetesekPage.tsx, NapMezoPage.tsx, NapRutinPage.tsx, NapomPage.tsx
+  - **pages:** EletjelPage.tsx, NapCheckinPage.tsx, NapGyorsPage.tsx, NapHubPage.tsx, NapKuldetesekPage.tsx,
+    NapMezoPage.tsx, NapRutinPage.tsx, NapomPage.tsx
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, CheckInSummary.tsx, CravingStep.tsx, IntentionSheet.tsx,
-    PainStep.tsx, ReflectSheet.tsx, ScaleStep.tsx
+    PainStep.tsx, ReflectSheet.tsx, ScaleStep.tsx, answerLevel.ts
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
-    EletjelStrip.tsx, KimeloCard.tsx, MezoMessagesSheet.tsx, NapCompanion.tsx, NapFuelGraphic.css, NapFuelGraphic.tsx,
-    NapPersonalInsight.css, NapPersonalInsight.tsx, NapomDayRatingCard.tsx, NapomDimensionRow.tsx, NapomLeadCard.tsx,
-    NapomReviewCard.tsx, NapomSegRing.tsx, NapomWeekStrip.tsx, NapzarasCard.tsx, NemVagyokJolSheet.tsx,
-    ObservationCard.tsx
+    EletjelStrip.tsx, KimeloCard.tsx, MezoMessagesSheet.tsx, NapFuelGraphic.tsx, NapFuelSheet.tsx,
+    NapPersonalInsight.tsx, NapomDayRatingCard.tsx, NapomDimensionRow.tsx, NapomLeadCard.tsx, NapomReviewCard.tsx,
+    NapomWeekStrip.tsx, NapzarasCard.tsx, NemVagyokJolSheet.tsx, ObservationCard.tsx
   - **logic:** chainMilestone.ts, chainPrompt.ts, checkinItems.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts,
     habitAction.ts, habitCelebration.ts, habitClayIcon.ts, mezoMessages.ts, napTimeline.ts, napom.ts, needs.ts,
-    needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useChangedKeys.ts, useDayFace.ts,
-    useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
-  - **root:** MezoThreadProvider.tsx
+    needsAverage.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts, todayItems.ts, useChangedKeys.ts,
+    useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useMorningMode.ts, useNeeds.ts, windDown.ts
+  - **root:** MezoThreadProvider.tsx, nrGlide.ts
 
 ### train
 
@@ -1715,13 +1714,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx, clay/boop/boop.svg,
   clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg, evidence/EvidenceList.tsx,
-  evidence/observationEvidence.ts, folyadek/Area.tsx, folyadek/Badge.tsx, folyadek/Bub.tsx, folyadek/Card.tsx,
-  folyadek/Drop.tsx, folyadek/Fill.tsx, folyadek/Hero.tsx, folyadek/Level.tsx, folyadek/Linked.tsx, folyadek/Mini.tsx,
-  folyadek/PerDay.tsx, folyadek/Row.tsx, folyadek/Section.tsx, folyadek/Stream.tsx, folyadek/Tank.tsx,
-  folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx, folyadek/index.ts, folyadek/util.ts,
-  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
-  mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css, voice/VoiceBubble.tsx, voice/VoiceField.css,
-  voice/VoiceField.tsx
+  evidence/observationEvidence.ts, folyadek/Area.tsx, folyadek/Badge.tsx, folyadek/Btn.tsx, folyadek/Bub.tsx,
+  folyadek/Card.tsx, folyadek/Dots.tsx, folyadek/Drop.tsx, folyadek/DropChain.tsx, folyadek/Field.tsx,
+  folyadek/Fill.tsx, folyadek/FoSheetHead.tsx, folyadek/Hero.tsx, folyadek/Jar.tsx, folyadek/Level.tsx,
+  folyadek/Linked.tsx, folyadek/Mini.tsx, folyadek/Msg.tsx, folyadek/Page.tsx, folyadek/PerDay.tsx, folyadek/Pick.tsx,
+  folyadek/Row.tsx, folyadek/Scale.tsx, folyadek/Section.tsx, folyadek/Step.tsx, folyadek/Stream.tsx,
+  folyadek/Tank.tsx, folyadek/Text.tsx, folyadek/Tick.tsx, folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx,
+  folyadek/index.ts, folyadek/util.ts, kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx,
+  mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css,
+  voice/VoiceBubble.tsx, voice/VoiceField.css, voice/VoiceField.tsx
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 

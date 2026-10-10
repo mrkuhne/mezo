@@ -1,67 +1,69 @@
 // ============================================================
-// Mezo · NapMezoPage — "Mezo üzenetei" as its own full page (mezo-d20.2.2)
-// Source of truth: docs/design_2.0/prototypes/src/nap-body.html #page-mezo
-// (p-coral tone, breathing-orb hero, the day's companion messages as a
-// thread, chat CTA). Absorbs the hub's MezoMessagesSheet surface: feedback
-// chips only on persisted feed rows (mezo-kr9v). The sheet component
-// stays in-tree for its remaining callers; only the hub tile now
-// navigates here instead of opening it.
-// A szál felépítése (feed + cimkézett demo-briefing + Életjel-nudge-ok) és az
-// olvasottság-vízjel a shell `MezoThreadProvider`-ébe költözött (mezo-atry) — ez az
-// oldal és a fejléc badge-e ugyanazt az EGY szálat olvassa, így nem tudnak szétcsúszni.
-// Üzenetek | Életjelek tab-szétválasztás (mezo-ho9k): a szál ÉRINTETLEN, csak a
-// megjelenítés bomlik két panelre a `?tab=` URL-en keresztül —
-// `partitionMezoThread`/`MezoMessageItem.source === 'eletjel'` a kulcs (mezoMessages.ts).
-// Régebbi Üzenetek-kártyák alapból összecsukva (`.nap-mzrow`), belépéskori
-// olvasatlan-pillanatkép tab-pöttyökhöz, a `?n=` deeplink mindig az Üzenetek tabra kényszerít.
-// Üveg (mezo-me75u.3, prototypes/uveg-nap.html#uzenetek): kis üveg vissza-pill, keret nélküli
-// lavender+arany halo-hős az élő Mezo-Boop-pal, lapos szegmentált fülsor; a teljes üzenet
-// `.glass` (lavender, a nudge a saját igény-színében), a régebbiek lapos egysoros cellák, a
-// fej art-ja 3D ikon egy lit wellben. Csak a bőr változott: szál, fülek, chipek érintetlenek.
+// Mezo · NapMezoPage — „Beszélgetés”: Mezo üzenetei saját oldalon (mezo-d20.2.2; Folyadék
+// mezo-n4wf5.2, prototípus vilagos/nap.js `uzenetek()`).
+// Három fül (Üzenetek | Életjelek | Észrevételek), mindegyik EGY hőssel: az Üzenetek a nap
+// fonalát mutatja összekötött cseppek soraként (ami új, gyűrűs), az Életjelek a hat kémcsövet,
+// az Észrevételek a válaszra váró észrevételek számát.
+// A szál felépítése (feed + cimkézett demo-briefing + Életjel-nudge-ok) és az olvasottság-vízjel
+// a shell `MezoThreadProvider`-éé (mezo-atry) — ez az oldal és a fejléc badge-e ugyanazt az EGY
+// szálat olvassa, így nem tudnak szétcsúszni.
+// Fül-szétválasztás (mezo-ho9k): a szál ÉRINTETLEN, csak a megjelenítés bomlik a `?tab=` URL-en
+// keresztül — `partitionMezoThread`/`MezoMessageItem.source === 'eletjel'` a kulcs
+// (mezoMessages.ts). A régebbi üzenetek egysoros sorok egy kártyában, helyben nyílnak; belépéskori
+// olvasatlan-pillanatkép a fül-pöttyökhöz és a hős „új” számához; a `?n=` deeplink mindig az
+// Üzenetek fülre kényszerít.
 // Csapatfal Act III (mezo-a9bo7.24): a napi tanácskártya a csapat-chatbe költözött. Ha a chatben
-// van mai sor vagy nyitott ügy, az Üzenetek fülön EGY lapos sor („A csapat most erről beszél” +
+// van mai sor vagy nyitott ügy, az Üzenetek fülön EGY sor („A csapat most erről beszél” +
 // a nyitott ügyek címkéi → /mezo/elo) áll a tanácskártya helyett; üres chat-napon a régi kártya
 // marad (a kivezetés átfedő napja); a chat töltése alatt egyik sem. A kérdés-kártya és a deeplink-cél
 // sosem rejtődik el.
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Boop, ContentIcon, Icon3D, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
+import { Icon3D } from '@/shared/ui/clay'
 import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { GhostState } from '@/shared/ui/GhostState'
-import { SkeletonCard, SkeletonText } from '@/shared/ui/Skeleton'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { SkeletonText } from '@/shared/ui/Skeleton'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
-import { EletjelStrip, needHueForIcon } from '@/features/today/components/EletjelStrip'
+import { EletjelStrip, needMemberForIcon } from '@/features/today/components/EletjelStrip'
+import { needNameInSentence, needsAttention, needsAverage } from '@/features/today/logic/needsAverage'
 import { useAdviceActions, useCompanionFeed, useFeedback, useObservations, useObservationReply, useTeamChat } from '@/data/hooks'
-import { FeedAvatar } from '@/features/insights/components/feed/FeedPostHead'
-import { TEAM, type TeamCharacterId } from '@/features/insights/logic/team'
+import type { TeamCharacterId } from '@/features/insights/logic/team'
 import { stripText, talkedFlagKeys } from '@/features/insights/logic/teamChat'
 import { renderInline } from '@/shared/lib/markdown'
-import '@/features/insights/boop-world.css'
-import { ObservationCard } from '@/features/today/components/ObservationCard'
+import { ObservationCard, observationEyebrow } from '@/features/today/components/ObservationCard'
 import { OBSERVATION_BUDGET } from '@/data/insights/observations'
 import { feedToMessageItem, isQuestionCard, partitionMezoThread, questionAnswers, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { localDateString } from '@/shared/lib/dates'
-import { FrameBack } from '@/shared/ui/folyadek'
+import {
+  Acts, Badge, Btn, Card, DropChain, ErrorRow, FrameBack, Hero, Lab, Lk, MEMBER_LABEL, Msg, Note, Page, Row, Section, Seg, Txt,
+  type HeroProps, type Member,
+} from '@/shared/ui/folyadek'
 
-/** The message head's art (üveg, mezo-me75u.3): a nudge carries its need's own clay icon (it
- *  renders through `CLAY_TO_3D`); a companion message carries a KIND, mapped here onto the 3D
- *  daypart set — evening/sleep → the moon, morning → the dawn, anything else → the bolt. The well
- *  around it takes the art's hue. */
-function messageArt(m: MezoMessageItem): { name: ClayIconName | Icon3DName; hue?: string } {
-  if (m.icon) return { name: m.icon }
-  if (m.kind === 'sleep' || m.kind === 'evening') return { name: 't-moon', hue: 'var(--dv-lav)' }
-  if (m.kind === 'morning' || m.id === 'briefing-demo') return { name: 't-dawn', hue: 'var(--dv-amber)' }
-  return { name: 't-bolt', hue: 'var(--dv-amber)' }
+/** Ki szól egy üzenetben (bible §6: a csapat szakterület szerint). A nudge a kiváltó jel
+ *  szakterületén szól (az ikonja `NEED_ICON`-ból jön); a feed-sor a saját fajtája szerint — az
+ *  alvás-reakció az Alvásé, a víz az Étkezésé, az emberek a Közérzeté; minden más Mezo. */
+function messageMember(m: MezoMessageItem): Member {
+  const byNeed = needMemberForIcon(m.icon)
+  if (byNeed) return byNeed
+  if (m.kind === 'sleep') return 'szunya'
+  if (m.kind === 'hydration') return 'falat'
+  if (m.kind === 'people') return 'deru'
+  return 'mezo'
 }
+
+/** A csapat-chat szereplője a kit arcai között (a Szkeptikus ott `szk`). */
+const teamMember = (id: TeamCharacterId): Member => (id === 'szkeptikus' ? 'szk' : id)
+
+/** Az üzenet fejsora: „HH:mm · fajta”. */
+const messageHead = (m: MezoMessageItem): string => (m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow)
+
+/** Hős, bal oldalán Mezo arcával (prototípus `hero({left})`, a kit `Hero left`). */
+const FaceHero = (p: Omit<HeroProps, 'left'>) => <Hero left={<Badge member="mezo" size={64} />} {...p} />
 
 export function NapMezoPage() {
   const navigate = useNavigate()
@@ -150,13 +152,16 @@ export function NapMezoPage() {
   // load-bearing rész a `dots !== null` egyszeri őr alább: az akadályozza meg, hogy az
   // effect egy KÉSŐBBI renderen újra lefusson és a már törölt `unread`-et fagyassza be.
   // Session-lokális, nem perzisztens.
-  const [dots, setDots] = useState<{ uzenetek: boolean; eletjelek: boolean } | null>(null)
+  // Ugyanez a pillanatkép adja a hős „új” számát és a cseppsor gyűrűs cseppjeit (`ids`): a
+  // megnyitás a vízjelet azonnal a szál végére teszi, a látogatás alatt mégis látszik, mi volt új.
+  const [dots, setDots] = useState<{ uzenetek: boolean; eletjelek: boolean; ids: ReadonlySet<string> } | null>(null)
   useEffect(() => {
     if (dots !== null || messages.length === 0) return
     const unseen = messages.slice(messages.length - unread)
     setDots({
       uzenetek: unseen.some((m) => m.source !== 'eletjel'),
       eletjelek: unseen.some((m) => m.source === 'eletjel'),
+      ids: new Set(unseen.map((m) => m.id)),
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- egyszeri pillanatkép
   }, [messages, unread, dots])
@@ -250,8 +255,8 @@ export function NapMezoPage() {
   }, [scrollTargetId])
 
   // Régebbi üzenetek összecsukva (mezo-ho9k): csak a szál legfrissebb hangja (a lista
-  // vége) nyílik teljes kártyaként alapból — a korábbiak egysoros gombok, kinyitásuk
-  // nem csukható vissza (YAGNI — a prototípus sem csukja).
+  // vége) nyílik teljes kártyaként alapból — a korábbiak egysoros gombok egy közös kártyában,
+  // helyben nyílnak.
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const isExpanded = (id: string) => expandedIds.has(id)
   const expand = (id: string) => setExpandedIds((s) => new Set(s).add(id))
@@ -264,47 +269,21 @@ export function NapMezoPage() {
       return next
     })
 
-  // Egyetlen kártya-JSX mindkét pane-nek (mezo-ho9k): a chips-ág magától sem fut az
-  // Életjelek nudge-okon, mert azoknak nincs `artifactId`-jük (mezo-kr9v szerződés).
-  // `collapsible` (mezo-z4h4): csak akkor igaz, amikor a kártya KIZÁRÓLAG a felhasználó
-  // kézi kinyitása miatt látszik teljes kártyaként — a legújabb üzenet és a deeplink-cél
-  // mindig teljes kártya marad, összecsukás-gomb nélkül (az Életjelek pane pedig eleve nem
-  // ad át semmit, tehát ott is hiányzik).
-  const renderCard = (m: MezoMessageItem, i: number, opts?: { collapsible?: boolean }) => {
-    const art = messageArt(m)
-    return (
-    <div
-      key={m.id}
-      ref={m.id === scrollTargetId ? linkedCardRef : undefined}
-      className="nap-mzmsg glass rise"
-      style={{ '--d': `${40 + i * 60}ms`, '--i': i, '--c': needHueForIcon(m.icon) ?? 'var(--dv-lav)' } as React.CSSProperties}
-    >
-      <div className="nap-mzmsg-h">
-        <span className="nap-mzmsg-art uv-well" aria-hidden="true"
-          style={art.hue ? { '--c': art.hue } as React.CSSProperties : undefined}>
-          <ContentIcon name={art.name} size={30} />
-        </span>
-        <div className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</div>
-        {opts?.collapsible && (
-          <button
-            type="button"
-            className="nap-mzmsg-collapse"
-            aria-label="Összecsukás"
-            aria-expanded={true}
-            onClick={() => collapse(m.id)}
-          >
-            <Icon name="chevron-up" size={12} />
-          </button>
-        )}
-      </div>
-      {m.paragraphs.map((p, j) => (
-        <p key={j} className="txt"><SafeMarkdown text={p} /></p>
-      ))}
-      {m.refs.length > 0 && <RefChips refs={m.refs} eyebrow="Amire épült" />}
+  // Egyetlen üzenet-törzs mindkét fülnek és a helyben kinyitott régebbi sornak (mezo-ho9k): a
+  // visszajelzés-ág magától sem fut az Életjelek nudge-okon, mert azoknak nincs `artifactId`-jük
+  // (mezo-kr9v szerződés).
+  const messageBody = (m: MezoMessageItem) => (
+    <>
+      <Msg member={messageMember(m)} meta={messageHead(m)}>
+        {m.paragraphs.map((p, j) => (
+          <p key={j} className="nb-p"><SafeMarkdown text={p} /></p>
+        ))}
+      </Msg>
+      {m.refs.length > 0 && <><Lab>Amire épült</Lab><RefChips refs={m.refs} /></>}
       {/* A question card's two suggestions ARE its two answer chips below (mezo-d58h.7.6) —
           listing them here too would say the same thing twice, one of them unclickable. */}
       {m.suggestions && m.suggestions.length > 0 && !questionAnswers(m) && (
-        <ul className="nap-mzmsg-sug">
+        <ul className="nb-sug">
           {m.suggestions.map((s, j) => (
             <li key={j}><SafeMarkdown text={s} /></li>
           ))}
@@ -312,56 +291,51 @@ export function NapMezoPage() {
       )}
       {m.facts && m.facts.length > 0 && (
         <>
-          <div className="nap-mzmsg-meta is-eb">Miből gondolom</div>
-          <ul className="nap-mzmsg-facts">
+          <Lab>Miből gondolom</Lab>
+          <ul className="nb-f2">
             {m.facts.map((f, j) => (
-              <li key={j}>{f}</li>
+              <li key={j}><Icon3D name="t-info" size={18} /><span>{f}</span></li>
             ))}
           </ul>
         </>
       )}
-      {m.meta && <div className="nap-mzmsg-meta">{m.meta}</div>}
+      {m.meta && <Note>{m.meta}</Note>}
       {/* Advice-card action buttons (S5, mezo-d58h.5) — directly above „Segített?", gated on
           the card actually OFFERING an action. Once applied, the buttons are replaced by the
           applied state (never a disabled button — a tapped action is a completed thing, not
           a greyed-out one). Driven by the SERVER's `m.applied`, not local-only state: a reload
-          re-reads the same feed row and shows the same applied state. Reuses the `.chip.brand`
-          recipe (`FeedbackChips`, right below in this same card) for the button itself. */}
+          re-reads the same feed row and shows the same applied state. */}
       {m.kind === 'advice' && m.artifactId != null && m.actions && m.actions.length > 0 && (
         m.applied ? (
-          <div className="nap-mzmsg-applied">
-            <Icon3D name="t-tick" size={20} />
-            {m.actions.find((a) => a.key === m.applied!.actionKey)?.label ?? m.applied.actionKey}
-          </div>
+          <Acts>
+            <span className="nb-okline nb-applied">
+              <Icon3D name="t-tick" size={18} />
+              <span>{`Beállítva: ${m.actions.find((a) => a.key === m.applied!.actionKey)?.label ?? m.applied.actionKey}`}</span>
+            </span>
+          </Acts>
         ) : (
-          <div className="nap-mzmsg-actions" role="group" aria-label="Javasolt lépés">
+          <Acts className="nb-actions" role="group" aria-label="Javasolt lépés">
             {m.actions.map((a) => (
-              <button
-                key={a.key}
-                type="button"
-                className="chip brand"
-                disabled={advice.pending}
-                onClick={() => advice.apply(m.artifactId!, a.key)}
-              >
+              <Btn key={a.key} sm disabled={advice.pending} onClick={() => advice.apply(m.artifactId!, a.key)}>
                 {a.label}
-              </button>
+              </Btn>
             ))}
             {advice.failedId === m.artifactId && (
-              <span className="nap-mzmsg-actionerr" role="alert">Nem sikerült — próbáld újra.</span>
+              <span className="nb-err" role="alert">Nem sikerült — próbáld újra.</span>
             )}
-          </div>
+          </Acts>
         )
       )}
-      {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
-          W5.2 intervention-változat (mezo-b3pp.19) ÉS az S4 advice-kártya (mezo-d58h.4) —
-          a sheet szerződése változatlanul. KIVÉTEL a round-2 S5 kérdés-kártya
-          (mezo-d58h.7.6): ott a 👍/👎 maga a VÁLASZ, nem a kártya értékelése, ezért „A
-          válaszod" felirat, a kérdés saját szavai a chipeken, és nincs indok-sor. */}
+      {/* Visszajelzés CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
+          W5.2 intervention-változat (mezo-b3pp.19) ÉS az S4 advice-kártya (mezo-d58h.4).
+          KIVÉTEL a round-2 S5 kérdés-kártya (mezo-d58h.7.6): ott a két gomb maga a VÁLASZ, nem
+          a kártya értékelése, ezért „A válaszod" felirat, a kérdés saját szavai a gombokon, és
+          nincs indok-sor. */}
       {m.artifactId != null && (
-        <div className="nap-mzmsg-fb">
+        <div className="nb-fb">
           {isQuestionCard(m)
-            ? <div className="nap-mzmsg-meta is-eb">A válaszod</div>
-            : (m.kind === 'intervention' || m.kind === 'advice') && <div className="nap-mzmsg-meta is-eb">Segített?</div>}
+            ? <span className="nb-fbq">A válaszod</span>
+            : (m.kind === 'intervention' || m.kind === 'advice') && <span className="nb-fbq">Segített?</span>}
           <FeedbackChips
             key={m.artifactId}
             value={feedback.get(m.artifactId)}
@@ -373,176 +347,183 @@ export function NapMezoPage() {
           />
         </div>
       )}
-    </div>
-    )
-  }
+    </>
+  )
+  const messageCard = (m: MezoMessageItem) => (
+    <Card key={m.id} ref={m.id === scrollTargetId ? linkedCardRef : undefined} className="nb-msg">
+      {messageBody(m)}
+    </Card>
+  )
 
+  // Az Üzenetek fül két csoportja: a teljes kártyák (a szál legfrissebb hangja és a deeplink-cél —
+  // ezek sosem csukhatók) és a korábbiak (egysoros sor; kinyitva helyben teljes, visszacsukható —
+  // mezo-z4h4).
+  const isFull = (m: MezoMessageItem, i: number) => i === displayUzenetek.length - 1 || m.id === scrollTargetId
+  const fullCards = displayUzenetek.filter(isFull)
+  const olderRows = displayUzenetek.filter((m, i) => !isFull(m, i))
+
+  // A hős számai a TELJES mai szálból jönnek (mindkét fül; a más napról belinkelt kártya nem
+  // számít bele — Finding 3), az „új” a belépéskori pillanatképből.
+  const unseenIds = dots?.ids
+  const newCount = unseenIds ? messages.filter((m) => unseenIds.has(m.id)).length : unread
+  const threadVerdict = messages.length === 0
+    ? 'Ma még nincs üzenet.'
+    : newCount === 0 ? `${messages.length} üzenet.` : `${messages.length} üzenet, ${newCount} új.`
+  const isNew = (m: MezoMessageItem, i: number) => (unseenIds ? unseenIds.has(m.id) : i >= messages.length - unread)
+  const threadDrops = messages.map((m, i) => ({
+    state: isNew(m, i) ? 'now' as const : 'done' as const,
+    label: m.time ?? '',
+    ariaLabel: `${messageHead(m)}${isNew(m, i) ? ' · új' : ''}`,
+  })).slice(-6)
+
+  // Az Életjelek fül mondata a jelek SÁVJÁBÓL jön, nem a (csendes ablakban elnyelhető) nudge-
+  // listából (mezo-z4h4): `deriveNudges` éjjel és az ébredés utáni első órában nem ad kártyát,
+  // attól a jel még figyelmet kér.
+  const attention = needs.isPending ? [] : needs.states.filter(needsAttention)
+  const needsAvg = needs.isPending ? null : needsAverage(needs.states)
+  const needsVerdict = needs.isPending
+    ? 'A jelek betöltése folyamatban.'
+    : attention.length === 1
+      ? `${needNameInSentence(attention[0].key).replace(/^a/, 'A')} az egyetlen, ami figyelmet kér.`
+      : attention.length > 1
+        ? `${attention.length} jel kér figyelmet.`
+        : 'Minden jel rendben — ma nincs teendő.'
+
+  const obsLoaded = !obs.isPending && !obs.isError && !obs.degraded
+  const obsVerdict = obs.observations.length === 0
+    ? 'Még nincs észrevétel — Mezo figyel.'
+    : unansweredObservations === 1
+      ? 'Egy észrevétel vár a válaszodra.'
+      : unansweredObservations > 1
+        ? `${unansweredObservations} észrevétel vár a válaszodra.`
+        : 'Mindre válaszoltál. Köszönöm.'
+
+  const olderNo = fullCards.length > 0 ? 2 : 1
+  const replyNo = olderRows.length > 0 ? olderNo + 1 : olderNo
   return (
-    <MozaikPage tone="coral" className="nap-mzpage">
-      {/* The house PageHead markup (same button, same name), worn as a small still glass pill
-          (üveg, mezo-me75u.3) — PageHead itself takes no class. */}
-      <div className="mz-page-head">
-        <FrameBack history className="mz-backbtn glass is-still" onBack={() => navigate(-1)}>
-          ‹ Ma
-        </FrameBack>
-      </div>
-      {/* Hero (rank 1): no card — a frameless lavender + gold halo around the living Mezo Boop,
-          then name → sub (no bignum). */}
-      <div className="mz-page-hero nap-mzhero uv-halo">
-        <Boop domain="mezo" size={90} alive />
-        <div className="mz-hero-nm">Mezo · ma</div>
-        {/* Today's own message count (Finding 3) — a cross-day deeplink prepends one extra card
-            to the Üzenetek pane that is not part of today's thread; the label must not count it.
-            The TELJES szál (mindkét tab) számít, a tab-bontás csak megjelenítés. */}
-        <div className="mz-hero-sb">{messages.length} üzenet · a napod fonala</div>
-      </div>
-      <PageBody>
-        <div className="nap-mzseg uv-flat" role="tablist" aria-label="Mezo tartalom" data-kalauz-anchor="uzenetek-tabs">
-          <button type="button" role="tab" aria-selected={tab === 'uzenetek'}
-            className={cn(tab === 'uzenetek' && 'on')} onClick={() => setTab('uzenetek')}>
-            Üzenetek
-            {dots?.uzenetek && tab !== 'uzenetek' && <span className="nap-mzdot" />}
-          </button>
-          <button type="button" role="tab" aria-selected={tab === 'eletjelek'}
-            className={cn(tab === 'eletjelek' && 'on')} onClick={() => setTab('eletjelek')}>
-            Életjelek
-            {dots?.eletjelek && tab !== 'eletjelek' && <span className="nap-mzdot" />}
-          </button>
-          <button type="button" role="tab" aria-selected={tab === 'eszrevetelek'}
-            className={cn(tab === 'eszrevetelek' && 'on')} onClick={() => setTab('eszrevetelek')}>
-            Észrevételek
-            {unansweredObservations > 0 && tab !== 'eszrevetelek' && <span className="nap-mzdot" />}
-          </button>
-        </div>
-        {tab === 'uzenetek' && (
-          <EntranceGroup>
-            {teamTalks && (
-              <>
-                <TeamChatRow latest={teamLatest} openLabels={teamOpen.map((t) => t.ruleLabel)}
-                  faces={teamOpen.length > 0 ? teamOpen.map((t) => t.owner) : [teamLatest!.speaker]}
-                  onOpen={() => navigate('/mezo/elo')} />
-                <p className="nap-mzteam-note rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-                  A napi tanácskártya innen átköltözött a csapat-chatbe — ott születik, ott reagálsz rá, és ott zárul le.
-                </p>
-              </>
-            )}
-            {displayUzenetek.map((m, i) =>
-              i === displayUzenetek.length - 1 || isExpanded(m.id) || m.id === scrollTargetId ? (
-                renderCard(m, i, {
-                  collapsible:
-                    isExpanded(m.id) && i !== displayUzenetek.length - 1 && m.id !== scrollTargetId,
-                })
-              ) : (
-                <button type="button" key={m.id} className="nap-mzrow uv-flat rise"
-                  style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}
-                  aria-expanded="false" onClick={() => expand(m.id)}>
-                  <ContentIcon name={messageArt(m).name} size={24} />
-                  <span className="grow">
-                    <span className="hd">
-                      <span className="t">{m.time ? `${m.time} · ${m.eyebrow}` : m.eyebrow}</span>
-                      {m.meta && <span className="mt">{m.meta}</span>}
-                    </span>
-                    <span className="pv">{m.paragraphs[0]}</span>
-                  </span>
-                  <span className="chev" aria-hidden="true">
-                    <Icon name="chevron-down" size={12} />
-                  </span>
-                </button>
-              ),
-            )}
-            <button type="button" className="nap-mz-cta glass rise"
-              style={{ '--d': `${40 + displayUzenetek.length * 60}ms`, '--c': 'var(--dv-lav)' } as React.CSSProperties}
-              onClick={() => navigate('/mezo/chat')}>
-              <Boop domain="mezo" size={30} />
-              Beszélgess Mezóval ›
-            </button>
-          </EntranceGroup>
-        )}
-        {tab === 'eletjelek' && (() => {
-          // mezo-z4h4: no nudge CARDS does not mean the rings are fine — `deriveNudges`
-          // swallows a fresh nudge during the quiet window (night + the first hour after
-          // waking) and once a ring has already nudged today. The empty-state line must read
-          // the rings' own BANDS, not the (possibly-suppressed) nudge list, or it cheerfully
-          // claims "minden rendben" while the strip above shows red/critical cells.
-          const attention = needs.states.filter((s) => s.band === 'red' || s.band === 'critical')
-          return (
-            <EntranceGroup>
-              {!needs.isPending && <EletjelStrip states={needs.states} onOpen={() => navigate('/nap/eletjel')} />}
-              {eletjelek.map((m, i) => renderCard(m, i))}
-              {!needs.isPending && eletjelek.length === 0 && attention.length === 0 && (
-                <p className="nap-ejok rise" style={{ '--d': '100ms' } as React.CSSProperties}>
-                  <Icon3D name="t-tick" size={22} />
-                  Minden gyűrű rendben — ma nincs teendő.
-                </p>
-              )}
-              {!needs.isPending && eletjelek.length === 0 && attention.length > 0 && (
-                <p className="nap-ejok warn rise" style={{ '--d': '100ms' } as React.CSSProperties}>
-                  <Icon3D name="t-heart" size={22} />
-                  {attention.length === 1
-                    ? 'Egy gyűrű figyelmet kér'
-                    : `${attention.length} gyűrű figyelmet kér`}
-                  {' '}— a részletekért koppints a sávra.
-                </p>
-              )}
-            </EntranceGroup>
-          )
-        })()}
-        {tab === 'eszrevetelek' && (
-          <EntranceGroup>
-            {/* Az oldal-állapotok háziszabály szerinti sorrendje: töltés → hiba → kikapcsolt
-                társ → üres → tartalom. */}
-            {obs.isPending && !obs.degraded && (
-              <SkeletonCard><SkeletonText lines={3} /></SkeletonCard>
-            )}
-            {!obs.isPending && obs.isError && (
-              <div className="nap-obs-ghost">
-                <GhostState
-                  message="Az észrevételeket most nem sikerült betölteni."
-                  ctaLabel="Újra"
-                  onCta={() => obs.refetch()}
-                />
-              </div>
-            )}
-            {!obs.isPending && !obs.isError && obs.degraded && (
-              <p className="nap-obs-empty uv-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
+    <Page className="nb-page">
+      <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
+      <Seg tabs className="nb-pre" data-kalauz-anchor="uzenetek-tabs" aria-label="Mezo tartalom" value={tab} onChange={setTab} items={[
+          { key: 'uzenetek', label: 'Üzenetek', dot: !!dots?.uzenetek && tab !== 'uzenetek' },
+          { key: 'eletjelek', label: 'Életjelek', dot: !!dots?.eletjelek && tab !== 'eletjelek' },
+          { key: 'eszrevetelek', label: 'Észrevételek', dot: unansweredObservations > 0 && tab !== 'eszrevetelek' },
+        ]} />
+      {tab === 'uzenetek' && (
+        <>
+          <FaceHero label="Mezo · ma" verdict={threadVerdict}
+            sub="A napod fonala: amit ma észrevettünk és javasoltunk."
+            actions={<Btn onClick={() => navigate('/mezo/chat')}>Beszélgess Mezóval</Btn>}>
+            {threadDrops.length > 0 && <DropChain aria-label="A mai üzenetek sorban" items={threadDrops} />}
+          </FaceHero>
+          {teamTalks && (
+            <>
+              <TeamChatRow latest={teamLatest} openLabels={teamOpen.map((t) => t.ruleLabel)}
+                faces={teamOpen.length > 0 ? teamOpen.map((t) => t.owner) : [teamLatest!.speaker]}
+                onOpen={() => navigate('/mezo/elo')} />
+              <Note>
+                A napi tanácskártya innen átköltözött a csapat-chatbe — ott születik, ott reagálsz rá, és ott zárul le.
+              </Note>
+            </>
+          )}
+          {fullCards.length > 0 && (
+            <>
+              <Section n={1} title="Ma" />
+              {fullCards.map(messageCard)}
+            </>
+          )}
+          {olderRows.length > 0 && (
+            <>
+              <Section n={olderNo} title="Korábbi üzenetek" />
+              <Card className="nb-older">
+                {olderRows.map((m) => (isExpanded(m.id) ? (
+                  <div key={m.id} className="fo-row nb-exp nb-msg">
+                    {messageBody(m)}
+                    <Lk aria-label="Összecsukás" aria-expanded={true} onClick={() => collapse(m.id)}>Összecsukom</Lk>
+                  </div>
+                ) : (
+                  <Row key={m.id} className="nb-oldrow" aria-expanded={false} onClick={() => expand(m.id)}
+                    left={<Badge member={messageMember(m)} size={36} />}
+                    title={MEMBER_LABEL[messageMember(m)]}
+                    sub={messageHead(m)}
+                    more={<>{m.meta && <small className="nb-mt">{m.meta}</small>}<small className="nb-pv">{m.paragraphs[0]}</small></>}
+                    right={<span className="chev" aria-hidden="true"><Icon name="chevron-down" size={14} /></span>} />
+                )))}
+              </Card>
+            </>
+          )}
+          <Section n={replyNo} title="Írj vissza" />
+          <Card>
+            <Row left={<Badge member="mezo" size={36} />} title="Beszélgess Mezóval"
+              sub="kérdezz, mesélj, vagy beszéljük át a napot" onClick={() => navigate('/mezo/chat')} />
+          </Card>
+        </>
+      )}
+      {tab === 'eletjelek' && (
+        <>
+          <Hero label={needsAvg == null ? 'Életjelek · ma' : `Életjelek · ma · átlag ${needsAvg}`}
+            verdict={needsVerdict}
+            sub={needs.isPending ? undefined : 'Koppints bármelyikre a részletekért.'}
+            actions={<Btn onClick={() => navigate('/nap/eletjel')}>Részletek</Btn>}>
+            {!needs.isPending && <EletjelStrip states={needs.states} onOpen={() => navigate('/nap/eletjel')} />}
+          </Hero>
+          {eletjelek.length > 0 && (
+            <>
+              <Section n={1} title="Amit a csapat mond" />
+              {eletjelek.map(messageCard)}
+            </>
+          )}
+        </>
+      )}
+      {tab === 'eszrevetelek' && (
+        <>
+          {/* Az oldal-állapotok háziszabály szerinti sorrendje: töltés → hiba → kikapcsolt
+              társ → üres → tartalom. */}
+          {obs.isPending && !obs.degraded && (
+            <Card aria-busy="true"><SkeletonText lines={3} /></Card>
+          )}
+          {!obs.isPending && obs.isError && (
+            <Card>
+              <ErrorRow message="Az észrevételeket most nem sikerült betölteni." onRetry={() => obs.refetch()} />
+            </Card>
+          )}
+          {!obs.isPending && !obs.isError && obs.degraded && (
+            <Card>
+              <Txt>
                 A társ jelenleg nincs bekapcsolva — most nincs mit észrevennem. A napló, az
                 edzés és a Fuel változatlanul működik.
-              </p>
-            )}
-            {!obs.isPending && !obs.isError && !obs.degraded && obs.observations.length === 0 && (
-              <p className="nap-obs-empty uv-empty rise" style={{ '--d': '100ms' } as React.CSSProperties}>
-                Még nincs észrevétel — Mezo figyel.
-              </p>
-            )}
-            {/* A lista kulcsa `item.id`: egy figyelt sor JOGOSAN jelenhet meg kétszer
-                (esemény-kártya + sor-kártya) — ez a feed szándéka, nem duplikátum. */}
-            {!obs.isPending && !obs.isError && obs.observations.map((o, i) => (
-              <div key={o.id} className="rise" style={{ '--d': `${40 + i * 60}ms` } as React.CSSProperties}>
-                <ObservationCard
-                  item={o}
-                  pending={observationReply.pendingPatternId === o.patternId}
-                  onReply={observationReply.reply}
-                />
-              </div>
-            ))}
-            {!obs.isPending && !obs.isError && !obs.degraded && obs.observations.length > 0 && (
-              <div className="nap-obs-quiet rise"
-                style={{ '--d': `${40 + obs.observations.length * 60}ms` } as React.CSSProperties}>
-                <Icon3D name="t-moon" size={22} />
-                Ma még {budgetLeft} észrevétel fér a keretbe · {OBSERVATION_BUDGET.quietFrom} után
-                csendben maradok
-              </div>
-            )}
-          </EntranceGroup>
-        )}
-      </PageBody>
-    </MozaikPage>
+              </Txt>
+            </Card>
+          )}
+          {/* A hős mondata az üres állapot is („Még nincs észrevétel — Mezo figyel.”); a napi keret
+              csak akkor áll alatta, ha van mit mutatni. */}
+          {obsLoaded && (
+            <FaceHero label="Észrevételek · ma" verdict={obsVerdict}
+              sub={obs.observations.length > 0
+                ? `Ma még ${budgetLeft} észrevétel fér a keretbe · ${OBSERVATION_BUDGET.quietFrom} után csendben maradok.`
+                : undefined}
+              actions={<Btn onClick={() => navigate('/mezo/chat')}>Beszéljük meg</Btn>} />
+          )}
+          {/* A lista kulcsa `item.id`: egy figyelt sor JOGOSAN jelenhet meg kétszer
+              (esemény-kártya + sor-kártya) — ez a feed szándéka, nem duplikátum. */}
+          {!obs.isPending && !obs.isError && obs.observations.map((o, i) => (
+            <div key={o.id} className="nb-obsblock">
+              <Section n={i + 1} title={observationEyebrow(o)} />
+              <ObservationCard
+                item={o}
+                pending={observationReply.pendingPatternId === o.patternId}
+                onReply={observationReply.reply}
+              />
+            </div>
+          ))}
+        </>
+      )}
+    </Page>
   )
 }
 
-/** A csapat-chat átadó sora (Csapatfal Act III, mezo-a9bo7.24; prototípus #nap-uzenetek
- *  `rowg glass`, zsálya) — ÜVEG sor: a nyitott ügyek gazdái, a címkéik, vagy ha nincs nyitott
- *  ügy, a nap legutóbbi mondata. Semmit nem fogalmaz (ADR 0049). */
+/** A csapat-chat átadó sora (Csapatfal Act III, mezo-a9bo7.24; prototípus `uzenetek()` `.np-duo`
+ *  sora): a nyitott ügyek gazdái, a címkéik, vagy ha nincs nyitott ügy, a nap legutóbbi mondata.
+ *  Semmit nem fogalmaz (ADR 0049). */
 function TeamChatRow({ latest, openLabels, faces, onOpen }: {
   latest: { speaker: TeamCharacterId; text: string } | null
   openLabels: string[]
@@ -551,20 +532,17 @@ function TeamChatRow({ latest, openLabels, faces, onOpen }: {
 }) {
   const unique = [...new Set(faces)].slice(0, 3)
   return (
-    <button type="button" className="nap-mzteam glass rise" onClick={onOpen}
-      style={{ '--d': '20ms', '--c': 'var(--dv-sage)' } as React.CSSProperties}>
-      <span className="nap-mzteam-minis" aria-hidden="true">
-        {unique.map((id) => <FeedAvatar key={id} id={id} size={20} />)}
-      </span>
-      <span className="grow">
-        <span className="nap-mzteam-t">A csapat most erről beszél</span>
-        <span className="pv">
-          {openLabels.length > 0
-            ? openLabels.join(' · ')
-            : latest && <><b>{TEAM[latest.speaker].name}:</b> {renderInline(latest.text, { boldOnly: true })}</>}
-        </span>
-      </span>
-      <span className="chev" aria-hidden="true">›</span>
-    </button>
+    <Card className="nb-team">
+      <Row onClick={onOpen}
+        left={<span className="nb-duo" aria-hidden="true">{unique.map((id) => <Badge key={id} member={teamMember(id)} size={30} />)}</span>}
+        title="A csapat most erről beszél"
+        sub={(
+          <span className="nb-pv">
+            {openLabels.length > 0
+              ? openLabels.join(' · ')
+              : latest && <><b>{MEMBER_LABEL[teamMember(latest.speaker)]}:</b> {renderInline(latest.text, { boldOnly: true })}</>}
+          </span>
+        )} />
+    </Card>
   )
 }

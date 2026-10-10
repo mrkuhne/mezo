@@ -1,36 +1,23 @@
 // ============================================================
-// Mezo · SzokasaidPage (mezo-mgpr) — /nap/rutin/szokasok, prototype rutin-formalodas.html
-// `pg-lista` ×1.18. The habit list left the hub for its own page: four STAGE FILTER tiles
-// (multi-toggle; none selected = everything shows, so there is no fifth "Mind" tile), then
-// one full-width tile per habit — name top-left with its stage, the reps as the big numeral,
-// the automaticity ring with its % on the right, and the remaining-time row at the bottom.
+// Mezo · SzokasaidPage (mezo-mgpr; Folyadék F2 mezo-n4wf5.2) — /nap/rutin/szokasok, prototype
+// vilagos/nap.js `szokasok`. The hero's four vessels are the four STAGES (the riper, the higher
+// the level; multi-toggle filters — none selected = everything shows, so there is no fifth
+// "Mind"), then one row per habit: its automaticity as a small level, the stage, what is still
+// ahead, and the repetitions.
 //
 // Honesty rules carried over from the formation view (mezo-08zl): under minReps there is no
-// percentage (the ring prints "—") and no deadline, only what is missing; a missing recent
+// percentage (the level prints "—") and no deadline, only what is missing; a missing recent
 // rate yields no weeks estimate; a miss slows the curve and never resets it — no streaks,
 // no red (ADR 0010). The page never ticks a habit.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useHabitCatalog, useHabitFormations } from '@/data/hooks'
 import type { HabitDefInfo, HabitFormation } from '@/data/types'
+import { RbBack } from '@/features/me/components/routineBits'
 import { etaPhrase, FORMATION_STAGES, stageIndexOf } from '@/features/me/logic/habitFormation'
 import { cn } from '@/shared/lib/cn'
-import { GhostState } from '@/shared/ui/GhostState'
-import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-
-// Stage tones — the colour carries the stage (bible U6 rule 46), in the üveg dark accents
-// (prototype uveg-en2.html `HAB`): still conscious lavender → building / nearly gold → settled sage.
-const STAGE_TONE = ['var(--dv-lav)', 'var(--dv-amber)', 'var(--dv-amber)', 'var(--dv-sage)'] as const
-
-const PRINCIPLE = 'Minden csempe a saját ívét mutatja: az ismétlésszám a nagy szám, az ív a '
-  + 'becsült automatizmus. A kihagyás lassítja a görbét, de sosem nullázza — nincs megtört '
-  + 'lánc, nincs piros.'
-
-function rise(delayMs: number): CSSProperties {
-  return { '--d': `${delayMs}ms` } as CSSProperties
-}
+import { Btn, Card, Empty, ErrorRow, Hero, Mini, Note, Page, Row, Section, useFrameTitle } from '@/shared/ui/folyadek'
 
 /** Estimate present = the server answered AND the honesty gate is open (minReps reached). */
 function hasEstimate(f: HabitFormation | undefined): f is HabitFormation & { automaticityPct: number } {
@@ -41,33 +28,23 @@ function stageIdxOf(f: HabitFormation | undefined): number {
   return hasEstimate(f) ? stageIndexOf(f.automaticityPct) : 0
 }
 
-/** The prototype's `arcSvg`: the automaticity ring with its % (or an honest dash) inside. */
-function Arc({ pct }: { pct: number | null }) {
-  const r = 21
-  const c = 2 * Math.PI * r
-  const off = c * (1 - (pct ?? 0) / 100)
-  return (
-    <svg className="rt-harc uv-ring" viewBox="0 0 52 52" aria-hidden="true">
-      <circle className="uv-ring-track" cx="26" cy="26" r={r} strokeWidth="5" />
-      {pct != null && (
-        <circle
-          className="uv-ring-prog" cx="26" cy="26" r={r} strokeWidth="5"
-          strokeDasharray={c.toFixed(1)} strokeDashoffset={off.toFixed(1)} transform="rotate(-90 26 26)"
-        />
-      )}
-      <text x="26" y="30" textAnchor="middle" fontSize="13" fill="var(--text-primary)">
-        {pct != null ? `${pct}%` : '—'}
-      </text>
-    </svg>
-  )
+/** The hero's verdict from the stage counts: how many run on their own, how many are on the way. */
+function verdictOf(counts: number[]): string {
+  const settled = counts[3]
+  const onWay = counts[1] + counts[2]
+  if (settled > 0 && onWay > 0) return `${settled} már magától megy, ${onWay} úton van oda.`
+  if (settled > 0) return `${settled} már magától megy.`
+  if (onWay > 0) return `${onWay} úton van afelé, hogy magától menjen.`
+  return 'Még mind tudatos — az ismétlés viszi előre.'
 }
 
 export function SzokasaidPage() {
   const navigate = useNavigate()
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const [filter, setFilter] = useState<Set<number>>(new Set())
+  useFrameTitle({ title: 'Szokásaid', eyebrow: 'Rutinok · formálódás szerint' })
 
-  // Active chains' active defs — the same "running habits" rule as the hub's aktív szokás cell:
+  // Active chains' active defs — the same "running habits" rule as the hub's aktív szokás fact:
   // a paused chain does not run, so its defs are not on this list either.
   const defs = (catalog?.chains ?? [])
     .filter((c) => c.isActive)
@@ -75,17 +52,22 @@ export function SzokasaidPage() {
     .flatMap((c) => [...c.defs].sort((a, b) => a.position - b.position))
     .filter((d) => d.isActive)
   const formations = useHabitFormations(defs.map((d) => d.habitKey))
+  const toWizard = () => navigate('/nap/rutin/uj')
 
   if (defs.length === 0) {
     return (
-      <MozaikPage tone="gold" className="rt-uv rt-szokasok">
-        <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
-        <PageBody>
-          {isPending ? <GhostState message="Szokások betöltése…" lines={3} />
-            : isError ? <GhostState message="Nem sikerült betölteni a szokásokat." ctaLabel="Újra" onCta={refetch} />
-              : <GhostState message="Még nincs aktív szokásod — az Építs ajtó indítja az elsőt." />}
-        </PageBody>
-      </MozaikPage>
+      <Page>
+        <RbBack label="Rutinok" fallback="/nap/rutin/epites" />
+        <Card>
+          {isPending ? <Note>Szokások betöltése…</Note>
+            : isError ? <ErrorRow message="Nem sikerült betölteni a szokásokat." onRetry={refetch} />
+              : (
+                <Empty icon="t-harvest" actions={<Btn onClick={toWizard}>+ Új szokás</Btn>}>
+                  Még nincs aktív szokásod — az „Új szokás” indítja az elsőt.
+                </Empty>
+              )}
+        </Card>
+      </Page>
     )
   }
 
@@ -110,11 +92,10 @@ export function SzokasaidPage() {
     })
   }
 
-  const tile = (d: HabitDefInfo, order: number) => {
+  const habitRow = (d: HabitDefInfo) => {
     const f = formations.get(d.habitKey)
     const enough = hasEstimate(f)
     const si = stageIdxOf(f)
-    const tone = STAGE_TONE[si]
     const settled = enough && f.automaticityPct >= f.thresholdPct
     const eta = enough ? etaPhrase(f.weeksToThresholdLo, f.weeksToThresholdHi) : null
     const etaBig = f == null ? '—'
@@ -126,63 +107,60 @@ export function SzokasaidPage() {
         : settled ? 'a küszöb fölött — jó horgony egy új szokásnak'
           : eta != null ? 'van hátra ebben a tempóban' : 'nincs friss ismétlés — tempó nélkül nincs becslés'
     return (
-      <button
-        key={d.habitKey}
-        type="button"
-        className="rt-htile glass rise"
-        style={{ ...rise(60 + order * 30), '--c': tone, '--i': order } as CSSProperties}
-        onClick={() => navigate(`/nap/rutin/szokas/${d.habitKey}`)}
-        data-testid={`habit-tile-${d.habitKey}`}
-      >
-        <span className="rt-htop">
-          <span className="rt-hleft">
-            <span className="rt-hnm">{d.title}</span>
-            <span className="rt-hstage">{enough ? FORMATION_STAGES[si].label : 'még gyűlik az adat'}</span>
-            <span className="rt-hreps">{f?.reps ?? '—'}<small>ismétlés</small></span>
-          </span>
-          <span className="rt-hright">
-            <Arc pct={enough ? f.automaticityPct : null} />
-          </span>
-        </span>
-        <span className="rt-heta"><b>{etaBig}</b><span>{etaSub}</span></span>
-      </button>
+        <Row
+          key={d.habitKey} data-testid={`habit-tile-${d.habitKey}`}
+          left={(
+            <Mini
+              pct={enough ? f.automaticityPct : 0}
+              color={settled ? 'var(--fo-ok)' : undefined}
+              value={enough ? `${f.automaticityPct}%` : '—'}
+            />
+          )}
+          title={d.title}
+          sub={(
+            <>
+              <span className="rb-stage">{enough ? FORMATION_STAGES[si].label : 'még gyűlik az adat'}</span>
+              <span className="rb-eta"><b>{etaBig}</b> {etaSub}</span>
+            </>
+          )}
+          value={<>{f?.reps ?? '—'}<small>ismétlés</small></>}
+          right=""
+          onClick={() => navigate(`/nap/rutin/szokas/${d.habitKey}`)}
+        />
     )
   }
 
   return (
-    <MozaikPage tone="gold" className="rt-uv rt-szokasok">
-      <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
-      <PageHero art="t-harvest" accent="var(--dv-amber)" big={`${visible.length}`} name="Szokásaid" sub="formálódás szerint rendezve" />
-      <PageBody principle={PRINCIPLE}>
-        <EntranceGroup replayKey={[...filter].join('-')}>
-          <div className="rt-fgrid rise" style={rise(40)}>
-            {FORMATION_STAGES.map((s, i) => {
-              return (
-                <button
-                  key={s.label}
-                  type="button"
-                  className={cn('rt-ftile', filter.has(i) && 'on', counts[i] === 0 && 'is-zero')}
-                  aria-pressed={filter.has(i)}
-                  style={{ '--c': STAGE_TONE[i] } as CSSProperties}
-                  onClick={() => toggle(i)}
-                >
-                  <b>{counts[i]}</b>
-                  <span className="rt-fdots" aria-hidden="true">
-                    {FORMATION_STAGES.map((x, j) => <i key={x.label} className={cn(j <= i && 'on')} />)}
-                  </span>
-                  <small>{s.label}</small>
-                </button>
-              )
-            })}
-          </div>
-          <div className="rt-hgrid">
-            {visible.map((d, i) => tile(d, i))}
-          </div>
-          {visible.length === 0 && (
-            <p className="rt-hint rt-emptyline uv-empty">Ebben a szakaszban most nincs szokásod.</p>
-          )}
-        </EntranceGroup>
-      </PageBody>
-    </MozaikPage>
+    <Page>
+      <RbBack label="Rutinok" fallback="/nap/rutin/epites" />
+      <Hero
+        label={`${defs.length} aktív szokás · melyik szakaszt mutassam?`}
+        verdict={verdictOf(counts)}
+        sub="Egy szokás ereje a 28 napos pipáiból jön — nem a sorozatból."
+        actions={<Btn onClick={toWizard}>+ Új szokás</Btn>}
+      >
+        {/* The four stages as four vessels: the riper the stage, the higher its level. */}
+        <div className={cn('rb-stg', filter.size > 0 && 'filtered')}>
+          {FORMATION_STAGES.map((s, i) => (
+            <button
+              key={s.label}
+              type="button"
+              className={cn('rb-stg-b', filter.has(i) && 'on')}
+              aria-pressed={filter.has(i)}
+              onClick={() => toggle(i)}
+            >
+              <span className="t"><i style={{ height: `${(i + 1) * 25}%` }} /><b>{counts[i]}</b></span>
+              <small>{s.label}</small>
+            </button>
+          ))}
+        </div>
+      </Hero>
+
+      <Section n={1} title={`Szokások · ${visible.length}`} />
+      <Card>
+        {visible.map((d) => habitRow(d))}
+        {visible.length === 0 && <Empty icon="t-harvest">Ebben a szakaszban most nincs szokásod.</Empty>}
+      </Card>
+    </Page>
   )
 }

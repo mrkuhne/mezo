@@ -98,11 +98,12 @@ beforeEach(() => {
 })
 
 describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
-  test('a kötél az előzőhöz kötött sornál teli, máshol szaggatott', () => {
+  test('a sor tudja, hogy az előzőhöz kötött-e: linked, máshol broken', () => {
     renderPage('MORNING')
-    expect(screen.getByTestId('stack-feny').querySelector('.rt-srail')).toHaveClass('is-linked')
-    expect(screen.getByTestId('stack-mozgas').querySelector('.rt-srail')).toHaveClass('is-broken')
-    expect(screen.getByTestId('stack-szabad').querySelector('.rt-srail')).toHaveClass('is-broken')
+    expect(screen.getByTestId('stack-viz')).not.toHaveAttribute('data-rope')
+    expect(screen.getByTestId('stack-feny')).toHaveAttribute('data-rope', 'linked')
+    expect(screen.getByTestId('stack-mozgas')).toHaveAttribute('data-rope', 'broken')
+    expect(screen.getByTestId('stack-szabad')).toHaveAttribute('data-rope', 'broken')
   })
 
   test('a jelvény megmondja, mihez van kötve a sor — linked / nem az előző / szabad szöveg', () => {
@@ -114,16 +115,36 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
 
   test('a sor navigál a szokás oldalára, és sehol nincs pipa-kontroll (ADR)', () => {
     renderPage('MORNING')
-    fireEvent.click(screen.getByRole('button', { name: /Reggeli fény/ }))
+    fireEvent.click(screen.getByTestId('stack-feny'))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/feny')
+    // the row's status node is a read-only mark, not a tick button
+    expect(screen.getByTestId('stack-viz').querySelector('.fo-mk')).toHaveClass('d')
+    expect(document.querySelector('.fo-tk')).toBeNull()
     expect(screen.queryByRole('button', { name: /^Pipa/ })).toBeNull()
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
 
-  test('a hero a mai állást és a lánc lefutását mutatja', () => {
-    renderPage('MORNING')
-    expect(screen.getByText('1 / 4')).toBeInTheDocument()
-    expect(screen.getByText(/egy pohár víz → reggeli fény/)).toBeInTheDocument()
+  test('a hero a mai állást mondja, és a láncot sorrendben, összekötött edényekként mutatja', () => {
+    const { container } = renderPage('MORNING')
+    const hero = container.querySelector('.fo-hero') as HTMLElement
+    expect(hero).toHaveTextContent('Ma eddig · 1 / 4 kész')
+    expect(hero).toHaveTextContent(/1 megvan a 4.ből\. Most jön: Reggeli fény\./)
+    const vials = [...hero.querySelectorAll('.rb-pipe .fo-vial')]
+    expect(vials.map((v) => v.querySelector('small')?.textContent)).toEqual(['Egy pohár víz', 'Reggeli fény', 'Mozgás', 'Szabad szokás'])
+    // the level is the habit's 28-day strength; a habit with no standing prints a dash, never 0%
+    expect(vials[0]).toHaveTextContent('80%')
+    expect(vials[1]).toHaveTextContent('—')
+    expect(vials[0].querySelector('em')).toHaveTextContent('✓')
+    expect(vials[1].querySelector('em')).toHaveTextContent('most')
+    expect(hero.querySelector('svg circle')).toBeNull()
+  })
+
+  test('az edény a szokás oldalára visz; szerkesztés közben nem gomb', () => {
+    const { container } = renderPage('MORNING')
+    fireEvent.click(container.querySelector('.rb-pipe button.fo-vial') as HTMLElement)
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/viz')
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(container.querySelector('.rb-pipe button.fo-vial')).toBeNull()
   })
 
   test('Szerkesztés: átnevezés + napszak a Kész gombbal megy ki updateChain-ként', async () => {
@@ -146,6 +167,17 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
     renderPage('MORNING')
     fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
     expect(screen.getByTestId('stack-warn')).toHaveTextContent('Mozgás')
+  })
+
+  test('szerkesztő módban a sor a ▲▼ párost kapja a szint helyett, és a navigáció megmarad', () => {
+    renderPage('MORNING')
+    const row = () => within(screen.getByTestId('stack-viz'))
+    expect(screen.getByTestId('stack-viz').querySelector('.fo-level')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(screen.getByTestId('stack-viz').querySelector('.fo-level')).toBeNull()
+    expect(row().getByRole('button', { name: 'Egy pohár víz feljebb' })).toBeDisabled()
+    fireEvent.click(row().getByRole('button', { name: /Egy pohár víz · kész/ }))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/viz')
   })
 
   test('a seed lánc nem törölhető — magyarázat, nem gomb', () => {
@@ -171,9 +203,12 @@ describe('ChainPage — a stacking kirajzolva (mezo-vxd8)', () => {
     expect(updateChain).toHaveBeenCalledWith('chain-m', { isActive: false })
   })
 
-  test('＋ Új habit a wizard Keret nélkül ajtajához visz, a lánccal előtöltve', () => {
+  test('az Új szokás a wizardhoz visz, a lánccal előtöltve — a sorból és a hero linkjéből is', () => {
     renderPage('MORNING')
-    fireEvent.click(screen.getByRole('button', { name: /Új habit/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Új szokás ebbe a láncba/ }))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj?chain=MORNING')
+    navigate.mockClear()
+    fireEvent.click(screen.getByRole('button', { name: '+ Új szokás ide' }))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj?chain=MORNING')
   })
 

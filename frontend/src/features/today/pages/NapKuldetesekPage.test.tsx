@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom'
 import { NapKuldetesekPage } from '@/features/today/pages/NapKuldetesekPage'
@@ -9,8 +9,8 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { routes } from '@/app/router'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 
-// Napi küldetések detail page (mezo-d20.2.4) — the hub's quest tile → own full page
-// (prototype nap-body.html #page-quest, p-gold tone). ADR 0010: quests are OFFERS —
+// Napi küldetések detail page (mezo-d20.2.4; Folyadék mezo-n4wf5.2, prototype vilagos/nap.js
+// `kuldetesek()`): one vial per quest in the hero, the offers as rows. ADR 0010: quests are OFFERS —
 // no failure state, no countdowns, nothing self-completes from the UI.
 
 // Mode-agnostic data stubs (QuickInputSheet.test pattern): mock seeds and real-mode
@@ -75,29 +75,47 @@ function renderPage() {
   )
 }
 
-test('gold-tone scaffold: ‹ Ma back chip navigates back, 3D quest art + 1/4 hero + subline', async () => {
+test('Folyadék scaffold: ‹ Ma back control navigates back, the hero counts the offers and holds one vial per quest', async () => {
   const { container } = renderPage()
-  expect(container.querySelector('.mz-page.mz-p-gold')).not.toBeNull()
-  // Üveg (mezo-me75u.3): the hero art is the 3D quest icon (it replaced the clay hajtás spot)
-  expect(container.querySelector('.nap-hero use[href="#t-quest"]')).not.toBeNull()
-  expect(container.querySelector('.nap-hero-num')).toHaveTextContent('1/4')
-  expect(screen.getByText('Napi küldetések')).toBeInTheDocument()
-  expect(screen.getByText('ajánlatok a mai napra')).toBeInTheDocument()
+  expect(container.querySelector('.fo-page')).not.toBeNull()
+  expect(container.querySelector('.mz-page')).toBeNull()
+  expect(container.querySelector('.glass')).toBeNull()
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).getByText('Mai ajánlatok · +75 XP')).toBeInTheDocument()
+  expect(within(hero).getByText('1 kész a 4 ajánlatból.')).toHaveClass('fo-hero-verdict')
+  expect(within(hero).getByText('A többi magától telik, ahogy a napod halad.')).toBeInTheDocument()
+  const vials = hero.querySelectorAll('.fo-vial')
+  expect(vials).toHaveLength(4)
+  expect([...vials].map((v) => v.querySelector('b')?.textContent)).toEqual(['+25 XP', '+20 XP', '+15 XP', '+15 XP'])
+  expect([...vials].map((v) => v.querySelector('use')?.getAttribute('href'))).toEqual(['#t-dumbbell', '#t-bowl', '#t-bowl', '#t-journal'])
+  expect([...vials].map((v) => v.querySelector('small')?.textContent)).toEqual(['Testfolyamatban', 'Étkezésfolyamatban', 'Étkezésfolyamatban', 'Fejlődésjóváírva'])
+  // a quest has no partial progress: the done vessel is full and marked, an open one shows a sliver
+  expect(within(vials[3] as HTMLElement).getByText('kész')).toBeInTheDocument()
+  expect((vials[3].querySelector('.l') as HTMLElement).style.getPropertyValue('--p')).toBe('100%')
+  expect((vials[0].querySelector('.l') as HTMLElement).style.getPropertyValue('--p')).toBe('6%')
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(await screen.findByText('hub-page')).toBeInTheDocument()
 })
 
-test('each quest renders as a card: title, why, XP pill; the completed card closes green with the XP credit line', () => {
+test('the hero button is the first open quest\'s smart action, spelled out', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: 'Edzés megnyitása' }))
+  expect(await screen.findByText('train-page')).toBeInTheDocument()
+})
+
+test('each quest renders as a row: title, why, XP pill; the completed row closes green with the XP credit line', () => {
   const { container } = renderPage()
-  expect(container.querySelectorAll('.nq-card.glass')).toHaveLength(4)
+  const rows = container.querySelectorAll<HTMLElement>('.nb-quests .fo-row')
+  expect(rows).toHaveLength(4)
   expect(screen.getByText('Mai tervezett edzés — csináld végig')).toBeInTheDocument()
   expect(screen.getByText('A memóriád ma is éhes — egy mondat elég.')).toBeInTheDocument()
-  expect(screen.getByText('+25 XP')).toBeInTheDocument()
-  const doneCard = container.querySelector('.nq-card.done')!
-  // the completed mark is the 3D tick now (it replaced the ✓ glyph) — same credit line
-  expect(doneCard).toHaveTextContent('kész · +15 XP jóváírva')
-  expect(doneCard.querySelector('.nq-state.f use[href="#t-tick"]')).not.toBeNull()
-  expect(doneCard.querySelector('button')).toBeNull() // a closed offer carries no affordance
+  expect(within(rows[0]).getByText('+25 XP')).toHaveClass('fo-st', 'plan')
+  const doneRow = container.querySelector<HTMLElement>('.nb-quest.done')!
+  expect(doneRow).toHaveTextContent('kész · +15 XP jóváírva')
+  expect(within(doneRow).getByText('Kész')).toHaveClass('fo-st', 'ok')
+  expect((doneRow.querySelector('.fo-level i') as HTMLElement).style.width).toBe('100%')
+  expect((rows[0].querySelector('.fo-level i') as HTMLElement).style.width).toBe('6%')
+  expect(doneRow.querySelector('button')).toBeNull() // a closed offer carries no affordance
 })
 
 test('offered quests state honestly: derived closes itself, never from the UI (ADR 0010)', () => {
@@ -117,7 +135,9 @@ test('the smart log-CTA dispatches: +250 ml logs water in place, Edzés navigate
 test('the Check-in CTA opens the check-in sheet in place', async () => {
   renderPage()
   await userEvent.click(screen.getByRole('button', { name: 'Check-in' }))
-  expect(await screen.findByText('Hogy vagyunk?')).toBeInTheDocument()
+  // the sheet's own copy belongs to CheckInSheet — here only that it opened, on this page
+  expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  expect(screen.getByTestId('loc')).toHaveTextContent('/nap/kuldetesek')
 })
 
 test('the reroll affordance carries the remaining count and rerolls THAT quest; spent = no affordance', async () => {
@@ -133,15 +153,25 @@ test('the reroll affordance carries the remaining count and rerolls THAT quest; 
 
 test('the quiet principle line spells out the offer contract', () => {
   renderPage()
-  expect(screen.getByText('A küldetés ajánlat: ha kimarad, csendben lejár — bukás nincs. A Csere naponta egyszer ingyenes.')).toBeInTheDocument()
+  expect(screen.getByText('A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs. A Csere naponta egyszer ingyenes.')).toHaveClass('fo-note')
 })
 
-test('honest empty state: no quests drawn → the empty line, no fabricated 0/0 hero number', () => {
+test('honest empty state: no quests drawn → the empty hero with three empty vessels, no fabricated 0/0 count', async () => {
   store.quests = []
   const { container } = renderPage()
-  expect(screen.getByText('Ma nincs kisorsolt küldetés.')).toBeInTheDocument()
-  expect(container.querySelector('.nap-hero-num')).toBeNull()
-  expect(container.querySelector('.nq-empty.uv-empty')).not.toBeNull()
+  expect(screen.getByText('Ma nincs kisorsolt küldetés.')).toHaveClass('fo-hero-verdict')
+  expect(screen.getByText('Holnap reggel új ajánlatok érkeznek. Addig a napod a szokott rendben megy.')).toBeInTheDocument()
+  expect(container.querySelector('.fo-hero-lbl')).toHaveTextContent(/^Mai ajánlatok$/) // no XP sum
+  expect(screen.queryByText(/kész a/)).toBeNull()
+  const vials = container.querySelectorAll('.fo-hero .fo-vial')
+  expect(vials).toHaveLength(3)
+  expect([...vials].map((v) => v.querySelector('b')?.textContent)).toEqual(['–', '–', '–'])
+  expect(container.querySelector('.fo-card .fo-empty')).toHaveTextContent('Nincs mára küldetés.')
+  expect(container.querySelector('.fo-empty use[href="#t-quest"]')).not.toBeNull()
+  // the offer contract still closes the page
+  expect(screen.getByText(/A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs\./)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza a mai napra' }))
+  expect(await screen.findByText('hub-page')).toBeInTheDocument()
 })
 
 // Titánium Nap/Mai (mezo-mhum, manifest C1 — DEFER): a küldetés-csempe lekerült a
@@ -157,5 +187,5 @@ test('/nap/kuldetesek still resolves and renders the page, while the hub carries
 
   await act(() => router.navigate('/nap/kuldetesek'))
   expect(router.state.location.pathname).toBe('/nap/kuldetesek')
-  expect(await screen.findByText('ajánlatok a mai napra')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: /Mai ajánlatok/ })).toBeInTheDocument()
 })

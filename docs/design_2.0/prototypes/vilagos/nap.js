@@ -1,8 +1,8 @@
 /* vilagos/nap.js — Nap domain in the "Folyadék" identity (built on "Világos · élő"). Built on window.F (see vilagos/README.md).
    Routes = the living prototype's (elo/nap.html):
-   mai[.kimelo|.kimelo-lejart] maieste checkin hatasok napom nap.<date>[.este] eletjel kuldetesek[.ures]
+   mai[.kimelo|.kimelo-lejart|.ures|.hiba] maieste checkin napom[.hiba|.tolt] nap.<date>[.este] eletjel kuldetesek[.ures]
    rutin[.reggel|.napkozben|.este] uzenetek[.eletjelek|.eszrevetelek] gyors napzaras.1–6 rutin-epites lanc szokasok szokas szerk rutin-uj.<step>.
-   Plain `mai` (no arg) is replaced by the approved concept screen in foly.js; the variants here follow its tank · vials · stream anatomy.
+   `mai` here is the single source of Nap · Mai (the approved tank · vials · stream anatomy), drawn only from fields the app has (F2 reality pass).
    Every route has one signature liquid graphic drawn from its own data (see the notes at the bottom).
    Domain interactions use one attribute: data-n="cmd:arg" (see ACT at the bottom). */
 (function(){
@@ -97,23 +97,23 @@ function ckDisp(id,a,short){
 }
 const NEEDS=[['Étel','t-bowl',72,'meal'],['Víz','t-water',52,'water'],['Alvás','t-sleep',81,'sleep'],['Mozgás','t-dumbbell',34,'train'],['Kapcsolat','t-people',64,'checkin'],['Rend','t-chain',58,'']];
 const QUESTS=[
-  {ic:'t-dumbbell',s:'Edzés',p:35,t:'A mai tervezett edzés a naptárban van — csináld végig',why:'A megjelenés a legerősebb identitás-szavazat: aki ma edz, az edző ember.',xp:25,st:'offered',cta:'Edzés',foot:'folyamatban · az edzésből záródik magától'},
+  {ic:'t-dumbbell',s:'Edzés',p:6,t:'A mai tervezett edzés a naptárban van — csináld végig',why:'A megjelenés a legerősebb identitás-szavazat: aki ma edz, az edző ember.',xp:25,st:'offered',cta:'Edzés',foot:'folyamatban · az edzésből záródik magától'},
   {ic:'t-weight',s:'Súlymérés',p:100,t:'Reggeli súlymérés — logold be',xp:15,st:'done'},
-  {ic:'t-journal',s:'Olvasás',p:20,t:'Olvass ma legalább 10 percet',xp:20,st:'offered',foot:'folyamatban · a logjaidból záródik magától'}];
+  {ic:'t-journal',s:'Olvasás',p:6,t:'Olvass ma legalább 10 percet',xp:20,st:'offered',foot:'folyamatban · a logjaidból záródik magától'}];
 let rerolls=1;
 const RUTIN={
   reggel:{title:'Reggeli rutin',stat:['6/30','tökéletes reggel'],xp:25,rows:[
-    ['Ébredés időben','a lánc kezdete','t-dawn',82,1],['Reggeli napfény','ébredés után','t-sun',64,1],['50 fekvőtámasz','megvolt a reggeli napfény','t-dumbbell',48,0],['Reggeli videó','megvolt az 50 fekvőtámasz','t-camera',39,0,1],['Reggeli súlymérés','fogmosás után','t-weight',93,1],['Gombakávé','súlymérés után','t-bowl',71,0],['Reggeli edzés','kávé után','t-run',57,0],['Fehérjés reggeli','edzés után','t-protein',79,0]]},
-  napkozben:{title:'Napközbeni rutin',stat:['11/30','tökéletes nap'],xp:10,rows:[
+    ['Ébredés időben','a lánc kezdete','t-dawn',82,1],['Mai fókusz','koppints, és írd le','t-ring',null,0,0,'intention'],['Reggeli napfény','ébredés után','t-sun',64,1],['50 fekvőtámasz','megvolt a reggeli napfény','t-dumbbell',48,0],['Reggeli videó','megvolt az 50 fekvőtámasz','t-camera',39,0,1],['Reggeli súlymérés','fogmosás után','t-weight',93,1],['Gombakávé','súlymérés után','t-bowl',71,0],['Reggeli edzés','kávé után','t-run',57,0],['Fehérjés reggeli','edzés után','t-protein',79,0]]},
+  napkozben:{title:'Napközbeni rutin',stat:null,xp:10,rows:[
     ['Ebéd utáni séta','ebéd után','t-steps',61,1],['Víz · 2 liter','délutánig','t-water',70,0],['Képernyőszünet','minden óra végén','t-clock',44,0]]},
   este:{title:'Esti rutin',stat:['4/30','tökéletes este'],xp:0,rows:[
     ['Koffein-cutoff','14:00 után már nem','t-clock',86,0],['Konyha zárva','elpakoltam a vacsora után','t-stack',68,0],['Szándékkal éltem?','koppints, és válaszolj','t-journal',55,0,0,'reflect'],['Napzárás','a nap lezárása','t-moon',null,0,0,'ritual'],['Wind-down, képernyő le','Napzárás után','t-sleep',43,0]]}};
-let face='reggel', nowRow=-1, macroSel=null, fbNo=false, wkStep=0, wkRes='';
+let face='reggel', nowRow=-1, macroSel=null, fbNo=false, advOn=false;
 const obsState={}, evOpen={}, expMsg={};
-const MAC=[['Fehérje','var(--protein)',148,220],['Szénhidrát','var(--carb)',224,380],['Zsír','var(--fat)',58,95]];
+const MAC=[['Fehérje','var(--protein)',148,166],['Szénhidrát','var(--carb)',224,340],['Zsír','var(--fat)',58,90]];
 const OBS=[
-  {k:'anna',h:'Anna és az alvásod',lbl:'Megfigyelés',x:'Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, ez még kevés. Figyeljem tovább?',ev:['4 hála-bejegyzés','4 éjszaka','+1 nap eltolás'],acts:['Igen, figyeld','Nem stimmel','Mesélj erről']},
-  {k:'keso',h:'Késői vacsora és az alvás',lbl:'Figyelem',x:'Amikor 21:00 után eszel, az alvásod minősége átlag <b>1,2 ponttal</b> alacsonyabb.',ev:['6 késői vacsora','6 éjszaka'],acts:['Így van','Kivétel volt']}];
+  {k:'anna',h:'Anna és az alvásod',lbl:'Megfigyelés',st:'Gyűlik',hits:4,miss:0,minN:7,x:'Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, ez még kevés. Figyeljem tovább?',ev:['4 hála-bejegyzés','4 éjszaka','+1 nap eltolás'],acts:['Igen, figyeld','Nem stimmel','Mesélj erről']},
+  {k:'keso',h:'Késői vacsora és az alvás',lbl:'Figyelem',st:'Figyelem',hits:5,miss:1,minN:6,x:'Amikor 21:00 után eszel, az alvásod minősége átlag <b>1,2 ponttal</b> alacsonyabb.',ev:['6 késői vacsora','6 éjszaka'],acts:['Így van','Kivétel volt']}];
 
 /* ── KÍMÉLŐ MÓD (kihagyás S2) ── */
 const KMC=[['ILLNESS','t-ill','Beteg vagyok'],['STOMACH','t-digestion','Gyomorrontás'],['INJURY','t-pain','Sérülés / fájdalom'],['TRAVEL','t-travel','Úton vagyok']];
@@ -146,50 +146,61 @@ function kmWelcome(){const d=Math.max(1,KM.day-1),few=d<=2;
   ${xrow({icon:'t-dumbbell',title:few?'Az első edzés könnyített':'Az első 2 edzés könnyített',sub:few?'Harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.':'Harmadával kevesebb sorozat; az elsőn kb. 10%-kal kisebb súly.'})}
   <button class="btn np-wide" style="margin-top:16px" data-n="kmok">Rendben</button><button class="fh-lk np-ctr" data-n="kmundo">Mégsem vagyok jól</button>`}
 
-/* ── MAI — a sima `mai` a jóváhagyott koncepció (foly.js); itt a változatai: kímélő mód, lejárt kímélő, este ── */
-const OBSL={anna:[58,86,'Anna a naplóban','alvás másnap'],keso:[84,40,'vacsora 21:00 után','alvásminőség']};
-function obsCard(o,i,all,g){const done=obsState[o.k],L=OBSL[o.k];
+/* ── MAI — nagy edény (a hat életjel átlaga), négy kémcső, folyam; változatok: kímélő, lejárt kímélő, este, üres nap, betöltési hiba ── */
+/* bizonyíték-edények: ami egybevág, tele; ami ellene szól, szaggatott; ami még hiányzik, üres */
+const tally=o=>`<div class="np-tally">${Array.from({length:o.minN},(_,i)=>`<i class="${i<o.hits?'p':i<o.hits+o.miss?'m':''}"></i>`).join('')}</div>
+  <div class="np-leg np-ev"><b>Bizonyíték · ${o.hits+o.miss} / ${o.minN} nap</b><span><i class="p"></i>egybevág</span><span><i class="m"></i>ellene szól</span><span><i class="s"></i>még hiányzik</span></div>`;
+function obsCard(o,i,all,g){const done=obsState[o.k];
   return card(head('t-pattern',o.h,all?'Összes':'',all?{go:'uzenetek.eszrevetelek'}:null)
-    +(g&&L?`<div class="np-lnk">${linked(L[0],L[1],{a:L[2],b:L[3],s:236})}</div>`:'')
+    +(g?`<div class="np-obst">${st(o.st,o.st==='Gyűlik'?'plan':'warn')}</div>${tally(o)}`:'')
     +msg('mezo',o.x,o.lbl.toLowerCase())
     +(evOpen[o.k]?chipsRow(o.ev,'Miből látom:'):'')
     +(done?acts(`<span class="np-okline">${I('i-check')}Megjegyeztem a válaszod.</span>${lk('Beszéljünk róla',{toast:'Mezo · Chat — előtöltve'})}`)
-      :acts(o.acts.map((a,k)=>nb(a,'obs:'+o.k,k?'sm ghost':'sm')).join('')+nl(evOpen[o.k]?'Elrejtem':'Miből látod?','ev:'+o.k))),{i});
+      :acts(o.acts.map((a,k)=>nb(a,'obs:'+o.k,k?'sm ghost':'sm')).join('')+nl(evOpen[o.k]?'Elrejtem':'Miből látod?','ev:'+o.k)))
+    +(g&&o.st==='Gyűlik'?acts(lk('Laborfüzet ›',{toast:'Mezo · Laborfüzet — ez a minta'})):''),{i});
 }
+const errRow=(t,l='Újra')=>card(xrow({div:true,icon:'t-info',title:t,right:nb(l,'retry','sm ghost')}));
 function mai(arg,evening){
   kmPreset(arg);
-  const ok=!KM.on, sl=nowSlot(), d=ndTodayDims();
+  const none=arg==='ures', err=arg==='hiba';
+  const ok=!KM.on, sl=nowSlot(), d=ndTodayDims(), avg=none?41:needAvg();
   const dusk=evening?{c1:'color-mix(in srgb,var(--dom) 72%,var(--ink))',c2:'color-mix(in srgb,var(--dom) 26%,var(--ink))'}:{};
   const T=nfix(evening
-    ?(ND.ritual?tank({...dusk,pct:62,h:420,num:72,cap:'a 100-ból · a nap le van téve',lbl:'Este · a nap lezárva',verdict:'Letetted a napot.',air:`<span class="np-airs">Hajnalban megírom, milyen napod volt.</span>`,marks:[75,50,25],cta:'A napom',ctaAct:'nap.2026-09-24'})
-      :tank({...dusk,pct:62,h:420,num:72,cap:`a 100-ból · ${ndDoneCount(d)}/6 terület kész`,lbl:'Este · napzárás',verdict:'Tegyük le a napot.',air:`<span class="np-airs">Amit megőriznél, és amit elengednél. Kb. 3 perc.</span>`,marks:[75,50,25],cta:'Napzárás indítása',ctaAct:N('ritual')}))
-    :tank({pct:ok?72:62,h:ok?372:420,num:72,cap:ok?'a 100-ból · 4 jel a 7-ből':`a 100-ból · kímélő mód · ${KM.day}. nap`,lbl:'Mai állapot',verdict:ok?'Ma jó nap egy közepes edzéshez.':'Ma a pihenés a dolgod.',
+    ?(ND.ritual?tank({...dusk,pct:avg,h:420,num:avg,cap:'a 100-ból · a nap le van téve',lbl:'Este · a nap lezárva',verdict:'Letetted a napot.',air:`<span class="np-airs">Hajnalban megírom, milyen napod volt.</span>`,marks:[75,50,25],cta:'A napom',ctaAct:'nap.2026-09-24'})
+      :tank({...dusk,pct:avg,h:420,num:avg,cap:'a 100-ból · hat életjel átlaga',lbl:'Este · napzárás',verdict:'Tegyük le a napot.',air:`<span class="np-airs">Amit megőriznél, és amit elengednél. Kb. 3 perc.</span>`,marks:[75,50,25],cta:'Napzárás indítása',ctaAct:N('ritual')}))
+    :tank({pct:avg,h:ok?372:420,num:avg,cap:ok?'a 100-ból · hat életjel átlaga':`a 100-ból · kímélő mód · ${KM.day}. nap`,lbl:'Mai állapot',
+      verdict:none?'Még üres a napod. Az első beírással elindul.':ok?ndReading():'Ma a pihenés a dolgod.',
       air:ok?'':`<span class="np-airs">Az edzés magától kimarad, és nem számít mulasztásnak.</span>`,marks:[75,50,25],cta:sl?`${SLOTA[sl.t]} check-in`:'Gyors logolás',ctaAct:sl?N('ck:open'):'gyors'}));
-  const lv=vials([{l:'Kalória',ic:'t-flame',c:'var(--dom)',p:66,v:'2 060',s:'1 040 van még',mark:'3 100',on:{dom:'fuel'}},
-    {l:'Fehérje',ic:'t-meat',c:'var(--protein)',p:67,v:'148 g',s:'72 g hiányzik',mark:'220',on:{dom:'fuel'}},
-    {l:'Alvás',ic:'t-sleep',c:'var(--ok)',p:92,v:'7 ó 40',s:'átlag fölött',mark:'8 ó',on:{dom:'en'}},
-    {l:'Mozgás',ic:'t-dumbbell',c:'var(--warn)',p:ok?6:0,v:ok?'0 / 2':'–',s:ok?'Pull Day vár':'kímélő · kimarad',mark:ok?'2':'szünet',on:{dom:'edzes'}}]);
+  const lv=vials(none?[['Kalória','t-flame','var(--dom)','2 782','fuel'],['Fehérje','t-meat','var(--protein)','166','fuel'],['Alvás','t-sleep','var(--ok)','8 ó','en'],['Mozgás','t-dumbbell','var(--warn)','1','edzes']].map(([l,ic,c,mark,dom])=>({l,ic,c,p:0,v:'–',s:'még nincs adat',mark,on:{dom}}))
+    :[{l:'Kalória',ic:'t-flame',c:'var(--dom)',p:74,v:'2 060',s:'722 van még',mark:'2 782',on:{dom:'fuel'}},
+    {l:'Fehérje',ic:'t-meat',c:'var(--protein)',p:89,v:'148 g',s:'18 g hiányzik',mark:'166',on:{dom:'fuel'}},
+    {l:'Alvás',ic:'t-sleep',c:'var(--ok)',p:91,v:'7 ó 16',s:'44 perc a célig',mark:'8 ó',on:{dom:'en'}},
+    {l:'Mozgás',ic:'t-dumbbell',c:'var(--warn)',p:ok?6:0,v:ok?'0 / 1':'–',s:ok?'Pull Day vár':'kímélő · kimarad',mark:ok?'1':'szünet',on:{dom:'edzes'}}]);
   const next=[];
-  if(sl)next.push({time:evening?'20:00':sl.t,title:`${SLOTA[sl.t]} check-in`,sub:`${ckSteps(sl.t).length} koppintás, kb. fél perc`,right:'Kitöltöm',now:true,attr:'data-n="ck:open"'});
-  if(evening)next.push({time:'21:00',title:'Napzárás',sub:ND.ritual?'Megvolt · a nap le van téve':'Hat rövid lépés, kb. 3 perc',right:ND.ritual?'Kész ✓':'Indítom',now:!sl&&!ND.ritual,attr:ND.ritual?'data-go="nap.2026-09-24"':'data-n="ritual"'},
-    {time:'21:45',title:'Esti rutin',sub:'Lecsendesítés, képernyők le',right:'Megnézem',attr:'data-go="rutin.este"'});
-  else next.push({time:'18:00',title:'Röpi edzés · BVSC',sub:ok?'90 perc · feladó':'kímélő mód · nem számít mulasztásnak',right:ok?'Megnézem':'Kimarad',attr:ok?'data-dom="edzes"':'data-toast="Kímélő mód: ez az edzés most kimarad"'},
-    {time:'19:30',title:'Vacsora',sub:'1 040 kcal van még · 72 g fehérje hiányzik',right:'Logolom',attr:'data-dom="fuel"'});
-  const log=[['13:00','Ebéd','Csirke · édesburgonya · spenót','760','data-toast="Fuel · Mai"'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','✓','data-go="checkin"'],['09:15','Reggeli','Túrós zabkása áfonyával','420','data-toast="Fuel · Mai"'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','✓','data-go="checkin"'],['tegnap','Késői vacsora · 23:35','Lazac · barna rizs · brokkoli','610','data-toast="Fuel · Mai"']];
+  if(sl&&!err)next.push({time:evening?'20:00':sl.t,title:`${SLOTA[sl.t]} check-in`,sub:`${ckSteps(sl.t).length} koppintás, kb. fél perc`,right:'Kitöltöm',now:true,attr:'data-n="ck:open"'});
+  if(evening)next.push({time:'20:00',title:'Napzárás',sub:ND.ritual?'Megvolt · a nap le van téve':'Hat rövid lépés, kb. 3 perc',right:ND.ritual?'Kész ✓':'Indítom',now:!sl&&!ND.ritual,attr:ND.ritual?'data-go="nap.2026-09-24"':'data-n="ritual"'},
+    {time:'este',title:'Esti rutin',sub:'5 elem · lánc',right:'Megnézem',attr:'data-go="rutin.este"'});
+  else next.push({time:'ma',title:'Pull Day',sub:ok?'a mai edzés még hátravan':'kímélő mód · nem számít mulasztásnak',right:ok?'Megnézem':'Kimarad',attr:ok?'data-dom="edzes"':'data-toast="Kímélő mód: ez az edzés most kimarad"'},
+    {time:'19:30',title:'Vacsora',sub:none?'a mai keret: 2 782 kcal':'722 kcal van még · 18 g fehérje hiányzik',right:'Logolom',attr:'data-dom="fuel"'});
+  const log=none?[]:[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760','data-dom="fuel"'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','✓','data-go="checkin"'],['09:15','Reggeli','Túrós zabkása áfonyával','420','data-dom="fuel"'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','✓','data-go="checkin"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`
   ${kmCard(0)}${T}
   ${evening&&!ND.ritual?`<div class="np-pad rise">${chipsRow([`${ndHu(NDT.kcal)} kcal`,KM.on?'edzés · kímélő mód':`edzés ${NDT.work}/${NDT.workG}`,`check-in ${NDT.ck}/${NDT.ckG}`,`${ndDoneCount(d)}/6 terület kész`])}</div>`:''}
-  ${kh('Mai szintek','Miből áll össze? ›','data-go="eletjel"',1)}
-  <div class="np-pad rise" style="--i:1">${lv}</div>
-  ${card(xrow({icon:'t-macro',title:'A hét üzemanyaga',sub:'napi edények és a három makró',on:{sheet:'uzemanyag'}})+xrow({icon:'t-heart',title:'Életjelek',sub:'hat jel · a mozgás kér figyelmet',v:'60',on:'eletjel'}),{i:1})}
+  ${kh('Mai szintek','hol tartasz a célhoz','',1)}
+  ${err?errRow('Az üzemanyagot most nem sikerült betölteni.'):`<div class="np-pad rise" style="--i:1">${lv}</div>`}
   ${kh('Most következik',`${next.length} teendő`,'',2)}
+  ${err?errRow('A check-ineket most nem sikerült betölteni.','Check-in újratöltése'):''}
   <div class="np-pad rise" style="--i:2">${lstream(next)}</div>
-  ${kh('Észrevétel','Mezo · 4 nap adata','',3)}${obsCard(OBS[0],3,true)}
-  ${card(xrow({icon:'t-calendar',title:'Heti egyeztetés',sub:'vasárnap · 1 javaslat vár · 3 lépés, kb. 2 perc',right:st('Új','plan')+chev(),on:'uzenetek'}),{i:3})}
+  ${kh('Észrevétel','Mezo · megerősített minta','',3)}${none?card(empty('t-pattern','Még nincs észrevétel. Néhány nap adat kell hozzá.',lk('Beszéljünk',{toast:'Mezo · Chat'})),{i:3}):err?errRow('Az észrevételt most nem sikerült betölteni.','Újrapróbálom'):obsCard(OBS[0],3,true)}
   ${kh('Mai napló','+ Új bejegyzés','data-go="gyors"',4)}
-  <div class="np-pad rise" style="--i:4">${lstream(log.map(([time,title,sub,right,attr])=>({time,title,sub,right,attr})))}
-    ${acts(btn('+ Új bejegyzés','gyors','sm')+btn('Napló',{sheet:'naplopick'},'sm ghost')+lk('Több',{sheet:'tobb'}))}</div>
-  ${ok?kh('Ha ma más a helyzet','','',5)+card(xrow({icon:'t-kimelo',title:'Nem vagyok jól',sub:'Kímélő mód: betegség, sérülés vagy utazás idejére',n:'km:open'}),{i:5}):''}`)}
+  ${none?card(empty('t-journal','Az első mai bejegyzésed itt kap helyet.'),{i:4}):`<div class="np-pad rise" style="--i:4">${lstream(log.slice(err?3:0).map(([time,title,sub,right,attr])=>({time,title,sub,right,attr})))}${err?note('Néhány pillanatot most nem sikerült betölteni.'):''}</div>`}
+  ${kh('Továbbiak','ami még a naphoz tartozik','',5)}
+  ${card(xrow({icon:'t-macro',title:'A napod üzemanyaga',sub:'kalória és a három makró',on:{sheet:'uzemanyag'}})
+    +xrow({icon:'t-heart',title:'Életjelek',sub:'hat jel · a mozgás kér figyelmet',v:String(needAvg()),on:'eletjel'})
+    +xrow({icon:'t-pattern',title:'Összes észrevétel',sub:`${OBS.filter(o=>!obsState[o.k]).length} vár a válaszodra`,on:'uzenetek.eszrevetelek'})
+    +xrow({left:who('mezo',36),title:'Valami nem stimmel ma?',sub:'A csapat utánanéz.',on:{toast:'Mezo · Kérdezd a csapatot'}})
+    +acts(btn('+ Új bejegyzés','gyors','sm')+btn('Napló',{sheet:'naplopick'},'sm ghost')+lk('Több',{sheet:'tobb'}))
+    +(KM.on?'':`<div class="np-rows">${xrow({icon:'t-kimelo',title:'Nem vagyok jól',sub:'Kímélő mód: betegség, sérülés vagy utazás idejére',n:'km:open'})}</div>`),{i:5})}`)}
 const maieste=()=>mai('',true);
 
 /* ── CHECK-IN (áttekintés) — a nap négy edénye, a válaszok kis szintek ── */
@@ -211,11 +222,7 @@ function checkin(){
   ${card(SLOTS.map(s=>{const isCur=s===cur,dn=s.st==='done';
     return `<div class="np-slot ${isCur?'now':''} ${!dn&&!isCur?'later':''}"><div class="np-slh"><time>${s.t}</time><span class="g"><strong>${s.n}${isCur?(s.st==='now'?' · most esedékes':' · következik'):''}</strong><small>${dn?[s.note,s.quick?'Most csak ennyi · az alap megvan':''].filter(Boolean).join(' · ')||'Kitöltve':isCur?`hogy vagy most? · ${nQ(s.t)} koppintás, kb. fél perc`:`később esedékes · ${nQ(s.t)} kérdés`}</small></span>${dn?st('Kész','ok'):isCur?nb('Kitöltöm','ckslot:'+s.t,'sm'):st('Később')}</div>${dn?cells(s):''}</div>`}).join('')
     +note('Egy kapszula egy válasz: a szint a 10-es skálán adott érték. A kimaradt check-in nem vész el: pótold bármikor, a társ nem büntet.'),{i:1})}
-  ${sec(2,'Mire jó ez?',2)}
-  ${card(xrow({icon:'t-orb',title:'Mit táplál az új check-in?',sub:'ahol a válaszaidat észre fogod venni',on:'hatasok'})
-    +xrow({icon:'t-day',title:'A napod · Te: 7/10',sub:'a te ítéleted az app pontszáma mellett',on:'napom'}),{i:2})}
-  ${sec(3,'Próbáld ki bármelyik napszakot',3)}
-  ${card(`<div class="fh-pills">${Object.keys(PLAN).map(t=>chip(`${SLOTN[t]} · ${nQ(t)}`,'ckslot:'+t)).join('')}</div>`+note('Csak ebben a mintában: így bármelyik napszak kérdéssora megnézhető.'),{i:3})}`);
+  `);
 }
 /* a check-in lap (lépésenként): minden válasz egy edény, amit megtöltesz */
 function ckSheet(){const S=ckSteps(),s=ck.step,slot=ck.slot,sn=SLOTN[slot],a=ck.a;
@@ -246,42 +253,6 @@ function ckSheet(){const S=ckSteps(),s=ck.step,slot=ck.slot,sn=SLOTN[slot],a=ck.
     <button class="btn np-wide" style="margin-top:16px" data-n="cksave">Mentés · ${slot}</button>`;
 }
 
-/* ── MIT TÁPLÁL AZ ÚJ CHECK-IN — egy forrás-edény négy csoportot táplál ── */
-function feed(G){const X=[40,120,200,280],id=F.uid('nf');
-  return `<svg class="np-feed" viewBox="0 0 320 166" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--liq1)"/><stop offset="1" stop-color="var(--liq2)"/></linearGradient>
-    <clipPath id="${id}s"><rect x="98" y="6" width="124" height="52" rx="24"/></clipPath>${X.map((x,i)=>`<clipPath id="${id}c${i}"><rect x="${x-27}" y="96" width="54" height="64" rx="22"/></clipPath>`).join('')}</defs>
-    <path d="M160 54V76M40 98V84Q40 76 48 76H272Q280 76 280 84V98M120 76V98M200 76V98" fill="none" stroke="var(--liq1)" stroke-width="7" stroke-linecap="round" opacity=".7"/>
-    <rect x="98" y="6" width="124" height="52" rx="24" fill="#fff" stroke="rgba(10,42,60,.10)" stroke-width="2"/><g clip-path="url(#${id}s)"><rect x="98" y="18" width="124" height="44" fill="url(#${id})"/></g>
-    <text x="160" y="44" text-anchor="middle" class="np-ft1">14 kérdés</text>
-    ${X.map((x,i)=>{const n=G[i][1].length;return `<rect x="${x-27}" y="96" width="54" height="64" rx="22" fill="#fff" stroke="rgba(10,42,60,.10)" stroke-width="2"/><g clip-path="url(#${id}c${i})"><rect x="${x-27}" y="${160-n*13}" width="54" height="70" fill="url(#${id})"/></g><text x="${x}" y="150" text-anchor="middle" class="np-ft2">${n}</text>`}).join('')}</svg>
-  <div class="np-feedl">${G.map(([t])=>`<span>${t}</span>`).join('')}</div>`}
-function hatasok(){
-  const C=[
-    ['mezo','Társ · beszélgetés','Mezo · minden választ lát, nem csak az energiát és a stresszt',['„Látom, reggel fájt a térded. Ma a guggolás helyett legyen lábtoló?”','„Délben már éhes voltál és nyűgös — ettél azóta rendesen?”'],['fájdalom','éhség','hangulat']],
-    ['deru','Figyelmeztető kártyák · 4 új','Közérzet · korai jelzések',['Harmadik napja fáj a térded. Érdemes ránézni.','Két reggel egymás után nem pihented ki magad.','Sokszor kívánsz mostanában édeset, főleg délután.','Pár napja alacsony a kedved. Kisebb lépések?'],['fájdalom','kipihentség','sóvárgás','motiváció'],'Holnap könnyítsünk'],
-    ['mocor','Edzés','Mozgás · terhelés',['Mai állapot: könnyebb nap javasolt — rosszul pihented ki magad (4/10), erős az izomláz (7/10).','A fájó vállat terhelő gyakorlatnál: „ma óvatosan”.','A Pull Day után nálad kb. 2 napig tart az izomláz.'],['kipihentség','izomláz','fájdalom','motiváció'],'Megnézem az Edzés mintában'],
-    ['falat','Étkezési tanácsadó','Étkezés · étrend',['10-kor már 7/10 éhes voltál — kevés volt a reggeli. Holnap tegyél bele még kb. 20 g fehérjét.','Most sósat kívánsz: egy marék pörkölt mandula jobb választás, mint a chips.','A babos ebédek után 3-ból 3-szor nehéz volt a gyomrod délután — legközelebb kisebb adag?'],['éhség','sóvárgás','emésztés']],
-    ['falat','Érzelmi evés','Étkezés · étrend',['Nem a stresszből találgatunk: a sóvárgásos napokon 2× több feldolgozott étel került a tányérodra, és ezek jellemzően rossz hangulatú napok voltak.'],['sóvárgás','hangulat','stressz']],
-    ['szunya','Alvás','Alvás · pihenés',['Neked kb. 7,5 óra alvás elég: ennél többtől már nem leszel kipihentebb. Beállítsam ezt alváscélnak?'],['reggeli kipihentség','alvásnapló'],'Legyen ez a cél'],
-    ['mezo','Mintakereső · új összefüggések','Mezo · 14 új párt figyel',['Rossz alvás után másnap többször sóvárogsz (5 esetből 4).','Edzéses napokon átlagosan 1,2 ponttal jobb a hangulatod.','Emberekkel töltött napokon +1,4 a hangulatod — ezt eddig a fejtisztaságból számoltuk, most a valódi hangulatodból.'],['hangulat','sóvárgás','kipihentség','éhség','motiváció']],
-    ['mezo','Csapat · mindenki kap új témát','Alvás · Étkezés · Közérzet · Mozgás · Mezo',['Közérzet: „A derekad 2 hete visszatérő, főleg az ülős napokon.”','Alvás: a kipihentségedből kiszámolja, mennyi alvás kell neked.','Étkezés: mi előzi meg a sóvárgást — rövid alvás, stressz vagy kevés fehérje.','Közérzet: amit a naplóba írsz és ahogy a hangulatod értékeled, 5 napból 4-szer egyezik.','Mozgás: reggel magas kedv → az esetek 80%-ában meg is lett az edzés.','Mozgás: melyik edzés után meddig tart az izomláz.','Mezo: kikkel töltött napokon jobb a hangulatod.'],['mindegyik új kérdés']],
-    ['mezo','Kapcsolat jel · életjelek','Mezo · emberek',['A Kapcsolat jelet mostantól az tölti, mennyire érezted magad kapcsolódva — nem az, hogy kitöltötted-e a check-int.','„Azokon a napokon, amikor Annával beszéltél, 8/10 a kapcsolódásod.”'],['kapcsolódás','napló-említések']],
-    ['mocor','Életcélok','Mozgás · fegyelem',['„Ha nincs kedvem (kedv ≤ 4) → akkor csak 10 perc séta.” — a terved ma egyszer beindult.','A lelki pillér a valódi hangulatodat mutatja, nem a fejtisztaságot.'],['motiváció','hangulat','kipihentség']],
-    ['mezo','Esti napzárás és napi pontszám','A napod',['Te: 7/10 · App: 64/100 — „Az app szerint közepes nap, szerinted jó volt.”','A napzárás nem kérdezi meg újra, csak jelzi, hogy 7/10-re értékelted.'],['a nap mérlege'],'','napom'],
-    ['mezo','Napi összefoglaló, emlékezet','Mezo · visszatekintés',['„Kedd: rövid éjszaka, délelőtt fájt a hátad, délután nyűgös voltál és édeset kívántál — este mégis jónak érezted a napot.”','Egy hónap múlva is emlékszik: „Legutóbb a hosszú autóút után fájt így a derekad.”'],['minden válasz']],
-    ['mezo','Heti nézet','Én · a heted',['Az energia mellett a hangulatod heti görbéje is megjelenik.'],['hangulat','energia']]];
-  const G=[['A csapat hangja',[0,1,7]],['Edzés, étel, alvás',[2,3,4,5]],['Minták és célok',[6,8,9]],['A napod képe',[10,11,12]]];
-  const one=(i,open)=>{const [w,t,sub,say,from,a,link]=C[i];
-    return `<details class="np-d" ${open?'open':''}><summary>${who(w,34)}<span class="g"><strong>${t}</strong><small>${pad2(i+1)} · ${sub}</small></span>${chev()}</summary>
-      <div class="np-db">${say.map(x=>`<p class="fh-txt np-say">${x}</p>`).join('')}${chipsRow(from,'Miből:')}
-      ${a||link?acts((a?btn(a,{toast:'Rendben — a mintában itt megáll.'},'sm ghost'):'')+(link?lk('Megnézem',link):'')):''}</div></details>`};
-  return page('nap',{title:'Mit táplál?',sub:'Check-in · 13 terület',back:'checkin'},`
-  ${hero({lbl:'Check-in 2.0 · minta',verdict:`A válaszaid ${C.length} helyen jelennek meg.`,sub:'Egy forrásból négy irányba folyik tovább, amit megadsz. Mindegyik területnél példák: itt veszed majd észre.',
-    body:`<div class="np-feedw">${feed(G)}</div>`,acts:nb('Kitöltöm a check-int','ck:open')})}
-  ${G.map(([t,idx],g)=>sec(g+1,`${t} · ${idx.length}`,g+1)+card(idx.map((i,k)=>one(i,g===0&&k===0)).join(''),{i:g+1})).join('')}
-  <p class="fh-note np-out">Üres válasz sehol nem számít: amit kihagysz, azt semmi nem veszi „közepesnek”.</p>`);
-}
-
 /* ── ÉLETJELEK — hat kémcső, az alacsony megjelölve ── */
 const needAct=a=>a==='water'?{on:{toast:'+250 ml víz — rögzítve'}}:a==='sleep'?{on:{sheet:'sleep'}}:a==='checkin'?{n:'ck:open'}:a==='meal'?{on:{toast:'Fuel · Logolás'}}:a==='train'?{on:{toast:'Edzés · Mai'}}:{};
 const needSub=a=>a==='water'?'koppintás: +250 ml':a==='sleep'?'koppintás: alvás rögzítése':a==='checkin'?'koppintás: a következő check-in':a==='meal'?'koppintás: étkezés logolása':a==='train'?'koppintás: Edzés':'magától töltődik a rutinból';
@@ -308,42 +279,44 @@ function kuldetesek(arg){const none=arg==='ures', done=QUESTS.filter(q=>q.st==='
   ${hero({lbl:`Mai ajánlatok · +${QUESTS.reduce((a,q)=>a+q.xp,0)} XP`,verdict:`${done} kész a ${QUESTS.length} ajánlatból.`,sub:'A többi magától telik, ahogy a napod halad.',body:qv,acts:open?btn(open.cta+' megnyitása',{toast:open.cta+' · Mai'}):''})}
   ${sec(1,'Mai ajánlatok',1)}
   ${card(QUESTS.map((q,i)=>xrow({icon:q.ic,title:q.t,sub:(q.why?q.why+'<br>':'')+(q.st==='done'?`kész · +${q.xp} XP jóváírva`:q.foot),
-    more:level(q.p,{c:q.st==='done'?'var(--ok)':'var(--dom)',h:8})+(q.st==='done'||!rerolls?'':`<span class="np-inacts">${nl(`Csere · ${rerolls} maradt`,'reroll:'+i)}</span>`),right:q.st==='done'?st('Kész','ok'):st(`+${q.xp} XP`,'plan')})).join(''),{i:1})}${foot}`);
+    more:level(q.p,{c:q.st==='done'?'var(--ok)':'var(--dom)',h:8})+(q.st==='done'?'':`<span class="np-inacts">${q.cta?btn(q.cta,{toast:q.cta+' · Mai'},'sm ghost'):''}${rerolls?nl(`Csere · ${rerolls} maradt`,'reroll:'+i):''}</span>`),right:q.st==='done'?st('Kész','ok'):st(`+${q.xp} XP`,'plan')})).join(''),{i:1})}${foot}`);
 }
 
 /* ── RUTIN — a lánc összekötött cseppek sora, pipálásra telik ── */
-const rowAttr=(r,i)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='ritual'?'data-go="napzaras.1"':`data-n="tick:${i}"`;
+const rowAttr=(r,i,g)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='intention'?'data-sheet="intention"':r[6]==='ritual'?'data-go="napzaras.1"':`data-n="tick:${g}:${i}"`;
 function rutin(arg){ if(arg&&RUTIN[arg])face=arg;
   const R=RUTIN[face], done=R.rows.filter(r=>r[4]).length, strs=R.rows.filter(r=>r[3]!=null);
   const avg=Math.round(strs.reduce((a,r)=>a+r[3],0)/strs.length);
   const nx=nowRow>=0&&R.rows[nowRow]&&!R.rows[nowRow][4]?nowRow:R.rows.findIndex(r=>!r[4]), all=nx<0;
+  const order=[face,...Object.keys(RUTIN).filter(k=>k!==face)];
+  const grp=(k,n)=>{const G=RUTIN[k],dn=G.rows.filter(r=>r[4]).length,gx=k===face?nx:-1;
+    return sec(n,`${G.title} · ${dn}/${G.rows.length}`,n+1)+card(G.rows.map((r,i)=>{const [nm,s,ic,str,d1,link]=r;return xrow({cls:(d1?'done ':'')+(i===gx?'now':''),left:tk(d1,rowAttr(r,i,k),nm),icon:ic,
+      title:link?`<button class="np-tl" data-toast="Megnyitom a videót">${nm}</button>`:nm,sub:(i===gx?'<b class="np-now">Most jön</b> · ':'')+s,v:str!=null?str+'<small>%</small>':null,more:str!=null?level(str,{h:8}):''})}).join('')
+      +(n===1?note('A sor végén a szám a szokás 28 napos ereje.'):''),{i:n+1})};
   return page('nap',{title:'Rutin',sub:'Nap · ma, szerda',tab:'rutin'},`
-  <div class="np-pre rise"><div class="fh-seg">${[['reggel','Reggel'],['napkozben','Napközben'],['este','Este']].map(([k,l])=>`<button class="${k===face?'on':''}" data-n="face:${k}">${l}</button>`).join('')}</div></div>
   ${hero({lbl:`${R.title} · <b class="np-cnt">${done}/${R.rows.length}</b> kész`,verdict:all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`,sub:all?'Holnap ugyanitt folytatódik.':`${R.rows.length} elem · lánc · ${R.rows[nx][1]}`,
-    body:drops(R.rows.map((r,i)=>({k:r[4]?'d':i===nx?'now':'',attr:rowAttr(r,i),label:r[0]})),'big'),
-    acts:(all?'':`<button class="btn" ${rowAttr(R.rows[nx],nx)}>${R.rows[nx][6]==='reflect'?'Válaszolok':R.rows[nx][6]==='ritual'?'Napzárás indítása':'Megvan, pipálom'}</button>`)
+    body:drops(R.rows.map((r,i)=>({k:r[4]?'d':i===nx?'now':'',attr:rowAttr(r,i,face),label:r[0]})),'big'),
+    acts:(all?'':`<button class="btn" ${rowAttr(R.rows[nx],nx,face)}>${R.rows[nx][6]==='reflect'?'Válaszolok':R.rows[nx][6]==='intention'?'Leírom':R.rows[nx][6]==='ritual'?'Napzárás indítása':'Megvan, pipálom'}</button>`)
       +lk('‹ Tegnap',{toast:'Tegnap — csak a kézi, kimaradt elemek pipálhatók'})+`<span class="fh-lk" style="opacity:.35">Holnap ›</span>`},1)}
-  ${sec(1,'A lánc sorrendben',2)}
-  ${card(R.rows.map((r,i)=>{const [n,s,ic,str,dn,link]=r;return xrow({cls:(dn?'done ':'')+(i===nx?'now':''),left:tk(dn,rowAttr(r,i),n),icon:ic,
-    title:link?`<button class="np-tl" data-toast="Megnyitom a videót">${n}</button>`:n,sub:(i===nx?'<b class="np-now">Most jön</b> · ':'')+s,v:str!=null?str+'<small>%</small>':null,more:str!=null?level(str,{h:8}):''})}).join('')
-    +note('A sor végén a szám a szokás 28 napos ereje.'),{i:2})}
-  ${sec(2,'Az utolsó 28 nap',3)}
-  ${card(facts([[R.stat[0],R.stat[1]],[`${avg}%`,'lánc-erő · 28 nap'],[`+${R.xp}`,'XP ma']])+g28(face==='este'?3:1,[],[],28,true)+note('Egy kémcső egy nap: annyira van tele, amennyi a láncból megvolt. A lánc-erő az elmúlt 28 nap következetessége: egy kihagyás nem nulláz, csak halványít.'),{i:3})}
-  ${sec(3,'Szerkesztés',4)}
-  ${card(xrow({icon:'t-chain',title:'Rutinok szerkesztése',sub:'láncok, szokások, új szokás',on:'rutin-epites'}),{i:4})}`);
+  ${order.map((k,i)=>grp(k,i+1)).join('')}
+  ${sec(4,'A lánc ereje',5)}
+  ${card(facts([...(R.stat?[[R.stat[0],R.stat[1]]]:[]),[`${avg}%`,'lánc-erő · 28 nap'],[`+${R.xp}`,'XP ma']])+note('A lánc-erő az elmúlt 28 nap következetessége: egy kihagyás nem nulláz, csak halványít.'),{i:5})}
+  ${sec(5,'Szerkesztés',6)}
+  ${card(xrow({icon:'t-chain',title:'Rutinok szerkesztése',sub:'láncok, szokások, új szokás',on:'rutin-epites'}),{i:6})}`);
 }
 
 /* ── BESZÉLGETÉS (Mezo · ma) — a heti egyeztetés három edénye ── */
-const WK=[['Miért most?','Vasárnap van, és egy hét adata gyűlt össze: 5 edzés, 19 étkezés, 24 check-in.'],['Mi történt?','A fehérje átlag 162 g lett a 220 g-os célból. Az alvás 7 ó 10 p átlag, kedd és szerda rövid.'],['Javaslat','A fehérjecél 200 g-ra igazítása: reálisabb, és a testsúly-trend így is tartja az irányt.']];
 function uzenetek(tab){ tab=tab||'uzenetek';
   const TABS=[['uzenetek','Üzenetek',1],['eletjelek','Életjelek',1],['eszrevetelek','Észrevételek',0]];
-  const wk3=`<div class="np-vh np-wk3">${vials(WK.map((w,i)=>({l:w[0],p:wkRes||i<wkStep?100:i===wkStep?52:0,v:i+1,mark:wkRes||i<wkStep?'kész':i===wkStep?'most':'',c:wkRes==='ok'?'var(--ok)':'var(--dom)',on:{toast:w[0]+' '+w[1]}})),{h:62})}</div>`;
   let body='';
   if(tab==='uzenetek') body=`
-    ${wkRes?hero({lbl:'Heti egyeztetés · kész',verdict:wkRes==='ok'?'Elfogadtad: a fehérjecél 200 g.':'Ezt most kihagytad. Marad minden.',sub:'Jövő vasárnap újra összeülünk.',left:who('mezo',64),body:wk3,acts:btn('Beszélgess Mezóval',{toast:'Mezo · Chat'})},1)
-      :hero({lbl:`Heti egyeztetés · ${wkStep+1} / 3`,verdict:WK[wkStep][0],sub:WK[wkStep][1],left:who('mezo',64),body:wk3,
-        acts:wkStep<2?nb('Tovább','wk:next')+nl('Ezt kihagyom','wk:skip'):nb('Elfogadom','wk:accept')+nl('Marad a 220 g','wk:skip')},1)}
-    ${sec(1,'Ma reggel',2)}
+    ${hero({lbl:'Mezo · ma',verdict:'Négy üzenet, kettő új.',sub:'A napod fonala: amit ma észrevettünk és javasoltunk.',left:who('mezo',64),
+      body:drops([{k:'d',t:'tegnap'},{k:'d',t:'tegnap'},{k:'now',t:'06:30'},{k:'now',t:'10:12'}]),acts:btn('Beszélgess Mezóval',{toast:'Mezo · Chat'})},1)}
+    ${card(xrow({left:`<span class="np-duo">${who('szunya',30)}${who('mocor',30)}</span>`,title:'A csapat most erről beszél',sub:'belefér-e ma az esti röpi a rövid éjszaka után',on:{toast:'Mezo · Élő beszélgetés'}}),{i:1})}
+    ${sec(1,'Ma',2)}
+    ${card(msg('falat','A reggelid 420 kcal volt, 22 g fehérjével. Ha az ebédhez legalább 40 g-ot teszel, estére nem marad nagy hiány.','10:12 · étkezési javaslat')
+      +(advOn?acts(`<span class="np-okline">${I('i-check')}Beállítva: az ebédnél szólok a fehérjéről.</span>`):acts(nb('Szólj az ebédnél','advice','sm')))
+      +acts(`<span class="np-ask">Segített?</span>${btn('Segített',{toast:'Köszönöm — ezt megjegyzem'},'sm ghost')}${btn('Nem talált',{toast:'Köszönöm, finomítok'},'sm ghost')}`),{i:2})}
     ${card(msg('mezo','Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, ma a hátad pihen.<br><br>Az alvásod 7,4 óra volt, a reggeli check-in nyugodt. Ma délben érdemes a fehérjét előrehozni.','06:30 · reggeli briefing')
       +lab('Amire épült')+chipsRow(['Push Day · tegnap','Chest Row 105,8 · márc 4','késő szénhidrát ↔ alvás'])
       +lab('Miből gondolom')+`<div class="np-f2"><div>${inl('t-sleep')}7,4 óra alvás, 2 ébredés</div><div>${inl('t-checkin')}Reggeli check-in: energia 7/10</div></div>`
@@ -351,7 +324,7 @@ function uzenetek(tab){ tab=tab||'uzenetek';
       +(fbNo?`<div class="fh-pills" style="margin-top:10px">${['pontatlan','túl sok','rossz időzítés','nem rólam szól'].map(r=>`<button class="fh-pill" data-toast="Köszönöm, finomítok">${r}</button>`).join('')}</div>`:''),{i:2})}
     ${sec(2,'Korábbi üzenetek',3)}
     ${card([['szunya','Tegnap 21:48 · esti visszanézés','Szép nap volt: 3 szokás, 2 check-in és egy erős edzés.'],['mocor','Tegnap 14:10 · délutáni jelzés','Alacsony az energiád — egy rövid séta többet ad, mint a harmadik kávé.']].map(([w,h,p],i)=>
-      expMsg[i]?`<div class="fh-row">${msg(w,p,h)}</div>`:xrow({left:who(w,36),title:F.TEAM[w][0],sub:h+'<br>'+p.slice(0,38)+'…',n:'exp:'+i})).join(''),{i:3})}
+      expMsg[i]?`<div class="fh-row np-exp">${msg(w,p,h)}${nl('Összecsukom','exp:'+i)}</div>`:xrow({left:who(w,36),title:F.TEAM[w][0],sub:h+'<br>'+p.slice(0,38)+'…',n:'exp:'+i})).join(''),{i:3})}
     ${sec(3,'Írj vissza',4)}
     ${card(xrow({left:who('mezo',36),title:'Beszélgess Mezóval',sub:'kérdezz, mesélj, vagy beszéljük át a napot',on:{toast:'Mezo · Chat'}}),{i:4})}`;
   if(tab==='eletjelek') body=`
@@ -408,7 +381,7 @@ function napzaras(arg){const a=Math.min(6,Math.max(1,+arg||1));
 
 /* ── A NAPOM · napi nézet ── */
 const ndHu=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
-const ND={phase:'day',open:new Set(),adj:false,ritual:false};
+const ND={phase:'day',open:new Set(['nutrition','quality','training','sleep','logging','rhythm']),adj:true,ritual:false};
 const NDT={kcal:2060,kcalG:2782,prot:148,protG:166,nova:68,micro:80,work:0,workG:1,sleepMin:436,sleepQ:7,ck:2,ckG:4,rhythm:74,updated:'14:20'};
 const ND_DIM=[['nutrition','Tápanyag','t-bowl'],['quality','Minőség','t-sprout'],['training','Edzés','t-dumbbell'],['sleep','Alvás','t-sleep'],['logging','Logolás','t-checkin'],['rhythm','Ritmus','t-chain']];
 function ndTodayDims(){const t=NDT,nut=Math.round((Math.min(1,t.kcal/t.kcalG)+Math.min(1,t.prot/t.protG))/2*100);
@@ -426,8 +399,8 @@ function ndReading(){const t=NDT,need=Math.max(0,t.protG-t.prot);
   return 'Minden a helyén. Ma este nyugodtan zárhatod a napot.'}
 function ndLead(){const t=NDT;
   if(ND.phase==='evening'&&!ND.ritual)return ['t-moon','este','Tegyük le a napot','Amit megőriznél, és amit elengednél. Hajnalban megírom, milyen napod volt.','Napzárás'];
-  if(!t.work)return ['t-dumbbell','délután','17:30-ra be van írva az edzés','Utána egy fehérjés vacsora, és a tápanyag is kész.','Edzés'];
-  if(t.ck<t.ckG)return ['t-checkin','este','Egy esti check-in hiányzik','Fél perc. Utána teljes a napod képe.','Check-in'];
+  if(!t.work)return ['t-dumbbell','délután','Még hátravan a mai edzés','Utána egy fehérjés vacsora, és a tápanyag is kész.','Edzés'];
+  if(t.ck<t.ckG)return ['t-checkin','este','Egy check-in hiányzik','Fél perc. Utána teljes a napod képe.','Check-in'];
   return ['t-moon','este','Készen állsz a napzárásra','A napzárás innen és az esti rutinból is indul.','Napzárás']}
 const NDY={score:87,base:89,corr:-2,label:'A hét legjobb napja',
   dims:{nutrition:[100,'2 962 / 2 782 kcal · fehérje 162 / 166 g'],quality:[79,'nova 71% · mikro 100%'],training:[100,'2/2 edzés'],sleep:[79,'6 óra · minőség Q7'],logging:[85,'check-in 2/4 · étkezések időben'],rhythm:[64,'7/7 nap a héten']},
@@ -452,10 +425,10 @@ function ndDayBody(iso){const [dn,dd]=ND_DAYNAME[iso]||['',''];
     ${sec(1,`Most érdemes · ${lwhen}`,2)}${card(step({icon:lic,title:lt,sub:ls,now:true}),{i:2})}
     ${sec(2,'Ma eddig · 6 terület',3)}
     ${card(ND_DIM.map(([key,l,ic])=>{const x=d[key];return xrow({icon:ic,title:`${l} <span class="np-stt">${st(x.st,stKind[x.st])}</span>`,sub:x.v,v:x.big+(x.unit==='%'?'<small>%</small>':''),more:level(Math.max(2,x.pct),{h:12,c:x.st==='nyitva'?'var(--warn)':x.st==='kész'?'var(--ok)':'var(--dom)'})})}).join('')
-      +`<div class="np-rows">${xrow({icon:'t-pencil',title:'Próbáld ki: írj be valamit',sub:'amit beírsz, itt azonnal megjelenik',on:{sheet:'ndlog'}})}</div>`,{i:3})}
+,{i:3})}
     ${sec(3,'A napod · te és az app',4)}
     ${card(F.vials([{l:'az app szerint',ic:'t-score',c:'var(--dom)',p:64,v:'64<small style="font-size:12px;font-weight:600;color:var(--sub)"> / 100</small>',s:'közepes nap',mark:'100',on:{toast:'Az app pontszáma: a hat terület súlyozott átlaga'}},{l:'szerinted',ic:'t-mood',c:'var(--ok)',p:70,v:'7<small style="font-size:12px;font-weight:600;color:var(--sub)"> / 10</small>',s:'jó nap',mark:'10',on:{toast:'A te ítéleted: az esti check-in utolsó kérdése'}}],{h:132})
-      +`<div style="margin-top:14px">${msg('mezo','Az app szerint közepes nap, szerinted jó volt. Kevés volt a fehérje és rövid az alvás, ezért lett közepes a pontszám. A hangulatod viszont egész nap 7 fölött volt, és este jónak érezted a napot — úgy tűnik, ma a délutáni séta többet számított, mint a számok.','a nap értékelése')}</div>`
+      +`<div class="np-rows">${xrow({div:true,icon:'t-day',title:'Az app szerint közepes nap, szerinted jó volt.'})}</div>`
       +note('A 7/10 az esti check-in utolsó kérdéséből jön („Milyen volt a napod összességében?”). A napod többi része nem változik.'),{i:4})}`}
   if(iso==='2026-09-21')return `${hero({lbl:`${dn} · ${dd} · lezárva, hajnali 3:02`,verdict:'Erre a napra kevés az adat.',sub:'Csak egy területről van adat (egy alvás), ezért nem adok pontszámot: kitalálni nem fogok. A hét pontszámába ez a nap nem számít bele.',left:jar(7,{s:80,t:'–'}),acts:btn('Vissza a mai napra','nap.2026-09-24')},1)}
     ${sec(1,'Amit erről a napról tudunk',2)}
@@ -473,21 +446,18 @@ function ndDayBody(iso){const [dn,dd]=ND_DAYNAME[iso]||['',''];
     ${sec(3,'A nap körülményei',4)}
     ${card(`<div class="np-ctx">${v.ctx.map(([a,b])=>`<div><small>${a}</small><b>${b}</b></div>`).join('')}</div>`+note('Ezek nem számítanak a pontba. Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.'),{i:4})}
     ${iso==='2026-09-23'?sec(4,'Reggeli összefoglaló · kész',5)+card(xrow({icon:'t-sun',title:'Tovább a mai napra',sub:'csütörtök · élő nap',on:'nap.2026-09-24'}),{i:5}):''}`}
-function napDay(arg){const [iso0,phase]=(arg||'').split('.');const iso=ND_DAYNAME[iso0]?iso0:'2026-09-24';ND.phase=phase==='este'?'evening':'day';
+function napDay(arg){const [iso0,phase]=(arg||'').split('.');
+  if(iso0==='hiba')return page('nap',{title:'A napom',sub:'Nap · szept 21 – 27',tab:'napom'},`${ndWeek('2026-09-24')}${hero({warn:true,lbl:'Csütörtök · szept 24',verdict:'Nem sikerült betölteni a napot.',sub:'A többi oldal működik. Próbáld újra egy pillanat múlva.',left:jar(0,{s:80,t:'?'}),acts:btn('Próbáld újra','napom')},1)}`);
+  if(iso0==='tolt')return page('nap',{title:'A napom',sub:'Nap · szept 21 – 27',tab:'napom'},`${ndWeek('2026-09-24')}${tankX({pct:44,h:400,num:'…',cap:'számolom · egy pillanat',lbl:'Csütörtök · szept 24',verdict:'Összeszedem a mai napodat.'})}${sec(1,'Ma eddig · 6 terület',2)}${card(ND_DIM.map(([key,l,ic])=>xrow({cls:'np-dim',icon:ic,title:l,sub:'betöltés…',v:'–',more:level(0,{h:12})})).join(''),{i:2})}`);const iso=ND_DAYNAME[iso0]?iso0:'2026-09-24';ND.phase=phase==='este'?'evening':'day';
   return page('nap',{title:'A napom',sub:'Nap · szept 21 – 27',tab:'napom'},`${ndWeek(iso)}${ndDayBody(iso)}`)}
-const napom=()=>napDay('2026-09-24');
-/* élő frissítés bemutató: amit beírsz, azonnal megjelenik a napi oldalon */
-const ndClock=[14,20];
-const ndLogSheet=()=>`${shH('Mit írsz be?','A napom · próbáld ki: a napi oldal azonnal frissül.','','t-pencil')}
-  <div class="np-qg">${[['meal','t-bowl','Uzsonna','+420 kcal · +18 g',0],['work','t-dumbbell','Edzés kész','1 edzés',NDT.work],['ck','t-checkin','Check-in','+1',NDT.ck>=NDT.ckG]].map(([k,ic,l,s,off])=>`<button data-n="ndlog:${k}" ${off?'disabled style="opacity:.4"':''}>${bub(ic,{s:52})}<span>${l}<small>${s}</small></span></button>`).join('')}</div>`;
-
+const napom=a=>napDay(a==='hiba'||a==='tolt'?a:'2026-09-24');
 /* ── RUTIN-ÉPÍTÉS ── */
 const RE={rutin:'full',lanc:'view'};
 let effort=[1,0,1,2], fwPick='fogg', fwRaw='fogg', sklFilter=[true,true,true,false];
 const RLIFE=[['Tudatosság','t-heart'],['Szemlélet','t-compass'],['Konyha','t-pot'],['Pénzügyek','t-coin'],['Produktivitás','t-record'],['Tanulás','t-book'],['Kapcsolatok','t-people'],['Regeneráció','t-sprout']];
 const CHAIN=[['Ébredés időben','reggel · ébredés',92,'d'],['Reggeli napfény','ébredés után',78,'d'],['50 fekvőtámasz','megvolt a reggeli napfény',48,'now'],['Reggeli videó','fekvőtámasz után',30,''],['Gombakávé','videó után',64,'']];
 const recept=(i=3)=>`<p class="np-recept">Miután <b>megvolt a reggeli napfény</b>, ${i>=2?'<b>50 fekvőtámaszt</b> csinálok':'<span class="np-blank"></span>'}, és ünneplésül ${i>=3?'<b>ökölrázás</b>':'<span class="np-blank"></span>'}.</p>`;
-const FWL={fogg:['Horgony','Pici tett','Ünneplés'],clear:['Jelzés','Vágy','Válasz','Jutalom']};
+const FWL={fogg:['Horgony','Pici tett','Ünneplés'],clear:['Jelzés','Vágy','Válasz','Jutalom'],free:['Tett']};
 const mark=k=>k==='d'?`<span class="np-mk d">${I('i-check')}</span>`:`<span class="np-mk ${k}"></span>`;
 const CSH=['Ébredés','Napfény','Fekvő','Videó','Kávé'];
 /* a két lánc két csepp-sor: a reggeli öt, az esti kettő */
@@ -545,7 +515,8 @@ function szokas(){
   ${sec(2,'Mikor megy a legjobban',2)}
   ${card(`<div class="np-vh np-ctx3">${vials([['Napszak',82,'reggel 7–8 között','t-clock'],['Horgony',74,'napfény után','t-anchor'],['Ritmus',51,'hétköznap erősebb','t-calendar']].map(r=>({l:r[0],s:r[2],p:r[1],v:r[1]+'%',ic:r[3],on:{toast:r[0]+' · '+r[2]}})),{h:92})}</div>`+note('A legerősebb jel a kontextus: mikor, mi után és milyen napokon megy magától.'),{i:2})}
   ${sec(3,'Előzmény · az első naptól · 29 nap',3)}
-  ${card(g28(2,[9,14,20,23,27],[0,1,2,3,4,5],35)+`<div class="np-leg"><span><i class="p"></i>pipa</span><span><i class="m"></i>kimaradt</span><span><i class="s"></i>nem volt sor</span></div>`+note('Egy kémcső egy nap. Csendes rács, nem sorozat.'),{i:3})}`);
+  ${card(g28(2,[9,14,20,23,27],[0,1,2,3,4,5],35)+`<div class="np-leg"><span><i class="p"></i>pipa</span><span><i class="m"></i>kimaradt</span><span><i class="s"></i>nem volt sor</span></div>`+note('Egy kémcső egy nap. Csendes rács, nem sorozat.')
+    +lab('A hét napjai szerint')+`<div class="np-cells np-wd">${[['H',80],['K',100],['Sze',80],['Cs',75],['P',60],['Szo',40],['V',50]].map(([l,p2])=>mini({p:p2,v:p2+'%',l})).join('')}</div>`+note('A legerősebb napod a kedd: ötből ötször megvolt.'),{i:3})}`);
 }
 function effortCard(){const f=['Idő','Fizikai','Fejmunka','Beleillik'],o=[['kevés','közép','sok'],['könnyű','közép','nehéz'],['könnyű','közép','nehéz'],['simán','kicsit','nehezen']];
   const sum=effort.reduce((a,b)=>a+b,0),lv=sum<=2?['Könnyű',5,34]:sum<=5?['Közepes',10,62]:['Nehéz',15,90];
@@ -558,18 +529,18 @@ function szerk(){
   ${card(lab('Keret')+xseg(['Szokás-láncolás','Négy törvény'])+`<p class="fh-txt np-why">${inl('t-info')}<span>Váltásnál elveszik: az ünneplés.</span></p>`
     +lab('Miután… · horgony')+xrow({icon:'t-anchor',title:'Reggeli napfény',sub:'74% erő · 28 nap',more:level(74,{h:8}),on:{sheet:'anchor'}}),{i:1})}
   ${sec(2,'A szokás',2)}
-  ${card(lab('Cím · a tett')+inp('','50 fekvőtámasz')+lab('Ünneplésül')+inp('','ökölrázás')+lab('Miért')+area('pl. hogy erősebb legyen a vállam','Hogy erősebb legyen a vállam, és ne fájjon a nyakam.',2),{i:2})}
+  ${card(lab('Cím · a tett')+inp('','50 fekvőtámasz')+lab('Ünneplésül')+inp('','ökölrázás')+lab('Miért')+area('pl. hogy erősebb legyen a vállam','Hogy erősebb legyen a vállam, és ne fájjon a nyakam.',2)+lab('Link · opcionális')+inp('pl. a reggeli videó címe'),{i:2})}
   ${sec(3,'Pipálás és lánc',3)}
-  ${card(lab('Hogyan pipálódik?')+xseg(['Kézzel pipálom','Adatból'])+lab('Lánc')+chips(['Reggeli lánc','Esti lánc','Egyik sem'],0),{i:3})}
+  ${card(lab('Hogyan pipálódik?')+xseg(['Kézzel pipálom','Adatból'])+lab('Metrika · ha adatból pipálódik')+chips(['Aznapi edzés','Aznapi súlylogolás','Fehérjés reggeli','Ébredés a cél-ablakban','Napzárás megtörtént'],0)+lab('Lánc')+chips(['Reggeli lánc','Esti lánc','Egyik sem'],0),{i:3})}
   ${sec(4,'Mennyibe kerül? · újraértékelhető',4)}${card(effortCard(),{i:4})}
   ${sec(5,'Szünet vagy törlés',5)}
   ${card(xrow({icon:'t-hold',title:'Szüneteltetés',sub:'a haladás megmarad',on:{toast:'Szüneteltetve'}})+xrow({icon:'t-trash',title:'Szokás törlése',sub:'két koppintás kell hozzá',on:{toast:'Koppints újra a törléshez'}}),{i:5})}`);
 }
-const WZ={fogg:['fw','anchor','act','celeb'],clear:['fw','cue','crave','act','reward']};
+const WZ={fogg:['fw','anchor','act','celeb'],clear:['fw','cue','crave','act','reward'],free:['fw','act']};
 const WT={fw:'Milyen keretre?',anchor:'Mihez horgonyzod?',cue:'Mi a jelzés?',crave:'Miért akarod?',act:'Mi a tett?',celeb:'Hogyan ünnepled?',reward:'Mi a jutalom?'};
 const WQ={fw:'Milyen keretre építsük?',anchor:'Mihez horgonyzod?',cue:'Mi a jelzés?',crave:'Miért fogod akarni?',act:'Mi a tett?',celeb:'Hogyan ünnepled?',reward:'Mi teszi kielégítővé?'};
 function rutinUj(stp){const steps=WZ[fwPick]||WZ.fogg,i=Math.max(0,steps.indexOf(stp||'fw')),s=steps[i];
-  const prevGo=i?`rutin-uj.${steps[i-1]}`:'rutin-epites',last=i===steps.length-1, fwName=fwPick==='clear'?'Négy törvény':'Szokás-láncolás', L=FWL[fwPick]||FWL.fogg;
+  const prevGo=i?`rutin-uj.${steps[i-1]}`:'rutin-epites',last=i===steps.length-1, fwName=fwPick==='clear'?'Négy törvény':fwPick==='free'?'Keret nélkül':'Szokás-láncolás', L=FWL[fwPick]||FWL.fogg;
   let body='';
   if(s==='fw')body=[['fogg','t-anchor','Szokás-láncolás','BJ Fogg · Tiny Habits',FWL.fogg],['clear','t-gem','Négy törvény','James Clear · Atomic Habits',FWL.clear],['free','t-note','Keret nélkül','csak a tett',[]]].map(f=>xrow({cls:fwRaw===f[0]?'now':'',icon:f[1],title:f[2],sub:f[3],more:f[4].length?`<span class="np-loop">${f[4].map(x=>`<i>${x}</i>`).join('<u>→</u>')}</span>`:'',n:'fw:'+f[0],right:fwRaw===f[0]?mark('d'):'<span class="np-mk"></span>'})).join('')
     +`<p class="fh-txt np-why">${inl('t-bulb')}<span>Kezdőknek a szokás-láncolás a legkönnyebb: egy meglévő szokásra ülteted az újat.</span></p>`;
@@ -578,10 +549,10 @@ function rutinUj(stp){const steps=WZ[fwPick]||WZ.fogg,i=Math.max(0,steps.indexOf
     ${lab('Melyik láncba?')}${chips(['Reggeli lánc','Esti lánc'],0)}${lab('Életterület')}${chips(RLIFE,7)}
     ${lab('Mennyibe kerül?')}${effortCard()}${lab('Hogyan pipálódik?')}${xseg(['Kézzel pipálom','Adatból'])}`;
   if(s==='celeb')body=`${chips(['ökölrázás','„Igen!”','mosoly a tükörbe','mély levegő'],0)}${lab('Vagy saját')}${inp('pl. egy kis tánc','Egy kis tánc a konyhában.')}<p class="fh-txt np-why">${inl('t-anchor')}<span>Az ünneplés azonnal jöjjön, a tett után — ettől ragad meg az érzés.</span></p>${acts(btn(I('i-check')+'Vállalom',{toast:'Vállalva'},'sm ghost'))}`;
-  if(['cue','crave','reward'].includes(s))body=`${lab(s==='cue'?'Jelzés':s==='crave'?'Miért akarod? · vágy':'Jutalom')}${area('…','Amikor felébredek, és még a kezemben van a telefon.',2)}<p class="fh-txt np-why">${inl('t-gem')}<span>A négy törvény egy-egy lépése.</span></p>`;
+  if(['cue','crave','reward'].includes(s))body=`${lab(s==='cue'?'Jelzés':s==='crave'?'Miért akarod? · vágy':'Jutalom')}${area('…','Amikor felébredek, és még a kezemben van a telefon.',2)}${s==='crave'?lab('Ki leszel ettől? · identitás, opcionális')+inp('pl. aki minden reggel mozog','Aki minden reggel mozog.'):''}<p class="fh-txt np-why">${inl('t-gem')}<span>A négy törvény egy-egy lépése.</span></p>`;
   return page('nap',{title:WT[s],sub:`Új szokás · ${i+1} / ${steps.length}`,back:prevGo},`
   <div class="np-pre rise">${dots(steps.length,i)}</div>
-  ${i?hero({lbl:`${fwName} · épül, ahogy töltöd`,verdict:WQ[s],body:recG(L,i)+recept(i)},1)
+  ${i?hero({lbl:`${fwName} · épül, ahogy töltöd`,verdict:WQ[s],body:recG(L,i)+(fwPick==='free'?'<p class="np-recept"><b>50 fekvőtámaszt</b> csinálok.</p>':recept(i))},1)
     :hero({lbl:'Új szokás-recept · még üres',verdict:WQ[s],sub:'A recept edényei lépésről lépésre telnek meg.',body:recG(L,0)},1)}
   ${sec(1,s==='fw'?'Válassz keretet':'Töltsd ki',2)}${card(body,{i:2})}`,
   {nonav:true,pad:'120px',foot:lk('Mégse','rutin-epites')+(i?btn('Vissza',prevGo,'ghost'):'')+`<button class="btn" style="flex:1" ${last?'data-toast="Mentve · vissza a Rutinra"':`data-go="rutin-uj.${steps[i+1]}"`}>${last?'Mentés':'Tovább'}</button>`});
@@ -595,15 +566,12 @@ const SHEETS={
   checkin:()=>{ck={slot:(nowSlot()||SLOTS[2]).t,step:0,a:{},quick:false};return ckSheet()},
   kimelo:()=>{KM.pick={cat:KM.on?KM.cat:null,dur:KM.on?KM.dur:null};return kmSheet()},
   kmwelcome:()=>kmWelcome(),
-  ndlog:()=>ndLogSheet(),
-  /* a hét hét edény: a szaggatott vonal a napi keret, a rétegek a három makró */
+  /* a nap három makrója három kémcső; a nagy szám a mai kalória a kerethez */
   uzemanyag:()=>{const m=macroSel!=null?MAC[macroSel]:null;
-    return `${shH('A hét üzemanyaga','Fuel · egy edény egy nap','','t-macro')}
-    <div class="np-bigrow"><span class="fh-big">${m?m[2]:'2 060'}<small>${m?`g ${m[0].toLowerCase()} · ${m[3]-m[2]} g a ${m[3]} g célig · ${Math.round(m[2]/m[3]*100)}%`:'/ 3 100 kcal ma · 1 040 van még'}</small></span></div>
-    <div class="np-wk">${WKB.map(([l,mm,h,met,t])=>`<div class="${t?'today':''}"><span class="t ${mm?(met?'met':''):'none'}"><span class="q" style="height:${mm?Math.round(h/1.12*100):0}%">${mm?`<i style="flex:${mm[2]};background:var(--fat)"></i><i style="flex:${mm[1]};background:var(--carb)"></i><i style="flex:${mm[0]};background:var(--protein)"></i>`:''}</span></span><small>${l}</small></div>`).join('')}</div>
-    ${note('A három réteg a három makró. Ha a nap célja megvan, az edény elhalványul. A szaggatott vonal a napi keret.')}
-    <div class="np-rows">${MAC.map(([n,c,g,goal],k)=>xrow({cls:macroSel===k?'now':'',title:n,v:`${g}<small>/ ${goal} g</small>`,more:level(Math.round(g/goal*100),{c,h:12}),n:'mac:'+k,right:' '})).join('')}</div>
-    <p class="fh-note">${m?`${m[3]-m[2]} g a ${m[3]} g-os célig.`:'A három szint a saját napi célodhoz viszonyít. Érints meg egy makrót a részletekhez.'}</p>
+    return `${shH('A napod üzemanyaga','Fuel · ma','','t-macro')}
+    <div class="np-bigrow"><span class="fh-big">${m?m[2]:'2 060'}<small>${m?`g ${m[0].toLowerCase()} · ${Math.round(m[2]/m[3]*100)}% a napi célból`:'kcal ma · 2 782 kcal keret'}</small></span></div>
+    <div class="np-vh">${nfix(vials(MAC.map(([n,c,g,goal],k)=>({l:n,c,p:Math.round(g/goal*100),v:g+' g',s:`/ ${goal} g cél`,mark:macroSel===k?'✓':'',on:N('mac:'+k)})),{h:124}))}</div>
+    <p class="fh-note">${m?`${m[3]-m[2]} g a ${m[3]} g-os célig.`:'722 kcal a napi keretig. A három szint a saját napi célodhoz viszonyít; érints meg egy makrót a részletekhez.'}</p>
     ${acts((m?nb('Vissza az összképhez','core','sm ghost'):'')+btn('Fuel megnyitása',{dom:'fuel'},'sm'))}`},
   tobb:()=>`${shH('Több','Mai · ami még ide tartozik')}${xrow({icon:'t-steps',title:'Aktivitás',sub:'amit ma tettél',on:{sheet:'activity'}})}${xrow({icon:'t-chat',title:'Chat',sub:'beszéljük át',on:{toast:'Mezo · Chat'}})}${xrow({icon:'t-heart',title:'Életjelek',sub:'a hat jel',on:'eletjel'})}${xrow({icon:'t-quest',title:'Napi küldetések',sub:'ajánlatok a mai napra',on:'kuldetesek'})}`,
   naplopick:()=>`${shH('Mit naplózol?','Napló','tobb','t-journal')}${qg([['Aktivitás','t-steps','data-sheet="activity"'],['Napló','t-journal','data-sheet="journal"'],['Hála','t-sprout','data-sheet="journal"']])}`,
@@ -634,7 +602,9 @@ const SHEETS={
     <div class="np-two" style="margin-top:16px"><button class="btn ghost" data-close>Mégse</button><button class="btn" data-sheet="activity" data-arg="done">Naplózom</button></div>`,
   /* három edény: tele · félig · üres */
   reflect:()=>`${shH('Szándékkal élted a napot?','Rutin · este · a mai szándékod: „nyugodt tempó”','','t-ring')}<div class="np-ref">${[['Igen',100],['Részben',50],['Nem',4]].map(([x,p])=>`<button data-n="reflect">${mini({p})}<b>${x}</b></button>`).join('')}</div>`,
-  ai:()=>`${shH('Milyen szokás segítene?','AI javaslat','','t-spark')}${lab('Szándék (opcionális)')}${area('pl. jobb esti lezárás','Szeretném, ha este hamarabb letenném a telefont és nyugodtabban zárnám a napot.')}<button class="btn np-wide" style="margin-top:16px" data-toast="Mezo gondolkodik…">Javasolj</button>`,
+  ai:(a)=>`${shH('Milyen szokás segítene?','AI javaslat','','t-spark')}${lab('Szándék (opcionális)')}${area('pl. jobb esti lezárás','Szeretném, ha este hamarabb letenném a telefont és nyugodtabban zárnám a napot.')}<button class="btn np-wide" style="margin-top:16px" data-sheet="ai" data-arg="done">Javasolj</button>
+    ${a==='done'?[['Telefon a töltőre 21:30-kor','Esti lánc · a Konyha zárva után',['Szokás-láncolás','könnyű','+6 XP']],['Három mély levegő lefekvés előtt','Esti lánc · a napzárás után',['Szokás-láncolás','könnyű','+6 XP']]].map(([t,s2,c])=>`<div class="np-sug"><strong>${t}</strong><small>${s2}</small>${chipsRow(c)}${acts(btn('Megnyitom a varázslóban','rutin-uj.fw','sm')+lk('Elvetem',{toast:'Elvetve'}))}</div>`).join(''):''}`,
+  intention:()=>`${shH('Mi ma a fókuszod?','Rutin · reggel · a mai szándék','','t-ring')}<p class="fh-txt np-why">${inl('t-compass')}<span>„Aki tudja, miért kel fel, az a hogyant is megtalálja.”</span></p><div style="margin-top:10px">${area('pl. nyugodt tempó','Nyugodt tempó: egyszerre egy dolog.',2)}</div>${note('Legfeljebb 200 karakter. Este megkérdezzük, sikerült-e eszerint élned a napot.')}${saveRow('Hozzáadom')}`,
   chain:()=>`${shH('Új rutin','Rutin · új lánc','','t-chain')}${lab('Név')}${inp('pl. Ebéd utáni szünet','Ebéd utáni szünet')}${lab('Napszak')}${chips([['Reggel','t-dawn'],['Napközben','t-sun'],['Este','t-moon']],0)}<div class="np-two" style="margin-top:16px"><button class="btn ghost" data-close>Mégse</button><button class="btn" data-n="save">Mentés</button></div>`,
   anchor:()=>`${shH('Mihez kötöd?','Horgony','','t-anchor')}${lab('A szokásaidból')}${[['Ébredés időben','92% erő · 28 nap',0,92],['Reggeli napfény','74% erő · 28 nap',1,74],['Gombakávé','friss szokás',0,26]].map(o=>`<button class="fh-row" data-close>${mark(o[2]?'d':'')}<span class="g"><strong>${o[0]}</strong><small>${o[1]}</small>${level(o[3],{h:8})}</span></button>`).join('')}
     ${lab('Mezo-események')}${['Edzés vége','Első étkezés'].map(o=>`<button class="fh-row" data-close>${mark('')}<span class="g"><strong>${o}</strong></span></button>`).join('')}
@@ -677,16 +647,16 @@ const ACT={
   obs:a=>{obsState[a]=1;soft();F.toast('Megjegyeztem a válaszod.')},
   ev:a=>{evOpen[a]=!evOpen[a];soft()},
   fbno:()=>{fbNo=true;soft()},
-  exp:a=>{expMsg[a]=1;soft()},
-  wk:a=>{if(a==='next')wkStep=Math.min(2,wkStep+1);else if(a==='accept'){wkRes='ok';F.toast('Elfogadva · a fehérjecél 200 g')}else{wkRes='skip';F.toast('Rendben, ezt most kihagyjuk')}soft()},
+  exp:a=>{expMsg[a]=!expMsg[a];soft()},
+  advice:()=>{advOn=true;soft();F.toast('Beállítva')},
+  retry:()=>{F.toast('Újratöltve');F.go('mai')},
   ritual:()=>{ND.ritual=true;F.go('napzaras.1')},
   /* Rutin */
-  face:a=>{nowRow=-1;F.go('rutin.'+a)},
-  tick:a=>{const R=RUTIN[face].rows,i=+a;R[i][4]=R[i][4]?0:1;let t='';if(R[i][4]){const d=R.filter(r=>r[4]).length;nowRow=R.findIndex((r,j)=>j>i&&!r[4]);t=d===R.length?`${face==='este'?'Tökéletes este':face==='reggel'?'Tökéletes reggel':'Tökéletes nap'} · ${d} / ${R.length}`:`Szokás · ${d} / ${R.length} · megvan, a lánc erősödik`}soft();if(t)F.toast(t)},
+  tick:a=>{const [g,ix]=a.split(':'),R=RUTIN[g].rows,i=+ix;R[i][4]=R[i][4]?0:1;let t='';if(R[i][4]){const d=R.filter(r=>r[4]).length;if(g===face)nowRow=R.findIndex((r,j)=>j>i&&!r[4]);t=d===R.length?`${g==='este'?'Tökéletes este':g==='reggel'?'Tökéletes reggel':'Minden megvan'} · ${d} / ${R.length}`:`Szokás · ${d} / ${R.length} · megvan, a lánc erősödik`}soft();if(t)F.toast(t)},
   reflect:()=>{F.closeSheet();F.toast('Megjegyeztem')},
   reroll:a=>{rerolls=0;QUESTS[+a]={ic:'t-sleep',t:'Pihenőnap: aludj legalább 7,5 órát',xp:20,st:'offered',foot:'folyamatban · a logjaidból záródik magától',cta:'Alvás'};soft();F.toast('Újrasorsolva')},
   rst:a=>{const [k,v]=a.split(':');RE[k]=v;soft()},
-  fw:a=>{fwRaw=a;fwPick=a==='free'?'fogg':a;soft();if(a==='free')F.toast('Keret nélkül: csak a tett lépése')},
+  fw:a=>{fwRaw=a;fwPick=a;soft();if(a==='free')F.toast('Keret nélkül: csak a tett lépése')},
   eff:a=>{const [x,y]=a.split(':');effort[+x]=+y;soft()},
   ft:a=>{sklFilter[+a]=!sklFilter[+a];soft()},
   /* A napom */
@@ -697,9 +667,6 @@ const ACT={
   sc:(a,el)=>{[...el.parentNode.children].forEach((b,i)=>{b.className=i+1<+a?'f':i+1===+a?'a':''})},
   inc:(a,el)=>{const b=el.parentNode.querySelector('b');b.textContent=Math.max(0,+b.textContent+ +a)},
   wat:a=>{wat=+a;F.openSheet(SHEETS.water())},
-  ndlog:a=>{const T=NDT;ndClock[1]+=17;if(ndClock[1]>=60){ndClock[0]++;ndClock[1]-=60}T.updated=`${ndClock[0]}:${pad2(ndClock[1])}`;
-    if(a==='meal'){T.kcal+=420;T.prot+=18;T.nova=Math.min(90,T.nova+3)} if(a==='work')T.work=1; if(a==='ck')T.ck++;
-    F.closeSheet();soft();F.toast('Beírva · a napod frissült')},
   save:()=>{F.closeSheet();F.toast('Mentve')}
 };
 document.addEventListener('click',e=>{
@@ -797,6 +764,23 @@ ${P} .np-ej button svg.ic{width:30px;height:30px;filter:drop-shadow(0 4px 5px rg
 ${P} .np-ej b{font-family:var(--disp);font-size:22px;font-weight:800;letter-spacing:-.6px;margin-top:4px}
 ${P} .np-ej small{font-size:11.5px;font-weight:600;color:var(--sub)}
 ${P} .np-ej button.warn{background:color-mix(in srgb,var(--warn) 14%,#fff)}${P} .np-ej button.warn b{color:var(--warn)}
+${P} .np-tally{display:flex;gap:6px;margin:12px 0 10px}
+${P} .np-tally i{flex:1;max-width:34px;height:44px;border-radius:999px;background:rgba(10,42,60,.05);box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.10)}
+${P} .np-tally i.p{background:linear-gradient(180deg,var(--liq1),var(--liq2));box-shadow:0 8px 14px -8px var(--liq2)}
+${P} .np-tally i.m{background:transparent;box-shadow:none;border:1.5px dashed rgba(10,42,60,.28)}
+${P} .np-leg i.m{border:1.5px dashed rgba(10,42,60,.28);box-shadow:none}
+${P} .np-obst{margin-top:10px}
+${P} .np-cells.np-wd{flex-wrap:nowrap;gap:0;justify-content:space-between}
+${P} .np-cells.np-wd .fl-mini{width:auto;flex:1 1 0}
+${P} .np-ev{margin:0 0 12px}
+${P} .np-ev b{flex:1 0 100%;font-size:13px;color:var(--ink)}
+${P} .np-duo{display:inline-flex;flex:0 0 auto}
+${P} .np-duo>*+*{margin-left:-10px}
+${P} .np-exp{display:block}
+${P} .np-exp .fh-lk{margin-top:8px}
+${P} .np-sug{margin-top:14px;padding-top:14px;border-top:1px solid var(--hair)}
+${P} .np-sug strong{display:block;font-size:15px}
+${P} .np-sug small{display:block;margin-top:2px;font-size:12.5px;color:var(--sub)}
 ${P} .np-g28{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:12px}
 ${P} .np-g28 i{display:block;aspect-ratio:1;border-radius:5px;background:color-mix(in srgb,var(--dom) 70%,#fff)}
 ${P} .np-g28 i.m{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(15,30,51,.12)}
@@ -1068,50 +1052,32 @@ ${P} .np-wk .today .t{box-shadow:inset 0 0 0 2px var(--ink)}
 }
 `;
 
-/* ── a koncepció-képernyő (sima `mai`, foly.js) kiegészítése: ami a jóváhagyott képernyőről hiányzik ──
-   F.napMaiExtra(n): „Továbbiak” szakasz a napló után (n megadva: számozott szakaszcím; nélküle a koncepció k2-h fejléce).
-   F.napMaiState(): 'kimelo' | 'kimelo-lejart' | '' — ha nem üres, a sima `mai` helyett F.napMaiFull() rajzolandó
-   (a jelenlegi kímélő-állapottal; a `mai.kimelo` útvonal a demó-előbeállítást töltené rá). */
-F.napMaiExtra=(n)=>`${n?sec(n,'Továbbiak',5):kh('Továbbiak','ami még a naphoz tartozik','',5)}
-  ${card(xrow({icon:'t-macro',title:'A hét üzemanyaga',sub:'napi edények és a három makró',on:{sheet:'uzemanyag'}})
-    +xrow({icon:'t-heart',title:'Életjelek',sub:'hat jel · a mozgás kér figyelmet',v:String(needAvg()),on:'eletjel'})
-    +xrow({icon:'t-calendar',title:'Heti egyeztetés',sub:'vasárnap · 1 javaslat vár · 3 lépés, kb. 2 perc',right:st('Új','plan')+chev(),on:'uzenetek'})
-    +xrow({icon:'t-pattern',title:'Összes észrevétel',sub:`${OBS.filter(o=>!obsState[o.k]).length} vár a válaszodra`,on:'uzenetek.eszrevetelek'})
-    +acts(btn('+ Új bejegyzés','gyors','sm')+btn('Napló',{sheet:'naplopick'},'sm ghost')+lk('Több',{sheet:'tobb'}))
-    +(KM.on?'':`<div class="np-rows">${xrow({icon:'t-kimelo',title:'Nem vagyok jól',sub:'Kímélő mód: betegség, sérülés vagy utazás idejére',n:'km:open'})}</div>`),{i:5})}`;
-F.napMaiState=()=>KM.on?(kmExpired()?'kimelo-lejart':'kimelo'):'';
+/* a sima `mai` is innen jön (a foly.js koncepció-képernyője helyett): egy forrás, valódi mezőkből */
+F.napMaiState=()=>'egy-forras';
 F.napMaiFull=()=>mai(KM.applied||'');
 
 register('nap',{title:'Nap',
   tabs:[['Mai','mai'],['A napom','napom'],['Beszélgetés','uzenetek'],['Rutin','rutin']],
-  routes:{mai,maieste,checkin,hatasok,napom,eletjel,kuldetesek,rutin,uzenetek,gyors,napzaras,nap:napDay,'rutin-epites':rutinEpites,lanc,szokasok,szokas,szerk,'rutin-uj':rutinUj},
+  routes:{mai,maieste,checkin,napom,eletjel,kuldetesek,rutin,uzenetek,gyors,napzaras,nap:napDay,'rutin-epites':rutinEpites,lanc,szokasok,szokas,szerk,'rutin-uj':rutinUj},
   sheets:SHEETS,
+  after:()=>{const t=$('#phone .fh-tabs .on');if(t&&t.scrollIntoView)t.scrollIntoView({inline:'nearest',block:'nearest'})},
   css:CSS,
-  notes:`<h2>Nap</h2>
-<p>Minden oldal kapott egy saját rajzot, ami abból az adatból áll, amiről az oldal szól. Az oldal a rajzáról felismerhető, a többi része csendes lista.</p>
-<h2>Melyik oldalon mi a rajz</h2>
+  notes:`<h2>Nap · F2</h2>
+<p>A Nap minden oldalát összevetettem az élő appal. Ami kitalált volt, kikerült vagy valódi adatra cserélődött; ami hiányzott, bekerült.</p>
+<h2>Ami változott</h2>
 <ul>
-<li><b>Mai:</b> a jóváhagyott képernyő (nagy edény, négy kémcső, folyam). Ugyanez este (<b>#w-nap-maieste</b>, sötétebb, esti vízzel) és kímélő módban (<b>#w-nap-mai.kimelo</b>).</li>
-<li><b>Check-in:</b> a nap négy pillanata négy edény. A válaszaid kis kapszulák: a szint az, amit a tízes skálán adtál. A kitöltő lapon a skála maga is tíz kémcső.</li>
-<li><b>Mit táplál a check-in:</b> egy forrás-edényből négy csoportba folyik tovább, amit megadsz.</li>
-<li><b>Életjelek:</b> hat kémcső egymás mellett, az alacsony megjelölve.</li>
-<li><b>Küldetések:</b> három edény, ami magától telik.</li>
-<li><b>A napom:</b> a hét hét kis edény. A lezárt nap egy nagy edény a pontszámmal; a szaggatott vonal az alap, a folyadék a végső pontszám. „Te és az app”: két összekötött edény.</li>
-<li><b>Beszélgetés:</b> a heti egyeztetés három edénye lépésenként telik. Az észrevételeknél két összekötött edény mutatja, mi mivel mozog együtt.</li>
-<li><b>Rutin:</b> a lánc összekötött cseppek sora, pipálásra telik. Az utolsó 28 nap 28 apró kémcső.</li>
-<li><b>Rutinok szerkesztése:</b> a reggeli és az esti lánc két csepp-sor. A lánc oldalán öt összekötött edény, mindegyik a szokás erejéig tele. A szokásoknál a négy érési szakasz négy edény, egy szokásnál pedig egy magas edény, amin a szint szakaszról szakaszra emelkedik. Az új szokás receptje annyi edényből áll, ahány lépés, és úgy telik, ahogy kitöltöd.</li>
-<li><b>Gyors logolás:</b> kilenc buborék egy edényben.</li>
-<li><b>Napzárás:</b> a nap edénye megtelik, a végén fedelet kap. A nap íve egy vízfelszín, a mai termés rétegenként áll egy edényben.</li>
-<li><b>Lapok:</b> a víznél egy pohár telik, a súlynál és az alvásnál vízfelszín mutatja a hetet és az éjszakát, a hét üzemanyaga hét edény.</li>
-</ul>
-<h2>Ami visszakerült</h2>
-<ul>
-<li>Check-in: a válaszok egyenként látszanak (nem egy sor szövegben).</li>
-<li>Reggeli üzenet: „Amire épült” és „Miből gondolom”.</li>
-<li>Rutin: lánc-erő százalék és soronként az erő szintje.</li>
-<li>Szokások: ismétlésszám, hátralévő idő; a szokás oldalán a naptár jelmagyarázata.</li>
-<li>A napom: „Próbáld ki: írj be valamit” – az oldal azonnal frissül.</li>
-<li>Napzárás: a sorozat és a „86 napja életben” sor.</li>
+<li><b>Mai · a nagy szám:</b> a hat életjel átlaga (étel, víz, alvás, mozgás, kapcsolat, rend). Napközben az app nem ad napi pontszámot, ezért a korábbi „72” mögött nem volt valódi adat. A mondat a nap állásából jön.</li>
+<li><b>Mai · szintek:</b> a célok mindenhol ugyanazok (2 782 kcal, 166 g fehérje, 8 óra alvás, 1 edzés).</li>
+<li><b>Mai · új állapotok:</b> üres nap (<b>#w-nap-mai.ures</b>), betöltési hiba (<b>#w-nap-mai.hiba</b>). Új sor: „Valami nem stimmel ma? A csapat utánanéz.”</li>
+<li><b>Heti egyeztetés:</b> kikerült, ilyen funkció nincs az appban.</li>
+<li><b>Beszélgetés:</b> a nap üzenetei egy szálon (az új üzenet gyűrűs csepp), „A csapat most erről beszél” sor, javaslat egy koppintásos gombbal, összecsukható régi üzenet.</li>
+<li><b>Észrevételek:</b> a két összekötött edény helyett bizonyíték-edények: ahány nap egybevág, annyi tele; ami ellene szól, szaggatott; ami még hiányzik, üres.</li>
+<li><b>Rutin:</b> mindhárom lánc egy oldalon van, ahogy az appban; a napszak lánca vezet. A 28 napos rács kikerült (az app láncra nem tárol napi bontást), a három szám maradt.</li>
+<li><b>A napom:</b> a pontszám indoklása és a hat terület részletei alapból nyitva vannak; „te és az app” alatt az app saját egy mondata áll. Új állapotok: <b>#w-nap-napom.hiba</b>, <b>#w-nap-napom.tolt</b>.</li>
+<li><b>A napod üzemanyaga (lap):</b> a mai kalória és a három makró három kémcsőben (heti makróbontás nincs az appban).</li>
+<li><b>Check-in:</b> a „Mit táplál?” oldal és a napszak-próbáló kikerült, ezek csak a mintában léteztek.</li>
+<li><b>Rutinok szerkesztése:</b> „Keret nélkül” út két lépésben, identitás mező, link mező, adatból pipálásnál a mérőszám, a szokás oldalán a hét napjai szerinti erő, az AI javaslat eredménylistája, „Mi ma a fókuszod?” lap.</li>
+<li><b>Küldetések:</b> nincs kitalált félig telt szint: egy küldetés vagy folyamatban van, vagy kész.</li>
 </ul>`
 });
 })();

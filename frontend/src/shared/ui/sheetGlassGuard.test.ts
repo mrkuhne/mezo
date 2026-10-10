@@ -11,6 +11,10 @@ import { describe, expect, it } from 'vitest'
 // carries a glass recipe (`glass …`, the capture sheets, the Kamra sheet constant). A new sheet
 // that forgets it fails here instead of shipping the flat pre-üveg sheet.
 //
+// Folyadék (mezo-n4wf5.2): a converted surface's sheet wears the light sheet instead —
+// `className="fo-sheet …"` (styles/folyadek-kit.css, `.sheet.fo-sheet`). That is the second
+// recognised dress; a sheet with neither still fails.
+//
 // Dead files (no importer up to a route — bible rule 18) are allowlisted by name; the guard
 // also fails if one of them gains an importer, so a revived file must be dressed first.
 // ============================================================
@@ -29,6 +33,7 @@ const DRESSED_CLASS = [
   /\bglass\b/, // any `glass …` class list
   /\bcapture-sheet\b/, // U3 capture sheets (they also pass `glass`)
   /\bKAMRA_SHEET_CLASS\b/, // 'fkk-sheet glass is-still' — asserted below
+  /\bfo-sheet\b/, // the Folyadék light sheet (kit: `.sheet.fo-sheet`) — asserted below
 ]
 
 function walk(dir: string): string[] {
@@ -92,6 +97,11 @@ describe('sheet glass guard (mezo-me75u.10)', () => {
     expect(kamra).toMatch(/KAMRA_SHEET_CLASS = '[^']*\bglass\b[^']*'/)
   })
 
+  it('the Folyadék light sheet recipe exists in the kit stylesheet', () => {
+    const kit = readFileSync(join(SRC_DIR, 'styles/folyadek-kit.css'), 'utf8')
+    expect(kit).toMatch(/\.sheet\.fo-sheet\s*\{[^}]*background:\s*#fff/)
+  })
+
   it('the allowlisted dead sheets are still dead (no importer outside tests)', () => {
     for (const dead of DEAD_SHEET_FILES) {
       const name = dead.split('/').pop()!.replace(/\.tsx$/, '')
@@ -108,5 +118,8 @@ describe('sheet glass guard (mezo-me75u.10)', () => {
     expect(wearsGlass('<Sheet glass onClose={() => setOpen(false)} className="uvl-fuel">')).toBe(true)
     expect(wearsGlass('<Sheet onClose={onClose} className="glass rt-sheet">')).toBe(true)
     expect(wearsGlass('<Sheet onClose={onClose} className={KAMRA_SHEET_CLASS}>')).toBe(true)
+    expect(wearsGlass('<Sheet onClose={onClose} labelledBy={id} className="fo-sheet">')).toBe(true)
+    expect(wearsGlass('<Sheet onClose={onClose} className={cn(\'fo-sheet\', tall && \'is-tall\')} labelledBy={id}>')).toBe(true)
+    expect(wearsGlass('<Sheet onClose={onClose} className="info-sheet">')).toBe(false)
   })
 })

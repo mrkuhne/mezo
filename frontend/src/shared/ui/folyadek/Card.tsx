@@ -1,5 +1,7 @@
-import type { ReactNode } from 'react'
+import { forwardRef, type HTMLAttributes } from 'react'
+import { cx } from './util'
 
-export function Card(p: { className?: string; children: ReactNode }) {
-  return <section className={p.className ? `fo-card ${p.className}` : 'fo-card'}>{p.children}</section>
-}
+/** A white section card. Passes `id`, `data-*`, `aria-*` and a `ref` through. */
+export const Card = forwardRef<HTMLElement, HTMLAttributes<HTMLElement>>(function Card({ className, ...rest }, ref) {
+  return <section ref={ref} className={cx('fo-card', className)} {...rest} />
+})

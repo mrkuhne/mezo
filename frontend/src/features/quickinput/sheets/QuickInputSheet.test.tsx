@@ -116,16 +116,16 @@ test('renders all nine quick-log tiles', () => {
 // would no longer match the spec's row-major reading order asserted below.
 test('the 3x3 grid is ordered per spec, with the chat row above it', () => {
   renderSheet()
-  const grid = document.querySelector('.quicklog-grid')
+  const grid = document.querySelector('.nqk-g')
   expect(grid).not.toBeNull()
-  const labels = Array.from(grid!.querySelectorAll('.quicklog-label')).map(el => el.textContent)
+  const labels = Array.from(grid!.querySelectorAll('.nqk-label')).map(el => el.textContent)
   expect(labels).toEqual([
     'Étkezés', 'Víz', 'Stack',
     'Edzés', 'Sport', 'Súly',
     'Check-in', 'Napló', 'Alvás',
   ])
 
-  const chatRow = document.querySelector('.quicklog-chat')
+  const chatRow = document.querySelector('.nqk-chat')
   expect(chatRow).not.toBeNull()
   // DOCUMENT_POSITION_FOLLOWING on chatRow's comparison to grid means chatRow precedes grid.
   // eslint-disable-next-line no-bitwise
@@ -141,9 +141,9 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 
 // ── Quick Log tile redesign (mezo-7lst) ────────────────────────────────────
 
-// Üveg (mezo-me75u.3): the tiles wear the capture family's Titanium 3D marks (bible §4) — the same
-// symbol the capture sheet each opens shows in its header (CaptureArt, restored bible rule 28).
-test('each tile carries its own decorative 3D capture symbol (mezo-me75u.3)', () => {
+// Folyadék (mezo-n4wf5.2): each tile wears its Folyadék-jel glyph in the kit's chip (`Bub`) — the same
+// symbol the capture sheet it opens shows in its header.
+test('each tile carries its own decorative symbol in a chip', () => {
   renderSheet()
   const art: Record<string, string> = {
     'Étkezés': 't-bowl', 'Víz': 't-water', 'Stack': 't-supps', 'Edzés': 't-dumbbell', 'Sport': 't-volley',
@@ -151,7 +151,7 @@ test('each tile carries its own decorative 3D capture symbol (mezo-me75u.3)', ()
   }
   for (const [label, symbol] of Object.entries(art)) {
     const button = screen.getByRole('button', { name: label })
-    const svg = button.querySelector('svg.quicklog-art')
+    const svg = button.querySelector('.fo-bub svg')
     expect(svg).toHaveAttribute('aria-hidden', 'true')
     expect(svg!.querySelector('use')).toHaveAttribute('href', `#${symbol}`)
   }
@@ -226,8 +226,13 @@ test('the Napló tile swaps the menu for a two-option picker, without closing', 
   renderSheet(onClose)
   await userEvent.click(screen.getByText('Napló'))
   expect(await screen.findByText('Mit naplózol?')).toBeInTheDocument()
-  expect(screen.getByText('Aktivitás')).toBeInTheDocument()
-  expect(screen.getByText('Napló')).toBeInTheDocument()
+  // the picker's head says „Napló" too (its sub line), so the tiles are asked for by role
+  expect(screen.getByRole('button', { name: 'Aktivitás' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Napló' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Hála' })).toBeInTheDocument()
+  // …and it has its way back to the nine tiles
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(screen.getByText('Gyors logolás')).toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
 
@@ -237,7 +242,7 @@ test('picking Aktivitás from the Napló picker swaps to the activity log sheet,
   await userEvent.click(screen.getByText('Napló'))
   await screen.findByText('Mit naplózol?')
   await userEvent.click(screen.getByText('Aktivitás'))
-  expect(await screen.findByText('Tevékenységnapló')).toBeInTheDocument()
+  expect(await screen.findByText(/^Tevékenységnapló/)).toBeInTheDocument()
   expect(screen.queryByText('Mit naplózol?')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
@@ -247,7 +252,7 @@ test('picking Napló from the Napló picker swaps to the JournalSheet, without c
   renderSheet(onClose)
   await userEvent.click(screen.getByText('Napló'))
   await screen.findByText('Mit naplózol?')
-  await userEvent.click(screen.getByText('Napló'))
+  await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
   expect(await screen.findByText('Mi jár a fejedben?')).toBeInTheDocument()
   expect(screen.queryByText('Mit naplózol?')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
@@ -289,7 +294,7 @@ test('the Check-in tile swaps the menu for the check-in sheet on the next fillab
   // Asserts the exact slot, not just that A sheet opened: `initialCheckins` has 06:30 and 10:00
   // done, so the next fillable slot is index 2 (14:00). A regression that pinned a constant index
   // instead of `nextCheckInIdx` would still open a sheet — only the time gives it away.
-  expect(await screen.findByText('Heartbeat · Délután · 14:00')).toBeInTheDocument()
+  expect(await screen.findByText('Check-in · Délután · 14:00')).toBeInTheDocument()
   expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
 })
@@ -347,7 +352,7 @@ test('driving a check-in all the way to Mentés closes the sheet (regression)', 
   renderSheet(onClose)
 
   await userEvent.click(screen.getByText('Check-in'))
-  expect(await screen.findByText(/Heartbeat ·/)).toBeInTheDocument()
+  expect(await screen.findByText(/^Check-in ·/)).toBeInTheDocument()
 
   // Skip every item of the slot's plan (Check-in 2.0: the count depends on the slot and the
   // question of the day) until the summary/save step shows — agnostic to which slot was picked.

@@ -1,0 +1,60 @@
+/* ── Folyadék · Nap · mai (mezo-n4wf5.2, slice F2) ── page-level rules of this area only; shared pieces live in folyadek-kit.css.
+   Ported in values from docs/design_2.0/prototypes/vilagos/nap.js (`.np-*`, `.k2-h`). No motion here: every base rule is the final frame. */
+
+/* the page rhythm between a heading and the vessels / streams that sit directly on the page */
+.nm-page > .fo-sec { margin-bottom: 12px; }
+.nm-page > .fo-sec + .fo-card { margin-top: 0; }
+.nm-page > .fo-sec + .fo-note { margin-top: 0; }
+.nm-page > .fo-sec .fo-lk { font-size: 12.5px; }
+.nm-page > .fo-card + .fo-stream, .nm-page > .fo-card + .nm-log { margin-top: 12px; }
+.nm-pad { padding: 0 16px; }
+.nm-hero > .fo-tank:first-child { margin-top: 14px; }
+
+/* kímélő mód — the warn hero with the category's glyph on the left (prototype `kmCard`; the kit Hero's `left`) */
+.nm-nw { white-space: nowrap; }
+.nm-km-ask { margin-top: 12px; }
+.nm-km-ask b { display: block; }
+.nm-km-ask span { color: var(--fo-sub); }
+.nm-kmslim .fo-lk { flex: 0 0 auto; }
+
+/* the four levels sit on the page, not in a card */
+.nm-levels + .fo-note { text-align: center; }
+
+/* Mai napló: a long note stays two lines in its pill */
+.nm-log .fo-stream-item small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.nm-log .fo-stream-item strong { overflow-wrap: anywhere; }
+
+/* Észrevétel */
+.nm-obs-q { margin-top: 8px; font-weight: 600; }
+.nm-evi { margin-top: 12px; display: grid; gap: 8px; }
+.nm-okline { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--fo-ok); }
+
+/* Továbbiak */
+.nm-askteam { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
+.nm-askteam > a { display: flex; margin: 0; }
+.nm-more > .fo-acts { margin-top: 2px; }
+.nm-rows { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--fo-hair); }
+.nm-sheetrows .fo-row { min-height: 44px; }
+
+/* „A napod üzemanyaga" lap: the big number (kit `Big`) is the reset button */
+.nm-fuel .fo-vials { padding: 0; }
+.nm-opt4 button:focus-visible, .nm-kmdur .trm-kmdc > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* „Mi történt?" lap (prototype `kmSheet`, `.np-opt4`) */
+.nm-opt4 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nm-opt4 button { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding: 14px 12px; border: 0; border-radius: 22px; background: var(--fo-page); color: var(--fo-ink);
+  font-family: var(--ff-body); font-size: 14px; font-weight: 600; line-height: 1.25; text-align: left; cursor: pointer; }
+.nm-opt4 button span:last-child { overflow-wrap: anywhere; }
+.nm-opt4 button.on { background: color-mix(in srgb, var(--dom) 12%, var(--fo-card)); box-shadow: inset 0 0 0 2px var(--dom); }
+.nm-opt4 button:disabled { cursor: default; }
+/* the shared „Meddig tarthat?" row (train's component, used as is) in the light sheet: a field label + pills */
+.nm-kmdur .trm-kmdur { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+.nm-kmdur .trm-kmdur-eb { display: block; margin: 14px 0 6px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; letter-spacing: 0; text-transform: lowercase; color: var(--fo-sub); }
+.nm-kmdur .trm-kmdur-eb::first-letter { text-transform: uppercase; }
+.nm-kmdur .trm-kmdc { display: flex; flex-wrap: wrap; gap: 8px; }
+.nm-kmdur .trm-kmdc > button { display: inline-flex; align-items: center; min-height: 44px; padding: 7px 14px; border: 0; border-radius: 999px; font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal;
+  color: var(--fo-ink); background: var(--fo-page); box-shadow: none; cursor: pointer; }
+.nm-kmdur .trm-kmdc > button.on { color: var(--fo-card); background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: none; }
+.nm-kmcta { margin-top: 14px; }
+.nm-kmcta:disabled { opacity: .4; }
+

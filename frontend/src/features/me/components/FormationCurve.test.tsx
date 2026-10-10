@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { FormationCurve } from '@/features/me/components/FormationCurve'
+import { FormationCurve, formationSeries } from '@/features/me/components/FormationCurve'
 import { toWeeks } from '@/features/me/components/HabitFormationHistory'
 
 describe('FormationCurve', () => {
@@ -9,29 +9,37 @@ describe('FormationCurve', () => {
     expect(container.querySelector('svg')).toBeNull()
   })
 
-  it('puts the threshold line where the curve reaches it, not at the top of the frame', () => {
+  it('draws the repetitions done so far as a liquid surface, with the threshold as the target waterline', () => {
     const { container } = render(<FormationCurve curveK={0.03} reps={30} thresholdPct={90} />)
-    const line = container.querySelector('.rt-curve-thr')!
-    const y = Number(line.getAttribute('y1'))
-    const svgTop = 14 // PAD_T
-    expect(y).toBeGreaterThan(svgTop)
-    // 90% of the plot height above the baseline — comfortably in the upper part, not AT the edge
-    expect(y).toBeLessThan(40)
+    const svg = container.querySelector('svg.fo-area')!
+    expect(svg).not.toBeNull()
+    // the dashed waterline sits ABOVE the surface's end: 30 repetitions at k=0.03 is ~59%, under 90%
+    const target = svg.querySelector('path[stroke-dasharray]')!
+    const targetY = Number(target.getAttribute('d')!.match(/^M[\d.]+ ([\d.]+)/)![1])
+    const now = svg.querySelector('circle')!
+    expect(targetY).toBeLessThan(Number(now.getAttribute('cy')))
+    // …and the axis says REPETITIONS, the model's own unit
+    expect(svg).toHaveTextContent('0 ismétlés')
+    expect(svg).toHaveTextContent('30 ismétlés')
   })
 
-  it('closes the uncertainty band into one filled shape', () => {
-    const { container } = render(<FormationCurve curveK={0.03} reps={30} thresholdPct={90} />)
-    const d = container.querySelector('.rt-curve-band')!.getAttribute('d')!
-    expect(d.startsWith('M')).toBe(true)
-    expect(d.endsWith('Z')).toBe(true)
-    // exactly ONE move command: the return leg must be line segments, not a second subpath
-    expect(d.match(/M/g)).toHaveLength(1)
+  it('names itself for a screen reader with where the habit stands', () => {
+    const { getByRole } = render(<FormationCurve curveK={0.03} reps={20} thresholdPct={90} />)
+    expect(getByRole('img')).toHaveAccessibleName(/20 ismétlésnél tartasz/)
+  })
+})
+
+describe('formationSeries', () => {
+  it('starts at zero, rises monotonically and ends exactly on the curve at the repetitions done', () => {
+    const series = formationSeries(0.03, 30)
+    expect(series[0]).toBe(0)
+    expect(series.every((v, i) => i === 0 || v > series[i - 1])).toBe(true)
+    expect(series[series.length - 1]).toBeCloseTo((1 - Math.exp(-0.9)) * 100, 1)
   })
 
-  it('splits the line into a solid past and a dashed projection', () => {
-    const { container } = render(<FormationCurve curveK={0.03} reps={20} thresholdPct={90} />)
-    expect(container.querySelector('.rt-curve-past')).not.toBeNull()
-    expect(container.querySelector('.rt-curve-next')).not.toBeNull()
+  it('never invents more samples than there are repetitions', () => {
+    expect(formationSeries(0.03, 3)).toHaveLength(4)
+    expect(formationSeries(0.03, 400)).toHaveLength(25)
   })
 })
 

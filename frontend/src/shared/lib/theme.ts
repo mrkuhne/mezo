@@ -4,8 +4,8 @@ export const DEFAULT_THEME: Theme = 'light'
 
 /** Folyadék light lock (Folyadék bible §1.1, mezo-n4wf5.1, owner 2026-10-08): the app resolves
  *  to this theme regardless of the stored preference or circadian `auto`. A force claim
- *  (`useForceTheme`) still outranks the lock in F1 — the two dark pockets (the Napzárás ritual and
- *  the night sleep page) stay dark until F2/F6. The mode/claim machinery and the dark CSS stay;
+ *  (`useForceTheme`) still outranks the lock — the one dark pocket left is the night sleep page
+ *  (until F6; the Napzárás ritual went light in F2, mezo-n4wf5.2). The mode/claim machinery and the dark CSS stay;
  *  setting this to `null` brings the stored/circadian choice back. index.html's `theme-color` and
  *  the manifest in vite.config.ts carry the same light canvas (`#EEF5F9`). */
 export const THEME_LOCK: Theme | null = 'light'

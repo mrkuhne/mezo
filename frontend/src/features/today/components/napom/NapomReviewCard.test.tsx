@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { NapomReviewCard } from '@/features/today/components/napom/NapomReviewCard'
@@ -27,7 +26,7 @@ function renderCard(ev = evaluation) {
     <QueryWrapper>
       <ToastProvider>
         <MemoryRouter initialEntries={['/nap/napom/2026-05-18']}>
-          <NapomReviewCard evaluation={ev} date="2026-05-18" i={3} />
+          <NapomReviewCard evaluation={ev} n={1} />
           <LocationProbe />
         </MemoryRouter>
       </ToastProvider>
@@ -39,14 +38,19 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 describe('NapomReviewCard', () => {
-  test('narrative paragraphs, flat highlight cells in key → pattern → win order', () => {
+  test('the Mezo message with the narrative paragraphs, highlight rows in key → pattern → win order', () => {
     const { container } = renderCard()
-    expect(screen.getByText('MEZO · A NAPODRÓL')).toBeInTheDocument()
-    expect(container.querySelectorAll('.napom-note p')).toHaveLength(2)
-    expect([...container.querySelectorAll('.napom-hl')].map((h) => h.querySelector('.uv-eyebrow')?.textContent))
-      .toEqual(['A NAP KULCSA', 'FELISMERT MINTA', 'JÓ IRÁNY'])
-    expect(container.querySelector('.napom-note')).toHaveClass('glass')
-    expect(container.querySelector('.napom-hl.glass')).toBeNull()
+    expect(screen.getByRole('heading', { name: /Mezo a napodról/ })).toBeInTheDocument()
+    // a team message: the Mezo badge, the name and the quiet meta
+    expect(container.querySelector('.fo-card .fo-msg .fo-badge')).not.toBeNull()
+    expect(container.querySelector('.fo-msg .nm')).toHaveTextContent('Mezoa napodról')
+    expect(container.querySelectorAll('.fo-msg .fo-txt p')).toHaveLength(2)
+    const rows = [...container.querySelectorAll('.nn-hls .fo-row')]
+    expect(rows.map((r) => r.querySelector('small')?.textContent)).toEqual(['A nap kulcsa', 'Felismert minta', 'Jó irány'])
+    expect(rows.map((r) => r.querySelector('strong')?.textContent))
+      .toEqual(['A fehérjecél tartása', 'Edzésnapon jobb az alvásod', 'Teljes napi logolás'])
+    expect(rows.map((r) => r.querySelector('use')?.getAttribute('href'))).toEqual(['#t-key', '#t-pattern', '#t-up'])
+    expect(container.querySelector('.glass, [class*="uv-"], [class*="napom-"]')).toBeNull()
   })
 
   test('feedback chips mount only with a reviewId', () => {
@@ -57,10 +61,11 @@ describe('NapomReviewCard', () => {
     expect(screen.queryByRole('button', { name: /Segített/ })).toBeNull()
   })
 
-  test('the chat button opens a day conversation', async () => {
-    const user = userEvent.setup()
+  // The day chat hand-off is the hero tank's CTA on the page (NapomPage.test.tsx asserts it opens
+  // the conversation) — the card must not draw a second one.
+  test('the card draws no chat button of its own', () => {
     renderCard()
-    await user.click(screen.getByRole('button', { name: /Beszélgess a napról/ }))
-    expect(screen.getByTestId('loc')).toHaveTextContent('/mezo/chat')
+    expect(screen.queryByRole('button', { name: /Beszélgess a napról/ })).toBeNull()
+    expect(screen.getByTestId('loc')).toHaveTextContent('/nap/napom/2026-05-18')
   })
 })

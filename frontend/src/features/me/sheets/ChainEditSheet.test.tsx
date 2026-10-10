@@ -75,4 +75,18 @@ describe('ChainEditSheet — edit', () => {
     expect(screen.queryByRole('button', { name: /törlése/i })).not.toBeInTheDocument()
     expect(screen.getByText(/alap rutinok nem törölhetők/i)).toBeInTheDocument()
   })
+
+  it('is a light sheet: the head names it, the daypart is a pressed pill, Mégse closes without writing', () => {
+    const onClose = vi.fn()
+    const { baseElement } = render(<ChainEditSheet onClose={onClose} />)
+    expect(baseElement.querySelector('.sheet.fo-sheet')).not.toBeNull()
+    expect(baseElement.querySelector('.glass')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Új rutin' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reggel' })).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Este' }))
+    expect(screen.getByRole('button', { name: 'Este' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /mentés/i })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+    expect(createChain).not.toHaveBeenCalled()
+  })
 })

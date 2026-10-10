@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrivalStep } from '@/features/ritual/components/ArrivalStep'
 import { DayStoryStep } from '@/features/ritual/components/DayStoryStep'
@@ -7,55 +6,39 @@ import { HarvestStep } from '@/features/ritual/components/HarvestStep'
 import { LoopsStep } from '@/features/ritual/components/LoopsStep'
 import { ReflectionStep } from '@/features/ritual/components/ReflectionStep'
 import { ReleaseStep } from '@/features/ritual/components/ReleaseStep'
+import { RitualExitContext } from '@/features/ritual/components/RitualFoot'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { ringsOf } from '@/features/today/logic/needsInputs'
 import { localDateString } from '@/shared/lib/dates'
-import { useForceTheme } from '@/app/ThemeProvider'
+import { Dots, Page } from '@/shared/ui/folyadek'
 import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
 
 const ACT_COUNT = 6
 
-// Index-derived star positions (mezo-d20.8.1.1). Deliberately NOT Math.random: /ritual carries
-// visual goldens, and a re-rolled sky would fail every one of them for no design reason. The
-// prime-ish multipliers just keep the grid from reading as a lattice.
-const STARS = Array.from({ length: 16 }, (_, i) => ({
-  left: `${((i * 37) % 96) + 2}%`,
-  top: `${((i * 53) % 88) + 3}%`,
-  delay: `${((i * 7) % 30) / 10}s`,
-}))
-
-function StarField() {
-  return (
-    <div className="rz-stars" aria-hidden="true">
-      {STARS.map((s) => (
-        <i key={s.left + s.top} style={{ left: s.left, top: s.top, '--tw': s.delay } as CSSProperties} />
-      ))}
-    </div>
-  )
-}
-
-/** Past acts are dim amber dots, the current one a lit amber pill — reporting progress, never navigable. */
-function beadClass(i: number, act: number) {
-  if (i + 1 === act) return 'rz-dot cur'
-  return i + 1 < act ? 'rz-dot on' : 'rz-dot'
-}
+/** The six acts by name — what the step dots announce to a screen reader („2 / 6 · A napod íve"). */
+const ACT_NAME = ['Indulás', 'A napod íve', 'A szavaid', 'Nyitott hurkok', 'A mai termés', 'Lezárva']
 
 /**
- * Full-screen Napzárás flow (/ritual, spec §4, mezo-ilsj) — a 6-act state machine over a
- * forced-dark surface (train/session idiom: AppLayout hides the tab bar for this route).
+ * Full-screen Napzárás flow (/ritual, spec §4, mezo-ilsj) — a 6-act state machine on a chrome-free
+ * route (train/session idiom: AppLayout hides the title bar, the bottom bar and the FAB here).
+ * Folyadék (mezo-n4wf5.2, owner decision, prototype `napzaras.1…6`): the flow is LIGHT; the evening
+ * mood is the deeper „dusk" liquid (`<Page tone="dusk">`), not a dark screen. The page draws only
+ * the six step dots on top; each act renders its hero, its numbered cards and its own foot bar
+ * (`RitualFoot`: „Kilépés" on the left — handed down through `RitualExitContext` — and the act's
+ * primary button), so the act keeps owning its advance.
+ *
  * The ONLY write before the Harvest act is the optional prose reflection in act 3
  * (`ReflectionStep`, W1.2) — an idempotent upsert that cannot conflict with the close, which
- * only stamps `closed_at`. The ✕ exit stays consequence-free otherwise: entering act 5 is
+ * only stamps `closed_at`. The „Kilépés" exit stays consequence-free otherwise: entering act 5 is
  * still the close — a `closedRef` guard fires `useRitualActions(date).close()` exactly once,
  * then silently drops any habit levelUps accrued earlier today (see the effect below) — the
  * Harvest stage IS the celebration, so the global LevelUpProvider overlay must never fire a
- * second one on /today.
+ * second one back on /nap.
  *
  * Act 4 (LoopsStep) only SIGNALS (onOpenCheckIn/onOpenJournal) — the reused sheets
- * (CheckInSheet, ActivityLogSheet) are mounted HERE, at the page level, exactly like
- * TodayPage.tsx mounts CheckInSheet (TodayPage.tsx:37-42/76-83): this page keeps its own
+ * (CheckInSheet, ActivityLogSheet) are mounted HERE, at the page level: this page keeps its own
  * `useCheckins` + the same next-open-slot `findIndex` predicate so it can resolve
  * onOpenCheckIn to a concrete slot index without LoopsStep needing to know or pass it.
  */
@@ -81,15 +64,6 @@ export function RitualPage() {
   // harmless GET (ritual_closed=false → evening_ritual stays pending, no completion yet).
   useHabitDay(date)
 
-  // mezo-tr5v: the ritual is a dark-takeover surface (rz-screen is hard-dark regardless of
-  // theme), but the sheets it portals (CheckInSheet, ActivityLogSheet) and any XP-award overlay
-  // (LevelUpScreen) are theme-aware and would render light for a light-mode user — clashing.
-  // Force data-theme=dark for the whole flow so everything is consistent, then revert to the
-  // user's real theme on exit. This does NOT touch the persisted preference.
-  // The claim is this component's OWN (mezo-mhum fix-wave): arriving from the Titán Nap, that
-  // shell holds a claim too, and the old single-slot API let its cleanup clear ours.
-  useForceTheme('dark')
-
   const [act, setAct] = useState(1)
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const [journalOpen, setJournalOpen] = useState(false)
@@ -110,47 +84,43 @@ export function RitualPage() {
         // useRitualActions), so by the time this runs the ritual's own +10/level_up_event is
         // already sitting in the habitDay cache — not just an earlier-in-the-day one. The
         // Harvest act (HarvestStep, Task 6) already displays today's XP/coins/streak as the
-        // ritual's own celebration, so consume (silently drop) it here, so RoutineCard's
+        // ritual's own celebration, so consume (silently drop) it here, so the routine's
         // effect doesn't fire the global LevelUpScreen a second time once the user lands
-        // back on /today.
+        // back on /nap.
         consumeLevelUps()
       })
     }
   }, [act, close, consumeLevelUps, needsPending, states])
 
-  return (
-    <div className="rz-screen" data-act={act}>
-      {/* Üveg (mezo-me75u.3): the blurred colour field the act's glass refracts (bible §1). */}
-      <div className="uv-aurora rz-aurora" aria-hidden="true"><i /><i /><i /><i /></div>
-      <StarField />
-      <div className="rz-top">
-        <div className="rz-dots" aria-hidden="true">
-          {Array.from({ length: ACT_COUNT }, (_, i) => (
-            <span key={i} className={beadClass(i, act)} />
-          ))}
-        </div>
-        <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/nap')}>Kilépés</button>
-      </div>
+  const exit = useCallback(() => navigate('/nap'), [navigate])
+  const checkinsDone = checkins.filter((c) => c.state === 'done').length
 
-      {act === 1 && <ArrivalStep onNext={() => setAct(2)} />}
-      {act === 2 && <DayStoryStep onNext={() => setAct(3)} />}
-      {act === 3 && <ReflectionStep onNext={() => setAct(4)} />}
-      {act === 4 && (
-        <LoopsStep
-          onNext={() => setAct(5)}
-          onOpenCheckIn={() => setCheckInIdx(nextCheckinIdx)}
-          onOpenJournal={() => setJournalOpen(true)}
-        />
-      )}
-      {act === 5 && <HarvestStep onNext={() => setAct(6)} />}
-      {act === 6 && (
-        <ReleaseStep
-          prepStartsAt={data.window.prepStartsAt}
-          bedTime={data.window.bedTime}
-          closingNote={closingNote}
-          onFinish={() => navigate('/nap')}
-        />
-      )}
+  return (
+    <RitualExitContext.Provider value={exit}>
+      {/* `has-foot`: the act's own `RitualFoot` is this page's foot bar (see the doc comment). */}
+      <Page tone="dusk" nonav className="has-foot nrz" data-act={act}>
+        <Dots count={ACT_COUNT} at={act - 1} label={`${act} / ${ACT_COUNT} · ${ACT_NAME[act - 1]}`} />
+
+        {act === 1 && <ArrivalStep onNext={() => setAct(2)} checkinsDone={checkinsDone} checkinsTotal={checkins.length} />}
+        {act === 2 && <DayStoryStep onNext={() => setAct(3)} />}
+        {act === 3 && <ReflectionStep onNext={() => setAct(4)} />}
+        {act === 4 && (
+          <LoopsStep
+            onNext={() => setAct(5)}
+            onOpenCheckIn={() => setCheckInIdx(nextCheckinIdx)}
+            onOpenJournal={() => setJournalOpen(true)}
+          />
+        )}
+        {act === 5 && <HarvestStep onNext={() => setAct(6)} />}
+        {act === 6 && (
+          <ReleaseStep
+            prepStartsAt={data.window.prepStartsAt}
+            bedTime={data.window.bedTime}
+            closingNote={closingNote}
+            onFinish={() => navigate('/nap/rutin?dp=este')}
+          />
+        )}
+      </Page>
 
       {/* checkInIdx >= 0 guards a -1 findIndex miss (nextCheckinIdx) from rendering CheckInSheet with an undefined slot. */}
       {checkInIdx !== null && checkInIdx >= 0 && (
@@ -162,6 +132,6 @@ export function RitualPage() {
         />
       )}
       {journalOpen && <ActivityLogSheet onClose={() => setJournalOpen(false)} />}
-    </div>
+    </RitualExitContext.Provider>
   )
 }

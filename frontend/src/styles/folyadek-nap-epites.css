@@ -1,0 +1,137 @@
+/* ── Folyadék · Nap · epites (mezo-n4wf5.2, slice F2) ── page-level rules of this area only; shared pieces live in folyadek-kit.css.
+   The routine builder: /nap/rutin/epites · lanc/:key · szokasok · szokas/:key (+ /szerkesztes) · uj, and the AI / chain /
+   anchor sheets. Ported in values from vilagos/nap.js (`.np-ch2 .np-pipe .np-stg .np-mat .np-rec .np-recept .np-blank
+   .np-g28 .np-leg .np-wd .np-eff .np-effout .np-loop .np-mv .np-sug`) and kit.js (`.fh-in`); prefix `.rb-`.
+   The base rules are the final (still) frame; motion lives in the no-preference block at the end. */
+
+/* ── the page's own back control ── only where no title bar is mounted (a page rendered alone); in the app the shell draws it */
+.rb-back { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; min-height: 44px; margin: 8px 18px 0; padding: 0; border: 0; background: none; cursor: pointer;
+  font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; color: var(--fo-sub); }
+.rb-back:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+.fo-row.rb-armed strong { color: var(--fo-bad); }
+.rb-anc { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; }
+.rb-anc > span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.rb-card-why > .fo-why:first-child { margin-top: 0; }
+
+/* ── fields are the kit's `.fo-in` ── */
+.fo-lab .rb-opt { font-weight: 500; color: var(--fo-faint); }
+.rb-save { margin-top: 16px; }
+
+/* ── hub: one drop row per chain ── */
+.rb-ch2 > div > small { display: block; font-size: 11.5px; font-weight: 700; color: var(--fo-sub); margin-top: 14px; }
+.rb-ch2 .fo-drops { margin-top: 8px; width: var(--w, 100%); min-width: 28px; }
+.rb-ch2 + .fo-facts { margin-top: 16px; }
+
+/* ── chain: the habits as connected vessels ── */
+.rb-pipe { margin-top: 14px; }
+.rb-pipe .fo-vials { position: relative; margin-top: 0; }
+.rb-pipe + .rb-pipe { margin-top: 12px; }
+.rb-pipe .fo-vials::before { content: ''; position: absolute; left: var(--el, 10%); right: var(--er, 10%); top: 76px; height: 8px; border-radius: 4px;
+  background: linear-gradient(90deg, var(--liq1), var(--liq2)); opacity: .55; }
+.rb-pipe .fo-tube { z-index: 1; }
+.rb-pipe .fo-vial b { font-size: 14px; }
+.rb-pipe .fo-vials .fo-vial small { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; overflow-wrap: anywhere; }
+.rb-pipe .fo-vials .fo-tube em { font-size: 9px; font-weight: 700; }
+/* six across, the kit colours the mark as a warning; here it is a plain status (the kit still turns it white on the liquid) */
+.rb-pipe .fo-vials .fo-tube em:not(.on) { color: var(--fo-sub); }
+.rb-pipe .fo-vials.xs .fo-vial small { font-size: 9.5px; }
+.rb-pipe.many .fo-vials { grid-template-columns: repeat(6, 1fr) !important; }
+.rb-mv { display: flex; gap: 4px; flex: 0 0 auto; }
+.rb-mv button { width: 40px; height: 44px; padding: 0; border: 0; border-radius: 10px; cursor: pointer; background: var(--fo-page); font-size: 11px; color: var(--fo-sub); }
+.rb-mv button:disabled { opacity: .4; cursor: default; }
+.rb-mv button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* ── habits: the four stages are four vessels, the riper the higher ── */
+.rb-stg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+.rb-stg-b { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; padding: 0; border: 0; background: none; cursor: pointer; color: inherit; font: inherit; }
+.rb-stg.filtered .rb-stg-b { opacity: .45; }
+.rb-stg.filtered .rb-stg-b.on { opacity: 1; }
+.rb-stg-b:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; border-radius: 26px; }
+.rb-stg .t { position: relative; display: block; width: 100%; height: 104px; border-radius: 26px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .08); }
+.rb-stg .on .t { box-shadow: inset 0 0 0 2.5px var(--liq2), 0 14px 18px -14px var(--liq2); }
+.rb-stg .t i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.rb-stg .t b { position: absolute; left: 0; right: 0; bottom: 3px; font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: #fff; text-align: center; }
+.rb-stg small { font-size: 10.5px; font-weight: 600; line-height: 1.2; color: var(--fo-sub); text-align: center; }
+.rb-stage, .rb-eta { display: block; }
+.rb-eta b { color: var(--fo-ink); font-weight: 700; }
+
+/* ── habit: ripening is one vessel, its level crosses four stages ── */
+.rb-mat { display: flex; gap: 14px; height: 204px; margin-top: 14px; }
+.rb-mat .t { position: relative; flex: 0 0 88px; border-radius: 34px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .08), 0 20px 26px -20px var(--liq2); }
+.rb-mat .t i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.rb-mat .t u { position: absolute; right: 0; width: 18px; height: 2px; background: rgba(10, 42, 60, .22); text-decoration: none; }
+.rb-mat .t b { position: absolute; left: 0; right: 0; bottom: 16px; font-family: var(--ff-display); font-size: 24px; font-weight: 800; color: #fff; text-align: center; }
+.rb-mat .t.lo b { color: var(--fo-ink); bottom: auto; top: 50%; transform: translateY(-50%); }
+.rb-mat ol { flex: 1; min-width: 0; display: flex; flex-direction: column; list-style: none; margin: 0; padding: 0; }
+.rb-mat li { flex: var(--f, 1) 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; padding-left: 2px; color: var(--fo-faint); border-top: 1.5px dashed rgba(10, 42, 60, .16); }
+.rb-mat li:first-child { border-top: 0; }
+.rb-mat li b { font-size: 13.5px; font-weight: 650; }
+.rb-mat li small { font-size: 11.5px; color: var(--fo-sub); line-height: 1.25; }
+.rb-mat li.done { color: var(--fo-sub); }
+.rb-mat li.on { color: var(--fo-ink); }
+.rb-mat li.on b { font-weight: 800; }
+.rb-curve { margin-top: 4px; }
+
+/* ── the recipe: one small vessel per part, filled once that part is set · the sentence with its blanks ── */
+.rb-rec { display: flex; gap: 10px; margin: 12px 0 4px; }
+.rb-rec span { position: relative; flex: 1; min-width: 0; height: 38px; display: grid; place-items: center; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .12); }
+.rb-rec span + span::before { content: ''; position: absolute; right: 100%; top: 50%; width: 10px; height: 5px; margin-top: -2.5px; background: rgba(10, 42, 60, .12); }
+.rb-rec .f + span::before { background: var(--liq2); }
+.rb-rec i { position: absolute; inset: 0; border-radius: 999px; background: linear-gradient(135deg, var(--liq1), var(--liq2)); opacity: 0; }
+.rb-rec .f i { opacity: 1; }
+.rb-rec b { position: relative; font-size: 12px; font-weight: 700; color: var(--fo-sub); white-space: nowrap; }
+.rb-rec .f b { color: #fff; }
+.rb-recept { font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+.fo-hero .rb-recept { margin-top: 8px; }
+.rb-recept b { font-weight: 700; }
+.rb-blank { display: inline-block; width: 52px; height: 1em; border-bottom: 2px dashed var(--fo-faint); vertical-align: -2px; overflow: hidden; white-space: nowrap; text-indent: 100%; }
+
+/* ── history: one small vessel per day — full = pipa, outlined = kimaradt, faint = nem volt sor ── */
+.rb-g28 { display: grid; grid-template-columns: repeat(14, 1fr); gap: 4px; margin-top: 12px; }
+.rb-g28 i { display: block; position: relative; overflow: hidden; height: 26px; border-radius: 999px; }
+.rb-g28.long i { height: 16px; }
+.rb-g28 i.p { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.rb-g28 i.m { background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .16); }
+.rb-g28 i.s { background: rgba(10, 42, 60, .05); }
+.rb-leg { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--fo-sub); }
+.rb-leg span { display: inline-flex; align-items: center; gap: 6px; }
+.rb-leg i { width: 10px; height: 16px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .16); }
+.rb-leg i.p { background: linear-gradient(180deg, var(--liq1), var(--liq2)); box-shadow: none; }
+.rb-leg i.s { background: rgba(10, 42, 60, .06); box-shadow: none; }
+.rb-leg b { font-weight: 700; color: var(--fo-ink); }
+.rb-wd { display: flex; justify-content: space-between; margin-top: 12px; }
+.rb-wd .fo-mini { flex: 1 1 0; min-width: 0; }
+.rb-wd .fo-mini b { font-size: 11.5px; white-space: nowrap; }
+.rb-wd .fo-mini small { font-size: 9.5px; white-space: nowrap; }
+
+/* ── effort: four factors, each a small segmented row; the outcome is a level ── */
+.rb-eff { padding: 6px 0; }
+.rb-eff-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.rb-eff-h b { font-size: 14px; font-weight: 600; }
+.rb-eff-h small { font-size: 12px; color: var(--fo-sub); }
+.rb-eff .fo-seg { margin: 0; }
+.rb-eff .fo-seg button { min-height: 44px; padding: 7px 4px; font-size: 12.5px; line-height: 1.15; white-space: normal; }
+.rb-effout { margin-top: 12px; }
+
+/* ── wizard: the framework's loop · AI suggestions ── */
+.rb-loop { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 6px; }
+.rb-loop i { font-style: normal; font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--dom) 9%, #fff); }
+.rb-loop u { text-decoration: none; color: var(--fo-faint); font-size: 12px; }
+.rb-sug { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--fo-hair); }
+.rb-sug strong { display: block; font-size: 15px; }
+.rb-sug small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--fo-sub); }
+
+@media (max-width: 350px) {
+  .rb-stg { gap: 6px; }
+  .rb-rec { gap: 8px; }
+  .rb-rec b { font-size: 11px; }
+  .rb-mat { gap: 10px; }
+  .rb-mat .t { flex-basis: 76px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rb-stg .t i, .rb-mat .t i { transition: height .6s cubic-bezier(.2, .8, .2, 1); }
+  .rb-stg-b { transition: opacity .15s; }
+  .rb-rec i { transition: opacity .2s; }
+}

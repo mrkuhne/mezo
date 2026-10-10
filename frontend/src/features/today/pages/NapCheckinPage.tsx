@@ -1,53 +1,43 @@
 // ============================================================
 // Mezo · NapCheckinPage — Check-in day overview (mezo-d20.2.5; Check-in 2.0 mezo-ck2:
-// answered cells, quick-exit tag, "N koppintás" hint — prototypes/elo/nap.html `checkin()`)
-// Source of truth: docs/design_2.0/prototypes/src/nap-body.html
-// #page-check (p-rose tone, px ×1.18). The day's four slots as rows
-// in ONE card: done slots carry their measured values as tinted
-// mini-cells, the NEXT fillable slot is the hot row and opens the
-// real CheckInSheet measurement flow from here — the sheet stays
-// the flow, this page is the day overview. Data layer reused
-// verbatim: useCheckins + isFillableSlot.
-// ÜVEG (mezo-me75u.3, prototypes/uveg-nap.html `checkin()`): a vissza-gomb kis üveg-pirula,
-// a hős KERET NÉLKÜLI halo (3D check-in ikon + nagy szám), a négy slot EGY rózsa üvegkártya
-// lapos sorai. A kész sor megvilágított pipája a 3D t-tick, a soron következő sor a kártyán
-// BELÜL világít (nem üveg az üvegben), a jövőbeli sor szaggatott körrel halványul.
+// answered cells, quick-exit line, "N koppintás" hint).
+// The day's four slots: done slots carry their answers, the NEXT fillable slot is the current
+// one and opens the real CheckInSheet measurement flow from here — the sheet stays the flow, this
+// page is the day overview. Data layer reused verbatim: useCheckins + isFillableSlot.
+// FOLYADÉK (mezo-n4wf5.2, prototypes/vilagos/nap.js `checkin()`): the hero is the day's four
+// vials (a done one filled to answered / asked, in the ok colour); below, ONE card with the four
+// slot rows — a done row shows every answer as a small capsule filled to its value on the
+// 10 scale (pain in the warn colour).
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCheckInPlan, useCheckins } from '@/data/hooks'
 import { planSteps } from '@/data/today/checkinPlan'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CHECKIN_LOOK, answerText, answeredItems } from '@/features/today/logic/checkinItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { answerLevel, answerTone } from '@/features/today/sheets/checkin/answerLevel'
 import { localDateString } from '@/shared/lib/dates'
 import type { CheckinSlot } from '@/data/types'
-import { FrameBack } from '@/shared/ui/folyadek'
+import { Btn, Card, FrameBack, Hero, Mini, Note, Page, Section, St, Vials, type VialItem } from '@/shared/ui/folyadek'
 
-/** The four canonical slots' daypart names (prototype #page-check rows). */
+/** The four canonical slots' daypart names, and the adjective the verdict uses („A délutáni…"). */
 const SLOT_NAMES = ['Reggel', 'Délelőtt', 'Délután', 'Este'] as const
+const SLOT_ADJ = ['reggeli', 'délelőtti', 'délutáni', 'esti'] as const
 
-/** Check-in 2.0 (mezo-ck2): every ANSWERED item of a done slot as a tinted mini-cell, in ask
- *  order, the row auto-filling (prototype `cells()` / `.mcells.n`). Skipped items show nothing. */
+/** Check-in 2.0 (mezo-ck2): every ANSWERED item of a done slot as a capsule, in ask order
+ *  (prototype `cells()`). Skipped items show nothing. */
 function AnswerCells({ slot }: { slot: CheckinSlot }) {
   const values = slot.values
   if (!values) return null
   const ids = answeredItems(values, slot.askedItems)
   if (ids.length === 0) return null
   return (
-    <div className="mz-mcells nck-cells is-n">
-      {ids.map((id) => {
-        const d = answerText(id, values, true) ?? ''
-        return (
-          <span key={id} style={{ '--c': CHECKIN_LOOK[id].color } as CSSProperties}>
-            <b className={d.length > 3 ? 'is-t' : undefined}>{d}</b>
-            <small>{CHECKIN_LOOK[id].short}</small>
-          </span>
-        )
-      })}
+    <div className="nck2-cells">
+      {ids.map((id) => (
+        <Mini key={id} pct={answerLevel(id, values)} color={answerTone(id, values)}
+          value={answerText(id, values, true) ?? ''} label={CHECKIN_LOOK[id].short} />
+      ))}
     </div>
   )
 }
@@ -58,14 +48,19 @@ function usePlanCount(slotTime: string): number | null {
   return plan ? planSteps(plan).length : null
 }
 
-function HotHint({ slotTime }: { slotTime: string }) {
-  const n = usePlanCount(slotTime)
-  return <span className="nck-hint">{n != null ? `${n} koppintás · kb. fél perc` : 'kb. fél perc'}</span>
+/** The plan size of EVERY slot of the day, handed to `children` in slot order. One component per
+ *  slot calls the hook, so a day with any number of slots keeps the hook order stable. */
+function PlanCounts({ times, acc = [], children }: {
+  times: string[]; acc?: (number | null)[]; children: (counts: (number | null)[]) => ReactNode
+}) {
+  if (times.length === 0) return <>{children(acc)}</>
+  return <PlanCountStep times={times} acc={acc}>{children}</PlanCountStep>
 }
-
-function LaterSub({ slotTime }: { slotTime: string }) {
-  const n = usePlanCount(slotTime)
-  return <div className="nck-sub">később esedékes{n != null ? ` · ${n} kérdés` : ''}</div>
+function PlanCountStep({ times, acc, children }: {
+  times: string[]; acc: (number | null)[]; children: (counts: (number | null)[]) => ReactNode
+}) {
+  const n = usePlanCount(times[0])
+  return <PlanCounts times={times.slice(1)} acc={[...acc, n]}>{children}</PlanCounts>
 }
 
 export function NapCheckinPage() {
@@ -73,77 +68,91 @@ export function NapCheckinPage() {
   const { checkins, saveCheckIn } = useCheckins()
   const [fillIdx, setFillIdx] = useState<number | null>(null)
 
-  const done = checkins.filter((c) => c.state === 'done').length
   const nextIdx = checkins.findIndex(isFillableSlot)
+  const cur = nextIdx >= 0 ? checkins[nextIdx] : null
+  const nameOf = (slot: CheckinSlot, i: number) => SLOT_NAMES[i] ?? slot.time
 
-  const slotRow = (slot: CheckinSlot, i: number) => {
-    const name = SLOT_NAMES[i] ?? slot.time
-    if (slot.state === 'done') {
+  const body = (counts: (number | null)[]) => {
+    const curN = nextIdx >= 0 ? counts[nextIdx] : null
+
+    const vials: VialItem[] = checkins.map((slot, i) => {
+      const base = { label: nameOf(slot, i), note: slot.time }
+      if (slot.state === 'done') {
+        const k = slot.values ? answeredItems(slot.values, slot.askedItems).length : 0
+        const n = counts[i] ?? slot.askedItems?.length ?? k
+        return { ...base, pct: n > 0 ? Math.round((k / n) * 100) : 0, value: `${k}/${n}`, mark: 'kész', color: 'var(--fo-ok)', icon: 't-tick' }
+      }
+      if (i === nextIdx) {
+        return { ...base, pct: 5, value: 'most', mark: slot.state === 'now' ? 'esedékes' : 'jön', icon: 't-checkin', onClick: () => setFillIdx(i) }
+      }
+      return { ...base, pct: 0, value: '–', mark: 'később', icon: 't-clock' }
+    })
+
+    const verdict = cur
+      ? cur.state === 'now'
+        ? `A ${SLOT_ADJ[nextIdx] ?? `${cur.time}-s`} most esedékes. Fél perc.`
+        : `A következő: ${nameOf(cur, nextIdx).toLowerCase()}, ${cur.time}. Fél perc.`
+      : 'Mind a négy megvan mára.'
+    const sub = cur
+      ? `${curN != null ? `${curN} koppintás. ` : ''}Öt alapkérdés után bármikor kiléphetsz.`
+      : 'A válaszaid beépülnek a holnapi napodba.'
+
+    const slotRow = (slot: CheckinSlot, i: number) => {
+      const name = nameOf(slot, i)
+      const n = counts[i]
+      const isDone = slot.state === 'done'
+      const isCur = i === nextIdx
+      const title = isCur ? `${name} · ${slot.state === 'now' ? 'most esedékes' : 'következik'}` : name
+      const subLine = isDone
+        ? [slot.note, slot.quickExit ? 'Most csak ennyi · az alap megvan' : null].filter(Boolean).join(' · ') || 'Kitöltve'
+        : isCur
+          ? `hogy vagy most? · ${n != null ? `${n} koppintás, ` : ''}kb. fél perc`
+          : `később esedékes${n != null ? ` · ${n} kérdés` : ''}`
       return (
-        <div key={i} className="nck-row" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
-          <span className="nck-tick f" role="img" aria-label="kész"><Icon3D name="t-tick" size={30} /></span>
-          <div className="nck-grow">
-            <div className="nck-t">{name} · {slot.time}</div>
-            {slot.note && <div className="nck-sub">{slot.note}</div>}
-            {slot.quickExit && <span className="nck-tag">Most csak ennyi · az alap megvan</span>}
-            <AnswerCells slot={slot} />
+        <div key={i} className={`nck2-slot${isCur ? ' now' : ''}${!isDone && !isCur ? ' later' : ''}`}
+          data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
+          <div className="nck2-slh">
+            <time>{slot.time}</time>
+            <span className="g"><strong>{title}</strong><small>{subLine}</small></span>
+            {isDone
+              ? <St tone="ok">Kész</St>
+              : isCur
+                ? <Btn sm onClick={() => setFillIdx(i)}>Kitöltöm</Btn>
+                // future (or non-next missed) slot — muted, honest: no values, no affordance
+                : <St>Később</St>}
           </div>
+          {isDone && <AnswerCells slot={slot} />}
         </div>
       )
     }
-    if (i === nextIdx) {
-      return (
-        <div key={i} className="nck-row nck-hot" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
-          <span className="nck-tick" aria-hidden="true" />
-          <div className="nck-grow">
-            <div className="nck-t nck-rose">
-              {slot.state === 'now' ? `${name} · most esedékes` : `${name} · ${slot.time}`}
-            </div>
-            <div className="nck-sub">hogy vagy most?</div>
-            <HotHint slotTime={slot.time} />
-          </div>
-          <button type="button" className="nck-fill" onClick={() => setFillIdx(i)}>
-            Kitöltöm
-          </button>
-        </div>
-      )
-    }
-    // future (or non-next missed) slot — muted, honest: no values, no affordance
+
     return (
-      <div key={i} className="nck-row nck-dim" data-kalauz-anchor={i === 0 ? 'checkin-sor' : undefined}>
-        <span className="nck-tick is-dash" aria-hidden="true" />
-        <div className="nck-grow">
-          <div className="nck-t">{name} · {slot.time} körül</div>
-          <LaterSub slotTime={slot.time} />
-        </div>
-      </div>
+      <>
+        <Hero label="A nap négy pillanata" verdict={verdict} sub={sub}
+          actions={cur
+            ? <Btn onClick={() => setFillIdx(nextIdx)}>Kitöltöm</Btn>
+            : <Btn onClick={() => navigate('/nap')}>Vissza a mai napra</Btn>}>
+          <Vials size="sm" height={118} items={vials} />
+        </Hero>
+        <Section n={1} title="Mai pillanatképek" />
+        <Card>
+          {checkins.map(slotRow)}
+          <Note>
+            Egy kapszula egy válasz: a szint a 10-es skálán adott érték. A kimaradt check-in nem vész el: pótold bármikor, a társ nem büntet.
+          </Note>
+        </Card>
+      </>
     )
   }
 
   return (
-    <MozaikPage tone="rose" className="nap-oldal nck-page">
-      <div className="mz-page-head nap-backrow">
-        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
-          <b aria-hidden="true">‹</b> Ma
-        </FrameBack>
-      </div>
-      <section className="nap-hero uv-halo" style={{ '--c': 'var(--dv-rose)', '--c2': 'var(--dv-lav)' } as React.CSSProperties}>
-        <Icon3D name="t-checkin" size={86} className="nap-hero-art uv-float" />
-        <div className="nap-hero-num">{done}<small>/{checkins.length}</small></div>
-        <div className="nap-hero-nm">Check-in</div>
-        <div className="nap-hero-sb">négy pillanatkép a napodról</div>
-      </section>
-      <PageBody principle="A kimaradt slot nem vész el — Pótold bármikor, a társ nem büntet.">
-        <EntranceGroup>
-          <div className="nck-card glass rise" style={{ '--d': '40ms' } as React.CSSProperties}>
-            {checkins.map(slotRow)}
-          </div>
-        </EntranceGroup>
-      </PageBody>
+    <Page className="nck2-page">
+      <FrameBack history className="fo-ib fo-back nck2-back" onBack={() => navigate(-1)}>‹</FrameBack>
+      <PlanCounts times={checkins.map((c) => c.time)}>{body}</PlanCounts>
       {fillIdx !== null && (
         <CheckInSheet slot={checkins[fillIdx]} slotIdx={fillIdx}
           onClose={() => setFillIdx(null)} onSave={(d) => saveCheckIn(fillIdx, d)} />
       )}
-    </MozaikPage>
+    </Page>
   )
 }

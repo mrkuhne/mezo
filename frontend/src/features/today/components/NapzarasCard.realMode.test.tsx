@@ -31,7 +31,7 @@ test('a closed day never flashes the full card while the ritual is loading', asy
   // in flight: neither the full card nor the done row
   expect(container).toBeEmptyDOMElement()
   expect(screen.queryByText('Tegyük le a napot.')).toBeNull()
-  // resolved as closed: the flat done row, and the full card never appeared
-  expect(await screen.findByText('Letetted a napot')).toBeInTheDocument()
+  // resolved as closed: the closed tank, and the open one never appeared
+  expect(await screen.findByText('Letetted a napot.')).toBeInTheDocument()
   expect(screen.queryByText('Tegyük le a napot.')).toBeNull()
 })

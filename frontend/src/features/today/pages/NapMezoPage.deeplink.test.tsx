@@ -108,7 +108,7 @@ test('surfaces the deep-linked card when d names an earlier day, alongside today
   expect(screen.queryByText(/Tegnapi napzáró/)).not.toBeInTheDocument()
 
   // the deep-linked card gets the same feedback-chip wiring as any persisted feed row
-  const card = (await screen.findByText(/Éjfél után írtál/)).closest('.nap-mzmsg') as HTMLElement
+  const card = (await screen.findByText(/Éjfél után írtál/)).closest('.nb-msg') as HTMLElement
   expect(within(card).getByText('Segített?')).toBeInTheDocument()
   expect(within(card).getByRole('button', { name: /Segített/ })).toBeInTheDocument()
 })
@@ -118,7 +118,7 @@ test('renders normally when the deeplink names today — no duplicate card', asy
   renderAt(`/nap/uzenetek?n=${todayMorning.id}&d=${TODAY}`)
 
   expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(1)
 })
 
 test('renders normally when there is no deeplink', async () => {
@@ -126,7 +126,7 @@ test('renders normally when there is no deeplink', async () => {
   renderAt('/nap/uzenetek')
 
   expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(1)
 })
 
 test('ignores a deeplink whose card is not in that day\'s feed — no crash, no placeholder, today intact', async () => {
@@ -135,7 +135,7 @@ test('ignores a deeplink whose card is not in that day\'s feed — no crash, no 
 
   expect(await screen.findByText(/Mai napod fonala/)).toBeInTheDocument()
   expect(screen.queryByText(/Tegnapi napzáró/)).not.toBeInTheDocument()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(1)
 })
 
 // Finding 3: the hero count must be TODAY's own message count, never inflated by a prepended
@@ -146,8 +146,10 @@ test('the hero count excludes a prepended cross-day linked card', async () => {
 
   await screen.findByText(/Éjfél után írtál/)
   // Two cards render (the linked one + today's own), but today's OWN thread is one message.
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(2)
-  expect(await screen.findByText('1 üzenet · a napod fonala')).toBeInTheDocument()
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(2)
+  // "1 üzenet." or "1 üzenet, 1 új." — never 2: the linked card is yesterday's.
+  expect(await screen.findByText(/^1 üzenet[.,]/)).toBeInTheDocument()
+  expect(document.querySelectorAll('.fo-hero .fo-dr')).toHaveLength(1)
 })
 
 // mezo-ho9k: ?n= must always land on the Üzenetek tab, overriding even an explicit
@@ -188,8 +190,8 @@ test('scrolls to the existing row for a same-day deeplink, without duplicating i
   serveFeeds({ [TODAY]: [todayMorning] })
   renderAt(`/nap/uzenetek?n=${todayMorning.id}&d=${TODAY}`)
 
-  const card = (await screen.findByText(/Mai napod fonala/)).closest('.nap-mzmsg') as HTMLElement
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  const card = (await screen.findByText(/Mai napod fonala/)).closest('.nb-msg') as HTMLElement
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(1)
   await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1))
   expect(scrollIntoView.mock.instances[0]).toBe(card)
   expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ block: 'center' })
@@ -222,7 +224,7 @@ test('does not re-fire the scroll when an unrelated part of the thread re-render
 
   // Vote on TODAY's own card (not the linked one) — useFeedback's optimistic write re-renders
   // the page. The linked card's scroll must not fire again.
-  const todayCard = (await screen.findByText(/Mai napod fonala/)).closest('.nap-mzmsg') as HTMLElement
+  const todayCard = (await screen.findByText(/Mai napod fonala/)).closest('.nb-msg') as HTMLElement
   await user.click(within(todayCard).getByRole('button', { name: /Segített/ }))
   await waitFor(() => expect(within(todayCard).getByRole('button', { name: /Segített/ })).toHaveAttribute('aria-pressed', 'true'))
 

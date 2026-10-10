@@ -17,11 +17,11 @@ import type { MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import type { NudgeSeenEntry } from '@/features/today/logic/nudgeSeen'
 
 export const NUDGE_COPY: Record<NeedKey, string> = {
-  energia: 'Ideje enni valamit — az utolsó étkezésed régen volt, az Energia-ringed leapadt.',
-  hidratacio: 'Ma még alig ittál — egy pohár víz máris feltölti a Hidratáció-ringet.',
+  energia: 'Ideje enni valamit — az utolsó étkezésed régen volt, az Étel szintje leapadt.',
+  hidratacio: 'Ma még alig ittál — egy pohár víz máris megemeli a Víz szintjét.',
   pihenes: 'A tegnapi éjszaka kevés volt — ma este érdemes korábban zárni.',
   mozgas: 'Két napja nem mozdultál nagyot — egy edzés vagy séta újra feltölt.',
-  lelek: 'Rég néztél magadra — egy gyors check-in feltölti a Lélek-ringet.',
+  lelek: 'Rég néztél magadra — egy gyors check-in megemeli a Kapcsolat szintjét.',
   rend: 'A láncaid ma még üresek — egy-két pipa visszahozza a Rendet.',
 }
 

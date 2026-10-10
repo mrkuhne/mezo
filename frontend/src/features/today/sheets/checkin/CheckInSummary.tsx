@@ -1,10 +1,10 @@
-// Check-in 2.0 · the summary cells (prototype `elo/nap.html` `SH.checkin`, `.sumn`): every step of
-// the slot as a cell — its 3D mark, label, and the answer, „kihagyva" (skipped) or „üres" (not
-// reached, e.g. after „Most csak ennyi"). The question of the day spans the row. A tap goes back
-// to that step.
-import type { CSSProperties } from 'react'
-import { Icon3D } from '@/shared/ui/clay'
+// Check-in · the summary rows (Folyadék, prototype vilagos/nap.js `ckSheet()` summary, `.np-sum`):
+// every step of the slot as a row: its icon, label, and the answer, „kihagyva" (skipped) or
+// „üres" (not reached, e.g. after „Most csak ennyi"), with the answer's level under it. A tap goes
+// back to that step.
+import { Level, Row, Why } from '@/shared/ui/folyadek'
 import { CHECKIN_LOOK, answerText } from '@/features/today/logic/checkinItems'
+import { answerLevel, answerTone } from '@/features/today/sheets/checkin/answerLevel'
 import type { CheckinItemId, CheckinValues } from '@/data/types'
 
 export function CheckInSummary({ steps, answers, adaptiveId, quick, onEdit }: {
@@ -17,26 +17,23 @@ export function CheckInSummary({ steps, answers, adaptiveId, quick, onEdit }: {
   return (
     <>
       {quick && (
-        <div className="ck-callout ck-qbanner" style={{ '--c': 'var(--dv-sage)' } as CSSProperties}>
-          <span className="ck-callout-eb">Most csak ennyi</span>
-          <p>Az alap megvan. A többi kérdés most üres marad — a check-in így is beszámít.</p>
-        </div>
+        <Why icon="t-tick">
+          <b>Most csak ennyi.</b> Az alap megvan. A többi kérdés üres marad, a check-in így is beszámít.
+        </Why>
       )}
-      <div className="ck-sumn">
+      <div className="nck2-sum">
         {steps.map((s, i) => {
-          const look = CHECKIN_LOOK[s.id]
           const isAd = adaptiveId != null && i === steps.length - 1
           const d = answerText(s.id, answers)
-          const shown = d === null ? 'üres' : d === '—' ? 'kihagyva' : d
+          const has = d !== null && d !== '—'
           return (
-            <button key={s.id} type="button" className={isAd ? 'ck-sum is-ad' : 'ck-sum'}
-              style={{ '--c': look.color } as CSSProperties} onClick={() => onEdit(i)}>
-              <Icon3D name={look.icon} size={26} />
-              <span>
-                <small>{s.label}{isAd ? ' · a nap kérdése' : ''}</small>
-                <b className={d && d !== '—' ? undefined : 'is-none'}>{shown}</b>
-              </span>
-            </button>
+            <Row key={s.id} className={isAd ? 'is-ad' : undefined}
+              icon={CHECKIN_LOOK[s.id].icon}
+              title={`${s.label}${isAd ? ' · a nap kérdése' : ''}`}
+              value={has ? d : <span className="nck2-none">{d === null ? 'üres' : 'kihagyva'}</span>}
+              more={<Level pct={answerLevel(s.id, answers)} color={has ? answerTone(s.id, answers) : 'var(--fo-faint)'} height={8} />}
+              right=""
+              onClick={() => onEdit(i)} />
           )
         })}
       </div>

@@ -9,7 +9,7 @@
 //   · the set clears after `FRESH_PULSE_MS`, or is replaced by the next change.
 import { useEffect, useState } from 'react'
 
-/** The pulse's length — `@keyframes napom-fresh` in the `uveg napom` block runs the same 1.6 s. */
+/** The pulse's length — `@keyframes nn-fresh` in `styles/folyadek-nap-napom.css` runs the same 1.6 s. */
 export const FRESH_PULSE_MS = 1600
 
 const NONE: ReadonlySet<string> = new Set()
