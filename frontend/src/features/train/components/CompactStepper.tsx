@@ -1,11 +1,10 @@
 // ============================================================
-// Mezo · CompactStepper — tight weight/reps stepper for the active
-// logging panel. 44px ± buttons, brand display for the primary (kg)
-// stepper, integer-clamped reps. The center value is tap-to-edit (type
-// the number straight in) so reaching e.g. 100 kg needs no tap-spam.
-// Ported from prototype train.jsx.
+// Mezo · CompactStepper — a stepper row of the running-plan editor (kör / mp pihenő).
+// The value in the middle is tap-to-edit (type the number straight in).
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `stv()`): the kit's stepper row
+// (`.fo-row` + `.fo-stp`: the label on the left, − value + on the right) with an input
+// where the kit shows a number.
 // ============================================================
-import { Icon } from '@/shared/ui/Icon'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
 
 export function CompactStepper({
@@ -14,7 +13,6 @@ export function CompactStepper({
   step,
   onChange,
   integer = false,
-  primary = false,
   min = 0,
   max,
 }: {
@@ -23,7 +21,6 @@ export function CompactStepper({
   step: number
   onChange: (next: number) => void
   integer?: boolean
-  primary?: boolean
   min?: number
   max?: number
 }) {
@@ -37,82 +34,13 @@ export function CompactStepper({
   const editable = useEditableNumber({ value, onChange, min, max, integer })
 
   return (
-    <div
-      className="flex-1"
-      style={{
-        background: 'var(--surface-2)',
-        padding: '6px 6px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        clipPath:
-          'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
-      }}
-    >
-      <button
-        type="button"
-        aria-label={`${label} csökkentése`}
-        onClick={decrement}
-        style={{
-          width: 44,
-          height: 44,
-          background: 'var(--surface-1)',
-          color: 'var(--coral)',
-          border: '1px solid var(--border-strong)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon name="minus" size={14} />
-      </button>
-      <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
-        <input
-          {...editable}
-          aria-label={label}
-          style={{
-            width: 60,
-            fontFamily: 'var(--ff-display)',
-            fontSize: 22,
-            fontWeight: 600,
-            color: primary ? 'var(--coral)' : 'var(--text-primary)',
-            lineHeight: 1,
-            textAlign: 'center',
-            background: 'transparent',
-            border: 'none',
-            padding: 0,
-            minWidth: 0,
-          }}
-        />
-        <span
-          style={{
-            fontSize: 10,
-            color: 'var(--text-tertiary)',
-            fontWeight: 500,
-          }}
-        >
-          {label}
-        </span>
-      </div>
-      <button
-        type="button"
-        aria-label={`${label} növelése`}
-        onClick={increment}
-        style={{
-          width: 44,
-          height: 44,
-          background: 'var(--surface-1)',
-          color: 'var(--coral)',
-          border: '1px solid var(--border-strong)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}
-      >
-        <Icon name="plus" size={14} />
-      </button>
+    <div className="fo-row es-num">
+      <span className="g"><strong>{label}</strong></span>
+      <span className="fo-stp">
+        <button type="button" aria-label={`${label} csökkentése`} onClick={decrement}>−</button>
+        <input {...editable} aria-label={label} className="es-numin" />
+        <button type="button" aria-label={`${label} növelése`} onClick={increment}>+</button>
+      </span>
     </div>
   )
 }

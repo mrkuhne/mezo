@@ -1,107 +1,89 @@
 // ============================================================
-// Mezo · TrainWeekJelekPage („Minden izomjel") — Terhelés subpage (Train parity
-// P2 Task 1, mezo-lf3cv). Source of truth: the prototype's `muscleMapHtml`
-// (docs/design_2.0/prototypes/companion-titanium/muscles.js:9) + its `.mm-*`
-// family (train-pages.css:154), ported onto the `.mm-` house section
-// (styles/prototype.css). The doorway is the map page's own quiet `.pl-row`.
+// Mezo · TrainWeekJelekPage („Minden izomjel") — Terhelés subpage, Folyadék face
+// (mezo-n4wf5.3, slice F3). Prototype: docs/design_2.0/prototypes/vilagos/edzes.js `jelek()`
+// (route `#w-edzes-jelek`, args `ures` / `tolt`). The doorway is the map page's „Mélyebben" row.
 //
-// The screen is the TAXONOMY, drawn: the six regions in their display order with
-// all 21 live catalog tokens under them (REGION_MUSCLES — the single source the
-// picker/filter surfaces already read, so a token added there appears here for
-// free). Each cell is the muscle's own clay silhouette, the SAME drawing path
-// every other Train surface uses (MuscleChip, slice T3) — there is no second
-// geometry path in the app and this page does not open one.
+// The screen is the TAXONOMY, drawn: the hero holds one tube per region (how many of its
+// muscles were worked this week), then the six regions in their display order with all 21
+// live catalog tokens under them (REGION_MUSCLES — the single source the picker/filter
+// surfaces already read, so a token added there appears here for free). Each cell is the
+// muscle's own silhouette through the SAME drawing path every other Train surface uses
+// (MuscleChip, on white through `Mchp`) — there is no second geometry path in the app.
 //
-// HONESTY — what „is-live" means: the muscle was actually WORKED this week, read
-// off the same logged source the map page reads (useWeekMuscleLog().details →
-// workedMusclesThisWeek). NOT the plan, not tonight's unlogged session. A token
-// the week's log cannot speak for renders UNLIT, never guessed lit; mock mode
-// has no persisted instances at all (weekMuscleLogHooks header note), so every
-// cell there is honestly unlit and the head says so in one line.
+// HONESTY — what a full sign means: the muscle was actually WORKED this week, read off the
+// same logged source the map page reads (useWeekMuscleLog().details →
+// workedMusclesThisWeek). NOT the plan, not tonight's unlogged session. A token the week's
+// log cannot speak for stays pale, never guessed full; mock mode has no persisted instances
+// at all (weekMuscleLogHooks header note), so every sign there is honestly pale and the
+// hero says so in one line.
 // ============================================================
-import type { CSSProperties } from 'react'
 import { useWeekMuscleLog } from '@/data/hooks'
-import { useBackNav } from '@/shared/hooks/useBackNav'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { Skeleton } from '@/shared/ui/Skeleton'
-import { REGION_LABELS, REGION_MUSCLES, regionColor } from '@/features/train/logic/muscleColors'
+import { Card, FrameBack, Hero, Note, Page, Section, Tubes, useFrameTitle } from '@/shared/ui/folyadek'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import { LIVE_MUSCLES, REGION_LABELS, REGION_MUSCLES } from '@/features/train/logic/muscleColors'
 import { workedMusclesThisWeek } from '@/features/train/logic/loadWeek'
 import { MUSCLE_LABELS } from '@/data/train/train'
-
-function JelekSkeleton() {
-  return (
-    <div role="status" aria-label="Betöltés…">
-      <div style={{ position: 'relative', padding: '58px 24px 20px' }}>
-        <Skeleton width={90} height={11} />
-        <div style={{ marginTop: 10 }}><Skeleton width={220} height={24} /></div>
-      </div>
-      <div className="col gap-sm" style={{ padding: '0 24px 19px' }}>
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} width="100%" height={120} radius={20} />
-        ))}
-      </div>
-    </div>
-  )
-}
+import TrainWeekSkeleton from '@/features/train/pages/TrainWeekSkeleton'
 
 export function TrainWeekJelekPage() {
   const weekLog = useWeekMuscleLog()
-  const goBack = useBackNav('/train/week/terkep')
+  useFrameTitle({ title: 'Minden izomjel', eyebrow: 'Izomtérkép' })
 
-  if (weekLog.pending) return <JelekSkeleton />
+  if (weekLog.pending) return <TrainWeekSkeleton blocks={[260, 150, 150, 150]} />
 
   const worked = workedMusclesThisWeek(weekLog.details)
+  const workedCount = LIVE_MUSCLES.filter((m) => worked.has(m)).length
 
   return (
-    <MozaikPage tone="gold">
-      <EntranceGroup>
-        <header className="ld-hero is-slim rise" style={{ '--d': '40ms' } as CSSProperties}>
-          <span className="ld-hero-wash" />
-          <button type="button" className="mz-backbtn ld-back" onClick={goBack}>‹ Izomtérkép</button>
-          <div className="mm-head">
-            <span className="ld-eyebrow">Izomtérkép</span>
-            <strong>Minden izomcsoport, saját jellel</strong>
-            <small>Egy régió — egy sziluett. A kiemelt rész mondja meg, melyik fejről van szó.</small>
-          </div>
-        </header>
+    <Page className="et-page">
+      <FrameBack history fallback="/train/week/terkep" label="Vissza: Izomtérkép" className="et-back">‹ Izomtérkép</FrameBack>
+      <Hero
+        label="Izomtérkép · minden izomcsoport, saját jellel"
+        verdict={workedCount > 0
+          ? `${workedCount} izmon dolgoztál már ezen a héten a ${LIVE_MUSCLES.length}-ből.`
+          : 'Ezen a héten még egy izmod sincs naplózva.'}
+        sub="Egy régió — egy sziluett. A kiemelt rész mondja meg, melyik fejről van szó."
+      >
+        <Tubes
+          className="et-regions"
+          size="sm"
+          height={92}
+          gap={6}
+          aria-label="Régiónként: hány izmon dolgoztál már a héten"
+          items={REGION_MUSCLES.map((group) => {
+            const on = group.muscles.filter((m) => worked.has(m)).length
+            const first = group.muscles[0]
+            return {
+              label: REGION_LABELS[group.region],
+              value: `${on}/${group.muscles.length}`,
+              pct: (on / group.muscles.length) * 94,
+              node: <Mchp muscle={first} size={28} />,
+              color: deepMuscle(first),
+            }
+          })}
+        />
+        <Note>
+          {workedCount > 0
+            ? 'A teli jelek azok az izmok, amiken ezen a héten már dolgoztál.'
+            : 'Amint egy edzés lezárul, a jele megtelik.'}
+        </Note>
+      </Hero>
 
-        <PageBody className="tw-signals">
-          <section className="mm">
-            {REGION_MUSCLES.map((group, gi) => (
-              <div
-                key={group.region}
-                className="mm-region rise"
-                style={{ '--mm-color': regionColor(group.region).rail, '--d': `${70 + gi * 25}ms` } as CSSProperties}
-              >
-                <div className="mm-region-head">
-                  <strong>{REGION_LABELS[group.region]}</strong>
-                  <span>{group.muscles.length} izom</span>
+      {REGION_MUSCLES.map((group, gi) => (
+        <div key={group.region} className="et-region" data-region={group.region}>
+          <Section n={gi + 1} title={`${REGION_LABELS[group.region]} · ${group.muscles.length} izom`} />
+          <Card>
+            <div className="et-mm">
+              {group.muscles.map((token) => (
+                <div key={token} className={worked.has(token) ? 'et-sign is-live' : 'et-sign'} data-muscle={token}>
+                  <Mchp muscle={token} />
+                  <span>{MUSCLE_LABELS[token] ?? token}</span>
                 </div>
-                <div className="mm-grid">
-                  {group.muscles.map((token) => (
-                    <span
-                      key={token}
-                      className={worked.has(token) ? 'mm-cell is-live' : 'mm-cell'}
-                      data-muscle={token}
-                    >
-                      <MuscleChip token={token} size={40} />
-                      <small>{MUSCLE_LABELS[token] ?? token}</small>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
-
-          <p className="ld-wait-done">
-            {worked.size > 0
-              ? 'A kigyulladt jelek azok az izmok, amiken ezen a héten már dolgoztál.'
-              : 'Ezen a héten még egy izmod sincs naplózva — amint egy edzés lezárul, a jele kigyullad.'}
-          </p>
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+              ))}
+            </div>
+          </Card>
+        </div>
+      ))}
+    </Page>
   )
 }

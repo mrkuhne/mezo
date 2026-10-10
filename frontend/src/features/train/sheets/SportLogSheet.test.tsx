@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { NumberStep, SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 
@@ -27,8 +27,10 @@ test('Mentés closes the sheet', async () => {
 test('captures high shoulder strain without inventing personalized training advice', async () => {
   setup()
   // default shoulder 6 → baseline copy; raise to ≥7 via the scale grid
-  await userEvent.click(screen.getByRole('button', { name: 'Váll terhelés 8' }))
-  expect(screen.getByRole('button', { name: 'Váll terhelés 8' })).toHaveAttribute('aria-pressed', 'true')
+  // Folyadék: the scale is the kit's radio group of ten rising vessels, named by its label.
+  const shoulder = within(screen.getByRole('radiogroup', { name: 'Váll terhelés' }))
+  await userEvent.click(shoulder.getByRole('radio', { name: '8' }))
+  expect(shoulder.getByRole('radio', { name: '8' })).toHaveAttribute('aria-checked', 'true')
   expect(screen.queryByText(/Overhead Press|Pull Day|heti ritmusodhoz képest/)).not.toBeInTheDocument()
 })
 
@@ -39,8 +41,8 @@ test('Mentés passes the sheet values to onSave (house WeightLogSheet idiom)', a
   // duration 90 -> 105 (+15 step), sets 5 -> 6, rpe -> 8, shoulder -> 7
   await userEvent.click(screen.getByRole('button', { name: 'Idő · perc növelése' }))
   await userEvent.click(screen.getByRole('button', { name: 'Setek · összesen növelése' }))
-  await userEvent.click(screen.getByRole('button', { name: 'RPE · összesített nehézség 8' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Váll terhelés 7' }))
+  await userEvent.click(within(screen.getByRole('radiogroup', { name: 'RPE · összesített nehézség' })).getByRole('radio', { name: '8' }))
+  await userEvent.click(within(screen.getByRole('radiogroup', { name: 'Váll terhelés' })).getByRole('radio', { name: '7' }))
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   // Deferred close: onSave receives the payload + a `done` closer; the parent
   // calls done after the log succeeds (the spy here does not, so the sheet stays open).
@@ -79,8 +81,9 @@ test('duration stepper never goes below 15 minutes', async () => {
   setup()
   const minus = screen.getByRole('button', { name: 'Idő · perc csökkentése' })
   for (let i = 0; i < 7; i++) await userEvent.click(minus) // 90 - 7×15 would be < 0
-  const display = minus.closest('.stepper')!.querySelector('.stepper-display') as HTMLInputElement
-  expect(display.value).toBe('15')
+  // Folyadék: the kit's stepper (`.fo-stp`) with the typeable value between its two buttons.
+  expect(minus.closest('.fo-stp')).not.toBeNull()
+  expect(screen.getByLabelText('Idő · perc')).toHaveValue('15')
 })
 
 test('Mégse does not call onSave', async () => {
@@ -156,4 +159,18 @@ test('typed notes are trimmed and included in the saved body', async () => {
   await userEvent.type(screen.getByLabelText('Session jegyzet'), '  Jó session volt  ')
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(onSave.mock.calls[0][0].notes).toBe('Jó session volt')
+})
+
+// Folyadék (mezo-n4wf5.3): the sheet is the light sheet with the kit head — the sport's own glyph,
+// the three sports as pills — and none of the old capture-sheet skin.
+test('the sheet wears the Folyadék sheet language', async () => {
+  render(<SportLogSheet onClose={vi.fn()} initialSport="cross" />)
+  const sheet = document.querySelector('.sheet.fo-sheet')!
+  expect(sheet).not.toBeNull()
+  expect(sheet.querySelector('.fo-shh use')?.getAttribute('href')).toBe('#t-crossfit')
+  expect(within(screen.getByRole('group', { name: 'Sport típus' })).getAllByRole('button')).toHaveLength(3)
+  expect(sheet.querySelector('.glass, [class*="capture-"], .stepper')).toBeNull()
+  // cross asks rounds, not the volleyball shoulder scale
+  expect(screen.queryByRole('radiogroup', { name: 'Váll terhelés' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Körök · összesen')).toHaveValue('6')
 })

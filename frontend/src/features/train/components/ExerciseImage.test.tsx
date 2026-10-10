@@ -67,25 +67,32 @@ test('reduced motion drops the auto-crossfade but keeps the frames reachable by 
   }
 })
 
-test('thumb without an image falls back to a muscle tile so list rows keep a straight edge', () => {
+test('thumb without an image falls back to the muscle chip so list rows keep a straight edge', () => {
   const { container } = render(
     <ExerciseImage start={null} name="Kettlebell Swing" muscle="glute" variant="thumb" />,
   )
-  const tile = container.querySelector('.exdemo-thumb')!
-  expect(tile.tagName).toBe('DIV')
+  // Folyadék (mezo-n4wf5.3): the fallback is the muscle chip itself, not a lettered tile
+  expect(container.querySelector('.ee-thumb.ex-mchp')).not.toBeNull()
+  expect(container.querySelector('img')).toBeNull()
+})
+
+test('thumb without an image and without a muscle the body map knows falls back to the initial', () => {
+  const { container } = render(<ExerciseImage start={null} name="Kettlebell Swing" muscle="ismeretlen" variant="thumb" />)
+  const tile = container.querySelector('.ee-thumb')!
+  expect(tile.tagName).toBe('SPAN')
   expect(tile).toHaveTextContent('K')
 })
 
 test('thumb with an image uses the start frame only, lazily', () => {
   const { container } = render(<ExerciseImage start={A} end={B} name="Barbell Squat" muscle="quad" variant="thumb" />)
-  const img = container.querySelector('img.exdemo-thumb')!
+  const img = container.querySelector('img.ee-thumb')!
   expect(img).toHaveAttribute('src', A)
   expect(img).toHaveAttribute('loading', 'lazy')
 })
 
 test('thumb image is decorative (next to a visible label) — empty alt, not exposed by name', () => {
   const { container } = render(<ExerciseImage start={A} end={null} name="Barbell Squat" muscle="quad" variant="thumb" />)
-  const img = container.querySelector('img.exdemo-thumb')!
+  const img = container.querySelector('img.ee-thumb')!
   expect(img).toHaveAttribute('alt', '')
   expect(screen.queryByAltText('Barbell Squat')).not.toBeInTheDocument()
 })

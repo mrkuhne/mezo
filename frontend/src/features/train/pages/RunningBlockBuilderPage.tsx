@@ -1,27 +1,25 @@
 // ============================================================
-// Mezo · RunningBlockBuilderPage — full-screen takeover for a single running
-// block (sibling route /train/futas/:id, NO sub-nav). Glass back pill (‹ Futás),
-// status-aware eyebrow + auto-save indicator + ⋯ overflow menu (Duplikálás /
-// Törlés), editable title + goal, a 1–8 add/remove week row driving the
-// RunWeekEditor, and a single status-dependent bottom CTA (Aktiválás | Lezárás).
-// Edits auto-save (debounced) and flush on back.
-// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `futasterv()` +
-// `SH.blkmenu`): the form is ONE sky glass card with flat inputs, week chips and
-// flat week-editor rows inside; the saved state wears the 3D tick; the CTA is the
-// lit sky primary; the ⋯ menu a glass round button over a glass menu card.
+// Mezo · RunningBlockBuilderPage — the editor of a single running block (sibling route
+// /train/futas/:id). Edits auto-save (debounced) and flush on back.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `futasterv()`, args none · `tervezett` ·
+// `archiv` · `uj` · `nincs` · `tolt`; sheet `blkmenu`): the hero says where the plan stands
+// („Szerkesztő · Aktív · Hét 3/8", the saved state as a pill + a sentence) and carries the one
+// status action (Lezárás | Aktiválás · dátum) with the „⋯ Több" link (Duplikálás / Törlés in a
+// sheet); then 1 Alapadatok (name, goal), 2 Hetek · 1–8 (the week pills + add / remove), and
+// one numbered card per session from RunWeekEditor.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import { useRunning } from '@/data/hooks'
-import type { CSSProperties } from 'react'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageHead } from '@/shared/ui/mozaik'
+import { Sheet } from '@/shared/ui/Sheet'
+import {
+  Btn, Bub, Card, FoSheetHead, FrameBack, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Skel, St, useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { huMonthDay } from '@/shared/lib/dates'
 import { RunWeekEditor } from '@/features/train/components/RunWeekEditor'
 import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/train/runningDraft'
 import type { RunningBlockUpsertRequest } from '@/data/train/runningApi'
-
-const SKY = { '--c': 'var(--dv-sky)' } as CSSProperties
 
 export function RunningBlockBuilderPage() {
   const { id } = useParams<{ id: string }>()
@@ -76,21 +74,24 @@ export function RunningBlockBuilderPage() {
     setSelectedWeek((w) => Math.min(w, Math.max(1, (draft.weeks || 1) - 1)))
   }
 
+  // The title bar shows the plan's own name (prototype `T0.title = b.t`).
+  useFrameTitle({ title: block ? (draft.title || block.title) : 'Futóterv', eyebrow: 'Edzés · Futás' })
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const back = <FrameBack onBack={backToList} className="es-back">‹ Futás</FrameBack>
+
   if (!block) {
     return (
-      <MozaikPage tone="sky" className="uvs-page uvs-rbb">
-        <PageHead glass onBack={backToList} label="Futás" />
-        <p className="uvs-ghost uv-empty uv-voice" style={SKY}>Ez a futóterv nem található.</p>
-      </MozaikPage>
+      <Page className="es-page es-rbb">
+        {back}
+        <Hero label="Futóterv" verdict="Ez a futóterv nem található." left={<Bub icon="t-run" size={60} />}
+          actions={<Btn ghost onClick={backToList}>Vissza a tervekhez</Btn>} />
+      </Page>
     )
   }
 
   if (!draft.structure) {
-    return (
-      <MozaikPage tone="sky" className="uvs-page uvs-rbb">
-        <p className="uvs-ghost uv-empty" style={SKY}>Betöltés…</p>
-      </MozaikPage>
-    )
+    return <Page className="es-page es-rbb">{back}<Skel blocks={[250, 200, 200, 300]} /></Page>
   }
 
   const statusEyebrow =
@@ -99,116 +100,110 @@ export function RunningBlockBuilderPage() {
       : block.status === 'planned'
         ? 'Tervezett'
         : 'Archív'
+  const verdict =
+    block.status === 'active'
+      ? `Aktív terv, a ${block.currentWeek}. hétnél tart.`
+      : block.status === 'planned'
+        ? 'Ez a terv még nem indult el.'
+        : 'Lezárt terv, az archívumban van.'
 
   const clampedWeek = Math.min(Math.max(selectedWeek, 1), draft.weeks || 1)
+  const weekCount = draft.weeks || 1
 
   return (
     // Inside AppLayout's .screen-content scroller — no nested wrapper.
-    <MozaikPage tone="sky" className="uvs-page uvs-rbb">
-      <PageHead glass onBack={backToList} label="Futás">
-        <OverflowMenu
-          onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
-          onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
-        />
-      </PageHead>
-
-      {/* Header — eyebrow, the builder status line and the auto-save state */}
-      <div className="uvs-rbb-head">
-        <span className="uv-eyebrow">Edzés · Futás</span>
-        <p>
-          <span className="uv-tint" style={SKY}>Builder · {statusEyebrow}</span>
-          <span className={dirty || runningMutationPending ? 'uvs-save' : 'uvs-save is-saved'}>
-            {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : <><Icon3D name="t-tick" size={16} />Mentve</>}
-          </span>
-        </p>
-      </div>
-
-      {/* The one glass surface: name, goal, weeks, the week editor — flat inside */}
-      <section className="uvs-bform glass" style={SKY}>
-        <label className="uvs-field">
-          <span className="uv-eyebrow">Terv neve</span>
-          <input
-            aria-label="Cím"
-            className="uvs-inp is-title"
-            value={draft.title}
-            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
-            placeholder="Terv neve"
-          />
-        </label>
-        <label className="uvs-field">
-          <span className="uv-eyebrow">Cél (pl. sprint-állóképesség)</span>
-          <input
-            aria-label="Cél"
-            className="uvs-inp"
-            value={draft.goal ?? ''}
-            onChange={(e) => setDraft((d) => ({ ...d, goal: e.target.value }))}
-            placeholder="Cél (pl. sprint-állóképesség)"
-          />
-        </label>
-
-        {/* Week add/remove row — 1–8 */}
-        <div className="uvs-field">
-          <span className="uv-eyebrow">Hetek · 1–8</span>
-          <div className="uvs-weeks">
-            {Array.from({ length: draft.weeks || 1 }, (_, i) => i + 1).map((w) => {
-              const active = w === clampedWeek
-              return (
-                <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="uvs-wk">
-                  {w}
-                </button>
-              )
-            })}
-            {(draft.weeks || 1) > 1 && (
-              <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="uvs-wk is-minus">−</button>
+    <Page className="es-page es-rbb">
+      {back}
+      <Hero
+        label={`Szerkesztő · ${statusEyebrow}`}
+        verdict={verdict}
+        // The auto-save state: a pill + what it means.
+        sub={runningMutationPending
+          ? <><St>Mentés…</St> A változásodat most mentjük.</>
+          : dirty
+            ? <><St>Nem mentve</St> A változás pár pillanat múlva magától mentődik.</>
+            : <><St tone="ok">Mentve</St> Minden változás mentve.</>}
+        left={<Bub icon="t-run" size={60} />}
+        // Single status action + the overflow link
+        actions={(
+          <>
+            {block.status === 'planned' && (
+              <Btn onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
+                Aktiválás · {huMonthDay(block.startDate)}
+              </Btn>
             )}
-            {(draft.weeks || 1) < 8 && (
-              <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="uvs-wk is-add">＋</button>
+            {block.status === 'active' && (
+              <Btn onClick={() => { closeRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
+                Lezárás
+              </Btn>
             )}
-          </div>
-        </div>
+            <Lk aria-label="További műveletek" aria-haspopup="dialog" onClick={() => setMenuOpen(true)}>⋯ Több</Lk>
+          </>
+        )}
+      >
+        {block.status === 'archived' && block.summary && <Note>{block.summary}</Note>}
+      </Hero>
 
-        {/* Week editor */}
-        <RunWeekEditor
-          structure={draft.structure}
-          weekNumber={clampedWeek}
-          onStructure={(s) => setDraft((d) => ({ ...d, structure: s }))}
+      <Section n={1} title="Alapadatok" />
+      <Card>
+        <Lab htmlFor="rbb-title">Terv neve</Lab>
+        <Input
+          id="rbb-title"
+          aria-label="Cím"
+          value={draft.title}
+          onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+          placeholder="Terv neve"
         />
-      </section>
+        <Lab htmlFor="rbb-goal">Cél (pl. sprint-állóképesség)</Lab>
+        <Input
+          id="rbb-goal"
+          aria-label="Cél"
+          value={draft.goal ?? ''}
+          onChange={(e) => setDraft((d) => ({ ...d, goal: e.target.value }))}
+          placeholder="Cél (pl. sprint-állóképesség)"
+        />
+      </Card>
 
-      {/* Single status CTA — Aktiválás is the lit sky primary; Lezárás keeps its warning tone */}
-      <div className="uvs-rbb-cta">
-        {block.status === 'planned' && (
-          <button type="button" className="uvs-primary" style={SKY} onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
-            <Icon3D name="t-tick" size={22} /> Aktiválás · {block.startDate}
-          </button>
-        )}
-        {block.status === 'active' && (
-          <button type="button" className="uvs-primary is-warn"
-            onClick={() => { closeRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
-            Lezárás
-          </button>
-        )}
-      </div>
-    </MozaikPage>
-  )
-}
+      {/* Week add/remove row — 1–8 */}
+      <Section n={2} title="Hetek · 1–8" />
+      <Card>
+        <Pills className="es-wks" role="group" aria-label="Hetek">
+          {Array.from({ length: weekCount }, (_, i) => i + 1).map((w) => (
+            <Pill key={w} on={w === clampedWeek} onClick={() => setSelectedWeek(w)}>{w}</Pill>
+          ))}
+          {weekCount > 1 && (
+            <button type="button" className="fo-pill pm" aria-label="Utolsó hét eltávolítása" onClick={removeWeek}>−</button>
+          )}
+          {weekCount < 8 && (
+            <button type="button" className="fo-pill pm" aria-label="Hét hozzáadása" onClick={addWeekToDraft}>＋</button>
+          )}
+        </Pills>
+        <Note>A {clampedWeek}. hét terhelését szerkeszted. A nap és az időpont minden hétre szól.</Note>
+      </Card>
 
-function OverflowMenu({ onDuplicate, onDelete }: { onDuplicate: () => void; onDelete: () => void }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="uvs-menu">
-      <button type="button" aria-label="További műveletek" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        className="uvs-menubtn glass is-round">⋯</button>
-      {open && (
-        <div className="uvs-menucard glass" style={SKY}>
-          <button type="button" onClick={() => { setOpen(false); onDuplicate() }}>
-            <Icon3D name="t-repeat" size={28} /><strong>Duplikálás</strong>
-          </button>
-          <button type="button" className="is-warn" onClick={() => { setOpen(false); onDelete() }}>
-            <Icon3D name="t-skip" size={28} /><strong>Törlés</strong>
-          </button>
-        </div>
+      {/* Week editor — one numbered card per session */}
+      <RunWeekEditor
+        structure={draft.structure}
+        weekNumber={clampedWeek}
+        onStructure={(s) => setDraft((d) => ({ ...d, structure: s }))}
+        firstN={3}
+      />
+
+      {menuOpen && (
+        <Sheet onClose={() => setMenuOpen(false)} labelledBy="rbb-menu-title" className="fo-sheet es-sheet">
+          {(close) => (
+            <>
+              <FoSheetHead titleId="rbb-menu-title" icon="t-run" eyebrow="Futóterv" title="További műveletek" onClose={close} />
+              <div className="es-vl">
+                <Row icon="t-repeat" title="Duplikálás"
+                  onClick={() => { close(); saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList }) }} />
+                <Row icon="t-trash" className="es-danger" title="Törlés"
+                  onClick={() => { close(); deleteRunningBlock(block.id, { onSuccess: backToList }) }} />
+              </div>
+            </>
+          )}
+        </Sheet>
       )}
-    </div>
+    </Page>
   )
 }

@@ -120,36 +120,48 @@ afterEach(() => {
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><TrainWeekMozgasPage /></MemoryRouter></QueryWrapper>)
 
-test('renders the Minden mozgásod hero with the drawn total minutes and the back pill', async () => {
+/** The two tubes of the hero: [gym, sport]. Each holds its minutes (b) and its line (small). */
+const tubes = (container: HTMLElement) => [...container.querySelectorAll('.fo-hero .et-vs .fo-vial')] as HTMLElement[]
+const ready = () => waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
+
+test('renders the Minden mozgásod hero with the total minutes in its verdict and the back pill', async () => {
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const hero = container.querySelector('.ld-hero.is-slim') as HTMLElement
-  expect(hero).not.toBeNull()
-  const minutes = Number(within(hero).getByText(/^\d+$/).textContent)
-  expect(Number.isInteger(minutes)).toBe(true)
-  expect(within(hero).getByText('perc')).toBeInTheDocument()
-  const back = within(hero).getByRole('button', { name: /Terhelés/ })
+  await ready()
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).getByText('Minden mozgásod eddig a héten')).toHaveClass('fo-hero-lbl')
+  const verdict = hero.querySelector('.fo-hero-verdict')!.textContent ?? ''
+  const total = Number(/^(\d+) perc mozgás van mögötted ezen a héten\.$/.exec(verdict)?.[1])
+  expect(Number.isInteger(total)).toBe(true)
+  // the verdict's total is exactly the two tubes together — never a third source
+  const [gym, sport] = tubes(container).map((t) => Number(/^(\d+) perc$/.exec(t.querySelector('b')!.textContent ?? '')?.[1]))
+  expect(gym + sport).toBe(total)
+  const back = screen.getByRole('button', { name: /Terhelés/ })
+  expect(back).toHaveClass('et-back')
   fireEvent.click(back)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week')
 })
 
-test('the gym-estimate and sport-logged boxes never mix into one number', async () => {
+test('the gym-estimate and sport-logged tubes never mix into one number', async () => {
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const boxes = container.querySelectorAll('.ld-move-box')
-  expect(boxes).toHaveLength(2)
-  expect(within(boxes[0] as HTMLElement).getByText(/perc/)).toBeInTheDocument()
-  expect(within(boxes[0] as HTMLElement).getByText(/gym/)).toBeInTheDocument()
-  expect(within(boxes[1] as HTMLElement).getByText(/sport/)).toBeInTheDocument()
-  expect(within(boxes[1] as HTMLElement).getByText(/naplóztad/)).toBeInTheDocument()
+  await ready()
+  const t = tubes(container)
+  expect(t).toHaveLength(2)
+  expect(t[0].querySelector('b')!.textContent).toMatch(/^\d+ perc$/)
+  expect(within(t[0]).getByText(/^Terem/)).toBeInTheDocument()
+  expect(t[0].querySelector('use')?.getAttribute('href')).toBe('#t-dumbbell')
+  expect(within(t[1]).getByText(/^Sport/)).toBeInTheDocument()
+  expect(within(t[1]).getByText(/naplóztad/)).toBeInTheDocument()
+  expect(t[1].querySelector('use')?.getAttribute('href')).toBe('#t-volley')
+  // one scale for both: the levels compare
+  expect(t[0].querySelector('.fo-tube .l')).toBeNull() // mock mode: no closed gym day, a dry tube
+  expect(t[1].querySelector('.fo-tube .l')).not.toBeNull()
 })
 
 // With no weight on file, the gym side's kcal is honestly unknown — a number must never
 // be fabricated where trainDayEnergy itself would return `known: false`. This needs an
-// actual DONE gym day in the fixture (fix round 2, mezo-88iwa.13 review: gymBlocks now
-// only covers done days, mock mode's own weekLog.details is otherwise always empty — see
-// weekMuscleLogHooks.ts) so the "known:false" branch under test is the weight-missing one,
-// not the separate "nothing done yet" one.
+// actual DONE gym day in the fixture (gymBlocks only covers done days, mock mode's own
+// weekLog.details is otherwise always empty — see weekMuscleLogHooks.ts) so the
+// "known:false" branch under test is the weight-missing one, not the "nothing done yet" one.
 test('movementWeek known:false renders the honest sentence, never a fabricated kcal', async () => {
   weightOverride = 0
   weekLogOverride = {
@@ -157,77 +169,80 @@ test('movementWeek known:false renders the honest sentence, never a fabricated k
     pending: false,
   }
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const gymBox = container.querySelectorAll('.ld-move-box')[0] as HTMLElement
-  expect(within(gymBox).queryByText(/kcal/)).toBeNull()
-  expect(within(gymBox).getByText(/nincs elég adat/)).toBeInTheDocument()
+  await ready()
+  const gym = tubes(container)[0]
+  expect(within(gym).queryByText(/kcal/)).toBeNull()
+  expect(within(gym).getByText(/nincs elég adat/)).toBeInTheDocument()
+  // the done day's minutes are in the tube
+  expect(gym.querySelector('.fo-tube .l')).not.toBeNull()
 })
 
-// Sport kcal now comes off the wire (T8 Task 6, SportSessionResponse.kcal /
-// RunSessionLogResponse.kcal) — the mock week's two logged sessions (05-18, 05-20) both
-// carry one, so the box sums them rather than falling back to the honest-absence copy.
-test('the sport box shows the summed kcal once every logged session this week carries one', async () => {
+// Sport kcal comes off the wire (SportSessionResponse.kcal / RunSessionLogResponse.kcal) —
+// the mock week's two logged sessions (05-18, 05-20) both carry one, so the tube's line sums
+// them rather than falling back to the honest-absence copy.
+test('the sport tube shows the summed kcal once every logged session this week carries one', async () => {
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
-  expect(within(sportBox).getByText(new RegExp(`${WEEK_SPORT_KCAL} kcal`))).toBeInTheDocument()
-  expect(within(sportBox).getByText('naplóztad')).toBeInTheDocument()
+  await ready()
+  const sport = tubes(container)[1]
+  expect(within(sport).getByText(`${WEEK_SPORT_KCAL} kcal · naplóztad`)).toBeInTheDocument()
 })
 
-// T8 Task 6 final review: a mock-mode RUN in the week must NOT blank the sum. Before the
-// fix the run fixtures (and the mock log response) carried no kcal, so `movementWeek`'s
-// all-or-null gate hid the whole number the moment a run landed in the week — a mock-only
-// darkening real mode would never show. The two volleyball sessions + the two run fixtures'
-// own estimates.
+// A mock-mode RUN in the week must NOT blank the sum: the two volleyball sessions + the two
+// run fixtures' own estimates.
 test('a logged run in the week keeps the sum visible — the mock run carries kcal too', async () => {
   runsInTestWeek = true
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
-  expect(within(sportBox).getByText(new RegExp(`${WEEK_SPORT_KCAL + RUN_KCAL} kcal`))).toBeInTheDocument()
+  await ready()
+  const sport = tubes(container)[1]
+  expect(within(sport).getByText(new RegExp(`^${WEEK_SPORT_KCAL + RUN_KCAL} kcal`))).toBeInTheDocument()
 })
 
 // movementWeek's all-or-null gate (loadWeek.ts): ONE session in the week missing kcal
-// (an old log written before this wiring, or a weight-less athlete at estimate time)
 // hides the WHOLE sum rather than under-reporting it — never a partial/fabricated total.
-test('the sport box hides the kcal sum when one logged session this week is missing it', async () => {
+test('the sport tube hides the kcal sum when one logged session this week is missing it', async () => {
   stripOneSessionKcal = true
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
-  expect(within(sportBox).queryByText(/kcal/)).toBeNull()
-  expect(within(sportBox).getByText(/a kalóriáját még nem tudjuk becsülni/)).toBeInTheDocument()
+  await ready()
+  const sport = tubes(container)[1]
+  expect(within(sport).queryByText(/kcal/)).toBeNull()
+  expect(within(sport).getByText(/a kalóriáját még nem tudjuk becsülni/)).toBeInTheDocument()
 })
 
-// Fix round 2 (mezo-88iwa.13 review): the test above was vacuous for the EMPTY-side bug —
-// the mock fixtures already have a logged session with kcal:null, so `sportKcal` was null
-// for the "unknown source" reason, never for the "nothing logged at all" reason. loadWeek.ts's
-// movementWeek used to fabricate `sportKcal: 0` for a truly empty sport side, which rendered
-// as "sport · 0 kcal — naplóztad" — a claimed measurement of zero calories for a session that
-// was never logged. With an actually-empty sport/run fixture this must render no kcal number
-// AND no "naplóztad" (you logged it) claim.
+// An actually-empty sport/run fixture must render no kcal number AND no "naplóztad" (you
+// logged it) claim — never „0 kcal", a claimed measurement of a session that was never logged.
 test('an empty-sport week renders no kcal number and no false "naplóztad" claim, never a fabricated zero', async () => {
   emptySportFixture = true
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const sportBox = container.querySelectorAll('.ld-move-box')[1] as HTMLElement
-  expect(within(sportBox).getByText('0 perc')).toBeInTheDocument()
-  expect(within(sportBox).queryByText(/kcal/)).toBeNull()
-  expect(within(sportBox).queryByText('naplóztad')).toBeNull()
-  expect(within(sportBox).getByText(/nincs naplózott sport/)).toBeInTheDocument()
+  await ready()
+  const sport = tubes(container)[1]
+  expect(sport.querySelector('b')!.textContent).toBe('0 perc')
+  expect(sport.querySelector('.fo-tube .l')).toBeNull()
+  expect(within(sport).queryByText(/kcal/)).toBeNull()
+  expect(within(sport).queryByText(/^naplóztad/)).toBeNull()
+  expect(within(sport).getByText(/nincs naplózott sport/)).toBeInTheDocument()
+  // nothing moved at all (mock mode has no closed gym day either): the hero says so
+  expect(screen.getByText('Ezen a héten még nincs lezárt mozgásod.')).toHaveClass('fo-hero-verdict')
 })
 
-test('the group rows carry a "sport is" chip only where the sport/futás estimate reaches them', async () => {
+test('the group rows carry a "sport is" pill only where the sport/futás estimate reaches them', async () => {
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const groups = [...container.querySelectorAll('.ld-group.is-flat')] as HTMLElement[]
+  await ready()
+  const groups = [...container.querySelectorAll('.et-groups .et-grp')] as HTMLElement[]
   expect(groups.length).toBeGreaterThan(0)
   const withChip = groups.filter((g) => within(g).queryByText('sport is') !== null)
   const withoutChip = groups.filter((g) => within(g).queryByText('sport is') === null)
   // At least one of each — the mock volleyball schedule reaches some groups (shoulder/quad/
-  // calf/core), not the whole body (e.g. biceps-only groups stay chip-less).
+  // calf/core), not the whole body (e.g. biceps-only groups stay pill-less).
   expect(withChip.length).toBeGreaterThan(0)
   expect(withoutChip.length).toBeGreaterThan(0)
+  expect(within(withChip[0]).getByText('sport is')).toHaveClass('fo-st', 'plan')
+  // every row: its muscle chip, done / planned sets, its level — and it is not a button here
+  for (const g of groups) {
+    expect(g.querySelector('.ex-mchp')).not.toBeNull()
+    expect(g.querySelector('.fo-wlv')).not.toBeNull()
+    expect(g.querySelector('.v')!.textContent).toMatch(/^\d+ \/ \d+ szett$/)
+    expect(g.tagName).toBe('DIV')
+  }
 })
 
 test('the skeleton renders while the week\'s own detail fetch is still pending', () => {
@@ -244,41 +259,46 @@ test('goal/timing-profile still pending renders the page with the honest sentenc
   timingPendingOverride = true
   const { container } = renderPage()
   expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull()
-  await waitFor(() => expect(container.querySelector('.ld-move-box')).not.toBeNull())
+  await waitFor(() => expect(container.querySelector('.et-vs .fo-vial')).not.toBeNull())
 })
 
-// Task 4 fix round 1 (review): the sport/run event list dropped from Task 3's migration
-// — per-event tag, title, day/time and region-load chips, ported from MuscleWeekSheet's
-// "Sport & futás terhelés" block onto this page's own honest section.
-test('the sport/futás event list renders each event\'s title, day/time and a region-load chip', async () => {
+// The sport/run events of the weekly order: per event its glyph, title, kind pill, day/time
+// and the regions it loads, each as drops (1–3).
+test('the sport/futás event list renders each event\'s title, day/time and its region loads as drops', async () => {
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  const events = [...container.querySelectorAll('.ld-event')] as HTMLElement[]
+  await ready()
+  const events = [...container.querySelectorAll('.et-events .et-event')] as HTMLElement[]
   expect(events.length).toBeGreaterThan(0)
   const first = events[0]
-  expect(first.querySelector('.ld-event-tag')?.textContent).not.toBe('')
-  expect(first.querySelector('.ld-event-title')?.textContent).not.toBe('')
-  expect(first.querySelector('.ld-event-when')?.textContent).not.toBe('')
-  expect(first.querySelectorAll('.ld-event-chip').length).toBeGreaterThan(0)
-  expect(screen.getByText('Becslés, nem mérés.')).toBeInTheDocument()
+  expect(first.querySelector('.fo-st')?.textContent).not.toBe('')
+  expect(first.querySelector('.et-event-title')?.textContent).not.toBe('')
+  expect(first.querySelector('.et-event-when')?.textContent).not.toBe('')
+  expect(first.querySelector('use')?.getAttribute('href')).toMatch(/^#t-/)
+  const loads = [...first.querySelectorAll('.et-evc em')]
+  expect(loads.length).toBeGreaterThan(0)
+  for (const l of loads) {
+    expect(l.querySelectorAll('.fo-dm i')).toHaveLength(3)
+    expect(l.querySelectorAll('.fo-dm i.f').length).toBeGreaterThan(0)
+  }
+  expect(screen.getByText(/^Becslés, nem mérés\. Ha egyetlen sport-alkalomnál hiányzik a kalória/)).toBeInTheDocument()
 })
 
 test('the sport/futás event list renders the honest absence when the week has no events', async () => {
   sportLoadOverride = { perMuscle: {}, events: [] }
   const { container } = renderPage()
-  await waitFor(() => expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull())
-  expect(container.querySelectorAll('.ld-event').length).toBe(0)
+  await ready()
+  expect(container.querySelectorAll('.et-event').length).toBe(0)
   expect(screen.getByText('Nincs tervezett sport/futás esemény ezen a héten.')).toBeInTheDocument()
 })
 
-// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
-// The button beside the heading, the prototype's copy word for word. The aria-label is
-// the prototype's own `"<title> — mit jelent?"`.
+// ── the explain layer (mezo-b516k, Task 2) ─────────────────────────────────────────────
+// Text links (the prototype's `info` sheet, args `becsles` / `olvasd`); the accessible name
+// stays `"<title> — mit jelent?"`.
 
-test('ⓘ in the hero sentence explains why the minutes are an estimate, word for word', async () => {
+test('the hero link explains why the minutes are an estimate, word for word', async () => {
   renderPage()
   const btn = await screen.findByRole('button', { name: 'Miért becslés? — mit jelent?' })
-  expect(btn.closest('.ld-hero-say')).not.toBeNull()
+  expect(btn.closest('.fo-hero-acts')).not.toBeNull()
   fireEvent.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Miért becslés?' })).getByText(
@@ -287,14 +307,22 @@ test('ⓘ in the hero sentence explains why the minutes are an estimate, word fo
   ).toBeInTheDocument()
 })
 
-test('ⓘ beside „Izomcsoportok, sporttal együtt" explains how to read it, word for word', async () => {
+test('the link under „Izomcsoportok, sporttal együtt" explains how to read it, word for word', async () => {
   renderPage()
   const btn = await screen.findByRole('button', { name: 'Hogyan olvasd? — mit jelent?' })
-  expect(btn.closest('h3')?.textContent).toBe('Izomcsoportok, sporttal együtt')
+  expect(btn.closest('.et-groups')).not.toBeNull()
   fireEvent.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Hogyan olvasd?' })).getByText(
-      'A sáv a gym szettjeidet mutatja a heti tervhez képest. A kék jel azt jelzi, hogy a sport is dolgoztatta a csoportot — ez becslés, és nem adódik hozzá a szettekhez.',
+      'A sáv a gym szettjeidet mutatja a heti tervhez képest. A „sport is” jel azt jelzi, hogy a sport is dolgoztatta a csoportot — ez becslés, és nem adódik hozzá a szettekhez.',
     ),
   ).toBeInTheDocument()
+})
+
+test('folyadék: the page skeleton and no old load classes', async () => {
+  const { container } = renderPage()
+  await ready()
+  const heads = [...container.querySelectorAll('.fo-page > .fo-sec')]
+  expect(heads.map((h) => h.textContent)).toEqual(['1Izomcsoportok, sporttal együtt', '2Sport és futás a heti rendben'])
+  expect(container.querySelector('[class*="ld-"], [class*="tw-"], .mz-page, .glass')).toBeNull()
 })

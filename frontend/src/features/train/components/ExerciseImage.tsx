@@ -11,6 +11,10 @@
 // 37 catalog rows with no faithful counterpart in the dataset (ADR 0020) leave
 // lists with a straight left edge instead of ragged holes.
 //
+// Folyadék (mezo-n4wf5.3): `thumb` is the round chip that leads a picker row — the photo
+// cropped to the size of a muscle chip, and the muscle chip itself (`Mchp`) where there is
+// no photo. Only a muscle the body map does not know falls back to the initial.
+//
 // The photos are tonally foreign to the DS — a man in a red-walled commercial
 // gym. Reconciling them lives HERE, once, not at each call site. The `thumb`
 // variant's image is always decorative (next to a visible label) — alt="" so
@@ -18,6 +22,8 @@
 // ============================================================
 import { type CSSProperties, useEffect, useRef, useState } from 'react'
 import { muscleColor } from '@/features/train/logic/muscleColors'
+import { shapesFor } from '@/features/train/logic/bodyMapShapes'
+import { Mchp } from '@/features/train/components/folyadek'
 
 /** How long each frame is held before crossfading to the other one. */
 const FRAME_MS = 1200
@@ -68,25 +74,18 @@ export function ExerciseImage({ start, end, name, muscle, variant = 'hero', styl
   }, [animated])
 
   if (variant === 'thumb') {
-    // A ragged list edge is worse than a plain tile, so the fallback is always rendered.
+    // A ragged list edge is worse than a plain chip, so the fallback is always rendered.
     if (!start) {
-      return (
-        <div
-          aria-hidden="true"
-          className="exdemo-thumb"
-          style={{ ...style, background: colors.wash, color: colors.deep }}
-        >
-          {name.slice(0, 1).toUpperCase()}
-        </div>
-      )
+      if (muscle && shapesFor(muscle).length > 0) return <Mchp muscle={muscle} sm className="ee-thumb" />
+      return <span aria-hidden="true" className="ee-thumb" style={style}>{name.slice(0, 1).toUpperCase()}</span>
     }
     return (
       <img
-        className="exdemo-thumb"
+        className="ee-thumb"
         src={start}
         alt=""
-        width={44}
-        height={44}
+        width={32}
+        height={32}
         loading="lazy"
         decoding="async"
         style={style}

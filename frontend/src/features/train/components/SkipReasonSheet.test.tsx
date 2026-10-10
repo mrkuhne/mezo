@@ -35,7 +35,10 @@ afterEach(() => vi.clearAllMocks())
 describe('SkipReasonSheet (prototype elo/edzes.html whySheet)', () => {
   test('head: eyebrow, title, sub', () => {
     renderSheet()
-    expect(screen.getByText('KIHAGYVA · PULL DAY')).toBeInTheDocument()
+    expect(screen.getByText('Kihagyva · Pull Day')).toBeInTheDocument()
+    // Folyadék (mezo-n4wf5.3, prototype `whySheet()`): the light sheet, no glass
+    expect(document.body.querySelector('.sheet.fo-sheet.em-why')).toBeInTheDocument()
+    expect(document.body.querySelector('.sheet.glass, [class*="uvl-"], .trm-whyc')).toBeNull()
     expect(screen.getByRole('heading', { name: 'Miért marad ki?' })).toBeInTheDocument()
     expect(screen.getByText('Nem kötelező — segít, hogy a terv hozzád igazodjon.')).toBeInTheDocument()
   })
@@ -53,7 +56,7 @@ describe('SkipReasonSheet (prototype elo/edzes.html whySheet)', () => {
   test('Kész is disabled while no reason is chosen; the invitation note shows', () => {
     renderSheet()
     expect(screen.getByRole('button', { name: 'Kész' })).toBeDisabled()
-    expect(screen.getByText('Ha megmondod, miért, a terv és az edző ehhez igazodik. Nem kötelező.')).toBeInTheDocument()
+    expect(document.body.querySelector('.em-whynote .fo-box')?.textContent).toBe('Nem kötelezőHa megmondod, miért, a terv és az edző ehhez igazodik.')
   })
 
   test('choosing Fáradt calls onReason with TIRED immediately', () => {
@@ -169,8 +172,9 @@ describe('SkipReasonSheet · kímélő mód (Kihagyás S2, prototype whySheet .k
     fireEvent.click(screen.getByRole('button', { name: '2–3 nap' }))
     expect(onOpenRecovery).toHaveBeenCalledWith('FEW_DAYS')
     await act(async () => { await Promise.resolve() })
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Kímélő mód bekapcsolva · amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.')
+    expect(screen.getByRole('status').querySelector('.fo-box')?.textContent).toBe(
+      'Kímélő mód bekapcsolvaAmíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.')
+    expect(screen.getByRole('status').querySelector('use')?.getAttribute('href')).toBe('#t-kimelo')
     expect(screen.getByRole('button', { name: '2–3 nap' })).toHaveAttribute('aria-pressed', 'true')
     expect(onRecoveryOpened).not.toHaveBeenCalled()
     await act(async () => { vi.advanceTimersByTime(1400) })

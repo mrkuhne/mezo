@@ -8,13 +8,21 @@ const ok: DayGroupRow = { group: 'back', label: 'Hát', colorMuscle: 'back-wide'
 const plyoOnly: DayGroupRow = { group: 'quad', label: 'Comb', colorMuscle: 'quad', sets: 0, exemptSets: 4, over: false }
 
 describe('DayBreakdownCard', () => {
-  // mezo-z5lov: the ⚠ glyph became the 3D t-info sprite; the meaning moved to an sr-only name.
-  it('renders an over-cap row with the warning sprite and its spoken meaning, never the ⚠ glyph', () => {
+  // Folyadék (mezo-n4wf5.3): an over-cap row is its level in the warning colour standing past the cap's
+  // waterline; the meaning is spoken by an sr-only name, never a ⚠ glyph.
+  it('renders an over-cap row as a warning-coloured level past the waterline, with its spoken meaning', () => {
     const { container } = render(<DayBreakdownCard rows={[over]} warnings={[]} />)
     expect(screen.getByText(/12 \/ 8/)).toBeInTheDocument()
-    expect(screen.getByText(/plafon fölött/)).toBeInTheDocument()
-    expect(container.querySelector('use[href="#t-info"]')).not.toBeNull()
+    expect(screen.getByText(/a határ fölött/)).toBeInTheDocument()
+    const level = container.querySelector('.fo-wlv') as HTMLElement
+    expect(level.style.getPropertyValue('--c')).toBe('var(--fo-warn)')
+    expect(level.querySelectorAll('u')).toHaveLength(1) // the cap's waterline
     expect(container.textContent).not.toMatch(/⚠/)
+  })
+
+  it('the card opens with the key of the waterline', () => {
+    render(<DayBreakdownCard rows={[ok]} warnings={[]} />)
+    expect(screen.getByText('max 8 szett/izom')).toBeInTheDocument()
   })
 
   it('renders an exempt-only row as "n kiegészítő" instead of the set count', () => {
@@ -22,22 +30,31 @@ describe('DayBreakdownCard', () => {
     expect(screen.getByText('4 kiegészítő')).toBeInTheDocument()
   })
 
-  it('renders an ok row as "n / 8" without the warning mark', () => {
-    render(<DayBreakdownCard rows={[ok]} warnings={[]} />)
+  it('renders an exempt-only row without a level', () => {
+    const { container } = render(<DayBreakdownCard rows={[plyoOnly]} warnings={[]} />)
+    expect(container.querySelector('.fo-wlv')).toBeNull()
+  })
+
+  it('renders an ok row as "n / 8" in the muscle colour, without the warning meaning', () => {
+    const { container } = render(<DayBreakdownCard rows={[ok]} warnings={[]} />)
     expect(screen.getByText('8 / 8')).toBeInTheDocument()
+    expect(screen.queryByText(/a határ fölött/)).not.toBeInTheDocument()
+    expect((container.querySelector('.fo-wlv') as HTMLElement).style.getPropertyValue('--c')).not.toBe('var(--fo-warn)')
   })
 
   it('includes the suggestDay clause when given', () => {
     const { container } = render(<DayBreakdownCard rows={[over]} warnings={[{ label: 'Váll', sets: 12, suggestDay: 'Sze' }]} />)
-    expect(screen.getByText(/Váll: ma 12 szett/)).toBeInTheDocument()
-    expect(container.textContent).toMatch(/Váll: ma 12 szett — 8 fölött nincs kimutatható plusz\./)
+    // the callout: the info glyph, the group and its sets as the title, the explanation under it
+    expect(screen.getByText('Váll: ma 12 szett')).toBeInTheDocument()
+    expect(container.querySelector('.fo-box use[href="#t-info"]')).not.toBeNull()
+    expect(container.textContent).toMatch(/8 fölött nincs kimutatható plusz\./)
     expect(container.textContent).toMatch(/\(pl\. Sze\)/)
   })
 
   it('omits the suggestDay clause when null', () => {
     const { container } = render(<DayBreakdownCard rows={[over]} warnings={[{ label: 'Váll', sets: 12, suggestDay: null }]} />)
-    expect(screen.getByText(/Váll: ma 12 szett/)).toBeInTheDocument()
-    expect(container.textContent).toMatch(/Váll: ma 12 szett — 8 fölött nincs kimutatható plusz\./)
+    expect(screen.getByText('Váll: ma 12 szett')).toBeInTheDocument()
+    expect(container.textContent).toMatch(/8 fölött nincs kimutatható plusz\./)
     expect(container.textContent).not.toMatch(/pl\./)
   })
 

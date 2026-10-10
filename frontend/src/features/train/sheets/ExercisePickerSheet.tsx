@@ -7,13 +7,15 @@
 // the picked row; the sheet only dismisses via Kész / ✕ / backdrop / Escape.
 // Wraps the shared Sheet (render-fn child) so the X button dismisses with
 // the same slide-down as the backdrop.
-// Ported from prototype mesocycles.jsx ExercisePickerSheet.
-// Üveg (U10, mezo-me75u.10, `uveg-reteg` `SH.ex`): a coral glass sheet, the dumbbell 3D head with
-// the lit „Kész" pill, a flat search field, flat filter chips (the active one lit), exercise rows
-// as hairline-split flat rows with the coral + ring; a pick shows „Hozzáadva" with the tick icon.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `xpick` / `xpBody()`): the light sheet. Context line
+// („Gyakorlat választás · Csü · Pull"), the dumbbell bubble with the question, then the count of
+// picks beside the „Kész" pill, the search field, the region pills (and a region's muscle pills),
+// and the rows: the photo or the muscle chip, name, „izom · típus", the stimulus as five drops
+// and the „▶ Demo" link; the + turns into „Hozzáadva" for a moment after a pick.
 // Mid-workout swap/add (mezo-mobji): `mode="single"` closes on the first pick, and `similarTo`
-// puts a „Hasonló gyakorlatok" strip (same muscle first, then the same region) above the list;
-// `excludeNames` hides what the session already holds.
+// puts a „Hasonló gyakorlatok" group (same muscle first, then the same region) above the list;
+// `excludeNames` hides what the session already holds. Props and behaviour are the same for
+// every caller (day editor, saját edzés, template editor, planner, the active workout).
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -24,9 +26,8 @@ import {
 } from '@/features/train/logic/muscleFilters'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
-import { SheetHead } from '@/shared/ui/SheetHead'
-import { Icon3D } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
+import { Btn, Chev, DropsMeter, FoSheetHead, Input, Lab, Note, Pill, Pills, St } from '@/shared/ui/folyadek'
+import { deepMuscle } from '@/features/train/components/folyadek'
 import { VideoDemo } from '@/features/train/components/VideoDemo'
 import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 import { muscleRegion } from '@/features/train/logic/muscleColors'
@@ -46,6 +47,8 @@ interface ExercisePickerSheetProps {
   /** Exercise names hidden from every list (already in the session). */
   excludeNames?: string[]
 }
+
+const TYPE_LABEL: Record<string, string> = { compound: 'összetett', isolation: 'izolált', plyo: 'plyo' }
 
 /** Up to four library items for a swap: the same muscle first, then the same region. */
 export function similarExercises(library: ExerciseLibraryItem[], muscle: string, exclude: Set<string>): ExerciseLibraryItem[] {
@@ -84,91 +87,77 @@ export function ExercisePickerSheet({
       (search === '' || e.name.toLowerCase().includes(search.toLowerCase())),
   )
 
+  const text = (e: ExerciseLibraryItem) => (
+    <>
+      <strong>{e.name}</strong>
+      <small>{MUSCLE_LABELS[e.muscle] ?? e.muscle} · {TYPE_LABEL[e.type] ?? e.type}</small>
+    </>
+  )
+  const thumb = (e: ExerciseLibraryItem) => (
+    <ExerciseImage start={e.imageStartUrl} end={e.imageEndUrl} name={e.name} muscle={e.muscle} variant="thumb" />
+  )
+
   return (
-    <Sheet glass onClose={onClose} labelledBy="exercise-picker-title" className="uvl-edzes">
+    <Sheet onClose={onClose} labelledBy="exercise-picker-title" className="fo-sheet ee-xp">
       {(close) => (
-        <div className="uvl-body">
-          <SheetHead
+        <>
+          <FoSheetHead
             icon="t-dumbbell"
             eyebrow={eyebrow ?? `Gyakorlat választás${dayLabel ? ` · ${dayLabel}` : ''}`}
             title={title ?? 'Mit pakolunk be?'}
             titleId="exercise-picker-title"
-            sub={!single && addedCount > 0 ? <span className="uvl-shh-count">{addedCount} hozzáadva</span> : undefined}
-            action={single ? undefined : (
-              <button type="button" className="uvl-cta is-sm" onClick={close}>
-                Kész{addedCount > 0 ? ` · ${addedCount}` : ''}
-              </button>
-            )}
             onClose={close}
           />
-
-          {/* Search */}
-          <label className="uvl-search">
-            <Icon3D name="t-lens" size={20} />
-            <input
-              placeholder="Keresés · pl. row, curl, press"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </label>
-
-          {similar.length > 0 && (
-            <>
-              <span className="uvl-subh">Hasonló gyakorlatok</span>
-              <div className="uvl-exlist is-similar" role="group" aria-label="Hasonló gyakorlatok">
-                {similar.map((e) => (
-                  <button key={e.id} type="button" className="uvl-exrow" onClick={() => { onPick(e); close() }}>
-                    <ExerciseImage start={e.imageStartUrl} end={e.imageEndUrl} name={e.name} muscle={e.muscle} variant="thumb" />
-                    <span className="uvl-exrow-t">
-                      <strong>{e.name}</strong>
-                      <small>{MUSCLE_LABELS[e.muscle] ?? e.muscle} · {e.type}</small>
-                    </span>
-                    <em className="uvl-exrow-add" aria-hidden="true">›</em>
-                  </button>
-                ))}
-              </div>
-              <span className="uvl-subh">Összes gyakorlat</span>
-            </>
-          )}
-
-          {/* Muscle filter — level 1: régiók */}
-          <div className="uvl-chips is-scroll">
-            {TOP_FILTERS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => { setTop(m); setSub(null) }}
-                aria-pressed={top === m}
-                className={cn('uvl-chip', top === m && 'on')}
-              >
-                {TOP_FILTER_LABELS[m] ?? m}
-              </button>
-            ))}
-          </div>
-
-          {/* Muscle filter — level 2: fej-specifikus al-szűrők (csak régió kiválasztásakor) */}
-          {subs.length > 0 && (
-            <div className="uvl-chips is-scroll is-sub">
-              {subs.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setSub(sub === m ? null : m)}
-                  aria-pressed={sub === m}
-                  className={cn('uvl-chip', sub === m && 'on')}
-                >
-                  {MUSCLE_LABELS[m] ?? m}
-                </button>
-              ))}
+          {!single && (
+            <div className="ee-xph">
+              <span aria-live="polite">{addedCount > 0 ? `${addedCount} hozzáadva` : ''}</span>
+              <Btn sm onClick={close}>Kész{addedCount > 0 ? ` · ${addedCount}` : ''}</Btn>
             </div>
           )}
 
-          {/* List */}
-          <div className="uvl-exlist">
+          <Input type="search" className="ee-xq" aria-label="Keresés" autoComplete="off"
+            placeholder="Keresés · pl. row, curl, press" value={search} onChange={(e) => setSearch(e.target.value)} />
+
+          {similar.length > 0 && (
+            <>
+              <Lab>Hasonló gyakorlatok</Lab>
+              <div className="ee-xlist" role="group" aria-label="Hasonló gyakorlatok">
+                {similar.map((e) => (
+                  <div key={e.id} className="fo-row ee-xrow">
+                    <button type="button" className="fo-row-main" onClick={() => { onPick(e); close() }}>
+                      {thumb(e)}
+                      <span className="g">{text(e)}</span>
+                      <Chev />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <Lab>Összes gyakorlat</Lab>
+            </>
+          )}
+
+          {/* Muscle filter — level 1: the regions */}
+          <Pills>
+            {TOP_FILTERS.map((m) => (
+              <Pill key={m} on={top === m} onClick={() => { setTop(m); setSub(null) }}>{TOP_FILTER_LABELS[m] ?? m}</Pill>
+            ))}
+          </Pills>
+
+          {/* Muscle filter — level 2: a region's muscles (only when a region is picked) */}
+          {subs.length > 0 && (
+            <Pills className="ee-xsub">
+              {subs.map((m) => (
+                <Pill key={m} on={sub === m} onClick={() => setSub(sub === m ? null : m)}>{MUSCLE_LABELS[m] ?? m}</Pill>
+              ))}
+            </Pills>
+          )}
+
+          <div className="ee-xlist">
             {filtered.map((e) => (
-              <div key={e.id} className="uvl-exitem">
+              <div key={e.id} className="fo-row ee-xrow">
                 <button
                   type="button"
+                  className="fo-row-main"
                   onClick={() => {
                     onPick(e)
                     if (single) {
@@ -180,43 +169,27 @@ export function ExercisePickerSheet({
                     if (flashTimer.current) clearTimeout(flashTimer.current)
                     flashTimer.current = setTimeout(() => setFlashId(null), 900)
                   }}
-                  className={cn('uvl-exrow', flashId === e.id && 'is-added')}
                 >
-                  <ExerciseImage
-                    start={e.imageStartUrl}
-                    end={e.imageEndUrl}
-                    name={e.name}
-                    muscle={e.muscle}
-                    variant="thumb"
-                  />
-                  <span className="uvl-exrow-t">
-                    <strong>{e.name}</strong>
-                    <small>{MUSCLE_LABELS[e.muscle] ?? e.muscle} · {e.type}</small>
-                  </span>
-                  <span className="uvl-stim">
-                    <small>STIM</small>
-                    <span aria-hidden="true">
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <i key={n} className={cn(n / 5 <= e.stim && 'on')} />
-                      ))}
+                  {thumb(e)}
+                  <span className="g">
+                    {text(e)}
+                    <span className="ee-stim">
+                      <em>STIM</em>
+                      <DropsMeter n={[1, 2, 3, 4, 5].filter((n) => n / 5 <= e.stim).length} of={5} color={deepMuscle(e.muscle)} />
                     </span>
                   </span>
-                  {flashId === e.id ? (
-                    <span className="uvl-exrow-done"><Icon3D name="t-tick" size={20} />Hozzáadva</span>
-                  ) : (
-                    <em className="uvl-exrow-add" aria-hidden="true">+</em>
-                  )}
+                  {flashId === e.id
+                    ? <St tone="ok">Hozzáadva</St>
+                    : <span className="ee-plus" aria-hidden="true">+</span>}
                 </button>
-                {/* Inline demo video — sibling of the row button so its toggle never triggers onPick */}
-                <VideoDemo url={e.videoUrl} />
+                {/* The demo link and its player are siblings of the row button, so the toggle never picks the exercise. */}
+                <VideoDemo url={e.videoUrl} fo />
               </div>
             ))}
           </div>
 
-          {filtered.length === 0 && (
-            <p className="uvl-none uv-empty">Nincs találat ezzel a szűrővel.</p>
-          )}
-        </div>
+          {filtered.length === 0 && <Note className="ee-xnone">Nincs találat ezzel a szűrővel.</Note>}
+        </>
       )}
     </Sheet>
   )

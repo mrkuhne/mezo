@@ -1,23 +1,23 @@
 // ============================================================
-// Mezo · DayStrip — Mai's horizontal week navigator (mezo-9bbc).
-// One `.daychip` per weekday: label (MA on today) + day number, a dot per
+// Mezo · DayStrip — Mai's week navigator (mezo-9bbc).
+// One chip per weekday: label (MA on today) + day number, a dot per
 // scheduled session coloured by modality, and a done marker line. Purely
 // presentational — it receives pre-derived DayStripItems (dayStripItems.ts).
-// The strip is wider than the viewport (7 × 62 px + gaps ≈ 536 px on a 440 px
-// phone), so on mount the selected chip is centred — a `?day=6` drill-in from
-// Heti would otherwise land with its own chip off-screen (spec §5a).
-// ÜVEG (mezo-me75u.4, prototypes/uveg-edzes.html `dstrip()`): seven FLAT cells in one row
-// (the week fits the width now, so the mount-centring is a harmless no-op on wide screens and
-// still helps a narrow one); today lit coral (radial wash + inset ring); a done day carries
-// one small 3D t-tick per logged session instead of the old `✓` glyphs, an unlogged scheduled
-// day carries its modality dots only (the `—` glyph is gone), a rest day reads „pihenő”.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `dstrip()`): seven white pills in one row;
+// the shown day is filled with the domain colour, a rest day is faded and reads „pihenő". Under
+// the number: one dot per session (gym = the domain colour, sport = pink, run = blue), then one
+// green tick per logged session, one skip glyph per skipped one, the kímélő glyph on a protected day.
 // ============================================================
 import { useEffect, useRef } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { Icon3D } from '@/shared/ui/clay'
-import { DAY_LABELS } from '@/data/train/train'
+import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import type { DayStripItem } from '@/features/train/logic/dayStripItems'
+
+/** The chip's short weekday caption (prototype `WKD`). */
+const SHORT = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V']
+const shortDay = (day: string) => SHORT[DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])] ?? day
 
 /** Spoken done-state of a chip — the visual tick / dots / `pihenő` marker in words. */
 function doneLabel(it: DayStripItem): string {
@@ -26,6 +26,10 @@ function doneLabel(it: DayStripItem): string {
   if (it.doneCount === 0) return `nincs naplózva${skipped}`
   return `${it.doneCount}/${it.sessionCount} kész${skipped}`
 }
+
+const Check = () => (
+  <svg className="em-ds-ok" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+)
 
 export function DayStrip({
   items,
@@ -51,7 +55,7 @@ export function DayStrip({
   }, [])
 
   return (
-    <div className="trm-daystrip" role="tablist" aria-label="Hét napjai" data-kalauz-anchor={kalauzAnchor}>
+    <section className="em-ds" role="tablist" aria-label="Hét napjai" data-kalauz-anchor={kalauzAnchor}>
       {items.map((it) => {
         const empty = it.sessionCount === 0
         const isSelected = it.day === selected
@@ -62,38 +66,36 @@ export function DayStrip({
             role="tab"
             ref={isSelected ? selectedRef : undefined}
             aria-selected={isSelected}
-            className={cn('trm-day', it.isToday && 'today', isSelected && 'sel', empty && 'rest')}
+            className={cn('em-day', it.isToday && 'today', isSelected && 'on', empty && 'rest')}
             onClick={() => onSelect(it.day)}
             // The label REPLACES the chip's content as its accessible name, so the day
             // number and the done marker have to be spoken here — the dots are decorative
             // and stay `aria-hidden` (mezo-9bbc final review).
             aria-label={`${DAY_LABELS[it.day] ?? it.day}${it.isToday ? ' · ma' : ''} · ${it.dayNumber}. · ${doneLabel(it)}`}
           >
-            <span className="trm-day-dl">{it.isToday ? 'MA' : it.day}</span>
-            <span className="trm-day-dn">{it.dayNumber}</span>
-            <span className="trm-day-dots" aria-hidden="true">
-              {it.dots.map((tone, i) => (
-                <span key={`${tone}-${i}`} className={cn('dot', `dot-${tone}`)} />
-              ))}
+            <small>{it.isToday ? 'MA' : shortDay(it.day)}</small>
+            <b>{it.dayNumber}</b>
+            <span className="em-dots" aria-hidden="true">
+              {it.dots.map((tone, i) => <u key={`${tone}-${i}`} className={tone} />)}
             </span>
-            <span className="trm-day-ck" aria-hidden="true">
+            <i className={cn('em-day-ck', it.doneCount > 0 && 'ok')} aria-hidden="true">
               {empty
                 ? 'pihenő'
                 : (
                   <>
-                    {Array.from({ length: it.doneCount }, (_, i) => <Icon3D key={`d${i}`} name="t-tick" size={14} />)}
-                    {/* Kihagyás S1 (mezo-q4xt2.1, prototype `dstrip()` `i.sk`): one t-skip per skipped session. */}
+                    {Array.from({ length: it.doneCount }, (_, i) => <Check key={`d${i}`} />)}
+                    {/* Kihagyás S1 (mezo-q4xt2.1): one skip glyph per skipped session. */}
                     {Array.from({ length: it.skipCount ?? 0 }, (_, i) => (
-                      <Icon3D key={`s${i}`} name="t-skip" size={14} className="trm-day-sk" />
+                      <Icon3D key={`s${i}`} name="t-skip" size={12} className="em-day-sk" />
                     ))}
-                    {/* Kímélő mód S2 (mezo-q4xt2.2, prototype `dstrip()` `km`): one t-kimelo on a protected day. */}
-                    {it.protectedDay && <Icon3D name="t-kimelo" size={14} className="trm-day-km" />}
+                    {/* Kímélő mód S2 (mezo-q4xt2.2): one kímélő glyph on a protected day. */}
+                    {it.protectedDay && <Icon3D name="t-kimelo" size={12} className="em-day-km" />}
                   </>
                 )}
-            </span>
+            </i>
           </button>
         )
       })}
-    </div>
+    </section>
   )
 }

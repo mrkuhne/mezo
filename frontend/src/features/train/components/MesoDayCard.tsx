@@ -1,123 +1,109 @@
 // ============================================================
-// Mezo · MesoDayCard — ONE day of the running plan, as a card in „A heted"
-// (mezo-me75u.5, U5). Shared by the Terv landing (MesoTervPage) and the run's
-// own page (MesocycleBuilderPage): the two surfaces show the same week, so they
-// render the same card rather than two drifting copies.
+// Mezo · MesoDayCard — ONE training day of the plan's week, in „A heted"
+// (mezo-me75u.5; Folyadék F3 mezo-n4wf5.3, prototype vilagos/edzes.js `dayCard`).
+// Shared by the Terv landing (MesoTervPage) and the plan's own page
+// (MesocycleBuilderPage): the two surfaces show the same week, so they render the
+// same piece rather than two drifting copies.
 //
-// ANATOMY (owner-approved 2026-09-24, prototypes/uveg-edzes2.html#terv). The
-// owner rejected an earlier draft as „rendszer nélkül összevissza odavágott
-// elemek"; what settled it was giving the card ONE structure, identical in every
-// state — state changes colour and volume, never layout:
-//
-//   ┌ header band ────────────────────────────────┐
-//   │ HÉTFŐ                    [Megvolt]       ›  │  eyebrow over title,
-//   │ Push                                        │  stamp + chevron right
-//   ├─ hairline ──────────────────────────────────┤
-//   │ ┌────┐  [16 szett][68 perc][5 gyakorlat]    │  fixed 62px map column |
-//   │ │map │  ◉4 ◉3 ◉3 ◉3 ◉3                      │  three EQUAL boxes in a
-//   │ └────┘                                      │  grid + the muscle row on
-//   └─────────────────────────────────────────────┘  the same left edge
-//
-// The one loud thing is WHAT you train — the body map and the title. The three
-// numbers are deliberately equal and quiet; they support, never compete.
+// OWNER DECISION 2026-10-10: only TODAY is a full card — the body filled with the
+// day's muscles, three facts, the muscle chips with their set counts. Every other
+// training day is ONE ROW: weekday, type, the facts as one line, the state stamp
+// (Megvolt · Részben · Jön) and the chevron. Both open the day's own page.
 //
 // HONESTY. A done day reports what the instance itself carries (mesoWeekDone:
 // logged sets, measured minutes, worked exercises) — never the plan's numbers
 // under a „Megvolt" stamp, and never a record count, which lives only in the
-// frozen meso report. An unmeasurable duration prints „–", not the estimate.
+// frozen report. An unmeasurable duration prints „–", not the estimate.
 // Today is never drawn as done even when a session is already logged: the day is
-// still open, and „Ma" is the card's loudest state.
+// still open, and „Ma" is the list's loudest state.
 // ============================================================
-import type { CSSProperties } from 'react'
 import type { MesoDay } from '@/data/types'
-import { cn } from '@/shared/lib/cn'
-import { Icon3D } from '@/shared/ui/clay'
-import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
+import type { BodyView } from '@/features/train/logic/bodyGeometry.gen'
+import { shapesFor } from '@/features/train/logic/bodyMapShapes'
+import { BodyLiq, Mchp } from '@/features/train/components/folyadek'
 import { dayTileData } from '@/features/train/wizard/dayTiles'
 import type { DayDone } from '@/features/train/logic/mesoWeekDone'
+import { Chev, St } from '@/shared/ui/folyadek'
+import { cx } from '@/shared/ui/folyadek/util'
 
-type Fact = { icon: 't-dumbbell' | 't-clock' | 't-protocol'; value: string; label: string }
+/** The side of the body a set of muscles is best seen from: the back when more than half of
+ *  them are drawn there first (prototype `dayView`). */
+export function bodyViewOf(muscles: string[]): BodyView {
+  const back = muscles.filter((m) => shapesFor(m)[0]?.[0] === 'back').length
+  return back > muscles.length / 2 ? 'back' : 'front'
+}
 
-export function MesoDayCard({ day, name, isToday, done, delayMs, onOpen }: {
+/** A muscle's level in the day's body: its sets against seven, the prototype's own scale. */
+export const DAY_BODY_FULL = 7
+
+export function MesoDayCard({ day, name, isToday, done, onOpen }: {
   day: MesoDay
   /** The weekday's display name ('Hétfő'), already resolved by the caller. */
   name: string
   isToday: boolean
   /** What this day actually held, or null when it is today / not trained yet. */
   done: DayDone | null
-  delayMs: number
+  /** Kept for the callers' signature (the entrance stagger is the kit's now). */
+  delayMs?: number
   onOpen: () => void
 }) {
   const tile = dayTileData(day)
   const partial = done !== null && done.sets < tile.sets
-  const state = done ? (partial ? 'is-part' : 'is-done') : isToday ? 'is-now' : 'is-next'
 
-  // The card's accent is the day's dominant muscle family, so Push / Legs / Pull read as three
-  // different cards at a glance — the fix for „minden nap ugyanúgy néz ki".
-  const accent = tile.muscles[0]?.color ?? 'var(--dv-coral)'
-  const heat: BodyHeat[] = tile.muscles.map((m) => ({ token: m.token, level: 'in' }))
-
-  const facts: Fact[] = done
+  const facts: [string, string][] = done
     ? [
-        { icon: 't-dumbbell', value: partial ? `${done.sets}/${tile.sets}` : String(done.sets), label: 'szett' },
-        { icon: 't-clock', value: done.minutes == null ? '–' : String(done.minutes), label: 'perc' },
-        { icon: 't-protocol', value: String(done.exercises), label: 'gyakorlat' },
+        [partial ? `${done.sets}/${tile.sets}` : String(done.sets), 'szett'],
+        [done.minutes == null ? '–' : String(done.minutes), 'perc'],
+        [String(done.exercises), 'gyakorlat'],
       ]
     : [
-        { icon: 't-dumbbell', value: String(tile.sets), label: 'szett' },
-        { icon: 't-clock', value: `${isToday ? '' : '~'}${tile.minutes}`, label: 'perc' },
-        { icon: 't-protocol', value: String(day.exercises.length), label: 'gyakorlat' },
+        [String(tile.sets), 'szett'],
+        [`${isToday ? '' : '~'}${tile.minutes}`, 'perc'],
+        [String(day.exercises.length), 'gyakorlat'],
       ]
 
   const stamp = done
-    ? { className: partial ? 'is-part' : 'is-done', icon: 't-tick' as const, text: partial ? 'Részben' : 'Megvolt' }
-    : isToday
-      ? { className: 'is-today', icon: 't-play' as const, text: 'Ma' }
-      : { className: 'is-next', icon: null, text: 'Jön' }
+    ? <St tone={partial ? 'warn' : 'ok'}>{partial ? 'Részben' : 'Megvolt'}</St>
+    : isToday ? <St tone="plan">Ma</St> : <St>Jön</St>
+  const label = `${name} · ${day.type}${done ? (partial ? ' · részben megvolt' : ' · megvolt') : isToday ? ' · ma' : ''}`
+
+  if (!isToday) {
+    return (
+      <button type="button" className={cx('ep-dc row', done ? 'done' : 'next')} aria-label={label} onClick={onOpen}>
+        <span className="hd">
+          <span className="g">
+            <small>{name}</small>
+            <strong>{day.type}</strong>
+            <em>{facts.map(([v, l]) => `${v} ${l}`).join(' · ')}</em>
+          </span>
+          {stamp}
+          <Chev />
+        </span>
+      </button>
+    )
+  }
 
   return (
-    <button
-      type="button"
-      className={cn('tv-day', state, 'rise')}
-      style={{ '--d': `${delayMs}ms`, '--c': accent } as CSSProperties}
-      aria-label={`${name} · ${day.type}${done ? (partial ? ' · részben megvolt' : ' · megvolt') : isToday ? ' · ma' : ''}`}
-      onClick={onOpen}
-    >
-      <span className="tv-day-head">
-        <span className="tv-day-id">
-          <span className="tv-day-tag">{name}</span>
+    <button type="button" className="ep-dc now" aria-label={label} onClick={onOpen}>
+      <span className="hd">
+        <span className="g">
+          <small>{name}</small>
           <strong>{day.type}</strong>
         </span>
-        <span className={cn('tv-day-stamp', stamp.className)}>
-          {stamp.icon && <Icon3D name={stamp.icon} size={17} />}
-          {stamp.text}
-        </span>
-        <b className="tv-day-chev" aria-hidden="true">›</b>
+        {stamp}
+        <Chev />
       </span>
-      <span className="tv-day-body">
-        {/* Not aria-hidden: the map carries the answer to „mit edzel ezen a napon". */}
-        <span className="tv-day-map">
-          <BodyMap heat={heat} views="auto" ariaLabel={`${day.type} nap — érintett izmok`} />
-        </span>
-        <span className="tv-day-col">
-          <span className="tv-day-facts">
-            {facts.map((f) => (
-              <i key={f.label}>
-                <Icon3D name={f.icon} size={17} />
-                <b>{f.value}</b>
-                <small>{f.label}</small>
-              </i>
-            ))}
+      <span className="ct">
+        <BodyLiq view={bodyViewOf(tile.muscles.map((m) => m.token))}
+          entries={tile.muscles.map((m) => ({ muscle: m.token, planned: m.sets / DAY_BODY_FULL }))}
+          ariaLabel={`${day.type} nap — érintett izmok`} />
+        <span className="cl">
+          <span className="f3">
+            {facts.map(([v, l]) => <i key={l}><b>{v}</b><small>{l}</small></i>)}
           </span>
-          <span className="tv-day-chips">
+          <span className="chs">
             {tile.muscles.map((m) => (
-              // Publish the hue on the element that wears the well (U1 rule 4): the chip's
-              // lit background reads `--mc` off THIS span, not off an inner child.
-              <span className="tv-day-chip" key={m.label} style={{ '--mc': m.color } as CSSProperties}>
-                <MuscleChip token={m.token} size={30} />
-                <b>{m.sets}</b>
-              </span>
+              <span key={m.label}><Mchp muscle={m.token} size={22} /><b>{m.sets}</b></span>
             ))}
           </span>
         </span>

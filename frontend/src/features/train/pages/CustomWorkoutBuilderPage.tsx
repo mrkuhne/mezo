@@ -1,29 +1,27 @@
 // ============================================================
-// Mezo · CustomWorkoutBuilderPage — the "Saját edzés" composer (mezo-ws2x).
-// Full-screen sibling route (/train/custom/new | /train/custom/:id): name +
-// recipe exercise list (ExerciseRecipeRow + multi-add ExercisePickerSheet).
-// "Mentés" persists via the custom-workout CRUD hooks; "Indítás ma" saves,
-// then jumps into the active session pinned to the template (?day=).
-// Üveg port (mezo-7ugb5, living prototype edzes.html#sajat): MozaikPage + glass back pill, a
-// coral halo hero with the dumbbell art, ONE glass card for the name (a form is not a poster),
-// flat summary rows that expand in place (one open at a time; a fresh pick opens itself), the
-// dashed „Gyakorlat hozzáadása", ghost Mentés + lit coral „Indítás ma", plus loading /
-// not-found ghosts so an unknown id no longer opens an empty form that saves a duplicate.
+// Mezo · CustomWorkoutBuilderPage — the „Saját edzés" composer (mezo-ws2x; Folyadék
+// mezo-n4wf5.3, prototype vilagos/edzes.js `sajat()`; states `.uj` · `.betolt` · `.nincs`).
+// Full-screen sibling route (/train/custom/new | /train/custom/:id).
+// The hero holds the name field and the workout poured into one vessel (a layer per exercise,
+// as wide as its working sets); „Indítás ma" and „Mentés" sit on its liquid row, with the
+// sentence naming what is still missing. Section 1 is the exercise list: summary rows that
+// open in place (one at a time; a fresh pick opens itself), drag to reorder, and the add link
+// that opens the multi-add ExercisePickerSheet. „Mentés" persists via the custom-workout CRUD
+// hooks; „Indítás ma" saves, then jumps into the active session pinned to the template (?day=).
+// An id that resolves to nothing shows the loading / not-found vessel, never an empty form.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useCustomWorkouts, useCustomWorkoutActions } from '@/data/hooks'
 import type { CustomWorkoutUpsertRequest } from '@/data/train/trainApi'
 import type { CustomWorkout, ExerciseLibraryItem, GymExercise } from '@/data/types'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { SortableList } from '@/shared/ui/SortableList'
+import { Acts, Btn, Card, EmptyTank, FrameBack, Hero, Input, Lab, Legend, Lk, Note, Page, Pour, Section, useFrameTitle } from '@/shared/ui/folyadek'
+import { deepMuscle } from '@/features/train/components/folyadek'
 import { ExerciseRecipeRow } from '@/features/train/components/ExerciseRecipeRow'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
-
-const CORAL = { '--c': 'var(--dv-coral)' } as CSSProperties
 
 function toUpsert(name: string, exercises: GymExercise[]): CustomWorkoutUpsertRequest {
   return {
@@ -91,102 +89,83 @@ export function CustomWorkoutBuilderPage() {
     navigate(saved?.id ? `/train/session?day=${saved.id}` : '/train/session', { replace: true })
   })
 
+  useFrameTitle({ title: existing || id ? 'Saját edzés' : 'Új saját edzés', eyebrow: 'Edzés' })
+  const back = <FrameBack history fallback="/train/gym" className="ee-back">‹</FrameBack>
+
   // An id that resolves to nothing is either still loading or gone — never an empty "new" form.
   if (id && !existing) {
     return (
-      <MozaikPage tone="coral" className="uvx-cw">
-        <PageHead glass onBack={goBack} label="Vissza" />
-        <p className="uvx-cw-ghost uv-empty" style={CORAL}>
-          {customPending ? 'Betöltés…' : 'Ez a saját edzés nem található — lehet, hogy törölted.'}
-        </p>
-      </MozaikPage>
+      <Page className="ee-page">
+        {back}
+        <Card>
+          <EmptyTank icon={customPending ? 't-clock' : 't-other'}>
+            {customPending ? 'Betöltés…' : 'Ez a saját edzés nem található — lehet, hogy törölted.'}
+          </EmptyTank>
+        </Card>
+      </Page>
     )
   }
 
   return (
-    <MozaikPage tone="coral" className="uvx-cw">
-      <PageHead glass onBack={goBack} label="Vissza" />
-      <PageHero
-        art="t-dumbbell"
-        accent="var(--dv-coral)"
-        eyebrow="Saját edzés"
-        name={existing ? 'Saját edzés' : 'Új saját edzés'}
-        sub="Összerakod, amit ma csinálni akarsz. Elmentheted későbbre, vagy egyből elindíthatod."
-      />
+    <Page className="ee-page">
+      {back}
+      <Hero className="ee-hero" label="Saját edzés" verdict="Összerakod, amit ma csinálni akarsz."
+        sub="Elmentheted későbbre, vagy egyből elindíthatod."
+        actions={(
+          <>
+            <Btn disabled={!valid || savePending} onClick={startNow}>Indítás ma</Btn>
+            <Btn ghost disabled={!valid || savePending} onClick={() => save(() => goBack())}>Mentés</Btn>
+            {hint && <p className="ee-hint">{hint}</p>}
+          </>
+        )}>
+        <Lab htmlFor="cw-name">Edzés neve</Lab>
+        <Input id="cw-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="pl. Pihenőnapi felső" maxLength={120} />
+        <Pour parts={exercises.map((e) => ({ n: e.workingSets, color: deepMuscle(e.muscle) }))}
+          aria-label={exercises.length ? `${totalSets} szett, ${exercises.length} gyakorlat` : undefined}
+          empty="üres — ide töltődnek a gyakorlatok" />
+        {exercises.length > 0 && (
+          <Legend items={exercises.map((e) => ({ color: deepMuscle(e.muscle), label: <>{e.name.split(' ')[0]} <b>{e.workingSets}</b></> }))} />
+        )}
+      </Hero>
 
-      {/* The one glass surface: the name — the input inside stays flat */}
-      <label className="uvx-cw-name glass" style={CORAL}>
-        <span className="uv-eyebrow">Edzés neve</span>
-        <input
-          className="uvs-inp"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="pl. Pihenőnapi felső"
-          maxLength={120}
-        />
-      </label>
-
-      <div className="uvx-cw-h">
-        <span className="uv-eyebrow">Gyakorlatok</span>
-        <em>{exercises.length} gyakorlat · {totalSets} szett</em>
-      </div>
-
-      {exercises.length === 0 ? (
-        <p className="uvx-cw-empty">
-          Még nincs gyakorlat. Add hozzá az elsőt — kap egy jó alapbeállítást, amit utána finomíthatsz.
-        </p>
-      ) : (
-        <div className="uvx-cw-list">
-          <SortableList
-            chevrons="focus"
-            items={exercises.map((e) => ({ ...e, label: e.name }))}
-            onReorder={(ids) => setExercises((xs) => ids.flatMap((i) => xs.find((x) => x.id === i) ?? []))}
-            renderItem={(e, i) => (
-              <ExerciseRecipeRow
-                ex={e}
-                open={openId === e.id}
-                onToggle={() => setOpenId((o) => (o === e.id ? null : e.id))}
-                onRemove={() => {
-                  setExercises((xs) => xs.filter((x) => x.id !== e.id))
-                  setOpenId(null)
-                }}
-                onChange={(patch) => setExercises((xs) => xs.map((x) => (x.id === e.id ? { ...x, ...patch } : x)))}
-                onMoveUp={i > 0 ? () => move(i, i - 1) : undefined}
-                onMoveDown={i < exercises.length - 1 ? () => move(i, i + 1) : undefined}
-              />
-            )}
-          />
-        </div>
-      )}
-
-      <button type="button" className="uvx-cw-add uv-empty" onClick={() => setPickerOpen(true)}>
-        <Icon3D name="t-addex" size={24} />Gyakorlat hozzáadása
-      </button>
-
-      <div className="uvx-cw-cta">
-        <button
-          type="button"
-          className="uvx-cw-save"
-          disabled={!valid || savePending}
-          onClick={() => save(() => goBack())}
-        >
-          <Icon3D name="t-tick" size={18} />Mentés
-        </button>
-        <button
-          type="button"
-          className="uvs-primary"
-          style={CORAL}
-          disabled={!valid || savePending}
-          onClick={startNow}
-        >
-          <Icon3D name="t-play" size={18} />Indítás ma
-        </button>
-      </div>
-      {hint && <p className="uvx-cw-hint">{hint}</p>}
+      <Section n={1} title={`Gyakorlatok · ${exercises.length} gyakorlat · ${totalSets} szett`} />
+      <Card className="ee-list">
+        {exercises.length === 0 ? (
+          <EmptyTank icon="t-dumbbell">
+            Még nincs gyakorlat. Add hozzá az elsőt — kap egy jó alapbeállítást, amit utána finomíthatsz.
+          </EmptyTank>
+        ) : (
+          <>
+            <SortableList
+              chevrons="focus"
+              items={exercises.map((e) => ({ ...e, label: e.name }))}
+              onReorder={(ids) => setExercises((xs) => ids.flatMap((i) => xs.find((x) => x.id === i) ?? []))}
+              renderItem={(e, i) => (
+                <ExerciseRecipeRow
+                  ex={e}
+                  open={openId === e.id}
+                  onToggle={() => setOpenId((o) => (o === e.id ? null : e.id))}
+                  onRemove={() => {
+                    setExercises((xs) => xs.filter((x) => x.id !== e.id))
+                    setOpenId(null)
+                  }}
+                  onChange={(patch) => setExercises((xs) => xs.map((x) => (x.id === e.id ? { ...x, ...patch } : x)))}
+                  onMoveUp={i > 0 ? () => move(i, i - 1) : undefined}
+                  onMoveDown={i < exercises.length - 1 ? () => move(i, i + 1) : undefined}
+                />
+              )}
+            />
+            <Note>Húzd a sorokat a sorrendhez, koppints egyre a beállításaihoz.</Note>
+          </>
+        )}
+        <Acts>
+          <Lk onClick={() => setPickerOpen(true)}>＋ Gyakorlat hozzáadása</Lk>
+        </Acts>
+      </Card>
 
       {pickerOpen && (
         <ExercisePickerSheet dayLabel="Saját edzés" onPick={addFromCatalog} onClose={() => setPickerOpen(false)} />
       )}
-    </MozaikPage>
+    </Page>
   )
 }

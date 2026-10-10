@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · StrengthCurve („Az erőd íve") — Train parity P2 Task 5 (mezo-lf3cv).
 // The exercise story's one graphic: the backend's `e1rmSeries` (ExerciseRecord-
-// Response, Task 2) drawn as the prototype's `.gy-curve` line
+// Response, Task 2) originally drawn as the Titanium prototype's curve line
 // (docs/design_2.0/prototypes/companion-titanium/gyak-pages.js `curve()`:55-68).
 //
 // THREE deliberate departures from the prototype, all in the direction of honesty:
@@ -41,20 +41,21 @@
 // Under two points there is no line to draw and none is faked: the component
 // says so in one sentence (0 points and 1 point say different, true things).
 //
-// Üveg (mezo-me75u.4): the drawn curve is ONE glass card (`.gy-curve-box.glass`) whose
-// `--c` is the caller's inherited `--mus-color`, the line glowing in it (the svg keeps
-// `overflow: visible` so the glow is not clipped to the box). The two honest sentences
-// stay plain text — glass around "nothing to draw" would promise a graphic.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `exercise()` hero): the curve is the
+// kit's liquid `Area` in the muscle's colour — the latest estimate as the big numeral above it,
+// the „now" mark (ink point + dashed drop line) on the last point, a gold record drop on the
+// points where an estimated-1RM record was set (matched by date from the medals the page
+// already holds), month captions under it, and the two honest captions below.
+// The kit's `Area` spaces its points EVENLY and cannot break its line, so departures 2 and 3
+// above no longer shape the drawing: `splitOnGaps` still counts the out-of-character holes and
+// the graphic's spoken label names them, but the surface itself is continuous. The two honest
+// sentences (0 points, 1 point) are unchanged.
 // ============================================================
 import type { E1rmPoint } from '@/data/train/trainApi'
 import { hu1 } from '@/shared/lib/huNum'
-import { huMonthDayAged } from '@/shared/lib/dates'
-
-/** Prototype geometry, verbatim (`curve()`): the 300×76 box and its 8/20 insets. */
-const W = 300
-const H = 76
-const PAD_BOTTOM = 8
-const PLOT_H = H - 20
+import { huMonthDay, huMonthDayAged } from '@/shared/lib/dates'
+import { Area, Big, EmptyTank, Note, type AreaMark } from '@/shared/ui/folyadek'
+import { deepMuscle, muscleLiquid } from '@/features/train/components/folyadek'
 
 /** An interval this many times the series' own median interval is a GAP, not a step. */
 const GAP_FACTOR = 1.75
@@ -92,74 +93,83 @@ export function splitOnGaps(points: readonly E1rmPoint[]): E1rmPoint[][] {
 export interface StrengthCurveProps {
   /** Task 2's wire series — OLDEST FIRST, gaps omitted (never zeroed). */
   points: readonly E1rmPoint[]
+  /** The exercise's muscle: the liquid's colour. Without it the domain liquid. */
+  muscle?: string
+  /** ISO dates on which an estimated-1RM record was set — each gets a record drop on its point. */
+  recordDates?: readonly string[]
 }
 
-export function StrengthCurve({ points }: StrengthCurveProps) {
+/** 'Szep 23' → 'szep': the month caption under the curve. */
+const monthOf = (iso: string) => huMonthDay(iso).split(' ')[0].toLowerCase()
+
+/** Up to four evenly spaced month captions over the series (first … last). */
+function monthLabels(points: readonly E1rmPoint[]): string[] {
+  const n = Math.min(4, points.length)
+  return Array.from({ length: n }, (_, i) => monthOf(points[Math.round((i * (points.length - 1)) / (n - 1))].date))
+}
+
+export function StrengthCurve({ points, muscle, recordDates }: StrengthCurveProps) {
   if (points.length === 0) {
     return (
-      <p className="pl-foot-say">
+      <EmptyTank icon="t-ring">
         Ehhez a gyakorlathoz még nincs becsülhető maximumod — az ív az első terhelt szettjeid után rajzolódik ki.
-      </p>
+      </EmptyTank>
     )
   }
   if (points.length === 1) {
     // One point is a dot, not a trend. Drawing a flat line through it would claim a
     // history of holding a level that was measured exactly once.
     return (
-      <p className="pl-foot-say">
+      <Note>
         Egyetlen becslésed van eddig ({huMonthDayAged(points[0].date)} · {hu1(points[0].e1rm)} kg) — a vonal a másodiktól kezd ívelni.
-      </p>
+      </Note>
     )
   }
 
   const values = points.map((p) => p.e1rm)
-  const low = Math.min(...values)
-  const span = Math.max(...values) - low || 1
-  const days = points.map((p) => dayNumber(p.date))
-  const t0 = days[0]
-  const tSpan = days[days.length - 1] - t0 || 1
-
-  const x = (iso: string) => ((dayNumber(iso) - t0) / tSpan) * W
-  const y = (v: number) => H - PAD_BOTTOM - ((v - low) / span) * PLOT_H
-  const at = (p: E1rmPoint) => `${x(p.date).toFixed(1)},${y(p.e1rm).toFixed(1)}`
-
-  const segments = splitOnGaps(points)
   const last = points[points.length - 1]
   const first = points[0]
-  const gaps = segments.length - 1
+  const gaps = splitOnGaps(points).length - 1
+  const lastIdx = points.length - 1
+
+  // Record drops: the points whose date carries an e1RM record. The last point already wears the
+  // „now" mark; only the highest record is captioned, so the drops never write over each other.
+  const recIdx = points.flatMap((p, i) => (i !== lastIdx && recordDates?.includes(p.date) ? [i] : []))
+  const topRec = recIdx.reduce<number | null>((best, i) => (best === null || values[i] > values[best] ? i : best), null)
+  const marks: AreaMark[] = [
+    ...recIdx.map((i): AreaMark => ({ i, kind: 'pr', label: i === topRec ? hu1(values[i]) : undefined })),
+    { i: lastIdx, kind: 'now', label: hu1(last.e1rm) },
+  ]
 
   return (
-    <div className="gy-curve-box glass">
-      <span className="gy-curve-val">
-        {/* The LATEST estimate, not the best one — this is „hol tartasz most". The
-            record itself is the „BECSÜLT 1RM" card above. */}
-        <b>{hu1(last.e1rm)}</b>
-        <small>kg most</small>
-      </span>
-      <svg
-        className="gy-curve"
-        viewBox={`0 0 ${W} ${H}`}
+    <div className="er-curve">
+      {/* The LATEST estimate, not the best one — this is „hol tartasz most". The
+          record itself is the „Becsült 1RM" row below. */}
+      <Big value={hu1(last.e1rm)} unit="kg most" />
+      <div
+        className="er-hg ar"
         role="img"
         aria-label={
           `Becsült maximumod alakulása ${huMonthDayAged(first.date)} óta: ${points.length} mérés, ` +
           `${hu1(first.e1rm)} kg-tól ${hu1(last.e1rm)} kg-ig` +
-          (gaps > 0 ? `, ${gaps} kihagyott időszakkal — ott a vonal megszakad.` : '.')
+          (gaps > 0 ? `, ${gaps} kihagyott időszakkal.` : '.')
         }
       >
-        {segments.map((seg, i) =>
-          seg.length > 1 ? (
-            <polyline key={i} className="gy-curve-was" points={seg.map(at).join(' ')} />
-          ) : (
-            // A measurement stranded between two gaps — a dot, so it is not lost.
-            <circle key={i} className="gy-curve-now" cx={x(seg[0].date)} cy={y(seg[0].e1rm)} r={3} />
-          ),
-        )}
-        <circle className="gy-curve-now" cx={x(last.date)} cy={y(last.e1rm)} r={4} />
-      </svg>
-      <span className="gy-curve-cap">
-        <i>ami eddig megtörtént · {huMonthDayAged(first.date)} óta</i>
-        <i>becslés, nem mérés</i>
-      </span>
+        <Area
+          values={values}
+          height={140}
+          labels={monthLabels(points)}
+          min={Math.min(...values) - 4}
+          max={Math.max(...values) + 4}
+          color={muscle ? muscleLiquid(muscle) : undefined}
+          color2={muscle ? deepMuscle(muscle) : undefined}
+          marks={marks}
+        />
+      </div>
+      <div className="er-ft">
+        <span>ami eddig megtörtént · {huMonthDayAged(first.date)} óta</span>
+        <span>becslés, nem mérés</span>
+      </div>
     </div>
   )
 }

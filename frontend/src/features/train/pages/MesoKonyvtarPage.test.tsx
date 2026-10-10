@@ -1,6 +1,6 @@
 // ============================================================
-// Mezo · MesoKonyvtarPage tests — the Titanium „Edzéstervek" landing
-// (Train Titanium T10 Task 2, mezo-88iwa.11).
+// Mezo · MesoKonyvtarPage tests — the „Edzéstervek" landing (Folyadék F3, mezo-n4wf5.3;
+// first written for Train Titanium T10 Task 2, mezo-88iwa.11).
 //
 // Rewritten from the DS-era suite: the mosaic tiles, the Tervezett list and the whole
 // Történet/Összevetés block are no longer this page's — the closed runs moved to
@@ -11,7 +11,7 @@
 // archives the running plan with no close ceremony/report) + its reassurance/hint line,
 // and the skeleton.
 // ============================================================
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
@@ -49,15 +49,18 @@ function setup() {
 // The mock fixture (data/train/train.ts) is 1 active + 2 planned + 3 archived runs and
 // 2 templates — every number below is that fixture, never a prototype-illustrative one.
 
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
+
+// Folyadék F3 (mezo-n4wf5.3; prototype vilagos/edzes.js `konyvtar()`).
 test('the hero names the page and says what lives here, jargon-free', () => {
   setup()
-  expect(screen.getByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
-  expect(screen.getByText('Edzéstervek')).toBeInTheDocument()
-  expect(screen.getByText(/Itt élnek a terveid/)).toBeInTheDocument()
+  expect(hero().querySelector('.fo-hero-lbl')?.textContent).toBe('Edzéstervek')
+  expect(hero().querySelector('.fo-hero-verdict')?.textContent).toBe('Itt élnek a terveid.')
+  expect(screen.getByText('Ami fut, ami jön, és ami már mögötted van.')).toBeInTheDocument()
+  expect(document.body.textContent).not.toMatch(/blokk|mesociklus/i)
 })
 
-// U11 (mezo-me75u.11): every content icon is the Titanium 3D set, chosen by meaning.
-test('the doorways and the hero wear 3D icons by meaning, no clay glyph left', () => {
+test('the rows and the hero wear Folyadék-jel icons by meaning, no clay glyph and no old skin left', () => {
   const { container } = render(
     <QueryWrapper>
       <MemoryRouter>
@@ -65,15 +68,15 @@ test('the doorways and the hero wear 3D icons by meaning, no clay glyph left', (
       </MemoryRouter>
     </QueryWrapper>,
   )
-  const href = (sel: string) => container.querySelector(`${sel} use`)?.getAttribute('href')
-  expect(href('.pl-lhero-art')).toBe('#t-stack')
-  expect(href('.pl-dest.is-plans')).toBe('#t-template')
-  expect(href('.pl-dest.is-done')).toBe('#t-history')
-  expect(href('.pl-lib-new-art')).toBe('#t-flask')
+  const iconOf = (name: string) => screen.getByRole('button', { name }).querySelector('use')?.getAttribute('href')
+  expect(iconOf('Most fut · Hypertrophy 04 · Tavasz')).toBe('#t-peak')
+  expect(iconOf('Sablonjaid')).toBe('#t-template')
+  expect(iconOf('Lezárt futamaid')).toBe('#t-history')
   const clay = Array.from(container.querySelectorAll('use'))
     .map((u) => u.getAttribute('href') ?? '')
     .filter((h) => /^#[is]-/.test(h))
   expect(clay).toEqual([])
+  expect(container.querySelector('.glass, [class*="pl-"], [class*="mz-"]')).toBeNull()
 })
 
 test('the facts row carries the four real counts', () => {
@@ -84,96 +87,93 @@ test('the facts row carries the four real counts', () => {
   expect(screen.getByText('3 lezárva')).toBeInTheDocument()
 })
 
-test('the back pill is docked INSIDE the hero, not in a row above it', () => {
-  const { container } = render(
-    <QueryWrapper><MemoryRouter><MesoKonyvtarPage /></MemoryRouter></QueryWrapper>,
-  )
-  const back = screen.getByRole('button', { name: 'Vissza' })
-  expect(back).toHaveClass('mz-backbtn')
-  // The docking CSS keys on `.pl-lhero > .mz-backbtn` — a pill that drifts out of the
-  // hero would silently lose its position, so assert the PARENT, not just the class.
-  expect(back.parentElement).toBe(container.querySelector('.pl-lhero'))
-})
-
-// --- „Most fut" --------------------------------------------------------------
-
-test('the Most fut card carries the active run and opens the Terv landing', async () => {
+// The plans as a pipeline: the running one half full (week 3 of 6), the coming ones waiting behind it; a
+// vessel's length is the plan's number of weeks.
+test('the hero draws the plans as a pipeline — the running one filled to its week, the next ones waiting', async () => {
   const user = userEvent.setup()
   setup()
-  const card = screen.getByRole('button', { name: 'Most fut · Hypertrophy 04 · Tavasz' })
-  expect(card).toHaveClass('pl-lib-card', 'is-now')
-  expect(card).toHaveTextContent('3. hét a 6-ból')
-  expect(card).toHaveTextContent('Pull / Push / Legs · 5×/hét')
-  await user.click(card)
+  const pipes = [...hero().querySelectorAll('.ep-queue button')] as HTMLElement[]
+  expect(pipes).toHaveLength(3)
+  expect(pipes[0]).toHaveClass('now')
+  expect(pipes[0].querySelector('b')?.textContent).toBe('3/6')
+  expect((pipes[0].querySelector('span i') as HTMLElement).style.width).toBe('50%')
+  expect(pipes[1].querySelector('b')?.textContent).toBe('7 hét')
+  expect(pipes[1].querySelector('span i')).toBeNull()
+  // length = weeks + 2
+  expect(pipes.map((p) => p.style.flexGrow)).toEqual(['8', '9', '5']) // 6, 7 and 3 weeks
+  await user.click(screen.getByRole('button', { name: 'Strength 02 · Nyár megnyitása' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-str-02')
+})
+
+test('the Most fut row carries the active run and opens the Terv landing', async () => {
+  const user = userEvent.setup()
+  setup()
+  const row = screen.getByRole('button', { name: 'Most fut · Hypertrophy 04 · Tavasz' })
+  expect(row).toHaveClass('fo-row')
+  expect(row).toHaveTextContent('3. hét a 6-ból')
+  expect(row).toHaveTextContent('Pull / Push / Legs · 5×/hét')
+  await user.click(row)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles')
 })
 
-// --- „Következnek" -----------------------------------------------------------
-
-test('each planned run gets a queued card with weeks, nap/hét and split — the start date said once, in the head', () => {
+test('each planned run gets a block with weeks, frequency and split — the start date said once, in the row', () => {
   setup()
-  const card = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' })
-  expect(card).toHaveClass('pl-lib-card', 'is-queued')
-  expect(card).toHaveTextContent('Jún 16-tól')
-  expect(card).toHaveTextContent('7')
-  expect(card).toHaveTextContent('hét')
-  expect(card).toHaveTextContent('4×/hét')
-  expect(card).toHaveTextContent('Upper / Lower')
-  // No duplicated date: the head's „Jún 16-tól" is the only place the date appears.
-  const occurrences = (card.textContent ?? '').split('Jún 16').length - 1
+  const row = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' })
+  const block = row.closest('.ep-log')!
+  expect(row).toHaveTextContent('Jún 16-tól')
+  expect(row).toHaveTextContent('Upper / Lower')
+  expect([...block.querySelectorAll('.fo-facts div')].map((d) => d.textContent)).toEqual(['7hét', '4×hetente'])
+  // the start date is said ONCE (in the row), not repeated in a fact box
+  const occurrences = (block.textContent ?? '').split('Jún 16').length - 1
   expect(occurrences).toBe(1)
   expect(screen.getByRole('button', { name: 'Tervezett · Pre-cut maintenance · Aug' })).toBeInTheDocument()
 })
 
-test('the queued card body opens the plan\'s own page (the builder) — no one-tap activation', async () => {
+test('the planned row opens the plan\'s own page — no one-tap activation', async () => {
   const user = userEvent.setup()
   setup()
-  // No activation affordance survives on the card at all — activating a plan silently
-  // archives the running one with no close ceremony/report.
+  // activating silently archives the running plan: the deliberate path is the plan page's dated button
   expect(screen.queryByRole('button', { name: /Indítás|Aktiválás/ })).toBeNull()
   await user.click(screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-str-02')
 })
 
-test('the queued card carries the reassurance line when an active run is already queued behind', () => {
+test('the planned block carries the reassurance line when a running plan is ahead of it', () => {
   setup()
-  const card = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' })
-  expect(card).toHaveTextContent('Akkor indul, amikor a mostani terved lezárul.')
-  expect(card).not.toHaveTextContent('Nyisd meg, és onnan indíthatod.')
+  const block = screen.getByRole('button', { name: 'Tervezett · Strength 02 · Nyár' }).closest('.ep-log')!
+  expect(block).toHaveTextContent('Akkor indul, amikor a mostani terved lezárul.')
+  expect(block).not.toHaveTextContent('Nyisd meg, és onnan indíthatod.')
 })
 
-// --- „Új terv" + the two doorways --------------------------------------------
-
-test('Új terv összeállítása opens the planner', async () => {
+test('Új terv összeállítása is the hero\'s one button and opens the planner', async () => {
   const user = userEvent.setup()
   setup()
-  const cta = screen.getByRole('button', { name: 'Új terv összeállítása' })
-  expect(cta).toHaveClass('pl-lib-new')
+  const cta = within(hero()).getByRole('button', { name: 'Új terv összeállítása' })
+  expect(cta).toHaveClass('fo-btn')
+  expect(screen.getByText('Sablonból indulsz, vagy nulláról építed')).toBeInTheDocument()
   await user.click(cta)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
 })
 
-test('the Sablonjaid doorway carries the template count and opens the templates tab', async () => {
+test('the Sablonjaid row carries the template count and opens the templates tab', async () => {
   const user = userEvent.setup()
   setup()
   const dest = screen.getByRole('button', { name: 'Sablonjaid' })
-  expect(dest).toHaveClass('pl-dest', 'is-plans')
+  expect(dest).toHaveClass('fo-row')
   expect(dest).toHaveTextContent('2 sablon, amiből indíthatsz')
   await user.click(dest)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/templates')
 })
 
-test('the Lezárt futamaid doorway carries the closed count and opens the futamok page', async () => {
+test('the Lezárt futamaid row carries the closed count and opens the futamok page', async () => {
   const user = userEvent.setup()
   setup()
   const dest = screen.getByRole('button', { name: 'Lezárt futamaid' })
-  expect(dest).toHaveClass('pl-dest', 'is-done')
+  expect(dest).toHaveClass('fo-row')
   expect(dest).toHaveTextContent('3 lezárt terv története')
   await user.click(dest)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/futamok')
 })
-
-// --- What LEFT the page ------------------------------------------------------
 
 test('the closed-run list and its Összevetés mode moved off this page', () => {
   setup()
@@ -196,28 +196,30 @@ describe('mounted at /train/mesocycles/konyvtar via the router', () => {
     return render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
   }
 
-  it('renders the Titanium landing at its real path, kalauz anchor and all', async () => {
+  it('renders the landing at its real path — title bar, kalauz anchor and all', async () => {
     const { container } = renderApp('/train/mesocycles/konyvtar')
-    expect(await screen.findByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
-    expect(container.querySelector('[data-kalauz-anchor="konyvtar-hero"]')).not.toBeNull()
+    expect(await screen.findByText('Itt élnek a terveid.')).toBeInTheDocument()
+    // the frame's title bar names the page and where it hangs
+    expect(screen.getByRole('heading', { name: 'Edzéstervek' })).toBeInTheDocument()
+    expect(container.querySelector('.fo-hero[data-kalauz-anchor="konyvtar-hero"]')).not.toBeNull()
   })
 
-  it('the back pill returns to /train/mesocycles', async () => {
+  it('the title bar\'s back returns to /train/mesocycles', async () => {
     const user = userEvent.setup()
     renderApp('/train/mesocycles/konyvtar')
-    await screen.findByRole('heading', { name: 'A terveid' })
+    await screen.findByText('Itt élnek a terveid.')
     await user.click(screen.getByRole('button', { name: 'Vissza' }))
-    // The Terv landing re-mounts — its whole-poster button proves the navigation.
-    expect(await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })).toBeInTheDocument()
+    // The Terv landing re-mounts — its hero button proves the navigation.
+    expect(await screen.findByRole('button', { name: 'A terv oldala' })).toBeInTheDocument()
   })
 
   it('the Lezárt futamaid doorway reaches a REAL route, not a 404', async () => {
     const user = userEvent.setup()
     renderApp('/train/mesocycles/konyvtar')
-    await screen.findByRole('heading', { name: 'A terveid' })
+    await screen.findByText('Itt élnek a terveid.')
     await user.click(screen.getByRole('button', { name: 'Lezárt futamaid' }))
-    // the closed list's own Titanium heading (T10 Task 4) — „Lezárt futamaid" is its eyebrow
-    expect(await screen.findByRole('heading', { name: 'Amit lezártál' })).toBeInTheDocument()
+    // the closed list's own hero label
+    expect(await screen.findByText('Amit lezártál')).toBeInTheDocument()
   })
 })
 
@@ -230,7 +232,9 @@ describe('no active run (real mode)', () => {
   it('says so in one line and counts 0 fut — no Most fut card is drawn', async () => {
     server.use(http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])))
     setup()
-    expect(await screen.findByText(/Most nem fut terv/)).toBeInTheDocument()
+    expect(await screen.findByText('Most nem fut terv — indíts egyet alább.')).toBeInTheDocument()
+    // nothing runs and nothing waits: no pipeline is drawn
+    expect(document.querySelector('.ep-queue')).toBeNull()
     // 0 is the TRUTH about this library, so it renders as 0 rather than hiding the fact.
     expect(screen.getByText('0 fut')).toBeInTheDocument()
     expect(screen.getByText('0 következik')).toBeInTheDocument()
@@ -264,7 +268,7 @@ describe('no active run (real mode)', () => {
       ),
     )
     setup()
-    const card = await screen.findByRole('button', { name: 'Tervezett · Real Planned Run' })
+    const card = (await screen.findByRole('button', { name: 'Tervezett · Real Planned Run' })).closest('.ep-log') as HTMLElement
     expect(card).toHaveTextContent('Jún 16-tól')
     // No active run behind it → the builder-pointing hint, not the „akkor indul" reassurance.
     expect(card).toHaveTextContent('Nyisd meg, és onnan indíthatod.')
@@ -287,14 +291,11 @@ describe('MesoKonyvtarPage (real mode, pending)', () => {
       http.get(`${API_BASE}/api/train/meso-templates`, () => new Promise(() => {})),
     )
     setup()
-    const status = await screen.findByRole('status')
-    // Shape, not just presence (the T5 skeleton-test idiom): hero → running card →
-    // two queued cards → the loud CTA → the two doorways, in the page's own order.
-    const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
-    const order = sk
-      .map((el) => el.style.height)
-      .filter((h) => ['220px', '70px', '112px', '115px'].includes(h))
-    expect(order).toEqual(['220px', '70px', '112px', '112px', '70px', '115px', '115px'])
+    const status = await screen.findByRole('status', { name: 'Betöltés…' })
+    // The kit's skeleton in the shape of the page (prototype `konyvtar('tolt')`): hero → the running plan →
+    // the coming ones → the shelf.
+    expect(status).toHaveClass('fo-sk')
+    expect([...status.querySelectorAll('i')].map((el) => (el as HTMLElement).style.height)).toEqual(['280px', '90px', '170px', '120px'])
   })
 })
 

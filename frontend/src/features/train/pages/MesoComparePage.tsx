@@ -1,8 +1,7 @@
 // ============================================================
 // Mezo · MesoComparePage (mezo-meyc.4) — two closed runs side by side.
 // Full-screen sibling route /train/mesocycles/compare?a=&b= (no Train sub-nav),
-// reached from the library's Történet „Összevetés" selection mode. Shell mirrors
-// MesoReportPage: sticky back breadcrumb → compact header → blocks.
+// reached from the Lezárt futamaid page's „Összevetés" selection mode.
 //
 // There is NO compare endpoint: the page runs TWO `useMesoReport` reads and the pure
 // helpers in `logic/mesoCompare.ts` line the pair up client-side (spec §4 — a report is
@@ -12,8 +11,14 @@
 // the two strength numbers stay labelled apart (kg = top-set LOAD, % = e1RM). The only
 // signal colour is the sage token on the better side's percentage — deliberately NO red on
 // the weaker side: this is a comparison of two finished blocks, not a verdict on one.
+//
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `osszevetes()`): the hero says which run
+// got more of its plan done and stands the two shares side by side as two vessels (A in the
+// domain liquid, B in blue), with each run's identity under them — or, per column, why that
+// column has nothing to show. Then 1 · Fókusz-különbség, 2 · Csúcs-volumen, 3 · Közös
+// gyakorlatok (the better side's percentage in green), 4 · Kontextus-átlagok.
 // ============================================================
-import type { CSSProperties } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMesoReport, useTrain } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
@@ -28,12 +33,11 @@ import {
   peakVolumeRows,
   sharedStrengthDeltas,
   type CompareContextRow,
+  type FocusDiff,
 } from '@/features/train/logic/mesoCompare'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import {
+  Btn, Card, EmptyTank, FrameBack, Hero, Lk, Note, Page, Section, Skel, Tags, Tubes, useFrameTitle, type TagItem,
+} from '@/shared/ui/folyadek'
 
 const fmt = (n: number): string => n.toLocaleString('hu-HU')
 const signed = (n: number): string => `${n > 0 ? '+' : ''}${fmt(n)}`
@@ -41,17 +45,8 @@ const signed = (n: number): string => `${n > 0 ? '+' : ''}${fmt(n)}`
 const day = (iso: string): string => huMonthDay(iso.slice(0, 10))
 /** The table convention: an absent measurement is a dash, never a zero. */
 const dash = (n: number | null): string => (n == null ? '–' : fmt(n))
-
-const TWO_COL: CSSProperties = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }
-const CELL: CSSProperties = {
-  padding: '6px 8px',
-  textAlign: 'right',
-  color: 'var(--text-secondary)',
-  borderBottom: '1px solid var(--border-subtle)',
-  whiteSpace: 'nowrap',
-}
-const HEAD: CSSProperties = { ...CELL, color: 'var(--text-tertiary)', fontWeight: 600 }
-const LABEL_MONO: CSSProperties = { fontSize: 9, color: 'var(--text-tertiary)' }
+/** „A" / „Az" before a run's title, by its first sound. */
+const article = (title: string): string => (/^[aáeéiíoóöőuúüű]/i.test(title.trim()) ? 'Az' : 'A')
 
 /** A context cell: unit-suffixed, signed for the one delta metric (kg), „–" when unmeasured. */
 function contextCell(v: number | null, unit: string): string {
@@ -66,29 +61,15 @@ function toVolumeArc(volume: MesocycleReportResponse['volume']): MesoVolumeArc |
   return { ...volume, muscles: volume.muscles.map((m) => ({ ...m, weeks: m.weeks.map((w) => ({ ...w, actual: w.actual ?? null })) })) }
 }
 
-const TIER_CHIP_STYLE: Record<'emphasize' | 'maintain', CSSProperties> = {
-  emphasize: { color: 'var(--coral)', background: 'color-mix(in srgb, var(--coral) 10%, transparent)' },
-  maintain: { border: '1px dashed var(--text-tertiary)', color: 'var(--text-tertiary)', background: 'transparent' },
-}
-const LEGACY_CHIP_STYLE: CSSProperties = { border: '1px dashed var(--border-subtle)', color: 'var(--text-tertiary)', background: 'transparent' }
-
 /** One run's `{kg, %}` pair inside a strength row — always both cells, so the two sides align. */
-function SideDeltas({ kg, pct, better }: { kg: number | null; pct: number | null; better: boolean }) {
+function SideDeltas({ side, kg, pct, better }: { side: 'A' | 'B'; kg: number | null; pct: number | null; better: boolean }) {
   return (
-    <div className="col" style={{ gap: 2 }}>
-      <span className="label-mono" style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-        {kg == null ? '–' : `${signed(kg)} kg`}
-      </span>
-      <span
-        {...(better ? { 'data-testid': 'compare-better' } : {})}
-        style={{
-          fontSize: 14,
-          fontWeight: better ? 700 : 600,
-          color: better ? 'var(--sage-deep)' : 'var(--text-secondary)',
-        }}
-      >
+    <div>
+      <small>{side}</small>
+      <span>{kg == null ? '–' : `${signed(kg)} kg`}</span>
+      <b className={better ? 'win' : undefined} {...(better ? { 'data-testid': 'compare-better' } : {})}>
         {pct == null ? '–' : `${signed(pct)}%`}
-      </span>
+      </b>
     </div>
   )
 }
@@ -112,34 +93,45 @@ function ColumnHead({
   onRetry: () => void
 }) {
   return (
-    <div className="card col gap-xs" style={{ padding: 'var(--sp-4)' }}>
-      <span className="label-mono" style={LABEL_MONO}>{side}</span>
+    <div>
+      <small>{side}</small>
       {report ? (
         <>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600 }}>{report.title}</span>
-          <span className="label-mono" style={LABEL_MONO}>
-            {`${day(report.startDate)}${report.endDate ? ` → ${day(report.endDate)}` : ''}`}
-          </span>
-          <span className="label-mono" style={LABEL_MONO}>{`${report.weeks} hét`}</span>
+          <b>{report.title}</b>
+          <span>{`${day(report.startDate)}${report.endDate ? ` → ${day(report.endDate)}` : ''}`}</span>
+          <span>{`${report.weeks} hét`}</span>
         </>
       ) : error ? (
         <>
-          <span className="text-secondary" style={{ fontSize: 13 }}>Nem sikerült betölteni.</span>
-          <button type="button" className="chip tapchip" onClick={onRetry}>Újrapróbálás</button>
+          <span>Nem sikerült betölteni.</span>
+          <Lk onClick={onRetry}>Újrapróbálás</Lk>
         </>
       ) : notFound ? (
         <>
           {/* A run with no frozen report cannot be compared — the fix is one tap away. */}
-          <span className="text-secondary" style={{ fontSize: 13 }}>Előbb generálj riportot</span>
-          <button type="button" className="chip tapchip" onClick={onOpenReport} data-run-id={id}>
-            <Icon name="chevron-right" size={10} /> Riport megnyitása
-          </button>
+          <span>Előbb generálj riportot</span>
+          <Lk onClick={onOpenReport} data-run-id={id}>Riport megnyitása</Lk>
         </>
       ) : (
-        <span className="text-secondary" style={{ fontSize: 13 }}>Riport betöltése…</span>
+        <span>Riport betöltése…</span>
       )}
     </div>
   )
+}
+
+/** One run's focus as tags: a ★ for a muscle in focus, a dashed tag for one only maintained. */
+function FocusTags({ focus }: { focus: FocusDiff | null }): ReactNode {
+  // No run on this side at all — „—", never „Minden izom Építés" (that would be a claim about
+  // a run we do not have).
+  if (focus === null) return <span>—</span>
+  if (focus.chips.length === 0 && !focus.legacy) return <span>Minden izom Építés</span>
+  const items: TagItem[] = focus.chips.map((c) => ({
+    label: c.tier === 'emphasize'
+      ? <b data-testid="focus-chip">{`${c.label} ★`}</b>
+      : <span className="add" data-testid="focus-chip">{c.label}</span>,
+  }))
+  if (focus.legacy) items.push({ label: <span className="add" data-testid="focus-legacy-chip">régi modell · címke</span> })
+  return <Tags items={items} />
 }
 
 export function MesoComparePage() {
@@ -155,6 +147,25 @@ export function MesoComparePage() {
   const A = useMesoReport(valid ? aId : null)
   const B = useMesoReport(valid ? bId : null)
   const { mesocycles } = useTrain()
+  useFrameTitle({ title: 'Összevetés', eyebrow: 'Két lezárt futam' })
+  const back = <FrameBack className="er-back" onBack={goBack}>‹ Mezociklus</FrameBack>
+
+  if (!valid) {
+    // A hand-typed / stale link, or a selection that never got two runs.
+    return (
+      <Page className="er-page">
+        {back}
+        <Card>
+          <EmptyTank
+            icon="t-compare"
+            actions={<Btn sm onClick={() => navigate('/train/mesocycles/futamok')}>Lezárt futamaid megnyitása</Btn>}
+          >
+            Válassz két lezárt futamot az összevetéshez — a Lezárt futamaid oldal „Összevetés” módjában.
+          </EmptyTank>
+        </Card>
+      </Page>
+    )
+  }
 
   const a = A.report
   const b = B.report
@@ -164,235 +175,177 @@ export function MesoComparePage() {
   const contextRows: CompareContextRow[] = both ? contextDiff(both.a, both.b) : []
   const focusA = focusDiff(mesocycles.find((m) => m.id === aId) ?? null)
   const focusB = focusDiff(mesocycles.find((m) => m.id === bId) ?? null)
+  const openA = () => navigate(`/train/mesocycles/${aId}/report`)
+  const openB = () => navigate(`/train/mesocycles/${bId}/report`)
+
+  // Nothing has answered yet on either side: the page-shaped loading face.
+  const waiting = (r: typeof A) => !r.report && !r.error && !r.notFound
+  if (waiting(A) && waiting(B)) return <Page className="er-page">{back}<Skel blocks={[260, 110, 170, 200]} /></Page>
+
+  // Both columns always render: a missing report is a per-column state, not a page-level dead
+  // end — the other run's identity stays on screen.
+  const columns = (
+    <div className="er-ab" data-testid="meso-compare-header">
+      <ColumnHead side="A" id={aId as string} report={a} notFound={A.notFound} error={A.error} onOpenReport={openA} onRetry={A.refetch} />
+      <ColumnHead side="B" id={bId as string} report={b} notFound={B.notFound} error={B.error} onOpenReport={openB} onRetry={B.refetch} />
+    </div>
+  )
+  // Both reports open one tap away — the compare view is a lens, not a replacement.
+  const actions = (
+    <>
+      <Btn onClick={openA}>A riportja</Btn>
+      <Lk onClick={openB}>B riportja</Lk>
+    </>
+  )
+
+  if (!both) {
+    const failed = A.error || B.error
+    const missing = A.notFound || B.notFound
+    return (
+      <Page className="er-page">
+        {back}
+        <Hero
+          label="A · B"
+          verdict={failed ? 'Az egyik riportot nem sikerült betölteni.' : missing ? 'Az egyik futamnak még nincs riportja.' : 'A másik riport még töltődik.'}
+          sub="A másik futam közben a helyén marad."
+          actions={actions}
+        >
+          {columns}
+        </Hero>
+      </Page>
+    )
+  }
+
+  const pa = both.a.adherence
+  const pb = both.b.adherence
+  const tie = pa.completionPct === pb.completionPct
+  const win = pa.completionPct >= pb.completionPct ? both.a : both.b
+  const los = win === both.a ? both.b : both.a
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead glass onBack={goBack} label="Mezociklus" />
-      <EntranceGroup>
-        <PageHero art="t-compare" accent="var(--dv-sky)" big={valid ? 'A · B' : undefined} name="Összevetés" sub="Két lezárt futam" />
-        <PageBody className="tv-cmp">
-
-      {!valid ? (
-        // A hand-typed / stale link, or a selection that never got two runs.
-        <div style={{ padding: '16px 0' }}>
-          <GhostState
-            lines={2}
-            message={'Válassz két lezárt futamot az összevetéshez — a Lezárt futamaid oldal „Összevetés" módjában.'}
-            ctaLabel="Lezárt futamaid megnyitása"
-            onCta={() => navigate('/train/mesocycles/futamok')}
+    <Page className="er-page er-cards">
+      {back}
+      {/* The "did either plan actually happen" glance — the two shares as two vessels. */}
+      <Hero
+        label="A · B"
+        verdict={tie
+          ? `A két futamból ugyanannyit csináltál meg: ${fmt(pa.completionPct)}%.`
+          : `${article(win.title)} ${win.title} futamból csináltál meg többet: ${fmt(win.adherence.completionPct)}% a ${fmt(los.adherence.completionPct)}% mellett.`}
+        sub="A betervezett edzések mekkora részét csináltad meg."
+        actions={actions}
+      >
+        <div className="er-vs" data-testid="meso-compare-adherence">
+          <Tubes
+            height={132}
+            items={([['A', both.a, 'var(--dom)', openA], ['B', both.b, '#1877F2', openB]] as const).map(([side, r, color, open]) => ({
+              label: `${side} · ${r.title}`,
+              value: `${fmt(r.adherence.completionPct)}%`,
+              note: `${r.adherence.completedSessions}/${r.adherence.plannedSessions} edzés · ${r.adherence.completedWeeks}/${r.adherence.plannedWeeks} hét`,
+              pct: Math.max(0, Math.min(100, r.adherence.completionPct)) * 0.94,
+              color,
+              onClick: open,
+              ariaLabel: `${side} · ${r.title}: ${fmt(r.adherence.completionPct)}%, ${r.adherence.completedSessions}/${r.adherence.plannedSessions} edzés, ${r.adherence.completedWeeks}/${r.adherence.plannedWeeks} hét — a riport megnyitása`,
+            }))}
           />
         </div>
-      ) : (
+        {columns}
+      </Hero>
+
+      {/* Fókusz-különbség — each run's non-default tiers, side by side (Építés is the silent
+          default, so it never earns a tag); a legacy run's own dashed label makes clear its
+          tiers are display-only, not band-model-generated. */}
+      <Section n={1} title="Fókusz-különbség" />
+      <Card data-testid="meso-compare-focus">
+        {([['A', focusA], ['B', focusB]] as const).map(([side, f]) => (
+          <div key={side} className="er-kv" data-testid="focus-row">
+            <span>{side}</span>
+            <FocusTags focus={f} />
+          </div>
+        ))}
+        <Note>★ = hangsúlyos izom · szaggatott = csak szinten tartott. Ha nincs jelölés: minden izom Építés.</Note>
+      </Card>
+
+      {/* Csúcs-volumen — the loudest week each run actually reached per muscle, next to A's own
+          ceiling; B's ceiling is not shown (the table judges A's peak against A's own ceiling,
+          not a cross-run ceiling comparison). */}
+      {peakRows.length > 0 && (
         <>
-          {/* Both columns always render: a missing report is a per-column state, not a
-              page-level dead end — the other run's identity stays on screen. */}
-          <div data-testid="meso-compare-header" style={{ ...TWO_COL, padding: '0 0 8px' }}>
-            <ColumnHead
-              side="A"
-              id={aId as string}
-              report={a}
-              notFound={A.notFound}
-              error={A.error}
-              onOpenReport={() => navigate(`/train/mesocycles/${aId}/report`)}
-              onRetry={A.refetch}
-            />
-            <ColumnHead
-              side="B"
-              id={bId as string}
-              report={b}
-              notFound={B.notFound}
-              error={B.error}
-              onOpenReport={() => navigate(`/train/mesocycles/${bId}/report`)}
-              onRetry={B.refetch}
-            />
-          </div>
-
-          {both && (
-            <>
-              {/* Adherencia — the "did either plan actually happen" glance */}
-              <div style={{ padding: '12px 0 0' }}>
-                <Eyebrow>Adherencia</Eyebrow>
-              </div>
-              <div data-testid="meso-compare-adherence" style={{ ...TWO_COL, padding: '8px 0 0' }}>
-                {([['A', both.a], ['B', both.b]] as const).map(([side, r]) => (
-                  <div key={side} className="card col gap-xs" style={{ padding: 'var(--sp-4)' }}>
-                    <span className="label-mono" style={LABEL_MONO}>{side}</span>
-                    <span style={{ fontSize: 22, fontWeight: 700 }}>{`${fmt(r.adherence.completionPct)}%`}</span>
-                    <span className="text-secondary" style={{ fontSize: 12 }}>
-                      {`${r.adherence.completedSessions}/${r.adherence.plannedSessions} edzés`}
-                    </span>
-                    <span className="label-mono" style={LABEL_MONO}>
-                      {`${r.adherence.completedWeeks}/${r.adherence.plannedWeeks} hét`}
-                    </span>
-                  </div>
+          <Section n={2} title="Csúcs-volumen · szett/hét" />
+          <Card data-testid="meso-compare-peak-volume">
+            <table className="er-cmp c4">
+              <thead>
+                <tr><th scope="col">Izom</th><th scope="col">A csúcs</th><th scope="col">A felső érték</th><th scope="col">B csúcs</th></tr>
+              </thead>
+              <tbody>
+                {peakRows.map((r) => (
+                  <tr key={r.group} data-testid="peak-volume-row">
+                    <td>{r.label}</td>
+                    <td>{dash(r.aPeak)}</td>
+                    <td>{dash(r.aCeiling)}</td>
+                    <td>{dash(r.bPeak)}</td>
+                  </tr>
                 ))}
-              </div>
-
-              {/* Fókusz-különbség — each run's non-Grow tiers, side by side (Grow is the
-                  silent default, so it never earns a chip); a legacy run's own dashed label
-                  makes clear its tiers are display-only, not band-model-generated. */}
-              <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-focus">
-                <Eyebrow>Fókusz-különbség</Eyebrow>
-                <div className="card col" style={{ padding: '8px 10px' }}>
-                  {([['A', focusA], ['B', focusB]] as const).map(([side, f], i) => (
-                    <div
-                      key={side}
-                      className="row gap-xs"
-                      style={{ alignItems: 'center', flexWrap: 'wrap', padding: '4px 0', borderTop: i > 0 ? '0.5px solid var(--border-subtle)' : 'none' }}
-                      data-testid="focus-row"
-                    >
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 14 }}>{side}</span>
-                      {/* No run on this side at all — „—", never „Minden izom Grow" (that
-                          would be a claim about a run we do not have). */}
-                      {f === null && <span className="text-secondary" style={{ fontSize: 12 }}>—</span>}
-                      {f !== null && f.chips.length === 0 && !f.legacy && (
-                        <span className="text-secondary" style={{ fontSize: 12 }}>Minden izom Grow</span>
-                      )}
-                      {f?.chips.map((c) => (
-                        <span key={c.group} className="chip" style={TIER_CHIP_STYLE[c.tier]} data-testid="focus-chip">
-                          {c.tier === 'emphasize' ? `${c.label} ★` : c.label}
-                        </span>
-                      ))}
-                      {f?.legacy && (
-                        <span className="chip" style={LEGACY_CHIP_STYLE} data-testid="focus-legacy-chip">régi modell · címke</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Csúcs-volumen — the loudest week each run actually reached per muscle, next
-                  to A's own MRV ceiling; B's ceiling is not shown (the table judges A's peak
-                  against A's own plafon, not a cross-run ceiling comparison). */}
-              {peakRows.length > 0 && (
-                <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-peak-volume">
-                  <Eyebrow>Csúcs-volumen · szet/hét</Eyebrow>
-                  <div className="card" style={{ padding: '10px 4px 6px' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ minWidth: 320, width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-                        <thead>
-                          <tr>
-                            {['Izom', 'A csúcs', 'A plafon', 'B csúcs'].map((h) => (
-                              <th key={h} style={{ ...HEAD, textAlign: h === 'Izom' ? 'left' : 'right' }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {peakRows.map((r) => (
-                            <tr key={r.group} data-testid="peak-volume-row">
-                              <td style={{ ...CELL, textAlign: 'left' }}>{r.label}</td>
-                              <td style={CELL}>{dash(r.aPeak)}</td>
-                              <td style={CELL}>{dash(r.aCeiling)}</td>
-                              <td style={CELL}>{dash(r.bPeak)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Erő — the heart of the comparison: only the exercises BOTH runs trained */}
-              <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-strength">
-                <Eyebrow>Közös gyakorlatok · {strengthRows.length}</Eyebrow>
-                {strengthRows.length === 0 ? (
-                  <span className="text-secondary" style={{ fontSize: 13 }}>
-                    A két futamban nincs közös gyakorlat — nincs mit egymás mellé tenni.
-                  </span>
-                ) : (
-                  strengthRows.map((r) => {
-                    const better = betterSide(r)
-                    return (
-                      <div
-                        key={r.exerciseName}
-                        className="card col gap-xs"
-                        style={{ padding: 'var(--sp-4)' }}
-                        data-testid="compare-strength-row"
-                      >
-                        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-                          <span data-testid="compare-exercise" style={{ fontSize: 15, fontWeight: 600 }}>
-                            {r.exerciseName}
-                          </span>
-                          <span className="label-mono" style={LABEL_MONO}>
-                            {MUSCLE_LABELS[r.muscle] ?? r.muscle}
-                          </span>
-                        </div>
-                        <div style={TWO_COL}>
-                          <div className="col" style={{ gap: 2 }}>
-                            <span className="label-mono" style={LABEL_MONO}>A</span>
-                            <SideDeltas kg={r.aDeltaKg} pct={r.aDeltaPct} better={better === 'a'} />
-                          </div>
-                          <div className="col" style={{ gap: 2 }}>
-                            <span className="label-mono" style={LABEL_MONO}>B</span>
-                            <SideDeltas kg={r.bDeltaKg} pct={r.bDeltaPct} better={better === 'b'} />
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })
-                )}
-                <span className="label-mono" style={{ ...LABEL_MONO, padding: '0 2px' }}>
-                  kg = csúcsszett terhelés-változás · % = e1RM-változás (ugyanaz a súly több
-                  ismétléssel 0 kg, de valós %).
-                </span>
-              </div>
-
-              {/* Kontextus — the run-level lifestyle averages, not the weekly buckets */}
-              {contextRows.length > 0 && (
-                <div className="col gap-sm" style={{ padding: '16px 0 0' }} data-testid="meso-compare-context">
-                  <Eyebrow>Kontextus-átlagok</Eyebrow>
-                  <div className="card" style={{ padding: '10px 4px 6px' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ minWidth: 280, width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-                        <thead>
-                          <tr>
-                            {['Mutató', 'A', 'B'].map((h) => (
-                              <th key={h} style={{ ...HEAD, textAlign: h === 'Mutató' ? 'left' : 'right' }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {contextRows.map((r) => (
-                            <tr key={r.label} data-testid="compare-context-row">
-                              <td style={{ ...CELL, textAlign: 'left' }}>{r.label}</td>
-                              <td style={CELL}>{contextCell(r.aValue, r.unit)}</td>
-                              <td style={CELL}>{contextCell(r.bValue, r.unit)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  <span className="label-mono" style={{ ...LABEL_MONO, padding: '0 2px' }}>
-                    Súlyváltozás (mért napok) — a mért, egymást követő napok deltáinak összege.
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Both reports open one tap away — the compare view is a lens, not a replacement. */}
-          <div className="row gap-sm" style={{ padding: '20px 0 32px', justifyContent: 'center' }}>
-            <button
-              type="button"
-              className="chip tapchip"
-              onClick={() => navigate(`/train/mesocycles/${aId}/report`)}
-            >
-              A riportja
-            </button>
-            <button
-              type="button"
-              className="chip tapchip"
-              onClick={() => navigate(`/train/mesocycles/${bId}/report`)}
-            >
-              B riportja
-            </button>
-          </div>
+              </tbody>
+            </table>
+          </Card>
         </>
       )}
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+
+      {/* Erő — the heart of the comparison: only the exercises BOTH runs trained */}
+      <Section n={peakRows.length > 0 ? 3 : 2} title={`Közös gyakorlatok · ${strengthRows.length}`} />
+      <Card data-testid="meso-compare-strength">
+        {strengthRows.length === 0 ? (
+          <Note className="er-none">A két futamban nincs közös gyakorlat — nincs mit egymás mellé tenni.</Note>
+        ) : (
+          <>
+            {strengthRows.map((r) => {
+              const better = betterSide(r)
+              return (
+                <div key={r.exerciseName} className="er-log" data-testid="compare-strength-row">
+                  <span className="er-log-h">
+                    <b data-testid="compare-exercise">{r.exerciseName}</b>
+                    <small>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</small>
+                  </span>
+                  <div className="er-ab sd">
+                    <SideDeltas side="A" kg={r.aDeltaKg} pct={r.aDeltaPct} better={better === 'a'} />
+                    <SideDeltas side="B" kg={r.bDeltaKg} pct={r.bDeltaPct} better={better === 'b'} />
+                  </div>
+                </div>
+              )
+            })}
+            <Note>
+              kg = a csúcsszett terhelésének változása · % = a becsült 1RM változása (ugyanaz a súly több
+              ismétléssel 0 kg, de valós %). A jobbik oldal zölddel áll.
+            </Note>
+          </>
+        )}
+      </Card>
+
+      {/* Kontextus — the run-level lifestyle averages, not the weekly buckets */}
+      {contextRows.length > 0 && (
+        <>
+          <Section n={peakRows.length > 0 ? 4 : 3} title="Kontextus-átlagok" />
+          <Card data-testid="meso-compare-context">
+            <table className="er-cmp">
+              <thead>
+                <tr><th scope="col">Mutató</th><th scope="col">A</th><th scope="col">B</th></tr>
+              </thead>
+              <tbody>
+                {contextRows.map((r) => (
+                  <tr key={r.label} data-testid="compare-context-row">
+                    <td>{r.label}</td>
+                    <td>{contextCell(r.aValue, r.unit)}</td>
+                    <td>{contextCell(r.bValue, r.unit)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Note>
+              Súlyváltozás (mért napok) — a mért, egymást követő napok változásainak összege. Ahol nincs adat, „–” áll, sosem 0.
+            </Note>
+          </Card>
+        </>
+      )}
+    </Page>
   )
 }

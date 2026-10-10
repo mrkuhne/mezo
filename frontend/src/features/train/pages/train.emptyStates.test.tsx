@@ -89,12 +89,12 @@ test('SportPage ghosts the weekly plan and shows an empty log message', async ()
 // itself already exercised the current page).
 test('MesoTervPage shows the empty hint when there are no mesocycles', async () => {
   renderApp('/train/mesocycles')
-  await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('Még nincs edzésterved.')).toBeInTheDocument())
 })
 
 // The OTHER no-active-meso branch (T9 fix round 1, review finding 5): at least one
 // mesocycle exists — just none of them is `active` — so the page says so with the
-// honest "Most nem fut terv" line, never falling back to the "Még nincs mesociklusod"
+// honest "Most nem fut terv" line, never falling back to the "Még nincs edzésterved"
 // first-run copy above.
 test('MesoTervPage shows the honest "no running plan" line when a mesocycle exists but none is active', async () => {
   server.use(
@@ -121,6 +121,6 @@ test('MesoTervPage shows the honest "no running plan" line when a mesocycle exis
     ),
   )
   renderApp('/train/mesocycles')
-  await waitFor(() => expect(screen.getByText(/Most nem fut terv/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('Most nem fut terv.')).toBeInTheDocument())
   expect(screen.getByRole('button', { name: 'Edzéstervek' })).toBeInTheDocument()
 })

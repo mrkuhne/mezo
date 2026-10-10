@@ -1,5 +1,6 @@
 // ============================================================
-// Mezo · MesoFutamokPage tests (Train Titanium T10 Task 4, mezo-88iwa.11).
+// Mezo · MesoFutamokPage tests (Train Titanium T10 Task 4, mezo-88iwa.11; the face is
+// Folyadék F3 since mezo-n4wf5.3 — prototype vilagos/edzes.js `futamok()`).
 // The Történet section moved off the refaced library landing in Task 2; Task 4 gave
 // it the Titanium closed-list face, so these tests now cover BOTH halves: the moved
 // behaviours (compare mode, Újrafuttatás, Sablonná, tap → report) in their new
@@ -10,7 +11,10 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, createMemoryRouter, RouterProvider, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 import { MesoFutamokPage } from '@/features/train/pages/MesoFutamokPage'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
@@ -37,16 +41,20 @@ function setup() {
   )
 }
 
-test('mounted at /train/mesocycles/futamok via the router, with a back pill to the library', async () => {
+/** A closed run's row in the list (the hero's vessels carry the short name, the rows the full one). */
+const row = (title: string) => screen.getByRole('button', { name: `Lezárt futam · ${title}` })
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
+
+test('mounted at /train/mesocycles/futamok via the router, and the title bar\'s back leads to the library', async () => {
   seedAllKalauzSeen()
   const user = userEvent.setup()
   const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/futamok'] })
   render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
-  expect(await screen.findByRole('heading', { name: 'Amit lezártál' })).toBeInTheDocument()
-  // the hero's eyebrow — and the shell's title bar, which names the page the same way
-  expect(screen.getAllByText('Lezárt futamaid')).toHaveLength(2)
+  expect(await screen.findByText('Amit lezártál')).toBeInTheDocument()
+  // the shell's title bar names the page and where it hangs
+  expect(screen.getByRole('heading', { name: 'Lezárt futamaid' })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Vissza' }))
-  expect(await screen.findByRole('heading', { name: 'A terveid' })).toBeInTheDocument()
+  expect(await screen.findByText('Itt élnek a terveid.')).toBeInTheDocument()
   expect(router.state.location.pathname).toBe('/train/mesocycles/konyvtar')
 })
 
@@ -54,29 +62,46 @@ test('the hero states only what the closed runs themselves carry: their count an
   const { container } = setup()
   // three closed runs since the mezo-meyc.4 fix wave: the compare pair (with reports) plus
   // a third, report-less run so selection mode has something to refuse a third pick on.
-  expect(screen.getByText('3 lezárt futam')).toBeInTheDocument()
   // 8 + 6 + 6 weeks — summed off the rows, no report fetched for it
-  expect(screen.getByText('20 hét összesen')).toBeInTheDocument()
-  // The prototype's session/record totals are NOT invented: neither exists on a Mesocycle.
+  expect(hero().querySelector('.fo-hero-verdict')?.textContent).toBe('3 lezárt futam, 20 hét összesen.')
+  // Session / record totals are NOT invented: neither exists on a Mesocycle.
   // Pinned against the shapes those facts would take ("N edzés a M-ből", "N rekord"), not
-  // against the bare words — "Edzéstervek" on the back pill would satisfy a loose /edzés/.
+  // against the bare words.
   expect(screen.queryByText(/\d+\s*edzés/)).toBeNull()
   expect(screen.queryByText(/\d+\s*rekord/)).toBeNull()
-  // and no star row anywhere on the LIST — completionPct lives only in the frozen report
-  expect(container.querySelector('.pl-stars')).toBeNull()
+  // no completion %, no star row anywhere on the LIST — completionPct lives only in the frozen report
+  expect(container.textContent).not.toMatch(/%/)
+  expect(container.querySelector('.pl-stars, .glass, [class*="pl-"], [class*="mz-"]')).toBeNull()
+})
+
+// Each closed run is a vessel: the level is its number of weeks, a run without a frozen report is hatched.
+test('the hero draws one vessel per closed run — level by weeks, hatched without a report', async () => {
+  const user = userEvent.setup()
+  setup()
+  const tubes = within(hero()).getByRole('group', { name: 'Lezárt futamaid: egy edény egy futam' })
+  const vials = [...tubes.querySelectorAll('button.fo-vial')] as HTMLElement[]
+  expect(vials).toHaveLength(3)
+  expect(vials.map((v) => v.querySelector('b')?.textContent)).toEqual(['8 hét', '6 hét', '6 hét'])
+  expect(vials.map((v) => v.classList.contains('hatch'))).toEqual([false, false, true])
+  const level = (v: HTMLElement) => parseFloat((v.querySelector('.l') as HTMLElement).style.getPropertyValue('--p'))
+  expect(level(vials[0])).toBeCloseTo(94, 5) // the longest run fills its vessel
+  expect(level(vials[1])).toBeCloseTo((6 / 8) * 94, 5)
+  // a vessel opens the run's report, like its row
+  await user.click(vials[0])
+  expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-rec-03/report')
 })
 
 test('a closed row draws the run name, its window and its weeks', () => {
   setup()
-  const card = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
-  expect(within(card).getByText('Feb 12 – Ápr 23')).toBeInTheDocument() // closedAt, not endDate
-  expect(within(card).getByText('8 hét')).toBeInTheDocument()
+  // closedAt, not endDate
+  expect(row('Recovery rebuild · Tél').querySelector('small')?.textContent).toMatch(/^Feb 12 – Ápr 23 · 8 hét/)
+  expect(row('Recovery rebuild · Tél').querySelector('use')?.getAttribute('href')).toBe('#t-scroll')
 })
 
 test('tapping a closed run opens its RUN REPORT, not the builder (mezo-meyc.2)', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
+  await user.click(row('Recovery rebuild · Tél'))
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-rec-03/report')
 })
 
@@ -100,47 +125,62 @@ test('Sablonná on a closed run saves it as a template and opens the new editor 
 
 test('a closed run advertises whether it HAS a report', () => {
   setup()
-  // two of the three fixture runs carry one; the third (meso-cut-02) has none, and the
-  // („nincs riport") — the row renders the ghost label inline, asserted right below.
-  expect(screen.getAllByText('riport')).toHaveLength(2)
-  expect(screen.getByText('nincs riport')).toBeInTheDocument()
+  // two of the three fixture runs carry one; the third (meso-cut-02) has none — the row wears the stamp.
+  const stamps = [...document.querySelectorAll('.ep-log .fo-st')]
+  expect(stamps.map((n) => n.textContent)).toEqual(['riport', 'riport', 'nincs riport'])
+  expect(stamps.map((n) => n.classList.contains('ok'))).toEqual([true, true, false])
 })
 
-test('Összevetés turns card taps into selection instead of navigation', async () => {
+test('Összevetés turns row taps into selection instead of navigation', async () => {
   const user = userEvent.setup()
   setup()
-  const toggle = screen.getByRole('button', { name: /Összevetés/ })
-  // The `.chip[aria-pressed="true"]` DS rule needs both the class AND the attribute on the
-  // same element to give the toggle its visible pressed state — assert the pairing, not
-  // just the attribute (a class regression would silently drop the styling).
-  expect(toggle).toHaveClass('chip')
+  const toggle = within(hero()).getByRole('button', { name: 'Összevetés' })
+  expect(toggle).toHaveClass('fo-btn')
   expect(toggle).toHaveAttribute('aria-pressed', 'false')
 
   await user.click(toggle)
-  expect(toggle).toHaveClass('chip')
+  // the same button, now pressed, is the way out of the mode
   expect(toggle).toHaveAttribute('aria-pressed', 'true')
+  expect(toggle).toHaveTextContent('Mégsem')
+  expect(screen.getByText('Válassz két lezárt futamot (0/2).')).toBeInTheDocument()
 
-  const card = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
+  const card = row('Recovery rebuild · Tél')
   await user.click(card)
   // selected, NOT navigated to the report
   expect(card).toHaveAttribute('aria-pressed', 'true')
+  expect(card.closest('.ep-log')?.querySelector('.ep-tk')).toHaveClass('on')
+  expect(card.closest('.ep-log')?.querySelector('.ep-tk')?.textContent).toBe('1') // the tap order
+  expect(screen.getByText('Válassz két lezárt futamot (1/2).')).toBeInTheDocument()
   expect(screen.getByTestId('loc').textContent).toBe('/')
-  // the card's own actions step aside while selecting
+  // its vessel in the hero is ringed too
+  expect(hero().querySelector('.fo-vial.sel b')?.textContent).toBe('8 hét')
+  // the row's own actions step aside while selecting
   expect(screen.queryByRole('button', { name: /Újrafuttatás/ })).toBeNull()
   expect(screen.queryByRole('button', { name: /Sablonná/ })).toBeNull()
+})
+
+// The hero's vessels select too — a tap there is the same tap.
+test('in selection mode a vessel selects its run', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByRole('button', { name: 'Összevetés' }))
+  await user.click(hero().querySelectorAll('button.fo-vial')[1])
+  expect(row('Hypertrophy 03 · Ősz')).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByTestId('loc').textContent).toBe('/')
 })
 
 test('a third tap in selection mode is refused — the pair from the first two taps stands', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
+  await user.click(screen.getByRole('button', { name: 'Összevetés' }))
 
-  await user.click(screen.getByRole('button', { name: /Hypertrophy 03 · Ősz/ }))
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
+  await user.click(row('Hypertrophy 03 · Ősz'))
+  await user.click(row('Recovery rebuild · Tél'))
   // the confirm CTA already carries a complete pair
   expect(screen.getByRole('button', { name: /Összevetés megnyitása/ })).toBeInTheDocument()
+  expect(screen.getByText('A két kiválasztott futam egymás mellett')).toBeInTheDocument()
 
-  const third = screen.getByRole('button', { name: /Cut prep · Nyár/ })
+  const third = row('Cut prep · Nyár')
   await user.click(third)
 
   // the third card never entered selection…
@@ -155,12 +195,12 @@ test('a third tap in selection mode is refused — the pair from the first two t
 test('two selected runs open the compare view with a= and b= in tap order', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
+  await user.click(screen.getByRole('button', { name: 'Összevetés' }))
   // no CTA until the pair is complete
   expect(screen.queryByRole('button', { name: /Összevetés megnyitása/ })).toBeNull()
 
-  await user.click(screen.getByRole('button', { name: /Hypertrophy 03 · Ősz/ }))
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
+  await user.click(row('Hypertrophy 03 · Ősz'))
+  await user.click(row('Recovery rebuild · Tél'))
   await user.click(screen.getByRole('button', { name: /Összevetés megnyitása/ }))
 
   expect(screen.getByTestId('loc').textContent).toBe(
@@ -171,28 +211,52 @@ test('two selected runs open the compare view with a= and b= in tap order', asyn
 test('tapping a selected run deselects it; leaving the mode clears the selection', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
-  const rec = screen.getByRole('button', { name: /Recovery rebuild · Tél/ })
+  await user.click(screen.getByRole('button', { name: 'Összevetés' }))
+  const rec = row('Recovery rebuild · Tél')
   await user.click(rec)
   await user.click(rec)
   expect(rec).toHaveAttribute('aria-pressed', 'false')
 
   // select a pair, toggle the mode off and back on -> nothing is selected any more
   await user.click(rec)
-  await user.click(screen.getByRole('button', { name: /Hypertrophy 03 · Ősz/ }))
+  await user.click(row('Hypertrophy 03 · Ősz'))
   expect(screen.getByRole('button', { name: /Összevetés megnyitása/ })).toBeInTheDocument()
 
-  await user.click(screen.getByRole('button', { name: /^Összevetés$/ }))
-  await user.click(screen.getByRole('button', { name: /^Összevetés$/ }))
+  await user.click(screen.getByRole('button', { name: 'Mégsem' }))
+  await user.click(screen.getByRole('button', { name: 'Összevetés' }))
   expect(screen.queryByRole('button', { name: /Összevetés megnyitása/ })).toBeNull()
-  expect(screen.getByRole('button', { name: /Recovery rebuild · Tél/ })).toHaveAttribute('aria-pressed', 'false')
+  expect(row('Recovery rebuild · Tél')).toHaveAttribute('aria-pressed', 'false')
 })
 
 test('outside selection mode a closed run still opens its report', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: /Összevetés/ }))
-  await user.click(screen.getByRole('button', { name: /^Összevetés$/ })) // back off
-  await user.click(screen.getByRole('button', { name: /Recovery rebuild · Tél/ }))
+  await user.click(screen.getByRole('button', { name: 'Összevetés' }))
+  await user.click(screen.getByRole('button', { name: 'Mégsem' })) // back off
+  await user.click(row('Recovery rebuild · Tél'))
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-rec-03/report')
+})
+
+// --- States (prototype `futamok.ures`, `futamok.tolt`) ------------------------
+describe('real mode', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('no closed run yet: the hero says so in an empty vessel, and there is nothing to compare', async () => {
+    server.use(http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])))
+    setup()
+    expect(await screen.findByText('Még nincs lezárt futamod.')).toBeInTheDocument()
+    expect(screen.getByText('Még nincs lezárt futamod — az első terved lezárása után itt lesz a története.').closest('.fo-ev')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: 'Összevetés' })).toBeNull()
+  })
+
+  test('the loading face is the kit skeleton in the shape of the page', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/meso-templates`, () => new Promise(() => {})),
+    )
+    setup()
+    const status = await screen.findByRole('status', { name: 'Betöltés…' })
+    expect([...status.querySelectorAll('i')].map((el) => (el as HTMLElement).style.height)).toEqual(['260px', '130px', '130px', '130px'])
+  })
 })

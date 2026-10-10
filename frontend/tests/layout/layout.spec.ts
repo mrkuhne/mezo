@@ -803,14 +803,14 @@ test('Edzés Mai · the readiness card stays contained and its taps are reachabl
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
 
-  const card = page.locator('.trd')
+  const card = page.locator('.em-ready')
   await card.scrollIntoViewIfNeeded()
   await expect(card).toBeVisible()
   const box = await page.evaluate(() => {
-    const el = document.querySelector('.trd') as HTMLElement
+    const el = document.querySelector('.em-ready') as HTMLElement
     const sc = document.querySelector('.screen-content') as HTMLElement
     const r = el.getBoundingClientRect()
-    const children = Array.from(el.querySelectorAll('.trd-chip, .trd-care, .trd-pill')) as HTMLElement[]
+    const children = Array.from(el.querySelectorAll('.fo-vial, .em-care, .fo-btn')) as HTMLElement[]
     return {
       cardOverflow: el.scrollWidth - el.clientWidth,
       pageOverflow: sc.scrollWidth - sc.clientWidth,

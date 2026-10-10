@@ -45,7 +45,8 @@ async function generate(user: ReturnType<typeof userEvent.setup>) {
 test('the interview asks everything on one screen', async () => {
   const user = userEvent.setup()
   setup()
-  expect(screen.getByText('Edzésnapok')).toBeInTheDocument()
+  expect(screen.getByText('Edzésnapok · 4 nap')).toBeInTheDocument()
+  expect(screen.getByText('Hossz')).toBeInTheDocument()
   expect(screen.getByText('A célod · opcionális')).toBeInTheDocument()
   expect(screen.getByText('Fókusz · max 2 hangsúly')).toBeInTheDocument()
   expect(screen.getByText('Ami magától megy')).toBeInTheDocument()
@@ -57,7 +58,8 @@ test('the interview asks everything on one screen', async () => {
   for (const chip of ['H', 'Sze', 'P', 'Szo']) {
     expect(screen.getByRole('button', { name: chip, pressed: true })).toBeInTheDocument()
   }
-  expect(screen.getByText('4 nap → Upper / Lower · minden izom 2×/hét')).toBeInTheDocument()
+  expect(screen.getByText('4 nap → Upper / Lower')).toBeInTheDocument()
+  expect(screen.getByText('minden izom 2×/hét')).toBeInTheDocument()
   // a different weekly count swaps in that pattern
   await user.click(screen.getByRole('button', { name: '2 nap / hét' }))
   expect(screen.getByRole('button', { name: 'H', pressed: true })).toBeInTheDocument()
@@ -71,21 +73,22 @@ test('the tier picker on the same screen moves the weekly set totals', async () 
   const weekOne = () => Number(screen.getByText('szett · 1. hét').parentElement!.querySelector('b')!.textContent)
   const before = weekOne()
   await user.click(
-    within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Emphasize' }),
+    within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Hangsúly' }),
   )
-  // Emphasize starts at MEV+2 — the same +2 the ramp adds every week
+  // Hangsúly (emphasize) starts at MEV+2 — the same +2 the ramp adds every week
   expect(weekOne()).toBe(before + 2)
 })
 
 // mezo-yty6 fix round 1: the Hossz control was missing, pinning every block at 6 weeks.
-test('picking a block length dispatches setWeeks and updates the derived ramp/deload copy', async () => {
+test('picking a block length dispatches setWeeks and updates the derived rising / rest week copy', async () => {
   const user = userEvent.setup()
   setup()
-  expect(screen.getByText('6 hét = 5 rámpa + 1 deload')).toBeInTheDocument()
+  expect(screen.getByText('6 hét = 5 emelkedő + 1 pihenőhét')).toBeInTheDocument()
   expect(screen.getByText('5 + 1')).toBeInTheDocument()
 
   await user.click(screen.getByRole('button', { name: '8 hét' }))
-  expect(screen.getByText('8 hét = 7 rámpa + 1 deload')).toBeInTheDocument()
+  expect(screen.getByText('8 hét = 7 emelkedő + 1 pihenőhét')).toBeInTheDocument()
+  expect(screen.getByText('8 hét = 7 emelkedő hét + 1 pihenőhét')).toBeInTheDocument()
   expect(screen.getByText('7 + 1')).toBeInTheDocument()
 })
 
@@ -101,7 +104,7 @@ test('generating lands in the unified editor with the day strip', async () => {
   const user = userEvent.setup()
   setup()
   await generate(user)
-  expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Hypertrophy · Ősz')
+  expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toHaveValue('Hypertrophy · Ősz')
   expect(screen.getByText('A heted · koppints egy napra')).toBeInTheDocument()
   expect(screen.getByText('Vázlat · még nincs mentve')).toBeInTheDocument()
   // one tile per TRAINING day, typed by the 4-day Upper/Lower split (rest days stay out
@@ -109,7 +112,7 @@ test('generating lands in the unified editor with the day strip', async () => {
   for (const name of ['Hét · Upper · szerkesztés', 'Sze · Lower · szerkesztés']) {
     expect(screen.getByRole('button', { name })).toBeInTheDocument()
   }
-  // the save affordances live in the editor's footer slot
+  // the save affordances live on the hero's liquid row
   expect(screen.getByRole('button', { name: /Mentés \+ indítás/ })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Mentés sablonként' })).toBeInTheDocument()
 })
@@ -132,7 +135,7 @@ test('regenerating over manual edits asks first', async () => {
   const user = userEvent.setup()
   setup()
   await generate(user)
-  await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+  await screen.findByRole('textbox', { name: 'A terv neve' })
 
   await user.click(screen.getAllByRole('button', { name: /· szerkesztés$/ })[0])
   await user.click(screen.getAllByRole('button', { name: /törlése$/ })[0])
@@ -157,12 +160,12 @@ describe('real mode', () => {
       </QueryWrapper>,
     )
     // Everything the wizard asks now lives on ONE screen: the goal text and the tier rows.
-    await user.type(screen.getByLabelText('Mit szeretnél ebben a blokkban?'), 'röplabda mellett')
+    await user.type(screen.getByLabelText('Mit szeretnél ebben a tervben?'), 'röplabda mellett')
     await user.click(
-      within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Emphasize' }),
+      within(screen.getByRole('group', { name: 'Hát prioritás' })).getByRole('button', { name: 'Hangsúly' }),
     )
     await generate(user)
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
     return router
   }
 
@@ -270,7 +273,7 @@ describe('real mode', () => {
     )
     await user.click(screen.getByRole('button', { name: '8 hét' }))
     await generate(user)
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
 
     await user.click(screen.getByRole('button', { name: 'Mentés sablonként' }))
 
@@ -295,6 +298,6 @@ describe('real mode', () => {
     expect(await screen.findByText('Nem sikerült a generálás — próbáld újra.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '↺ Újrapróbálom' })).toBeInTheDocument()
     // the interview itself is still there to edit — never a blank body
-    expect(screen.getByText('Edzésnapok')).toBeInTheDocument()
+    expect(screen.getByText('Edzésnapok · 4 nap')).toBeInTheDocument()
   })
 })

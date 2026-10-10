@@ -48,50 +48,88 @@ afterEach(() => {
 
 const renderPage = () => render(<QueryWrapper><MemoryRouter><TrainWeekMapPage /></MemoryRouter></QueryWrapper>)
 
-test('renders the Izomtérkép hero with the back pill docked inside it', async () => {
+test('renders the Izomtérkép hero with its verdict and the page’s own back pill', async () => {
   const { container } = renderPage()
-  await screen.findByText('Hol tart a tested?')
-  const hero = container.querySelector('.ld-hero.is-slim') as HTMLElement
-  expect(hero).not.toBeNull()
-  const back = within(hero).getByRole('button', { name: /Terhelés/ })
-  expect(back).toHaveClass('ld-back')
+  await screen.findByText('Izomtérkép · eddig megvolt')
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).getByText(/^\d+ izomcsoport még munkára vár ezen a héten\.$/)).toHaveClass('fo-hero-verdict')
+  expect(within(hero).getByText('Amit már megmozgattál, sötétebben telik — ami még vár, az halvány marad.')).toBeInTheDocument()
+  // rendered alone (no title bar) the page keeps its own back control: history, else Terhelés
+  const back = screen.getByRole('button', { name: /Terhelés/ })
+  expect(back).toHaveClass('et-back')
   fireEvent.click(back)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week')
 })
 
-test('the mode chips re-render the SAME body map with different heat, never re-derive from scratch', async () => {
+test('the mode switch re-pours the SAME body with different heat, never re-derives from scratch', async () => {
   const { container } = renderPage()
-  await waitFor(() => expect(container.querySelectorAll('.ld-map-big .body-map-shape').length).toBeGreaterThan(0))
-  const doneOpacities = () => [...container.querySelectorAll('.ld-map-big .body-map-shape')]
-    .map((g) => Number((g as SVGElement).getAttribute('opacity')))
-  const before = doneOpacities()
+  const map = () => container.querySelector('.et-maphero .et-map') as HTMLElement
+  await waitFor(() => expect(map().querySelectorAll('[data-shape]').length).toBeGreaterThan(0))
+  expect(map().dataset.mode).toBe('done')
+  const before = map().dataset.heat
+  // nothing is logged in the mock week: the plan stands pale, no deep liquid anywhere
+  expect(map().querySelectorAll('.pl').length).toBeGreaterThan(0)
+  expect(map().querySelectorAll('.dn')).toHaveLength(0)
 
   fireEvent.click(screen.getByRole('button', { name: 'A heti terv' }))
-  await waitFor(() => expect(doneOpacities()).not.toEqual(before))
-  // switching mode never touches the doorway itself — still one BodyMap, still both views.
-  expect(container.querySelectorAll('.ld-map-big').length).toBe(1)
+  await waitFor(() => expect(map().dataset.heat).not.toEqual(before))
+  expect(map().dataset.mode).toBe('planned')
+  expect(screen.getByRole('button', { name: 'A heti terv' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('Izomtérkép · a heti terv')).toBeInTheDocument()
+  expect(screen.getByText(/^\d+ szettet kér tőled ez a hét\.$/)).toBeInTheDocument()
+  // switching mode never touches the figure itself — still one body pair, both views.
+  expect(container.querySelectorAll('.et-maphero .ex-duo.xl')).toHaveLength(1)
+  expect(container.querySelectorAll('.et-maphero .ex-body')).toHaveLength(2)
 })
 
-test('the legend speaks the four fatigue words in "Eddig megvolt" mode', () => {
+// The key under the body is drawn from the REAL levels: every group with its done/planned
+// sets and the word of the level the live logic gave it; the note names the four words.
+test('the key names every group with its sets and the word of its real level in "Eddig megvolt" mode', () => {
   const { container } = renderPage()
-  const legend = container.querySelector('.ld-legend') as HTMLElement
-  expect(within(legend).getByText('még vár')).toBeInTheDocument()
-  expect(within(legend).getByText('elkezdted')).toBeInTheDocument()
-  expect(within(legend).getByText('jó úton')).toBeInTheDocument()
-  expect(within(legend).getByText('megvan')).toBeInTheDocument()
+  const key = container.querySelector('.et-key') as HTMLElement
+  const items = [...key.querySelectorAll(':scope > span')]
+  expect(items.length).toBeGreaterThan(0)
+  // the mock week has nothing logged: every group is still waiting
+  for (const it of items) expect(it.textContent).toMatch(/^.+ 0\/\d+ még vár$/)
+  expect(screen.getByText('Négy állapot: még vár · elkezdted · jó úton · megvan. A szín az izomcsoporté, nem ítélet.')).toBeInTheDocument()
 })
 
-test('"A heti terv" mode swaps in its own one-line legend, not the fatigue words', () => {
-  renderPage()
+test('a logged group reads its real level in the key, and its muscle stands deep on the body', async () => {
+  weekLogOverride = [{
+    id: 'w-1', templateSessionId: 'ts-1', date: '2026-05-20', status: 'completed',
+    title: 'Push', dayLabel: 'Hét',
+    exercises: [{
+      exerciseId: 'e-1', name: 'Bench', muscle: 'chest-mid', type: 'compound',
+      warmupSets: 0, workingSets: 1, repMin: 8, repMax: 10, targetRIR: 2, skipped: false,
+      sets: [{ id: 's1', exerciseId: 'e-1', setIndex: 0, reps: 8, rir: 2, skipped: false, kind: 'working' }],
+    }],
+  }] as unknown as WorkoutDetailResponse[]
+  const { container } = renderPage()
+  const key = container.querySelector('.et-key') as HTMLElement
+  // one set of chest is below the floor: „elkezdted", never „jó úton"
+  expect([...key.querySelectorAll(':scope > span')].find((x) => x.textContent?.startsWith('Mell'))!.textContent).toMatch(/^Mell 1\/\d+ elkezdted$/)
+  const map = container.querySelector('.et-maphero .et-map') as HTMLElement
+  expect(map.dataset.heat).toMatch(/:below/)
+  await waitFor(() => expect(map.querySelectorAll('.dn').length).toBeGreaterThan(0))
+})
+
+test('"A heti terv" mode swaps in its own key and line, not the level words', () => {
+  const { container } = renderPage()
   fireEvent.click(screen.getByRole('button', { name: 'A heti terv' }))
-  expect(screen.getByText(/minél többet kér a hét/)).toBeInTheDocument()
-  expect(screen.queryByText('még vár')).toBeNull()
+  expect(screen.getByText('Minél többet kér a hét, annál teltebb az izom.')).toBeInTheDocument()
+  expect(screen.queryByText(/még vár/)).toBeNull()
+  for (const it of container.querySelectorAll('.et-key > span')) expect(it.textContent).toMatch(/^.+ \d+$/)
 })
 
 test('mock-empty honesty: the untouched list names the planned-but-untouched groups', () => {
-  renderPage()
-  expect(screen.getByText('Még munkára vár')).toBeInTheDocument()
-  expect(screen.getAllByText(/szett vár a héten/).length).toBeGreaterThan(0)
+  const { container } = renderPage()
+  expect(screen.getByRole('heading', { name: /Még munkára vár/ })).toBeInTheDocument()
+  const rows = [...container.querySelectorAll('.et-wait .fo-row')]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) {
+    expect(row.textContent).toMatch(/\d+ szett vár a héten$/)
+    expect(row.querySelector('.ex-mchp')).not.toBeNull()
+  }
 })
 
 // A week with NO plan at all must not fabricate either the "minden sorra került" claim
@@ -101,6 +139,7 @@ test('mock-empty honesty: a week with no plan at all shows neither the wait list
   renderPage()
   expect(screen.queryByText('Még munkára vár')).toBeNull()
   expect(screen.queryByText('Minden izomcsoportod sorra került ezen a héten.')).toBeNull()
+  expect(screen.getByText('Ezen a héten még nincs betervezett szett.')).toHaveClass('fo-hero-verdict')
 })
 
 test('a week with every planned group already touched says so, honestly', () => {
@@ -119,43 +158,58 @@ test('a week with every planned group already touched says so, honestly', () => 
       sets: [{ id: 's1', exerciseId: 'e-1', setIndex: 0, reps: 8, rir: 2, skipped: false, kind: 'working' }],
     }],
   }] as unknown as WorkoutDetailResponse[]
-  renderPage()
-  expect(screen.getByText('Minden izomcsoportod sorra került ezen a héten.')).toBeInTheDocument()
-  expect(screen.queryByText('Még munkára vár')).toBeNull()
-})
-
-test('the sport-reach note names the touched muscles and labels itself an estimate', () => {
-  renderPage()
-  expect(screen.getByText(/A sport ezeket is dolgoztatta/)).toBeInTheDocument()
-  expect(screen.getByText(/Becslés, nem mérés/)).toBeInTheDocument()
-})
-
-// Parity P2 Task 1 (matrix §13): the prototype's own quiet doorway at the foot of
-// `mapScreen()` — copy verbatim, routing to the „Minden izomjel" screen.
-test('the quiet doorway to „Minden izomjel" carries the prototype copy and routes there', () => {
   const { container } = renderPage()
-  const row = container.querySelector('.pl-row.is-quiet') as HTMLElement
-  expect(row).not.toBeNull()
-  expect(within(row).getByText('Minden izomjel')).toBeInTheDocument()
+  // the hero says it, and the section keeps its place with the same sentence instead of rows
+  const said = screen.getAllByText('Minden izomcsoportod sorra került ezen a héten.')
+  expect(said).toHaveLength(2)
+  expect(said[0]).toHaveClass('fo-hero-verdict')
+  expect(container.querySelectorAll('.et-wait .fo-row')).toHaveLength(0)
+  expect(container.querySelector('.et-wait .fo-txt')).not.toBeNull()
+})
+
+test('the sport-reach row names the touched muscles and labels itself an estimate', () => {
+  renderPage()
+  expect(screen.getByRole('heading', { name: /A sport is dolgozott/ })).toBeInTheDocument()
+  expect(screen.getByText(/A sport ezeket is dolgoztatta/)).toBeInTheDocument()
+  expect(screen.getByText('Becslés, nem mérés — a szettszámokba nem számít bele.')).toBeInTheDocument()
+})
+
+// The doorway to the „Minden izomjel" screen: the last section's one row.
+test('the doorway to „Minden izomjel" carries the prototype copy and routes there', () => {
+  renderPage()
+  expect(screen.getByRole('heading', { name: /Mélyebben/ })).toBeInTheDocument()
+  const row = screen.getByRole('button', { name: /Minden izomjel/ })
+  expect(row).toHaveClass('fo-row')
   expect(within(row).getByText('A 21 izom, saját jellel, régiónként')).toBeInTheDocument()
+  expect(row.querySelector('use')?.getAttribute('href')).toBe('#t-pattern')
   fireEvent.click(row)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week/jelek')
 })
 
-// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
-// The button beside the heading, the prototype's copy word for word. The aria-label is
-// the prototype's own `"<title> — mit jelent?"`.
+test('the sections are numbered in order, each followed by its card', () => {
+  const { container } = renderPage()
+  const heads = [...container.querySelectorAll('.fo-page > .fo-sec')]
+  expect(heads.map((h) => h.textContent)).toEqual(['1Még munkára vár', '2A sport is dolgozott', '3Mélyebben'])
+  for (const h of heads) expect(h.nextElementSibling!.classList.contains('fo-card')).toBe(true)
+})
 
-test('ⓘ in the hero sentence explains what the map is drawn from, word for word', async () => {
+// ── the explain layer (mezo-b516k, Task 2) ─────────────────────────────────────────────
+// The hero's one text link (the prototype's `info` sheet, arg `terkep`); the accessible name
+// stays `"<title> — mit jelent?"`.
+
+test('the hero link explains what the map is drawn from, word for word', async () => {
   renderPage()
   const btn = await screen.findByRole('button', { name: 'Miből rajzoljuk? — mit jelent?' })
-  expect(btn.closest('.ld-hero-say')?.textContent).toContain(
-    'Amit már megmozgattál, erősebben világít — ami még vár, az csak körvonal.',
-  )
+  expect(btn.closest('.fo-hero-acts')).not.toBeNull()
   fireEvent.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Miből rajzoljuk?' })).getByText(
-      'A futó terved e heti szettjeiből: minden izom annyira fénylik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott az erősebb szín többet kérő izmot jelent.',
+      'A futó terved e heti szettjeiből: minden izom annyira telik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott a teltebb izom többet kérő izmot jelent.',
     ),
   ).toBeInTheDocument()
+})
+
+test('folyadék: no old load classes, no glow map — the body is the liquid vessel', () => {
+  const { container } = renderPage()
+  expect(container.querySelector('[class*="ld-"], [class*="tw-"], .pl-row, .segtabs, .mz-page, .glass, .body-map')).toBeNull()
 })

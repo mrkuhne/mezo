@@ -8,7 +8,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { CAPTION_MIN_GAP, labelsMerge, nudgeFor, spreadCaptions } from './MesoMusclePage'
+import { CAPTION_MIN_GAP, spreadCaptions } from './MesoMusclePage'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -36,19 +36,24 @@ function setup(muscle = 'back', mesoId = MESO_ID) {
   return router
 }
 
-const gaugeLegend = () => Array.from(document.querySelectorAll('.pl-scale-legend i'))
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
+/** The measuring cylinder's captions, top (ceiling) first. */
+const cylCaptions = () => Array.from(document.querySelectorAll('.ep-cyl .wl em')).map((n) => n.textContent)
+const facts = () => Array.from(document.querySelectorAll('.ep-mfacts b')).map((n) => n.textContent)
 
-test('the hero names the muscle and says, in words, what its number means', () => {
+// Folyadék F3 (prototype vilagos/edzes.js `izom()`): the muscle's name rides the title bar; the hero says the
+// number as a verdict.
+test('the hero says, in words, what the muscle\'s number means', () => {
   setup('back')
-  const hero = document.querySelector('.pl-dhero')!
-  expect(hero.querySelector('h2')?.textContent).toBe('Hát')
+  expect(screen.getByText('Hát')).toBeInTheDocument()
   // back @ W3: 14 sets now, ceiling (Építés → MAV) 16 — 2 still fit.
-  expect(hero.querySelector('.pl-dhero-number')?.textContent).toContain('14')
-  expect(hero.querySelector('.pl-say')?.textContent).toBe(
-    'A hát hetente 14 szettet kap. Még 2 fér bele, aztán a terv végéig 16 marad a felső érték.',
-  )
+  expect(hero().querySelector('.fo-hero-lbl')?.textContent).toBe('3. hét · Építés')
+  expect(hero().querySelector('.fo-hero-verdict')?.textContent).toBe('A hát hetente 14 szettet kap.')
   // …and what Monday does to it — read off the arc's own next week (W4 = 16).
-  expect(hero.querySelector('.pl-sub-say')?.textContent).toBe('Hétfőn 2 szettel többet kapsz.')
+  expect(hero().querySelector('.fo-hero-sub')?.textContent).toBe(
+    'Még 2 fér bele, aztán a terv végéig 16 marad a felső érték. Hétfőn 2 szettel többet kapsz.',
+  )
+  expect(within(hero()).getByRole('img', { name: 'Hát a testtérképen' })).toHaveClass('ex-body')
 })
 
 // Was „the five section eyebrows all render" — same contract, the T9 Titanium headings.
@@ -63,121 +68,110 @@ test('the five section headings all render', () => {
 
 test('the three plain facts: sessions a week, week one, the most this plan asks', () => {
   setup('back')
-  const stats = document.querySelector('.pl-mstats')!
+  const stats = document.querySelector('.ep-mfacts')!
   expect(stats.textContent).toContain('szett az 1. héten')
   expect(stats.textContent).toContain('a legtöbb lesz')
   expect(stats.textContent).toContain('edzés hetente')
   // W1 = 10, the plan's peak = 16 (the last non-pihenőhét week).
-  const values = Array.from(stats.querySelectorAll('strong')).map((n) => n.textContent)
-  expect(values.slice(1)).toEqual(['10', '16'])
+  expect(facts().slice(1)).toEqual(['10', '16'])
 })
 
-// ── The gauge (this page only — the old per-tile VolumeBand.tsx had no other consumer
-//    left once this page and the week page were refaced, and was removed T9 sweep) ──
-test('the gauge draws the fill, both landmarks and a labelled pin at the current number', () => {
+// ── The measuring cylinder (this page only) ──
+test('the cylinder draws the liquid to the current number and both lines with their captions', () => {
   setup('back')
-  const bar = document.querySelector('.pl-scale-bar')!
+  const cyl = document.querySelector('.ep-cyl')!
   // scale = max(mrv 22, plan peak 16) = 22 → now 14/22, mev 10/22, ceiling 16/22.
-  expect(bar.querySelector('.fill')?.getAttribute('style')).toContain('--w: 63.63')
-  expect(bar.querySelectorAll('.mark')).toHaveLength(2)
-  expect(bar.querySelector('.mark.is-top')?.getAttribute('style')).toContain('--at: 72.72')
-  expect(bar.querySelector('.pin')?.textContent).toBe('14')
-  expect(gaugeLegend().map((n) => n.querySelector('small')?.textContent))
-    .toEqual(['ennyitől fejlődik', 'eddig mész el'])
+  const liquid = cyl.querySelector('.l') as HTMLElement
+  expect(liquid.getAttribute('data-level')).toBe('63.6')
+  expect(liquid.style.height).toBe(`${(14 / 22) * 90}%`) // the liquid uses 90% of the vessel
+  expect(liquid.querySelector('b')?.textContent).toBe('14')
+  expect(cyl.querySelectorAll('.wl')).toHaveLength(2)
+  expect(cyl.querySelector('.wl.top')?.getAttribute('data-at')).toBe('72.7')
+  expect(cyl.querySelector('.wl.low')).toHaveClass('d') // the lower threshold is the dashed one
+  expect(cylCaptions()).toEqual(['eddig mész el · 16', 'ennyitől fejlődik · 10'])
+  expect(cyl).toHaveAccessibleName('Hát: 14 szett hetente; 10 szettől fejlődik, 16 szettig mész el')
 })
 
-// THE MERGED-LABEL RULE: a muscle you only hold has its lower landmark and its ceiling in
-// the same place — ONE caption, never two stacked on top of each other saying the same
-// thing. Váll (shoulder) is meso-hyp-04's maintain group: mev 8 === ceiling 8.
-test('a maintain muscle renders ONE merged gauge caption, not two', () => {
+// THE MERGED-LABEL RULE: a muscle you only hold has its lower threshold and its ceiling in
+// the same place — ONE line and ONE caption, never two stacked on top of each other saying
+// the same thing. Váll (shoulder) is meso-hyp-04's maintain group: mev 8 === ceiling 8.
+test('a maintain muscle renders ONE merged line and caption, not two', () => {
   setup('shoulder')
-  const legend = gaugeLegend()
-  expect(legend).toHaveLength(1)
-  expect(legend[0].textContent).toBe('8ennyitől fejlődik — és itt tartod')
-  // The lower landmark mark is dropped with its caption — the ceiling mark carries both.
-  expect(document.querySelectorAll('.pl-scale-bar .mark')).toHaveLength(1)
-  expect(document.querySelector('.pl-scale-bar .mark')).toHaveClass('is-top')
+  expect(cylCaptions()).toEqual(['ennyitől fejlődik — és itt tartod · 8'])
+  expect(document.querySelectorAll('.ep-cyl .wl')).toHaveLength(1)
+  expect(document.querySelector('.ep-cyl .wl')).toHaveClass('top')
 })
 
-test('the merge threshold and the --nudge clamp are the prototype rules', () => {
-  // Two landmarks within 7 points of each other read as one.
-  expect(labelsMerge(44.4, 44.4)).toBe(true)
-  expect(labelsMerge(40, 46)).toBe(true)
-  expect(labelsMerge(45.4, 72.7)).toBe(false)
-  // A label anchored near either end is pulled back onto the track instead of centred.
-  expect(nudgeFor(0)).toBe('-16%')
-  expect(nudgeFor(13.9)).toBe('-16%')
-  expect(nudgeFor(50)).toBe('-50%')
-  expect(nudgeFor(86.1)).toBe('-84%')
-  expect(nudgeFor(100)).toBe('-84%')
-})
-
-test('captions whose geometry merges but whose numbers differ are pushed apart, not stacked', () => {
+test('captions that sit close while their numbers differ are pushed apart, not stacked', () => {
   // Far enough apart already — untouched, to the decimal.
   expect(spreadCaptions(45.4, 72.7)).toEqual([45.4, 72.7])
   // Exactly the minimum gap still counts as far enough.
   expect(spreadCaptions(40, 40 + CAPTION_MIN_GAP)).toEqual([40, 40 + CAPTION_MIN_GAP])
-  // Mid-scale collision (nudgeFor does nothing here): the pair opens to the minimum gap
-  // around its own midpoint, so each caption moves by at most half of it.
-  expect(spreadCaptions(50, 50)).toEqual([46.5, 53.5])
-  expect(spreadCaptions(48, 52)).toEqual([46.5, 53.5])
-  // Near the ends the pair slides back INSIDE the track rather than hanging off it —
-  // the existing edge clamp then takes over on the anchors it returns.
+  // A collision opens to the minimum gap around its own midpoint, so each caption moves by at most half of it.
+  expect(spreadCaptions(50, 50)).toEqual([50 - CAPTION_MIN_GAP / 2, 50 + CAPTION_MIN_GAP / 2])
+  expect(spreadCaptions(48, 52)).toEqual([50 - CAPTION_MIN_GAP / 2, 50 + CAPTION_MIN_GAP / 2])
+  // Near the ends the pair slides back INSIDE the scale rather than hanging off it.
   expect(spreadCaptions(0, 0)).toEqual([0, CAPTION_MIN_GAP])
   expect(spreadCaptions(100, 100)).toEqual([100 - CAPTION_MIN_GAP, 100])
-  expect(nudgeFor(spreadCaptions(0, 0)[0])).toBe('-16%')
-  expect(nudgeFor(spreadCaptions(100, 100)[1])).toBe('-84%')
 })
 
-test('the plan ramp draws one bar per week, this week lit and the pihenőhét hatched', () => {
+test('the plan ramp draws one vessel per week, this week ringed and the pihenőhét hatched', () => {
   setup('back') // W3 is current, W6 is the pihenőhét
-  const bars = Array.from(document.querySelectorAll('.pl-arc i'))
-  expect(bars.map((b) => b.className)).toEqual(['is-past', 'is-past', 'is-now', '', '', 'is-deload'])
-  expect(Array.from(document.querySelectorAll('.pl-weekvals i')).map((n) => n.textContent))
-    .toEqual(['10', '12', '14', '16', '16', '8'])
-  expect(document.querySelector('.pl-weekvals .is-now')?.textContent).toBe('14')
+  const tubes = screen.getByRole('group', { name: 'A hát heti szettszáma a terv 6 hetében' })
+  const vials = Array.from(tubes.querySelectorAll('.fo-vial'))
+  expect(vials.map((v) => v.className.replace('fo-vial', '').trim())).toEqual(['', '', 'now', 'ghost', 'ghost', 'ghost hatch'])
+  expect(vials.map((v) => v.querySelector('b')?.textContent)).toEqual(['10', '12', '14', '16', '16', '8'])
+  expect(tubes.querySelector('.fo-vial.now b')?.textContent).toBe('14')
   expect(screen.getByText(/Az utolsó hét pihenőhét — ott 8 szettre esik vissza/)).toBeInTheDocument()
 })
 
 test('a where-row is a door to that day', async () => {
   const router = setup('back')
-  const rows = document.querySelectorAll('.pl-ex.is-link')
+  const rows = document.querySelectorAll('button.ep-where')
   expect(rows.length).toBeGreaterThan(0)
+  expect(rows[0].querySelector('.ex-day')).not.toBeNull() // the weekday in its round chip
   await userEvent.click(rows[0] as HTMLElement)
   await waitFor(() =>
     expect(router.state.location.pathname).toMatch(new RegExp(`^/train/mesocycles/${MESO_ID}/days/`)))
 })
 
-test('the derivation has 4 numbered steps', () => {
+test('the derivation has 4 numbered steps, in plain words', () => {
   setup('back')
-  const nums = document.querySelectorAll('.mz-dnum')
+  const nums = document.querySelectorAll('.ep-deriv .ex-day')
   expect(Array.from(nums).map((n) => n.textContent)).toEqual(['1', '2', '3', '4'])
-  expect(screen.getByText('Baseline · RP tábla')).toBeInTheDocument()
-  expect(screen.getByText('Fókusz-sáv · Építés')).toBeInTheDocument()
+  expect(screen.getByText('Kiinduló ajánlás')).toBeInTheDocument()
+  expect(screen.getByText('Fókusz · Építés')).toBeInTheDocument()
   expect(screen.getByText('Rád szabva')).toBeInTheDocument()
-  expect(screen.getByText('Eredő · a blokkban')).toBeInTheDocument()
+  expect(screen.getByText('Ebben a tervben')).toBeInTheDocument()
+  expect(screen.getByText('indul: 10 · felső érték: 16 · hetente +2')).toBeInTheDocument()
+  expect(screen.getByText('1. hét: 10 · 2. hét: 12 · 3. hét · most: 14 · hétfőn: +2')).toBeInTheDocument()
+  // how sure the band is: a level, and the inert „Felülír"
+  expect(document.querySelector('.ep-deriv .fo-level')?.textContent).toMatch(/^Mennyire biztos a sáv\d+%$/)
+  expect(screen.getByRole('button', { name: 'Felülír · hamarosan' })).toBeDisabled()
+  // the engine's words never reach the screen
+  expect(document.querySelector('.ep-deriv')?.textContent).not.toMatch(/MEV|MAV|MRV|Baseline|baseline|plafon|blokk/)
 })
 
 test('Rád szabva shows the real adjustments when the engine made them', () => {
   setup('back') // back's fixture carries 2 adjustments (pattern + sport-cross)
   expect(screen.getByText(/Pull Day konzisztencia/)).toBeInTheDocument()
-  expect(screen.queryByText('nincs igazítás — a baseline érvényes')).not.toBeInTheDocument()
+  expect(screen.queryByText('nincs igazítás — a kiinduló ajánlás érvényes')).not.toBeInTheDocument()
 })
 
 test('Rád szabva reads honestly empty for triceps (no adjustments in the fixture)', () => {
   setup('triceps')
-  expect(screen.getByText('nincs igazítás — a baseline érvényes')).toBeInTheDocument()
+  expect(screen.getByText('nincs igazítás — a kiinduló ajánlás érvényes')).toBeInTheDocument()
 })
 
 // Was „a maintain-tier muscle skips the ramp band but keeps the rest of the page": the
 // Titanium gauge replaces the ramp-only `VolumeBand`, so a maintain muscle now gets the
 // SAME gauge (merged caption above) — and still the whole rest of the page.
-test('a maintain muscle keeps the whole page, gauge included', () => {
+test('a maintain muscle keeps the whole page, cylinder included', () => {
   setup('shoulder')
   expect(screen.getByText('A 6 hét')).toBeInTheDocument()
   expect(screen.getByText('Hol tartasz')).toBeInTheDocument()
-  expect(document.querySelector('.pl-scale-bar')).toBeInTheDocument()
-  expect(document.querySelector('.pl-dhero .pl-say')?.textContent).toContain('és ez így is marad')
+  expect(document.querySelector('.ep-cyl')).toBeInTheDocument()
+  expect(hero().querySelector('.fo-hero-sub')?.textContent).toContain('Ez így is marad')
 })
 
 test('previous-plan ghost when no archived run ever carried this muscle', () => {
@@ -318,13 +312,13 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Hát')
-    expect(document.querySelector('.pl-dhero-tag')?.textContent).toBe('3. hét · Hangsúly')
+    expect(hero().querySelector('.fo-hero-lbl')?.textContent).toBe('3. hét · Hangsúly')
     expect(screen.queryByText(/Emphasize/)).not.toBeInTheDocument()
   })
 
-  // --nudge EDGE-CLAMPING, on real markup: a ceiling that lands at 100% of the scale and a
-  // lower landmark at 10% would both be centred half-way off the track without the clamp.
-  test('gauge labels at the track edges carry the clamped --nudge, not the centred default', async () => {
+  // The cylinder's ends, on real markup: a ceiling at 100% of the scale and a lower threshold at 10% keep both
+  // lines and both captions exactly where the numbers put them (far apart — nothing is nudged).
+  test('lines at the two ends of the cylinder stand at their true positions', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles`, () =>
         HttpResponse.json(runList({
@@ -336,12 +330,36 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Hol tartasz')
-    const legend = gaugeLegend()
-    expect(legend).toHaveLength(2)
-    // scale = max(mrv 20, peak 20) = 20 → mev at 10% (left edge), ceiling at 100% (right).
-    expect(legend[0].getAttribute('style')).toContain('--nudge: -16%')
-    expect(legend[1].getAttribute('style')).toContain('--nudge: -84%')
-    expect(document.querySelector('.pl-scale-bar .pin')?.getAttribute('style')).toContain('--nudge: -84%')
+    // scale = max(mrv 20, peak 20) = 20 → mev at 10%, ceiling at 100%.
+    const top = document.querySelector('.ep-cyl .wl.top') as HTMLElement
+    const low = document.querySelector('.ep-cyl .wl.low') as HTMLElement
+    expect(top.getAttribute('data-at')).toBe('100.0')
+    expect(low.getAttribute('data-at')).toBe('10.0')
+    expect(top.style.bottom).toBe('90%')
+    expect(low.style.bottom).toBe('9%')
+    expect(top.style.getPropertyValue('--dy')).toBe('0.0px')
+    expect(low.style.getPropertyValue('--dy')).toBe('0.0px')
+    // the liquid stands at the ceiling: full to the top line
+    expect((document.querySelector('.ep-cyl .l') as HTMLElement).style.height).toBe('90%')
+  })
+
+  // Was the gauge's edge clamp for its pin: in the cylinder a LOW level has no room for the numeral inside the
+  // liquid, so it stands above the surface instead (prototype `.l.lo`, under 28% of the scale).
+  test('a low level carries its numeral above the liquid, a high one inside it', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () =>
+        HttpResponse.json(runList({
+          mev: 4, mav: 16, mrv: 20, current: 4,
+          source: { baseline: { name: 'RP guidelines · intermediate', mev: 4, mav: 16, mrv: 20 }, adjustments: [], confidence: 0.8 },
+        }, null))),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () =>
+        HttpResponse.json(backArc([2, 3, 4, 8, 12, 4], 20))),
+    )
+    setup('back', REAL_MESO_ID)
+    await screen.findByText('Hol tartasz')
+    // 4 of a scale of 20 → 20%: under the threshold
+    expect(document.querySelector('.ep-cyl .l')).toHaveClass('lo')
+    expect(document.querySelector('.ep-cyl .l b')?.textContent).toBe('4')
   })
 
   // NEVER RED ON A DOWN MOVE: the previous plan peaked at 24, this one stops at 20. The
@@ -363,13 +381,16 @@ describe('MesoMusclePage (real mode)', () => {
     // The previous plan's own identity stays legible, not just its numbers.
     expect(screen.getByText('Előző terved: Hypertrophy 03')).toBeInTheDocument()
 
-    const rows = Array.from(document.querySelectorAll('.pl-versus-row'))
-    expect(rows).toHaveLength(2)
-    expect(rows[0].textContent).toContain('8 → 24') // akkor: start → peak
-    expect(rows[1].textContent).toContain('10 → 20') // most: this plan is LOWER
-    // The down move carries no red/danger/warning modifier anywhere in the versus block.
-    expect(rows[1].className).toBe('pl-versus-row is-now')
-    expect(document.querySelector('.pl-versus')!.innerHTML).not.toMatch(/red|danger|warn|is-down|is-bad|negative/i)
+    const vials = Array.from(document.querySelectorAll('.ep-vs .fo-vial'))
+    expect(vials).toHaveLength(2)
+    expect(vials[0].textContent).toContain('8 → 24') // akkor: start → peak
+    expect(vials[1].textContent).toContain('10 → 20') // most: this plan is LOWER
+    // The down move carries no red/danger/warning modifier anywhere: „Most" keeps the muscle's own colour,
+    // and the previous peak stands in it as a quiet dashed waterline.
+    expect(vials[1].className).toBe('fo-vial')
+    expect(vials[1].getAttribute('style')).toContain('--c: color-mix')
+    expect(vials[1].querySelector('.wl')).not.toBeNull()
+    expect(document.querySelector('.ep-vs')!.innerHTML).not.toMatch(/fo-bad|fo-warn|danger|is-down|is-bad|negative/i)
     expect(screen.getByText('Az előző terv magasabbra vitt — most más izom kapja a hangsúlyt.')).toBeInTheDocument()
   })
 
@@ -398,14 +419,13 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Hát')
-    const hero = document.querySelector('.pl-dhero')!
-    expect(hero.querySelector('.pl-sub-say')?.textContent).toBe('Hétfőn nem változik.')
+    expect(hero().querySelector('.fo-hero-sub')?.textContent).toMatch(/ Hétfőn nem változik\.$/)
+    expect(hero().textContent).not.toMatch(/szettel többet kapsz/)
   })
 
-  // Finding 3: the 7-point merged-LABEL rule (mark/label geometry) and the merged-CAPTION
-  // TEXT are different questions. mev 19 and ceiling 20 land within 7 points of each other
-  // on this scale (geometry merges, one mark), but 19 !== 20 — the text „ennyitől fejlődik —
-  // és itt tartod" would be a lie, so both captions must render, nudged apart.
+  // Finding 3: „close together" and „the same" are different questions. mev 19 and ceiling 20 land 3.8
+  // points apart on this scale, but 19 !== 20 — the text „ennyitől fejlődik — és itt tartod" would be a lie,
+  // so both lines and both captions render, the captions pushed apart so they do not print on each other.
   test('a near-but-not-equal threshold/ceiling renders both captions, not the merged text (fix round 1)', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles`, () =>
@@ -418,12 +438,12 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Hol tartasz')
-    // Geometry: the two landmarks are 3.8 points apart (< 7) — still ONE mark on the bar.
-    expect(document.querySelectorAll('.pl-scale-bar .mark')).toHaveLength(1)
-    // Text: mev (19) !== ceiling (20) — both captions render, neither says „és itt tartod".
-    const legend = gaugeLegend()
-    expect(legend).toHaveLength(2)
-    expect(legend.map((n) => n.querySelector('small')?.textContent)).toEqual(['ennyitől fejlődik', 'eddig mész el'])
+    expect(document.querySelectorAll('.ep-cyl .wl')).toHaveLength(2)
+    expect(cylCaptions()).toEqual(['eddig mész el · 20', 'ennyitől fejlődik · 19'])
+    // the lines keep their true places; only the captions slide — the top one up, the low one down
+    const dy = (sel: string) => parseFloat((document.querySelector(sel) as HTMLElement).style.getPropertyValue('--dy'))
+    expect(dy('.ep-cyl .wl.top')).toBeLessThan(0)
+    expect(dy('.ep-cyl .wl.low')).toBeGreaterThan(0)
   })
 
   // Finding 4: the plan's peak is the MAX planned value over the non-pihenőhét weeks, not
@@ -443,19 +463,16 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Hol tartasz')
-    const stats = document.querySelector('.pl-mstats')!
-    const values = Array.from(stats.querySelectorAll('strong')).map((n) => n.textContent)
-    expect(values[2]).toBe('20') // „a legtöbb lesz" — the MAX (week 4), not the last (16).
-    // The gauge scale widens to the true peak (max(mrv 18, peak 20) = 20), not to 18: the
-    // fill reads 18/20 = 90%, not 18/18 = 100%.
-    const bar = document.querySelector('.pl-scale-bar')!
-    expect(bar.querySelector('.fill')?.getAttribute('style')).toContain('--w: 90')
+    expect(facts()[2]).toBe('20') // „a legtöbb lesz" — the MAX (week 4), not the last (16).
+    // The cylinder's scale widens to the true peak (max(mrv 18, peak 20) = 20), not to 18: the
+    // liquid reads 18/20 = 90%, not 18/18 = 100%.
+    expect(document.querySelector('.ep-cyl .l')?.getAttribute('data-level')).toBe('90.0')
   })
 
   // Finding 5: the versus bars clamp against their OWN scale (`versusScale`), not the
   // gauge's `scale` — an archived peak above this plan's scale must not pin both bars to an
   // identical 100% width while their numbers still differ.
-  test('an archived peak above the current scale renders unequal versus bar widths (fix round 1)', async () => {
+  test('an archived peak above the current scale renders unequal then / now levels (fix round 1)', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles`, () =>
         HttpResponse.json(runList({
@@ -467,45 +484,35 @@ describe('MesoMusclePage (real mode)', () => {
     )
     setup('back', REAL_MESO_ID)
     await screen.findByText('Az előző tervhez képest')
-    const bars = Array.from(document.querySelectorAll('.pl-versus-bar i'))
-    expect(bars).toHaveLength(2)
-    const widths = bars.map((b) => b.getAttribute('style'))
-    // versusScale = max(scale 20, prev.peak 30) = 30 → akkor 30/30 = 100%, most 20/30 ≈ 66.7%.
-    expect(widths[0]).toContain('--w: 100')
-    expect(widths[1]).toContain('--w: 66.6')
-    expect(widths[0]).not.toBe(widths[1])
+    const levels = Array.from(document.querySelectorAll('.ep-vs .fo-tube .l')).map((l) => parseFloat((l as HTMLElement).style.getPropertyValue('--p')))
+    expect(levels).toHaveLength(2)
+    // versusScale = max(scale 20, prev.peak 30) = 30 → akkor 30/30 (a full vessel = 94%), most 20/30 of it.
+    expect(levels[0]).toBeCloseTo(94, 5)
+    expect(levels[1]).toBeCloseTo((20 / 30) * 94, 5)
+    expect(levels[0]).not.toBe(levels[1])
   })
 })
 
-// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
-// The button beside the heading, the prototype's copy word for word. The aria-label is
-// the prototype's own `"<title> — mit jelent?"`.
-
-test('ⓘ beside „Hol tartasz" interpolates the muscle\'s REAL MEV — never a literal number', async () => {
+// ── the explain layer (mezo-b516k; Folyadék F3) ──────────────────────────────────────────
+// The text link on the hero's liquid row, the prototype's copy word for word. The aria-label is
+// `"<title> — mit jelent?"`.
+test('„Mit jelentenek a jelölések?" explains the two lines of the cylinder, word for word', async () => {
   const user = userEvent.setup()
   setup('back')
-  // The gauge legend already prints this threshold (fix round 1, mezo-b516k: the
-  // `.pl-foot-say` paragraph that used to repeat it below the gauge is gone — a
-  // near-duplicate the ⓘ glass itself already says in full); the glass must quote
-  // THAT number, not a constant baked into the copy.
-  const mev = gaugeLegend()[0].textContent!.match(/^(\d+)/)![1]
   const btn = screen.getByRole('button', { name: 'Mit jelentenek a jelölések? — mit jelent?' })
-  expect(btn.closest('h3')?.textContent).toBe('Hol tartasz')
+  expect(btn.closest('.fo-hero-acts')).not.toBeNull()
   await user.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Mit jelentenek a jelölések?' })).getByText(
-      `A ${mev} alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg. Fölötte a több munka már nem hoz többet.`,
+      'Az alsó jelölés alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg.',
     ),
   ).toBeInTheDocument()
 })
 
-// The no-duplicate-text directive (mezo-b516k fix round 1, same ruling as item #4): the
-// MEV threshold the ⓘ glass explains must appear ONCE on the page — in the gauge legend —
-// never repeated a second time in a plain paragraph sitting behind the button.
-test('the MEV threshold is not printed twice — the near-duplicate paragraph is gone', () => {
+// The no-duplicate-text directive (mezo-b516k fix round 1): the lower threshold is printed ONCE on the page's
+// graphic — on the cylinder's own caption — never repeated in a plain paragraph behind the link.
+test('the lower threshold is printed once on the cylinder — no near-duplicate paragraph', () => {
   setup('back')
-  // Other `.pl-foot-say` paragraphs remain on the page (the pihenőhét note, etc.) — only
-  // THIS gauge's near-duplicate of the ⓘ glass's own copy is the one that had to go.
-  const mev = gaugeLegend()[0].textContent!.match(/^(\d+)/)![1]
-  expect(screen.queryByText(new RegExp(`^${mev} szett alatt nincs elég inger`))).not.toBeInTheDocument()
+  expect(cylCaptions().filter((c) => c?.startsWith('ennyitől fejlődik'))).toEqual(['ennyitől fejlődik · 10'])
+  expect(screen.queryByText(/^10 szett alatt nincs elég inger/)).not.toBeInTheDocument()
 })

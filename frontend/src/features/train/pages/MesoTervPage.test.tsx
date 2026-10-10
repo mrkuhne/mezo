@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
-import { afterEach, beforeEach, describe, it, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { MesoTervPage } from '@/features/train/pages/MesoTervPage'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -29,32 +29,39 @@ function setup() {
   )
 }
 
-// --- The poster (Train Titanium T9 Task 3, mezo-88iwa.10) ---
-// The landing IS the running block now: no `Mesociklusok` h1, no `+ Új` chip, no
-// library sections. Every number is derived from mocks[0] (meso-hyp-04: week 3 of 6,
-// phaseCurve MEV MEV MAV MAV MRV Deload) through logic/mesoBands.ts + wizard/dayTiles.ts,
-// never hard-coded against the prototype's illustrative copy.
+// --- The hero (Folyadék F3, mezo-n4wf5.3; prototype vilagos/edzes.js `terv()`) ---
+// The landing IS the running plan: no library sections. Every number is derived from mocks[0]
+// (meso-hyp-04: week 3 of 6, phaseCurve MEV MEV MAV MAV MRV Deload) through logic/mesoBands.ts +
+// the volume arc, never hard-coded against the prototype's illustrative copy.
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
 
-test('the poster is ONE button carrying its own a11y name, with the block name inside', () => {
+test('the hero names the plan and its phase, and says where you are as a verdict', () => {
   setup()
-  const poster = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
-  expect(poster).toHaveTextContent('Hypertrophy 04 · Tavasz')
+  expect(hero().querySelector('.fo-hero-lbl')).toHaveTextContent('Hypertrophy 04 · Tavasz · Emelkedés')
+  expect(hero().querySelector('.fo-hero-verdict')).toHaveTextContent('A 6 hétből a 3. héten jársz.')
 })
 
-test('the poster leads with the week numeral (3. hét / 6)', () => {
+test('the weeks stand as vessels: past full, this week ringed with done / planned, the pihenőhét hatched', () => {
   setup()
-  const poster = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
-  expect(poster).toHaveTextContent('3. hét')
-  expect(poster).toHaveTextContent('/ 6')
+  const tubes = within(hero()).getByRole('group', { name: 'A terv hetei: heti szettszám' })
+  const vials = [...tubes.querySelectorAll('.fo-vial')]
+  expect(vials).toHaveLength(6)
+  expect(vials.map((v) => v.className.replace('fo-vial', '').trim())).toEqual(['', '', 'now', 'ghost', 'ghost', 'ghost hatch'])
+  // the arc's per-week totals (mock arc of meso-hyp-04); this week reads „done / planned" — mock mode has
+  // no completed instance, so 0 of the week's 88
+  expect(vials.map((v) => v.querySelector('b')?.textContent)).toEqual(['60', '74', '0/88', '92', '92', '46'])
+  expect(vials[2].querySelector('small')?.textContent).toBe('3. hétmost')
+  expect(vials[4].querySelector('small')?.textContent).toBe('5. hétcsúcs')
+  expect(vials[5].querySelector('small')?.textContent).toBe('6. hétpihenő')
+  expect(hero().querySelector('.ep-ft')).toHaveTextContent('heti szettszám')
+  // no progress ring anywhere (bible rule 4)
+  expect(document.querySelector('.pl-ring, circle')).toBeNull()
 })
 
-test('the phase pill reads the derived phase in the owner\'s words (meso-hyp-04 week 3 = MAV -> Rámpa -> Emelkedés)', () => {
-  // The banned-word sweep (T9 fix round 1): `phaseChip`'s own „Rámpa" is itself the
-  // banned word, so PHASE_LABEL must translate ALL three phases, not just Deload.
+test('the phase reads in the owner\'s words (meso-hyp-04 week 3 = MAV -> Emelkedés)', () => {
   setup()
-  const poster = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
-  expect(poster).toHaveTextContent('Emelkedés')
-  expect(poster).not.toHaveTextContent(/rámpa/i)
+  expect(hero()).toHaveTextContent('Emelkedés')
+  expect(hero()).not.toHaveTextContent(/rámpa|MAV/i)
 })
 
 // A REAL deload fixture (T9 fix round 1 — the earlier version of this test rendered
@@ -65,7 +72,7 @@ describe('a Deload week', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('makes the pill POSITIVELY say Pihenőhét — never the engine word', async () => {
+  it('makes the hero POSITIVELY say Pihenőhét — never the engine word', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles`, () =>
         HttpResponse.json([
@@ -116,31 +123,50 @@ describe('a Deload week', () => {
         </MemoryRouter>
       </QueryWrapper>,
     )
-    const poster = await screen.findByRole('button', { name: 'Aktív mezociklus megnyitása' })
-    expect(poster).toHaveTextContent('Pihenőhét')
-    expect(poster).not.toHaveTextContent(/deload/i)
+    await screen.findByRole('button', { name: 'A terv oldala' })
+    expect(hero().querySelector('.fo-hero-lbl')).toHaveTextContent('Hypertrophy 04 · Tavasz · Pihenőhét')
+    expect(hero()).toHaveTextContent('1 edzésnapra osztva — és ez a hét maga a pihenőhét.')
+    expect(hero()).not.toHaveTextContent(/deload/i)
   })
 })
 
-test('the poster carries ONE plain sentence: where you are, what it weighs, when the pihenőhét lands', () => {
+test('the hero carries ONE support line: what the week weighs and when the pihenőhét lands', () => {
   setup()
-  const poster = screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' })
   // set total = sum of runBands(meso).current over its 8 tracked groups
   // (14+16+12+10+10+12+10+12 = 96) — the same math mesoBands.test.ts pins; 5 training
   // days (Szo = volleyball, Vas = rest are off-days); the Deload is week 6 → 3 weeks out.
-  expect(poster).toHaveTextContent('A 6 hétből a 3. héten jársz: 96 szett, 5 edzésnapra osztva — 3 hét múlva jön a pihenőhét.')
+  expect(hero().querySelector('.fo-hero-sub')).toHaveTextContent('96 szett, 5 edzésnapra osztva — 3 hét múlva jön a pihenőhét.')
 })
 
-test('the whole-poster tap opens the builder deep-link (the whole-card contract)', async () => {
+test('the hero\'s one button opens the plan\'s own page', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: 'Aktív mezociklus megnyitása' }))
+  await user.click(within(hero()).getByRole('button', { name: 'A terv oldala' }))
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/meso-hyp-04')
+})
+
+// Before the first workout there is no volume arc: the vessels stand at the plan's own phase curve and carry
+// NO numbers (prototype `terv.elso`).
+describe('before the first workout', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('draws the plain vessels with the note, and no set counts', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => new HttpResponse(null, { status: 404 })),
+    )
+    setup()
+    const tubes = await screen.findByRole('group', { name: 'A terv hetei: a terv íve' })
+    expect(await screen.findByText('A hetek szettszáma az első edzésed után jelenik meg — addig a terv íve látszik.')).toBeInTheDocument()
+    expect(tubes.querySelectorAll('.fo-vial')).toHaveLength(6)
+    expect(tubes.querySelectorAll('.fo-vial > b')).toHaveLength(0)
+    expect(hero().querySelector('.ep-ft')).toHaveTextContent('a terv íve')
+  })
 })
 
 // --- „A heted" day cards ---
 
-test('every training day is a card with its FULL weekday name and its type', () => {
+test('every training day is a button with its FULL weekday name and its type', () => {
   // Pinned clock (napszak test-bomb rule): a Saturday, so no fixture training day is 'ma'
   // and the accessible names stay stable every real weekday.
   vi.useFakeTimers({ toFake: ['Date'] })
@@ -154,7 +180,7 @@ test('every training day is a card with its FULL weekday name and its type', () 
   } finally { vi.useRealTimers() }
 })
 
-test('a day card carries its boxed facts (szett / perc / gyakorlat) from dayTileData', () => {
+test('a day row carries its facts (szett / perc / gyakorlat) from dayTileData as one line', () => {
   // Pinned clock, same reason as its two siblings above and below (napszak test-bomb rule):
   // a training day that happens to BE today gets „ · ma" appended to its accessible name, so
   // this `getByRole` failed on real Mondays — and only on Mondays, which is why it survived
@@ -166,9 +192,8 @@ test('a day card carries its boxed facts (szett / perc / gyakorlat) from dayTile
     setup()
     // Hétfő: 4+3+3+3+3 = 16 working sets, round(16 * 4.4) = 70 perc, 5 exercises.
     const monday = screen.getByRole('button', { name: 'Hétfő · Push' })
-    expect(monday).toHaveTextContent('16szett')
-    expect(monday).toHaveTextContent('70perc')
-    expect(monday).toHaveTextContent('5gyakorlat')
+    expect(monday).toHaveClass('ep-dc', 'row')
+    expect(monday.querySelector('em')?.textContent).toBe('16 szett · ~70 perc · 5 gyakorlat')
   } finally { vi.useRealTimers() }
 })
 
@@ -211,6 +236,11 @@ describe('the MA chip marks today wherever it lands', () => {
     const thursday = screen.getByRole('button', { name: 'Csütörtök · Pull · ma' })
     expect(thursday).toHaveTextContent('Ma')
     expect(screen.getAllByText('Ma')).toHaveLength(1)
+    // owner decision 2026-10-10: today is the ONE full card — the body, three boxed facts, the muscle chips
+    expect(thursday).toHaveClass('ep-dc', 'now')
+    expect(document.querySelectorAll('.ep-dc.now')).toHaveLength(1)
+    expect(within(thursday).getByRole('img', { name: 'Pull nap — érintett izmok' })).toBeInTheDocument()
+    expect([...thursday.querySelectorAll('.f3 i')].map((i) => i.textContent)).toEqual(['16szett', '70perc', '5gyakorlat'])
   })
 
   it('a Sunday puts the Ma stamp on the rest ROW — the marker is not card-only', () => {
@@ -231,7 +261,7 @@ describe('the MA chip marks today wherever it lands', () => {
   })
 })
 
-// --- The two dest tiles ---
+// --- The two doorway rows ---
 
 test('the Melyik izmod hol tart tile carries the rollover forecast and opens the week page', async () => {
   const user = userEvent.setup()
@@ -268,7 +298,7 @@ test('the quiet close row opens the shared MesoCloseSheet', async () => {
 
 // --- The kalauz anchor must have a home on EVERY state of this page ---
 
-test('the kalauz anchor sits on the dest row, which always renders', () => {
+test('the kalauz anchor sits on the Terveid card', () => {
   const { container } = render(
     <QueryWrapper>
       <MemoryRouter>
@@ -295,25 +325,11 @@ describe('MesoTervPage (real mode, pending)', () => {
       http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
     )
     setup()
-    const status = await screen.findByRole('status')
-    expect(status).toBeInTheDocument()
-    // The T5 skeleton-test idiom (TrainTodayPage.test.tsx): read every `.sk` placeholder
-    // and check the SHAPE, not just presence — the poster block, the day-card rows, and
-    // the dest tiles, in the real page's own document order.
-    const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
-    // the poster (`.pl-poster`) — one full-width 285px placeholder, derived in
-    // MesoTervSkeleton.tsx next to the real `.pl-poster` CSS it mirrors (285 since the
-    // surfaces slice restored the prototype's own `22px 20px 26px` padding, mezo-fsz2r).
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '285px')).toHaveLength(1)
-    // the day-card rows (`.pl-day`) — 5 reserved 126px placeholders.
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '126px')).toHaveLength(5)
-    // the two dest tiles (`.pl-dests`/`.pl-dest`) — 115px each.
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '115px')).toHaveLength(2)
-    // Order matters — poster → day rows → dest tiles, matching the real document order.
-    const order = sk
-      .map((el) => el.style.height)
-      .filter((h) => ['285px', '126px', '115px'].includes(h))
-    expect(order).toEqual(['285px', '126px', '126px', '126px', '126px', '126px', '115px', '115px'])
+    const status = await screen.findByRole('status', { name: 'Betöltés…' })
+    // The kit's skeleton in the shape of the page (prototype `terv('tolt')`): the hero vessel, the week
+    // list in two blocks, the cards.
+    expect(status).toHaveClass('fo-sk')
+    expect([...status.querySelectorAll('i')].map((el) => (el as HTMLElement).style.height)).toEqual(['330px', '170px', '170px', '120px'])
   })
 })
 
@@ -342,8 +358,11 @@ describe('no active block', () => {
         </MemoryRouter>
       </QueryWrapper>,
     )
-    expect(await screen.findByText(/Még nincs mesociklusod/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edzéstervek' })).toBeInTheDocument()
+    expect(await screen.findByText('Még nincs edzésterved.')).toBeInTheDocument()
+    expect(screen.getByText('Még nincs edzésterved — itt fognak élni a terveid.')).toBeInTheDocument()
+    expect(document.body.textContent).not.toMatch(/mesociklus/i)
+    await userEvent.click(screen.getByRole('button', { name: 'Edzéstervek' }))
+    expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/konyvtar')
     expect(screen.queryByRole('button', { name: 'Melyik izmod hol tart' })).toBeNull()
     expect(container.querySelector('[data-kalauz-anchor="mesociklus-mosaic"]')).not.toBeNull()
   })

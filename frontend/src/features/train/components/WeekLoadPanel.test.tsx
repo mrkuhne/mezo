@@ -17,6 +17,15 @@ const WEEK: MesoDay[] = [
 ]
 
 describe('WeekLoadPanel', () => {
+  // Folyadék (mezo-n4wf5.3): the hero says the week in a sentence; the jargon left the page.
+  test('the hero carries the verdict and no landmark jargon', () => {
+    const { container } = render(<WeekLoadPanel days={WEEK} onBack={vi.fn()} />)
+    expect(screen.getByText(/^13 szett az 1\. héten, a csúcson \d+\.$/)).toBeInTheDocument()
+    expect(screen.getByText('ennyitől fejlődik')).toBeInTheDocument()
+    expect(screen.getByText('a cél a fókusz szerint')).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/MEV|MAV|MRV|Emphasize|Maintain|Grow|tier/)
+  })
+
   test('one card per muscle, sorted by weekly sets descending', () => {
     render(<WeekLoadPanel days={WEEK} onBack={vi.fn()} />)
     const cards = screen.getAllByTestId('week-load-card')
@@ -26,7 +35,7 @@ describe('WeekLoadPanel', () => {
   test('each card shows the tier, the frequency and the direction toward the target', () => {
     render(<WeekLoadPanel days={WEEK} priorities={{ back: 'emphasize' }} onBack={vi.fn()} />)
     const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
-    expect(within(back).getByText('Emphasize')).toBeInTheDocument()
+    expect(within(back).getByText('Hangsúly')).toBeInTheDocument()
     expect(within(back).getByText('1 nap / hét')).toBeInTheDocument()
     // 6 sets toward the MRV target of 22
     expect(within(back).getByText('6')).toBeInTheDocument()
@@ -39,8 +48,6 @@ describe('WeekLoadPanel', () => {
     expect(container.textContent).not.toMatch(/%/)
   })
 
-  // jsdom loads no stylesheet, so the `.mz-lcard-body { display: none }` rule is not in
-  // effect here — assert the state the CSS keys off, not computed visibility.
   test('tapping a card toggles the day-by-day contribution open', async () => {
     const user = userEvent.setup()
     render(<WeekLoadPanel days={WEEK} onBack={vi.fn()} />)
@@ -48,6 +55,7 @@ describe('WeekLoadPanel', () => {
     const toggle = within(shoulder).getByRole('button', { name: 'Váll · lebontás' })
     expect(toggle).toHaveAttribute('aria-expanded', 'false')
     expect(shoulder).not.toHaveClass('open')
+    expect(within(shoulder).queryByText('Oldalemelés +4')).not.toBeInTheDocument()
     await user.click(toggle)
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
     expect(shoulder).toHaveClass('open')
@@ -58,10 +66,10 @@ describe('WeekLoadPanel', () => {
     // "Váll" also labels the shoulder card's pill, so scope the query to the
     // lint line itself rather than the whole document (would otherwise throw
     // on multiple matches).
-    const { container } = render(<WeekLoadPanel days={WEEK} onBack={vi.fn()} />)
-    const lint = container.querySelector('.mz-lint:not(.mz-lint-ok)')!
-    expect(within(lint as HTMLElement).getByText(/Váll/)).toBeInTheDocument()
-    expect(within(lint as HTMLElement).getByText(/pihenőnap ajánlott/i)).toBeInTheDocument()
+    render(<WeekLoadPanel days={WEEK} onBack={vi.fn()} />)
+    const lint = screen.getByTestId('week-conflict')
+    expect(within(lint).getByText(/Váll/)).toBeInTheDocument()
+    expect(within(lint).getByText(/pihenőnap ajánlott/i)).toBeInTheDocument()
   })
 
   test('a conflict-free week says so instead of staying silent', () => {
@@ -71,7 +79,7 @@ describe('WeekLoadPanel', () => {
   })
 
   // mezo-yty6 fix round 1: spec §3 requires the peak-week check after the adjacency lint —
-  // amber when peakWeekFit flags out-of-band days, green .mz-lint-ok otherwise. Fixture is
+  // amber when peakWeekFit flags out-of-band days, a green „elfér” box otherwise. Fixture is
   // peakWeekFit.test.ts's own primary case (same hand-computed 109/29-minute projection).
   test('a peak-week fit issue renders an amber lint row naming the day and the minutes', () => {
     // Exact fixture from peakWeekFit.test.ts's primary case (109/29-minute projection) — the
@@ -108,11 +116,11 @@ describe('WeekLoadPanel', () => {
     const { container } = render(<WeekLoadPanel days={WEEK} priorities={{ back: 'emphasize' }} onBack={vi.fn()} />)
     const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
     const stat = within(back).getByText(/szett a célig$/)
-    expect(stat).toHaveClass('mz-arr-up')
-    expect(stat).not.toHaveClass('mz-arr-dn')
+    expect(stat).toHaveClass('ew-dir-up')
+    expect(stat).not.toHaveClass('ew-dir-dn')
     // the arrow carries the same class, so glyph and sentence can never disagree
-    expect(within(back).getByText('▲')).toHaveClass('mz-arr-up')
-    expect(container.querySelector('.mz-arr-dn')).toBeNull()
+    expect(within(back).getByText('▲')).toHaveClass('ew-dir-up')
+    expect(container.querySelector('.ew-dir-dn')).toBeNull()
   })
 
   test('a group ABOVE its target is the amber one', () => {
@@ -121,8 +129,8 @@ describe('WeekLoadPanel', () => {
     render(<WeekLoadPanel days={heavy} priorities={{ back: 'maintain' }} onBack={vi.fn()} />)
     const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
     const stat = within(back).getByText(/szettel a cél fölött$/)
-    expect(stat).toHaveClass('mz-arr-dn')
-    expect(within(back).getByText('▼')).toHaveClass('mz-arr-dn')
+    expect(stat).toHaveClass('ew-dir-dn')
+    expect(within(back).getByText('▼')).toHaveClass('ew-dir-dn')
   })
 
   test('a group exactly on its target reads neutral', () => {
@@ -138,8 +146,8 @@ describe('WeekLoadPanel', () => {
     )
     const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
     const stat = within(back).getByText('a célon')
-    expect(stat).toHaveClass('mz-arr-eq')
-    expect(within(back).getByText('=')).toHaveClass('mz-arr-eq')
+    expect(stat).toHaveClass('ew-dir-eq')
+    expect(within(back).getByText('=')).toHaveClass('ew-dir-eq')
   })
 
   // mezo-yty6 final review, I4: spec §3 names structureLint as a week-page lint source; it

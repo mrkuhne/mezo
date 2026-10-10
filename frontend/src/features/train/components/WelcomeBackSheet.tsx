@@ -1,16 +1,17 @@
 import { Sheet } from '@/shared/ui/Sheet'
-import { SheetHead } from '@/shared/ui/SheetHead'
-import { Icon3D } from '@/shared/ui/clay'
+import { Acts, Btn, FoSheetHead, Lk, Row, Tubes } from '@/shared/ui/folyadek'
 import type { RecoveryReturn } from '@/data/train/recoveryApi'
 import { returnCopy } from '@/features/train/logic/recovery'
 import { KIMELO } from '@/features/train/logic/skipCopy'
 
 /**
- * „Üdv újra!" (Kímélő mód S2, mezo-q4xt2.2 — prototype elo/edzes.html `udvSheet()`): after
- * „Jobban vagyok" the server has ended the period and applied its return rule; this says what
- * happens next, from the server's own `return` — the calendar line, how the first session(s) are
- * lightened, the first run's half length. „Rendben" closes; the quiet „Mégsem vagyok jól" reopens
- * the period. The prototype's rule tabs („PRÓBÁLD KI") are a demo only and are not built.
+ * „Üdv újra!" (Kímélő mód S2, mezo-q4xt2.2; Folyadék mezo-n4wf5.3 — prototype vilagos/edzes.js
+ * `udvSheet()`): after „Jobban vagyok" the server has ended the period and applied its return rule;
+ * this says what happens next, from the server's own `return`. Three tubes draw the ramp (the first
+ * session at two thirds with ~10% less weight, the second lightened only when the server ramps two
+ * sessions — `rampSessions` —, then the full plan), three rows say it in words: the calendar line,
+ * how the first session(s) are lightened, the first run's half length. „Rendben" closes; the quiet
+ * „Mégsem vagyok jól" reopens the period. Also opened from the Nap hub's kímélő card.
  */
 export function WelcomeBackSheet({ ret, week, showRun = true, busy, onClose, onOk, onUndo }: {
   ret: RecoveryReturn
@@ -26,24 +27,29 @@ export function WelcomeBackSheet({ ret, week, showRun = true, busy, onClose, onO
   onUndo(): void
 }) {
   const c = returnCopy(ret, { week })
+  const two = ret.rampSessions > 1
   return (
-    <Sheet glass onClose={onClose} labelledBy="udv-title" className="trm-udvsheet">
+    <Sheet onClose={onClose} labelledBy="udv-title" className="fo-sheet em-udv">
       {(close) => (
-        <div className="uvl-body">
-          <SheetHead icon="t-sprout" eyebrow="KÍMÉLŐ MÓD VÉGE" title="Üdv újra!" titleId="udv-title"
+        <>
+          <FoSheetHead eyebrow="Kímélő mód vége" title="Üdv újra!" titleId="udv-title"
             sub="Így folytatjuk — a terv magától igazodik." onClose={close} />
-          <div className="trm-udvl">
-            <div className="trm-whynote"><Icon3D name="t-calendar" size={22} /><span><b>{c.headline}</b> · {c.program}</span></div>
-            <div className="trm-whynote"><Icon3D name="t-dumbbell" size={22} /><span>{c.ramp}</span></div>
-            {showRun && <div className="trm-whynote"><Icon3D name="t-run" size={22} /><span>{KIMELO.welcomeRun}</span></div>}
+          <Tubes className="em-ramp" height={104} aria-label="A könnyített visszatérés"
+            items={[
+              { label: '1. edzés', value: '⅔', note: 'kb. −10% súly', pct: 60 },
+              { label: '2. edzés', value: two ? '⅔' : 'teljes', note: two ? 'a régi súly' : 'a terv szerint', pct: two ? 66 : 92 },
+              { label: 'utána', value: 'teljes', note: 'a terv szerint', pct: 92 },
+            ]} />
+          <div className="em-udvl">
+            <Row icon="t-calendar" title={c.headline} sub={c.program} />
+            <Row icon="t-dumbbell" title="Könnyített kezdés" sub={c.ramp} />
+            {showRun && <Row icon="t-run" title="Rövidebb első futás" sub={KIMELO.welcomeRun} />}
           </div>
-          <div className="uvl-foot">
-            <button type="button" className="uvl-ghost" disabled={busy} onClick={onUndo}>Mégsem vagyok jól</button>
-            <button type="button" className="uvl-cta" disabled={busy} onClick={() => { onOk(); close() }}>
-              <Icon3D name="t-tick" size={20} />Rendben
-            </button>
-          </div>
-        </div>
+          <Acts>
+            <Btn grow disabled={busy} onClick={() => { onOk(); close() }}>Rendben</Btn>
+            <Lk disabled={busy} onClick={onUndo}>Mégsem vagyok jól</Lk>
+          </Acts>
+        </>
       )}
     </Sheet>
   )

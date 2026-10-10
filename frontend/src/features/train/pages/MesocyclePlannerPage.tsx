@@ -1,5 +1,6 @@
 // ============================================================
-// Mezo · MesocyclePlannerPage — a mezociklus-varázsló v3 (mezo-yty6):
+// Mezo · MesocyclePlannerPage — a mezociklus-varázsló v3 (mezo-yty6; Folyadék mezo-n4wf5.3,
+// prototype vilagos/edzes.js `ujterv()` → interjú, `ujterv.kesz*` → `weekEd('ujterv')`):
 // EGY kérdező képernyő (InterviewStep) → generálás → a KÖZÖS MesoWeekEditor
 // draft módban. A régi 3 lépés + progress-sáv és a külön ProgramDayView
 // nyugdíjba ment: a sablon-szerkesztés ugyanezt a szerkesztőt nyitja, így
@@ -34,8 +35,7 @@ import {
 } from '@/features/train/wizard/wizardState'
 import { localDateString } from '@/shared/lib/dates'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { CtaGhost, CtaPrimary } from '@/shared/ui/Cta'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
+import { Acts, Box, Btn, Card, Lk, Row, Section } from '@/shared/ui/folyadek'
 
 export function MesocyclePlannerPage() {
   const goBack = useBackNav('/train/mesocycles')
@@ -166,41 +166,47 @@ export function MesocyclePlannerPage() {
           onRemoveExercise={(dayKey, exId) => patchDay(dayKey, (d) =>
             withExercises(d, d.exercises.filter((e) => e.id !== exId)))}
           onAddClick={setPickerDay}
-          footer={
-            <div className="mz-draftfoot">
-              {failed && (
-                <div className="mz-confirm" role="alert">
-                  Nem sikerült az újragenerálás — a korábbi program megmaradt.
-                  <div className="mz-confirm-acts">
-                    <button type="button" className="mz-minighost" onClick={() => void runGenerate(state)}>Újra</button>
-                    <button type="button" className="mz-minighost" onClick={() => setFailed(false)}>Mégse</button>
+          actions={(
+            <>
+              <Btn onClick={() => void save(true)} disabled={saving}>✓ Mentés + indítás</Btn>
+              <Lk onClick={() => void save(false)} disabled={saving}>Mentés sablonként</Lk>
+            </>
+          )}
+          footer={(
+            <>
+              <Section n={3} title="Újragenerálás" />
+              <Card>
+                {failed && (
+                  <div className="ew-alert" role="alert">
+                    <Box icon="t-info" color="var(--fo-warn)" title="Nem sikerült az újragenerálás — a korábbi program megmaradt.">
+                      <Acts>
+                        <Lk onClick={() => void runGenerate(state)}>Újra</Lk>
+                        <Lk onClick={() => setFailed(false)}>Mégse</Lk>
+                      </Acts>
+                    </Box>
                   </div>
-                </div>
-              )}
-              {confirming && (
-                <div className="mz-confirm">
-                  Kézzel szerkesztett napjaid vannak — az újragenerálás felülírja őket.
-                  <div className="mz-confirm-acts">
-                    <button
-                      type="button"
-                      className="mz-minighost"
-                      onClick={() => { setConfirming(false); void runGenerate(state) }}
-                    >
-                      Újragenerálás
-                    </button>
-                    <button type="button" className="mz-minighost" onClick={() => setConfirming(false)}>Mégse</button>
+                )}
+                {confirming && (
+                  <div className="ew-alert">
+                    <Box icon="t-info" color="var(--fo-warn)" title="Kézzel szerkesztett napjaid vannak — az újragenerálás felülírja őket.">
+                      <Acts>
+                        <Lk onClick={() => { setConfirming(false); void runGenerate(state) }}>Újragenerálás</Lk>
+                        <Lk onClick={() => setConfirming(false)}>Mégse</Lk>
+                      </Acts>
+                    </Box>
                   </div>
-                </div>
-              )}
-              <div className="mz-draftfoot-row">
-                <CtaPrimary onClick={() => void save(true)} disabled={saving}>✓ Mentés + indítás</CtaPrimary>
-                <CtaGhost onClick={() => void save(false)} disabled={saving}>Mentés sablonként</CtaGhost>
-                <button type="button" className="mz-minighost" disabled={generating} onClick={regenerate}>
-                  ↺ Újragenerálás
-                </button>
-              </div>
-            </div>
-          }
+                )}
+                <Row
+                  icon="t-repeat"
+                  title="↺ Újragenerálás"
+                  sub="Új programot kérsz ugyanazokkal a válaszokkal"
+                  aria-label="↺ Újragenerálás"
+                  aria-disabled={generating || undefined}
+                  onClick={() => { if (!generating) regenerate() }}
+                />
+              </Card>
+            </>
+          )}
         />
         {open && (
           <ExercisePickerSheet
@@ -215,28 +221,13 @@ export function MesocyclePlannerPage() {
   }
 
   return (
-    <MozaikPage tone="gold">
-      <PageHead glass onBack={goBack} label="Mezociklus">
-        <span className="mz-stepct">Új blokk · interjú</span>
-      </PageHead>
-      <PageBody className="tv-wizard">
-        {failed && (
-          <div className="mz-confirm" role="alert">
-            Nem sikerült a generálás — próbáld újra.
-            <div className="mz-confirm-acts">
-              <button type="button" className="mz-minighost" onClick={() => void runGenerate(state)}>
-                ↺ Újrapróbálom
-              </button>
-            </div>
-          </div>
-        )}
-        <InterviewStep
-          state={state}
-          dispatch={dispatch}
-          generating={generating}
-          onGenerate={() => void runGenerate(state)}
-        />
-      </PageBody>
-    </MozaikPage>
+    <InterviewStep
+      state={state}
+      dispatch={dispatch}
+      generating={generating}
+      failed={failed}
+      onBack={goBack}
+      onGenerate={() => void runGenerate(state)}
+    />
   )
 }

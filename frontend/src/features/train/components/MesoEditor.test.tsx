@@ -17,7 +17,7 @@ const props = { onAddClick: noop, onRemove: noop, onChange: noop, onReorder: noo
 describe('MesoEditor', () => {
   it('renders hero with active-day sets and week totals', () => {
     render(<MesoEditor days={days} {...props} />)
-    expect(screen.getByText('12')).toBeInTheDocument()          // active day H: 6+6
+    expect(screen.getByText('12 szett ma, 2 gyakorlat.')).toBeInTheDocument() // active day H: 6+6
     expect(screen.getByText(/25 szett/)).toBeInTheDocument()    // week: 12+13
   })
   it('flags warnings: chest 12 failure sets = 100% (near, not over); H chest 12 sets and Cs back 13 sets both break the session cap', () => {
@@ -45,8 +45,8 @@ describe('MesoEditor', () => {
   it('renders the active day breakdown card (H chest 12/8) and highlights its over rows', () => {
     render(<MesoEditor days={days} {...props} />)
     expect(screen.getByText(/12 \/ 8/)).toBeInTheDocument()
-    const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.card')
-    const rowB = screen.getByRole('button', { name: /Gyak b · szerkesztés/ }).closest('.card')
+    const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.ee-ex')
+    const rowB = screen.getByRole('button', { name: /Gyak b · szerkesztés/ }).closest('.ee-ex')
     expect(rowA).toHaveAttribute('data-over', 'true')
     expect(rowB).toHaveAttribute('data-over', 'true')
   })
@@ -63,8 +63,8 @@ describe('MesoEditor', () => {
       },
     ]
     render(<MesoEditor days={exemptDays} {...props} />)
-    const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.card')
-    const rowX = screen.getByRole('button', { name: /Gyak x · szerkesztés/ }).closest('.card')
+    const rowA = screen.getByRole('button', { name: /Gyak a · szerkesztés/ }).closest('.ee-ex')
+    const rowX = screen.getByRole('button', { name: /Gyak x · szerkesztés/ }).closest('.ee-ex')
     expect(rowA).toHaveAttribute('data-over', 'true') // counted exercise in the over group — still flagged
     expect(rowX).not.toHaveAttribute('data-over') // exempt exercise — never flagged, even in an over group
   })
@@ -74,7 +74,7 @@ describe('MesoEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: /^Cs ·/ }))
     expect(screen.getByText(/13 \/ 8/)).toBeInTheDocument()
     expect(screen.getByText(/\(pl\. H\)/)).toBeInTheDocument()
-    const rowC = screen.getByRole('button', { name: /Gyak c · szerkesztés/ }).closest('.card')
+    const rowC = screen.getByRole('button', { name: /Gyak c · szerkesztés/ }).closest('.ee-ex')
     expect(rowC).toHaveAttribute('data-over', 'true')
   })
 
@@ -82,7 +82,7 @@ describe('MesoEditor', () => {
     render(<MesoEditor days={days} {...props} />)
     fireEvent.click(screen.getByRole('button', { name: /^K ·/ }))
     // "Ma · izmonként" is DayBreakdownCard's own eyebrow — scoped so it doesn't collide
-    // with the week-level WeeklyBandsCard's "Heti szetek · izmonként", which stays
+    // with the week-level WeeklyBandsCard's „Heti szettek · izmonként", which stays
     // mounted regardless of the active day.
     expect(screen.queryByText(/Ma · izmonként/)).not.toBeInTheDocument()
   })
@@ -132,7 +132,7 @@ describe('MesoEditor', () => {
     expect(screen.getByText(/25 szett/)).toBeInTheDocument()
     expect(screen.getByText(/2 edzésnap/)).toBeInTheDocument()
     // bands: back is on Cs only — with a Monday-only week it would not appear at all
-    const bands = screen.getByRole('group', { name: 'Heti szetek · izmonként' })
+    const bands = screen.getByRole('group', { name: 'Heti szettek · izmonként' })
     expect(within(bands).getByText('Hát')).toBeInTheDocument()
     expect(within(bands).getByText(/^13 →/)).toBeInTheDocument()
     // a single edited day has no tab strip at all — a lone tab switches nothing (mezo-d20.15)
@@ -171,5 +171,48 @@ describe('MesoEditor', () => {
     )
     expect(screen.getByRole('button', { name: /Csúcshét/i })).toBeInTheDocument()
     expect(screen.getByText('2 nap')).toBeInTheDocument()
+  })
+
+  // Folyadék (mezo-n4wf5.3, prototype `napszerk()`): hero → numbered sections, in this order.
+  it('lays the day out as the hero and four numbered sections', () => {
+    const { container } = render(<MesoEditor days={days} {...props} />)
+    const heads = Array.from(container.querySelectorAll('h2.fo-sec')).map((h) => h.textContent)
+    expect(heads).toEqual(['1Sorrend és előírás', '2Ma · izmonként', '3Heti szettek · izmonként', '4Ellenőrzés'])
+    expect(container.querySelector('.fo-hero .fo-pour')).not.toBeNull()
+    expect(screen.getByText(/Minden változás azonnal mentődik/)).toBeInTheDocument()
+    // the old skin is gone from the editor
+    expect(container.querySelector('.card, .glass, .mz-card, .mz-eyebrow')).toBeNull()
+  })
+
+  it('the hero names the day in full and its type', () => {
+    const one: MesoDay[] = [{ ...days[0], day: 'Csü', type: 'Pull' }]
+    render(<MesoEditor days={one} {...props} />)
+    expect(screen.getByText('Csütörtök · Pull · a nap szerkesztése')).toBeInTheDocument()
+  })
+
+  it('a rest day is the hero alone: no sections, no add button', () => {
+    const { container } = render(<MesoEditor days={days} {...props} />)
+    fireEvent.click(screen.getByRole('button', { name: /^K ·/ }))
+    expect(screen.getByText('Ez pihenőnap.')).toBeInTheDocument()
+    expect(container.querySelectorAll('h2.fo-sec')).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /Gyakorlat hozzáadása/ })).not.toBeInTheDocument()
+  })
+
+  it('a day without exercises says so and keeps its add button; the section numbers close up', () => {
+    const empty: MesoDay = { day: 'H', type: 'Push A', muscle: 'chest', exerciseCount: 0, exercises: [], current: true }
+    const { container } = render(<MesoEditor days={[empty]} weekDays={[empty, days[2]]} {...props} />)
+    expect(screen.getByText('Ezen a napon még nincs gyakorlat.')).toBeInTheDocument()
+    expect(screen.getByText('üres — ide töltődnek a gyakorlatok')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ })).toBeInTheDocument()
+    // no „Ma · izmonként" without sets today — the week and the checks move up
+    const heads = Array.from(container.querySelectorAll('h2.fo-sec')).map((h) => h.textContent)
+    expect(heads).toEqual(['1Sorrend és előírás', '2Heti szettek · izmonként', '3Ellenőrzés'])
+  })
+
+  it('the day pills mark a day that breaks the session cap; the two checks share one card', () => {
+    const { container } = render(<MesoEditor days={days} {...props} />)
+    expect(screen.getByRole('button', { name: 'H · Push A · terhelés-jelzés' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'K · Pihenő' })).toHaveAttribute('aria-pressed', 'false')
+    expect(container.querySelector('.ee-checks')).toContainElement(screen.getByRole('button', { name: /Struktúra/i }))
   })
 })

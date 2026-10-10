@@ -7,9 +7,9 @@ const EX = [
   { id: 'e2', name: 'Evezés rúddal', sets: 2 },
 ]
 
-test('pill label „VISSZATÉRŐ EDZÉS · k/N"', () => {
-  expect(comebackPillLabel({ index: 1, total: 2 })).toBe('VISSZATÉRŐ EDZÉS · 1/2')
-  expect(comebackPillLabel({ index: 2, total: 2 })).toBe('VISSZATÉRŐ EDZÉS · 2/2')
+test('state line „Visszatérő edzés · k/N"', () => {
+  expect(comebackPillLabel({ index: 1, total: 2 })).toBe('Visszatérő edzés · 1/2')
+  expect(comebackPillLabel({ index: 2, total: 2 })).toBe('Visszatérő edzés · 2/2')
 })
 
 test('index 1: fewer sets and ~10% less weight; index 2: fewer sets, the weight does not rise', () => {
@@ -20,9 +20,12 @@ test('index 1: fewer sets and ~10% less weight; index 2: fewer sets, the weight 
 test('the note: t-sprout, the line, the served set counts, Kikapcsolom a könnyítést', () => {
   const onWaive = vi.fn()
   const { container } = render(<ComebackPill comeback={{ index: 1, total: 2, mode: 'RAMP' }} exercises={EX} onWaive={onWaive} />)
-  expect(container.querySelector('.trm-cbnote use')?.getAttribute('href')).toBe('#t-sprout')
+  expect(container.querySelector('.fo-box.em-cbnote use')?.getAttribute('href')).toBe('#t-sprout')
   expect(screen.getByText('Könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly')).toBeInTheDocument()
-  expect([...container.querySelectorAll('.trm-cbsets > div')].map((d) => d.textContent)).toEqual(['Húzódzkodás3 szett', 'Evezés rúddal2 szett'])
+  expect([...container.querySelectorAll('.em-cbsets > div')].map((d) => d.textContent)).toEqual(['Húzódzkodás 3 szett', 'Evezés rúddal 2 szett'])
+  // the served sets as empty capsules (still to do) — never the original count
+  expect([...container.querySelectorAll('.em-cbsets > div')].map((d) => d.querySelectorAll('.fo-caps i').length)).toEqual([3, 2])
+  expect(container.querySelector('.em-cbsets .fo-caps i.f')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Kikapcsolom a könnyítést' }))
   expect(onWaive).toHaveBeenCalled()
   expect(screen.queryByRole('button', { name: 'Mégsem vagyok jól' })).toBeNull()

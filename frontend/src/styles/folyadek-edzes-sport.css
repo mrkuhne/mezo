@@ -1,2 +1,97 @@
 /* ── Folyadék · Edzés · sport (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.es-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── page frame ── */
+/* the page's own back pill, drawn only where no title bar is mounted (a page rendered alone) */
+.es-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; color: var(--fo-ink); background: #fff; box-shadow: 0 6px 14px -8px rgba(10, 42, 60, .4); }
+.es-back:focus-visible, .es-spg button:focus-visible, .es-pyr button:focus-visible, .es-wks .pm:focus-visible, .es-numin:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+/* the title row of the chrome-free log flow (`/train/sport/log`): the title bar's sub-page row, drawn by the page */
+.es-top { padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; color: var(--fo-ink); font-family: var(--ff-body); }
+
+.es-top .fo-ib::after { content: ''; position: absolute; inset: -1px; }
+
+/* ── hero graphics (prototype `.vs-hg`) ── */
+.es-hg { margin-top: 14px; }
+
+/* ── list blocks inside a card or a sheet ── */
+/* a group of rows standing after other content (prototype `<div class="vl" style="margin-top:12px">`) */
+.es-vl { margin-top: 12px; }
+.es-vl.es-vl-gap { margin-top: 14px; }
+.es-vl.es-vl-flush, .fo-card > .es-vl:first-child { margin-top: 0; }
+/* a labelled block: label + its control (prototype `blk`) */
+.es-blk > .fo-scale { margin-top: 0; }
+/* one logged session / one prescribed session: a row and what hangs under it (prototype `.vs-log`) */
+.es-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
+.es-log:first-child { border-top: 0; padding-top: 0; }
+.es-log .fo-tags { margin-top: 8px; }
+.es-log + .fo-note { margin-top: 0; }
+/* two labelled levels under a logged session (prototype `.vs-l2`) */
+.es-l2 { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; margin-top: 8px; font-size: 12.5px; color: var(--fo-sub); }
+/* the athlete's own note under a session (prototype `.vs-xl`) */
+.es-xl { font-size: 12.5px; color: var(--fo-sub); margin-top: 8px; line-height: 1.4; }
+/* a quoted line / summary inside a row's sub (prototype `.vs-q`) */
+.es-q { display: block; margin-top: 5px; color: var(--fo-sub); }
+/* the quiet "not yet" state on the right of a future session (prototype `.vs-later`) */
+.es-later { font-size: 13px; font-weight: 600; color: var(--fo-faint); white-space: nowrap; flex: 0 0 auto; }
+.es-rowbar { margin-top: 7px; }
+.es-page .fo-row strong .fo-st { vertical-align: 1px; }
+.es-day abbr { text-decoration: none; }
+.es-danger strong { color: var(--fo-bad); }
+
+/* ── the interval tube (prototype `.vs-ivl`): a session as one vessel, the level follows the pace ── */
+.es-ivl { display: flex; align-items: flex-end; gap: 2px; height: 40px; margin: 10px 0 2px; padding: 5px 8px 0; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .07); }
+.es-ivl i { display: block; height: var(--h); min-width: 2px; border-radius: 5px 5px 0 0; background: color-mix(in srgb, var(--dom) 24%, #fff); }
+.es-ivl i.s { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.es-ivl i.w { background: color-mix(in srgb, var(--dom) 46%, #fff); }
+
+/* ── stepper rows with a typeable value (the kit's `.fo-stp` with an input for its number) ── */
+.es-numin { width: 46px; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: none; text-align: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 34px; color: var(--fo-ink); -moz-appearance: textfield; appearance: textfield; }
+.es-numin::-webkit-outer-spin-button, .es-numin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── sport log flow (prototype `.vs-spg`, `.vs-form`) ── */
+.es-spg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 8px; }
+.es-spg button { display: flex; flex-direction: column; align-items: center; gap: 8px; min-height: 44px; padding: 0; border: 0; background: none; cursor: pointer; font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; text-align: center; line-height: 1.2; color: var(--fo-ink); }
+.es-spg button span small { display: block; font-size: 11px; font-weight: 500; color: var(--fo-sub); margin-top: 2px; }
+.es-modes.fo-seg { margin: 14px 0 0; }
+.es-form .es-fl { margin-top: 14px; }
+.es-form > .es-fl:first-child, .es-form > .es-blk:first-child .fo-lab { margin-top: 0; }
+.es-sportart { display: grid; }
+
+/* ── running-plan editor (prototype `.vs-wks`, the pyramid tags) ── */
+.es-wks { gap: 5px; }
+.es-wks .fo-pill { min-width: 30px; padding: 7px 0; justify-content: center; }
+.es-wks .fo-pill.pm { background: none; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .14); color: var(--fo-sub); position: relative; }
+.es-pyr { margin-top: 0; }
+.es-pyr span.tx button { position: relative; padding: 0; border: 0; background: none; cursor: pointer; font: inherit; color: inherit; }
+.es-pyr span.tx { padding: 0; }
+.es-pyr span.tx button { padding: 5px 4px 5px 11px; }
+.es-pyr span.tx button + button, .es-pyr span.tx.add button { padding: 5px 11px 5px 7px; }
+.es-pyr span.tx.add button { padding-left: 11px; }
+/* the tag is 26px tall and its two buttons share it: each gets the full 44px height, the width is its own part of the tag */
+.es-pyr span.tx button::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.es-pyr span.tx.add { background: none; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .14); color: var(--fo-sub); }
+.es-ses > .fo-pills + .fo-lab, .fo-card.es-ses > .fo-lab:first-child { margin-top: 14px; }
+
+/* ── schedule sheets (no prototype route — the sheet language of `SHEETS.sportev`) ── */
+.es-days { display: flex; flex-direction: column; }
+.es-dayed { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
+.es-dayed:first-child { border-top: 0; padding-top: 0; }
+.es-dayed-h { display: flex; align-items: center; gap: 10px; }
+.es-dayed-h strong { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 600; }
+.es-dayed:not(.has) .es-dayed-h strong { color: var(--fo-sub); font-weight: 500; }
+.es-slot { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; padding: 12px; border-radius: 20px; background: var(--fo-page); }
+.es-slot-top, .es-slot-when { display: flex; align-items: center; gap: 10px; }
+.es-slot-top .fo-pills, .es-slot-when .fo-pills { flex: 1; min-width: 0; }
+.es-slot .fo-pill { background: #fff; }
+.es-slot .fo-pill.on { background: linear-gradient(135deg, var(--liq1), var(--liq2)); }
+.es-slot-when .fo-in { width: auto; flex: 0 0 auto; }
+.es-slot .fo-stp button { background: #fff; }
+.es-gymday .fo-in { width: auto; flex: 0 0 auto; min-height: 44px; padding: 9px 12px; }
+.es-gymday:not(.is-set) strong { color: var(--fo-sub); font-weight: 500; }
+label.es-gymday { cursor: pointer; }
+
+@media (max-width: 360px) {
+  .es-spg { gap: 12px 4px; }
+  .es-numin { width: 38px; }
+  .es-slot { padding: 10px; }
+}

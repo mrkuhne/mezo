@@ -1,79 +1,60 @@
 // ============================================================
-// Mezo · MesoEditorHero — top hero card of the unified meso day editor
-// (mezo-7rdg, spec 2026-08-01-set-budget-unified-editor, composite-v2
-// mockup). Wash→surface gradient + radial glow precedent from the
-// Mozaik poster cards; flips to the amber wash + error status line when the
-// day carries set-budget warnings (warningCount > 0).
+// Mezo · MesoEditorHero — the hero of the day editor (mezo-7rdg; Folyadék mezo-n4wf5.3,
+// prototype vilagos/edzes.js `napszerk()` hero).
+// The day poured into one vessel: every exercise is a layer as wide as its working sets, in
+// its muscle's colour, with the key under it. The verdict is the day's set and exercise count;
+// the support line carries the time estimate and the week totals; a tag says whether any
+// muscle breaks the per-session cap this week (`warningCount`). The liquid row adds an exercise.
+// `off` = a rest day: an empty vessel and the (inert, as before) „Edzéssé alakít".
 // ============================================================
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Icon3D } from '@/shared/ui/clay'
+import type { ReactNode } from 'react'
+import { deepMuscle } from '@/features/train/components/folyadek'
+import { Btn, Bub, EmptyTank, Hero, Legend, Pour } from '@/shared/ui/folyadek'
 
 interface MesoEditorHeroProps {
-  dayType: string
+  /** The eyebrow: „Csütörtök · Pull · a nap szerkesztése". */
+  label?: ReactNode
+  /** The day's exercises, in order — the layers of the vessel. */
+  exercises?: { name: string; muscle: string; workingSets: number }[]
   daySets: number
   dayExerciseCount: number
   dayMinutes: number
   weekSets: number
   trainingDays: number
   warningCount: number
+  onAdd?: () => void
+  off?: boolean
+  offNote?: string
 }
 
-export function MesoEditorHero({ dayType, daySets, dayExerciseCount, dayMinutes, weekSets, trainingDays, warningCount }: MesoEditorHeroProps) {
+export function MesoEditorHero({
+  label, exercises = [], daySets, dayExerciseCount, dayMinutes, weekSets, trainingDays, warningCount, onAdd, off, offNote,
+}: MesoEditorHeroProps) {
+  if (off) {
+    return (
+      <Hero className="ee-hero" label={label} verdict="Ez pihenőnap." sub="Ezen a napon nincs gyakorlat a tervben."
+        actions={<Btn>＋ Edzéssé alakít</Btn>}>
+        <EmptyTank icon="t-moon">{offNote || 'Pihenőnap'}</EmptyTank>
+      </Hero>
+    )
+  }
   const hasWarnings = warningCount > 0
-
   return (
-    <div
-      className="card"
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        padding: 20,
-        background: `linear-gradient(180deg, ${hasWarnings ? 'var(--wash-amber)' : 'var(--wash-gym)'} 0%, var(--surface-1) 100%)`,
-      }}
-    >
-      <span
-        style={{
-          position: 'absolute',
-          right: -50,
-          top: -50,
-          width: 180,
-          height: 180,
-          borderRadius: '50%',
-          background: `radial-gradient(circle, color-mix(in srgb, ${hasWarnings ? 'var(--error)' : 'var(--coral)'} 18%, transparent), transparent 70%)`,
-        }}
-      />
-
-      <div style={{ position: 'relative' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Eyebrow brand>{dayType}</Eyebrow>
-          <span className="label-mono">{dayExerciseCount} gyakorlat{dayMinutes > 0 ? ` · ~${dayMinutes} perc` : ''}</span>
-        </div>
-
-        <div className="row" style={{ alignItems: 'baseline', gap: 8, marginTop: 6 }}>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 40, fontWeight: 800, lineHeight: 1 }}>{daySets}</span>
-          <span className="text-secondary">szett ma</span>
-        </div>
-
-        <div
-          className="row"
-          style={{
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginTop: 14,
-            paddingTop: 14,
-            borderTop: '1px solid var(--border-subtle)',
-          }}
-        >
-          <span className="text-secondary" style={{ fontSize: 12 }}>
-            Heti terhelés: <strong>{weekSets} szett</strong> · {trainingDays} edzésnap
-          </span>
-          {hasWarnings ? (
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--error)' }}><Icon3D name="t-info" size={16} className="uv-inline" />{warningCount} jelzés</span>
-          ) : (
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--sage-deep)' }}><Icon3D name="t-tick" size={16} className="uv-inline" />kereten belül</span>
-          )}
-        </div>
+    <Hero className="ee-hero" label={label}
+      verdict={`${daySets} szett ma, ${dayExerciseCount} gyakorlat.`}
+      sub={`${dayMinutes > 0 ? `~${dayMinutes} perc · ` : ''}Heti terhelés: ${weekSets} szett · ${trainingDays} edzésnap`}
+      actions={<Btn onClick={onAdd}>＋ Gyakorlat hozzáadása</Btn>}>
+      <Pour aria-label={exercises.length ? `${daySets} szett, ${dayExerciseCount} gyakorlat` : undefined}
+        parts={exercises.map((e) => ({ n: e.workingSets, color: deepMuscle(e.muscle) }))}
+        empty="üres — ide töltődnek a gyakorlatok" />
+      {exercises.length > 0 && (
+        <Legend items={exercises.map((e) => ({ color: deepMuscle(e.muscle), label: <>{e.name.split(' ')[0]} <b>{e.workingSets}</b></> }))} />
+      )}
+      <div className="fo-tags">
+        {hasWarnings
+          ? <span className="ic"><Bub icon="t-info" size={28} color="var(--fo-warn)" />{warningCount} jelzés</span>
+          : <span className="ic"><Bub icon="t-tick" size={28} color="var(--fo-ok)" />kereten belül</span>}
       </div>
-    </div>
+    </Hero>
   )
 }

@@ -50,10 +50,48 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
   it('puts the two adherence figures side by side', () => {
     renderAt(BOTH)
     const adh = screen.getByTestId('meso-compare-adherence')
-    expect(within(adh).getByText('88%')).toBeInTheDocument()
-    expect(within(adh).getByText('79%')).toBeInTheDocument()
-    expect(within(adh).getByText('21/24 edzés')).toBeInTheDocument()
-    expect(within(adh).getByText('19/24 edzés')).toBeInTheDocument()
+    // two vessels in the hero: A in the domain liquid, B in blue, each filled to its share
+    const tubes = [...adh.querySelectorAll<HTMLElement>('.fo-vial')]
+    expect(tubes).toHaveLength(2)
+    expect(tubes.map((t) => t.querySelector('b')!.textContent)).toEqual(['88%', '79%'])
+    expect(tubes[0].querySelector('small')!.textContent).toBe('A · Recovery rebuild · Tél21/24 edzés · 8/8 hét')
+    expect(tubes[1].querySelector('small')!.textContent).toBe('B · Hypertrophy 03 · Ősz19/24 edzés · 6/6 hét')
+    expect((tubes[0].querySelector('.fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe(`${88 * 0.94}%`)
+    expect(tubes[0].style.getPropertyValue('--c')).toBe('var(--dom)')
+    expect(tubes[1].style.getPropertyValue('--c')).toBe('#1877F2')
+  })
+
+  it('the hero says which run got more of its plan done, and both reports open from it', async () => {
+    const user = userEvent.setup()
+    const { container } = renderAt(BOTH)
+    expect(screen.getByText('A Recovery rebuild · Tél futamból csináltál meg többet: 88% a 79% mellett.')).toHaveClass('fo-hero-verdict')
+    expect(screen.getByText('A betervezett edzések mekkora részét csináltad meg.')).toBeInTheDocument()
+    const acts = container.querySelector('.fo-hero-acts') as HTMLElement
+    expect(within(acts).getByRole('button', { name: 'A riportja' })).toBeInTheDocument()
+    await user.click(within(acts).getByRole('button', { name: 'B riportja' }))
+    expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles/meso-hyp-03/report')
+  })
+
+  it('a vessel is a door to its own report too', async () => {
+    const user = userEvent.setup()
+    renderAt(BOTH)
+    await user.click(screen.getByRole('button', { name: /^A · Recovery rebuild · Tél: 88%/ }))
+    expect(screen.getByTestId('loc').textContent).toBe('/train/mesocycles/meso-rec-03/report')
+  })
+
+  it('folyadék: hero → four numbered cards, the better side green, no old skin', () => {
+    const { container } = renderAt(BOTH)
+    expect([...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual([
+      '1Fókusz-különbség', '2Csúcs-volumen · szett/hét', '3Közös gyakorlatok · 3', '4Kontextus-átlagok',
+    ])
+    for (const b of screen.getAllByTestId('compare-better')) expect(b).toHaveClass('win')
+    expect(container.querySelector('.glass, .card, .chip, .mz-play, [class*="tv-cmp"]')).toBeNull()
+    expect(container.querySelector('[style*="overflow"]')).toBeNull()
+    // the peak table heads its third column in plain words
+    expect(within(screen.getByTestId('meso-compare-peak-volume')).getAllByRole('columnheader').map((h) => h.textContent))
+      .toEqual(['Izom', 'A csúcs', 'A felső érték', 'B csúcs'])
+    expect(screen.getByText(/A jobbik oldal zölddel áll\./)).toBeInTheDocument()
+    expect(screen.getByText(/Ahol nincs adat, „–” áll, sosem 0\./)).toBeInTheDocument()
   })
 
   it('tables each muscle\'s peak planned week against A\'s own MRV ceiling, "–" where a side never trained it', () => {
@@ -85,6 +123,10 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     // the side label and the (absent) legacy chip.
     expect(within(rows[0]).queryByTestId('focus-chip')).toBeNull()
     expect(within(rows[1]).queryByTestId('focus-chip')).toBeNull()
+    // …and each side says the silent default in words
+    expect(rows[0]).toHaveTextContent('AMinden izom Építés')
+    expect(rows[1]).toHaveTextContent('BMinden izom Építés')
+    expect(within(focus).getByText(/★ = hangsúlyos izom · szaggatott = csak szinten tartott/)).toBeInTheDocument()
   })
 
   it('lists ONLY the shared exercises, loudest first, and highlights the better side', () => {
@@ -147,6 +189,10 @@ describe('MesoComparePage (mock mode · the two fixture reports)', () => {
     renderAt('?a=meso-rec-03&b=meso-maint-01')
 
     expect(screen.getByText('Előbb generálj riportot')).toBeInTheDocument()
+    expect(screen.getByText('Az egyik futamnak még nincs riportja.')).toHaveClass('fo-hero-verdict')
+    expect(screen.getByText('A másik futam közben a helyén marad.')).toBeInTheDocument()
+    // the ready side keeps its identity in its own column
+    expect(within(screen.getByTestId('meso-compare-header')).getByText('Recovery rebuild · Tél')).toBeInTheDocument()
     // the ready side is not thrown away — the compare body simply waits
     expect(screen.queryByTestId('meso-compare-strength')).toBeNull()
 
@@ -217,5 +263,42 @@ describe('MesoComparePage (real mode · one legacy run, one current)', () => {
     expect(within(rows[0]).getByTestId('focus-chip')).toHaveTextContent('Hát ★')
     expect(within(rows[1]).queryByTestId('focus-legacy-chip')).toBeNull()
     expect(within(rows[1]).getByTestId('focus-chip')).toHaveTextContent('Mell')
+    // a muscle only maintained wears the dashed tag, a muscle in focus the bold ★ one
+    expect(within(rows[1]).getByTestId('focus-chip')).toHaveClass('add')
+    expect(within(rows[0]).getByTestId('focus-chip').tagName).toBe('B')
+    // both runs did 83 % — the verdict says so instead of naming a winner
+    expect(screen.getByText('A két futamból ugyanannyit csináltál meg: 83%.')).toHaveClass('fo-hero-verdict')
+    // no volume, no context in these reports → those two cards are absent and the numbering closes up
+    expect([...document.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual(['1Fókusz-különbség', '2Közös gyakorlatok · 0'])
+    expect(screen.getByText('A két futamban nincs közös gyakorlat — nincs mit egymás mellé tenni.')).toBeInTheDocument()
+  })
+
+  it('a report that fails to load is a per-column state with a retry; the other column stays', async () => {
+    let fail = true
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([legacyMeso, currentMeso])),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/report`, ({ params }) => {
+        if (params.id === legacyMeso.id && fail) return new HttpResponse(null, { status: 500 })
+        const meso = [legacyMeso, currentMeso].find((m) => m.id === params.id)
+        return meso ? HttpResponse.json(reportFor(meso)) : new HttpResponse(null, { status: 404 })
+      }),
+    )
+    const user = userEvent.setup()
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={[`/train/mesocycles/compare?a=${legacyMeso.id}&b=${currentMeso.id}`]}>
+          <Routes>
+            <Route path="train/mesocycles/compare" element={<MesoComparePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    expect(await screen.findByText('Az egyik riportot nem sikerült betölteni.', undefined, { timeout: 4000 })).toHaveClass('fo-hero-verdict')
+    const head = screen.getByTestId('meso-compare-header')
+    expect(within(head).getByText('Nem sikerült betölteni.')).toBeInTheDocument()
+    expect(within(head).getByText('Current blokk')).toBeInTheDocument()
+    fail = false
+    await user.click(within(head).getByRole('button', { name: 'Újrapróbálás' }))
+    expect(await screen.findByTestId('meso-compare-focus')).toBeInTheDocument()
   })
 })

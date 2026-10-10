@@ -1,8 +1,8 @@
 // ============================================================
 // Mezo · MesoExercises — the run's exercise editor. Seeds LOCAL day-state from
 // meso.days (deep-ish copy so edits never mutate the module const), renders the
-// shared unified MesoEditor (gradient hero, the collapsible weekly set-budget
-// card, and the accordion exercise rows). Add/remove/change/reorder all mutate
+// shared MesoEditor (Folyadék mezo-n4wf5.3: the poured-day hero, the sortable accordion rows,
+// the day and week breakdowns, the two checks). Add/remove/change/reorder all mutate
 // the local state only (Phase-1 UI) and fire a background full-list PUT when the
 // day carries a real row id. The exercise picker (ExercisePickerSheet) opens for
 // the active day and appends to that day's list.
@@ -20,7 +20,7 @@
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Card, EmptyTank } from '@/shared/ui/folyadek'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import type { SessionTimingProfile } from '@/features/train/logic/sessionLength'
@@ -68,9 +68,7 @@ export function MesoExercises({ meso, day, autoAdd, timingProfile, timingProfile
   // Planned / archived mesos have no day plan yet.
   if (!meso.days || meso.days.length === 0) {
     return (
-      <div style={{ padding: '12px 24px' }}>
-        <Eyebrow>Heti gyakorlat-terv csak aktív mesocikluson érhető el.</Eyebrow>
-      </div>
+      <Card><EmptyTank icon="t-calendar">A heti gyakorlat-terv csak futó edzésterven érhető el.</EmptyTank></Card>
     )
   }
 
@@ -119,21 +117,19 @@ export function MesoExercises({ meso, day, autoAdd, timingProfile, timingProfile
   if (day && edited.length === 0) return null
 
   return (
-    <div className="col">
-      <div style={{ padding: '12px 24px' }}>
-        <MesoEditor
-          days={edited}
-          weekDays={day ? days : undefined}
-          onAddClick={setPickerDay}
-          onRemove={removeExercise}
-          onChange={updateExercise}
-          onReorder={reorderExercises}
-          priorities={priorities}
-          volumePerMuscle={meso.volumePerMuscle ?? undefined}
-          timingProfile={timingProfile}
-          timingProfilePending={timingProfilePending}
-        />
-      </div>
+    <>
+      <MesoEditor
+        days={edited}
+        weekDays={day ? days : undefined}
+        onAddClick={setPickerDay}
+        onRemove={removeExercise}
+        onChange={updateExercise}
+        onReorder={reorderExercises}
+        priorities={priorities}
+        volumePerMuscle={meso.volumePerMuscle ?? undefined}
+        timingProfile={timingProfile}
+        timingProfilePending={timingProfilePending}
+      />
 
       {pickerDay && (
         <ExercisePickerSheet
@@ -145,6 +141,6 @@ export function MesoExercises({ meso, day, autoAdd, timingProfile, timingProfile
           onPick={(item) => addExercise(pickerDay, item)}
         />
       )}
-    </div>
+    </>
   )
 }

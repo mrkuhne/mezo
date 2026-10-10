@@ -35,6 +35,17 @@ function setup(overrides: Partial<Parameters<typeof ExerciseCard>[0]> = {}) {
 }
 
 describe('ExerciseCard', () => {
+  // Folyadék (mezo-n4wf5.3): the muscle chip stands in front of the name; the clay weight
+  // glyph and the flame / sprout icons of the old card are gone.
+  test('wears the muscle chip and the muscle name, no old icon', () => {
+    const { container } = render(
+      <ExerciseCard ex={EX} contribution={[]} canMoveUp canMoveDown onChange={vi.fn()} onMove={vi.fn()} onRemove={vi.fn()} />,
+    )
+    expect(container.querySelector('.ew-ex .eh .ex-mchp')).not.toBeNull()
+    expect(screen.getByText('Döntött evezés')).toBeInTheDocument()
+    expect(container.querySelector('use[href="#t-flame"], use[href="#t-sprout"], use[href="#i-suly"]')).toBeNull()
+  })
+
   test('shows every value inline — no accordion to open', () => {
     setup()
     expect(screen.getByRole('spinbutton', { name: 'Munkaszettek' })).toHaveValue(4)
@@ -77,6 +88,9 @@ describe('ExerciseCard', () => {
   test('the Failure/Volume toggle rewrites targetRIR', async () => {
     const user = userEvent.setup()
     const props = setup()
+    // RIR 1 is a failure-style set: that pill is the pressed one
+    expect(screen.getByRole('button', { name: 'Failure' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Volume' })).toHaveAttribute('aria-pressed', 'false')
     await user.click(screen.getByRole('button', { name: /Volume/ }))
     expect(props.onChange).toHaveBeenLastCalledWith({ targetRIR: 2 })
   })

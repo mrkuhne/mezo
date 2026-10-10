@@ -1,15 +1,16 @@
-import type { CSSProperties } from 'react'
 import type { ReadinessTodayResponse } from '@/data/train/readinessApi'
 import { useTodayReadiness } from '@/data/hooks'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import type { Icon3DName } from '@/shared/ui/clay'
+import { Box, Btn, Bub, Hero, Lk, Note, Tubes } from '@/shared/ui/folyadek'
 import { useToast } from '@/shared/ui/ToastProvider'
 
 // ============================================================
-// Check-in 2.0 · „Mai állapot" (mezo-ck2, spec 2026-09-27 §3.3) — the Edzés today card built to
-// the approved prototype (`elo/edzes.html` `readyCard()`): this morning's check-in says a lighter
-// day would be wiser. Lavender glass offer (eyebrow, title, reason chips with 3D icons, the rose
-// care row per pain-loaded exercise, a lit „Könnyítsük" pill + a ghost „Maradjon a terv", the
-// „Csak javaslat" note); after „Könnyítsük" a sage glass „Könnyítve" state with the undo ghost.
+// Check-in 2.0 · „Mai állapot" (mezo-ck2, spec 2026-09-27 §3.3) — the Edzés today card.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `readyCard()`): this morning's check-in says a
+// lighter day would be wiser. The offer is the amber (warn) hero: the reasons the server gives
+// (GET /api/train/readiness/today, 0–3 of them) as test tubes filled to their 1–10 value, one box
+// per pain-loaded exercise, the „Csak javaslat" note, and on the liquid row „Könnyítsük" +
+// „Maradjon a terv". After „Könnyítsük" a calm hero with the green tick and the undo link.
 // „Maradjon a terv" hides it for the day. Never automatic — nothing changes without a tap.
 // ============================================================
 
@@ -17,6 +18,12 @@ const REASON: Record<ReadinessTodayResponse['reasons'][number]['item'], { icon: 
   rested: { icon: 't-rested', label: 'Kipihentség' },
   soreness: { icon: 't-soreness', label: 'Izomláz' },
   motivation: { icon: 't-motivation', label: 'Kedv' },
+}
+
+/** The tube's colour is the value's state: soreness reads high = bad, the other two low = warn. */
+function reasonColor(item: keyof typeof REASON, value: number): string {
+  if (item === 'soreness') return value >= 7 ? 'var(--fo-bad)' : 'var(--fo-warn)'
+  return value <= 4 ? 'var(--fo-warn)' : 'var(--fo-ok)'
 }
 
 const TOAST = {
@@ -48,57 +55,37 @@ export function ReadinessCard({ readiness, onLighten, onKeep, onUndo, busy = fal
   if (state === 'LIGHTENED') {
     const names = care.map((c) => c.exerciseName)
     return (
-      <section className="trd glass is-lightened" style={{ '--c': 'var(--dv-sage)' } as CSSProperties}
-        aria-label="Mai állapot">
-        <span className="trd-eb">MAI ÁLLAPOT · KÖNNYÍTVE</span>
-        <h3 className="trd-title">Ma egy fokkal lejjebb</h3>
-        <div className="trd-ok">
-          <Icon3D name="t-tick" size={20} />
-          <span>
-            Minden gyakorlatnál a múlt heti súly marad, nem emelünk.
-            {names.length > 0 && ` ${article(names[0])} ${joinNames(names)} nehéz szettjei kimaradnak.`}
-          </span>
-        </div>
-        <div className="trd-acts">
-          <button type="button" className="trd-pill is-ghost np-press" onClick={onUndo} disabled={busy}>
-            Visszaállítom a tervet
-          </button>
-        </div>
-      </section>
+      <Hero className="em-ready is-lightened" aria-label="Mai állapot"
+        label="Mai állapot · könnyítve" verdict="Ma egy fokkal lejjebb"
+        sub={`Minden gyakorlatnál a múlt heti súly marad, nem emelünk.${names.length > 0 ? ` ${article(names[0])} ${joinNames(names)} nehéz szettjei kimaradnak.` : ''}`}
+        left={<Bub icon="t-tick" size={56} color="var(--fo-ok)" />}
+        actions={<Lk onClick={onUndo} disabled={busy}>Visszaállítom a tervet</Lk>} />
     )
   }
   if (state !== 'OFFER') return null
   return (
-    <section className="trd glass" style={{ '--c': 'var(--dv-lav)' } as CSSProperties} aria-label="Mai állapot">
-      <span className="trd-eb">MAI ÁLLAPOT · A REGGELI CHECK-INBŐL</span>
-      <h3 className="trd-title">Könnyebb nap javasolt</h3>
+    <Hero warn className="em-ready" aria-label="Mai állapot"
+      label="Mai állapot · a reggeli check-inből" verdict="Könnyebb nap javasolt"
+      actions={(
+        <>
+          <Btn sm onClick={onLighten} disabled={busy}>Könnyítsük</Btn>
+          <Btn sm ghost onClick={onKeep} disabled={busy}>Maradjon a terv</Btn>
+        </>
+      )}>
       {reasons.length > 0 && (
-        <div className="trd-why">
-          {reasons.map((r) => (
-            <span key={r.item} className="trd-chip">
-              <Icon3D name={REASON[r.item].icon} size={18} />
-              {REASON[r.item].label} {r.value}/10
-            </span>
-          ))}
-        </div>
+        <Tubes className="em-rd" height={112} aria-label="A reggeli check-in értékei"
+          items={reasons.map((r) => ({
+            label: REASON[r.item].label, icon: REASON[r.item].icon, value: `${r.value}/10`,
+            pct: r.value * 10, color: reasonColor(r.item, r.value), mark: '10',
+          }))} />
       )}
       {care.map((c) => (
-        <div key={c.exerciseName} className="trd-care">
-          <Icon3D name="t-pain" size={28} />
-          <span>
-            <b>{c.exerciseName}</b> — fáj a {c.regionLabel}{c.intensity != null && ` (${c.intensity}/10)`}.
-            {' '}Ma óvatosan: könnyebb súly, vagy hagyd ki.
-          </span>
-        </div>
+        <Box key={c.exerciseName} icon="t-pain" color="var(--fo-warn)" title={c.exerciseName} className="em-care">
+          <p>Fáj a {c.regionLabel}{c.intensity != null && ` (${c.intensity}/10)`}. Ma óvatosan: könnyebb súly, vagy hagyd ki.</p>
+        </Box>
       ))}
-      <div className="trd-acts">
-        <button type="button" className="trd-pill np-press" onClick={onLighten} disabled={busy}>Könnyítsük</button>
-        <button type="button" className="trd-pill is-ghost np-press" onClick={onKeep} disabled={busy}>
-          Maradjon a terv
-        </button>
-      </div>
-      <p className="trd-note">Csak javaslat — magától nem változtat semmit.</p>
-    </section>
+      <Note>Csak javaslat — magától nem változtat semmit.</Note>
+    </Hero>
   )
 }
 

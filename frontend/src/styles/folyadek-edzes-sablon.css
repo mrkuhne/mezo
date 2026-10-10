@@ -1,2 +1,108 @@
 /* ── Folyadék · Edzés · sablon (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.ew-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* the page's own back button, where no title bar is mounted (a page rendered alone) */
+.ew-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer;
+  font-family: var(--ff-body); font-size: 14px; font-weight: 650; color: var(--fo-ink); background: var(--fo-card, #fff); box-shadow: inset 0 0 0 1px var(--fo-hair); }
+
+/* ── hero body: the name field, the callout, the tubes (prototype `.vs-hg`) ── */
+.ew-hero .fo-lab { margin-top: 14px; }
+.ew-hero .fo-msg { margin-top: 12px; }
+.ew-hg { margin-top: 14px; }
+.ew-hg.n3 { max-width: 290px; margin-left: auto; margin-right: auto; }
+.ew-hg .fo-tube { max-width: 64px; }
+.ew-hg.n3 .fo-tube { max-width: 60px; }
+
+/* ── the week face: one row per day (prototype `rw({left:num(…)})` + `.vs-pour.sm`) ── */
+.ew-day .ew-end { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.ew-day .fo-pour { margin-top: 7px; }
+
+/* ── the day face: the always-open exercise cards (prototype `.vs-ex`, `.eh`, `.eg.in`, `.vs-mv`, `.vs-bem`) ── */
+.ew-exw { padding: 14px 0; border-top: 1px solid var(--fo-hair); }
+.ew-exw:first-child { border-top: 0; padding-top: 0; }
+.ew-exw:last-child { padding-bottom: 0; }
+.ew-ex .eh { display: flex; align-items: center; gap: 8px; }
+.ew-ex .eh strong { flex: 1; min-width: 0; font-size: 14.5px; font-weight: 650; overflow-wrap: anywhere; }
+.ew-ex .eh strong small { display: block; font-size: 11.5px; font-weight: 500; color: var(--fo-sub); margin-top: 1px; }
+.ew-mv { display: inline-flex; gap: 4px; flex: 0 0 auto; }
+.ew-mv button { position: relative; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 10px; background: var(--fo-page); display: grid; place-items: center; font-size: 11px; color: var(--fo-sub); cursor: pointer; }
+/* the 44px target: full height, and sideways up to the middle of the 4px gap */
+.ew-mv button::after { content: ''; position: absolute; inset: -7px -2px; }
+.ew-mv button:disabled { opacity: .3; cursor: default; }
+.ew-mv button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.ew-ex .eg { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.ew-ex .eg > label, .ew-ex .eg > .rp { display: block; padding: 8px 3px; border-radius: 14px; background: var(--fo-page); text-align: center; min-width: 0; cursor: text; }
+.ew-ex .eg small { display: block; font-size: 10px; color: var(--fo-sub); line-height: 1.5; }
+.ew-ex .eg input, .ew-bem input { width: 100%; min-width: 0; border: 0; background: none; text-align: center; font-family: var(--ff-display); font-size: 14.5px; font-weight: 800; color: var(--fo-ink); padding: 0; outline: 0; border-radius: 0; -moz-appearance: textfield; appearance: textfield; }
+.ew-ex input::-webkit-outer-spin-button, .ew-ex input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ew-ex .eg input::placeholder { color: var(--fo-faint); font-family: var(--ff-body); font-size: 12px; font-weight: 500; }
+.ew-ex .eg .rp { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; }
+.ew-ex .eg .rp input { width: 38%; }
+.ew-ex .eg .rp i { font-style: normal; font-weight: 700; color: var(--fo-sub); }
+.ew-ex .eg .rp small { flex-basis: 100%; }
+.ew-ex .eg > :focus-within, .ew-bem:focus-within { box-shadow: inset 0 0 0 2px var(--dom); }
+.ew-sjl { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 13.5px; }
+.ew-ex .ew-sjl { margin-top: 8px; }
+.ew-ex .ew-sjl .fo-pills { flex: 1; min-width: 0; }
+.ew-bem { display: block; width: 84px; flex: 0 0 auto; padding: 7px 4px; border-radius: 14px; background: var(--fo-page); text-align: center; cursor: text; }
+.ew-bem small { display: block; font-size: 10px; color: var(--fo-sub); line-height: 1.15; }
+.ew-ex .fo-note { margin: 6px 0 0; }
+.ew-ex .fo-note b { font-weight: 700; }
+.ew-ex .fo-note b + b { margin-left: 6px; }
+
+/* ── the load pages (prototype `.vs-log`, `.vs-sjp`, `.vs-rowbar`) ── */
+.ew-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
+.ew-log:first-of-type { border-top: 0; padding-top: 0; }
+.ew-log > .fo-row { padding: 0; border-top: 0; }
+.ew-log .fo-row strong .fo-st, .ew-dl strong .fo-st { margin-left: 6px; vertical-align: 1px; }
+.ew-log .fo-row .v b { font-weight: 700; }
+.ew-log .fo-row .v i { font-style: normal; font-size: .8em; }
+.ew-dir-dn { color: var(--fo-warn); }
+.ew-zb { display: block; margin-top: 7px; }
+.ew-zb .fo-wlv { margin-top: 0; }
+.ew-sjp { padding: 0 0 2px 12px; margin: 10px 0 0 14px; border-left: 3px solid color-mix(in srgb, var(--dom) 35%, #fff); }
+.ew-sjp .ew-sjl > b { font-weight: 700; flex: 0 0 auto; }
+.ew-sjp .fo-tags { margin: 0; justify-content: flex-end; }
+.ew-lg { margin: 0 0 14px; font-size: 11.5px; gap: 4px 14px; }
+.ew-dl .fo-tags { margin-top: 8px; }
+
+/* ── the interview (prototype `.vs-cnt`, `.vs-wd`, `.vs-pr`, `.vs-tri`) ── */
+.ew-cnt { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.ew-cnt button { padding: 9px 2px 8px; border: 0; border-radius: 18px; background: var(--fo-page); color: var(--fo-ink); text-align: center; min-width: 0; min-height: 44px; cursor: pointer; font-family: var(--ff-body); }
+.ew-cnt b { display: block; font-family: var(--ff-display); font-size: 21px; font-weight: 800; line-height: 1.1; }
+.ew-cnt small { display: block; font-size: 9.5px; color: var(--fo-sub); line-height: 1.15; margin-top: 2px; overflow-wrap: anywhere; }
+.ew-cnt button[aria-pressed='true'] { background: linear-gradient(180deg, var(--liq1), var(--liq2)); color: #fff; box-shadow: 0 12px 16px -12px var(--liq2); }
+.ew-cnt button[aria-pressed='true'] small { color: #fff; }
+.ew-wd { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 12px; }
+.ew-wd button { position: relative; height: 58px; padding: 0 0 9px; border: 0; border-radius: 999px; overflow: hidden; background: #fff; color: var(--fo-ink); box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .10); display: grid; place-items: end center; cursor: pointer; font-family: var(--ff-body); }
+.ew-wd i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.ew-wd button[aria-pressed='true'] i { height: 100%; }
+.ew-wd b { position: relative; font-size: 12px; font-weight: 800; }
+.ew-wd button[aria-pressed='true'] b { color: #fff; }
+.ew-cnt button:focus-visible, .ew-wd button:focus-visible, .ew-tri button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.ew-len { margin-bottom: 10px; }
+.ew-goal + .fo-note { margin-top: 10px; }
+.ew-prh { font-weight: 700; }
+.ew-prh + .fo-note { margin: 2px 0 12px; }
+.ew-pr { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid var(--fo-hair); flex-wrap: wrap; }
+.ew-pr:first-of-type { border-top: 0; }
+.ew-pr > .l { flex: 1; min-width: 64px; font-size: 14px; font-weight: 600; }
+.ew-tri { display: inline-flex; border-radius: 999px; background: var(--fo-page); padding: 3px; flex: 0 0 auto; }
+.ew-tri button { position: relative; padding: 6px 9px; border: 0; border-radius: 999px; background: none; font-family: var(--ff-body); font-size: 12px; font-weight: 650; color: var(--fo-sub); cursor: pointer; }
+.ew-tri button::after { content: ''; position: absolute; inset: -9px 0; }
+.ew-tri button[aria-pressed='true'] { background: #fff; color: var(--fo-ink); box-shadow: 0 2px 6px -2px rgba(10, 42, 60, .3); }
+.ew-tri button:disabled { opacity: .35; cursor: default; }
+.ew-gate { color: var(--fo-warn); }
+
+@media (max-width: 360px) {
+  .ew-tri button { padding: 6px 7px; font-size: 11.5px; }
+  .ew-cnt small { font-size: 9px; }
+  .ew-bem { width: 72px; }
+  .ew-wd { gap: 4px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .ew-wd i { transition: height .35s cubic-bezier(.2, .8, .2, 1); }
+  .ew-rise { animation: ew-rise .42s cubic-bezier(.2, .8, .2, 1) both; animation-delay: var(--d, 0ms); }
+  @keyframes ew-rise { from { opacity: 0; transform: translateY(8px); } }
+}

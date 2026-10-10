@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -36,38 +36,65 @@ function setup(id = 'meso-hyp-04') {
   return router
 }
 
-test('the hero says where the run stands: week, phase and the end date', () => {
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
+
+// Folyadék F3 (prototype vilagos/edzes.js `run()`): the plan's name and its status line ride the frame's
+// title bar; the phase reads in the owner's words („Emelkedés", never „Rámpa").
+test('the title bar says where the run stands: week, phase and the end date', () => {
   setup()
   expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
-  expect(screen.getByText('Aktív · 3/6 hét · Rámpa · vége Jún 12')).toBeInTheDocument()
+  expect(screen.getByText('Aktív · 3/6 hét · Emelkedés · vége Jún 12')).toBeInTheDocument()
+  expect(document.body.textContent).not.toMatch(/Rámpa|rámpázik|Mezociklus|blokk íve/)
 })
 
-test('the arc card carries one week dot per week', () => {
+test('the hero draws the plan\'s arc as a liquid surface with „most" and the peak marked', () => {
   setup()
-  // meso-hyp-04 runs 6 weeks — one dot per week, the last one striped (deload).
-  expect(document.querySelectorAll('.mz-wdots i')).toHaveLength(6)
-  expect(screen.getByText('A blokk íve')).toBeInTheDocument()
+  expect(hero().querySelector('.fo-hero-lbl')).toHaveTextContent('A terv íve · Pull / Push / Legs · 5×/hét')
+  // phaseCurve MEV MEV MAV MAV MRV Deload → week 5 is the peak, week 6 the pihenőhét
+  expect(hero().querySelector('.fo-hero-verdict')).toHaveTextContent('Az 5. hét a csúcs, a 6. a pihenőhét.')
+  expect(hero().querySelector('.fo-hero-sub')).toHaveTextContent('Most a 3. héten jársz: 88 szett.')
+  const arc = within(hero()).getByRole('img', { name: 'A terv íve: heti szettszám, 60, 74, 88, 92, 92, 46' })
+  expect(arc.querySelector('svg.fo-area')).not.toBeNull()
+  expect(arc.querySelector('.fo-area-now text')?.textContent).toBe('most · 88')
+  expect(arc.querySelector('.fo-area-pr text')?.textContent).toBe('csúcs · 92')
+  // one axis label per week
+  expect([...arc.querySelectorAll('svg > text')].map((t) => t.textContent)).toEqual(['1.', '2.', '3.', '4.', '5.', '6. hét'])
 })
 
-test("Mezo's decider sentence explains the volume change", () => {
+test("Mezo's note explains the volume change, signed by Mezo", () => {
   setup()
   // activeMeso.volumeRecompute.changes[0] is the 'back' (Hát) row.
-  expect(screen.getByText(/^Hát:/)).toBeInTheDocument()
+  const note = screen.getByText(/^Hát:/)
+  expect(note.closest('.fo-msg')).not.toBeNull()
+  expect(screen.getByText('Mezo jegyzete')).toBeInTheDocument()
 })
 
-test('the two status tiles are there — the week one navigates, the rollover forecast does not', () => {
-  setup()
-  const week = screen.getByRole('button', { name: 'Heti vizsgálat' })
-  expect(week).toBeInTheDocument()
-  expect(screen.getByText(/szett · \d+ rámpázik · \d+ tart/)).toBeInTheDocument()
+test('„Hol tartasz": the week row navigates, the rollover forecast does not', async () => {
+  const router = setup()
+  expect(screen.getByText(/^\d+ szett · \d+ emelkedik · \d+ tart$/)).toBeInTheDocument()
+  // five little vessels beside the row — the plan's five loudest muscles
+  expect(document.querySelectorAll('.ep-mini i')).toHaveLength(5)
   expect(screen.getByText('Hétfőn jön')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Hétfőn jön' })).not.toBeInTheDocument()
-  expect(screen.getByText('a heti görgetés hajnalban fut')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Hétfőn jön/ })).not.toBeInTheDocument()
+  expect(screen.getByText('A heti váltás hajnalban magától lefut.')).toBeInTheDocument()
+  // the forecast chips: five muscles, then „+N" (meso-hyp-04 tracks 8 groups)
+  const chips = [...document.querySelectorAll('.ep-roll > span')]
+  expect(chips).toHaveLength(6)
+  expect(chips[5].textContent).toBe('+3')
+  expect(chips[0].querySelector('.ex-mchp')).not.toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: /^Heti vizsgálat\d+ szett/ }))
+  await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/week'))
+})
+
+test('the hero\'s button opens the week review too', async () => {
+  const router = setup()
+  await userEvent.click(within(hero()).getByRole('button', { name: 'Heti vizsgálat' }))
+  await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/week'))
 })
 
 // U5 (mezo-me75u.5): the page renders the SAME `MesoWeekDays` list the Terv landing does,
-// so the week is shown WHOLE — a training day is a card (a button), an off day is a slim
-// row (not a button). What the old assertion protected still holds: you cannot tap into
+// so the week is shown WHOLE — a training day is a button (today a full card, the rest rows), an off
+// day is a quiet row (not a button). What the old assertion protected still holds: you cannot tap into
 // a rest or sport day, because it never became a card.
 test('the week shows training days as cards — a Rest or sport day is not tappable', () => {
   setup()
@@ -91,7 +118,7 @@ test('the in-cycle Fókusz picker is gone — tiers are a planning-time decision
   expect(screen.queryByText('Fókusz')).not.toBeInTheDocument()
 })
 
-test('Meso lezárása opens the close sheet instead of closing straight away', async () => {
+test('Edzésterv lezárása opens the close sheet instead of closing straight away', async () => {
   const user = userEvent.setup()
   const calls: string[] = []
   server.use(
@@ -101,7 +128,7 @@ test('Meso lezárása opens the close sheet instead of closing straight away', a
     }),
   )
   setup()
-  await user.click(screen.getByRole('button', { name: 'Meso lezárása' }))
+  await user.click(screen.getByRole('button', { name: 'Edzésterv lezárása' }))
   expect(await screen.findByRole('heading', { name: 'Futam lezárása' })).toBeInTheDocument()
   expect(calls).toEqual([]) // nothing closed until the sheet is confirmed
 })
@@ -126,8 +153,8 @@ describe('MesocycleBuilderPage (real mode)', () => {
       }),
     )
     const router = setup(REAL_MESO_ID)
-    await userEvent.click(await screen.findByRole('button', { name: 'Meso lezárása' }))
-    await userEvent.click(await screen.findByRole('button', { name: /Lezárás/ }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Edzésterv lezárása' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Lezárás' }))
     await waitFor(() => expect(calls).toEqual([`close:${REAL_MESO_ID}`]))
     await waitFor(() =>
       expect(router.state.location.pathname).toBe(`/train/mesocycles/${REAL_MESO_ID}/report`),
@@ -157,7 +184,40 @@ describe('MesocycleBuilderPage (real mode)', () => {
     )
     setup(REAL_MESO_ID)
     await screen.findByRole('button', { name: /Aktiválás/ })
+    // the planned face (prototype `run.tervezett`): the verdict, the plain vessels (no numbers), the dated button
+    expect(screen.getByText('Ez a terv még nem indult el.')).toBeInTheDocument()
+    expect(screen.getByText('Tervezett · 6 hét · indul Jún 1')).toBeInTheDocument()
+    const tubes = screen.getByRole('group', { name: 'A terv hetei: a terv íve' })
+    expect(tubes.querySelectorAll('.fo-vial.ghost')).toHaveLength(6)
+    expect(tubes.querySelectorAll('.fo-vial > b')).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Aktiválás · Jún 1' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edzésterv lezárása' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Aktiválás/ }))
     await waitFor(() => expect(calls).toEqual([`activate:${REAL_MESO_ID}`]))
+  })
+
+  // Before the first workout the run has no volume arc: the hero falls back to the plain vessels at the plan's
+  // phase curve, with the note (prototype `run.elso`).
+  test('an active run without an arc draws the plain vessels and the note', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('active')])),
+      http.get(`${API_BASE}/api/train/mesocycles/:id/volume-arc`, () => new HttpResponse(null, { status: 404 })),
+    )
+    setup(REAL_MESO_ID)
+    expect(await screen.findByText('A hetek szettszáma az első edzésed után jelenik meg — addig a terv íve látszik.')).toBeInTheDocument()
+    const tubes = screen.getByRole('group', { name: 'A terv hetei: a terv íve' })
+    expect(tubes.querySelectorAll('.fo-vial')).toHaveLength(6)
+    expect(tubes.querySelector('.fo-vial.now small')?.textContent).toBe('1. hétmost')
+    expect(document.querySelector('svg.fo-area')).toBeNull()
+    expect(screen.getByText('Most az 1. héten jársz.')).toBeInTheDocument()
+  })
+
+  test('an unknown id says the plan is not found, in an empty vessel', async () => {
+    server.use(http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])))
+    const router = setup(REAL_MESO_ID)
+    expect(await screen.findByText('Ez az edzésterv nem található.')).toBeInTheDocument()
+    expect(document.querySelector('.fo-ev')).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Edzéstervek' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/train/mesocycles'))
   })
 })

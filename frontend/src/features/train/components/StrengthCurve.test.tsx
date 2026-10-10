@@ -3,11 +3,11 @@ import { afterEach, describe, expect, it, test, vi } from 'vitest'
 import { StrengthCurve, splitOnGaps } from '@/features/train/components/StrengthCurve'
 import type { E1rmPoint } from '@/data/train/trainApi'
 
-// „Az erőd íve" (Train parity P2 Task 5, mezo-lf3cv). The three things this suite is
-// actually here to pin: the honest empty branches (0 and 1 points say different, true
-// things and NEVER draw a flat line), the fact that NOTHING projected is drawn, and the
-// gap rule — Task 2's wire OMITS a session with no eligible set, so the line must not
-// cross the hole as if the weeks had been continuous.
+// „Az erőd íve" (Train parity P2 Task 5, mezo-lf3cv; Folyadék mezo-n4wf5.3). What this suite
+// pins: the honest empty branches (0 and 1 points say different, true things and NEVER draw a
+// flat line), the fact that NOTHING projected is drawn, the liquid area with its „now" mark and
+// record drops, and the gap rule — `splitOnGaps` still finds the holes and the spoken label
+// names them (the kit's area itself is one continuous surface).
 
 /** `n` weekly points starting at `startIso`, skipping the 0-based indices in `skip`. */
 function weekly(n: number, startIso = '2026-01-07', skip: readonly number[] = []): E1rmPoint[] {
@@ -21,8 +21,11 @@ function weekly(n: number, startIso = '2026-01-07', skip: readonly number[] = []
   return out
 }
 
-const polylines = (c: HTMLElement) => Array.from(c.querySelectorAll('polyline'))
-const pointCount = (el: Element) => el.getAttribute('points')!.trim().split(/\s+/).length
+const area = (c: HTMLElement) => c.querySelector('svg.fo-area')
+/** The curve's line: the one stroked, unfilled path of the area. */
+const line = (c: HTMLElement) => c.querySelector('svg.fo-area > path[fill="none"]')!.getAttribute('d')!
+/** Points on the line: the M plus one C per further point. */
+const pointCount = (d: string) => 1 + (d.match(/C/g) ?? []).length
 
 afterEach(() => vi.useRealTimers())
 
@@ -36,37 +39,60 @@ test('the caption carries the YEAR on a date old enough to be misread', () => {
   const { container } = render(
     <StrengthCurve points={[{ date: '2025-09-03', e1rm: 100 }, { date: '2026-09-01', e1rm: 120 }]} />,
   )
-  expect(container.querySelector('.gy-curve-cap')!.textContent).toContain('2025. Szep 3 óta')
-  expect(container.querySelector('svg')!.getAttribute('aria-label')).toContain('2025. Szep 3 óta')
+  expect(container.querySelector('.er-ft')!.textContent).toContain('2025. Szep 3 óta')
+  expect(screen.getByRole('img').getAttribute('aria-label')).toContain('2025. Szep 3 óta')
 })
 
 test('no points at all says so — and draws nothing', () => {
   const { container } = render(<StrengthCurve points={[]} />)
-  expect(container.querySelector('svg')).toBeNull()
+  expect(area(container)).toBeNull()
   expect(screen.getByText(/még nincs becsülhető maximumod/)).toBeInTheDocument()
+  // …in the empty vessel
+  expect(container.querySelector('.fo-ev')).not.toBeNull()
 })
 
 test('ONE point is a dot in prose, never a flat line through it', () => {
   const { container } = render(<StrengthCurve points={[{ date: '2026-05-19', e1rm: 130 }]} />)
   expect(container.querySelector('svg')).toBeNull()
-  expect(container.querySelector('polyline')).toBeNull()
   expect(screen.getByText(/Egyetlen becslésed van eddig/)).toBeInTheDocument()
   // The one measurement it does have is still named, date and value.
   expect(screen.getByText(/Máj 19 · 130 kg/)).toBeInTheDocument()
 })
 
-test('two points draw one solid line and the „now" dot', () => {
+test('two points draw one liquid surface with the „now" mark on the last point', () => {
   const { container } = render(<StrengthCurve points={weekly(2)} />)
-  const lines = polylines(container)
-  expect(lines).toHaveLength(1)
-  expect(lines[0].getAttribute('class')).toBe('gy-curve-was')
-  expect(pointCount(lines[0])).toBe(2)
-  expect(container.querySelectorAll('circle.gy-curve-now')).toHaveLength(1)
+  expect(area(container)).not.toBeNull()
+  expect(pointCount(line(container))).toBe(2)
+  expect(container.querySelectorAll('.fo-area-now')).toHaveLength(1)
+  // the mark carries the latest value
+  expect(container.querySelector('.fo-area-now text')!.textContent).toBe('81')
+  expect(container.querySelector('.fo-area-pr')).toBeNull()
+})
+
+test('a record drop stands on each point whose date holds an e1RM record; only the highest is captioned', () => {
+  const pts = weekly(6)
+  const { container } = render(<StrengthCurve points={pts} recordDates={[pts[1].date, pts[3].date, '1999-01-01']} />)
+  const drops = container.querySelectorAll('.fo-area-pr')
+  expect(drops).toHaveLength(2)
+  expect(Array.from(drops).map((d) => d.querySelector('text')?.textContent ?? null)).toEqual([null, '83'])
+})
+
+test('a record on the LAST point is the „now" mark, not a second drop on top of it', () => {
+  const pts = weekly(4)
+  const { container } = render(<StrengthCurve points={pts} recordDates={[pts[3].date]} />)
+  expect(container.querySelector('.fo-area-pr')).toBeNull()
+  expect(container.querySelectorAll('.fo-area-now')).toHaveLength(1)
+})
+
+test('the liquid wears the muscle colour when the muscle is known', () => {
+  const { container } = render(<StrengthCurve points={weekly(3)} muscle="back-mid" />)
+  const stroke = container.querySelector('svg.fo-area > path[fill="none"]')!.getAttribute('stroke')!
+  expect(stroke).not.toContain('--liq')
 })
 
 test('the projected branch is NOT drawn — there is no dashed line and no „várakozás" copy', () => {
   const { container } = render(<StrengthCurve points={weekly(8)} />)
-  expect(container.querySelector('.gy-curve-will')).toBeNull()
+  expect(container.querySelector('[stroke-dasharray="3 4"]')).toBeNull()
   expect(screen.queryByText(/várakozás/)).toBeNull()
   // …and the caption says what the line IS, plus names the estimate.
   expect(screen.getByText(/ami eddig megtörtént/)).toBeInTheDocument()
@@ -79,36 +105,27 @@ test('the headline is the LATEST estimate („kg most"), not the best one', () =
     { date: '2026-04-14', e1rm: 132.5 },
   ]
   const { container } = render(<StrengthCurve points={points} />)
-  expect(container.querySelector('.gy-curve-val b')!.textContent).toBe('132,5')
+  expect(container.querySelector('.fo-big')!.textContent).toBe('132,5kg most')
 })
 
 test('60 points render — the FE never re-caps what the wire already capped at 52', () => {
   const { container } = render(<StrengthCurve points={weekly(60)} />)
-  const lines = polylines(container)
-  expect(lines).toHaveLength(1)
-  expect(pointCount(lines[0])).toBe(60)
+  expect(pointCount(line(container))).toBe(60)
 })
 
 describe('a gap reads as a gap', () => {
-  it('breaks the line where the interval is out of character for the series', () => {
+  it('finds the hole where the interval is out of character for the series', () => {
     // 10 weekly points with weeks 4 and 5 missing → a 21-day hole in a 7-day cadence.
-    const { container } = render(<StrengthCurve points={weekly(10, '2026-01-07', [4, 5])} />)
-    const lines = polylines(container)
-    expect(lines).toHaveLength(2)
-    expect(pointCount(lines[0])).toBe(4)
-    expect(pointCount(lines[1])).toBe(4)
+    const segs = splitOnGaps(weekly(10, '2026-01-07', [4, 5]))
+    expect(segs.map((x) => x.length)).toEqual([4, 4])
   })
 
-  it('the x axis is TIME, so the hole is as wide as the calendar says', () => {
+  it('the surface keeps every measurement across the hole (the kit area does not break)', () => {
     const { container } = render(<StrengthCurve points={weekly(10, '2026-01-07', [4, 5])} />)
-    const [before, after] = polylines(container)
-    const lastBefore = Number(before.getAttribute('points')!.trim().split(/\s+/).pop()!.split(',')[0])
-    const firstAfter = Number(after.getAttribute('points')!.trim().split(/\s+/)[0].split(',')[0])
-    // 3 weeks of a 9-week span (63 days) over a 300-wide box = 100, vs 33.3 for one week.
-    expect(firstAfter - lastBefore).toBeCloseTo(100, 1)
+    expect(pointCount(line(container))).toBe(8)
   })
 
-  it('a measurement stranded between two gaps keeps a dot of its own', () => {
+  it('a measurement stranded between two gaps is its own segment and stays on the surface', () => {
     const points: E1rmPoint[] = [
       { date: '2026-01-07', e1rm: 80 },
       { date: '2026-01-14', e1rm: 82 },
@@ -116,10 +133,10 @@ describe('a gap reads as a gap', () => {
       { date: '2026-07-01', e1rm: 95 },
       { date: '2026-07-08', e1rm: 96 },
     ]
+    expect(splitOnGaps(points).map((x) => x.length)).toEqual([2, 1, 2])
     const { container } = render(<StrengthCurve points={points} />)
-    expect(polylines(container)).toHaveLength(2)
-    // two segment dots would be one; here: the stranded point + the „now" marker
-    expect(container.querySelectorAll('circle.gy-curve-now')).toHaveLength(2)
+    expect(pointCount(line(container))).toBe(5)
+    expect(screen.getByRole('img').getAttribute('aria-label')).toMatch(/2 kihagyott időszakkal/)
   })
 
   it('an even cadence is never broken up, however long the series', () => {
@@ -149,6 +166,5 @@ test('a perfectly flat series still draws (no divide-by-zero collapse)', () => {
     { date: '2026-01-21', e1rm: 100 },
   ]
   const { container } = render(<StrengthCurve points={flat} />)
-  const pts = container.querySelector('polyline')!.getAttribute('points')!
-  expect(pts).not.toMatch(/NaN/)
+  expect(line(container)).not.toMatch(/NaN/)
 })

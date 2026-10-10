@@ -80,80 +80,101 @@ afterEach(() => {
 const renderPage = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainWeekPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
 // ============================================================================
-// The hero — the DRAWN percent (T12 Task 3)
+// The hero — the tank: done sets of the planned ones (Folyadék F3)
 // ============================================================================
 
-// Adapted from 'renders the Heti hero, the load tiles and one card per weekday': the hero
-// survives with a new face, while the three `.loadtile`s and the seven `.dayrow`s are gone —
-// their functions live in the group cards (load) and on Mai's DayStrip (the days; see the
-// page header's function inventory).
-test('renders the Terhelés hero and one card per muscle group — no load tiles, no day rows', () => {
+// The Terhelés hero is the kit tank; the load tiles, the day rows and the old `.ld-` group
+// tiles are gone — the groups are rows of one card, the days live on Mai's DayStrip.
+test('renders the Terhelés hero and one row per muscle group — no load tiles, no day rows', () => {
   const { container } = renderPage()
   expect(screen.getByText(/Terhelés · \d+\. hét/)).toBeInTheDocument()
   expect(container.querySelectorAll('.loadtile')).toHaveLength(0)
   expect(container.querySelectorAll('.dayrow')).toHaveLength(0)
-  expect(container.querySelectorAll('.ld-group').length).toBeGreaterThan(0)
+  expect(container.querySelectorAll('.et-grp').length).toBeGreaterThan(0)
 })
 
-test('the hero DRAWS the percent: a big numeral plus a bar carrying its own width', () => {
+test('the hero is the tank: the numeral is the done sets, the caption carries the plan and the share', () => {
   const { container } = renderPage()
-  const hero = container.querySelector('.ld-hero') as HTMLElement
-  const numeral = hero.querySelector('.ld-hero-pct b') as HTMLElement
-  const percent = Number(numeral.textContent)
-  expect(Number.isInteger(percent)).toBe(true)
-  expect(hero.querySelector('.ld-hero-pct em')!.textContent).toBe('%')
-  const bar = hero.querySelector('.ld-hero-bar i') as HTMLElement
-  expect(bar.style.getPropertyValue('--w')).toBe(`${percent}%`)
-  // „{done} szett a {planned}-ből" — the sets behind the share, never only the share.
-  expect(within(hero).getByText(/szett a \d+-ből/)).toBeInTheDocument()
+  const tank = container.querySelector('.fo-tank') as HTMLElement
+  const numeral = tank.querySelector('.fo-tank-n b') as HTMLElement
+  const done = Number(numeral.textContent)
+  expect(Number.isInteger(done)).toBe(true)
+  // „szett a {planned}-ből · {share}%" — the sets behind the share, never only the share.
+  const cap = tank.querySelector('.fo-tank-n small')!.textContent ?? ''
+  const m = /^szett a (\d+)-ből · (\d+)%$/.exec(cap)
+  expect(m).not.toBeNull()
+  const planned = Number(m![1])
+  expect(Number(m![2])).toBe(planned > 0 ? Math.round(Math.min(1, done / planned) * 100) : 0)
+  // the scale marks are the plan's quarters, top down
+  const marks = [...tank.querySelectorAll('.fo-tank-marks span')].map((s) => Number(s.textContent))
+  expect(marks).toEqual([1, 0.75, 0.5, 0.25].map((x) => Math.round(planned * x)))
+  // a level is set on the vessel (the kit bands it so the sentence keeps its air)
+  expect(tank.style.getPropertyValue('--fo-tank-lv')).toMatch(/^\d+%$/)
 })
 
 // Mock-empty honesty: the mock week carries NO completed workout instances, so nothing is
-// done yet. The page must say so in words and draw nothing — never a fabricated bar.
-test('mock-empty honesty: zero done renders the honest words and 0% bars, never fake fill', () => {
+// done yet. The page must say so in words and draw nothing — never a fabricated level.
+test('mock-empty honesty: zero done renders the honest words and empty vessels, never fake fill', () => {
   const { container } = renderPage()
-  expect((container.querySelector('.ld-hero-pct b') as HTMLElement).textContent).toBe('0')
-  expect((container.querySelector('.ld-hero-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('0%')
+  expect((container.querySelector('.fo-tank-n b') as HTMLElement).textContent).toBe('0')
+  expect(container.querySelector('.fo-tank-n small')!.textContent).toMatch(/· 0%$/)
   expect(screen.getByText('A hét még előtted van: eddig egyetlen szett sem ment le.')).toBeInTheDocument()
-  // Every group card: 0 done ⇒ the word ladder's "the second half of the week builds on this"
-  // and a 0% bar. („Mell" is untouched by today's Pull plan too, so its remaining never zeroes.)
+  // Every group row: 0 done ⇒ the word ladder's "the second half of the week builds on this"
+  // and an empty vessel. („Mell" is untouched by today's Pull plan too, so its remaining never zeroes.)
   const chest = screen.getByRole('button', { name: 'Mell — ezen a héten' })
   expect(within(chest).getByText('erre a hét második fele épül')).toBeInTheDocument()
-  for (const card of container.querySelectorAll('.ld-group')) {
-    const zeroDone = within(card as HTMLElement).queryByText(/^0 \/ \d+$/) !== null
-    const bar = card.querySelector('.ld-group-bar i') as HTMLElement
-    if (zeroDone) expect(bar.style.getPropertyValue('--w')).toBe('0%')
+  const rows = [...container.querySelectorAll('.et-grp')] as HTMLElement[]
+  expect(rows.length).toBeGreaterThan(0)
+  for (const row of rows) {
+    const zeroDone = within(row).queryByText(/^0 \/ \d+$/) !== null
+    const level = row.querySelector('.fo-wlv i') as HTMLElement
+    if (zeroDone) expect(level.style.width).toBe('0%')
   }
 })
 
-// Adapted from 'the izom-zóna panel shows the live zone mini grid': the same live per-group
-// done/planned numbers, now on the group cards instead of the retired ZoneMiniGrid.
-test('the group cards carry the live done/planned sets per group, biggest contribution first', () => {
+test('the group rows carry the live done/planned sets per group, biggest contribution first', () => {
   const { container } = renderPage()
-  const cards = [...container.querySelectorAll('.ld-group')] as HTMLElement[]
-  expect(within(cards.find((c) => c.textContent?.includes('Hát'))!).getByText(/^0 \/ \d+$/)).toBeInTheDocument()
+  const rows = [...container.querySelectorAll('.et-grp')] as HTMLElement[]
+  expect(within(rows.find((c) => c.textContent?.includes('Hát'))!).getByText(/^0 \/ \d+$/)).toBeInTheDocument()
   // loadGroups sorts by done desc, then by the heavier plan — with nothing done, the
   // heaviest-planned group leads.
-  const planned = cards.map((c) => Number(/0 \/ (\d+)/.exec(c.textContent ?? '')?.[1] ?? 0))
+  const planned = rows.map((c) => Number(/0 \/ (\d+)/.exec(c.textContent ?? '')?.[1] ?? 0))
   expect(planned).toEqual([...planned].sort((a, b) => b - a))
+  // each row draws its level in the group's own (deepened) colour, in the kit's vessel
+  for (const row of rows) expect((row.querySelector('.fo-wlv') as HTMLElement).style.getPropertyValue('--c')).toContain('color-mix')
 })
 
-// Adapted from 'tapping the izom-zóna panel opens the MuscleWeekSheet': the sheet's content
-// migrated into the group GlassBox, per group.
-test('tapping a group card opens the glass with THAT group’s per-muscle rows and its XP line', async () => {
+test('tapping a group row opens the sheet with THAT group’s per-muscle rows and its XP line', async () => {
   renderPage()
   fireEvent.click(screen.getByRole('button', { name: 'Hát — ezen a héten' }))
-  const glass = await screen.findByRole('dialog', { name: 'Hát · ezen a héten' })
-  // The migrated MuscleWeekSheet rows: this group's heads, with sets/reps/frequency.
-  expect(within(glass).getAllByText(/ismétlés · \d+×\/hét/).length).toBeGreaterThan(0)
+  const sheet = await screen.findByRole('dialog', { name: 'Hát · ezen a héten' })
+  expect(sheet.classList.contains('fo-sheet')).toBe(true)
+  // the head says the group's numbers and its word
+  expect(within(sheet).getByRole('heading', { name: /^0 \/ \d+ szett$/ })).toBeInTheDocument()
+  expect(within(sheet).getByText('erre a hét második fele épül')).toBeInTheDocument()
+  // this group's heads, with sets/reps/frequency.
+  expect(within(sheet).getAllByText(/ismétlés · \d+×\/hét/).length).toBeGreaterThan(0)
   // the XP forecast line always speaks — with an estimate, or with the honest "not yet"
   // (the mock plan carries no weight anchors, so growthForecast has nothing to forecast)
-  expect(within(glass).getByText(/XP-előrejelzés ehhez a csoporthoz még nincs/)).toBeInTheDocument()
-  // and a leg group's muscles must NOT be in the back group's glass
-  expect(within(glass).queryByText('Vádli')).toBeNull()
+  expect(within(sheet).getByText(/XP-előrejelzés ehhez a csoporthoz még nincs/)).toBeInTheDocument()
+  // and a leg group's muscles must NOT be in the back group's sheet
+  expect(within(sheet).queryByText('Vádli')).toBeNull()
 })
 
-test('the glass closes again with Escape', async () => {
+// The sport/run stimulus of a muscle is drawn as drops (1–3) with its source — an estimate,
+// and the sheet says so.
+test('a group the sport reaches shows the stimulus as drops, with the estimate note', async () => {
+  renderPage()
+  fireEvent.click(screen.getByRole('button', { name: 'Váll — ezen a héten' }))
+  const sheet = await screen.findByRole('dialog', { name: 'Váll · ezen a héten' })
+  const sources = [...sheet.querySelectorAll('.et-evc em')] as HTMLElement[]
+  expect(sources.length).toBeGreaterThan(0)
+  expect(sources[0].querySelectorAll('.fo-dm i')).toHaveLength(3)
+  expect(sources[0].querySelectorAll('.fo-dm i.f').length).toBeGreaterThan(0)
+  expect(within(sheet).getByText(/A cseppek a sport és a futás plusz-terhelését jelzik/)).toBeInTheDocument()
+})
+
+test('the sheet closes again with Escape', async () => {
   renderPage()
   fireEvent.click(screen.getByRole('button', { name: 'Mell — ezen a héten' }))
   await screen.findByRole('dialog', { name: 'Mell · ezen a héten' })
@@ -161,9 +182,8 @@ test('the glass closes again with Escape', async () => {
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 })
 
-// Adapted from 'an over-budget group cell shows ⚠ in error color': the ⚠ glyph retired with
-// ZoneMiniGrid; the same over state now flags itself on the group card in the house amber.
-test('an over-planned group flags itself on its card (mezo-oyhy.7 → T12)', () => {
+// The retired ⚠'s exact meaning — the PLAN is over its budget — flags itself on the group row.
+test('an over-planned group flags itself on its row (mezo-oyhy.7 → T12)', () => {
   daysOverride = [{
     day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 2,
     exercises: [
@@ -174,24 +194,20 @@ test('an over-planned group flags itself on its card (mezo-oyhy.7 → T12)', () 
   const { container } = renderPage()
   const chest = screen.getByRole('button', { name: 'Mell — ezen a héten' })
   expect(within(chest).getByText('0 / 16')).toBeInTheDocument()
-  // The flag carries the retired ⚠'s exact meaning — the PLAN is over its budget.
-  const over = [...container.querySelectorAll('.ld-group[data-plan="over"]')]
+  const over = [...container.querySelectorAll('.et-grp[data-plan="over"]')]
   expect(over.length).toBeGreaterThan(0)
-  expect(within(over[0] as HTMLElement).getByText('sok')).toBeInTheDocument()
+  expect(within(over[0] as HTMLElement).getByText(/sok/)).toHaveClass('et-much')
   expect(over[0].textContent).toContain('Mell')
 })
 
 // ============================================================================
-// Step 2: today's plan feeds the body map so 'entering' can fire
+// Today's plan feeds the body so 'entering' can fire
 // ============================================================================
 
-// The map heat is drawn from rows that INCLUDE today's plan (the prep-screen precedent,
-// ActiveWorkoutPage.tsx :779). Without `todayPlan` the 'entering' status — "today's session
-// crosses the floor" — is arithmetically unreachable, and the map could never say it.
-// Staged state: 2 chest sets already logged this week (below chest's MEV of 4) and a today
-// plan carrying 3 more chest sets — so done alone is 'below', but done+today crosses the
-// floor. That is the ONLY arithmetic that produces 'entering', and it is unreachable if
-// `todayPlan` is not threaded into weekZoneRows.
+// The body is poured from rows that INCLUDE today's plan. Without `todayPlan` the 'entering'
+// status — "today's session crosses the floor" — is arithmetically unreachable. Staged state:
+// 2 chest sets already logged this week (below chest's MEV of 4) and a today plan carrying 3
+// more chest sets — so done alone is 'below', but done+today crosses the floor.
 test("today's plan feeds the map heat, so 'entering' can actually fire", async () => {
   weekLogOverride = {
     details: [{
@@ -216,17 +232,20 @@ test("today's plan feeds the map heat, so 'entering' can actually fire", async (
     }],
   } as unknown as WorkoutPlan
   const { container } = renderPage()
-  await waitFor(() => expect(container.querySelectorAll('.ld-map-mini .body-map-shape').length).toBeGreaterThan(0))
-  // 'entering' renders at the interpolated 0.58 opacity (BodyMap's OPACITY scale); with only
-  // 2 sets logged, nothing may reach 'in' (0.72) or 'over' (1).
-  const opacities = [...container.querySelectorAll('.ld-map-mini .body-map-shape')]
-    .map((g) => Number((g as SVGElement).getAttribute('opacity')))
-  expect(opacities).toContain(0.58)
-  expect(opacities.some((o) => o >= 0.72)).toBe(false)
+  const map = container.querySelector('.et-mapc .et-map') as HTMLElement
+  await waitFor(() => expect(map.querySelectorAll('[data-shape]').length).toBeGreaterThan(0))
+  // the levels the live logic handed out: with only 2 sets logged, chest is 'entering' and
+  // nothing may reach 'in' or 'over'.
+  const levels = (map.dataset.heat ?? '').split(' ').map((x) => x.split(':')[1])
+  expect(levels).toContain('entering')
+  expect(levels.some((l) => l === 'in' || l === 'over')).toBe(false)
+  // logged work stands deep in the vessel, over the pale plan
+  expect(map.querySelectorAll('.ex-body .dn').length).toBeGreaterThan(0)
+  expect(map.querySelectorAll('.ex-body .pl').length).toBeGreaterThan(0)
 })
 
 // ============================================================================
-// The doorways, the kept chips and the kept footer
+// The doorways and the kept rows
 // ============================================================================
 
 test('the map card opens the Izomtérkép subscreen', () => {
@@ -235,15 +254,26 @@ test('the map card opens the Izomtérkép subscreen', () => {
   expect(mockNavigate).toHaveBeenCalledWith('/train/week/terkep')
 })
 
-test('the Minden mozgásod card opens the Mozgás subscreen', () => {
+test('the tank’s own button opens the Izomtérkép subscreen too', () => {
+  renderPage()
+  fireEvent.click(screen.getByRole('button', { name: /^A tested térképe/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/week/terkep')
+})
+
+test('the Minden mozgásod row opens the Mozgás subscreen', () => {
   renderPage()
   fireEvent.click(screen.getByRole('button', { name: /Minden mozgásod a héten/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/week/mozgas')
 })
 
-test('the sport card names the week’s sport minutes and says it is an estimate', () => {
-  renderPage()
-  expect(screen.getByText(/perc sport és futás a heti rendben/)).toBeInTheDocument()
+test('the sport card names the week’s sport minutes, the reach as drops, and says it is an estimate', () => {
+  const { container } = renderPage()
+  const card = container.querySelector('.et-sport') as HTMLElement
+  expect(card.querySelector('.fo-big')!.textContent).toMatch(/^\d+perc sport és futás a heti rendben$/)
+  expect(within(card).getByText(/^Ezeket is dolgoztatja: /)).toBeInTheDocument()
+  const reach = [...card.querySelectorAll('.et-reach .fo-row')]
+  expect(reach.length).toBeGreaterThan(0)
+  for (const row of reach) expect(row.querySelectorAll('.fo-dm i')).toHaveLength(3)
   expect(screen.getByText('Becslés — a szettszámokba nem számít bele.')).toBeInTheDocument()
 })
 
@@ -267,21 +297,24 @@ test('a runner-only week (no sport slots) still counts run minutes and covers bo
       }],
     },
   } as unknown as RunningBlockResponse
-  renderPage()
+  const { container } = renderPage()
   // 1800s of work = 30 minutes, and no sport slots at all — the number must be run-only,
   // and the headline must not claim "sport" alone when it is really futás doing the work.
-  expect(screen.getByText('30 perc sport és futás a heti rendben')).toBeInTheDocument()
+  expect(container.querySelector('.et-sport .fo-big')!.textContent).toBe('30perc sport és futás a heti rendben')
 })
 
-test('the Mezociklus áttekintő chip navigates to the overview (mezo-hi9m)', () => {
+test('the Mezociklus áttekintő row navigates to the overview (mezo-hi9m)', () => {
   renderPage()
-  fireEvent.click(screen.getByRole('button', { name: /Mezociklus áttekintő/ }))
+  const row = screen.getByRole('button', { name: /Mezociklus áttekintő/ })
+  expect(row.textContent).toMatch(/· \d+\. hét \/ \d+/)
+  fireEvent.click(row)
   expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/meso-hyp-04/overview')
 })
 
-test('the medál count of the week rides in the hero row (mezo-88iwa.13)', () => {
+test('the medál count of the week is a row of the last card (mezo-88iwa.13)', () => {
   const { container } = renderPage()
-  expect(within(container.querySelector('.ld-hero') as HTMLElement).getByText(/medál e héten/)).toBeInTheDocument()
+  const row = within(container.querySelector('.fo-page') as HTMLElement).getByText(/^\d+ medál e héten$/)
+  expect(row.closest('.fo-row')!.querySelector('use')?.getAttribute('href')).toBe('#t-record')
 })
 
 test('weekly load has no duplicate schedule editor after central settings migration', () => {
@@ -290,33 +323,30 @@ test('weekly load has no duplicate schedule editor after central settings migrat
   expect(screen.queryByRole('heading', { name: 'Heti gym-időpontok' })).not.toBeInTheDocument()
 })
 
-test('keeps the provenance note and the Saját edzés footer', () => {
+test('keeps the provenance note and the Saját edzés link', () => {
   renderPage()
-  expect(screen.getByText(/A gym a mesociklus szerint/)).toBeInTheDocument()
+  expect(screen.getByText(/A terem a mesociklus szerint megy, a sport a saját heti rendjén/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Saját edzés/ })).toBeInTheDocument()
 })
 
-test('the Saját edzés footer opens the sheet (mezo-ws2x)', () => {
+test('the Saját edzés link opens the sheet (mezo-ws2x)', () => {
   renderPage()
   fireEvent.click(screen.getByRole('button', { name: /Saját edzés/ }))
-  expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
   expect(screen.getByText('Pihenőnapi felső')).toBeInTheDocument()
 })
 
 test('the kalauz anchor sits on the hero (heti-terheles)', () => {
   const { container } = renderPage()
-  expect(container.querySelector('.ld-hero[data-kalauz-anchor="heti-terheles"]')).not.toBeNull()
+  expect(container.querySelector('.fo-tank[data-kalauz-anchor="heti-terheles"]')).not.toBeNull()
 })
 
 // ============================================================================
 // Real mode
 // ============================================================================
 
-// Was 'real mode: a weekly gym row completed this week on ANOTHER date routes to its review,
-// not a restart'. That routing moved to Mai with the day strip (see the page's function
-// inventory; TrainTodayPage.test.tsx covers the review hero), so per the T12 spec this test
-// keeps the exact same fixture and asserts what the page NOW owes that state instead: the map
-// and the group cards render off the real-mode week, not a blank page.
+// The fixture of the old 'a weekly gym row completed this week on ANOTHER date routes to its
+// review' test (that routing moved to Mai with the day strip); what the page owes that state
+// is the map and the group rows off the real-mode week, not a blank page.
 test('real mode: a week with a pulled-forward completed instance still draws the map and the groups', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayLabel = DAY_ORDER[(new Date().getDay() + 6) % 7]
@@ -345,52 +375,53 @@ test('real mode: a week with a pulled-forward completed instance still draws the
   )
   const { container } = renderPage()
   await screen.findByRole('button', { name: 'Hát — ezen a héten' })
-  expect(container.querySelector('.ld-map-mini')).not.toBeNull()
-  expect(container.querySelector('.ld-hero-bar i')).not.toBeNull()
+  expect(container.querySelector('.et-mapc .et-map')).not.toBeNull()
+  expect(container.querySelector('.fo-tank')).not.toBeNull()
+  // the mesocycle row reads the real plan's own short name
+  expect(screen.getByRole('button', { name: /Mezociklus áttekintő/ }).textContent).toContain('T2 · 2. hét / 6')
 })
 
 // ============================================================================
-// Motion + skeleton
+// The page skeleton + the loading face
 // ============================================================================
 
-// Adapted from 'the week body staggers inside the armed entrance group' (mezo-d20.11): the
-// stage changed (hero + group cards, no statstrip / day list) but the contract did not —
-// an armed EntranceGroup with nothing marked `.rise` is the silent-static bug.
-test('the page body staggers inside the armed entrance group', async () => {
+// Replaces 'the page body staggers inside the armed entrance group' (mezo-d20.11): the
+// Mozaik entrance stage left with the old face. What the page owes now is the Folyadék
+// skeleton (bible §2.1): the hero first, then the numbered sections, each followed by its card.
+test('the page follows the Folyadék skeleton: tank, then four numbered sections with their cards', async () => {
   const { container } = renderPage()
   await screen.findByText(/szett a \d+-ből/)
-  const play = container.querySelector('.mz-play')
-  expect(play).not.toBeNull()
-  const hero = play!.querySelector('.ld-hero.rise') as HTMLElement | null
-  expect(hero).not.toBeNull()
-  expect(hero!.style.getPropertyValue('--d')).toBe('40ms')
-  // the group cards ride the prototype's 40ms step, starting at 160ms
-  const first = play!.querySelector('.ld-group.rise') as HTMLElement
-  expect(first.style.getPropertyValue('--d')).toBe('160ms')
-  const second = [...play!.querySelectorAll('.ld-group.rise')][1] as HTMLElement
-  expect(second.style.getPropertyValue('--d')).toBe('200ms')
+  const page = container.querySelector('.fo-page') as HTMLElement
+  expect(page.firstElementChild!.classList.contains('fo-tank')).toBe(true)
+  const heads = [...page.querySelectorAll(':scope > .fo-sec')] as HTMLElement[]
+  expect(heads.map((h) => h.textContent)).toEqual([
+    '1A tested térképe', '2Izomcsoportok ezen a héten', '3Sport a héten', '4Mozgás és terv',
+  ])
+  for (const h of heads) expect(h.nextElementSibling!.classList.contains('fo-card')).toBe(true)
+  // the old Mozaik stage is gone
+  expect(container.querySelector('.mz-play')).toBeNull()
 })
 
-// The skeleton must promise the shape the page actually draws — a day list it no longer
-// renders would reflow on the swap (the whole reason this file is layout-aware).
-test('the skeleton mirrors the new order: hero, one map card, group cards, no day list', () => {
+// The skeleton must promise the shape the page actually draws: the tank, the map card, the
+// group card — one block each, in the page's own heights.
+test('the skeleton mirrors the page: one block for the tank, the map card and the group card', () => {
   const { container } = render(<TrainWeekSkeleton />)
   expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
-  expect(container.querySelectorAll('.card')).toHaveLength(4) // the four group cards
-  expect(container.querySelectorAll('.sk').length).toBeGreaterThan(8)
-  // the retired face promised seven day cards + three load tiles; neither may survive here
-  expect(container.querySelectorAll('.card')).not.toHaveLength(7)
+  const blocks = [...container.querySelectorAll('.fo-sk i')] as HTMLElement[]
+  expect(blocks.map((b) => b.style.height)).toEqual(['356px', '110px', '340px'])
+  // nothing of the retired skeleton (cards, bars) survives
+  expect(container.querySelectorAll('.card, .sk')).toHaveLength(0)
 })
 
 // weekLog.pending must gate too (ActiveWorkoutPage.tsx :778 precedent) — without it, real
-// mode draws a 0% hero and speaks "a hét még előtted van" while the week's own detail
+// mode draws an empty tank and speaks "a hét még előtted van" while the week's own detail
 // fetches are still in flight, then jumps once they land: a loading week rendering as an
 // EMPTY week, then silently becoming a different week under the reader's eyes.
-test('the week log still loading renders the skeleton, not a fabricated 0% hero', () => {
+test('the week log still loading renders the skeleton, not a fabricated empty tank', () => {
   weekLogOverride = { details: [], pending: true }
   const { container } = renderPage()
   expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
-  expect(container.querySelector('.ld-hero')).toBeNull()
+  expect(container.querySelector('.fo-tank')).toBeNull()
   expect(screen.queryByText('A hét még előtted van: eddig egyetlen szett sem ment le.')).toBeNull()
 })
 
@@ -401,42 +432,44 @@ test('the week log resolving renders the real hero, not the skeleton', async () 
   expect(screen.queryByRole('status', { name: 'Betöltés…' })).toBeNull()
 })
 
-// ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
-// The button beside the heading, the prototype's copy word for word. The aria-label is
-// the prototype's own `"<title> — mit jelent?"`.
+// ── the explain layer (mezo-b516k, Task 2) ─────────────────────────────────────────────
+// On the Folyadék face the three explanations are text links under their card (the
+// prototype's `info` sheet); the accessible name stays `"<title> — mit jelent?"`.
 
-test('ⓘ in the hero sentence explains what the weekly number is made of, word for word', async () => {
-  renderPage()
+test('the link under the map doorway explains what the weekly number is made of, and draws it', async () => {
+  const { container } = renderPage()
   const btn = await screen.findByRole('button', { name: 'Miből áll össze a szám? — mit jelent?' })
-  expect(btn.closest('.ld-hero-say')).not.toBeNull()
+  expect(btn.textContent).toBe('Miből áll össze a szám?')
+  expect(btn.closest('.fo-card')).toBe(container.querySelector('.et-mapc')!.closest('.fo-card'))
   fireEvent.click(btn)
+  const sheet = screen.getByRole('dialog', { name: 'Miből áll össze a szám?' })
   expect(
-    within(screen.getByRole('dialog', { name: 'Miből áll össze a szám?' })).getByText(
+    within(sheet).getByText(
       'A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké.',
     ),
   ).toBeInTheDocument()
+  // the number it explains, drawn: done sets in the week's vessel, the plan at its rim
+  expect(sheet.querySelector('.fo-level')).not.toBeNull()
+  expect(within(sheet).getByText('0 szett megvan')).toBeInTheDocument()
+  expect(sheet.querySelector('.fo-level b')!.textContent).toMatch(/^\d+$/)
 })
 
-test('ⓘ beside „Izomcsoportok ezen a héten" explains the bar, word for word', async () => {
+test('the link under the group rows explains the bar, word for word', async () => {
   renderPage()
   const btn = await screen.findByRole('button', { name: 'Mit mutat a sáv? — mit jelent?' })
-  expect(btn.closest('h3')?.textContent).toBe('Izomcsoportok ezen a héten')
+  expect(btn.closest('.et-groups')).not.toBeNull()
   fireEvent.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Mit mutat a sáv?' })).getByText(
-      'A színes rész az elvégzett szett, a halvány a hét teljes kérése. Egy csoportra koppintva látod, melyik része mennyit kapott, és melyik napokon.',
+      'A színes rész az elvégzett szett, a halvány a hét teljes kérése. Egy csoportra koppintva látod, melyik része mennyit kapott.',
     ),
   ).toBeInTheDocument()
 })
 
-// The prototype puts this one INSIDE the sport card (load-pages.js:95), not beside the
-// heading above it. Its art override there is `volley` — in üveg (mezo-me75u.4) the
-// Titanium t-volley itself, the card's own glyph.
-test('ⓘ inside the sport card explains how sport relates to the sets, word for word', async () => {
+test('the link inside the sport card explains how sport relates to the sets, word for word', async () => {
   const { container } = renderPage()
   const btn = await screen.findByRole('button', { name: 'A sport és a szettek — mit jelent?' })
-  expect(btn.closest('.ld-sport')).toBe(container.querySelector('.ld-sport'))
-  expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-volley')
+  expect(btn.closest('.et-sport')).toBe(container.querySelector('.et-sport'))
   fireEvent.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'A sport és a szettek' })).getByText(
@@ -445,44 +478,35 @@ test('ⓘ inside the sport card explains how sport relates to the sets, word for
   ).toBeInTheDocument()
 })
 
-// ── Üveg (mezo-me75u.4, prototype uveg-edzes.html#gym) ─────────────────────────────────
-// The ranking of bible §3.4 as DOM facts: the hero stays a halo (no glass), the map doorway,
-// every group tile, the sport card and the movement doorway are glass, each group tile wears
-// ITS muscle hue as `--c` on itself (rule 4), the chips are flat, the free state is dashed,
-// and every icon is a Titanium 3D sprite symbol — no clay, no text glyph.
-test('üveg: halo hero, glass doorways + tiles with their own --c, flat chips, dashed free state', () => {
+// ── Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `terheles`) ─────────────────────
+// The old skin is out of the markup: no glass, no `.ld-` / `.tw-` family, no dashed free
+// state, no BodyMap glow — the body is the liquid vessel, the icons are Folyadék-jel ids.
+test('folyadék: no glass, no old load classes, the body is the liquid vessel', async () => {
   const { container } = renderPage()
-  expect(container.querySelector('.tw-load')).not.toBeNull()
-  const hero = container.querySelector('.ld-hero') as HTMLElement
-  expect(hero.classList.contains('glass')).toBe(false)
-  expect(hero.querySelector('.glass')).toBeNull()
-  expect(container.querySelector('.ld-map-card')!.classList.contains('glass')).toBe(true)
-  expect(container.querySelector('.ld-move-card')!.classList.contains('glass')).toBe(true)
-  const tiles = [...container.querySelectorAll('.ld-group')] as HTMLElement[]
-  expect(tiles.length).toBeGreaterThan(0)
-  for (const tile of tiles) {
-    expect(tile.classList.contains('glass')).toBe(true)
-    const c = tile.style.getPropertyValue('--c')
-    expect(c).not.toBe('')
-    expect(c).toBe(tile.style.getPropertyValue('--mus-color'))
-    // never glass in glass
-    expect(tile.querySelector('.glass')).toBeNull()
-  }
-  expect(hero.querySelectorAll('.tw-chip')).toHaveLength(2)
-  const custom = screen.getByRole('button', { name: /Saját edzés/ })
-  expect(custom.classList.contains('uv-empty')).toBe(true)
-  expect(custom.classList.contains('glass')).toBe(false)
+  expect(container.querySelector('.glass')).toBeNull()
+  expect(container.querySelector('[class*="ld-"], [class*="tw-"], .uv-empty, .uv-eyebrow, .mz-page')).toBeNull()
+  expect(container.querySelector('.body-map')).toBeNull()
+  await waitFor(() => expect(container.querySelectorAll('.et-mapc .ex-duo.sm .ex-body svg')).toHaveLength(2))
+  // every group row wears its muscle chip on white
+  for (const row of container.querySelectorAll('.et-grp')) expect(row.querySelector('.ex-mchp')).not.toBeNull()
 })
 
-test('üveg: the medal chip, the ⓘ buttons and the doorway art are Titanium 3D icons', () => {
+test('folyadék: the row icons are Folyadék-jel sprite ids', () => {
   const { container } = renderPage()
-  const hrefs = (root: Element) => [...root.querySelectorAll('use')].map((u) => u.getAttribute('href'))
-  const medal = container.querySelector('.ld-hero-medal') as HTMLElement
-  expect(hrefs(medal)).toEqual(['#t-record'])
-  expect(hrefs(screen.getByRole('button', { name: 'Miből áll össze a szám? — mit jelent?' }))).toEqual(['#t-info'])
-  expect(hrefs(screen.getByRole('button', { name: 'Mit mutat a sáv? — mit jelent?' }))).toEqual(['#t-info'])
-  expect(hrefs(container.querySelector('.ld-move-card .ld-sport-art')!)).toEqual(['#t-bolt'])
-  // no clay glyph left anywhere on the page (the body maps and muscle chips draw paths, not <use>)
   const all = [...container.querySelectorAll('use')].map((u) => u.getAttribute('href') ?? '')
   expect(all.filter((h) => !h.startsWith('#t-'))).toEqual([])
+  for (const id of ['#t-bolt', '#t-layers', '#t-record']) expect(all).toContain(id)
+})
+
+// No running mesocycle: one hero that says what will live here, and the way to the planner.
+test('no active mesocycle: the hero says so and leads to the planner', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])))
+  const { container } = renderPage()
+  expect(await screen.findByText('A heti terhelésed itt jelenik majd meg.')).toBeInTheDocument()
+  expect(screen.getByText('Előbb tervezz egy mesociklust.')).toBeInTheDocument()
+  expect(container.querySelector('.et-art use')?.getAttribute('href')).toBe('#t-peak')
+  expect(container.querySelector('.fo-tank')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: '+ Tervezz mesociklust' }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/new')
 })

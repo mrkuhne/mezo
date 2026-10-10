@@ -3,9 +3,13 @@ import { ESTIMATE_CHIPS, type RecoveryEstimate } from '@/features/train/logic/re
 import { KIMELO } from '@/features/train/logic/skipCopy'
 
 /**
- * „Meddig tarthat?" (Kímélő mód S2, mezo-q4xt2.2 — prototype elo/edzes.html `whySheet()` `.kmdur`):
- * the four estimate chips under a serious reason. A tap opens kímélő mód; the lit chip is the
- * picked estimate. Presentational: the sheet owns the write.
+ * „Meddig tarthat?" (Kímélő mód S2, mezo-q4xt2.2 — prototype vilagos/edzes.js `whySheet()`
+ * `lab('Meddig tarthat?') + chips(KDUR)`): the four estimate chips under a serious reason. A tap
+ * opens kímélő mód; the lit chip is the picked estimate. Presentational: the sheet owns the write.
+ * Shared with the Fuel and Nap sheets (MealSkipSheet, NemVagyokJolSheet), which dress it themselves
+ * — so the markup and the `trm-kmdur` / `trm-kmdc` hooks stay (their styles and the layout specs key
+ * on them); on the Edzés sheet `folyadek-edzes-mai.css` (`.em-why .trm-kmdur`) gives it the
+ * Folyadék pills.
  */
 export function RecoveryDurationRow({ value, disabled, onPick }: {
   value: RecoveryEstimate | null

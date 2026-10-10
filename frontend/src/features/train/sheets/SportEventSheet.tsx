@@ -6,15 +6,13 @@
 // BOTH modes (mock emulates the server in the client-owned event cache),
 // and the saved event flows into Mai / Heti terv / the fuel day-plan
 // through the schedule merge in trainHooks.
-// Üveg re-dress (mezo-me75u.4): the shared floating capture sheet (one rose glass
-// surface, bible U2 rule 15) with the capture header; chips flat with the chosen one
-// solid rose, fields flat, Mégse flat and Mentés the one lit primary.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `SHEETS.sportev`): a light sheet — the
+// calendar glyph head, the sport as pills, date + time side by side, the kind pills
+// (volleyball only), the length stepper, the place field, „Mentés" + „Mégse".
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon3D } from '@/shared/ui/clay'
-import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { FoSheetHead, Input, Lab, Pill, Pills, SheetActs, TwoBtn } from '@/shared/ui/folyadek'
 import { localDateString } from '@/shared/lib/dates'
 import type { SportEventCreateRequest } from '@/data/train/trainApi'
 import { NumberStep } from '@/features/train/sheets/SportLogSheet'
@@ -41,7 +39,7 @@ export function SportEventSheet({ onSave, onClose }: {
   const [saving, setSaving] = useState(false)
 
   return (
-    <Sheet onClose={onClose} labelledBy="sport-event-title" className="capture-sheet capture-tone-sport glass uvs-sheet">
+    <Sheet onClose={onClose} labelledBy="sport-event-title" className="fo-sheet es-sheet">
       {(close) => {
         const save = () => {
           if (!date || saving) return
@@ -55,89 +53,44 @@ export function SportEventSheet({ onSave, onClose }: {
         }
         return (
           <>
-            <CaptureHeader id="sport-event-title" title="Új esemény" eyebrow="Sport · egyszeri esemény" kind="sport" onClose={close} />
+            <FoSheetHead titleId="sport-event-title" icon="t-calendar" eyebrow="Sport · egyszeri esemény" title="Új esemény" onClose={close} />
 
-            <div className="col gap-sm">
-              {/* Sport selector */}
-              <div className="row gap-xs" role="group" aria-label="Esemény sportja">
-                {EVENT_SPORT_KINDS.map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    className="chip flex-1"
-                    aria-pressed={sport === k}
-                    onClick={() => setSport(k)}
-                  >
-                    {SPORT_LABELS[k]}
-                  </button>
-                ))}
+            <Pills role="group" aria-label="Esemény sportja">
+              {EVENT_SPORT_KINDS.map((k) => (
+                <Pill key={k} on={sport === k} onClick={() => setSport(k)}>{SPORT_LABELS[k]}</Pill>
+              ))}
+            </Pills>
+
+            <TwoBtn>
+              <div>
+                <Lab htmlFor="sport-event-date">Dátum</Lab>
+                <Input id="sport-event-date" type="date" aria-label="Esemény dátuma" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
-
-              {/* Date + time */}
-              <div className="row gap-sm">
-                <input
-                  type="date"
-                  aria-label="Esemény dátuma"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="uvs-inp is-date"
-                />
-                <input
-                  type="time"
-                  aria-label="Esemény ideje"
-                  value={time}
-                  onChange={(e) => setTime(e.target.value)}
-                  className="uvs-inp is-time"
-                />
+              <div>
+                <Lab htmlFor="sport-event-time">Idő</Lab>
+                <Input id="sport-event-time" type="time" aria-label="Esemény ideje" value={time} onChange={(e) => setTime(e.target.value)} />
               </div>
+            </TwoBtn>
 
-              {/* Kind — volleyball only (cross/TRX always save 'training') */}
-              {sport === 'volleyball' && (
-                <div className="row gap-sm" role="group" aria-label="Esemény típusa">
-                  <button
-                    type="button"
-                    className="chip flex-1"
-                    aria-pressed={kind === 'match'}
-                    onClick={() => setKind('match')}
-                  >
-                    meccs
-                  </button>
-                  <button
-                    type="button"
-                    className="chip flex-1"
-                    aria-pressed={kind === 'training'}
-                    onClick={() => setKind('training')}
-                  >
-                    edzés
-                  </button>
-                </div>
-              )}
+            {/* Kind — volleyball only (cross/TRX always save 'training') */}
+            {sport === 'volleyball' && (
+              <div className="es-blk">
+                <Lab>Típus</Lab>
+                <Pills role="group" aria-label="Esemény típusa">
+                  <Pill on={kind === 'match'} onClick={() => setKind('match')}>meccs</Pill>
+                  <Pill on={kind === 'training'} onClick={() => setKind('training')}>edzés</Pill>
+                </Pills>
+              </div>
+            )}
 
-              <NumberStep
-                label="Hossz · perc"
-                val={durationMin}
-                step={15}
-                min={15}
-                max={360}
-                onChange={setDurationMin}
-              />
-
-              <input
-                aria-label="Esemény helyszíne"
-                placeholder="Helyszín"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="uvs-inp"
-              />
+            <div className="es-vl">
+              <NumberStep label="Hossz · perc" val={durationMin} step={15} min={15} max={360} onChange={setDurationMin} />
             </div>
 
-            {/* Footer */}
-            <div className="capture-actions">
-              <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-              <CtaPrimary className="capture-save flex-1" onClick={save} disabled={saving}>
-                <Icon3D name="t-tick" size={22} /> Mentés
-              </CtaPrimary>
-            </div>
+            <Lab htmlFor="sport-event-loc">Helyszín</Lab>
+            <Input id="sport-event-loc" aria-label="Esemény helyszíne" placeholder="Helyszín" value={location} onChange={(e) => setLocation(e.target.value)} />
+
+            <SheetActs label="Mentés" onSave={save} onCancel={close} disabled={saving} />
           </>
         )
       }}

@@ -121,8 +121,10 @@ describe('KimeloCard — the open period (mock mode)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Jobban' }))
     expect(await screen.findByRole('heading', { name: 'Üdv újra!' })).toBeInTheDocument()
     expect(cache()?.period?.endedOn).toBe(today())
-    expect(document.querySelectorAll('.trm-udvl .trm-whynote')).toHaveLength(2)
-    expect(document.querySelector('.trm-udvl .trm-whynote')?.textContent).toBe('2 nap kiesés · a program megy tovább a naptár szerint.')
+    // the shared „Üdv újra!" sheet (train's WelcomeBackSheet, Folyadék since mezo-n4wf5.3): rows, not notes
+    expect(document.querySelectorAll('.em-udvl .fo-row')).toHaveLength(2)
+    expect(document.querySelector('.em-udvl .fo-row strong')?.textContent).toBe('2 nap kiesés')
+    expect(document.querySelector('.em-udvl .fo-row small')?.textContent).toBe('a program megy tovább a naptár szerint.')
     // the card is gone behind the sheet; the entry pill is back
     expect(screen.getByRole('button', { name: 'Nem vagyok jól' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Rendben/ }))

@@ -6,7 +6,7 @@ import { MedalsPage } from '@/features/train/pages/MedalsPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
+import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import type { Medal } from '@/data/train/medalTypes'
 
 // Real-mode view: medals come from the MSW fixture unless a test overrides it.
@@ -16,11 +16,15 @@ afterEach(() => vi.unstubAllEnvs())
 const renderView = () =>
   render(<QueryWrapper><MemoryRouter><MedalsPage /></MemoryRouter></QueryWrapper>)
 
-test('own hero: name + count + this-month sub (mezo-d20.3.2)', async () => {
-  renderView()
-  await screen.findByText('Medálok')
-  // 3 in the default fixture — the hero big number, not the "N medál" body chip.
-  expect(screen.getByText('3')).toBeInTheDocument()
+test('the hero names the page and says the count and the share of this month as its verdict', async () => {
+  const { container } = renderView()
+  // 3 in the default fixture, all of them earlier than this month.
+  expect(await screen.findByText('3 medál, ebből 0 e hónapban.')).toBeInTheDocument()
+  expect(screen.getByText('Medálok')).toHaveClass('fo-hero-lbl')
+  // the shelf: one drop per medal, none of them this month's
+  expect(container.querySelectorAll('.er-shelf i')).toHaveLength(3)
+  expect(container.querySelectorAll('.er-shelf i.new')).toHaveLength(0)
+  expect(container.querySelector('.fo-lg')!.textContent).toBe('0 e hónapban3 korábbról')
 })
 
 test('the counter chip + honest backfill line render alongside the cabinet', async () => {
@@ -52,35 +56,37 @@ test('the default fixture groups by date with exercise names + type labels under
   expect(screen.getByText('Volumen-rekord')).toBeInTheDocument()
 })
 
-test('RECORD gets the amber t-record medal, TARGET_HIT the quiet sage t-tick — different accents', async () => {
+test('RECORD is the gold capsule with the old record as its line, TARGET_HIT the green capsule with none', async () => {
   const { container } = renderView()
   await screen.findByText('Chest Supported Row')
-  // Üvegesítés (mezo-me75u.4): the 🏅 / ✓ text glyphs became 3D sprite icons; the tier
-  // meaning rides the visible REKORD / CÉL tag, the accent rides the glass row's --c.
-  const recordRow = screen.getByText('Chest Supported Row').closest('.mz-facttile') as HTMLElement
-  const targetRow = screen.getByText('Hip Thrust').closest('.mz-facttile') as HTMLElement
-  expect(recordRow.querySelector('use')!.getAttribute('href')).toBe('#t-record')
-  expect(targetRow.querySelector('use')!.getAttribute('href')).toBe('#t-tick')
-  expect(within(recordRow).getByText('REKORD')).toBeInTheDocument()
-  expect(within(targetRow).getByText('CÉL')).toBeInTheDocument()
-  const recordAccent = recordRow.style.getPropertyValue('--c')
-  const targetAccent = targetRow.style.getPropertyValue('--c')
-  expect(recordAccent).not.toBe('')
-  expect(targetAccent).not.toBe('')
-  expect(recordAccent).not.toBe(targetAccent)
+  // Folyadék (mezo-n4wf5.3): the tier rides the visible REKORD / CÉL tag and the capsule.
+  const recordRow = screen.getByText('Chest Supported Row').closest('.er-medal') as HTMLElement
+  const targetRow = screen.getByText('Hip Thrust').closest('.er-medal') as HTMLElement
+  expect(recordRow).toHaveAttribute('data-tier', 'RECORD')
+  expect(targetRow).toHaveAttribute('data-tier', 'TARGET')
+  expect(within(recordRow).getByText('REKORD')).toHaveClass('fo-st', 'warn')
+  expect(within(targetRow).getByText('CÉL')).toHaveClass('fo-st', 'ok')
+  const recordCap = recordRow.querySelector('.ex-rc') as HTMLElement
+  const targetCap = targetRow.querySelector('.ex-rc') as HTMLElement
+  // the dashed line of the beaten record stands inside the RECORD capsule only
+  expect(recordCap.querySelector('u')).not.toBeNull()
+  expect(targetCap.querySelector('u')).toBeNull()
+  expect(targetCap.style.getPropertyValue('--c')).toBe('var(--fo-ok)')
+  expect(recordCap.style.getPropertyValue('--c')).not.toBe(targetCap.style.getPropertyValue('--c'))
   // no text glyph survives anywhere on the page
   expect(container.textContent).not.toMatch(/🏅|✓/)
 })
 
-test('each cabinet row is ONE glass surface; the empty cabinet is dashed, never glass', async () => {
+test('the cabinet is kit rows in a white card — no glass, no old skin', async () => {
   const { container } = renderView()
   await screen.findByText('Chest Supported Row')
-  const rows = Array.from(container.querySelectorAll('.mz-facttile'))
+  const rows = Array.from(container.querySelectorAll('.er-medal'))
   expect(rows.length).toBe(3)
   for (const row of rows) {
-    expect(row).toHaveClass('glass')
-    expect(row.querySelector('.glass')).toBeNull()
+    expect(row).toHaveClass('fo-row')
+    expect(row.closest('.fo-card')).not.toBeNull()
   }
+  expect(container.querySelector('.glass, .mz-facttile, [class*="gyx-"], [class*="uv-"]')).toBeNull()
 })
 
 // The regression case for mezo-wp6n Finding 1: a real-mode SESSION_VOLUME medal
@@ -89,7 +95,7 @@ test('each cabinet row is ONE glass surface; the empty cabinet is dashed, never 
 // a "previous" that is itself a volume, and read as an indistinguishable WEIGHT row.
 test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not the set', async () => {
   renderView()
-  const row = (await screen.findByText('Leg Press')).closest('.mz-facttile') as HTMLElement
+  const row = (await screen.findByText('Leg Press')).closest('.er-medal') as HTMLElement
   expect(within(row).getByText('820 kg')).toBeInTheDocument()
   expect(within(row).queryByText(/102,5 kg × 8/)).not.toBeInTheDocument()
   expect(within(row).getByText(/Előző: 800 kg/)).toBeInTheDocument()
@@ -97,7 +103,7 @@ test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not 
 
 test('a TARGET_HIT medal never renders a previous-value slot (nothing was beaten)', async () => {
   renderView()
-  const row = (await screen.findByText('Hip Thrust')).closest('.mz-facttile') as HTMLElement
+  const row = (await screen.findByText('Hip Thrust')).closest('.er-medal') as HTMLElement
   expect(within(row).queryByText(/Előző/)).not.toBeInTheDocument()
 })
 
@@ -135,7 +141,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
   test('newest date group renders first, older date group after', async () => {
     const { container } = renderView()
     await screen.findByText('Bench Press')
-    const cards = Array.from(container.querySelectorAll('.mz-facttile'))
+    const cards = Array.from(container.querySelectorAll('.er-medal'))
     const names = cards.map((c) => c.textContent)
     const benchIdx = names.findIndex((t) => t?.includes('Bench Press'))
     const rowIdx = names.findIndex((t) => t?.includes('Row Machine'))
@@ -151,7 +157,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
 
   test('a RECORD medal with previousValue but null previousDate drops the date cleanly', async () => {
     renderView()
-    const row = (await screen.findByText('Squat')).closest('.mz-facttile') as HTMLElement
+    const row = (await screen.findByText('Squat')).closest('.er-medal') as HTMLElement
     expect(within(row).getByText(/Előző: 135 kg/)).toBeInTheDocument()
     // never a dangling "null"/"undefined" or trailing separator
     expect(row.textContent).not.toMatch(/null|undefined/i)
@@ -160,7 +166,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
 
   test('a RECORD medal WITH a previousDate renders the "…óta állt" phrasing', async () => {
     renderView()
-    const row = (await screen.findByText('Bench Press')).closest('.mz-facttile') as HTMLElement
+    const row = (await screen.findByText('Bench Press')).closest('.er-medal') as HTMLElement
     expect(within(row).getByText(new RegExp(`Előző: 145 kg · ${huMonthDay('2026-06-20')} óta állt`))).toBeInTheDocument()
   })
 })
@@ -174,9 +180,11 @@ test('empty cabinet: an honest single line, no ghost rows, no counter chip, no b
     await screen.findByText('Még nincs medálod — az első megdöntött rekord ide kerül.'),
   ).toBeInTheDocument()
   expect(screen.getByText('Medálok')).toBeInTheDocument()
-  expect(container.querySelectorAll('.mz-facttile').length).toBe(0)
-  expect(container.querySelector('.uv-empty')).not.toBeNull()
-  expect(container.querySelector('.uv-empty.glass')).toBeNull()
+  expect(container.querySelectorAll('.er-medal').length).toBe(0)
+  // the empty vessel in the hero, and the verdict says it too
+  expect(container.querySelector('.fo-hero .fo-ev')).not.toBeNull()
+  expect(screen.getByText('Még nincs medálod.')).toHaveClass('fo-hero-verdict')
+  expect(container.querySelector('.fo-sec')).toBeNull()
   expect(screen.queryByText(/medál$/)).not.toBeInTheDocument()
   expect(screen.queryByText(/visszamenőleg/)).not.toBeInTheDocument()
 })
@@ -204,7 +212,7 @@ describe('MedalsPage (mock mode)', () => {
 
   it('groups the seeded cabinet by date, newest first', () => {
     const { container } = renderView()
-    const cards = Array.from(container.querySelectorAll('.mz-facttile'))
+    const cards = Array.from(container.querySelectorAll('.er-medal'))
     const names = cards.map((c) => c.textContent ?? '')
     // 2026-07-27 (Hammer Curl E1RM + TARGET_HIT) is the newest date in the seed —
     // it must render before 2026-06-15 (the oldest Hammer Curl WEIGHT medal).
@@ -216,16 +224,39 @@ describe('MedalsPage (mock mode)', () => {
   })
 })
 
-// Motion (mezo-d20.11): the page shipped an ARMED EntranceGroup with nothing
-// marked `.rise` — the wrapper animated an empty stage. Both halves must exist.
-test('the cabinet staggers inside the armed entrance group', async () => {
-  const { container } = renderView()
-  await screen.findByText('3 medál')
-  const play = container.querySelector('.mz-play')
-  expect(play).not.toBeNull()
-  const risen = play!.querySelectorAll('.rise')
-  expect(risen.length).toBeGreaterThan(1)
-  // a running 60ms cadence across the date-group eyebrows and their cards
-  expect((risen[0] as HTMLElement).style.getPropertyValue('--d')).toBe('40ms')
-  expect((risen[1] as HTMLElement).style.getPropertyValue('--d')).toBe('100ms')
+// Folyadék (mezo-n4wf5.3): the cabinet is two numbered cards — this month and earlier.
+describe('E hónapban / Korábbról', () => {
+  const today = localDateString()
+  const split: Medal[] = [
+    {
+      type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Squat',
+      date: today, setIndex: 1, value: 140, unit: 'KG', weightKg: 140, reps: 5,
+      previousValue: 135, previousDate: null,
+    },
+    {
+      type: 'E1RM', tier: 'RECORD', exerciseName: 'Bench Press',
+      date: '2025-01-10', setIndex: 3, value: 150, unit: 'KG', weightKg: 130, reps: 5,
+      previousValue: 145, previousDate: '2024-12-20',
+    },
+  ]
+
+  test('a medal of this month sits in card 1, the rest in card 2; the capsule note is said once', async () => {
+    server.use(http.get(`${API_BASE}/api/train/medals`, () => HttpResponse.json({ medals: split })))
+    const { container } = renderView()
+    expect(await screen.findByText('2 medál, ebből 1 e hónapban.')).toBeInTheDocument()
+    const heads = Array.from(container.querySelectorAll('.fo-sec')).map((h) => h.textContent)
+    expect(heads).toEqual(['1E hónapban', '2Korábbról'])
+    const cards = container.querySelectorAll('.fo-card:not(.fo-hero)')
+    expect(within(cards[0] as HTMLElement).getByText('Squat')).toBeInTheDocument()
+    expect(within(cards[1] as HTMLElement).getByText('Bench Press')).toBeInTheDocument()
+    expect(screen.getAllByText(/A kapszulán a vonal a régi rekord/)).toHaveLength(1)
+    expect(container.querySelectorAll('.er-shelf i.new')).toHaveLength(1)
+  })
+
+  test('with nothing this month only „Korábbról" stands, numbered 1', async () => {
+    const { container } = renderView()
+    await screen.findByText('3 medál')
+    expect(Array.from(container.querySelectorAll('.fo-sec')).map((h) => h.textContent)).toEqual(['1Korábbról'])
+    expect(screen.getByText(/A kapszulán a vonal a régi rekord/)).toBeInTheDocument()
+  })
 })

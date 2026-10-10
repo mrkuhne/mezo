@@ -1,28 +1,26 @@
 // ============================================================
 // Mezo · MesoDayEditor — egy edzésnap szerkesztője az egységes mezo-szerkesztőben
-// (mezo-yty6). Anatómia: hero ÁTNEVEZHETŐ napnévvel → Napi terhelés csempe →
-// mindig nyitott gyakorlat-kártyák → hozzáadás-gomb.
+// (mezo-yty6; Folyadék mezo-n4wf5.3, prototype vilagos/edzes.js `weekEd(r, 'nap')`).
+// Anatómia: hero ÁTNEVEZHETŐ napnévvel + a nap három legtöbbet dolgozó izma edényként a
+// kb. 8 szett / edzés határ vízvonalával (dayMuscleLoad) → a hero folyadéksorán a Napi
+// terhelés és a gyakorlat hozzáadása → mindig nyitott gyakorlat-kártyák.
 //
 // RENDER-FEGYELEM (prototípus-visszajelzés: „átrendezéskor az egész oldal flashel"):
-// a belépő `rise` choreográfia CSAK az első mountra fut. A lista `data-entered`
-// jelzője a mount után 'true' lesz, és onnantól a kártyák stagger-osztály nélkül
-// renderelődnek — a szerkesztés (átrendezés, törlés, hozzáadás, számbevitel)
-// villanás nélkül frissül.
+// a belépő choreográfia CSAK az első mountra fut. A lista `data-entered` jelzője a mount
+// után 'true' lesz, és onnantól a kártyák stagger-osztály nélkül renderelődnek — a
+// szerkesztés (átrendezés, törlés, hozzáadás, számbevitel) villanás nélkül frissül.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { DAY_LABELS } from '@/data/train/train'
 import type { GymExercise, MesoDay } from '@/data/types'
 import { DayLoadPanel } from '@/features/train/components/DayLoadPanel'
 import { ExerciseCard } from '@/features/train/components/ExerciseCard'
-import { LoadTile } from '@/features/train/components/LoadTile'
-import { dayMuscleLoad, dayTone } from '@/features/train/logic/mesoLoad'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import { dayMuscleLoad } from '@/features/train/logic/mesoLoad'
 import { BUDGET_GROUP_LABELS, budgetGroup } from '@/features/train/logic/setBudget'
-import { Icon } from '@/shared/ui/Icon'
-import { ClayIcon } from '@/shared/ui/clay'
-import { MozaikPage, PageBody, PageHead, type PageTone } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-
-const TONE: Record<string, PageTone> = { coral: 'coral', sage: 'sage', rose: 'rose', gold: 'gold' }
+import {
+  Btn, Card, FrameBack, Hero, Input, Lab, Note, Page, Section, Tubes, useFrameTitle,
+} from '@/shared/ui/folyadek'
 
 /**
  * Buffers the day-name text locally rather than mirroring the incoming `type` prop
@@ -49,6 +47,10 @@ interface MesoDayEditorProps {
   day: MesoDay
   /** Estimated session minutes — the page owns the timing profile and passes the number. */
   minutes: number
+  /** Which editor this day belongs to — picks the hero label. */
+  mode?: 'draft' | 'template'
+  /** The title bar's small line above the day (the template's name, or „még nincs mentve"). */
+  eyebrow?: string
   onBack: () => void
   onRename: (name: string) => void
   onChangeExercise: (exId: string, patch: Partial<GymExercise>) => void
@@ -58,18 +60,19 @@ interface MesoDayEditorProps {
 }
 
 export function MesoDayEditor({
-  day, minutes, onBack, onRename, onChangeExercise, onMoveExercise, onRemoveExercise, onAdd,
+  day, minutes, mode = 'template', eyebrow, onBack, onRename, onChangeExercise, onMoveExercise, onRemoveExercise, onAdd,
 }: MesoDayEditorProps) {
   const [loadOpen, setLoadOpen] = useState(false)
-  // One-shot entrance, WITHOUT state: the first render paints the `rise` stagger, the
-  // post-mount effect clears the ref, and every LATER render (an edit, a reorder, a delete)
-  // renders without it. Deliberately not useState — a state flip would force an extra
-  // render and the staggered frame would never reach the screen.
+  // One-shot entrance, WITHOUT state: the first render paints the stagger, the post-mount
+  // effect clears the ref, and every LATER render (an edit, a reorder, a delete) renders
+  // without it. Deliberately not useState — a state flip would force an extra render and the
+  // staggered frame would never reach the screen.
   const firstRender = useRef(true)
   const entrance = firstRender.current
   useEffect(() => { firstRender.current = false }, [])
 
   const [nameText, setNameText] = useBufferedText(day.type, day.day)
+  const nameId = useId()
 
   const rows = dayMuscleLoad(day)
   const sets = day.exercises.reduce((a, e) => a + e.workingSets, 0)
@@ -79,74 +82,86 @@ export function MesoDayEditor({
   }
 
   return (
-    <MozaikPage tone={TONE[dayTone(day.type)] ?? 'coral'}>
-      <PageHead onBack={onBack} label="‹ A heted" />
-      <EntranceGroup>
-        <div className="mz-dayhero rise">
-          <ClayIcon name="i-edzes" size={30} />
-          <input
-            className="mz-dayname"
-            aria-label={`${day.day} nap neve`}
-            value={nameText}
-            onChange={(e) => {
-              setNameText(e.target.value)
-              onRename(e.target.value)
-            }}
-          />
-          <span className="mz-dayhero-hint">✎ koppints a névre az átnevezéshez</span>
-          <span className="mz-dayhero-sub">
-            {day.day} · {sets} szett · ~{minutes} perc · {day.exercises.length} gyakorlat
-          </span>
-        </div>
-        <PageBody principle="Minden mező közvetlenül írható. Átrendezés a ▲▼ nyilakkal, törlés az ×-szel.">
-          <div className="rise" style={{ marginBottom: 10 }}>
-            <LoadTile
-              tone="day"
-              eyebrow={`Napi terhelés · ${day.day}`}
-              value={sets}
-              unit={`szett · ~${minutes}′`}
-              gauges={rows.slice(0, 3).map((r) => ({
+    <DayFace eyebrow={eyebrow} title={`${DAY_LABELS[day.day] ?? day.day} · ${day.type}`}>
+      <FrameBack className="ew-back" onBack={onBack}>‹ A heted</FrameBack>
+      <Hero
+        className="ew-hero"
+        label={mode === 'draft' ? 'Vázlat · egy nap' : 'Sablon · egy nap'}
+        verdict={`${sets} szett, ~${minutes} perc, ${day.exercises.length} gyakorlat.`}
+        sub="Minden mező közvetlenül írható. Átrendezés a ▲▼ nyilakkal, törlés az ✕-szel."
+        actions={(
+          <>
+            <Btn onClick={() => setLoadOpen(true)}>Napi terhelés · {day.day}</Btn>
+            <Btn ghost aria-label="Gyakorlat hozzáadása" onClick={onAdd}>＋ Gyakorlat</Btn>
+          </>
+        )}
+      >
+        <Lab htmlFor={nameId}>A nap neve</Lab>
+        <Input
+          id={nameId}
+          aria-label={`${day.day} nap neve`}
+          value={nameText}
+          onChange={(e) => {
+            setNameText(e.target.value)
+            onRename(e.target.value)
+          }}
+        />
+        <Note>✎ koppints a névre az átnevezéshez</Note>
+        {rows.length > 0 && (
+          <div className="ew-hg n3">
+            <Tubes
+              size="sm" height={86}
+              items={rows.slice(0, 3).map((r) => ({
+                node: <Mchp muscle={r.colorMuscle} size={28} />,
                 label: r.label,
                 value: r.sets,
-                max: r.cap,
-                color: muscleColor(r.colorMuscle).deep,
-                warn: r.nearCap || r.over,
+                note: `/ ~${r.cap}`,
+                pct: (r.sets / (r.cap + 1)) * 94,
+                wl: (r.cap / (r.cap + 1)) * 94,
+                color: deepMuscle(r.colorMuscle),
+                over: r.over,
               }))}
-              flagged={rows.some((r) => r.over)}
-              onOpen={() => setLoadOpen(true)}
             />
           </div>
+        )}
+      </Hero>
 
-          <div data-testid="exercise-list" data-entered={entrance ? 'false' : 'true'}>
-            {day.exercises.map((ex, i) => {
-              const group = budgetGroup(ex.muscle)
-              return (
-                <div key={ex.id} className={entrance ? 'rise' : undefined} style={entrance ? { ['--d' as string]: `${60 + i * 50}ms` } : undefined}>
-                  <ExerciseCard
-                    ex={ex}
-                    contribution={group
-                      ? [{
-                        label: BUDGET_GROUP_LABELS[group] ?? group,
-                        sets: ex.workingSets,
-                        color: muscleColor(ex.muscle).deep,
-                      }]
-                      : []}
-                    canMoveUp={i > 0}
-                    canMoveDown={i < day.exercises.length - 1}
-                    onChange={(patch) => onChangeExercise(ex.id, patch)}
-                    onMove={(dir) => onMoveExercise(ex.id, dir)}
-                    onRemove={() => onRemoveExercise(ex.id)}
-                  />
-                </div>
-              )
-            })}
-          </div>
-
-          <button type="button" onClick={onAdd} className="mz-addex">
-            <Icon name="plus" size={12} /> Gyakorlat hozzáadása
-          </button>
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+      <Section n={1} title={`Gyakorlatok · ${day.exercises.length} gyakorlat · ${sets} szett`} />
+      <Card data-testid="exercise-list" data-entered={entrance ? 'false' : 'true'}>
+        {day.exercises.length === 0 && <Note>Ezen a napon még nincs gyakorlat.</Note>}
+        {day.exercises.map((ex, i) => {
+          const group = budgetGroup(ex.muscle)
+          return (
+            <div
+              key={ex.id}
+              className={entrance ? 'ew-exw ew-rise' : 'ew-exw'}
+              style={entrance ? { ['--d' as string]: `${60 + i * 50}ms` } : undefined}
+            >
+              <ExerciseCard
+                ex={ex}
+                contribution={group
+                  ? [{
+                    label: BUDGET_GROUP_LABELS[group] ?? group,
+                    sets: ex.workingSets,
+                    color: deepMuscle(ex.muscle),
+                  }]
+                  : []}
+                canMoveUp={i > 0}
+                canMoveDown={i < day.exercises.length - 1}
+                onChange={(patch) => onChangeExercise(ex.id, patch)}
+                onMove={(dir) => onMoveExercise(ex.id, dir)}
+                onRemove={() => onRemoveExercise(ex.id)}
+              />
+            </div>
+          )
+        })}
+      </Card>
+    </DayFace>
   )
+}
+
+/** The day face's page root: it owns the title-bar line, so the load page (its sibling face) can set its own. */
+function DayFace({ title, eyebrow, children }: { title: string; eyebrow?: string; children: ReactNode }) {
+  useFrameTitle({ title, eyebrow })
+  return <Page className="ew-page">{children}</Page>
 }

@@ -6,6 +6,7 @@ import { http, HttpResponse } from 'msw'
 import { MesoReportPage, versusPairs } from '@/features/train/pages/MesoReportPage'
 import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
@@ -14,64 +15,87 @@ function LocationProbe() {
   return <div data-testid="loc">{pathname}</div>
 }
 
+/** The run's title is the TITLE BAR's since Folyadék (`useFrameTitle`); the probe stands in for
+ *  the bar and prints what the page handed it. */
+function TitleProbe() {
+  const { title, eyebrow } = useFrame()
+  return <div data-testid="frame-title" data-eyebrow={eyebrow}>{title}</div>
+}
+
 const renderAt = (id: string) =>
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={[`/train/mesocycles/${id}/report`]}>
-        <Routes>
-          <Route path="train/mesocycles/:id/report" element={<MesoReportPage />} />
-        </Routes>
+        <FrameProvider>
+          <TitleProbe />
+          <Routes>
+            <Route path="train/mesocycles/:id/report" element={<MesoReportPage />} />
+          </Routes>
+        </FrameProvider>
         <LocationProbe />
       </MemoryRouter>
     </QueryWrapper>,
   )
 
+const sections = (container: HTMLElement) => [...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)
+
 describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  // --- the Titanium star hero (T10 Task 4, mezo-88iwa.11) ---
+  // --- the hero (Folyadék mezo-n4wf5.3; the rating is T10 Task 4's, mezo-88iwa.11) ---
 
-  it('heads the page with the run title and its frozen window', () => {
+  it('hands the run title to the title bar and heads the hero with its frozen window', () => {
     renderAt('meso-rec-03')
-    expect(screen.getByRole('heading', { name: 'Recovery rebuild · Tél' })).toBeInTheDocument()
-    expect(screen.getByText('Lezárt futam · Feb 12 – Ápr 23')).toBeInTheDocument()
+    expect(screen.getByTestId('frame-title')).toHaveTextContent('Recovery rebuild · Tél')
+    expect(screen.getByTestId('frame-title')).toHaveAttribute('data-eyebrow', 'Lezárt futam · Feb 12 – Ápr 23')
+    expect(screen.getByText('Lezárt futam · Feb 12 – Ápr 23')).toHaveClass('fo-hero-lbl')
     expect(screen.getByText('8 hét')).toBeInTheDocument()
+    expect(screen.getByText('Lezárva · Ápr 23')).toBeInTheDocument()
   })
 
-  it('docks the back pill inside the star hero, neutrally labeled (fix round, mezo-88iwa.11)', () => {
-    const { container } = renderAt('meso-rec-03')
-    const hero = container.querySelector('.pl-lhero')!
+  it('draws its own back control where no title bar is mounted, neutrally labeled', () => {
+    renderAt('meso-rec-03')
     const back = screen.getByRole('button', { name: 'Vissza' })
-    expect(back.parentElement).toBe(hero)
+    expect(back).toHaveClass('er-back')
     expect(back).toHaveTextContent('Vissza')
   })
 
   it('rates the run with the ceremony star scale and says it in one plain sentence', () => {
     const { container } = renderAt('meso-rec-03')
     // completionPct 88 -> share .88 -> starsFor gives 4.5 (halves), say: „Erős futam volt."
-    expect(screen.getByRole('img', { name: '4,5 csillag az ötből' })).toBeInTheDocument()
-    expect(container.querySelectorAll('.pl-stars i.is-lit')).toHaveLength(4)
-    expect(container.querySelectorAll('.pl-stars i.is-half')).toHaveLength(1)
-    expect(screen.getByText('Erős futam volt.')).toBeInTheDocument()
+    const stars = screen.getByRole('img', { name: '4,5 csillag az ötből' })
+    expect(stars).toBeInTheDocument()
+    expect([...stars.querySelectorAll('use')].map((u) => u.getAttribute('href')))
+      .toEqual(['#t-star', '#t-star', '#t-star', '#t-star', '#t-star-half'])
+    expect(screen.getByText('Erős futam volt.')).toHaveClass('fo-hero-verdict')
+    expect(container.querySelector('.fo-hero')).toContainElement(stars)
   })
 
-  it('draws the completed share instead of merely printing it', () => {
+  it('draws the completed share (the cup\'s level) and spells it once beside the stars', () => {
     const { container } = renderAt('meso-rec-03')
-    expect((container.querySelector('.ld-hero-pct b') as HTMLElement).textContent).toBe('88')
-    expect((container.querySelector('.ld-hero-pct em') as HTMLElement).textContent).toBe('%')
+    expect(container.querySelector('.er-ms')!.textContent).toBe('88%')
     expect(screen.getByText('A teljesített edzések aránya')).toBeInTheDocument()
-    const bar = container.querySelector('.ld-hero-bar i') as HTMLElement
-    expect(bar.style.getPropertyValue('--w')).toBe('88%')
+    // the cup: 88 % × 0.9 of a 0 0 100 100 box → the surface stands at y = 20.8
+    const wave = container.querySelector('.fo-hero-left svg.fo-fill .fo-fill-wv path')!.getAttribute('d')!
+    expect(Number(wave.split(' ')[1])).toBeCloseTo(20.8, 1)
   })
 
-  it('renders the adherence stat strip — without repeating the hero\'s share', () => {
-    renderAt('meso-rec-03')
-    expect(screen.getByText('21/24')).toBeInTheDocument()
-    expect(screen.getByText('8/8')).toBeInTheDocument()
-    // the 88% lives in the hero now; the strip must not state it a second time
+  it('renders the two adherence facts — without repeating the hero\'s share', () => {
+    const { container } = renderAt('meso-rec-03')
+    const facts = container.querySelector('.fo-facts')!
+    expect(facts.textContent).toBe('21/24Edzés8/8Hét')
+    // the 88% lives in the hero; the facts must not state it a second time
     expect(screen.queryByText('Teljesítés')).toBeNull()
-    expect(screen.getAllByText('88')).toHaveLength(1)
+    expect(screen.getAllByText('88%')).toHaveLength(1)
+  })
+
+  it('both hero actions stand on the liquid row: Újrafuttatás, and Sablon megnyitása only with a template', () => {
+    const { container } = renderAt('meso-rec-03')
+    const acts = container.querySelector('.fo-hero-acts') as HTMLElement
+    expect(within(acts).getByRole('button', { name: 'Újrafuttatás' })).toBeInTheDocument()
+    // meso-rec-03's report carries no templateId → no link to open
+    expect(within(acts).queryByRole('button', { name: 'Sablon megnyitása' })).toBeNull()
   })
 
   // --- the pre-Titanium tail is gone (T-P1 Task 5, mezo-e1ii9) ---
@@ -145,13 +169,21 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
 
   it('renders the per-muscle band card — start → peak / ceiling, sorted by ceiling desc', () => {
     renderAt('meso-rec-03')
-    expect(screen.getByText('Izmonként · indulás → elért csúcs / plafon')).toBeInTheDocument()
+    expect(screen.getByText('Izmonként · indulás → elért csúcs / felső érték')).toBeInTheDocument()
     const bands = screen.getByTestId('meso-report-bands')
     const rows = within(bands).getAllByTestId('report-band-row')
     expect(rows).toHaveLength(6)
     // Hát (back): mev 8 -> mav/mrv 20, so W1 8, peak reaches the 20 ceiling exactly
     expect(within(rows[0]).getByText('Hát')).toBeInTheDocument()
     expect(within(rows[0]).getByText('8 → 20 / 20')).toBeInTheDocument()
+    // …drawn: the vessel's rim is the ceiling, the level the peak, the dashed line the start
+    const vessel = rows[0].querySelector('.fo-wlv') as HTMLElement
+    expect((vessel.querySelector('i') as HTMLElement).style.width).toBe('100%')
+    expect((vessel.querySelector('u.d') as HTMLElement).style.left).toBe('40%')
+    expect(rows[0].querySelector('.ex-mchp')).not.toBeNull()
+    // the key under the rows says what the two marks mean
+    expect(within(bands).getByText('innen indult')).toBeInTheDocument()
+    expect(within(bands).getByText('az edény széle a felső érték')).toBeInTheDocument()
   })
 
   // --- „A mostani tervedhez képest" (T10 Task 4, mezo-88iwa.11) ---
@@ -163,62 +195,72 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
     // the two fixtures share all six of rec-03's muscles (the active hyp-04 adds triceps +
     // glute, which have no „akkor" side and so are not pairs); loudest run peak first
     expect(pairs).toHaveLength(6)
-    expect(within(pairs[0]).getByText('Hát')).toBeInTheDocument() // peak 20
+    expect(pairs[0]).toHaveTextContent('Hát') // peak 20
 
     // Hand-computed, Mell: rec-03's frozen arc is mev 6 → ceiling (mav) 16 in +2 steps over
     // 8 weeks, so its peak week is 16. The ACTIVE hyp-04 run is in week 3 of mev 8 → mav 14,
     // i.e. 8 → 10 → 12, so this week gives 12.
-    const chest = pairs.find((p) => within(p).queryByText('Mell')) as HTMLElement
-    const then = within(chest).getByText('akkor').parentElement as HTMLElement
-    const now = within(chest).getByText('most').parentElement as HTMLElement
-    expect(within(then).getByText('16')).toBeInTheDocument()
-    expect(within(now).getByText('12')).toBeInTheDocument()
-    // one ruler for both bars: 16/16 and 12/16 of the pair set's widest value (back's 20)
-    expect((then.querySelector('.pl-versus-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('80%')
-    expect((now.querySelector('.pl-versus-bar i') as HTMLElement).style.getPropertyValue('--w')).toBe('60%')
+    const chest = pairs.find((p) => p.textContent === 'Mell')!.closest('.fo-vial') as HTMLElement
+    // the tube's number is what the plan gives NOW, „akkor N" under it is the run's peak
+    expect(chest.querySelector('b')!.textContent).toBe('12')
+    expect(chest.querySelector('small i')!.textContent).toBe('akkor 16')
+    // one ruler for both, the pair set's widest value (back's 20), on the tube's 94 % scale:
+    // the liquid stands at 12/20, the dashed waterline at 16/20
+    expect((chest.querySelector('.fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe(`${(12 / 20) * 94}%`)
+    expect((chest.querySelector('.fo-tube .wl') as HTMLElement).style.bottom).toBe(`${(16 / 20) * 94}%`)
+    expect(chest.querySelector('.fo-tube .ex-mchp')).not.toBeNull()
   })
 
   it('labels the top-set LOAD move and the e1RM percentage distinctly', () => {
     renderAt('meso-rec-03')
     const strength = screen.getByTestId('meso-report-strength')
-    expect(within(strength).getByText('Chest Supported Row')).toBeInTheDocument()
-    expect(within(strength).getByText('72,5 → 85 kg · 8 → 8 rep')).toBeInTheDocument()
-    expect(within(strength).getByText('+12,5 kg')).toBeInTheDocument()
-    expect(within(strength).getByText('+17,2% e1RM')).toBeInTheDocument()
+    const row = within(strength).getByText('Chest Supported Row').closest('[data-testid="strength-row"]') as HTMLElement
+    const sub = row.querySelector('small')!.textContent!
+    expect(sub).toContain('72,5 → 85 kg · 8 → 8 rep')
+    expect(sub).toMatch(/^\d+\. hét → \d+\. hét · /)
+    // the two deltas, labelled apart: kg is the load, % is the estimated 1RM
+    expect(sub).toContain('+12,5 kg · +17,2% becsült 1RM · ')
+    // the row's headline value is the load move; the capsule's line is the old top set
+    expect(row.querySelector('.v')!.textContent).toBe('+12,5 kg')
+    expect(row.querySelector('.ex-rc u')).not.toBeNull()
   })
 
-  it('shows the e1RM pill alone when the load did not move but the reps did', () => {
+  it('shows the e1RM gain alone when the load did not move but the reps did', () => {
     renderAt('meso-rec-03')
     const strength = screen.getByTestId('meso-report-strength')
     const row = within(strength).getByText('Lateral Raise').closest('[data-testid="strength-row"]')!
-    expect(within(row as HTMLElement).getByText('+9,5% e1RM')).toBeInTheDocument()
-    expect(within(row as HTMLElement).queryByText(/kg$/)).toBeNull() // 0 kg is not a gain
+    expect(row.querySelector('small')!.textContent).toContain('+9,5% becsült 1RM')
+    expect(row.querySelector('.v')!.textContent).toBe('+9,5%')
+    expect(row.textContent).not.toMatch(/[+-]\d[\d,]* kg/) // 0 kg is not a gain
   })
 
   it('badges nothing at all on a genuinely flat lift (0 kg AND 0%)', () => {
     renderAt('meso-rec-03')
     const strength = screen.getByTestId('meso-report-strength')
     const row = within(strength).getByText('Leg Press').closest('[data-testid="strength-row"]')!
-    expect(within(row as HTMLElement).getByText('120 → 120 kg · 12 → 12 rep')).toBeInTheDocument()
-    // a `0% e1RM` badge in a signal colour would invent a verdict where nothing moved
-    expect(within(row as HTMLElement).queryByText(/e1RM/)).toBeNull()
-    expect(within(row as HTMLElement).queryByText(/kg$/)).toBeNull()
+    expect(row.querySelector('small')!.textContent).toContain('120 → 120 kg · 12 → 12 rep')
+    // a `0%` in the value slot would invent a verdict where nothing moved
+    expect(row.textContent).not.toMatch(/becsült 1RM/)
+    expect(row.querySelector('.v')).toBeNull()
   })
 
   it('falls back to reps movement on a weightless lift (no e1RM to quote)', () => {
     renderAt('meso-rec-03')
     const strength = screen.getByTestId('meso-report-strength')
     const row = within(strength).getByText('Chin-up').closest('[data-testid="strength-row"]')!
-    expect(within(row as HTMLElement).getByText('6 → 10 rep')).toBeInTheDocument()
-    expect(within(row as HTMLElement).queryByText(/e1RM/)).toBeNull()
+    expect(row.querySelector('small')!.textContent).toMatch(/hét · 6 → 10 rep/)
+    expect(row.textContent).not.toMatch(/becsült 1RM/)
+    // nothing was loaded → the capsule has no old-load line to draw
+    expect(row.querySelector('.ex-rc u')).toBeNull()
   })
 
   it('renders the records block with the medal count and the highlights', () => {
     renderAt('meso-rec-03')
     const records = screen.getByTestId('meso-report-records')
-    expect(within(records).getByText(/7 medál/)).toBeInTheDocument()
-    expect(within(records).getByText('Hammer Curl')).toBeInTheDocument()
-    expect(within(records).getByText('Súly-rekord')).toBeInTheDocument()
+    expect(screen.getByText('Rekordok · 7 medál')).toBeInTheDocument()
+    const row = within(records).getByText('Hammer Curl').closest('.fo-row') as HTMLElement
+    expect(row.querySelector('small')!.textContent).toMatch(/^Súly-rekord · /)
+    expect(row.querySelector('.ex-rc')).not.toBeNull()
   })
 
   it('renders the self-eval read-only', () => {
@@ -248,15 +290,25 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
 
   it('ends the page where the prototype\'s closed-run story ends', () => {
     const { container } = renderAt('meso-rec-03')
-    // the Titanium halves are untouched…
-    expect(container.querySelector('.pl-lhero.is-closed')).toBeTruthy()
-    expect(container.querySelector('.ld-hero-bar i')).toBeTruthy()
+    // the page's order: hero, then the five numbered cards
+    expect(container.querySelector('.fo-hero')).toBeTruthy()
+    expect(sections(container)).toEqual([
+      '1Hogy ment', '2Izmonként · indulás → elért csúcs / felső érték', '3Erő · 6 gyakorlat', '4Rekordok · 7 medál', '5A futam után',
+    ])
+    // the old skin is gone
+    expect(container.querySelector('.glass, [class*="pl-l"], [class*="pl-versus"], [class*="ld-hero"], .mz-play, .chip, .card')).toBeNull()
     expect(screen.getByTestId('meso-report-bands')).toBeInTheDocument()
     const versus = screen.getByTestId('meso-report-versus')
     // …and the then-vs-now block is the LAST story block: only the collapsed machine
     // evaluation and the run's live actions may follow it.
     const ai = screen.getByTestId('meso-report-ai')
     expect(versus.compareDocumentPosition(ai) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // the two live actions close the last card, after the disclosure
+    const save = screen.getByRole('button', { name: 'Sablon mentése ebből a futamból' })
+    const regen = screen.getByRole('button', { name: 'Riport újragenerálása' })
+    expect(ai.compareDocumentPosition(save) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(save.compareDocumentPosition(regen) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(save.closest('.fo-card')).toBe(ai.closest('.fo-card'))
   })
 
   it('says the report is not written yet for a run that is still going', () => {
@@ -624,18 +676,17 @@ describe('versusPairs', () => {
 // The button beside the heading, the prototype's copy word for word. The aria-label is
 // the prototype's own `"<title> — mit jelent?"`.
 
-// The TITLE here is the one adjudicated swap: production renders text rows, not the
-// prototype's bars, so „Mit mutat a sáv?" would point at a bar that is not on screen.
-// It reads „Hogyan olvasd?" until the surfaces slice (mezo-fsz2r) brings the bars back.
+// A text link under the muscle rows (Folyadék, mezo-n4wf5.3), titled „Hogyan olvasd?".
 describe('MesoReportPage · the ⓘ explain layer (mezo-b516k)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('ⓘ beside the muscle-journey eyebrow explains the journey, copy word for word', async () => {
+  it('„Hogyan olvasd?" under the muscle rows explains the journey, copy word for word', async () => {
     const user = userEvent.setup()
     renderAt('meso-rec-03')
     const btn = await screen.findByRole('button', { name: 'Hogyan olvasd? — mit jelent?' })
-    expect(btn.previousElementSibling?.textContent).toBe('Izmonként · indulás → elért csúcs / plafon')
+    expect(screen.getByTestId('meso-report-bands')).toContainElement(btn)
+    expect(btn).toHaveTextContent('Hogyan olvasd?')
     await user.click(btn)
     expect(
       within(screen.getByRole('dialog', { name: 'Hogyan olvasd?' })).getByText(

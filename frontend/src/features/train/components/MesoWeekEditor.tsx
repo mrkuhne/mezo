@@ -1,27 +1,30 @@
 // ============================================================
-// Mezo · MesoWeekEditor — az EGYSÉGES mezo-szerkesztő (mezo-yty6). A varázsló
-// harmadik lépése és a sablon-szerkesztő ugyanezt rendereli: két felület helyett
-// egy. Ami különbözik, az kívülről jön — a perzisztencia (a szülő callbackjei) és
-// a lábléc CTA-i (`footer` slot); a `mode` csak a fejléc-eyebrow-t választja.
+// Mezo · MesoWeekEditor — az EGYSÉGES mezo-szerkesztő (mezo-yty6; Folyadék mezo-n4wf5.3,
+// prototype vilagos/edzes.js `weekEd()`). A varázsló vázlata és a sablon-szerkesztő ugyanezt
+// rendereli: két felület helyett egy. Ami különbözik, az kívülről jön — a perzisztencia (a
+// szülő callbackjei), a hero gombjai (`actions`) és a lap alja (`footer` slot); a `mode` a
+// hero feliratát, a cél megjelenését és a címsort választja.
 //
-// Anatómia: hero (szerkeszthető mezo-név + meta) → VÍZSZINTESEN görgethető
-// nap-csempesor → Heti terhelés csempe → lint-sorok → footer. Egy nap
-// megnyitása OLDAL-ÁLLAPOT (`activeDay`, a hívó birtokolja), nem route — a még
-// nem mentett vázlat így éli túl a be-/kilépést (ProgramDayView idiom).
+// Anatómia: hero (szerkeszthető név + meta + a cél / Mezo indoklása + az öt legtöbbet dolgozó
+// izom edényként, a szélük a legfeljebb vállalható heti szett — weekMuscleLoad) → ① a hét
+// napjai soronként → ② Heti terhelés sor + az átfedés-jelzések → footer. Egy nap megnyitása
+// OLDAL-ÁLLAPOT (`activeDay`, a hívó birtokolja), nem route — a még nem mentett vázlat így éli
+// túl a be-/kilépést.
 // ============================================================
 import type { ReactNode } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
 import { DayStripTile } from '@/features/train/components/DayStripTile'
 import { LoadTile } from '@/features/train/components/LoadTile'
 import { MesoDayEditor } from '@/features/train/components/MesoDayEditor'
 import { WeekLoadPanel } from '@/features/train/components/WeekLoadPanel'
-import { adjacentDayConflicts, dayMuscleLoad, dayTone, weekMuscleLoad, type Landmark } from '@/features/train/logic/mesoLoad'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import { adjacentDayConflicts, dayMuscleLoad, weekMuscleLoad, type Landmark } from '@/features/train/logic/mesoLoad'
+import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes, type SessionTimingProfile } from '@/features/train/logic/sessionLength'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { Icon3D } from '@/shared/ui/clay'
+import {
+  Box, Btn, Card, FrameBack, Hero, Input, Lab, Msg, Page, Section, Tubes, useFrameTitle,
+} from '@/shared/ui/folyadek'
 
 interface MesoWeekEditorProps {
   mode: 'draft' | 'template'
@@ -44,6 +47,9 @@ interface MesoWeekEditorProps {
   onMoveExercise: (dayKey: string, exId: string, dir: -1 | 1) => void
   onRemoveExercise: (dayKey: string, exId: string) => void
   onAddClick: (dayKey: string) => void
+  /** The hero's liquid row. Default: the „Heti terhelés" button (the template editor has nothing to save by hand). */
+  actions?: ReactNode
+  /** Rendered after the numbered sections (the draft's „Újragenerálás" section). */
   footer?: ReactNode
 }
 
@@ -65,10 +71,11 @@ function useBufferedText(value: string): [string, (t: string) => void] {
 export function MesoWeekEditor({
   mode, name, meta, note, days, priorities, volumePerMuscle, timingProfile, timingProfilePending,
   activeDay, onOpenDay, onBack, onRename, onRenameDay,
-  onChangeExercise, onMoveExercise, onRemoveExercise, onAddClick, footer,
+  onChangeExercise, onMoveExercise, onRemoveExercise, onAddClick, actions, footer,
 }: MesoWeekEditorProps) {
   const [weekLoadOpen, setWeekLoadOpen] = useState(false)
   const [nameText, setNameText] = useBufferedText(name)
+  const nameId = useId()
 
   // Held at 0 while the calibrated profile is still loading — never the static fallback,
   // which would render and then swap under the user (MesoEditor's own rule).
@@ -86,12 +93,16 @@ export function MesoWeekEditor({
   // target to gauge against.
   const weekSets = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
 
+  const trainingCount = days.filter((d) => d.exercises.length > 0).length
+
   const open = activeDay ? days.find((d) => d.day === activeDay) : undefined
   if (open) {
     return (
       <MesoDayEditor
         day={open}
         minutes={minutesOf(open)}
+        mode={mode}
+        eyebrow={mode === 'draft' ? 'Új terv · még nincs mentve' : `Sablon · ${name}`}
         onBack={() => onOpenDay(null)}
         onRename={(next) => onRenameDay(open.day, next)}
         onChangeExercise={(exId, patch) => onChangeExercise(open.day, exId, patch)}
@@ -114,89 +125,96 @@ export function MesoWeekEditor({
   }
 
   return (
-    <MozaikPage tone="coral">
-      <PageHead onBack={onBack} label="‹ Mezociklus" />
-      <EntranceGroup>
-        <PageBody>
-          <div className="mz-wbhero rise">
-            <div className="mz-eyebrow">{mode === 'draft' ? 'Vázlat · még nincs mentve' : 'Sablon · mentve'}</div>
-            <input
-              className="mz-wbname"
-              aria-label="Mezociklus neve"
-              value={nameText}
-              onChange={(e) => {
-                setNameText(e.target.value)
-                onRename(e.target.value)
-              }}
-            />
-            <div className="mz-wbmeta">{meta}</div>
-            {note && (
-              <div className="mz-coach">
-                <span className="dot" aria-hidden="true" />
-                <span>{note}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="mz-eyebrow rise" style={{ padding: '9px 2px 5px' }}>A heted · koppints egy napra</div>
-          <div className="mz-dayrow rise">
-            {days.map((d) => {
-              const rows = dayMuscleLoad(d)
-              const sets = d.exercises.reduce((a, e) => a + e.workingSets, 0)
-              return (
-                <DayStripTile
-                  key={d.day}
-                  day={d.day}
-                  // MesoDay has no name field, so the (renameable) day name IS `d.type`.
-                  // KNOWN, ACCEPTED knock-on (mezo-yty6 final review, I5): `dayTone` keys off
-                  // the split-type vocabulary, so once the user renames a day away from a
-                  // known type ('Upper', 'Push'…) its tile falls back to the default coral
-                  // wash. Fixing it needs a real `name` column on MesoDay — filed, not done
-                  // here; do not "fix" it by re-deriving the tone from the muscles.
-                  name={d.type}
-                  sets={sets}
-                  minutes={minutesOf(d)}
-                  muscles={rows.map((r) => ({
-                    label: r.label, sets: r.sets, color: muscleColor(r.colorMuscle).deep,
-                  }))}
-                  tone={dayTone(d.type)}
-                  flagged={flaggedDays.has(d.day)}
-                  onOpen={() => onOpenDay(d.day)}
-                />
-              )
-            })}
-          </div>
-
-          <div className="rise">
-            <LoadTile
-              tone="week"
-              eyebrow="Heti terhelés · izmonként"
-              value={weekSets}
-              unit="szett · W1"
-              gauges={weekRows.slice(0, 3).map((r) => ({
+    <WeekFace mode={mode} name={name}>
+      <FrameBack className="ew-back" onBack={onBack}>‹ Terv</FrameBack>
+      <Hero
+        className="ew-hero"
+        label={mode === 'draft' ? 'Vázlat · még nincs mentve' : 'Sablon · mentve'}
+        verdict={`${weekSets} szett az első héten, ${trainingCount} edzésnapra.`}
+        sub={meta}
+        actions={actions ?? <Btn onClick={() => setWeekLoadOpen(true)}>Heti terhelés · izmonként</Btn>}
+      >
+        <Lab htmlFor={nameId}>A terv neve</Lab>
+        <Input
+          id={nameId}
+          aria-label="A terv neve"
+          value={nameText}
+          onChange={(e) => {
+            setNameText(e.target.value)
+            onRename(e.target.value)
+          }}
+        />
+        {note && (mode === 'draft'
+          ? <Msg member="mezo">{note}</Msg>
+          : <Box icon="t-note" title="A sablon célja"><p>{note}</p></Box>)}
+        {weekRows.length > 0 && (
+          <div className="ew-hg">
+            <Tubes
+              size="sm" height={86} gap={6}
+              items={weekRows.slice(0, 5).map((r) => ({
+                node: <Mchp muscle={r.colorMuscle} size={28} />,
                 label: r.label,
                 value: r.sets,
-                max: r.landmark.mrv,
-                color: muscleColor(r.colorMuscle).deep,
+                note: `/ ${r.landmark.mrv}`,
+                pct: (r.sets / Math.max(1, r.landmark.mrv)) * 94,
+                color: deepMuscle(r.colorMuscle),
+                ariaLabel: `${r.label}: ${r.sets} szett, legfeljebb ${r.landmark.mrv}`,
+                onClick: () => setWeekLoadOpen(true),
               }))}
-              flagged={conflicts.length > 0}
-              onOpen={() => setWeekLoadOpen(true)}
             />
           </div>
+        )}
+      </Hero>
 
-          {conflicts.map((c) => (
-            <div className="mz-lint rise" key={`${c.fromDay}-${c.toDay}`}>
-              <Icon3D name="t-info" size={18} />
-              <span>
-                <b>{c.groups.map((g) => g.label).join(' + ')}</b> egymást követő napokon
-                ({c.fromDay} {c.fromType} → {c.toDay} {c.toType}) — pihenőnap ajánlott közéjük.
-              </span>
-            </div>
-          ))}
+      <Section n={1} title="A heted · koppints egy napra" />
+      <Card>
+        {days.map((d) => {
+          const rows = dayMuscleLoad(d)
+          const sets = d.exercises.reduce((a, e) => a + e.workingSets, 0)
+          return (
+            <DayStripTile
+              key={d.day}
+              day={d.day}
+              // MesoDay has no name field, so the (renameable) day name IS `d.type`.
+              name={d.type}
+              sets={sets}
+              minutes={minutesOf(d)}
+              muscles={rows.map((r) => ({ label: r.label, sets: r.sets, color: deepMuscle(r.colorMuscle) }))}
+              flagged={flaggedDays.has(d.day)}
+              rest={d.exercises.length === 0 && (isOffDay(d) || d.type === 'Rest')}
+              onOpen={() => onOpenDay(d.day)}
+            />
+          )
+        })}
+      </Card>
 
-          {footer && <div className="mz-wfoot">{footer}</div>}
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+      <Section n={2} title="Heti terhelés · izmonként" />
+      <Card>
+        <LoadTile
+          title="Heti terhelés · izmonként"
+          value={weekSets}
+          unit="szett · 1. hét"
+          flags={conflicts.length}
+          onOpen={() => setWeekLoadOpen(true)}
+        />
+        {conflicts.map((c) => (
+          <div className="ew-alert" data-testid="week-conflict" key={`${c.fromDay}-${c.toDay}`}>
+            <Box icon="t-info" color="var(--fo-warn)" title={`${c.groups.map((g) => g.label).join(' + ')} egymást követő napokon`}>
+              <p>({c.fromDay} {c.fromType} → {c.toDay} {c.toType}) — pihenőnap ajánlott közéjük.</p>
+            </Box>
+          </div>
+        ))}
+      </Card>
+
+      {footer}
+    </WeekFace>
   )
+}
+
+/** The week face's page root: it owns the title-bar line, so the day and load faces can set their own. */
+function WeekFace({ mode, name, children }: { mode: 'draft' | 'template'; name: string; children: ReactNode }) {
+  useFrameTitle(mode === 'draft'
+    ? { title: 'A vázlatod', eyebrow: 'Új terv · még nincs mentve' }
+    : { title: 'Szerkesztés', eyebrow: `Sablon · ${name}` })
+  return <Page className="ew-page">{children}</Page>
 }

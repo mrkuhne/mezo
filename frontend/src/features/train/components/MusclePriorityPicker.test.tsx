@@ -19,60 +19,60 @@ describe('MusclePriorityPicker', () => {
     }
   })
 
-  it('all rows default to Grow pressed, others not pressed', () => {
+  it('all rows default to Építés pressed, others not pressed', () => {
     render(<MusclePriorityPicker value={{}} onChange={vi.fn()} />)
     for (const group of TIER_GROUPS) {
       const row = rowGroup(group)
-      expect(within(row).getByRole('button', { name: 'Grow' })).toHaveAttribute('aria-pressed', 'true')
-      expect(within(row).getByRole('button', { name: 'Emphasize' })).toHaveAttribute('aria-pressed', 'false')
-      expect(within(row).getByRole('button', { name: 'Maintain' })).toHaveAttribute('aria-pressed', 'false')
+      expect(within(row).getByRole('button', { name: 'Építés' })).toHaveAttribute('aria-pressed', 'true')
+      expect(within(row).getByRole('button', { name: 'Hangsúly' })).toHaveAttribute('aria-pressed', 'false')
+      expect(within(row).getByRole('button', { name: 'Tartás' })).toHaveAttribute('aria-pressed', 'false')
     }
   })
 
   it('reflects the current tier from value as the pressed button', () => {
     const value: MusclePriorities = { back: 'emphasize', chest: 'maintain' }
     render(<MusclePriorityPicker value={value} onChange={vi.fn()} />)
-    expect(within(rowGroup('back')).getByRole('button', { name: 'Emphasize' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(rowGroup('chest')).getByRole('button', { name: 'Maintain' })).toHaveAttribute('aria-pressed', 'true')
-    expect(within(rowGroup('quad')).getByRole('button', { name: 'Grow' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(rowGroup('back')).getByRole('button', { name: 'Hangsúly' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(rowGroup('chest')).getByRole('button', { name: 'Tartás' })).toHaveAttribute('aria-pressed', 'true')
+    expect(within(rowGroup('quad')).getByRole('button', { name: 'Építés' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('clicking Emphasize calls onChange with the sparse map (grow never stored)', () => {
+  it('clicking Hangsúly calls onChange with the sparse map (grow never stored)', () => {
     const onChange = vi.fn()
     render(<MusclePriorityPicker value={{}} onChange={onChange} />)
-    fireEvent.click(within(rowGroup('back')).getByRole('button', { name: 'Emphasize' }))
+    fireEvent.click(within(rowGroup('back')).getByRole('button', { name: 'Hangsúly' }))
     expect(onChange).toHaveBeenCalledWith({ back: 'emphasize' })
   })
 
-  it('clicking Grow on an emphasized row deletes the key from the map', () => {
+  it('clicking Építés on an emphasized row deletes the key from the map', () => {
     const onChange = vi.fn()
     render(<MusclePriorityPicker value={{ back: 'emphasize', chest: 'maintain' }} onChange={onChange} />)
-    fireEvent.click(within(rowGroup('back')).getByRole('button', { name: 'Grow' }))
+    fireEvent.click(within(rowGroup('back')).getByRole('button', { name: 'Építés' }))
     expect(onChange).toHaveBeenCalledWith({ chest: 'maintain' })
   })
 
-  it('clicking Maintain calls onChange with maintain set for that group only', () => {
+  it('clicking Tartás calls onChange with maintain set for that group only', () => {
     const onChange = vi.fn()
     render(<MusclePriorityPicker value={{}} onChange={onChange} />)
-    fireEvent.click(within(rowGroup('calf')).getByRole('button', { name: 'Maintain' }))
+    fireEvent.click(within(rowGroup('calf')).getByRole('button', { name: 'Tartás' }))
     expect(onChange).toHaveBeenCalledWith({ calf: 'maintain' })
   })
 
-  it(`once ${EMPHASIZE_CAP} groups are emphasized, Emphasize disables on the rest but Grow/Maintain stay clickable`, () => {
+  it(`once ${EMPHASIZE_CAP} groups are emphasized, Hangsúly disables on the rest but Építés/Tartás stay clickable`, () => {
     const value: MusclePriorities = { back: 'emphasize', chest: 'emphasize' }
     const onChange = vi.fn()
     render(<MusclePriorityPicker value={value} onChange={onChange} />)
 
     // Already-emphasized rows: Emphasize stays enabled (so it can be toggled off) and pressed.
-    const backEmphasize = within(rowGroup('back')).getByRole('button', { name: 'Emphasize' })
+    const backEmphasize = within(rowGroup('back')).getByRole('button', { name: 'Hangsúly' })
     expect(backEmphasize).not.toBeDisabled()
     expect(backEmphasize).toHaveAttribute('aria-pressed', 'true')
 
     // A row that is not emphasized: Emphasize is disabled (present, not hidden), Grow/Maintain still clickable.
     const quadRow = rowGroup('quad')
-    const quadEmphasize = within(quadRow).getByRole('button', { name: 'Emphasize' })
-    const quadGrow = within(quadRow).getByRole('button', { name: 'Grow' })
-    const quadMaintain = within(quadRow).getByRole('button', { name: 'Maintain' })
+    const quadEmphasize = within(quadRow).getByRole('button', { name: 'Hangsúly' })
+    const quadGrow = within(quadRow).getByRole('button', { name: 'Építés' })
+    const quadMaintain = within(quadRow).getByRole('button', { name: 'Tartás' })
     expect(quadEmphasize).toBeDisabled()
     expect(quadGrow).not.toBeDisabled()
     expect(quadMaintain).not.toBeDisabled()
@@ -86,7 +86,8 @@ describe('MusclePriorityPicker', () => {
 
   it('shows the header and helper copy', () => {
     render(<MusclePriorityPicker value={{}} onChange={vi.fn()} />)
-    expect(screen.getByText('Mire gyúr ez a blokk?')).toBeInTheDocument()
+    expect(screen.getByText('Mire gyúr ez a terv?')).toBeInTheDocument()
+    expect(screen.getByText(/a Tartás szinten tart/)).toBeInTheDocument()
     expect(screen.getByText(/Válassz 1–2 hangsúlyt/)).toBeInTheDocument()
   })
 })

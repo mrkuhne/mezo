@@ -30,7 +30,10 @@ function setup(search = '', day = 'Csü') {
 
 test('the editor route edits THIS day — its exercises, and its add affordance', () => {
   setup()
-  expect(screen.getByText(/A NAP SZERKESZTÉSE/i)).toBeInTheDocument()
+  // the title bar names the page and the day; the hero's eyebrow repeats the day in full
+  expect(screen.getByRole('heading', { name: 'A nap szerkesztése' })).toBeInTheDocument()
+  expect(screen.getByText('Csütörtök · Pull · a nap szerkesztése')).toBeInTheDocument()
+  expect(screen.getByText(/szett ma, \d+ gyakorlat\./)).toBeInTheDocument()
   expect(screen.getAllByText('Chest Supported Row').length).toBeGreaterThan(0) // Csü
   expect(screen.queryByText('Barbell Bench Press')).not.toBeInTheDocument() // Hét
   expect(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ })).toBeInTheDocument()
@@ -57,4 +60,25 @@ test('back lands on the day page', async () => {
 test('a day the block does not have says so instead of an empty editor', () => {
   setup('', 'Vasárnap')
   expect(screen.getByText('Ez a nap nincs a tervedben.')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Gyakorlat hozzáadása/ })).not.toBeInTheDocument()
+})
+
+test('a plan that does not exist says so', () => {
+  const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/nincs-ilyen/days/Cs%C3%BC/edit'] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  expect(screen.getByText('Ez az edzésterv nem található.')).toBeInTheDocument()
+})
+
+test('while the plans are still loading the page shows its skeleton, not a not-found', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setup()
+  expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
+  expect(screen.queryByText('Ez az edzésterv nem található.')).not.toBeInTheDocument()
+})
+
+test('the editor wears the Folyadék skeleton — no glass, no old cards', () => {
+  setup()
+  const page = document.querySelector('.fo-page.ee-page')!
+  expect(page.querySelector('.fo-hero')).not.toBeNull()
+  expect(page.querySelector('.glass, .card, .mz-card, .mz-eyebrow, .tv-dayedit')).toBeNull()
 })

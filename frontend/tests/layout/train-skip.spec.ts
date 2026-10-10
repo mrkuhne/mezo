@@ -39,7 +39,7 @@ test('Edzés Mai · the skipped hero and the reason sheet stay contained @ 320px
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
 
-  await page.locator('.trm-hero .trm-skipbtn').click()
+  await page.locator('.em-hero .em-skipbtn').click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await expect(dialog.getByText('Miért marad ki?')).toBeVisible()
@@ -50,23 +50,23 @@ test('Edzés Mai · the skipped hero and the reason sheet stay contained @ 320px
   expect(sheet.scroll).toBeLessThanOrEqual(sheet.width + 1)
   const chipsOutside = await dialog.evaluate((el) => {
     const r = el.getBoundingClientRect()
-    return Array.from(el.querySelectorAll('.trm-whyc, .trm-micb, .uvl-cta, .uvl-ghost'))
+    return Array.from(el.querySelectorAll('.em-opts button, .vmic, .fo-acts .fo-btn, .fo-acts .fo-lk'))
       .filter((c) => c.getBoundingClientRect().right > r.right + 0.5).length
   })
   expect(chipsOutside).toBe(0)
   // the eight reason labels keep their words whole (no „Gyomorront / ás") and inside their chip
-  expect(await brokenChipWords(page, '.trm-whysheet .trm-whyc > span')).toEqual([])
+  expect(await brokenChipWords(page, '.em-why .em-opts button > span:last-child')).toEqual([])
   await dialog.getByRole('button', { name: 'Most nem mondom' }).click()
   await expect(dialog).toBeHidden()
 
-  const hero = page.locator('.trm-hero.is-skip')
+  const hero = page.locator('.em-hero.is-skip')
   await expect(hero).toBeVisible()
-  await expect(hero.getByText('KIHAGYVA', { exact: true })).toBeVisible()
+  await expect(hero.getByText('Kihagyva', { exact: true })).toBeVisible()
   const undo = page.getByRole('button', { name: 'Visszavonom' })
   await undo.scrollIntoViewIfNeeded()
   await expect(undo).toBeVisible()
   await expect(page.getByRole('button', { name: 'Másik ok' })).toBeVisible()
-  for (const b of await contained(page, '.trm-hero .trm-skipd, .trm-hero .trm-skacts')) {
+  for (const b of await contained(page, '.em-hero .em-skipd, .em-hero .fo-hero-acts')) {
     expect(b.overflow).toBeLessThanOrEqual(1)
     expect(b.left).toBeGreaterThanOrEqual(-0.5)
     expect(b.right).toBeLessThanOrEqual(b.viewport + 0.5)
@@ -81,8 +81,8 @@ test('Edzés Mai · a past day\'s skipped card stays contained @ 320px', async (
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
 
-  const card = page.locator('.trm-sess', { hasText: 'Legs' })
-  const pills = await contained(page, '.trm-sess-cta')
+  const card = page.locator('.em-sess', { hasText: 'Legs' })
+  const pills = await contained(page, '.em-sess .fo-hero-acts, .em-sess-cta')
   for (const b of pills) expect(b.right).toBeLessThanOrEqual(b.viewport + 0.5)
   await card.getByRole('button', { name: 'Kihagytam' }).click()
   const dialog = page.getByRole('dialog')
@@ -92,10 +92,10 @@ test('Edzés Mai · a past day\'s skipped card stays contained @ 320px', async (
 
   await expect(card).toHaveClass(/is-skip/)
   await expect(card.getByText('Kihagyva · Beteg vagyok')).toBeVisible()
-  for (const b of await contained(page, '.trm-sess.is-skip, .trm-sess.is-skip .trm-skipd, .trm-sess.is-skip .trm-skacts')) {
+  for (const b of await contained(page, '.em-sess.is-skip, .em-sess.is-skip .em-skipd, .em-sess.is-skip .fo-hero-acts')) {
     expect(b.overflow).toBeLessThanOrEqual(1)
     expect(b.right).toBeLessThanOrEqual(b.viewport + 0.5)
   }
-  await expect(page.locator('.trm-day-sk')).toHaveCount(1)
+  await expect(page.locator('.em-day-sk')).toHaveCount(1)
   expect(await pageOverflow(page)).toBeLessThanOrEqual(1)
 })

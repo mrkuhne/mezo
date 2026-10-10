@@ -69,11 +69,11 @@ test('the active workout session is a full-screen flow without the sub-nav', () 
 })
 
 // „Sablonjaid" stays reachable on its own route — the library landing's doorway links
-// here (mezo-tlwa; refaced into the Titanium list in T10 Task 3, mezo-88iwa.11, so the
-// page's name now lives in its poster hero's h2, not in a DS h1).
+// here (mezo-tlwa; Folyadék since mezo-n4wf5.3: the hero's verdict counts the shelf and the
+// list is the one numbered section).
 test('Sablonjaid stays reachable on its own route', async () => {
   renderApp('/train/templates')
-  expect(await screen.findByRole('heading', { name: 'Amiből indíthatsz' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: /Sablonok · egy kapszula egy nap/ })).toBeInTheDocument()
 })
 
 // A template's own READ-FIRST page (T10 Task 3) — a real route under the list, NOT the

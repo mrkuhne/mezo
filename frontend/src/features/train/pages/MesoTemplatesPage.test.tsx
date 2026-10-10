@@ -1,14 +1,11 @@
 // ============================================================
-// Mezo · MesoTemplatesPage tests — the Titanium „Sablonjaid" list
-// (Train Titanium T10 Task 3, mezo-88iwa.11).
+// Mezo · MesoTemplatesPage tests — „Sablonjaid" in the Folyadék look (mezo-n4wf5.3; the
+// behaviour is Train Titanium T10 Task 3's, mezo-88iwa.11).
 //
-// Rewritten from the DS-era suite: the page-header + „+ Új" chip, the shelf StatStrip and
-// the whole removed template poster card (its arc/spine/chips, the ⋯ lifecycle menu with
-// Duplikálás + the two-tap Törlés, and the card-foot „Indítás") are no longer this page's
-// — a card is now one `.pl-lib-card` that OPENS the template's own page, and the start
+// A template is one block in the list card that OPENS the template's own page; the start
 // sheet + lifecycle pair live there (MesoTemplateStoryPage.test.tsx carries their tests).
-// What is asserted here: the hero's real counts, the card's facts/muscles/story line, the
-// card tap's destination, the create CTA, the empty state and the skeleton.
+// What is asserted here: the hero's real counts, the block's week capsules / facts / muscles /
+// story line, the block tap's destination, the create button, the empty state and the skeleton.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -42,9 +39,11 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
 
   test('the hero names the page, says what a sablon is, and counts the real shelf', () => {
     setup()
-    expect(screen.getByText('Sablonjaid')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Amiből indíthatsz' })).toBeInTheDocument()
+    expect(screen.getByText('Sablonjaid')).toHaveClass('fo-hero-lbl')
+    expect(screen.getByText('2 sablonból indíthatsz.')).toHaveClass('fo-hero-verdict')
     expect(screen.getByText(/Egy sablon a recept/)).toBeInTheDocument()
+    // the big tilted template glyph of the hero
+    expect(document.querySelector('.fo-hero .er-art use')!.getAttribute('href')).toBe('#t-template')
     // The fixture shelf: 2 templates, 1 run ever started out of them.
     expect(screen.getByText('2 sablon')).toBeInTheDocument()
     // 2 + 0: the PPL template's runCount covers both the active meso-hyp-04 and the closed
@@ -52,37 +51,41 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.getByText('2 futam indult belőlük')).toBeInTheDocument()
   })
 
-  test('the back pill is docked INSIDE the hero and leads to the library landing', async () => {
+  test('the page\'s own back control (drawn where no title bar is mounted) leads to the library landing', async () => {
     const user = userEvent.setup()
-    const { container } = setup()
+    setup()
     const back = screen.getByRole('button', { name: 'Vissza' })
-    expect(back).toHaveClass('mz-backbtn')
-    // The docking CSS keys on `.pl-lhero > .mz-backbtn` — assert the PARENT, not the class.
-    expect(back.parentElement).toBe(container.querySelector('.pl-lhero'))
+    expect(back).toHaveClass('er-back')
+    expect(back).toHaveTextContent('‹ Edzéstervek')
     await user.click(back)
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/konyvtar')
   })
 
-  test('each template is one card: name, split, the facts, the muscles and one story line', () => {
+  test('each template is one block: name, split, the week capsules, the facts, the muscles and one story line', () => {
     setup()
     const card = screen.getByRole('button', { name: /Sablon · Upper\/Lower Power/ })
     // name + split head (the „×/hét" tail is already said by the nap-hetente fact)
     expect(card).toHaveTextContent('Upper/Lower Power')
     expect(card).toHaveTextContent('Upper / Lower')
     // 5 weeks, 4 training days (Sze/Szo/Vas are rest), a calibrated minutes fact
-    expect(card.querySelector('.pl-day-facts')).toHaveTextContent('5hét')
-    expect(card.querySelector('.pl-day-facts')).toHaveTextContent('4nap hetente')
-    expect(card.querySelector('.pl-day-facts')?.textContent).toMatch(/~\d+perc/)
-    // the muscles as anatomy chips, one per worked group (never emoji)
-    expect(card.querySelectorAll('.pl-lib-mus i').length).toBeGreaterThan(3)
-    expect(card.querySelector('.pl-lib-note')).toHaveTextContent('Még nem indítottál belőle')
+    expect(card).toHaveClass('er-tpl')
+    expect(card.querySelector('.fo-facts')).toHaveTextContent('5hét')
+    expect(card.querySelector('.fo-facts')).toHaveTextContent('4nap hetente')
+    expect(card.querySelector('.fo-facts')?.textContent).toMatch(/~\d+perc/)
+    // the week as seven capsules: the four training days full, Sze / Szo / Vas empty
+    const caps = [...card.querySelectorAll('.fo-caps i')]
+    expect(caps.map((c) => c.textContent)).toEqual(['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'])
+    expect(caps.map((c) => c.classList.contains('f'))).toEqual([true, true, false, true, true, false, false])
+    // the muscles as overlapping anatomy chips, at most four (never emoji)
+    expect(card.querySelectorAll('.ex-stk .ex-mchp')).toHaveLength(4)
+    expect(card.querySelector('.er-tpl-use')).toHaveTextContent('Még nem indítottál belőle')
   })
 
   test('the story line reads the RUNS, not the template: the active run names its own recipe', () => {
     setup()
     // meso-hyp-04 (active) carries templateId a10e… → that template is the one running now.
     const card = screen.getByRole('button', { name: /Sablon · Hypertrophy 04 · Tavasz/ })
-    expect(card.querySelector('.pl-lib-note')).toHaveTextContent('Ebből fut a mostani terved')
+    expect(card.querySelector('.er-tpl-use')).toHaveTextContent('Ebből fut a mostani terved')
   })
 
   test('a card tap opens that template\'s own page, not the raw editor', async () => {
@@ -108,14 +111,14 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.queryByRole('button', { name: /Indítás/ })).toBeNull()
   })
 
-  test('the list staggers inside an armed entrance group', () => {
-    setup()
-    const play = document.body.querySelector('.mz-play')
-    expect(play).not.toBeNull()
-    const risen = [...play!.querySelectorAll('.rise')] as HTMLElement[]
-    expect(risen.length).toBeGreaterThan(1)
-    expect(risen[0].style.getPropertyValue('--d')).toBe('40ms')
-    expect(risen[1].style.getPropertyValue('--d')).toBe('90ms')
+  test('folyadék: hero → 1 „Sablonok · egy kapszula egy nap", every block in ONE white card, no old skin', () => {
+    const { container } = setup()
+    expect([...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual(['1Sablonok · egy kapszula egy nap'])
+    const blocks = [...container.querySelectorAll('.er-tpl')]
+    expect(blocks).toHaveLength(2)
+    expect(new Set(blocks.map((b) => b.closest('.fo-card'))).size).toBe(1)
+    expect(screen.getByText('Sablonból indulsz, vagy nulláról építed')).toBeInTheDocument()
+    expect(container.querySelector('.glass, [class*="pl-l"], [class*="pl-d"], .mz-play, .mz-backbtn')).toBeNull()
   })
 })
 
@@ -133,7 +136,8 @@ describe('MesoTemplatesPage (real mode)', () => {
     server.use(http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([])))
     const user = userEvent.setup()
     setup()
-    expect(await screen.findByText(/Még nincs sablonod/)).toBeInTheDocument()
+    expect(await screen.findByText('Még nincs sablonod.')).toHaveClass('fo-hero-verdict')
+    expect(screen.getByText('Még nincs sablonod — az elsőt fent állíthatod össze.')).toBeInTheDocument()
     expect(screen.getByText('0 sablon')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Új terv összeállítása' }))
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')

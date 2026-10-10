@@ -90,3 +90,22 @@ test('a TRX slot prefills its sport from the schedule', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(onSave.mock.calls[0][0][0]).toMatchObject({ sport: 'trx', location: 'Life1 Corvin' })
 })
+
+// Folyadék (mezo-n4wf5.3): the light sheet with the kit head and fields — none of the old capture / glass skin.
+test('the sheet wears the Folyadék sheet language', async () => {
+  render(<SportScheduleSheet initial={initial} onSave={vi.fn()} onClose={vi.fn()} />)
+  const sheet = document.querySelector('.sheet.fo-sheet') as HTMLElement
+  expect(sheet).not.toBeNull()
+  expect(screen.getByText('Sport · heti terv')).toBeInTheDocument()
+  // one block per weekday; the two prefilled days carry a slot each
+  expect(sheet.querySelectorAll('.es-dayed')).toHaveLength(7)
+  expect(sheet.querySelectorAll('.es-dayed.has')).toHaveLength(2)
+  expect(sheet.querySelectorAll('.es-slot')).toHaveLength(2)
+  expect(screen.getByRole('group', { name: 'Hétfő 1. sport' })).toHaveClass('fo-pills')
+  await userEvent.click(screen.getByRole('button', { name: 'Kedd sport hozzáadása' }))
+  expect(sheet.querySelectorAll('.es-slot')).toHaveLength(3)
+  await userEvent.click(screen.getByRole('button', { name: 'Kedd 1. slot törlése' }))
+  expect(sheet.querySelectorAll('.es-slot')).toHaveLength(2)
+  expect(sheet.querySelector('.glass, [class*="capture-"], [class*="uvs-"], [class*="uvl-"], .chip, .stepper')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Mégse' })).toHaveClass('fo-lk')
+})

@@ -43,7 +43,7 @@ function setup() {
 
 async function generate(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: /Program generálása/ }))
-  await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+  await screen.findByRole('textbox', { name: 'A terv neve' })
 }
 
 test('accepted: saving a generated proposal untouched reports "accepted"', async () => {

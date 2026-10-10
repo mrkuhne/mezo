@@ -1,5 +1,6 @@
 // ============================================================
-// Mezo · ExerciseCard — a mezo-szerkesztő gyakorlat-kártyája (mezo-yty6).
+// Mezo · ExerciseCard — a mezo-szerkesztő gyakorlat-kártyája (mezo-yty6; Folyadék mezo-n4wf5.3,
+// prototype vilagos/edzes.js `tdCard()`).
 // Az ExerciseAccordionRow utódja az ÚJ szerkesztőben: nincs nyitogatás és
 // nincsenek stepper-gombok — szett / rep-ablak / kiinduló súly / RIR / bemelegítő
 // mind egyszerre látszik és közvetlenül írható. A régi „Finomhangolás"
@@ -10,10 +11,10 @@
 import { useEffect, useState } from 'react'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
-import { muscleColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
-import { ClayIcon, Icon3D } from '@/shared/ui/clay'
+import { Mchp } from '@/features/train/components/folyadek'
+import { Note, Pill, Pills } from '@/shared/ui/folyadek'
 
 /** targetRIR values the two style buttons write — mirrors ExerciseAccordionRow's toggle. */
 const FAILURE_RIR = 0
@@ -50,8 +51,9 @@ function useBufferedText(value: number | null): [string, (t: string) => void] {
   return [text, setText]
 }
 
-function NumField({ label, value, min, max, step, placeholder, decimal = false, onCommit }: {
+function NumField({ label, value, min, max, step, placeholder, decimal = false, className, onCommit }: {
   label: string
+  className?: string
   /** A kg field: text input on the decimal keypad, HU comma or dot (mezo-py1i6). */
   decimal?: boolean
   value: number | null
@@ -63,13 +65,11 @@ function NumField({ label, value, min, max, step, placeholder, decimal = false, 
 }) {
   const [text, setText] = useBufferedText(value)
   return (
-    <label className="mz-exc-fld">
-      <span>{label}</span>
+    <label className={className}>
       <input
         type={decimal ? 'text' : 'number'}
         inputMode={decimal || (step && step < 1) ? 'decimal' : 'numeric'}
         aria-label={label}
-        className="mz-exc-num"
         value={text}
         min={decimal ? undefined : min}
         max={decimal ? undefined : max}
@@ -84,6 +84,7 @@ function NumField({ label, value, min, max, step, placeholder, decimal = false, 
           onCommit(Math.min(max, Math.max(min, n)))
         }}
       />
+      <small>{label}</small>
     </label>
   )
 }
@@ -100,7 +101,7 @@ function RepBoundInput({ label, value, onCommit }: { label: string; value: numbe
   const [text, setText] = useBufferedText(value)
   return (
     <input
-      type="number" inputMode="numeric" aria-label={label} className="mz-exc-num"
+      type="number" inputMode="numeric" aria-label={label}
       value={text} min={REP_MIN} max={REP_MAX}
       onChange={(e) => {
         const raw = e.target.value
@@ -117,90 +118,50 @@ function RepBoundInput({ label, value, onCommit }: { label: string; value: numbe
 export function ExerciseCard({
   ex, contribution, canMoveUp, canMoveDown, onChange, onMove, onRemove,
 }: ExerciseCardProps) {
-  const fam = muscleColor(ex.muscle)
   const isFailure = setStyle(ex.targetRIR) === 'failure'
 
   return (
-    <div className="mz-exc" style={{ background: fam.wash, borderLeftColor: fam.rail }}>
-      <div className="mz-exc-head">
-        <span className="mz-exc-ico" aria-hidden="true">
-          <ClayIcon name="i-suly" size={17} />
+    <div className="ew-ex">
+      <div className="eh">
+        <Mchp muscle={ex.muscle} sm />
+        <strong>{ex.name}<small>{MUSCLE_LABELS[ex.muscle] ?? ex.muscle}</small></strong>
+        <span className="ew-mv">
+          <button type="button" aria-label={`${ex.name} feljebb`} disabled={!canMoveUp} onClick={() => onMove(-1)}>▲</button>
+          <button type="button" aria-label={`${ex.name} lejjebb`} disabled={!canMoveDown} onClick={() => onMove(1)}>▼</button>
+          <button type="button" aria-label={`${ex.name} törlése`} onClick={onRemove}>✕</button>
         </span>
-        <span className="mz-grow" style={{ minWidth: 0 }}>
-          <span className="mz-exc-nm">{ex.name}</span>
-          <span className="mz-exc-sub">{MUSCLE_LABELS[ex.muscle] ?? ex.muscle}</span>
-        </span>
-        <span className="mz-exc-mv">
-          <button
-            type="button"
-            aria-label={`${ex.name} feljebb`}
-            disabled={!canMoveUp}
-            onClick={() => onMove(-1)}
-          >
-            ▲
-          </button>
-          <button
-            type="button"
-            aria-label={`${ex.name} lejjebb`}
-            disabled={!canMoveDown}
-            onClick={() => onMove(1)}
-          >
-            ▼
-          </button>
-        </span>
-        <button type="button" className="mz-exc-del" aria-label={`${ex.name} törlése`} onClick={onRemove}>
-          ✕
-        </button>
       </div>
 
-      <div className="mz-exc-row">
+      <div className="eg">
         <NumField label="Munkaszettek" value={ex.workingSets} min={1} max={10}
           onCommit={(v) => onChange({ workingSets: v ?? 1 })} />
-        <label className="mz-exc-fld mz-exc-reps">
-          <span>Rep</span>
-          <span className="mz-exc-pair">
-            <RepBoundInput
-              label="Rep minimum" value={ex.repMin}
-              onCommit={(n) => onChange({ repMin: n })}
-            />
-            <i aria-hidden="true">–</i>
-            <RepBoundInput
-              label="Rep maximum" value={ex.repMax}
-              onCommit={(n) => onChange({ repMax: n })}
-            />
-          </span>
-        </label>
+        <span className="rp">
+          <RepBoundInput label="Rep minimum" value={ex.repMin} onCommit={(n) => onChange({ repMin: n })} />
+          <i aria-hidden="true">–</i>
+          <RepBoundInput label="Rep maximum" value={ex.repMax} onCommit={(n) => onChange({ repMax: n })} />
+          <small>Rep</small>
+        </span>
         <NumField label="Kiinduló súly (kg)" value={ex.anchorWeightKg ?? null} min={0} max={500} decimal
           placeholder="auto" onCommit={(v) => onChange({ anchorWeightKg: v })} />
         <NumField label="Cél RIR" value={ex.targetRIR} min={0} max={RIR_MAX}
           onCommit={(v) => onChange({ targetRIR: v ?? 0 })} />
       </div>
 
-      <div className="mz-exc-row2">
-        <span className="mz-exc-fv">
-          <button
-            type="button" aria-pressed={isFailure} className={isFailure ? 'on fire' : undefined}
-            onClick={() => onChange({ targetRIR: FAILURE_RIR })}
-          >
-            <Icon3D name="t-flame" size={16} className="uv-inline" />Failure
-          </button>
-          <button
-            type="button" aria-pressed={!isFailure} className={!isFailure ? 'on leaf' : undefined}
-            onClick={() => onChange({ targetRIR: VOLUME_RIR })}
-          >
-            <Icon3D name="t-sprout" size={16} className="uv-inline" />Volume
-          </button>
-        </span>
-        <NumField label="Bemelegítő szettek" value={ex.warmupSets} min={0} max={5}
+      <div className="ew-sjl">
+        <Pills>
+          <Pill on={isFailure} onClick={() => onChange({ targetRIR: FAILURE_RIR })}>Failure</Pill>
+          <Pill on={!isFailure} onClick={() => onChange({ targetRIR: VOLUME_RIR })}>Volume</Pill>
+        </Pills>
+        <NumField className="ew-bem" label="Bemelegítő szettek" value={ex.warmupSets} min={0} max={5}
           onCommit={(v) => onChange({ warmupSets: v ?? 0 })} />
       </div>
 
-      <div className="mz-exc-ctx">
+      <Note>
         Hozzájárulás ·{' '}
         {contribution.map((c) => (
           <b key={c.label} style={{ color: c.color }}>{c.label} +{c.sets}</b>
         ))}
-      </div>
+      </Note>
     </div>
   )
 }

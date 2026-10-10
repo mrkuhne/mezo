@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { SheetHead } from '@/shared/ui/SheetHead'
-import { Icon3D } from '@/shared/ui/clay'
+import { Acts, Box, Btn, Bub, FoSheetHead, Lab, Lk } from '@/shared/ui/folyadek'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
-import { cn } from '@/shared/lib/cn'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 import type { PlannedSkip, SkipReason } from '@/features/train/logic/plannedSkips'
 import { KIMELO, REASONS, sheetNoteParts, skipDoneToast } from '@/features/train/logic/skipCopy'
@@ -38,10 +36,17 @@ export interface SkipReasonSheetProps {
   onRecoveryOpened?(): void
 }
 
+/** The note's second line: the copy's tail without its leading dash / dot, as a sentence of its own. */
+function tail(rest: string): string {
+  const t = rest.replace(/^\s*[—·]\s*/, '').trim()
+  return t.charAt(0).toLocaleUpperCase('hu') + t.slice(1)
+}
+
 /**
- * „Miért marad ki?" (Kihagyás S1, mezo-q4xt2.1 — prototype elo/edzes.html `whySheet()`): the
- * optional reason for a skip. Eight flat 3D chips in two columns, „Egyéb" opens a free-text field
- * with dictation, a calm note says what the skip does to the week, and „Most nem mondom" / „Kész"
+ * „Miért marad ki?" (Kihagyás S1, mezo-q4xt2.1; Folyadék mezo-n4wf5.3 — prototype vilagos/edzes.js
+ * `whySheet()`): the optional reason for a skip. Eight options in two columns (glyph bubble + label,
+ * the chosen one ringed), „Egyéb" opens a free-text field with dictation, a serious reason offers
+ * „Meddig tarthat?", a calm box says what the skip does to the week, and „Kész" / „Most nem mondom"
  * close it. Presentational: the caller owns the skip row and the saving.
  */
 export function SkipReasonSheet(props: SkipReasonSheetProps) {
@@ -98,33 +103,33 @@ function SkipReasonSheetBody({
   const otherText = () => (cur === 'OTHER' ? text.trim() || null : null)
 
   return (
-    <Sheet glass onClose={onClose} labelledBy="skip-why-title" className="trm-whysheet">
+    <Sheet onClose={onClose} labelledBy="skip-why-title" className="fo-sheet em-why">
       {(close) => {
         closeRef.current = close
         const serious = categoryCopy(cur) !== null
         return (
-        <div className="uvl-body">
-          <SheetHead icon="t-skip" eyebrow={`KIHAGYVA · ${title.toLocaleUpperCase('hu')}`} title="Miért marad ki?"
+        <>
+          <FoSheetHead eyebrow={`Kihagyva · ${title}`} title="Miért marad ki?"
             titleId="skip-why-title" sub="Nem kötelező — segít, hogy a terv hozzád igazodjon." onClose={close} />
 
-          <div className="trm-whyg" role="group" aria-label="A kihagyás oka">
+          <div className="em-opts" role="group" aria-label="A kihagyás oka">
             {REASONS.map((r) => (
-              <button key={r.id} type="button" className={cn('trm-whyc', cur === r.id && 'on')} aria-pressed={cur === r.id}
+              <button key={r.id} type="button" className={cur === r.id ? 'on' : undefined} aria-pressed={cur === r.id}
                 onClick={() => onReason(r.id, r.id === 'OTHER' ? text.trim() || null : undefined)}>
-                <Icon3D name={r.icon} size={30} />
+                <Bub icon={r.icon} size={36} />
                 <span>{r.label}</span>
               </button>
             ))}
           </div>
 
           {cur === 'OTHER' && (
-            <div className="uvl-field">
-              <span className="uvl-flabel" id="skip-why-text">Mi történt? · saját szavakkal</span>
-              <VoiceField domain="train" className="trm-inpmic" onTranscript={(t) => setText((d) => appendDictation(d, t, TEXT_MAX))}>
-                <textarea aria-labelledby="skip-why-text" value={text} maxLength={TEXT_MAX} placeholder="pl. családi program jött közbe"
+            <>
+              <Lab id="skip-why-text">Mi történt? · saját szavakkal</Lab>
+              <VoiceField domain="train" className="em-inpmic" onTranscript={(t) => setText((d) => appendDictation(d, t, TEXT_MAX))}>
+                <textarea className="fo-in" aria-labelledby="skip-why-text" value={text} maxLength={TEXT_MAX} placeholder="pl. családi program jött közbe"
                   onChange={(e) => setText(e.target.value)} />
               </VoiceField>
-            </div>
+            </>
           )}
 
           {serious && (canOpenRecovery || km) && onOpenRecovery && (
@@ -132,36 +137,36 @@ function SkipReasonSheetBody({
           )}
 
           {km ? (
-            <div className="trm-whynote is-km" role="status">
-              <Icon3D name="t-kimelo" size={22} />
-              <span><b>{KIMELO.onLead}</b>{KIMELO.onRest}</span>
+            <div className="em-whynote is-km" role="status">
+              <Box icon="t-kimelo" title={KIMELO.onLead}><p>{tail(KIMELO.onRest)}</p></Box>
             </div>
           ) : (
-            <div className="trm-whynote">
-              <Icon3D name={note.icon} size={22} />
-              <span>{note.bold && <b>{note.bold}</b>}{note.rest}</span>
+            <div className="em-whynote">
+              {note.bold
+                ? <Box icon={note.icon} title={note.bold}>{note.rest.trim() ? <p>{tail(note.rest)}</p> : null}</Box>
+                : <Box icon={note.icon} title="Nem kötelező"><p>{note.rest.replace(/\s*Nem kötelező\.$/, '')}</p></Box>}
             </div>
           )}
 
-          <div className="uvl-foot">
-            <button type="button" className="uvl-ghost"
-              onClick={() => {
-                // Like the prototype's data-whydone="0": keep a typed Egyéb text, just no toast.
-                const t = otherText()
-                if (cur === 'OTHER' && t !== (skip.reasonText?.trim() || null)) onReason('OTHER', t)
-                close()
-              }}>Most nem mondom</button>
-            <button type="button" className="uvl-cta" disabled={!chosen}
+          <Acts>
+            <Btn grow disabled={!chosen}
               onClick={() => {
                 const t = otherText()
                 onDone(t)
                 toast.show({ kind: 'success', text: skipDoneToast(skip, t) })
                 close()
               }}>
-              <Icon3D name="t-tick" size={20} />Kész
-            </button>
-          </div>
-        </div>
+              Kész
+            </Btn>
+            <Lk
+              onClick={() => {
+                // Like the prototype's data-whydone="0": keep a typed Egyéb text, just no toast.
+                const t = otherText()
+                if (cur === 'OTHER' && t !== (skip.reasonText?.trim() || null)) onReason('OTHER', t)
+                close()
+              }}>Most nem mondom</Lk>
+          </Acts>
+        </>
         )
       }}
     </Sheet>

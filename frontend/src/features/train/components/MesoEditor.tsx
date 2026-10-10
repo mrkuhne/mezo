@@ -1,12 +1,13 @@
 // ============================================================
-// Mezo · MesoEditor — unified day-tabbed meso day editor (mezo-7rdg, spec
-// 2026-08-01-set-budget-unified-editor). Drop-in replacement for
-// MesoDayTabsEditor that composes MesoEditorHero + WeeklyBandsCard +
-// ExerciseAccordionRow: same day-tab strip / active-day seeding / off-day
-// card / add-button (ported from MesoDayTabsEditor.tsx), plus a red
-// session-cap warning dot per tab, single-expand accordion rows with
-// auto-expand-on-add, and optional inline day-rename for custom splits
-// (capability parity with PlannerDaySection's onRename).
+// Mezo · MesoEditor — the day editor of a running plan (mezo-7rdg, spec
+// 2026-08-01-set-budget-unified-editor; Folyadék mezo-n4wf5.3, prototype
+// vilagos/edzes.js `napszerk()`).
+// The page body under the title bar: the hero (the day poured into one vessel, the add
+// button on the liquid row) → 1 „Sorrend és előírás" (sortable accordion rows, autosaved)
+// → 2 „Ma · izmonként" → 3 „Heti szettek · izmonként" → 4 „Ellenőrzés" (two collapsible
+// checks). A section whose card has nothing to say is left out and the numbers close up.
+// A rest day is the hero alone. With more than one day it also carries the day pills (a
+// dot marks a day that breaks the session cap) and, for custom splits, the day-name field.
 //
 // Hero warningCount is WEEK-level: ALL session-cap breaches across the week
 // (the weekly-band % overage alarm retired with SetBudgetCard, mezo-d20.14)
@@ -17,7 +18,8 @@
 // ============================================================
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { GymExercise, MesoDay, MusclePriorities } from '@/data/types'
-import { Icon } from '@/shared/ui/Icon'
+import { DAY_LABELS } from '@/data/train/train'
+import { Card, Input, Note, Pill, Pills, Section } from '@/shared/ui/folyadek'
 import { SortableList } from '@/shared/ui/SortableList'
 import { DayBreakdownCard } from '@/features/train/components/DayBreakdownCard'
 import { ExerciseAccordionRow } from '@/features/train/components/ExerciseAccordionRow'
@@ -148,148 +150,92 @@ export function MesoEditor({
   const trainingDays = week.filter((d) => d.exercises.length > 0).length
   const showRename = Boolean(onRenameDay) && day.muscle === 'custom'
 
+  const dayName = DAY_LABELS[day.day] ?? day.day
+  const heroLabel = [dayName, showRename ? '' : day.type, 'a nap szerkesztése'].filter(Boolean).join(' · ')
+  // The numbered sections: only the ones that have something to show, numbered in order.
+  let n = 0
+
   return (
-    <div className="col gap-md">
-      {/* Day tabs — only when there IS a choice. A single-day editor (the day page,
-          ProgramDayView) has its own hero saying which day this is; a lone tab there
-          is chrome that switches nothing (mezo-d20.15). */}
+    <>
+      {/* Day pills — only when there IS a choice. A single-day editor (the day's own route)
+          names its day in the title bar and the hero; a lone pill would switch nothing (mezo-d20.15). */}
       {days.length > 1 && (
-      <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
-        {days.map((d) => {
-          const active = d.day === day.day
-          const dayOff = isOffDay(d)
-          const dayWarning = warningDays.has(d.day)
-          return (
-            <button
-              key={d.day}
-              type="button"
-              aria-pressed={active}
-              aria-label={`${d.day} · ${d.type}${dayWarning ? ' · terhelés-jelzés' : ''}`}
-              onClick={() => setActiveDay(d.day)}
-              className="rad-12"
-              style={{
-                position: 'relative',
-                flex: '1 0 auto',
-                minWidth: 44,
-                padding: '8px 10px',
-                background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'var(--line)' : 'var(--border-subtle)'}`,
-                color: active ? 'var(--coral)' : dayOff ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-                opacity: dayOff && !active ? 0.6 : 1,
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {d.day}
-              {!dayOff && (
-                <span style={{ marginLeft: 4, color: active ? 'var(--coral)' : 'var(--text-tertiary)' }}>
-                  {d.exercises.length}
-                </span>
-              )}
-              {dayWarning && (
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: 'absolute',
-                    top: 4,
-                    right: 4,
-                    width: 6,
-                    height: 6,
-                    borderRadius: '50%',
-                    background: 'var(--error)',
-                  }}
-                />
-              )}
-            </button>
-          )
-        })}
-      </div>
+        <Pills className="ee-days">
+          {days.map((d) => {
+            const dayOff = isOffDay(d)
+            const dayWarning = warningDays.has(d.day)
+            return (
+              <Pill key={d.day} on={d.day === day.day} className={dayOff ? 'ee-dayoff' : undefined}
+                aria-label={`${d.day} · ${d.type}${dayWarning ? ' · terhelés-jelzés' : ''}`}
+                onClick={() => setActiveDay(d.day)}>
+                {d.day}
+                {!dayOff && <small>{d.exercises.length}</small>}
+                {dayWarning && <i className="ee-daydot" aria-hidden="true" />}
+              </Pill>
+            )
+          })}
+        </Pills>
       )}
 
       {showRename && (
-        <input
-          aria-label={`${day.day} nap átnevezése`}
-          value={day.type}
-          onChange={(e) => onRenameDay?.(day.day, e.target.value)}
-          className="card"
-          style={{ padding: '8px 10px', fontSize: 14, width: '100%' }}
-        />
+        <Input className="ee-rename" aria-label={`${day.day} nap átnevezése`} value={day.type}
+          onChange={(e) => onRenameDay?.(day.day, e.target.value)} />
       )}
 
       <MesoEditorHero
-        // When the rename input is shown, it already carries the custom day's
-        // name — blank the hero eyebrow so the name isn't rendered twice.
-        dayType={showRename ? '' : day.type}
+        label={heroLabel}
+        exercises={day.exercises}
         daySets={daySets}
         dayExerciseCount={day.exercises.length}
         dayMinutes={dayMinutes}
         weekSets={weekSets}
         trainingDays={trainingDays}
         warningCount={warningCount}
+        onAdd={() => onAddClick(day.day)}
+        off={off}
+        offNote={day.note}
       />
 
-      <DayBreakdownCard rows={dayRows} warnings={dayWarnings} />
-
-      <WeeklyBandsCard rows={bands} note="1. hét → plafon. Az Emphasize izmok kapják a legtöbbet." />
-
-      <PeakFitCard fits={peakFit} />
-
-      <StructureLintCard findings={lintFindings} />
-
-      {off ? (
-        <div className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
-          <Icon name="anchor" size={12} color="var(--text-tertiary)" />
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
-            {day.note || 'Pihenőnap'}
-          </span>
-          {/* Edzéssé alakít — inert visual affordance, parity with the old day cards */}
-          <button type="button" className="chip" style={{ fontSize: 9, padding: '4px 8px' }}>
-            <Icon name="plus" size={10} /> Edzéssé alakít
-          </button>
-        </div>
-      ) : (
+      {!off && (
         <>
-          <SortableList
-            items={day.exercises.map((e) => ({ ...e, label: e.name }))}
-            onReorder={(ids) => onReorder(day.day, ids)}
-            renderItem={(e) => (
-              <ExerciseAccordionRow
-                ex={e}
-                expanded={expandedId === e.id}
-                onToggle={() => setExpandedId((cur) => (cur === e.id ? null : e.id))}
-                onRemove={() => onRemove(day.day, e.id)}
-                onChange={(patch) => onChange(day.day, e.id, patch)}
-                highlight={countsForVolume(e) && overGroups.has(budgetGroup(e.muscle) ?? '')}
-                suggestedWarmup={suggestedWarmupSets(day, e.id)}
+          <Section n={++n} title="Sorrend és előírás" />
+          <Card className="ee-list">
+            {day.exercises.length === 0 ? (
+              <Note className="ee-none">Ezen a napon még nincs gyakorlat.</Note>
+            ) : (
+              <SortableList
+                chevrons="focus"
+                items={day.exercises.map((e) => ({ ...e, label: e.name }))}
+                onReorder={(ids) => onReorder(day.day, ids)}
+                renderItem={(e) => (
+                  <ExerciseAccordionRow
+                    ex={e}
+                    expanded={expandedId === e.id}
+                    onToggle={() => setExpandedId((cur) => (cur === e.id ? null : e.id))}
+                    onRemove={() => onRemove(day.day, e.id)}
+                    onChange={(patch) => onChange(day.day, e.id, patch)}
+                    highlight={countsForVolume(e) && overGroups.has(budgetGroup(e.muscle) ?? '')}
+                    suggestedWarmup={suggestedWarmupSets(day, e.id)}
+                  />
+                )}
               />
             )}
-          />
-          <button
-            type="button"
-            onClick={() => onAddClick(day.day)}
-            className="card"
-            style={{
-              padding: 12,
-              width: '100%',
-              background: 'transparent',
-              borderStyle: 'dashed',
-              borderColor: 'var(--line)',
-              color: 'var(--coral)',
-              fontSize: 10,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-            }}
-          >
-            <Icon name="plus" size={12} /> Gyakorlat hozzáadása
-          </button>
+            <Note>Húzd a sorokat a sorrendhez, koppints egyre az átíráshoz. Minden változás azonnal mentődik.</Note>
+          </Card>
+
+          {dayRows.length > 0 && <Section n={++n} title="Ma · izmonként" />}
+          <DayBreakdownCard rows={dayRows} warnings={dayWarnings} />
+
+          {bands.length > 0 && <Section n={++n} title="Heti szettek · izmonként" />}
+          <WeeklyBandsCard rows={bands} note="Az 1. héttől a felső értékig. A hangsúlyos izmok kapják a legtöbbet." />
+
+          <Section n={++n} title="Ellenőrzés" />
+          <Card className="ee-checks">
+            <PeakFitCard fits={peakFit} />
+            <StructureLintCard findings={lintFindings} />
+          </Card>
         </>
       )}
-    </div>
+    </>
   )
 }

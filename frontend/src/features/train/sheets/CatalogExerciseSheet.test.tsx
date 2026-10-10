@@ -30,7 +30,7 @@ test('create mode builds the request and calls createCatalogExercise', async () 
   render(<CatalogExerciseSheet onClose={vi.fn()} />)
   await userEvent.type(screen.getByLabelText('Név'), 'DB Row')
   await userEvent.click(screen.getByRole('button', { name: 'Hát (széles)' })) // muscle -> back-wide
-  await userEvent.click(screen.getByRole('button', { name: 'isolation' })) // type
+  await userEvent.click(screen.getByRole('button', { name: 'izolált' })) // type
   await userEvent.click(screen.getByRole('button', { name: 'Stim növelése' })) // 0.7 -> 0.75
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(createCatalogExercise).toHaveBeenCalledWith(
@@ -97,15 +97,34 @@ test('edit mode carries the row\'s existing demo stills through unchanged', asyn
   })
 })
 
-// Üveg (mezo-me75u.4, bible U2 rule 15): one floating glass sheet, flat controls inside it.
-test('the sheet is ONE glass surface; the active chip is lit, nothing inside is glass', async () => {
+// Folyadék (mezo-n4wf5.3): the light kit sheet; the type reads in Hungarian, the picked pill is pressed.
+test('the sheet is the light kit sheet; the picked type pill is pressed, the old glass skin is gone', async () => {
   render(<CatalogExerciseSheet onClose={vi.fn()} />)
   const dialog = screen.getByRole('dialog')
-  expect(dialog).toHaveClass('glass')
-  expect(dialog).toHaveClass('gyx-sheet')
-  expect(dialog.querySelector('.glass')).toBeNull()
-  expect(screen.getByRole('button', { name: 'compound' })).toHaveClass('is-on')
-  await userEvent.click(screen.getByRole('button', { name: 'isolation' }))
-  expect(screen.getByRole('button', { name: 'isolation' })).toHaveClass('is-on')
-  expect(screen.getByRole('button', { name: 'compound' })).not.toHaveClass('is-on')
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(dialog).not.toHaveClass('glass')
+  expect(dialog.querySelector('.glass, [class*="gyx-"]')).toBeNull()
+  expect(screen.getByRole('heading', { name: 'Új gyakorlat' })).toBeInTheDocument()
+  expect(screen.getByText('Gyakorlat · Katalógus')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'összetett' })).toHaveAttribute('aria-pressed', 'true')
+  await userEvent.click(screen.getByRole('button', { name: 'izolált' }))
+  expect(screen.getByRole('button', { name: 'izolált' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'összetett' })).toHaveAttribute('aria-pressed', 'false')
+  // the steppers show the Hungarian decimal comma
+  expect(screen.getByRole('group', { name: 'Stim' })).toHaveTextContent('0,70')
+})
+
+test('edit mode: the delete is a two-tap confirm that calls deleteCatalogExercise on the second tap', async () => {
+  const edit: ExerciseLibraryItem = {
+    id: 'cat-1', catalogId: 'cat-1', name: 'Cable Fly', muscle: 'chest', type: 'isolation',
+    stim: 0.74, fatigue: 0.25, videoUrl: null, editable: true,
+  }
+  render(<CatalogExerciseSheet onClose={vi.fn()} edit={edit} />)
+  expect(screen.getByRole('heading', { name: 'Gyakorlat szerkesztése' })).toBeInTheDocument()
+  const del = screen.getByRole('button', { name: 'Gyakorlat törlése' })
+  await userEvent.click(del)
+  expect(deleteCatalogExercise).not.toHaveBeenCalled()
+  expect(del).toHaveTextContent('Biztos? Koppints a törléshez')
+  await userEvent.click(del)
+  expect(deleteCatalogExercise).toHaveBeenCalledWith('cat-1', { onSuccess: expect.any(Function) })
 })

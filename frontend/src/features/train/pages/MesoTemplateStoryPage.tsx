@@ -1,52 +1,34 @@
 // ============================================================
 // Mezo · MesoTemplateStoryPage — ONE template, read-first, at /train/templates/:id.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `sablon()`):
+//   hero   — split as the label, „N hét, hetente N edzésnap." as the verdict; the week as seven
+//            tubes (a training day filled to its working sets in its first muscle's colour, an
+//            off day hatched with the moon / sport glyph), the top muscles as chips, the facts
+//            as tags; „Futam indítása ebből" on the liquid row opens the ONE shared
+//            `MesoStartSheet`.
+//   1 · A hét felépítése — every day in one card: a training day with each exercise spelled
+//            out (muscle chip, name, szett×ismétlés, induló súly), rest/sport days as quiet
+//            lines. Honest words: a hold (repMin AND repMax both 0) reads „tartás", 0 kg reads
+//            „saját testsúly", a training day with no exercise says so (never „Pihenő").
+//   2 · Heti szettek izmonként — levels over `templateWeekSets` (the shared
+//            `daySessionBreakdown` summed across the week), scaled to the biggest muscle.
+//   3 · Futamok ebből a sablonból — `templateRuns`: the running one → the Terv landing, a
+//            queued one → its own page, a closed one → its FROZEN report.
+//   4 · A sablon kezelése — Szerkesztés (the raw editor), Másolat készítése (createTemplate
+//            from this template's own document → the copy's editor) and Sablon törlése: the
+//            inline two-step confirm (a soft delete that leaves past runs and reports alone).
 //
-// Train Titanium T10 Task 3 (mezo-88iwa.11). A NEW page: until now a template's only own
-// surface was the raw day-plan EDITOR (/train/mesocycles/templates/:id) — you could not
-// look at a recipe without standing in the form that edits it. Ported from the
-// prototype's `planLibraryTemplate`
-// (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:456-515):
-//   hero          — `.pl-lhero` with the back pill docked inside (→ Sablonjaid), the
-//                   split as the eyebrow, the name, one plain sentence carrying
-//                   hét × edzésnap, and the muscles as `MuscleChip` minis.
-//   „A hét felépítése" — one `.pl-lib-card.is-open` per TRAINING day, every exercise
-//                   spelled out in a `.pl-tpl-ex` row (muscle chip, name, szett×ismétlés,
-//                   induló súly). Rest/sport days stay as quiet `.pl-row.is-quiet` lines
-//                   — a week is also its off days, and hiding them would misread the
-//                   split. Honest words, the MesoDayPage rule: a hold (repMin AND repMax
-//                   both 0) reads „tartás", 0 kg reads „saját testsúly".
-//   „Heti szettek izmonként" — `.pl-wload` bars over `templateWeekSets` (the shared
-//                   `daySessionBreakdown` summed across the week — never inline page
-//                   math), scaled to the biggest muscle's own total.
-//   „Futamok ebből a sablonból" — `.pl-row` list over `templateRuns`: the running one →
-//                   the Terv landing, a queued one → its own page (the builder, whose
-//                   dated „Aktiválás" CTA is the deliberate path — the Task 2 lesson),
-//                   a closed one → its FROZEN report. No run yet says so in one line.
-//   CTAs          — „Futam indítása ebből" opens the ONE shared `MesoStartSheet` (the
-//                   same POST …/start flow the DS template cards fired), „Szerkesztés"
-//                   opens the raw editor. Under them the lifecycle pair the DS list card
-//                   carried behind ⋯ — Másolat (createTemplate from this template's own
-//                   document → the copy's editor) and Törlés (two-tap confirm, a soft
-//                   delete that leaves past runs and their reports untouched) — so the
-//                   reface made nothing unreachable (the T4 lesson).
-//
-// A bad/stale :id is a dead link and says so (the MesoDayPage idiom: page head + a
-// GhostState line), never an empty page pretending to be a template.
+// A bad/stale :id is a dead link and says so, never an empty page pretending to be a template.
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import type { MesoDay, MesoTemplate } from '@/data/types'
-import { Icon3D } from '@/shared/ui/clay'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Skeleton } from '@/shared/ui/Skeleton'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
-import { huKg } from '@/features/train/logic/mesoDates'
+import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { huDate, huKg } from '@/features/train/logic/mesoDates'
 import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { InfoButton } from '@/features/train/components/InfoButton'
+import { Mchp, MuscleRow, MuscleTags, deepMuscle } from '@/features/train/components/folyadek'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import {
   splitLabel,
@@ -55,35 +37,29 @@ import {
   templateWeekSets,
   trainingDayCount,
 } from '@/features/train/logic/libraryStory'
-import { huDate } from '@/features/train/logic/mesoDates'
 import { toDayInputs } from '@/features/train/logic/mesoDays'
-import { muscleColor } from '@/features/train/logic/muscleColors'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
-import { FrameBack } from '@/shared/ui/folyadek'
+import {
+  Acts, Btn, Caps, Card, Chev, EmptyTank, FrameBack, Hero, Lk, Note, Page, Row, Section, Skel, Tags, Tubes,
+  useFrameTitle, type TagItem, type VialItem,
+} from '@/shared/ui/folyadek'
 
-const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
-
-/** Fixed one decimal: `hu1` strips a trailing ",0", which reads as a typo next to `2,7 volt`. */
-
-/** Working sets on one day — the card's own fact box (the weekly bars below do the
- *  budget-aware sum; this is just "how much work is this session"). */
+/** Working sets on one day (the weekly levels below do the budget-aware sum; this is just
+ *  "how much work is this session"). */
 const daySets = (day: MesoDay) => day.exercises.reduce((n, e) => n + e.workingSets, 0)
 
-/** Mirrors the real page's geometry: hero → two day cards → the bars → two rows. */
-function TemplateStorySkeleton() {
+const clampPct = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
+
+/** A management row that is a real button with a `disabled` state (the kit Row has none): the
+ *  kit row's own markup and classes. */
+function ActRow(p: { icon: Icon3DName; title: ReactNode; sub: ReactNode; onClick: () => void; disabled?: boolean; ariaLabel?: string }) {
   return (
-    <div role="status" aria-label="Betöltés…">
-      <Skeleton height={230} radius={0} />
-      <div className="col gap-sm" style={{ padding: '14px 17px 19px' }}>
-        <Skeleton width={150} height={11} />
-        {Array.from({ length: 2 }, (_, i) => <Skeleton key={`d${i}`} variant="card" height={150} radius={20} />)}
-        <Skeleton width={170} height={11} style={{ marginTop: 12 }} />
-        {Array.from({ length: 4 }, (_, i) => <Skeleton key={`m${i}`} height={22} />)}
-        <Skeleton width={170} height={11} style={{ marginTop: 12 }} />
-        {Array.from({ length: 2 }, (_, i) => <Skeleton key={`r${i}`} height={58} radius={16} />)}
-      </div>
-    </div>
+    <button type="button" className="fo-row er-act" aria-label={p.ariaLabel} disabled={p.disabled} onClick={p.onClick}>
+      <span className="si"><Icon3D name={p.icon} size={26} /></span>
+      <span className="g"><strong>{p.title}</strong><small>{p.sub}</small></span>
+      <Chev />
+    </button>
   )
 }
 
@@ -97,6 +73,9 @@ export function MesoTemplateStoryPage() {
   const deleteRowRef = useRef<HTMLDivElement>(null)
 
   const goBack = () => navigate('/train/templates')
+  const template = templates.find((t) => t.id === id)
+  useFrameTitle({ title: template?.title ?? 'Sablon', eyebrow: 'Sablonjaid' })
+  const back = <FrameBack className="er-back" history fallback="/train/templates">‹ Sablonjaid</FrameBack>
 
   // Care on Törlés (Task 3 fix round, mezo-88iwa.11): the armed confirm auto-disarms the
   // moment the user taps anything else on the page — a capture-phase document listener
@@ -112,19 +91,15 @@ export function MesoTemplateStoryPage() {
   }, [confirmDelete])
 
   // Real mode: the lists are still in flight — wait, do not accuse the link.
-  if (pending || workoutPending) return <TemplateStorySkeleton />
-
-  const template = templates.find((t) => t.id === id)
+  if (pending || workoutPending) return <Page className="er-page">{back}<Skel blocks={[300, 150, 150, 120]} /></Page>
 
   // A RESOLVED list without this template is a dead link, and says so.
   if (!template) {
     return (
-      <MozaikPage tone="gold">
-        <PageHead history fallback="/train/templates" label="‹ Sablonjaid" />
-        <PageBody className="tv-tpl">
-          <GhostState message="Ez a sablon nem található." />
-        </PageBody>
-      </MozaikPage>
+      <Page className="er-page">
+        {back}
+        <Card><EmptyTank icon="t-other">Ez a sablon nem található.</EmptyTank></Card>
+      </Page>
     )
   }
 
@@ -135,9 +110,8 @@ export function MesoTemplateStoryPage() {
   const topSets = Math.max(1, ...muscles.map((m) => m.sets))
   const minutes = templateSessionMinutes(template)
   const runs = templateRuns(template.id, template.title, mesocycles)
-  // Highlighted = trained by this template — a flat 'in' level (the MesoDayPage idiom for
-  // "this muscle is in the plan", not a graded weekly load like TrainWeekPage's map).
-  const heat: BodyHeat[] = muscles.map((m) => ({ token: m.colorMuscle, level: 'in' }))
+  const noRuns = runs.active === null && runs.planned.length === 0 && runs.closed.length === 0
+  const topDaySets = Math.max(1, ...days.map(daySets))
 
   const openEditor = (templateId: string) => navigate(`/train/mesocycles/templates/${templateId}`)
   // Failed mutations are toasted globally (§7a) — the handlers have nothing richer to add.
@@ -163,253 +137,188 @@ export function MesoTemplateStoryPage() {
     deleteTemplate(template.id).then(goBack).catch(() => {})
   }
 
-  return (
-    <MozaikPage tone="gold">
-      <EntranceGroup>
-        <header
-          className="pl-dhero pl-lhero rise"
-          style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
-        >
-          <span className="pl-dhero-wash" aria-hidden="true" />
-          <FrameBack className="mz-backbtn glass uv-back" history fallback="/train/templates">
-            ‹ Sablonjaid
-          </FrameBack>
-          {muscles.length > 0 && (
-            <span className="pl-lhero-map">
-              <BodyMap heat={heat} views="auto" className="pl-lhero-body" ariaLabel={`${template.title} — érintett izmok`} />
-            </span>
-          )}
-          <span className="pl-dhero-tag tr-eyebrow">{split ? `Sablon · ${split}` : 'Sablon'}</span>
-          <h2>{template.title}</h2>
-          <p className="pl-say">
-            {template.weeks} hét, hetente {trainingDays} edzésnap.
-          </p>
-          {muscles.length > 0 && (
-            <span className="pl-lib-mus" style={{ position: 'relative', marginTop: 10 }}>
-              {muscles.map((m) => (
-                <i key={m.group} style={{ '--mus-color': muscleColor(m.colorMuscle).rail } as CSSProperties}>
-                  <MuscleChip token={m.colorMuscle} size={21} />
-                </i>
-              ))}
-            </span>
-          )}
-          <div className="pl-poster-foot">
-            {minutes > 0 && <span>~{minutes} perc egy edzés</span>}
-            <span>{muscles.length} izomcsoport</span>
-            {/* The legacy signal the retired MesoTemplateCard used to carry (mezo-88iwa.11):
-                a plan built on the old model still starts, but its tiers are display-only. */}
-            {isLegacyPlan(template) && <span data-testid="template-legacy">régi modell</span>}
-          </div>
-        </header>
+  // The week as tubes: a training day filled to its working sets (against the week's biggest
+  // day) in its first exercise's muscle colour; an off day is the hatched tube.
+  const weekTubes: VialItem[] = days.map((day) => {
+    const sets = daySets(day)
+    if (isOffDay(day) || sets === 0) {
+      return { label: day.day, value: '–', pct: 0, hatch: true, icon: day.muscle === 'sport' ? 't-volley' : isOffDay(day) ? 't-moon' : undefined }
+    }
+    return {
+      label: day.day, value: sets, pct: (sets / topDaySets) * 94,
+      color: deepMuscle(day.exercises[0].muscle), mark: day.type.split(' ')[0],
+    }
+  })
+  const heroTags: (TagItem | string)[] = []
+  if (minutes > 0) heroTags.push(`~${minutes} perc egy edzés`)
+  heroTags.push(`${muscles.length} izomcsoport`)
+  // The legacy signal (mezo-88iwa.11): a plan built on the old model still starts, but its
+  // tiers are display-only.
+  if (isLegacyPlan(template)) heroTags.push({ label: <span data-testid="template-legacy">régi modell</span> })
 
-        <PageBody className="pl-lib pl-sub tv-tpl">
-          <h3 className="pl-h3">A hét felépítése</h3>
-          {days.length === 0 && <p className="pl-foot-say">Ennek a sablonnak még nincs heti beosztása.</p>}
-          {days.map((day, i) =>
-            isOffDay(day) ? (
-              <div key={day.day} className="pl-row is-quiet rise" style={delay(70 + i * 25)}>
-                <span>
-                  <strong>{day.day}</strong>
-                  <small>{day.muscle === 'sport' ? day.type : 'Pihenő'}</small>
-                </span>
-              </div>
-            ) : day.exercises.length === 0 ? (
-              // A TRAINING day with no exercises yet is not a rest day — say so honestly
-              // instead of misreading it as „Pihenő" (Task 3 fix round, mezo-88iwa.11).
-              <div key={day.day} className="pl-row is-quiet rise" style={delay(70 + i * 25)}>
-                <span>
-                  <strong>{day.day}</strong>
-                  <small>{day.type} · még nincs gyakorlat</small>
-                </span>
-              </div>
-            ) : (
-              <div key={day.day} className="pl-lib-card is-open rise" style={delay(70 + i * 25)}>
-                <span className="pl-lib-head">
-                  <strong>{day.day}</strong>
-                  <em>{day.type}</em>
-                </span>
-                <span className="pl-day-facts">
-                  <i><Icon3D name="t-protocol" size={22} className="icon" /><b>{day.exercises.length}</b><small>gyakorlat</small></i>
-                  <i><Icon3D name="t-dumbbell" size={22} className="icon" /><b>{daySets(day)}</b><small>szett</small></i>
-                  <i><Icon3D name="t-clock" size={22} className="icon" /><b>~{estimateSessionMinutes(day.exercises)}</b><small>perc</small></i>
-                </span>
-                <span className="pl-tpl-exs">
+  const hasWeek = days.length > 0
+  let n = 0
+
+  return (
+    <Page className="er-page er-cards">
+      {back}
+      <Hero
+        label={split ? `Sablon · ${split}` : 'Sablon'}
+        verdict={`${template.weeks} hét, hetente ${trainingDays} edzésnap.`}
+        sub={hasWeek ? 'Ez a hét felépítése — a futam ebből készül.' : 'Ennek a sablonnak még nincs heti beosztása.'}
+        actions={(
+          <>
+            <Btn onClick={() => setStartOpen(true)}>Futam indítása ebből</Btn>
+            <Note className="er-heronote">A sablon marad, a terv a tiéd lesz</Note>
+          </>
+        )}
+      >
+        {hasWeek ? (
+          <>
+            <div className="er-hg"><Tubes items={weekTubes} height={96} size="wk" gap={6} aria-label={`${template.title} — a hét napjai`} /></div>
+            {muscles.length > 0 && <MuscleTags items={muscles.slice(0, 5).map((m) => ({ muscle: m.colorMuscle, label: m.label }))} />}
+          </>
+        ) : (
+          <EmptyTank icon="t-template">Ennek a sablonnak még nincs heti beosztása.</EmptyTank>
+        )}
+        <Tags items={heroTags} />
+      </Hero>
+
+      {hasWeek && (
+        <>
+          <Section n={++n} title="A hét felépítése" />
+          <Card>
+            {days.map((day) =>
+              isOffDay(day) ? (
+                <div key={day.day} className="er-tday muted">
+                  <div className="dh"><b>{day.day}</b><span>{day.muscle === 'sport' ? day.type : 'Pihenő'}</span></div>
+                </div>
+              ) : day.exercises.length === 0 ? (
+                // A TRAINING day with no exercises yet is not a rest day — say so honestly
+                // instead of misreading it as „Pihenő" (Task 3 fix round, mezo-88iwa.11).
+                <div key={day.day} className="er-tday muted">
+                  <div className="dh"><b>{day.day}</b><span>{day.type} · még nincs gyakorlat</span></div>
+                </div>
+              ) : (
+                <div key={day.day} className="er-tday">
+                  <div className="dh">
+                    <b>{day.day} · {day.type}</b>
+                    <span>{day.exercises.length} gyakorlat · {daySets(day)} szett · ~{estimateSessionMinutes(day.exercises)} perc</span>
+                  </div>
                   {day.exercises.map((e) => {
                     const isHold = e.repMin === 0 && e.repMax === 0
                     return (
-                      <span
-                        key={e.id}
-                        className="pl-tpl-ex"
-                        style={{ '--mus-color': muscleColor(e.muscle).rail } as CSSProperties}
-                      >
-                        <MuscleChip token={e.muscle} size={24} />
-                        <strong>{e.name}</strong>
-                        <b>{isHold ? `${e.workingSets}× tartás` : `${e.workingSets}×${e.repMin}–${e.repMax}`}</b>
-                        <small>
+                      <div key={e.id} className="ex">
+                        <Mchp muscle={e.muscle} sm />
+                        <span className="g">{e.name}</span>
+                        <span className="v">
+                          <b>{isHold ? `${e.workingSets}× tartás` : `${e.workingSets}×${e.repMin}–${e.repMax}`}</b>
+                          {' · '}
                           {e.anchorWeightKg === 0
                             ? 'saját testsúly'
                             : e.anchorWeightKg != null
                               ? `${huKg(e.anchorWeightKg)} kg`
                               : '—'}
-                        </small>
-                      </span>
+                        </span>
+                      </div>
                     )
                   })}
-                </span>
-              </div>
-            ),
-          )}
-
-          {muscles.length > 0 && (
-            <>
-              {/* The explanation lives BEHIND the ⓘ, as the prototype keeps it
-                  (plan-pages.js:489) — the static paragraph that used to print it here
-                  went with the button, so the sentence is not said twice (mezo-b516k). */}
-              <h3 className="pl-h3">
-                Heti szettek izmonként
-                <InfoButton
-                  title="Mit jelent a szám?"
-                  copy="Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet."
-                />
-              </h3>
-              <div className="pl-wload pl-tpl-load rise" style={delay(160)}>
-                {muscles.map((m) => (
-                  <span
-                    key={m.group}
-                    className="pl-wload-row"
-                    style={{ '--mus-color': muscleColor(m.colorMuscle).rail } as CSSProperties}
-                  >
-                    <MuscleChip token={m.colorMuscle} size={22} />
-                    <small>{m.label}</small>
-                    <i style={{ '--w': `${Math.min(100, (m.sets / topSets) * 100)}%` } as CSSProperties} />
-                    <b>{m.sets}</b>
-                  </span>
-                ))}
-              </div>
-            </>
-          )}
-
-          <h3 className="pl-h3">Futamok ebből a sablonból</h3>
-          {runs.active === null && runs.planned.length === 0 && runs.closed.length === 0 && (
-            <p className="pl-foot-say">Még nem indult futam ebből.</p>
-          )}
-          {runs.active && (
-            <button
-              type="button"
-              className="pl-row rise"
-              style={delay(190)}
-              aria-label={`Most fut · ${runs.active.title}`}
-              onClick={() => navigate('/train/mesocycles')}
-            >
-              <span>
-                <strong>{runs.active.title}</strong>
-                <small>Most fut — {runs.active.currentWeek}. hét a {runs.active.weeks}-ból</small>
-              </span>
-              <b aria-hidden="true">›</b>
-            </button>
-          )}
-          {runs.planned.map((m, i) => (
-            <button
-              key={m.id}
-              type="button"
-              className="pl-row rise"
-              style={delay(210 + i * 25)}
-              aria-label={`Tervezett · ${m.title}`}
-              onClick={() => navigate(`/train/mesocycles/${m.id}`)}
-            >
-              <span>
-                <strong>{m.title}</strong>
-                <small>{huDate(m.startDate)}-tól következik</small>
-              </span>
-              <b aria-hidden="true">›</b>
-            </button>
-          ))}
-          {runs.closed.map((m, i) => (
-            <button
-              key={m.id}
-              type="button"
-              className="pl-row rise"
-              style={delay(240 + i * 25)}
-              aria-label={`Lezárt futam · ${m.title}`}
-              onClick={() => navigate(`/train/mesocycles/${m.id}/report`)}
-            >
-              <span>
-                <strong>{m.title}</strong>
-                <small>Lezárva · {m.weeks} hét</small>
-              </span>
-              <b aria-hidden="true">›</b>
-            </button>
-          ))}
-
-          <button
-            type="button"
-            className="pl-lib-new is-start rise"
-            style={delay(280)}
-            aria-label="Futam indítása ebből"
-            onClick={() => setStartOpen(true)}
-          >
-            <span className="pl-lib-new-art"><Icon3D name="t-play" size={30} className="icon" /></span>
-            <span>
-              <strong>Futam indítása ebből</strong>
-              <small>A sablon marad, a terv a tiéd lesz</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-
-          <button
-            type="button"
-            className="pl-row rise"
-            style={delay(300)}
-            aria-label="Szerkesztés"
-            onClick={() => openEditor(template.id)}
-          >
-            <span>
-              <strong>Szerkesztés</strong>
-              <small>A napok és a gyakorlatok átírása</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-
-          {/* The lifecycle pair the DS list card carried behind ⋯ — kept reachable here. */}
-          <button
-            type="button"
-            className="pl-row is-quiet rise"
-            style={delay(320)}
-            aria-label="Másolat készítése"
-            disabled={createPending}
-            onClick={() => duplicate(template)}
-          >
-            <span>
-              <strong>Másolat készítése</strong>
-              <small>Egy saját változat, amit szabadon átírhatsz</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-          <div
-            ref={deleteRowRef}
-            className={confirmDelete ? 'pl-row is-quiet is-danger rise' : 'pl-row is-quiet rise'}
-            style={delay(340)}
-          >
-            <button
-              type="button"
-              className="pl-row-main"
-              disabled={deletePending}
-              onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
-            >
-              <span>
-                <strong>{confirmDelete ? 'Biztos? Törlés' : 'Sablon törlése'}</strong>
-                <small>A már elindult futamok és a riportjaik megmaradnak</small>
-              </span>
-              <b aria-hidden="true">›</b>
-            </button>
-            {confirmDelete && (
-              <button type="button" className="pl-row-cancel" onClick={() => setConfirmDelete(false)}>
-                Mégsem
-              </button>
+                </div>
+              ),
             )}
-          </div>
-        </PageBody>
-      </EntranceGroup>
+          </Card>
+        </>
+      )}
+
+      {muscles.length > 0 && (
+        <>
+          <Section n={++n} title="Heti szettek izmonként" />
+          <Card>
+            {muscles.map((m) => (
+              <MuscleRow key={m.group} muscle={m.colorMuscle} label={m.label} value={`${m.sets} szett`} pct={clampPct((m.sets / topSets) * 100, 6, 100)} />
+            ))}
+            {/* The explanation lives BEHIND the link, as the prototype keeps it (mezo-b516k). */}
+            <Acts>
+              <InfoButton
+                link
+                eyebrow="Heti szettek izmonként"
+                title="Mit jelent a szám?"
+                copy="Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet."
+              />
+            </Acts>
+          </Card>
+        </>
+      )}
+
+      <Section n={++n} title="Futamok ebből a sablonból" />
+      <Card>
+        {noRuns && <Note className="er-none">Még nem indult futam ebből.</Note>}
+        {runs.active && (
+          <Row
+            icon="t-peak"
+            title={runs.active.title}
+            sub={`Most fut — ${runs.active.currentWeek}. hét a ${runs.active.weeks}-ból`}
+            right={(
+              <span className="er-chev">
+                <Caps n={runs.active.weeks} done={runs.active.currentWeek - 1} cur={runs.active.currentWeek - 1} />
+                <Chev />
+              </span>
+            )}
+            aria-label={`Most fut · ${runs.active.title}`}
+            onClick={() => navigate('/train/mesocycles')}
+          />
+        )}
+        {runs.planned.map((m) => (
+          <Row
+            key={m.id}
+            icon="t-calendar"
+            title={m.title}
+            sub={`${huDate(m.startDate)}-tól következik`}
+            aria-label={`Tervezett · ${m.title}`}
+            onClick={() => navigate(`/train/mesocycles/${m.id}`)}
+          />
+        ))}
+        {runs.closed.map((m) => (
+          <Row
+            key={m.id}
+            icon="t-scroll"
+            title={m.title}
+            sub={`Lezárva · ${m.weeks} hét`}
+            aria-label={`Lezárt futam · ${m.title}`}
+            onClick={() => navigate(`/train/mesocycles/${m.id}/report`)}
+          />
+        ))}
+      </Card>
+
+      <Section n={++n} title="A sablon kezelése" />
+      <Card>
+        <Row
+          icon="t-pencil"
+          title="Szerkesztés"
+          sub="A napok és a gyakorlatok átírása"
+          aria-label="Szerkesztés"
+          onClick={() => openEditor(template.id)}
+        />
+        {/* The lifecycle pair — kept reachable here. */}
+        <ActRow
+          icon="t-repeat"
+          title="Másolat készítése"
+          sub="Egy saját változat, amit szabadon átírhatsz"
+          ariaLabel="Másolat készítése"
+          disabled={createPending}
+          onClick={() => duplicate(template)}
+        />
+        <div ref={deleteRowRef} className="er-del">
+          <ActRow
+            icon="t-trash"
+            title={<span className="er-bad">{confirmDelete ? 'Biztos? Törlés' : 'Sablon törlése'}</span>}
+            sub="A már elindult futamok és a riportjaik megmaradnak"
+            disabled={deletePending}
+            onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}
+          />
+          {confirmDelete && <Acts><Lk onClick={() => setConfirmDelete(false)}>Mégsem</Lk></Acts>}
+        </div>
+      </Card>
 
       {startOpen && (
         <MesoStartSheet
@@ -418,6 +327,6 @@ export function MesoTemplateStoryPage() {
           onClose={() => setStartOpen(false)}
         />
       )}
-    </MozaikPage>
+    </Page>
   )
 }

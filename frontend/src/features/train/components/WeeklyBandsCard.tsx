@@ -1,44 +1,41 @@
 // ============================================================
-// Mezo · WeeklyBandsCard — wizard v2's weekly per-muscle set band card:
-// current → ceiling per muscle, tier chip, step arrow. Replaces
-// SetBudgetCard's % pills/rows (mesocycle wizard redesign, mezo-d20.14).
-// No percentages anywhere — the bar is the only place `pct` shows up, and
-// only as a fill width.
+// Mezo · WeeklyBandsCard — „Heti szettek · izmonként" in the day editor (mezo-d20.14;
+// Folyadék mezo-n4wf5.3, prototype vilagos/edzes.js `napszerk()` section 3).
+// One row per muscle group of the WEEK: the tier as a status pill (Hangsúly · Építés ·
+// Tartás), the weekly step, „now → the top value" and a level showing how far the week is
+// from that top. A held (Tartás) group has no level: it says „n szett · tart".
+// No percentages anywhere — `pct` only sets the level.
 // ============================================================
 import type { BandRow } from '@/features/train/logic/weeklyBands'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import { Card, Level, Note, Row, St } from '@/shared/ui/folyadek'
 
-const TIER_LABEL = { emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' } as const
+const TIER_LABEL = { emphasize: 'Hangsúly', grow: 'Építés', maintain: 'Tartás' } as const
+const TIER_TONE = { emphasize: 'ok', grow: 'plan', maintain: 'q' } as const
 
 interface WeeklyBandsCardProps {
   rows: BandRow[]
+  /** The card's accessible name (the visible heading is the section title above it). */
   eyebrow?: string
   note?: string
 }
 
-export function WeeklyBandsCard({ rows, eyebrow = 'Heti szetek · izmonként', note }: WeeklyBandsCardProps) {
+export function WeeklyBandsCard({ rows, eyebrow = 'Heti szettek · izmonként', note }: WeeklyBandsCardProps) {
   if (!rows.length) return null
   return (
-    <div className="mz-card mz-bands" role="group" aria-label={eyebrow}>
-      <div className="mz-eyebrow">{eyebrow}</div>
+    <Card className="ee-bands" role="group" aria-label={eyebrow}>
       {rows.map((r) => {
-        const fam = muscleColor(r.group)
+        const held = r.tier === 'maintain'
         return (
-          <div className="mz-band" key={r.group} role="group" aria-label={`${r.label} · ${TIER_LABEL[r.tier]}`}>
-            <div className="mz-band-row">
-              <span className="mz-pill" style={{ background: fam.wash, color: fam.deep }}>{r.label}</span>
-              <span className={`mz-tchip mz-tchip-${r.tier}`}>{TIER_LABEL[r.tier]}</span>
-              <span className="mz-grow" />
-              {r.tier !== 'maintain' && <span className="mz-stepchip">{r.step === '+2' ? '▲ +2 / hét' : 'plafonon'}</span>}
-              <span className="mz-band-nums">{r.tier === 'maintain' ? `${r.planned} szett · tart` : `${r.planned} → ${r.ceiling}`}</span>
-            </div>
-            {r.tier !== 'maintain' && (
-              <div className="mz-band-bar"><div style={{ width: `${Math.min(100, r.pct)}%`, background: fam.deep }} /></div>
-            )}
-          </div>
+          <Row key={r.group} role="group" aria-label={`${r.label} · ${TIER_LABEL[r.tier]}`}
+            left={<Mchp muscle={r.group} sm />}
+            title={<>{r.label} <St tone={TIER_TONE[r.tier]}>{TIER_LABEL[r.tier]}</St></>}
+            sub={held ? undefined : r.step === '+2' ? '▲ +2 / hét' : 'a felső értéken'}
+            more={!held && <Level pct={Math.min(100, r.pct)} color={deepMuscle(r.group)} height={10} />}
+            value={held ? `${r.planned} szett · tart` : `${r.planned} → ${r.ceiling}`} />
         )
       })}
-      {note && <div className="mz-habnote">{note}</div>}
-    </div>
+      {note && <Note>{note}</Note>}
+    </Card>
   )
 }

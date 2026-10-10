@@ -1,21 +1,20 @@
 // ============================================================
-// Mezo · InterviewStep — a varázsló EGYETLEN kérdező képernyője (mezo-yty6).
-// A régi 01 „Mikor és miért" + 02 „Fókusz" lépés egy görgethető oldallá olvadt,
-// a 03 „Program" pedig megszűnt: a generálás kimenete a közös MesoWeekEditor-ban
-// nyílik (Alpha-Progression-minta — a wizard vékony interjú, nem második szerkesztő).
-//
-// A kártyák a StepWhen/StepFocus bevált .mz-stepcard anatómiáját öröklik (ikon +
-// eyebrow + tartalom), így a stíluslap sem duplikálódik: csak a rózsaszín wash és
-// a lábléc-rács új.
+// Mezo · InterviewStep — a varázsló EGYETLEN kérdező képernyője (mezo-yty6; Folyadék
+// mezo-n4wf5.3, prototype vilagos/edzes.js `ujterv()`, states `kapu` / `gen` / `hiba`).
+// Hero: a terv íve hétről hétre üres edényekben — a vízvonal a hét súlya, a csúcshét a
+// legmagasabb, a pihenőhét sraffozott (phaseCurve(weeks)). Alatta öt számozott kártya:
+// edzésnapok, hossz, cél, fókusz, ami magától megy; a generálás gombja a lap alján úszik.
+// A generálás kimenete a közös MesoWeekEditor-ban nyílik (a wizard vékony interjú, nem
+// második szerkesztő).
 // ============================================================
-import type { CSSProperties, Dispatch } from 'react'
+import type { Dispatch } from 'react'
+import type { MesoPhase } from '@/data/types'
 import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
-import { splitLine, weekTotals } from '@/features/train/logic/mesoPlan'
+import { phaseCurve, splitLine, weekTotals } from '@/features/train/logic/mesoPlan'
 import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
-import { CtaPrimary } from '@/shared/ui/Cta'
-import { Icon3D } from '@/shared/ui/clay'
-import { StatCell, StatStrip } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import {
+  Acts, Box, Btn, Card, Facts, FrameBack, Hero, Lk, Note, Page, Pill, Pills, Section, TextArea, Tubes, Txt, useFrameTitle,
+} from '@/shared/ui/folyadek'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
@@ -34,49 +33,85 @@ const COUNTS: { n: number; sub: string }[] = [
 /** The retired StepProgram's Hossz range (mezo-yty6 fix round 1) — 4-8 weeks. */
 const WEEK_CHOICES = [4, 5, 6, 7, 8]
 
-const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
-
 /** The split table only covers 2–6 training days — the generate CTA's gate. */
 function canGenerate(state: WizardState): boolean {
   return state.daysOfWeek.length >= 2 && state.daysOfWeek.length <= 6
 }
+
+/** How high the waterline of a week stands in the hero's arc (prototype `PH_H`): the phase's weight, not a set count. */
+const PHASE_LEVEL: Record<MesoPhase, number> = { MEV: 34, MAV: 66, MRV: 100, Deload: 26 }
 
 interface InterviewStepProps {
   state: WizardState
   dispatch: Dispatch<WizardAction>
   onGenerate: () => void
   generating: boolean
+  /** The first generation failed: the retry callout stands in the hero. */
+  failed?: boolean
+  onBack?: () => void
 }
 
-export function InterviewStep({ state, dispatch, onGenerate, generating }: InterviewStepProps) {
+export function InterviewStep({ state, dispatch, onGenerate, generating, failed = false, onBack }: InterviewStepProps) {
   const days = state.daysOfWeek
   const { weekOne, peak } = weekTotals(state.priorities)
   const toggleDay = (day: string) =>
     dispatch({ type: 'setDays', days: days.includes(day) ? days.filter((d) => d !== day) : [...days, day] })
 
   const gateOpen = canGenerate(state)
+  const curve = phaseCurve(state.weeks)
+  const short = curve.length > 6
+  const [splitHead, splitBody] = splitLine(days).split(' · ')
+
+  useFrameTitle({ title: 'Új terv', eyebrow: 'Pár kérdés' })
 
   return (
-    <EntranceGroup>
-      <div className="mz-steptitle">Mikor edzel — és mire gyúrsz?</div>
-      <p className="mz-steplead">
-        Csak ennyit kérdezünk — a többit a modell rakja össze, és a szerkesztőben bármit átírhatsz.
-      </p>
-
-      <div className="mz-stepcard mz-stepcard-coral rise" style={delay(40)}>
-        <div className="mz-stephead">
-          <Icon3D name="t-calendar" size={28} />
-          <span className="mz-eyebrow mz-eb-coral mz-grow">Edzésnapok</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--mz-ink-soft)' }}>
-            {days.length} nap
-          </span>
+    <Page
+      className="ew-page"
+      foot={(
+        <Btn grow disabled={!gateOpen || generating} onClick={onGenerate}>
+          {generating ? 'Mezo dolgozik…' : 'Program generálása'}
+        </Btn>
+      )}
+    >
+      {onBack && <FrameBack className="ew-back" onBack={onBack}>‹ Terv</FrameBack>}
+      <Hero
+        className="ew-hero"
+        label="Új terv"
+        verdict="Mikor edzel — és mire gyúrsz?"
+        sub="Csak ennyit kérdezünk — a többit Mezo rakja össze, és a szerkesztőben bármit átírhatsz."
+      >
+        {failed && (
+          <div className="ew-alert" role="alert">
+            <Box icon="t-info" color="var(--fo-warn)" title="Nem sikerült a generálás — próbáld újra.">
+              <Acts><Lk onClick={onGenerate}>↺ Újrapróbálom</Lk></Acts>
+            </Box>
+          </div>
+        )}
+        <div className="ew-hg">
+          <Tubes
+            size="wk" height={64} gap={short ? 4 : 6}
+            aria-label={`A terv íve: ${state.weeks - 1} emelkedő hét és egy pihenőhét`}
+            items={curve.map((ph, i) => ({
+              label: short ? `${i + 1}.` : `${i + 1}. hét`,
+              note: ph === 'Deload' ? 'pihenő' : ph === 'MRV' ? 'csúcs' : undefined,
+              pct: 0,
+              wl: PHASE_LEVEL[ph] * 0.94,
+              ghost: true,
+              hatch: ph === 'Deload',
+              mark: ph === 'Deload' ? '↓' : ph === 'MRV' ? '▲' : undefined,
+            }))}
+          />
         </div>
-        <div className="mz-dcgrid">
+        <Note>{state.weeks} hét = {state.weeks - 1} emelkedő hét + 1 pihenőhét</Note>
+      </Hero>
+
+      <Section n={1} title={`Edzésnapok · ${days.length} nap`} />
+      <Card>
+        <div className="ew-cnt">
           {COUNTS.map(({ n, sub }) => (
             <button
               key={n}
               type="button"
-              className="mz-dct"
               aria-label={`${n} nap / hét`}
               aria-pressed={days.length === n}
               onClick={() => dispatch({ type: 'setDayCount', n })}
@@ -88,103 +123,65 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
             </button>
           ))}
         </div>
-        <div className="mz-daypick">
-          {DAY_CHIPS.map(({ day, short }) => (
+        <div className="ew-wd">
+          {DAY_CHIPS.map(({ day, short: label }) => (
             <button
               key={day}
               type="button"
-              aria-label={short}
+              aria-label={label}
               aria-pressed={days.includes(day)}
               onClick={() => toggleDay(day)}
             >
-              {short}
+              <i />
+              <b>{label}</b>
             </button>
           ))}
         </div>
-        <div className="mz-coach">
-          <span className="dot" aria-hidden="true" />
-          <span>{splitLine(days)}</span>
-        </div>
-        <div className="mz-stephead" style={{ marginTop: 11, marginBottom: 6 }}>
-          <span className="mz-eyebrow mz-eb-coral mz-grow">Hossz</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--mz-ink-soft)' }}>
-            {state.weeks} hét = {state.weeks - 1} rámpa + 1 deload
-          </span>
-        </div>
-        <div className="segtabs" role="group" aria-label="Hossz hetekben">
-          {WEEK_CHOICES.map((w) => (
-            <button
-              key={w}
-              type="button"
-              className="segtab"
-              aria-pressed={state.weeks === w}
-              aria-label={`${w} hét`}
-              onClick={() => dispatch({ type: 'setWeeks', weeks: w })}
-            >
-              {w}
-            </button>
-          ))}
-        </div>
-      </div>
+        <Box icon="t-calendar" title={splitHead}>{splitBody && <p>{splitBody}</p>}</Box>
+      </Card>
 
-      <div className="mz-stepcard mz-stepcard-lav rise" style={delay(110)}>
-        <div className="mz-stephead">
-          <Icon3D name="t-target" size={28} />
-          <span className="mz-eyebrow mz-eb-lav mz-grow">A célod · opcionális</span>
-        </div>
-        <VoiceField domain="train" onTranscript={(t) => dispatch({ type: 'setGoalText', text: appendDictation(state.goalText, t, 400) })}>
-          <textarea
+      <Section n={2} title="Hossz" />
+      <Card>
+        <Txt className="ew-len">{state.weeks} hét = {state.weeks - 1} emelkedő + 1 pihenőhét</Txt>
+        <Pills role="group" aria-label="Hossz hetekben">
+          {WEEK_CHOICES.map((w) => (
+            <Pill key={w} on={state.weeks === w} onClick={() => dispatch({ type: 'setWeeks', weeks: w })}>
+              {w} hét
+            </Pill>
+          ))}
+        </Pills>
+      </Card>
+
+      <Section n={3} title="A célod · opcionális" />
+      <Card>
+        <VoiceField className="ew-goal" domain="train" onTranscript={(t) => dispatch({ type: 'setGoalText', text: appendDictation(state.goalText, t, 400) })}>
+          <TextArea
             rows={3}
             maxLength={400}
-            aria-label="Mit szeretnél ebben a blokkban?"
+            aria-label="Mit szeretnél ebben a tervben?"
             placeholder="pl. röplabda szezon mellett, a vállam kímélve — de a hát és a váll nagyon jöhet"
             value={state.goalText}
             onChange={(e) => dispatch({ type: 'setGoalText', text: e.target.value })}
           />
         </VoiceField>
-        <div className="mz-stepnote">
-          Üresen is teljes program készül — a szöveg a gyakorlatválasztást és a napok hangolását befolyásolja.
-        </div>
-      </div>
+        <Note>Üresen is teljes program készül — a szöveg a gyakorlatválasztást és a napok hangolását befolyásolja.</Note>
+      </Card>
 
-      <div className="mz-stepcard mz-stepcard-rose rise" style={delay(180)}>
-        <div className="mz-stephead">
-          <Icon3D name="t-muscle" size={28} />
-          <span className="mz-eyebrow mz-eb-rose mz-grow">Fókusz · max 2 hangsúly</span>
-        </div>
+      <Section n={4} title="Fókusz · max 2 hangsúly" />
+      <Card>
         <MusclePriorityPicker
           value={state.priorities}
           onChange={(priorities) => dispatch({ type: 'setPriorities', priorities })}
         />
-        <div style={{ marginTop: 11 }}>
-          <StatStrip>
-            <StatCell value={weekOne} label="szett · 1. hét" />
-            <StatCell value={peak} label="szett · csúcshét" />
-          </StatStrip>
-        </div>
-      </div>
+        <Facts items={[[weekOne, 'szett · 1. hét'], [peak, 'szett · csúcshét']]} />
+      </Card>
 
-      <div className="mz-stepcard mz-stepcard-gold rise" style={delay(250)}>
-        <div className="mz-stephead">
-          <Icon3D name="t-peak" size={28} />
-          <span className="mz-eyebrow mz-eb-gold mz-grow">Ami magától megy</span>
-        </div>
-        <StatStrip>
-          <StatCell value={`${state.weeks - 1} + 1`} label="rámpa + deload hét" />
-          <StatCell value="+2" label="szett / hét / izom" />
-          <StatCell value="~8" label="szett-plafon / edzés" />
-        </StatStrip>
-        <div className="mz-stepnote">
-          A szerkesztőben bármit átírhatsz — de e nélkül is kész, működő blokkot kapsz.
-        </div>
-      </div>
-
-      {!gateOpen && <p className="mz-stepnote">Válassz 2–6 edzésnapot a folytatáshoz.</p>}
-      <div className="mz-wfoot">
-        <CtaPrimary disabled={!gateOpen || generating} onClick={onGenerate}>
-          {generating ? 'Mezo dolgozik…' : <><Icon3D name="t-spark" size={20} className="uv-inline" />Program generálása</>}
-        </CtaPrimary>
-      </div>
-    </EntranceGroup>
+      <Section n={5} title="Ami magától megy" />
+      <Card>
+        <Facts items={[[`${state.weeks - 1} + 1`, 'emelkedő + pihenőhét'], ['+2', 'szett / hét / izom'], ['~8', 'szett-határ / edzés']]} />
+        <Note>A szerkesztőben bármit átírhatsz — de e nélkül is kész, működő tervet kapsz.</Note>
+        {!gateOpen && <Note className="ew-gate">Válassz 2–6 edzésnapot a folytatáshoz.</Note>}
+      </Card>
+    </Page>
   )
 }
