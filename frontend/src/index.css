@@ -3,6 +3,12 @@
 @import "./styles/prototype.css";
 @import "./styles/folyadek.css";
 @import "./styles/folyadek-kit.css";
+@import "./styles/folyadek-nap-mai.css";
+@import "./styles/folyadek-nap-napom.css";
+@import "./styles/folyadek-nap-beszelgetes.css";
+@import "./styles/folyadek-nap-rutin.css";
+@import "./styles/folyadek-nap-rogzites.css";
+@import "./styles/folyadek-nap-epites.css";
 @import "./styles/folyadek-frame.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
