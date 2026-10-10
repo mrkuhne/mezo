@@ -1,7 +1,0 @@
-/* Quick-log surface — one grid, two shells: the FAB sheet and the /nap/gyors page.
-
-   Üveg (mezo-me75u.3, prototypes/src/uveg-nap-body.html `gyors()` / `qsurface()`): the skin — the
-   lavender glass chat row and the nine glass tiles in their own hues on the page, the flat-lit rows
-   and tiles inside the glass sheet — lives in the `── uveg nap rogzites (` block at the end of
-   src/styles/prototype.css, after the uveg kit it builds on. The old white-edged wash tiles and
-   the --gradient-cta chat row that lived here were removed in the same change. */

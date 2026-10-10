@@ -1,33 +1,29 @@
 // ============================================================
-// Mezo · NapKuldetesekPage — Napi küldetések detail page (mezo-d20.2.4)
-// Source of truth: docs/design_2.0/prototypes/src/nap-body.html #page-quest
-// (p-gold tone, hajtás spot hero, quest cards with XP pill + reroll
-// affordance, quiet principle line). Absorbs the DailyQuestsSheet surface:
-// the data layer (useDailyQuests/useQuestActions) and the smart-action
-// dispatch are the hub's, verbatim — ADR 0010 keeps quests OFFERS: no
-// failure state, no countdowns, nothing self-completes from the UI.
-// ÜVEG (mezo-me75u.3, prototypes/uveg-nap.html `kuldetesek()`): frameless halo hero (3D quest
-// + done/n), each quest ONE glass card in its slot hue with the icon in a lit well, a flat-lit
-// gold XP pill, a solid pill CTA in the card hue and a ghost "Csere" pill; the completed card
-// dims and marks itself with the 3D tick. The empty state is dashed.
+// Mezo · NapKuldetesekPage — Napi küldetések detail page (mezo-d20.2.4; Folyadék mezo-n4wf5.2,
+// prototype vilagos/nap.js `kuldetesek()`).
+// Vessels that fill on their own: the hero holds one vial per quest (full once it is done — a
+// quest has no partial progress, so an open one shows a sliver), then the offers as rows with
+// their state line, a level, the smart action and the „Csere”. The data layer
+// (useDailyQuests/useQuestActions) and the smart-action dispatch are the hub's, verbatim —
+// ADR 0010 keeps quests OFFERS: no failure state, no countdowns, nothing self-completes from the UI.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { cn } from '@/shared/lib/cn'
+import type { Icon3DName } from '@/shared/ui/clay'
 import { localDateString } from '@/shared/lib/dates'
 import { useCheckins, useDailyQuests, useQuestActions, useWaterActions } from '@/data/hooks'
 import { questAction } from '@/features/today/logic/questAction'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import type { DailyQuest, QuestSlot } from '@/data/types'
-import { FrameBack } from '@/shared/ui/folyadek'
+import { Btn, Card, Empty, FrameBack, Hero, Level, Lk, Note, Page, Row, Section, St, Vials } from '@/shared/ui/folyadek'
 
-/** The slot's 3D icon and glass hue (uveg-nap.html `QUESTS`). */
+/** The slot's glyph and its short name under the vial. */
 const SLOT_ICON: Record<QuestSlot, Icon3DName> = { BODY: 't-dumbbell', FUELBIO: 't-bowl', GROWTH: 't-journal' }
-const SLOT_HUE: Record<QuestSlot, string> = { BODY: 'var(--dv-coral)', FUELBIO: 'var(--dv-sage)', GROWTH: 'var(--dv-lav)' }
+const SLOT_LABEL: Record<QuestSlot, string> = { BODY: 'Test', FUELBIO: 'Étkezés', GROWTH: 'Fejlődés' }
+
+/** An open quest has no partial progress: its vessel shows a sliver, a done one is full. */
+const OPEN_PCT = 6
 
 /** The card's quiet state line. Offered quests close themselves from real logs
  *  (derived evaluation) — the copy says so; terminal states reuse the sheet's
@@ -41,6 +37,11 @@ function stateLine(q: DailyQuest): { text: string; done?: boolean } {
       ? 'folyamatban · az edzésből záródik magától'
       : 'folyamatban · a logjaidból záródik magától',
   }
+}
+
+/** The vial's one-word state under the slot name. */
+const VIAL_NOTE: Record<DailyQuest['status'], string> = {
+  completed: 'jóváírva', offered: 'folyamatban', expired: 'lejárt', rerolled: 'újrasorsolva',
 }
 
 export function NapKuldetesekPage() {
@@ -73,66 +74,82 @@ export function NapKuldetesekPage() {
   }
 
   const done = quests.filter((q) => q.status === 'completed').length
+  // The hero's one button: the smart action of the first open offer that has one. Its label is
+  // spelled out (the row's own button keeps the short one).
+  const firstOpen = quests.find((q) => q.status === 'offered' && questActionLabel(q) != null)
+  const heroLabel = firstOpen
+    ? (questAction(firstOpen)?.kind === 'water' ? `${questActionLabel(firstOpen)} víz` : `${questActionLabel(firstOpen)} megnyitása`)
+    : null
+
+  const foot = (
+    <Note>A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs. A Csere naponta egyszer ingyenes.</Note>
+  )
+  const sheet = checkInIdx !== null && (
+    <CheckInSheet slot={checkins[checkInIdx]} slotIdx={checkInIdx}
+      onClose={() => setCheckInIdx(null)} onSave={(d) => saveCheckIn(checkInIdx, d)} />
+  )
+  const back = <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
+
+  if (quests.length === 0) {
+    return (
+      <Page className="nb-page">
+        {back}
+        <Hero label="Mai ajánlatok" verdict="Ma nincs kisorsolt küldetés."
+          sub="Holnap reggel új ajánlatok érkeznek. Addig a napod a szokott rendben megy."
+          actions={<Btn onClick={() => navigate('/nap')}>Vissza a mai napra</Btn>}>
+          <Vials size="sm" height={116} className="nb-vials"
+            items={[0, 1, 2].map(() => ({ label: 'holnap', value: '–', pct: 0, mark: 'üres', color: 'var(--fo-faint)' }))} />
+        </Hero>
+        <Section n={1} title="Mai ajánlatok" />
+        <Card><Empty icon="t-quest">Nincs mára küldetés.</Empty></Card>
+        {foot}
+        {sheet}
+      </Page>
+    )
+  }
 
   return (
-    <MozaikPage tone="gold" className="nap-quest-page nap-oldal">
-      <div className="mz-page-head nap-backrow">
-        <FrameBack history className="mz-backbtn glass nap-back" onBack={() => navigate(-1)}>
-          <b aria-hidden="true">‹</b> Ma
-        </FrameBack>
-      </div>
-      <section className="nap-hero uv-halo" style={{ '--c': 'var(--dv-amber)', '--c2': 'var(--dv-coral)' } as React.CSSProperties}>
-        <Icon3D name="t-quest" size={86} className="nap-hero-art uv-float" />
-        {quests.length > 0 && <div className="nap-hero-num">{done}<small>/{quests.length}</small></div>}
-        <div className="nap-hero-nm">Napi küldetések</div>
-        <div className="nap-hero-sb">ajánlatok a mai napra</div>
-      </section>
-      <PageBody principle="A küldetés ajánlat: ha kimarad, csendben lejár — bukás nincs. A Csere naponta egyszer ingyenes.">
-        <EntranceGroup className="nq-list">
-          {quests.length === 0 ? (
-            <div className="nq-empty uv-empty">Ma nincs kisorsolt küldetés.</div>
-          ) : quests.map((q, i) => {
-            const st = stateLine(q)
-            const offered = q.status === 'offered'
-            const label = offered ? questActionLabel(q) : null
-            return (
-              <div key={q.id} className={cn('nq-card glass rise', q.status === 'completed' && 'done')}
-                style={{ '--d': `${40 + i * 60}ms`, '--i': i, '--c': SLOT_HUE[q.slot] } as React.CSSProperties}>
-                <div className="nq-top">
-                  <span className="uv-well nq-well"><Icon3D name={SLOT_ICON[q.slot]} size={34} /></span>
-                  <div className="nq-grow">
-                    <div className="nq-title">{q.title}</div>
-                    <div className="nq-why uv-voice">{q.why}</div>
-                  </div>
-                  <span className="nq-xp">+{q.xp} XP</span>
-                </div>
-                <div className="nq-foot">
-                  <span className={cn('nq-state', st.done && 'f')}>
-                    {st.done
-                      ? <Icon3D name="t-tick" size={20} className="nq-state-tick" />
-                      : <i className="nq-state-dot" aria-hidden="true" />}
-                    {st.text}
-                  </span>
-                  {label && (
-                    <button type="button" className="nq-btn primary np-press" onClick={() => actQuest(q)}>
-                      {label}
-                    </button>
+    <Page className="nb-page">
+      {back}
+      <Hero label={`Mai ajánlatok · +${quests.reduce((sum, q) => sum + q.xp, 0)} XP`}
+        verdict={`${done} kész a ${quests.length} ajánlatból.`}
+        sub="A többi magától telik, ahogy a napod halad."
+        actions={firstOpen && heroLabel ? <Btn onClick={() => actQuest(firstOpen)}>{heroLabel}</Btn> : undefined}>
+        <Vials size="sm" height={116} className="nb-vials" items={quests.map((q) => {
+          const isDone = q.status === 'completed'
+          return {
+            label: SLOT_LABEL[q.slot], note: VIAL_NOTE[q.status], icon: SLOT_ICON[q.slot], value: `+${q.xp} XP`,
+            pct: isDone ? 100 : OPEN_PCT, mark: isDone ? <span className="nb-full">kész</span> : undefined, color: isDone ? 'var(--fo-ok)' : undefined,
+          }
+        })} />
+      </Hero>
+      <Section n={1} title="Mai ajánlatok" />
+      <Card className="nb-quests">
+        {quests.map((q) => {
+          const st = stateLine(q)
+          const offered = q.status === 'offered'
+          const label = offered ? questActionLabel(q) : null
+          const canSwap = offered && rerollsLeft > 0
+          return (
+            <Row key={q.id} as="div" className={st.done ? 'nb-quest done' : 'nb-quest'} icon={SLOT_ICON[q.slot]} title={q.title}
+              sub={<><span className="nb-why">{q.why}</span><span className="nb-state">{st.text}</span></>}
+              right={st.done ? <St tone="ok">Kész</St> : <St tone="plan">{`+${q.xp} XP`}</St>}
+              more={(
+                <>
+                  <Level pct={st.done ? 100 : OPEN_PCT} height={8} color={st.done ? 'var(--fo-ok)' : undefined} />
+                  {(label || canSwap) && (
+                    <span className="nb-inacts">
+                      {label && <Btn sm ghost onClick={() => actQuest(q)}>{label}</Btn>}
+                      {canSwap && <Lk disabled={pending} onClick={() => reroll(q.id)}>Csere · {rerollsLeft} maradt</Lk>}
+                    </span>
                   )}
-                  {offered && rerollsLeft > 0 && (
-                    <button type="button" className="nq-btn np-press" disabled={pending} onClick={() => reroll(q.id)}>
-                      Csere · {rerollsLeft} maradt
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </EntranceGroup>
-      </PageBody>
-      {checkInIdx !== null && (
-        <CheckInSheet slot={checkins[checkInIdx]} slotIdx={checkInIdx}
-          onClose={() => setCheckInIdx(null)} onSave={(d) => saveCheckIn(checkInIdx, d)} />
-      )}
-    </MozaikPage>
+                </>
+              )} />
+          )
+        })}
+      </Card>
+      {foot}
+      {sheet}
+    </Page>
   )
 }

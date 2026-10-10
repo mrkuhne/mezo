@@ -59,7 +59,9 @@ describe('ActivityLogSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Naplózom' }))
     await waitFor(() => expect(logActivity).toHaveBeenCalledWith('Olvastam 30 percet'))
     expect(await screen.findByText('Tanulás')).toBeInTheDocument()
-    expect(screen.getByText('+15 XP')).toBeInTheDocument()
+    // the earned XP: the big number beside the jar, and the jar's own label
+    expect(document.querySelector('.nqk-xp')).toHaveTextContent('+15XP')
+    expect(document.querySelector('.fo-jar text')).toHaveTextContent('+15')
   })
 
   test('(b) low-confidence result switches to the picker and categorize fires with the picked key', async () => {
@@ -69,7 +71,7 @@ describe('ActivityLogSheet', () => {
     fireEvent.change(screen.getByPlaceholderText(/Olvastam 30 percet/), { target: { value: 'Rendet raktam' } })
     fireEvent.click(screen.getByRole('button', { name: 'Naplózom' }))
     expect(await screen.findByText('Nem egyértelmű — melyik skillhez tartozik?')).toBeInTheDocument()
-    // all 8 LIFE skill chips are offered (F7.4: clay symbol + name, no emoji)
+    // all 8 LIFE skills are offered as pills (symbol + name, no emoji)
     for (const s of LIFE_SKILLS) expect(screen.getByRole('button', { name: s.name })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Konyha' }))
     await waitFor(() => expect(categorize).toHaveBeenCalledWith('act-new', 'cooking'))

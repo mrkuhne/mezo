@@ -35,6 +35,10 @@ export interface NavTab {
    *  mezo-n4wf5.1): a domain's first tab is labelled „Mai" but its page is titled „Ma" /
    *  „Edzés" / „Fuel". Absent = the label is the title. */
   title?: string
+  /** A parameterised child (`<route>/<one segment>`) is the SAME hub page showing another
+   *  record, so it keeps the hub face with the top tabs (Folyadék F2, mezo-n4wf5.2: A napom's
+   *  `/nap/napom/:date` — picking a day on the week strip must not turn the hub into a sub-page). */
+  hubChild?: boolean
 }
 
 export interface NavDomain {
@@ -60,7 +64,7 @@ export const DOMAINS: NavDomain[] = [
       // tab — the day's own reading + next action, not just the evening close. `/ritual`
       // itself survives as a reachable page (Rutin's evening row, the leltár, later a
       // Mai evening card); the Rutin tab OWNS it so the page index files it correctly.
-      { label: 'A napom', route: '/nap/napom', icon: 'i-heti' },
+      { label: 'A napom', route: '/nap/napom', icon: 'i-heti', hubChild: true },
       { label: 'Beszélgetés', route: '/nap/uzenetek', icon: 'i-mezo' },
       { label: 'Rutin', route: '/nap/rutin', icon: 'i-rend', owns: ['/ritual'] },
     ],
@@ -258,6 +262,13 @@ function indexedLabel(pathname: string): string | null {
   return best?.label ?? null
 }
 
+/** A hub page: a tab's own route, or a `hubChild` tab's single parameter segment. The title bar
+ *  and the top tabs share this one rule. */
+export function isHubPath(domain: NavDomain, pathname: string): boolean {
+  return domain.tabs.some((t) => t.route === pathname
+    || (t.hubChild === true && pathname.startsWith(`${t.route}/`) && !pathname.slice(t.route.length + 1).includes('/')))
+}
+
 export function frameFor(pathname: string, today: Date): Frame {
   const domain = domainById(activeDomainId(pathname))
   if (!domain) {
@@ -272,7 +283,7 @@ export function frameFor(pathname: string, today: Date): Frame {
   }
   const tabRoute = activeTabRoute(domain, pathname)
   const tab = domain.tabs.find((t) => t.route === tabRoute) ?? null
-  const isHub = domain.tabs.some((t) => t.route === pathname)
+  const isHub = isHubPath(domain, pathname)
   if (isHub && tab) {
     return { domain, tab, isHub: true, title: tab.title ?? tab.label, eyebrow: frameDate(today), fallback: tab.route }
   }

@@ -1,6 +1,8 @@
 // ============================================================
-// Mezo · RoutineWizardPage (mezo-3zue.4, one-flow rebuild mezo-9k99) — /nap/rutin/uj,
-// prototype rutin-formalodas.html `pg-wiz` ×1.18. ONE creation flow for every habit:
+// Mezo · RoutineWizardPage (mezo-3zue.4, one-flow rebuild mezo-9k99; Folyadék F2 mezo-n4wf5.2) —
+// /nap/rutin/uj, prototype vilagos/nap.js `rutinUj`. ONE creation flow for every habit; the hero
+// is the recipe filling up (its vessels + the sentence), the card under it is the step, and the
+// floating foot carries Mégse / Vissza / Tovább:
 //
 //  - the two frameworks are NOT the same flow any more: the Fogg branch builds an anchored
 //    tiny act (keret → horgony → tett → ünneplés), the Clear branch walks the FOUR LAWS —
@@ -13,28 +15,28 @@
 //    újdonság) sum into a deliberately narrow 6–14 band (habitEffort.ts), with a „make it
 //    tiny" nudge on the heaviest factor — advice, never arithmetic.
 //
-// The live sentence card renders through the pure `routineSentenceParts`, never a local
-// template, so the wizard and the finished habit page can't drift. The page NEVER ticks a
+// The live sentence renders through the pure `routineSentenceParts` (`RecipeSentence`), never a
+// local template, so the wizard and the finished habit page can't drift. The page NEVER ticks a
 // habit (ADR — ticking lives on /nap/rutin).
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import type { HabitFramework, HabitMode, HabitSuggestion } from '@/data/types'
 import { EffortGrid } from '@/features/me/components/EffortGrid'
+import { FW_ART, FW_NAME, RbBack, RecipeSentence, RecipeVessels, recipeParts } from '@/features/me/components/routineBits'
 import { habitAnchorOptions } from '@/features/me/logic/habitAnchors'
 import { EMPTY_EFFORT, effortRated, effortXp, type EffortState } from '@/features/me/logic/habitEffort'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
-import { routineSentenceParts, recipeFromDef, titlePlaceholder, type RoutineRecipe } from '@/features/me/logic/routineSentence'
+import { recipeFromDef, titlePlaceholder, type RoutineRecipe } from '@/features/me/logic/routineSentence'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { cn } from '@/shared/lib/cn'
-import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { GhostState } from '@/shared/ui/GhostState'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { ContentIcon } from '@/shared/ui/clay'
+import {
+  Acts, Btn, Card, Dots, ErrorRow, Hero, Lab, Lk, Mark, Note, Page, Pill, Pills, Row, Section, Seg, Why, useFrameTitle,
+} from '@/shared/ui/folyadek'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { Stepper } from '@/shared/ui/Stepper'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
@@ -57,15 +59,22 @@ const STEP_TITLES: Record<StepId, string> = {
   celeb: 'Hogyan ünnepled?',
   reward: 'Mi teszi kielégítővé?',
 }
-const STEP_SUBS: Record<StepId, string> = {
-  fw: 'Mindkét keret ugyanoda visz: egy mondat, amit minden nap el tudsz mondani magadnak.',
-  anchor: 'Válassz egy szokást, ami már megy — vagy írd le a pillanatot.',
-  cue: '1. törvény — tedd nyilvánvalóvá. Idő és hely, hogy ne kelljen emlékezned rá.',
-  crave: '2. törvény — tedd vonzóvá. És Clear tézise: a szokás szavazat arra, kinek tartod magad.',
-  act: 'Olyan kicsi, hogy rossz napon is megteszed — a nehézségből számoljuk az XP-t.',
-  celeb: 'Az azonnali jó érzés rögzíti a szokást.',
-  reward: '4. törvény — ami azonnal jutalmaz, az ismétlődik.',
+/** The title bar's short form of each step. */
+const STEP_BAR: Record<StepId, string> = {
+  fw: 'Milyen keretre?',
+  anchor: 'Mihez horgonyzod?',
+  cue: 'Mi a jelzés?',
+  crave: 'Miért akarod?',
+  act: 'Mi a tett?',
+  celeb: 'Hogyan ünnepled?',
+  reward: 'Mi a jutalom?',
 }
+/** The three doors of the first step: who it is from, and the loop it walks. */
+const FW_DOORS: { key: FwChoice; who: string; loop: string[] }[] = [
+  { key: 'FOGG', who: 'BJ Fogg · Tiny Habits', loop: ['Horgony', 'Pici tett', 'Ünneplés'] },
+  { key: 'CLEAR', who: 'James Clear · Atomic Habits', loop: ['Jelzés', 'Vágy', 'Válasz', 'Jutalom'] },
+  { key: 'NONE', who: 'csak a tett', loop: [] },
+]
 const CELEBRATIONS = ['ökölrázás', '„Igen!”', 'mosoly a tükörbe', 'mély levegő']
 const REWARDS = ['a pipa maga', 'egy fejezet papírkönyv', 'kávé csak utána', 'öt perc semmittevés']
 const CUES = ['reggel · konyha', 'este · hálószoba', 'edzés előtt · öltöző', 'ebéd után · asztal']
@@ -96,43 +105,12 @@ function readSuggestion(): HabitSuggestion | null {
 
 const clampXp = (xp: number) => Math.min(XP_MAX, Math.max(XP_MIN, xp))
 
-const NOTE_DEFAULT = 'Egy futtatás = egy szokás. A lánc a stack; a következő recept horgonya ez a szokás lehet.'
-const NOTE_LAST = 'Mentés = egy sor a láncban. A pipa holnaptól a Nap tabon, az erő-csík itt.'
-
-function rise(delayMs: number): CSSProperties {
-  return { '--d': `${delayMs}ms` } as CSSProperties
-}
-
-/** A form section. Üveg (mezo-me75u.7): sections are bare (flat controls on the ground); only the
- *  effort card is a glass object (prototype uveg-en2.html `uj`). */
-function FieldCard({ children, delayMs, glass = false }: { children: ReactNode; delayMs: number; glass?: boolean }) {
-  return <div className={cn('rt-fcard rise', glass && 'glass')} style={rise(delayMs)}>{children}</div>
-}
-
-function Tip({ tone, sign, children }: { tone?: 'lav' | 'warn'; sign: Icon3DName; children: ReactNode }) {
+/** Chip row bound to ONE string — picking a chip fills the field under it. */
+function ChipField({ options, value, onPick }: { options: string[]; value: string; onPick: (v: string) => void }) {
   return (
-    <div className={cn('rt-tip', tone && `is-${tone}`)}>
-      <Icon3D name={sign} size={26} />
-      <span>{children}</span>
-    </div>
-  )
-}
-
-/** Chip row + free-text field bound to ONE string — picking a chip fills the input. */
-function ChipField({ options, value, onPick, tone }: {
-  options: string[]
-  value: string
-  onPick: (v: string) => void
-  tone?: 'sage' | 'gold'
-}) {
-  return (
-    <div className={cn('rt-chips', tone && `is-${tone}`)}>
-      {options.map((o) => (
-        <button key={o} type="button" className={cn(value === o && 'on')} onClick={() => onPick(o)}>
-          {o}
-        </button>
-      ))}
-    </div>
+    <Pills>
+      {options.map((o) => <Pill key={o} on={value === o} onClick={() => onPick(o)}>{o}</Pill>)}
+    </Pills>
   )
 }
 
@@ -210,18 +188,21 @@ export function RoutineWizardPage() {
     if (def.metric !== 'manual') setMetric(def.metric)
   }, [catalog, prefillKey, params])
 
+  // The step list is pure state, so the title bar can name the step before the catalog answers.
+  const steps = fwChoice != null ? STEPS[fwChoice] : STEPS.FOGG
+  const stepId: StepId = steps[Math.min(stepIdx, steps.length - 1)]
+  useFrameTitle({ title: STEP_BAR[stepId], eyebrow: `Új szokás · ${Math.min(stepIdx, steps.length - 1) + 1} / ${steps.length}` })
+
   if (isPending) return <ScreenSkeleton />
   // A FAILED catalog fetch is not an empty catalog: without this branch the act step offered
   // zero chain chips while `chainKey` still defaulted to 'MORNING', so a save could 400 on a
-  // chain the user never saw. The retry ghost is the one RutinHubPage/HabitPage already use.
+  // chain the user never saw.
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
-      <MozaikPage tone="gold" className="rt-uv rt-wiz">
-        <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
-        <PageBody>
-          <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
-        </PageBody>
-      </MozaikPage>
+      <Page>
+        <RbBack label="Rutinok" fallback="/nap/rutin/epites" />
+        <Card><ErrorRow message="Nem sikerült betölteni a rutinokat." onRetry={refetch} /></Card>
+      </Page>
     )
   }
 
@@ -235,8 +216,6 @@ export function RoutineWizardPage() {
   // (HabitFrameworkValidator.validateAnchorReference) with nothing shown inline.
   const anchors = catalog != null ? habitAnchorOptions(catalog, prefillDef?.id) : []
 
-  const steps = fwChoice != null ? STEPS[fwChoice] : STEPS.FOGG
-  const stepId: StepId = steps[Math.min(stepIdx, steps.length - 1)]
   const isLast = stepIdx === steps.length - 1 && fwChoice != null
   const framework: HabitFramework | null = fwChoice === 'NONE' ? null : fwChoice
   const recipe: RoutineRecipe = { framework, title, anchorLabel, celebration, cue, craving, reward, identity }
@@ -348,365 +327,271 @@ export function RoutineWizardPage() {
     else setStepIdx(stepIdx + 1)
   }
 
-  const stepTitle = STEP_TITLES[stepId]
+  const cancel = () => navigate('/nap/rutin/epites')
+  const stepBack = () => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : cancel())
+  // Before a framework is chosen the vessels show the default door's parts (prototype: the Fogg three).
+  const parts = recipeParts(fwChoice == null ? { ...recipe, framework: 'FOGG' } : recipe)
+  const blank = !parts.some((p) => p.filled)
+  const fwKey: FwChoice = fwChoice ?? 'FOGG'
+
+  const commit = (
+    <>
+      <Acts>
+        <Btn sm ghost={!committed} icon="t-tick" aria-pressed={committed} onClick={() => setCommitted(!committed)}>Vállalom</Btn>
+      </Acts>
+      <Note>A pipa egy ígéret, nem beállítás. Holnap reggel ott lesz a Rutin fülön.</Note>
+    </>
+  )
 
   return (
-    <MozaikPage tone="gold" className="rt-uv rt-wiz">
-      <PageHead
-        glass
-        onBack={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : navigate('/nap/rutin/epites'))}
-        label={stepIdx > 0 ? STEP_TITLES[steps[stepIdx - 1]] : 'Rutinok'}
-      >
-        <button type="button" className="pgact rt-ghostpill" onClick={() => navigate('/nap/rutin/epites')}>Mégse</button>
-      </PageHead>
-      <PageBody>
-        <EntranceGroup replayKey={stepId}>
-          <Stepper className="rise" title="Új szokás-recept" step={stepIdx + 1} total={steps.length} stepLabel={stepTitle} />
+    <Page
+      foot={(
+        <>
+          <Lk onClick={cancel}>Mégse</Lk>
+          {stepIdx > 0 && <Btn ghost onClick={() => setStepIdx(stepIdx - 1)}>Vissza</Btn>}
+          <Btn grow disabled={!canProceed || (isLast && pending)} onClick={onNext}>{isLast ? 'Mentés' : 'Tovább'}</Btn>
+        </>
+      )}
+    >
+      <RbBack label={stepIdx > 0 ? STEP_TITLES[steps[stepIdx - 1]] : 'Rutinok'} onBack={stepBack} />
+      <Dots count={steps.length} at={stepIdx} label={`Új szokás-recept: ${stepIdx + 1}. lépés / ${steps.length}`} />
 
-          <div className="rt-wtitle rise" style={rise(30)}>{stepTitle}</div>
-          <div className="rt-wsub rise" style={rise(40)}>{STEP_SUBS[stepId]}</div>
+      {stepId === 'fw' ? (
+        <Hero
+          label={blank ? 'Új szokás-recept · még üres' : `${FW_NAME[fwKey]} · épül, ahogy töltöd`}
+          verdict={STEP_TITLES[stepId]}
+          sub="A recept edényei lépésről lépésre telnek meg."
+        >
+          <RecipeVessels parts={parts} />
+        </Hero>
+      ) : (
+        <Hero label={`${FW_NAME[fwKey]} · épül, ahogy töltöd`} verdict={STEP_TITLES[stepId]}>
+          <RecipeVessels parts={parts} />
+          <RecipeSentence recipe={recipe} testId="recipe-sentence" />
+        </Hero>
+      )}
 
-          {stepId !== 'fw' && (
-            <div
-              className={cn('rt-sentence glass', framework === 'CLEAR' && 'is-clear', isLast && 'is-big')}
-              data-testid="recipe-sentence"
-            >
-              <span className="rt-sentence-lb">
-                <Icon3D name={framework === 'FOGG' ? 't-anchor' : framework === 'CLEAR' ? 't-gem' : 't-note'} size={18} />
-                {framework === 'FOGG' ? 'Szokás-láncolás' : framework === 'CLEAR' ? 'Négy törvény' : 'Keret nélkül'}
-                <span className="rt-sentence-lb-sub">· épül, ahogy töltöd</span>
-              </span>
-              <p className="rt-sentence-tx">
-                {routineSentenceParts(recipe).map((part, i) => (
-                  part.slot === undefined
-                    ? <span key={i}>{part.text}</span>
-                    : <span key={i} className={cn('rt-blank', part.filled && 'is-filled')}>{part.text}</span>
-                ))}
-              </p>
-            </div>
-          )}
-
-          {/* KERET */}
-          {stepId === 'fw' && (
-            <>
-              <button
-                type="button"
-                className={cn('rt-fwcard glass is-fogg rise', fwChoice === 'FOGG' && 'on')}
-                style={rise(80)}
-                onClick={() => pickFramework('FOGG')}
-              >
-                <span className="rt-fwsgn"><Icon3D name="t-anchor" size={40} /></span>
-                <span className="rt-fwbody">
-                  <b>Szokás-láncolás</b>
-                  <small>Egy már meglévő szokásod végpillanatához kötöd az újat. Pici viselkedés, azonnali ünneplés — a szokás nő magától.</small>
-                  <span className="rt-fwloop"><span>Horgony</span><i>→</i><span>Pici tett</span><i>→</i><span>Ünneplés</span></span>
-                  <span className="rt-fwwho">BJ Fogg · Tiny Habits</span>
-                </span>
-              </button>
-              <button
-                type="button"
-                className={cn('rt-fwcard glass is-clear rise', fwChoice === 'CLEAR' && 'on')}
-                style={rise(120)}
-                onClick={() => pickFramework('CLEAR')}
-              >
-                <span className="rt-fwsgn"><Icon3D name="t-gem" size={40} /></span>
-                <span className="rt-fwbody">
-                  <b>Négy törvény</b>
-                  <small>Tedd nyilvánvalóvá, vonzóvá, könnyűvé és kielégítővé. Akkor válaszd, ha a viselkedésnek valódi akadálya van.</small>
-                  <span className="rt-fwloop"><span>Jelzés</span><i>→</i><span>Vágy</span><i>→</i><span>Válasz</span><i>→</i><span>Jutalom</span></span>
-                  <span className="rt-fwwho">James Clear · Atomic Habits</span>
-                </span>
-              </button>
-              {/* The Keret nélkül branch is create-only: a conversion cannot LOSE its framework
-                  over the wire (a PATCH null is "leave unchanged"), so the card hides on ?prefill. */}
-              {prefillDef == null && (
-                <button
-                  type="button"
-                  className={cn('rt-fwcard glass is-none rise', fwChoice === 'NONE' && 'on')}
-                  style={rise(150)}
-                  onClick={() => pickFramework('NONE')}
-                >
-                  <span className="rt-fwsgn"><Icon3D name="t-note" size={40} /></span>
-                  <span className="rt-fwbody">
-                    <b>Keret nélkül</b>
-                    <small>Nem kérünk keretet — cím, lánc, és kész. Bármikor felvehetsz rá keretet később a szokás oldalán.</small>
-                    <span className="rt-fwwho">csak egy szokás</span>
+      <Section n={1} title={stepId === 'fw' ? 'Válassz keretet' : 'Töltsd ki'} />
+      <Card>
+        {/* KERET */}
+        {stepId === 'fw' && (
+          <>
+            {/* The Keret nélkül branch is create-only: a conversion cannot LOSE its framework
+                over the wire (a PATCH null is "leave unchanged"), so the door hides on ?prefill. */}
+            {FW_DOORS.filter((d) => d.key !== 'NONE' || prefillDef == null).map((d) => (
+              <Row
+                key={d.key}
+                icon={FW_ART[d.key]}
+                className={cn(fwChoice === d.key && 'on')}
+                state={fwChoice === d.key ? 'now' : undefined}
+                title={FW_NAME[d.key]}
+                sub={d.who}
+                more={d.loop.length > 0 ? (
+                  <span className="rb-loop">
+                    {d.loop.flatMap((x, i) => [i > 0 ? <u key={`a${i}`} aria-hidden="true">→</u> : null, <i key={x}>{x}</i>])}
                   </span>
-                </button>
-              )}
-              <Tip sign="t-bulb">
-                Nem tudod eldönteni? <b>Szokás-láncolással</b> kezdj — ha a tett tényleg pici, nincs mit legyőzni.
-              </Tip>
-            </>
-          )}
+                ) : undefined}
+                right={<Mark state={fwChoice === d.key ? 'done' : 'empty'} />}
+                onClick={() => pickFramework(d.key)}
+              />
+            ))}
+            <Why icon="t-bulb">Kezdőknek a szokás-láncolás a legkönnyebb: egy meglévő szokásra ülteted az újat.</Why>
+          </>
+        )}
 
-          {/* HORGONY (FOGG) */}
-          {stepId === 'anchor' && (
-            <>
-              <FieldCard delayMs={80}>
-                <span className="rt-flabel">Miután … · horgony</span>
-                <div className={cn('rt-chips', 'is-sage')}>
-                  {anchors.map((o) => (
-                    <button
-                      key={`${o.source}-${o.label}`}
-                      type="button"
-                      className={cn(anchorLabel === o.label && 'on')}
-                      onClick={() => { setAnchorLabel(o.label); setAnchorHabitKey(o.habitKey ?? null) }}
-                    >
-                      {o.label}
-                      <span className="rt-chip-src" aria-hidden="true">{o.source}</span>
-                    </button>
-                  ))}
-                </div>
-                <VoiceField domain="me" size="sm" onTranscript={(t) => { setAnchorLabel(appendDictation(anchorLabel, t)); setAnchorHabitKey(null) }}>
-                  <input
-                    className="rt-fin"
-                    aria-label="Horgony"
-                    value={anchorLabel}
-                    onChange={(e) => { setAnchorLabel(e.target.value); setAnchorHabitKey(null) }}
-                    placeholder="…vagy a saját szavaiddal: „kitöltöttem a reggeli kávét”"
-                  />
-                </VoiceField>
-              </FieldCard>
-              <Tip sign="t-anchor">
-                A horgony <b>végpillanata</b> számít: nem „reggel”, hanem „miután letettem a fogkefét”. Ugyanaz a hely, ugyanaz a gyakoriság.
-              </Tip>
-            </>
-          )}
+        {/* HORGONY (FOGG) */}
+        {stepId === 'anchor' && (
+          <>
+            <Lab>A szokásaidból és a Mezo-pillanatokból</Lab>
+            <Pills>
+              {anchors.map((o) => (
+                <Pill
+                  key={`${o.source}-${o.label}`}
+                  on={anchorLabel === o.label}
+                  onClick={() => { setAnchorLabel(o.label); setAnchorHabitKey(o.habitKey ?? null) }}
+                >
+                  {o.label}
+                  <small aria-hidden="true">· {o.source === 'SZOKÁS' ? 'szokás' : 'Mezo-pillanat'}</small>
+                </Pill>
+              ))}
+            </Pills>
+            <Lab htmlFor="rb-wz-anchor">Vagy saját szavakkal</Lab>
+            <VoiceField domain="me" size="sm" onTranscript={(t) => { setAnchorLabel(appendDictation(anchorLabel, t)); setAnchorHabitKey(null) }}>
+              <input
+                id="rb-wz-anchor"
+                className="rb-in"
+                aria-label="Horgony"
+                value={anchorLabel}
+                onChange={(e) => { setAnchorLabel(e.target.value); setAnchorHabitKey(null) }}
+                placeholder="pl. „kitöltöttem a reggeli kávét”"
+              />
+            </VoiceField>
+            <Why icon="t-anchor">A jó horgony minden nap biztosan megtörténik, és pontosan tudod, mikor ért véget.</Why>
+          </>
+        )}
 
-          {/* JELZÉS (CLEAR · 1. törvény) */}
-          {stepId === 'cue' && (
-            <>
-              <FieldCard delayMs={80}>
-                <span className="rt-flabel">Mikor és hol? · jelzés</span>
-                <ChipField options={CUES} value={cue} onPick={setCue} />
-                <VoiceField domain="me" size="sm" onTranscript={(t) => setCue(appendDictation(cue, t))}>
-                  <input
-                    className="rt-fin"
-                    aria-label="Jelzés"
-                    value={cue}
-                    onChange={(e) => setCue(e.target.value)}
-                    placeholder="pl. „7:10-kor, a konyhaasztalnál, a jegyzetfüzet a bögre mellett”"
-                  />
-                </VoiceField>
-              </FieldCard>
-              <Tip tone="lav" sign="t-gem">
-                <b>1. törvény — tedd nyilvánvalóvá.</b> A jelzés legyen látható a térben: a füzet a párnán, a cipő az ajtóban.
-              </Tip>
-            </>
-          )}
+        {/* JELZÉS (CLEAR · 1. törvény) */}
+        {stepId === 'cue' && (
+          <>
+            <Lab htmlFor="rb-wz-cue">Mikor és hol? · jelzés</Lab>
+            <ChipField options={CUES} value={cue} onPick={setCue} />
+            <VoiceField domain="me" size="sm" onTranscript={(t) => setCue(appendDictation(cue, t))}>
+              <input
+                id="rb-wz-cue"
+                className="rb-in"
+                aria-label="Jelzés"
+                value={cue}
+                onChange={(e) => setCue(e.target.value)}
+                placeholder="pl. „7:10-kor, a konyhaasztalnál, a jegyzetfüzet a bögre mellett”"
+              />
+            </VoiceField>
+            <Why icon="t-gem">
+              <b>1. törvény — tedd nyilvánvalóvá.</b> A jelzés legyen látható a térben: a füzet a párnán, a cipő az ajtóban.
+            </Why>
+          </>
+        )}
 
-          {/* VÁGY + IDENTITÁS (CLEAR · 2. törvény) — a saját lépése, nem egy mellékmező */}
-          {stepId === 'crave' && (
-            <>
-              <FieldCard delayMs={80}>
-                <span className="rt-flabel">Miért akarod? · vágy</span>
-                <VoiceField domain="me" size="sm" onTranscript={(t) => setCraving(appendDictation(craving, t))}>
-                  <input
-                    className="rt-fin"
-                    aria-label="Vágy"
-                    value={craving}
-                    onChange={(e) => setCraving(e.target.value)}
-                    placeholder="pl. „tisztább fejjel indul a nap”"
-                  />
-                </VoiceField>
-              </FieldCard>
-              <FieldCard delayMs={100}>
-                <span className="rt-flabel">Milyen emberré tesz? <span className="rt-opt">identitás · opcionális</span></span>
-                <VoiceField domain="me" size="sm" onTranscript={(t) => setIdentity(appendDictation(identity, t))}>
-                  <input
-                    className="rt-fin"
-                    aria-label="Identitás"
-                    value={identity}
-                    onChange={(e) => setIdentity(e.target.value)}
-                    placeholder="pl. „figyel a saját gondolataira”"
-                  />
-                </VoiceField>
-                <div className="rt-lockline">
-                  <Icon3D name="t-gem" size={16} />
-                  <span>Clear tézise: a szokás <b>szavazat</b> arra, hogy kinek tartod magad. Ez a mező a Fogg-ágon nincs.</span>
-                </div>
-              </FieldCard>
-              <Tip tone="lav" sign="t-gem">
-                <b>Vonzó</b> — a második törvény. Kösd olyasmihez, amit amúgy is szeretsz, vagy csinálj belőle valamit, ami után vágysz.
-              </Tip>
-            </>
-          )}
+        {/* VÁGY + IDENTITÁS (CLEAR · 2. törvény) — a saját lépése, nem egy mellékmező */}
+        {stepId === 'crave' && (
+          <>
+            <Lab htmlFor="rb-wz-crave">Miért akarod? · vágy</Lab>
+            <VoiceField domain="me" size="sm" onTranscript={(t) => setCraving(appendDictation(craving, t))}>
+              <input
+                id="rb-wz-crave"
+                className="rb-in"
+                aria-label="Vágy"
+                value={craving}
+                onChange={(e) => setCraving(e.target.value)}
+                placeholder="pl. „tisztább fejjel indul a nap”"
+              />
+            </VoiceField>
+            <Lab htmlFor="rb-wz-identity">Ki leszel ettől? · identitás<span className="rb-opt"> · opcionális</span></Lab>
+            <VoiceField domain="me" size="sm" onTranscript={(t) => setIdentity(appendDictation(identity, t))}>
+              <input
+                id="rb-wz-identity"
+                className="rb-in"
+                aria-label="Identitás"
+                value={identity}
+                onChange={(e) => setIdentity(e.target.value)}
+                placeholder="pl. „figyel a saját gondolataira”"
+              />
+            </VoiceField>
+            <Note>Clear tézise: a szokás szavazat arra, hogy kinek tartod magad. Ez a mező a szokás-láncolásnál nincs.</Note>
+            <Why icon="t-gem">
+              <b>2. törvény — tedd vonzóvá.</b> Kösd olyasmihez, amit amúgy is szeretsz, vagy csinálj belőle valamit, ami után vágysz.
+            </Why>
+          </>
+        )}
 
-          {/* A TETT — cím, lánc, életterület, nehézség→XP, pipálódás (minden ágon) */}
-          {stepId === 'act' && (
-            <>
-              <FieldCard delayMs={80}>
-                {/* The Clear branch names the slot "válasz", not the sentence module's shorter
-                    "tett" — the label teaches the law, the sentence reads. */}
-                <span className="rt-flabel">Én … · {framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}</span>
-                <input
-                  className="rt-fin"
-                  aria-label={framework === 'CLEAR' ? 'Válasz' : 'Pici tett'}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="pl. „leírok egy mondatot a füzetbe”"
-                />
-                {tooBig && (
-                  <Tip tone="warn" sign="t-scissors">
-                    Ez nagynak hangzik. <b>Mi a legkisebb változat</b>, amit rossz napon is megteszel? Nőni fog magától.
-                  </Tip>
-                )}
-              </FieldCard>
-
-              <FieldCard delayMs={100}>
-                <span className="rt-flabel">Melyik láncba?</span>
-                <div className="rt-chips is-gold">
-                  {chains.map((c) => (
-                    <button
-                      key={c.chainKey}
-                      type="button"
-                      className={cn(chainKey === c.chainKey && 'on')}
-                      onClick={() => setChainKey(c.chainKey)}
-                    >
-                      {c.title}
-                    </button>
-                  ))}
-                </div>
-              </FieldCard>
-
-              <FieldCard delayMs={120}>
-                <span className="rt-flabel">Életterület</span>
-                <div className="rt-lifegrid">
-                  {LIFE_SKILLS.map((s) => (
-                    <button
-                      key={s.key}
-                      type="button"
-                      className={cn(skillKey === s.key && 'on')}
-                      onClick={() => setSkillKey(s.key)}
-                    >
-                      <ContentIcon name={s.clayIcon} size={28} />
-                      <small>{s.name}</small>
-                    </button>
-                  ))}
-                </div>
-              </FieldCard>
-
-              <FieldCard delayMs={140} glass>
-                <span className="rt-flabel">Mennyibe kerül? <span className="rt-opt">Fogg ability-faktorai</span></span>
-                <EffortGrid
-                  value={eff}
-                  onChange={setEff}
-                  xpOverride={prefillDef != null && !effortRated(eff) ? clampXp(prefillDef.xp) : undefined}
-                />
-                <div className="rt-hint">Az XP a nehézségből számolódik (6–14) — nem beállítás, hanem tükör.</div>
-              </FieldCard>
-
-              <FieldCard delayMs={160}>
-                <span className="rt-flabel">Hogyan pipálódik?</span>
-                <div className="rt-swseg">
-                  <button
-                    type="button"
-                    className={cn(mode === 'MANUAL' && 'on')}
-                    onClick={() => setMode('MANUAL')}
-                  >
-                    <Icon3D name="t-tick" size={20} />Kézzel pipálom
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(mode === 'DERIVED' && 'on')}
-                    onClick={() => setMode('DERIVED')}
-                  >
-                    <Icon3D name="t-signal" size={20} />Adatból
-                  </button>
-                </div>
-                {mode === 'DERIVED' && (
-                  <>
-                    <span className="rt-flabel" style={{ marginTop: 10 }}>Metrika</span>
-                    <select
-                      aria-label="Metrika"
-                      className="rt-fin"
-                      value={metric}
-                      onChange={(e) => setMetric(e.target.value)}
-                    >
-                      {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
-                    </select>
-                  </>
-                )}
-                <div className="rt-lockline">
-                  <Icon3D name="t-tick" size={16} />
-                  <span>Ezt <b>később is módosíthatod</b> a szokás oldalán.</span>
-                </div>
-              </FieldCard>
-            </>
-          )}
-
-          {/* ÜNNEPLÉS (FOGG) / JUTALOM (CLEAR · 4. törvény) + VÁLLALÁS */}
-          {(stepId === 'celeb' || stepId === 'reward') && (
-            <>
-              {stepId === 'celeb' ? (
-                <>
-                  <FieldCard delayMs={80}>
-                    <span className="rt-flabel">Ünneplésül … · shine</span>
-                    <ChipField options={CELEBRATIONS} value={celebration} onPick={setCelebration} tone="sage" />
-                    <input
-                      className="rt-fin"
-                      aria-label="Ünneplés"
-                      value={celebration}
-                      onChange={(e) => setCelebration(e.target.value)}
-                      placeholder="…vagy a sajátod"
-                    />
-                  </FieldCard>
-                  <Tip sign="t-anchor">
-                    Az ünneplés <b>másodperceken belül</b> jön, és tényleg jó érzés. Ettől rögzül a szokás — nem a fegyelemtől.
-                  </Tip>
-                </>
-              ) : (
-                <>
-                  <FieldCard delayMs={80}>
-                    <span className="rt-flabel">Jutalmam … · kielégítő</span>
-                    <ChipField options={REWARDS} value={reward} onPick={setReward} />
-                    <input
-                      className="rt-fin"
-                      aria-label="Jutalom"
-                      value={reward}
-                      onChange={(e) => setReward(e.target.value)}
-                      placeholder="…vagy a sajátod"
-                    />
-                  </FieldCard>
-                  <Tip tone="lav" sign="t-gem">
-                    <b>4. törvény — tedd kielégítővé.</b> A logolás maga a jutalom: a pipa és az emelkedő erő-csík. Ezért az első chip az alap.
-                  </Tip>
-                </>
-              )}
-              <button
-                type="button"
-                className={cn('rt-commit', committed && 'on')}
-                aria-pressed={committed}
-                onClick={() => setCommitted(!committed)}
-              >
-                <span className="rt-commit-box" aria-hidden="true">{committed && <Icon3D name="t-tick" size={20} />}</span>
-                <span className="rt-commit-body">
-                  <b>Vállalom</b>
-                  <small>A pipa egy ígéret, nem beállítás. Holnap reggel ott lesz a Nap tabon.</small>
-                </span>
-              </button>
-            </>
-          )}
-
-          {/* Nav */}
-          <div className="rt-wnav rise" style={rise(170)}>
-            {stepIdx > 0 && (
-              <button type="button" className="cta-ghost rt-ghostpill flex-1" onClick={() => setStepIdx(stepIdx - 1)}>← Vissza</button>
+        {/* A TETT — cím, lánc, életterület, nehézség→XP, pipálódás (minden ágon) */}
+        {stepId === 'act' && (
+          <>
+            {/* The Clear branch names the slot "válasz", not the sentence module's shorter
+                "tett" — the label teaches the law, the sentence reads. */}
+            <Lab htmlFor="rb-wz-title">Én … · {framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}</Lab>
+            <input
+              id="rb-wz-title"
+              className="rb-in"
+              aria-label={framework === 'CLEAR' ? 'Válasz' : 'Pici tett'}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="pl. „leírok egy mondatot a füzetbe”"
+            />
+            {tooBig && (
+              <Why icon="t-scissors">
+                Ez nagynak hangzik. <b>Mi a legkisebb változat</b>, amit rossz napon is megteszel? Nőni fog magától.
+              </Why>
             )}
-            <button
-              type="button"
-              className="cta-primary rt-litpill"
-              style={{ flex: stepIdx > 0 ? 2 : 1 }}
-              disabled={!canProceed || (isLast && pending)}
-              onClick={onNext}
-            >
-              {isLast ? <><Icon3D name="t-tick" size={20} />Mentés</> : 'Tovább →'}
-            </button>
-          </div>
-          <p className="mz-principle">{isLast ? NOTE_LAST : NOTE_DEFAULT}</p>
-        </EntranceGroup>
-      </PageBody>
-    </MozaikPage>
+
+            <Lab>Melyik láncba?</Lab>
+            <Pills>
+              {chains.map((c) => (
+                <Pill key={c.chainKey} on={chainKey === c.chainKey} onClick={() => setChainKey(c.chainKey)}>{c.title}</Pill>
+              ))}
+            </Pills>
+
+            <Lab>Életterület</Lab>
+            <Pills>
+              {LIFE_SKILLS.map((s) => (
+                <Pill key={s.key} on={skillKey === s.key} onClick={() => setSkillKey(s.key)}>
+                  <ContentIcon name={s.clayIcon} size={18} />{s.name}
+                </Pill>
+              ))}
+            </Pills>
+
+            <Lab>Mennyibe kerül?</Lab>
+            <EffortGrid
+              value={eff}
+              onChange={setEff}
+              xpOverride={prefillDef != null && !effortRated(eff) ? clampXp(prefillDef.xp) : undefined}
+            />
+            <Note>Az XP a nehézségből számolódik (6–14) — nem beállítás, hanem tükör.</Note>
+
+            <Lab>Hogyan pipálódik?</Lab>
+            <Seg
+              aria-label="Hogyan pipálódik?"
+              items={[{ key: 'MANUAL', label: 'Kézzel pipálom' }, { key: 'DERIVED', label: 'Adatból' }]}
+              value={mode}
+              onChange={(k) => setMode(k as HabitMode)}
+            />
+            {mode === 'DERIVED' && (
+              <>
+                <Lab htmlFor="rb-wz-metric">Metrika</Lab>
+                <select
+                  id="rb-wz-metric"
+                  aria-label="Metrika"
+                  className="rb-in"
+                  value={metric}
+                  onChange={(e) => setMetric(e.target.value)}
+                >
+                  {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
+                </select>
+              </>
+            )}
+            <Note>Ezt később is módosíthatod a szokás oldalán.</Note>
+          </>
+        )}
+
+        {/* ÜNNEPLÉS (FOGG) + VÁLLALÁS */}
+        {stepId === 'celeb' && (
+          <>
+            <Lab>Ünneplésül …</Lab>
+            <ChipField options={CELEBRATIONS} value={celebration} onPick={setCelebration} />
+            <Lab htmlFor="rb-wz-celeb">Vagy saját</Lab>
+            <input
+              id="rb-wz-celeb"
+              className="rb-in"
+              aria-label="Ünneplés"
+              value={celebration}
+              onChange={(e) => setCelebration(e.target.value)}
+              placeholder="pl. egy kis tánc"
+            />
+            <Why icon="t-anchor">Az ünneplés azonnal jöjjön, a tett után — ettől ragad meg az érzés.</Why>
+            {commit}
+          </>
+        )}
+
+        {/* JUTALOM (CLEAR · 4. törvény) + VÁLLALÁS */}
+        {stepId === 'reward' && (
+          <>
+            <Lab>Jutalmam …</Lab>
+            <ChipField options={REWARDS} value={reward} onPick={setReward} />
+            <Lab htmlFor="rb-wz-reward">Vagy saját</Lab>
+            <input
+              id="rb-wz-reward"
+              className="rb-in"
+              aria-label="Jutalom"
+              value={reward}
+              onChange={(e) => setReward(e.target.value)}
+              placeholder="pl. egy csésze tea"
+            />
+            <Why icon="t-gem">
+              <b>4. törvény — tedd kielégítővé.</b> A logolás maga a jutalom: a pipa és az emelkedő szint. Ezért az első az alap.
+            </Why>
+            {commit}
+          </>
+        )}
+      </Card>
+    </Page>
   )
 }

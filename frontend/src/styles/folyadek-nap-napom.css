@@ -1,1 +1,80 @@
 /* ── Folyadék · Nap · napom (mezo-n4wf5.2, slice F2) ── page-level rules of this area only; shared pieces live in folyadek-kit.css. */
+/* Build target: docs/design_2.0/prototypes/vilagos/nap.js — `napDay` / `ndWeek` / `ndDayBody` and its `.np-*` rules, ported under `.nn-`. */
+
+/* The week: seven small vessels. A closed day fills to its score, today is „élő", the future is empty. */
+.nn-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin: 14px 14px 0; }
+.nn-week button { display: flex; flex-direction: column; align-items: center; gap: 5px; min-width: 0; min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.nn-week button:disabled { cursor: default; }
+.nn-week small { font-size: 11px; font-weight: 600; color: var(--fo-sub); }
+.nn-week .t { position: relative; display: block; width: 100%; height: 62px; border-radius: 999px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.nn-week .t i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.nn-week .t b { position: absolute; left: 0; right: 0; bottom: 8px; font-family: var(--ff-display); font-size: 13px; font-weight: 800; color: #fff; text-align: center; }
+/* The liquid does not cover the caption: it stands just above the level, in ink, not white on white. */
+.nn-week .lo .t b { color: var(--fo-sub); bottom: max(8px, calc(var(--p, 0%) + 3px)); }
+.nn-week em { font-style: normal; font-family: var(--ff-display); font-size: 13px; font-weight: 700; color: var(--fo-sub); }
+.nn-week .on .t { box-shadow: inset 0 0 0 2.5px var(--fo-ink); }
+.nn-week .on small, .nn-week .on em { color: var(--fo-ink); font-weight: 800; }
+.nn-week .fut { opacity: .5; }
+.nn-week .fut .t { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .14); }
+.nn-week button:focus-visible { outline: 0; }
+.nn-week button:focus-visible .t { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* The hero. The tank is the kit's; the page only adds the line under it and the jar heroes' two-column layout. */
+.nn-under { margin: 12px 22px 0; font-size: 12.5px; line-height: 1.45; color: var(--fo-sub); }
+.nn-hero .fo-tank-shift > span { white-space: nowrap; }
+.nn-hero .fo-tank-cta { border: 0; font-family: var(--ff-body); cursor: pointer; white-space: nowrap; }
+/* Jar on the left, label + verdict + sub on the right (prototype `hero({left})`); the liquid row spans both. */
+.nn-jhero .fo-hero { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 14px; align-items: start; }
+.nn-jhero .fo-hero > * { grid-column: 2; }
+.nn-jhero .fo-hero > .fo-jar { grid-column: 1; grid-row: 1 / span 3; align-self: center; }
+.nn-jhero .fo-hero > .fo-hero-acts, .nn-jhero .fo-hero[data-closed="true"]::after { grid-column: 1 / -1; }
+.nn-jhero .fo-hero-sub { overflow-wrap: break-word; }
+
+/* The six areas. */
+.nn-drow { position: relative; }
+.nn-stt { margin-left: 4px; vertical-align: 1px; }
+.nn-w { font-size: 11.5px; font-weight: 500; color: var(--fo-faint); margin-left: 4px; white-space: nowrap; }
+.nn-lv { position: relative; display: block; }
+/* The day's kcal goal: a mark at the level's end. */
+.nn-goal { position: absolute; right: 7px; bottom: 2px; width: 2px; height: 8px; border-radius: 1px; background: var(--fo-ink); opacity: .55; }
+.nn-open { display: block; margin-top: 8px; font-size: 12.5px; line-height: 1.45; color: var(--fo-sub); }
+.nn-open .fo-chips { margin: 0 0 8px; }
+.nn-open .fo-chips:last-child { margin-bottom: 0; }
+.nn-dnote { display: block; }
+.nn-tick { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; }
+/* The fold toggle: the word sits at the row's end, its hit area is the whole row. */
+.nn-tg { flex: 0 0 auto; margin-left: 6px; padding: 0; border: 0; background: none; cursor: pointer; font-family: var(--ff-body); font-size: 11.5px; font-weight: 700; color: var(--fo-sub); white-space: nowrap; }
+.nn-tg::after { content: ''; position: absolute; inset: 0; min-height: 44px; border-radius: 16px; }
+.nn-tg:focus-visible { outline: 0; }
+.nn-tg:focus-visible::after { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+/* A value that just moved on a live refetch: the resting row is the final frame. */
+.nn-drow.is-fresh { border-radius: 16px; }
+
+/* Rows that follow a message or the vials inside one card. */
+.nn-rows { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--fo-hair); }
+.nn-note .fo-msg .fo-txt p + p { margin-top: 12px; }
+.nn-fb { margin-top: 12px; }
+.nn-fb .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; border: 0; border-radius: 999px; background: var(--fo-page); color: var(--fo-ink); font-family: var(--ff-body); font-size: 13px; font-weight: 600; cursor: pointer; }
+.nn-fb .chip.brand { background: color-mix(in srgb, var(--dom) 16%, #fff); box-shadow: inset 0 0 0 1.5px var(--dom); }
+
+/* Te és az app: the unit sits quietly next to the vial's number. */
+.nn-dayc .fo-vial b small { display: inline; font-family: var(--ff-body); font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--fo-sub); }
+
+/* The day's context: facts that do not score. */
+.nn-ctx { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nn-ctx div { min-width: 0; padding: 10px 12px; border-radius: 14px; background: var(--fo-page); }
+.nn-ctx small { display: block; font-size: 12px; font-weight: 600; color: var(--fo-sub); }
+.nn-ctx b { display: block; font-family: var(--ff-display); font-size: 16px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; overflow-wrap: break-word; }
+
+@media (max-width: 340px) {
+  .nn-week { gap: 4px; margin-inline: 10px; }
+  .nn-week .t b { font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* One 1.6 s pass — the length of `FRESH_PULSE_MS` in logic/useChangedKeys.ts. */
+  .nn-drow.is-fresh { animation: nn-fresh 1.6s ease-out 1; }
+  .nn-hero.is-fresh .fo-tank-n b { animation: nn-fresh-n 1.6s ease-out 1; }
+}
+@keyframes nn-fresh { 0%, 35% { background-color: color-mix(in srgb, var(--dom) 16%, #fff); box-shadow: 0 0 0 6px color-mix(in srgb, var(--dom) 16%, #fff); } 100% { background-color: transparent; box-shadow: 0 0 0 6px transparent; } }
+@keyframes nn-fresh-n { 0%, 100% { opacity: 1; } 30% { opacity: .55; } }

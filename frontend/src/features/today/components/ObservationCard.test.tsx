@@ -29,14 +29,21 @@ test('a fresh card renders the Mezo sentence, the question and three chips', () 
   renderCard(fresh)
   expect(screen.getByText('Anna és az alvásod')).toBeInTheDocument()
   expect(screen.getByText('ÚJ')).toBeInTheDocument()
-  const say = document.querySelector('.nap-obs-say')
+  expect(screen.getByText('ÚJ')).toHaveClass('fo-st', 'plan')
+  const say = document.querySelector('.nb-obs .fo-msg .nb-say')
   expect(say?.textContent).toContain('40 perccel többet')
-  expect(document.querySelector('.nap-obs-ask')?.textContent).toContain('Figyeljem tovább?')
-  const chips = document.querySelectorAll('.nap-obs-chips button')
+  expect(document.querySelector('.nb-ask')?.textContent).toContain('Figyeljem tovább?')
+  const chips = document.querySelectorAll('.nb-chips button')
   expect(chips).toHaveLength(3)
   expect([...chips].map((c) => c.textContent)).toEqual(['Igen, ez igaz rám', 'Nem, ez nem stimmel', 'Beszéljük meg'])
-  expect(document.querySelector('.nap-obs use[href="#t-journal"]')).not.toBeNull()
-  expect(document.querySelector('.nap-obs.glass')).not.toBeNull()
+  // Folyadék (mezo-n4wf5.2): a white kit card, the source glyph in the head's chip, Mezo as a
+  // glyph badge — no glass, no Boop; the first reply is the liquid button, the rest are ghosts.
+  expect(document.querySelector('.nb-obs.fo-card .fo-head .fo-bub use[href="#t-journal"]')).not.toBeNull()
+  expect(document.querySelector('.nb-obs .fo-msg .fo-badge use[href="#t-orb"]')).not.toBeNull()
+  expect(document.querySelector('.nb-q .nb-qeb .fo-badge')).not.toBeNull()
+  expect(document.querySelector('.glass')).toBeNull()
+  expect(document.querySelector('.boop')).toBeNull()
+  expect([...chips].map((c) => c.classList.contains('ghost'))).toEqual([false, true, true])
 })
 
 // A dróton az időpont UTC-ben jön (`…T12:12:00Z`). A nyers karakterlánc-szeletelés az UTC
@@ -50,16 +57,16 @@ describe('az eyebrow ideje HELYI idő, nem UTC', () => {
 
   test('a Z-vel érkező időbélyeg a helyi órát mutatja', () => {
     renderCard({ ...fresh, occurredAt: '2026-05-22T12:12:00Z' })
-    expect(document.querySelector('.nap-obs .eb')?.textContent).toContain('14:12')
-    expect(document.querySelector('.nap-obs .eb')?.textContent).not.toContain('12:12')
+    expect(document.querySelector('.nb-obs .fo-msg .nm small')?.textContent).toContain('14:12')
+    expect(document.querySelector('.nb-obs .fo-msg .nm small')?.textContent).not.toContain('12:12')
   })
 })
 
 test('a return card offers the same three replies as a fresh card', async () => {
   const onReply = renderCard(back)
-  const chips = document.querySelectorAll('.nap-obs-chips button')
+  const chips = document.querySelectorAll('.nb-chips button')
   expect([...chips].map((c) => c.textContent)).toEqual(['Igen, ez igaz rám', 'Nem, ez nem stimmel', 'Beszéljük meg'])
-  expect(screen.getByText('FIGYELEM')).toBeInTheDocument()
+  expect(screen.getByText('FIGYELEM')).toHaveClass('fo-st', 'warn')
 
   await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
   expect(onReply).toHaveBeenCalledWith(back.patternId, 'watch')
@@ -75,11 +82,11 @@ test('watching and confirmed cards carry no chips at all - nothing to answer', (
   const { unmount } = render(
     <MemoryRouter><ObservationCard item={watching} onReply={vi.fn()} /></MemoryRouter>,
   )
-  expect(document.querySelector('.nap-obs-chips')).toBeNull()
+  expect(document.querySelector('.nb-chips')).toBeNull()
   unmount()
   render(<MemoryRouter><ObservationCard item={confirmed} onReply={vi.fn()} /></MemoryRouter>)
-  expect(document.querySelector('.nap-obs-chips')).toBeNull()
-  expect(screen.getByText('BEÉPÜLT')).toBeInTheDocument()
+  expect(document.querySelector('.nb-chips')).toBeNull()
+  expect(screen.getByText('BEÉPÜLT')).toHaveClass('fo-st', 'ok')
 })
 
 test('tapping „Igen, ez igaz rám" replies watch and flips the card to its acknowledgement line', async () => {
@@ -87,8 +94,8 @@ test('tapping „Igen, ez igaz rám" replies watch and flips the card to its ack
   await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
 
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
-  expect(document.querySelector('.nap-obs-chips')).toBeNull()
-  expect(document.querySelector('.nap-obs-ack')?.textContent)
+  expect(document.querySelector('.nb-chips')).toBeNull()
+  expect(document.querySelector('.nb-ack')?.textContent)
     .toBe('Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.')
 })
 
@@ -97,14 +104,14 @@ test('a measurable-less fresh card acknowledges without promising a day count', 
   await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
 
   expect(onReply).toHaveBeenCalledWith(fresh.patternId, 'watch')
-  expect(document.querySelector('.nap-obs-ack')?.textContent)
+  expect(document.querySelector('.nb-ack')?.textContent)
     .toBe('Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.')
 })
 
 test('a card the server already knows the answer to opens acknowledged, without chips', () => {
   renderCard({ ...fresh, repliedChoice: 'reject' })
-  expect(document.querySelector('.nap-obs-chips')).toBeNull()
-  expect(document.querySelector('.nap-obs-ack')?.textContent)
+  expect(document.querySelector('.nb-chips')).toBeNull()
+  expect(document.querySelector('.nb-ack')?.textContent)
     .toBe('Értem, ez nem stimmel. Nem hozom fel újra ebben a formában.')
 })
 
@@ -121,28 +128,30 @@ test("the chip group is disabled while that card's reply is in flight - no doubl
   expect(onReply).not.toHaveBeenCalled()
 })
 
-test('a watching card shows the 8-slot tally (hit / miss / empty marks), the 5 / 8 progress and the lab link', () => {
+test('a watching card shows the 8-vessel tally (full / dashed / empty), the 5 / 8 evidence line with its legend and the lab link', () => {
   renderCard(watching)
-  expect(screen.getByText('GYŰLIK')).toBeInTheDocument()
-  const slots = document.querySelectorAll('.nap-obs-tally i')
+  expect(screen.getByText('GYŰLIK')).toHaveClass('fo-st', 'plan')
+  const slots = document.querySelectorAll('.nb-tally i')
   expect(slots).toHaveLength(8)
-  // mezo-me75u.3: the ✓/✕/· text glyphs became 3D tick / skip marks + a flat dot - the
-  // meaning stays in the data hook AND in each slot's accessible text.
+  // mezo-n4wf5.2: each day is a small vessel - a hit is full, a miss is dashed, a missing day is
+  // empty. The meaning stays in the data hook AND in each slot's accessible text.
   expect([...slots].map((s) => s.getAttribute('data-slot')))
     .toEqual(['hit', 'hit', 'hit', 'hit', 'miss', 'none', 'none', 'none'])
   expect([...slots].map((s) => s.textContent)).toEqual([
     'bejött', 'bejött', 'bejött', 'bejött', 'nem jött be', 'még nincs adat', 'még nincs adat', 'még nincs adat',
   ])
-  expect(slots[0].querySelector('use[href="#t-tick"]')).not.toBeNull()
-  expect(slots[4].querySelector('use[href="#t-skip"]')).not.toBeNull()
-  expect(document.querySelector('.nap-obs-tally')?.textContent).not.toMatch(/[✓✕·]/)
-  expect(document.querySelector('.nap-obs-tally')).toHaveAttribute(
+  expect([...slots].map((s) => s.className)).toEqual(['hit', 'hit', 'hit', 'hit', 'miss', 'none', 'none', 'none'])
+  expect(document.querySelector('.nb-tally')?.textContent).not.toMatch(/[✓✕·]/)
+  expect(document.querySelector('.nb-tally')).toHaveAttribute(
     'aria-label', 'Napok: bejött, nem jött be, még nincs adat',
   )
-  expect(screen.getByText('5 / 8 nap')).toBeInTheDocument()
-  expect(document.querySelector('.nap-obs-prog')).toHaveAttribute('aria-label', '5 a szükséges 8 napból')
-  // the watching card has no prose - the question line carries the numbers instead
-  expect(document.querySelector('.nap-obs-say')).toBeNull()
+  expect(screen.getByText('Bizonyíték · 5 / 8 nap')).toBeInTheDocument()
+  expect([...document.querySelectorAll('.nb-leg span')].map((x) => x.textContent))
+    .toEqual(['egybevág', 'ellene szól', 'még hiányzik'])
+  // the watching card has no prose - the question line carries the numbers instead; its kind
+  // label stands beside the state pill
+  expect(document.querySelector('.nb-say')).toBeNull()
+  expect(document.querySelector('.nb-obst .nb-obeb')?.textContent).toBe('Figyelem · 5 megfigyelt nap')
   expect(screen.getByRole('link', { name: 'Laborfüzet ›' }))
     .toHaveAttribute('href', `/mezo/patterns/${watching.hypothesisKey}`)
 })
@@ -190,7 +199,7 @@ test('egy elbukott válasz NEM hazudik nyugtázást - a chipek visszajönnek hib
   await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
 
   expect(await screen.findByText('Nem sikerült elküldeni — próbáld újra.')).toBeInTheDocument()
-  expect(document.querySelector('.nap-obs-ack')).toBeNull()
+  expect(document.querySelector('.nb-ack')).toBeNull()
   expect(screen.getByRole('button', { name: 'Igen, ez igaz rám' })).toBeInTheDocument()
 })
 
@@ -199,9 +208,9 @@ test('statistical watching exposes source evidence and detail link without inven
   renderCard({ ...watching, kind: 'statistical', evidenceHits: 0, evidenceMisses: 0,
     minN: undefined, evidence: [mapEvidence({ type: 'tag', text: '2026-09-09 · Check-in: stressz' })], hypothesisKey: 'stress_sleep' })
   expect(screen.getByText('2026-09-09 · Check-in: stressz')).toBeInTheDocument()
-  expect(document.querySelector('.nap-obs-tally')).toBeNull()
-  expect(document.querySelector('.nap-obs-prog')).toBeNull()
-  expect(document.querySelector('.nap-obs .eb')?.textContent).not.toContain('0. napja')
+  expect(document.querySelector('.nb-tally')).toBeNull()
+  expect(document.querySelector('.nb-leg')).toBeNull()
+  expect(document.querySelector('.nb-obst .nb-obeb')?.textContent).toBe('Figyelt összefüggés')
   expect(screen.getByRole('link', { name: 'Laborfüzet ›' })).toHaveAttribute('href', '/mezo/patterns/stress_sleep')
   expect(screen.queryByRole('group', { name: 'Válaszod az észrevételre' })).toBeNull()
 })
@@ -209,14 +218,15 @@ test('statistical watching exposes source evidence and detail link without inven
 test('return confirmation records experience without calling it measured proof', async () => {
   renderCard(back)
   await userEvent.click(screen.getByRole('button', { name: 'Igen, ez igaz rám' }))
-  expect(document.querySelector('.nap-obs-ack')?.textContent)
+  expect(document.querySelector('.nb-ack')?.textContent)
     .toBe('Megjegyeztem, hogy ez igaz rád. Az összefüggést tovább figyelem.')
 })
 
 test('older unanswered card retains its original observation date', () => {
   renderCard({ ...fresh, occurredAt: '2026-05-22T12:12:00Z' })
-  const eb = document.querySelector('.nap-obs .eb')?.textContent ?? ''
-  expect(eb).toMatch(/^Feltűnt · máj\. 22\. \d\d:\d\d$/)
+  // the kind label rides beside Mezo's name, in the meta's quiet lower case
+  const eb = document.querySelector('.nb-obs .fo-msg .nm small')?.textContent ?? ''
+  expect(eb).toMatch(/^feltűnt · máj\. 22\. \d\d:\d\d$/)
 })
 
 // mezo-d6ivw.1: a strukturált bizonyíték tagolt sorokká bomlik, két check-in közös
@@ -249,9 +259,9 @@ test('a Mezo-mondat egyenes szöveg, a nyers bizonyíték tagolt sorokként jele
   expect(energy?.querySelector('.nap-sh-d')?.textContent).toBe('−3')
   expect(document.querySelector('.nap-ev-shift')).toHaveAttribute('aria-label', 'Változás: 14:00 → 20:00')
   expect(screen.getByText('Miből látom · 3 bejegyzés')).toBeInTheDocument()
-  // a kérdés a válasz-pillek blokkjában ül
-  expect(document.querySelector('.nap-obs-q .nap-obs-ask')?.textContent).toContain('Figyeljem tovább?')
-  expect(document.querySelector('.nap-obs-q .nap-obs-chips')).not.toBeNull()
+  // a kérdés a válasz-gombok blokkjában ül
+  expect(document.querySelector('.nb-q .nb-ask')?.textContent).toContain('Figyeljem tovább?')
+  expect(document.querySelector('.nb-q .nb-chips')).not.toBeNull()
 })
 
 test('a bizonyíték nyitva indul, csukható; megválaszolt kártyán csukva, koppintásra nyílik', async () => {

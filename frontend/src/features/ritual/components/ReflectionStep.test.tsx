@@ -11,7 +11,7 @@ import type { GratitudeEntry } from '@/data/journal/journalTypes'
 import { server } from '@/test/msw/server'
 import { localDateString } from '@/shared/lib/dates'
 
-// Force reduced-motion so the rz-* entrance choreography never masks content under jsdom
+// Force reduced-motion so no entrance choreography ever masks content under jsdom
 // (stubReduced pattern, DayStoryStep.test.tsx precedent).
 function stubReduced(matches = true) {
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -146,10 +146,11 @@ describe('ReflectionStep', () => {
     }
     render(<ReflectionStep onNext={vi.fn()} />, { wrapper })
     await readySettled()
-    const hint = screen.getByText(/Az esti check-inben/).closest('.rz-day')!
+    const hint = screen.getByText(/Az esti check-inben/).closest('.fo-hero-sub')!
     expect(hint).toHaveTextContent('Az esti check-inben 7/10-re értékelted a napot. Ide már csak a szavaid kellenek.')
     expect(hint.querySelector('b')).toHaveTextContent('7/10')
-    expect(hint.querySelector('use')?.getAttribute('href')).toBe('#t-day')
+    // the verdict is also the level of the hero's jar
+    expect(document.querySelector('.fo-hero .fo-jar text')).toHaveTextContent('7')
   })
 
   // ── The four seed × edit transitions. „Tovább" writes iff the prose CHANGED against the seed.

@@ -1,40 +1,37 @@
 // ============================================================
-// Mezo · ChainPage (mezo-vxd8) — /nap/rutin/lanc/:chainKey, prototype rutin-formalodas.html
-// `pg-lanc` ×1.18. ONE chain: rename, daypart, order — and the STACKING drawn. The vertical
-// rope is the chain's ORDER; the per-row badge says what the row is ACTUALLY anchored to
-// (`chainStacking.ts`); where the two disagree the rope goes dashed. Chain position and
-// `anchorHabitKey` are two independent orderings, and nothing surfaced it before this page.
+// Mezo · ChainPage (mezo-vxd8; Folyadék F2 mezo-n4wf5.2) — /nap/rutin/lanc/:chainKey, prototype
+// vilagos/nap.js `lanc`. ONE chain: rename, daypart, order — and the STACKING said. The hero's
+// connected vessels are the chain in ORDER, each filled to the habit's 28-day strength; every
+// row names what it is ACTUALLY anchored to (`chainStacking.ts`). Chain position and
+// `anchorHabitKey` are two independent orderings: where they disagree the row carries
+// `data-rope="broken"` and edit mode explains it.
 //
-// The page NEVER ticks a habit (ADR — ticking lives on /nap/rutin): the row nodes are
-// read-only status dots, and a row tap navigates to the habit's own page.
+// The page NEVER ticks a habit (ADR — ticking lives on /nap/rutin): the row marks are read-only
+// status nodes, and a row tap navigates to the habit's own page.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions, useHabitDay, useHabitSummary } from '@/data/hooks'
 import type { HabitDaypart, HabitDefInfo } from '@/data/types'
+import { RbBack, RowItem } from '@/features/me/components/routineBits'
 import { ropeKindOf, stackAnchorOf } from '@/features/me/logic/chainStacking'
-import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
-import { GhostState } from '@/shared/ui/GhostState'
-import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { huArticle, huFrom } from '@/shared/lib/huNum'
+import type { Icon3DName } from '@/shared/ui/clay'
+import {
+  Btn, Bub, Card, Empty, ErrorRow, Hero, Lab, Level, Lk, Mark, Note, Page, Pill, Pills, Row, Section, Vials, Why,
+  useFrameTitle, type VialItem,
+} from '@/shared/ui/folyadek'
 
-// Üveg (mezo-me75u.7): mapped at the call site — `i-alvas` is sleep in CLAY_TO_3D, „este" here.
+// Mapped at the call site — `i-alvas` is sleep in CLAY_TO_3D, „este" here.
 const DAYPART_ART: Record<HabitDaypart, Icon3DName> = { MORNING: 't-dawn', DAY: 't-sun', EVENING: 't-moon' }
 const DAYPARTS: { key: HabitDaypart; label: string }[] = [
   { key: 'MORNING', label: 'Reggel' },
   { key: 'DAY', label: 'Nap' },
   { key: 'EVENING', label: 'Este' },
 ]
-
-const PRINCIPLE = 'A kötél a lánc sorrendjét mutatja, a jelvény azt, mihez van kötve az adott '
-  + 'szokás. Ha egy elem nem az előzőhöz kötődik, a kötél szaggatottá válik — a sorrend és a '
-  + 'horgony ilyenkor nem ugyanazt mondja.'
-
-function rise(delayMs: number): CSSProperties {
-  return { '--d': `${delayMs}ms` } as CSSProperties
-}
+/** Vessels per line in the hero: up to five stand in one row, more wrap six across. */
+const PIPE_ROW = 6
 
 export function ChainPage() {
   const navigate = useNavigate()
@@ -51,6 +48,10 @@ export function ChainPage() {
   const [title, setTitle] = useState('')
   const [daypart, setDaypart] = useState<HabitDaypart>('MORNING')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  useFrameTitle({
+    title: chain != null ? `${chain.title} lánc` : undefined,
+    eyebrow: chain != null ? `Rutinok · ${chain.isActive ? 'aktív' : 'szünetelő'} lánc` : undefined,
+  })
 
   if (chain != null && seedId !== chain.id) {
     setSeedId(chain.id)
@@ -64,20 +65,18 @@ export function ChainPage() {
   if (chain == null) {
     if (isPending) {
       return (
-        <MozaikPage tone="lav" className="rt-uv rt-lanc">
-          <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
-          <PageBody><GhostState message="Lánc betöltése…" lines={3} /></PageBody>
-        </MozaikPage>
+        <Page>
+          <RbBack label="Rutinok" fallback="/nap/rutin/epites" />
+          <Card><Note>Lánc betöltése…</Note></Card>
+        </Page>
       )
     }
     if (isError) {
       return (
-        <MozaikPage tone="lav" className="rt-uv rt-lanc">
-          <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok" />
-          <PageBody>
-            <GhostState message="Nem sikerült betölteni a láncot." ctaLabel="Újra" onCta={refetch} />
-          </PageBody>
-        </MozaikPage>
+        <Page>
+          <RbBack label="Rutinok" fallback="/nap/rutin/epites" />
+          <Card><ErrorRow message="Nem sikerült betölteni a láncot." onRetry={refetch} /></Card>
+        </Page>
       )
     }
     return <Navigate to="/nap/rutin/epites" replace />
@@ -86,10 +85,13 @@ export function ChainPage() {
   const allDefs = (catalog?.chains ?? []).flatMap((c) => c.defs)
   const defs = [...chain.defs].sort((a, b) => a.position - b.position)
   const statusOf = (habitKey: string) => todayHabits.find((h) => h.key === habitKey)?.status
+  const strengthOf = (habitKey: string) => summary.habits.find((h) => h.key === habitKey)?.strengthPct ?? null
   const doneCount = defs.filter((d) => statusOf(d.habitKey) === 'done').length
   const next = defs.find((d) => d.isActive && statusOf(d.habitKey) === 'pending')
   const isSeed = chain.chainKey === 'MORNING' || chain.chainKey === 'EVENING'
   const brokenRows = defs.filter((_, i) => ropeKindOf(defs, allDefs, i) === 'broken')
+  const toHabit = (habitKey: string) => navigate(`/nap/rutin/szokas/${habitKey}`)
+  const toWizard = () => navigate(`/nap/rutin/uj?chain=${encodeURIComponent(chain.chainKey)}`)
 
   const finishEdit = () => {
     const patch: { title?: string; daypart?: HabitDaypart } = {}
@@ -111,163 +113,186 @@ export function ChainPage() {
   }
 
   const togglePause = () => {
+    if (pending) return
     updateChain(chain.id, { isActive: !chain.isActive }).then(() => setEditing(false))
   }
 
   const remove = () => {
+    if (pending) return
     if (!confirmDelete) { setConfirmDelete(true); return }
     deleteChain(chain.id).then(() => navigate('/nap/rutin/epites', { replace: true }))
   }
+
+  // The hero's vessels: one per habit, in chain order, filled to its 28-day strength.
+  const vial = (d: HabitDefInfo): VialItem => {
+    const status = statusOf(d.habitKey)
+    const strength = strengthOf(d.habitKey)
+    return {
+      label: d.title,
+      pct: strength ?? 0,
+      value: strength != null ? `${strength}%` : '—',
+      // The mark turns white once the liquid covers it (bible §5).
+      mark: status === 'done' || next?.habitKey === d.habitKey
+        ? <span className={(strength ?? 0) >= 78 ? 'rb-on' : undefined}>{status === 'done' ? '✓' : 'most'}</span>
+        : undefined,
+      color: status === 'done' ? 'var(--fo-ok)' : undefined,
+      onClick: editing ? undefined : () => toHabit(d.habitKey),
+    }
+  }
+  const many = defs.length > PIPE_ROW
+  const lines: HabitDefInfo[][] = []
+  for (let i = 0; i < defs.length; i += many ? PIPE_ROW : defs.length) lines.push(defs.slice(i, i + (many ? PIPE_ROW : defs.length)))
+  const pipe = lines.map((line, i) => {
+    const cols = many ? PIPE_ROW : line.length
+    const edge = 100 / (2 * cols)
+    return (
+      <div
+        key={i}
+        className={many ? 'rb-pipe many' : 'rb-pipe'}
+        style={{ '--el': `${edge}%`, '--er': `${100 - (line.length - 0.5) * (100 / cols)}%` } as CSSProperties}
+      >
+        <Vials size={defs.length > 5 ? 'xs' : 'sm'} height={100} items={line.map(vial)} />
+      </div>
+    )
+  })
+
+  // „a 9‑ből": a non-breaking hyphen and space, so the number never parts from its suffix or article.
+  const ofAll = `${huArticle(defs.length)}\u00a0${huFrom(defs.length).replace('-', '\u2011')}`
+  const verdict = editing ? 'Rendezd át, ahogy neked kézre áll.'
+    : defs.length === 0 ? 'Ez a lánc még üres.'
+      : next != null ? `${doneCount} megvan ${ofAll}. Most jön: ${next.title}.`
+        : doneCount === defs.length ? `Mind megvan: ${doneCount} / ${defs.length}.`
+          : `${doneCount} megvan ${ofAll}.`
 
   const stackRow = (d: HabitDefInfo, i: number) => {
     const a = stackAnchorOf(defs, allDefs, i)
     const rope = ropeKindOf(defs, allDefs, i)
     const status = statusOf(d.habitKey)
     const isNext = next?.habitKey === d.habitKey
-    const strength = summary.habits.find((h) => h.key === d.habitKey)?.strengthPct ?? null
+    const strength = strengthOf(d.habitKey)
     return (
-      <div key={d.id} className={cn('rt-stackrow', !d.isActive && 'is-inert')} data-testid={`stack-${d.habitKey}`}>
-        <span className={cn('rt-srail', rope != null && `is-${rope}`)}>
-          {/* Read-only status node — never a tick control (ADR: ticking lives on /nap/rutin). */}
-          <span
-            className={cn('rt-snode', status === 'done' && 'on', isNext && 'next')}
-            aria-hidden="true"
-          >
-            {status === 'done' ? <Icon3D name="t-tick" size={22} /> : isNext ? '›' : ''}
-          </span>
-        </span>
-        <button
-          type="button"
-          className="rt-sbody"
-          onClick={() => navigate(`/nap/rutin/szokas/${d.habitKey}`)}
+      <RowItem key={d.id} testId={`stack-${d.habitKey}`} data-rope={rope ?? undefined}>
+        <Row
+          as={editing ? 'div' : undefined}
+          state={d.isActive ? undefined : 'dim'}
+          // Read-only status node — never a tick control (ADR: ticking lives on /nap/rutin).
+          left={<Mark state={status === 'done' ? 'done' : isNext ? 'now' : 'empty'} />}
+          title={d.title}
+          sub={(
+            <span className="rb-anc" data-kind={a.kind}>
+              <Bub icon={a.kind === 'free' ? 't-note' : 't-anchor'} size={24} /><span>{a.label}</span>
+            </span>
+          )}
+          value={!editing && strength != null ? <>{strength}<small>%</small></> : undefined}
+          more={!editing && strength != null
+            ? <Level pct={strength} height={8} color={status === 'done' ? 'var(--fo-ok)' : undefined} />
+            : undefined}
+          right={editing ? (
+            <span className="rb-mv">
+              <button type="button" aria-label={`${d.title} feljebb`} disabled={i === 0 || pending} onClick={() => move(d.id, -1)}>▲</button>
+              <button type="button" aria-label={`${d.title} lejjebb`} disabled={i === defs.length - 1 || pending} onClick={() => move(d.id, 1)}>▼</button>
+            </span>
+          ) : undefined}
+          onClick={() => toHabit(d.habitKey)}
           aria-label={`${d.title} · ${status === 'done' ? 'kész' : status === 'missed' ? 'kimaradt' : 'nyitott'}`}
-        >
-          <span className="rt-sbody-nm">{d.title}</span>
-          <span className={cn('rt-achip', `is-${a.kind}`)}>
-            <Icon3D name={a.kind === 'free' ? 't-note' : 't-anchor'} size={15} />{a.label}
-          </span>
-        </button>
-        {editing ? (
-          <span className="rt-smove">
-            <button type="button" aria-label={`${d.title} feljebb`} disabled={i === 0 || pending} onClick={() => move(d.id, -1)}>▲</button>
-            <button type="button" aria-label={`${d.title} lejjebb`} disabled={i === defs.length - 1 || pending} onClick={() => move(d.id, 1)}>▼</button>
-          </span>
-        ) : (
-          <span className="rt-smini uv-bar" aria-hidden="true">
-            {strength != null && <b style={{ '--w': `${strength}%` } as CSSProperties} />}
-          </span>
-        )}
-      </div>
+        />
+      </RowItem>
     )
   }
 
   return (
-    <MozaikPage tone="lav" className="rt-uv rt-lanc">
-      <PageHead glass history fallback="/nap/rutin/epites" label="Rutinok">
-        <button
-          type="button"
-          className="mz-pgact rt-act is-lav"
-          disabled={pending}
-          onClick={() => (editing ? finishEdit() : setEditing(true))}
-        >
-          {editing ? 'Kész' : 'Szerkesztés'}
-        </button>
-      </PageHead>
-      <PageHero
-        art={DAYPART_ART[chain.daypart]}
-        accent="var(--dv-lav)"
-        big={`${doneCount} / ${defs.length}`}
-        name={`${chain.title} lánc`}
-        sub={defs.map((d) => d.title.split(' · ')[0].toLowerCase()).join(' → ') || 'még nincs szokás a láncban'}
-      />
-      <PageBody principle={PRINCIPLE}>
-        <EntranceGroup replayKey={`${chain.id}-${editing}`}>
-          {editing && (
-            <>
-              <div className="rt-fcard rise" style={rise(30)}>
-                <span className="rt-flabel">A lánc neve</span>
-                <input
-                  className="rt-fin"
-                  aria-label="A lánc neve"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </div>
-              <div className="rt-fcard rise" style={rise(45)}>
-                <span className="rt-flabel">Napszak</span>
-                <div className="rt-chips is-gold">
-                  {DAYPARTS.map((dp) => (
-                    <button
-                      key={dp.key}
-                      type="button"
-                      className={cn(daypart === dp.key && 'on')}
-                      onClick={() => setDaypart(dp.key)}
-                    >
-                      <Icon3D name={DAYPART_ART[dp.key]} size={18} />{dp.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+    <Page>
+      <RbBack label="Rutinok" fallback="/nap/rutin/epites" />
+      <Hero
+        label={editing ? 'Szerkesztés' : `Ma eddig · ${doneCount} / ${defs.length} kész`}
+        verdict={verdict}
+        sub={defs.length === 0
+          ? 'Az „Új szokás ebbe a láncba” sor indítja az elsőt.'
+          : `${defs.length} összekötött edény: mindegyik a szokás 28 napos erejéig telik.`}
+        actions={(
+          <>
+            <Btn disabled={pending} onClick={() => (editing ? finishEdit() : setEditing(true))}>
+              {editing ? 'Kész' : 'Szerkesztés'}
+            </Btn>
+            {!editing && <Lk onClick={toWizard}>+ Új szokás ide</Lk>}
+          </>
+        )}
+      >
+        {pipe}
+      </Hero>
 
-          <div className="rt-macard glass rise" style={rise(60)}>
-            <div className="rt-macard-head">
-              <span className="rt-macard-t">{editing ? 'Sorrend és horgonyok' : 'A lánc sorrendben'}</span>
-              <span className="rt-macard-c">{doneCount} / {defs.length} kész</span>
-            </div>
-            {defs.map((d, i) => stackRow(d, i))}
-            {defs.length === 0 && (
-              <p className="rt-hint rt-emptyline uv-empty">Ez a lánc még üres — a „＋ Új habit” sor indítja az első szokást.</p>
-            )}
+      {editing && (
+        <>
+          <Section n={1} title="Név és napszak" />
+          <Card>
+            <Lab htmlFor="rb-chain-name">A lánc neve</Lab>
+            <input
+              id="rb-chain-name"
+              className="rb-in"
+              aria-label="A lánc neve"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+            <Lab>Napszak</Lab>
+            <Pills>
+              {DAYPARTS.map((dp) => (
+                <Pill key={dp.key} on={daypart === dp.key} icon={DAYPART_ART[dp.key]} onClick={() => setDaypart(dp.key)}>
+                  {dp.label}
+                </Pill>
+              ))}
+            </Pills>
+          </Card>
+        </>
+      )}
+
+      <Section n={editing ? 2 : 1} title={editing ? 'Sorrend és horgonyok' : 'A lánc sorrendben'} />
+      <Card>
+        {defs.map((d, i) => stackRow(d, i))}
+        {defs.length === 0 && <Empty icon={DAYPART_ART[chain.daypart]}>Ez a lánc még üres.</Empty>}
+        {editing && brokenRows.length > 0 && (
+          <div data-testid="stack-warn">
+            <Why icon="t-info">
+              <b>A sorrend és a horgony nem ugyanazt mondja:</b>{' '}
+              {brokenRows.map((d) => d.title).join(', ')} nem az előző eleméhez kötődik. Sorrendezéssel
+              vagy a horgony cseréjével simítható ki.
+            </Why>
           </div>
+        )}
+        <Note>A horgony mondja meg, mi után jön a szokás — a sorrend ezt követi.</Note>
+      </Card>
 
-          {editing && brokenRows.length > 0 && (
-            <div className="rt-warn rise" style={rise(75)} data-testid="stack-warn">
-              <Icon3D name="t-info" size={26} />
-              <span>
-                <b>A sorrend és a horgony nem ugyanazt mondja:</b>{' '}
-                {brokenRows.map((d) => d.title).join(', ')} nem az előző eleméhez kötődik. A kötél
-                ott szaggatott — sorrendezéssel vagy a horgony cseréjével simítható ki.
-              </span>
-            </div>
-          )}
-
-          <button
-            type="button"
-            className="rt-addrow rise"
-            style={rise(90)}
-            onClick={() => navigate(`/nap/rutin/uj?chain=${encodeURIComponent(chain.chainKey)}`)}
-          >
-            ＋ Új habit ebbe a láncba
-          </button>
-
-          {editing && (
-            <>
-              <button type="button" className="rt-danger rise" style={rise(110)} disabled={pending} onClick={togglePause}>
-                <Icon3D name={chain.isActive ? 't-hold' : 't-play'} size={22} />
-                {chain.isActive ? 'Lánc szüneteltetése — a szokások megmaradnak' : 'Folytatás — a lánc újra él'}
-              </button>
-              {isSeed ? (
-                <p className="rt-hint rise" style={rise(125)}>Az alap rutinok (Reggeli, Esti) nem törölhetők.</p>
-              ) : defs.length > 0 ? (
-                <p className="rt-hint rise" style={rise(125)}>Csak üres lánc törölhető — előbb a szokásait kell törölni vagy átköltöztetni.</p>
-              ) : (
-                <button
-                  type="button"
-                  className={cn('rt-danger is-hard rise', confirmDelete && 'is-armed')}
-                  style={rise(125)}
-                  disabled={pending}
-                  onClick={remove}
-                >
-                  <Icon3D name="t-trash" size={22} />
-                  {confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Lánc törlése'}
-                </button>
-              )}
-            </>
-          )}
-        </EntranceGroup>
-      </PageBody>
-    </MozaikPage>
+      <Section n={editing ? 3 : 2} title={editing ? 'Bővítés és szünet' : 'Bővítés'} />
+      <Card>
+        <Row
+          icon="t-addex" title="Új szokás ebbe a láncba"
+          sub={editing ? undefined : 'a varázsló végigvezet'}
+          onClick={toWizard}
+        />
+        {editing && (
+          <>
+            <Row
+              icon={chain.isActive ? 't-hold' : 't-play'}
+              title={chain.isActive ? 'Lánc szüneteltetése' : 'Folytatás'}
+              sub={chain.isActive ? 'a szokások megmaradnak' : 'a lánc újra él'}
+              onClick={togglePause}
+            />
+            {isSeed ? (
+              <Note>Az alap rutinok (Reggeli, Esti) nem törölhetők.</Note>
+            ) : defs.length > 0 ? (
+              <Note>Csak üres lánc törölhető — előbb a szokásait kell törölni vagy átköltöztetni.</Note>
+            ) : (
+              <Row
+                icon="t-trash"
+                className={confirmDelete ? 'rb-armed' : undefined}
+                title={confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Lánc törlése'}
+                sub={confirmDelete ? undefined : 'két koppintás kell hozzá'}
+                aria-label={confirmDelete ? 'Biztosan törlöd? Koppints újra' : 'Lánc törlése'}
+                onClick={remove}
+              />
+            )}
+          </>
+        )}
+      </Card>
+    </Page>
   )
 }

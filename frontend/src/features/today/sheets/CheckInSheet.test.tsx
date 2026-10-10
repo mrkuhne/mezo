@@ -5,7 +5,9 @@ import { initialCheckins } from '@/data/today/checkins'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { CheckinSlot } from '@/data/types'
 
-// Check-in 2.0 (mezo-ck2) — the sheet built to prototypes/elo/nap.html `SH.checkin`. The plan is
+// Check-in 2.0 (mezo-ck2) — the flow of prototypes/elo/nap.html `SH.checkin`, in the Folyadék look
+// (mezo-n4wf5.2, prototypes/vilagos/nap.js `ckSheet()`): the kit's light sheet, `Dots`, the ten
+// vials of `Scale` (a radio group), `Pill`s, and the summary as rows with a level. The plan is
 // the server config in real mode (MSW serves the mirrored config) and the mirror in mock mode,
 // so these flows hold in both.
 
@@ -20,11 +22,13 @@ function renderSheet(slot: CheckinSlot, onSave = vi.fn(), onClose = vi.fn(), slo
   return { onSave, onClose }
 }
 
-const stepLabel = () => document.querySelector('.capture-stepl')?.textContent ?? ''
+const stepLabel = () => document.querySelector('.nck2-stepl')?.textContent ?? ''
+/** One of the ten vials of the scale on screen (the kit's `Scale`: a radio group). */
+const vial = (n: number) => screen.getByRole('radio', { name: String(n) })
 /** Tap a scale value and wait for the 200 ms auto-advance to land on the next step. */
 async function tap(n: number) {
   const before = stepLabel()
-  await userEvent.click(screen.getByRole('button', { name: String(n) }))
+  await userEvent.click(vial(n))
   await vi.waitFor(() => expect(stepLabel()).not.toBe(before))
 }
 const skip = () => userEvent.click(screen.getByRole('button', { name: /Kihagyom/ }))
@@ -32,30 +36,40 @@ const summary = () => screen.findByText(/Mentés · /)
 
 test('the full morning: 10 steps (plan + question of the day), pain Igen, nothing pre-selected', async () => {
   const { onSave, onClose } = renderSheet(slotAt('06:30'), undefined, undefined, 0)
-  expect(await screen.findByText(/Hogy vagyunk/)).toBeInTheDocument()
-  expect(await screen.findByText('01 / 10 · ENERGIA · ALAP')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: 'Hogy vagy?' })).toBeInTheDocument()
+  expect(screen.getByText('Check-in · Reggel · 06:30')).toBeInTheDocument()
+  // the light Folyadék sheet, no glass
+  expect(document.querySelector('.sheet.fo-sheet')).not.toBeNull()
+  expect(document.querySelector('.glass')).toBeNull()
+  expect(await screen.findByText('01 / 10 · Energia · alap')).toBeInTheDocument()
   expect(screen.getByText('Mennyi energia van benned most?')).toBeInTheDocument()
   // eleven progress segments: ten steps + the summary
-  expect(document.querySelectorAll('.ck-prog i')).toHaveLength(11)
+  expect(document.querySelectorAll('.fo-dots i')).toHaveLength(11)
+  // the first is the current step, the next four are the rest of the core
+  expect(document.querySelectorAll('.fo-dots i.on')).toHaveLength(1)
+  expect(document.querySelectorAll('.fo-dots i.core')).toHaveLength(4)
   // nothing pre-selected: the numeral is the „–" placeholder, no cell is active
   expect(screen.getByTestId('ck-value')).toHaveTextContent('–')
-  expect(document.querySelector('.capture-scale-cell[data-state="active"]')).toBeNull()
+  expect(screen.queryByRole('radio', { checked: true })).toBeNull()
+  // the answer is a jar you fill, the item's icon sits in its chip
+  expect(document.querySelector('.nck2-bigrow .fo-jar')).not.toBeNull()
+  expect(document.querySelector('.nck2-bigrow .fo-bub use')?.getAttribute('href')).toBe('#t-bolt')
 
   await tap(7) // energy
-  expect(stepLabel()).toBe('02 / 10 · HANGULAT · ALAP')
+  expect(stepLabel()).toBe('02 / 10 · Hangulat · alap')
   // the next step starts empty again
   expect(screen.getByTestId('ck-value')).toHaveTextContent('–')
   await tap(8) // mood
   await tap(3) // stress
   await tap(6) // body
   await tap(7) // mental
-  expect(stepLabel()).toBe('06 / 10 · KIPIHENTSÉG · REGGEL')
+  expect(stepLabel()).toBe('06 / 10 · Kipihentség · Reggel')
   expect(screen.getByText('Az alap megvan. Innen bármikor kiléphetsz.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Most csak ennyi' })).toBeInTheDocument()
   await tap(6) // rested
   expect(screen.queryByText('Az alap megvan. Innen bármikor kiléphetsz.')).not.toBeInTheDocument()
   await tap(5) // soreness
-  expect(stepLabel()).toBe('08 / 10 · FÁJDALOM · REGGEL')
+  expect(stepLabel()).toBe('08 / 10 · Fájdalom · Reggel')
   expect(screen.getByText('Fáj valami?')).toBeInTheDocument()
 
   // pain: Igen → figure + chips + intensity; Tovább waits for a region AND an intensity
@@ -69,31 +83,34 @@ test('the full morning: 10 steps (plan + question of the day), pain Igen, nothin
   await userEvent.click(screen.getByRole('button', { name: 'Térd' }))
   expect(next).toBeDisabled()
   // the figure's knee dot lit with the chip
-  expect(document.querySelector('.ck-dot.on[data-region="TERD"]')).not.toBeNull()
+  expect(document.querySelector('.nck2-dot.on[data-region="TERD"]')).not.toBeNull()
   // a figure tap toggles a region too (back view: Derék)
-  fireEvent.click(document.querySelector('.ck-dot[data-region="DEREK"]')!)
+  fireEvent.click(document.querySelector('.nck2-dot[data-region="DEREK"]')!)
   expect(screen.getByRole('button', { name: 'Derék' })).toHaveAttribute('aria-pressed', 'true')
-  await userEvent.click(screen.getByRole('button', { name: '4' }))
+  await userEvent.click(vial(4))
   expect(screen.getByText(/Mennyire fáj · 4 \/ 10/i)).toBeInTheDocument()
   expect(next).toBeEnabled()
   await userEvent.click(next)
-  expect(stepLabel()).toBe('09 / 10 · MOTIVÁCIÓ · REGGEL')
+  expect(stepLabel()).toBe('09 / 10 · Motiváció · Reggel')
   await tap(8) // motivation
 
-  // the question of the day: its own callout + why, no daypart tag
-  expect(stepLabel()).toBe('10 / 10 · ÉHSÉG')
-  expect(screen.getByText(/A nap kérdése/i)).toBeInTheDocument()
+  // the question of the day: its own tag and the why callout, no daypart tag
+  expect(stepLabel()).toBe('10 / 10 · Éhség · a nap kérdése')
+  expect(document.querySelector('.fo-why')).toHaveTextContent('A nap kérdése.')
   expect(screen.getByText('Most azt figyeljük, összefügg-e a reggeli éhséged a tegnapi vacsorával.')).toBeInTheDocument()
   await tap(5) // hunger → summary
 
   await summary()
-  const cells = document.querySelectorAll('.ck-sum')
+  const cells = document.querySelectorAll('.nck2-sum .fo-row')
   expect(cells).toHaveLength(10)
   expect(within(cells[7] as HTMLElement).getByText('Térd, Derék · 4/10')).toBeInTheDocument()
   expect(within(cells[9] as HTMLElement).getByText(/a nap kérdése/)).toBeInTheDocument()
   expect(cells[9]).toHaveClass('is-ad')
   expect(cells[0].querySelector('use')?.getAttribute('href')).toBe('#t-bolt')
   expect(cells[1].querySelector('use')?.getAttribute('href')).toBe('#t-mood')
+  // every row carries its answer as a level: energy 7 → 70 %, a reported pain in the warn colour
+  expect((cells[0].querySelector('.fo-level i') as HTMLElement).style.width).toBe('70%')
+  expect((cells[7].querySelector('.fo-level') as HTMLElement).style.getPropertyValue('--c')).toBe('var(--fo-warn)')
 
   await userEvent.click(screen.getByRole('button', { name: /Mentés · 06:30/ }))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
@@ -113,7 +130,7 @@ test('the full morning: 10 steps (plan + question of the day), pain Igen, nothin
 
 test('the afternoon quick exit after the core five saves only what was asked', async () => {
   const { onSave } = renderSheet(slotAt('14:00'))
-  expect(await screen.findByText('01 / 09 · ENERGIA · ALAP')).toBeInTheDocument()
+  expect(await screen.findByText('01 / 09 · Energia · alap')).toBeInTheDocument()
   // „Most csak ennyi" only from the sixth step
   expect(screen.queryByRole('button', { name: 'Most csak ennyi' })).not.toBeInTheDocument()
   await tap(6)
@@ -121,11 +138,11 @@ test('the afternoon quick exit after the core five saves only what was asked', a
   await skip() // stress → skipped (NULL)
   await tap(5)
   await tap(6)
-  expect(stepLabel()).toBe('06 / 09 · ÉHSÉG · DÉLUTÁN')
+  expect(stepLabel()).toBe('06 / 09 · Éhség · Délután')
   await userEvent.click(screen.getByRole('button', { name: 'Most csak ennyi' }))
 
   await summary()
-  expect(screen.getByText('Az alap megvan. A többi kérdés most üres marad — a check-in így is beszámít.')).toBeInTheDocument()
+  expect(screen.getByText('Az alap megvan. A többi kérdés üres marad, a check-in így is beszámít.')).toBeInTheDocument()
   // skipped reads „kihagyva", not reached reads „üres"
   expect(screen.getAllByText('kihagyva')).toHaveLength(1)
   expect(screen.getAllByText('üres')).toHaveLength(4)
@@ -142,26 +159,26 @@ test('the afternoon quick exit after the core five saves only what was asked', a
 
 test('the evening: craving ≥ 4 asks what, pain „Nem" answers and advances', async () => {
   const { onSave } = renderSheet(slotAt('20:00'), undefined, undefined, 3)
-  expect(await screen.findByText('01 / 12 · ENERGIA · ALAP')).toBeInTheDocument()
+  expect(await screen.findByText('01 / 12 · Energia · alap')).toBeInTheDocument()
   for (let i = 0; i < 5; i++) await tap(7)
   await tap(3) // soreness
-  expect(stepLabel()).toBe('07 / 12 · FÁJDALOM · ESTE')
+  expect(stepLabel()).toBe('07 / 12 · Fájdalom · Este')
   await userEvent.click(screen.getByRole('button', { name: 'Nem' }))
-  await vi.waitFor(() => expect(stepLabel()).toBe('08 / 12 · SÓVÁRGÁS · ESTE'))
+  await vi.waitFor(() => expect(stepLabel()).toBe('08 / 12 · Sóvárgás · Este'))
 
   // craving from 4: the kinds + its own Tovább, no auto-advance
-  await userEvent.click(screen.getByRole('button', { name: '6' }))
+  await userEvent.click(vial(6))
   expect(screen.getByText(/Mit kívánsz\?/i)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Édes' }))
   await userEvent.click(screen.getByRole('button', { name: 'Sós' }))
-  expect(stepLabel()).toBe('08 / 12 · SÓVÁRGÁS · ESTE')
+  expect(stepLabel()).toBe('08 / 12 · Sóvárgás · Este')
   await userEvent.click(screen.getByRole('button', { name: /Tovább/ }))
-  expect(stepLabel()).toBe('09 / 12 · EMÉSZTÉS · ESTE')
+  expect(stepLabel()).toBe('09 / 12 · Emésztés · Este')
   await tap(8) // digestion
   await tap(9) // connection
-  expect(stepLabel()).toBe('11 / 12 · A NAP MÉRLEGE · ESTE')
+  expect(stepLabel()).toBe('11 / 12 · A nap mérlege · Este')
   await tap(7) // day
-  expect(stepLabel()).toBe('12 / 12 · MOTIVÁCIÓ')
+  expect(stepLabel()).toBe('12 / 12 · Motiváció · a nap kérdése')
   await skip() // the question of the day skipped
 
   await summary()
@@ -178,20 +195,20 @@ test('the evening: craving ≥ 4 asks what, pain „Nem" answers and advances', 
 
 test('a craving below 4 answers and advances like any scale', async () => {
   renderSheet(slotAt('14:00'))
-  await screen.findByText('01 / 09 · ENERGIA · ALAP')
+  await screen.findByText('01 / 09 · Energia · alap')
   for (let i = 0; i < 6; i++) await tap(5)
-  expect(stepLabel()).toBe('07 / 09 · SÓVÁRGÁS · DÉLUTÁN')
+  expect(stepLabel()).toBe('07 / 09 · Sóvárgás · Délután')
   await tap(2)
-  expect(stepLabel()).toBe('08 / 09 · EMÉSZTÉS · DÉLUTÁN')
+  expect(stepLabel()).toBe('08 / 09 · Emésztés · Délután')
 })
 
 test('a summary cell jumps back to its step', async () => {
   renderSheet(slotAt('10:00'), undefined, undefined, 1)
-  await screen.findByText('01 / 08 · ENERGIA · ALAP')
+  await screen.findByText('01 / 08 · Energia · alap')
   for (let i = 0; i < 8; i++) await skip()
   await summary()
   await userEvent.click(screen.getAllByRole('button', { name: /Stressz/ })[0])
-  expect(stepLabel()).toBe('03 / 08 · STRESSZ · ALAP')
+  expect(stepLabel()).toBe('03 / 08 · Stressz · alap')
 })
 
 test('saves a long check-in note without truncating it', async () => {

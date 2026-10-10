@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
@@ -65,6 +65,8 @@ beforeEach(() => {
 const renderWizard = (path = '/nap/rutin/uj') =>
   render(<MemoryRouter initialEntries={[path]}><RoutineWizardPage /></MemoryRouter>)
 const next = () => screen.getByRole('button', { name: /Tovább|Mentés/ })
+// The foot's own „Vissza" (the page's fallback back control is a second button of that name here).
+const stepBack = () => within(document.querySelector('.fo-foot') as HTMLElement).getByRole('button', { name: 'Vissza' })
 
 describe('RoutineWizardPage', () => {
   it('blocks step 1 until a framework is chosen', () => {
@@ -167,7 +169,7 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
     fireEvent.click(next())
     fireEvent.click(screen.getByRole('button', { name: 'kész a Reggeli fény' }))
-    fireEvent.click(screen.getByRole('button', { name: '← Vissza' }))
+    fireEvent.click(stepBack())
 
     // Away to Clear and back. anchorLabel survives the round trip, so the chip still reads as
     // selected — the resolved habitKey behind it must survive too, or the payload silently
@@ -204,7 +206,7 @@ describe('RoutineWizardPage', () => {
     expect(next()).toBeEnabled()
 
     // back to step 1 and switch frameworks — the tick was a promise about the Fogg sentence
-    for (let i = 0; i < 3; i++) fireEvent.click(screen.getByRole('button', { name: '← Vissza' }))
+    for (let i = 0; i < 3; i++) fireEvent.click(stepBack())
     fireEvent.click(screen.getByRole('button', { name: /Négy törvény/ }))
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
@@ -546,6 +548,59 @@ describe('RoutineWizardPage', () => {
     expect(screen.queryByRole('button', { name: /Szokás-láncolás/ })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     expect(refetch).toHaveBeenCalled()
+  })
+})
+
+describe('RoutineWizardPage — Folyadék frame (mezo-n4wf5.2)', () => {
+  it('names its progress for a screen reader and fills the recipe vessels as the steps are answered', () => {
+    const { container } = renderWizard()
+    expect(screen.getByRole('img', { name: 'Új szokás-recept: 1. lépés / 4' })).toBeInTheDocument()
+    expect(container.querySelector('.fo-hero')).toHaveTextContent('Új szokás-recept · még üres')
+    expect(container.querySelectorAll('.rb-rec .f')).toHaveLength(0)
+    // the first step shows no sentence yet — only the empty vessels
+    expect(screen.queryByTestId('recipe-sentence')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    expect(screen.getByRole('img', { name: 'Új szokás-recept: 2. lépés / 4' })).toBeInTheDocument()
+    expect(container.querySelector('.fo-hero')).toHaveTextContent('Szokás-láncolás · épül, ahogy töltöd')
+    fireEvent.click(screen.getByRole('button', { name: 'kész a Reggeli fény' }))
+    expect([...container.querySelectorAll('.rb-rec span')].map((p) => `${p.textContent}:${p.classList.contains('f')}`))
+      .toEqual(['Horgony:true', 'Pici tett:false', 'Ünneplés:false'])
+    // an unset slot is a blank that still names itself
+    expect(screen.getByTestId('recipe-sentence').querySelectorAll('.rb-blank')).toHaveLength(2)
+  })
+
+  it('the foot carries Mégse (leaves to the builder), Vissza only after the first step, and the primary action', () => {
+    renderWizard()
+    const foot = within(document.querySelector('.fo-foot') as HTMLElement)
+    expect(foot.queryByRole('button', { name: 'Vissza' })).toBeNull()
+    expect(foot.getByRole('button', { name: 'Tovább' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    fireEvent.click(stepBack())
+    expect(screen.getByRole('img', { name: 'Új szokás-recept: 1. lépés / 4' })).toBeInTheDocument()
+    fireEvent.click(foot.getByRole('button', { name: 'Mégse' }))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/epites')
+  })
+
+  it('the page\'s own back steps back inside the flow before it leaves', () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Szokás-láncolás/ }))
+    fireEvent.click(next())
+    const back = screen.getAllByRole('button', { name: 'Vissza' })[0]
+    expect(back).toHaveTextContent(/^‹Milyen keretre építsük\?$/)
+    fireEvent.click(back)
+    expect(navigate).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: /Keret nélkül/ })).toBeInTheDocument()
+  })
+
+  it('Vállalom is a pressed toggle', () => {
+    renderWizard('/nap/rutin/uj?prefill=stack')
+    fireEvent.click(next()); fireEvent.click(next()); fireEvent.click(next())
+    const commit = screen.getByRole('button', { name: /Vállalom/ })
+    expect(commit).toHaveAttribute('aria-pressed', 'false')
+    fireEvent.click(commit)
+    expect(commit).toHaveAttribute('aria-pressed', 'true')
   })
 })
 

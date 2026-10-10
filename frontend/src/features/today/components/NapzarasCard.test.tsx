@@ -55,29 +55,48 @@ test('before 20:00 renders nothing', () => {
 test('after midnight (00:30) renders nothing — the window ends at midnight', () => {
   renderCard(new Date(2026, 8, 25, 0, 30))
   expect(screen.queryByText('Tegyük le a napot.')).toBeNull()
-  expect(screen.queryByText('Letetted a napot')).toBeNull()
+  expect(screen.queryByText('Letetted a napot.')).toBeNull()
 })
 
 test('after 20:00 and not closed: card with CTA to /ritual', async () => {
   renderCard(new Date(2026, 8, 24, 20, 1))
   expect(screen.getByText('Tegyük le a napot.')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Napzárás indítása' }))
+  await userEvent.click(screen.getByRole('button', { name: /^Napzárás indítása/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/ritual')
 })
 
-test('after closing: the compact done row links to A napom', () => {
-  store.ritualClosed = true
-  renderCard(new Date(2026, 8, 24, 21, 0))
-  expect(screen.getByText('Letetted a napot')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'A napom ›' })).toHaveAttribute('href', '/nap/napom')
+test('after 20:00 the vessel is the evening tank; without a level from the page it shows no number', () => {
+  const { container } = renderCard(new Date(2026, 8, 24, 20, 1))
+  expect(container.querySelector('.fo-tank')).toHaveClass('fo-dusk')
+  expect(screen.getByText('Este · napzárás')).toBeInTheDocument()
+  expect(screen.getByText('Amit megőriznél, és amit elengednél. Kb. 3 perc.')).toBeInTheDocument()
+  expect(container.querySelector('.fo-tank-n b')).toHaveTextContent('…')
+  expect(container.querySelector('.glass, [class*="uv-"], [class*="nap-z"]:not(.nm-zchips)')).toBeNull()
 })
 
-test('the kcal chip uses the HU thousands separator and every fact chip leads with its icon', () => {
+test('the page hands in the level (the six életjel average)', () => {
+  const { container } = render(<MemoryRouter><NapzarasCard now={new Date(2026, 8, 24, 20, 1)} level={{ pct: 60, num: 60 }} /></MemoryRouter>)
+  expect(container.querySelector('.fo-tank-n b')).toHaveTextContent('60')
+  expect(screen.getByText('a 100-ból · hat életjel átlaga')).toBeInTheDocument()
+})
+
+test('after closing: the tank says the day is put down and leads to A napom', async () => {
+  store.ritualClosed = true
+  renderCard(new Date(2026, 8, 24, 21, 0))
+  expect(screen.getByText('Letetted a napot.')).toBeInTheDocument()
+  expect(screen.getByText('Este · a nap lezárva')).toBeInTheDocument()
+  expect(screen.getByText('Hajnalban megírom, milyen napod volt.')).toBeInTheDocument()
+  expect(document.querySelector('.fo-chips')).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: /^A napom/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/nap/napom')
+})
+
+test('the kcal chip uses the HU thousands separator; the four facts are the kit\'s drop chips under the tank', () => {
   store.kcal = 2060
   const { container } = renderCard(new Date(2026, 8, 24, 20, 1))
   expect(screen.getByText('2 060 kcal')).toBeInTheDocument()
-  const hrefs = [...container.querySelectorAll('.nap-zchips use')].map((u) => u.getAttribute('href'))
-  expect(hrefs).toEqual(['#t-bowl', '#t-dumbbell', '#t-checkin'])
+  const chips = [...container.querySelectorAll('.fo-tank + .fo-chips > span')].map((c) => c.textContent)
+  expect(chips).toEqual(['2 060 kcal', 'edzés 1 / 1', 'check-in 2/4', '3/6 terület kész'])
 })
 
 test('renders known chips and omits the kcal chip when unknown', () => {

@@ -1,19 +1,20 @@
 import { useMemo } from 'react'
+import type { CSSProperties } from 'react'
 import { useGamificationDay, useNeedsSummary, useProgressionProfile } from '@/data/hooks'
 import { skillDisplay } from '@/features/progression/logic/levelUpMeta'
 import { harvestStages } from '@/features/ritual/logic/harvestStages'
 import { CountUp } from '@/shared/ui/CountUp'
 import { localDateString } from '@/shared/lib/dates'
-import type { CSSProperties } from 'react'
-import { Icon3D } from '@/shared/ui/clay'
-import type { Icon3DName } from '@/shared/ui/clay'
+import { CLAY_TO_3D } from '@/shared/ui/clay'
+import type { ClayIconName, Icon3DName } from '@/shared/ui/clay'
+import { Btn, Card, Hero, Level, Note, Row, Section } from '@/shared/ui/folyadek'
+import { RitualFoot } from '@/features/ritual/components/RitualFoot'
 
 type KnownSource = 'GYM' | 'RUN' | 'SPORT' | 'QUEST' | 'ACTIVITY' | 'HABIT'
 
-// HU chip label per source — icons are reused from levelUpMeta's CHIP_ICON_BY_SOURCE (the
-// same map the LevelUpScreen chip uses). GamificationDay.xpBySource[].source is the closed
-// XpEventType union, but it has 5 members OTHER than the ones mapped here (MEAL/WEIGHT/
-// SLEEP/CHECKIN/MEDICATION) — those are defensively skipped rather than rendered unlabelled.
+// HU label per source. GamificationDay.xpBySource[].source is the closed XpEventType union, but it
+// has 5 members OTHER than the ones mapped here (MEAL/WEIGHT/SLEEP/CHECKIN/MEDICATION) — those are
+// defensively skipped rather than rendered unlabelled.
 const SOURCE_LABEL_HU: Record<KnownSource, string> = {
   QUEST: 'Küldetések',
   HABIT: 'Rutin',
@@ -23,33 +24,28 @@ const SOURCE_LABEL_HU: Record<KnownSource, string> = {
   SPORT: 'Sport',
 }
 
-// Titanium 3D symbol per source, scoped to the ritual (Üveg re-dress mezo-me75u.3, approved on
-// prototypes/uveg-nap.html#napzaras/5). Deliberately NOT a rewrite of levelUpMeta's
-// CHIP_ICON_BY_SOURCE: that map also feeds the LevelUpScreen overlay, which moves in its own slice.
-const SOURCE_3D: Record<KnownSource, Icon3DName> = {
-  QUEST: 't-quest',
-  HABIT: 't-chain',
-  ACTIVITY: 't-journal',
-  GYM: 't-dumbbell',
-  RUN: 't-run',
-  SPORT: 't-volley',
-}
-
 function isKnownSource(source: string): source is KnownSource {
   return Object.prototype.hasOwnProperty.call(SOURCE_LABEL_HU, source)
 }
 
-const CONFETTI_LEFT = ['12%', '22%', '31%', '40%', '49%', '58%', '67%', '76%', '85%', '93%']
-// Data-viz band tokens (D4) — confetti is a reward moment, the one place these hues belong.
-const CONFETTI_COLOR = ['var(--dv-lav)', 'var(--dv-amber)', 'var(--dv-sage)', 'var(--dv-coral)']
+/** „egy / két / … forrásból" — the count as a word, the way the sentence reads it. */
+const COUNT_HU = ['nulla', 'egy', 'két', 'három', 'négy', 'öt', 'hat']
+
+/** A skill's icon as a Folyadék-jel name: a Titanium name as is, a clay name through `CLAY_TO_3D`. */
+const glyphOf = (art: Icon3DName | ClayIconName): Icon3DName =>
+  art.startsWith('t-') ? (art as Icon3DName) : CLAY_TO_3D[art as ClayIconName] ?? 't-spark'
 
 const clampPct = (n: number) => Math.max(0, Math.min(100, n))
 
 /**
- * Napzárás act 5 — A mai termés (mezo-ilsj, spec §4, Task 6). The choreography peak: an XP
- * count-up (the shared `CountUp` primitive), per-source + coin chips, an optional LIFE
- * skill highlight, the streak flame, and a one-shot confetti burst — all staggered via
- * `harvestStages()`'s fixed cadence, applied as inline `animationDelay`.
+ * Napzárás act 5 — A mai termés (mezo-ilsj, spec §4, Task 6; Folyadék mezo-n4wf5.2, prototype
+ * `napzaras.5`). The peak of the flow: the XP total counts up (the shared `CountUp` primitive) as
+ * the verdict, and the day's harvest stands in ONE vessel, a layer per source, each as tall as the
+ * XP it brought — the list beside it names them. Under it: where the day leaves you (the LIFE skill
+ * closest to its next level, the coins, the streak, the days alive). The layers settle in
+ * `harvestStages()`'s fixed cadence (inline `animationDelay`; the animation itself is opt-in under
+ * `prefers-reduced-motion: no-preference`). The confetti burst of the dark skin is gone: the
+ * filling vessel is the celebration.
  *
  * Skill hint honesty: the spec's "még N XP a Lv M-ig" hint is DELIBERATELY DROPPED.
  * `SkillLevel` (the wire type) only carries `level` + `progressPct` (the within-level
@@ -87,104 +83,62 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
     coins: day.coinEvents.length,
     hasSkillHighlight: skill != null,
   })
-  const xpStage = stages.find((s) => s.kind === 'xp-total')!
   const sourceStages = stages.filter((s) => s.kind === 'source')
-  const coinStages = stages.filter((s) => s.kind === 'coin')
-  const skillStage = stages.find((s) => s.kind === 'skill')
-  const streakStage = stages.find((s) => s.kind === 'streak')!
+  // Largest at the bottom of the vessel: the layers stack upwards from the heaviest source.
+  const layers = [...visibleSources].sort((a, b) => b.xp - a.xp)
+  const coinSum = day.coinEvents.reduce((sum, c) => sum + c.amount, 0)
+  const meta = skill ? skillDisplay(skill.skillKey, 'LIFE') : null
 
   return (
-    <div className="rz-act rz-harvest">
-      {day.xpTotal > 0 && (
-        <div className="rz-conf" aria-hidden="true">
-          {CONFETTI_LEFT.map((left, i) => (
-            <i
-              key={left}
-              style={{
-                left,
-                background: CONFETTI_COLOR[i % CONFETTI_COLOR.length],
-                // Bursts around the finale (the streak beat), not at t=0 — the choreography's
-                // last stage, not a literal copy of the pre-harvestStages() mockup timing.
-                animationDelay: `${streakStage.delayMs + (i % 5) * 60}ms`,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* mezo-tr5v: the reward block centers vertically; the CTA below stays pinned to the bottom. */}
-      <div className="rz-harvest-body">
-      <div className="rz-xp-wrap np-anim" style={{ animationDelay: `${xpStage.delayMs}ms` }}>
-        {/* The gold break — the peak told with light: a frameless gold + lavender halo behind the
-            harvest art. It renders on every harvest, thin day or not: the light is the act
-            arriving, whereas confetti above is EARNED (xpTotal > 0). */}
-        <div className="rz-glow" aria-hidden="true" />
-        <div className="rz-harvest-spot" aria-hidden="true"><Icon3D name="t-harvest" size={92} /></div>
-        <div className="rz-story-eyebrow">A MAI TERMÉS</div>
-        <CountUp to={day.xpTotal} className="rz-xp-num" />
-        <div className="rz-xp-unit">XP ma</div>
-      </div>
-
-      {visibleSources.length > 0 && (
-        <div className="rz-src-row">
-          {visibleSources.map((s, i) => (
-            <span
-              key={s.source}
-              className="rz-chip uv-flat rz-pop"
-              style={{ animationDelay: `${sourceStages[i].delayMs}ms` }}
-            >
-              <Icon3D name={SOURCE_3D[s.source]} size={20} />
-              <span className="rz-chip-label">{SOURCE_LABEL_HU[s.source]}</span>
-              <span className="rz-chip-xp">+{s.xp}</span>
-            </span>
-          ))}
-        </div>
-      )}
-
-      {day.coinEvents.length > 0 && (
-        <div className="rz-coin-row">
-          {day.coinEvents.map((c, i) => (
-            <span
-              key={`${c.reason}-${i}`}
-              className="rz-coin-chip uv-flat rz-pop"
-              style={{ animationDelay: `${coinStages[i].delayMs}ms` }}
-            >
-              <Icon3D name="t-coin" size={20} /> +{c.amount}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {skill && skillStage && (() => {
-        const meta = skillDisplay(skill.skillKey, 'LIFE')
-        return (
-          <div className="rz-skill-row glass np-anim" style={{ animationDelay: `${skillStage.delayMs}ms` }}>
-            <div className="rz-skill-head">
-              <span>{meta.name} — <span className="rz-skill-lv">Lv {skill.level}</span></span>
-              <span className="rz-skill-pct">{Math.round(clampPct(skill.progressPct))}%</span>
-            </div>
-            <span className="rz-skill-bar uv-bar">
-              <b style={{ '--w': `${clampPct(skill.progressPct)}%` } as CSSProperties} />
-            </span>
-          </div>
-        )
-      })()}
-
-      <div
-        className={day.streakAlive ? 'rz-streak uv-flat np-anim' : 'rz-streak uv-flat np-anim dim'}
-        style={{ animationDelay: `${streakStage.delayMs}ms` }}
+    <>
+      <Hero
+        label="A mai termés"
+        verdict={<span className="nrz-vbig">+<CountUp to={day.xpTotal} /> XP</span>}
+        sub={layers.length > 0
+          ? `Ennyit gyűjtöttél ma, ${COUNT_HU[layers.length] ?? layers.length} forrásból. Egy edényben, rétegenként:`
+          : undefined}
       >
-        <Icon3D name="t-flame" size={30} /> {day.streakDays} napos sorozat{day.streakAlive ? ' él' : ' — megszakadt'}
-      </div>
-
-      {needsSummary.streakDays > 0 && (
-        <div className="rz-streak uv-flat np-anim" style={{ animationDelay: `${streakStage.delayMs + 200}ms` }}>
-          <Icon3D name="t-heart" size={30} /> {needsSummary.streakDays} napja életben
+        <div className="nrz-strata">
+          <span className="v" aria-hidden="true">
+            {layers.map((s, i) => (
+              <i key={s.source} style={{ flex: s.xp, '--m': `${Math.max(15, 100 - i * 17)}%`, animationDelay: `${sourceStages[i].delayMs}ms` } as CSSProperties} />
+            ))}
+          </span>
+          <ol>
+            {layers.map((s, i) => (
+              <li key={s.source} style={{ flex: s.xp, animationDelay: `${sourceStages[i].delayMs}ms` }}>
+                <b>+{s.xp}</b>{SOURCE_LABEL_HU[s.source]}
+              </li>
+            ))}
+          </ol>
         </div>
-      )}
-      </div>
+        {layers.length === 0 && <Note>Ma ennyi fért bele. Az is számít.</Note>}
+      </Hero>
 
-      <button className="rz-cta" onClick={onNext}>Tovább</button>
-    </div>
+      <Section n={1} title="Hol tartasz" />
+      <Card>
+        {skill && meta && (
+          <Row
+            icon={glyphOf(meta.art3d)}
+            title={<>{meta.name} · <span>Lv {skill.level}</span></>}
+            sub="a következő szintig"
+            value={<>{Math.round(clampPct(skill.progressPct))}<small>%</small></>}
+            more={<Level pct={clampPct(skill.progressPct)} height={10} />}
+          />
+        )}
+        {day.coinEvents.length > 0 && (
+          <Row icon="t-coin" title="Érme" sub="a mai jutalmakból" value={`+${coinSum}`} className="nrz-coins" />
+        )}
+        <Row
+          icon="t-flame"
+          state={day.streakAlive ? undefined : 'dim'}
+          className="nrz-streak"
+          title={`${day.streakDays} napos sorozat${day.streakAlive ? ' él' : ' — megszakadt'}`}
+        />
+        {needsSummary.streakDays > 0 && <Row icon="t-sprout" title={`${needsSummary.streakDays} napja életben`} />}
+      </Card>
+
+      <RitualFoot><Btn grow onClick={onNext}>Tovább</Btn></RitualFoot>
+    </>
   )
 }

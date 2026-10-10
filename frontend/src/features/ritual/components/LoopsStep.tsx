@@ -1,28 +1,35 @@
-import type { CSSProperties } from 'react'
 import { useCheckins, useIntentionActions, useIntentionDay } from '@/data/hooks'
 import type { Reflection } from '@/data/types'
 import { openLoops } from '@/features/ritual/logic/openLoops'
 import { localDateString } from '@/shared/lib/dates'
-import { Icon3D } from '@/shared/ui/clay'
+import { Btn, Card, Hero, Mark, Pill, Pills, Row, Section, Vials, type VialItem } from '@/shared/ui/folyadek'
+import { RitualFoot } from '@/features/ritual/components/RitualFoot'
 
 const REFLECT_LABEL: Record<Reflection, string> = { yes: 'Igen', partial: 'Részben', no: 'Nem' }
+const COUNT_HU = ['', 'Egy', 'Két', 'Három']
 
 /**
- * Napzárás act 4 — Nyitott hurkok (mezo-ilsj, spec §4). Soft close-out of the day's two GATED
- * loops (missed check-in, intention reflection) plus a standing "log anything else" journal
- * invite. Nothing here is mandatory — Tovább always advances regardless of state.
+ * Napzárás act 4 — Nyitott hurkok (mezo-ilsj, spec §4; Folyadék mezo-n4wf5.2, prototype
+ * `napzaras.4`). Soft close-out of the day's two GATED loops (missed check-in, intention
+ * reflection) plus a standing "log anything else" journal invite. Nothing here is mandatory —
+ * Tovább always advances regardless of state.
  *
- * The reused sheets (CheckInSheet, ActivityLogSheet) live one level up on RitualPage, not
- * here (the TodayPage precedent, TodayPage.tsx:37-42/76-83) — this step only SIGNALS via
- * onOpenCheckIn/onOpenJournal; RitualPage owns the sheet open/close state and the
- * next-open-slot index math (its own parallel `useCheckins` + the same findIndex predicate).
+ * The hero shows one vial per loop that exists (the check-ins' share, the intention answered or
+ * not, the journal's standing „+"); the card under it carries the same loops as rows with their
+ * actions. With nothing open the verdict itself is the „Minden hurok zárva" beat and only the
+ * evergreen journal row remains.
  *
- * The reflect row is INLINE (the IntentionBanner precedent, IntentionBanner.tsx:85-100) rather
- * than a sheet: the three Igen/Részben/Nem buttons call `useIntentionActions(date).reflect`
- * directly, collapsing to a 3D-tick line once `reflection` is set. It only renders at all
- * when the day HAS a focus — with none, there is nothing to reflect on (openLoops.ts).
+ * The reused sheets (CheckInSheet, ActivityLogSheet) live one level up on RitualPage, not here —
+ * this step only SIGNALS via onOpenCheckIn/onOpenJournal; RitualPage owns the sheet open/close
+ * state and the next-open-slot index math (its own parallel `useCheckins` + the same findIndex
+ * predicate).
  *
- * The journal row is deliberately EVERGREEN — no closed state, never glows, and excluded from
+ * The reflect row is INLINE rather than a sheet: the three Igen/Részben/Nem pills call
+ * `useIntentionActions(date).reflect` directly, collapsing to a ticked line once `reflection` is
+ * set. It only renders at all when the day HAS a focus — with none, there is nothing to reflect on
+ * (openLoops.ts).
+ *
+ * The journal row is deliberately EVERGREEN — no closed state, never highlighted, and excluded from
  * `openLoops` — "did anything else happen today" is always askable, unlike the two scheduled
  * loops above (and mock-mode's `useActivities` seed is date-invariant, so gating the invite on
  * "already logged today" would make it permanently vanish in mock mode).
@@ -42,74 +49,72 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
   const nothingOpen = !checkinOpen && !reflectOpen
   const checkinsDone = checkins.filter((c) => c.state === 'done').length
   const nextSlot = checkins.find((c) => c.state === 'now' || c.state === 'pending')
-  // Glow only ever lands on one of the two GATED loops (never journal — see doc comment).
+  // The highlight only ever lands on one of the two GATED loops (never journal — see doc comment).
   const firstOpen = checkinOpen ? 'checkin' : reflectOpen ? 'reflect' : null
+  const focusText = intention.foci.map((f) => f.text).join(' · ')
+
+  const vials: VialItem[] = [
+    {
+      label: 'Check-in', icon: 't-checkin', value: `${checkinsDone}/${checkins.length}`,
+      pct: checkins.length > 0 ? (checkinsDone / checkins.length) * 100 : 0,
+      note: `${checkinsDone} / ${checkins.length} kész`,
+      mark: checkinOpen ? 'nyitva' : undefined,
+      onClick: checkinOpen ? onOpenCheckIn : undefined,
+    },
+    ...(hasFoci ? [{
+      label: 'Szándék', icon: 't-ring' as const, value: intention.reflection ? REFLECT_LABEL[intention.reflection] : '?',
+      pct: reflectOpen ? 0 : 100, note: focusText, mark: reflectOpen ? 'nyitva' : undefined,
+    }] : []),
+    { label: 'Napló', icon: 't-journal', value: '+', pct: 0, note: 'egy apró lépés', onClick: onOpenJournal },
+  ]
+  const rowCount = nothingOpen ? 1 : hasFoci ? 3 : 2
 
   return (
-    <div className="rz-act rz-loops">
-      <div className="rz-story-eyebrow">Nyitott hurkok</div>
-      <p className="rz-loops-sub">Zárd le, ami még nyitva — aztán elengedheted.</p>
+    <>
+      <Hero
+        label="Nyitott hurkok"
+        verdict={nothingOpen ? 'Minden hurok zárva' : 'Zárd le, ami még nyitva.'}
+        sub={nothingOpen ? 'Elengedheted a napot.' : 'Aztán elengedheted.'}
+      >
+        <Vials size="sm" height={92} items={vials} />
+      </Hero>
 
-      {nothingOpen ? (
-        <div className="rz-loop glass rz-loop-beat np-anim" data-hue="sage" style={{ '--i': 0 } as CSSProperties}>
-          <Icon3D name="t-tick" size={24} className="rz-loop-mk" />
-          <span className="rz-loop-text">Minden hurok zárva</span>
-        </div>
-      ) : (
-        <>
-          <div
-            data-hue="rose"
-            className={`rz-loop glass np-anim${checkinOpen ? (firstOpen === 'checkin' ? ' glow' : '') : ' rz-loop-done'}`}
-            style={{ '--i': 0 } as CSSProperties}
-          >
-            {checkinOpen ? (
-              <>
-                <Icon3D name="t-checkin" size={38} className="rz-loop-ico" />
-                <span className="rz-loop-text">{nextSlot?.time} check-in kimaradt</span>
-                <button className="rz-loop-act" onClick={onOpenCheckIn}>Koppints</button>
-              </>
-            ) : (
-              <>
-                <Icon3D name="t-tick" size={24} className="rz-loop-mk" />
-                <span className="rz-loop-text">{checkinsDone}/{checkins.length} check-in kész</span>
-              </>
-            )}
-          </div>
+      <Section n={1} title={`${COUNT_HU[rowCount]} apróság`} />
+      <Card>
+        {!nothingOpen && (
+          checkinOpen ? (
+            <Row as="div" icon="t-checkin" state={firstOpen === 'checkin' ? 'now' : undefined}
+              title={`${nextSlot?.time} check-in kimaradt`}
+              sub={`${checkinsDone} / ${checkins.length} check-in kész`}
+              right={<Btn sm onClick={onOpenCheckIn}>Kitöltöm</Btn>} />
+          ) : (
+            <Row as="div" state="done" left={<Mark state="done" />}
+              title={`${checkinsDone}/${checkins.length} check-in kész`} />
+          )
+        )}
 
-          {hasFoci && (
-            <div
-              data-hue="amber"
-              className={`rz-loop glass np-anim${reflectOpen ? (firstOpen === 'reflect' ? ' glow' : '') : ' rz-loop-done'}`}
-              style={{ '--i': 1 } as CSSProperties}
-            >
-              {reflectOpen ? (
-                <>
-                  <Icon3D name="t-ring" size={38} className="rz-loop-ico" />
-                  <span className="rz-loop-text">Szándékkal élted a napot?</span>
-                  <span className="rz-loop-chips">
-                    {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
-                      <button key={v} className="rz-loop-chip" onClick={() => reflect(v)}>{REFLECT_LABEL[v]}</button>
-                    ))}
-                  </span>
-                </>
-              ) : (
-                <>
-                  <Icon3D name="t-tick" size={24} className="rz-loop-mk" />
-                  <span className="rz-loop-text">A mai szándékodra reflektáltál.</span>
-                </>
-              )}
-            </div>
-          )}
-        </>
-      )}
+        {!nothingOpen && hasFoci && (
+          reflectOpen ? (
+            <Row as="div" icon="t-ring" state={firstOpen === 'reflect' ? 'now' : undefined}
+              title="Szándékkal élted a napot?"
+              sub={<>a mai szándékod: „{focusText}”</>}
+              more={(
+                <Pills className="nrz-inacts">
+                  {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
+                    <Pill key={v} onClick={() => reflect(v)}>{REFLECT_LABEL[v]}</Pill>
+                  ))}
+                </Pills>
+              )} />
+          ) : (
+            <Row as="div" state="done" left={<Mark state="done" />} title="A mai szándékodra reflektáltál." />
+          )
+        )}
 
-      <div className="rz-loop glass np-anim" data-hue="sage" style={{ '--i': 2 } as CSSProperties}>
-        <Icon3D name="t-journal" size={38} className="rz-loop-ico" />
-        <span className="rz-loop-text">Történt még valami ma?</span>
-        <button className="rz-loop-act" onClick={onOpenJournal}>Napló</button>
-      </div>
+        <Row as="div" icon="t-journal" title="Történt még valami ma?" sub="egy apró lépés is számít"
+          right={<Btn sm ghost onClick={onOpenJournal}>Napló</Btn>} />
+      </Card>
 
-      <button className="rz-cta" onClick={onNext}>Tovább</button>
-    </div>
+      <RitualFoot><Btn grow onClick={onNext}>Tovább</Btn></RitualFoot>
+    </>
   )
 }

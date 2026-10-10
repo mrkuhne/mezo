@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import rawCss from '@/styles/prototype.css?raw'
+import rawCss from '@/styles/folyadek-nap-epites.css?raw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { HabitPage } from '@/features/me/pages/HabitPage'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 import type { HabitChainInfo, HabitFormation } from '@/data/types'
 
 const navigate = vi.fn()
@@ -83,14 +84,23 @@ vi.mock('@/data/hooks', () => ({
   useHabitCatalog: () => useHabitCatalog(),
 }))
 
+/** What the page hands to the app frame's title bar (no title bar is mounted in these tests). */
+function FrameProbe() {
+  const frame = useFrame()
+  return <output data-testid="frame">{frame.title} | {frame.eyebrow}</output>
+}
+
 function renderPage(habitKey: string) {
   return render(
-    <MemoryRouter initialEntries={[`/nap/rutin/szokas/${habitKey}`]}>
-      <Routes>
-        <Route path="/nap/rutin/szokas/:habitKey" element={<HabitPage />} />
-        <Route path="/nap/rutin/epites" element={<div>RUTIN HUB</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <FrameProvider>
+      <MemoryRouter initialEntries={[`/nap/rutin/szokas/${habitKey}`]}>
+        <FrameProbe />
+        <Routes>
+          <Route path="/nap/rutin/szokas/:habitKey" element={<HabitPage />} />
+          <Route path="/nap/rutin/epites" element={<div>RUTIN HUB</div>} />
+        </Routes>
+      </MemoryRouter>
+    </FrameProvider>,
   )
 }
 
@@ -122,7 +132,14 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
     expect(screen.queryByRole('button', { name: /törlése/ })).not.toBeInTheDocument()
   })
 
-  test('the head button opens the editor page', () => {
+  test('the recipe is drawn as vessels, one per part of the framework, filled when that part is set', () => {
+    const { container } = renderPage('intent')
+    const parts = [...container.querySelectorAll('.rb-rec span')]
+    expect(parts.map((p) => p.textContent)).toEqual(['Jelzés', 'Vágy', 'Válasz', 'Jutalom'])
+    expect(parts.every((p) => p.classList.contains('f'))).toBe(true)
+  })
+
+  test('the hero button opens the editor page', () => {
     renderPage('intent')
     fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent/szerkesztes')
@@ -130,7 +147,7 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
 
   test('the recipe row itself opens the editor too', () => {
     renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: /szerkesztem/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztem' }))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/intent/szerkesztes')
   })
 
@@ -141,22 +158,25 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
 
   test('the hero carries the 28-day strength and its pipa/kihagyás split', () => {
     renderPage('intent')
-    expect(screen.getByText('82%')).toBeInTheDocument()
-    expect(screen.getByText('28 napos erő · 23 pipa · 5 kihagyás')).toBeInTheDocument()
+    const hero = document.querySelector('.fo-hero') as HTMLElement
+    expect(hero.querySelector('.fo-hero-lbl')).toHaveTextContent('Út az automatizmus felé · 28 napos erő 82%')
+    expect(hero.querySelector('.fo-hero-sub')).toHaveTextContent(/^23 pipa · 5 kihagyás\./)
   })
 
-  test('omits the hero sub entirely when the def has no summary row', () => {
+  test('omits the 28-day standing entirely when the def has no summary row', () => {
     renderPage('sun')
     expect(screen.queryByText(/28 napos erő/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/pipa ·/)).not.toBeInTheDocument()
   })
 
-  test('an evening habit does not wear the dawn icon', () => {
-    const { container } = renderPage('bed')
-    // Üveg (mezo-me75u.7): the daypart wears the Titanium set — „este" is the moon, not sleep
-    expect(container.querySelector('.mz-page-hero use')).toHaveAttribute('href', '#t-moon')
-    // …and a morning habit still wears the dawn one
-    expect(renderPage('intent').container.querySelector('.mz-page-hero use'))
-      .toHaveAttribute('href', '#t-dawn')
+  test('the title bar names the habit and its OWN chain — an evening habit is not filed under the morning', () => {
+    renderPage('bed')
+    expect(screen.getByTestId('frame')).toHaveTextContent('Időben ágyban | Szokás · Esti rutin')
+  })
+
+  test('a morning habit is named with the morning chain', () => {
+    renderPage('intent')
+    expect(screen.getByTestId('frame')).toHaveTextContent('leírom a napi szándékot | Szokás · Reggeli rutin')
   })
 
   test('an unknown habit key bounces back to the rutin hub', () => {
@@ -205,20 +225,27 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
 
   test('the lifetime calendar keeps the three states visually distinct (a miss is not an empty day)', () => {
     const { container } = renderPage('intent')
-    const cells = [...container.querySelectorAll('.rt-cal i')]
+    const cells = [...container.querySelectorAll('.rb-g28 i')]
     // 40 lifetime days, padded to whole weeks — so at least the lifetime, and a multiple of 7
     expect(cells.length).toBeGreaterThanOrEqual(40)
     expect(cells.length % 7).toBe(0)
-    expect(container.querySelectorAll('.rt-cal i.is-done').length).toBe(32)
-    expect(container.querySelectorAll('.rt-cal i.is-miss').length).toBe(8)
+    expect(container.querySelectorAll('.rb-g28 i.p').length).toBe(32)
+    expect(container.querySelectorAll('.rb-g28 i.m').length).toBe(8)
+    expect(container.querySelectorAll('.rb-g28 i.s').length).toBe(cells.length - 40)
     // A day with NO row is not a miss: rows only exist for days the app was opened, so the two
     // must not share a fill — otherwise absence reads as failure, which ADR 0010 forbids.
-    // The glass habit page (U7) paints the cells; the pre-üveg unscoped fills left in U11 (mezo-zn01o).
-    const emptyFill = rawCss.match(/\.rt-szokas \.rt-cal i \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
-    const missFill = rawCss.match(/\.rt-szokas \.rt-cal i\.is-miss,[^{]*\{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
+    // Folyadék (F2): a day is a small vessel — full = pipa, outlined = kimaradt, faint = nem volt sor.
+    const fillOf = (state: string) =>
+      rawCss.match(new RegExp(`\\.rb-g28 i\\.${state} \\{[^}]*background:\\s*([^;]+);`))?.[1]?.trim()
+    const [doneFill, missFill, emptyFill] = [fillOf('p'), fillOf('m'), fillOf('s')]
+    expect(doneFill).toBeTruthy()
     expect(emptyFill).toBeTruthy()
     expect(missFill).toBeTruthy()
     expect(missFill).not.toEqual(emptyFill)
+    expect(doneFill).not.toEqual(missFill)
+    // …and the legend carries the lifetime counts
+    expect(screen.getByTestId('formation-history')).toHaveTextContent('pipa 32')
+    expect(screen.getByTestId('formation-history')).toHaveTextContent('kimaradt 8')
   })
 
   test('the estimate is shown as a RANGE, never as a single date', () => {
@@ -236,12 +263,40 @@ describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
       }),
     })
     const { container } = renderPage('intent')
-    expect(screen.getByTestId('formation-card')).toHaveTextContent('Még gyűlik az adat')
-    expect(screen.getByTestId('formation-eta')).toHaveTextContent('3')
-    expect(screen.getByTestId('formation-eta')).toHaveTextContent(/még ennyi ismétlés/)
-    // no fabricated curve and no fabricated percentage
-    expect(container.querySelector('.rt-curve')).toBeNull()
+    expect(screen.getByTestId('formation-card')).toHaveTextContent('még gyűlik az adat')
+    expect(screen.getByTestId('formation-eta')).toHaveTextContent('Még gyűlik az adat: 3 ismétlés a becslésig.')
+    // no fabricated curve, no fabricated percentage, an empty vessel
+    expect(container.querySelector('.rb-curve')).toBeNull()
+    expect(screen.queryByText('Így épült')).toBeNull()
     expect(screen.getByTestId('formation-card').textContent).not.toMatch(/\d+%/)
+    expect(screen.getByTestId('formation-card').querySelector('.t i')).toBeNull()
+  })
+
+  test('the ripening vessel stands at the estimated automaticity, with the current stage lit on the rail', () => {
+    renderPage('intent')
+    const card = screen.getByTestId('formation-card')
+    expect(card.querySelector('.t i')).toHaveStyle({ height: '62%' })
+    expect(card.querySelector('.t b')).toHaveTextContent('62%')
+    const now = card.querySelector('li[aria-current="step"]') as HTMLElement
+    expect(now).toHaveTextContent('kezd magától menni')
+    expect(now).toHaveTextContent('itt tartasz · még ~30–80 ismétlés')
+    expect(card.querySelectorAll('li.done')).toHaveLength(2)
+    // a level, never a progress ring
+    expect(card.querySelector('svg')).toBeNull()
+  })
+
+  test('the formation surface is drawn only from a fitted curve, with the threshold as its waterline', () => {
+    const { container } = renderPage('intent')
+    expect(screen.getByRole('heading', { name: /Így épült/ })).toBeInTheDocument()
+    expect(container.querySelector('.rb-curve .fo-area')).not.toBeNull()
+    expect(screen.getByTestId('formation-curve')).toHaveAccessibleName(/32 ismétlésnél tartasz/)
+  })
+
+  test('the weekday breakdown shows each day as a small level', () => {
+    renderPage('intent')
+    const days = [...screen.getByTestId('formation-history').querySelectorAll('.rb-wd .fo-mini small')]
+    expect(days.map((d) => d.textContent)).toEqual(['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'])
+    expect(screen.getByText(/A legerősebb napod:/)).toBeInTheDocument()
   })
 
   test('a context signal we cannot measure renders as a dash, not as 0%', () => {

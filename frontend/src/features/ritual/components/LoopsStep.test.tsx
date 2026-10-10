@@ -4,7 +4,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest'
 import { LoopsStep } from '@/features/ritual/components/LoopsStep'
 import type { CheckinSlot, IntentionDay } from '@/data/types'
 
-// Force reduced-motion so the np-anim entrance choreography never masks content under jsdom
+// Force reduced-motion so no entrance choreography ever masks content under jsdom
 // (stubReduced pattern, DayStoryStep.test.tsx precedent).
 function stubReduced(matches = true) {
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -64,7 +64,7 @@ afterEach(() => {
 })
 
 describe('LoopsStep', () => {
-  test('an open check-in renders the glowing row + fires onOpenCheckIn on Koppints', async () => {
+  test('an open check-in renders the highlighted row + fires onOpenCheckIn on Kitöltöm', async () => {
     stubReduced()
     setup({ checkins: OPEN_CHECKINS, intention: intentionDay() })
     const user = userEvent.setup()
@@ -72,12 +72,17 @@ describe('LoopsStep', () => {
     const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={onOpenCheckIn} onOpenJournal={vi.fn()} />)
 
     expect(screen.getByText('20:00 check-in kimaradt')).toBeInTheDocument()
-    const glowing = container.querySelector('.rz-loop.glow')
+    const glowing = container.querySelector('.fo-row.now')
     expect(glowing).not.toBeNull()
     expect(glowing?.textContent).toContain('check-in kimaradt')
 
-    await user.click(screen.getByRole('button', { name: 'Koppints' }))
+    await user.click(screen.getByRole('button', { name: 'Kitöltöm' }))
     expect(onOpenCheckIn).toHaveBeenCalledTimes(1)
+    // the hero's check-in vial is the same door, and shows the day's share (3 of 4)
+    const vial = container.querySelector('button.fo-vial')!
+    expect(vial).toHaveTextContent('3/4')
+    await user.click(vial)
+    expect(onOpenCheckIn).toHaveBeenCalledTimes(2)
   })
 
   test('a fully-done check-in day renders the dim summary row, not the open row', () => {
@@ -86,9 +91,9 @@ describe('LoopsStep', () => {
     const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
 
     expect(screen.getByText('4/4 check-in kész')).toBeInTheDocument()
-    // the dim row's closed mark is the 3D tick
-    expect(container.querySelector('.rz-loop-done use[href="#t-tick"]')).not.toBeNull()
-    expect(screen.queryByRole('button', { name: 'Koppints' })).not.toBeInTheDocument()
+    // the quiet row's closed mark is the tick
+    expect(container.querySelector('.fo-row.done .fo-mk.d')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: 'Kitöltöm' })).not.toBeInTheDocument()
   })
 
   test('the reflect row renders inline Igen/Részben/Nem buttons that call reflect(v) directly', async () => {
@@ -98,7 +103,9 @@ describe('LoopsStep', () => {
     const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
 
     expect(screen.getByText('Szándékkal élted a napot?')).toBeInTheDocument()
-    expect(container.querySelector('.rz-loop.glow')?.textContent).toContain('Szándékkal élted a napot?')
+    expect(container.querySelector('.fo-row.now')?.textContent).toContain('Szándékkal élted a napot?')
+    // the day's focus is named under the question
+    expect(screen.getByText(/a mai szándékod: „Jelenlét a meetingen”/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Részben' }))
     expect(reflect).toHaveBeenCalledWith('partial')
@@ -140,9 +147,10 @@ describe('LoopsStep', () => {
     setup({ checkins: DONE_CHECKINS, intention: intentionDay({ foci: [FOCUS], reflection: 'partial' }) })
     const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
 
-    // The closed mark is the 3D tick now, not a „✓" glyph (Üveg, mezo-me75u.3).
-    expect(screen.getByText('Minden hurok zárva')).toBeInTheDocument()
-    expect(container.querySelector('.rz-loop-beat use[href="#t-tick"]')).not.toBeNull()
+    // The beat is the hero's verdict (Folyadék, mezo-n4wf5.2), over vials that are all full.
+    expect(screen.getByText('Minden hurok zárva')).toHaveClass('fo-hero-verdict')
+    expect(screen.queryByText('Zárd le, ami még nyitva.')).not.toBeInTheDocument()
+    expect(container.querySelector('.fo-row.done')).toBeNull()
     expect(screen.queryByText('4/4 check-in kész')).not.toBeInTheDocument()
     expect(screen.queryByText('A mai szándékodra reflektáltál.')).not.toBeInTheDocument()
     // the journal invite is evergreen — still present even once the beat replaces the rest
@@ -153,8 +161,9 @@ describe('LoopsStep', () => {
     stubReduced()
     setup({ checkins: DONE_CHECKINS, intention: intentionDay({ foci: [], reflection: null }) })
     const { container } = render(<LoopsStep onNext={vi.fn()} onOpenCheckIn={vi.fn()} onOpenJournal={vi.fn()} />)
-    expect(screen.getByText('Minden hurok zárva')).toBeInTheDocument()
-    expect(container.querySelector('.rz-loop-beat use[href="#t-tick"]')).not.toBeNull()
+    expect(screen.getByText('Minden hurok zárva')).toHaveClass('fo-hero-verdict')
+    // no focus → no Szándék vial: only Check-in and Napló
+    expect(container.querySelectorAll('.fo-vial')).toHaveLength(2)
   })
 
   test('Tovább always fires onNext, even with open loops remaining (soft — nothing mandatory)', async () => {

@@ -27,13 +27,16 @@ afterEach(() => vi.unstubAllEnvs())
 
 it('head, the four serious reasons, the note; no duration row and a disabled CTA before a pick', () => {
   renderSheet()
-  expect(screen.getByText('KÍMÉLŐ MÓD')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Mi történt?' })).toBeInTheDocument()
-  expect(screen.getByText('Szólj, és a napod hozzád igazodik. Nem kell magyarázkodnod.')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Mi történt?' }).closest('.sheet')).toHaveClass('fo-sheet')
+  expect(document.querySelector('.sheet.glass, .uvl-body')).toBeNull()
+  expect(screen.getByText('Kímélő mód · szólj, és a napod hozzád igazodik. Nem kell magyarázkodnod.')).toBeInTheDocument()
   const chips = within(screen.getByRole('group', { name: 'Mi történt?' })).getAllByRole('button').map((b) => b.textContent)
   expect(chips).toEqual(['Beteg vagyok', 'Gyomorrontás', 'Sérülés / fájdalom', 'Úton vagyok'])
+  // each reason tile carries its glyph in the kit's chip
+  expect([...document.querySelectorAll('.nm-opt4 .fo-bub use')].map((u) => u.getAttribute('href'))).toEqual(['#t-ill', '#t-digestion', '#t-pain', '#t-travel'])
   expect(screen.queryByText('MEDDIG TARTHAT?')).not.toBeInTheDocument()
-  const note = document.querySelector('.nap-kmsheet .trm-whynote')!
+  const note = document.querySelector('.nm-kmsheet .fo-why')!
   expect(note.textContent).toBe('Amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak. Bármikor befejezheted.')
   expect(note.querySelector('b')?.textContent).toBe('Amíg tart, az edzés és a sport magától kimarad, és nem számít mulasztásnak.')
   expect(screen.getByRole('button', { name: 'Kímélő mód bekapcsolása' })).toBeDisabled()
@@ -44,7 +47,7 @@ it('a pick lights the chip, shows „Meddig tarthat?", and a second tap clears t
   fireEvent.click(screen.getByRole('button', { name: 'Gyomorrontás' }))
   expect(screen.getByRole('button', { name: 'Gyomorrontás' })).toHaveAttribute('aria-pressed', 'true')
   expect(screen.getByText('MEDDIG TARTHAT?')).toBeInTheDocument()
-  expect((document.querySelector('.nap-kmdur') as HTMLElement).style.getPropertyValue('--kc')).toBe('var(--dv-sage)')
+  expect(document.querySelector('.nm-kmdur')).not.toBeNull()
   const chip = screen.getByRole('button', { name: '2–3 nap' })
   fireEvent.click(chip)
   expect(chip).toHaveAttribute('aria-pressed', 'true')

@@ -78,6 +78,8 @@ const {
   useHabitCatalogActions: vi.fn(),
 }))
 vi.mock('@/data/hooks', () => ({
+  // the AI sheet's voice field (mezo-xojq8) transcribes through this hook
+  useTranscribe: () => ({ transcribe: vi.fn() }),
   useHabitDay: (d: string) => useHabitDay(d),
   useHabitSummary: () => useHabitSummary(),
   useHabitCatalog: () => useHabitCatalog(),
@@ -115,61 +117,87 @@ beforeEach(() => {
 })
 
 describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
-  test('the statstrip keeps the 30-day counters and the active-def cell', () => {
+  test('the hero keeps the 30-day counters and the active-def fact', () => {
     renderPage()
-    expect(screen.getByText('tökéletes reggel · 30 n')).toBeInTheDocument()
-    expect(screen.getByText('tökéletes este · 30 n')).toBeInTheDocument()
-    expect(screen.getByText('aktív szokás')).toBeInTheDocument()
-    expect(screen.getByText('3')).toBeInTheDocument()
+    const facts = screen.getByTestId('next-card').querySelector('.fo-facts') as HTMLElement
+    expect(within(facts).getByText('tökéletes reggel · 30 nap').previousElementSibling).toHaveTextContent(/^6$/)
+    expect(within(facts).getByText('tökéletes este · 30 nap').previousElementSibling).toHaveTextContent(/^4$/)
+    expect(within(facts).getByText('aktív szokás').previousElementSibling).toHaveTextContent(/^3$/)
   })
 
   test('the hero sub counts the settled habits from the formation data', () => {
     renderPage()
-    expect(screen.getByText('ma · 1 szokás már magától megy')).toBeInTheDocument()
+    expect(screen.getByText('kávé után · Reggeli rutin lánc · 1 szokás már magától megy')).toBeInTheDocument()
   })
 
-  test('a Következik sor a soron következő szokást mutatja, és a Nap oldalra NAVIGÁL, nem pipál', () => {
+  test('a hero a soron következő szokást mondja, és a Rutin fülre NAVIGÁL, nem pipál', () => {
     renderPage()
     const card = screen.getByTestId('next-card')
-    expect(card).toHaveTextContent('Következik')
-    expect(card).toHaveTextContent('Napi szándék')
+    expect(card).toHaveTextContent('Következik · 1 / 3 ma')
+    expect(card.querySelector('.fo-hero-verdict')).toHaveTextContent(/^Napi szándék\.$/)
     expect(card).toHaveTextContent('kávé után · Reggeli rutin lánc')
-    fireEvent.click(within(card).getByRole('button', { name: 'Pipálás a Nap oldalon' }))
+    fireEvent.click(within(card).getByRole('button', { name: 'Pipálom a Rutin fülön' }))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin?dp=reggel')
-    // the ADR's hard rule: no tick control anywhere on an Én surface
+    // the ADR's hard rule: no tick control anywhere on the builder
     expect(screen.queryByRole('checkbox')).toBeNull()
+    expect(card.querySelector('.fo-tk')).toBeNull()
   })
 
-  test('mind kész: a Következik kártya ünnepel és a Nap oldalra visz', () => {
+  test('the hero draws each running chain as a row of drops: done, next, open — never a ring', () => {
+    renderPage()
+    const card = screen.getByTestId('next-card')
+    expect(card).toHaveTextContent('Reggeli rutin · 1 / 3')
+    const drops = [...card.querySelectorAll('.fo-drops .fo-dr')]
+    expect(drops.map((d) => d.className)).toEqual(['fo-dr d', 'fo-dr now', 'fo-dr'])
+    expect(within(card).getByRole('img', { name: 'Napi szándék · nyitott' })).toBeInTheDocument()
+    expect(card.querySelector('svg circle')).toBeNull()
+  })
+
+  test('mind kész: a hero ünnepel és a Rutin fülre visz', () => {
     useHabitDay.mockReturnValue({ habits: habitsToday.map((h) => ({ ...h, status: 'done' })) })
     renderPage()
     const card = screen.getByTestId('next-card')
-    expect(card).toHaveTextContent('A mai rutin kész')
-    fireEvent.click(within(card).getByRole('button', { name: /Nap oldal/ }))
+    expect(card).toHaveTextContent('Mind megvan')
+    expect(card).toHaveTextContent('A mai rutin kész.')
+    fireEvent.click(within(card).getByRole('button', { name: 'Pipálom a Rutin fülön' }))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin?dp=reggel')
   })
 
-  test('az aktív lánc csempe a következő szokás láncát mutatja, és a lánc-oldalra visz', () => {
+  test('az aktív lánc sora a következő szokás láncát mutatja, és a lánc-oldalra visz', () => {
     renderPage()
     const tile = screen.getByTestId('chain-tile')
     expect(tile).toHaveTextContent('Aktív lánc · Reggeli rutin')
-    expect(tile).toHaveTextContent('1 / 3')
-    fireEvent.click(tile)
+    expect(tile).toHaveTextContent('1 / 3 kész · 3 szokás, horgonyokkal összekötve')
+    fireEvent.click(within(tile).getByRole('button'))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/lanc/MORNING')
   })
 
-  test('a Szokásaid csempe a saját oldalára visz, a beérett számmal', () => {
+  test('every running chain has its own row to its page', () => {
     renderPage()
-    const tile = screen.getByRole('button', { name: 'Szokásaid' })
+    fireEvent.click(within(screen.getByTestId('chain-row-EVENING')).getByRole('button'))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/lanc/EVENING')
+  })
+
+  test('a Szokásaid sor a saját oldalára visz, a beérett számmal', () => {
+    renderPage()
+    const tile = screen.getByRole('button', { name: /^Szokásaid/ })
     expect(tile).toHaveTextContent('3 aktív · 1 beérett')
     fireEvent.click(tile)
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokasok')
   })
 
-  test('az Építs csempe az egy létrehozó folyamot nyitja', () => {
+  test('az Új szokás sor az egy létrehozó folyamot nyitja', () => {
     renderPage()
-    fireEvent.click(screen.getByRole('button', { name: 'Építs' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Új szokás/ }))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj')
+  })
+
+  test('az Új lánc és az AI javaslat a saját lapját nyitja', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /^Új lánc/ }))
+    expect(screen.getByRole('heading', { name: 'Új rutin' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^AI javaslat/ }))
+    expect(screen.getByRole('heading', { name: 'Milyen szokás segítene?' })).toBeInTheDocument()
   })
 
   test('a hub nem listáz szokás-sorokat — a lista a saját oldalán él', () => {
@@ -188,7 +216,7 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
       isPending: false, isError: false, refetch: vi.fn(),
     })
     renderPage()
-    expect(screen.getByText('0')).toBeInTheDocument()
+    expect(screen.getByText('aktív szokás').previousElementSibling).toHaveTextContent(/^0$/)
   })
 
   test('goes back to the Nap Rutin tab, not to Én', () => {
@@ -217,7 +245,7 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     expect(refetch).toHaveBeenCalled()
-    expect(screen.queryByRole('button', { name: 'Építs' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Új szokás/ })).toBeNull()
   })
 
   // ---- past-day branch (mezo-x9c2) — untouched by hub 2.0 ----
@@ -225,7 +253,20 @@ describe('RutinHubPage — hub 2.0 (mezo-mgpr)', () => {
   test('past day: the summary line reads `Reggel k/n · Este k/n · +XP`', () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
-    expect(document.querySelector('.gr-daysum')).toHaveTextContent(/^Reggel 1\/3 · Este 0\/0 · \+5 XP$/)
+    const hero = screen.getByTestId('past-day')
+    expect(hero.querySelector('.fo-hero-verdict')).toHaveTextContent(/^Reggel 1\/3 · Este 0\/0$/)
+    expect(hero.querySelector('.fo-hero-lbl')).toHaveTextContent(/· \+5 XP$/)
+    // a row that did not happen is a dashed drop, never a filled one
+    expect([...hero.querySelectorAll('.fo-dr')].map((d) => d.className)).toEqual(['fo-dr d', 'fo-dr x', 'fo-dr x'])
+  })
+
+  test('past day: stepping further back and returning to today both work', () => {
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Előző nap/ }))
+    expect(screen.getByRole('button', { name: /Következő nap/ })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Vissza a mai napra' }))
+    expect(screen.getByTestId('next-card')).toBeInTheDocument()
   })
 
   test('past day shows the day rows read-only, no next card', () => {

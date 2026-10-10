@@ -55,10 +55,12 @@ test('a deep page is a sub-page: leltár title, „Terület · Fül" context, th
   })
   // a parameterised page is titled by the list page that opens it
   expect(frameFor('/fuel/kamra/p1', d)).toMatchObject({ isHub: false, title: 'Kamra', eyebrow: 'Fuel · Konyha' })
-  // a tab route with a deeper segment is NOT a hub — the day page behind the header orb
-  expect(frameFor('/nap/napom/2026-10-07', d)).toMatchObject({
-    isHub: false, title: 'A napom', eyebrow: 'Nap · A napom', fallback: '/nap/napom',
-  })
+  // a tab route with a deeper segment is NOT a hub…
+  expect(frameFor('/nap/rutin/epites', d).isHub).toBe(false)
+  // …except a `hubChild` tab's ONE parameter segment: a day picked on A napom is the same hub
+  // page showing another day, so it keeps the top tabs (F2, mezo-n4wf5.2)
+  expect(frameFor('/nap/napom/2026-10-07', d)).toMatchObject({ isHub: true, title: 'A napom', tab: { route: '/nap/napom' } })
+  expect(frameFor('/nap/napom/2026-10-07/x', d).isHub).toBe(false)
   // no leltár line under the path → the owning tab's label
   expect(frameFor('/train/review/abc', d)).toMatchObject({ isHub: false, title: 'Mai', eyebrow: 'Edzés · Mai', fallback: '/train/mai' })
 })

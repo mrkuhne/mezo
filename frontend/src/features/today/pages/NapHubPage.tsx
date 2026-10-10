@@ -1,99 +1,234 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useActivities, useCheckins, useFuelDay, useJournalNotes, useTodayScenario } from '@/data/hooks'
+import {
+  useActivities, useCheckInPlan, useCheckins, useDayEvaluation, useFuelDay, useJournalNotes, useMeWeek,
+  normalizeDayEvaluation,
+} from '@/data/hooks'
+import { planSteps } from '@/data/today/checkinPlan'
+import type { NormalizedDayEvaluation } from '@/data/me/dayEvaluation'
 import { localDateString } from '@/shared/lib/dates'
+import { huInt } from '@/shared/lib/huNum'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { useNeeds } from '@/features/today/logic/useNeeds'
+import { needsAttentionLine, needsAverage } from '@/features/today/logic/needsAverage'
 import { buildNapTimeline } from '@/features/today/logic/napTimeline'
-import { NapCompanion } from '@/features/today/components/NapCompanion'
-import { NapFuelGraphic } from '@/features/today/components/NapFuelGraphic'
+import { NAPZARAS_CARD_FROM_HOUR, dayReading } from '@/features/today/logic/napom'
+import { mondayOf } from '@/features/me/logic/weekDay'
+import { remainingAfterSkips } from '@/features/fuel/logic/keretHero'
+import { NapFuelSheet } from '@/features/today/components/NapFuelSheet'
 import { NapPersonalInsight } from '@/features/today/components/NapPersonalInsight'
-import { NapzarasCard } from '@/features/today/components/NapzarasCard'
-import { KimeloSlot } from '@/features/today/components/KimeloCard'
+import { NapzarasCard, useNapzarasState } from '@/features/today/components/NapzarasCard'
+import { KimeloEntry, KimeloSlot } from '@/features/today/components/KimeloCard'
 import { useRecovery } from '@/data/train/recoveryHooks'
-import type { CSSProperties } from 'react'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { Sheet } from '@/shared/ui/Sheet'
+import {
+  Acts, Btn, Card, Empty, ErrorRow, FoSheetHead, Lk, Note, Page, Row, Section, Stream, Tank, Vials,
+  type StreamItem, type VialItem,
+} from '@/shared/ui/folyadek'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { AskTeamRow } from '@/features/insights/components/AskTeamRow'
-import '@/features/today/pages/NapHubPage.css'
 
-/** A Mai pillanatok sorának 3D ikonja a sor FAJTÁJÁBÓL (az id előtagja, `napTimeline.ts`):
- *  owner-döntés az U3 prototípuson — étkezés tál, check-in, napló, aktivitás lépések. */
-const MOMENT_ICON: Record<string, Icon3DName> = { meal: 't-bowl', checkin: 't-checkin', journal: 't-journal', activity: 't-steps' }
-const momentIcon = (id: string): Icon3DName => MOMENT_ICON[id.split(':')[0]] ?? 't-checkin'
+/** The four canonical check-in slots as the tank's button and the stream name them. */
+const SLOT_ADJ = ['Reggeli', 'Délelőtti', 'Délutáni', 'Esti'] as const
+const slotTitle = (i: number) => `${SLOT_ADJ[i] ?? 'Következő'} check-in`
+const sleepText = (min: number) => `${Math.floor(min / 60)} ó ${String(Math.round(min % 60)).padStart(2, '0')}`
+const pctOf = (value: number, goal: number) => goal > 0 && Number.isFinite(goal) ? Math.max(0, value) / goal * 100 : 0
+const dimOf = (ev: NormalizedDayEvaluation | null, id: string) => ev?.dimensions.find((d) => d.id === id) ?? null
 
+/** „Most következik" with the next check-in on top: the slot's plan tells how many taps it asks. */
+function NextStream({ date, slotTime, title, onFill, rest }: { date: string; slotTime: string; title: string; onFill(): void; rest: StreamItem[] }) {
+  const { plan } = useCheckInPlan(date, slotTime)
+  const taps = plan ? planSteps(plan).length : null
+  return <Stream items={[
+    { time: slotTime, title, sub: taps != null ? `${taps} koppintás, kb. fél perc` : 'kb. fél perc', right: 'Kitöltöm', now: true, onClick: onFill },
+    ...rest,
+  ]} />
+}
+
+/** Mai — the Nap hub (Folyadék F2, mezo-n4wf5.2; prototype `vilagos/nap.js` `mai()`): the big vessel is the
+ *  average of the six életjel with the day's one-line reading, then four levels, what comes next, Mezo's
+ *  observation, the day's log and the rest behind rows. In the evening the vessel turns to napzárás. */
 export function NapHubPage() {
   const navigate = useNavigate()
   const tick = useMinuteTick()
   const date = localDateString(tick)
   const needs = useNeeds(tick)
-  const scenario = useTodayScenario()
   const checkinDay = useCheckins()
   const { checkins, saveCheckIn } = checkinDay
   const nutrition = useFuelDay(date)
   const notes = useJournalNotes(date, date)
   const activities = useActivities(date)
-  const [sheet, setSheet] = useState<'journal' | 'activity' | number | null>(null)
-  // Kímélő mód (mezo-q4xt2.2): an open period turns the napzárás gym chip into „edzés · kímélő mód".
+  const evalQuery = useDayEvaluation(date)
+  const { week } = useMeWeek(mondayOf(date))
+  const evening = useNapzarasState(tick)
+  const [sheet, setSheet] = useState<'journal' | 'activity' | 'fuel' | 'more' | number | null>(null)
+  // Kímélő mód (mezo-q4xt2.2): an open period changes the tank's reading, the Mozgás level and the edzés step.
   const { recovery } = useRecovery()
-  const kimeloOn = Boolean(recovery.period && !recovery.period.endedOn)
+  const kimelo = recovery.period && !recovery.period.endedOn ? recovery.period : null
+  const kimeloOn = Boolean(kimelo)
+
+  const evaluation = evalQuery.data ? normalizeDayEvaluation(evalQuery.data) : null
+  const day = week?.days?.find((d) => d.date === date) ?? null
+  const avg = needs.isPending ? null : needsAverage(needs.states)
+  const level = { pct: avg ?? 0, num: avg ?? '…' }
+  const attention = needsAttentionLine(needs.states)
+
+  // Capture is offered only once the persisted slots are known (never over a pending / failed read).
+  const slotsKnown = !checkinDay.isPending && !checkinDay.isError
   const nextIdx = checkins.findIndex(c => c.state === 'now')
-  const fillIdx = nextIdx >= 0 ? nextIdx : checkins.findIndex(c => c.state !== 'done')
-  const moments = buildNapTimeline(date, checkins, nutrition.fuel.meals, notes.data, activities.data)
+  const fillIdx = slotsKnown ? (nextIdx >= 0 ? nextIdx : checkins.findIndex(c => c.state !== 'done')) : -1
+  const openEletjel = () => navigate('/nap/eletjel')
+
+  // ── Mai szintek ──
+  const fuel = nutrition.fuel
+  const guidance = fuel.fuelMode === 'GUIDANCE'
+  const kcal = Math.max(0, fuel.consumed?.kcal ?? 0)
+  const kcalGoal = fuel.targets?.kcal ?? 0
+  const protein = Math.max(0, fuel.consumed?.p ?? 0)
+  const proteinGoal = fuel.targets?.p ?? 0
+  const fuelEmpty = kcal === 0 && protein === 0 && !(fuel.consumed?.c > 0) && !(fuel.consumed?.f > 0)
+  const remaining = remainingAfterSkips(kcalGoal, kcal, fuel.skippedKcal ?? 0)
+  const proteinGap = Math.round(proteinGoal - protein)
+  const sleepDim = dimOf(evaluation, 'sleep')
+  const training = dimOf(evaluation, 'training')
+  const trainingFact = training?.facts.find((f) => f.label === 'edzés')?.value
+  const trainingOpen = training != null && training.status !== 'DONE' && training.status !== 'NO_DATA'
+  const levels: VialItem[] = [
+    guidance
+      ? { label: 'Kalória', icon: 't-flame', value: '–', pct: 0, note: 'ma nincs cél', onClick: () => navigate('/fuel') }
+      : {
+          label: 'Kalória', icon: 't-flame', value: fuelEmpty ? '–' : huInt(kcal), pct: pctOf(kcal, kcalGoal),
+          mark: kcalGoal > 0 ? huInt(kcalGoal) : undefined,
+          note: fuelEmpty ? 'még nincs adat' : !(kcalGoal > 0) ? 'nincs keret'
+            : remaining >= 0 ? `${huInt(remaining)} van még` : fuel.fuelMode === 'ESTIMATE' ? 'a keret körül' : `${huInt(-remaining)} felett`,
+          onClick: () => navigate('/fuel'),
+        },
+    guidance
+      ? { label: 'Fehérje', icon: 't-meat', color: 'var(--macro-protein)', value: '–', pct: 0, note: 'ma nincs cél', onClick: () => navigate('/fuel') }
+      : {
+          label: 'Fehérje', icon: 't-meat', color: 'var(--macro-protein)', value: fuelEmpty ? '–' : `${huInt(protein)} g`, pct: pctOf(protein, proteinGoal),
+          mark: proteinGoal > 0 ? huInt(proteinGoal) : undefined,
+          note: fuelEmpty ? 'még nincs adat' : !(proteinGoal > 0) ? 'nincs cél' : proteinGap > 0 ? `${huInt(proteinGap)} g hiányzik` : 'megvan',
+          onClick: () => navigate('/fuel'),
+        },
+    {
+      label: 'Alvás', icon: 't-sleep', color: 'var(--fo-ok)', value: day?.sleepMin != null ? sleepText(day.sleepMin) : '–',
+      pct: day?.sleepMin != null ? sleepDim?.score ?? 0 : 0, note: day?.sleepMin != null ? undefined : 'még nincs adat',
+      onClick: () => navigate('/me/sleep'),
+    },
+    kimeloOn
+      ? { label: 'Mozgás', icon: 't-dumbbell', color: 'var(--fo-warn)', value: '–', pct: 0, mark: 'szünet', note: 'kímélő · kimarad', onClick: () => navigate('/train/mai') }
+      : {
+          label: 'Mozgás', icon: 't-dumbbell', color: training?.status === 'DONE' ? 'var(--fo-ok)' : 'var(--fo-warn)', value: trainingFact ?? '–', pct: training?.score ?? 0,
+          note: training?.status === 'DONE' ? 'megvolt' : trainingOpen ? 'még hátravan' : undefined,
+          onClick: () => navigate('/train/mai'),
+        },
+  ]
+
+  // ── Most következik ──
+  const next: StreamItem[] = []
+  if (evening !== 'none') {
+    const closed = evening === 'closed'
+    next.push(
+      {
+        time: `${NAPZARAS_CARD_FROM_HOUR}:00`, title: 'Napzárás', sub: closed ? 'Megvolt · a nap le van téve' : 'Hat rövid lépés, kb. 3 perc',
+        right: closed ? 'Kész ✓' : 'Indítom', now: fillIdx < 0 && !closed, onClick: () => navigate(closed ? '/nap/napom' : '/ritual'),
+      },
+      { time: 'este', title: 'Esti rutin', right: 'Megnézem', onClick: () => navigate('/nap/rutin?dp=este') },
+    )
+  } else if (trainingOpen) {
+    next.push(kimeloOn
+      ? { time: 'ma', title: 'Edzés', sub: 'kímélő mód · nem számít mulasztásnak', right: 'Kimarad' }
+      : { time: 'ma', title: 'Edzés', sub: 'a mai edzés még hátravan', right: 'Megnézem', onClick: () => navigate('/train/mai') })
+  }
+  const nextCount = next.length + (fillIdx >= 0 ? 1 : 0)
+
+  // ── Mai napló ──
+  const moments = buildNapTimeline(date, checkins, fuel.meals, notes.data, activities.data)
   const timelinePending = checkinDay.isPending || nutrition.isPending || notes.isPending || activities.isPending
   const timelineError = checkinDay.isError || nutrition.isError || notes.isError || activities.isError
-  // Az öt művelet ARCA (üvegesítés U3, mezo-me75u.3): a Titanium 3D készlet puszta ikonja a
-  // pályán, keret és korong nélkül (prototypes/uveg-nap.html#mai). A kétértelmű agyag jelek
-  // (i-kristaly, i-sport, i-mezo) itt, a hívás helyén kapják a 3D nevüket (bible U1 7. szabály).
-  // Az `art` kulcs a HELYET tartja a pályán, a `hue` az ikon-halo akcentusa.
-  const actions: { label: string; art: string; icon: Icon3DName; hue: string; sub: string; run: () => void }[] = [
-    { label: 'Check-in', art: 'membrane', icon: 't-checkin', hue: 'var(--dv-rose)', sub: 'Hogy vagy most?', run: () => fillIdx < 0 ? navigate('/nap/checkin') : setSheet(fillIdx) },
-    { label: 'Gyors logolás', art: 'crystal', icon: 't-quick', hue: 'var(--dv-lav)', sub: 'Egy mozdulat', run: () => navigate('/nap/gyors') },
-    { label: 'Napló', art: 'pages', icon: 't-journal', hue: 'var(--dv-sage)', sub: 'Ami benned van', run: () => setSheet('journal') },
-    { label: 'Aktivitás', art: 'ribbon', icon: 't-steps', hue: 'var(--dv-rose)', sub: 'Amit ma tettél', run: () => setSheet('activity') },
-    { label: 'Chat', art: 'chat', icon: 't-chat', hue: 'var(--dv-lav)', sub: 'Beszéljük át', run: () => navigate('/mezo/chat') },
-  ]
+  const log: StreamItem[] = moments.slice(0, 8).map(m => ({
+    time: m.time ? new Date(m.time).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) : 'Ma',
+    title: m.label, sub: m.text, right: '↗', onClick: () => navigate(m.to),
+  }))
+
   return (
-    // `nap-titan` (a Titán-korszak hatókör-osztálya) SOHA nem kapott szabályt sehol, és a
-    // `nap-titan-quiet` a `nap-center*` családot módosítja — mindkét név a rollback után
-    // már csak zajt vitt a DOM-ba (mezo-ju4j6.16, lezárás). A holt osztály kiesik, a másik
-    // a családja nevét veszi fel.
-    // Az EntranceGroup a ház egyszeri belépő-koreográfiája (`.rise` + `--i` lépcső, 70ms).
-    <EntranceGroup className={`nap-hub nap-center${scenario.anchorMode ? ' nap-center-quiet' : ''}`}>
-      <div className="nap-center-heading rise" style={{ '--i': 0 } as CSSProperties}><p>NAPKÖZPONT</p><h1>A napod.<br /><span>Minden kapcsolódik.</span></h1></div>
-      {/* Kímélő mód (prototype elo/nap.html `kmSlot`): the „Nem vagyok jól" pill or the „Hogy vagy?" card, above the napzárás card. */}
+    <Page className="nm-page">
       <KimeloSlot />
-      <NapzarasCard now={tick} kimelo={kimeloOn} />
-      <section className="nap-center-orbit rise" style={{ '--i': 1 } as CSSProperties} aria-label="Gyors műveletek" data-kalauz-anchor="nap-hero">
-        <div className="nap-center-companion"><NapCompanion states={needs.states} onOpenSignals={() => navigate('/nap/eletjel')} /></div>
-        {actions.map((a, i) => <button type="button" aria-label={a.label} key={a.art} className={`nap-center-node nap-node-${a.art}`} style={{ '--c': a.hue, '--i': i } as CSSProperties} onClick={a.run} disabled={a.art === 'membrane' && (checkinDay.isPending || checkinDay.isError)}>
-          <span className="nap-center-art" aria-hidden="true"><Icon3D name={a.icon} size={62} /></span><span>{a.label}</span><small>{a.sub}</small>
-        </button>)}
-      </section>
-      {checkinDay.isError && <p className="nap-center-read-error" role="alert">A check-injeidet most nem sikerült betölteni. <button type="button" onClick={() => { void checkinDay.refetch() }}>Check-in újratöltése</button></p>}
-      <NapFuelGraphic guidance={nutrition.fuel.fuelMode === 'GUIDANCE'} skippedKcal={nutrition.fuel.skippedKcal} fuelMode={nutrition.fuel.fuelMode} consumed={nutrition.fuel.consumed} targets={nutrition.fuel.targets} isPending={nutrition.isPending} isError={nutrition.isError} onRetry={nutrition.refetch} />
-      <NapPersonalInsight date={date} />
-      <section className="nap-center-timeline rise" style={{ '--i': 4 } as CSSProperties} aria-labelledby="nap-moments-title">
-        <header><p>AMI MÁR A NAPOD RÉSZE</p><h2 id="nap-moments-title">Mai pillanatok</h2></header>
-        {timelinePending && <p role="status">Pillanatok betöltése…</p>}
-        {timelineError && <p role="status">Néhány pillanatot most nem sikerült betölteni.</p>}
-        {!timelinePending && !timelineError && moments.length === 0 && <p>Az első mai bejegyzésed itt kap helyet.</p>}
-        <ol>{moments.slice(0, 8).map(m => <li key={m.id}><button type="button" data-kind={m.id.split(':')[0]} onClick={() => navigate(m.to)}>
-          <time dateTime={m.time ?? date}>{m.time ? new Date(m.time).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }) : 'Ma'}</time>
-          <Icon3D name={momentIcon(m.id)} size={30} className="nap-moment-ico" />
-          <span><strong>{m.label}</strong><span className="nap-moment-text">{m.text}</span></span><span aria-hidden="true">↗</span>
-        </button></li>)}</ol>
-      </section>
-      {/* Kérdezd a csapatot (mezo-u3712, owner-döntés 2026-09-26): a Nap alján, ha valami nem stimmel. */}
-      <div className="nap-askteam rise" style={{ '--i': 5 } as CSSProperties}>
-        <AskTeamRow origin={{ from: '/nap', label: 'Mai' }} sub="Valami nem stimmel ma? A csapat utánanéz." />
+      <div className="nm-hero" data-kalauz-anchor="nap-hero">
+        {evening !== 'none'
+          ? <NapzarasCard now={tick} kimelo={kimeloOn} level={level} onAir={openEletjel} airLabel="Életjelek" />
+          : <Tank pct={level.pct} num={level.num} height={kimelo ? 420 : undefined} label="Mai állapot" marks={[75, 50, 25]}
+              cap={kimelo ? `a 100-ból · kímélő mód · ${kimelo.dayIndex}. nap` : 'a 100-ból · hat életjel átlaga'}
+              verdict={kimelo ? 'Ma a pihenés a dolgod.' : evaluation ? dayReading(evaluation, day) : undefined}
+              air={kimelo ? 'Az edzés magától kimarad, és nem számít mulasztásnak.' : undefined}
+              cta={fillIdx >= 0 ? slotTitle(fillIdx) : 'Gyors logolás'}
+              onCta={() => fillIdx >= 0 ? setSheet(fillIdx) : navigate('/nap/gyors')}
+              onAir={openEletjel} airLabel="Életjelek" />}
       </div>
+
+      <Section title="Mai szintek" link="hol tartasz a célhoz" />
+      {nutrition.isError
+        ? <Card><ErrorRow message="Az üzemanyagot most nem sikerült betölteni." onRetry={() => { void nutrition.refetch() }} /></Card>
+        : nutrition.isPending ? <Note role="status">Szintek betöltése…</Note>
+          : <>
+            <Vials className="nm-levels" items={levels} />
+            {guidance && <Note>Kímélő mód · ma nincs kalóriacél — folyadék, könnyű étel</Note>}
+          </>}
+
+      {(nextCount > 0 || checkinDay.isError) && <>
+        <Section title="Most következik" link={nextCount > 0 ? `${nextCount} teendő` : undefined} />
+        {checkinDay.isError && <Card><ErrorRow message="A check-ineket most nem sikerült betölteni." onRetry={() => { void checkinDay.refetch() }} retryLabel="Check-in újratöltése" /></Card>}
+        {fillIdx >= 0
+          ? <NextStream date={date} slotTime={checkins[fillIdx].time} title={slotTitle(fillIdx)} onFill={() => setSheet(fillIdx)} rest={next} />
+          : next.length > 0 && <Stream items={next} />}
+      </>}
+
+      <NapPersonalInsight date={date} />
+
+      <Section title="Mai napló" link={<Lk onClick={() => navigate('/nap/gyors')}>+ Új bejegyzés</Lk>} />
+      {timelinePending && <Note role="status">Pillanatok betöltése…</Note>}
+      {!timelinePending && !timelineError && moments.length === 0 && <Card><Empty icon="t-journal">Az első mai bejegyzésed itt kap helyet.</Empty></Card>}
+      {log.length > 0 && <div className="nm-log"><Stream items={log} /></div>}
+      {timelineError && <Note role="status">Néhány pillanatot most nem sikerült betölteni.</Note>}
+
+      <Section title="Továbbiak" link="ami még a naphoz tartozik" />
+      <Card className="nm-more">
+        <Row icon="t-macro" title="A napod üzemanyaga" sub="kalória és a három makró" onClick={() => setSheet('fuel')} />
+        <Row icon="t-heart" title="Életjelek" sub={attention ? `hat jel · ${attention}` : 'hat jel'} value={avg ?? undefined} onClick={openEletjel} />
+        <Row icon="t-pattern" title="Összes észrevétel" onClick={() => navigate('/nap/uzenetek?tab=eszrevetelek')} />
+        {/* Kérdezd a csapatot (mezo-u3712, owner-döntés 2026-09-26): a Nap alján, ha valami nem stimmel. */}
+        <div className="nm-askteam">
+          <AskTeamRow origin={{ from: '/nap', label: 'Mai' }} sub="Valami nem stimmel ma? A csapat utánanéz." />
+        </div>
+        <Acts>
+          <Btn sm onClick={() => navigate('/nap/gyors')}>+ Új bejegyzés</Btn>
+          <Btn sm ghost onClick={() => setSheet('journal')}>Napló</Btn>
+          <Lk onClick={() => setSheet('more')}>Több</Lk>
+        </Acts>
+        <KimeloEntry />
+      </Card>
+
       {typeof sheet === 'number' && <CheckInSheet slot={checkins[sheet]} slotIdx={sheet} onClose={() => setSheet(null)} onSave={data => saveCheckIn(sheet, { ...data, savedAt: new Date().toISOString() })} />}
       {sheet === 'journal' && <JournalSheet onClose={() => setSheet(null)} />}
       {sheet === 'activity' && <ActivityLogSheet onClose={() => setSheet(null)} />}
-    </EntranceGroup>
+      {sheet === 'fuel' && <NapFuelSheet onClose={() => setSheet(null)} guidance={guidance} skippedKcal={fuel.skippedKcal} fuelMode={fuel.fuelMode}
+        consumed={fuel.consumed} targets={fuel.targets} isPending={nutrition.isPending} isError={nutrition.isError} onRetry={nutrition.refetch} />}
+      {sheet === 'more' && (
+        <Sheet onClose={() => setSheet(null)} labelledBy="nm-more-title" className="fo-sheet">
+          {(close) => <>
+            <FoSheetHead title="Több" titleId="nm-more-title" sub="Mai · ami még ide tartozik" onClose={close} />
+            <div className="nm-sheetrows">
+              <Row icon="t-steps" title="Aktivitás" sub="amit ma tettél" onClick={() => setSheet('activity')} />
+              <Row icon="t-chat" title="Chat" sub="beszéljük át" onClick={() => navigate('/mezo/chat')} />
+              <Row icon="t-heart" title="Életjelek" sub="a hat jel" onClick={openEletjel} />
+              <Row icon="t-quest" title="Napi küldetések" sub="ajánlatok a mai napra" onClick={() => navigate('/nap/kuldetesek')} />
+            </div>
+          </>}
+        </Sheet>
+      )}
+    </Page>
   )
 }

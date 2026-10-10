@@ -9,10 +9,10 @@ import { lastSeenMessage } from '@/shared/lib/seenMessages'
 import { localDateString } from '@/shared/lib/dates'
 import { observations as obsSeed } from '@/data/insights/observations'
 
-// Mezo üzenetei page (mezo-d20.2.2) — the Nap hub's Mezo tile → own full page
-// (prototype nap-body.html #page-mezo): p-coral tone, breathing-orb hero, the day's
-// companion messages as a thread of cards, chat CTA at the bottom. The thread logic is
-// the sheet's verbatim (buildMezoMessages + useCompanionFeed + useFeedback wiring).
+// Mezo üzenetei page (mezo-d20.2.2; Folyadék mezo-n4wf5.2, prototype vilagos/nap.js `uzenetek()`):
+// three tabs, each with ONE hero — the day's thread as a chain of drops, the newest message as a
+// full card, the earlier ones as one-line rows in one card, the chat entry at the bottom. The
+// thread logic is the sheet's verbatim (buildMezoMessages + useCompanionFeed + useFeedback wiring).
 
 // Mode-agnostic data stubs: the companion feed is [] in mock mode and MSW-fixture-fed in
 // real mode — this suite tests the page, not the data layer (QuickInputSheet.test pattern).
@@ -151,15 +151,34 @@ function renderPage(url = '/nap/uzenetek') {
   )
 }
 
-test('the hero is the living Mezo Boop with the Mezo · ma name and the honest message count', async () => {
+test('the hero is the Mezo badge with the Mezo · ma label, the honest message count and the thread as drops', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
   renderPage()
   expect(await screen.findByText('Mezo · ma')).toBeInTheDocument()
-  expect(screen.getByText('2 üzenet · a napod fonala')).toBeInTheDocument()
-  // üveg (mezo-me75u.3): the clay s-orb spot became the living Mezo Boop in a frameless halo
-  expect(document.querySelector('.mz-page-hero.nap-mzhero.uv-halo .boop.is-alive')).not.toBeNull()
-  expect(document.querySelector('.mz-page-hero use[href="#s-orb"]')).toBeNull()
-  expect(document.querySelector('.mz-page.mz-p-coral')).not.toBeNull()
+  // nothing was read yet (fresh storage) → both messages are new
+  expect(screen.getByText('2 üzenet, 2 új.')).toBeInTheDocument()
+  expect(screen.getByText('A napod fonala: amit ma észrevettünk és javasoltunk.')).toBeInTheDocument()
+  // Folyadék (mezo-n4wf5.2): the hero is the kit vessel with Mezo's glyph badge — no Boop, no glass
+  expect(document.querySelector('.fo-page .fo-hero .fo-badge use[href="#t-orb"]')).not.toBeNull()
+  expect(document.querySelector('.boop')).toBeNull()
+  expect(document.querySelector('.glass')).toBeNull()
+  expect(document.querySelector('.mz-page')).toBeNull()
+  // one drop per message, in time order; an unread one is ringed
+  const drops = document.querySelectorAll('.fo-hero .fo-drops .fo-dr')
+  expect(drops).toHaveLength(2)
+  expect([...drops].map((d) => d.textContent)).toEqual(['07:05', '07:12'])
+  expect(document.querySelectorAll('.fo-hero .fo-dr.now')).toHaveLength(2)
+})
+
+test('a thread that was already read says only the count, and its drops are full', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
+  const { unmount } = renderPage()
+  await screen.findByText('2 üzenet, 2 új.') // markSeen ran
+  unmount()
+  renderPage()
+  expect(await screen.findByText('2 üzenet.')).toBeInTheDocument()
+  expect(document.querySelectorAll('.fo-hero .fo-dr.now')).toHaveLength(0)
+  expect(document.querySelectorAll('.fo-hero .fo-dr.d')).toHaveLength(2)
 })
 
 test('the back chip navigates back to the hub', async () => {
@@ -178,17 +197,25 @@ test('feed messages render as thread cards: time · eyebrow head, body, refs, da
   expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
   expect(screen.getByText(/W3-csúcs/)).toBeInTheDocument()
   expect(screen.getByText(/Pull A$/)).toBeInTheDocument() // the ref tag
-  // kind → 3D art mapping (mezo-me75u.3): morning → t-dawn, sleep → t-moon, in a lit well
-  expect(document.querySelector('.nap-mzmsg .uv-well use[href="#t-dawn"]')).not.toBeNull()
-  expect(document.querySelector('.nap-mzmsg .uv-well use[href="#t-moon"]')).not.toBeNull()
-  expect(document.querySelectorAll('.nap-mzmsg.glass')).toHaveLength(2)
+  // who speaks (mezo-n4wf5.2): the briefing is Mezo's (t-orb badge), the sleep reaction is the
+  // Alvás field's (t-sleep badge) — a glyph badge each, never a Boop
+  const morningCard = screen.getByText('07:05 · Reggeli briefing').closest('.nb-msg') as HTMLElement
+  const sleepCard = screen.getByText('07:12 · Alvás-reakció').closest('.nb-msg') as HTMLElement
+  expect(morningCard.querySelector('.fo-msg .fo-badge use[href="#t-orb"]')).not.toBeNull()
+  expect(within(morningCard).getByText('Mezo')).toBeInTheDocument()
+  expect(sleepCard.querySelector('.fo-msg .fo-badge use[href="#t-sleep"]')).not.toBeNull()
+  expect(within(sleepCard).getByText('Alvás')).toBeInTheDocument()
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(2)
+  // the newest is its own card under „Ma", the opened earlier one stays in the „Korábbi üzenetek" card
+  expect(sleepCard).toHaveClass('fo-card')
+  expect(morningCard.closest('.fo-card.nb-older')).not.toBeNull()
 })
 
 test('no morning message in the feed → the labelled demo briefing leads the thread', async () => {
   feedMock.useCompanionFeed.mockReturnValue([sleepMsg])
   renderPage()
   // sleep is the thread's last voice → full card by default; the demo briefing (leading
-  // the thread) is collapsed (mezo-ho9k) as a one-line `.nap-mzrow`.
+  // the thread) is collapsed (mezo-ho9k) as a one-line row of the „Korábbi üzenetek" card.
   expect(await screen.findByText('07:12 · Alvás-reakció')).toBeInTheDocument()
   // Záró review Finding 2: the "Demo tartalom" honesty label must survive collapse — it is
   // rendered inline in the collapsed row itself, not only inside the expanded card.
@@ -196,9 +223,9 @@ test('no morning message in the feed → the labelled demo briefing leads the th
   expect(within(row).getByText('Demo tartalom')).toBeInTheDocument()
   await userEvent.click(row)
   expect(await screen.findByText('Demo tartalom')).toBeInTheDocument()
-  const cards = document.querySelectorAll('.nap-mzmsg')
-  expect(cards).toHaveLength(2)
-  expect(within(cards[0] as HTMLElement).getByText('Demo tartalom')).toBeInTheDocument()
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(2)
+  const demoCard = screen.getByText('Demo tartalom').closest('.nb-msg') as HTMLElement
+  expect(within(demoCard).getByText(/Reggeli briefing/)).toBeInTheDocument()
 })
 
 // ── Összecsukott régebbiek (mezo-ho9k): a legújabb teljes, a többi egysoros.
@@ -209,15 +236,15 @@ test('a legújabb üzenet teljes kártya, a régebbi összecsukott sor — koppi
   expect(await screen.findByText('07:12 · Alvás-reakció')).toBeInTheDocument()
   expect(screen.getByText(/zsinórban a harmadik/)).toBeInTheDocument()
   // a morning (07:05) összecsukott: a fejsora látszik, a törzse (teljes kártya body) nem —
-  // a `.pv` egysoros előnézet a saját szövegét (ellipszissel vágva CSS-ben) megjelenítheti,
-  // csak a teljes kártya `.txt` bekezdése nem létezhet még.
-  expect(screen.queryByText(/W3-csúcs/, { selector: '.txt' })).toBeNull()
+  // a `.nb-pv` egysoros előnézet a saját szövegét (ellipszissel vágva CSS-ben) megjelenítheti,
+  // csak a teljes kártya `.nb-p` bekezdése nem létezhet még.
+  expect(screen.queryByText(/W3-csúcs/, { selector: '.nb-p' })).toBeNull()
   const row = screen.getByRole('button', { name: /07:05.*Reggeli briefing/ })
   expect(row).toHaveAttribute('aria-expanded', 'false')
   await userEvent.click(row)
   expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
   // kibontva a chipjei is élnek (mezo-kr9v: artifactos sor)
-  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nap-mzmsg') as HTMLElement
+  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nb-msg') as HTMLElement
   await userEvent.click(within(msg).getByRole('button', { name: /Segített/ }))
   expect(voteMock.vote).toHaveBeenCalledWith('fm-1', 'up', undefined)
 })
@@ -360,7 +387,8 @@ test('an applied advice card renders the applied state and no action button', as
   }
   feedMock.useCompanionFeed.mockReturnValue([appliedMsg])
   renderPage()
-  expect(await screen.findByText('Horgony −30 perc')).toBeInTheDocument()
+  expect(await screen.findByText('Beállítva: Horgony −30 perc')).toBeInTheDocument()
+  expect(document.querySelector('.nb-applied use[href="#t-tick"]')).not.toBeNull()
   expect(screen.queryByRole('button', { name: 'Horgony −30 perc' })).toBeNull()
 })
 
@@ -370,8 +398,8 @@ test('a card with no offered actions renders neither the button row nor the appl
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   renderPage()
   expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
-  expect(document.querySelector('.nap-mzmsg-actions')).toBeNull()
-  expect(document.querySelector('.nap-mzmsg-applied')).toBeNull()
+  expect(document.querySelector('.nb-actions')).toBeNull()
+  expect(document.querySelector('.nb-applied')).toBeNull()
 })
 
 // Spec §7: a failed apply leaves the card intact and surfaces the error next to it — no
@@ -400,18 +428,18 @@ test('egy felhasználó által kinyitott régebbi kártya az összecsukás gombb
   const row = await screen.findByRole('button', { name: /07:05.*Reggeli briefing/ })
   await userEvent.click(row)
   expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
-  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nap-mzmsg') as HTMLElement
+  const msg = screen.getByText('07:05 · Reggeli briefing').closest('.nb-msg') as HTMLElement
   const collapseBtn = within(msg).getByRole('button', { name: 'Összecsukás' })
   expect(collapseBtn).toHaveAttribute('aria-expanded', 'true')
   await userEvent.click(collapseBtn)
-  expect(screen.queryByText(/W3-csúcs/, { selector: '.txt' })).toBeNull()
+  expect(screen.queryByText(/W3-csúcs/, { selector: '.nb-p' })).toBeNull()
   expect(await screen.findByRole('button', { name: /07:05.*Reggeli briefing/ })).toBeInTheDocument()
 })
 
 test('a legújabb üzenetnek nincs összecsukás gombja', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg, sleepMsg])
   renderPage()
-  const sleepCard = (await screen.findByText('07:12 · Alvás-reakció')).closest('.nap-mzmsg') as HTMLElement
+  const sleepCard = (await screen.findByText('07:12 · Alvás-reakció')).closest('.nb-msg') as HTMLElement
   expect(within(sleepCard).queryByRole('button', { name: 'Összecsukás' })).toBeNull()
 })
 
@@ -426,7 +454,7 @@ test('a deeplink célkártyának nincs összecsukás gombja, akkor sem, ha nem a
       </MemoryRouter>
     </QueryWrapper>,
   )
-  const card = (await screen.findByText('07:05 · Reggeli briefing')).closest('.nap-mzmsg') as HTMLElement
+  const card = (await screen.findByText('07:05 · Reggeli briefing')).closest('.nb-msg') as HTMLElement
   expect(within(card).queryByRole('button', { name: 'Összecsukás' })).toBeNull()
 })
 
@@ -434,7 +462,7 @@ test('a persisted feed message carries the feedback chips and votes with its art
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   renderPage()
   const card = await screen.findByText('07:05 · Reggeli briefing')
-  const msg = card.closest('.nap-mzmsg') as HTMLElement
+  const msg = card.closest('.nb-msg') as HTMLElement
   await userEvent.click(within(msg).getByRole('button', { name: /Segített/ }))
   expect(voteMock.vote).toHaveBeenCalledWith('fm-1', 'up', undefined)
 })
@@ -443,7 +471,7 @@ test('the demo briefing card carries NO feedback chips — nothing persisted to 
   feedMock.useCompanionFeed.mockReturnValue([])
   renderPage()
   const meta = await screen.findByText('Demo tartalom')
-  const msg = meta.closest('.nap-mzmsg') as HTMLElement
+  const msg = meta.closest('.nb-msg') as HTMLElement
   expect(within(msg).queryByRole('button', { name: /Segített/ })).toBeNull()
 })
 
@@ -470,7 +498,7 @@ test('a nudge naponta egyszer jelenik meg az Életjelek tabon (megjelenés-napl�
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(1)
 })
 
 test('?tab=eletjelek induláskor az Életjelek tabot nyitja', async () => {
@@ -489,18 +517,22 @@ test('?tab=eletjelek induláskor az Életjelek tabot nyitja', async () => {
   expect(screen.getByRole('tab', { name: /Életjelek/ })).toHaveAttribute('aria-selected', 'true')
 })
 
-test('mezo-z4h4: a nudge card head shows the need\'s clay icon instead of a daypart spot, and the collapsed row previews the same icon', async () => {
+test('a nudge card speaks through its need\'s field: the water nudge is the Étkezés badge, never an emoji', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
-  // hidratacio → i-viz (NEED_ICON, needs.ts), the same clay icon EletjelPage's VITAL_TILE uses —
-  // worn as its 3D face (CLAY_TO_3D i-viz → t-water, mezo-me75u.3), on a card in the need's hue.
-  expect(document.querySelector('.nap-mzmsg use[href="#t-water"]')).not.toBeNull()
-  expect((document.querySelector('.nap-mzmsg.glass') as HTMLElement).style.getPropertyValue('--c')).toBe('var(--dv-sky)')
-  // Copy no longer starts with the 💧 emoji — the icon replaces it.
-  expect(document.querySelector('.nap-mzmsg .txt')?.textContent).not.toMatch(/💧/)
+  // hidratacio → i-viz (NEED_ICON, needs.ts) names the need; the field that speaks about water
+  // is Étkezés (mezo-n4wf5.2, bible §6) — its glyph badge heads the card.
+  const card = screen.getByText(/alig ittál/).closest('.nb-msg') as HTMLElement
+  expect(card.querySelector('.fo-msg .fo-badge use[href="#t-bowl"]')).not.toBeNull()
+  expect(within(card).getByText('Étkezés')).toBeInTheDocument()
+  expect(within(card).getByText('13:42 · Életjel')).toBeInTheDocument()
+  expect(within(card).getByText('Életjel-figyelő')).toBeInTheDocument()
+  expect(document.querySelector('.glass')).toBeNull()
+  // Copy does not start with the 💧 emoji — the badge stands for it.
+  expect(card.querySelector('.nb-p')?.textContent).not.toMatch(/💧/)
 })
 
 test('a healthy ring set adds nothing to the thread', async () => {
@@ -508,11 +540,11 @@ test('a healthy ring set adds nothing to the thread', async () => {
   needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
   renderPage()
   expect(await screen.findByText('07:05 · Reggeli briefing')).toBeInTheDocument()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(1)
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(1)
 })
 
 // ── Életjelek tab státusz-sáv (mezo-ho9k): mindig látszik, sosem üres a tab.
-test('az Életjelek tab a 6 gyűrű státusz-sávját mutatja, riasztás nélkül "minden rendben" sorral', async () => {
+test('az Életjelek tab a hat jel kémcsöveit mutatja, riasztás nélkül "minden rendben" mondattal', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [
     { key: 'energia', pct: 72, band: 'green' }, { key: 'hidratacio', pct: 82, band: 'green' },
@@ -522,47 +554,52 @@ test('az Életjelek tab a 6 gyűrű státusz-sávját mutatja, riasztás nélkü
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText('Víz')).toBeInTheDocument() // hidratacio eyebrow (EletjelPage tile-nyelv)
-  expect(screen.getByText('82%')).toBeInTheDocument()
-  const okLine = screen.getByText(/Minden gyűrű rendben/)
-  expect(okLine).toBeInTheDocument()
-  // mezo-z4h4: emoji→icon pass — the ✓ glyph is an icon, not a literal character in the text
-  // content; since mezo-me75u.3 it is the 3D tick.
+  expect(screen.getByText('82')).toBeInTheDocument()
+  // the hero's verdict sentence, read from the bands; the label carries the client mean
+  const okLine = screen.getByText('Minden jel rendben — ma nincs teendő.')
+  expect(okLine).toHaveClass('fo-hero-verdict')
   expect(okLine.textContent).not.toMatch(/✓/)
-  expect(okLine.querySelector('use[href="#t-tick"]')).not.toBeNull()
-  expect(document.querySelectorAll('.nap-ejcell')).toHaveLength(6)
+  expect(screen.getByText('Életjelek · ma · átlag 70')).toBeInTheDocument()
+  expect(screen.getByText('Koppints bármelyikre a részletekért.')).toBeInTheDocument()
+  const strip = screen.getByRole('group', { name: 'Életjelek részletei' })
+  expect(strip.querySelectorAll('.fo-vial')).toHaveLength(6)
+  // no need asks for attention → no vial carries the mark; no ring anywhere
+  expect(screen.queryByText('figyelj')).toBeNull()
+  expect(document.querySelector('svg circle')).toBeNull()
 })
 
-test('piros gyűrű cellája warn jelölést kap, és a nudge-kártya alatta áll — nincs "minden rendben"', async () => {
+test('piros jel kémcsöve „figyelj" jelölést kap, és a nudge-kártya alatta áll — nincs "minden rendben"', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
   expect(await screen.findByText(/alig ittál/)).toBeInTheDocument()
-  expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
-  expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
-  // A nudge-kártya megvan a szálban — az őszinte figyelmeztető sor SEM kell mellé
-  // (mezo-z4h4): a kártya már elmondja, a sor csak a kártya-nélküli esetre való.
-  expect(screen.queryByText(/figyelmet kér/)).toBeNull()
+  expect(within(screen.getByRole('group', { name: 'Életjelek részletei' })).getByText('figyelj')).toBeInTheDocument()
+  expect(screen.queryByText(/Minden jel rendben/)).toBeNull()
+  // A hős mondata a sávból jön (mezo-n4wf5.2): nudge-kártyával együtt is ez az EGY mondat áll.
+  expect(screen.getAllByText(/figyelmet kér/)).toHaveLength(1)
+  expect(screen.getByText('A víz az egyetlen, ami figyelmet kér.')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /Amit a csapat mond/ })).toBeInTheDocument()
 })
 
-// mezo-z4h4: a bug ("Minden gyűrű rendben" miközben mind a hat gyűrű 0%-on áll) abból jött,
-// hogy az üres sor a NUDGE-LISTA hosszát nézte, nem a gyűrűk sávját — `deriveNudges` pedig
+// mezo-z4h4: a bug ("minden rendben" miközben mind a hat jel 0%-on áll) abból jött,
+// hogy az üres sor a NUDGE-LISTA hosszát nézte, nem a jelek sávját — `deriveNudges` pedig
 // elnyeli a friss nudge-ot az éjszakai/ébredés utáni csendes ablakban. A csendes ablakra
-// állított óra pontosan ezt az esetet szimulálja: piros gyűrű, de a szálban NINCS nudge-kártya.
-test('csendes ablakban elnyelt nudge esetén (piros gyűrű, nudge-kártya nélkül) őszinte figyelmeztető sor jön a "minden rendben" helyett', async () => {
+// állított óra pontosan ezt az esetet szimulálja: piros jel, de a szálban NINCS nudge-kártya.
+test('csendes ablakban elnyelt nudge esetén (piros jel, nudge-kártya nélkül) őszinte figyelmeztető mondat jön a "minden rendben" helyett', async () => {
   feedMock.useCompanionFeed.mockReturnValue([morningMsg])
   needsMock.states = [{ key: 'hidratacio', pct: 12, band: 'red' }]
   tickMock.now = new Date('2026-05-22T03:00:00') // mélyéjszaka — deriveNudges csendes ablaka
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
-  expect(document.querySelector('.nap-ejcell.warn')).not.toBeNull()
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(0) // nincs nudge-kártya a szálban
-  expect(screen.queryByText(/Minden gyűrű rendben/)).toBeNull()
-  expect(screen.getByText('Egy gyűrű figyelmet kér — a részletekért koppints a sávra.')).toBeInTheDocument()
-  expect(document.querySelector('.nap-ejok.warn')).not.toBeNull()
+  expect(await screen.findByText('figyelj')).toBeInTheDocument()
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(0) // nincs nudge-kártya a szálban
+  expect(screen.queryByText(/Minden jel rendben/)).toBeNull()
+  expect(screen.getByText('A víz az egyetlen, ami figyelmet kér.')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: /Amit a csapat mond/ })).toBeNull()
 })
 
-test('csendes ablakban több elnyelt piros/kritikus gyűrű esetén a figyelmeztető sor többes számot használ helyesen', async () => {
+test('csendes ablakban több elnyelt piros/kritikus jel esetén a figyelmeztető mondat többes számot használ helyesen', async () => {
   feedMock.useCompanionFeed.mockReturnValue([])
   needsMock.states = [
     { key: 'hidratacio', pct: 12, band: 'red' },
@@ -572,13 +609,12 @@ test('csendes ablakban több elnyelt piros/kritikus gyűrű esetén a figyelmezt
   tickMock.now = new Date('2026-05-22T03:00:00')
   renderPage()
   await userEvent.click(await screen.findByRole('tab', { name: /Életjelek/ }))
-  expect(document.querySelectorAll('.nap-mzmsg')).toHaveLength(0)
-  expect(screen.getByText('2 gyűrű figyelmet kér — a részletekért koppints a sávra.')).toBeInTheDocument()
+  expect(document.querySelectorAll('.nb-msg')).toHaveLength(0)
+  expect(screen.getByText('2 jel kér figyelmet.')).toBeInTheDocument()
+  expect(screen.getAllByText('figyelj')).toHaveLength(2)
 })
 
-test('a státusz-sáv a teljes életjel-oldalra visz', async () => {
-  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
-  needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
+const renderEletjelekTab = () =>
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/nap/uzenetek?tab=eletjelek']}>
@@ -591,13 +627,34 @@ test('a státusz-sáv a teljes életjel-oldalra visz', async () => {
       </MemoryRouter>
     </QueryWrapper>,
   )
-  await userEvent.click(await screen.findByRole('button', { name: 'Életjelek részletei' }))
+
+test('a kémcső-sáv a teljes életjel-oldalra visz', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
+  renderEletjelekTab()
+  const strip = await screen.findByRole('group', { name: 'Életjelek részletei' })
+  await userEvent.click(within(strip).getByRole('button', { name: /Víz/ }))
   expect(await screen.findByText('eletjel-page')).toBeInTheDocument()
 })
 
-test('the chat CTA navigates to /mezo/chat', async () => {
+test('a hős „Részletek" gombja is a teljes életjel-oldalra visz', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  needsMock.states = [{ key: 'hidratacio', pct: 82, band: 'green' }]
+  renderEletjelekTab()
+  await userEvent.click(await screen.findByRole('button', { name: 'Részletek' }))
+  expect(await screen.findByText('eletjel-page')).toBeInTheDocument()
+})
+
+test('the hero chat button navigates to /mezo/chat', async () => {
   renderPage()
-  await userEvent.click(await screen.findByRole('button', { name: 'Beszélgess Mezóval ›' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Beszélgess Mezóval' }))
+  expect(await screen.findByText('chat-page')).toBeInTheDocument()
+})
+
+test('the „Írj vissza" row navigates to /mezo/chat too', async () => {
+  renderPage()
+  expect(await screen.findByRole('heading', { name: /Írj vissza/ })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /kérdezz, mesélj, vagy beszéljük át a napot/ }))
   expect(await screen.findByText('chat-page')).toBeInTheDocument()
 })
 
@@ -618,11 +675,11 @@ test('olvasatlan nudge mellett az Életjelek tabon pötty ég, és a tab meglát
   renderPage()
   await screen.findByText('07:05 · Reggeli briefing')
   const ejTab = screen.getByRole('tab', { name: /Életjelek/ })
-  expect(ejTab.querySelector('.nap-mzdot')).not.toBeNull()
+  expect(ejTab.querySelector('.fo-seg-dot')).not.toBeNull()
   // az aktív Üzenetek tabon nincs pötty (ott van a user)
-  expect(screen.getByRole('tab', { name: /Üzenetek/ }).querySelector('.nap-mzdot')).toBeNull()
+  expect(screen.getByRole('tab', { name: /Üzenetek/ }).querySelector('.fo-seg-dot')).toBeNull()
   await userEvent.click(ejTab)
-  expect(ejTab.querySelector('.nap-mzdot')).toBeNull()
+  expect(ejTab.querySelector('.fo-seg-dot')).toBeNull()
 })
 
 test('minden olvasottnak jelölve → egyik tabon sincs pötty', async () => {
@@ -633,7 +690,7 @@ test('minden olvasottnak jelölve → egyik tabon sincs pötty', async () => {
   unmount()
   renderPage()
   await screen.findByText('07:05 · Reggeli briefing')
-  expect(document.querySelector('.nap-mzdot')).toBeNull()
+  expect(document.querySelector('.fo-seg-dot')).toBeNull()
 })
 
 // ── Észrevételek fül (Reflexió S5, mezo-eq85.5) ──────────────────────────────
@@ -677,9 +734,9 @@ test('friss, még megválaszolatlan észrevétel pöttyöt gyújt a fülön — 
   renderTab('')
   await screen.findByText('07:05 · Reggeli briefing')
   const tabBtn = screen.getByRole('tab', { name: /Észrevételek/ })
-  expect(tabBtn.querySelector('.nap-mzdot')).not.toBeNull()
+  expect(tabBtn.querySelector('.fo-seg-dot')).not.toBeNull()
   await userEvent.click(tabBtn)
-  expect(tabBtn.querySelector('.nap-mzdot')).toBeNull()
+  expect(tabBtn.querySelector('.fo-seg-dot')).toBeNull()
 })
 
 test('már megválaszolt friss kártya nem gyújt pöttyöt', async () => {
@@ -687,19 +744,19 @@ test('már megválaszolt friss kártya nem gyújt pöttyöt', async () => {
   obsMock.observations = [{ ...obsSeed[0], repliedChoice: 'watch' as const }, obsSeed[2]]
   renderTab('')
   await screen.findByText('07:05 · Reggeli briefing')
-  expect(screen.getByRole('tab', { name: /Észrevételek/ }).querySelector('.nap-mzdot')).toBeNull()
+  expect(screen.getByRole('tab', { name: /Észrevételek/ }).querySelector('.fo-seg-dot')).toBeNull()
 })
 
 test('a lábjegyzet a maradék napi keretet mondja, és nem megy nulla alá', async () => {
   obsMock.observations = [obsSeed[0]]
   const { unmount } = renderTab()
-  expect(await screen.findByText('Ma még 1 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+  expect(await screen.findByText('Ma még 1 észrevétel fér a keretbe · 22:00 után csendben maradok.'))
     .toBeInTheDocument()
   unmount()
 
   obsMock.observations = [obsSeed[0], { ...obsSeed[0], id: 'obs-fresh-2', patternId: 'op-2' }, { ...obsSeed[0], id: 'obs-fresh-3', patternId: 'op-3' }]
   renderTab()
-  expect(await screen.findByText('Ma még 0 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+  expect(await screen.findByText('Ma még 0 észrevétel fér a keretbe · 22:00 után csendben maradok.'))
     .toBeInTheDocument()
 })
 
@@ -710,7 +767,7 @@ test('a lábjegyzet a maradék napi keretet mondja, és nem megy nulla alá', as
 test('a visszatérő kártya is fogyasztja a napi keretet, nem csak a friss', async () => {
   obsMock.observations = [obsSeed[0], obsSeed[1], obsSeed[2], obsSeed[3]]
   renderTab()
-  expect(await screen.findByText('Ma még 0 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+  expect(await screen.findByText('Ma még 0 észrevétel fér a keretbe · 22:00 után csendben maradok.'))
     .toBeInTheDocument()
 })
 
@@ -718,13 +775,15 @@ test('a visszatérő kártya is fogyasztja a napi keretet, nem csak a friss', as
 test('a figyelt és a megerősített sor-kártya nem fogyasztja a keretet', async () => {
   obsMock.observations = [obsSeed[2], obsSeed[3]]
   renderTab()
-  expect(await screen.findByText('Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+  expect(await screen.findByText('Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok.'))
     .toBeInTheDocument()
 })
 
-test('üres feed: őszinte üres sor, keret-lábjegyzet nélküli kártyák helyett', async () => {
+test('üres feed: őszinte üres mondat a hősben, keret-sor és kártyák nélkül', async () => {
   renderTab()
   expect(await screen.findByText('Még nincs észrevétel — Mezo figyel.')).toBeInTheDocument()
+  expect(screen.queryByText(/fér a keretbe/)).toBeNull()
+  expect(document.querySelector('.nb-obs')).toBeNull()
 })
 
 test('töltés közben csontváz, nem üres állapot', async () => {
@@ -735,7 +794,7 @@ test('töltés közben csontváz, nem üres állapot', async () => {
   expect(screen.queryByText('Még nincs észrevétel — Mezo figyel.')).toBeNull()
 })
 
-test('hiba esetén újrapróbálható ghost-állapot jön, nem néma üresség', async () => {
+test('hiba esetén újrapróbálható hibasor jön, nem néma üresség', async () => {
   obsMock.isError = true
   renderTab()
   expect(await screen.findByText(/nem sikerült betölteni/i)).toBeInTheDocument()
@@ -773,7 +832,7 @@ test('older persistent cards do not consume today’s publication budget', async
     { ...obsSeed[0], id: 'today-new', occurredAt: '2026-05-22T12:00:00' },
   ]
   renderTab()
-  expect(await screen.findByText('Ma még 1 észrevétel fér a keretbe · 22:00 után csendben maradok')).toBeInTheDocument()
+  expect(await screen.findByText('Ma még 1 észrevétel fér a keretbe · 22:00 után csendben maradok.')).toBeInTheDocument()
 })
 
 test('an unanswered return from a previous day lights the observation dot', async () => {
@@ -781,7 +840,7 @@ test('an unanswered return from a previous day lights the observation dot', asyn
   obsMock.observations = [{ ...obsSeed[1], occurredAt: '2026-05-20T12:00:00' }]
   renderTab('')
   await screen.findByText('07:05 · Reggeli briefing')
-  expect(screen.getByRole('tab', { name: /Észrevételek/ }).querySelector('.nap-mzdot')).not.toBeNull()
+  expect(screen.getByRole('tab', { name: /Észrevételek/ }).querySelector('.fo-seg-dot')).not.toBeNull()
 })
 
 // Csapatfal Act III (mezo-a9bo7.24): the daily advice card moved into the team chat. While the
@@ -812,10 +871,14 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     renderPage()
     const row = await screen.findByRole('button', { name: /A csapat most erről beszél/ })
     expect(row).toHaveTextContent('Alvásadósság · Tartós stressz')
-    // Prototípus #nap-uzenetek: `rowg glass`, zsálya — üveg sor, nem üveg az üvegben.
-    expect(row).toHaveClass('glass')
-    expect(row.parentElement?.closest('.glass')).toBeNull()
-    expect(screen.getByText(/A napi tanácskártya innen átköltözött a csapat-chatbe/)).not.toHaveClass('glass')
+    // Folyadék (mezo-n4wf5.2): a sor egy fehér kártya sora, a két gazda szakterület-jelével
+    // (Alvás, Közérzet) — nem üveg, nem Boop.
+    expect(row).toHaveClass('fo-row')
+    expect(row.closest('.fo-card')).not.toBeNull()
+    expect([...row.querySelectorAll('.nb-duo .fo-badge use')].map((u) => u.getAttribute('href'))).toEqual(['#t-sleep', '#t-heart'])
+    expect(document.querySelector('.glass')).toBeNull()
+    expect(document.querySelector('.boop')).toBeNull()
+    expect(screen.getByText(/A napi tanácskártya innen átköltözött a csapat-chatbe/)).toHaveClass('fo-note')
     expect(screen.queryByText('Ma este feküdj le korábban.')).not.toBeInTheDocument()
     expect(screen.getByText(/Két nap múlva W3-csúcs/)).toBeInTheDocument()
     await userEvent.click(row)
@@ -834,7 +897,8 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
     renderPage()
     const row = await screen.findByRole('button', { name: /A csapat most erről beszél/ })
-    expect(row).toHaveTextContent('Falat: Megvan, rendeződött ✅')
+    // a csapat szakterület szerint szól (bible §6): Falat → Étkezés
+    expect(row).toHaveTextContent('Étkezés: Megvan, rendeződött ✅')
     expect(screen.queryByText('Ma este feküdj le korábban.')).not.toBeInTheDocument()
   })
 
@@ -922,8 +986,8 @@ describe('a csapat-chat átadás az Üzenetek fülön', () => {
     }
     renderPage()
     const row = await screen.findByRole('button', { name: /A csapat most erről beszél/ })
-    expect(row).toHaveTextContent('Szunya: Ma 6 óra alvás.')
-    expect(row.querySelector('.pv strong')).not.toBeNull()
+    expect(row).toHaveTextContent('Alvás: Ma 6 óra alvás.')
+    expect(row.querySelector('.nb-pv strong')).not.toBeNull()
   })
 
   test('üres csapat-chat → nincs átadó sor, a régi tanácskártya megmarad', async () => {

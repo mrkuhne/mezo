@@ -1,40 +1,37 @@
 // ============================================================
 // Mezo · NapomPage — `/nap/napom` + `/nap/napom/:date` (mezo-yjzhw.4, spec 2026-09-24)
-// Source of truth: docs/design_2.0/prototypes/src/uveg-napod-body.html `nap()` / `dayBody()`
-// with layout 2 (banded rows), in the Üveg material, owner OK 2026-09-24. Replaces the retired
-// Heti single-day page (`/me/week/napok/:date` now redirects here).
+// Look: Folyadék (mezo-n4wf5.2, slice F2) — build target `napDay` / `ndDayBody` in
+// docs/design_2.0/prototypes/vilagos/nap.js. Replaces the retired Heti single-day page
+// (`/me/week/napok/:date` now redirects here).
 //
 // One day, read two ways:
-//   · TODAY is live — a six-segment ring filled by progress, "N/6 terület kész", a one-line
-//     reading and the one next step, both from pure rules (`logic/napom.ts`, no LLM). No
-//     overall number during the day.
-//   · a CLOSED, scored day leads with the Mezo's overnight note, the gradient score with its
-//     base + the Mezo's ±5 correction (reason shown, foldable), six rows open by default and the day's
-//     context (which does not score).
-// Thin/empty days say so on a dashed card; a future day is a dashed promise; an unresolved
-// evaluation is an honest pending ring with no number (mezo-ahf5b), a failed one a retry.
+//   · TODAY is live — a tank filled by progress, "N/6 terület kész", a one-line reading and the
+//     one next step, both from pure rules (`logic/napom.ts`, no LLM). No overall number during
+//     the day.
+//   · a CLOSED, scored day leads with the tank at its score, the base + the Mezo's ±5 correction
+//     (reason shown, foldable), the Mezo's overnight note, six rows open by default and the
+//     day's context (which does not score).
+// Thin/empty days say so in a jar hero; a future day is a promise; an unresolved evaluation is
+// an honest pending tank with no number (mezo-ahf5b), a failed one a retry.
 //
 // Morning mode: `/nap/napom` with no date opens YESTERDAY while its overnight review is unseen
 // (`isMorningMode`), and marks it seen once it is on screen. The decision is latched per
 // navigation, so marking it seen does not flip the page to today under the reader.
-//
-// Owner 2026-09-24: no italic serif on this page — every Mezo sentence is upright Geist.
 // ============================================================
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useCheckinDayRating, useDayEvaluation, useMeWeek, useRitualDay, normalizeDayEvaluation } from '@/data/hooks'
 import { usePrefetchDayEvaluations } from '@/data/me/dayEvaluationHooks'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import type { NormalizedDayEvaluation, NormalizedDayDimension } from '@/data/me/dayEvaluation'
 import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { cn } from '@/shared/lib/cn'
+import { Btn, Card, Hero, Jar, Msg, Note, Page, Row, Section, Tank, useFrameTitle } from '@/shared/ui/folyadek'
 import { DAY_COPY, dayState, dayVerdict, huDowFull, isValidIsoDate, mondayOf } from '@/features/me/logic/weekDay'
-import { dayReading, doneCount, isMorningMode, markSeen, nextBestAction } from '@/features/today/logic/napom'
+import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
+import { dayReading, doneCount, isMorningMode, markSeen, nextBestAction, type NextActionKind } from '@/features/today/logic/napom'
 import { useChangedKeys } from '@/features/today/logic/useChangedKeys'
 import { NapomWeekStrip } from '@/features/today/components/napom/NapomWeekStrip'
-import { NapomSegRing } from '@/features/today/components/napom/NapomSegRing'
 import { NAPOM_DIMENSIONS, NapomDimensionRow, factLineOf, type NapomRowMode } from '@/features/today/components/napom/NapomDimensionRow'
 import { NapomLeadCard } from '@/features/today/components/napom/NapomLeadCard'
 import { NapomDayRatingCard } from '@/features/today/components/napom/NapomDayRatingCard'
@@ -56,7 +53,7 @@ const placeholder = (id: NormalizedDayDimension['id']): NormalizedDayDimension =
 const rowsOf = (ev: NormalizedDayEvaluation | null) =>
   NAPOM_DIMENSIONS.map((m) => ev?.dimensions.find((d) => d.id === m.key) ?? placeholder(m.key))
 
-/** The pulse snapshot's key for the ring centre (`N/6` done count) — not a dimension id. */
+/** The pulse snapshot's key for the tank's number (`N/6` done count) — not a dimension id. */
 const CENTER = '·center'
 
 /** `id → what the reader sees` for today's open evaluation: each row's score, status and fact
@@ -67,14 +64,15 @@ function pulseSnapshot(ev: NormalizedDayEvaluation): Record<string, string> {
   return snap
 }
 
-function SectionTitle({ title, eyebrow, i }: { title: string; eyebrow: string; i: number }) {
-  return (
-    <div className="napom-sec rise" style={{ '--i': i } as CSSProperties}>
-      <h2>{title}</h2>
-      <span className="uv-eyebrow">{eyebrow}</span>
-    </div>
-  )
+/** The tank CTA's wording per next step; the target stays the action's own `to`. */
+const CTA_LABEL: Record<NextActionKind, string> = {
+  napzaras: 'Napzárás indítása',
+  workout: 'Edzés megnyitása',
+  checkin: 'Check-in',
 }
+
+/** `a hét legjobb napja` → `A hét legjobb napja.` */
+const asSentence = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}${/[.!?…]$/.test(s) ? '' : '.'}`
 
 export function NapomPage() {
   const navigate = useNavigate()
@@ -120,6 +118,12 @@ export function NapomPage() {
   // per row (score · status · the fact line the reader sees) plus the N/6 centre. Anything else
   // (loading, a past or closed day) is `null`, which resets the baseline — so the first render,
   // the mock seed, a date change and past days never pulse.
+  const chat = useChatHandoff()
+  // The correction's reason shows by default (owner 2026-09-26, mezo-7izrx); a tap folds it away.
+  const [adjOpen, setAdjOpen] = useState(true)
+  // The title bar's eyebrow names the viewed week (the old page head's second line).
+  useFrameTitle({ eyebrow: `Nap · ${deriveWeekTitle(monday).toLowerCase()}` })
+
   const liveEval = !deciding && date === today && evaluation?.state === 'in_progress' ? evaluation : null
   const fresh = useChangedKeys(liveEval ? pulseSnapshot(liveEval) : null, date)
 
@@ -137,174 +141,207 @@ export function NapomPage() {
   const live = isToday || open
   const rows = rowsOf(loading ? null : evaluation)
 
-  const heroTone = scored
-    ? { '--c': 'var(--dv-lav)', '--c2': 'var(--dv-amber)' }
-    : state === 'thin' || state === 'empty'
-      ? { '--c': 'var(--dv-sky)', '--c2': 'var(--dv-lav)' }
-      : { '--c': 'var(--dv-coral)', '--c2': 'var(--dv-amber)' }
+  const dayLabel = `${huDowFull(date)} · ${huMonthDay(date).toLowerCase()}`
+  const closedLabel = `${dayLabel} · lezárva`
+  const toToday = !isToday ? <Btn onClick={() => navigate(`/nap/napom/${today}`)}>Vissza a mai napra</Btn> : undefined
 
-  const ring = (() => {
-    if (loading) {
-      return (
-        <NapomSegRing segments={NAPOM_DIMENSIONS.map((m) => ({ pct: 0, color: m.color }))} label="számolom · egy pillanat">
-          <span><strong className="napom-wait">számolom</strong><em>egy pillanat</em></span>
-        </NapomSegRing>
-      )
-    }
-    if (!evaluation || !(scored || open)) return null
-    const segments = rows.map((d, k) => ({ pct: d.score ?? 0, color: NAPOM_DIMENSIONS[k].color }))
-    if (open) {
-      const done = doneCount(evaluation)
-      return (
-        <NapomSegRing segments={segments} label={`${done} / 6 terület kész`} fresh={fresh.has(CENTER)}>
-          <span><strong>{done}<small>/6</small></strong><em>TERÜLET KÉSZ</em></span>
-        </NapomSegRing>
-      )
-    }
-    const verdict = day && dayState(day, today) === 'scored' ? dayVerdict(day, days, today).toUpperCase() : 'PONT'
-    return (
-      <NapomSegRing segments={segments} label={`Pontszám: ${evaluation.score} / 100`}>
-        <span><strong className="napom-grad">{evaluation.score}</strong><em>{verdict}</em></span>
-      </NapomSegRing>
-    )
-  })()
-
-  // No lead card until today's ritual state is KNOWN (mezo-yjzhw.7): real mode's pending ritual
+  // No lead until today's ritual state is KNOWN (mezo-yjzhw.7): real mode's pending ritual
   // reads as "not closed", which would flash the evening napzárás offer on a closed day.
   const action = isToday && evaluation && open && !todayRitual.isPending
     ? nextBestAction(evaluation, day, new Date(), todayRitual.data.closed)
     : null
   const rowMode: NapomRowMode = loading ? 'loading' : scored ? 'scored' : open ? 'today' : 'plain'
+  const adjustment = scored && evaluation?.base != null ? evaluation.adjustment : null
+
+  const hero = (() => {
+    if (loading) {
+      return (
+        <div className="nn-hero" role="group" aria-label="számolom · egy pillanat">
+          <Tank pct={44} height={400} num="…" cap="számolom · egy pillanat" label={dayLabel} verdict="Összeszedem a napodat." />
+        </div>
+      )
+    }
+    if (failed) {
+      return (
+        <div className="nn-jhero" role="alert">
+          <Hero
+            warn
+            label={dayLabel}
+            verdict="Nem sikerült betölteni a napot."
+            sub="A többi oldal működik. Próbáld újra egy pillanat múlva."
+            actions={<Btn onClick={() => evalQuery.refetch()}>Próbáld újra</Btn>}
+          >
+            <Jar pct={0} size={80} text="?" />
+          </Hero>
+        </div>
+      )
+    }
+    if (!evaluation) return null
+    if (state === 'future') {
+      return (
+        <div className="nn-jhero">
+          <Hero label={dayLabel} verdict="Még előtted." sub={DAY_COPY.futurePage} actions={toToday}>
+            <Jar pct={0} size={80} />
+          </Hero>
+        </div>
+      )
+    }
+    if (state === 'thin' || state === 'empty') {
+      return (
+        <div className="nn-jhero">
+          <Hero
+            label={live ? dayLabel : closedLabel}
+            verdict="Erre a napra kevés az adat."
+            sub={state === 'empty' ? DAY_COPY.emptyPage : DAY_COPY.thinPage}
+            actions={toToday}
+          >
+            <Jar pct={state === 'empty' ? 0 : 7} size={80} text="–" />
+          </Hero>
+        </div>
+      )
+    }
+    if (open) {
+      const done = doneCount(evaluation)
+      const updated = evalQuery.dataUpdatedAt > 0 ? ` · ${hhmm(evalQuery.dataUpdatedAt)}` : ''
+      return (
+        <div className={cn('nn-hero', fresh.has(CENTER) && 'is-fresh')} role="group" aria-label={`${done} / 6 terület kész`}>
+          <Tank
+            // The vessel keeps room for the three-line reading above the liquid: 0–6 done areas
+            // move the level inside the tank's 44–66% band (the prototype's live tank stands at 57).
+            pct={44 + (done / 6) * 22}
+            height={440}
+            num={`${done}/6`}
+            cap={`terület kész · élő${updated}`}
+            label={dayLabel}
+            verdict={isToday ? dayReading(evaluation, day) : undefined}
+            cta={action ? CTA_LABEL[action.kind] : undefined}
+            onCta={action ? () => navigate(action.to) : undefined}
+          />
+        </div>
+      )
+    }
+    // Scored. The verdict is the week's own sentence about the day; without the week's data the
+    // day's key highlight speaks, and with neither the tank simply carries no sentence.
+    const verdict = day && dayState(day, today) === 'scored'
+      ? dayVerdict(day, days, today)
+      : evaluation.highlights.find((h) => h.kind === 'key')?.label ?? null
+    return (
+      <div className="nn-hero" role="group" aria-label={`Pontszám: ${evaluation.score} / 100`}>
+        <Tank
+          // The base line stands 24px above the liquid, under the verdict: the score moves the
+          // level inside the 56–66% band (the prototype's 87 stands at 66), the number says the rest.
+          pct={56 + (evaluation.score ?? 0) / 10}
+          height={430}
+          num={evaluation.score}
+          cap="a 100-ból · hat területből"
+          label={live ? dayLabel : closedLabel}
+          verdict={verdict ? asSentence(verdict) : undefined}
+          marks={[75, 50, 25]}
+          cta={chat.pending ? 'Indítás…' : 'Beszélgess a napról'}
+          onCta={() => { if (!chat.pending) chat.open({ kind: 'day', date }) }}
+          extra={adjustment && evaluation.base != null ? (
+            <button type="button" className="fo-tank-shift" aria-expanded={adjOpen} onClick={() => setAdjOpen((o) => !o)}>
+              <span>alap {evaluation.base}</span>
+              <span>a Mezo szerint <b>{fmtDelta(adjustment.delta)}</b> <span aria-hidden="true">{adjOpen ? '▴' : '▾'}</span></span>
+            </button>
+          ) : undefined}
+        />
+      </div>
+    )
+  })()
+
+  // Section numbers follow what is actually rendered, top to bottom.
+  let count = 0
+  const next = () => (count += 1)
+  const showRows = loading || (evaluation != null && state !== 'future')
+  const rowsTitle = loading
+    ? (isToday ? 'Ma eddig · 6 terület' : '6 terület')
+    : open
+      ? (isToday ? 'Ma eddig · 6 terület' : 'Eddig · 6 terület')
+      : scored ? 'Miből jött össze' : 'Amit erről a napról tudunk'
 
   return (
-    <MozaikPage tone="lav" className="napom-page">
-      <EntranceGroup replayKey={date}>
-        <div className="napom-head rise" style={{ '--i': 0 } as CSSProperties}>
-          <span className="uv-eyebrow">A NAPOM</span>
-          <span className="uv-eyebrow">{deriveWeekTitle(monday).toUpperCase()}</span>
-        </div>
-        <NapomWeekStrip date={date} today={today} days={days} onPick={(iso) => navigate(`/nap/napom/${iso}`)} />
+    <Page className="nn-page">
+      <NapomWeekStrip
+        date={date}
+        today={today}
+        days={days}
+        liveDone={isToday && open && evaluation ? doneCount(evaluation) : null}
+        onPick={(iso) => navigate(`/nap/napom/${iso}`)}
+      />
 
-        <section className="napom-hero uv-halo rise" style={{ ...heroTone, '--i': 2 } as CSSProperties}>
-          <h1>{huDowFull(date)} <span>· {huMonthDay(date).toLowerCase()}</span></h1>
-          {live ? (
-            <span className="napom-sub uv-eyebrow napom-live">
-              <i aria-hidden="true" />
-              ÉLŐ{evaluation && evalQuery.dataUpdatedAt > 0 ? ` · FRISSÜLT ${hhmm(evalQuery.dataUpdatedAt)}` : ''}
-            </span>
-          ) : evaluation && state !== 'future' ? (
-            <span className="napom-sub uv-eyebrow">LEZÁRVA</span>
-          ) : null}
-          {ring}
-          {scored && evaluation?.base != null && evaluation.adjustment && (
-            <AdjustmentPill base={evaluation.base} adjustment={evaluation.adjustment} />
-          )}
-          {isToday && evaluation && !loading && (
-            <>
-              <p className="napom-reading">{dayReading(evaluation, day)}</p>
-              <span className="napom-upd">
-                Napközben nincs pontszám. Hajnalban zárom a napot, és reggelre megírom, milyen volt.
-              </span>
-            </>
-          )}
-        </section>
+      {hero}
 
-        {dayRating != null && !deciding && (
-          <NapomDayRatingCard rating={dayRating} score={scored && evaluation ? evaluation.score : null} i={3} />
-        )}
+      {isToday && evaluation && !loading && (
+        <p className="nn-under">Napközben nincs pontszám. Hajnali 3-kor zárom a napot, és reggelre megírom, milyen volt.</p>
+      )}
 
-        {action && <NapomLeadCard action={action} onGo={(to) => navigate(to)} i={3} />}
+      {adjustment && adjOpen && (
+        <Card className="nn-adj">
+          <Msg member="mezo" meta={`miért ${fmtDelta(adjustment.delta)}?`}>{adjustment.reason}</Msg>
+          <Note>A szaggatott vonal az alap-pontszám szintje; a folyadék a végső pontszámig ér.</Note>
+        </Card>
+      )}
 
-        {failed && (
-          <div className="napom-nodata rise" role="alert" style={{ '--i': 3 } as CSSProperties}>
-            <Icon3D name="t-journal" size={56} />
-            <strong>Nem sikerült betölteni a napot.</strong>
-            <button type="button" className="napom-flat napom-retry" onClick={() => evalQuery.refetch()}>Próbáld újra</button>
-          </div>
-        )}
+      {action && <NapomLeadCard action={action} n={next()} />}
 
-        {state === 'future' && (
-          <div className="napom-nodata rise" style={{ '--i': 3 } as CSSProperties}>
-            <Icon3D name="t-journal" size={56} />
-            <p>{DAY_COPY.futurePage}</p>
-          </div>
-        )}
+      {scored && evaluation && evaluation.narrative.length > 0 && (
+        <NapomReviewCard evaluation={evaluation} n={next()} />
+      )}
 
-        {(state === 'thin' || state === 'empty') && (
-          <div className="napom-nodata rise" style={{ '--i': 3 } as CSSProperties}>
-            <Icon3D name="t-journal" size={56} />
-            <strong>Erre a napra kevés az adat</strong>
-            <p>{state === 'empty' ? DAY_COPY.emptyPage : DAY_COPY.thinPage}</p>
-          </div>
-        )}
-
-        {scored && evaluation && evaluation.narrative.length > 0 && (
-          <NapomReviewCard evaluation={evaluation} date={date} i={3} />
-        )}
-
-        {open && <SectionTitle title={isToday ? 'Ma eddig' : 'Eddig'} eyebrow="6 TERÜLET" i={4} />}
-        {scored && <SectionTitle title="Miből jött össze" eyebrow="A MEZO RÉSZLETEIVEL" i={4} />}
-
-        {(loading || (evaluation && state !== 'future')) && (
-          <div className="napom-rows">
-            {rows.map((d, k) => (
+      {showRows && (
+        <>
+          <Section n={next()} title={rowsTitle} />
+          <Card className="nn-rowscard">
+            {rows.map((d) => (
               <NapomDimensionRow
                 key={`${date}-${d.id}`}
                 dimension={d}
                 mode={rowMode}
                 goalTick={d.id === 'nutrition' && day?.kcalTarget != null}
                 fresh={fresh.has(d.id)}
-                i={k + 5}
               />
             ))}
-          </div>
-        )}
+            {scored && <Note>Koppints egy területre a részletekért.</Note>}
+          </Card>
+        </>
+      )}
 
-        {scored && evaluation && evaluation.context.length > 0 && (
-          <>
-            <SectionTitle title="A nap körülményei" eyebrow="NEM SZÁMÍT A PONTBA" i={6} />
-            <div className="napom-ctx rise" style={{ '--i': 6 } as CSSProperties}>
+      {dayRating != null && !deciding && (
+        <NapomDayRatingCard rating={dayRating} score={scored && evaluation ? evaluation.score : null} n={next()} />
+      )}
+
+      {scored && evaluation && evaluation.context.length > 0 && (
+        <>
+          <Section n={next()} title="A nap körülményei" />
+          <Card>
+            <div className="nn-ctx">
               {evaluation.context.map((c) => (
-                <span key={`${c.label}·${c.value}`} className="napom-flat">{c.label} · <b>{c.value}</b></span>
+                <div key={`${c.label}·${c.value}`}><small>{c.label}</small><b>{c.value}</b></div>
               ))}
             </div>
-          </>
-        )}
+            <Note>Ezek nem számítanak a pontba. Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</Note>
+          </Card>
+        </>
+      )}
 
-        {scored && (
-          <p className="napom-foot">Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>
-        )}
+      {scored && !(evaluation && evaluation.context.length > 0) && (
+        <Note>Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</Note>
+      )}
 
-        {morning && date === yesterday && (
-          <button
-            type="button"
-            className="napom-tonext glass rise"
-            style={{ '--c': 'var(--dv-coral)', '--i': 7 } as CSSProperties}
-            onClick={() => navigate(`/nap/napom/${today}`)}
-          >
-            <span>
-              <span className="uv-eyebrow">REGGELI ÖSSZEFOGLALÓ · KÉSZ</span>
-              <strong>Tovább a mai napra</strong>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-        )}
-      </EntranceGroup>
-    </MozaikPage>
-  )
-}
-
-/** `alap 75 · a Mezo szerint +3 ▴` — the deterministic base and the Mezo's contextual
- *  correction stay two claims; the reason shows by default (owner 2026-09-26, mezo-7izrx) and
- *  a tap folds it away. */
-function AdjustmentPill({ base, adjustment }: { base: number; adjustment: { delta: number; reason: string } }) {
-  const [open, setOpen] = useState(true)
-  return (
-    <>
-      <button type="button" className="napom-corr" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        alap {base} · a Mezo szerint <b>{fmtDelta(adjustment.delta)}</b> <i aria-hidden="true">{open ? '▴' : '▾'}</i>
-      </button>
-      {open && <p className="napom-adjwhy">{adjustment.reason}</p>}
-    </>
+      {morning && date === yesterday && (
+        <>
+          <Section n={next()} title="Reggeli összefoglaló · kész" />
+          <Card>
+            <Row
+              icon="t-sun"
+              title="Tovább a mai napra"
+              sub={`${huDowFull(today).toLowerCase()} · élő nap`}
+              onClick={() => navigate(`/nap/napom/${today}`)}
+            />
+          </Card>
+        </>
+      )}
+    </Page>
   )
 }

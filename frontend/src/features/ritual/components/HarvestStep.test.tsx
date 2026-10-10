@@ -7,8 +7,8 @@ import { progressionProfileMock } from '@/data/progression/progressionMock'
 import type { GamificationDay } from '@/data/gamification/gamificationTypes'
 import { localDateString } from '@/shared/lib/dates'
 
-// Force reduced-motion so the choreography (harvestStages' inline animationDelay + the
-// np-anim/np-pop entrance classes) never masks content under jsdom (stubReduced pattern,
+// Force reduced-motion so the choreography (harvestStages' inline animationDelay on the vessel's
+// layers) never masks content under jsdom (stubReduced pattern,
 // LevelUpScreen.test.tsx / LoopsStep.test.tsx precedent).
 function stubReduced(matches = true) {
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -54,39 +54,39 @@ afterEach(() => {
 })
 
 describe('HarvestStep', () => {
-  test('renders the eyebrow, XP total, HU-labelled source chips, coin chips, the skill highlight, and an alive streak', () => {
+  test('renders the label, the XP total, one vessel layer per HU-labelled source, the coins, the skill highlight, and an alive streak', () => {
     stubReduced()
     setup()
     const { container } = render(<HarvestStep onNext={vi.fn()} />)
 
-    expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
+    expect(screen.getByText('A mai termés')).toBeInTheDocument()
     expect(screen.getByText('115')).toBeInTheDocument()
+    expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('+115 XP')
+    expect(screen.getByText(/Ennyit gyűjtöttél ma, négy forrásból\./)).toBeInTheDocument()
 
-    // Label and amount are separate spans — the chip is a flat cell with a 3D icon (Üveg,
-    // mezo-me75u.3), not one emoji-prefixed string.
-    expect(screen.getByText('Küldetések')).toBeInTheDocument()
-    expect(container.querySelector('.rz-chip-xp')).toHaveTextContent('+45')
-    expect(screen.getByText('Rutin')).toBeInTheDocument()
-    expect(screen.getByText('Napló')).toBeInTheDocument()
-    expect(screen.getByText('Edzés')).toBeInTheDocument()
-    // One 3D icon per visible source, and the quest source resolves to t-quest.
-    expect(container.querySelectorAll('.rz-chip .t-ico')).toHaveLength(4)
-    expect(container.querySelector('.rz-chip use')).toHaveAttribute('href', '#t-quest')
+    // One vessel (Folyadék, mezo-n4wf5.2): a layer per visible source, heaviest at the bottom, and
+    // the list beside it — the amount and the label, no icon.
+    expect(container.querySelectorAll('.nrz-strata .v i')).toHaveLength(4)
+    const rows = [...container.querySelectorAll('.nrz-strata li')].map((li) => li.textContent)
+    expect(rows).toEqual(['+45Küldetések', '+35Rutin', '+20Edzés', '+15Napló'])
+    // a layer is as tall as the XP it brought
+    expect((container.querySelector('.nrz-strata .v i') as HTMLElement).style.flexGrow).toBe('45')
 
-    // Scoped to the coin row: a source chip also reads +20 (GYM), so a bare text query is ambiguous.
-    const coins = [...container.querySelectorAll('.rz-coin-chip')].map((c) => c.textContent?.trim())
-    expect(coins).toEqual(['+10', '+20'])
-    expect(container.querySelectorAll('.rz-coin-chip use[href="#t-coin"]')).toHaveLength(2)
+    // The coins are ONE row with the day's sum (10 + 20).
+    expect(container.querySelector('.nrz-coins')).toHaveTextContent('Érme')
+    expect(container.querySelector('.nrz-coins .v')).toHaveTextContent('+30')
 
     // Skill highlight = the LIFE skill with the highest progressPct < 100 in the mock
-    // profile: `connection` (Kapcsolatok, progressPct 60, Lv 1) — bar + level only, the
+    // profile: `connection` (Kapcsolatok, progressPct 60, Lv 1) — level bar + level only, the
     // "még N XP a Lv M-ig" hint is deliberately dropped (no per-skill curve to derive it
     // from honestly — see HarvestStep.tsx's doc comment).
     expect(screen.getByText(/Kapcsolatok/)).toBeInTheDocument()
     expect(screen.getByText('Lv 1')).toBeInTheDocument()
+    expect(container.querySelector('.fo-row .fo-level i')).toHaveStyle({ width: '60%' })
     expect(screen.queryByText(/még.*XP/)).not.toBeInTheDocument()
 
     expect(screen.getByText(/12 napos sorozat él/)).toBeInTheDocument()
+    expect(container.querySelector('.nrz-streak')).not.toHaveClass('dim')
   })
 
   test('a dead streak dims the row and appends "— megszakadt" (the AppHero precedent)', () => {
@@ -95,21 +95,27 @@ describe('HarvestStep', () => {
     const { container } = render(<HarvestStep onNext={vi.fn()} />)
 
     expect(screen.getByText(/12 napos sorozat — megszakadt/)).toBeInTheDocument()
-    expect(container.querySelector('.rz-streak')).toHaveClass('dim')
+    expect(container.querySelector('.nrz-streak')).toHaveClass('dim')
   })
 
-  test('confetti bursts (10 particles) only when xpTotal > 0', () => {
+  test('the dark skin\'s confetti is gone — the filling vessel is the celebration', () => {
     stubReduced()
     setup()
     const { container } = render(<HarvestStep onNext={vi.fn()} />)
-    expect(container.querySelectorAll('.rz-conf i')).toHaveLength(10)
+    expect(container.querySelector('.rz-conf')).toBeNull()
+    expect(container.querySelectorAll('.nrz-strata .v')).toHaveLength(1)
   })
 
-  test('a thin (zero-XP) day renders no confetti', () => {
+  test('a thin (zero-XP) day shows an empty vessel and the soft acceptance line, no coin row', () => {
     stubReduced()
     setup({ xpTotal: 0, xpBySource: [], coinEvents: [], coinTotal: 0 })
     const { container } = render(<HarvestStep onNext={vi.fn()} />)
-    expect(container.querySelector('.rz-conf')).toBeNull()
+    expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('+0 XP')
+    expect(container.querySelectorAll('.nrz-strata .v')).toHaveLength(1)
+    expect(container.querySelectorAll('.nrz-strata .v i')).toHaveLength(0)
+    expect(screen.getByText('Ma ennyi fért bele. Az is számít.')).toBeInTheDocument()
+    expect(screen.queryByText(/forrásból/)).not.toBeInTheDocument()
+    expect(container.querySelector('.nrz-coins')).toBeNull()
   })
 
   test('an unmapped xp source is skipped defensively (the wire\'s open string type)', () => {

@@ -363,7 +363,7 @@ test('ha nincs hova visszalépni (közvetlen link), a lapot birtokló fülre vis
 test.each([
   ['/settings/fuel', '/nap'],
   ['/minden', '/nap'],
-  ['/nap/napom/2026-08-30', '/nap/napom'],
+  ['/nap/rutin/epites', '/nap/rutin'],
   ['/train/review/abc', '/train/mai'],
 ])('közvetlen linkről a %s vissza gombja ide visz: %s', async (path, home) => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

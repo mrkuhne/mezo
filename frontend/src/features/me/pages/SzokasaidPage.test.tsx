@@ -75,7 +75,7 @@ beforeEach(() => {
 })
 
 describe('SzokasaidPage — a lista saját oldala (mezo-mgpr)', () => {
-  test('egy sor egy csempe: név, szakasz, ismétlésszám, karika a %-kal, hátralévő idő', () => {
+  test('egy szokás egy sor: név, szakasz, ismétlésszám, szint a %-kal, hátralévő idő', () => {
     renderPage()
     const tile = screen.getByTestId('habit-tile-epul')
     expect(within(tile).getByText('Épülő szokás')).toBeInTheDocument()
@@ -84,6 +84,9 @@ describe('SzokasaidPage — a lista saját oldala (mezo-mgpr)', () => {
     expect(within(tile).getByText('40%')).toBeInTheDocument()
     expect(within(tile).getByText('5–11 hét')).toBeInTheDocument()
     expect(within(tile).getByText(/van hátra/)).toBeInTheDocument()
+    // the automaticity is a small level, not a ring
+    expect(tile.querySelector('.fo-mini .t i')).toHaveStyle({ height: '40%' })
+    expect(tile.querySelector('svg circle')).toBeNull()
   })
 
   test('a beérett csempe Beérett feliratot visel, nem határidőt', () => {
@@ -104,16 +107,33 @@ describe('SzokasaidPage — a lista saját oldala (mezo-mgpr)', () => {
 
   test('a négy szakasz-szűrő csempe a saját darabszámát mutatja, és többes szűrésre kapcsol', () => {
     renderPage()
-    const filters = screen.getAllByRole('button', { pressed: false }).filter((b) => b.classList.contains('rt-ftile'))
+    const filters = screen.getAllByRole('button', { pressed: false }).filter((b) => b.classList.contains('rb-stg-b'))
     expect(filters).toHaveLength(4)
     // counts: 'friss' no-estimate → stage 0; 'epul' 40% → stage 1; 'kesz' 93% → stage 3
     expect(filters[0]).toHaveTextContent('1')
     expect(filters[1]).toHaveTextContent('1')
     expect(filters[2]).toHaveTextContent('0')
     expect(filters[3]).toHaveTextContent('1')
+    // the riper the stage, the higher its vessel stands
+    expect(filters.map((b) => (b.querySelector('.t i') as HTMLElement).style.height)).toEqual(['25%', '50%', '75%', '100%'])
     fireEvent.click(filters[3])
+    expect(filters[3]).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('habit-tile-kesz')).toBeInTheDocument()
     expect(screen.queryByTestId('habit-tile-epul')).toBeNull()
+    expect(screen.getByRole('heading', { name: /Szokások · 1/ })).toBeInTheDocument()
+    fireEvent.click(filters[2])
+    expect(screen.getByRole('heading', { name: /Szokások · 1/ })).toBeInTheDocument()
+    fireEvent.click(filters[3])
+    expect(screen.getByText('Ebben a szakaszban most nincs szokásod.')).toBeInTheDocument()
+  })
+
+  test('a hero a valódi darabszámokból beszél, és az Új szokás a wizardot nyitja', () => {
+    const { container } = renderPage()
+    const hero = container.querySelector('.fo-hero') as HTMLElement
+    expect(hero).toHaveTextContent('3 aktív szokás · melyik szakaszt mutassam?')
+    expect(hero).toHaveTextContent('1 már magától megy, 1 úton van oda.')
+    fireEvent.click(within(hero).getByRole('button', { name: '+ Új szokás' }))
+    expect(navigate).toHaveBeenCalledWith('/nap/rutin/uj')
   })
 
   test('szűrő nélkül minden látszik — nincs ötödik „Mind" csempe', () => {
@@ -131,7 +151,7 @@ describe('SzokasaidPage — a lista saját oldala (mezo-mgpr)', () => {
 
   test('a csempe a szokás oldalára visz, és sehol nincs pipa', () => {
     renderPage()
-    fireEvent.click(screen.getByTestId('habit-tile-epul'))
+    fireEvent.click(within(screen.getByTestId('habit-tile-epul')).getByRole('button'))
     expect(navigate).toHaveBeenCalledWith('/nap/rutin/szokas/epul')
     expect(screen.queryByRole('checkbox')).toBeNull()
   })

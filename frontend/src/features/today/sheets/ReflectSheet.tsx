@@ -1,27 +1,32 @@
 import { Sheet } from '@/shared/ui/Sheet'
+import { FoSheetHead, Mini } from '@/shared/ui/folyadek'
 import type { Reflection } from '@/data/types'
 
-const OPTS: { v: Reflection; label: string }[] = [
-  { v: 'yes', label: 'Igen' }, { v: 'partial', label: 'Részben' }, { v: 'no', label: 'Nem' },
+const OPTS: { v: Reflection; label: string; pct: number }[] = [
+  { v: 'yes', label: 'Igen', pct: 100 }, { v: 'partial', label: 'Részben', pct: 50 }, { v: 'no', label: 'Nem', pct: 4 },
 ]
 
-// DS re-dress (mezo-setx.5.5): h2 role title; the option row reuses the DS-restyled
-// .reflect-opt buttons (44px min targets, press feedback).
-// Üveg (mezo-me75u.3): ONE floating amber glass sheet (bible U2 rule 15); the three options are
-// lit flat pills inside it. Styling only — `nap-glass-sheet` in the `uveg nap oldalak` block.
-export function ReflectSheet({ onReflect, onClose }:
-  { onReflect: (v: Reflection) => void; onClose: () => void }) {
+// The evening answer to the morning focus (the `intention_reflect` row of the routine).
+// FOLYADÉK (mezo-n4wf5.2, prototypes/vilagos/nap.js `SHEETS.reflect`, `.np-ref`): a light sheet;
+// the three answers are three capsules: full, half, nearly empty. `foci` (optional) are the
+// day's own focus sentences, quoted in the sub line.
+export function ReflectSheet({ onReflect, onClose, foci }:
+  { onReflect: (v: Reflection) => void; onClose: () => void; foci?: string[] }) {
+  const quoted = (foci ?? []).map((f) => `„${f}”`).join(', ')
   return (
-    <Sheet onClose={onClose} labelledBy="reflect-title" className="glass nap-glass-sheet">
+    <Sheet onClose={onClose} labelledBy="reflect-title" className="fo-sheet nck2-sheet">
       {(close) => (
-        <div className="col" style={{ padding: '4px 4px 8px', gap: 14 }}>
-          <h2 id="reflect-title" className="h-display size-lg">Szándékkal élted a napot?</h2>
-          <div className="reflect-opts">
+        <>
+          <FoSheetHead titleId="reflect-title" title="Szándékkal élted a napot?" icon="t-ring" onClose={close}
+            sub={quoted ? `Rutin · este · a mai szándékod: ${quoted}` : 'Rutin · este'} />
+          <div className="nck2-ref">
             {OPTS.map((o) => (
-              <button key={o.v} className="reflect-opt" onClick={() => { onReflect(o.v); close() }}>{o.label}</button>
+              <button key={o.v} type="button" onClick={() => { onReflect(o.v); close() }}>
+                <Mini pct={o.pct} /><b>{o.label}</b>
+              </button>
             ))}
           </div>
-        </div>
+        </>
       )}
     </Sheet>
   )

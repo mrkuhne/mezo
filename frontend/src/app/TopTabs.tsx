@@ -13,7 +13,7 @@ import { useId } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
-import { activeDomainId, activeTabRoute, domainById } from '@/app/navModel'
+import { activeDomainId, activeTabRoute, domainById, isHubPath } from '@/app/navModel'
 
 /** The tab whose pill carries the Mezo thread's unread count. */
 const THREAD_TAB = '/nap/uzenetek'
@@ -32,7 +32,7 @@ export function TopTabs({ dots }: TopTabsProps = {}) {
   const { unread } = useMezoThread()
   const idBase = useId()
   const domain = domainById(activeDomainId(pathname))
-  if (!domain || !domain.tabs.some((t) => t.route === pathname)) return null
+  if (!domain || !isHubPath(domain, pathname)) return null
   const activeRoute = activeTabRoute(domain, pathname)
   return (
     // `train-tabs` anchors the Edzés kalauz's tab-row orientation card (mezo-88iwa.5): this

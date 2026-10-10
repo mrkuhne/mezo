@@ -6,7 +6,7 @@ import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 
-// Force reduced-motion so the np-draw/rz-breath entrance choreography never masks content
+// Force reduced-motion so no entrance choreography ever masks content
 // under jsdom (stubReduced pattern, LevelUpScreen.test.tsx precedent).
 function stubReduced(matches = true) {
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -74,7 +74,7 @@ test('act 1 (Megérkezés) renders the fixed arrival line and no tab bar', () =>
   stubReduced()
   const { container } = renderApp()
   expect(screen.getByText('A nap véget ért.')).toBeInTheDocument()
-  expect(screen.getByText('Zárjuk le együtt.')).toBeInTheDocument()
+  expect(screen.getByText(/^Zárjuk le együtt\./)).toBeInTheDocument()
   expect(container.querySelector('.fo-nav')).toBeNull()
 })
 
@@ -88,11 +88,11 @@ test('clicking Kezdjük advances from act 1 to act 2 (DayStoryStep)', async () =
   expect(screen.queryByText('A nap véget ért.')).not.toBeInTheDocument()
 })
 
-test('the Kilépés exit navigates straight to /today, consequence-free from act 1', async () => {
+test('the Kilépés exit navigates straight to /nap, consequence-free from act 1', async () => {
   stubReduced()
   const user = userEvent.setup()
   renderApp()
-  // a worded flat pill now, not a „✕" glyph (Üveg, mezo-me75u.3)
+  // a worded link in the foot bar (Folyadék, mezo-n4wf5.2), not a „✕" glyph
   expect(screen.getByRole('button', { name: 'Kilépés' })).toHaveTextContent('Kilépés')
   await user.click(screen.getByRole('button', { name: 'Kilépés' }))
   // Today's face-independent landmark: a daypart's own content would make the exit
@@ -125,7 +125,7 @@ test('entering act 5 (Harvest) fires close() exactly once, then silently consume
   await user.click(screen.getByRole('button', { name: 'Ma nem írok' })) // act 3 -> act 4
   await user.click(screen.getByText('Tovább')) // act 4 -> act 5 (HarvestStep)
 
-  expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
+  expect(screen.getByText('A mai termés')).toBeInTheDocument()
   expect(close).toHaveBeenCalledTimes(1)
   // useNeeds resolves (the beforeEach default: isPending false) — the real rings payload
   // goes out, not the pending gate's `undefined` (covered separately below).
@@ -153,7 +153,7 @@ test('entering act 5 while useNeeds is still pending calls close(undefined) — 
   await user.click(screen.getByRole('button', { name: 'Ma nem írok' })) // act 3 -> act 4
   await user.click(screen.getByText('Tovább')) // act 4 -> act 5 (HarvestStep)
 
-  expect(screen.getByText('A MAI TERMÉS')).toBeInTheDocument()
+  expect(screen.getByText('A mai termés')).toBeInTheDocument()
   expect(close).toHaveBeenCalledTimes(1)
   expect(close).toHaveBeenCalledWith(undefined)
 })
@@ -177,7 +177,9 @@ test('the Kilépés exit before act 5 never calls close (consequence-free up to 
 test('renders six progress dots — one per act', () => {
   stubReduced()
   const { container } = renderApp()
-  expect(container.querySelectorAll('.rz-dot')).toHaveLength(6)
+  expect(container.querySelectorAll('.fo-dots i')).toHaveLength(6)
+  // …and the first one is the lit one on act 1
+  expect(container.querySelectorAll('.fo-dots i.on')).toHaveLength(1)
 })
 
 test('act 3 (Ma milyen volt) sits between A napod íve and Nyitott hurkok, and the skip writes nothing', async () => {

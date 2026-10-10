@@ -1,7 +1,8 @@
-// A napom · the week strip (prototype uveg-napod-body.html `week()`, owner OK 2026-09-24) — the
-// seven days of the viewed day's week, one tap each. Replaces the old "‹ Napok" list. The 4px
-// mark under each number is the day's state: scored (gradient), thin (dashed), today (coral),
-// future (dimmed, and not openable — there is nothing there yet).
+// A napom · the week strip (Folyadék prototype `ndWeek`, vilagos/nap.js) — the seven days of the
+// viewed day's week as seven small vessels, one tap each. A scored day fills to its score and
+// shows it; today is „élő" and fills with the areas done so far; a thin day is a sliver with a
+// dash; a future day is empty and not openable — there is nothing there yet. The viewed day
+// wears the ink outline.
 import type { CSSProperties } from 'react'
 import { addDays, huMonthDay } from '@/shared/lib/dates'
 import { cn } from '@/shared/lib/cn'
@@ -10,41 +11,54 @@ import type { MeWeekDay } from '@/data/me/meWeek'
 
 const LETTERS = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'] as const
 
-function markClass(iso: string, today: string, day: MeWeekDay | undefined): string | null {
-  if (iso === today) return 'is-today'
-  if (iso > today) return 'is-fut'
+type Mark = 'today' | 'fut' | 'sc' | 'th' | null
+
+function markOf(iso: string, today: string, day: MeWeekDay | undefined): Mark {
+  if (iso === today) return 'today'
+  if (iso > today) return 'fut'
   if (!day) return null
   const st = dayState(day, today)
-  return st === 'scored' ? 'is-sc' : st === 'thin' ? 'is-th' : null
+  return st === 'scored' ? 'sc' : st === 'thin' ? 'th' : null
 }
 
-export function NapomWeekStrip({ date, today, days, onPick }: {
+export function NapomWeekStrip({ date, today, days, liveDone = null, onPick }: {
   /** The viewed day — the strip shows its week. */
   date: string
   today: string
   /** `useMeWeek(monday).days` — empty while the week is still loading. */
   days: readonly MeWeekDay[]
+  /** Today's done areas (0–6) when today's open evaluation is the one on screen; `null` when the
+   *  page is showing another day, so today's vessel claims no level. */
+  liveDone?: number | null
   onPick: (iso: string) => void
 }) {
   const monday = mondayOf(date)
   return (
-    <div className="napom-week rise" role="group" aria-label="A hét napjai" style={{ '--i': 1 } as CSSProperties}>
+    <div className="nn-week" role="group" aria-label="A hét napjai">
       {LETTERS.map((letter, i) => {
         const iso = addDays(monday, i)
-        const fut = iso > today
+        const day = days.find((d) => d.date === iso)
+        const mark = markOf(iso, today, day)
+        const score = mark === 'sc' ? (day?.score ?? null) : null
+        const pct = score != null ? score : mark === 'today' ? ((liveDone ?? 0) / 6) * 100 : mark === 'th' ? 7 : 0
+        const text = score != null ? score : mark === 'th' ? '–' : mark === 'today' ? 'élő' : ''
         return (
           <button
             key={iso}
             type="button"
-            className={cn('napom-wd', markClass(iso, today, days.find((d) => d.date === iso)), iso === date && 'is-on')}
+            // `lo` = the liquid does not cover the caption, so it stands above the level, in ink.
+            className={cn(mark, pct < 40 && 'lo', iso === date && 'on')}
             aria-label={`${huDowFull(iso)}, ${huMonthDay(iso)}`}
             aria-current={iso === date ? 'date' : undefined}
-            disabled={fut}
+            disabled={mark === 'fut'}
             onClick={() => onPick(iso)}
           >
-            {letter}
-            <b>{Number(iso.slice(8))}</b>
-            <i aria-hidden="true" />
+            <small>{letter}</small>
+            <span className="t" aria-hidden="true" style={{ '--p': `${Math.max(0, Math.min(100, pct))}%` } as CSSProperties}>
+              <i style={{ height: `${Math.max(0, Math.min(100, pct))}%` }} />
+              <b>{text}</b>
+            </span>
+            <em>{Number(iso.slice(8))}</em>
           </button>
         )
       })}

@@ -78,7 +78,7 @@ describe('AiSuggestSheet', () => {
     fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
     await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
 
-    const card = screen.getByText('Esti telefon-lezárás').closest('.card') as HTMLElement
+    const card = screen.getByText('Esti telefon-lezárás').closest('.rb-sug') as HTMLElement
     fireEvent.click(within(card).getByRole('button', { name: ACCEPT }))
 
     // ADR 0019: the suggester PROPOSES. Accepting must open the wizard, never create a habit —
@@ -152,5 +152,17 @@ describe('AiSuggestSheet', () => {
     useHabitAiSuggest.mockReturnValue({ suggest, pending: true, unavailable: false })
     render(<AiSuggestSheet onClose={vi.fn()} />)
     expect(screen.getByRole('button', { name: /javasolj/i })).toBeDisabled()
+  })
+
+  it('is a light sheet, and a suggestion shows its anchor, life area by NAME, XP and chain as chips', async () => {
+    const { baseElement } = render(<AiSuggestSheet onClose={vi.fn()} />)
+    expect(baseElement.querySelector('.sheet.fo-sheet')).not.toBeNull()
+    expect(baseElement.querySelector('.glass')).toBeNull()
+    expect(screen.getByRole('heading', { name: 'Milyen szokás segítene?' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /javasolj/i }))
+    await waitFor(() => expect(screen.getByText('Esti telefon-lezárás')).toBeInTheDocument())
+    const card = screen.getByText('Esti telefon-lezárás').closest('.rb-sug') as HTMLElement
+    expect(card.querySelectorAll('.fo-chips span').length).toBeGreaterThanOrEqual(3)
+    expect(card.querySelector('.fo-chips')).toHaveTextContent(/XP/)
   })
 })

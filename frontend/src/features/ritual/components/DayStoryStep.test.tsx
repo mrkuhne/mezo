@@ -5,7 +5,7 @@ import { DayStoryStep } from '@/features/ritual/components/DayStoryStep'
 import type { DayRecap } from '@/data/ritual/recapHooks'
 import type { CheckinSlot } from '@/data/types'
 
-// Force reduced-motion so the np-draw/np-pop/np-anim entrance choreography never masks
+// Force reduced-motion so no entrance choreography ever masks
 // content under jsdom (stubReduced pattern, RitualPage.test.tsx precedent).
 function stubReduced(matches = true) {
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -58,7 +58,7 @@ afterEach(() => {
 })
 
 describe('DayStoryStep', () => {
-  test('renders the header, the arc, and one .rz-ev row per recap event with icon/label/meta', () => {
+  test('renders the header, the arc, and one row per recap event with icon/label/meta', () => {
     stubReduced()
     setup()
     const { container } = render(<DayStoryStep onNext={vi.fn()} />)
@@ -66,27 +66,33 @@ describe('DayStoryStep', () => {
     expect(screen.getByText('A napod íve')).toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'A napod íve — összegzés' })).toBeInTheDocument()
 
-    const rows = container.querySelectorAll('.rz-ev')
+    // the arc is the kit's liquid surface, with a dot per DONE check-in (2 of the 4 slots)
+    expect(container.querySelectorAll('.nrz-arc svg.fo-area')).toHaveLength(1)
+    expect(container.querySelectorAll('.nrz-arc circle[r="2"]')).toHaveLength(2)
+
+    const rows = container.querySelectorAll('.fo-card .fo-row')
     expect(rows).toHaveLength(recap.events.length)
     expect(screen.getByText('Pull A — kész')).toBeInTheDocument()
-    // The data's „✓" glyph renders as the 3D tick (Üveg, mezo-me75u.3): the time stays as text.
+    // The data's „✓" glyph renders as the tick mark (Folyadék kit `Mark`): the time stays as text.
     expect(screen.getByText('17:30')).toBeInTheDocument()
-    expect(rows[0].querySelector('use[href="#t-tick"]')).not.toBeNull()
+    expect(rows[0].querySelector('.fo-mk.d')).not.toBeNull()
+    // each row wears its Folyadék-jel glyph: the workout the dumbbell, the meals the bowl
+    expect(rows[0].querySelector('.si use')).toHaveAttribute('href', '#t-dumbbell')
     expect(screen.queryByText(/✓/)).not.toBeInTheDocument()
     expect(screen.getByText('4 étkezés')).toBeInTheDocument()
     expect(screen.getByText('132 g fehérje')).toBeInTheDocument()
   })
 
-  test('done rows carry .ok, not-done rows do not', () => {
+  test('done rows carry the ok value colour, not-done rows do not', () => {
     stubReduced()
     setup()
     const { container } = render(<DayStoryStep onNext={vi.fn()} />)
-    const rows = container.querySelectorAll('.rz-ev')
+    const rows = container.querySelectorAll('.fo-card .fo-row')
 
-    expect(rows[0].querySelector('.ok')).not.toBeNull() // Pull A — done: true
-    expect(rows[1].querySelector('.ok')).toBeNull() // 4 étkezés — done: false
+    expect(rows[0]).toHaveClass('nrz-ok') // Pull A — done: true
+    expect(rows[1]).not.toHaveClass('nrz-ok') // 4 étkezés — done: false
     // …and only a done row the data marked „✓" carries the tick
-    expect(rows[1].querySelector('use[href="#t-tick"]')).toBeNull()
+    expect(rows[1].querySelector('.fo-mk')).toBeNull()
   })
 
   test('thinDay renders the soft acceptance line above whatever events exist — never a gap list', () => {
@@ -96,7 +102,9 @@ describe('DayStoryStep', () => {
 
     expect(screen.getByText('Ma ennyi fért bele. Az is számít.')).toBeInTheDocument()
     // events still render — thinDay never replaces the list with nothing
-    expect(container.querySelectorAll('.rz-ev')).toHaveLength(recap.events.length)
+    expect(container.querySelectorAll('.fo-card .fo-row')).toHaveLength(recap.events.length)
+    // …and it IS the verdict now, replacing the default one
+    expect(screen.queryByText('Így telt a mai nap.')).not.toBeInTheDocument()
   })
 
   test('thinDay is false renders no soft line', () => {
@@ -104,6 +112,7 @@ describe('DayStoryStep', () => {
     setup({ thinDay: false })
     render(<DayStoryStep onNext={vi.fn()} />)
     expect(screen.queryByText('Ma ennyi fért bele. Az is számít.')).not.toBeInTheDocument()
+    expect(screen.getByText('Így telt a mai nap.')).toBeInTheDocument()
   })
 
   test('Tovább advances to the next act', async () => {
