@@ -80,6 +80,8 @@ export const frameHu = {
     },
   },
   nav: { domains: 'Területek', quickLog: 'Gyors logolás' },
+  // The bar above the chat composer while a workout is open.
+  returnBar: { title: 'Vissza az edzéshez', go: 'Vissza', setsDone: (n: number) => `${n} szett kész` },
   topTabs: {
     pagesOf: (domain: string) => `${domain} oldalai`,
     dotMark: 'kész a tegnapi értékelés',

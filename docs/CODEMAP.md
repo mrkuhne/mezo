@@ -370,7 +370,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/journal.md](features/journal.md) (updated 2026-10-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-10-11, mixed) ·
-  [docs/features/settings.md](features/settings.md) (updated 2026-10-09, done) ·
+  [docs/features/settings.md](features/settings.md) (updated 2026-10-11, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-10-11, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
@@ -1455,7 +1455,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### settings
 
-*FE-ui* · read next: [docs/features/settings.md](features/settings.md) (updated 2026-10-09, done)
+*FE-ui* · read next: [docs/features/settings.md](features/settings.md) (updated 2026-10-11, done)
 
 - **FE ui** `frontend/src/features/settings`
   - **pages:** AccountSettingsPage.tsx, MeSettingsPage.tsx, MezoPersonalPage.tsx, MezoSettingsPage.tsx,

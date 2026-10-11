@@ -79,6 +79,7 @@ export const frameEn: Shape<typeof frameHu> = {
     },
   },
   nav: { domains: 'Areas', quickLog: 'Quick log' },
+  returnBar: { title: 'Back to your workout', go: 'Back', setsDone: (n) => `${n} ${plural(n, { one: 'set', other: 'sets' })} done` },
   topTabs: {
     pagesOf: (domain) => `${domain} pages`,
     dotMark: 'yesterday’s review is ready',
