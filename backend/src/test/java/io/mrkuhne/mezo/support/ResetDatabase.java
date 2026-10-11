@@ -65,6 +65,8 @@ public class ResetDatabase {
         entityManager.createNativeQuery("DELETE FROM app_user WHERE lower(email) <> lower(:ownerEmail)")
             .setParameter("ownerEmail", ownerProperties.ownerEmail())
             .executeUpdate();
+        // The surviving owner may have been switched to English by a language test (mezo-n4wf5.11).
+        entityManager.createNativeQuery("UPDATE app_user SET language = 'hu' WHERE language <> 'hu'").executeUpdate();
         // User-authored catalog rows go; master content (created_by null) survives for the loader.
         entityManager.createNativeQuery("DELETE FROM exercise_catalog WHERE created_by IS NOT NULL").executeUpdate();
     }

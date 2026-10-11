@@ -42,7 +42,7 @@ class AuthServiceTest {
 
     @Test
     void testRegister_shouldReturn409_whenSaveRacesPastPreCheck() {
-        RegisterRequest req = new RegisterRequest("MEZO-AAAA-AAAA", "race@test.local", "titkos-jelszo-1", "Race");
+        RegisterRequest req = new RegisterRequest("MEZO-AAAA-AAAA", "race@test.local", "titkos-jelszo-1", "Race", null);
         when(appUserRepository.existsByEmail("race@test.local")).thenReturn(false);
         when(passwordEncoder.encode("titkos-jelszo-1")).thenReturn("hashed");
         when(appUserRepository.saveAndFlush(any(AppUserEntity.class)))

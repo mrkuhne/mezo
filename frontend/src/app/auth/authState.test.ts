@@ -1,7 +1,7 @@
 import { ApiError } from '@/data/_client/api'
 import { deriveFromError, deriveFromMe } from '@/app/auth/authState'
 
-const me = { id: '1', email: 'a@b.c', name: 'A', role: 'USER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest' }
+const me = { id: '1', email: 'a@b.c', name: 'A', role: 'USER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest', language: 'hu' as const }
 
 test('an onboarded user with a fresh password is ready', () => {
   expect(deriveFromMe(me)).toBe('ready')

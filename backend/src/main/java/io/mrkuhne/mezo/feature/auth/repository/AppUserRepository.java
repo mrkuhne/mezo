@@ -20,6 +20,10 @@ public interface AppUserRepository extends JpaRepository<AppUserEntity, UUID> {
     @Query("update AppUserEntity u set u.name = :name, u.email = :email where u.id = :id")
     void updateAccount(@Param("id") UUID id, @Param("name") String name, @Param("email") String email);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update AppUserEntity u set u.language = :language where u.id = :id")
+    void updateLanguage(@Param("id") UUID id, @Param("language") String language);
+
     /** The cron fan-out set (spec L1): ACTIVE and onboarded. Disabled or half-registered accounts get no jobs. */
     List<AppUserEntity> findByStatusAndOnboardedAtIsNotNull(AppUserEntity.UserStatus status);
 

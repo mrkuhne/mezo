@@ -171,15 +171,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
   - **repositories:** `AppUserRepository`, `InviteRepository`
   - **services:** `AdminService`, `AuthService`, `CurrentUser`, `InviteService`, `PersonaContext`, `PromptPersona`,
-    `UserFanOut`
+    `UserFanOut`, `UserLanguage`
   - **controllers→contract:** `AdminController`→`AdminApi`, `AuthController`→`AuthApi`
   - **other:** `AuthProperties`, `AuthStartupGuard`, `OwnerProperties`, `OwnerSeedData`
 - **Contract** `api/feature/admin/admin.yml` — 6 operations
   - **endpoints:** POST /api/admin/invites · GET /api/admin/invites · DELETE /api/admin/invites/{id} ·
     GET /api/admin/users · POST /api/admin/users/{id}/reset-password · POST /api/admin/users/{id}/status
-- **Contract** `api/feature/auth/auth.yml` — 6 operations
+- **Contract** `api/feature/auth/auth.yml` — 7 operations
   - **endpoints:** POST /api/auth/login · POST /api/auth/register · PUT /api/auth/me · GET /api/auth/me ·
-    POST /api/auth/change-password · POST /api/auth/onboarding-complete
+    PUT /api/auth/me/language · POST /api/auth/change-password · POST /api/auth/onboarding-complete
 - **FE data** `frontend/src/data/auth`
   - **hooks (via `@/data/hooks`):** `ME_QUERY_KEY`, `useAuthActions`, `useMe`, `useOnboardingActions`
   - **modules:** authApi.ts, authHooks.ts, authMock.ts, onboardingHooks.ts
@@ -188,9 +188,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** ChangePasswordSheet.tsx
   - **components:** AuthShell.tsx, ChangePasswordForm.tsx, StepField.tsx
   - **logic:** authErrorText.ts, onboardingSteps.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 12 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 13 IT + 4 unit
   - **ITs:** `AccountUpdateIT`, `AdminInviteIT`, `AdminUserIT`, `AuthControllerIT`, `AuthIsolationIT`, `AuthMeIT`,
-    `AuthOnboardingIT`, `AuthRegisterIT`, `CurrentUserIT`, `OwnerSeedDataIT`, `PromptPersonaIT`, `UserFanOutIT`
+    `AuthOnboardingIT`, `AuthRegisterIT`, `CurrentUserIT`, `LanguageIT`, `OwnerSeedDataIT`, `PromptPersonaIT`,
+    `UserFanOutIT`
   - **populators:** `UserPopulator`
 
 ### biometrics
@@ -1696,8 +1697,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### techcore — `backend/src/main/java/io/mrkuhne/mezo/techcore`
 
-- **configuration:** `AsyncConfiguration`, `FeaturesConfiguration`, `JacksonConfiguration`, `SchedulingConfiguration`
+- **configuration:** `AsyncConfiguration`, `FeaturesConfiguration`, `JacksonConfiguration`,
+  `MessageSourceConfiguration`, `SchedulingConfiguration`
 - **exception:** `GlobalExceptionHandler`, `Level`, `SystemMessage`, `SystemRuntimeErrorException`, `Type`
+- **message:** `UserMessages`
 - **persistence:** `OwnedEntity`, `OwnedRepository`, `OwnershipGuard`
 - **query:** `WeightTrendQuery`
 - **security:** `CorsProperties`, `CurrentUserId`, `LlmActorContext`, `SecurityConfig`

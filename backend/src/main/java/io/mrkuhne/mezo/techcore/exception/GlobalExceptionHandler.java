@@ -1,12 +1,11 @@
 package io.mrkuhne.mezo.techcore.exception;
 
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
-import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -27,7 +26,7 @@ import tools.jackson.core.JacksonException;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
-    private final MessageSource messageSource;
+    private final UserMessages userMessages;
 
     @ExceptionHandler(SystemRuntimeErrorException.class)
     public ResponseEntity<List<SystemMessage>> handle(SystemRuntimeErrorException ex) {
@@ -258,6 +257,6 @@ public class GlobalExceptionHandler {
 
     private String resolve(SystemMessage m) {
         Object[] params = m.getParams() == null ? new Object[0] : m.getParams().toArray();
-        return messageSource.getMessage(m.getCode(), params, m.getCode(), Locale.ENGLISH);
+        return userMessages.text(m.getCode(), params);
     }
 }

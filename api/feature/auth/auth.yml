@@ -128,6 +128,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/me/language:
+    put:
+      tags: [Auth]
+      operationId: updateLanguage
+      summary: Switch the authenticated user's interface and AI language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateLanguageRequest' }
+      responses:
+        '200':
+          description: Updated current account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeResponse' }
+        '400':
+          description: Unsupported language
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/auth/change-password:
     post:
       tags: [Auth]
@@ -170,6 +196,15 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
 components:
   schemas:
+    Language:
+      type: string
+      enum: [hu, en]
+      description: Interface and AI language of an account (hu is the default)
+    UpdateLanguageRequest:
+      type: object
+      required: [language]
+      properties:
+        language: { $ref: '#/components/schemas/Language' }
     UpdateAccountRequest:
       type: object
       required: [name, email]
@@ -222,6 +257,8 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        language:
+          $ref: '#/components/schemas/Language'
     MeResponse:
       type: object
       required:
@@ -232,6 +269,7 @@ components:
         - onboarded
         - mustChangePassword
         - timezone
+        - language
       properties:
         id:
           type: string
@@ -250,6 +288,8 @@ components:
         timezone:
           type: string
           example: Europe/Budapest
+        language:
+          $ref: '#/components/schemas/Language'
     ChangePasswordRequest:
       type: object
       required:

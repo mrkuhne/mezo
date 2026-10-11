@@ -52,7 +52,7 @@ class AdminInviteIT extends ApiIntegrationTest {
     void testListInvites_shouldShowConsumerName_whenCodeWasUsed() {
         InviteResponse open = postForBody(URI, new CreateInviteRequest(null, null), ownerAuthHeaders(), HttpStatus.OK, InviteResponse.class);
         InviteResponse used = postForBody(URI, new CreateInviteRequest("Béla", null), ownerAuthHeaders(), HttpStatus.OK, InviteResponse.class);
-        postForBody("/api/auth/register", new RegisterRequest(used.getCode(), "bela-admin@test.local", "teszt-jelszo-1", "Béla"),
+        postForBody("/api/auth/register", new RegisterRequest(used.getCode(), "bela-admin@test.local", "teszt-jelszo-1", "Béla", null),
             null, HttpStatus.OK, TokenResponse.class);
 
         List<InviteResponse> invites = getForList(URI, ownerAuthHeaders(), HttpStatus.OK, InviteResponse.class);
@@ -74,7 +74,7 @@ class AdminInviteIT extends ApiIntegrationTest {
     @Test
     void testDeleteInvite_shouldReturn409_whenCodeAlreadyUsed() {
         InviteResponse used = postForBody(URI, new CreateInviteRequest(null, null), ownerAuthHeaders(), HttpStatus.OK, InviteResponse.class);
-        postForBody("/api/auth/register", new RegisterRequest(used.getCode(), "used-admin@test.local", "teszt-jelszo-1", "Dóra"),
+        postForBody("/api/auth/register", new RegisterRequest(used.getCode(), "used-admin@test.local", "teszt-jelszo-1", "Dóra", null),
             null, HttpStatus.OK, TokenResponse.class);
 
         String body = exchangeForBody(org.springframework.http.HttpMethod.DELETE, URI + "/" + used.getId(), null,

@@ -26,7 +26,7 @@ class AuthMeIT extends ApiIntegrationTest {
         UUID ownerId = appUserRepository.findByEmail("owner@mezo.local").orElseThrow().getId();
         String code = inviteService.create(ownerId, null, null).getCode();
         TokenResponse token = postForBody("/api/auth/register",
-            new RegisterRequest(code, email, "titkos-jelszo-1", "Teszt"), null, HttpStatus.OK, TokenResponse.class);
+            new RegisterRequest(code, email, "titkos-jelszo-1", "Teszt", null), null, HttpStatus.OK, TokenResponse.class);
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token.getToken());
         return headers;

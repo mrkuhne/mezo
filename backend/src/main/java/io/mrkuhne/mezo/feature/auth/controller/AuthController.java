@@ -35,6 +35,11 @@ public class AuthController implements AuthApi {
     }
 
     @Override
+    public MeResponse updateLanguage(io.mrkuhne.mezo.api.dto.UpdateLanguageRequest request) {
+        return authService.updateLanguage(currentUser.get(), request);
+    }
+
+    @Override
     public MeResponse me() {
         return authService.me(currentUser.get());
     }

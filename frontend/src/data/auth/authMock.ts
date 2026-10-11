@@ -10,4 +10,5 @@ export const mockMe: MeResponse = {
   onboarded: true,
   mustChangePassword: false,
   timezone: 'Europe/Budapest',
+  language: 'hu',
 }
