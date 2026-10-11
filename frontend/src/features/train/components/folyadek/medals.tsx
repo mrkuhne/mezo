@@ -3,19 +3,12 @@
 // `.ex-stars` in folyadek-edzes-kozos.css.
 import type { Medal } from '@/data/train/medalTypes'
 import {
-  MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel,
+  MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalPreviousShare, medalValueLabel,
 } from '@/features/train/logic/medalLabels'
 import { huMonthDay } from '@/shared/lib/dates'
 import { Icon3D } from '@/shared/ui/clay'
 import { Row, St } from '@/shared/ui/folyadek'
 import { Rcap } from './rows'
-
-/** Where the old record stood inside the new one, in % — the capsule's dashed line. Only when
- *  both numbers are real and comparable (a RECORD with a positive previous value). */
-function previousShare(medal: Medal): number | null {
-  if (medal.tier !== 'RECORD' || medal.previousValue == null || !(medal.value > 0) || medal.previousValue <= 0) return null
-  return (medal.previousValue / medal.value) * 100
-}
 
 /** One medal as a row (prototype `medalRow`). `titled="exercise"` names the exercise and puts the
  *  medal's kind under it (the cabinet); `titled="type"` names the kind and puts the date under it
@@ -28,7 +21,7 @@ export function MedalRow({ medal, titled = 'exercise', date }: { medal: Medal; t
     <Row
       className="ex-medal"
       data-tier={medal.tier}
-      left={target ? <Rcap color="var(--fo-ok)" /> : <Rcap prev={previousShare(medal)} />}
+      left={target ? <Rcap color="var(--fo-ok)" /> : <Rcap prev={medalPreviousShare(medal)} />}
       title={<>{titled === 'exercise' ? medal.exerciseName : typeLabel} <St tone={target ? 'ok' : 'warn'}>{tier.tag}</St></>}
       sub={(
         <>

@@ -77,3 +77,10 @@ export function medalValueLabel(medal: Medal): string {
   }
   return `${formatMedalNumber(medal.value)} ${MEDAL_UNIT_LABEL[medal.unit] ?? ''}`.trim()
 }
+
+/** Where the old record stood inside the new one, in % — the dashed line on a record capsule (`Rcap prev`).
+ *  Only when both numbers are real and comparable (a RECORD with a positive previous value); else null = no line. */
+export function medalPreviousShare(medal: Medal): number | null {
+  if (medal.tier !== 'RECORD' || medal.previousValue == null || !(medal.value > 0) || medal.previousValue <= 0) return null
+  return (medal.previousValue / medal.value) * 100
+}

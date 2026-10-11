@@ -6,6 +6,11 @@ export function Foot(p: { nonav?: boolean; className?: string; children: ReactNo
   return <div className={cx('fo-foot', p.nonav && 'nonav', p.className)}>{p.children}</div>
 }
 
+/** A foot whose content is stacked: the full-width button, then a quiet line or a text link under it (`sub`). */
+export function FootCol(p: { sub?: ReactNode; className?: string; children: ReactNode }) {
+  return <div className={cx('fo-fcol', p.className)}>{p.children}{p.sub != null && <span className="fo-fsub">{p.sub}</span>}</div>
+}
+
 /** Two (or `three`) equal cells in a row: paired buttons or paired fields. */
 export function TwoBtn({ three, className, ...rest }: HTMLAttributes<HTMLDivElement> & { three?: boolean }) {
   return <div className={cx('fo-two', three && 'three', className)} {...rest} />

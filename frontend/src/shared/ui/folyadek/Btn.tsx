@@ -25,3 +25,8 @@ export function Lk({ className, type = 'button', bad, ...rest }: ButtonHTMLAttri
 export function Acts({ center, className, ...rest }: HTMLAttributes<HTMLDivElement> & { center?: boolean }) {
   return <div className={cx('fo-acts', center && 'center', className)} {...rest} />
 }
+
+/** The round three-dot button: „more actions" for the thing it sits on. Directly inside a `Hero` it takes the top right corner. */
+export function DotsBtn({ className, type = 'button', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { 'aria-label': string }) {
+  return <button type={type} className={cx('fo-dotsbtn', className)} {...rest}><i /><i /><i /></button>
+}

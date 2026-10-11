@@ -516,3 +516,9 @@ test('nothing pending means no pending note', () => {
   const { container } = render(<WorkoutCeremony {...props({ settled: true, pendingSets: 0 })} />)
   expect(container.textContent).not.toMatch(/kihagyott státusszal/)
 })
+
+test('ceremonyRecord keeps where the old record stood (the Folyadék capsule\'s dashed line), and omits it without one', () => {
+  const base = { tier: 'RECORD', exerciseName: 'Row', date: '2026-09-24', unit: 'KG', type: 'WEIGHT', value: 12.5, weightKg: 12.5, reps: 8 } as const
+  expect(ceremonyRecord({ ...base, previousValue: 10 }).prevShare).toBe(80)
+  expect(ceremonyRecord(base).prevShare).toBeUndefined()
+})

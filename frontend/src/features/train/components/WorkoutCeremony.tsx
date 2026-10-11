@@ -43,7 +43,7 @@ import type { Challenge } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { verdictFor, type CerScore, type MuscleStarRow } from '@/features/train/logic/cerScore'
 import { muscleColor } from '@/features/train/logic/muscleColors'
-import { MEDAL_TYPE_LABEL, formatMedalNumber } from '@/features/train/logic/medalLabels'
+import { MEDAL_TYPE_LABEL, formatMedalNumber, medalPreviousShare } from '@/features/train/logic/medalLabels'
 import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
@@ -52,7 +52,10 @@ import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 /** One record row of the step-one records card: the exercise, the medal type label
  *  (MEDAL_TYPE_LABEL) and the plain achieved values as chips ('105 kg', '10 ism.'). */
-export interface CeremonyRecord { name: string; kind: string; values: string[] }
+export interface CeremonyRecord { name: string; kind: string; values: string[]
+  /** Where the OLD record stood inside the new one, in % (`medalPreviousShare`) — the dashed line of the
+   *  Folyadék record capsule (`Rcap prev`). Absent when the medal carries no comparable previous value. */
+  prevShare?: number }
 
 /** One ACCEPTED challenge of the session with its outcome (the stats card's Küldetések). */
 export interface CeremonyChallenge {
@@ -87,7 +90,7 @@ export function ceremonyRecord(m: Medal): CeremonyRecord {
     default:
       values = [`${huNum(m.value)} kg`]
   }
-  return { name: m.exerciseName, kind: MEDAL_TYPE_LABEL[m.type] ?? m.type, values }
+  return { name: m.exerciseName, kind: MEDAL_TYPE_LABEL[m.type] ?? m.type, values, prevShare: medalPreviousShare(m) ?? undefined }
 }
 
 /**
