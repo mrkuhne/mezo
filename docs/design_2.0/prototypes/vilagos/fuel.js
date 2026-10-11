@@ -369,7 +369,7 @@ function mai(arg){
   ${card(row({icon:'t-bowl',title:L('Logolj bármit','Log anything'),sub:L('ablakon kívül is','outside the windows too'),on:past?'log.potlas':'log'})
     /* a tegnapi pótolható ablakok csalija: csak a mai nézetben, ha tegnap maradt üres ablak és nem kímélő nap volt */
     +(!past&&!mode?row({icon:'t-history',title:L(`${dL(10,6)} · 2 ablak pótolható`,`${dL(10,6)} · 2 windows can still be added`),sub:L('tegnap','yesterday'),on:'mai.tegnap'}):''),{i:7})}
-  ${learnMark(V)?sec(++n,L('A nap a tanulásban','The day in the learning'),8)+card(learnMark(V),{i:8}):''}`);
+  ${learnMark(V)?sec(++n,L('A nap a tanulásban','Today and the learning'),8)+card(learnMark(V),{i:8}):''}`);
 }
 
 /* gHero: hős saját grafikával — címke → grafika → ítélet-mondat → gomb */
@@ -1200,7 +1200,7 @@ function trendek(arg){
       +(kcs.some(v=>v!=null)?seriesG(kcs,{h:84,c:'color-mix(in srgb,var(--carb) 55%,#fff)',c2:'var(--carb)',aria:L('Heti átlag kalória 7 héten át','Weekly average calories over 7 weeks')}):'')
       +note(L('A heti átlagok egymás alatt: fent a súly, lent az evés, ugyanazokon a heteken. Egyik sem ok, csak együttjárás.','Weekly averages one under the other: weight above, eating below, over the same weeks. Neither causes the other; they just move together.')),{i:4});
   const pats=arg==='mintanelkul'?[]:PATS;
-  return page('fuel',{title:L('Trendek','Trends'),sub:`Fuel · ${V.title}`,tab:'trendek'},`
+  return page('fuel',{title:L('Trendek','Trends'),sub:`Fuel · ${['mult','egyszint','hetkoznap'].includes(arg)?L('múlt hét','last week'):L('ez a hét','this week')}`,tab:'trendek'},`
   ${nav}
   ${gHero({lbl:L(`${n} / 7 naplózott nap · ebből áll a heti kép`,`${n} of 7 days logged · this is what the week is built from`),g:weekVes(V)+leg,verdict,sub:`${sub?sub+' ':''}${hint}`},1)}
   ${sec(1,L('A hét számai','The week in numbers'),2)}
