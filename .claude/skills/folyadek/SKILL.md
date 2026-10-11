@@ -1,6 +1,6 @@
 ---
 name: folyadek
-description: Session driver for the Folyadék programme (epic mezo-n4wf5, owner decisions 2026-10-08/09) — rebuilding the whole app from the dark Üveg/Boop world into the approved Folyadék identity (light only, structure-first page skeleton, everything is a level that fills, own outlined icon family, team named by field, five domains in the bottom bar). One slice per fresh session, the same loop every time - prototype of the slice checked against the live app and iterated on the Artifact → owner OK → build → gates → merge to main → deploy → live check → Hungarian report. Use when the user invokes /folyadek or asks to continue the folyadék / új design / átépítés work.
+description: Session driver for the Folyadék programme (epic mezo-n4wf5, owner decisions 2026-10-08/09) — rebuilding the whole app from the dark Üveg/Boop world into the approved Folyadék identity (light only, structure-first page skeleton, everything is a level that fills, own outlined icon family, team named by field, five domains in the bottom bar) AND, since 2026-10-11, making it usable in English (language switch in Settings; screen texts, prompts, AI answers, chat and evaluations follow it — slices N1–N3, and every remaining F slice ships bilingual). One slice per fresh session, the same loop every time - prototype of the slice checked against the live app and iterated on the Artifact → owner OK → build → gates → merge to main → deploy → live check → Hungarian report. Use when the user invokes /folyadek or asks to continue the folyadék / új design / átépítés / angol nyelv / nyelvválasztó work.
 ---
 
 # Folyadék session driver
@@ -37,6 +37,14 @@ the "obvious" alternatives are wrong).
 - **Behaviour frozen** otherwise: every control, state, sheet and data field of the live app
   stays.
 - **The owner looks once per slice**, at the Artifact, before any code.
+- **Two languages (owner, 2026-10-11):** *"szeretném átfordítani az egészet angol nyelvűre …
+  a beállításokban egy nyelvválasztó … mindennek angolul kéne mennie, szövegek, promptok,
+  válaszok, chat, értékelések."* Hungarian stays, English is added; the switch lives in
+  Settings and **everything** follows it — screen text, dates and numbers, server-written
+  sentences, notifications, prompts and every AI answer. It runs inside this programme as the
+  language track (N1–N3, see *The slices* and *Language*), because the remaining slices
+  re-read every sentence of their screens anyway. The working language with the owner stays
+  Hungarian (CLAUDE.md §Communication) — that rule is about us, not about the app.
 
 ## Canon (read every session, in this order)
 
@@ -61,9 +69,12 @@ the "obvious" alternatives are wrong).
 
 ### 0. Pick the slice
 1. `gh run list --branch main --limit 3`. **A red main outranks everything.**
-2. `bd list --label epic:folyadek`. This listing is the authority. Take the lowest-numbered
-   open `F<N>` whose blockers are closed (**F1 blocks everything**; F2–F7 are independent after
-   F1; F8 after F2; F9 last). If the owner named a slice, take that one. `bd show <id>`.
+2. `bd list --label epic:folyadek`. This listing is the authority. Take the first open slice
+   whose blockers are closed, in this order: **N1** (the language foundation — it blocks
+   F5–F8, so nothing new is built Hungarian-only), then the lowest-numbered open `F<N>`
+   (F5–F7 are independent after N1; F8 after F2), with **N2** any time after N1 and F4, **N3**
+   after F7, **F9 last**. A slice another session holds in progress is not yours. If the owner
+   named a slice, take that one. `bd show <id>`.
 3. If everything is closed, say so in two sentences and stop.
 4. `bd update <id> --claim`; work in an isolated worktree on `feat/folyadek-<topic>`.
 5. Write the *Kész, ha…* checklist into the bead (`bd update <id> --acceptance "..."`) before
@@ -82,22 +93,30 @@ start from zero; it **proves its part against reality** and gets the owner's OK 
    cannot compute it, replace the graphic with one it can, and tell the owner. Query
    production read-only if you need to see real shapes (CLAUDE.md §Production database);
    never copy real rows into the prototype.
-3. **Edit in place** — `vilagos/<domain>.js` only (plus the kit when something is truly shared;
+3. **Both languages (every slice after N1).** The prototype has a language switch; write the
+   English wording of every sentence, label and state of the slice next to the Hungarian, by
+   the bible's English copy rules — written as English, not translated word by word (verdict
+   sentences, team voice and empty states are where a literal translation reads wrong). The
+   owner approves the English on the Artifact with the look. English runs longer or shorter:
+   the 320 px pass is done in **both** languages.
+4. **Edit in place** — `vilagos/<domain>.js` only (plus the kit when something is truly shared;
    a kit change needs a full re-sweep). Use the primitives before drawing a new one. New icon →
    draw it in the bible §5 recipe and add it to the icon sheet (`#w-nap-ikonok`).
-4. **Verify yourself:** Playwright from `frontend/` (import the absolute path
+5. **Verify yourself:** Playwright from `frontend/` (import the absolute path
    `frontend/node_modules/@playwright/test/index.mjs`), reload per route, **390 and 320 px**;
    console clean, no missing `<use>` ids, no horizontal overflow; **look at the screenshots** of
-   every route, state variant and sheet of the slice — the sweep does not see ugliness.
+   every route, state variant and sheet of the slice, in Hungarian and in English — the sweep
+   does not see ugliness, and it does not see a sentence left in the other language.
    Reduced motion: `reducedMotion:'reduce'`.
-5. **Publish** to the fixed Artifact URL: `Artifact` publish with `file_path` = the shell,
+6. **Publish** to the fixed Artifact URL: `Artifact` publish with `file_path` = the shell,
    `url` = the fixed link, `files` = the changed `vilagos/*.js`. Verify over HTTP; the in-app
    browser cannot open Artifact URLs.
-6. **Hand-off in Hungarian, business language** (CLAUDE.md §Communication): the link, exactly
+7. **Hand-off in Hungarian, business language** (CLAUDE.md §Communication): the link, exactly
    what to open (`#w-…`), what changed versus the last time he saw it, what is invented and
-   was replaced, 1–2 genuine questions. **Then stop and wait.** Iterate in the same files on
+   was replaced, that the language switch shows the English wording to read through, 1–2
+   genuine questions. **Then stop and wait.** Iterate in the same files on
    his feedback (he sends screenshots: fix exactly those, check by screenshot, answer).
-7. Commit the approved prototype with the slice.
+8. Commit the approved prototype with the slice.
 
 ### 2. Build (after the OK)
 - **Match the prototype exactly.** Same order, same graphic, same copy, same states.
@@ -110,14 +129,24 @@ start from zero; it **proves its part against reality** and gets the owner's OK 
 - **Tests that assert the old skin are rewritten** in the same commit to assert the new
   structure — never deleted.
 - **Behaviour frozen.** No changed route semantics, hook, API contract, mutation or state
-  machine — except F1's navigation change and light lock. TDD only where logic changes.
+  machine — except F1's navigation change and light lock, and the language track (below).
+  TDD only where logic changes.
 - Copy: field names per the bible §2.3/§6; re-read every sentence you touch.
+- **Bilingual from the first line (every slice after N1)** — see *Language*. No visible string
+  of the slice stays a literal in a component; the slice's server-written sentences come in
+  both languages in the same change.
 
 ### 3. Gates (non-negotiable)
 - FE tests in **both** modes with `CI=true`: `VITE_USE_MOCK` unset (mock) and
   `VITE_USE_MOCK=false` (real). File filters after `--` are ignored; the full suite runs.
   Affected `frontend/tests/layout` specs. `pnpm build`.
-- Backend focused tests (+ `ArchitectureTest`) only if backend changed (F7's rename).
+- Backend focused tests (+ `ArchitectureTest`) whenever backend changed — after N1 that is
+  most slices (the domain's server-written sentences), and always N1, N3 and F7.
+- **Language gate (every slice after N1):** the catalog completeness test green (every key in
+  both languages); a search of the slice's files for visible Hungarian literals left outside
+  the catalog comes back empty; the runtime pass below repeated with the switch on English —
+  no Hungarian word on any route, state or sheet of the slice, dates and numbers in the
+  English format, and one real AI answer per AI surface of the slice read in each language.
 - Runtime pass (`verify` skill): every route of the slice at 390 and 320 px, reduced motion;
   title bar, top tabs and bottom bar exactly as after F1; side by side with the prototype.
 - **Reverse parity checklist** pasted into the bead.
@@ -140,7 +169,8 @@ start from zero; it **proves its part against reality** and gets the owner's OK 
 - Close the bead with a result summary; `node scripts/check-beads-backup.mjs --fix` + commit,
   `bd dolt push`, `git push`, `git status` clean.
 - Report to the owner **in Hungarian**, walking the *Kész, ha…* list in everyday words: what is
-  live, what comes next, how many slices are left, and plainly what you did *not* do.
+  live, what comes next, how many slices are left, and plainly what you did *not* do —
+  including what still shows Hungarian when the app is set to English.
 
 ## The slices
 
@@ -158,20 +188,61 @@ more Üveg.
 | F6 | Én | Hol tartok, Test, Célok, Napló, Emberek, Fejlődés + sheets; night mode decision |
 | F7 | Mezo | Üzenőfal, A csapat, Rólad, Emlékek, Tudástár, chat, gépterem; **the team rename** in copy and, with the owner's OK on the wording, in the prompts |
 | F8 | Átfedők | kalauz, quick input, voice bubble, settings, auth, admin; PWA icon; the name/logo question (the splash is in F1) |
-| F9 | Záró söprés | every route audited, dead CSS + Boop + old sprite deleted, old `elo/*.html` retired, bible appendix consolidated, roadmap entry |
+| F9 | Záró söprés | every route audited, dead CSS + Boop + old sprite deleted, old `elo/*.html` retired, bible appendix consolidated, roadmap entry; **the same audit with the app set to English** — no Hungarian left anywhere, including errors, notifications and AI answers |
+
+**The language track** (owner 2026-10-11; beads `mezo-n4wf5.11`–`.13`). From N1 on, F5–F8 each
+also deliver their own screens and their domain's server-written sentences in English.
+
+| # | Slice | Scope (details in the bead) |
+|---|---|---|
+| N1 | Nyelv alap | **Opens with a brainstorm + short spec** (`superpowers:brainstorming`, `brainstorm-recon`) — the mechanism is not chosen yet. The language stored with the account and the switch in Settings (prototype first); the message mechanism on the client; dates, numbers and units by language; the user's language on **every** AI call so answers come back in it at once; the pattern for server-written sentences; the language switch in the prototype + English copy rules in the bible; the frame, kit and Settings pages translated; the guards. |
+| N2 | Nyelv pótlás | Nap, Edzés and Edzés közben were converted before the decision: their screens, sheets, states and server-written sentences into both languages, English wording approved on the Artifact. No visual change. Split per domain if one session is not enough. |
+| N3 | Az AI angolul | The prompts themselves, the team's voice, the context fed to the AI, notifications and the built-in catalogs in English; the evaluation run in both languages and side-by-side samples shown to the owner before switching; memory written in one language still found in the other. After F7 (the team rename). |
+
+## Language (every slice after N1)
+
+N1's spec is the authority on the mechanism once it exists
+(`docs/superpowers/specs/` — link it here when written). Until then, and as the frame around it:
+
+- **Hungarian is the source language and the default**; English is the second. Existing tests
+  keep asserting Hungarian — never mass-rewrite tests for this; add English-mode checks.
+- **A slice owns its words end to end:** the screen text, the sentences the server writes for
+  those screens (verdicts, nudges, reasons, errors), the notifications it triggers, and the AI
+  surfaces it shows. A screen is not done in English while the server still answers it in
+  Hungarian.
+- **Never translate what the user wrote or what was already said.** Journal entries, meal and
+  exercise names he typed, old AI messages and memories stay as written; only new output
+  follows the switch. (Confirm with the owner in N1; then this line is a decision.)
+- **Formatting follows the language**, not the device: dates, weekday names, decimal separator,
+  plurals. One shared helper; no new hard-coded locale.
+- **English is written, not converted.** Short, plain, the same calm voice; team fields get
+  their agreed English names (bible, after N1). A search-and-replace or a bulk machine pass is
+  a draft — read every sentence in place, on the screen, at 320 px.
+- **Size seen 2026-10-11, before any work:** ≈990 client files / 33k lines and ≈620 server
+  files / 13.5k lines carry Hungarian text, ≈60 files hold Hungarian prompt blocks, 118 places
+  hard-code the Hungarian date/number format, and built-in catalogs (exercises, habits, quests,
+  titles, pantry) are Hungarian. This is why it is sliced by domain and never done in one pass.
 
 ## Open questions to raise at the right slice (never decide silently)
 F3: body silhouette vs. dumbbell on Edzés · Mai; day cards vs. rows on Terv. F6: Én night mode
 dark or light; the streak. F7: the separate "Rád vár" list; whether the rename also changes the
 prompts' voice. F8: the "boop" name and logo. Any slice: invented numbers and sentences;
-inconsistent dates across domains.
+inconsistent dates across domains. N1: what happens to what is already written in Hungarian
+(old messages, memories, journal); which language a new account starts in; the English names of
+the team fields; whether the built-in catalogs are translated or stay. N3: whether the English
+team voice should sound the same as the Hungarian one or be re-tuned.
 
 ## Traps
 - The bible §8 list, plus the üveg bible appendix for everything structural.
 - Never `git checkout -- .` to tidy a worktree; commit first. No bare `git stash`.
 - A kit change after pages were converted needs every converted page looked at again.
 - A search-and-replace on names or classes is a draft; read the result.
+- Language: text hides outside components — `aria-label`s, placeholders, toasts, error
+  messages from the server, notification bodies, chart axis labels, label maps in `lib/`
+  files, the kalauz registry, mock fixtures (they are what the owner sees in mock mode).
+  Concatenated sentence halves do not translate; make them one message with slots.
 
 ## Model guidance
-F1 (the kit, the sprite, navigation) and F7 (the rename, the largest domain) carry the most
+F1 (the kit, the sprite, navigation), F7 (the rename, the largest domain), N1 (the mechanism
+every later slice lives with) and N3 (the AI's voice in a second language) carry the most
 judgment. If the running model is weaker than the work asks, say so to the owner before starting.
