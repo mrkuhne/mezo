@@ -2,16 +2,24 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { WorkoutSummary } from '@/features/train/components/WorkoutSummary'
+import { deriveSummaryStats } from '@/features/train/logic/summaryStats'
+import { deriveComparison } from '@/features/train/logic/workoutComparison'
 import type { Medal } from '@/data/train/medalTypes'
+import type { Challenge } from '@/data/types'
+import { questRows } from '@/features/train/logic/workoutReviewDerive'
 
 const exercises = [
   { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 4, sets: [{ weight: 80, reps: 8, rir: 1 }], skipped: false },
   { id: 'b', name: 'Dead Hang', muscle: 'back-wide', plannedSets: 2, sets: [], skipped: true },
 ]
-const challenges = [
-  { id: 'c1', typeLabel: 'PR', exercise: 'Bench Press', target: '85 kg × 8', state: 'hit' as const },
-  { id: 'c2', typeLabel: 'Depth', exercise: 'Face Pull', target: 'RIR 0', state: 'skipped' as const },
-]
+// The rows the review page hands over: `questRows` of the day's challenges (one hit, one never taken).
+const challenges = questRows([
+  { id: 'c1', typeLabel: 'PR', exercise: 'Bench Press', target: '85 kg × 8', status: 'hit' },
+  { id: 'c2', typeLabel: 'Depth', exercise: 'Face Pull', target: 'RIR 0', status: 'proposed' },
+] as Challenge[]).rows
+/** The „Gyakorlatonként" card — an exercise is reachable from its hero tube AND its row here. */
+const exList = () => document.querySelector('.eo-exlist') as HTMLElement
+const exRow = (name: RegExp) => within(exList()).getByRole('button', { name })
 const medals: Medal[] = [
   {
     type: 'SESSION_VOLUME', tier: 'RECORD', exerciseName: 'Bench Press',
@@ -33,50 +41,75 @@ describe('WorkoutSummary', () => {
     const onFinish = vi.fn()
     render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing" durationMin={65}
       exercises={exercises} challenges={challenges} onFinish={onFinish} onBack={() => {}} onExit={() => {}} />)
-    // hero: 1/6 sets + duration ("1" alone is ambiguous — Ø RIR cell also shows 1)
-    const num = document.querySelector('.wsum-num') as HTMLElement
-    expect(num.textContent).toBe('1/6szett')
+    // hero: the verdict sentence carries done / planned sets and the tonnes; the duration is in the sub line
+    const num = document.querySelector('.eo-num') as HTMLElement
+    expect(num.textContent).toBe('1 szett a 6-ból, 0,6 tonna összvolumen.')
     expect(screen.getByText(/~65 perc/)).toBeInTheDocument()
-    // region pills: Mell live (has a set-count child → regex), Hát off (bare label).
-    // Scoped to .wsum-regrow — "Mell" also appears inside the exercise's own muscle
-    // tag ("Mell (közép)"), which would otherwise make the query ambiguous.
-    const regionRow = document.querySelector('.wsum-regrow') as HTMLElement
-    expect(within(regionRow).getByText(/Mell/)).toBeInTheDocument()
-    expect(within(regionRow).getByText('Hát')).toBeInTheDocument()
-    // challenge outcomes keep the existing vocabulary
-    expect(screen.getByText('megcsináltad')).toBeInTheDocument()
-    expect(screen.getByText('skippelted')).toBeInTheDocument()
-    // abandoned exercise
-    expect(screen.getByText('kihagyva')).toBeInTheDocument()
+    // region tags: Mell live (with its set count), Hát struck off (nothing logged for it).
+    const regionRow = document.querySelector('.eo-regs') as HTMLElement
+    expect(within(regionRow).getByText('Mell · 1 szett')).toBeInTheDocument()
+    expect(within(regionRow).getByText('Hát').tagName).toBe('S')
+    // quest outcomes in the Folyadék vocabulary — a quest never taken is quiet, not a failure
+    expect(screen.getByText('Küldetések · 1 megvan · 1 kimaradt')).toBeInTheDocument()
+    expect(screen.getByText('megvan')).toBeInTheDocument()
+    expect(screen.getByText('nem vállaltad')).toBeInTheDocument()
+    expect(document.querySelector('.eo-quest[data-state="skipped"]')!.className).toContain('dim')
+    // abandoned exercise: its tube says so, and so does its row
+    expect(within(document.querySelector('.eo-extubes') as HTMLElement).getByText('kihagyva')).toBeInTheDocument()
+    expect(within(exList()).getByText('kihagyva · nincs szett')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Edzés lezárása/ }))
     expect(onFinish).toHaveBeenCalledOnce()
   })
 
-  it('closed mode: no finish CTA, and the swimlane anchors each exercise on its top set', () => {
+  it('closed mode: no finish CTA, and each exercise row is anchored on its top set', () => {
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={exercises} challenges={challenges} onExit={() => {}} />)
     expect(screen.queryByRole('button', { name: /Edzés lezárása/ })).toBeNull()
-    const tile = screen.getByRole('button', { name: /Bench Press/ })
-    expect(tile.querySelector('.top')!.textContent).toMatch(/80\s*×\s*8/)
-    // The partial exercise's foot counts what was logged against what was planned.
-    expect(within(tile).getByText('1/4 szett')).toBeInTheDocument()
-    // …and the unlogged slots show as dashed bars, never as a warning.
-    expect(tile.querySelectorAll('.wr-setbars i.miss')).toHaveLength(3)
+    const row = exRow(/Bench Press/)
+    expect(row.querySelector('.eo-top')!.textContent).toMatch(/80\s*×\s*8/)
+    // The partial exercise counts what was logged against what was planned…
+    expect(row).toHaveAccessibleName('Bench Press — 1 / 4 szett')
+    // …as capsules: one full, the three unlogged slots empty — never a warning.
+    const caps = [...row.querySelectorAll('.fo-caps i')]
+    expect(caps).toHaveLength(4)
+    expect(caps.filter((c) => c.className === 'f')).toHaveLength(1)
+    // The same numbers stand under the exercise's tube in the hero.
+    const tube = within(document.querySelector('.eo-extubes') as HTMLElement).getByRole('button', { name: /Bench Press/ })
+    expect(within(tube).getByText('1/4')).toBeInTheDocument()
+    expect(within(tube).getByText('−3 szett')).toBeInTheDocument()
   })
 
-  it('omits the "Kihívások" section entirely when challenges is empty', () => {
+  it('draws the previous instance as a dashed line on the tubes — and no line without a reference', () => {
+    const { unmount } = render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={[]} onExit={() => {}} />)
+    expect(document.querySelectorAll('.eo-extubes .wl')).toHaveLength(0)
+    unmount()
+
+    const reference = deriveSummaryStats([{ ...exercises[0], sets: [exercises[0].sets[0], exercises[0].sets[0]] }], [])
+    const now = deriveSummaryStats(exercises, [])
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={[]} reference={reference}
+      comparison={deriveComparison(now, reference, '2026-07-20', 'Júl 13', '2026-07-13')} onExit={() => {}} />)
+    // Bench Press was in the reference (2 of today's 4 planned → halfway up); Dead Hang was not.
+    const lines = [...document.querySelectorAll<HTMLElement>('.eo-extubes .wl')]
+    expect(lines).toHaveLength(1)
+    expect(lines[0].style.bottom).toBe('46%')
+    expect(screen.getByText(/A szaggatott vonal az előző alkalom \(Júl 13\)/)).toBeInTheDocument()
+  })
+
+  it('omits the "Küldetések" section entirely when challenges is empty', () => {
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={exercises} challenges={[]} onExit={() => {}} />)
-    expect(screen.queryByText('Kihívások')).toBeNull()
+    expect(screen.queryByText(/Küldetések/)).toBeNull()
+    expect(document.querySelector('.eo-quests')).toBeNull()
   })
 
   it('the hero number carries a full aria-label for screen readers, decorative markup hidden', () => {
     render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing" durationMin={65}
       exercises={exercises} challenges={challenges} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-    const num = document.querySelector('.wsum-num') as HTMLElement
-    expect(num.getAttribute('aria-label')).toBe('1 / 6 szett')
+    const num = document.querySelector('.eo-num') as HTMLElement
+    expect(num.getAttribute('aria-label')).toBe('1 / 6 szett, 0,6 tonna összvolumen')
     expect(num.querySelector(':scope > [aria-hidden="true"]')).not.toBeNull()
-    expect(num.textContent).toBe('1/6szett') // visual layout unchanged
   })
 
   it('a set with a null rir (warmup) shows no RIR fragment on the exercise view', async () => {
@@ -86,22 +119,25 @@ describe('WorkoutSummary', () => {
     ]
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={withWarmup} challenges={[]} onExit={() => {}} />)
-    await user.click(screen.getByRole('button', { name: /Bench Press/ }))
-    const set = document.querySelector('.wr-set') as HTMLElement
+    await user.click(exRow(/Bench Press/))
+    const set = document.querySelector('.eo-set') as HTMLElement
     expect(set.textContent).not.toContain('RIR')
-    expect(set.querySelector('.rir')).toBeNull()
+    expect(set.querySelector('.eo-rir')).toBeNull()
   })
 
-  it('an exercise with nothing logged reads "nincs szett" and dims, never strikes a number', () => {
+  it('an exercise with nothing logged reads "kihagyva · nincs szett" and dims, never strikes a number', () => {
     const abandoned = [
       { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 4, sets: [], skipped: true },
     ]
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={abandoned} challenges={[]} onExit={() => {}} />)
-    const tile = screen.getByRole('button', { name: /Bench Press/ })
-    expect(tile.className).toContain('dead')
-    expect(within(tile).getByText('nincs szett')).toBeInTheDocument()
-    expect(tile.querySelector('.top')!.textContent).toBe('—')
+    const row = exRow(/Bench Press/)
+    expect(row.className).toContain('dim')
+    expect(within(row).getByText('kihagyva · nincs szett')).toBeInTheDocument()
+    expect(row.querySelector('.eo-top')).toBeNull()
+    expect(row.querySelectorAll('.fo-caps i.f')).toHaveLength(0)
+    // …and its tube in the hero is an empty vessel.
+    expect(document.querySelector('.eo-extubes .fo-vial')!.className).toContain('ghost')
   })
 
   it('omits the "~N perc" fragment when durationMin is not provided', () => {
@@ -114,8 +150,9 @@ describe('WorkoutSummary', () => {
     const noSets = exercises.map((e) => ({ ...e, sets: [] }))
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={noSets} challenges={challenges} onExit={() => {}} />)
-    const cells = document.querySelectorAll('.mz-statstrip .mz-statcell')
-    expect(cells[3].textContent).toContain('–')
+    const cells = document.querySelectorAll('.eo-nums .fo-facts > div')
+    expect(cells).toHaveLength(4)
+    expect(cells[3].textContent).toBe('–Ø RIR')
   })
 
   // mezo-d20.8.2.1 removed the workout-note textarea because it accepted what you typed and
@@ -126,7 +163,7 @@ describe('WorkoutSummary', () => {
     const { unmount } = render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
       exercises={exercises} challenges={challenges} draftNote="" onDraftNote={(v) => typed.push(v)}
       onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-    expect(screen.getByText('Hogy ment?')).toBeInTheDocument()
+    expect(screen.getAllByText('Hogy ment?').length).toBeGreaterThan(0)
     fireEvent.change(screen.getByLabelText('Hogy ment?'), { target: { value: 'Nehéz nap volt.' } })
     expect(typed).toEqual(['Nehéz nap volt.'])
     unmount()
@@ -145,12 +182,13 @@ describe('WorkoutSummary', () => {
     expect(document.querySelector('textarea')).toBeNull()
     unmount()
 
-    // ADR 0010: an absent note is not an empty placeholder — and without an editor (the
-    // just-finished summary) there is no `＋ Jegyzet` either.
+    // ADR 0010: an absent note is not an empty placeholder — and without an editor there is no
+    // „+ Jegyzet" either: the whole section is absent.
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={exercises} challenges={challenges} note={null} onExit={() => {}} />)
-    expect(document.querySelector('.wsum-note-r')).toBeNull()
-    expect(document.querySelector('.wsum-note-add')).toBeNull()
+    expect(document.querySelector('.eo-note')).toBeNull()
+    expect(screen.queryByText('Amit aznap írtál')).toBeNull()
+    expect(screen.queryByRole('button', { name: /Jegyzet ehhez az edzéshez/ })).toBeNull()
   })
 
   it('offers ＋ Jegyzet only where editing is possible, and swaps in the editor', () => {
@@ -167,33 +205,38 @@ describe('WorkoutSummary', () => {
       onEditNote={() => {}} onExit={() => {}} />)
     expect((screen.getByLabelText('Hogy ment?') as HTMLTextAreaElement).value).toBe('pótolva')
     expect(screen.getByRole('button', { name: 'Mentés' })).toBeInTheDocument()
-    expect(document.querySelector('.wsum-note-add')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Mégse' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Jegyzet ehhez az edzéshez/ })).toBeNull()
   })
 
   // The comparison tile and the stepping are the REVISIT's own; the closing report gets neither.
   it('keeps the comparison out of the closing report', () => {
     render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
       exercises={exercises} challenges={challenges} comparison={null} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-    expect(document.querySelector('.wr-cmp')).toBeNull()
-    expect(document.querySelector('.wr-stepnav')).toBeNull()
+    expect(document.querySelector('.eo-cmp')).toBeNull()
+    expect(document.querySelector('.eo-stepnav')).toBeNull()
+    expect(screen.getByText('A számok')).toBeInTheDocument()
   })
 
   describe('medals (mezo-wp6n / mezo-w943 split)', () => {
-    it('RECORD medal renders as a celebration card with value + previous', () => {
+    it('RECORD medal renders as a capsule row with value + previous', () => {
       render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
         exercises={exercises} challenges={challenges} medals={medals} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-      const section = screen.getByText('Medálok').closest('.wsum-sec') as HTMLElement
-      expect(within(section).getByText('Volumen-rekord')).toBeInTheDocument()
-      expect(within(section).getByText(/1[\s ]?250/)).toBeInTheDocument()
-      expect(within(section).getByText(/előző:/)).toBeInTheDocument()
+      expect(screen.getByText('Medálok · 1 rekord · 2 célszett')).toBeInTheDocument()
+      const row = document.querySelector('.eo-medals .eo-medal') as HTMLElement
+      expect(within(row).getByText('Bench Press')).toBeInTheDocument()
+      expect(within(row).getByText(/Volumen-rekord · előző: 1[\s\u00a0]?180 kg/)).toBeInTheDocument()
+      expect(row.querySelector('.v')!.textContent).toMatch(/1[\s\u00a0]?250/)
+      // The capsule carries the old record as its dashed line (1180 of 1250).
+      expect(row.querySelector('.ex-rc u')).not.toBeNull()
     })
 
-    it('TARGET_HITs collapse into a single summary row with per-exercise chips', () => {
+    it('TARGET_HITs collapse into a single summary row with per-exercise counts', () => {
       render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
         exercises={exercises} challenges={challenges} medals={medals} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
       expect(screen.getByText('2 célszett teljesítve')).toBeInTheDocument()
-      expect(screen.getByText('Bench Press ×1')).toBeInTheDocument()
-      expect(screen.getByText('Row ×1')).toBeInTheDocument()
+      expect(screen.getByText('Bench Press ×1 · Row ×1')).toBeInTheDocument()
+      expect(document.querySelectorAll('.eo-targets')).toHaveLength(1)
       // no per-TARGET rows anymore
       expect(screen.queryAllByText('Cél teljesítve')).toHaveLength(0)
     })
@@ -201,12 +244,12 @@ describe('WorkoutSummary', () => {
     it('renders no medal section and no title suffix when medals is empty', () => {
       render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
         exercises={exercises} challenges={challenges} medals={[]} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-      expect(screen.getByText('Pull Day A')).toBeInTheDocument()
-      expect(screen.queryByText(/medál/)).not.toBeInTheDocument()
-      expect(screen.queryByText('Medálok')).not.toBeInTheDocument()
+      expect(screen.getByText('Edzés vége · Pull Day A')).toBeInTheDocument()
+      expect(screen.queryByText(/medál/i)).not.toBeInTheDocument()
+      expect(document.querySelector('.eo-medals')).toBeNull()
     })
 
-    it('stamps the swimlane tile and golds the set itself on the exercise view', async () => {
+    it('tags the exercise row and marks the set itself as the record on the exercise view', async () => {
       const user = userEvent.setup()
       const recordOnSet: Medal[] = [{
         type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Bench Press',
@@ -214,12 +257,15 @@ describe('WorkoutSummary', () => {
       }]
       render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
         exercises={exercises} challenges={challenges} medals={recordOnSet} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-      const tile = screen.getByRole('button', { name: /Bench Press/ })
-      expect(within(tile).getByText('REKORD')).toBeInTheDocument()
-      expect(tile.querySelectorAll('.wr-setbars i.med')).toHaveLength(1)
+      const row = exRow(/Bench Press/)
+      expect(within(row).getByText('Rekord')).toBeInTheDocument()
 
-      await user.click(tile)
-      expect((document.querySelector('.wr-set') as HTMLElement).className).toContain('rec')
+      await user.click(row)
+      const set = document.querySelector('.eo-set') as HTMLElement
+      expect(set.className).toContain('rec')
+      expect(within(set).getByText('rekord')).toBeInTheDocument()
+      // …and the exercise's own Medál card names what it beat.
+      expect(within(document.querySelector('.eo-medals') as HTMLElement).getByText(/Súly-rekord · előző: 77,5 kg/)).toBeInTheDocument()
     })
   })
 })

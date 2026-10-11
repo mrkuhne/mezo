@@ -1,39 +1,24 @@
 // ============================================================
-// Mezo · ChallengeGenerationLoader — game-style loading for the lazy LLM
-// challenge generation on the prep Küldetések page (mezo-tvw8). Rotating
-// playful status lines + a fake-progress bar (fast start, decelerating creep,
-// never self-completes — completion is the data arriving and the loader
-// unmounting). Spec: docs/superpowers/specs/2026-08-31-challenge-generation-
-// loader-design.md.
+// Mezo · ChallengeGenerationLoader (mezo-tvw8; Folyadék: mezo-n4wf5.4) — what the quest card of
+// the Eligazítás says while the lazy LLM quest generation is still running. The card keeps its
+// place (an entry point never hides itself): one calm box that says the quests are being put
+// together and that the workout can start anyway. Completion is the data arriving and the loader
+// unmounting. A polite live region, so a screen reader hears it once.
+// The game-style face of the Üveg world (rotating status lines + a fake-progress bar) is retired
+// with the approved prototype: a bar that only pretends to fill is not a level.
+// Build target: docs/design_2.0/prototypes/vilagos/edzes.js `indulas('kuld-keszul')`.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { Box } from '@/shared/ui/folyadek'
 
-export const CHALLENGE_LOADER_LINES = [
-  'Edzésnapló átfésülése…',
-  'Formád felmérése…',
-  'Megmérettetések kalibrálása…',
-  'Küldetések kisorsolása…',
-  'Utolsó simítások…',
-] as const
-
-export const CHALLENGE_LOADER_ROTATE_MS = 2200
+export const CHALLENGE_LOADER_TITLE = 'Készülnek a mai küldetések…'
+export const CHALLENGE_LOADER_BODY = 'A múlt heti szettjeidből rakom össze, pár pillanat. Az edzés ettől még indulhat.'
 
 export function ChallengeGenerationLoader() {
-  const [idx, setIdx] = useState(0)
-  useEffect(() => {
-    const t = setInterval(
-      () => setIdx((i) => (i + 1) % CHALLENGE_LOADER_LINES.length),
-      CHALLENGE_LOADER_ROTATE_MS,
-    )
-    return () => clearInterval(t)
-  }, [])
   return (
-    <div className="mz-chload" role="status" aria-live="polite">
-      {/* key remounts the line so the fade-in replays on every rotation */}
-      <div key={idx} className="mz-chload-line">{CHALLENGE_LOADER_LINES[idx]}</div>
-      <div className="mz-chload-bar">
-        <div className="mz-chload-fill" />
-      </div>
+    <div className="ei-load" role="status" aria-live="polite">
+      <Box icon="t-quest" title={CHALLENGE_LOADER_TITLE}>
+        <p>{CHALLENGE_LOADER_BODY}</p>
+      </Box>
     </div>
   )
 }

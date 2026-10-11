@@ -1,9 +1,11 @@
 // ============================================================
-// Mezo · WorkoutSessionSheets (mezo-n4wf5.4 foundation) — every sheet and glass of the active workout, in one file:
-// the debrief, the exercise menu, video, quest detail and records glasses, the set editor, the note editor, the
-// extra-set prompt, the exercise picker and the scope sheet. The markup was moved here UNCHANGED from
-// pages/ActiveWorkoutPage.tsx; the page keeps the state and the handlers and hands them over as ONE object (`s`),
-// field names = the page's own local names. Slice F4 area C („session sheets") owns this file.
+// Mezo · WorkoutSessionSheets (mezo-n4wf5.4) — every sheet of the active workout, in one file: the debrief, the
+// exercise menu, video, quest detail and records sheets, the set editor, the note editor, the extra-set prompt, the
+// exercise picker and the scope sheet. The page keeps the state and the handlers and hands them over as ONE object
+// (`s`), field names = the page's own local names. Slice F4 area C („session sheets") owns this file; since F4 every
+// sheet here is a light Folyadék sheet (`<Sheet className="fo-sheet">`, rules in folyadek-edzes-kozben-lapok.css).
+// What a sheet draws beyond `s` (today's goal on the records sheet, the capsules of the extra-set prompt, the
+// replaced exercise's colour) is derived HERE from `session` and the exercise — the page hands over nothing new.
 // ============================================================
 import type { Dispatch, SetStateAction } from 'react'
 import type { Challenge, ExerciseLibraryItem, LoggedWorkoutExercise, WorkoutPlan } from '@/data/types'
@@ -14,7 +16,7 @@ import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
 import { type Session, addExtraSet, canRemoveSet, effectiveSetCount, prescribedAt, slotIndex } from '@/features/train/logic/workoutState'
 import { prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
 import { ChallengeDetailGlass, WorkoutMenuGlass, WorkoutVideoGlass, type ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
-import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
+import { WorkoutRecordsGlass, setShort } from '@/features/train/components/WorkoutRecordsGlass'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { ExerciseScopeSheet, type ChangeScope } from '@/features/train/sheets/ExerciseScopeSheet'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
@@ -99,6 +101,11 @@ export function WorkoutSessionSheets({ s }: { s: WorkoutSessionSheetsState }) {
         const slotCount = effectiveSetCount(session, menuEx.id)
         const lastSlotPending = (session.logged[menuEx.id]?.length ?? 0) < slotCount
         const tint = muscleColor(menuEx.muscle).rail
+        // „Mai cél" on the records sheet: the first working prescribed set, else the progression's own target.
+        const firstTarget = prescribedAt(session, menuEx.id, slotIndex(session, menuEx.id, 0))
+        const goal = firstTarget
+          ? setShort(firstTarget.targetWeightKg, firstTarget.targetReps)
+          : menuEx.progression ? setShort(menuEx.progression.targetWeightKg, menuEx.progression.targetReps) : null
         return (
           <>
             <WorkoutMenuGlass
@@ -146,6 +153,7 @@ export function WorkoutSessionSheets({ s }: { s: WorkoutSessionSheetsState }) {
               record={recordFor(exerciseRecords, menuEx)}
               todaySets={session.logged[menuEx.id] ?? []}
               tint={tint}
+              goal={goal}
               onClose={() => setGlass(null)}
             />
           </>
@@ -181,6 +189,7 @@ export function WorkoutSessionSheets({ s }: { s: WorkoutSessionSheetsState }) {
       {noteEditEx && (
         <NoteEditSheet
           initialNote={noteOf(noteEditEx)}
+          exerciseName={noteEditEx.name}
           onClose={() => setNoteEditExId(null)}
           onSave={(text) => {
             saveExerciseNote(noteEditEx.id, text)
@@ -189,7 +198,13 @@ export function WorkoutSessionSheets({ s }: { s: WorkoutSessionSheetsState }) {
         />
       )}
       {addSetPrompt && (
-        <ExtraSetPrompt onEveryWeek={() => writeExtraSetToTemplate(addSetPrompt.exerciseId)} onClose={() => setAddSetPrompt(null)} />
+        <ExtraSetPrompt
+          slotCount={effectiveSetCount(session, addSetPrompt.exerciseId)}
+          doneCount={session.logged[addSetPrompt.exerciseId]?.length ?? 0}
+          muscle={exerciseById(addSetPrompt.exerciseId)?.muscle}
+          onEveryWeek={() => writeExtraSetToTemplate(addSetPrompt.exerciseId)}
+          onClose={() => setAddSetPrompt(null)}
+        />
       )}
 
       {pick && (
@@ -213,13 +228,14 @@ export function WorkoutSessionSheets({ s }: { s: WorkoutSessionSheetsState }) {
             mode={scopeFor.mode}
             item={scopeFor.item}
             replacedName={scopeTarget?.name}
+            replacedMuscle={scopeTarget?.muscle}
             loggedOnReplaced={scopeLogged}
             newSets={scopeNewSets}
             repLabel={`${recipe.repMin}–${recipe.repMax}`}
             planSlot={!noPlan}
             noPlanNote={noPlan
               ? scopeTarget?.changeScope
-                ? 'Ez a gyakorlat ma került be, nincs a mezociklus tervében, ezért csak mára cserélhető.'
+                ? 'Ez a gyakorlat ma került be, nincs a terved napjai között, ezért csak mára cserélhető.'
                 : 'A nap végi levezetőt az app minden nap visszateszi, ezért csak mára cserélhető.'
               : null}
             mesoLine={mesoLine}

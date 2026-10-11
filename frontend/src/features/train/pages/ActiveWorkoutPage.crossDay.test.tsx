@@ -110,7 +110,7 @@ async function logAndFinish() {
   const user = userEvent.setup()
   await user.click(await screen.findByRole('button', { name: /szett mentése$/ }, { timeout: 5000 }))
   await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }, { timeout: 5000 }))
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(/Így sikerült/)).toBeInTheDocument()
 }
 
 test('a resumed off-day workout closes on ITS OWN muscles, not today’s plan', async () => {
@@ -118,10 +118,10 @@ test('a resumed off-day workout closes on ITS OWN muscles, not today’s plan', 
   await logAndFinish()
   // let the post-finish /today refetch land before judging the ceremony
   await new Promise((r) => setTimeout(r, 300))
-  expect(screen.getByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(screen.getByText(/Így sikerült/)).toBeInTheDocument()
   // the muscle rows live on the ceremony's second step („Részletek”)
   await userEvent.setup().click(screen.getByRole('button', { name: /Részletek/ }))
-  const rows = [...container.querySelectorAll('.cer-mstar strong')].map((el) => el.textContent)
+  const rows = [...container.querySelectorAll('.ex-mstar .l')].map((el) => el.textContent)
   expect(rows).toEqual(['Hát (közép)'])
 })
 
@@ -131,5 +131,5 @@ test('a resumed off-day workout finished on a rest day keeps the ceremony (no bo
   await logAndFinish()
   await new Promise((r) => setTimeout(r, 300))
   await waitFor(() => expect(screen.queryByText('TRAIN HOME')).toBeNull())
-  expect(screen.getByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(screen.getByText(/Így sikerült/)).toBeInTheDocument()
 })

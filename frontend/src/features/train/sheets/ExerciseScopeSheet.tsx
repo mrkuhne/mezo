@@ -1,14 +1,17 @@
 // ============================================================
-// Mezo · ExerciseScopeSheet (mezo-mobji) — the second step of a mid-workout swap/add: the
-// chosen exercise, then two option rows, „Csak ma” (lit, the default) and „Mezociklusra is”,
-// each carrying its own one-line consequence. One tap decides and closes. An exercise with no
-// plan slot (added today only, or the fixed closing block) gets only „Csak ma” plus a note.
-// Approved look: docs/design_2.0/prototypes/elo/edzes.html, sheet `scope` (owner OK 2026-09-28).
+// Mezo · ExerciseScopeSheet (mezo-mobji) — the second step of a mid-workout swap / add: the chosen exercise,
+// then how long the change holds — „Csak ma" and „A tervben is", each carrying its own one-line consequence.
+// One tap decides and closes. An exercise with no plan slot (added today only, or the fixed closing block)
+// gets only „Csak ma" plus a note.
+//
+// Folyadék F4 (mezo-n4wf5.4, area C): a light sheet built to the prototype's `scope` sheet
+// (docs/design_2.0/prototypes/vilagos/edzes.js): the chosen exercise is a row whose capsules show what stays
+// with the old one (full, in the old muscle's colour) and what the new one gets (empty, in its own).
 // ============================================================
 import type { ExerciseLibraryItem } from '@/data/types'
 import { MUSCLE_LABELS } from '@/data/train/train'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import { Caps, FoSheetHead, Lab, Note, Row } from '@/shared/ui/folyadek'
 import { Sheet } from '@/shared/ui/Sheet'
 
 export type ChangeScope = 'TODAY' | 'MESO'
@@ -18,49 +21,40 @@ export interface ExerciseScopeSheetProps {
   item: ExerciseLibraryItem
   /** The exercise being replaced (swap only). */
   replacedName?: string
+  /** Its muscle — the colour of the capsules that stay with it. Absent → they wear the new one's colour. */
+  replacedMuscle?: string
   /** Working sets already logged on the replaced exercise, and how many the new one gets. */
   loggedOnReplaced?: number
   newSets: number
   repLabel: string
-  /** Whether „Mezociklusra is” is on offer (false: no plan slot). */
+  /** Whether „A tervben is" is on offer (false: no plan slot). */
   planSlot: boolean
-  /** Why there is no plan slot, shown under the lone „Csak ma”. */
+  /** Why there is no plan slot, shown under the lone „Csak ma". */
   noPlanNote?: string | null
-  /** e.g. „A Hypertrophy 04 hátralévő 3 hetében is.” — null without an active meso. */
+  /** e.g. „A Hypertrophy 04 hátralévő 3 hetében is." — null without a running plan. */
   mesoLine: string | null
-  /** The exercise's last top set („70 × 12”), or null when it was never done. */
+  /** The exercise's last top set („70 × 12"), or null when it was never done. */
   lastTop: string | null
   onChoose: (scope: ChangeScope) => void
   onClose: () => void
 }
 
-function ScopeOption({
-  icon, label, hint, lit, onClick,
-}: { icon: Icon3DName; label: string; hint: string; lit?: boolean; onClick: () => void }) {
-  return (
-    <button type="button" className={lit ? 'wos-scope-opt is-lit' : 'wos-scope-opt'} onClick={onClick}>
-      <Icon3D name={icon} size={34} />
-      <span>
-        <strong>{label}</strong>
-        <small>{hint}</small>
-      </span>
-      <b aria-hidden="true">›</b>
-    </button>
-  )
-}
+/** A sentence as the quiet second line of a row: it starts in lower case there. */
+const asHint = (text: string) => text.charAt(0).toLocaleLowerCase('hu') + text.slice(1)
 
 export function ExerciseScopeSheet({
-  mode, item, replacedName, loggedOnReplaced = 0, newSets, repLabel, planSlot, noPlanNote, mesoLine, lastTop, onChoose, onClose,
+  mode, item, replacedName, replacedMuscle, loggedOnReplaced = 0, newSets, repLabel, planSlot, noPlanNote, mesoLine, lastTop, onChoose, onClose,
 }: ExerciseScopeSheetProps) {
   const swap = mode === 'swap'
+  const kept = swap ? loggedOnReplaced : 0
   const lead = swap
-    ? loggedOnReplaced > 0
-      ? `A ${loggedOnReplaced} kész szett a ${replacedName}-nál marad, a hátralévő ${newSets} szett az újé.`
+    ? kept > 0
+      ? `A ${kept} kész szett a ${replacedName}-nál marad, a hátralévő ${newSets} szett az újé.`
       : `Ugyanott, ugyanúgy ${newSets} szett.`
     : `${newSets} szett · ${repLabel} ismétlés — a gyakorlat típusához szabva, utána átírhatod.`
   const offerMeso = planSlot && mesoLine != null
   return (
-    <Sheet onClose={onClose} labelledBy="scope-title" className="sheet-nested glass wos-sheet is-sky">
+    <Sheet onClose={onClose} labelledBy="scope-title" className="sheet-nested fo-sheet el-sheet">
       {(close) => {
         const choose = (scope: ChangeScope) => {
           onChoose(scope)
@@ -68,36 +62,30 @@ export function ExerciseScopeSheet({
         }
         return (
           <>
-            <div className="wos-sheet-head">
-              <Icon3D name={swap ? 't-swap' : 't-addex'} size={52} className="wos-sheet-art3d" />
-              <span className="wos-sheet-title">
-                <span className="wos-sheet-eb">{swap ? 'Gyakorlat cseréje' : 'Gyakorlat hozzáadása'}</span>
-                <h3 id="scope-title">{swap ? `${replacedName} → ${item.name}` : item.name}</h3>
-              </span>
+            <FoSheetHead
+              eyebrow={swap ? 'Gyakorlat cseréje' : 'Gyakorlat hozzáadása'} titleId="scope-title" onClose={close}
+              title={swap ? `${replacedName} → ${item.name}` : item.name} sub={lead}
+            />
+            <div className="el-ls">
+              <Row
+                left={<Mchp muscle={item.muscle} />} title={item.name}
+                sub={`${MUSCLE_LABELS[item.muscle] ?? item.muscle} · ${lastTop ? `múltkor ${lastTop} — innen jön a javaslat` : 'még nem csináltad — a súlyt te adod meg'}`}
+                right={(
+                  <span className="el-scope-caps">
+                    {kept > 0 && <Caps n={kept} done={kept} color={deepMuscle(replacedMuscle ?? item.muscle)} />}
+                    <Caps n={newSets} done={0} color={deepMuscle(item.muscle)} />
+                  </span>
+                )}
+              />
             </div>
-            <p className="wos-sheet-lead">{lead}</p>
-            <div className="wos-scope-ex">
-              <MuscleChip token={item.muscle} size={40} />
-              <span>
-                <strong>{item.name}</strong>
-                <small>
-                  {MUSCLE_LABELS[item.muscle] ?? item.muscle} ·{' '}
-                  {lastTop ? `múltkor ${lastTop} — innen jön a javaslat` : 'még nem csináltad — a súlyt te adod meg'}
-                </small>
-              </span>
-            </div>
-            <div className="wos-scope-opts">
-              <ScopeOption icon="t-calendar" label="Csak ma" hint="A mai edzésre. Jövő héten a régi terv jön." lit onClick={() => choose('TODAY')} />
+            <Lab>Meddig érvényes?</Lab>
+            <div className="el-ls">
+              <Row icon="t-calendar" title="Csak ma" sub="a mai edzésre. Jövő héten a régi terv jön." onClick={() => choose('TODAY')} />
               {offerMeso && (
-                <ScopeOption
-                  icon="t-peak"
-                  label="Mezociklusra is"
-                  hint={`${mesoLine} A mentett sablonod nem változik.`}
-                  onClick={() => choose('MESO')}
-                />
+                <Row icon="t-peak" title="A tervben is" sub={`${asHint(mesoLine)} A mentett sablonod nem változik.`} onClick={() => choose('MESO')} />
               )}
             </div>
-            {!planSlot && noPlanNote && <p className="wos-sheet-hint">{noPlanNote}</p>}
+            {!planSlot && noPlanNote && <Note>{noPlanNote}</Note>}
           </>
         )
       }}

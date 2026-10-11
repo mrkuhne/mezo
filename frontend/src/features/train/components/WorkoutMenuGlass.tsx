@@ -1,54 +1,44 @@
 // ============================================================
-// Mezo · WorkoutMenuGlass (mezo-88iwa.7, T6 Task 4) — the per-card ⋮ menu, ported
-// off the shared GlassBox primitive. Replaces the old ExerciseActionSheet for the
-// active-workout card list: everything that is not "log this set" lives here.
+// Mezo · WorkoutMenuGlass — the exercise's menu, its video and the quest detail of the active workout.
 //
-// Ported 1:1 from the prototype's `menuGlass` (docs/design_2.0/prototypes/
-// companion-titanium/session.js:101-126): Videó (only when the exercise carries a
-// demo url) · Jegyzet · Szett hozzáadása · Szett elvétele · Előrébb · Hátrébb ·
-// Gyakorlat kihagyása / Visszavesszük. Every action row runs its handler THEN
-// closes the glass (mirrors the old sheet's `fire` idiom) — except Videó, whose
-// handler switches the page to the VIDEO glass instead (the menu glass's `open`
-// prop then simply reads false, no separate close needed).
+// Folyadék F4 (mezo-n4wf5.4, area C): the three former glasses are light sheets
+// (`<Sheet className="fo-sheet">` + `FoSheetHead`), built to the prototype's `menu`, `demo` and `qb` sheets
+// (docs/design_2.0/prototypes/vilagos/edzes.js). The component names and props are the ones the page already
+// uses (`tint` is kept in the props and no longer drawn: the muscle chip and the capsules carry the colour).
 //
-// A second, minimal glass — WorkoutVideoGlass — embeds the exercise's demo video
-// inside `.wo-video-frame`, reusing VideoDemo's `videoEmbed` resolver (the same
-// YouTube/Instagram idiom the exercise picker also uses — the third user, the
-// pre-Titanium `ExerciseRecordSheet`, was deleted in mezo-lf3cv) rather than
-// inventing a second embed path.
-//
-// Üvegesítés U4 (mezo-me75u.4): the three glasses wear the dark glass (coral `--c`), their rows
-// are FLAT cells with Titanium 3D icons (Videó t-camera, Jegyzet t-note,
-// Szett ± t-weight, Előrébb t-up, Hátrébb t-down, kihagyás t-skip / visszavétel t-repeat). The
-// GlassBox cards carry `className="wos-gbx"` (U10, mezo-8vfr2) so the `uveg edzes session` block
-// scopes the shared glass dialog to this page (centred, coral) without re-skinning every other
-// caller; the card itself is the ONE glass, the `.wos-gb` bodies inside it are flat.
-//
-// Csere (mezo-mobji): a „Gyakorlat cseréje" row (t-swap) sits above the skip row; it opens the
-// single-pick picker, then the „Csak ma / Mezociklusra is" sheet.
-//
-// Eligazítás (mezo-mgu2r): the challenge PICKER left this file for the briefing
-// (WorkoutBriefing) and the menu lost its Küldetések row; what stays is ChallengeDetailGlass,
-// opened from a card's challenge badge — release / take back one challenge mid-workout.
+//   · WorkoutMenuGlass — everything that is not „log this set": Videó (only when the exercise carries a demo
+//     url) · Jegyzet · Szett hozzáadása · Szett elvétele · Előrébb · Hátrébb · Gyakorlat cseréje (only with
+//     `onSwap`) · Gyakorlat kihagyása / Visszavesszük. Under the head the exercise's sets stand as capsules.
+//     Every row runs its handler THEN closes (`fire`) — except Videó, whose handler switches the page to the
+//     video sheet (the menu's `open` then simply reads false).
+//   · WorkoutVideoGlass — the demo video in a frame (VideoDemo's `videoEmbed` resolver), or the empty state.
+//     The hero's „Technika" and the menu's „Videó" both open this.
+//   · ChallengeDetailGlass — one quest, opened from its line on the exercise: the type, the exercise, the
+//     target big, how sure it is (a level), the reasoning, and ONE action — Elengedem (no penalty) or
+//     Visszaveszem. A resolved quest shows its outcome instead.
 // ============================================================
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import { videoEmbed } from '@/features/train/components/VideoDemo'
 import { challengeConfidenceLine, challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import type { Icon3DName } from '@/shared/ui/clay'
+import { Acts, Btn, Bub, Caps, FoSheetHead, Lab, Level, Note, Row, SheetGraphic, Txt } from '@/shared/ui/folyadek'
+import { Sheet } from '@/shared/ui/Sheet'
+
+const muscleLabel = (muscle: string) => MUSCLE_LABELS[muscle] ?? muscle
 
 export interface WorkoutMenuGlassProps {
   open: boolean
-  /** The card whose menu this is — drives the glass label/tint and the Videó row. */
+  /** The exercise whose menu this is — the head, the capsules and the Videó row. */
   exercise: LoggedWorkoutExercise
-  /** Accent for the glass card (the exercise's own muscle-family color). */
+  /** Kept for the callers; the light sheet draws the muscle's own colour instead. */
   tint: string
   /** 0-based position of `exercise` in the session's current display order. */
   position: number
   /** Total exercise count of the session — the far end Hátrébb disables against. */
   orderLength: number
-  /** Effective set count of this exercise right now (Szett hozzáadása's hint). */
+  /** Effective set count of this exercise right now (the capsules, Szett hozzáadása's hint). */
   slotCount: number
   skipped: boolean
   /** Whether a durable note already exists (toggles the Jegyzet hint). */
@@ -56,7 +46,7 @@ export interface WorkoutMenuGlassProps {
   /** Enabled only for an unchecked TRAILING slot (canRemoveSet + last slot pending). */
   canRemoveTrailingSet: boolean
   onClose: () => void
-  /** Opens the video glass — does NOT also call onClose (see file header). */
+  /** Opens the video sheet — does NOT also call onClose (see file header). */
   onVideo: () => void
   onEditNote: () => void
   onAddSet: () => void
@@ -64,134 +54,124 @@ export interface WorkoutMenuGlassProps {
   onMoveEarlier: () => void
   onMoveLater: () => void
   onToggleSkip: () => void
-  /** Working sets already logged here — the swap row's hint (mezo-mobji). */
+  /** Working sets already logged here — the full capsules and the swap row's hint (mezo-mobji). */
   loggedCount?: number
   /** Opens the swap picker; absent → no swap row (e.g. no started workout). */
   onSwap?: () => void
 }
 
-function MenuRow({
-  icon, label, hint, disabled, warn, onClick,
-}: {
-  icon: Icon3DName
-  label: string
-  hint: string
-  disabled?: boolean
-  /** The destructive-ish row (Gyakorlat kihagyása) reads coral. */
-  warn?: boolean
+function MenuRow({ icon, label, hint, disabled, bad, onClick }: {
+  icon: Icon3DName; label: string; hint: string; disabled?: boolean
+  /** The destructive-ish row (Gyakorlat kihagyása) reads in the danger tone. */
+  bad?: boolean
   onClick: () => void
 }) {
-  return (
-    <button type="button" className={warn ? 'wo-menu-row is-warn' : 'wo-menu-row'} disabled={disabled} onClick={onClick}>
-      <Icon3D name={icon} size={32} />
-      <span>
-        <strong>{label}</strong>
-        <small>{hint}</small>
-      </span>
-      <b aria-hidden="true">›</b>
-    </button>
-  )
+  return <Row icon={icon} title={label} sub={hint} bad={bad} disabled={disabled} chev={!disabled} onClick={onClick} />
 }
 
-/** The note row's hint (prototype `note()`, session.js:127): what it says the note is FOR. */
+/** The note row's hint: what it says the note is FOR. */
 export function noteHint(hasNote: boolean): string {
-  return hasNote ? 'Megírt jegyzet szerkesztése' : 'Ami a következő alkalomra számít'
+  return hasNote ? 'a megírt jegyzet szerkesztése' : 'ami a következő alkalomra számít'
 }
 
 export function WorkoutMenuGlass({
-  open, exercise, tint, position, orderLength, slotCount, skipped, hasNote, canRemoveTrailingSet,
+  open, exercise, position, orderLength, slotCount, skipped, hasNote, canRemoveTrailingSet,
   onClose, onVideo, onEditNote, onAddSet, onRemoveSet, onMoveEarlier, onMoveLater, onToggleSkip,
   loggedCount = 0, onSwap,
 }: WorkoutMenuGlassProps) {
-  // Every row but Videó runs its action then dismisses the glass (Videó switches
-  // the page to the OTHER glass instead — see the file header).
+  if (!open) return null
+  // Every row but Videó runs its action then dismisses the sheet (Videó switches the page to the OTHER sheet).
   const fire = (fn: () => void) => () => {
     fn()
     onClose()
   }
+  const done = Math.min(loggedCount, slotCount)
+  const state = skipped ? 'kihagyva' : `${done} / ${slotCount} szett kész`
 
   return (
-    <GlassBox
-      open={open} onClose={onClose} label={exercise.name} tint={tint} variant="menu" className="wos-gbx"
-      eyebrow="Gyakorlat"
-      art={<span className="wos-gb-art"><MuscleChip token={exercise.muscle} size={40} /></span>}
-    >
-      <div className="wo-menu wos-gb wos-gb-menu">
-        {exercise.videoUrl && (
-          <MenuRow icon="t-camera" label="Videó" hint="A gyakorlathoz csatolt felvétel" onClick={onVideo} />
-        )}
-        <MenuRow icon="t-note" label="Jegyzet" hint={noteHint(hasNote)} onClick={fire(onEditNote)} />
-        <MenuRow
-          icon="t-weight" label="Szett hozzáadása" hint={`Most ${slotCount} szett van`}
-          disabled={skipped} onClick={fire(onAddSet)}
-        />
-        <MenuRow
-          icon="t-weight" label="Szett elvétele" hint="Csak bepipálatlan utolsó szett"
-          disabled={skipped || !canRemoveTrailingSet} onClick={fire(onRemoveSet)}
-        />
-        <MenuRow
-          icon="t-up" label="Előrébb" hint="Egy hellyel korábban"
-          disabled={position === 0} onClick={fire(onMoveEarlier)}
-        />
-        <MenuRow
-          icon="t-down" label="Hátrébb" hint="Egy hellyel később"
-          disabled={position === orderLength - 1} onClick={fire(onMoveLater)}
-        />
-        {onSwap && (
-          <MenuRow
-            icon="t-swap" label="Gyakorlat cseréje"
-            hint={loggedCount > 0 ? `A ${loggedCount} kész szett itt marad, a többi az újé` : 'Hasonlóra vagy bármi másra'}
-            onClick={fire(onSwap)}
+    <Sheet onClose={onClose} labelledBy="wo-menu-title" className="fo-sheet el-sheet">
+      {(close) => (
+        <>
+          <FoSheetHead
+            eyebrow="Gyakorlat" title={exercise.name} titleId="wo-menu-title"
+            sub={`${slotCount} szett · ${muscleLabel(exercise.muscle)}`} left={<Mchp muscle={exercise.muscle} />} onClose={close}
           />
-        )}
-        <MenuRow
-          icon={skipped ? 't-repeat' : 't-skip'}
-          warn={!skipped}
-          label={skipped ? 'Visszavesszük' : 'Gyakorlat kihagyása'}
-          hint={skipped ? 'Újra bekerül a mai munkába' : 'A már logolt szettjeid megmaradnak'}
-          onClick={fire(onToggleSkip)}
-        />
-      </div>
-    </GlassBox>
+          <SheetGraphic note={state}>
+            <Caps n={slotCount} done={done} cur={skipped ? undefined : done} color={deepMuscle(exercise.muscle)} size="big" />
+          </SheetGraphic>
+          <div className="el-ls">
+            {exercise.videoUrl && (
+              <MenuRow icon="t-camera" label="Videó" hint="a gyakorlathoz csatolt felvétel" onClick={onVideo} />
+            )}
+            <MenuRow icon="t-note" label="Jegyzet" hint={noteHint(hasNote)} onClick={fire(onEditNote)} />
+            <MenuRow icon="t-weight" label="Szett hozzáadása" hint={`most ${slotCount} szett van`} disabled={skipped} onClick={fire(onAddSet)} />
+            <MenuRow
+              icon="t-weight" label="Szett elvétele" hint="csak a még üres utolsó szett"
+              disabled={skipped || !canRemoveTrailingSet} onClick={fire(onRemoveSet)}
+            />
+            <MenuRow icon="t-up" label="Előrébb" hint="egy hellyel korábban" disabled={position === 0} onClick={fire(onMoveEarlier)} />
+            <MenuRow icon="t-down" label="Hátrébb" hint="egy hellyel később" disabled={position === orderLength - 1} onClick={fire(onMoveLater)} />
+            {onSwap && (
+              <MenuRow
+                icon="t-swap" label="Gyakorlat cseréje"
+                hint={loggedCount > 0 ? `a ${loggedCount} kész szett itt marad, a többi az újé` : 'hasonlóra vagy bármi másra'}
+                onClick={fire(onSwap)}
+              />
+            )}
+            <MenuRow
+              icon={skipped ? 't-repeat' : 't-skip'}
+              bad={!skipped}
+              label={skipped ? 'Visszavesszük' : 'Gyakorlat kihagyása'}
+              hint={skipped ? 'újra bekerül a mai munkába' : 'a már naplózott szettjeid megmaradnak'}
+              onClick={fire(onToggleSkip)}
+            />
+          </div>
+        </>
+      )}
+    </Sheet>
   )
 }
 
 export interface WorkoutVideoGlassProps {
   open: boolean
-  /** Null once the glass is closing (mirrors GlassBox's own open-gates-render idiom). */
+  /** Null once the sheet is closing. */
   exercise: LoggedWorkoutExercise | null
+  /** Kept for the callers; not drawn. */
   tint: string
   onClose: () => void
 }
 
-/** The minimal video glass (Task 4): a `.wo-video-frame` embed of the exercise's demo url. */
-export function WorkoutVideoGlass({ open, exercise, tint, onClose }: WorkoutVideoGlassProps) {
+/** The video sheet: the exercise's demo url embedded in a frame, or „Nincs elérhető videó". */
+export function WorkoutVideoGlass({ open, exercise, onClose }: WorkoutVideoGlassProps) {
+  if (!open) return null
   const embed = videoEmbed(exercise?.videoUrl)
   return (
-    <GlassBox open={open} onClose={onClose} label={exercise ? `${exercise.name} · videó` : 'Videó'} tint={tint} className="wos-gbx">
-      <div className="wos-gb wos-gb-video">
-      {embed ? (
-        <div className="wo-video-frame" style={{ aspectRatio: embed.aspectRatio }}>
-          <iframe
-            title="Demo videó"
-            loading="lazy"
-            allowFullScreen
-            src={embed.src}
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0 }}
+    <Sheet onClose={onClose} labelledBy="wo-video-title" className="fo-sheet el-sheet">
+      {(close) => (
+        <>
+          <FoSheetHead
+            eyebrow="Videó" titleId="wo-video-title" onClose={close}
+            title={exercise ? <>{exercise.name}{' '}<span className="el-sr">· videó</span></> : 'Videó'}
+            sub={exercise ? muscleLabel(exercise.muscle) : undefined}
+            left={exercise ? <Mchp muscle={exercise.muscle} /> : undefined}
           />
-        </div>
-      ) : (
-        <div className="wo-video-frame uv-empty">
-          <Icon3D name="t-camera" size={62} />
-          <span>Nincs elérhető videó</span>
-        </div>
+          {embed ? (
+            <div className="el-vid" style={{ aspectRatio: embed.aspectRatio }}>
+              <iframe title="Demo videó" loading="lazy" allowFullScreen src={embed.src} />
+            </div>
+          ) : (
+            <div className="el-vid is-empty">
+              <Bub icon="t-camera" size={54} />
+              <small>Nincs elérhető videó</small>
+            </div>
+          )}
+        </>
       )}
-      </div>
-    </GlassBox>
+    </Sheet>
   )
 }
 
-/** A challenge badge's state on its card: taken on, released mid-workout, or resolved. */
+/** A quest's state on its exercise: taken on, released mid-workout, or resolved. */
 export type ChallengeBadgeState = 'accepted' | 'released' | 'hit' | 'miss' | 'inconclusive'
 
 const OUTCOME_LINE: Partial<Record<ChallengeBadgeState, string>> = {
@@ -200,10 +180,18 @@ const OUTCOME_LINE: Partial<Record<ChallengeBadgeState, string>> = {
   inconclusive: 'Ebből nem tudtuk eldönteni.',
 }
 
+/** The target as one big line: „107,5 kg × 8"; free-text targets keep their own pieces („RIR 0 · utolsó szett"). */
+function targetLine(target: string): string {
+  const kgReps = /^(\d+(?:[.,]\d+)?)\s*kg\s*×\s*(\d+)$/i.exec(target.trim())
+  if (kgReps) return `${kgReps[1].replace('.', ',')} kg × ${kgReps[2]}`
+  return targetChips(target).join(' · ')
+}
+
 export interface ChallengeDetailGlassProps {
   open: boolean
   challenge: Challenge | null
   state: ChallengeBadgeState
+  /** Kept for the callers; not drawn. */
   tint: string
   /** accepted → release ('undo'); released → take back ('accept'). */
   onToggle: () => void
@@ -211,47 +199,44 @@ export interface ChallengeDetailGlassProps {
 }
 
 /**
- * One challenge, opened from its card badge (mezo-mgu2r, prototype gbox `qb`): the type, the
- * exercise, the target big, the reasoning, and ONE action — Elengedem (no penalty, it just drops
- * out of the closing tally) or Visszaveszem. A resolved challenge shows its outcome instead.
+ * One quest, opened from its line on the exercise (prototype sheet `qb`): the type, the exercise, the target big,
+ * how sure it is, the reasoning, and ONE action — Elengedem (no penalty, it just drops out of the closing tally) or
+ * Visszaveszem. A resolved quest shows its outcome instead.
  */
-export function ChallengeDetailGlass({ open, challenge, state, tint, onToggle, onClose }: ChallengeDetailGlassProps) {
-  if (!challenge) return null
+export function ChallengeDetailGlass({ open, challenge, state, onToggle, onClose }: ChallengeDetailGlassProps) {
+  if (!open || !challenge) return null
   const label = challengeTypeLabel(challenge.typeLabel)
   const outcome = OUTCOME_LINE[state]
+  const pct = challenge.confidence == null ? null : Math.round(challenge.confidence * 100)
   return (
-    <GlassBox
-      open={open} onClose={onClose} label={`${label} küldetés`} tint={tint} className="wos-gbx wos-gbx-qd"
-      eyebrow={state === 'accepted' ? 'Küldetés · vállalva' : state === 'released' ? 'Küldetés · elengedve' : 'Küldetés'}
-      art={<Icon3D name={challengeTypeIcon(challenge.type)} size={52} className="wos-gb-art3d" />}
-    >
-      <div className="wos-gb wos-gb-qd">
-        {challenge.exercise && <p className="wos-gb-sub">{challenge.exercise}</p>}
-        <div className="wos-qd-target">
-          {targetChips(challenge.target).map((v, j) => <b key={`${v}-${j}`}>{v}</b>)}
-        </div>
-        <span className="wos-qc-conf">{challengeConfidenceLine(challenge.confidence, challenge.risk)}</span>
-        <p className="wos-qd-why">{outcome && challenge.outcome ? challenge.outcome : challenge.why}</p>
-        {outcome ? (
-          <p className="wos-qd-note">{outcome}</p>
-        ) : (
-          <>
-            <button
-              type="button"
-              className={state === 'accepted' ? 'wos-pill is-block is-warn' : 'wos-pill is-block is-lit'}
-              onClick={() => { onToggle(); onClose() }}
-            >
-              <Icon3D name={state === 'accepted' ? 't-skip' : 't-quest'} size={22} />
-              {state === 'accepted' ? 'Elengedem' : 'Visszaveszem'}
-            </button>
-            <p className="wos-qd-note">
-              {state === 'accepted'
-                ? 'Büntetés nélkül — elengedve nem számít a zárásnál. Bármikor visszaveheted.'
-                : 'Most nem számít bele a zárásba. Ha mégis nekifutsz, vedd vissza.'}
-            </p>
-          </>
-        )}
-      </div>
-    </GlassBox>
+    <Sheet onClose={onClose} labelledBy="wo-quest-title" className="fo-sheet el-sheet">
+      {(close) => (
+        <>
+          <FoSheetHead
+            eyebrow={outcome ? 'Küldetés' : state === 'accepted' ? 'Küldetés · vállalva' : 'Küldetés · elengedve'}
+            title={<>{label}{' '}<span className="el-sr">küldetés</span></>} titleId="wo-quest-title"
+            sub={challenge.exercise || undefined} icon={challengeTypeIcon(challenge.type)} onClose={close}
+          />
+          <p className="el-qd-target">{targetLine(challenge.target)}</p>
+          <Lab>{challengeConfidenceLine(challenge.confidence, challenge.risk)}</Lab>
+          {pct != null && <Level pct={pct} color="var(--fo-gold)" height={22} label={`${pct}% biztos`} />}
+          <Txt className="el-qd-why">{outcome && challenge.outcome ? challenge.outcome : challenge.why}</Txt>
+          {outcome ? (
+            <Note>{outcome}</Note>
+          ) : (
+            <>
+              <Acts>
+                <Btn grow onClick={() => { onToggle(); onClose() }}>{state === 'accepted' ? 'Elengedem' : 'Visszaveszem'}</Btn>
+              </Acts>
+              <Note>
+                {state === 'accepted'
+                  ? 'Büntetés nélkül — elengedve nem számít a zárásnál. Bármikor visszaveheted.'
+                  : 'Most nem számít bele a zárásba. Ha mégis nekifutsz, vedd vissza.'}
+              </Note>
+            </>
+          )}
+        </>
+      )}
+    </Sheet>
   )
 }

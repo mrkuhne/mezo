@@ -1,1 +1,58 @@
 /* ── Folyadék · Edzés · kozben-lapok (mezo-n4wf5.4, slice F4) ── the session sheets (menu, video, quest, records, finish confirm, set edit, scope, debrief, note, extra-set prompt). Rules of this area only, class prefix `.el-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-edzes-kozos.css (`.ex-`). Motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the sheet itself ── every session sheet is `.fo-sheet.el-sheet`; the kit owns the frame, the head and the pieces */
+/* the inside scrolls, never the frame — and the 44 px hit area of a closing text link („Mégse", „Hagyjuk") must not add a
+   stray scroll to a sheet that fits: the room for it moves from the frame's bottom padding into the scroller */
+.sheet.fo-sheet.el-sheet { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.el-sheet > .sheet-scroll { padding-bottom: 14px; }
+.el-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* a long title (an exercise name, „A → B") wraps instead of pushing the × out */
+.el-sheet .fo-shh h2 { overflow-wrap: anywhere; }
+/* a list of rows standing straight in the sheet (prototype `ls`): the kit's hairlines, first row flush */
+.el-ls { display: block; }
+.el-ls > .fo-row:first-child { border-top: 0; padding-top: 0; }
+.el-ls + .fo-lab { margin-top: 16px; }
+.el-sheet .fo-shg + .el-ls { margin-top: 2px; }
+
+/* ── video (`.vs-vid`) ── the frame holds the embed; without a url the same frame says so */
+.el-vid { position: relative; aspect-ratio: 16 / 9; margin: 12px 0 10px; border-radius: 18px; overflow: hidden; background: var(--fo-page); }
+.el-vid > iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.el-vid.is-empty { display: grid; place-items: center; align-content: center; gap: 6px; font-size: 12px; color: var(--fo-sub); }
+
+/* ── quest detail (`qb`) ── the target as the sheet's big line, the reasoning under the level */
+.el-qd-target { margin: 6px 0 0; font-family: var(--ff-display); font-size: 30px; font-weight: 800; letter-spacing: -1.2px; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--fo-ink); overflow-wrap: anywhere; }
+.el-qd-why { margin-top: 10px; font-size: 13.5px; color: var(--fo-sub); }
+
+/* ── records (`recs`) ── the two cells on top, last time as facts, a level under each record, „ma …" under the level */
+.el-sheet .el-cells { margin-top: 4px; }
+.el-cells > span > b { overflow-wrap: anywhere; }
+.el-sheet .el-last { margin-top: 0; background: #fff; }
+.el-none, .el-sheet .el-empty { margin-top: 0; }
+.el-sheet .el-empty { margin-bottom: 10px; }
+.el-rec { align-items: flex-start; }
+.el-rec > .si { margin-top: 2px; }
+.el-rec > .g > strong > .fo-st { margin-left: 4px; vertical-align: 1px; }
+.el-rec > .v { align-self: center; white-space: nowrap; }
+.el-now { display: block; margin-top: 4px; font-size: 11.5px; color: var(--fo-sub); }
+.el-reprecs > .fo-row > .v > small { font-family: var(--ff-body); font-size: 12px; font-weight: 500; color: var(--fo-sub); }
+
+/* ── finish confirm (`fin`) ── the tally stands on the primary's second line */
+.el-sheet .fo-shh + .el-ls { margin-top: 10px; }
+.el-fin-go > span { display: block; text-align: center; }
+.el-fin-go > span > small { display: block; margin-top: 1px; font-size: 12px; font-weight: 600; opacity: .92; }
+
+/* ── set edit (`set`) ── a slot not logged yet reads its targets dimmed (`.vs-ro`) */
+.el-set.is-ro { opacity: .5; pointer-events: none; }
+.el-set .fo-pills .fo-pill { min-width: 36px; justify-content: center; }
+.el-sheet .el-side { margin-top: 14px; }
+
+/* ── scope (`scope`) ── what stays with the old exercise + what the new one gets (`.vs-rr`) */
+.el-scope-caps { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+
+/* ── note (`note`) ── the field with the mic tile beside it (the tile keeps its own look until F8) */
+.el-note textarea.fo-in { min-height: 84px; border-radius: 18px; }
+
+@media (max-width: 360px) {
+  .el-rec > .v { font-size: 14px; }
+  .el-qd-target { font-size: 26px; }
+}

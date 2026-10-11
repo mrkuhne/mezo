@@ -5,7 +5,8 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { SportLogPage } from '@/features/train/pages/SportLogPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import type { SportSessionCreateRequest } from '@/data/train/trainApi'
+import type { LevelUpResult, SportSessionCreateRequest } from '@/data/train/trainApi'
+import { sportLevelUpMock } from '@/data/progression/progressionMock'
 
 const mockNavigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -17,7 +18,8 @@ vi.mock('react-router-dom', async () => {
 // tests — what the form folds into it is the contract with the backend.
 const logged: SportSessionCreateRequest[] = []
 /** Flipped by the failure test so the mutation takes its onError branch (a real-mode 400). */
-const wire = { fails: false }
+/** `levelUp` — set by the XP tests: the save response's progression payload (a level was reached). */
+const wire: { fails: boolean; levelUp: LevelUpResult | null } = { fails: false, levelUp: null }
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -30,7 +32,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       ) => {
         logged.push(req)
         if (wire.fails) opts?.onError?.(new Error('400'))
-        else opts?.onSuccess?.({ id: 'ss-1', kcal: 500, kcalIsEstimate: req.kcalOverride == null })
+        else opts?.onSuccess?.({ id: 'ss-1', kcal: 500, kcalIsEstimate: req.kcalOverride == null, ...(wire.levelUp ? { levelUp: wire.levelUp } : {}) })
         opts?.onSettled?.()
       },
     }),
@@ -41,6 +43,7 @@ beforeEach(() => {
   mockNavigate.mockClear()
   logged.length = 0
   wire.fails = false
+  wire.levelUp = null
 })
 
 function renderPage() {
@@ -207,7 +210,7 @@ test('a failed save surfaces a Hungarian line and re-enables the CTA', async () 
   wire.fails = false
   await userEvent.click(within(alert).getByRole('button', { name: 'Újra' }))
   expect(logged).toHaveLength(2)
-  expect(await screen.findByText('FOCI · MA')).toBeInTheDocument()
+  expect(await screen.findByText(/^Foci · ma · .* csillag az ötből$/)).toBeInTheDocument()
 })
 
 // ---- the save: which field lands where on the wire ----
@@ -258,16 +261,21 @@ test('a successful save lands on the ceremony, not straight back to Mai', async 
   renderPage()
   await pick(/Tenisz/)
   await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
-  expect(await screen.findByText('TENISZ · MA')).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { level: 1, name: 'Mozgás lezárva' })).toBeInTheDocument()
+  expect(screen.getByText(/^Tenisz · ma · .* csillag az ötből$/)).toBeInTheDocument()
   expect(mockNavigate).not.toHaveBeenCalled()
 })
 
 test('the ceremony carries the saved minutes/rpe and the response\'s honest kcal', async () => {
-  renderPage()
+  const { container } = renderPage()
   await pick(/Kerékpár/)
   await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
-  await screen.findByText('KERÉKPÁR · MA')
-  expect(screen.getByText('500')).toBeInTheDocument() // the mocked response's kcal
+  await screen.findByText(/^Kerékpár · ma · /)
+  // the saved minutes / felt effort and the mocked response's kcal are what the three counters count up TO
+  // (the pass is still running here, so the targets are read, not the moving text)
+  expect([...container.querySelectorAll('.ec-tally [data-cer-count]')].map((el) => el.getAttribute('data-value'))).toEqual(['60', '6', '500'])
+  expect([...container.querySelectorAll('.ec-tally small')].map((el) => el.textContent)).toEqual(['perc', 'megélt terhelés · 10-ből', 'kcal'])
+  expect(screen.getByText('+500 kcal került a mai keretedbe')).toBeInTheDocument()
   expect(screen.getByText('Becslés, nem mérés')).toBeInTheDocument() // req.kcalOverride == null
 })
 
@@ -275,7 +283,7 @@ test('the ceremony\'s close CTA navigates to Mai', async () => {
   renderPage()
   await pick(/Foci/)
   await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
-  await userEvent.click(await screen.findByRole('button', { name: /Vissza a mai napra/ }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Vissza a mai napra' }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/mai')
 })
 
@@ -288,8 +296,36 @@ test('an own kcal override reaches the ceremony as "Saját értéked", not an es
   await userEvent.type(field, '640')
   await userEvent.click(screen.getByRole('button', { name: /Ezt mentem/ }))
   await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
-  await screen.findByText('FOCI · MA')
+  await screen.findByText(/^Foci · ma · /)
   expect(screen.getByText('Saját értéked')).toBeInTheDocument()
+})
+
+// ---- XP: on the closing screen, never an overlay over it (owner decision, mezo-n4wf5.4) ----
+
+const LEVEL_UP: LevelUpResult = sportLevelUpMock
+
+test('a save that earned XP shows it ON the closing screen — the level-up overlay is NOT raised over the ceremony', async () => {
+  wire.levelUp = LEVEL_UP
+  const { container } = renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
+  await screen.findByRole('heading', { level: 1, name: 'Mozgás lezárva' })
+  // The XP is the closing screen's own row…
+  const row = container.querySelector('.ec-xp .fo-row') as HTMLElement
+  expect(row.querySelector('strong')).toHaveTextContent(`+${LEVEL_UP.totalXp} szerzett XP`)
+  expect(row.querySelector('small')).toHaveTextContent('a mai mozgásért')
+  // …and nothing is painted over the ceremony: no level-up screen in the document (it used to open here first).
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  expect(document.querySelector('.lvu-body, .levelup')).toBeNull()
+})
+
+test('a save that earned no XP shows no XP row at all', async () => {
+  const { container } = renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Naplózom/ }))
+  await screen.findByRole('heading', { level: 1, name: 'Mozgás lezárva' })
+  expect(container.querySelector('.ec-xp')).toBeNull()
+  expect(screen.queryByText(/szerzett XP/)).not.toBeInTheDocument()
 })
 
 // ---- copy discipline ----

@@ -1,52 +1,37 @@
 // ============================================================
-// Mezo · WorkoutCard (mezo-88iwa.7, T6 Task 3) — ONE exercise of the active
-// workout as a Titanium poster card. Every exercise of the session renders one
-// of these inside `.wo-list`: the active phase is no longer a one-exercise-at-a-
-// time stepper, it is the Hevy-style card list of the prototype
-// (docs/design_2.0/prototypes/companion-titanium/session.js:82 `card()`).
+// Mezo · WorkoutCard (mezo-n4wf5.4, Folyadék F4 area B) — ONE exercise of the active workout, in its two faces:
 //
-// Anatomy (prototype 1:1, fed from real data):
-//   head  — MuscleChip art · name (+ KIHAGYVA tag) · records button · ⋮ menu
-//   note  — the durable per-exercise note as a `.wo-note` pill (tap → editor)
-//   cue   — the plan's OWN rationale sentence (never invented copy)
-//   head  — the vs-last-week chip when the engine emitted a progression signal (mezo-mgu2r:
-//           it replaced the ProgressionBanner's Múlt hét / Ma a cél cells).
-//   rows  — `.wo-rows-head` + one `.wo-row` per WORKING slot
+//   WorkoutCard — the exercise ON TOP (the hero): muscle chip + name, the round three-dot button in the corner (the
+//                 per-exercise menu), the tool row (Rekordok · Technika), a state cell (kihagyva / lecserélve / első
+//                 alkalom), its küldetések, the quiet lines (where it came from, its note, a reason) and the set grid.
+//   WorkoutRow  — every OTHER exercise: a row with its target, its state pill and one capsule per set; a tap brings
+//                 it on top.
 //
-// Warm-up slots are prescribed but never rendered (mezo-i8ahy, owner ruling): the card
-// shows working sets only and every count on screen agrees with the rows. The session
-// model keeps its warmup-then-working prescription array untouched — a row index is
-// mapped onto it through `slotIndex()`.
-//
-// Set logging stays STRICTLY in order per exercise (the model's `nextSetIdx`):
-//   · rows BEFORE the cursor are logged/done — read-only, tap opens SetEditSheet
-//     (gated by the mezo-l3on set-identity rule: a done row with no server id and
-//     no known write failure is still in flight, so it is NOT tappable)
-//   · the row AT the cursor is the ONLY editable one — kg / reps / RIR inputs all
-//     INLINE on the row (prototype `setRow()`, session.js:71), the L/B/R side segment
-//     for isolation work, and the ✓ that submits
-//   · rows AFTER the cursor show their prescribed targets, quiet and inert
-//
-// Üvegesítés U4 (mezo-me75u.4): each card is ONE glass with `--c` = the exercise's muscle color
-// (a skipped card is the dashed free state instead, never glass). Inside it everything is flat:
-// the MuscleChip in a lit well, round flat header buttons (records t-journal, ⋮), flat pills
-// (accepted challenge t-quest, note t-note, coaching cue t-info), the progression cells, and
-// the set rows — a done row's tick is a lit disc holding the 3D t-tick, its verdict a 3D mark
-// (t-tick in range / t-up above / t-down below / t-record for a record). No text glyphs.
+// Build target: docs/design_2.0/prototypes/vilagos/edzes.js `session()` + `setRow()`. The layout is the approved change
+// from the old list of open cards; the logging rules did not move:
+//   · warm-up slots are prescribed but never shown (mezo-i8ahy) — a row index goes through `slotIndex()`;
+//   · sets are logged strictly in order per exercise (the model's `nextSetIdx`): rows BEFORE the cursor are done
+//     (their mark opens the set editor; a row whose POST is still in flight is not tappable — mezo-l3on), the row AT
+//     the cursor is the only editable one, rows AFTER it show their target;
+//   · the cursor draft: kg is a text field (the HU keypad types a comma — mezo-py1i6), the reps follow the kg at
+//     equivalent effort (mezo-l95v4), RIR is clamped 0–5, isolation work has the side picker, plyo has no weight.
+// The draft lives here and is seeded from the cursor slot; the grid itself is the shared `SetGrid`.
 // ============================================================
-import { Fragment, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { LastWeekSet, LoggedWorkoutExercise } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
-import { muscleColor } from '@/features/train/logic/muscleColors'
 import { RIR_MAX } from '@/features/train/logic/rir'
 import { setStatus } from '@/features/train/logic/workoutCardMeta'
 import { adjustedRange, adjustedTarget, equivalentReps } from '@/features/train/logic/repEquivalence'
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
-import { MedalChip } from '@/features/train/components/MedalChip'
 import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
+import type { RowTag } from '@/features/train/logic/sessionFocus'
 import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
-import { Icon3D } from '@/shared/ui/clay'
+import {
+  Cell, Cells, DeltaChip, InfoLine, Mchp, QuestLine, SetGrid, ToolBtn, ToolRow, deepMuscle,
+  type SetGridRow, type SetVerdict,
+} from '@/features/train/components/folyadek'
+import { Caps, DotsBtn, Hero, Row, St } from '@/shared/ui/folyadek'
 import {
   type Session,
   type SetSide,
@@ -62,25 +47,26 @@ export function prefill(e: LoggedWorkoutExercise): LastWeekSet {
   return e.lastWeek ?? { weight: 0, reps: e.repMin || 10, rir: e.targetRIR }
 }
 
-/** The verdict cell is ICON-ONLY (prototype `verdictCell`, session.js:64): one compact
- *  mark, with the sentence carried by title + aria-label. Pouring the words into the cell
- *  itself overflowed it (fix wave I2).
- *
- *  Visszaöltöztetés (mezo-ju4j6.11) put the house clay trend marks here; U4 (mezo-me75u.4) makes
- *  all three states Titanium 3D marks — the in-range `ok` loses its text ✓ too. */
-const VERDICT_ICON = { ok: 't-tick', below: 't-down', above: 't-up' } as const
-const VERDICT_LABEL = {
-  ok: 'A javasolt rep-sávban',
-  below: 'Cél alatt — a javasolt rep-sáv alatt',
-  above: 'Cél felett — a javasolt rep-sáv felett',
-} as const
-
-/** The human label of one set slot — shared by the row, its aria-label and the edit sheet.
- *  Warm-up slots are no longer shown (mezo-i8ahy), so every visible slot is simply the
- *  nth set of the exercise. */
+/** The human label of one set slot — shared by the grid's accessible names and the edit sheet.
+ *  Warm-up slots are not shown (mezo-i8ahy), so every visible slot is simply the nth set. */
 export function setSlotLabel(index: number): string {
   return `${index + 1}. szett`
 }
+
+const hu = (n: number) => n.toLocaleString('hu-HU')
+
+/** „72,5 × 10": the first working set's prescription (the engine's target when the plan carries none); a weightless
+ *  target reads „8 ism."; null when there is nothing to say. */
+export function exerciseGoal(e: LoggedWorkoutExercise): string | null {
+  const p = e.prescribedSets?.find((x) => x.kind === 'working')
+  const kg = p?.targetWeightKg ?? e.progression?.targetWeightKg ?? null
+  const reps = p?.targetReps ?? e.progression?.targetReps ?? null
+  if (reps == null) return null
+  if (e.type === 'plyo') return `${reps} ism.`
+  return kg != null ? `${hu(kg)} × ${reps}` : null
+}
+
+const VERDICT: Record<'ok' | 'below' | 'above', SetVerdict> = { ok: 'tick', below: 'down', above: 'up' }
 
 export interface WorkoutCardProps {
   exercise: LoggedWorkoutExercise
@@ -88,32 +74,36 @@ export interface WorkoutCardProps {
   /** A log/edit write is in flight for this exercise (drives `aria-busy`). */
   busy: boolean
   onLogSet(input: { weight: number; reps: number; rir: number | null; side: SetSide | null }): void
-  /** Opens the existing SetEditSheet for an already-logged slot. */
+  /** Opens the SetEditSheet for an already-logged slot. */
   onTapDoneRow(setIdx: number): void
-  /** Task 5 glass: history + personal records. */
+  /** The Rekordok sheet: history + personal records (+ Múlt hét / Mai cél). */
   onOpenRecords(): void
-  /** Task 4 glass: the per-card ⋮ menu. */
+  /** The per-exercise menu (the round three-dot button in the corner). */
   onOpenMenu(): void
-  /** The existing NoteEditSheet for the durable per-exercise note. */
+  /** The exercise's video (Technika). The button exists only when the exercise has one. */
+  onOpenVideo?(): void
+  /** The NoteEditSheet for the durable per-exercise note. */
   onEditNote(): void
   /** Effective per-exercise note (a just-saved local override wins over `exercise.note`). */
   note?: string
-  /** RECORD-tier medal chips per LOGGED set index (mezo-wp6n). */
+  /** RECORD-tier medals per LOGGED set index (mezo-wp6n): such a row's mark is the record mark. */
   medalsBySetIdx?: Record<number, Medal[]>
   /** localIds of this exercise's logged sets whose POST failed (mezo-l3on F1). */
   failedLocalIds?: ReadonlySet<string>
-  /** The challenges on THIS exercise that the owner took on at Indulás (mezo-mgu2r) — accepted,
-   *  released mid-workout, or already resolved. Each is a tappable badge. */
+  /** The küldetések on THIS exercise that the owner took on at Indulás (mezo-mgu2r) — accepted,
+   *  released mid-workout, or already resolved. Each is a tappable line. */
   challenges?: { id: string; label: string; target: string; state: ChallengeBadgeState }[]
-  /** Opens the challenge's detail glass (release / take back). */
+  /** Opens the küldetés sheet (release / take back). */
   onOpenChallenge?: (id: string) => void
   /** No instance id to log against (a failed start — mezo-e1ii9 fix round 1): the cursor
    *  row's ✓ is disabled, so a set that the server cannot store is never shown as stored. */
   logBlocked?: boolean
 }
 
+interface Draft { weight: number; reps: string; rir: string }
+
 export function WorkoutCard({
-  exercise, session, busy, onLogSet, onTapDoneRow, onOpenRecords, onOpenMenu, onEditNote,
+  exercise, session, busy, onLogSet, onTapDoneRow, onOpenRecords, onOpenMenu, onOpenVideo, onEditNote,
   note = '', medalsBySetIdx = {}, failedLocalIds, challenges = [], onOpenChallenge, logBlocked = false,
 }: WorkoutCardProps) {
   const id = exercise.id
@@ -122,325 +112,207 @@ export function WorkoutCard({
   const count = effectiveSetCount(session, id)
   const skipped = session.skipped.includes(id)
   const complete = !skipped && cursor >= count
-  const family = muscleColor(exercise.muscle)
   const weightless = exercise.type === 'plyo'
-  // The card's ONE sentence: the exercise's own rationale, falling back to the engine's
-  // wording when the plan carries none. Never both — the banner no longer repeats it.
-  // The prototype's cue is a COACHING sentence ("Vidd hátra a könyököd…"). Production has
-  // no such field yet — `rationale` carries the plan's PROGRESSION prose, i.e. the banner's
-  // own story in words, so rendering it on every card re-stated the banner (owner
-  // screenshot, 2026-09-17). The one case the prose says something the numbers cannot is a
-  // FIRST-EVER exercise (no lastWeek to compare — the banner's left cell is an em dash):
-  // there the rationale explains the starting choice, so it keeps that one slot. The real
-  // coaching cue arrives with its own field (mezo-b516k's cue work).
-  // mezo-bk7sn: a target past the range top (reps before a too-big weight jump) carries its
-  // reason in the same slot — "13" in a 10–12 range is not self-explaining.
+  const color = deepMuscle(exercise.muscle)
+  // The hero's ONE sentence. Production has no coaching-cue field yet: `rationale` carries the plan's PROGRESSION
+  // prose, which only says something the numbers cannot for a FIRST-EVER exercise (no last week to compare). A target
+  // past the range top (reps before a too-big weight jump, mezo-bk7sn) carries its reason in the same slot.
   const cue = exercise.lastWeek == null
     ? (exercise.rationale ?? exercise.progression?.rationale ?? null)
     : overflowWhy(exercise.repMax, exercise.progression)
 
-  // The draft for the ONE editable row (the cursor slot). Reset whenever the cursor
-  // moves or the slot count changes — a removeSet splices the prescription, so the
-  // target behind the same cursor can change without the cursor itself moving.
-  const [weight, setWeight] = useState(0)
-  // The kg field's live text while typing — null mirrors `weight`. A text field, not a
-  // native number input: the HU decimal keypad types a comma, which a number input
-  // reports as '' mid-entry and wiped the draft (mezo-py1i6).
-  const [weightText, setWeightText] = useState<string | null>(null)
-  const [reps, setReps] = useState(0)
-  const [rir, setRir] = useState(0)
-  const [side, setSide] = useState<SetSide | null>(null)
-  // The cursor slot's prescription — read by the prefill, the kg field and the swap caption.
+  // The cursor slot's prescription — read by the prefill, the kg field and the adjust caption.
   const cursorTarget = prescribedAt(session, id, slotIndex(session, id, cursor))
-  useEffect(() => {
-    // Every visible slot is a WORKING set now, so the prescription is read through the
-    // visible→model mapping and the warmup branch is gone with the warmup rows.
+  // The draft of the ONE editable row. Seeded from the cursor slot: the just-logged set wins over the static engine
+  // target (the engine seeds only the first working set), and a weight carried over from a swapped set keeps its
+  // equivalent reps (mezo-l95v4).
+  const seed = (): Draft => {
     const t = cursorTarget
     const prev = logged[cursor - 1]
     const p = prefill(exercise)
-    // The just-logged set wins over the static engine target; the engine seeds only the
-    // first working set. A weight carried over from a swapped set keeps its equivalent
-    // reps (mezo-l95v4).
     const w = prev?.weight ?? t?.targetWeightKg ?? p.weight
-    setWeight(w)
+    return { weight: w, reps: String(equivalentReps(t, w) ?? t?.targetReps ?? prev?.reps ?? p.reps), rir: String(t?.targetRIR ?? prev?.rir ?? p.rir) }
+  }
+  const [draft, setDraft] = useState<Draft>(seed)
+  // The kg field's live text while typing — null mirrors `draft.weight`. A text field, not a native number input: the
+  // HU decimal keypad types a comma, which a number input reports as '' mid-entry and wiped the draft (mezo-py1i6).
+  const [weightText, setWeightText] = useState<string | null>(null)
+  const [side, setSide] = useState<SetSide | null>(null)
+  // Re-seed whenever the cursor moves or the slot count changes — a removeSet splices the prescription, so the target
+  // behind the same cursor can change without the cursor itself moving.
+  useEffect(() => {
+    setDraft(seed())
     setWeightText(null)
-    setReps(equivalentReps(t, w) ?? t?.targetReps ?? prev?.reps ?? p.reps)
-    setRir(t?.targetRIR ?? prev?.rir ?? p.rir)
     setSide(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, cursor, count])
 
-  // Skipped = the dashed free state (bible §3 rank 4), everything else ONE glass card.
-  // Mid-workout swap/add (mezo-mobji): a swapped-out exercise stays with only its logged sets,
-  // faded and without a menu; a swapped-in / added one says so, and a never-done one says who
-  // picks the first weight.
+  const { weight } = draft
+  const repsNum = Number(draft.reps)
+  const submit = () => {
+    // The old number field's own bounds (1–100): a set without a rep count is not a set.
+    if (!Number.isFinite(repsNum) || repsNum < 1 || repsNum > 100) return
+    onLogSet({ weight: weightless ? 0 : weight, reps: repsNum, rir: Number(draft.rir) || 0, side })
+  }
+
+  // Mid-workout swap/add (mezo-mobji): a swapped-out exercise stays with only its logged sets and without a menu; a
+  // swapped-in / added one says so, and a never-done one says who picks the first weight.
   const swappedOut = !!exercise.replacedByName
+  const inPlan = exercise.changeScope === 'MESO'
   const change = !skipped && exercise.changeScope
     ? exercise.replacesName
-      ? { icon: exercise.changeScope === 'MESO' ? 't-peak' as const : 't-swap' as const,
-          text: `${exercise.changeScope === 'MESO' ? 'Mezociklusban' : 'Csak ma'} · a ${exercise.replacesName} helyett` }
-      : { icon: exercise.changeScope === 'MESO' ? 't-peak' as const : 't-addex' as const,
-          text: exercise.changeScope === 'MESO' ? 'Mezociklusba felvéve' : 'Ma hozzáadva' }
+      ? { icon: inPlan ? 't-peak' as const : 't-swap' as const, text: `${inPlan ? 'A tervben is' : 'Csak ma'} · a ${exercise.replacesName} helyett` }
+      : { icon: inPlan ? 't-peak' as const : 't-addex' as const, text: inPlan ? 'Felvéve a tervbe' : 'Ma hozzáadva' }
     : null
-  const firstTime = !skipped && !!exercise.changeScope && exercise.lastWeek == null && !cue
-  const cardClass = 'wo-card' + (skipped ? ' is-skipped uv-empty' : ' glass' + (complete ? ' is-complete' : '')) + (swappedOut ? ' is-swapped' : '')
-  const hasPills = challenges.length > 0 || !!note || (!skipped && !!cue) || swappedOut || !!change || firstTime
+  const firstTime = !skipped && !swappedOut && !!exercise.changeScope && exercise.lastWeek == null && !cue
+
+  const rows: SetGridRow[] = Array.from({ length: count }, (_, i): SetGridRow => {
+    // Row `i` is the i-th WORKING slot; the prescription lives behind the warm-up ramp in the model (mezo-i8ahy).
+    const t = prescribedAt(session, id, slotIndex(session, id, i))
+    const actual = logged[i]
+    if (i < cursor && actual) {
+      // mezo-l3on: a logged row whose POST is still in flight has no server row to PUT/DELETE against, so it is not
+      // tappable. A row whose POST is KNOWN to have failed is not in flight — it is tappable again.
+      const rowFailed = !!actual.localId && !!failedLocalIds?.has(actual.localId)
+      // A swapped weight is judged against its shifted range (mezo-l95v4).
+      const status = setStatus(adjustedRange(exercise, t, actual.weight), { reps: actual.reps, kind: 'working' })
+      const record = (medalsBySetIdx[i] ?? []).some((m) => m.tier === 'RECORD')
+      return {
+        kind: 'done', kg: weightless ? '—' : hu(actual.weight), reps: actual.reps, rir: actual.rir,
+        verdict: record ? 'record' : VERDICT[status], busy: !actual.id && !rowFailed, onEdit: () => onTapDoneRow(i),
+      }
+    }
+    if (i === cursor) {
+      return {
+        kind: 'cursor', kg: weightText ?? formatDecimal(weight), reps: draft.reps, rir: draft.rir, weightless, disabled: logBlocked,
+        onKg: (v) => {
+          setWeightText(v)
+          const w = parseDecimal(v)
+          if (w == null) return
+          // The reps follow the kg at equivalent effort (mezo-l95v4); typed reps stand until the kg moves again.
+          const r = equivalentReps(cursorTarget, w)
+          setDraft((d) => ({ ...d, weight: w, reps: r != null ? String(r) : d.reps }))
+        },
+        onKgBlur: () => setWeightText(null),
+        onReps: (v) => setDraft((d) => ({ ...d, reps: v.replace(/\D/g, '').slice(0, 3) })),
+        // One digit, 0–RIR_MAX: the last key typed wins, so „2" → „4" needs no select-all.
+        onRir: (v) => {
+          const digits = v.replace(/\D/g, '')
+          setDraft((d) => ({ ...d, rir: digits === '' ? '' : String(Math.min(RIR_MAX, Math.max(0, Number(digits.slice(-1))))) }))
+        },
+        onSubmit: submit,
+      }
+    }
+    // A later pending row: the prescribed target — or, after a weight swap, the swapped weight at its equivalent reps.
+    const later = weightless ? null : adjustedTarget(t, weight)
+    return {
+      kind: 'pending',
+      kg: weightless ? '—' : later ? hu(later.targetWeightKg) : t?.targetWeightKg != null ? hu(t.targetWeightKg) : '—',
+      reps: later ? String(later.targetReps) : `${exercise.repMin}–${exercise.repMax}`,
+      rir: t?.targetRIR ?? exercise.targetRIR,
+    }
+  })
+  const adj = !weightless && !complete ? adjustedTarget(cursorTarget, weight) : null
 
   return (
-    <section
-      className={cardClass}
+    <Hero
+      className="ek-hero"
       aria-label={exercise.name}
       aria-busy={busy || undefined}
-      style={{ '--ex-color': family.rail, '--c': family.rail } as React.CSSProperties}
+      data-state={skipped ? 'skipped' : swappedOut ? 'swapped' : complete ? 'done' : 'open'}
+      verdict={exercise.name}
+      left={<Mchp muscle={exercise.muscle} />}
     >
-      <header className="wo-card-head">
-        <span className="wo-card-art">
-          <MuscleChip token={exercise.muscle} size={40} />
-        </span>
-        <span className="wo-card-copy">
-          <strong>{exercise.name}</strong>
-          {skipped && <small className="is-skip">KIHAGYVA</small>}
-          {/* The one-glance vs-last-week chip (mezo-mgu2r) — it replaced the Múlt hét / Ma a cél
-              cells: the pre-filled rows already carry today's target. */}
-          {!skipped && !swappedOut && exercise.progression && (() => {
-            const chip = progressionChip(exercise.progression)
-            return <span className={`wo-delta is-${chip.tone}`} title="A múlt héthez képest">{chip.text}</span>
-          })()}
-        </span>
-        <button
-          type="button"
-          className="wo-card-log"
-          aria-label={`${exercise.name} · előzmények és rekordok`}
-          onClick={onOpenRecords}
-        >
-          <Icon3D name="t-journal" size={22} />
-        </button>
-        {!swappedOut && (
-          <button
-            type="button"
-            className="wo-card-menu"
-            aria-haspopup="dialog"
-            aria-label={`${exercise.name} · további műveletek`}
-            onClick={onOpenMenu}
-          >
-            ⋮
-          </button>
-        )}
-      </header>
+      <ToolRow>
+        <ToolBtn icon="t-journal" aria-label={`${exercise.name} · előzmények és rekordok`} onClick={onOpenRecords}>Rekordok</ToolBtn>
+        {onOpenVideo && !swappedOut && <ToolBtn icon="t-play" aria-haspopup="dialog" onClick={onOpenVideo}>Technika</ToolBtn>}
+      </ToolRow>
+      {!swappedOut && <DotsBtn aria-haspopup="dialog" aria-label={`${exercise.name} · további műveletek`} onClick={onOpenMenu} />}
 
-      {hasPills && (
-        <div className="wos-pills">
-          {swappedOut && (
-            <span className="wo-change">
-              <Icon3D name="t-swap" size={18} />
-              Lecserélve → {exercise.replacedByName} · {logged.length} szett kész
-            </span>
-          )}
-          {change && (
-            <span className={`wo-change is-${exercise.changeScope === 'MESO' ? 'meso' : 'today'}`}>
-              <Icon3D name={change.icon} size={18} />
-              {change.text}
-            </span>
-          )}
-          {firstTime && (
-            <div className="wo-cue">
-              <Icon3D name="t-info" size={18} />
-              <p>Első alkalom — a súlyt te adod meg, innentől jön a javaslat</p>
-            </div>
-          )}
-          {challenges.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              className={`wo-note wos-pill-quest${c.state === 'released' ? ' is-released' : ''}`}
-              aria-label={`${c.label} küldetés · ${c.state === 'released' ? 'elengedve' : c.state === 'accepted' ? 'vállalva' : 'lezárva'}`}
-              onClick={() => onOpenChallenge?.(c.id)}
-            >
-              <Icon3D name="t-quest" size={18} />
-              <span className="ntext">
-                {c.state === 'released' ? <>elengedve · <s>{c.target}</s></> : `${c.label} · ${c.target}`}
-              </span>
-            </button>
-          ))}
+      {skipped ? (
+        <Cells><Cell label="Állapot" value="kihagyva · a már naplózott szettjeid megmaradnak" /></Cells>
+      ) : swappedOut ? (
+        <Cells><Cell label="Állapot" value={`lecserélve → ${exercise.replacedByName} · ${logged.length} szett kész`} /></Cells>
+      ) : firstTime ? (
+        <Cells><Cell label="Első alkalom" value="a súlyt te adod meg, innentől jön a javaslat" /></Cells>
+      ) : null}
 
-          {note && (
-            <button type="button" className="wo-note exercise-note-pill" aria-label="Gyakorlat-jegyzet" onClick={onEditNote}>
-              <Icon3D name="t-note" size={18} />
-              <span className="ntext">{note}</span>
-            </button>
-          )}
+      {challenges.map((c) => (
+        <QuestLine
+          key={c.id}
+          label={c.label}
+          target={c.target}
+          released={c.state === 'released'}
+          aria-label={`${c.label} küldetés · ${c.state === 'released' ? 'elengedve' : c.state === 'accepted' ? 'vállalva' : 'lezárva'}`}
+          onClick={() => onOpenChallenge?.(c.id)}
+        />
+      ))}
 
-          {/* The cue slot stays wired for the coaching-cue field; see the note at `cue`. */}
-          {!skipped && cue && (
-            <div className="wo-cue">
-              <Icon3D name="t-info" size={18} />
-              <p>{cue}</p>
-            </div>
-          )}
-        </div>
-      )}
+      {change && <InfoLine icon={change.icon}>{change.text}</InfoLine>}
+      {note && <InfoLine icon="t-note" aria-label="Gyakorlat-jegyzet" onClick={onEditNote}>{note}</InfoLine>}
+      {!skipped && cue && <InfoLine icon="t-info">{cue}</InfoLine>}
 
       {!skipped && (
-        <>
-          <div className="wo-rows">
-            <div className="wo-rows-head" aria-hidden="true">
-              <span>#</span>
-              <span>KG</span>
-              <span>ISM</span>
-              <span>RIR</span>
-              <span />
-              <span />
-            </div>
-
-            {Array.from({ length: count }, (_, i) => {
-              // Row `i` is the i-th WORKING slot; the prescription lives behind the warm-up
-              // ramp in the model, so the address goes through `slotIndex` (mezo-i8ahy).
-              const t = prescribedAt(session, id, slotIndex(session, id, i))
-              const actual = logged[i]
-              const isDone = i < cursor
-              const idxCell = <span className="wo-idx">{i + 1}</span>
-
-              // ---- DONE row: read-only, tap opens the edit sheet ----
-              if (isDone && actual) {
-                // mezo-l3on: a logged row whose POST is still genuinely in flight has no
-                // server row to PUT/DELETE against, so it must not be tappable. A row whose
-                // POST is KNOWN to have failed is not in flight — it is tappable again.
-                const rowFailed = !!actual.localId && !!failedLocalIds?.has(actual.localId)
-                const rowDisabled = !actual.id && !rowFailed
-                // A swapped weight is judged against its shifted range (mezo-l95v4).
-                const status = setStatus(adjustedRange(exercise, t, actual.weight), { reps: actual.reps, kind: 'working' })
-                const medals = (medalsBySetIdx[i] ?? []).filter((m) => m.tier === 'RECORD')
-                const ariaLabel = `${setSlotLabel(i)} szerkesztése — ${actual.weight ?? '—'} kg × ${actual.reps ?? '—'} — RIR ${actual.rir ?? '—'}`
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    className="wo-row is-done"
-                    disabled={rowDisabled}
-                    aria-label={ariaLabel}
-                    onClick={() => onTapDoneRow(i)}
-                  >
-                    {idxCell}
-                    <span className="wo-field num">{actual.weight.toLocaleString('hu-HU')}</span>
-                    <span className="wo-field num">{actual.reps}</span>
-                    <span className="wo-field small num">{actual.rir}</span>
-                    <span className="wo-check is-checked" aria-hidden="true">
-                      <Icon3D name="t-tick" size={22} />
-                    </span>
-                    {/* Icon-only: the medal wins the cell when there is one, otherwise the
-                        rep-range mark. Either way the words live on the title + aria-label. */}
-                    <span className={`wo-verdict is-${status}`} title={VERDICT_LABEL[status]}>
-                      {medals.length > 0
-                        ? medals.map((m, mi) => <MedalChip key={mi} medal={m} />)
-                        : (
-                          <span className="wo-verdict-mark" role="img" aria-label={VERDICT_LABEL[status]}>
-                            <Icon3D name={VERDICT_ICON[status]} size={24} />
-                          </span>
-                        )}
-                    </span>
-                  </button>
-                )
-              }
-
-              // ---- THE editable row: the cursor slot, and only it ----
-              if (i === cursor) {
-                const adj = weightless ? null : adjustedTarget(cursorTarget, weight)
-                return (
-                  <Fragment key={i}>
-                  <form
-                    className="wo-row is-current"
-                    onSubmit={(e) => {
-                      e.preventDefault()
-                      onLogSet({ weight: weightless ? 0 : weight, reps, rir, side })
-                    }}
-                  >
-                    {idxCell}
-                    <label className="wo-field">
-                      <input
-                        type="text" inputMode="decimal"
-                        aria-label={`${exercise.name}, ${setSlotLabel(i)}, súly`}
-                        disabled={weightless}
-                        value={weightless ? '0' : (weightText ?? formatDecimal(weight))}
-                        onBlur={() => setWeightText(null)}
-                        onChange={(e) => {
-                          setWeightText(e.target.value)
-                          const w = parseDecimal(e.target.value)
-                          if (w == null) return
-                          setWeight(w)
-                          // The reps follow the kg at equivalent effort (mezo-l95v4); typed
-                          // reps stand until the kg moves again.
-                          const r = equivalentReps(cursorTarget, w)
-                          if (r != null) setReps(r)
-                        }}
-                      />
-                    </label>
-                    <label className="wo-field">
-                      <input
-                        type="number" step="1" min={1} max={100} inputMode="numeric"
-                        aria-label={`${exercise.name}, ${setSlotLabel(i)}, ismétlés`}
-                        value={reps}
-                        onChange={(e) => setReps(Number(e.target.value))}
-                      />
-                    </label>
-                    {/* RIR is a FIELD on the row, beside kg and rep (prototype `setRow()`,
-                        session.js:78) — not the full-width pill strip that used to sit under
-                        the row and broke the card's one column grid (mezo-i8ahy). The 0–RIR_MAX
-                        contract is enforced by the input's own min/max. */}
-                    <label className="wo-field small">
-                      <input
-                        type="number" step="1" min={0} max={RIR_MAX} inputMode="numeric"
-                        aria-label={`${exercise.name}, ${setSlotLabel(i)}, RIR`}
-                        value={rir}
-                        onChange={(e) => setRir(Math.min(RIR_MAX, Math.max(0, Number(e.target.value))))}
-                      />
-                    </label>
-                    <button type="submit" className="wo-check is-submit" disabled={logBlocked} aria-pressed={false} aria-label={`${setSlotLabel(i)} mentése`}>
-                      <Icon3D name="t-tick" size={24} />
-                    </button>
-                    <span className="wo-verdict" />
-
-                    {exercise.type === 'isolation' && (
-                      <span className="wo-pick">
-                        {/* The eyebrow caption the segment lost — says WHAT the L/B/R picks. */}
-                        <small className="wo-pick-key">OLDAL</small>
-                        {(['L', 'B', 'R'] as const).map((s) => (
-                          <button
-                            key={s} type="button" className="wo-check"
-                            aria-pressed={side === s} aria-label={`Oldal ${s}`}
-                            onClick={() => setSide(side === s ? null : s)}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </span>
-                    )}
-                  </form>
-                  {adj && cursorTarget?.targetWeightKg != null && (
-                    <p className="wo-adjust">
-                      {`${adj.targetWeightKg.toLocaleString('hu-HU')} kg-hoz igazítva · ajánlás ${cursorTarget.targetWeightKg.toLocaleString('hu-HU')} × ${cursorTarget.targetReps}`}
-                    </p>
-                  )}
-                  </Fragment>
-                )
-              }
-
-              // ---- LATER pending row: the prescribed target, quiet and inert ----
-              // …or, after a weight swap, the swapped weight at its equivalent reps (mezo-l95v4).
-              const later = weightless ? null : adjustedTarget(t, weight)
-              return (
-                <div key={i} className="wo-row" aria-label={`${setSlotLabel(i)} · terv`}>
-                  {idxCell}
-                  <span className="wo-field num">{later ? later.targetWeightKg.toLocaleString('hu-HU') : t?.targetWeightKg != null ? t.targetWeightKg.toLocaleString('hu-HU') : '—'}</span>
-                  <span className="wo-field num">{later ? String(later.targetReps) : `${exercise.repMin}–${exercise.repMax}`}</span>
-                  <span className="wo-field small num">{t?.targetRIR ?? exercise.targetRIR}</span>
-                  <span className="wo-check" aria-hidden="true" />
-                  <span className="wo-verdict" />
-                </div>
-              )
-            })}
-          </div>
-        </>
+        <SetGrid
+          name={exercise.name}
+          color={color}
+          rows={rows}
+          rirMax={RIR_MAX}
+          side={exercise.type === 'isolation' ? { value: side, onChange: setSide } : undefined}
+          adjust={adj && cursorTarget?.targetWeightKg != null
+            ? `${hu(adj.targetWeightKg)} kg-hoz igazítva · ajánlás ${hu(cursorTarget.targetWeightKg)} × ${cursorTarget.targetReps}`
+            : undefined}
+        />
       )}
-    </section>
+    </Hero>
+  )
+}
+
+const TAG: Record<Exclude<RowTag, null>, { text: string; tone: 'q' | 'plan' | 'ok' }> = {
+  skipped: { text: 'Kihagyva', tone: 'q' },
+  now: { text: 'Most', tone: 'plan' },
+  done: { text: 'Kész', tone: 'ok' },
+}
+
+export interface WorkoutRowProps {
+  exercise: LoggedWorkoutExercise
+  session: Session
+  /** `rowTag(session, id, { swappedOut })`. */
+  tag: RowTag
+  /** Brings this exercise on top. */
+  onFocus(): void
+}
+
+/** An exercise that is NOT on top: what it asks for, where it stands (pill + one capsule per set). */
+export function WorkoutRow({ exercise, session, tag, onFocus }: WorkoutRowProps) {
+  const id = exercise.id
+  const done = session.logged[id]?.length ?? 0
+  const count = effectiveSetCount(session, id)
+  const skipped = session.skipped.includes(id)
+  const swappedOut = !!exercise.replacedByName
+  const goal = exerciseGoal(exercise)
+  const chip = exercise.progression ? progressionChip(exercise.progression) : null
+  const sub = skipped
+    ? 'kihagyva'
+    : swappedOut
+      ? `lecserélve → ${exercise.replacedByName} · ${done} szett kész`
+      : <>{count} szett{goal ? ` · cél ${goal}` : ''}{chip && <> <DeltaChip tone={chip.tone}>{chip.text}</DeltaChip></>}</>
+  return (
+    <Row
+      className="ek-row"
+      data-state={skipped ? 'skipped' : swappedOut ? 'swapped' : tag ?? 'open'}
+      state={skipped || swappedOut ? 'dim' : undefined}
+      left={<Mchp muscle={exercise.muscle} sm />}
+      title={exercise.name}
+      sub={sub}
+      onClick={onFocus}
+      chev
+      right={(
+        <span className="ek-rr">
+          {tag && <St tone={TAG[tag].tone}>{TAG[tag].text}</St>}
+          <Caps n={count} done={done} cur={skipped || swappedOut ? undefined : done} color={deepMuscle(exercise.muscle)} label={`${done} / ${count} szett kész`} />
+        </span>
+      )}
+    />
   )
 }

@@ -104,9 +104,9 @@ test('valós mód: a lezárás a csillagos ceremónián landol, NEM a régi öss
   await user.click(await screen.findByRole('button', { name: /szett mentése$/ }, { timeout: 5000 }))
   await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }, { timeout: 5000 }))
 
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(/Így sikerült/)).toBeInTheDocument()
   // és OTT IS MARAD: a nap-lekérés újratöltése (completedWorkout + openWorkout: null) nem
   // navigálhat el a ceremóniáról
   await waitFor(() => expect(screen.queryByText('RÉGI ÖSSZESÍTŐ')).toBeNull())
-  expect(screen.getByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(screen.getByText(/Így sikerült/)).toBeInTheDocument()
 })

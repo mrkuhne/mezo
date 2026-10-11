@@ -12,12 +12,14 @@ const record: Medal = {
 }
 
 describe('MedalChip', () => {
-  it('renders the 3D record medal named in Hungarian for a RECORD medal', () => {
+  it('renders the gold record bubble named in Hungarian for a RECORD medal', () => {
     render(<MedalChip medal={record} />)
     const chip = screen.getByRole('img', { name: 'Súly-rekord' })
-    // mezo-ju4j6.11: a jel az érem (`i-erem`), nem a korábbi érme-korong (`i-erme`); U4
-    // (mezo-me75u.4): `i-erem` renders as the Titanium 3D `t-record` through CLAY_TO_3D.
+    // Folyadék (mezo-n4wf5.4): the family's record glyph in its flat gold bubble — no 3D sprite, no emoji.
     expect(chip.querySelector('use')!.getAttribute('href')).toBe('#t-record')
+    const bub = chip.querySelector('.fo-bub') as HTMLElement
+    expect(bub.style.getPropertyValue('--c')).toBe('var(--fo-gold)')
+    expect(bub.style.getPropertyValue('--s')).toBe('24px')
   })
 
   it.each([

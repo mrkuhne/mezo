@@ -1,1 +1,43 @@
 /* ── Folyadék · Edzés · osszegzes (mezo-n4wf5.4, slice F4) ── the review (WorkoutSummary, ExerciseReview, WorkoutReviewPage). Rules of this area only, class prefix `.eo-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-edzes-kozos.css (`.ex-`). Motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the comparison rows (prototype `review` · „az előzőhöz mérve") ── the report never punishes: the level is neutral, and
+   ONLY an improvement takes the domain's liquid. There is deliberately no `down` tone (workoutReviewTokens.test.ts). */
+.eo-cmp { --eo-liq: var(--fo-faint); }
+.eo-cmp.up { --eo-liq: var(--dom); }
+.eo-cmp .v, .eo-medal .v, .eo-set .v { white-space: nowrap; }
+
+/* ── the hero's tubes are buttons: the caption may wrap, the name never pushes a tube wider ── */
+.eo-extubes .fo-vial, .eo-settubes .fo-vial { min-width: 0; }
+.eo-extubes .fo-vial small, .eo-settubes .fo-vial small { overflow-wrap: anywhere; }
+.eo-regs s { color: var(--fo-faint); }
+
+/* ── the one-exercise numbers: two rows of two with a reference (prototype `facts()+facts()`) ── */
+.eo-nums .fo-facts + .fo-facts { margin-top: 8px; }
+.eo-nums .fo-facts:last-child { margin-bottom: 0; }
+
+/* ── a row's end: the record tag over the set capsules (prototype `.vs-rr.cl`) ── */
+.eo-rr { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: 0 0 auto; }
+.eo-top { color: var(--fo-ink); font-weight: 700; }
+
+/* ── the set rows: a warm-up and a set without a rep range carry their number where the verdict mark would stand;
+   a missed set is a quiet row — dimmed by the kit (`state="dim"`), never a warning colour ── */
+.eo-ix { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--fo-page);
+  box-shadow: inset 0 0 0 1px rgba(10, 42, 60, .06); font-family: var(--ff-display); font-size: 15px; font-weight: 800; color: var(--fo-sub); }
+.eo-set.warm strong { color: var(--fo-sub); font-weight: 650; }
+.eo-ghost strong { color: var(--fo-sub); font-weight: 650; }
+
+/* ── the note card ── */
+.eo-note .fo-lab { display: block; margin-bottom: 8px; }
+.eo-note-read { white-space: pre-wrap; }
+
+/* ── the previous / next instance pair (prototype `.vs-stepnav`; local by the README) ── */
+.eo-stepnav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 14px 0; }
+.eo-stepnav button { min-width: 0; min-height: 44px; padding: 12px 14px; border: 0; border-radius: 22px; background: #fff; color: var(--fo-ink); text-align: left; cursor: pointer;
+  font-family: var(--ff-body); box-shadow: 0 10px 18px -14px rgba(10, 42, 60, .35), inset 0 0 0 1px rgba(10, 42, 60, .06); }
+.eo-stepnav button + button { text-align: right; }
+.eo-stepnav small { display: block; font-size: 11.5px; font-weight: 650; color: var(--fo-sub); overflow-wrap: anywhere; }
+.eo-stepnav b { display: block; font-family: var(--ff-display); font-size: 15px; font-weight: 700; margin-top: 2px; }
+.eo-stepnav button:disabled { opacity: .5; cursor: default; box-shadow: inset 0 0 0 1px rgba(10, 42, 60, .06); }
+.eo-stepnav button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+/* two or three tubes do not swell into bowls: a tube keeps a tube's width */
+.eo-extubes .fo-vial, .eo-settubes .fo-vial { width: 100%; max-width: 84px; justify-self: center; }

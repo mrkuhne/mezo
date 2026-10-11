@@ -31,15 +31,15 @@
 // TASK 5: `onSaved(response)` below computes the sport's stars from the SAVED
 // values (duration/rpe against the sport's own minutes-field default) and
 // switches the page's own step state to the ceremony — SportCeremony.tsx,
-// mounted full-screen exactly like WorkoutCeremony closes a gym session. A
-// response `levelUp` opens the shared LevelUpProvider overlay BEFORE the
-// switch, same as every other finish path (ActiveWorkoutPage, RunningPage).
+// mounted full-screen exactly like WorkoutCeremony closes a gym session. The
+// XP a save earned (`response.levelUp.totalXp`) is shown ON that closing screen;
+// the full-screen level-up overlay is NOT raised over it any more (owner
+// decision, mezo-n4wf5.4 — nothing is painted over a ceremony).
 // ============================================================
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuickLogSport } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { Sheet } from '@/shared/ui/Sheet'
 import {
   Acts, Box, Btn, Bub, Card, FoSheetHead, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Seg, Slider, Stepper,
@@ -343,7 +343,6 @@ export function SportLogPage() {
   const navigate = useNavigate()
   const goBack = useBackNav('/train/mai')
   const { logSportSession } = useQuickLogSport()
-  const { showLevelUp } = useLevelUp()
 
   const [chosen, setChosen] = useState<Sport | null>(null)
   const [mode, setMode] = useState<string | null>(null)
@@ -383,12 +382,10 @@ export function SportLogPage() {
   /**
    * The ceremony mounts here, on the SAVED response — its `kcal`/`kcalIsEstimate` are the
    * honest figures the form refuses to guess (see the honesty note at the top of the
-   * file). A `levelUp` payload opens the shared overlay first, exactly like every other
-   * finish path (ActiveWorkoutPage, RunningPage) — the ceremony reveals once it is
-   * dismissed.
+   * file). A `levelUp` payload does NOT open the level-up overlay here (mezo-n4wf5.4): the
+   * closing screen owns the screen and carries the earned XP itself („+N szerzett XP").
    */
   function onSaved(sport: Sport, savedMinutes: number, savedRpe: number, response?: SportSessionResponse) {
-    if (response?.levelUp) showLevelUp(response.levelUp)
     setCeremony({
       sport,
       minutes: savedMinutes,
@@ -416,8 +413,6 @@ export function SportLogPage() {
       <SportCeremony
         score={sportStars(ceremony.minutes, minutesTarget(ceremony.sport), ceremony.rpe)}
         sportName={ceremony.sport.id === 'other' && values.name ? String(values.name) : ceremony.sport.name}
-        art={ceremony.sport.art3d}
-        color={ceremony.sport.color}
         minutes={ceremony.minutes}
         rpe={ceremony.rpe}
         kcal={ceremony.kcal}

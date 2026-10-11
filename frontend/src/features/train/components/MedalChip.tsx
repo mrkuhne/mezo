@@ -1,26 +1,18 @@
 // ============================================================
-// Mezo · MedalChip — the set-row medal mark (mezo-wp6n). RECORD tier gets the clay
-// medal; TARGET tier renders nothing — a TARGET_HIT is carried by the row's own
-// done-tick turning sage instead (the double-tick fix, see ActiveWorkoutPage.tsx's
-// prescribed-set rows).
-//
-// Visszaöltöztetés (mezo-ju4j6.11): a jel eddig egy 18px-es sárga KORONG volt, benne egy
-// 14px-es érme-ikon — a korong a saját ikonját nyomta el, és a cellában alig látszott. Most
-// maga az agyag érem áll ott, 24px-en, korong nélkül (owner 2026-09-19: „a medalnak is új
-// ikon, és lehetnek picit nagyobbak").
-// Üvegesítés U4 (mezo-me75u.4): the medal is the Titanium 3D record symbol now — `i-erem` maps to
-// `t-record` through CLAY_TO_3D, so the chip goes through ContentIcon and says the meaning once.
+// Mezo · MedalChip — a RECORD medal as a small named mark (mezo-wp6n; Folyadék look: mezo-n4wf5.4). TARGET tier renders
+// nothing: a hit target is carried by the row's own verdict. The mark is the family's gold record bubble; the medal's
+// name („Súly-rekord") is its accessible name. The set grid of the active workout shows ONE mark per row (the record
+// mark wins), so it no longer lists a chip per medal — this piece names a single medal wherever one is listed.
 // ============================================================
 import type { Medal } from '@/data/train/medalTypes'
-import { ContentIcon } from '@/shared/ui/clay'
+import { Bub } from '@/shared/ui/folyadek'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 
-export function MedalChip({ medal }: { medal: Medal }) {
+export function MedalChip({ medal, size = 24 }: { medal: Medal; size?: number }) {
   if (medal.tier !== 'RECORD') return null
-  const label = MEDAL_TYPE_LABEL[medal.type] ?? 'Rekord'
   return (
-    <span className="wo-verdict-mark" role="img" aria-label={label}>
-      <ContentIcon name="i-erem" size={24} />
+    <span className="ek-medal" role="img" aria-label={MEDAL_TYPE_LABEL[medal.type] ?? 'Rekord'}>
+      <Bub icon="t-record" size={size} color="var(--fo-gold)" />
     </span>
   )
 }

@@ -8,19 +8,21 @@
 // shell is CONTEXT — the comparison against the previous instance of the same
 // template day, the reference top set per exercise, and the stepping along that
 // same chain. All of it rides existing endpoints; no contract changed.
-// Üveg re-dress (mezo-me75u.4): the shell's look lives in WorkoutSummary / ExerciseReview.
+// Folyadék (mezo-n4wf5.4, prototype vilagos/edzes.js `review`): the look lives in WorkoutSummary /
+// ExerciseReview; this page owns the loading and not-found faces and the stepping pair.
 // ============================================================
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useChallenges, useMedals, useTemplateDayChain, useWorkoutDetail, useWorkoutNote } from '@/data/hooks'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
-import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { Btn, Card, EmptyTank, FrameBack, Page, Skel, useFrameTitle } from '@/shared/ui/folyadek'
 import { actualMinutes } from '@/features/train/logic/actualDuration'
 import { deriveSummaryStats } from '@/features/train/logic/summaryStats'
 import type { SummarySetChip } from '@/features/train/logic/summaryStats'
 import { deriveComparison } from '@/features/train/logic/workoutComparison'
-import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
+import { questRows } from '@/features/train/logic/workoutReviewDerive'
+import { WorkoutSummary, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
 import type { WorkoutDetailResponse } from '@/data/train/trainApi'
 
 /** The API rows a report needs, in the shape summaryStats consumes. */
@@ -53,6 +55,17 @@ function toSummaryExercises(detail: WorkoutDetailResponse): SummaryExercise[] {
   }))
 }
 
+/** The title bar of the two faces that have no workout yet (loading, not found). */
+function ReviewFrame({ onBack, children }: { onBack: () => void; children: ReactNode }) {
+  useFrameTitle({ title: 'Összegzés', eyebrow: 'Edzés' })
+  return (
+    <Page className="eo-page">
+      <FrameBack className="fo-backpill" onBack={onBack}>Vissza</FrameBack>
+      {children}
+    </Page>
+  )
+}
+
 export function WorkoutReviewPage() {
   const { workoutId } = useParams()
   const navigate = useNavigate()
@@ -62,7 +75,7 @@ export function WorkoutReviewPage() {
   const { data: allMedals } = useMedals()
 
   // The chain this instance sits on. A custom workout has no templateSessionId and therefore
-  // no chain — the comparison tile and the stepping simply do not render for it.
+  // no chain — the comparison and the stepping simply do not render for it.
   const { prev, next } = useTemplateDayChain(detail?.templateSessionId, detail?.date ?? null)
   const { detail: prevDetail } = useWorkoutDetail(prev?.id ?? null)
   // Closing-note editing state (mezo-d20.8.2.2) — above the early returns, as hooks must be.
@@ -70,34 +83,28 @@ export function WorkoutReviewPage() {
   const [noteEditing, setNoteEditing] = useState(false)
   const [noteDraft, setNoteDraft] = useState('')
 
-  if (pending) return <ScreenSkeleton />
+  if (pending) return <ReviewFrame onBack={goBack}><Skel blocks={[330, 220, 200]} label="Összegzés betöltése…" /></ReviewFrame>
   if (error || !detail) {
     return (
-      // Üveg (mezo-me75u.4): the missing workout is an empty state — dashed, no glass.
-      <div className="wr-root uv-rev">
-        <div className="wr-empty uv-empty">
-          <p>Ez az edzés nem található.</p>
-          <button type="button" className="uv-flat" onClick={() => navigate('/train')}>← Vissza az edzésekhez</button>
-        </div>
-      </div>
+      <ReviewFrame onBack={goBack}>
+        <Card>
+          <EmptyTank icon="t-journal" actions={<Btn sm onClick={() => navigate('/train')}>Vissza az edzésekhez</Btn>}>
+            Ez az edzés nem található.
+          </EmptyTank>
+        </Card>
+      </ReviewFrame>
     )
   }
 
   const exercises = toSummaryExercises(detail)
-  // Server-resolved outcomes; anything not hit/miss/inconclusive reads as skipped.
-  const challengeRows: SummaryChallenge[] = challenges.map((c) => ({
-    id: c.id,
-    typeLabel: c.typeLabel,
-    exercise: c.exercise,
-    target: c.target,
-    state: c.status === 'hit' || c.status === 'miss' || c.status === 'inconclusive' ? c.status : 'skipped',
-    detail: c.outcome ?? undefined,
-  }))
+  // Server-resolved outcomes; a quest never taken reads „nem vállaltad", an accepted one the
+  // server never judged „nem értékelhető" (logic/workoutReviewDerive).
+  const quests = questRows(challenges).rows
   // The medal cabinet scoped to this workout — empty filter → no medal section.
   const medals = allMedals.filter((m) => m.workoutSessionId === detail.id)
 
   // The comparison exists only when the reference's detail has actually arrived. A half-loaded
-  // reference would render a tile full of deltas against zero — the loudest possible lie.
+  // reference would render deltas against zero — the loudest possible lie.
   const refStats = prevDetail && prev
     ? deriveSummaryStats(toSummaryExercises(prevDetail), allMedals.filter((m) => m.workoutSessionId === prevDetail.id))
     : null
@@ -110,14 +117,15 @@ export function WorkoutReviewPage() {
     if (e.topChip) prevTopByName[e.name] = e.topChip
   }
 
+  // The ends of the chain are disabled, never hidden.
   const stepping = prev || next ? (
-    <div className="wr-stepnav">
+    <div className="eo-stepnav">
       <button type="button" disabled={!prev} onClick={() => prev && navigate(`/train/review/${prev.id}`)}>
-        <small>← Előző {detail.title}</small>
+        <small>‹&nbsp;Előző {detail.title}</small>
         <b>{prev ? huMonthDay(prev.date) : 'nincs korábbi'}</b>
       </button>
-      <button type="button" className="nx" disabled={!next} onClick={() => next && navigate(`/train/review/${next.id}`)}>
-        <small>Következő {detail.title} →</small>
+      <button type="button" disabled={!next} onClick={() => next && navigate(`/train/review/${next.id}`)}>
+        <small>Következő {detail.title}&nbsp;›</small>
         <b>{next ? huMonthDay(next.date) : 'ez a legutóbbi'}</b>
       </button>
     </div>
@@ -129,16 +137,17 @@ export function WorkoutReviewPage() {
       eyebrow={`Lezárva · ${huMonthDayDow(detail.date)}`}
       mode="closed"
       exercises={exercises}
-      challenges={challengeRows}
+      challenges={quests}
       medals={medals}
       durationMin={detail.durationEst ?? null}
       actualMin={actualMinutes(detail)}
       comparison={comparison}
+      reference={comparison ? refStats : null}
       prevTopByName={prevTopByName}
       footer={stepping}
       // The closing note (mezo-d20.8.2.2). This page is the ONLY one that offers editing:
       // revisiting is its whole job, so filling a gap here is a deliberate intent — which is
-      // also why an absent note still offers `＋ Jegyzet` rather than rendering nothing.
+      // also why an absent note still offers „+ Jegyzet" rather than rendering nothing.
       note={detail.note ?? null}
       draftNote={noteDraft}
       onDraftNote={setNoteDraft}

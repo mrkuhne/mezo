@@ -7,7 +7,8 @@
 //             the overload line, the exercise list; Indulás sends the challenge decisions,
 //             POSTs the start and flips to `active`. The old prep mosaic (XP forecast, six
 //             tiles, "Kezdjük el") stays retired.
-//   active  → the Titanium card list. Session-level panels live on the briefing only; a
+//   active  → the session page (Folyadék F4, mezo-n4wf5.4): ONE exercise on top with its set grid, the
+//             others as rows (tap → on top). Session-level panels live on the briefing only; a
 //             challenge shows as the badge on its own card (tap → release / take back).
 //             Per-set logging (weight/reps/RIR), the vs-last-week chip,
 //             set dots, today's set history, PR toast + feedback debrief
@@ -27,9 +28,9 @@ import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
-import { sessionProgressSegments } from '@/features/train/logic/workoutCardMeta'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
-import { WorkoutSessionView } from '@/features/train/components/WorkoutSessionView'
+import { KalauzButton, SessionTop, WorkoutSessionView } from '@/features/train/components/WorkoutSessionView'
+import { type FocusEvent, dockNumbers, finishState as finishStateOf, heroExerciseId, nextFocus } from '@/features/train/logic/sessionFocus'
 import { WorkoutSessionSheets } from '@/features/train/components/WorkoutSessionSheets'
 import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import { WorkoutBriefing } from '@/features/train/components/WorkoutBriefing'
@@ -46,7 +47,6 @@ import {
   type Session,
   attachSetId,
   completeSet as completeSetModel,
-  currentExerciseId,
   effectiveSetCount,
   makeSession,
   mergePlan,
@@ -64,7 +64,7 @@ import {
   unskipExercise as unskipExerciseModel,
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
-import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { Page, Skel } from '@/shared/ui/folyadek'
 import type { ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/train/components/WorkoutCeremony'
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
@@ -137,7 +137,7 @@ export function ActiveWorkoutPage() {
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
   // `!mock`-gated (false in mock, synchronous seed), so no skeleton flashes in
   // mock mode.
-  if (workoutPending) return <ScreenSkeleton />
+  if (workoutPending) return <SessionSkeleton />
   // Resume on a FRESH read (the "Folytatás → an extra set" report): the session seeds ONCE
   // from `openWorkout.sets`, so a cached today snapshot that predates the last logged set
   // (the POST's invalidate-refetch had not landed when the user left, or the param-less key
@@ -145,7 +145,7 @@ export function ActiveWorkoutPage() {
   // set behind the server — the user re-ticks it and the server stores a duplicate. Wait for
   // the mount-time refetch ONCE; later in-session refetches must never unmount the session,
   // so the latch closes on the first settled read and stays closed.
-  if (!mountSyncedRef.current && workoutFetching) return <ScreenSkeleton />
+  if (!mountSyncedRef.current && workoutFetching) return <SessionSkeleton />
   mountSyncedRef.current = true
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   // Meso-independence (mezo-ws2x D4): getToday resolves custom (saját) templates with NO
@@ -178,6 +178,18 @@ export function ActiveWorkoutPage() {
       changeExercise={changeExercise}
       addPlanWorkingSets={addPlanWorkingSets}
     />
+  )
+}
+
+/** The loading frame of the chrome-free route (prototype `#w-edzes-session.tolt`): the title row with a working back
+ *  button, and the page's blocks as a skeleton. */
+function SessionSkeleton() {
+  const goBack = useBackNav('/train')
+  return (
+    <Page className="ek-page" nonav>
+      <SessionTop title="Edzés" eyebrow="Betöltés…" onBack={goBack} />
+      <Skel blocks={[40, 430, 220]} />
+    </Page>
   )
 }
 
@@ -266,7 +278,7 @@ function ActiveWorkoutSession({
   const [medalsBySet, setMedalsBySet] = useState<Record<string, Medal[]>>({})
   const [toastMedal, setToastMedal] = useState<{ medal: Medal; extra: number } | null>(null)
   // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA
-  // AND (T6 Task 6) the new .wo-finish / dock-Lezárás CTA + the confirm glass's own primary.
+  // AND (T6 Task 6) the finish tile / the dock's Lezárás + the confirm sheet's own primary.
   const [finishPending, setFinishPending] = useState(false)
   // How many sets the close left unticked, frozen at finish time (T7 Task 4, mezo-88iwa.8):
   // the settled recap reads it back long after the finish POST resolved, and the live
@@ -277,7 +289,7 @@ function ActiveWorkoutSession({
   // one `rest.start` call site in handleLogSet; stale once idle is harmless (the dock only
   // reads it while `rest.status !== 'idle'`).
   const [restExerciseId, setRestExerciseId] = useState<string | null>(null)
-  // The finish confirm glass (T6 Task 6, prototype confirmGlass): opened by the .wo-finish
+  // The finish confirm sheet (T6 Task 6): opened by the finish tile
   // CTA or the dock's "Lezárás →" whenever pending sets remain — see handleFinishTap below.
   const [finishConfirmOpen, setFinishConfirmOpen] = useState(false)
   /** The workout-level closing note (mezo-d20.8.2.2) — a page-owned draft, so stepping back to
@@ -337,6 +349,11 @@ function ActiveWorkoutSession({
   // tappable again, same as a bound `id` would. The global mutation-error toast already
   // tells the user the save failed; this just keeps the row from being a dead end.
   const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
+  // Which exercise is ON TOP (mezo-n4wf5.4): pure VIEW state. null = follow „Most" (the first exercise with an open
+  // set). The session model knows nothing about it — every exercise keeps its own cursor and stays loggable; the
+  // focus only moves through `nextFocus` (a row tap, a logged set, a closed debrief, a skip, a swap / add).
+  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const focus = (ev: FocusEvent) => setFocusedId((f) => nextFocus(f, ev))
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -369,12 +386,9 @@ function ActiveWorkoutSession({
     setSession((s) => mergePlan(s, W.exercises))
   }, [W.exercises])
 
-  // The session CURSOR exercise: the first unresolved one in `session.order`. The card
-  // list shows every exercise at once (T6 Task 3), so this is no longer a "viewed"
-  // exercise — it only drives the header's progress counter and the header ⋯ menu's
-  // default target. A debrief pins its own exercise on top of it.
-  const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
-  const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // The exercise ON TOP (the hero): the focused one, else „Most" — the first exercise in `session.order` with an open
+  // set. Logging pins the focus to the logged exercise, so its debrief opens over its own hero.
+  const heroId = heroExerciseId(session, focusedId)
   const exerciseById = (id: string | null | undefined) => (id ? W.exercises.find((e) => e.id === id) ?? null : null)
   // Effective note of one exercise: a just-saved local override wins, else the
   // backend/mock note, else empty (drives the card's pill + the editor prefill).
@@ -500,6 +514,7 @@ function ActiveWorkoutSession({
     const localId = crypto.randomUUID()
     const next = completeSetModel(session, finishing.id, { weight, reps, rir, localId })
     setSession(next)
+    focus({ type: 'logged', id: finishing.id })
     // Medals (mezo-wp6n): always logged — real mode never had a `workoutId` guard
     // reason to skip this (mirrors finishAndCelebrate's 'mock' sentinel below), and
     // mock mode needs the call too, to run the mock medal evaluator. targetWeightKg/
@@ -652,6 +667,7 @@ function ActiveWorkoutSession({
       // must not survive into the debrief either.
       rest.skip()
       setFeedbackEx(ex)
+      focus({ type: 'logged', id: ex.id })
       setGlass(null)
     }
   }
@@ -780,7 +796,7 @@ function ActiveWorkoutSession({
   }
 
   // The manual-finish entry point (T6 Task 6, prototype finishCta/dock): tapping the
-  // .wo-finish CTA or the dock's "Lezárás →" with pending sets remaining asks first (the
+  // finish tile or the dock's „Lezárás" with pending sets remaining asks first (the
   // confirm glass); with nothing pending it finishes right away — there is nothing to warn
   // about. Since T7 this is the ONLY way a workout closes: the pre-finish closing-review
   // screen is gone, and 'summary' is the post-finish ceremony.
@@ -795,6 +811,8 @@ function ActiveWorkoutSession({
   // mezo-88iwa.8): the ceremony is a post-finish reward, so the user stays on the card
   // list — now fully ticked, its finish CTA in its `full` state — and closes explicitly.
   const advanceAfterFeedback = () => {
+    // The hero moves on: without a focus it follows „Most" again.
+    if (feedbackEx) focus({ type: 'debriefClosed', id: feedbackEx.id })
     setFeedbackEx(null)
   }
 
@@ -806,6 +824,7 @@ function ActiveWorkoutSession({
     rest.skip()
     if (workoutId) skipExercise(workoutId, exId)
     setSession(skipExerciseModel(session, exId))
+    focus({ type: 'skipped', id: exId })
   }
 
   // ---------- SUMMARY (the closing ceremony) ----------
@@ -915,29 +934,22 @@ function ActiveWorkoutSession({
         }))}
         onBack={onExit}
         onStart={handleStart}
-        kalauzButton={kalauz.current ? (
-          <button type="button" className="wos-rb wos-q np-press" aria-label="Kalauz ehhez az oldalhoz"
-            aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
-            <span aria-hidden="true">?</span>
-          </button>
-        ) : undefined}
+        kalauzButton={kalauz.current ? <KalauzButton kalauz={kalauz} /> : undefined}
       />
     )
   }
 
-  // ---------- ACTIVE (Titanium card list, mezo-88iwa.7 T6 Task 3) ----------
-  // Every exercise is a `.wo-card` in one `.wo-list` — no viewed exercise, no rail,
-  // no pager, no swipe. The only ordering rule left is INSIDE a card: its sets are
-  // logged strictly in cursor order (WorkoutCard owns that).
+  // ---------- ACTIVE (Folyadék F4, mezo-n4wf5.4) ----------
+  // ONE exercise is on top with its set grid (`heroId`), the others are rows; a tap on a row (or on a top vessel)
+  // brings that exercise on top. The only ordering rule left is INSIDE an exercise: its sets are logged strictly in
+  // cursor order (WorkoutCard owns that).
   const totalSets = W.exercises.reduce((a, e) => a + effectiveSetCount(session, e.id), 0)
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
-  // Session progress bar (under the header): one flex segment per exercise,
-  // weighted by its own planned set count, coloured by ITS OWN muscle family.
-  const progressSegments = sessionProgressSegments(
-    W.exercises,
-    currentIdx,
-    (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
-  )
+  // A tap asks for an exercise: it comes on top, and the page shows it (the scroller jumps to the top, as a phase flip does).
+  const onFocus = (id: string) => {
+    focus({ type: 'tap', id })
+    scrollToTop(screenScroller())
+  }
 
   // The finish CTA / confirm glass's data (T6 Task 6): pending sets across the whole
   // session, per-exercise for the confirm list, and the resulting three-state CTA look.
@@ -946,19 +958,15 @@ function ActiveWorkoutSession({
     const e = exerciseById(id)
     return { id, left, name: e?.name ?? '', muscle: e?.muscle ?? '' }
   })
-  const finishState: 'skip' | 'partial' | 'full' = doneSets === 0 ? 'skip' : pendingTotal === 0 ? 'full' : 'partial'
+  const finishState = finishStateOf(session)
 
-  // The dock's "n / m szett" must agree with the finish CTA it sits next to (fix wave M3):
-  // the CTA's `full` state is driven by pendingSetCount, which SKIPS excluded exercises,
-  // while the dock counted every exercise — so a session with one skipped exercise showed
-  // e.g. "9 / 12 szett" beside a green "everything is done" CTA. Same exclusion here.
-  const activeIds = session.order.filter((id) => !session.skipped.includes(id))
-  const dockPlanned = activeIds.reduce((a, id) => a + effectiveSetCount(session, id), 0)
-  const dockDone = activeIds.reduce((a, id) => a + (session.logged[id]?.length ?? 0), 0)
+  // The dock's „n / m szett" agrees with the finish button it sits next to (fix wave M3): both count the non-skipped
+  // exercises only.
+  const { done: dockDone, planned: dockPlanned } = dockNumbers(session)
 
-  // The glass's target: the card whose ⋮/Videó was tapped, else (the header's ⋯) the
-  // session cursor exercise. A debrief unmounts the glass, so `current` is safe here.
-  const menuEx = exerciseById(glass?.id) ?? current
+  // The glass's target: the exercise whose menu / Technika / Rekordok was tapped — always the one on top; the
+  // fallback only keeps the closed sheets fed.
+  const menuEx = exerciseById(glass?.id) ?? exerciseById(heroId) ?? W.exercises[0]
   const editingEx = exerciseById(editingSet?.exerciseId)
   const noteEditEx = exerciseById(noteEditExId)
   // A log/edit write is in flight for an exercise while one of its logged entries has
@@ -997,6 +1005,7 @@ function ActiveWorkoutSession({
   const handleToggleSkip = (exId: string) => {
     if (session.skipped.includes(exId)) {
       setSession((s) => unskipExerciseModel(s, exId))
+      focus({ type: 'unskipped', id: exId })
     } else {
       handleSkip(exId)
     }
@@ -1054,6 +1063,8 @@ function ActiveWorkoutSession({
       onSuccess: (created) => {
         const input = { id: created.id, warmupSets: created.warmupSets, workingSets: created.workingSets, prescribedSets: created.prescribedSets }
         setSession((s) => (old ? swapExercise(s, old.id, input) : addExercise(s, input, closingAfter(s))))
+        // The new exercise comes on top (prototype `applyPick`).
+        focus({ type: 'changed', id: created.id })
       },
       onError: () => setChangeFailed(true),
     })
@@ -1073,7 +1084,7 @@ function ActiveWorkoutSession({
   return (
     <WorkoutSessionView
       v={{
-        toastMedal, W, onExit, doneSets, totalSets, kalauz, feedbackEx, setGlass, current, progressSegments, session, logBlocked,
+        toastMedal, W, onExit, doneSets, totalSets, kalauz, setGlass, heroId, onFocus, session, logBlocked,
         startRetrying, runStart, isBusy, noteOf, medalsOf, failedSetLocalIds, challenges, acceptedMap, startedChallengeIds, badgeState,
         handleLogSet, setEditingSet, setNoteEditExId, changeFailed, setChangeFailed, canChange, setPick, finishState, handleFinishTap,
         rest, exerciseById, restExerciseId, dockDone, dockPlanned,
