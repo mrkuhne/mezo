@@ -16,7 +16,7 @@
 .eo-nums .fo-facts:last-child { margin-bottom: 0; }
 
 /* ── a row of the exercise list (its end is the kit's `RowEnd stack`) ── */
-.eo-top { color: var(--fo-ink); font-weight: 700; }
+.eo-best { color: var(--fo-ink); font-weight: 700; }
 
 /* ── the set rows: a warm-up and a set without a rep range carry their number where the verdict mark would stand;
    a missed set is a quiet row — dimmed by the kit (`state="dim"`), never a warning colour ── */

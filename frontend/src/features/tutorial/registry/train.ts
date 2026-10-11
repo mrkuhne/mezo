@@ -340,13 +340,17 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
     id: 'train-session',
     route: '/train/session',
     tier: 'T2',
-    version: 1,
+    // v2 (Folyadék F4, mezo-n4wf5.4): a kártyalista megszűnt — egy gyakorlat áll felül a szettjeivel, a többi
+    // sorként alatta; a művelet-menü a hős sarkában a három pont, a pihenő a lenti sávban jár. A régi
+    // kártyák a régi lapot írták le („minden kártya egy gyakorlat", „a ⋯ alatt"), ezért verzió-emelés:
+    // az élő oldalt rosszul leíró kártyát azok is lássák újra, akik a régit már látták (bible F1.10).
+    version: 2,
     label: 'Aktív edzés',
     cards: [
       {
         kind: 'intro', spot: 's-edzes', orb: 's-orb',
         title: 'Előbb egy eligazítás.',
-        voice: 'Indulás előtt látod, mennyi idő vár és milyen küldetéseket vállalsz. Az Indulás után a mai edzés összes gyakorlata egy listában: milyen súlyokkal, hány szett — és rögtön logolhatsz.',
+        voice: 'Indulás előtt látod, mennyi idő vár és milyen küldetéseket vállalsz. Az Indulás után egy gyakorlat áll felül a szettjeivel, a többi sorban alatta — koppints egyre, és az kerül felülre.',
       },
       {
         kind: 'fogalom', spot: 'i-retegek', orb: 's-orb',
@@ -357,12 +361,12 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'hogyan', spot: 'i-lang', orb: 's-orb-figyel', anchor: 'session-start',
         title: 'Szettről szettre.',
-        voice: 'Minden kártya egy gyakorlat: beírod a súlyt és az ismétlést, köztük pihenő-időzítő jár. A vállalt küldetés a gyakorlatán ül (koppints rá, ha elengednéd), a ⋯ alatt a jegyzet és a szett-igazítás lakik.',
+        voice: 'A felül álló gyakorlatnál beírod a súlyt és az ismétlést, a pipa menti a szettet, a pihenő pedig lent magától indul. A vállalt küldetés a gyakorlat alatt áll (koppints rá, ha elengednéd), a sarokban a három pont mögött a jegyzet és a szett-igazítás lakik.',
       },
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'A terem küszöbén.',
-        voice: 'Ahogy belépsz a terembe, az edzés már fut. Az összegzés a végén magától jön.',
+        voice: 'Az Indulással az edzés már fut. A végén a Lezárás után jön az értékelés: csillagok, a mai számok és az új rekordok.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',
@@ -390,7 +394,7 @@ export const TRAIN_KALAUZ: KalauzEntry[] = [
       {
         kind: 'mikor', spot: 'i-idozito', orb: 's-orb',
         title: 'Aznap vagy hetekkel később.',
-        voice: 'Edzés után még frissiben, vagy a Hetiből visszalapozva. A lánc mentén az előző alkalmakra is átléphetsz.',
+        voice: 'Edzés után még frissiben, vagy a Hetiből visszalapozva. A lap alján az előző és a következő azonos napra is átléphetsz.',
       },
       {
         kind: 'kapcsolat', orb: 's-orb-unnepel',

@@ -169,8 +169,8 @@ test('the card wears the glass by default, with no sheen', () => {
 
 // mezo-8vfr2: a caller scopes its own dialog through a class, not a `:has()` on its body.
 test('className lands on the card, next to the glass classes', () => {
-  render(<GlassBox open onClose={() => {}} label="Kar" className="wos-gbx wos-gbx-recs">tartalom</GlassBox>)
-  expect(screen.getByRole('dialog', { name: 'Kar' })).toHaveClass('gl-card', 'glass', 'wos-gbx', 'wos-gbx-recs')
+  render(<GlassBox open onClose={() => {}} label="Kar" className="caller-box caller-box-wide">tartalom</GlassBox>)
+  expect(screen.getByRole('dialog', { name: 'Kar' })).toHaveClass('gl-card', 'glass', 'caller-box', 'caller-box-wide')
 })
 
 test('art sits in a lit well in the header; no art, no well', () => {

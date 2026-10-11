@@ -50,7 +50,7 @@ test('renders the closed report from the workout detail (mock fixture)', () => {
   // The inventory is a row per exercise, one anchor number each.
   const lane = exList()
   expect(within(lane).getByText('Chest Supported Row')).toBeInTheDocument()
-  expect(lane.querySelector('.eo-exrow .eo-top')!.textContent).toMatch(/85\s*×\s*8/)
+  expect(lane.querySelector('.eo-exrow .eo-best')!.textContent).toMatch(/85\s*×\s*8/)
   // The abandoned exercise reads "kihagyva · nincs szett" on its row.
   expect(within(lane).getByText('kihagyva · nincs szett')).toBeInTheDocument()
   // The honesty line, said once.

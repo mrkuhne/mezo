@@ -58,11 +58,11 @@ export function FeedbackModal({
   }
 
   return (
-    <Sheet onClose={resolveOnce} labelledBy="wo-debrief-title" className="fo-sheet el-sheet">
+    <Sheet onClose={resolveOnce} labelledBy="el-debrief-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
           <FoSheetHead
-            eyebrow="Gyakorlat kész · hogy ment?" title={ex.name} titleId="wo-debrief-title"
+            eyebrow="Gyakorlat kész · hogy ment?" title={ex.name} titleId="el-debrief-title"
             sub={MUSCLE_LABELS[ex.muscle] ?? ex.muscle} left={<Mchp muscle={ex.muscle} />} onClose={close}
           />
           <Lab>Pumpa · érzed?</Lab>

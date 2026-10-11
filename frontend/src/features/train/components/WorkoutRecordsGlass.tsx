@@ -117,12 +117,12 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, goal, o
     : 0
 
   return (
-    <Sheet onClose={onClose} labelledBy="wo-records-title" className="fo-sheet el-sheet">
+    <Sheet onClose={onClose} labelledBy="el-records-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
           <FoSheetHead
             eyebrow={`${MUSCLE_LABELS[exercise.muscle] ?? exercise.muscle}${record ? ` · ${record.sessionCount} alkalom` : ''}`}
-            title={<>{exercise.name}{' '}<span className="sr-only">előzményei és rekordjai</span></>} titleId="wo-records-title"
+            title={<>{exercise.name}{' '}<span className="sr-only">előzményei és rekordjai</span></>} titleId="el-records-title"
             left={<Mchp muscle={exercise.muscle} />} onClose={close}
           />
 

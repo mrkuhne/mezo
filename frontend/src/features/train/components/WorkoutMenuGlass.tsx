@@ -89,11 +89,11 @@ export function WorkoutMenuGlass({
   const state = skipped ? 'kihagyva' : `${done} / ${slotCount} szett kész`
 
   return (
-    <Sheet onClose={onClose} labelledBy="wo-menu-title" className="fo-sheet el-sheet">
+    <Sheet onClose={onClose} labelledBy="el-menu-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
           <FoSheetHead
-            eyebrow="Gyakorlat" title={exercise.name} titleId="wo-menu-title"
+            eyebrow="Gyakorlat" title={exercise.name} titleId="el-menu-title"
             sub={`${slotCount} szett · ${muscleLabel(exercise.muscle)}`} left={<Mchp muscle={exercise.muscle} />} onClose={close}
           />
           <SheetGraphic note={state}>
@@ -146,11 +146,11 @@ export function WorkoutVideoGlass({ open, exercise, onClose }: WorkoutVideoGlass
   if (!open) return null
   const embed = videoEmbed(exercise?.videoUrl)
   return (
-    <Sheet onClose={onClose} labelledBy="wo-video-title" className="fo-sheet el-sheet">
+    <Sheet onClose={onClose} labelledBy="el-video-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
           <FoSheetHead
-            eyebrow="Videó" titleId="wo-video-title" onClose={close}
+            eyebrow="Videó" titleId="el-video-title" onClose={close}
             title={exercise ? <>{exercise.name}{' '}<span className="sr-only">· videó</span></> : 'Videó'}
             sub={exercise ? muscleLabel(exercise.muscle) : undefined}
             left={exercise ? <Mchp muscle={exercise.muscle} /> : undefined}
@@ -209,12 +209,12 @@ export function ChallengeDetailGlass({ open, challenge, state, onToggle, onClose
   const outcome = OUTCOME_LINE[state]
   const pct = challenge.confidence == null ? null : Math.round(challenge.confidence * 100)
   return (
-    <Sheet onClose={onClose} labelledBy="wo-quest-title" className="fo-sheet el-sheet">
+    <Sheet onClose={onClose} labelledBy="el-quest-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
           <FoSheetHead
             eyebrow={outcome ? 'Küldetés' : state === 'accepted' ? 'Küldetés · vállalva' : 'Küldetés · elengedve'}
-            title={<>{label}{' '}<span className="sr-only">küldetés</span></>} titleId="wo-quest-title"
+            title={<>{label}{' '}<span className="sr-only">küldetés</span></>} titleId="el-quest-title"
             sub={challenge.exercise || undefined} icon={challengeTypeIcon(challenge.type)} onClose={close}
           />
           <p className="el-qd-target">{targetLine(challenge.target)}</p>

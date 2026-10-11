@@ -160,7 +160,8 @@ describe('folyadék kit · F4 integration folds', () => {
     const { container } = render(<TitleRow context="Pull Day · Okt 11" title="Edzés lezárva" backLabel="Bezárás" onBack={back} data-kalauz-anchor="session-start" />)
     const root = container.querySelector('.fo-ptop') as HTMLElement
     expect(root).toHaveAttribute('data-kalauz-anchor', 'session-start')
-    expect(root).not.toHaveClass('sticky-top')
+    // pinned like the title bar it stands in for
+    expect(root).toHaveClass('sticky-top')
     expect(root.querySelector('.fo-trow > .fo-title > small > i')).toHaveAttribute('aria-hidden', 'true')
     expect(root.querySelector('small')).toHaveTextContent('Pull Day · Okt 11')
     const h1 = screen.getByRole('heading', { level: 1, name: 'Edzés lezárva' })
@@ -170,12 +171,11 @@ describe('folyadék kit · F4 integration folds', () => {
     expect(back).toHaveBeenCalledTimes(1)
   })
 
-  it('TitleRow: `sticky` pins it, `mark` sits beside the title, `headingRef` makes the title a focus target; back says „Vissza" by default', () => {
+  it('TitleRow: `mark` sits beside the title, `headingRef` makes the title a focus target; back says „Vissza" by default', () => {
     const ref = createRef<HTMLHeadingElement>()
     const { container } = render(
-      <TitleRow sticky context="3 / 15 szett kész" title="Pull Day" onBack={() => {}} headingRef={ref} mark={<button type="button" className="fo-help" aria-label="Kalauz ehhez az oldalhoz">?</button>} />,
+      <TitleRow context="3 / 15 szett kész" title="Pull Day" onBack={() => {}} headingRef={ref} mark={<button type="button" className="fo-help" aria-label="Kalauz ehhez az oldalhoz">?</button>} />,
     )
-    expect(container.querySelector('.fo-ptop')).toHaveClass('sticky-top')
     expect(screen.getByRole('button', { name: 'Vissza' })).toHaveClass('fo-back')
     expect(container.querySelector('.fo-h.sm > h1 + .fo-help')).not.toBeNull()
     expect(ref.current).toBe(screen.getByRole('heading', { level: 1 }))
@@ -184,7 +184,7 @@ describe('folyadék kit · F4 integration folds', () => {
 
   it('TitleRow CSS: the back disc gets its 44px target and the pinned row its own frosted ground on ::before', () => {
     expect(KIT_CSS).toMatch(/\.fo-ptop \.fo-ib::after \{[^}]*inset: -1px/)
-    expect(KIT_CSS).toMatch(/\.fo-ptop\.sticky-top::before \{[^}]*backdrop-filter/)
+    expect(KIT_CSS).toMatch(/\.fo-ptop::before \{[^}]*backdrop-filter/)
     // the row itself carries no backdrop-filter (it would capture fixed descendants — F1.6)
     expect(KIT_CSS).not.toMatch(/\.fo-ptop(\.sticky-top)? \{[^}]*backdrop-filter/)
   })

@@ -272,7 +272,7 @@ export function WorkoutSummary({
             title={e.name}
             sub={e.abandoned
               ? 'kihagyva · nincs szett'
-              : <>top szett <b className="eo-top">{e.topChip ? `${hu(e.topChip.weight)} × ${e.topChip.reps}` : '—'}</b>{e.noteCount > 0 && ` · ${e.noteCount} jegyzet`}</>}
+              : <>top szett <b className="eo-best">{e.topChip ? `${hu(e.topChip.weight)} × ${e.topChip.reps}` : '—'}</b>{e.noteCount > 0 && ` · ${e.noteCount} jegyzet`}</>}
             right={(
               <RowEnd stack>
                 {e.hasRecord && <St tone="warn">Rekord</St>}

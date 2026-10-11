@@ -187,7 +187,7 @@ function SessionSkeleton() {
   const goBack = useBackNav('/train')
   return (
     <Page className="ek-page" nonav>
-      <TitleRow sticky title="Edzés" context="Betöltés…" onBack={goBack} />
+      <TitleRow title="Edzés" context="Betöltés…" onBack={goBack} />
       <Skel blocks={[40, 430, 220]} />
     </Page>
   )

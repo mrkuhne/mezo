@@ -126,7 +126,7 @@ it('renders every export once with realistic props and logs no console error', (
           <K.OptionVessels aria-label="Akarunk még?" value={1} onChange={() => {}} line={64} items={[{ label: 'Kevés volt', pct: 34 }, { label: 'Pont jó', pct: 64 }, { label: 'Sok volt', pct: 100 }]} />
           <K.FootCol sub="Röplabda · elmentve"><K.Btn>Vissza a mai napra</K.Btn></K.FootCol>
           <K.Row title="Evezés" sub="4 szett" right={<K.RowEnd stack><K.St tone="warn">Rekord</K.St><K.Caps n={4} done={4} /></K.RowEnd>} />
-          <K.TitleRow sticky context="3 / 15 szett kész" title="Pull Day" onBack={() => {}} />
+          <K.TitleRow context="3 / 15 szett kész" title="Pull Day" onBack={() => {}} />
         </K.Card>
         <Ceremony />
         <K.Foot><K.Btn grow>Kész</K.Btn></K.Foot>

@@ -104,7 +104,7 @@ export function WorkoutSessionView({ v, overlays, after }: { v: WorkoutSessionVi
       {overlays}
       {/* The title row of the chrome-free route, pinned; the kalauz anchor and its mini ? live here (the shell's own ? does
           not exist on this route). */}
-      <TitleRow sticky data-kalauz-anchor="session-start" title={W.title} context={`${doneSets} / ${totalSets} szett kész`}
+      <TitleRow data-kalauz-anchor="session-start" title={W.title} context={`${doneSets} / ${totalSets} szett kész`}
         onBack={onExit} mark={<KalauzButton kalauz={kalauz} />} />
 
       {/* A failed start is LOUD (mezo-e1ii9 fix round 1): the sets have nowhere to go, so the page says so and offers

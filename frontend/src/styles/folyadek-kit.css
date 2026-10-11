@@ -797,11 +797,12 @@ button.fo-row:disabled, .fo-row-main:disabled { opacity: .5; cursor: default; }
 .fo-ptop .fo-ib::after { content: ''; position: absolute; inset: -1px; }   /* 42px disc → a 44px hit area */
 .fo-ptop h1:focus { outline: none; }
 .fo-ptop h1:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; border-radius: 6px; }
-/* pinned (`sticky`): `.sticky-top` gives top: 0 (no bar above); the frosted ground sits on ::before, as the title bar's does
-   (a backdrop-filter on the row itself would capture fixed descendants — F1.6). */
+/* pinned, like the title bar it stands in for (the prototype's bar is sticky on every route): `.sticky-top` gives
+   top: 0 (no bar above); the frosted ground sits on ::before, as the title bar's does (a backdrop-filter on the row itself
+   would capture fixed descendants — F1.6). */
 .fo-ptop.sticky-top { z-index: 30; background: none; isolation: isolate; }
-.fo-ptop.sticky-top::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: color-mix(in srgb, #F8FCFD 78%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
-@media (max-width: 360px) { .fo-ptop.sticky-top { padding-left: 14px; padding-right: 14px; } }
+.fo-ptop::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: color-mix(in srgb, #F8FCFD 78%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+@media (max-width: 360px) { .fo-ptop { padding-left: 14px; padding-right: 14px; } }
 
 /* ── a row's end with two things (`RowEnd`; edzes.js `.vs-rr` / `.vs-rr.cl`) ── a mark beside the capsules, or (`.cl`)
    a pill stacked over them. */

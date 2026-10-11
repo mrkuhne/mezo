@@ -47,11 +47,11 @@ export function FinishConfirmGlass({
   if (!open) return null
   const zero = loggedCount === 0
   return (
-    <Sheet onClose={onClose} labelledBy="wo-finish-title" className="fo-sheet el-sheet">
+    <Sheet onClose={onClose} labelledBy="el-finish-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
           <FoSheetHead
-            eyebrow="Edzés befejezése" titleId="wo-finish-title" onClose={close}
+            eyebrow="Edzés befejezése" titleId="el-finish-title" onClose={close}
             title={zero ? 'Egy szettet sem rögzítettél ma.' : `Van még ${pendingTotal} bepipálatlan szetted.`}
             sub={zero
               ? 'Ha most befejezed az edzést, a mai edzés egésze kihagyott lesz. Ez is része a ritmusnak — a terv megvár.'

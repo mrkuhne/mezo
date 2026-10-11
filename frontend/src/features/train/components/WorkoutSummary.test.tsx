@@ -66,7 +66,7 @@ describe('WorkoutSummary', () => {
       exercises={exercises} challenges={challenges} onExit={() => {}} />)
     expect(screen.queryByRole('button', { name: /Edzés lezárása/ })).toBeNull()
     const row = exRow(/Bench Press/)
-    expect(row.querySelector('.eo-top')!.textContent).toMatch(/80\s*×\s*8/)
+    expect(row.querySelector('.eo-best')!.textContent).toMatch(/80\s*×\s*8/)
     // The partial exercise counts what was logged against what was planned…
     expect(row).toHaveAccessibleName('Bench Press — 1 / 4 szett')
     // …as capsules: one full, the three unlogged slots empty — never a warning.
@@ -134,7 +134,7 @@ describe('WorkoutSummary', () => {
     const row = exRow(/Bench Press/)
     expect(row.className).toContain('dim')
     expect(within(row).getByText('kihagyva · nincs szett')).toBeInTheDocument()
-    expect(row.querySelector('.eo-top')).toBeNull()
+    expect(row.querySelector('.eo-best')).toBeNull()
     expect(row.querySelectorAll('.fo-caps i.f')).toHaveLength(0)
     // …and its tube in the hero is an empty vessel.
     expect(document.querySelector('.eo-extubes .fo-vial')!.className).toContain('ghost')
