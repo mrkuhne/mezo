@@ -6,6 +6,7 @@ import {
 } from '@/shared/lib/toastBus'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { useM } from '@/shared/i18n'
 
 // Single global toast host (mounted once in AppLayout) + the useToast() imperative API.
 // Components call useToast().show(...); non-React code (mutation cache, the mock award
@@ -47,6 +48,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<Entry[]>([])   // newest first
   const nextId = useRef(0)
   const reduced = useReducedMotion()
+  // The host outlives a language switch (it sits above the remount boundary), so its own word follows the language.
+  const closeLabel = useM().kit.close
 
   // Every pending timer is tracked so unmount can clear them — a toast whose auto-hide
   // fires after the host is gone would setState on an unmounted tree.
@@ -122,7 +125,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <button
                 type="button"
                 className="t-close"
-                aria-label="Bezárás"
+                aria-label={closeLabel}
                 onClick={() => dismiss(e.id)}
               >
                 <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor"

@@ -15,6 +15,7 @@ import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { FrameProvider } from '@/shared/ui/folyadek'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
+import { LanguageBoundary } from '@/shared/i18n'
 import { useTodayScenario, useScheduleSnapshotWriter, useDayEvaluation, normalizeDayEvaluation } from '@/data/hooks'
 import { useScreenTracking } from '@/app/useScreenTracking'
 import { useMorningMode } from '@/features/today/logic/useMorningMode'
@@ -120,14 +121,19 @@ export function AppLayout() {
                   a provider ~15 `useNeeds`-olvasása ott tiszta pazarlás volt. A provider
                   EGYÜTTES őse marad a fejlécnek és az Outlet-nek (mezo-atry), csak épp már
                   nem mountol ott, ahol egyik sincs. */}
-              {hideChrome ? screen : <MezoThreadProvider>{screen}</MezoThreadProvider>}
+              {/* A nyelvváltás remount-határa (mezo-n4wf5.11): a képernyők — címsor, oldal, alsó sáv,
+                  FAB — újramountolnak, a fölötte ülő app-élettartamú réteg (toast, ceremóniák,
+                  kalauz, érkezés, a telefon-keret) NEM. A felülvizsgált lista: LanguageBoundary.tsx. */}
+              <LanguageBoundary>
+                {hideChrome ? screen : <MezoThreadProvider>{screen}</MezoThreadProvider>}
+                {/* Az alsó sáv az öt terület, mindig (mezo-n4wf5.1) — a területváltó megszűnt. */}
+                {!hideChrome && !inSettings && <BottomBar />}
+                {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
+                    every tab, absent on the chrome-free full-screen flows. */}
+                {!hideFab && <QuickLogFab />}
+                <FloatingReturnLayer />
+              </LanguageBoundary>
             </TutorialProvider>
-            {/* Az alsó sáv az öt terület, mindig (mezo-n4wf5.1) — a területváltó megszűnt. */}
-            {!hideChrome && !inSettings && <BottomBar />}
-            {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
-                every tab, absent on the chrome-free full-screen flows. */}
-            {!hideFab && <QuickLogFab />}
-            <FloatingReturnLayer />
           </LevelUpProvider>
           </MealCeremonyProvider>
         </ToastProvider>

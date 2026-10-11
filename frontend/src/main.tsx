@@ -1,15 +1,11 @@
-import { StrictMode, Suspense } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
-import { ThemeProvider } from '@/app/ThemeProvider'
-import { StartupSplash } from '@/app/StartupSplash'
-import { QueryProvider } from '@/app/providers/QueryProvider'
+import { AppProviders } from '@/app/providers/AppProviders'
 import { routes } from '@/app/router'
-import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { installAutoGrow } from '@/shared/lib/autoGrow'
-import { LanguageProvider, m } from '@/shared/i18n'
-import { LoadingFallback } from '@/shared/i18n/LoadingFallback'
+import { m } from '@/shared/i18n'
 import '@/index.css'
 
 const router = createBrowserRouter(routes)
@@ -47,28 +43,9 @@ createRoot(document.getElementById('root')!).render(
         </div>
       )}
     >
-      <QueryProvider>
-        <LanguageProvider>
-          <ThemeProvider>
-            {/* A clay <symbol> defek EGYETLEN mountja (mezo-ju4j6.3). Korábban minden
-                shell-réteg (AppLayout, AdminLayout) külön mountolta őket — az indító-
-                képernyő viszont MINDKETTŐ fölött él, és a visszaállított jele agyag-gömb,
-                tehát neki is látnia kell a defeket. Egy közös, gyökérszintű példány mindhárom
-                fogyasztót kiszolgálja, duplikált id-k nélkül. */}
-            <ClaySprites />
-            <StartupSplash>
-              {/* App-root boundary for the FIRST lazily-loaded chunk (mezo-d5iy.9): AdminLayout
-                  itself is behind a React.lazy(), so a Suspense mounted only inside it can't
-                  cover its own load — this one catches the gap between navigating to /admin
-                  and that chunk (plus every other lazy admin page) arriving. Every non-admin
-                  route already renders synchronously, so this fallback is otherwise inert. */}
-              <Suspense fallback={<LoadingFallback />}>
-                <RouterProvider router={router} />
-              </Suspense>
-            </StartupSplash>
-          </ThemeProvider>
-        </LanguageProvider>
-      </QueryProvider>
+      <AppProviders>
+        <RouterProvider router={router} />
+      </AppProviders>
     </ErrorBoundary>
   </StrictMode>,
 )

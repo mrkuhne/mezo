@@ -2,6 +2,7 @@ import { act, render, renderHook, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LANG_KEY, deviceLang, getLang, normalizeLang, resolveInitialLang, setLang, subscribe } from './lang'
 import { LanguageProvider } from './LanguageProvider'
+import { LanguageBoundary } from './LanguageBoundary'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { LoadingFallback } from './LoadingFallback'
 import { m, plural, useM } from './index'
@@ -82,14 +83,14 @@ describe('the catalog', () => {
     expect(m().frame.crash.title).toBe('Something went wrong.')
   })
 
-  it('LanguageProvider remounts its subtree on a language change', () => {
+  it('LanguageBoundary remounts its subtree on a language change', () => {
     let mounts = 0
     function Probe() {
       const t = useM()
       mounts += 1
       return <p>{t.frame.loading}</p>
     }
-    render(<QueryWrapper><LanguageProvider><Probe /></LanguageProvider></QueryWrapper>)
+    render(<QueryWrapper><LanguageProvider><LanguageBoundary><Probe /></LanguageBoundary></LanguageProvider></QueryWrapper>)
     expect(screen.getByText('Betöltés…')).toBeInTheDocument()
     const before = mounts
     act(() => setLang('en', { persist: false }))

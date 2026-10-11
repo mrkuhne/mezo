@@ -75,16 +75,22 @@ export function alignLang(l: Lang): void {
   unannounced = true
 }
 
-/** Persist the cache and `<html lang>` for the current language and tell subscribers about a silent `alignLang`. */
-export function announceLang(): void {
+/**
+ * Finish a silent `alignLang`: set `<html lang>`, write the device cache and tell subscribers.
+ * `accountKnown` writes the device cache even when nothing was aligned -- the cache follows the
+ * account whenever the account's language is known (spec 4.1), also when it already equals the store.
+ */
+export function announceLang(accountKnown = false): void {
   applyHtmlLang(current)
+  if (accountKnown || unannounced) {
+    try {
+      localStorage.setItem(LANG_KEY, current)
+    } catch {
+      /* ignore */
+    }
+  }
   if (!unannounced) return
   unannounced = false
-  try {
-    localStorage.setItem(LANG_KEY, current)
-  } catch {
-    /* ignore */
-  }
   listeners.forEach((fn) => fn())
 }
 

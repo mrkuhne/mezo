@@ -10,7 +10,7 @@ import { ME_QUERY_KEY } from '@/data/auth/authHooks'
 import type { MeResponse } from '@/data/auth/authApi'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
-import { LANG_KEY, LanguageProvider, getLang, setLang } from '@/shared/i18n'
+import { LANG_KEY, LanguageBoundary, LanguageProvider, getLang, setLang } from '@/shared/i18n'
 import { onToast, type ToastMessage } from '@/shared/lib/toastBus'
 import { server } from '@/test/msw/server'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
@@ -19,10 +19,12 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 let client!: QueryClient
 function Probe() { client = useQueryClient(); return null }
 
-/** `provider: false` leaves the account-language sync out, so a test can pin the language with `setLang`
+/** The app's order: the account sync at the root, the remount boundary under the shell's providers.
+ *  `provider: false` leaves both out -- no account-language sync, so a test can pin the language with `setLang`
  *  (the mock account says Hungarian and the sync would win) and watch one DOM node follow it. */
 function renderPage({ provider = true }: { provider?: boolean } = {}) {
   const Sync = provider ? LanguageProvider : Fragment
+  const Remount = provider ? LanguageBoundary : Fragment
   return render(
     <QueryProvider>
       <Sync>
@@ -30,7 +32,9 @@ function renderPage({ provider = true }: { provider?: boolean } = {}) {
         <ThemeProvider>
           <MemoryRouter initialEntries={['/settings/general']}>
             <TutorialProvider>
-              <Routes><Route path="/settings/general" element={<BeallitasokPage />} /><Route path="*" element={null} /></Routes>
+              <Remount>
+                <Routes><Route path="/settings/general" element={<BeallitasokPage />} /><Route path="*" element={null} /></Routes>
+              </Remount>
             </TutorialProvider>
           </MemoryRouter>
         </ThemeProvider>

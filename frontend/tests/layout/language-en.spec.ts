@@ -189,6 +189,34 @@ test('pressing English / Magyar in Settings switches the words in place, no navi
   await expect(bar('Területek')).toHaveText(['Nap', 'Edzés', 'Fuel', 'Mezo', 'Én'])
 })
 
+test('the startup intro plays once: switching the language does not bring it back', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 820 })
+  await seedKalauzSeen(page) // NOT the splash skip: this case is about the intro itself
+  await page.goto('/me')
+  const stage = page.locator('.startup-stage')
+  await expect(stage).toBeVisible()
+  // the intro signals its end by leaving the DOM and releasing the app beneath it
+  await expect(stage).toHaveCount(0, { timeout: 10_000 })
+  await expect(page.locator('.startup-content')).not.toHaveAttribute('inert')
+  // from here on, any intro that mounts again is recorded, however briefly it shows
+  await page.evaluate(() => {
+    const w = window as unknown as { __introAgain?: boolean }
+    w.__introAgain = false
+    new MutationObserver(() => { if (document.querySelector('.startup-stage')) w.__introAgain = true })
+      .observe(document.body, { childList: true, subtree: true })
+  })
+  await page.getByRole('button', { name: 'Beállítások', exact: true }).click()
+  await page.getByRole('link', { name: /Megjelenés és alkalmazás/ }).click()
+  await page.getByRole('group', { name: 'Az app nyelve' }).getByRole('button', { name: 'English' }).click()
+  // applies at once: the words are English within a second, with the app usable (role queries skip an inert app)
+  await expect(page.getByRole('heading', { level: 2, name: 'Language', exact: true })).toBeVisible({ timeout: 1_000 })
+  await expect(stage).toHaveCount(0)
+  await expect(page.locator('.startup-content')).not.toHaveAttribute('inert')
+  await page.getByRole('group', { name: 'App language' }).getByRole('button', { name: 'Magyar' }).click()
+  await expect(page.getByRole('heading', { level: 2, name: 'Nyelv', exact: true })).toBeVisible({ timeout: 1_000 })
+  expect(await page.evaluate(() => (window as unknown as { __introAgain?: boolean }).__introAgain)).toBe(false)
+})
+
 test('after the switch the Fuel settings page still carries its save bar (portal target survives the remount)', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 820 })
   await seed(page, null)

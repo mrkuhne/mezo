@@ -7,6 +7,7 @@ import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { emitToast } from '@/shared/lib/toastBus'
+import { LanguageBoundary } from '@/shared/i18n'
 
 // The /admin desktop shell (mezo-d5iy.9) — a SIBLING of AppLayout, not a child of it
 // (see adminRoutes.tsx / router.tsx): left rail + Outlet, no PhoneFrame, no BottomBar, no
@@ -71,6 +72,9 @@ function AdminLayoutInner() {
     // `uv-admin` scopes the üveg re-dress (mezo-me75u.10, `── uveg reteg admin` block in
     // prototype.css): every `.ad-*` / `.am-*` rule is outranked under this root, so the class
     // names the tests and pages rely on stay as they are.
+    // The language switch remounts the rail and the page, not the toast host / arrival mode above
+    // (mezo-n4wf5.11, see LanguageBoundary.tsx).
+    <LanguageBoundary>
     <div className="ad-shell uv-admin">
       <AdminRail />
       <main className="ad-main">
@@ -84,5 +88,6 @@ function AdminLayoutInner() {
         </ErrorBoundary>
       </main>
     </div>
+    </LanguageBoundary>
   )
 }
