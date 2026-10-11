@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-10-09
+updated: 2026-10-11
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -12,7 +12,7 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/insights/memoryFeedbackHooks.ts
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
-related: [insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
+related: [insights, proactive, today, me, character, _platform-api-backend, _platform-auth-security, _platform-notifications, _platform-language, journal, ritual]
 ---
 
 # Companion (AI chat brain) — Feature Documentation
@@ -7544,6 +7544,8 @@ Canonical suppression then reuses the shared `memory_item.state` lifecycle alrea
 dense and lexical retrieval. The FE consumes it through the standard `@/data/hooks` boundary;
 one page-level hook owns batching/cache/rollback, while `RecalledMemoriesRow` stays a handle-driven
 component and never issues per-card requests.
+
+**Output-language directive (N1, `mezo-n4wf5.11`).** The adapter base `SpringAiCompanionLlm` is also where the account's language reaches every model call. `UserLanguage.current()` (resolved through `LlmActorContext.capture()`, so request, SSE and cron threads all work and no call site changed) feeds `OutputLanguageDirective.apply(prompt, language, slug)`: for `hu` it returns the prompt **unchanged** (same instance — golden prompt tests, the fake LLM's `startsWith` dispatch and the OpenAI cache prefix are untouched); for `en` it **appends** an `[OUTPUT LANGUAGE]` block telling the model that the instructions and data are Hungarian, that every sentence a person reads must be natural English, and that JSON keys, enum values, tool names, ids and fixed options stay exactly as specified and names or quoted user text are not translated. When the call carries a turn context the block rides on it (the later system message, so the cacheable system prefix stays intact), otherwise on the system prompt; it is applied once, on the caller's thread, at the entry point that first receives the prompt, and the audited `llm_log_history.system_prompt` is the text actually sent. Exempt: the call-site slugs `embed_memory` (embeddings) and `companion_recall` (the recall rewriter and reranker), and the audio-transcription overload (a transcript is the user's own words). Until the prompts and the context are translated (slice N3) an English answer can drift back to Hungarian; stored AI text is never re-translated and carries no language marker yet. Details and the rest of the language mechanism: [`_platform-language.md`](_platform-language.md).
 
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline

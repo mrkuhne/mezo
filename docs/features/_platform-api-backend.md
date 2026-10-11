@@ -2,14 +2,14 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-10-07
+updated: 2026-10-11
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
   - api/generate
   - backend/src/main/java/io/mrkuhne/mezo/techcore
   - backend/pom.xml
-  - backend/src/main/resources/messages.properties
+  - backend/src/main/resources/messages_hu.properties
   - frontend/src/data/_client/api.ts
   - frontend/src/data/fuel/pantryApi.ts
   - frontend/src/data/hooks.ts
@@ -20,7 +20,7 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 
 > **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** `train-skip.yml` gains `PlannedSkipKind.MEAL`, `PlannedSkipReason.NOT_HUNGRY` and `plannedKcal`; `meal.yml` gains `fuelMode`, `recoveryCategory`, `recoveryDay`, `skippedKcal` on `FuelDayResponse` and `fuelMode` on `FuelDayRollup` (inline enums generate separate `FuelDayResponse.*`/`FuelDayRollup.*` types). New error message `TRAIN_SKIP_REASON_INVALID` in `messages.properties`. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
-> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** New fragment `api/feature/train/train-recovery.yml` (tag `TrainRecovery`, `/api/train/recovery*`) registered in `api/generate/merge.yml`; six Hungarian `TRAIN_RECOVERY_*` error keys in `messages.properties`; Liquibase `1.1.0` gains `recovery_period` + `recovery_day_release`. See [`train.md`](train.md) §2 "Kihagyás S2 — kímélő mód".
+> **2026-09-30 — Kihagyás S2 (`mezo-q4xt2.2`).** New fragment `api/feature/train/train-recovery.yml` (tag `TrainRecovery`, `/api/train/recovery*`) registered in `api/generate/merge.yml`; six Hungarian `TRAIN_RECOVERY_*` error keys in the message bundle (`messages.properties` then, `messages_hu`/`messages_en` since N1); Liquibase `1.1.0` gains `recovery_period` + `recovery_day_release`. See [`train.md`](train.md) §2 "Kihagyás S2 — kímélő mód".
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** New fragment `api/feature/train/train-skip.yml` (tag `TrainSkip`, `GET/PUT/DELETE /api/train/skips`) merges into `api/openapi.yml` like any other feature fragment — no new pattern. `TRAIN_SKIP_DATE_OUT_OF_WINDOW`/`TRAIN_SKIP_TARGET_INVALID`/`TRAIN_SKIP_NOT_FOUND` join `messages.properties`. See [`train.md`](train.md) "Kihagyás (S1)".
 
@@ -446,7 +446,7 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 - `techcore/persistence/OwnedEntity.java`, `OwnedRepository.java` — owned-entity superclass + `findAllOwned`
 - `techcore/security/SecurityConfig.java`, `CurrentUserId.java`, `CorsProperties.java` — stateless JWT + ownership resolution + CORS
 - `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract (an unreadable request body — unknown enum constant, wrong JSON type, broken JSON — is a 400 `VALIDATION_INVALID_VALUE` naming the JSON path since Check-in 2.0 follow-up C; [`_platform-auth-security.md`](_platform-auth-security.md), [`error_handling.md`](../references/error_handling.md))
-- `backend/src/main/resources/messages.properties` — message codes (Hungarian; newest: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
+- `backend/src/main/resources/messages_hu.properties` + `messages_en.properties` — message codes, one bundle per language, every key in both (since N1, `mezo-n4wf5.11`; resolved per user by `techcore/message/UserMessages`, see [`_platform-language.md`](_platform-language.md); newest Hungarian-side: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
 
 **Reference feature (weight — smallest full slice)**
 - `feature/biometrics/weight/controller/WeightLogController.java`, `service/WeightLogService.java`, `mapper/WeightLogMapper.java`, `repository/WeightLogRepository.java`, `entity/WeightLogEntity.java`

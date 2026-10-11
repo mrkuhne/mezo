@@ -389,3 +389,59 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
   assert it is gone — still counts as „used" by a token scan; review those hits and list them explicitly. Guards
   that REQUIRE the old rules are rewritten first (F3.8). A block's marker pair leaves only with its last
   rule (an orphaned keyframe counts as a rule), and a surviving block must keep both markers.
+
+**N1 — Nyelv alap (`mezo-n4wf5.11`, 2026-10-11)**
+
+- **N1.1 — A keyed remount detaches every portal that resolves its target during render.** The language switch
+  remounts the tree with a `key`; the new tree's render ran while the old `.phone-screen` was still in the DOM,
+  so `document.querySelector('.phone-screen')` returned the node about to be removed and the portal's content
+  (Fuel settings' save bar) landed in a detached subtree. Fourteen files resolve a target this way. The fix is a
+  two-phase remount: commit the children as unmounted (`null`), then mount the new tree from a layout effect — it
+  then renders against a DOM like a cold start. Do not go back to a single `key`, and test with a portal child.
+- **N1.2 — When the account language is already known, the store is aligned before the children render.** The
+  store starts from the device cache or the device language; applying the account value afterwards flipped it a
+  moment later and mounted the whole tree twice. Write the known value silently during render (`alignLang`) and
+  announce it from an effect; the first paint is already right and nothing remounts.
+- **N1.3 — No translated text is cached without the language in the cache key.** A `useMemo`, a state initialiser,
+  a module constant or a query-selected value that holds a sentence goes stale on a switch. Two reviewed cases (the
+  day orb's label, the notification panel's day headings) were hidden only because the remount resets every memo.
+  Put the language in the deps, or store data (`{ sent, attempted }`) and build the sentence at render.
+- **N1.4 — A prototype-only "mixed" state is drawn in the prototype too.** The app is bilingual with some screens
+  still Hungarian; the prototype shows the same: the switch changes the frame and Settings, untranslated screens
+  stay Hungarian on purpose (`?lang=en`, side-panel checkbox, `F.L(hu, en)`, the kit's `FR_EN` table). A prototype
+  that looks fully English promises what the build cannot yet deliver.
+- **N1.5 — Scope creep through a Settings link into another feature's page is refused and listed.** Fuel settings,
+  the goal page and several sheets are reachable from Settings but belong to F5/F6/N2. Converting them ad hoc is
+  what F2.12 forbids; the slice report lists every such page so the owner knows what is still Hungarian.
+- **N1.6 — A test that waits on a remounted hook's state waits on nothing.** The switch remounts the caller, so a
+  fresh `useLanguageSetting` starts with `pending = false` and the test's `waitFor(pending === false)` passed at
+  once. The write outlived the case and landed in a later one (a whole-suite-only flake, reproduced only by moving
+  the leak into the failure window). Wait on the cache's `isMutating() === 0`, in an `afterEach` that also clears.
+- **N1.7 — A layout check over an empty set passes.** `/settings` is a hub of links and `/settings/notifications`
+  showed only a note, so the "no wrapped button" loops measured zero elements and were green. Every check asserts
+  its set is non-empty (or states the zero on purpose, with an anchor element standing in).
+- **N1.8 — A guard's allowlist needs a rot check.** The hard-coded-Hungarian guard fails on an entry that matches
+  nothing and on one outside the translated list, and a second test pins the one broad entry (`pageIndex.ts`) to
+  data only. Without both, a list only grows and slowly stops guarding. The same sorted-and-shrink rule holds for
+  the formatting ratchet.
+- **N1.9 — A time-zone test must be shown RED.** The first date-only test ran in the machine's zone and could not
+  fail on the bug it named. It now runs the module per zone and was run against `new Date(d)` to see it fail. Any
+  test that claims to guard a zone, locale or clock detail is shown failing before it is trusted.
+- **N1.10 — Server messages that were English in a Hungarian app are a defect, not a parity target.** Splitting
+  the bundle made `INTERNAL_ERROR` and `AUTH_LOGIN_INVALID_CREDENTIALS` Hungarian in Hungarian mode. "Word for
+  word unchanged" applies to Hungarian text; record the ruling, and keep the stable `code` as the contract.
+- **N1.11 — Mock data decides what a runtime pass can see.** In mock mode `me.language` used to override the
+  device cache on every load, so a layout spec could not open a route in English. The mock account now follows the
+  cache (never `navigator.language`, so tests stay Hungarian). Say per route which languages and states were looked
+  at in the browser and which only in tests.
+- **N1.12 — The directive is appended, never prepended.** The fake LLM dispatches on the start of the prompt and
+  the OpenAI cache keys on the prefix; Hungarian returns the same instance, so prompts stay byte-identical. Where a
+  turn context exists the directive rides on it. Exempt what a person never reads (embeddings, recall rewriter and
+  reranker) and what must stay the speaker's words (transcription).
+- **N1.13 — An accent detector does not see unaccented Hungarian.** „Vissza", „Mai", „Terv" pass the guard, as does
+  Hungarian after a `//` in JSX text. The completeness test and a read-through on the screen, in both languages at
+  320 px, cover the rest; a leftover found by the guard (the floating return bar) is moved into the catalog, never
+  allowlisted.
+- **N1.14 — A shared test file or catalog is the controller's, and a sequential order beats a parallel one.** Three
+  catalog areas touched the same index; running the converters one after another cost only time. Reviewers may run
+  on a finished task's diff while the next implementer works; a fix round waits until that implementer commits.

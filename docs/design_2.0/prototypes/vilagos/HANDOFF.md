@@ -1,4 +1,4 @@
-# Folyadék — handoff (state on 2026-10-08)
+# Folyadék — handoff (state on 2026-10-11)
 
 The owner chose **Folyadék** as the app's new UI identity after eight rounds. This file is the
 memory of that journey. Read it before touching the prototype, the spec or the skill.
@@ -16,8 +16,17 @@ memory of that journey. Read it before touching the prototype, the spec or the s
 - **URL scheme:** `#w-<domain>-<route>[.<arg>]` = Folyadék · `#j-…` = the living prototype
   (`elo/<domain>.html`) in the same frame. Domains: `nap edzes fuel mezo en`.
   Serve: `python3 -m http.server 8731 --bind 127.0.0.1` in `docs/design_2.0/prototypes/`.
-- **Tracker:** programme epic `mezo-n4wf5` (children `.1`–`.9` = slices F1–F9, none started).
-  Direction issue `mezo-juo1e` is closed.
+- **Tracker:** programme epic `mezo-n4wf5` (children `.1`–`.9` = slices F1–F9; `.11`–`.13` = the language
+  track N1–N3). **State 2026-10-11: F1–F4 and N1 are built and merged** (frame + kit, Nap, Edzés, Edzés
+  közben, the language foundation); next is N2 (Nap first), then F5 Fuel, F6 Én, F7 Mezo, F8, N3, F9.
+  Direction issue `mezo-juo1e` is closed. The dated sections at the end of this file record, per slice, what
+  was built differently from the prototype.
+- **Language switch in the prototype (N1, 2026-10-11).** Side panel checkbox „English (angol szöveg)" or
+  `?lang=en` on the shell URL (`window.LANG`, `window.setLang`). In a domain file write a sentence in both
+  languages with `F.L(hu, en)`; the frame's own words (domain names, top tabs, hub titles, team fields) are
+  looked up in the kit's `FR_EN` table, so `tabs`/`title` need no change. Only the frame and the Settings
+  routes (`#w-en-beall`, `#w-en-b-*`) carry both languages; **untranslated screens stay Hungarian on
+  purpose** — the same mixed state as the app. The mechanism in the app: `docs/features/_platform-language.md`.
 - **Verification scripts** (scratchpad, session-local; recreate if gone): a Playwright sweep
   over every route of all five domains at 390 and 320 px (322 loads; console/page errors,
   missing `<use>` ids, `.scroll` overflow). Import Playwright from the absolute path
@@ -27,7 +36,7 @@ memory of that journey. Read it before touching the prototype, the spec or the s
 ## Build programme (written 2026-10-09)
 
 The owner closed the prototype phase ("a mostani design nagyon tetszik … így kell kinéznie").
-Spec: `docs/superpowers/specs/2026-10-09-folyadek-irany-design.md` · style bible:
+Spec: `docs/superpowers/specs/2026-10-09-folyadek-irany-design.md` (language: `docs/superpowers/specs/2026-10-11-nyelv-alap-design.md`) · style bible:
 `docs/design_2.0/2026-10-09-folyadek-style-bible.md` · driver skill `/folyadek`
 (`.claude/skills/folyadek/SKILL.md`) · slices F1–F9 on epic `mezo-n4wf5` (label `epic:folyadek`).
 `CLAUDE.md` §Design direction now says Folyadék. `csepp/*.js` and `tiszta/*.html` are earlier

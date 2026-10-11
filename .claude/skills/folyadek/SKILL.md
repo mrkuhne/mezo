@@ -70,10 +70,10 @@ the "obvious" alternatives are wrong).
 ### 0. Pick the slice
 1. `gh run list --branch main --limit 3`. **A red main outranks everything.**
 2. `bd list --label epic:folyadek`. This listing is the authority. Take the first open slice
-   whose blockers are closed, in this order: **N1** (the language foundation — it blocks
-   F5–F8, so nothing new is built Hungarian-only), then the lowest-numbered open `F<N>`
-   (F5–F7 are independent after N1; F8 after F2), with **N2** any time after N1 and F4, **N3**
-   after F7, **F9 last**. A slice another session holds in progress is not yours. If the owner
+   whose blockers are closed, in this order: the lowest-numbered open `F<N>` or **N2**
+   (**N1 is done, 2026-10-11** — F5–F7 are independent of each other and are built bilingual from
+   their first line; F8 after F2; **N2** any time, F4 and N1 being done), **N3** after F7,
+   **F9 last**. A slice another session holds in progress is not yours. If the owner
    named a slice, take that one. `bd show <id>`.
 3. If everything is closed, say so in two sentences and stop.
 4. `bd update <id> --claim`; work in an isolated worktree on `feat/folyadek-<topic>`.
@@ -93,7 +93,9 @@ start from zero; it **proves its part against reality** and gets the owner's OK 
    cannot compute it, replace the graphic with one it can, and tell the owner. Query
    production read-only if you need to see real shapes (CLAUDE.md §Production database);
    never copy real rows into the prototype.
-3. **Both languages (every slice after N1).** The prototype has a language switch; write the
+3. **Both languages (every slice after N1).** The prototype has a language switch (side-panel
+   checkbox „English (angol szöveg)", `?lang=en`; `F.L(hu, en)` for a sentence, the kit's `FR_EN`
+   table for the frame's words); write the
    English wording of every sentence, label and state of the slice next to the Hungarian, by
    the bible's English copy rules — written as English, not translated word by word (verdict
    sentences, team voice and empty states are where a literal translation reads wrong). The
@@ -142,11 +144,18 @@ start from zero; it **proves its part against reality** and gets the owner's OK 
   Affected `frontend/tests/layout` specs. `pnpm build`.
 - Backend focused tests (+ `ArchitectureTest`) whenever backend changed — after N1 that is
   most slices (the domain's server-written sentences), and always N1, N3 and F7.
-- **Language gate (every slice after N1):** the catalog completeness test green (every key in
-  both languages); a search of the slice's files for visible Hungarian literals left outside
-  the catalog comes back empty; the runtime pass below repeated with the switch on English —
-  no Hungarian word on any route, state or sheet of the slice, dates and numbers in the
-  English format, and one real AI answer per AI surface of the slice read in each language.
+- **Language gate (every slice after N1):** the four guards of `docs/features/_platform-language.md`
+  §7 extended and green — (1) **catalog completeness** (`catalog.completeness.test.ts`: every key,
+  leaf kind and arity in both languages; nothing to extend, it walks every registered area),
+  (2) **no hard-coded Hungarian** (`hardcodedHungarian.guard.test.ts`: the slice's directories
+  added to `TRANSLATED`, the hits moved into the catalog, the obsolete `ALLOWLIST` entries deleted),
+  (3) the **formatting ratchet** (`format.ratchet.test.ts`: the converted files' lines removed),
+  (4) the **English layout** spec (`tests/layout/language-en.spec.ts`: the slice's routes at 390 and
+  320 px, non-empty sets) — plus the backend **bundle parity** test when server sentences moved.
+  The guard sees accented Hungarian only: read the rest on the screen. Then the runtime pass below
+  repeated with the switch on English — no Hungarian word on any route, state or sheet of the
+  slice, dates and numbers in the English format, and one real AI answer per AI surface of the
+  slice read in each language.
 - Runtime pass (`verify` skill): every route of the slice at 390 and 320 px, reduced motion;
   title bar, top tabs and bottom bar exactly as after F1; side by side with the prototype.
 - **Reverse parity checklist** pasted into the bead.
@@ -195,43 +204,62 @@ also deliver their own screens and their domain's server-written sentences in En
 
 | # | Slice | Scope (details in the bead) |
 |---|---|---|
-| N1 | Nyelv alap | **Opens with a brainstorm + short spec** (`superpowers:brainstorming`, `brainstorm-recon`) — the mechanism is not chosen yet. The language stored with the account and the switch in Settings (prototype first); the message mechanism on the client; dates, numbers and units by language; the user's language on **every** AI call so answers come back in it at once; the pattern for server-written sentences; the language switch in the prototype + English copy rules in the bible; the frame, kit and Settings pages translated; the guards. |
+| N1 | Nyelv alap | **Done 2026-10-11** (`mezo-n4wf5.11`; spec `2026-10-11-nyelv-alap-design.md`, doc `docs/features/_platform-language.md`). The language stored with the account and the switch in Settings; the typed client catalog and `LanguageProvider`; dates and numbers by language (`format.ts`); the output-language directive on every AI call; the server message bundles and `UserMessages`; the prototype's language switch and the bible's English copy rules; the frame, kit and Settings pages translated; the five guards. |
 | N2 | Nyelv pótlás | Nap, Edzés and Edzés közben were converted before the decision: their screens, sheets, states and server-written sentences into both languages, English wording approved on the Artifact. No visual change. Split per domain if one session is not enough. |
 | N3 | Az AI angolul | The prompts themselves, the team's voice, the context fed to the AI, notifications and the built-in catalogs in English; the evaluation run in both languages and side-by-side samples shown to the owner before switching; memory written in one language still found in the other. After F7 (the team rename). |
 
 ## Language (every slice after N1)
 
-N1's spec is the authority on the mechanism:
-`docs/superpowers/specs/2026-10-11-nyelv-alap-design.md` (owner decisions in its §2; English copy
-rules in the bible §2.5). The frame around it:
+N1 is built. The mechanism, the resolution order, the formats, the server and LLM sides, the
+guards and the **step-by-step recipe for translating an area** are in
+`docs/features/_platform-language.md` (§7 *How a slice translates its area*); the design and the
+owner decisions are in `docs/superpowers/specs/2026-10-11-nyelv-alap-design.md` (§2); the English
+copy rules are in the bible §2.5; the lessons are N1.1–N1.14 in the bible appendix. The frame
+around it:
 
-- **Hungarian is the source language and the default**; English is the second. Existing tests
-  keep asserting Hungarian — never mass-rewrite tests for this; add English-mode checks.
-- **A slice owns its words end to end:** the screen text, the sentences the server writes for
-  those screens (verdicts, nudges, reasons, errors), the notifications it triggers, and the AI
-  surfaces it shows. A screen is not done in English while the server still answers it in
+- **Hungarian is the source language and the default**; English is the second. A new account
+  takes the **device language** (a Hungarian device → `hu`, anything else → `en`); existing
+  accounts stay `hu`. Existing tests keep asserting Hungarian — never mass-rewrite tests for this;
+  add English-mode checks.
+- **A slice owns its words end to end:** the screen text (a catalog area `messages/<area>.hu.ts`
+  + `.en.ts`, read with `useM()` / `m()`), the sentences the server writes for those screens
+  (bundle keys with arguments, rendered with `UserMessages`), the notifications it triggers, and
+  the AI surfaces it shows. A screen is not done in English while the server still answers it in
   Hungarian.
-- **Never translate what the user wrote or what was already said.** Journal entries, meal and
-  exercise names he typed, old AI messages and memories stay as written; only new output
-  follows the switch. (Confirm with the owner in N1; then this line is a decision.)
-- **Formatting follows the language**, not the device: dates, weekday names, decimal separator,
-  plurals. One shared helper; no new hard-coded locale.
-- **English is written, not converted.** Short, plain, the same calm voice; team fields get
-  their agreed English names (bible, after N1). A search-and-replace or a bulk machine pass is
-  a draft — read every sentence in place, on the screen, at 320 px.
+- **Never translate what the user wrote or what was already said** (owner decision, confirmed
+  2026-10-11). Journal entries, meal and exercise names the user typed, old AI messages and
+  memories stay as written; only new output follows the switch. Server text that is persisted is
+  rendered once, in the language of that moment, and stays.
+- **English names (decided):** domains **Today · Training · Fuel · Mezo · Me**; team fields
+  **Sleep · Movement · Food · Mood · Mezo · Skeptic**. Internal keys do not change. A field name
+  is a label ("your sleep…", never "Sleep says…").
+- **Built-in catalogs** (exercises, habits, quests, titles, pantry) are translated in **N3**;
+  items the user created or renamed stay as written.
+- **Formatting follows the language**, not the device: `shared/lib/format.ts` only (`hu-HU` /
+  `en-GB`); no new hard-coded locale, no private month arrays. Units do not change: kg, km, cm and
+  the 24-hour clock in both languages.
+- **No translated text cached without the language in the cache key**; a sentence is one message
+  with slots, never concatenated halves; label maps in `lib/` files are lookups on `m()`, not
+  module constants.
+- **English is written, not converted.** Short, plain, the same calm voice. A search-and-replace
+  or a bulk machine pass is a draft — read every sentence in place, on the screen, at 320 px.
+- **Scope:** another feature's page reached through a link is not yours to convert ad hoc; list
+  it in the report (bible F2.12 / N1.5).
 - **Size seen 2026-10-11, before any work:** ≈990 client files / 33k lines and ≈620 server
   files / 13.5k lines carry Hungarian text, ≈60 files hold Hungarian prompt blocks, 118 places
-  hard-code the Hungarian date/number format, and built-in catalogs (exercises, habits, quests,
-  titles, pantry) are Hungarian. This is why it is sliced by domain and never done in one pass.
+  hard-code the Hungarian date/number format, and built-in catalogs are Hungarian. This is why
+  it is sliced by domain and never done in one pass.
 
 ## Open questions to raise at the right slice (never decide silently)
 F3: body silhouette vs. dumbbell on Edzés · Mai; day cards vs. rows on Terv. F6: Én night mode
 dark or light; the streak. F7: the separate "Rád vár" list; whether the rename also changes the
 prompts' voice. F8: the "boop" name and logo. Any slice: invented numbers and sentences;
-inconsistent dates across domains. N1: what happens to what is already written in Hungarian
-(old messages, memories, journal); which language a new account starts in; the English names of
-the team fields; whether the built-in catalogs are translated or stay. N3: whether the English
-team voice should sound the same as the Hungarian one or be re-tuned.
+inconsistent dates across domains. N2: the English term for „kímélő mód" (provisionally "Gentle
+mode" in the server bundle) and the other domain wording. N3: whether the English team voice
+should sound the same as the Hungarian one or be re-tuned. (Decided in N1, 2026-10-11, no longer
+open: stored Hungarian text is never translated; a new account takes the device language and
+existing ones stay Hungarian; the English names of the domains and team fields; built-in
+catalogs are translated in N3 and user-created items stay.)
 
 ## Traps
 - The bible §8 list, plus the üveg bible appendix for everything structural.

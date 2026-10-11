@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: done
-updated: 2026-09-28
+updated: 2026-10-11
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
@@ -13,7 +13,7 @@ key_files:
   - frontend/src/features/auth
   - frontend/src/shared/lib/userScope.ts
   - frontend/src/data/_client/api.ts
-related: [_platform-data-layer, _platform-api-backend, _platform-notifications, me, admin-hub]
+related: [_platform-data-layer, _platform-api-backend, _platform-notifications, _platform-language, me, admin-hub]
 ---
 
 # Auth & Security — Feature Documentation
@@ -140,6 +140,7 @@ view → useX hook (frontend/src/data/hooks.ts) → *Api.ts client → apiFetch 
 | `role` | `varchar(16) NOT NULL default 'USER'` | `ck_app_user_role IN ('OWNER','USER')` |
 | `status` | `varchar(16) NOT NULL default 'ACTIVE'` | `ck_app_user_status IN ('ACTIVE','DISABLED')` — checked on every request by `CurrentUser` |
 | `timezone` | `varchar(64) NOT NULL default 'Europe/Budapest'` | T1 decision: stored for the future, not yet consulted by any "today" logic |
+| `language` | `varchar(2) NOT NULL default 'hu'` | `ck_app_user_language IN ('hu','en')` — the interface/AI language (slice N1, `mezo-n4wf5.11`, migration `1.1.0/script/202610111200_mezo-n4wf5.11_app_user_language.sql`). Every pre-existing account is `hu`; written only by a targeted `AppUserRepository.updateLanguage` (never a whole-entity save); read per call by `UserLanguage`. See [`_platform-language.md`](_platform-language.md) |
 | `onboarded_at` | `timestamptz` | null = onboarding not done; the S1 backfill sets it to `created_at` for every pre-existing (owner) row |
 | `must_change_password` | `boolean NOT NULL default false` | drives `AuthGate`'s `mustChangePassword` phase |
 | `last_seen_at` | `timestamptz` | stamped by `CurrentUser`, at most once per 5 minutes per account |
@@ -174,8 +175,9 @@ Entity: `…/feature/auth/entity/InviteEntity.java` (`isUsed()`/`isExpired(now)`
 |---|---|---|---|---|
 | PUT | `/api/auth/me` | Bearer | `UpdateAccountRequest{name,email}` → `MeResponse` | 400 validation, 401 missing/invalid token, 409 `AUTH_EMAIL_TAKEN` |
 | POST | `/api/auth/login` | `security: []` (public) | `LoginRequest{email, password}` → `TokenResponse{token}` | 400 field (`VALIDATION_INVALID_EMAIL`, `VALIDATION_INVALID_VALUE`), 401 `AUTH_LOGIN_INVALID_CREDENTIALS`, 403 `AUTH_ACCOUNT_DISABLED` |
-| POST | `/api/auth/register` | `security: []` (public) | `RegisterRequest{inviteCode, email, password, name}` → `TokenResponse{token}` | 400 field, 409 `AUTH_INVITE_INVALID` \| `AUTH_EMAIL_TAKEN` |
-| GET | `/api/auth/me` | Bearer | — → `MeResponse{id, email, name, role, onboarded, mustChangePassword, timezone}` | 401 `AUTH_TOKEN_MISSING`, 403 `AUTH_ACCOUNT_DISABLED` |
+| POST | `/api/auth/register` | `security: []` (public) | `RegisterRequest{inviteCode, email, password, name, language?}` → `TokenResponse{token}` (`language` optional, default `hu`; the client always sends the language the register screen was in) | 400 field, 409 `AUTH_INVITE_INVALID` \| `AUTH_EMAIL_TAKEN` |
+| GET | `/api/auth/me` | Bearer | — → `MeResponse{id, email, name, role, onboarded, mustChangePassword, timezone, language}` | 401 `AUTH_TOKEN_MISSING`, 403 `AUTH_ACCOUNT_DISABLED` |
+| PUT | `/api/auth/me/language` | Bearer | `UpdateLanguageRequest{language}` (`hu` \| `en`) → `MeResponse` | 400 `VALIDATION_INVALID_VALUE` for an unsupported value, 401 missing/invalid token |
 | POST | `/api/auth/change-password` | Bearer | `ChangePasswordRequest{currentPassword, newPassword}` → 204 | 400 field, 401 `AUTH_LOGIN_INVALID_CREDENTIALS` (wrong current password — **exempted from the session-death 401 handler**, see §5) |
 | POST | `/api/auth/onboarding-complete` | Bearer | — → 204 | 401 `AUTH_TOKEN_MISSING` |
 
@@ -275,6 +277,7 @@ Auth is the **substrate every other backend feature stands on**. The contract cr
 - **Session-death detection ↔ `AuthGate`.** *Contract:* `apiFetch`/`apiSse`'s `handleAuthFailure` (`data/_client/api.ts`) treats a 401 anywhere protected, or a 403 carrying `AUTH_ACCOUNT_DISABLED`, as a dead session — it clears the token and emits `authEvents.emitSignedOut(reason)`. A 403 `AUTH_FORBIDDEN` (an owner-only endpoint hit by a non-owner) is a **permission** problem, not a session one, and does not sign the user out. Three paths are exempted from this altogether (`PUBLIC_AUTH_PATHS`): `/api/auth/login`, `/api/auth/register`, `/api/auth/change-password` — a 401 there means "wrong credentials"/"wrong current password", not "your session died". `AuthGate` is the sole subscriber (`authEvents.onSignedOut`) and reacts by clearing the whole query cache and returning to the `signedOut` phase.
 - **App boot ↔ `AuthGate` gate.** *Contract:* `AuthGate` (mounted inside `QueryProvider`, above the router) exposes the boot phase to the rest of the tree — nothing downstream mounts until it resolves to `ready` (or `mustChangePassword`/`signedOut`/`failed`, each of which renders its own screen instead of `{children}`). Every screen inside `{children}` can assume "the current account is `ACTIVE` and its `me()` has already loaded" — see §2.
 - **Error envelope ↔ `SystemMessage[]`.** *Contract:* `AuthService`/`CurrentUser`/`InviteService` throw `SystemRuntimeErrorException` → `GlobalExceptionHandler` (`…/techcore/exception/GlobalExceptionHandler.java`) → `SystemMessage[]` JSON (`code/message/fieldName/exceptionTraceId`). The FE `ApiError` (`api.ts`) parses exactly that array. **Since mezo-78rn** the same handler maps a method-mismatch (`HttpRequestMethodNotSupportedException` — e.g. a POST to a path that only survives as `/api/meal/{id}` once a `@ConditionalOnProperty` controller is gone) to a clean **405 `METHOD_NOT_ALLOWED`** SystemMessage instead of the generic 500 catch-all, and a multipart container-cap breach (`MaxUploadSizeExceededException` — `spring.servlet.multipart.max-file/request-size` in `application.yml`, kept above the 5 MB app-level photo cap so the service check stays the message-bearing limit) to a clean **400** rather than a 500. **Since `mezo-x0nb`** an unconvertible request parameter (`MethodArgumentTypeMismatchException` — a malformed UUID in a path, a non-numeric integer in a query, an unknown enum constant) likewise maps to a **400 FIELD `VALIDATION_INVALID_VALUE`** naming the parameter, instead of the 500 it used to produce; conversion runs before both the controller method and bean validation, so this is the only layer that can catch it (`…/techcore/exception/GlobalExceptionHandlerIT`). **Since Check-in 2.0 follow-up C (2026-09-28)** its body twin — an unreadable request BODY (`HttpMessageNotReadableException`: an unknown enum constant such as a `PainRegion`/`CravingKind`/`AdaptiveReason`/`CheckInItemId`, a wrong JSON type, broken JSON) — is a **400 `VALIDATION_INVALID_VALUE`** too: a FIELD message naming Jackson's dotted path (`painRegions[1]`) when known, a plain one otherwise; global for every endpoint (`BiometricsContractIT`). **Asymmetry to know:** Spring Security's *filter-level* 401 (missing/invalid token) uses `BearerTokenAuthenticationEntryPoint` → **empty body**, NOT the `SystemMessage[]` envelope (only `AuthService`/`CurrentUser` 401s flow through `GlobalExceptionHandler`). Tracked in `mezo-aus`.
+- **Account language ↔ message bundles & LLM (N1, `mezo-n4wf5.11`).** *Contract:* `app_user.language` (`hu` | `en`) is exposed as `MeResponse.language`, set by `PUT /api/auth/me/language` and `RegisterRequest.language`. `GlobalExceptionHandler` resolves every `SystemMessage` text through `UserMessages`: the acting account's language (JWT subject, via `LlmActorContext.capture()`), else the first two letters of `Accept-Language` for requests with no account (login, register, a missing token — the client sends the header on every call), else Hungarian. The stable `code` is still the contract; only `message` follows the language. The same `UserLanguage` drives the output-language directive on every LLM call. Whole mechanism: [`_platform-language.md`](_platform-language.md).
 - **Config ↔ deploy.** *Contract:* `OwnerProperties` + `AuthProperties` + `CorsProperties` bind `mezo.auth.*` / `mezo.cors.*`; in prod those env vars come from the `mezo-app` Kubernetes SealedSecret (see §9 / §10). `mezo.auth.strict=true` in the k8s Deployment means `AuthStartupGuard` refuses to boot on a dev-default owner password or JWT secret. Rotating the JWT secret invalidates all existing tokens for every account, not just one.
 - **Tests ↔ `ownerAuthHeaders()` / `registerUser()`.** *Contract:* every HTTP-level integration test obtains a real Bearer header either by logging in as the `demodata` owner, or by minting and registering a second real `USER` account through the invite flow — see §8.
 - **Cron ↔ `UserFanOut` + `LlmActorContext` (S6, `mezo-qw37.6`).** *Contract:* every `@Scheduled` job (23 of them across quest, proactive, companion, notification) fans out via `feature/auth/service/UserFanOut.forEachActiveUser(jobName, body)` instead of `appUserRepository.findAll()` — only `ACTIVE` + onboarded accounts, each `body` run under `techcore/security/LlmActorContext.runAs(userId, …)` so an LLM call made on the scheduler thread still gets `llm_log_history.created_by = userId` (see [`admin-hub.md`](admin-hub.md) §5). A `Throwable` from one user's body is logged and the fan-out continues; jobs add their own finer-grained try/catch on top. See §4.
@@ -350,7 +353,7 @@ Remember `CurrentUser`'s usage contract from §3: call it from the controller la
 3. **Owner key** — pass `currentUserId.get()` into the service. **Never** accept `created_by` from a request DTO.
 4. **Persistence** — entity extends `OwnedEntity`; repository extends `OwnedRepository<T>`; reads via `findAllOwned(currentUserId.get())`; writes set `entity.setCreatedBy(currentUserId.get())`. Migration named `{YYYYMMDDHHMM}_{bd-id}_{desc}.sql` per [`docs/references/liquibase_conventions.md`](../references/liquibase_conventions.md); add the new table to `support/ResetDatabase` TRUNCATE list + a populator per [`docs/references/integration_test_framework.md`](../references/integration_test_framework.md).
 5. **Config** — any tunable goes under `mezo:` in `application.yml` via a `@Validated` `*Properties` record; **never `@Value`** — see [`docs/references/configuration_conventions.md`](../references/configuration_conventions.md).
-6. **Errors** — throw `SystemRuntimeErrorException` with a `SystemMessage` code registered in `messages.properties`; never hardcode user text — see [`docs/references/error_handling.md`](../references/error_handling.md).
+6. **Errors** — throw `SystemRuntimeErrorException` with a `SystemMessage` code registered in **both** `messages_hu.properties` and `messages_en.properties` (`MessageBundleParityTest` fails on a key in one only); never hardcode user text — see [`docs/references/error_handling.md`](../references/error_handling.md).
 
 **Swapping a mock hook to real** (e.g. Fuel/Insights/People): edit the matching branch in `frontend/src/data/hooks.ts` so the real branch calls a new `*Api.ts` client over `apiFetch`. The token is already there — no auth wiring needed. Add an MSW handler in `frontend/src/test/msw/handlers.ts` for the new path so real-mode tests pass. **Both modes must stay green** (`VITE_USE_MOCK=true pnpm test` and `VITE_USE_MOCK=false pnpm test`).
 
@@ -473,7 +476,9 @@ The full multi-user epic (`mezo-qw37`, S1–S6) is now complete; see [ADR 0035](
 - `api/feature/admin/admin.yml` (S3) — invite CRUD + user list/reset-password/status.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202606101200_mezo-v67_create_auth.sql` — original `app_user` + `user_profiles` DDL.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609021200_mezo-qw37.1_multi_user_accounts.sql` — S1: role/status/timezone/onboarding columns, `invite` table, `user_profiles` drop, owner backfill.
-- `backend/src/main/resources/messages.properties` — `AUTH_LOGIN_INVALID_CREDENTIALS`, `AUTH_TOKEN_MISSING`, `AUTH_ACCOUNT_DISABLED`, `AUTH_FORBIDDEN`, `AUTH_INVITE_INVALID`, `AUTH_EMAIL_TAKEN`, `ADMIN_*`, validation codes.
+- `backend/src/main/resources/messages_hu.properties` + `messages_en.properties` — the two bundles (184 keys each; the single `messages.properties` is gone): `AUTH_LOGIN_INVALID_CREDENTIALS`, `AUTH_TOKEN_MISSING`, `AUTH_ACCOUNT_DISABLED`, `AUTH_FORBIDDEN`, `AUTH_INVITE_INVALID`, `AUTH_EMAIL_TAKEN`, `ADMIN_*`, validation codes. Resolved per user by `techcore/message/UserMessages` over the `MessageSource` bean in `techcore/configuration/MessageSourceConfiguration.java`.
+- `backend/src/main/resources/db/changelog/1.1.0/script/202610111200_mezo-n4wf5.11_app_user_language.sql` — N1: `app_user.language` + `ck_app_user_language`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java` — the account language lookup (`of(userId)`, `current()`), shared with the LLM directive and `UserMessages`.
 - `backend/src/main/resources/application.yml` — `mezo.auth.*` + `mezo.cors.*` defaults/env overrides; `management.server.port` + `health,prometheus` exposure (mezo-ibxy).
 
 **Frontend:**

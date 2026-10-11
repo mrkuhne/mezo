@@ -2,7 +2,7 @@
 
 > Examples below use the **real** classes in `techcore/exception/` — `SystemMessage` (static
 > builders), `SystemRuntimeErrorException` (carries an `HttpStatus`), `GlobalExceptionHandler`.
-> Message texts live in `backend/src/main/resources/messages.properties`.
+> Message texts live in `backend/src/main/resources/messages_hu.properties` and `messages_en.properties` (one bundle per language, every key in both; resolved for the acting user by `UserMessages` — see `docs/features/_platform-language.md`).
 
 ## Core Pattern
 
@@ -18,9 +18,9 @@ static builder entry points — these are the ONLY sanctioned way to construct o
 @Builder
 public class SystemMessage {
     private Level level;           // ERROR, WARNING, INFO
-    private String code;           // "RESOURCE_NOT_FOUND" — key into messages.properties
+    private String code;           // "RESOURCE_NOT_FOUND" — key into the message bundles (`messages_hu` / `messages_en`)
     private List<String> params;   // optional MessageFormat params for the resolved text
-    private String message;        // resolved server-side from messages.properties — never set at throw site
+    private String message;        // resolved server-side from the message bundles (`messages_hu` / `messages_en`) — never set at throw site
     private String fieldName;      // "email" or "personalInfo.email" (FIELD type only)
     private Type type;             // REQUEST or FIELD
     private String exceptionTraceId;
@@ -57,7 +57,7 @@ throw new SystemRuntimeErrorException(
 ```
 
 The `message` field is NEVER set at the throw site. `GlobalExceptionHandler` resolves it from
-`messages.properties` by `code` (with `params` as message arguments) and stamps the
+`the message bundles (`messages_hu` / `messages_en`)` by `code` (with `params` as message arguments) and stamps the
 `exceptionTraceId`.
 
 ## HTTP Status Mapping
@@ -89,7 +89,7 @@ every endpoint, Check-in 2.0 follow-up C); `NoResourceFoundException` → 404 `R
 
 Format: `{DOMAIN}_{ACTION}_{REASON}` in SCREAMING_SNAKE_CASE.
 
-Real examples from `messages.properties`:
+Real examples from `the message bundles (`messages_hu` / `messages_en`)`:
 
 | Code | Meaning |
 |---|---|
@@ -99,7 +99,7 @@ Real examples from `messages.properties`:
 | `TRAIN_WORKOUT_NOT_ACTIVE` | Workout already completed |
 
 Rules: SCREAMING_SNAKE_CASE, English, unique and descriptive. **Every code MUST have an entry
-in `messages.properties`** — a code without an entry falls back to rendering the code itself.
+in `the message bundles (`messages_hu` / `messages_en`)`** — a code without an entry falls back to rendering the code itself.
 
 ## Type: REQUEST vs FIELD
 
@@ -135,12 +135,12 @@ duplicate any of this in services** — just throw.
 **DON'T:**
 - Send stack traces to the client
 - Expose internal error details
-- Hardcode user-facing text — all messages go through `SystemMessage.code` + `messages.properties`
+- Hardcode user-facing text — all messages go through `SystemMessage.code` + `the message bundles (`messages_hu` / `messages_en`)`
 
 ## No Hardcoded Text Rule
 
 Error messages, fallback strings, or any text that may reach the UI MUST go through
-`SystemMessage.code` + `messages.properties`. Never inline "Unknown error", "Failed to...", etc.
+`SystemMessage.code` + `the message bundles (`messages_hu` / `messages_en`)`. Never inline "Unknown error", "Failed to...", etc.
 
 ## Frontend Consumption
 
