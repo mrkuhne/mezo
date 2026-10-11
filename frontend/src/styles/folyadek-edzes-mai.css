@@ -92,9 +92,11 @@
   .em-h2 .ex-hb { --w: 92px; }
   .em-hf b { font-size: 21px; }
   .em-hf span { padding: 9px 12px; }
-  .em-opts { gap: 6px; }
-  .em-opts button { font-size: 12.5px; padding: 7px 6px; gap: 6px; }
-  .em-opts button .fo-bub { --s: 30px !important; }
+  /* „Gyomorrontás" must stay whole with room to spare: the Linux runner lays the same label out
+     wider than macOS does (red main after F3), so the chip keeps ~20px of slack, not 6 */
+  .em-opts { gap: 4px; }
+  .em-opts button { font-size: 12px; padding: 7px 4px; gap: 5px; }
+  .em-opts button .fo-bub { --s: 26px !important; }
 }
 /* seven chips cannot each be 44px wide on a narrow phone: the tap area overhangs the 3px gaps */
 .em-day { position: relative; }
