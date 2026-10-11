@@ -12,10 +12,10 @@ export const CHALLENGE_TYPE_ICON: Record<string, Icon3DName> = {
 export const challengeTypeIcon = (type: string): Icon3DName => CHALLENGE_TYPE_ICON[type] ?? 't-quest'
 
 /** The wire's English labels, in the app's language. */
-const TYPE_LABEL_HU: Record<string, string> = { 'PR-attempt': 'PR-kísérlet' }
+const TYPE_LABEL_HU: Record<string, string> = { 'PR-attempt': 'Rekord-kísérlet' }
 
-/** '⚡ Túlterhelés' → 'Túlterhelés', 'PR-attempt' → 'PR-kísérlet'. Render-time only: the wire and
- *  the mock seed stay as they are; the chip's icon is the 3D one. */
+/** '⚡ Túlterhelés' → 'Túlterhelés', 'PR-attempt' → 'Rekord-kísérlet'. Render-time only: the wire stays
+ *  as it is; the chip's icon is the 3D one. */
 export function challengeTypeLabel(label: string): string {
   const clean = label.replace(/[\p{Extended_Pictographic}️‍]/gu, '').trim() || label
   return TYPE_LABEL_HU[clean] ?? clean

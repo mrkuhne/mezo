@@ -29,7 +29,7 @@ export const MEDAL_TYPE_LABEL: Record<MedalType, string> = {
   TARGET_HIT: 'Cél teljesítve',
 }
 
-export const MEDAL_UNIT_LABEL: Record<MedalUnit, string> = { KG: 'kg', REPS: 'rep' }
+export const MEDAL_UNIT_LABEL: Record<MedalUnit, string> = { KG: 'kg', REPS: 'ism.' }
 
 /**
  * Tier → 3D icon + tag + accent, the two-tier split every medal row surface uses (mezo-wp6n):
@@ -76,4 +76,11 @@ export function medalValueLabel(medal: Medal): string {
     return `${formatMedalNumber(medal.weightKg)} kg × ${medal.reps}`
   }
   return `${formatMedalNumber(medal.value)} ${MEDAL_UNIT_LABEL[medal.unit] ?? ''}`.trim()
+}
+
+/** Where the old record stood inside the new one, in % — the dashed line on a record capsule (`Rcap prev`).
+ *  Only when both numbers are real and comparable (a RECORD with a positive previous value); else null = no line. */
+export function medalPreviousShare(medal: Medal): number | null {
+  if (medal.tier !== 'RECORD' || medal.previousValue == null || !(medal.value > 0) || medal.previousValue <= 0) return null
+  return (medal.previousValue / medal.value) * 100
 }

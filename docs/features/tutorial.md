@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-10-09
+updated: 2026-10-11
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -15,6 +15,8 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 ---
 
 # Mezo-kalauz — In-App Page Guides
+
+> **2026-10-11 — Folyadék F4 · Edzés közben (`mezo-n4wf5.4`).** The `train-session` guide is **version 2**: its cards described the old card list („minden kártya egy gyakorlat", „a ⋯ alatt") and now describe the built screen — one exercise on top with its sets, the others as rows (tap = on top), the tick saves the set, the rest runs in the bar below, the three dots in the hero's corner hold the note and the set changes; the „mikor" card names Indulás and the Lezárás → értékelés path. The `train-review` guide's „mikor" card says the previous / next instance is at the bottom of the page (was: „a lánc mentén"). The `session-start` anchor sits on the kit's `TitleRow` on both the Eligazítás and the session page, and the route's mini `?` (the `fo-help` mark) lives inside it (`registry/anchors.test.tsx` pins both). A version bump re-arms the guide for users who saw v1.
 
 > **2026-09-28 — Eligazítás (`mezo-mgu2r`).** The `train-session` guide (`registry/train.ts`) speaks of the new briefing: the intro card is „Előbb egy eligazítás.” (time + challenges before Indulás, then the card list), and the „Szettről szettre” card says the taken-on challenge sits on its own exercise (tap to release) instead of under the header ⋯. The `session-start` anchor lives on the briefing's top bar. Version unchanged.
 

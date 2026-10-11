@@ -25,3 +25,8 @@ export function FoSheetHead(p: { title: ReactNode; titleId?: string; sub?: React
     </>
   )
 }
+
+/** The graphic line right under a sheet's head: a small graphic (capsules, a vessel) and what it says. */
+export function SheetGraphic(p: { note?: ReactNode; className?: string; children: ReactNode }) {
+  return <div className={p.className ? `fo-shg ${p.className}` : 'fo-shg'}>{p.children}{p.note != null && <small>{p.note}</small>}</div>
+}

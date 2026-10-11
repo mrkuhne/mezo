@@ -31,18 +31,18 @@
 // TASK 5: `onSaved(response)` below computes the sport's stars from the SAVED
 // values (duration/rpe against the sport's own minutes-field default) and
 // switches the page's own step state to the ceremony — SportCeremony.tsx,
-// mounted full-screen exactly like WorkoutCeremony closes a gym session. A
-// response `levelUp` opens the shared LevelUpProvider overlay BEFORE the
-// switch, same as every other finish path (ActiveWorkoutPage, RunningPage).
+// mounted full-screen exactly like WorkoutCeremony closes a gym session. The
+// XP a save earned (`response.levelUp.totalXp`) is shown ON that closing screen;
+// the full-screen level-up overlay is NOT raised over it any more (owner
+// decision, mezo-n4wf5.4 — nothing is painted over a ceremony).
 // ============================================================
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuickLogSport } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { Sheet } from '@/shared/ui/Sheet'
 import {
-  Acts, Box, Btn, Bub, Card, FoSheetHead, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Seg, Slider, Stepper,
+  Acts, Box, Btn, Bub, Card, FoSheetHead, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Seg, Slider, Stepper, TitleRow,
 } from '@/shared/ui/folyadek'
 import { SportCeremony } from '@/features/train/components/SportCeremony'
 import { sportStars } from '@/features/train/logic/sportScore'
@@ -146,28 +146,12 @@ export function toCreateRequest(
 /** Futás is the Nap-blue door among the Edzés-orange tiles (prototype `c: ic==='t-run' ? '#1877F2' : 'var(--dom)'`). */
 const tileColor = (s: Sport | RunTile) => (s.id === 'run' ? '#1877F2' : undefined)
 
-/** The page's own title row — this route has no title bar (AppLayout hides the chrome), so the
- *  page draws the bar's sub-page row itself: round back, the context line, the title. */
-function TopRow({ eyebrow, title, backLabel, onBack }: { eyebrow: string; title: ReactNode; backLabel: string; onBack: () => void }) {
-  return (
-    <div className="es-top">
-      <div className="fo-trow">
-        <button type="button" className="fo-ib fo-back" aria-label={backLabel} onClick={onBack}><span aria-hidden="true">‹</span></button>
-        <div className="fo-title">
-          <small><i aria-hidden="true" /><span>{eyebrow}</span></small>
-          <div className="fo-h sm"><h1>{title}</h1></div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 // ── step one: which sport ────────────────────────────────────────────────────
 
 function SportPickGrid({ onPick, onLeave }: { onPick: (id: string) => void; onLeave: () => void }) {
   return (
     <Page nonav className="es-page es-logflow">
-      <TopRow eyebrow="Sport · ma" title="Naplózás" backLabel="Vissza" onBack={onLeave} />
+      <TitleRow context="Sport · ma" title="Naplózás" onBack={onLeave} />
       <Hero
         label="Naplózás"
         verdict="Mi volt ma mozgás?"
@@ -273,7 +257,7 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
   return (
     <Page nonav className="es-page es-logflow"
       foot={<Btn grow disabled={saving} onClick={onSave}>Naplózom · {values.minutes} perc</Btn>}>
-      <TopRow eyebrow="Naplózás · ma" title={title} backLabel="Vissza a sportválasztóhoz" onBack={onBack} />
+      <TitleRow context="Naplózás · ma" title={title} backLabel="Vissza a sportválasztóhoz" onBack={onBack} />
       <Hero
         label="Naplózás · ma"
         verdict="Hogy ment?"
@@ -343,7 +327,6 @@ export function SportLogPage() {
   const navigate = useNavigate()
   const goBack = useBackNav('/train/mai')
   const { logSportSession } = useQuickLogSport()
-  const { showLevelUp } = useLevelUp()
 
   const [chosen, setChosen] = useState<Sport | null>(null)
   const [mode, setMode] = useState<string | null>(null)
@@ -383,12 +366,10 @@ export function SportLogPage() {
   /**
    * The ceremony mounts here, on the SAVED response — its `kcal`/`kcalIsEstimate` are the
    * honest figures the form refuses to guess (see the honesty note at the top of the
-   * file). A `levelUp` payload opens the shared overlay first, exactly like every other
-   * finish path (ActiveWorkoutPage, RunningPage) — the ceremony reveals once it is
-   * dismissed.
+   * file). A `levelUp` payload does NOT open the level-up overlay here (mezo-n4wf5.4): the
+   * closing screen owns the screen and carries the earned XP itself („+N szerzett XP").
    */
   function onSaved(sport: Sport, savedMinutes: number, savedRpe: number, response?: SportSessionResponse) {
-    if (response?.levelUp) showLevelUp(response.levelUp)
     setCeremony({
       sport,
       minutes: savedMinutes,
@@ -416,8 +397,6 @@ export function SportLogPage() {
       <SportCeremony
         score={sportStars(ceremony.minutes, minutesTarget(ceremony.sport), ceremony.rpe)}
         sportName={ceremony.sport.id === 'other' && values.name ? String(values.name) : ceremony.sport.name}
-        art={ceremony.sport.art3d}
-        color={ceremony.sport.color}
         minutes={ceremony.minutes}
         rpe={ceremony.rpe}
         kcal={ceremony.kcal}

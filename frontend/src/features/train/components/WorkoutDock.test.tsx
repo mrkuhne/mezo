@@ -3,9 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 
+// The session's dock in the Folyadék look (mezo-n4wf5.4): `WorkoutDock` IS the shared `SessionDock` — between sets
+// the done work as a LEVEL (no ring: a circle is a real clock only), during a rest the vessel that drains.
 /** The dock portals out of the render container — always query the document. */
 function dock(): HTMLElement {
-  return document.querySelector('.wo-dock') as HTMLElement
+  return document.querySelector('.ex-dock') as HTMLElement
 }
 
 function idleProps(overrides: Partial<Parameters<typeof WorkoutDock>[0]> = {}) {
@@ -24,48 +26,57 @@ function idleProps(overrides: Partial<Parameters<typeof WorkoutDock>[0]> = {}) {
   }
 }
 
-test('idle: shows the progress ring share, the done/planned copy and an enabled Lezárás', () => {
+test('idle: shows the done work as a level, the done/planned copy and an enabled Lezárás', () => {
   render(<WorkoutDock {...idleProps()} />)
   expect(dock()).not.toHaveClass('is-resting')
-  expect(screen.getByText('ELVÉGZETT MUNKA')).toBeInTheDocument()
+  expect(screen.getByText('Elvégzett munka')).toBeInTheDocument()
   expect(screen.getByText('3 / 10 szett')).toBeInTheDocument()
-  const ring = document.querySelector('.wo-dock-ring') as HTMLElement
-  expect(ring.style.getPropertyValue('--ring')).toBe('30')
-  const finish = screen.getByRole('button', { name: 'Lezárás →' })
-  expect(finish).toBeEnabled()
+  // 3 of 10 → the level stands at 30%; and no ring anywhere.
+  const level = dock().querySelector('.fo-wlv') as HTMLElement
+  expect(level).not.toBeNull()
+  expect(level.outerHTML).toMatch(/30%/)
+  expect(dock().querySelector('svg circle')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Lezárás' })).toBeEnabled()
 })
 
 test('idle: Lezárás is disabled at zero logged sets', () => {
   render(<WorkoutDock {...idleProps({ doneSets: 0, finishDisabled: true })} />)
-  expect(screen.getByRole('button', { name: 'Lezárás →' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Lezárás' })).toBeDisabled()
 })
 
 test('idle: Lezárás fires onFinish', async () => {
   const user = userEvent.setup()
   const onFinish = vi.fn()
   render(<WorkoutDock {...idleProps({ onFinish })} />)
-  await user.click(screen.getByRole('button', { name: 'Lezárás →' }))
+  await user.click(screen.getByRole('button', { name: 'Lezárás' }))
   expect(onFinish).toHaveBeenCalledTimes(1)
 })
 
-test('resting: shows the countdown share, the exercise name uppercased, mm:ss and the rest actions', () => {
+test('resting: the vessel stands at what is LEFT, whose rest it is, m:ss and the rest actions', () => {
   render(
     <WorkoutDock {...idleProps({ resting: true, remaining: 30, total: 120, exerciseName: 'Fekvőtámasz' })} />,
   )
   expect(dock()).toHaveClass('is-resting')
-  expect(screen.getByText('PIHENŐ · FEKVŐTÁMASZ')).toBeInTheDocument()
+  expect(screen.getByText('pihenő · Fekvőtámasz')).toBeInTheDocument()
   expect(screen.getByText('0:30')).toBeInTheDocument()
-  const ring = document.querySelector('.wo-dock-ring') as HTMLElement
-  // 30s left of 120 → 75% ELAPSED: the ring fills as the rest passes (asymmetric on purpose,
+  // 30s left of 120 → the liquid stands at 25%: the vessel DRAINS with the countdown (asymmetric on purpose,
   // a 50/50 case cannot tell fill from drain).
-  expect(ring.style.getPropertyValue('--ring')).toBe('75')
-  expect(screen.getByRole('button', { name: '+30s' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Kész' })).toBeInTheDocument()
+  const liquid = dock().querySelector('.ex-rv > i') as HTMLElement
+  expect(liquid.style.height).toBe('25%')
+  expect(screen.getByRole('button', { name: '+30 mp' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tovább' })).toBeInTheDocument()
   // Idle-only affordances are gone while resting.
-  expect(screen.queryByRole('button', { name: 'Lezárás →' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Lezárás' })).not.toBeInTheDocument()
 })
 
-test('resting: +30s fires onExtend, Kész fires onSkipRest', async () => {
+test('resting: the vessel never overflows nor goes under (an extended rest, a spent one)', () => {
+  const { rerender } = render(<WorkoutDock {...idleProps({ resting: true, remaining: 150, total: 120, exerciseName: 'X' })} />)
+  expect((dock().querySelector('.ex-rv > i') as HTMLElement).style.height).toBe('100%')
+  rerender(<WorkoutDock {...idleProps({ resting: true, remaining: 0, total: 0, exerciseName: 'X' })} />)
+  expect((dock().querySelector('.ex-rv > i') as HTMLElement).style.height).toBe('0%')
+})
+
+test('resting: +30 mp fires onExtend, Tovább fires onSkipRest', async () => {
   const user = userEvent.setup()
   const onExtend = vi.fn()
   const onSkipRest = vi.fn()
@@ -74,21 +85,22 @@ test('resting: +30s fires onExtend, Kész fires onSkipRest', async () => {
       {...idleProps({ resting: true, remaining: 45, total: 90, exerciseName: 'Fekvőtámasz', onExtend, onSkipRest })}
     />,
   )
-  await user.click(screen.getByRole('button', { name: '+30s' }))
+  await user.click(screen.getByRole('button', { name: '+30 mp' }))
   expect(onExtend).toHaveBeenCalledTimes(1)
-  await user.click(screen.getByRole('button', { name: 'Kész' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
   expect(onSkipRest).toHaveBeenCalledTimes(1)
 })
 
 // M2: the mm:ss `strong` re-renders every SECOND. With aria-live on the dock root a
 // screen reader read the whole dock out on every tick for the length of the rest. The
-// region stays a `role="status"`, but only the NON-ticking label span is live — it
-// changes exactly when the dock changes state, which is the announcement worth making.
-test('role="status" on the dock, aria-live on the non-ticking label only', () => {
-  render(<WorkoutDock {...idleProps()} />)
+// region stays a `role="status"`; only the NON-ticking rest label is live.
+test('role="status" on the dock, aria-live on the non-ticking rest label only', () => {
+  const { rerender } = render(<WorkoutDock {...idleProps()} />)
   expect(dock()).toHaveAttribute('role', 'status')
   expect(dock()).not.toHaveAttribute('aria-live')
-  expect(screen.getByText('ELVÉGZETT MUNKA')).toHaveAttribute('aria-live', 'polite')
+  rerender(<WorkoutDock {...idleProps({ resting: true, remaining: 30, total: 120, exerciseName: 'Fekvőtámasz' })} />)
+  expect(dock()).not.toHaveAttribute('aria-live')
+  expect(screen.getByText('pihenő · Fekvőtámasz')).toHaveAttribute('aria-live', 'polite')
 })
 
 test('the ticking mm:ss is NOT inside a live region while resting', () => {
@@ -98,32 +110,33 @@ test('the ticking mm:ss is NOT inside a live region while resting', () => {
   expect(clock.closest('[aria-live]')).toBeNull()
 })
 
-// C1: the dock is portalled to the phone frame so `bottom: 0` anchors to the FRAME, not
+// C1: the dock is portalled to the phone frame so its `bottom` anchors to the FRAME, not
 // to the scrolling content it used to sit inside (where it scrolled away with the list).
-test('portals into .phone-screen when present (GlassBox.tsx idiom)', () => {
+test('portals into .phone-screen when present', () => {
   document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"></div>')
   const { container } = render(<WorkoutDock {...idleProps()} />)
   expect(container).toBeEmptyDOMElement()
-  expect(document.querySelector('.wo-dock')?.closest('.phone-screen')).toBeTruthy()
+  expect(document.querySelector('.ex-dock')?.closest('.phone-screen')).toBeTruthy()
   document.querySelector('.phone-screen')!.remove()
 })
 
 test('unmounting removes the portalled dock from the frame', () => {
   document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"></div>')
   const { unmount } = render(<WorkoutDock {...idleProps()} />)
-  expect(document.querySelector('.wo-dock')).toBeTruthy()
+  expect(document.querySelector('.ex-dock')).toBeTruthy()
   unmount()
-  expect(document.querySelector('.wo-dock')).toBeNull()
+  expect(document.querySelector('.ex-dock')).toBeNull()
   document.querySelector('.phone-screen')!.remove()
 })
 
-// U4 (mezo-me75u.4): the dock is always-visible chrome like the BottomBar — one glass bar with NO
-// sheen (`.glass.is-still`, bible §7.2), and resting shows the 3D stopwatch inside the ring.
-test('the dock is one no-sheen glass bar; resting puts the 3D clock in the ring', () => {
+// Folyadék: the dock is the kit's floating foot (light, no glass, no sheen) — and the rest is a VESSEL, never a ring
+// or a clock glyph.
+test('the dock is the kit foot at the screen edge; no glass, no ring, no clock glyph in either state', () => {
   const { rerender } = render(<WorkoutDock {...idleProps()} />)
-  const dock = document.querySelector('.wo-dock')!
-  expect(dock).toHaveClass('glass', 'is-still')
-  expect(dock.querySelector('use[href="#t-clock"]')).toBeNull()
+  expect(dock()).toHaveClass('fo-foot', 'nonav')
+  expect(dock()).not.toHaveClass('glass')
   rerender(<WorkoutDock {...idleProps({ resting: true, remaining: 60, total: 90, exerciseName: 'Face Pull' })} />)
-  expect(document.querySelector('.wo-dock.is-resting use[href="#t-clock"]')).not.toBeNull()
+  expect(dock().querySelector('use[href="#t-clock"]')).toBeNull()
+  expect(dock().querySelector('svg circle')).toBeNull()
+  expect(dock().querySelector('.ex-rv')).toHaveAttribute('aria-hidden', 'true')
 })

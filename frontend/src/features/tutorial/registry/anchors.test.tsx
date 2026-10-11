@@ -85,15 +85,20 @@ test.each([
 })
 
 // D11 (epic-spec §2): az aktív edzés oldala chrome-mentes (AppLayout hideChrome),
-// tehát a fejléc „?" gombja itt nem létezik — a kártyalista fejlécének saját mini ?-e
-// nyitja újra a kalauzt (mezo-e1ii9: a prep-breadcrumbról költözött ide). Az AUTO-OPEN
+// tehát a fejléc „?" gombja itt nem létezik — a lap saját címsorának (a kit `TitleRow`-ja,
+// Folyadék F4, mezo-n4wf5.4) mini ?-e nyitja újra a kalauzt, a cím mellett. Az AUTO-OPEN
 // már nem él sehol a Train doméniumban (mezo-e1ii9 Task 6 kapuzta ki az egészet), tehát
 // ez a mini ? az EGYETLEN út a kalauzhoz ezen az útvonalon — nem egy második út.
-test('/train/session — a kártyalista fejlécében van mini ? gomb', async () => {
+test('/train/session — a lap saját címsorában, a horgonyon belül van a mini ? gomb', async () => {
   renderAt('/train/session')
   await waitFor(() =>
     expect(document.querySelector('[aria-label="Kalauz ehhez az oldalhoz"]')).not.toBeNull(),
   )
+  const mark = document.querySelector('[aria-label="Kalauz ehhez az oldalhoz"]') as HTMLElement
+  const anchor = mark.closest('[data-kalauz-anchor="session-start"]')
+  expect(anchor, 'a mini ? a session-start horgonyon (a címsoron) belül ül').not.toBeNull()
+  expect(anchor).toHaveClass('fo-ptop')
+  expect(mark).toHaveClass('fo-help')
 })
 
 // ── S3b (mezo-gb1s.6): a Fuel T2 aloldalak horgonyai ─────────────────────────

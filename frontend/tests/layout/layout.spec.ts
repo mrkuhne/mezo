@@ -261,10 +261,10 @@ test('címsor · kitapad, a magassága nem függ a görgetéstől, és a lap-chr
 
   const chromeFree = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
-    // A lap saját tapadó chrome-ja: a prep-morzsa `.sticky-top`-ja mezo-e1ii9 óta nincs
-    // (az edzés a kártyalistán nyílik), a kártyalista fejléce a `.wk-top`. Mindkettőt
-    // elfogadjuk, de a NULL-t nem: az üres találat vakon zöld tesztet jelentene.
-    const sticky = sc.querySelector('.sticky-top, .wk-top') as HTMLElement | null
+    // A lap saját tapadó chrome-ja a Folyadék óta (mezo-n4wf5.4) a kit címsora (`TitleRow`,
+    // `.fo-ptop.sticky-top`): az Eligazítás, a szettlista és a záró képernyők is ezt rajzolják.
+    // A NULL nem elfogadható: az üres találat vakon zöld tesztet jelentene.
+    const sticky = sc.querySelector('.fo-ptop.sticky-top') as HTMLElement | null
     return {
       hasHead: !!document.querySelector('.fo-top'),
       published: sc.style.getPropertyValue('--fo-top-h'),
@@ -275,7 +275,7 @@ test('címsor · kitapad, a magassága nem függ a görgetéstől, és a lap-chr
   })
   expect(chromeFree.hasHead, '/train/session nem renderel címsort').toBe(false)
   expect(chromeFree.published, 'címsor nélkül nincs közölt magasság').toBe('')
-  expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja létezik (.sticky-top vagy .wk-top)').not.toBeNull()
+  expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja létezik (a kit címsora: .fo-ptop.sticky-top)').not.toBeNull()
   expect(chromeFree.stickyTop, 'a lap tapadó chrome-ja tapad, üres sáv nélkül').toBe(0)
 })
 
@@ -830,10 +830,11 @@ test('Edzés Mai · the readiness card stays contained and its taps are reachabl
   await expect(page.getByRole('button', { name: 'Maradjon a terv' })).toBeVisible()
 })
 
-// Eligazítás (mezo-mgu2r): the briefing and the list after Indulás stay horizontally contained at
-// the narrowest phone, and the floating Indulás foot sits at the bottom of the frame, not above
-// the scroller's tab-bar padding (the first build's sticky foot floated ~130px up).
-test('train · the Eligazítás and the list after Indulás stay contained at 320px', async ({ page }) => {
+// Eligazítás (mezo-mgu2r; Folyadék: mezo-n4wf5.4): the briefing and the session page after Indulás stay
+// horizontally contained at the narrowest phone, and the floating Indulás foot (the kit page's `.fo-foot`)
+// sits at the bottom of the frame, not above the scroller's tab-bar padding (the first build's sticky foot
+// floated ~130px up).
+test('train · the Eligazítás and the session page after Indulás stay contained at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 })
   await page.goto('/train/session')
   await page.waitForLoadState('networkidle')
@@ -843,14 +844,15 @@ test('train · the Eligazítás and the list after Indulás stay contained at 32
 
   const brief = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
-    const foot = document.querySelector('.wbr-foot') as HTMLElement
+    const foot = document.querySelector('.ei-page > .fo-foot') as HTMLElement
     return { scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth, footGap: Math.round(innerHeight - foot.getBoundingClientRect().bottom) }
   })
   expect(brief.scrollWidth).toBeLessThanOrEqual(brief.clientWidth + 1)
   expect(brief.footGap).toBeLessThanOrEqual(40)
+  expect(brief.footGap).toBeGreaterThanOrEqual(0)
 
   await start.click()
-  await expect(page.locator('.wo-list')).toBeVisible()
+  await expect(page.locator('.ek-page')).toBeVisible()
   const list = await page.evaluate(() => {
     const sc = document.querySelector('.screen-content') as HTMLElement
     return { scrollWidth: sc.scrollWidth, clientWidth: sc.clientWidth }
@@ -858,15 +860,15 @@ test('train · the Eligazítás and the list after Indulás stay contained at 32
   expect(list.scrollWidth).toBeLessThanOrEqual(list.clientWidth + 1)
 })
 
-// Mid-workout swap / add (mezo-mobji): the picker, the „Csak ma / Mezociklusra is" sheet and the
-// list's add button stay inside the narrowest phone, and every option row is reachable.
+// Mid-workout swap / add (mezo-mobji): the picker, the „Csak ma / A tervben is" sheet and the
+// page's add tile stay inside the narrowest phone, and every option row is reachable.
 test('train · the exercise swap picker and scope sheet stay contained at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 })
   await page.goto('/train/session')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
   await page.getByRole('button', { name: /^Indulás/ }).click()
-  await expect(page.locator('.wo-list')).toBeVisible()
+  await expect(page.locator('.ek-page')).toBeVisible()
   const addBtn = page.getByRole('button', { name: 'Gyakorlat hozzáadása' })
   await addBtn.scrollIntoViewIfNeeded()
   const add = await addBtn.boundingBox()
@@ -883,10 +885,10 @@ test('train · the exercise swap picker and scope sheet stay contained at 320px'
   expect(await sheetFits()).toBe(true)
 
   await page.getByRole('group', { name: 'Hasonló gyakorlatok' }).getByText('T-Bar Row').click()
-  await expect(page.getByText('Mezociklusra is')).toBeVisible()
+  await expect(page.getByText('A tervben is')).toBeVisible()
   expect(await sheetFits()).toBe(true)
   await expect(page.getByRole('button', { name: /^Csak ma/ })).toBeInViewport()
-  await expect(page.getByRole('button', { name: /^Mezociklusra is/ })).toBeInViewport()
+  await expect(page.getByRole('button', { name: /^A tervben is/ })).toBeInViewport()
 })
 
 // ── Én · Hol tartok (mezo-lhqw7): the hub's strip, week hero, Életvonal and goal card at 320px ──

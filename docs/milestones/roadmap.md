@@ -55,13 +55,33 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-ju4j6` — **Boop visszaöltöztetés** | ✅ closed | Titanium visual rollback to Mozaik/Clay, functionality kept. See the milestone log (2026-09-20). |
 | `mezo-a9bo7` / `mezo-ui5by` — **Boop csapat-üzenőfal** | ✅ closed | Social wall + karakter-narratíva; `mezo-ui5by` a duplikátum. See the milestone log (2026-09-27). |
 | `mezo-ck2` — **Check-in 2.0** | ✅ shipped 2026-09-28 | 14-item check-in (5 core + time-of-day items + adaptive „A nap kérdése"), feeding chat, flags, patterns, detectors, life goals, meal coach, training readiness, Napom, ritual, rings. Follow-ups: `persistent_pain` lighten action, day-review reading the day rating. See the milestone log (2026-09-28). [`today.md`](../features/today.md), [`me.md`](../features/me.md). |
-| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ 3/9 slices | Light-only identity, structure-first pages, everything is a level that fills. F1 (foundation + frame + kit) done 2026-10-09; F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10; **F3 (Edzés — Mai, Terv, Terhelés, Gyakorlatok, Sport, Futás, both editors, the planner, the reports) done 2026-10-11**. Six slices left: F4 Edzés közben, F5 Fuel, F6 Én, F7 Mezo, F8 átfedők (overlays), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md). |
+| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ 4/9 slices | Light-only identity, structure-first pages, everything is a level that fills. F1 (foundation + frame + kit) done 2026-10-09; F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10; F3 (Edzés — Mai, Terv, Terhelés, Gyakorlatok, Sport, Futás, both editors, the planner, the reports) done 2026-10-11; **F4 (Edzés közben — Eligazítás, the session page and its sheets, both closing ceremonies, the review) done 2026-10-11**. Five slices left: F5 Fuel, F6 Én, F7 Mezo, F8 átfedők (overlays), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md). |
 | `mezo-me75u` — **Üvegesítés** | ✅ closed | Whole app onto the dark glass material (U1–U11). See the milestone log (2026-09-27). |
 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
 
+- **2026-10-11 — Folyadék F4 · Edzés közben — maga az edzés is az új arculatban (`mezo-n4wf5.4`).**
+  Átöltözött minden, amit edzés közben és utána látsz: az eligazítás (mennyi idő vár, mit vállalsz ma), a
+  szettek rögzítése, az összes hozzá tartozó lap, a két záró ünneplés (edzés és sport) és az edzés utáni
+  összegzés. **A legnagyobb változás az elrendezés:** nem egy hosszú kártyalistát görgetsz, hanem mindig
+  egy gyakorlat áll felül a szettjeivel, a többi alatta sorban vár — koppintasz egyre, és az kerül felülre.
+  Fent kis edények mutatják, melyik gyakorlatnál hol tartasz. Lent egy sáv mindig ott van: két szett
+  között a pihenő edénye ürül a visszaszámlálással, egyébként az elvégzett munka szintje áll benne a
+  Lezárás gombbal. A záráskor egy kehely telik meg annyira, amennyire a tervedet teljesítetted; ami
+  kicsordul belőle, az új rekord.
+  **A tulajdonos döntései:** a gyakorlat fejléce karcsú (a „Múlt hét / Mai cél" a Rekordok lapra került);
+  a további műveletek a sarokban, három pont mögött; a „Hogy ment?" három kérdésére edények felelnek,
+  amelyek annyira telnek, amennyit a válasz jelent; a „Technika" a gyakorlat saját videója (ahol nincs
+  videó, ott gomb sincs); sportnál a szerzett XP a záró képernyőn áll, és nem ugrik rá külön ablak.
+  **A szavak:** Küldetések (nem kihívások), Rekord-kísérlet, ism. (nem rep), „A tervben is" (nem
+  mezociklusra), célsávban / cél alatt / cél fölött.
+  A működés nem változott: ugyanúgy mentődnek a szettek, ugyanúgy indul a pihenő, ugyanúgy zárul az edzés.
+  A régi külső szabályai bizonyítottan használaton kívül kerültek ki a kódból (több mint ezer szabály).
+  **Ami még a régi külsőt viseli:** a diktáló gomb a jegyzetmezőkben és a szintlépés ablaka — ezek később
+  jönnek (F8). **Mi jön:** F5 · Fuel. [Stílus-biblia](../design_2.0/2026-10-09-folyadek-style-bible.md)
+  (F4 tanulságok), [eltérések a rajztól](../design_2.0/prototypes/vilagos/HANDOFF.md), [`train.md`](../features/train.md).
 - **2026-10-11 — Folyadék F3 · Edzés — az Edzés terület oldalai az új arculatban (`mezo-n4wf5.3`).**
   A második terület, amely átöltözött: a Mai, a Terhelés (az izomtérképpel, az izomjelekkel és a heti
   mozgással), a Terv (az edzésterv saját oldala, egy nap és a szerkesztője, a heti vizsgálat, egy izom

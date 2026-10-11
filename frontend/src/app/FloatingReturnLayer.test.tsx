@@ -57,6 +57,10 @@ test('an open workout adds the resume FAB with the done-set badge (skipped rows 
   renderAt('/nap', openToday)
   const fab = screen.getByRole('button', { name: 'Vissza az edzéshez' })
   expect(fab).toHaveTextContent('2')
+  // Folyadék (mezo-n4wf5.4): the shared return disc (the Edzés liquid + the dumbbell glyph), placed by this layer.
+  expect(fab).toHaveClass('ex-ret')
+  expect(fab.parentElement).toHaveClass('ek-retwrap')
+  expect(fab.querySelector('use')!.getAttribute('href')).toBe('#t-dumbbell')
   await userEvent.click(fab)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/session')
 })
@@ -75,6 +79,7 @@ test('the chat route shows a return bar while a workout is open', async () => {
   renderAt('/mezo/chat', openToday)
   expect(screen.queryByRole('button', { name: 'Beszélgetés a társsal' })).toBeNull()
   const bar = screen.getByRole('button', { name: /Vissza az edzéshez/ })
+  expect(bar).toHaveClass('ek-retbar')
   expect(bar).toHaveTextContent('Pull Day')
   expect(bar).toHaveTextContent('2 szett kész')
   await userEvent.click(bar)
@@ -89,4 +94,16 @@ test('the chat route renders nothing without an open workout', () => {
 test.each(['/me/sleep/night', '/ritual'])('the layer hides entirely on %s', (path) => {
   renderAt(path, openToday)
   expect(screen.queryByRole('button')).toBeNull()
+})
+
+test('an open workout with nothing logged yet shows the disc without a count', () => {
+  renderAt('/nap', { ...openToday, openWorkout: { ...openToday.openWorkout!, sets: [] } })
+  const fab = screen.getByRole('button', { name: 'Vissza az edzéshez' })
+  expect(fab.querySelector('b')).toBeNull()
+})
+
+// The old skin is gone from this layer: no glass, no `.float-*` hooks (their CSS is being retired).
+test('the layer carries no legacy float / glass classes', () => {
+  renderAt('/nap', openToday)
+  expect(document.querySelector('[class*="float-"], .glass')).toBeNull()
 })

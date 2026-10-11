@@ -76,7 +76,131 @@ button.ex-mus:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 
 .ex-medal small .ex-prev { display: block; }
 .ex-medal strong .fo-st { margin-left: 4px; vertical-align: 1px; }
 .ex-stars { display: inline-flex; gap: 2px; }
-.ex-stars .t-ico { width: 18px; height: 18px; }
+.ex-stars .t-ico { width: 18px; height: 18px; --ic2: var(--dom2); }   /* full liquid: at 18px a tinted star reads as an empty one */
+
+/* ══ F4 (mezo-n4wf5.4) — the in-workout flow's shared pieces. Ported in values from vilagos/edzes.js. ══ */
+
+/* small controls keep their look; an invisible centred extension makes the touch area at least 44 × 44 (kit rule) */
+.ex-ql, .ex-tool, button.ex-xl, .ex-pv > button, .ex-sets .vd, .ex-ret { position: relative; }
+.ex-ql::after, .ex-tool::after, button.ex-xl::after, .ex-pv > button::after, .ex-sets .vd::after { content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+.ex-qb:focus-visible, .ex-ql:focus-visible, .ex-tool:focus-visible, button.ex-xl:focus-visible, .ex-pv > button:focus-visible, .ex-sets .vd:focus-visible, .ex-sets .tk:focus-visible, .ex-sets .vin:focus-visible, .ex-ret:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* ── the quest pieces (`QuestCapsule`, `QuestTick`, `QuestType`, `QuestLine`, `QuestWhy`; edzes.js `.vs-qc`, `.vs-qb`, `.vs-qt`, `.vs-ql`, `.vs-why`) ── */
+.ex-qb { flex: 0 0 auto; display: grid; place-items: center; min-width: 44px; min-height: 46px; margin-left: -8px; padding: 0; border: 0; background: none; cursor: pointer; }
+.ex-qc { position: relative; box-sizing: border-box; flex: 0 0 auto; width: 28px; height: 46px; border-radius: 999px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .16); display: grid; place-items: end center; padding-bottom: 6px; }
+.ex-qc > i { position: absolute; left: 0; right: 0; bottom: 0; height: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.ex-qc.on { box-shadow: inset 0 0 0 2px var(--liq2); }
+.ex-qc.on > i { height: var(--p); }
+.ex-qc > svg { position: relative; width: 15px; height: 15px; color: #fff; opacity: 0; }
+.ex-qc.on > svg { opacity: 1; }
+/* still learning: no level, only the tick */
+.ex-qc.nl { box-shadow: none; border: 2px dashed rgba(10, 42, 60, .28); padding-bottom: 4px; }
+.ex-qc.nl > i { display: none; }
+.ex-qc.nl.on { border-color: var(--liq2); }
+.ex-qc.nl.on > svg { color: var(--liq2); }
+.ex-qt { display: inline-flex; align-items: center; gap: 5px; font-weight: 650; color: var(--fo-ink); vertical-align: middle; }
+.ex-ql { display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px; padding: 5px 10px 5px 5px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .07);
+  color: var(--fo-ink); font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: 1.3; text-align: left; cursor: pointer; }
+.ex-ql > .fo-bub { flex: 0 0 auto; }
+.ex-ql > span:not(.fo-bub) { flex: 1; min-width: 0; }
+.ex-ql > .chev { width: 16px; height: 16px; flex: 0 0 auto; color: var(--fo-faint); }
+.ex-ql s { color: var(--fo-faint); }
+.ex-why { margin: 0 0 12px 44px; padding: 11px 13px; border-radius: 18px; background: var(--fo-page); font-size: 12.5px; line-height: 1.45; color: var(--fo-sub); }
+.ex-why > p { margin: 0; }
+.ex-why > b { display: flex; gap: 7px; align-items: center; margin-top: 9px; color: var(--fo-ink); font-weight: 650; }
+
+/* ── the step against last week (`DeltaChip`; edzes.js `.vs-dchip`) ── */
+.ex-dchip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; font-style: normal; white-space: nowrap; vertical-align: 1px; color: var(--fo-sub); background: rgba(10, 42, 60, .06); }
+.ex-dchip.up { color: color-mix(in srgb, var(--fo-ok) 78%, var(--fo-ink)); background: color-mix(in srgb, var(--fo-ok) 13%, #fff); }
+.ex-dchip.down { color: color-mix(in srgb, var(--fo-warn) 70%, var(--fo-ink)); background: color-mix(in srgb, var(--fo-warn) 15%, #fff); }
+
+/* ── the small vessels on top of the session (`ProgressVessels`; edzes.js `.vs-pv`) ── */
+.ex-pv { display: flex; gap: 8px; margin: 16px 18px 2px; }
+.ex-pv > button { --c: var(--dom); display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.ex-pv > button > span { position: relative; display: block; height: 14px; border-radius: 999px; overflow: hidden; background: rgba(10, 42, 60, .09); box-shadow: inset 0 1px 2px rgba(10, 42, 60, .10); }
+.ex-pv > button > span > i { position: absolute; left: 0; top: 0; bottom: 0; width: var(--pw, 0%); border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, #fff), var(--c)); }
+.ex-pv > button > small { font-size: 10.5px; font-weight: 700; color: var(--fo-sub); text-align: center; white-space: nowrap; }
+.ex-pv > button.on > span { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--dom); }
+.ex-pv > button.on > small { color: var(--fo-ink); }
+.ex-pv > button.off { opacity: .45; }
+
+/* ── the hero's tools, cells and lines (`ToolRow`, `ToolBtn`, `Cells`, `Cell`, `InfoLine`; edzes.js `.vs-tools`, `.vs-tg`, `.vs-xl`) ── */
+.ex-tools { display: flex; gap: 8px; flex-wrap: wrap; margin: 2px 0 12px; }
+.ex-tool { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 5px; border: 0; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .08);
+  color: var(--fo-ink); font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal; cursor: pointer; }
+.ex-tg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.ex-tg > span { display: block; min-width: 0; padding: 10px 12px; border-radius: 18px; background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .07); }
+.ex-tg > span:only-child { grid-column: 1 / -1; }
+.ex-tg > span > small { display: block; font-size: 11.5px; font-weight: 650; color: var(--fo-sub); }
+.ex-tg > span > b { display: block; font-family: var(--ff-display); font-size: 16px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; }
+.ex-tg > span.t { background: #fff; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--dom) 45%, #fff); }
+.ex-tg > span > .ex-dchip { margin-top: 4px; }
+.ex-xl { display: flex; gap: 8px; align-items: center; margin: 8px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--fo-sub); }
+.ex-xl > span:not(.fo-bub) { flex: 1; min-width: 0; }
+button.ex-xl { width: 100%; padding: 0; border: 0; background: none; font-family: var(--ff-body); text-align: left; cursor: pointer; }
+
+/* ── the set grid (`SetGrid`; edzes.js `.vs-sets`, `.vs-side`, `.vs-adj`) ── a row is `display: contents`, so every cell sits on the one grid */
+.ex-sets { --c: var(--dom); display: grid; grid-template-columns: 26px 1fr 1fr 1fr 44px; gap: 8px; align-items: center; margin-top: 14px; padding: 12px; border-radius: 22px; background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .07); font-variant-numeric: tabular-nums; }
+.ex-sets > .r { display: contents; }
+.ex-sets > .h { font-size: 11px; font-weight: 650; color: var(--fo-sub); text-align: center; }
+.ex-sets .n { justify-self: center; width: 24px; height: 40px; border-radius: 999px; display: grid; place-items: center; font-family: var(--ff-display); font-size: 12.5px; font-weight: 700; color: var(--fo-sub); background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .16); }
+.ex-sets .n.f { color: #fff; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 50%, #fff), var(--c)); box-shadow: 0 6px 8px -6px var(--c); }
+.ex-sets .n.h { color: var(--fo-ink); background: linear-gradient(180deg, #fff 0 50%, color-mix(in srgb, var(--c) 45%, #fff) 50%); box-shadow: inset 0 0 0 2px var(--c); }
+.ex-sets .v { text-align: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700; padding: 9px 0; border-radius: 14px; min-width: 0; }
+.ex-sets .v.d { background: color-mix(in srgb, var(--fo-ok) 10%, #fff); }
+.ex-sets .v.u { color: var(--fo-faint); background: var(--fo-page); }
+.ex-sets .vin { box-sizing: border-box; width: 100%; min-width: 0; text-align: center; font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--fo-ink); padding: 7px 0; border-radius: 14px; border: 2px solid var(--dom); background: #fff; -moz-appearance: textfield; appearance: textfield; }
+.ex-sets .vin:disabled { opacity: .45; border-style: dashed; }
+.ex-sets .tk { width: 44px; height: 42px; padding: 0; border: 0; border-radius: 999px; display: grid; place-items: center; color: #fff; cursor: pointer; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 10px 16px -10px var(--dom); }
+.ex-sets .tk > svg { width: 22px; height: 22px; }
+.ex-sets .tk:disabled { opacity: .35; box-shadow: none; cursor: default; }
+.ex-sets .vd { width: 44px; height: 40px; padding: 0; border: 0; background: none; display: grid; place-items: center; cursor: pointer; }
+.ex-sets .vd:disabled { cursor: default; }
+.ex-sets .vd.busy { opacity: .4; }
+.ex-side { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.ex-side > small { font-size: 12px; font-weight: 650; color: var(--fo-sub); margin-right: 2px; }
+.ex-adj { margin: 10px 2px 0; font-size: 12.5px; color: var(--fo-sub); }
+
+/* ── what the verdict marks mean (`VerdictLegend`; edzes.js `.vs-leg`) ── */
+.ex-leg { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 12px; font-size: 12.5px; font-weight: 600; }
+.ex-leg > span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ── the floating bar of the session (`SessionDock`; edzes.js `dock`, `.vs-rest`, `.vs-rv`) ── the kit foot's look, pinned to the phone frame (it is portalled) */
+.fo-foot.ex-dock { position: absolute; left: 10px; right: 10px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); margin: 0; }
+.ex-dock .fo-btn:disabled { opacity: .4; box-shadow: none; cursor: default; }
+.ex-rest { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.ex-rest > .g { min-width: 0; }
+.ex-rest strong { display: block; font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.6px; line-height: 1; font-variant-numeric: tabular-nums; }
+.ex-rest small { display: block; font-size: 11.5px; color: var(--fo-sub); margin-top: 2px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-rest.idle > .g { flex: 1; }
+.ex-rest.idle strong { font-size: 19px; letter-spacing: -.4px; margin-top: 2px; }
+.ex-rest.idle small { margin-top: 0; }
+.ex-rest.idle .fo-wlv { display: block; margin-top: 7px; }
+/* the rest is water whatever the domain: it drains with the countdown */
+.ex-rv { position: relative; flex: 0 0 auto; width: 34px; height: 50px; border-radius: 13px 13px 17px 17px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .12); }
+.ex-rv > i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, #19C7C0, #1877F2); }
+
+/* ── the record toast (`RecordToast`; edzes.js `.vs-mtw`, `.vs-mtoast`) ── sticky under the title bar, takes no room.
+   Its tier is the app's toast tier (styles/prototype.css `.toast-solo`, 300): ABOVE an open sheet (200 / 211) — a record on
+   an exercise's last set shows while the debrief is open. The page scroller is no stacking context, so the number competes
+   in the phone frame; nothing between the toast and the frame may become one (no transform / isolation on the page root). */
+.ex-mtw { position: sticky; top: calc(var(--fo-top-h, 0px) + 10px); height: 0; z-index: 300; }
+.ex-mtoast { position: absolute; left: 12px; right: 12px; top: 0; display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 24px; background: #fff; box-shadow: 0 20px 34px -18px rgba(233, 137, 43, .75), inset 0 0 0 2px color-mix(in srgb, var(--fo-gold) 50%, #fff); }
+.ex-mtoast > div { min-width: 0; }
+.ex-mtoast small { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .2px; color: color-mix(in srgb, var(--fo-gold) 62%, var(--fo-ink)); }
+.ex-mtoast strong { display: block; font-family: var(--ff-display); font-size: 21px; font-weight: 800; letter-spacing: -.5px; line-height: 1.15; }
+.ex-mtoast span:not(.fo-bub) { display: block; font-size: 12px; color: var(--fo-sub); line-height: 1.35; }
+
+/* ── the way back into a running workout (`ReturnFab`; edzes.js `.vs-ret`) ── only the disc; the floating layer places it */
+.ex-ret { width: 54px; height: 54px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 16px 24px -12px var(--liq2), 0 4px 8px -4px rgba(10, 42, 60, .3), inset 0 0 0 1.5px rgba(255, 255, 255, .35); }
+.ex-ret > .t-ico { width: 30px; height: 30px; --ic: #fff; --ic2: rgba(255, 255, 255, .45); --icf: transparent; }
+.ex-ret > b { position: absolute; right: -3px; top: -3px; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; display: grid; place-items: center; background: #fff; color: var(--fo-ink); font-size: 12px; font-weight: 800; box-shadow: 0 4px 8px -4px rgba(10, 42, 60, .4), inset 0 0 0 1.5px var(--liq2); }
+
+/* ── the closing screens (`KcalBowl`, `MuscleStarRow`; edzes.js `kcalBowl`, `.vs-bowl`, `.vs-mt`) ── */
+.ex-bowl { display: block; width: 92px; height: auto; flex: 0 0 auto; }
+.ex-bowl .a { fill: var(--fo-gold); }
+.ex-bowl .b { fill: color-mix(in srgb, #149E6E 50%, #fff); }
+.ex-mstar > .ex-stars { flex: 0 0 auto; }
 
 @media (max-width: 360px) {
   .ex-hb { --w: 78px; }
@@ -86,7 +210,16 @@ button.ex-mus:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 
   .ex-duo.sm .ex-body { --w: 38px; }
   .ex-mus .fo-level, .ex-mus .fo-split { width: 54px; }
   .fo-tube-nd .ex-mchp { --s: 24px; }
+  .ex-sets { gap: 6px; padding: 10px; }
+  .ex-sets .vin { font-size: 16px; }
+  .ex-sets .v { font-size: 16px; }
+  .ex-mstar > .ex-stars .t-ico { width: 14px; height: 14px; }
+  .ex-pv { gap: 6px; margin-left: 14px; margin-right: 14px; }
+  /* the dock at 320: the timer and its two buttons fit, the rest label goes (edzes.js `.vs-rest small{display:none}`);
+     the idle face keeps its label — it has the room */
+  .ex-dock.is-resting .ex-rest small { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .ex-sw::after { transition: left .2s; }
+  .ex-rv > i { transition: height 1s linear; }
 }

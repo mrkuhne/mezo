@@ -3,10 +3,6 @@
 
 /* ── page frame ── */
 .es-spg button:focus-visible, .es-pyr button:focus-visible, .es-wks .pm:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
-/* the title row of the chrome-free log flow (`/train/sport/log`): the title bar's sub-page row, drawn by the page */
-.es-top { padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; color: var(--fo-ink); font-family: var(--ff-body); }
-
-.es-top .fo-ib::after { content: ''; position: absolute; inset: -1px; }
 
 
 /* ── list blocks inside a card or a sheet ── */

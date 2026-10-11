@@ -53,17 +53,21 @@ export function Slider({ value, min = 1, max = 10, step = 1, onChange, unit, cla
   )
 }
 
-export interface PairItem { icon: Icon3DName; label: ReactNode; small?: ReactNode; onClick?: () => void; to?: string; ariaLabel?: string }
+export interface PairItem { icon: Icon3DName; label: ReactNode; small?: ReactNode; onClick?: () => void; to?: string; ariaLabel?: string
+  /** Switches a button tile off (dimmed, not clickable). A link tile has no such state. */
+  disabled?: boolean
+  /** `data-*` for the tile (a state the page's tests or styles read). */
+  data?: Record<`data-${string}`, string> }
 
-/** Two big tiles side by side: bubble icon, a small caption, the label. A tile with `to` is a link. */
+/** Two big tiles side by side: bubble icon, a small caption, the label. A tile with `to` is a link; a button tile may be `disabled`. */
 export function Pair(p: { items: PairItem[]; className?: string }) {
   return (
     <div className={cx('fo-pair', p.className)}>
       {p.items.map((it, i) => {
         const inner = <><Bub icon={it.icon} size={44} />{it.small != null && <small>{it.small}</small>}{it.label}</>
         return it.to != null
-          ? <Link key={i} to={it.to} onClick={it.onClick} aria-label={it.ariaLabel}>{inner}</Link>
-          : <button key={i} type="button" onClick={it.onClick} aria-label={it.ariaLabel}>{inner}</button>
+          ? <Link key={i} to={it.to} onClick={it.onClick} aria-label={it.ariaLabel} {...it.data}>{inner}</Link>
+          : <button key={i} type="button" onClick={it.onClick} aria-label={it.ariaLabel} disabled={it.disabled} {...it.data}>{inner}</button>
       })}
     </div>
   )

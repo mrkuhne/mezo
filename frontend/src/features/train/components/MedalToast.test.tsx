@@ -11,9 +11,12 @@ const weightMedal: Medal = {
 }
 
 describe('MedalToast', () => {
-  it('renders the eyebrow, the achieving set and the previous value + date', () => {
+  it('renders the eyebrow, the achieving set and the previous value + date — as a status in the light record toast', () => {
     render(<MedalToast medal={weightMedal} />)
-    expect(screen.getByText('ÚJ REKORD · SÚLY')).toBeInTheDocument()
+    const toast = screen.getByRole('status')
+    expect(toast).toHaveClass('ex-mtoast')
+    expect(toast.querySelector('use')!.getAttribute('href')).toBe('#t-record')
+    expect(screen.getByText('Új rekord · súly')).toBeInTheDocument()
     expect(screen.getByText('102,5 kg × 8')).toBeInTheDocument()
     expect(screen.getByText(/Eddigi legjobbad 97,5 kg volt/)).toBeInTheDocument()
     expect(screen.getByText(/Jún 8 óta állt/)).toBeInTheDocument()
@@ -45,8 +48,24 @@ describe('MedalToast', () => {
       previousValue: 10, previousDate: '2026-06-15',
     }
     render(<MedalToast medal={repsMedal} />)
-    expect(screen.getByText('ÚJ REKORD · REP')).toBeInTheDocument()
+    expect(screen.getByText('Új rekord · ismétlés')).toBeInTheDocument()
     expect(screen.getByText('74,5 kg × 12')).toBeInTheDocument()
-    expect(screen.getByText(/Eddigi legjobbad 10 rep volt/)).toBeInTheDocument()
+    expect(screen.getByText(/Eddigi legjobbad 10 ism\. volt/)).toBeInTheDocument()
+  })
+
+  it.each([
+    ['E1RM', 'Új rekord · 1RM'],
+    ['SESSION_VOLUME', 'Új rekord · volumen'],
+  ] as const)('a %s record reads „%s" and shows its derived value', (type, eyebrow) => {
+    render(<MedalToast medal={{ ...weightMedal, type, value: 136.7, previousValue: 133.3 }} />)
+    expect(screen.getByText(eyebrow)).toBeInTheDocument()
+    expect(screen.getByText('136,7 kg')).toBeInTheDocument()
+    expect(screen.getByText(/Eddigi legjobbad 133,3 kg volt/)).toBeInTheDocument()
+  })
+
+  it('a first-ever record (no previous value) shows no „eddigi legjobbad" line at all', () => {
+    render(<MedalToast medal={{ ...weightMedal, previousValue: null, previousDate: null }} extraCount={1} />)
+    expect(screen.getByText('102,5 kg × 8')).toBeInTheDocument()
+    expect(screen.queryByText(/Eddigi legjobbad/)).not.toBeInTheDocument()
   })
 })

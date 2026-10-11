@@ -2,11 +2,12 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Challenge, LoggedWorkoutExercise } from '@/data/types'
 import { ChallengeDetailGlass, WorkoutMenuGlass, WorkoutVideoGlass, noteHint } from '@/features/train/components/WorkoutMenuGlass'
+import { challengeTypeLabel } from '@/features/train/logic/challengeDisplay'
 
-// WorkoutMenuGlass (mezo-88iwa.7, T6 Task 4) — the per-card ⋮ menu, GlassBox-hosted.
-// Ports the prototype's `menuGlass` (session.js:101-126) row-for-row: Videó (only with
-// a demo url) · Jegyzet · Szett hozzáadása · Szett elvétele · Előrébb · Hátrébb ·
-// Gyakorlat kihagyása / Visszavesszük.
+// WorkoutMenuGlass — the exercise's menu of the active workout. Since Folyadék F4 (mezo-n4wf5.4) a light sheet
+// (prototype vilagos/edzes.js `menu`): Videó (only with a demo url) · Jegyzet · Szett hozzáadása · Szett elvétele ·
+// Előrébb · Hátrébb · Gyakorlat cseréje (only with onSwap) · Gyakorlat kihagyása / Visszavesszük, under the
+// exercise's sets drawn as capsules.
 
 const EX: LoggedWorkoutExercise = {
   id: 'e-1', name: 'Chest Supported Row', warmupSets: 2, workingSets: 3,
@@ -107,7 +108,7 @@ test('tapping Gyakorlat kihagyása fires onToggleSkip and closes the glass', asy
 
 test('Szett hozzáadása\'s hint carries the current slot count', () => {
   render(<WorkoutMenuGlass {...baseProps()} slotCount={5} />)
-  expect(screen.getByText('Most 5 szett van')).toBeInTheDocument()
+  expect(screen.getByText('most 5 szett van')).toBeInTheDocument()
 })
 
 test('Szett hozzáadása is disabled once the exercise is skipped', () => {
@@ -116,27 +117,88 @@ test('Szett hozzáadása is disabled once the exercise is skipped', () => {
 })
 
 test('the note hint toggles between the first-note and the edit copy', () => {
-  expect(noteHint(false)).toBe('Ami a következő alkalomra számít')
-  expect(noteHint(true)).toBe('Megírt jegyzet szerkesztése')
+  expect(noteHint(false)).toBe('ami a következő alkalomra számít')
+  expect(noteHint(true)).toBe('a megírt jegyzet szerkesztése')
 })
 
 test('Jegyzet fires onEditNote and closes the glass', async () => {
   const user = userEvent.setup()
   const props = baseProps()
   render(<WorkoutMenuGlass {...props} hasNote />)
-  expect(screen.getByText('Megírt jegyzet szerkesztése')).toBeInTheDocument()
+  expect(screen.getByText('a megírt jegyzet szerkesztése')).toBeInTheDocument()
   await user.click(screen.getByText('Jegyzet'))
   expect(props.onEditNote).toHaveBeenCalledOnce()
   expect(props.onClose).toHaveBeenCalledOnce()
 })
 
-test('the label + tint reach the underlying GlassBox dialog', () => {
-  render(<WorkoutMenuGlass {...baseProps()} />)
+test('it is a light sheet named after the exercise, with the context line, the muscle and the set count', () => {
+  render(<WorkoutMenuGlass {...baseProps()} exercise={{ ...EX, muscle: 'back-mid' }} />)
   const dialog = screen.getByRole('dialog', { name: 'Chest Supported Row' })
-  expect(within(dialog).getByText('Chest Supported Row')).toBeInTheDocument()
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(within(dialog).getByRole('heading', { name: 'Chest Supported Row' })).toBeInTheDocument()
+  expect(within(dialog).getByText('Gyakorlat')).toBeInTheDocument()
+  expect(within(dialog).getByText(/^5 szett · /)).toBeInTheDocument()
+  // no dressing of the retired glass skin
+  expect(dialog.querySelector('[class*="wo-"], [class*="wos-"], [class*="gl-"]')).toBeNull()
 })
 
-// ---- WorkoutVideoGlass — the minimal `.wo-video-frame` embed ----
+test('the sets stand as capsules: the logged ones full, the next one half, and the line says how many are done', () => {
+  render(<WorkoutMenuGlass {...baseProps()} slotCount={4} loggedCount={2} />)
+  const caps = document.querySelector('.fo-shg .fo-caps') as HTMLElement
+  expect(caps.querySelectorAll('i')).toHaveLength(4)
+  expect(caps.querySelectorAll('i.f')).toHaveLength(2)
+  expect(caps.querySelectorAll('i.h')).toHaveLength(1)
+  expect(screen.getByText('2 / 4 szett kész')).toBeInTheDocument()
+})
+
+test('a skipped exercise: the line reads kihagyva and no capsule is the current one', () => {
+  render(<WorkoutMenuGlass {...baseProps()} slotCount={4} loggedCount={1} skipped />)
+  expect(screen.getByText('kihagyva')).toBeInTheDocument()
+  expect(document.querySelectorAll('.fo-shg .fo-caps i.h')).toHaveLength(0)
+})
+
+test('Gyakorlat cseréje is offered only with onSwap; its hint names the sets that stay', async () => {
+  const user = userEvent.setup()
+  const props = baseProps()
+  const onSwap = vi.fn()
+  const { rerender } = render(<WorkoutMenuGlass {...props} />)
+  expect(screen.queryByText('Gyakorlat cseréje')).not.toBeInTheDocument()
+  rerender(<WorkoutMenuGlass {...props} onSwap={onSwap} />)
+  expect(screen.getByText('hasonlóra vagy bármi másra')).toBeInTheDocument()
+  rerender(<WorkoutMenuGlass {...props} onSwap={onSwap} loggedCount={2} />)
+  expect(screen.getByText('a 2 kész szett itt marad, a többi az újé')).toBeInTheDocument()
+  await user.click(screen.getByText('Gyakorlat cseréje'))
+  expect(onSwap).toHaveBeenCalledOnce()
+  expect(props.onClose).toHaveBeenCalledOnce()
+})
+
+test('Szett hozzáadása / elvétele fire their handlers and close', async () => {
+  const user = userEvent.setup()
+  const props = baseProps()
+  render(<WorkoutMenuGlass {...props} />)
+  await user.click(screen.getByText('Szett hozzáadása'))
+  expect(props.onAddSet).toHaveBeenCalledOnce()
+  await user.click(screen.getByText('Szett elvétele'))
+  expect(props.onRemoveSet).toHaveBeenCalledOnce()
+  expect(props.onClose).toHaveBeenCalledTimes(2)
+})
+
+test('closed: renders nothing', () => {
+  const { container } = render(<WorkoutMenuGlass {...baseProps()} open={false} />)
+  expect(container).toBeEmptyDOMElement()
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('the skip row wears the danger tone, the take-back row does not', () => {
+  const { rerender } = render(<WorkoutMenuGlass {...baseProps()} />)
+  expect(screen.getByText('Gyakorlat kihagyása').closest('button')).toHaveClass('bad')
+  expect(screen.getByText('a már naplózott szettjeid megmaradnak')).toBeInTheDocument()
+  rerender(<WorkoutMenuGlass {...baseProps()} skipped />)
+  expect(screen.getByText('Visszavesszük').closest('button')).not.toHaveClass('bad')
+  expect(screen.getByText('újra bekerül a mai munkába')).toBeInTheDocument()
+})
+
+// ---- WorkoutVideoGlass — the video sheet: the embed in its frame, or the empty state ----
 
 test('renders nothing when closed', () => {
   const { container } = render(
@@ -145,7 +207,7 @@ test('renders nothing when closed', () => {
   expect(container).toBeEmptyDOMElement()
 })
 
-test('embeds a recognized YouTube demo url inside .wo-video-frame', () => {
+test('embeds a recognized YouTube demo url inside the frame', () => {
   render(
     <WorkoutVideoGlass
       open
@@ -154,7 +216,8 @@ test('embeds a recognized YouTube demo url inside .wo-video-frame', () => {
       onClose={() => {}}
     />,
   )
-  const frame = document.querySelector('.wo-video-frame') as HTMLElement
+  expect(screen.getByRole('dialog', { name: 'Chest Supported Row · videó' })).toHaveClass('fo-sheet')
+  const frame = document.querySelector('.el-vid') as HTMLElement
   expect(frame).not.toBeNull()
   const iframe = within(frame).getByTitle('Demo videó') as HTMLIFrameElement
   expect(iframe.src).toContain('youtube-nocookie.com/embed/dQw4w9WgXcQ')
@@ -162,7 +225,7 @@ test('embeds a recognized YouTube demo url inside .wo-video-frame', () => {
 
 test('no demo url -> the frame renders the empty-state copy, not an iframe', () => {
   render(<WorkoutVideoGlass open exercise={EX} tint="#fff" onClose={() => {}} />)
-  const frame = document.querySelector('.wo-video-frame') as HTMLElement
+  const frame = document.querySelector('.el-vid') as HTMLElement
   expect(within(frame).queryByTitle('Demo videó')).not.toBeInTheDocument()
   expect(within(frame).getByText('Nincs elérhető videó')).toBeInTheDocument()
 })
@@ -173,7 +236,7 @@ test('the menu carries no Küldetések row any more', () => {
   expect(screen.queryByText('Küldetések')).not.toBeInTheDocument()
 })
 
-// ── ChallengeDetailGlass · a card badge's glass: release / take back (mezo-mgu2r) ──
+// ── ChallengeDetailGlass · the quest's sheet: release / take back (mezo-mgu2r) ──
 const CHALLENGE: Challenge = {
   id: 'c1', type: 'PR', typeLabel: 'PR-attempt', exerciseId: 'e-1', exercise: 'Chest Supported Row',
   target: '107.5 kg × 8', confidence: 0.72, risk: 'low', why: 'jó formában vagy', refs: [], glory: 'új csúcs',
@@ -187,9 +250,16 @@ test('detail glass · an accepted challenge reads its target and offers Elengede
   const user = userEvent.setup()
   const p = detailProps()
   render(<ChallengeDetailGlass {...p} />)
-  expect(screen.getByRole('dialog', { name: 'PR-kísérlet küldetés' })).toBeInTheDocument()
-  expect(screen.getByText('107,5 kg')).toBeInTheDocument()
+  const dialog = screen.getByRole('dialog', { name: `${challengeTypeLabel(CHALLENGE.typeLabel)} küldetés` })
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(within(dialog).getByText('Küldetés · vállalva')).toBeInTheDocument()
+  expect(within(dialog).getByText('Chest Supported Row')).toBeInTheDocument()
+  expect(screen.getByText('107,5 kg × 8')).toBeInTheDocument()
   expect(screen.getByText('72% biztos · alacsony kockázat')).toBeInTheDocument()
+  // how sure it is, as a level
+  expect((dialog.querySelector('.fo-level > i') as HTMLElement).style.width).toBe('72%')
+  expect(screen.getByText('jó formában vagy')).toBeInTheDocument()
+  expect(screen.getByText(/Büntetés nélkül/)).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Elengedem' }))
   expect(p.onToggle).toHaveBeenCalledTimes(1)
   expect(p.onClose).toHaveBeenCalled()
@@ -199,6 +269,8 @@ test('detail glass · a released challenge offers Visszaveszem', () => {
   render(<ChallengeDetailGlass {...detailProps({ state: 'released' })} />)
   expect(screen.getByRole('button', { name: 'Visszaveszem' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Elengedem' })).not.toBeInTheDocument()
+  expect(screen.getByText('Küldetés · elengedve')).toBeInTheDocument()
+  expect(screen.getByText(/Most nem számít bele a zárásba/)).toBeInTheDocument()
 })
 
 test('detail glass · a resolved challenge shows its outcome and no action', () => {
@@ -206,4 +278,29 @@ test('detail glass · a resolved challenge shows its outcome and no action', () 
   expect(screen.getByText('108 × 8 lett')).toBeInTheDocument()
   expect(screen.getByText('Teljesült.')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Elengedem|Visszaveszem/ })).not.toBeInTheDocument()
+})
+
+test.each([
+  ['miss' as const, 'Most nem jött össze — semmi gond.'],
+  ['inconclusive' as const, 'Ebből nem tudtuk eldönteni.'],
+])('detail glass · a %s quest reads its outcome line and offers no action', (state, line) => {
+  render(<ChallengeDetailGlass {...detailProps({ state })} />)
+  expect(screen.getByText(line)).toBeInTheDocument()
+  expect(screen.getByText('Küldetés')).toBeInTheDocument()
+  // no recorded outcome text -> the reasoning stays
+  expect(screen.getByText('jó formában vagy')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Elengedem|Visszaveszem/ })).not.toBeInTheDocument()
+})
+
+test('detail glass · a quest still being learned has no level, and a free-text target keeps its pieces', () => {
+  render(<ChallengeDetailGlass {...detailProps({ challenge: { ...CHALLENGE, confidence: null, target: 'Utolsó szet RIR 0-ig' } })} />)
+  expect(document.querySelector('.fo-level')).toBeNull()
+  expect(screen.getByText('RIR 0 · utolsó szett')).toBeInTheDocument()
+})
+
+test('detail glass · closed or without a quest renders nothing', () => {
+  const { container, rerender } = render(<ChallengeDetailGlass {...detailProps({ open: false })} />)
+  expect(container).toBeEmptyDOMElement()
+  rerender(<ChallengeDetailGlass {...detailProps({ challenge: null })} />)
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 })

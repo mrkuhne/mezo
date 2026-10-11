@@ -1,18 +1,19 @@
 // ============================================================
 // Mezo · SetEditSheet — edit or delete ONE set of the active workout (mezo-l3on).
-// Opened by tapping a row of the active-workout set list. Reuses the logging
-// surface's own inputs (SetStepper + the RIR/Side pill rows) so the app has a
-// single input language for a set; the destructive action removes the SLOT too
+// Opened by tapping a row of the active-workout set list. The destructive action removes the SLOT too
 // (spec D2), floored at one slot per exercise (spec D4).
-// Üvegesítés U4 (mezo-me75u.4): a floating coral glass sheet (bible rule 15) — the muscle in a
-// lit well beside the title, flat steppers / RIR pills, a lit flat "Mentés" pill carrying the 3D
-// tick (the old "Mentés ✓" glyph retired). Skin: `.wos-sheet` in the `uveg edzes session` block.
+//
+// Folyadék F4 (mezo-n4wf5.4, area C): a light sheet built to the prototype's `set` sheet
+// (docs/design_2.0/prototypes/vilagos/edzes.js): the muscle chip beside the title, Súly / Ismétlés as stepper
+// rows, RIR 0–5 as pills, the side on an isolation exercise (Bal / Mindkettő / Jobb — values stay L / B / R),
+// the set's note, „Mentés" + „Mégse", and „Szett törlése" as the danger link. A slot that is not logged yet
+// („pending") shows its targets dimmed and read-only, with delete only.
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon3D } from '@/shared/ui/clay'
+import { Acts, FoSheetHead, Input, Lab, Lk, Note, Pill, Pills, SheetActs } from '@/shared/ui/folyadek'
+import { Mchp, SidePicker } from '@/features/train/components/folyadek'
 import { SetStepper } from '@/features/train/components/SetStepper'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { RIR_VALUES } from '@/features/train/logic/rir'
 import type { SetSide } from '@/features/train/logic/workoutState'
 
@@ -26,7 +27,7 @@ export interface SetEditValues {
 
 interface SetEditSheetProps {
   exerciseName: string
-  /** "1. working szett" / "B1 bemelegítő szett" — the row's own label. */
+  /** „1. szett" — the row's own label. */
   setLabel: string
   /** 'pending' = the slot has no logged set yet: targets shown, read-only, delete only. */
   mode: 'logged' | 'pending'
@@ -34,7 +35,7 @@ interface SetEditSheetProps {
   exerciseType: 'compound' | 'isolation' | 'plyo'
   initial: SetEditValues
   canDelete: boolean
-  /** The exercise's muscle token — drawn in the header's lit well (visual only). */
+  /** The exercise's muscle token — the chip in the head (visual only). */
   muscle?: string
   onSave: (v: SetEditValues) => void
   onDelete: () => void
@@ -52,81 +53,54 @@ export function SetEditSheet({
   const readOnly = mode === 'pending'
 
   return (
-    <Sheet onClose={onClose} labelledBy="set-edit-title" className="glass wos-sheet">
+    <Sheet onClose={onClose} labelledBy="set-edit-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
-          <div className="wos-sheet-head">
-            {muscle && <span className="wos-sheet-art"><MuscleChip token={muscle} size={48} /></span>}
-            <span className="wos-sheet-title">
-              <span className="wos-sheet-eb">{setLabel}</span>
-              <h3 id="set-edit-title">{exerciseName}</h3>
-            </span>
-          </div>
+          <FoSheetHead
+            eyebrow={`${setLabel} · ${exerciseName}`} titleId="set-edit-title" onClose={close}
+            title={readOnly ? 'Még nincs naplózva' : 'Szett szerkesztése'}
+            sub={readOnly ? 'A cél áll itt — naplózni a gyakorlat soránál tudod.' : undefined}
+            left={muscle ? <Mchp muscle={muscle} /> : undefined}
+          />
 
-          <div className="steprow">
-            {exerciseType !== 'plyo' && (
-              <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999}
-                disabled={readOnly} onChange={setWeight} />
+          <div className={readOnly ? 'el-set is-ro' : 'el-set'}>
+            <div className="el-ls">
+              {exerciseType !== 'plyo' && (
+                <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999} disabled={readOnly} onChange={setWeight} />
+              )}
+              <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} disabled={readOnly} onChange={setReps} />
+            </div>
+
+            {kind !== 'warmup' && (
+              <>
+                <Lab id="set-edit-rir">RIR</Lab>
+                <Pills role="group" aria-labelledby="set-edit-rir">
+                  {RIR_VALUES.map((n) => (
+                    <Pill key={n} on={rir === n} disabled={readOnly} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>{n}</Pill>
+                  ))}
+                </Pills>
+              </>
             )}
-            <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100}
-              disabled={readOnly} onChange={setReps} />
+
+            {exerciseType === 'isolation' && <SidePicker className="el-side" value={side} onChange={setSide} disabled={readOnly} />}
           </div>
 
-          {kind !== 'warmup' && (
-            <div className="rirrow">
-              <span className="rk">RIR</span>
-              {RIR_VALUES.map((n) => (
-                <button key={n} type="button" disabled={readOnly} aria-pressed={rir === n}
-                  aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
-                  {n}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {exerciseType === 'isolation' && (
-            <div className="rirrow">
-              <span className="rk">Side</span>
-              {(['L', 'B', 'R'] as const).map((s) => (
-                <button key={s} type="button" disabled={readOnly} aria-pressed={side === s}
-                  onClick={() => setSide(side === s ? null : s)}>
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-
           {!readOnly && (
-            <input
-              className="setnote"
-              aria-label="Szett megjegyzés"
-              placeholder="Megjegyzés ehhez a szetthez (opcionális)"
-              maxLength={500}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
+            <>
+              <Lab htmlFor="set-edit-note">Megjegyzés ehhez a szetthez (nem kötelező)</Lab>
+              <Input
+                id="set-edit-note" aria-label="Szett megjegyzés" placeholder="pl. az utolsó ismétlés kemény volt"
+                maxLength={500} value={note} onChange={(e) => setNote(e.target.value)}
+              />
+              <SheetActs label="Mentés" onSave={() => { onSave({ weight, reps, rir, side, note }); close() }} onCancel={close} />
+            </>
           )}
 
-          {!readOnly && (
-            <button type="button" className="wos-primary np-press"
-              onClick={() => { onSave({ weight, reps, rir, side, note }); close() }}>
-              <Icon3D name="t-tick" size={22} />
-              Mentés
-            </button>
-          )}
-
-          <button
-            type="button"
-            className="wos-pill is-block is-warn np-press"
-            disabled={!canDelete}
-            onClick={() => { onDelete(); close() }}
-          >
-            Szett törlése
-          </button>
+          <Acts>
+            <Lk bad disabled={!canDelete} onClick={() => { onDelete(); close() }}>Szett törlése</Lk>
+          </Acts>
           {!canDelete && (
-            <p className="wos-sheet-hint">
-              Az utolsó szett nem törölhető — a gyakorlat kihagyásához használd a Kihagyás-t.
-            </p>
+            <Note>Az utolsó szett nem törölhető — ha ez a gyakorlat ma nem megy, hagyd ki a Műveletekben.</Note>
           )}
         </>
       )}

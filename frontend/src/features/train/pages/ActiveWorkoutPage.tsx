@@ -7,7 +7,8 @@
 //             the overload line, the exercise list; Indulás sends the challenge decisions,
 //             POSTs the start and flips to `active`. The old prep mosaic (XP forecast, six
 //             tiles, "Kezdjük el") stays retired.
-//   active  → the Titanium card list. Session-level panels live on the briefing only; a
+//   active  → the session page (Folyadék F4, mezo-n4wf5.4): ONE exercise on top with its set grid, the
+//             others as rows (tap → on top). Session-level panels live on the briefing only; a
 //             challenge shows as the badge on its own card (tap → release / take back).
 //             Per-set logging (weight/reps/RIR), the vs-last-week chip,
 //             set dots, today's set history, PR toast + feedback debrief
@@ -22,37 +23,30 @@ import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useGoal, useTimingProfile, useTrain, useWorkoutNote } from '@/data/hooks'
-import { localDateString } from '@/shared/lib/dates'
+import { huMonthDay, localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
-import { muscleColor } from '@/features/train/logic/muscleColors'
-import { sessionProgressSegments } from '@/features/train/logic/workoutCardMeta'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
-import { WorkoutDock } from '@/features/train/components/WorkoutDock'
-import { WorkoutCard, prefill, setSlotLabel } from '@/features/train/components/WorkoutCard'
-import { ChallengeDetailGlass, WorkoutMenuGlass, WorkoutVideoGlass, type ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
+import { KalauzButton, WorkoutSessionView } from '@/features/train/components/WorkoutSessionView'
+import { type FocusEvent, dockNumbers, finishState as finishStateOf, heroExerciseId, nextFocus } from '@/features/train/logic/sessionFocus'
+import { WorkoutSessionSheets } from '@/features/train/components/WorkoutSessionSheets'
+import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import { WorkoutBriefing } from '@/features/train/components/WorkoutBriefing'
 import { briefingDecisions, durationRange, preTicked } from '@/features/train/logic/briefing'
 import { overflowWhy, progressionChip } from '@/features/train/logic/progressionChip'
-import { WorkoutRecordsGlass } from '@/features/train/components/WorkoutRecordsGlass'
 import { FinishConfirmGlass } from '@/features/train/components/FinishConfirmGlass'
-import { recordFor } from '@/features/train/logic/recordFor'
 import type { ExerciseLibraryItem, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, SetLogRequest, SetUpdateRequest, WorkoutExerciseChangeRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
-import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
-import { ExerciseScopeSheet, type ChangeScope } from '@/features/train/sheets/ExerciseScopeSheet'
+import type { ChangeScope } from '@/features/train/sheets/ExerciseScopeSheet'
 import { libraryToGymExercise } from '@/features/train/logic/exerciseDefaults'
 import type { Medal } from '@/data/train/medalTypes'
 import type { MockMedalContext } from '@/data/train/medalEvaluator'
 import {
   type Session,
-  addExtraSet,
   attachSetId,
-  canRemoveSet,
   completeSet as completeSetModel,
-  currentExerciseId,
   effectiveSetCount,
   makeSession,
   mergePlan,
@@ -70,22 +64,16 @@ import {
   unskipExercise as unskipExerciseModel,
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
-import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { Sheet } from '@/shared/ui/Sheet'
-import { Icon3D } from '@/shared/ui/clay'
-import { challengeTypeLabel } from '@/features/train/logic/challengeDisplay'
-import { MedalToast } from '@/features/train/components/MedalToast'
-import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
+import { Page, Skel, TitleRow } from '@/shared/ui/folyadek'
+import type { ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/train/components/WorkoutCeremony'
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import { trainDayEnergy } from '@/features/train/logic/trainDayEnergy'
 import { restKcalPerHour } from '@/data/train/activityEnergy'
 import { actualMinutes, type SessionTiming } from '@/features/train/logic/actualDuration'
-import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
+import type { SetEditValues } from '@/features/train/sheets/SetEditSheet'
 import { adjustedTarget } from '@/features/train/logic/repEquivalence'
-import { VoiceField } from '@/shared/ui/voice/VoiceField'
-import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
 type Phase = 'brief' | 'active' | 'summary'
 type Side = 'L' | 'B' | 'R'
@@ -149,7 +137,7 @@ export function ActiveWorkoutPage() {
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
   // `!mock`-gated (false in mock, synchronous seed), so no skeleton flashes in
   // mock mode.
-  if (workoutPending) return <ScreenSkeleton />
+  if (workoutPending) return <SessionSkeleton />
   // Resume on a FRESH read (the "Folytatás → an extra set" report): the session seeds ONCE
   // from `openWorkout.sets`, so a cached today snapshot that predates the last logged set
   // (the POST's invalidate-refetch had not landed when the user left, or the param-less key
@@ -157,7 +145,7 @@ export function ActiveWorkoutPage() {
   // set behind the server — the user re-ticks it and the server stores a duplicate. Wait for
   // the mount-time refetch ONCE; later in-session refetches must never unmount the session,
   // so the latch closes on the first settled read and stays closed.
-  if (!mountSyncedRef.current && workoutFetching) return <ScreenSkeleton />
+  if (!mountSyncedRef.current && workoutFetching) return <SessionSkeleton />
   mountSyncedRef.current = true
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   // Meso-independence (mezo-ws2x D4): getToday resolves custom (saját) templates with NO
@@ -190,6 +178,18 @@ export function ActiveWorkoutPage() {
       changeExercise={changeExercise}
       addPlanWorkingSets={addPlanWorkingSets}
     />
+  )
+}
+
+/** The loading frame of the chrome-free route (prototype `#w-edzes-session.tolt`): the title row with a working back
+ *  button, and the page's blocks as a skeleton. */
+function SessionSkeleton() {
+  const goBack = useBackNav('/train')
+  return (
+    <Page className="ek-page" nonav>
+      <TitleRow title="Edzés" context="Betöltés…" onBack={goBack} />
+      <Skel blocks={[40, 430, 220]} />
+    </Page>
   )
 }
 
@@ -278,7 +278,7 @@ function ActiveWorkoutSession({
   const [medalsBySet, setMedalsBySet] = useState<Record<string, Medal[]>>({})
   const [toastMedal, setToastMedal] = useState<{ medal: Medal; extra: number } | null>(null)
   // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA
-  // AND (T6 Task 6) the new .wo-finish / dock-Lezárás CTA + the confirm glass's own primary.
+  // AND (T6 Task 6) the finish tile / the dock's Lezárás + the confirm sheet's own primary.
   const [finishPending, setFinishPending] = useState(false)
   // How many sets the close left unticked, frozen at finish time (T7 Task 4, mezo-88iwa.8):
   // the settled recap reads it back long after the finish POST resolved, and the live
@@ -289,7 +289,7 @@ function ActiveWorkoutSession({
   // one `rest.start` call site in handleLogSet; stale once idle is harmless (the dock only
   // reads it while `rest.status !== 'idle'`).
   const [restExerciseId, setRestExerciseId] = useState<string | null>(null)
-  // The finish confirm glass (T6 Task 6, prototype confirmGlass): opened by the .wo-finish
+  // The finish confirm sheet (T6 Task 6): opened by the finish tile
   // CTA or the dock's "Lezárás →" whenever pending sets remain — see handleFinishTap below.
   const [finishConfirmOpen, setFinishConfirmOpen] = useState(false)
   /** The workout-level closing note (mezo-d20.8.2.2) — a page-owned draft, so stepping back to
@@ -349,6 +349,11 @@ function ActiveWorkoutSession({
   // tappable again, same as a bound `id` would. The global mutation-error toast already
   // tells the user the save failed; this just keeps the row from being a dead end.
   const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
+  // Which exercise is ON TOP (mezo-n4wf5.4): pure VIEW state. null = follow „Most" (the first exercise with an open
+  // set). The session model knows nothing about it — every exercise keeps its own cursor and stays loggable; the
+  // focus only moves through `nextFocus` (a row tap, a logged set, a closed debrief, a skip, a swap / add).
+  const [focusedId, setFocusedId] = useState<string | null>(null)
+  const focus = (ev: FocusEvent) => setFocusedId((f) => nextFocus(f, ev))
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -381,12 +386,9 @@ function ActiveWorkoutSession({
     setSession((s) => mergePlan(s, W.exercises))
   }, [W.exercises])
 
-  // The session CURSOR exercise: the first unresolved one in `session.order`. The card
-  // list shows every exercise at once (T6 Task 3), so this is no longer a "viewed"
-  // exercise — it only drives the header's progress counter and the header ⋯ menu's
-  // default target. A debrief pins its own exercise on top of it.
-  const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
-  const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // The exercise ON TOP (the hero): the focused one, else „Most" — the first exercise in `session.order` with an open
+  // set. Logging pins the focus to the logged exercise, so its debrief opens over its own hero.
+  const heroId = heroExerciseId(session, focusedId)
   const exerciseById = (id: string | null | undefined) => (id ? W.exercises.find((e) => e.id === id) ?? null : null)
   // Effective note of one exercise: a just-saved local override wins, else the
   // backend/mock note, else empty (drives the card's pill + the editor prefill).
@@ -512,6 +514,7 @@ function ActiveWorkoutSession({
     const localId = crypto.randomUUID()
     const next = completeSetModel(session, finishing.id, { weight, reps, rir, localId })
     setSession(next)
+    focus({ type: 'logged', id: finishing.id })
     // Medals (mezo-wp6n): always logged — real mode never had a `workoutId` guard
     // reason to skip this (mirrors finishAndCelebrate's 'mock' sentinel below), and
     // mock mode needs the call too, to run the mock medal evaluator. targetWeightKg/
@@ -664,6 +667,7 @@ function ActiveWorkoutSession({
       // must not survive into the debrief either.
       rest.skip()
       setFeedbackEx(ex)
+      focus({ type: 'logged', id: ex.id })
       setGlass(null)
     }
   }
@@ -792,7 +796,7 @@ function ActiveWorkoutSession({
   }
 
   // The manual-finish entry point (T6 Task 6, prototype finishCta/dock): tapping the
-  // .wo-finish CTA or the dock's "Lezárás →" with pending sets remaining asks first (the
+  // finish tile or the dock's „Lezárás" with pending sets remaining asks first (the
   // confirm glass); with nothing pending it finishes right away — there is nothing to warn
   // about. Since T7 this is the ONLY way a workout closes: the pre-finish closing-review
   // screen is gone, and 'summary' is the post-finish ceremony.
@@ -807,6 +811,8 @@ function ActiveWorkoutSession({
   // mezo-88iwa.8): the ceremony is a post-finish reward, so the user stays on the card
   // list — now fully ticked, its finish CTA in its `full` state — and closes explicitly.
   const advanceAfterFeedback = () => {
+    // The hero moves on: without a focus it follows „Most" again.
+    if (feedbackEx) focus({ type: 'debriefClosed', id: feedbackEx.id })
     setFeedbackEx(null)
   }
 
@@ -818,6 +824,7 @@ function ActiveWorkoutSession({
     rest.skip()
     if (workoutId) skipExercise(workoutId, exId)
     setSession(skipExerciseModel(session, exId))
+    focus({ type: 'skipped', id: exId })
   }
 
   // ---------- SUMMARY (the closing ceremony) ----------
@@ -855,7 +862,8 @@ function ActiveWorkoutSession({
     return (
       <WorkoutCeremony
         score={score}
-        eyebrow="EDZÉS LEZÁRVA"
+        // The title row's context line: the workout's own name and its day.
+        context={`${W.title} · ${huMonthDay(localToday)}`}
         // The MEASURED duration (mezo-1jm8), now really wired (mezo-e1ii9, Task 3). T7 read it
         // off `todaySession.openWorkout`, which is indeed always stale — but the finish POST's
         // own response is not: `WorkoutInstanceResponse` carries startedAt/finishedAt/
@@ -927,50 +935,39 @@ function ActiveWorkoutSession({
         }))}
         onBack={onExit}
         onStart={handleStart}
-        kalauzButton={kalauz.current ? (
-          <button type="button" className="wos-rb wos-q np-press" aria-label="Kalauz ehhez az oldalhoz"
-            aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
-            <span aria-hidden="true">?</span>
-          </button>
-        ) : undefined}
+        kalauzButton={kalauz.current ? <KalauzButton kalauz={kalauz} /> : undefined}
       />
     )
   }
 
-  // ---------- ACTIVE (Titanium card list, mezo-88iwa.7 T6 Task 3) ----------
-  // Every exercise is a `.wo-card` in one `.wo-list` — no viewed exercise, no rail,
-  // no pager, no swipe. The only ordering rule left is INSIDE a card: its sets are
-  // logged strictly in cursor order (WorkoutCard owns that).
+  // ---------- ACTIVE (Folyadék F4, mezo-n4wf5.4) ----------
+  // ONE exercise is on top with its set grid (`heroId`), the others are rows; a tap on a row (or on a top vessel)
+  // brings that exercise on top. The only ordering rule left is INSIDE an exercise: its sets are logged strictly in
+  // cursor order (WorkoutCard owns that).
   const totalSets = W.exercises.reduce((a, e) => a + effectiveSetCount(session, e.id), 0)
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
-  // Session progress bar (under the header): one flex segment per exercise,
-  // weighted by its own planned set count, coloured by ITS OWN muscle family.
-  const progressSegments = sessionProgressSegments(
-    W.exercises,
-    currentIdx,
-    (exId) => session.skipped.includes(exId) || (session.logged[exId]?.length ?? 0) >= effectiveSetCount(session, exId),
-  )
+  // A tap asks for an exercise: it comes on top, and the page shows it (the scroller jumps to the top, as a phase flip does).
+  const onFocus = (id: string) => {
+    focus({ type: 'tap', id })
+    scrollToTop(screenScroller())
+  }
 
   // The finish CTA / confirm glass's data (T6 Task 6): pending sets across the whole
   // session, per-exercise for the confirm list, and the resulting three-state CTA look.
   const pendingTotal = pendingSetCount(session)
   const pendingRows = pendingByExercise(session).map(({ id, left }) => {
     const e = exerciseById(id)
-    return { id, left, name: e?.name ?? '', muscle: e?.muscle ?? '' }
+    return { id, left, total: effectiveSetCount(session, id), name: e?.name ?? '', muscle: e?.muscle ?? '' }
   })
-  const finishState: 'skip' | 'partial' | 'full' = doneSets === 0 ? 'skip' : pendingTotal === 0 ? 'full' : 'partial'
+  const finishState = finishStateOf(session)
 
-  // The dock's "n / m szett" must agree with the finish CTA it sits next to (fix wave M3):
-  // the CTA's `full` state is driven by pendingSetCount, which SKIPS excluded exercises,
-  // while the dock counted every exercise — so a session with one skipped exercise showed
-  // e.g. "9 / 12 szett" beside a green "everything is done" CTA. Same exclusion here.
-  const activeIds = session.order.filter((id) => !session.skipped.includes(id))
-  const dockPlanned = activeIds.reduce((a, id) => a + effectiveSetCount(session, id), 0)
-  const dockDone = activeIds.reduce((a, id) => a + (session.logged[id]?.length ?? 0), 0)
+  // The dock's „n / m szett" agrees with the finish button it sits next to (fix wave M3): both count the non-skipped
+  // exercises only.
+  const { done: dockDone, planned: dockPlanned } = dockNumbers(session)
 
-  // The glass's target: the card whose ⋮/Videó was tapped, else (the header's ⋯) the
-  // session cursor exercise. A debrief unmounts the glass, so `current` is safe here.
-  const menuEx = exerciseById(glass?.id) ?? current
+  // The glass's target: the exercise whose menu / Technika / Rekordok was tapped — always the one on top; the
+  // fallback only keeps the closed sheets fed.
+  const menuEx = exerciseById(glass?.id) ?? exerciseById(heroId) ?? W.exercises[0]
   const editingEx = exerciseById(editingSet?.exerciseId)
   const noteEditEx = exerciseById(noteEditExId)
   // A log/edit write is in flight for an exercise while one of its logged entries has
@@ -1009,6 +1006,7 @@ function ActiveWorkoutSession({
   const handleToggleSkip = (exId: string) => {
     if (session.skipped.includes(exId)) {
       setSession((s) => unskipExerciseModel(s, exId))
+      focus({ type: 'unskipped', id: exId })
     } else {
       handleSkip(exId)
     }
@@ -1066,6 +1064,8 @@ function ActiveWorkoutSession({
       onSuccess: (created) => {
         const input = { id: created.id, warmupSets: created.warmupSets, workingSets: created.workingSets, prescribedSets: created.prescribedSets }
         setSession((s) => (old ? swapExercise(s, old.id, input) : addExercise(s, input, closingAfter(s))))
+        // The new exercise comes on top (prototype `applyPick`).
+        focus({ type: 'changed', id: created.id })
       },
       onError: () => setChangeFailed(true),
     })
@@ -1083,400 +1083,34 @@ function ActiveWorkoutSession({
   }
 
   return (
-    <>
-      {toastMedal && <MedalToast medal={toastMedal.medal} extraCount={toastMedal.extra} />}
-      {feedbackEx && (
-        <FeedbackModal
-          ex={feedbackEx}
-          isLastExercise={W.exercises.findIndex((e) => e.id === feedbackEx.id) + 1 >= W.exercises.length}
-          onResolve={advanceAfterFeedback}
-          onSave={saveFeedback}
-        />
-      )}
-      {(() => {
-        const menuOpen = glass?.kind === 'menu' && !feedbackEx
-        const videoOpen = glass?.kind === 'video' && !feedbackEx
-        const recordsOpen = glass?.kind === 'records' && !feedbackEx
-        const detail = glass?.kind === 'challenge' && !feedbackEx ? challenges.find((c) => c.id === glass.id) ?? null : null
-        const position = session.order.indexOf(menuEx.id)
-        const slotCount = effectiveSetCount(session, menuEx.id)
-        const lastSlotPending = (session.logged[menuEx.id]?.length ?? 0) < slotCount
-        const tint = muscleColor(menuEx.muscle).rail
-        return (
-          <>
-            <WorkoutMenuGlass
-              open={!!menuOpen}
-              exercise={menuEx}
-              tint={tint}
-              position={position}
-              orderLength={session.order.length}
-              slotCount={slotCount}
-              skipped={session.skipped.includes(menuEx.id)}
-              hasNote={!!noteOf(menuEx)}
-              canRemoveTrailingSet={canRemoveSet(session, menuEx.id) && lastSlotPending}
-              onClose={() => setGlass(null)}
-              onVideo={() => setGlass({ kind: 'video', id: menuEx.id })}
-              onEditNote={() => setNoteEditExId(menuEx.id)}
-              onAddSet={() => {
-                setSession((s) => addExtraSet(s, menuEx.id))
-                // „Minden hétre" needs a plan slot (mezo-mobji): a today-only row just grows today.
-                if (menuEx.planSlot !== false) setAddSetPrompt({ exerciseId: menuEx.id })
-              }}
-              onRemoveSet={() => handleSetDelete(menuEx, slotCount - 1)}
-              onMoveEarlier={() => movePosition(menuEx.id, -1)}
-              onMoveLater={() => movePosition(menuEx.id, 1)}
-              onToggleSkip={() => handleToggleSkip(menuEx.id)}
-              loggedCount={session.logged[menuEx.id]?.length ?? 0}
-              onSwap={canChange ? () => setPick({ mode: 'swap', exerciseId: menuEx.id }) : undefined}
-            />
-            <WorkoutVideoGlass
-              open={!!videoOpen}
-              exercise={videoOpen ? menuEx : null}
-              tint={tint}
-              onClose={() => setGlass(null)}
-            />
-            <ChallengeDetailGlass
-              open={!!detail}
-              challenge={detail}
-              state={detail ? badgeState(detail) : 'accepted'}
-              tint={detail ? muscleColor(exerciseById(detail.exerciseId)?.muscle ?? menuEx.muscle).rail : tint}
-              onToggle={() => detail && toggleChallenge(detail.id)}
-              onClose={() => setGlass(null)}
-            />
-            <WorkoutRecordsGlass
-              open={!!recordsOpen}
-              exercise={menuEx}
-              record={recordFor(exerciseRecords, menuEx)}
-              todaySets={session.logged[menuEx.id] ?? []}
-              tint={tint}
-              onClose={() => setGlass(null)}
-            />
-          </>
-        )
-      })()}
-      {editingSet && editingEx && !feedbackEx && (() => {
-        const ex = editingEx
-        const idx = editingSet.idx
-        const t = prescribedAt(session, ex.id, slotIndex(session, ex.id, idx))
-        const actual = session.logged[ex.id]?.[idx]
-        return (
-          <SetEditSheet
-            exerciseName={ex.name}
-            setLabel={setSlotLabel(idx)}
-            mode={actual ? 'logged' : 'pending'}
-            kind="working"
-            exerciseType={ex.type}
-            initial={{
-              weight: actual?.weight ?? t?.targetWeightKg ?? prefill(ex).weight,
-              reps: actual?.reps ?? t?.targetReps ?? prefill(ex).reps,
-              rir: actual?.rir ?? t?.targetRIR ?? ex.targetRIR,
-              side: actual?.side ?? null,
-              note: actual?.note ?? '',
-            }}
-            canDelete={canRemoveSet(session, ex.id)}
-            muscle={ex.muscle}
-            onSave={(v) => handleSetSave(ex, idx, v)}
-            onDelete={() => handleSetDelete(ex, idx)}
-            onClose={() => setEditingSet(null)}
-          />
-        )
-      })()}
-      {noteEditEx && (
-        <NoteEditSheet
-          initialNote={noteOf(noteEditEx)}
-          onClose={() => setNoteEditExId(null)}
-          onSave={(text) => {
-            saveExerciseNote(noteEditEx.id, text)
-            setLocalNotes((prev) => ({ ...prev, [noteEditEx.id]: text }))
+    <WorkoutSessionView
+      v={{
+        toastMedal, W, onExit, doneSets, totalSets, kalauz, setGlass, heroId, onFocus, session, logBlocked,
+        startRetrying, runStart, isBusy, noteOf, medalsOf, failedSetLocalIds, challenges, acceptedMap, startedChallengeIds, badgeState,
+        handleLogSet, setEditingSet, setNoteEditExId, changeFailed, setChangeFailed, canChange, setPick, finishState, handleFinishTap,
+        rest, exerciseById, restExerciseId, dockDone, dockPlanned,
+      }}
+      overlays={(
+        <WorkoutSessionSheets
+          s={{
+            feedbackEx, W, advanceAfterFeedback, saveFeedback, glass, setGlass, challenges, session, setSession, menuEx, noteOf,
+            setNoteEditExId, setAddSetPrompt, handleSetDelete, movePosition, handleToggleSkip, canChange, setPick, badgeState, exerciseById,
+            toggleChallenge, exerciseRecords, editingSet, editingEx, handleSetSave, setEditingSet, noteEditEx, saveExerciseNote, setLocalNotes,
+            addSetPrompt, writeExtraSetToTemplate, pick, scopeFor, setScopeFor, scopeTarget, scopeLogged, scopeNewSets, mesoLine, applyChange,
           }}
         />
       )}
-      {addSetPrompt && (
-        <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested glass wos-sheet">
-          {(close) => (
-            <>
-              {/* U4: a floating coral glass sheet — the prototype's `extra` sheet. */}
-              <div className="wos-sheet-head">
-                <Icon3D name="t-weight" size={52} className="wos-sheet-art3d" />
-                <span className="wos-sheet-title">
-                  <span className="wos-sheet-eb">Extra szett hozzáadva</span>
-                  <h3 id="add-set-prompt-title">A tervbe is felvegyük?</h3>
-                </span>
-              </div>
-              <p className="wos-sheet-lead">
-                Csak erre az alkalomra szól, vagy minden hétre — ilyenkor a mesociklus terve is eggyel több szettet ír elő ennél a gyakorlatnál.
-              </p>
-              <div className="wos-sheet-two">
-                <button
-                  type="button"
-                  className="wos-primary"
-                  onClick={() => {
-                    writeExtraSetToTemplate(addSetPrompt.exerciseId)
-                    close()
-                  }}
-                >
-                  Minden hétre
-                </button>
-                <button type="button" className="wos-pill is-block" onClick={close}>
-                  Csak ma
-                </button>
-              </div>
-            </>
-          )}
-        </Sheet>
-      )}
-
-      {pick && (
-        <ExercisePickerSheet
-          mode="single"
-          eyebrow={pick.mode === 'swap' ? `Csere · ${exerciseById(pick.exerciseId)?.name ?? ''}` : 'Gyakorlat hozzáadása'}
-          title={pick.mode === 'swap' ? 'Mire cseréled?' : 'Mit adunk hozzá?'}
-          similarTo={pick.mode === 'swap' ? exerciseById(pick.exerciseId)?.muscle : undefined}
-          excludeNames={W.exercises.map((e) => e.name)}
-          onPick={(item) => setScopeFor({ mode: pick.mode, exerciseId: pick.exerciseId, item })}
-          onClose={() => setPick(null)}
-        />
-      )}
-      {scopeFor && !pick && (() => {
-        const rec = recordFor(exerciseRecords, { name: scopeFor.item.name, catalogId: scopeFor.item.catalogId })
-        const top = rec?.recentTopSets?.[rec.recentTopSets.length - 1]
-        const recipe = libraryToGymExercise(scopeFor.item)
-        const noPlan = scopeTarget?.planSlot === false
-        return (
-          <ExerciseScopeSheet
-            mode={scopeFor.mode}
-            item={scopeFor.item}
-            replacedName={scopeTarget?.name}
-            loggedOnReplaced={scopeLogged}
-            newSets={scopeNewSets}
-            repLabel={`${recipe.repMin}–${recipe.repMax}`}
-            planSlot={!noPlan}
-            noPlanNote={noPlan
-              ? scopeTarget?.changeScope
-                ? 'Ez a gyakorlat ma került be, nincs a mezociklus tervében, ezért csak mára cserélhető.'
-                : 'A nap végi levezetőt az app minden nap visszateszi, ezért csak mára cserélhető.'
-              : null}
-            mesoLine={mesoLine}
-            lastTop={top ? `${top.weightKg != null ? String(top.weightKg).replace('.', ',') : 'saját súly'} × ${top.reps}` : null}
-            onChoose={applyChange}
-            onClose={() => setScopeFor(null)}
+      after={(
+          <FinishConfirmGlass
+            open={finishConfirmOpen}
+            onClose={() => setFinishConfirmOpen(false)}
+            loggedCount={doneSets}
+            pending={pendingRows}
+            pendingTotal={pendingTotal}
+            finishPending={finishPending}
+            onConfirm={finishAndCelebrate}
           />
-        )
-      })()}
-
-      <div className="wos">
-        {/* Header — the one piece of chrome the card list keeps: back pill, the
-            session title + its live set-progress line, and the ⋯ that opens the
-            session/exercise actions for the exercise that is up now. Sticky by
-            `.wk-top` itself (position: sticky; top: 0). */}
-        {/* Üvegesítés U4 (mezo-me75u.4): a sticky FLAT header — round flat buttons, the title and
-            "n/m szett" with the done count lit coral. Skin: `uveg edzes session` block. */}
-        <div className="wk-top wos-top np-anim" data-kalauz-anchor="session-start" style={{ '--i': 0 } as React.CSSProperties}>
-          <button type="button" className="back wos-rb np-press" aria-label="Vissza" onClick={onExit}>‹</button>
-          <div className="tt wkx-tt">
-            <div className="t1">{W.title}</div>
-            <div className="t2"><b>{doneSets}</b>/{totalSets} szett</div>
-          </div>
-          {/* Mini ? (D11): ez az oldal chrome-mentes, a fejléc globális ?-e itt nem létezik.
-              A kalauz horgonya és újranyitása a prep breadcrumbról ide költözött (mezo-e1ii9)
-              — a kártyalista fejléce AZ indítás most. */}
-          {kalauz.current && (
-            <button type="button" className="wos-rb wos-q np-press" aria-label="Kalauz ehhez az oldalhoz"
-              aria-haspopup="dialog" onClick={() => kalauz.open(kalauz.current!.id)}>
-              <span aria-hidden="true">?</span>
-            </button>
-          )}
-          <button
-            type="button"
-            aria-label="Gyakorlat műveletek"
-            disabled={!!feedbackEx}
-            onClick={() => setGlass({ kind: 'menu', id: current.id })}
-            className="back wos-rb np-press"
-          >
-            ⋯
-          </button>
-        </div>
-
-        {/* Session progress bar: one segment per exercise, flex-weighted by its
-            planned set count, family-coloured; opacity signals done/current/upcoming. */}
-        {/* U4: each segment is a muscle-tinted track whose lit fill grows with the exercise's
-            logged share (prototype `.pbar`); `data-state` keeps the done/current/upcoming read. */}
-        <div className="wkx-progressbar wos-pbar" aria-hidden="true">
-          {progressSegments.map((seg, i) => {
-            const ex = W.exercises[i]
-            const planned = ex ? effectiveSetCount(session, ex.id) : 0
-            const fill = seg.state === 'done' ? 100 : planned > 0 ? Math.min(100, ((session.logged[ex.id]?.length ?? 0) / planned) * 100) : 0
-            return (
-              <span
-                key={i}
-                data-state={seg.state}
-                style={{ flex: seg.weight, '--c': muscleColor(seg.colorMuscle).rail } as React.CSSProperties}
-              >
-                <b style={{ width: `${fill}%` }} />
-              </span>
-            )
-          })}
-        </div>
-
-        {/* THE list — one card per exercise, in session order. */}
-        {/* Padding (including the bottom room the portalled dock floats over) lives in
-            `.wo-list`'s own CSS rule now — see prototype.css, fix wave C1. */}
-        <div className="wo-list">
-          {/* A failed start is LOUD (mezo-e1ii9 fix round 1): the sets have nowhere to go,
-              so the list says so and offers the retry instead of quietly eating them. */}
-          {logBlocked && (
-            <div className="wo-overload" role="alert">
-              <span className="wo-overload-title">Nem sikerült elindítani az edzést</span>
-              <span className="wo-overload-why">
-                A szerver nem vette fel a mai edzést, ezért most nem tudunk szettet menteni, és
-                lezárni sem tudjuk. Próbáld újra.
-              </span>
-              <button
-                type="button"
-                className="wo-overload-retry"
-                disabled={startRetrying}
-                onClick={() => runStart(true)}
-              >
-                {startRetrying ? 'Újrapróbálás…' : 'Újra'}
-              </button>
-            </div>
-          )}
-          {session.order.map((id) => {
-            const e = W.exercises.find((x) => x.id === id)
-            if (!e) return null
-            return (
-              <WorkoutCard
-                key={id}
-                exercise={e}
-                session={session}
-                busy={isBusy(id)}
-                note={noteOf(e)}
-                medalsBySetIdx={medalsOf(id)}
-                failedLocalIds={failedSetLocalIds}
-                logBlocked={logBlocked}
-                challenges={challenges
-                  .filter((c) => c.exerciseId === id && (acceptedMap[c.id] || startedChallengeIds.has(c.id)))
-                  .map((c) => ({ id: c.id, label: challengeTypeLabel(c.typeLabel), target: c.target.replace(/(\d)\.(\d)/g, '$1,$2'), state: badgeState(c) }))}
-                onOpenChallenge={(cid) => setGlass({ kind: 'challenge', id: cid })}
-                onLogSet={(input) => handleLogSet(e, input)}
-                onTapDoneRow={(idx) => setEditingSet({ exerciseId: id, idx })}
-                onOpenRecords={() => setGlass({ kind: 'records', id })}
-                onOpenMenu={() => setGlass({ kind: 'menu', id })}
-                onEditNote={() => setNoteEditExId(id)}
-              />
-            )
-          })}
-
-          {/* The one way out of the list, in three honest states (T6 Task 6, prototype
-              finishCta): `skip` when nothing is logged, `partial` (gold) while sets remain
-              unticked, `full` (green) once every non-skipped exercise is done. Replaces
-              Task 4's temporary plain button. */}
-          {/* U4: a FLAT button — t-skip while nothing is logged, t-star while partial, t-tick
-              once everything is done (the three states keep their `is-*` hooks). */}
-          {changeFailed && (
-            <div className="wo-change-err" role="alert">
-              <span>Nem sikerült menteni a változtatást — próbáld újra.</span>
-              <button type="button" aria-label="Értesítés bezárása" onClick={() => setChangeFailed(false)}>×</button>
-            </div>
-          )}
-          <button type="button" className="wo-add" disabled={!canChange} onClick={() => setPick({ mode: 'add' })}>
-            <Icon3D name="t-addex" size={26} />
-            Gyakorlat hozzáadása
-          </button>
-
-          <button type="button" className={`wo-finish is-${finishState}`} onClick={handleFinishTap} disabled={logBlocked}>
-            <span className="wo-finish-art">
-              <Icon3D name={finishState === 'skip' ? 't-skip' : finishState === 'full' ? 't-tick' : 't-star'} size={26} />
-            </span>
-            <strong>{finishState === 'skip' ? 'Edzés kihagyása' : 'Edzés befejezése'}</strong>
-          </button>
-        </div>
-      </div>
-
-      {/* The fixed session dock (T6 Task 6, prototype dock): replaces the old RestTimerBar
-          render in this phase — same `useRestTimer()` instance, same start sites/durations,
-          only the rendering moved. Constant height, always present in the active phase, so
-          the list above it never jumps between its idle and resting looks. */}
-      <WorkoutDock
-        resting={rest.status !== 'idle'}
-        remaining={rest.remaining}
-        total={rest.total}
-        exerciseName={exerciseById(restExerciseId)?.name ?? null}
-        doneSets={dockDone}
-        plannedSets={dockPlanned}
-        onExtend={() => rest.extend(30)}
-        onSkipRest={rest.skip}
-        onFinish={handleFinishTap}
-        finishDisabled={doneSets === 0 || logBlocked}
-      />
-
-      <FinishConfirmGlass
-        open={finishConfirmOpen}
-        onClose={() => setFinishConfirmOpen(false)}
-        loggedCount={doneSets}
-        pending={pendingRows}
-        pendingTotal={pendingTotal}
-        finishPending={finishPending}
-        onConfirm={finishAndCelebrate}
-      />
-    </>
-  )
-}
-
-// F4 durable per-exercise note editor — a nested sheet (mirrors the add-set
-// prompt). Prefilled with the effective note; "Mentés" persists + closes,
-// "Mégse"/backdrop dismiss without saving. maxLength matches the contract (500).
-function NoteEditSheet({
-  initialNote,
-  onSave,
-  onClose,
-}: {
-  initialNote: string
-  onSave: (note: string) => void
-  onClose: () => void
-}) {
-  const [text, setText] = useState(initialNote)
-  return (
-    <Sheet onClose={onClose} labelledBy="note-edit-title" className="sheet-nested glass wos-sheet is-lav">
-      {(close) => (
-        <>
-          {/* U4: a floating lavender glass sheet — the prototype's `note` sheet. */}
-          <div className="wos-sheet-head">
-            <Icon3D name="t-note" size={52} className="wos-sheet-art3d" />
-            <span className="wos-sheet-title">
-              <span className="wos-sheet-eb">Gyakorlat-jegyzet</span>
-              <h3 id="note-edit-title">Jegyzet a gyakorlathoz</h3>
-            </span>
-          </div>
-          <VoiceField domain="train" onTranscript={(t) => setText((d) => appendDictation(d, t, 500))}>
-            <textarea
-              className="wos-sheet-ta"
-              aria-label="Gyakorlat-jegyzet szerkesztése"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              maxLength={500}
-              rows={4}
-              placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
-            />
-          </VoiceField>
-          <div className="wos-sheet-two">
-            <button type="button" className="wos-pill is-block" onClick={close}>
-              Mégse
-            </button>
-            <button
-              type="button"
-              className="wos-primary"
-              onClick={() => {
-                onSave(text.trim())
-                close()
-              }}
-            >
-              <Icon3D name="t-tick" size={22} />
-              Mentés
-            </button>
-          </div>
-        </>
       )}
-    </Sheet>
+    />
   )
 }

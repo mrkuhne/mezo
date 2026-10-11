@@ -713,3 +713,111 @@ button.fo-row:disabled, .fo-row-main:disabled { opacity: .5; cursor: default; }
 .fo-sortable [data-sortable-row] > button:first-child:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 .fo-sortable .srt-chev { align-self: flex-start; height: 76px; }
 .fo-sortable .srt-chev-focus:not(:focus-within) { margin-left: -10px; }
+
+/* ══ F4 (mezo-n4wf5.4) — generic pieces born with the in-workout flow. Ported in values from vilagos/edzes.js; each rule
+   addresses its own children (`>`), the kit owns the 44px target, motion only under prefers-reduced-motion: no-preference. ══ */
+
+/* ── a range on a scale (`RangeBand`; edzes.js `.vs-range`) ── */
+.fo-range { margin-top: 14px; }
+.fo-range > .t { position: relative; display: block; height: 30px; border-radius: 999px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .07), 0 14px 18px -14px var(--liq2); }
+.fo-range > .t > i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, var(--liq1), var(--liq2)); }
+.fo-range > .t > u { position: absolute; top: 0; bottom: 0; border-right: 2px dashed var(--liq2); text-decoration: none;
+  background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--liq2) 55%, #fff) 0 4px, color-mix(in srgb, var(--liq2) 25%, #fff) 4px 8px); }
+.fo-range > .ax { position: relative; display: block; height: 16px; margin-top: 5px; font-size: 10.5px; color: var(--fo-sub); }
+.fo-range > .ax > em { position: absolute; transform: translateX(-50%); font-style: normal; white-space: nowrap; }
+.fo-range > .ax > em.z { transform: none; }
+.fo-range > .ax > em.k { color: var(--fo-ink); font-weight: 800; }
+
+/* ── an answer scale as small vessels (`OptionVessels`; edzes.js `vopt`, `.vs-vo`) ── */
+.fo-vo { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; margin-top: 8px; }
+.fo-vo > button { --c: var(--dom); display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; min-height: 44px; padding: 10px 4px 9px; border: 0; border-radius: 20px; background: #EEF4F8; color: inherit; font: inherit; cursor: pointer; }
+.fo-vo > button > .v { position: relative; width: 32px; height: 40px; border-radius: 9px 9px 15px 15px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .16); overflow: hidden; }
+.fo-vo > button > .v > i { position: absolute; left: 0; right: 0; bottom: 0; height: var(--p); background: var(--c); opacity: .3; }
+.fo-vo > button > .v > i::before { content: ''; position: absolute; left: -4px; right: -4px; top: -3px; height: 6px; border-radius: 50%; background: inherit; }
+.fo-vo > button > .v > u { position: absolute; left: 3px; right: 3px; border-top: 2px dashed rgba(10, 42, 60, .45); text-decoration: none; }
+.fo-vo > button > b { font-size: 12.5px; font-weight: 650; line-height: 1.15; text-align: center; color: var(--fo-sub); }
+.fo-vo > button.on { background: color-mix(in srgb, var(--c) 12%, #fff); box-shadow: inset 0 0 0 2px var(--c); }
+.fo-vo > button.on > .v > i { opacity: 1; }
+.fo-vo > button.on > b { color: var(--fo-ink); }
+.fo-vo > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* ── the round three-dot button (`DotsBtn`; edzes.js `.vs-dots`) ── in a hero it takes the top right corner */
+.fo-dotsbtn { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; gap: 4px; flex: 0 0 auto; cursor: pointer;
+  background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .08), 0 6px 12px -8px rgba(15, 30, 51, .35); }
+.fo-dotsbtn > i { width: 4.5px; height: 4.5px; border-radius: 50%; background: var(--fo-ink); }
+.fo-dotsbtn:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fo-hero > .fo-dotsbtn { position: absolute; top: 14px; right: 14px; z-index: 2; }
+/* the hero's own text keeps clear of the corner button (the `:has()` argument adds its specificity: an undo needs the same shape) */
+.fo-hero:has(> .fo-dotsbtn) > .fo-hero-row { padding-right: 46px; }
+
+/* ── a stacked foot (`FootCol`; edzes.js `.vs-fcol`, `.vs-fsub`) · the sheet's graphic line (`SheetGraphic`; `.vs-shg`) · the gold card (`Card gold`; `.vs-gold`) ── */
+.fo-fcol { display: flex; flex-direction: column; gap: 10px; align-items: center; flex: 1; min-width: 0; }
+.fo-fcol > .fo-btn { width: 100%; }
+.fo-fcol > .fo-fsub { margin: 0; font-size: 12px; line-height: 1.45; color: var(--fo-faint); text-align: center; overflow-wrap: anywhere; }
+.fo-shg { display: flex; align-items: center; gap: 12px; margin: 10px 0 14px; }
+.fo-shg > small { font-size: 12.5px; color: var(--fo-sub); }
+.fo-card.gold { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--fo-gold) 55%, #fff), 0 14px 30px -20px var(--fo-gold); }
+
+/* ── the ceremony stage (`CeremonyRoot`, `CupStage`, `CeremonyReveal`; edzes.js `.vs-cer`, `.vs-cstars`, `.vs-cup`, `#cerroot`) ──
+   Base rules are the END state's geometry; the pass (useCeremonyPass) writes `--p`, the star classes and the beats. */
+.fo-cer-stage { text-align: center; padding-bottom: 22px; }
+.fo-cer-stage .fo-hero-verdict { font-size: 30px; margin: 2px 0 0; }
+.fo-cer-stage .fo-hero-sub { margin-top: 6px; }
+.fo-cer-stars { display: flex; justify-content: center; gap: 6px; margin: 14px 0; }
+.fo-cer-stars > i { position: relative; display: block; width: 46px; height: 46px; }
+/* A star is a level, not an icon beside a label: it fills with the FULL liquid (the prototype's `--ic2: var(--dom2)`), not
+   the 55 % tint the app gives a glyph by default — tinted, a lit star read as an empty one. */
+.fo-cer-stars > i > .t-ico { position: absolute; inset: 0; width: 100%; height: 100%; --ic2: var(--dom2); }
+.fo-cer-stars > i > .on, .fo-cer-stars > i > .half { opacity: 0; transform: scale(.6); }
+.fo-cer-stars > i.is-lit > .on, .fo-cer-stars > i.is-half > .half { opacity: 1; transform: none; }
+.fo-cer-stars > i.is-lit > .off, .fo-cer-stars > i.is-half > .off, .fo-cer-stars > i.is-lit > .half { opacity: 0; }
+.fo-cup { position: relative; width: 200px; max-width: 74%; margin: 0 auto 14px; }
+.fo-cup > svg { display: block; width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 18px 16px rgba(233, 137, 43, .38)); }
+.fo-cup .lq { transform: translateY(calc((1 - var(--p, 0)) * 108px)); }
+.fo-cup .sp { fill: #F2A93F; opacity: 0; transform-box: fill-box; transform-origin: 50% 50%; }
+.fo-cer.b1 .fo-cup .sp { opacity: 1; }
+.fo-cer-res, .fo-cer-card { opacity: 0; transform: translateY(8px); }
+.fo-cer.b1 .fo-cer-res, .fo-cer.b2 .fo-cer-card { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .fo-cer:not(.inst) .fo-cer-stars > i > .t-ico { transition: opacity .35s cubic-bezier(.2, .8, .2, 1), transform .35s cubic-bezier(.2, .8, .2, 1); }
+  .fo-cer:not(.inst) .fo-cer-res, .fo-cer:not(.inst) .fo-cer-card { transition: opacity .5s cubic-bezier(.2, .8, .2, 1), transform .5s cubic-bezier(.2, .8, .2, 1); }
+  .fo-cer.b1:not(.inst) .fo-cup .sp { animation: fo-spill .95s cubic-bezier(.2, .8, .2, 1) both; }
+  .fo-cer.b1:not(.inst) .fo-cup .s2 { animation-delay: .07s; }
+  .fo-cer.b1:not(.inst) .fo-cup .s3 { animation-delay: .14s; }
+  .fo-cer.b1:not(.inst) .fo-cup .s4 { animation-delay: .2s; }
+  .fo-cer.b1:not(.inst) .fo-cup .s5 { animation-delay: .05s; }
+  .fo-cup .wvp { animation: fo-cupwv 5s linear infinite; }
+}
+@keyframes fo-spill { 0% { opacity: 0; transform: translateY(26px) scale(.3); } 45% { opacity: 1; transform: translateY(-8px) scale(1); } 100% { opacity: 1; transform: none; } }
+@keyframes fo-cupwv { to { transform: translateX(40px); } }
+
+/* ══ F4 integration (mezo-n4wf5.4) ══ the pieces the five in-workout areas each built locally, folded into one recipe. */
+
+/* ── the title row of a chrome-free route (`TitleRow`; four local twins before: `.es-top`, `.ei-top`, `.ek-top`, `.ec-top`) ──
+   the app title bar's sub-page row (`.fo-trow`, folyadek-frame.css), drawn by the page because no title bar is mounted. */
+.fo-ptop { padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; color: var(--fo-ink); font-family: var(--ff-body); }
+.fo-ptop .fo-ib::after { content: ''; position: absolute; inset: -1px; }   /* 42px disc → a 44px hit area */
+.fo-ptop h1:focus { outline: none; }
+.fo-ptop h1:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; border-radius: 6px; }
+/* pinned, like the title bar it stands in for (the prototype's bar is sticky on every route): `.sticky-top` gives
+   top: 0 (no bar above); the frosted ground sits on ::before, as the title bar's does (a backdrop-filter on the row itself
+   would capture fixed descendants — F1.6). */
+.fo-ptop.sticky-top { z-index: 30; background: none; isolation: isolate; }
+.fo-ptop::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: color-mix(in srgb, #F8FCFD 78%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+@media (max-width: 360px) { .fo-ptop { padding-left: 14px; padding-right: 14px; } }
+
+/* ── a row's end with two things (`RowEnd`; edzes.js `.vs-rr` / `.vs-rr.cl`) ── a mark beside the capsules, or (`.cl`)
+   a pill stacked over them. */
+.fo-rr { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.fo-rr.cl { flex-direction: column; align-items: flex-end; gap: 5px; }
+@media (max-width: 360px) { .fo-rr:not(.cl) { gap: 5px; } }
+
+/* ── a switched-off tile of `Pair` ── */
+.fo-pair > button:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: no-preference) { .fo-pair > button:disabled:active { transform: none; } }
+
+/* ── a sheet that ENDS in a text link („Mégse", „Hagyjuk") ── the link's 44 px hit area (`.fo-lk::after`) reaches past the
+   link's own box; as the last thing in the scroller it added ~13 px of stray scroll to a sheet that fits. The room for
+   it moves from the frame's bottom padding into the scroller (22 px in all, as before): nothing moves on screen. */
+.sheet.fo-sheet { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.sheet.fo-sheet > .sheet-scroll { padding-bottom: 14px; }

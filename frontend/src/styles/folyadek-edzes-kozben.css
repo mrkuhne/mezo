@@ -1,0 +1,45 @@
+/* ── Folyadék · Edzés · kozben (mezo-n4wf5.4, slice F4) ── the session page (ActiveWorkoutPage active phase, its view, the dock, strips, toast, return button). Rules of this area only, class prefix `.ek-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-edzes-kozos.css (`.ex-`). Motion only inside @media (prefers-reduced-motion: no-preference).
+   Build target: docs/design_2.0/prototypes/vilagos/edzes.js `session()` (`.vs-shero`, `.vs-rr`, `pad:'150px'`, `.vs-ret`). */
+
+/* ── the page ── the dock is portalled into the phone frame and always there, so the page reserves its room once
+   (prototype `pad: 150px`); the scroller's own bottom clearance is given back, as a kit page with a foot does. */
+.ek-page { margin-bottom: calc(-1 * var(--fo-pad)); }
+.fo-page.ek-page { padding-bottom: calc(118px + env(safe-area-inset-bottom, 0px)); }
+
+/* ── the exercise on top ── the hero's name row keeps clear of the corner button by the kit. The tool row closes the
+   head with a hairline, as approved (edzes.js `.vs-tools.top`: 18px above, 10px + the line below). */
+.ek-hero > .ex-tools { padding: 18px 0 10px; border-bottom: 1px solid var(--fo-hair, rgba(28, 33, 38, .12)); }
+
+/* ── a row of „A mai sor" (its end is the kit's `RowEnd stack`) ── */
+.ek-row { border-left: 0; border-right: 0; border-bottom: 0; font-family: var(--ff-body); cursor: pointer; }
+.ek-row:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; border-radius: 12px; }
+
+/* ── „Közben és a végén": the change-failed strip above the kit's `Pair` ── */
+.ek-chgerr { margin-bottom: 14px; }
+.ek-chgerr > .fo-acts { margin-top: 8px; }
+
+/* ── a single medal named (`MedalChip`) ── */
+.ek-medal { display: inline-grid; flex: 0 0 auto; }
+
+/* ── the way back into a running workout (`app/FloatingReturnLayer`) ── the disc is the shared `ReturnFab`; this is
+   where it stands: above the quick-log button (its seat + 54px + 10px), in the Edzés liquid on every domain. */
+.ek-retwrap, .ek-retbar { --liq1: #F7B23B; --liq2: #F2683A; --dom: #F2683A; --dom2: #F7B23B; }
+.ek-retwrap { position: absolute; right: 16px; bottom: calc(var(--fo-nav-bottom, 10px) + 150px); z-index: 44; display: grid; }
+/* The chat route: the bar floats just above the composer (the offset is the old bar's, browser-measured) and UNDER it
+   (z 19 < 20): the auto-grow composer slides over the bar instead of the bar covering what is being typed. */
+.ek-retbar { position: absolute; left: 14px; right: 14px; bottom: calc(var(--screen-bottom-pad) + 88px); z-index: 19; min-height: 52px; padding: 7px 8px; border: 0; border-radius: 999px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; text-align: left; font-family: var(--ff-body); color: var(--fo-ink);
+  background: rgba(255, 255, 255, .94); box-shadow: 0 18px 34px -16px rgba(15, 30, 51, .45), inset 0 0 0 1px rgba(15, 30, 51, .06); }
+.ek-retbar > .g { flex: 1; min-width: 0; }
+.ek-retbar strong { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.2; }
+.ek-retbar small { display: block; font-size: 11.5px; color: var(--fo-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ek-retbar > .go { flex: 0 0 auto; padding: 9px 14px; border-radius: 999px; font-size: 13px; font-weight: 700; color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 10px 16px -10px var(--liq2); }
+.ek-retbar:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+
+@media (prefers-reduced-motion: no-preference) {
+  .ek-retwrap > .ex-ret, .ek-retbar { animation: ek-pop .28s cubic-bezier(.34, 1.56, .64, 1); }
+  .ek-retwrap > .ex-ret { transition: transform .12s ease; }
+  .ek-retwrap > .ex-ret:active { transform: scale(.94); }
+}
+@keyframes ek-pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }

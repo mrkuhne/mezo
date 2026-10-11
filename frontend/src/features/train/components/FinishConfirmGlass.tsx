@@ -1,22 +1,19 @@
 // ============================================================
-// Mezo · FinishConfirmGlass (mezo-88iwa.7, T6 Task 6) — "closing with unticked sets is
-// allowed, but never silently". Ported 1:1 from the prototype's `confirmGlass()` (docs/
-// design_2.0/prototypes/companion-titanium/session.js:249-265): a GlassBox surface that
-// names exactly which sets are about to become "kihagyott" (skipped) and by how much,
-// then asks for one deliberate tap before finishing goes through.
+// Mezo · FinishConfirmGlass — „closing with unticked sets is allowed, but never silently".
 //
-// Opened by the finish CTA / the dock's "Lezárás →" whenever pending sets remain; a zero-
-// pending finish (the CTA's `full` state) skips this glass entirely and finishes right
-// away — see ActiveWorkoutPage. `onConfirm` runs the EXISTING `finishAndCelebrate` path.
+// Opened by the finish button / the dock's „Lezárás" whenever pending sets remain; a zero-pending finish skips
+// it and finishes right away (see ActiveWorkoutPage). It names exactly which sets are about to become
+// „kihagyott" and by how much, then asks for one deliberate tap. `onConfirm` runs the EXISTING
+// `finishAndCelebrate` path.
 //
-// Üvegesítés U4 (mezo-me75u.4): a coral glass — the pending list as FLAT rows (MuscleChip ·
-// name · "N szett") and ONE lit coral primary whose sub-count sits on its own line under the
-// label (3D t-tick instead of the old check glyph); "Mégse" is a flat pill. Skin: the
-// `uveg edzes session` block (`.gl-card.wos-gbx-fin`, the GlassBox className since U10).
+// Folyadék F4 (mezo-n4wf5.4, area C): a light sheet built to the prototype's `fin` sheet
+// (docs/design_2.0/prototypes/vilagos/edzes.js): the headline, the consequence, one row per exercise with its
+// sets as capsules (the empty ones are what stays out), a calm note, ONE primary carrying the tally on its
+// second line, and „Mégse, visszamegyek" as the link under it.
 // ============================================================
-import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
-import { Icon3D } from '@/shared/ui/clay'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
+import { Acts, Btn, Caps, FoSheetHead, Lk, Note, Row } from '@/shared/ui/folyadek'
+import { Sheet } from '@/shared/ui/Sheet'
 
 export interface FinishConfirmPendingRow {
   id: string
@@ -24,6 +21,9 @@ export interface FinishConfirmPendingRow {
   muscle: string
   /** Unlogged slots left on this exercise. */
   left: number
+  /** Every slot of this exercise today (logged + left) — the row's capsules. Optional: without it the row
+   *  draws only the `left` empty ones. */
+  total?: number
 }
 
 export interface FinishConfirmGlassProps {
@@ -35,47 +35,51 @@ export interface FinishConfirmGlassProps {
   pending: FinishConfirmPendingRow[]
   /** Sum of every row's `left` — the headline's count. */
   pendingTotal: number
-  /** The finish POST is in flight — disables the primary CTA (mirrors the dock/finish CTA). */
+  /** The finish POST is in flight — disables the primary button (mirrors the dock / finish button). */
   finishPending: boolean
-  /** "Befejezem így" / "Kihagyom a mai edzést" — fires the EXISTING finishAndCelebrate path. */
+  /** „Befejezem így" / „Kihagyom a mai edzést" — fires the EXISTING finishAndCelebrate path. */
   onConfirm: () => void
 }
 
 export function FinishConfirmGlass({
   open, onClose, loggedCount, pending, pendingTotal, finishPending, onConfirm,
 }: FinishConfirmGlassProps) {
+  if (!open) return null
   const zero = loggedCount === 0
   return (
-    <GlassBox open={open} onClose={onClose} label="Lezárás megerősítése" tint="#d9c395" variant="confirm" className="wos-gbx wos-gbx-fin">
-      <div className="wos-gb wos-gb-fin">
-      <h2>{zero ? 'Egy szettet sem rögzítettél ma.' : `Van még ${pendingTotal} bepipálatlan szetted.`}</h2>
-      <p>
-        Ha most befejezed az edzést, {zero ? (
-          <>a mai edzés egésze <strong>kihagyott</strong> lesz. Ez is része a ritmusnak — a terv megvár.</>
-        ) : (
-          <>ezek <strong>kihagyott</strong> státusszal rögzülnek. A már elmentett {loggedCount} szetted természetesen megmarad.</>
-        )}
-      </p>
-      <div className="wo-confirm-list">
-        {pending.map((row) => (
-          <span key={row.id}>
-            <span className="wos-fin-art"><MuscleChip token={row.muscle} size={24} /></span>
-            <strong>{row.name}</strong>
-            <b>{row.left} szett</b>
-          </span>
-        ))}
-      </div>
-      <button type="button" className="wos-primary" disabled={finishPending} onClick={onConfirm}>
-        <Icon3D name={zero ? 't-skip' : 't-tick'} size={26} />
-        <span className="wos-primary-copy">
-          <strong>{zero ? 'Kihagyom a mai edzést' : 'Befejezem így'}</strong>
-          <small>{loggedCount} elvégzett · {pendingTotal} kihagyott</small>
-        </span>
-      </button>
-      <button type="button" className="wos-pill is-block" onClick={onClose}>
-        Mégse, visszamegyek
-      </button>
-      </div>
-    </GlassBox>
+    <Sheet onClose={onClose} labelledBy="el-finish-title" className="fo-sheet el-sheet">
+      {(close) => (
+        <>
+          <FoSheetHead
+            eyebrow="Edzés befejezése" titleId="el-finish-title" onClose={close}
+            title={zero ? 'Egy szettet sem rögzítettél ma.' : `Van még ${pendingTotal} bepipálatlan szetted.`}
+            sub={zero
+              ? 'Ha most befejezed az edzést, a mai edzés egésze kihagyott lesz. Ez is része a ritmusnak — a terv megvár.'
+              : `Ha most befejezed az edzést, ezek kihagyott státusszal zárulnak. A már elmentett ${loggedCount} szetted megmarad.`}
+          />
+          <div className="el-ls el-fin-rows">
+            {pending.map((row) => {
+              const total = Math.max(row.total ?? row.left, row.left)
+              return (
+                <Row
+                  key={row.id} left={<Mchp muscle={row.muscle} />} title={row.name} sub={`${row.left} szett maradna üresen`}
+                  right={<Caps n={total} done={total - row.left} color={deepMuscle(row.muscle)} />}
+                />
+              )
+            })}
+          </div>
+          <Note>Az üres kapszulák kihagyott státusszal zárulnak — az összegzés nem büntet értük.</Note>
+          <Acts>
+            <Btn grow className="el-fin-go" disabled={finishPending} onClick={onConfirm}>
+              <span>
+                {zero ? 'Kihagyom a mai edzést' : 'Befejezem így'}
+                <small>{loggedCount} elvégzett · {pendingTotal} kihagyott</small>
+              </span>
+            </Btn>
+          </Acts>
+          <Acts><Lk onClick={close}>Mégse, visszamegyek</Lk></Acts>
+        </>
+      )}
+    </Sheet>
   )
 }

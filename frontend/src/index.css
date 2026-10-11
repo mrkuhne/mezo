@@ -17,6 +17,11 @@
 @import "./styles/folyadek-edzes-napszerk.css";
 @import "./styles/folyadek-edzes-sablon.css";
 @import "./styles/folyadek-edzes-riport.css";
+@import "./styles/folyadek-edzes-eligazitas.css";
+@import "./styles/folyadek-edzes-kozben.css";
+@import "./styles/folyadek-edzes-kozben-lapok.css";
+@import "./styles/folyadek-edzes-lezaras.css";
+@import "./styles/folyadek-edzes-osszegzes.css";
 @import "./styles/folyadek-frame.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.

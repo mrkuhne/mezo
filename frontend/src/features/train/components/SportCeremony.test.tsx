@@ -11,8 +11,6 @@ function props(overrides: Partial<Parameters<typeof SportCeremony>[0]> = {}) {
   return {
     score: SCORE,
     sportName: 'Kerékpár',
-    art: 't-bike' as const,
-    color: '#c8e895',
     minutes: 30,
     rpe: 5,
     kcal: null,
@@ -29,30 +27,58 @@ afterEach(() => vi.restoreAllMocks())
 
 test('reduced motion paints the final state instantly: told, counters at the real values, stars lit to the score', () => {
   const { container } = render(<SportCeremony {...props()} />)
-  expect(container.querySelector('.cer-screen')).toHaveClass('is-told')
-  const stage = container.querySelector('.cer') as HTMLElement
+  expect(container.querySelector('.fo-cer')).toHaveClass('b1', 'b2', 'b3', 'told', 'inst')
+  const stage = container.querySelector('[data-cer-stage]') as HTMLElement
   expect(stage.style.getPropertyValue('--p')).toBe('0.5')
-  expect(container.querySelector('[data-cer-count="perc"]')).toHaveTextContent('30')
-  expect(container.querySelector('[data-cer-count="rpe"]')).toHaveTextContent('5')
-  expect(screen.getByText('perc')).toBeInTheDocument()
-  expect(screen.getByText('RPE')).toBeInTheDocument()
+  const facts = [...container.querySelectorAll('.ec-tally > div')].map((d) => d.textContent)
+  // Wording: the felt effort in everyday words, never „RPE".
+  expect(facts).toEqual(['30perc', '5megélt terhelés · 10-ből'])
+  expect(screen.queryByText('RPE')).not.toBeInTheDocument()
   // 2 of 5 stars lit, the third half (2.5/5 = .5 progressed).
-  const stars = container.querySelectorAll('.cer-stars i')
+  const stars = container.querySelectorAll('.fo-cer-stars i')
   expect(stars).toHaveLength(5)
-  expect(container.querySelectorAll('.cer-stars i.is-lit')).toHaveLength(2)
-  expect(container.querySelectorAll('.cer-stars i.is-half')).toHaveLength(1)
+  expect(container.querySelectorAll('.fo-cer-stars i.is-lit')).toHaveLength(2)
+  expect(container.querySelectorAll('.fo-cer-stars i.is-half')).toHaveLength(1)
 })
 
-test('the eyebrow reads the sport name uppercased plus MA', () => {
-  render(<SportCeremony {...props({ sportName: 'Kerékpár' })} />)
-  expect(screen.getByText('KERÉKPÁR · MA')).toBeInTheDocument()
+test('the stage\'s overline names the sport, the day and the stars with a Hungarian decimal comma', () => {
+  const { container } = render(<SportCeremony {...props({ sportName: 'Kerékpár' })} />)
+  expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent('Kerékpár · ma · 2,5 csillag az ötből')
+  expect(screen.getByText('A kehely az edzésidőből és az erőfeszítésből telt meg.')).toBeInTheDocument()
 })
 
-test('the sr-only heading announces the stars with a Hungarian decimal comma and takes focus', () => {
-  render(<SportCeremony {...props()} />)
+test('the closing screen starts at the top of the app scroller (it replaces the form without a route change)', () => {
+  const sc = document.createElement('div')
+  sc.className = 'screen-content'
+  const scrollTo = vi.fn()
+  sc.scrollTo = scrollTo as unknown as typeof sc.scrollTo
+  document.body.appendChild(sc)
+  try {
+    render(<SportCeremony {...props()} />)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+  } finally {
+    sc.remove()
+  }
+})
+
+test('the overline names the stars the stage draws, not the score\'s rounding (0.37 → 1,5, never 2)', () => {
+  const { container } = render(<SportCeremony {...props({ score: { ratio: 0.37, stars: 2 } })} />)
+  expect(container.querySelectorAll('.fo-cer-stars i.is-lit')).toHaveLength(1)
+  expect(container.querySelectorAll('.fo-cer-stars i.is-half')).toHaveLength(1)
+  expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent('Kerékpár · ma · 1,5 csillag az ötből')
+})
+
+test('the screen draws its own title row (the route is chrome-free); the title takes focus and the back is the way out', async () => {
+  const user = userEvent.setup()
+  const onClose = vi.fn()
+  const { container } = render(<SportCeremony {...props({ onClose })} />)
   const heading = screen.getByRole('heading', { level: 1 })
-  expect(heading).toHaveTextContent('2,5 csillag az ötből')
+  expect(heading).toHaveTextContent('Mozgás lezárva')
   expect(heading).toHaveFocus()
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Kerékpár · ma')
+  await user.click(container.querySelector('.fo-ptop .fo-back') as HTMLElement)
+  expect(onClose).toHaveBeenCalledTimes(1)
 })
 
 test('the verdict sentence comes from the star count (the same ladder as the gym ceremony)', () => {
@@ -70,12 +96,12 @@ test('the rAF pass runs exactly once — a re-render never restarts it', () => {
   })
   const { container, rerender } = render(<SportCeremony {...props({ reducedMotion: false })} />)
   expect(raf).toHaveBeenCalledTimes(1)
-  expect(container.querySelector('.cer-screen')).not.toHaveClass('is-told')
+  expect(container.querySelector('.fo-cer')).not.toHaveClass('told')
   rerender(<SportCeremony {...props({ reducedMotion: false, xpGained: 80 })} />)
   expect(raf).toHaveBeenCalledTimes(1)
 })
 
-test('the pass drives --p, the counters and the star classes, then reveals act two', () => {
+test('the pass drives --p, the star classes and — in its last stretch — the counters, then tells the reading', () => {
   const frames: FrameRequestCallback[] = []
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
     frames.push(cb)
@@ -83,53 +109,65 @@ test('the pass drives --p, the counters and the star classes, then reveals act t
   })
   const now = vi.spyOn(performance, 'now')
   now.mockReturnValue(0)
-  const { container } = render(<SportCeremony {...props({ reducedMotion: false })} />)
-  const stage = container.querySelector('.cer') as HTMLElement
+  const { container } = render(<SportCeremony {...props({ reducedMotion: false, kcal: { value: 420, isEstimate: true } })} />)
+  const stage = container.querySelector('[data-cer-stage]') as HTMLElement
+  const root = container.querySelector('.fo-cer') as HTMLElement
+  const counts = () => [...container.querySelectorAll('.ec-tally [data-cer-count]')].map((el) => el.textContent)
   expect(stage.style.getPropertyValue('--p')).toBe('0')
+  expect(counts()).toEqual(['0', '0', '0'])
   // mezo-7tj3j: az első frame horgonyoz (started = az első rAF-időbélyeg), utána mér.
   frames.shift()?.(0)
-  // Halfway through the 2400 ms pass: cubic ease-out 1-(1-.5)^3 = .875 of the ratio.
-  frames.shift()?.(1200)
+  // Halfway through the 1700 ms star phase (the gym ceremony's own timing): cubic ease-out .875 of the ratio.
+  frames.shift()?.(850)
   expect(Number(stage.style.getPropertyValue('--p'))).toBeCloseTo(0.4375, 5)
-  expect(container.querySelector('.cer-screen')).not.toHaveClass('is-told')
-  act(() => { frames.shift()?.(2400) })
+  expect(root).not.toHaveClass('b1')
+  expect(counts()).toEqual(['0', '0', '0'])
+  // 2100 ms: the verdict and the numbers are in; the counters are on their way.
+  frames.shift()?.(2100)
+  expect(root).toHaveClass('b1')
+  expect(root).toHaveClass('b2')
+  expect(root).not.toHaveClass('told')
+  act(() => { frames.shift()?.(2700) })
   expect(Number(stage.style.getPropertyValue('--p'))).toBeCloseTo(0.5, 5)
-  expect(container.querySelector('[data-cer-count="perc"]')).toHaveTextContent('30')
-  expect(container.querySelectorAll('.cer-stars i.is-lit')).toHaveLength(2)
-  expect(container.querySelector('.cer-screen')).toHaveClass('is-told')
+  expect(counts()).toEqual(['30', '5', '420'])
+  expect(container.querySelectorAll('.fo-cer-stars i.is-lit')).toHaveLength(2)
+  expect(root).toHaveClass('told')
 })
 
-// ---- act two: the +XP tile ----
+// ---- the XP row (the level-up overlay is not raised on this path any more) ----
 
-test('no xpGained means no XP chip at all — never a fabricated number', () => {
+test('no xpGained means no XP row at all — never a fabricated number', () => {
   const { container } = render(<SportCeremony {...props()} />)
-  expect(container.querySelector('.cer-xp')).toBeNull()
-  expect(screen.queryByText('szerzett XP')).not.toBeInTheDocument()
+  expect(container.querySelector('.ec-xp')).toBeNull()
+  expect(screen.queryByText(/szerzett XP/)).not.toBeInTheDocument()
 })
 
-test('the +XP chip shows only when the response carried XP, as a flat gold chip with the coin', () => {
+test('the XP the save earned is a row ON the closing screen, with the coin: „+N szerzett XP · a mai mozgásért"', () => {
   const { container } = render(<SportCeremony {...props({ xpGained: 240 })} />)
-  expect(screen.getByText('+240')).toBeInTheDocument()
-  expect(screen.getByText('szerzett XP')).toBeInTheDocument()
-  expect(container.querySelector('.cer-xp.uv-flat use')).toHaveAttribute('href', '#t-coin')
+  const row = container.querySelector('.ec-numbers .ec-xp .fo-row') as HTMLElement
+  expect(row.querySelector('strong')).toHaveTextContent('+240 szerzett XP')
+  expect(row.querySelector('small')).toHaveTextContent('a mai mozgásért')
+  expect(row.querySelector('use')).toHaveAttribute('href', '#t-coin')
 })
 
 // ---- the kcal tile: three states ----
 
 test('the kcal tile is absent when kcal is unknown — no 0 kcal, no kcal counter either', () => {
   const { container } = render(<SportCeremony {...props()} />)
-  expect(container.querySelector('.cer-kcal')).toBeNull()
-  expect(container.querySelector('[data-cer-count="kcal"]')).toBeNull()
+  expect(container.querySelector('.ec-kcal')).toBeNull()
+  expect(container.querySelectorAll('.ec-tally [data-cer-count]')).toHaveLength(2)
   expect(screen.queryByText(/kcal/)).not.toBeInTheDocument()
+  expect(screen.queryByText('A mai mozgással')).not.toBeInTheDocument()
 })
 
 test('the kcal tile says it is an estimate when the wire says isEstimate', () => {
-  render(<SportCeremony {...props({ kcal: { value: 420, isEstimate: true } })} />)
-  expect(screen.getByText('Ennyit nyertél a mai mozgással')).toBeInTheDocument()
+  const { container } = render(<SportCeremony {...props({ kcal: { value: 420, isEstimate: true } })} />)
+  expect(screen.getByText('A mai mozgással')).toBeInTheDocument()
+  expect(screen.getByText('+420 kcal került a mai keretedbe')).toBeInTheDocument()
   expect(screen.getByText('Becslés, nem mérés')).toBeInTheDocument()
   expect(screen.queryByText('Saját értéked')).not.toBeInTheDocument()
-  // The scene counter and the kcal-tile figure both show the real value.
-  expect(screen.getAllByText('420').length).toBe(2)
+  // The counter and the tile both show the real value.
+  expect([...container.querySelectorAll('.ec-tally > div')].map((d) => d.textContent)).toEqual(['30perc', '5megélt terhelés · 10-ből', '420kcal'])
 })
 
 test('the kcal tile says it is the athlete\'s own value when the wire says the override won', () => {
@@ -138,44 +176,47 @@ test('the kcal tile says it is the athlete\'s own value when the wire says the o
   expect(screen.queryByText('Becslés, nem mérés')).not.toBeInTheDocument()
 })
 
-// ---- the close CTA ----
+// ---- the way out ----
 
-test('the close CTA is a sage glass row carrying the sport\'s own 3D glyph and goes back to Mai', async () => {
+test('the foot is a short „Vissza a mai napra" with „<sport> · elmentve" under it, and goes back to Mai', async () => {
   const user = userEvent.setup()
   const onClose = vi.fn()
-  const { container } = render(<SportCeremony {...props({ onClose, sportName: 'Foci', art: 't-football' })} />)
-  expect(screen.getByText('Foci elmentve')).toBeInTheDocument()
-  const cta = container.querySelector('.cer-go') as HTMLElement
-  expect(cta).toHaveClass('glass', 'is-done')
-  expect(cta.querySelector('use')).toHaveAttribute('href', '#t-football')
-  await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
+  const { container } = render(<SportCeremony {...props({ onClose, sportName: 'Foci' })} />)
+  const foot = container.querySelector('.ec-sport > .fo-foot.nonav > .fo-fcol') as HTMLElement
+  expect(foot.querySelector('.fo-btn')).toHaveTextContent(/^Vissza a mai napra$/)
+  expect(foot.querySelector('.fo-fsub')).toHaveTextContent('Foci · elmentve')
+  await user.click(foot.querySelector('.fo-btn') as HTMLElement)
   expect(onClose).toHaveBeenCalledTimes(1)
 })
 
-// ---- üveg (mezo-me75u.10): the glass ceremony family ----
+// ---- Folyadék (mezo-n4wf5.4): the liquid ceremony family ----
 
-test('it wears the U4 glass ceremony family: 3D stars, 3D counter icons, the kcal halo', () => {
-  const { container } = render(<SportCeremony {...props({ kcal: { value: 300, isEstimate: true } })} />)
-  expect(container.querySelector('.cer-screen')).toHaveClass('uv-cer', 'cer-sport')
-  expect(container.querySelectorAll('.cer-stars i')[0].querySelectorAll('use')).toHaveLength(3)
-  const icons = [...container.querySelectorAll('.cer-counters use')].map((u) => u.getAttribute('href'))
-  expect(icons).toEqual(['#t-clock', '#t-flame', '#t-plate'])
-  expect(container.querySelector('.cer-kcal')).toHaveClass('uv-halo')
-  expect(container.querySelector('.cer-kcal use')).toHaveAttribute('href', '#t-bowl')
+test('it wears the Folyadék ceremony: sprite stars over the cup, numbered cards, the gold kcal row — nothing of the glass skin', () => {
+  const { container } = render(<SportCeremony {...props({ kcal: { value: 300, isEstimate: true }, xpGained: 50 })} />)
+  expect(container.querySelector('.fo-page')).toHaveClass('ec-page', 'ec-sport', 'nonav', 'has-foot')
+  expect(container.querySelectorAll('.fo-cer-stars i')[0].querySelectorAll('use')).toHaveLength(3)
+  expect(container.querySelector('.fo-cup svg')?.getAttribute('viewBox')).toBe('0 -34 200 166')
+  // A sport session sets no record: the cup never spills here.
+  expect(container.querySelectorAll('.fo-cup .sp')).toHaveLength(0)
+  expect([...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual(['1A mai számok', '2A mai mozgással'])
+  expect(container.querySelector('.ec-kcal')).toHaveClass('fo-card', 'gold')
+  expect(container.querySelector('.ec-kcal .fo-bub use')).toHaveAttribute('href', '#t-bowl')
+  expect(container.querySelector('[class^="cer-"], [class*=" cer-"], .glass, [class*="uv-"]')).toBeNull()
 })
 
 // ---- the honesty line ----
 
-test('the honesty line names time and effort, not AI', () => {
+test('the honesty line names time and effort, not a machine\'s judgement', () => {
   render(<SportCeremony {...props()} />)
   expect(screen.getByText(
-    'A csillagok az edzésidőből és az erőfeszítésből számolnak, nem AI-értékelés.',
+    'A csillagok az edzésidőből és az erőfeszítésből számolnak, nem gépi értékelés.',
   )).toBeInTheDocument()
+  expect(screen.queryByText(/AI-értékelés/)).not.toBeInTheDocument()
 })
 
 // ---- copy discipline ----
 
-test('no emoji anywhere — the art is the 3D sprite', () => {
+test('no emoji anywhere — the art is the sprite', () => {
   const { container } = render(<SportCeremony {...props({ kcal: { value: 300, isEstimate: true }, xpGained: 50 })} />)
   const emoji = /\p{Extended_Pictographic}/u
   expect(container.textContent ?? '').not.toMatch(emoji)

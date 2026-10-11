@@ -1,0 +1,13 @@
+/* ── Folyadék · Edzés · eligazitas (mezo-n4wf5.4, slice F4) ── Eligazítás (WorkoutBriefing). Rules of this area only, class prefix `.ei-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-edzes-kozos.css (`.ex-`). Motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the quest card ── the first box / empty vessel of the card sits at its top edge */
+.ei-load > .fo-box, .ei-page .fo-card > .fo-box:first-child, .ei-page .fo-card > .fo-ev:first-child { margin-top: 0; }
+/* a quest row: the bold target stays ink on the quiet sub line (prototype `.fh-row small b`) */
+.ei-quest small b { color: var(--fo-ink); font-weight: 650; }
+.ei-quest .fo-lk { flex: 0 0 auto; }
+/* the note under the quests */
+.ei-page .fo-card > .fo-row + .fo-note, .ei-page .fo-card > .ex-why + .fo-note { margin-top: 12px; }
+
+/* ── the day's list ── the reason line under a row (prototype `.vs-warn`); the row's end is the kit's `RowEnd` */
+.ei-warn { display: block; margin-top: 3px; color: var(--fo-warn); font-weight: 600; }
+.ei-rq { display: inline-grid; }

@@ -1,11 +1,11 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
 
 const base = {
   exerciseName: 'Fekvenyomás',
-  setLabel: '1. working szett',
+  setLabel: '1. szett',
   mode: 'logged' as const,
   kind: 'working' as const,
   exerciseType: 'compound' as const,
@@ -21,13 +21,20 @@ test('a logged working set offers save + delete and the RIR row', () => {
   expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
   expect(screen.getByRole('button', { name: /Szett törlése/ })).toBeEnabled()
   expect(screen.getByLabelText('RIR 2')).toBeInTheDocument()
-  expect(screen.getByText('Fekvenyomás')).toBeInTheDocument()
+  // Folyadék F4: a light sheet — the context line names the set and the exercise, the title says what it is
+  const dialog = screen.getByRole('dialog', { name: 'Szett szerkesztése' })
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(dialog.querySelector('[class*="wo-"], [class*="wos-"], .stepper, .rirrow')).toBeNull()
+  expect(screen.getByText('1. szett · Fekvenyomás')).toBeInTheDocument()
+  expect(screen.getByLabelText('Súly')).toHaveValue('82,5')
+  expect(screen.getByText('Súly · kg')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mégse' })).toBeInTheDocument()
   // A compound exercise shows the weight stepper and hides the Side row — the
   // mirror image of the plyo/isolation assertions below, so a regression that
   // removed the stepper unconditionally or rendered Side unconditionally would
   // be caught here too.
   expect(screen.getByLabelText('Súly növelése')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'L' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('group', { name: 'Oldal' })).not.toBeInTheDocument()
 })
 
 test('the RIR row shows all 6 buttons (0-5) and the correct one is pressed', () => {
@@ -63,9 +70,42 @@ test('a warmup set hides the RIR row', () => {
   expect(screen.queryByLabelText('RIR 2')).not.toBeInTheDocument()
 })
 
-test('an isolation exercise offers the Side row', () => {
-  render(<SetEditSheet {...base} exerciseType="isolation" />)
-  expect(screen.getByRole('button', { name: 'L' })).toBeInTheDocument()
+test('an isolation exercise offers the side: Bal / Mindkettő / Jobb, saved as L / B / R, a second tap clears it', async () => {
+  const onSave = vi.fn()
+  render(<SetEditSheet {...base} exerciseType="isolation" onSave={onSave} />)
+  const side = within(screen.getByRole('group', { name: 'Oldal' }))
+  expect(side.getByRole('button', { name: 'Bal' })).toHaveAttribute('aria-pressed', 'false')
+  await userEvent.click(side.getByRole('button', { name: 'Jobb' }))
+  expect(side.getByRole('button', { name: 'Jobb' })).toHaveAttribute('aria-pressed', 'true')
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave).toHaveBeenLastCalledWith(expect.objectContaining({ side: 'R' }))
+  await userEvent.click(side.getByRole('button', { name: 'Jobb' }))
+  expect(side.getByRole('button', { name: 'Jobb' })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('RIR, the typed weight and the note all reach the save', async () => {
+  const onSave = vi.fn()
+  render(<SetEditSheet {...base} onSave={onSave} />)
+  await userEvent.click(screen.getByLabelText('RIR 0'))
+  const kg = screen.getByLabelText('Súly')
+  await userEvent.clear(kg)
+  await userEvent.type(kg, '83,75')
+  await userEvent.type(screen.getByLabelText('Szett megjegyzés'), 'kemény volt')
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave).toHaveBeenCalledWith({ weight: 83.75, reps: 9, rir: 0, side: null, note: 'kemény volt' })
+  expect(screen.getByLabelText('Szett megjegyzés')).toHaveAttribute('maxlength', '500')
+})
+
+test('delete fires onDelete; Mégse closes without saving', async () => {
+  const onDelete = vi.fn()
+  const onSave = vi.fn()
+  const onClose = vi.fn()
+  render(<SetEditSheet {...base} onDelete={onDelete} onSave={onSave} onClose={onClose} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+  await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1))
+  expect(onSave).not.toHaveBeenCalled()
+  await userEvent.click(screen.getByRole('button', { name: 'Szett törlése' }))
+  expect(onDelete).toHaveBeenCalledTimes(1)
 })
 
 test('a plyo exercise hides the weight stepper', () => {
@@ -78,6 +118,14 @@ test('a pending slot offers delete only, with disabled inputs', () => {
   expect(screen.queryByRole('button', { name: /Mentés/ })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Szett törlése/ })).toBeEnabled()
   expect(screen.getByLabelText('Ismétlés növelése')).toBeDisabled()
+  expect(screen.getByLabelText('Ismétlés')).toBeDisabled()
+  expect(screen.getByLabelText('RIR 2')).toBeDisabled()
+  // it says what it is: the target, read-only — and offers no note field
+  expect(screen.getByRole('dialog', { name: 'Még nincs naplózva' })).toBeInTheDocument()
+  expect(screen.getByText('A cél áll itt — naplózni a gyakorlat soránál tudod.')).toBeInTheDocument()
+  expect(document.querySelector('.el-set')).toHaveClass('is-ro')
+  expect(screen.queryByLabelText('Szett megjegyzés')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Mégse' })).not.toBeInTheDocument()
 })
 
 test('the last remaining slot cannot be deleted and says why', () => {

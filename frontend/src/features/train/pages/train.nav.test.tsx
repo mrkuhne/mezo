@@ -63,8 +63,13 @@ test('the active workout session is a full-screen flow without the sub-nav', () 
   const { container } = renderApp('/train/session')
   expect(container.querySelector('.np-pills')).toBeNull()
   // A fresh start opens the Eligazítás (mezo-mgu2r) — full-screen too, Pull Day's briefing.
-  expect(container.querySelector('.wbr')).not.toBeNull()
-  expect(screen.getByText('Eligazítás')).toBeInTheDocument()
+  // The Folyadék briefing (mezo-n4wf5.4): a kit page without the bottom bar, its own title row (the route is
+  // chrome-free — no title bar, no top tabs), and nothing of the old skin.
+  expect(container.querySelector('.fo-page.ei-page.nonav')).not.toBeNull()
+  expect(container.querySelector('.fo-top, .fo-tabs')).toBeNull()
+  expect(container.querySelector('.ei-page > .fo-ptop')).not.toBeNull()
+  expect(container.querySelector('.wbr, [class*="wbr-"], [class*="wos-"], .glass')).toBeNull()
+  expect(screen.getByRole('heading', { level: 1, name: 'Eligazítás' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^Indulás/ })).toBeInTheDocument()
 })
 

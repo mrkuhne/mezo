@@ -11,6 +11,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { resetMockMedalHistory } from '@/data/train/medalEvaluator'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import { huMonthDay, localDateString } from '@/shared/lib/dates'
 
 // Asserts Phase-1 mock workout data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -50,19 +51,39 @@ function setup() {
   return r
 }
 
-// ---- the card-list idiom (mezo-88iwa.7, T6 Task 3) ----
-// The active phase shows EVERY exercise at once as a `.wo-card`, so a query has to
-// say which card it means. The card's accessible name is the exercise name.
+// ---- the focused-exercise idiom (Folyadék F4, mezo-n4wf5.4) ----
+// ONE exercise is on top (`.ek-hero`, its accessible name is the exercise name) with its set grid; every other
+// exercise is a row (`.ek-row`) that comes on top when tapped. A query says which exercise it means: `card(name)`
+// brings it on top first — exactly what a user does to log anywhere but „Most" — and returns the hero.
 const EX1 = 'Chest Supported Row'
 const EX2 = 'Lat Pulldown · Pronated'
 const EX3 = 'Cable Pull-Around'
 
-function card(name: string): HTMLElement {
-  const el = document.querySelector(`.wo-card[aria-label="${name}"]`)
-  if (!el) throw new Error(`no .wo-card for "${name}"`)
-  return el as HTMLElement
+const heroOf = (name: string) => document.querySelector(`.ek-hero[aria-label="${name}"]`) as HTMLElement | null
+function rowOf(name: string): HTMLElement | null {
+  return (Array.from(document.querySelectorAll('.ek-row')) as HTMLElement[])
+    .find((r) => r.querySelector('strong')?.textContent === name) ?? null
 }
-/** The ✓ of the card's ONE editable row (its cursor slot); null when nothing is loggable. */
+function card(name: string): HTMLElement {
+  if (!heroOf(name)) {
+    const row = rowOf(name)
+    if (!row) throw new Error(`no exercise "${name}" on the session page`)
+    fireEvent.click(row)
+  }
+  const el = heroOf(name)
+  if (!el) throw new Error(`"${name}" did not come on top`)
+  return el
+}
+/** Where an exercise stands, read WITHOUT moving the focus: open / now / done / skipped / swapped. */
+function stateOf(name: string): string | undefined {
+  return (heroOf(name) ?? rowOf(name))?.dataset.state
+}
+/** The exercises in session order (the small vessels on top are one per exercise, in order). */
+const cardOrder = () =>
+  Array.from(document.querySelectorAll('.ex-pv > button')).map((b) => b.getAttribute('aria-label')!.split(' · ').slice(0, -1).join(' · '))
+/** The three-dot button of the exercise on top (there is exactly one on the page). */
+const menuButton = () => screen.getByRole('button', { name: /· további műveletek$/ })
+/** The ✓ of the exercise's ONE editable row (its cursor slot); null when nothing is loggable. */
 function submitOf(name: string): HTMLElement {
   return within(card(name)).getByRole('button', { name: /szett mentése$/ })
 }
@@ -70,44 +91,53 @@ function querySubmitOf(name: string): HTMLElement | null {
   return within(card(name)).queryByRole('button', { name: /szett mentése$/ })
 }
 const kgInput = (name: string) => within(card(name)).getByRole('textbox', { name: /súly$/ })
-const repsInput = (name: string) => within(card(name)).getByRole('spinbutton', { name: /ismétlés$/ })
+const repsInput = (name: string) => within(card(name)).getByRole('textbox', { name: /ismétlés$/ })
 async function typeInto(user: ReturnType<typeof userEvent.setup>, input: HTMLElement, value: string | number) {
   await user.clear(input)
   await user.type(input, String(value))
 }
-/** Rows of one card, in slot order. */
-const rowsOf = (name: string) => Array.from(card(name).querySelectorAll('.wo-row')) as HTMLElement[]
-/** The already-logged (tappable) rows of one card. */
+/** Rows of the exercise's set grid, in slot order. */
+const rowsOf = (name: string) => Array.from(card(name).querySelectorAll('.ex-sets > .r')) as HTMLElement[]
+/** The slot numbers of the grid. */
+const slotNumbers = (name: string) => Array.from(card(name).querySelectorAll('.ex-sets .n')).map((n) => n.textContent)
+/** The already-logged sets of one exercise: their marks open the set editor. */
 const doneRowsOf = (name: string) =>
   within(card(name)).queryAllByRole('button', { name: /szett szerkesztése/ })
+/** The numbers of one logged set as its row shows them: [kg, ism, RIR]. */
+const doneCells = (name: string, i: number) =>
+  Array.from(doneRowsOf(name)[i].parentElement!.querySelectorAll('.v')).map((c) => c.textContent)
+/** The debrief sheet's way on (its copy is the sheets' own: „Mentés · tovább" / „Edzés vége"). */
+const DEBRIEF_CTA = /Mentés · tovább|Edzés vége/
+/** The closing ceremony's overline: the mark that the ceremony is up. */
+const CEREMONY = /Így sikerült/
 
 async function skipRest(user: ReturnType<typeof userEvent.setup>) {
-  const skip = screen.queryByRole('button', { name: 'Kész' })
+  const skip = screen.queryByRole('button', { name: 'Tovább' })
   if (skip) await user.click(skip)
 }
-/** Log the card's next set and clear the rest it starts. */
+/** Log the exercise's next set and clear the rest it starts. */
 async function logSet(user: ReturnType<typeof userEvent.setup>, name = EX1) {
   await user.click(submitOf(name))
   await skipRest(user)
 }
 // A fresh start opens the Eligazítás (mezo-mgu2r); an open instance resumes straight into the
-// list. In real mode the page shows the skeleton until /today + /meso resolve, so tests that
-// need the list await it here and tap Indulás when the briefing is up; mock mode's setup()
-// already did.
+// session page. In real mode the page shows the skeleton (which has its own Vissza) until /today + /meso
+// resolve, so tests that need the page wait for Indulás or the hero, and tap Indulás when the briefing is up;
+// mock mode's setup() already did.
 async function enterList() {
-  await screen.findByRole('button', { name: 'Vissza' })
+  await waitFor(() => expect(screen.queryByRole('button', { name: /^Indulás/ }) ?? document.querySelector('.ek-hero')).not.toBeNull())
   const start = screen.queryByRole('button', { name: /^Indulás/ })
   if (start) fireEvent.click(start)
-  await waitFor(() => expect(document.querySelector('.wo-list')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('.ek-hero')).not.toBeNull())
 }
-// Set counts vary per exercise (warmup + working sets), so a fixed loop is fragile:
-// log until the card has no editable row left (its debrief CTA is then up).
+// Set counts vary per exercise, so a fixed loop is fragile: log until the exercise has no editable row left (its
+// debrief is then up).
 async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>, name = EX1) {
   for (let i = 0; i < 12; i++) {
     const btn = querySubmitOf(name)
     if (!btn) return
     await user.click(btn)
-    if (screen.queryByText(/Mentés · tovább|Edzés vége →/)) return
+    if (screen.queryByText(DEBRIEF_CTA)) return
     await skipRest(user)
   }
 }
@@ -121,9 +151,9 @@ const startBtn = () => screen.getByRole('button', { name: /^Indulás/ })
 test('a fresh start opens the Eligazítás — duration band, counts, no cards yet', () => {
   setupBrief()
   expect(screen.getByText('Eligazítás')).toBeInTheDocument()
-  expect(screen.getByLabelText(/várható időtartam/).textContent).toMatch(/\d+–\d+perc/)
-  expect(screen.getByText('5 gyakorlat')).toBeInTheDocument()
-  expect(document.querySelector('.wo-card')).toBeNull()
+  expect(screen.getByLabelText(/várható időtartam/).textContent).toMatch(/\d+–\d+ perc/)
+  expect(screen.getByLabelText(/várható időtartam/)).toHaveTextContent('5gyakorlat')
+  expect(document.querySelector('.ek-hero')).toBeNull()
 })
 
 test('none of the retired prep surfaces come back: no Kezdjük el, no XP forecast, no mosaic tiles', () => {
@@ -139,7 +169,7 @@ test('the briefing carries the niggle with its real detail prose; the list no lo
   const strip = screen.getByRole('note', { name: 'Sérülés-figyelmeztetés' })
   expect(strip.textContent).toContain('a Cable Pull-Around-ot előrébb hozzuk')
   fireEvent.click(startBtn())
-  expect(document.querySelector('.wo-list')).not.toBeNull()
+  expect(document.querySelector('.ek-page')).not.toBeNull()
   expect(document.querySelector('.warmstrip')).toBeNull()
 })
 
@@ -164,9 +194,9 @@ test('the exercise list marks the exercises a ticked challenge targets', () => {
   expect(screen.getAllByRole('img', { name: 'Van vállalt küldetés' }).length).toBeGreaterThan(0)
 })
 
-test('the "Miért ezt?" fold reads prose — no conf code, no tool chips; passzolni ér is said', () => {
+test('the "Miért?" fold reads prose — no conf code, no tool chips; passzolni ér is said', () => {
   setupBrief()
-  fireEvent.click(screen.getAllByRole('button', { name: 'Miért ezt? ›' })[0])
+  fireEvent.click(screen.getAllByRole('button', { name: 'Miért?' })[0])
   expect(screen.queryByText(/conf/i)).not.toBeInTheDocument()
   expect(screen.queryByText('get_pr_history(ex=chest_row)')).not.toBeInTheDocument()
   expect(screen.getByText(/Passzolni ér/)).toBeInTheDocument()
@@ -177,7 +207,7 @@ test('after Indulás the list carries no session-level panel: no quest row, no o
   setup()
   expect(document.querySelector('.wos-fresh')).toBeNull()
   expect(document.querySelector('.wos-ovl')).toBeNull()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   expect(screen.queryByText('Küldetések')).toBeNull()
 })
 
@@ -188,7 +218,8 @@ test('a challenge taken on shows as its card\'s badge; Elengedem releases it, Vi
   await user.click(badge)
   await user.click(screen.getByRole('button', { name: 'Elengedem' }))
   const released = within(card(EX2)).getByRole('button', { name: 'Mélység küldetés · elengedve' })
-  expect(released).toHaveClass('is-released')
+  expect(released).toHaveClass('rel')
+  expect(released.querySelector('s')).not.toBeNull() // the target is struck through
   await user.click(released)
   await user.click(screen.getByRole('button', { name: 'Visszaveszem' }))
   expect(within(card(EX2)).getByRole('button', { name: 'Mélység küldetés · vállalva' })).toBeInTheDocument()
@@ -201,28 +232,35 @@ test('a card names its exercise and carries one row per WORKING slot', async () 
   expect(rowsOf(EX1)).toHaveLength(3)
 })
 
-test('mock mode: the card head carries the vs-last-week chip — no Múlt hét / Ma a cél cells (mezo-mgu2r)', async () => {
+// Owner round (mezo-n4wf5.4): the exercise on top is LEAN — muscle chip + name. The vs-last-week chip lives on the
+// exercise's ROW (while it is not on top); the Múlt hét / Mai cél cells live on the Rekordok sheet.
+test('mock mode: the hero is lean — no vs-last-week chip, no Múlt hét / Mai cél cells; the row carries the chip', async () => {
   setup()
-  expect(card(EX1).querySelector('.wo-card-head .wo-delta')).toHaveTextContent('↑ +2,5 kg')
-  expect(card(EX1).querySelector('.pobanner')).toBeNull()
-  expect(within(card(EX1)).queryByText('Múlt hét')).toBeNull()
+  expect(heroOf(EX1)!.querySelector('.ex-dchip')).toBeNull()
+  expect(heroOf(EX1)!.querySelector('.pobanner')).toBeNull()
+  expect(within(heroOf(EX1)!).queryByText('Múlt hét')).toBeNull()
+  expect(rowOf(EX2)!.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
+  // …and it is the same chip for the first exercise once another one is on top.
+  fireEvent.click(rowOf(EX2)!)
+  expect(rowOf(EX1)!.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
 })
 
 // ---- Execution card v2 (mezo-8xmf) → calm re-face (mezo-d20.3.9): the muscle-themed
 // card, its metaline and the single logging panel ----
 
-// The old eyebrow (`idx/n · izom · típus`), the muted metaline and the set-budget
-// style hints (`🔥 bukásig!` / `🌿 hagyj 2 rep tartalékot`) had their home in the
-// one-exercise-at-a-time execution card, which this slice retires. The poster card's
-// head carries the identity instead: the muscle art, the name, and the two buttons
-// that open the (T4/T5) glass surfaces.
-test('mock mode: the card head carries the muscle art, the records button and the ⋮ menu', async () => {
+// The hero carries the identity: the muscle art, the name, the Rekordok tool and — in its top right corner — the
+// round three-dot button that opens the per-exercise menu (it replaced the header's ⋯).
+test('mock mode: the hero carries the muscle art, the Rekordok tool and the corner three-dot menu', async () => {
   setup()
-  const head = card(EX1).querySelector('.wo-card-head') as HTMLElement
-  expect(within(head).getByText(EX1)).toBeInTheDocument()
-  expect(head.querySelector('.wo-card-art')).not.toBeNull()
-  expect(within(head).getByRole('button', { name: `${EX1} · előzmények és rekordok` })).toBeInTheDocument()
-  expect(within(head).getByRole('button', { name: `${EX1} · további műveletek` })).toBeInTheDocument()
+  const hero = card(EX1)
+  expect(within(hero).getByText(EX1)).toBeInTheDocument()
+  expect(hero.querySelector('.fo-hero-left .ex-mchp')).not.toBeNull()
+  expect(within(hero).getByRole('button', { name: `${EX1} · előzmények és rekordok` })).toHaveTextContent('Rekordok')
+  const dots = within(hero).getByRole('button', { name: `${EX1} · további műveletek` })
+  expect(dots).toHaveClass('fo-dotsbtn')
+  expect(dots.parentElement).toBe(hero) // a DIRECT child: that is what puts it in the corner
+  // Mock exercises carry no video: no Technika tool without one.
+  expect(within(hero).queryByRole('button', { name: 'Technika' })).toBeNull()
 })
 
 // mezo-i8ahy: RIR is a FIELD on the row, beside kg and rep (prototype `setRow()`), not a
@@ -236,56 +274,63 @@ test('real mode: the RIR field is inline on the row, pre-filled and bounded 0-5'
   )
   setup()
   await enterList()
+  const user = userEvent.setup()
   const row = within(card(EX1)).getByRole('button', { name: /szett mentése$/ }).closest('form') as HTMLElement
-  const rir = within(row).getByLabelText(/RIR$/)
-  expect(rir).toHaveAttribute('min', '0')
-  expect(rir).toHaveAttribute('max', '5')
+  // The field says its own bounds; typing past them is clamped (one digit, the last key wins).
+  const rir = within(row).getByLabelText(/RIR \(0–5\)$/)
+  expect(rir).toHaveValue('4') // last week's RIR — this fixture carries no prescription
+  await user.type(rir, '9')
+  expect(rir).toHaveValue('5')
+  await user.type(rir, '3')
+  expect(rir).toHaveValue('3')
   expect(screen.queryByRole('button', { name: 'RIR 0' })).toBeNull()
-  expect(document.querySelector('.wo-pick')).toBeNull()
+  expect(document.querySelector('.ex-side')).toBeNull()
 })
 
-test('mock mode: the session progress bar renders one segment per exercise', async () => {
+test('mock mode: the small vessels on top are one per exercise; the one on top is current', async () => {
   const { container } = setup()
   // Pull Day (mock) has 5 exercises.
-  expect(container.querySelectorAll('.wkx-progressbar span')).toHaveLength(5)
+  const vessels = Array.from(container.querySelectorAll('.ex-pv > button'))
+  expect(vessels).toHaveLength(5)
+  expect(vessels[0]).toHaveAttribute('aria-label', `${EX1} · 0 / 3 szett`)
+  expect(vessels.map((v) => v.getAttribute('aria-current'))).toEqual(['true', null, null, null, null])
 })
 
-test('the sticky header shows the workout title, the live set counter and the Vissza + ⋯ buttons', async () => {
+test('the title row shows the workout title, the live set counter and Vissza — the menu moved to the hero', async () => {
   const { container } = setup()
-  expect(container.querySelector('.wk-top .t1')).toHaveTextContent('Pull Day')
-  // No exercise counter / dots / jump trigger anymore — every exercise is on screen,
-  // so the header only carries the session's own set progress. WORKING sets only
-  // (mezo-i8ahy): 15 = 3+3+3+3+3, the warm-up ramps count for nothing on screen.
-  // U4 (mezo-me75u.4): the done count is its own lit <b>, so the counter reads as one line.
-  expect(container.querySelector('.wk-top .t2')).toHaveTextContent('0/15 szett')
-  expect(container.querySelector('.wk-top .t2 b')).toHaveTextContent('0')
+  expect(container.querySelector('.fo-ptop h1')).toHaveTextContent('Pull Day')
+  // The title row only carries the session's own set progress. WORKING sets only (mezo-i8ahy):
+  // 15 = 3+3+3+3+3, the warm-up ramps count for nothing on screen.
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('0 / 15 szett kész')
+  expect(container.querySelector('.fo-ptop')).toHaveAttribute('data-kalauz-anchor', 'session-start')
   expect(container.querySelectorAll('.exdots i')).toHaveLength(0)
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Gyakorlat műveletek' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Gyakorlat műveletek' })).toBeNull()
+  expect(menuButton()).toHaveAccessibleName(`${EX1} · további műveletek`)
 })
 
-test('completing a set marks the row done and advances the header counter', async () => {
+test('completing a set marks the row done and advances the title row counter', async () => {
   const user = userEvent.setup()
   const { container } = setup()
-  expect(container.querySelector('.wk-top .t2')).toHaveTextContent('0/15 szett')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('0 / 15 szett kész')
   expect(doneRowsOf(EX1)).toHaveLength(0)
   await user.click(submitOf(EX1))
   expect(doneRowsOf(EX1)).toHaveLength(1)
-  expect(container.querySelector('.wk-top .t2')).toHaveTextContent('1/15 szett')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('1 / 15 szett kész')
 })
 
 // ---- rest wiring: "Szett kész ✓" morphs the dock into its resting look (mezo-xt65,
-// T6 Task 6: the dock — `.wo-dock.is-resting` — replaces the old `.restbar`) ----
+// T6 Task 6: the dock — `.ex-dock.is-resting` — replaces the old `.restbar`) ----
 
 test('mock mode: logging a mid-exercise set starts the rest countdown', async () => {
   const user = userEvent.setup()
   setup()
-  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(document.querySelector('.ex-dock.is-resting')).toBeNull()
   // ex1 (Chest Supported Row, compound): 2 warmup + 3 working = 5 planned sets.
   // Logging the first (a warmup) leaves 4 sets remaining -> the exercise continues.
   await user.click(submitOf(EX1))
-  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
-  expect(screen.getByText(/PIHENŐ · CHEST SUPPORTED ROW/)).toBeInTheDocument()
+  expect(document.querySelector('.ex-dock.is-resting')).not.toBeNull()
+  expect(screen.getByText('pihenő · Chest Supported Row')).toBeInTheDocument()
   // The card list never hides the next row behind the rest — the cursor simply moved.
   expect(doneRowsOf(EX1)).toHaveLength(1)
 })
@@ -294,8 +339,8 @@ test('mock mode: skipping the rest (dock\'s Kész) clears the resting dock', asy
   const user = userEvent.setup()
   setup()
   await user.click(submitOf(EX1))
-  await user.click(screen.getByRole('button', { name: 'Kész' }))
-  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  expect(document.querySelector('.ex-dock.is-resting')).toBeNull()
   expect(submitOf(EX1)).toBeInTheDocument()
 })
 
@@ -308,7 +353,7 @@ test('mock mode: the dock\'s +30s extends the rest countdown', async () => {
     return m * 60 + s
   }
   const before = parseMMSS(screen.getByText(/^\d+:\d+$/).textContent!)
-  await user.click(screen.getByRole('button', { name: '+30s' }))
+  await user.click(screen.getByRole('button', { name: '+30 mp' }))
   const after = parseMMSS(screen.getByText(/^\d+:\d+$/).textContent!)
   // Allow a little wall-clock drift (userEvent isn't instantaneous) — the point is the
   // 30s bump landed, not that not a single tick elapsed.
@@ -322,18 +367,18 @@ test('mock mode: logging an exercise\'s final set (opens the feedback modal) sta
   for (let i = 0; i < 2; i++) await logSet(user)
   // The 3rd (last) set completes the exercise -> feedback modal opens, no rest.
   await user.click(submitOf(EX1))
-  expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
-  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(await screen.findByText(DEBRIEF_CTA)).toBeInTheDocument()
+  expect(document.querySelector('.ex-dock.is-resting')).toBeNull()
 })
 
 test('mock mode: the rest bar belongs to the SESSION — it survives logging on another card', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(submitOf(EX1)) // rest starts on ex1
-  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
+  expect(document.querySelector('.ex-dock.is-resting')).not.toBeNull()
   // The rest is the user's, not one card's — working another card keeps it running.
   await user.click(submitOf(EX2))
-  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
+  expect(document.querySelector('.ex-dock.is-resting')).not.toBeNull()
   expect(doneRowsOf(EX2)).toHaveLength(1)
 })
 
@@ -341,14 +386,14 @@ test('mock mode: the closing ceremony (workout end) shows no dock at all', async
   const user = userEvent.setup()
   setup()
   // Skip ex0 (no rest on skip), then drive the remaining 4 exercises to completion.
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(user)
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   // The active-phase-only dock unmounts entirely on the ceremony.
-  await waitFor(() => expect(document.querySelector('.wo-dock')).toBeNull())
+  await waitFor(() => expect(document.querySelector('.ex-dock')).toBeNull())
 })
 
 test('mock mode: the editable row pre-fills from the slot\'s prescribed target', async () => {
@@ -356,12 +401,12 @@ test('mock mode: the editable row pre-fills from the slot\'s prescribed target',
   // ex1: the warm-up rungs (52,5×8, 80×3) are never shown, so the cursor row is the
   // first WORKING slot — 105 × 10 (mezo-i8ahy).
   expect(kgInput(EX1)).toHaveValue('105')
-  expect(repsInput(EX1)).toHaveValue(10)
+  expect(repsInput(EX1)).toHaveValue('10')
 })
 
 test('mock mode: the rows are the working slots, numbered 1..n', async () => {
   setup()
-  const idx = Array.from(card(EX1).querySelectorAll('.wo-idx')).map((n) => n.textContent)
+  const idx = slotNumbers(EX1)
   // ex1: two warmups (never shown) then three working slots.
   expect(idx).toEqual(['1', '2', '3'])
 })
@@ -370,11 +415,10 @@ test('mock mode: the rows are the working slots, numbered 1..n', async () => {
 // HAS a lastWeek to compare — the structured ProgressionBanner is the single statement
 // of progression (the owner saw the same sentence three times). The rationale prose
 // keeps its one slot for a first-ever exercise only (WorkoutCard.tsx, the `cue` const).
-test('mock mode: a card with a progression shows the chip only — no .wo-cue, no sentence', async () => {
+test('mock mode: an exercise with a last week shows no reason line and no progression sentence on top', async () => {
   setup()
   const c = card(EX1)
-  expect(c.querySelector('.wo-cue')).toBeNull()
-  expect(c.querySelector('.wo-delta')).not.toBeNull()
+  expect(c.querySelector('.ex-xl')).toBeNull()
   expect(within(c).queryAllByText(/Múlt hét 9 × 102.5 kg → \+2.5 kg/)).toHaveLength(0)
 })
 
@@ -398,52 +442,51 @@ test('mock mode: only the cursor slot is editable; later slots render their pres
   // Working set 1 is the cursor slot — the ONE editable row of the card, with all three
   // fields (kg, rep, RIR) inline on it.
   expect(rows[0].tagName).toBe('FORM')
-  // kg is a text field on the decimal keypad (mezo-py1i6); reps + RIR are spinbuttons.
-  expect(within(rows[0]).getAllByRole('textbox')).toHaveLength(1)
-  expect(within(rows[0]).getAllByRole('spinbutton')).toHaveLength(2)
+  // kg is a text field on the decimal keypad (mezo-py1i6); reps + RIR are text fields on the numeric keypad.
+  expect(within(rows[0]).getByRole('textbox', { name: /súly$/ })).toHaveAttribute('inputmode', 'decimal')
+  expect(within(rows[0]).getByRole('textbox', { name: /ismétlés$/ })).toHaveAttribute('inputmode', 'numeric')
+  expect(within(rows[0]).getAllByRole('textbox')).toHaveLength(3)
   // Working set 2 is a later pending row: its prescribed target, no inputs at all.
   expect(rows[1].tagName).toBe('DIV')
-  expect(within(rows[1]).queryAllByRole('spinbutton')).toHaveLength(0)
   expect(within(rows[1]).queryAllByRole('textbox')).toHaveLength(0)
   expect(rows[1]).toHaveTextContent('105')
   expect(rows[1]).toHaveTextContent('8–10')
 })
 
-// Fix wave I2: the verdict cell is 22×22 and ICON-ONLY (prototype `verdictCell`) — the
-// sentence rides on its title/aria-label, and a RECORD medal takes the cell over
-// entirely when the set earned one. So the assertions below read the title, which is
-// present in every case, rather than overflowing text that only existed medal-less.
-test('mock mode: a logged working set below the prescribed rep range is marked "cél alatt"', async () => {
+// The mark at the end of a logged row says the verdict against the prescribed rep range, and its accessible name
+// carries the word. A RECORD takes the mark over (see the medal tests below), so these cases log a record-free
+// SECOND set: the first set of the session beats last week on weight whatever its reps are.
+test('mock mode: a logged working set below the prescribed rep range is marked „cél alatt"', async () => {
   const user = userEvent.setup()
   setup()
-  // Prefilled reps = 10 (the engine target); drop to 5 — below ex1's repMin (8).
+  await logSet(user) // 105 × 10
+  // Prefilled reps = 10; drop to 5 — below ex1's repMin (8), and no record against the first set.
   await typeInto(user, repsInput(EX1), 5)
   await user.click(submitOf(EX1))
-  const workingRow = within(card(EX1)).getAllByRole('button', { name: /szett szerkesztése/ })[0]
-  const cell = workingRow.querySelector('.wo-verdict')!
-  expect(cell).toHaveClass('is-below')
-  expect(cell.getAttribute('title')).toMatch(/Cél alatt/)
+  await waitFor(() => expect(doneRowsOf(EX1)[1]).toHaveAccessibleName('2. szett szerkesztése · cél alatt'))
+  expect(doneRowsOf(EX1)[1].querySelector('use')!.getAttribute('href')).toBe('#t-down')
 })
 
-test('mock mode: a logged working set above the prescribed rep range is marked "cél felett"', async () => {
+test('mock mode: a logged working set above the prescribed rep range is marked „cél fölött"', async () => {
   const user = userEvent.setup()
   setup()
-  // Prefilled reps = 10 (the repMax boundary, still "ok"); bump to 11 — above repMax.
+  await typeInto(user, repsInput(EX1), 12)
+  await logSet(user) // 105 × 12 (the record)
+  // 11 is above repMax (10) and under the 12 just logged — above the range, not a record.
   await typeInto(user, repsInput(EX1), 11)
   await user.click(submitOf(EX1))
-  const workingRow = within(card(EX1)).getAllByRole('button', { name: /szett szerkesztése/ })[0]
-  const cell = workingRow.querySelector('.wo-verdict')!
-  expect(cell).toHaveClass('is-above')
-  expect(cell.getAttribute('title')).toMatch(/Cél felett/)
+  await waitFor(() => expect(doneRowsOf(EX1)[1]).toHaveAccessibleName('2. szett szerkesztése · cél fölött'))
+  expect(doneRowsOf(EX1)[1].querySelector('use')!.getAttribute('href')).toBe('#t-up')
 })
 
 // ---- warmup vs working distinction on the logging card (mezo-eerq) ----
 
 test('mock mode: every editable row carries its RIR field, and no pill strip survives', async () => {
   setup()
-  expect(within(card(EX1)).getByLabelText(/RIR$/)).toBeInTheDocument()
+  expect(within(card(EX1)).getByLabelText(/RIR \(0–5\)$/)).toBeInTheDocument()
   expect(within(card(EX1)).queryByRole('button', { name: 'RIR 0' })).not.toBeInTheDocument()
-  expect(card(EX1).querySelector('.wo-pick')).toBeNull()
+  // …and the side picker belongs to isolation work only (ex1 is a compound).
+  expect(card(EX1).querySelector('.ex-side')).toBeNull()
 })
 
 test('mock mode: a deviated working-set weight carries into the next working set', async () => {
@@ -591,7 +634,7 @@ test('mock mode: logging a set that beats the mock lastWeek fires the RECORD med
   // target (TARGET_HIT) — three medals on one set. The toast shows the highest-
   // priority RECORD (WEIGHT before E1RM) and counts the other two.
   await user.click(submitOf(EX1)) // working set 1 -> RECORD
-  expect(await screen.findByText('ÚJ REKORD · SÚLY')).toBeInTheDocument()
+  expect(await screen.findByText('Új rekord · súly')).toBeInTheDocument()
   expect(screen.getByText('105 kg × 10')).toBeInTheDocument()
   // Mock-mode RECORD medals never carry a previousDate (medalEvaluator.ts) — the
   // "— … óta állt" clause must be dropped, never render as "null"/"undefined".
@@ -625,82 +668,51 @@ test('real mode: a set-log response with only a TARGET_HIT medal shows no toast 
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(submitOf(EX1))
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5'))
-  expect(screen.queryByText(/ÚJ REKORD/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Új rekord/)).not.toBeInTheDocument()
 })
 
-// ---- the set-row half of the two-tier split (mezo-wp6n) ----
-// v4 (mezo-8xmf): the read-only row is now a `<button class="wkx-srow">` found
-// by its aria-label (setSlotLabel), not by a `.stag` kind tag — the old
-// "Bemel."/"Working" text tags are gone (the marker circle + row label carry
-// that distinction now). RECORD medal chips (MedalChip, role="img") still
-// render in the row's status cell; the old coral/sage "done-tick" Icon that
-// tracked the TARGET_HIT medal is GONE — the v4 status column already conveys
-// hit/miss directly via the rep-range status (✓ / ▼ cél alatt / ▲ cél felett),
-// so that distinction no longer needs a second, medal-driven visual.
-const firstWorkingRow = () => within(card(EX1)).getAllByRole('button', { name: /szett szerkesztése/ })[0]
+// ---- the set-row half of the two-tier split (mezo-wp6n), in the Folyadék grid (mezo-n4wf5.4) ----
+// A logged row ends in ONE mark that opens the set editor. The mark says the verdict (célsávban / cél alatt / cél
+// fölött) and a RECORD-tier medal takes it over as the gold record mark — however many records the set earned (their
+// names are told by the toast and listed on the closing ceremony). A TARGET_HIT alone changes nothing: the in-range
+// verdict already says it.
+const firstWorkingRow = () => doneRowsOf(EX1)[0]
 
-test('mock mode: a set that hits its target gets a sage ✓ status and a chip per RECORD medal', async () => {
+test('mock mode: a set that earns RECORD medals ends in the ONE record mark', async () => {
   const user = userEvent.setup()
   setup()
-  // ex1 working sets are prescribed 105 kg × 10 and prefill to exactly that, so
-  // set index 2 earns WEIGHT + E1RM (RECORD) *and* TARGET_HIT (TARGET) — the
-  // three-medal case that makes the loud/quiet split visible on one row.
-  await user.click(submitOf(EX1)) // working set 1
-
-  // Exactly TWO chips — the TARGET_HIT contributes none (MedalChip gates on tier).
-  await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
-  const workingRow = firstWorkingRow()
-  expect(within(workingRow).getByRole('img', { name: 'Súly-rekord' })).toBeInTheDocument()
-  expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
-  // 10 reps is within ex1's prescribed [8,10] range -> the in-range verdict. The two
-  // medals OWN the 22px cell (I2), so the verdict itself is carried by the title.
-  expect(workingRow.querySelector('.wo-verdict')).toHaveClass('is-ok')
-  expect(workingRow.querySelector('.wo-verdict')!.getAttribute('title')).toMatch(/javasolt rep-sávban/)
-
+  // ex1 working sets are prescribed 105 kg × 10 and prefill to exactly that, so the set earns WEIGHT + E1RM
+  // (RECORD) *and* TARGET_HIT (TARGET) — three medals, one mark.
+  await user.click(submitOf(EX1))
+  await waitFor(() => expect(firstWorkingRow()).toHaveAccessibleName('1. szett szerkesztése · rekord'))
+  const uses = firstWorkingRow().querySelectorAll('use')
+  expect(uses).toHaveLength(1)
+  expect(uses[0].getAttribute('href')).toBe('#t-record')
+  // The numbers stay on the row itself.
+  expect(doneCells(EX1, 0)).toEqual(['105', '10', '0'])
 })
 
-// mezo-fsz2r Task 4 sweep. The surfaces slice restored `.wo-verdict` to the prototype's
-// `display: grid` and keeps the production-only two-medal row behind
-// `.wo-verdict:has(> [role="img"] + [role="img"])` (prototype.css). That selector keys on
-// ADJACENT DIRECT CHILDREN — a medal wrapped in one more element, or a third node slipped
-// between the two chips, silently drops the flex row and the second medal gets clipped by
-// the cell's `overflow: hidden`. jsdom cannot compute the stylesheet, so this pins the DOM
-// SHAPE the selector needs instead of the painted result.
-test('mock mode: two RECORD medals are two ADJACENT DIRECT [role="img"] children of the verdict cell', async () => {
-  const user = userEvent.setup()
-  setup()
-  await user.click(submitOf(EX1)) // the WEIGHT + E1RM (+ TARGET_HIT, chip-less) set
-
-  await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
-  const cell = firstWorkingRow().querySelector('.wo-verdict')!
-  const directImgs = cell.querySelectorAll(':scope > [role="img"]')
-  expect(directImgs).toHaveLength(2)
-  // ...and they are siblings with nothing between them, which is what `+` requires.
-  expect(directImgs[0].nextElementSibling).toBe(directImgs[1])
-  expect(cell.children).toHaveLength(2)
-})
-
-test('mock mode: a set that sets records still shows its chips even when the logged weight misses the prescribed target', async () => {
+test('mock mode: a set that sets records still gets the record mark even when the logged weight misses the prescribed target', async () => {
   const user = userEvent.setup()
   setup()
   // Drop the prefilled 105 kg to 102.5 — under the prescribed 105, so NO TARGET_HIT,
   // yet 102,5 × 10 still beats lastWeek (102,5 × 9) on REPS_AT_WEIGHT and E1RM.
   await typeInto(user, kgInput(EX1), 102.5)
-  await user.click(submitOf(EX1)) // working set 1
+  await user.click(submitOf(EX1))
+  await waitFor(() => expect(firstWorkingRow()).toHaveAccessibleName('1. szett szerkesztése · rekord'))
+})
 
-  await waitFor(() => expect(within(firstWorkingRow()).getAllByRole('img')).toHaveLength(2))
-  const workingRow = firstWorkingRow()
-  expect(within(workingRow).getByRole('img', { name: 'Rep-rekord' })).toBeInTheDocument()
-  expect(within(workingRow).getByRole('img', { name: '1RM-rekord' })).toBeInTheDocument()
-  // The weight miss doesn't affect reps (still 10, within [8,10]) -> still in-range;
-  // the verdict is rep-range-only, unlike the old TARGET_HIT tick.
-  expect(workingRow.querySelector('.wo-verdict')).toHaveClass('is-ok')
+test('mock mode: a set with no record keeps its rep-range verdict as the mark', async () => {
+  const user = userEvent.setup()
+  setup()
+  await logSet(user) // 105 × 10 — the record
+  await user.click(submitOf(EX1)) // 105 × 10 again: a tie earns nothing, inside the 8–10 range → „célsávban"
+  await waitFor(() => expect(doneRowsOf(EX1)[1]).toHaveAccessibleName('2. szett szerkesztése · célsávban'))
+  expect(doneRowsOf(EX1)[1].querySelector('use')!.getAttribute('href')).toBe('#t-tick')
 })
 
 // The card list has no "next exercise" to hand over to — a reorder now literally
 // restacks the cards, which is the thing to assert.
-const cardOrder = () =>
-  Array.from(document.querySelectorAll('.wo-card')).map((c) => c.getAttribute('aria-label'))
 
 test('reordering remaining exercises restacks the cards', async () => {
   const user = userEvent.setup()
@@ -718,7 +730,7 @@ test('reordering remaining exercises restacks the cards', async () => {
 test('the menu\'s own exercise can be moved back', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Hátrébb'))
   await waitFor(() => expect(cardOrder().slice(0, 2)).toEqual([EX2, EX1]))
 })
@@ -729,8 +741,8 @@ test('a card\'s own ⋮ menu targets THAT exercise, not the session cursor', asy
   await user.click(within(card(EX2)).getByRole('button', { name: `${EX2} · további műveletek` }))
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   // The SECOND card is the one that got skipped — the first is untouched.
-  await waitFor(() => expect(card(EX2)).toHaveClass('is-skipped'))
-  expect(card(EX1)).not.toHaveClass('is-skipped')
+  await waitFor(() => expect(stateOf(EX2)).toBe('skipped'))
+  expect(stateOf(EX1)).not.toBe('skipped')
 })
 
 // mezo-vad0: a phase flip swaps the whole tree WITHOUT a route change, so the page must
@@ -754,10 +766,10 @@ test('Szett hozzáadása adds an extra set: the card grows 3→4 rows', async ()
   const user = userEvent.setup()
   setup()                                                   // active: Chest Supported Row shows its 3 WORKING slots
   expect(rowsOf(EX1)).toHaveLength(3)
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Szett hozzáadása'))             // adds one extra set; sheet closes
   expect(rowsOf(EX1)).toHaveLength(4)
-  const idx = Array.from(card(EX1).querySelectorAll('.wo-idx')).map((n) => n.textContent)
+  const idx = slotNumbers(EX1)
   expect(idx).toEqual(['1', '2', '3', '4'])
 })
 
@@ -768,16 +780,20 @@ test('⋯ Gyakorlat kihagyása collapses the exercise\'s card without opening th
   // fix, mezo-8141 — Ride-along A), not leave the bar counting toward an
   // abandoned exercise.
   await user.click(submitOf(EX1))
-  expect(document.querySelector('.wo-dock.is-resting')).not.toBeNull()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  expect(document.querySelector('.ex-dock.is-resting')).not.toBeNull()
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   // The card collapses in place — no FeedbackModal / debrief CTA.
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
-  expect(within(card(EX1)).getByText('KIHAGYVA')).toBeInTheDocument()
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
+  // The page moved on to the next open exercise; the skipped one is a quiet row that says so…
+  expect(heroOf(EX2)).not.toBeNull()
+  expect(rowOf(EX1)).toHaveTextContent('kihagyva')
+  expect(within(rowOf(EX1)!).getByText('Kihagyva')).toBeInTheDocument()
+  // …and brought back on top it shows its state instead of a set grid.
+  expect(within(card(EX1)).getByText('kihagyva · a már naplózott szettjeid megmaradnak')).toBeInTheDocument()
   expect(rowsOf(EX1)).toHaveLength(0)
-  expect(screen.queryByText('Mentés · tovább')).not.toBeInTheDocument()
-  expect(screen.queryByText('Edzés vége →')).not.toBeInTheDocument()
-  expect(document.querySelector('.wo-dock.is-resting')).toBeNull()
+  expect(screen.queryByText(DEBRIEF_CTA)).not.toBeInTheDocument()
+  expect(document.querySelector('.ex-dock.is-resting')).toBeNull()
 })
 
 /** Drive every non-skipped exercise of the mock Pull Day to completion. */
@@ -800,9 +816,9 @@ async function openCeremonyDetails(user: ReturnType<typeof userEvent.setup>) {
 async function finishMockSession(user: ReturnType<typeof userEvent.setup>, names: string[]) {
   for (const name of names) {
     await completeExerciseSets(user, name)
-    const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
+    const cta = await screen.findByText(DEBRIEF_CTA)
     await user.click(cta)
-    await waitFor(() => expect(screen.queryByText(/Mentés · tovább|Edzés vége →/)).toBeNull())
+    await waitFor(() => expect(screen.queryByText(DEBRIEF_CTA)).toBeNull())
   }
 }
 
@@ -810,9 +826,9 @@ test('a skipped exercise stays missing work in the ceremony\'s muscle row', asyn
   const user = userEvent.setup()
   setup() // mock mode, 5 exercises
   // Skip the first exercise (ex1: back-mid, 3 WORKING sets — its warm-up ramp counts for nothing).
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(user)
   await openCeremonyDetails(user)
@@ -824,16 +840,18 @@ test('a skipped exercise stays missing work in the ceremony\'s muscle row', asyn
   expect(screen.getByText('Váll (hátsó)').parentElement).toHaveTextContent('3 / 3 szett')
 })
 
-test('a skipped exercise\'s card reads KIHAGYVA and hides its rows', async () => {
+test('a skipped exercise reads „kihagyva" and hides its set grid', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
-  expect(within(card(EX1)).getByText('KIHAGYVA')).toBeInTheDocument()
-  // The other cards are untouched — a skip is not a completion.
-  expect(card(EX2)).not.toHaveClass('is-skipped')
-  expect(card(EX2)).not.toHaveClass('is-complete')
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
+  expect(within(card(EX1)).getByText('Állapot')).toBeInTheDocument()
+  expect(within(card(EX1)).getByText('kihagyva · a már naplózott szettjeid megmaradnak')).toBeInTheDocument()
+  expect(card(EX1).querySelector('.ex-sets')).toBeNull()
+  // The other exercises are untouched — a skip is not a completion.
+  expect(stateOf(EX2)).not.toBe('skipped')
+  expect(stateOf(EX2)).not.toBe('done')
 })
 
 // mezo-e1ii9 (Train parity P1, Task 2) — the owner's headline complaint: closing a workout never
@@ -846,30 +864,32 @@ test('the finish CTA lands straight on the closing ceremony — NO level-up over
   setup()
   // Skip ex0, then drive the remaining 4 exercises to completion — the last debrief leaves
   // the card list fully resolved (T7: no pre-finish review screen, no auto-finish).
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
   await finishMockSession(user, [EX2, EX3, 'Hammer Curl', 'Face Pull'])
-  expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
+  expect(screen.queryByText(CEREMONY)).not.toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
   // The ceremony IS the closing frame: the stars, the verdict and the way out.
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   // Nothing above it — no overlay node, no Szintlépés dialog, none of its pre-Titanium content.
   expect(document.querySelector('.levelup')).toBeNull()
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
   expect(screen.queryByText(/KLASSZIK KONDI/)).not.toBeInTheDocument()
   // The XP is not lost: the ceremony carries the finish response's REAL award (mock seed: 480).
-  const stats = document.querySelector('.cer-stats')
-  expect(stats).not.toBeNull()
-  expect(stats).toHaveTextContent('+480')
-  expect(stats).toHaveTextContent('szerzett XP')
-  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/csillag az ötből/)
+  expect(screen.getByText('+480')).toBeInTheDocument()
+  expect(screen.getByText('szerzett XP')).toBeInTheDocument()
+  expect(screen.getByText(/csillag az ötből/)).toBeInTheDocument()
+  // The title row's context line names the workout and its day (controller wiring, mezo-n4wf5.4) — and the old
+  // Üveg overline is not drawn any more.
+  expect(document.querySelector('.fo-ptop small')).toHaveTextContent(`Pull Day · ${huMonthDay(localDateString())}`)
+  expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
   // Step ONE has exactly one way on (mezo-e1ii9 Task 3): the close CTA is on step two.
   expect(screen.queryByRole('button', { name: /Vissza a mai napra/ })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Részletek/ })).toBeInTheDocument()
   // The session's real records (mezo-wp6n) drive the ceremony's record strip — ex2..ex5's
   // working sets all hit their prescribed target and several beat last week.
-  expect(screen.getByText(/új rekord|Új rekord/)).toBeInTheDocument()
+  expect(screen.getAllByText(/új rekord|Új rekord/).length).toBeGreaterThan(0)
   await openCeremonyDetails(user)
   expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
 })
@@ -881,10 +901,33 @@ test('nothing logged: the finish CTA reads "Edzés kihagyása" and opens the con
   const user = userEvent.setup()
   setup()
   const cta = screen.getByRole('button', { name: 'Edzés kihagyása' })
-  expect(cta).toHaveClass('is-skip')
+  expect(cta).toHaveAttribute('data-finish', 'skip')
+  expect(cta.querySelector('use')!.getAttribute('href')).toBe('#t-skip')
   await user.click(cta)
   expect(await screen.findByText('Egy szettet sem rögzítettél ma.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Kihagyom a mai edzést/ })).toBeInTheDocument()
+})
+
+// Controller wiring (mezo-n4wf5.4): each pending row of the finish confirm carries the exercise's WHOLE set count, so
+// its capsules show the done ones filled beside the empty ones — not only the empty ones.
+test('the finish confirm draws every slot of a pending exercise: the logged ones filled, the rest empty', async () => {
+  const user = userEvent.setup()
+  setup()
+  await logSet(user)
+  await skipRest(user)
+  await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
+  const dialog = await screen.findByRole('dialog')
+  const row = Array.from(dialog.querySelectorAll('.fo-row')).find((r) => r.textContent?.includes(EX1)) as HTMLElement
+  expect(row, `${EX1} is still pending and must be listed`).toBeTruthy()
+  const caps = Array.from(row.querySelectorAll('.fo-caps > i'))
+  const total = rowsOf(EX1).length
+  expect(total).toBeGreaterThan(1)
+  expect(caps).toHaveLength(total)
+  expect(caps.filter((c) => c.classList.contains('f'))).toHaveLength(1)
+  // an untouched exercise: all of its slots, none filled
+  const other = Array.from(dialog.querySelectorAll('.fo-row')).find((r) => r.textContent?.includes(EX2)) as HTMLElement
+  expect(other.querySelectorAll('.fo-caps > i').length).toBeGreaterThan(1)
+  expect(other.querySelector('.fo-caps > i.f')).toBeNull()
 })
 
 test('the confirm glass\'s Mégse closes it without finishing — the active phase stays put', async () => {
@@ -893,7 +936,7 @@ test('the confirm glass\'s Mégse closes it without finishing — the active pha
   await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
   await screen.findByText('Egy szettet sem rögzítettél ma.')
   await user.click(screen.getByRole('button', { name: 'Mégse, visszamegyek' }))
-  expect(screen.queryByText('Egy szettet sem rögzítettél ma.')).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByText('Egy szettet sem rögzítettél ma.')).not.toBeInTheDocument())
   expect(submitOf(EX1)).toBeInTheDocument()
 })
 
@@ -904,7 +947,7 @@ test('confirming a zero-logged finish goes straight through finishAndCelebrate (
   await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
   // The ceremony is the close moment for the zero-logged path too (T7) — and the only layer
   // on screen (mezo-e1ii9): no level-up overlay in front of it.
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   expect(document.querySelector('.levelup')).toBeNull()
   await openCeremonyDetails(user)
   expect(screen.getByRole('button', { name: /Vissza a mai napra/ })).toBeInTheDocument()
@@ -919,39 +962,35 @@ test('once every set is logged (full state) the finish CTA reads "Edzés befejez
   // (T7), fully logged, with nothing FINISHED yet.
   await finishMockSession(user, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
   const cta = screen.getByRole('button', { name: 'Edzés befejezése' })
-  expect(cta).toHaveClass('is-full')
+  expect(cta).toHaveAttribute('data-finish', 'full')
+  expect(cta.querySelector('use')!.getAttribute('href')).toBe('#t-tick')
   await user.click(cta)
   // Zero pending -> straight to finishAndCelebrate, no confirm glass in between.
   expect(screen.queryByText(/bepipálatlan szetted/)).not.toBeInTheDocument()
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   expect(document.querySelector('.levelup')).toBeNull()
 })
 
-// mezo-e1ii9 Task 3: the küldetés rows T7 put in the ceremony have no prototype counterpart
-// on either step, so they are gone from the close. The outcomes keep their other home — the
-// review page (WorkoutReviewPage → WorkoutSummary's own `Kihívások` strip), which is covered
-// in WorkoutReviewPage.test.tsx.
-test('neither ceremony step carries a küldetés row — and the old WorkoutSummary report is still gone', async () => {
+// The close never speaks the retired wording, and the pre-Titanium summary shell stays gone. (What the ceremony
+// itself lists — stars, numbers, records, the accepted küldetések — is WorkoutCeremony.test.tsx's own ground.)
+test('neither ceremony step says „skippelted" — and the old WorkoutSummary report is still gone', async () => {
   const user = userEvent.setup()
   setup()
   await finishMockSession(user, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(user)
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
-  expect(document.querySelector('.cer-chals')).toBeNull()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   expect(screen.queryByText('skippelted')).not.toBeInTheDocument()
   await openCeremonyDetails(user)
-  expect(document.querySelector('.cer-chals')).toBeNull()
   expect(screen.queryByText('skippelted')).not.toBeInTheDocument()
   // The pre-Titanium summary shell no longer renders anywhere on this page.
   expect(document.querySelector('.wr-root')).toBeNull()
   expect(document.querySelector('.wsum-chal')).toBeNull()
 })
 
-/** The ceremony's kcal tile numeral (`.cer-kcal-line strong`), as a plain integer —
+/** The kcal the details step says the workout earned („+N kcal került a mai keretedbe."), as a plain integer —
  *  huNumber() renders thousands with a (possibly non-breaking) space separator. */
 function readKcalValue(): number {
-  const el = document.querySelector('.cer-kcal-line strong')
-  if (!el) throw new Error('no .cer-kcal-line tile in the document')
+  const el = screen.getByText(/kcal került a mai keretedbe/)
   return Number((el.textContent ?? '').replace(/[^\d]/g, ''))
 }
 
@@ -961,7 +1000,7 @@ test('mock mode: the kcal tile scales with the done/planned set share, not the w
   const full = setup()
   await finishMockSession(userFull, [EX1, EX2, EX3, 'Hammer Curl', 'Face Pull'])
   await closeWorkout(userFull)
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   await openCeremonyDetails(userFull)
   const fullKcal = readKcalValue()
   full.unmount()
@@ -970,11 +1009,11 @@ test('mock mode: the kcal tile scales with the done/planned set share, not the w
   const userPartial = userEvent.setup()
   setup()
   await completeExerciseSets(userPartial, EX1)
-  const debriefCta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
+  const debriefCta = await screen.findByText(DEBRIEF_CTA)
   await userPartial.click(debriefCta)
-  await waitFor(() => expect(screen.queryByText(/Mentés · tovább|Edzés vége →/)).toBeNull())
+  await waitFor(() => expect(screen.queryByText(DEBRIEF_CTA)).toBeNull())
   await closeWorkout(userPartial)
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   await openCeremonyDetails(userPartial)
   const partialKcal = readKcalValue()
 
@@ -993,7 +1032,7 @@ test('mock mode: no note pill on a card when the exercise has no note', async ()
 test('mock mode: editing a note via ⋯ → Jegyzet renders the note pill with the typed text', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Jegyzet'))
   const textarea = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
   await user.type(textarea, 'Lassú excentrikus')
@@ -1006,7 +1045,7 @@ test('mock mode: clearing the note via the editor removes the pill', async () =>
   const user = userEvent.setup()
   setup()
   // 1. add a note → the pill renders with the typed text.
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Jegyzet'))
   const textarea = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
   await user.type(textarea, 'Lassú excentrikus')
@@ -1018,8 +1057,8 @@ test('mock mode: clearing the note via the editor removes the pill', async () =>
   // the pill surviving). Wait for the first editor to leave before reopening.
   await waitFor(() => expect(screen.queryByLabelText('Gyakorlat-jegyzet szerkesztése')).not.toBeInTheDocument())
   // 2. reopen the editor (the row's hint now reads "Megírt jegyzet szerkesztése"), empty it, save.
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
-  await user.click(screen.getByText('Megírt jegyzet szerkesztése'))
+  await user.click(menuButton())
+  await user.click(screen.getByText(/megírt jegyzet szerkesztése/i))
   const reopened = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
   await user.clear(reopened)
   await user.click(screen.getByText('Mentés'))
@@ -1125,7 +1164,7 @@ test('real mode: the 1RM badge renders when an exercise record matches the worko
   // The e1RM's home since the prep mosaic retired (mezo-e1ii9): the card's OWN
   // records glass, not a briefing badge.
   await user.click(await screen.findByRole('button', { name: `${EX1} · előzmények és rekordok` }))
-  expect(await screen.findByText('BECSÜLT 1RM')).toBeInTheDocument()
+  expect(await screen.findByText('Becsült 1RM')).toBeInTheDocument()
   expect(screen.getByText('133 kg')).toBeInTheDocument()
 })
 
@@ -1200,14 +1239,14 @@ test('real mode: an edit PUTs the FIRST logged set\'s OWN server id, and deletin
   // Log the first working set at its 102.5 kg prefill (useRealHandlers echoes id `st-0`).
   await user.click(submitOf(EX1))
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5'))
-  await user.click(await screen.findByRole('button', { name: 'Kész' }))
+  await user.click(await screen.findByRole('button', { name: 'Tovább' }))
   // Bump the weight on the CARD's own next row (not the sheet) before logging the SECOND
   // set, so the two rows carry visibly DIFFERENT weights — the only way to prove the
   // later edit/delete addressed the right ROW, not merely "some" row.
   await typeInto(user, kgInput(EX1), 105)
   await user.click(submitOf(EX1))
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:1:105'))
-  await user.click(await screen.findByRole('button', { name: 'Kész' }))
+  await user.click(await screen.findByRole('button', { name: 'Tovább' }))
 
   // Edit the FIRST row (102.5 kg) — bump REPS only (not weight), so the 102.5/105 kg
   // marker keeps discriminating the two rows through the edit.
@@ -1223,7 +1262,7 @@ test('real mode: an edit PUTs the FIRST logged set\'s OWN server id, and deletin
   await waitFor(() => expect(calls).toContain('delete:st-0'))
   // The surviving row (now at index 0) carries the SECOND set's 105 kg marker —
   // proof the shift landed correctly, not just that "a" DELETE fired.
-  expect(doneRowsOf(EX1)[0].getAttribute('aria-label')).toContain('105')
+  await waitFor(() => expect(doneCells(EX1, 0)[0]).toBe('105'))
 })
 
 // mezo-e1ii9 fix round 1: a FAILED start used to strand the session silently — `workoutId`
@@ -1260,11 +1299,13 @@ test('real mode: a failed start blocks logging, says so, and a successful retry 
   // used to POST /api/train/workouts/mock/finish in real mode and raise the ceremony over a
   // session the server never had. The CTA is dead, the alert says so, no finish is POSTed.
   expect(alert.textContent).toContain('lezárni sem tudjuk')
-  const finishCta = document.querySelector('.wo-finish') as HTMLButtonElement
+  const finishCta = document.querySelector('[data-finish]') as HTMLButtonElement
   expect(finishCta).toBeDisabled()
   await user.click(finishCta)
   expect(calls.some((c) => c.startsWith('finish:'))).toBe(false)
-  expect(document.querySelector('.cer-screen')).toBeNull()
+  expect(screen.queryByText(CEREMONY)).toBeNull()
+  // …and nothing can be added to a workout the server does not have.
+  expect(screen.getByRole('button', { name: 'Gyakorlat hozzáadása' })).toBeDisabled()
 
   // The retry binds a real id and the list comes back to life.
   startShouldFail = false
@@ -1290,7 +1331,7 @@ test('real mode: an open instance resumes mid-workout with seeded sets', async (
   const user = userEvent.setup()
   setup()
   // a resumed instance seeds straight to set 2 (and re-POSTs no start)
-  await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('.ek-hero')).not.toBeNull())
   // …and never shows the Eligazítás (mezo-mgu2r D2: resume skips the briefing)
   expect(screen.queryByText('Eligazítás')).toBeNull()
   expect(screen.queryByRole('button', { name: /^Indulás/ })).toBeNull()
@@ -1332,7 +1373,7 @@ test('real mode: a hard reload on /train/session resumes instead of redirecting 
       </ThemeProvider>
     </QueryWrapper>,
   )
-  await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('.ek-hero')).not.toBeNull())
   expect(rowsOf(EX1)).toHaveLength(2) // resumed at the 2nd set
   expect(doneRowsOf(EX1)).toHaveLength(1)
 }, 20_000)
@@ -1349,12 +1390,12 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(submitOf(EX1)) // only set -> FeedbackModal
-  await user.click(await screen.findByText('Edzés vége →'))
+  await user.click(await screen.findByText('Edzés vége'))
   await waitFor(() => expect(calls).toContain('feedback:w-1'))
   // New flow: the debrief leaves the card list up; finish fires only on the explicit CTA.
   await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
   await waitFor(() => expect(calls).toContain('finish:w-1'))
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument() // the ceremony
 })
 
 // Fix round 1 (mezo-e1ii9 Task 3): the ceremony's "a pulton töltött idő" tile must come
@@ -1383,13 +1424,13 @@ test('real mode: a finish response carrying startedAt/finishedAt/activeSeconds r
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(submitOf(EX1)) // only set -> FeedbackModal
-  await user.click(await screen.findByText('Edzés vége →'))
+  await user.click(await screen.findByText('Edzés vége'))
   await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
   await waitFor(() => expect(calls).toContain('finish:w-1'))
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument() // the ceremony
   // finishedAt − startedAt = 41 minutes, straight off the wire — not a mount-to-finish clock.
   expect(await screen.findByText('a pulton töltött idő')).toBeInTheDocument()
-  expect(screen.getByText('41')).toBeInTheDocument()
+  expect(screen.getByText(/^41/)).toBeInTheDocument()
 })
 
 test('real mode: a finish response with no startedAt renders NO measured-time tile', async () => {
@@ -1406,10 +1447,10 @@ test('real mode: a finish response with no startedAt renders NO measured-time ti
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(submitOf(EX1)) // only set -> FeedbackModal
-  await user.click(await screen.findByText('Edzés vége →'))
+  await user.click(await screen.findByText('Edzés vége'))
   await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
   await waitFor(() => expect(calls).toContain('finish:w-1'))
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument() // the ceremony
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument() // the ceremony
   // Never a mount-to-finish client clock standing in for a real measurement in real mode.
   expect(screen.queryByText('a pulton töltött idő')).not.toBeInTheDocument()
 })
@@ -1431,13 +1472,13 @@ test('real mode: a failed finish POST re-enables the finish CTA (not stuck disab
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(submitOf(EX1)) // only set -> FeedbackModal
-  await user.click(await screen.findByText('Edzés vége →')) // debrief -> back to the list
+  await user.click(await screen.findByText('Edzés vége')) // debrief -> back to the list
   await user.click(await screen.findByRole('button', { name: 'Edzés befejezése' }))
   // The finish POST fails; the CTA must become enabled again so the user can retry
   // (regression guard for the reset living only in onSuccess — mezo-cd8s).
   await waitFor(() => expect(screen.getByRole('button', { name: 'Edzés befejezése' })).toBeEnabled())
   // Still on the card list — the ceremony only ever follows a resolved finish.
-  expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
+  expect(screen.queryByText(CEREMONY)).not.toBeInTheDocument()
 })
 
 test('real mode: Szett hozzáadása grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {
@@ -1452,12 +1493,12 @@ test('real mode: Szett hozzáadása grows a 1-set exercise to 2 and the extra se
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
   expect(rowsOf(EX1)).toHaveLength(1)
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Szett hozzáadása')) // 1 planned set -> 2 effective
   expect(rowsOf(EX1)).toHaveLength(2) // the extra set grew the count to 2
   await user.click(submitOf(EX1)) // set 1 (setIndex 0)
   expect(doneRowsOf(EX1)).toHaveLength(1) // still mid-exercise, not overflowed
-  await user.click(screen.getByRole('button', { name: 'Kész' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
   await user.click(submitOf(EX1)) // extra set (setIndex 1) -> last set, opens FeedbackModal
   await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-1:e-1:1'))).toBe(true))
 })
@@ -1480,10 +1521,10 @@ test('real mode: ⋯ Gyakorlat kihagyása POSTs the skip for the current exercis
   setup()
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
   await waitFor(() => expect(calls).toContain('skip:w-1:e-1'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
 })
 
 test('real mode: a /today exercise WITH a note renders the pill on the active card', async () => {
@@ -1506,7 +1547,7 @@ test('real mode: editing + saving a note PUTs it for the current exercise', asyn
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Jegyzet'))
   const textarea = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
   await user.type(textarea, 'Tartsd a könyököt')
@@ -1527,7 +1568,7 @@ test('real mode: finishing then tapping "Vissza a mai napra" with a typed note P
   await enterList()
   await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
   await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   await openCeremonyDetails(user)
   await user.type(screen.getByLabelText('Hogy ment?'), 'Jól ment az edzés')
   await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
@@ -1543,7 +1584,7 @@ test('real mode: closing with an empty note fires no note PUT', async () => {
   await enterList()
   await user.click(screen.getByRole('button', { name: 'Edzés kihagyása' }))
   await user.click(await screen.findByRole('button', { name: /Kihagyom a mai edzést/ }))
-  expect(await screen.findByText('EDZÉS LEZÁRVA')).toBeInTheDocument()
+  expect(await screen.findByText(CEREMONY)).toBeInTheDocument()
   await openCeremonyDetails(user)
   await user.click(screen.getByRole('button', { name: /Vissza a mai napra/ }))
   await waitFor(() => expect(calls.some((c) => c.startsWith('finish:'))).toBe(true))
@@ -1559,24 +1600,36 @@ test('real mode: no videoUrl -> no Videó row', async () => {
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  // No video on the exercise: no Technika tool on top, no Videó row in the menu.
+  expect(screen.queryByRole('button', { name: 'Technika' })).toBeNull()
+  await user.click(menuButton())
   expect(screen.queryByText('Videó')).not.toBeInTheDocument()
 })
 
-test('real mode: a videoUrl -> Videó opens the embed glass', async () => {
+test('real mode: a videoUrl -> the menu\'s Videó opens the video sheet', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useRealHandlers({ ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], videoUrl: 'https://youtu.be/GZTvxN5fPBc' }] }, calls)
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Videó'))
-  const frame = document.querySelector('.wo-video-frame') as HTMLElement
-  expect(frame).not.toBeNull()
-  expect(within(frame).getByTitle('Demo videó')).toBeInTheDocument()
-  // The menu itself is gone — the Videó action switched the glass, it never fired onClose.
-  expect(screen.queryByText('Jegyzet')).not.toBeInTheDocument()
+  expect(await screen.findByTitle('Demo videó')).toBeInTheDocument()
+  // The menu itself is gone — the Videó action switched the sheet, it never fired onClose.
+  await waitFor(() => expect(screen.queryByText('Jegyzet')).not.toBeInTheDocument())
+})
+
+// Owner round (mezo-n4wf5.4): Technika on the hero IS the exercise's video — one tap, no menu in between.
+test('real mode: a videoUrl -> the hero\'s Technika opens the same video sheet', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers({ ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], videoUrl: 'https://youtu.be/GZTvxN5fPBc' }] }, calls)
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  await user.click(within(card(EX1)).getByRole('button', { name: 'Technika' }))
+  expect(await screen.findByTitle('Demo videó')).toBeInTheDocument()
 })
 
 test('real mode: Szett elvétele removes the trailing pending slot and, once nothing pending remains, opens the debrief (I2 revived)', async () => {
@@ -1592,12 +1645,12 @@ test('real mode: Szett elvétele removes the trailing pending slot and, once not
   await waitFor(() => expect(calls).toContain('start:d-1'))
   expect(rowsOf(EX1)).toHaveLength(2)
   await user.click(submitOf(EX1)) // log the first working set -> 1 logged, 1 trailing pending
-  await user.click(await screen.findByRole('button', { name: 'Kész' }))
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(await screen.findByRole('button', { name: 'Tovább' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Szett elvétele'))
   // The trailing pending slot is gone and the exercise now reads fully logged —
   // no editable row left, and the debrief takes over (the dead I2 branch, revived).
-  expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
+  expect(await screen.findByText(DEBRIEF_CTA)).toBeInTheDocument()
   expect(rowsOf(EX1)).toHaveLength(1)
 })
 
@@ -1611,7 +1664,7 @@ test('real mode: Szett elvétele is disabled at the one-slot floor', async () =>
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   expect(screen.getByText('Szett elvétele').closest('button')).toBeDisabled()
 })
 
@@ -1632,14 +1685,14 @@ test('real mode: Visszavesszük restores a skipped card\'s rows', async () => {
   setup()
   await enterList()
   await waitFor(() => expect(calls).toContain('start:d-1'))
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
   expect(rowsOf(EX1)).toHaveLength(0)
   await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · további műveletek` }))
   expect(screen.getByText('Visszavesszük')).toBeInTheDocument()
   await user.click(screen.getByText('Visszavesszük'))
-  await waitFor(() => expect(card(EX1)).not.toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).not.toBe('skipped'))
   expect(rowsOf(EX1)).toHaveLength(2)
 })
 
@@ -1671,9 +1724,9 @@ test('real mode: the logging panel pre-fills from the prescribed target (not las
   await enterList()
   // first WORKING target = 105 kg × 10 (engine prescription, NOT lastWeek 102.5). The two
   // warm-up rungs in front of it are prescribed but never shown (mezo-i8ahy).
-  await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('.ek-hero')).not.toBeNull())
   expect(kgInput(EX1)).toHaveValue('105')
-  expect(repsInput(EX1)).toHaveValue(10)
+  expect(repsInput(EX1)).toHaveValue('10')
   // This exercise carries lastWeek, so its rationale prose no longer renders as a .wo-cue
   // (mezo-i8ahy round 2) — the prefill itself, asserted above via the input values, is
   // the load-bearing proof that the panel reads the prescribed target and not lastWeek.
@@ -1727,10 +1780,10 @@ test('real mode: a plyo set hides the kg stepper and logs weightKg 0 (reps-only)
   const user = userEvent.setup()
   setup()
   await enterList()
-  await waitFor(() => expect(document.querySelector('.wo-card')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('.ek-hero')).not.toBeNull())
   expect(within(card('Box Jump')).getByText('Box Jump')).toBeInTheDocument()
   expect(kgInput('Box Jump')).toBeDisabled() // no load to log
-  expect(repsInput('Box Jump')).toHaveValue(5)
+  expect(repsInput('Box Jump')).toHaveValue('5')
   await user.click(submitOf('Box Jump'))
   await waitFor(() => expect(calls).toContain('set:w-1:e-plyo:0:0')) // weightKg 0
 })
@@ -1794,7 +1847,7 @@ test('real mode: add-set "Minden hétre" adds one working set to that plan row o
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Szett hozzáadása'))
   await user.click(await screen.findByText('Minden hétre'))
   await waitFor(() => expect(puts).toHaveLength(1))
@@ -1809,7 +1862,7 @@ test('real mode: add-set "Csak ma" fires no plan write', async () => {
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Szett hozzáadása'))
   await user.click(await screen.findByText('Csak ma'))
   await new Promise((r) => setTimeout(r, 0))
@@ -1883,7 +1936,7 @@ test('real mode: a custom workout with NO active meso renders the card list inst
   )
   expect((await screen.findAllByText('Saját HIIT')).length).toBeGreaterThan(0)
   await enterList()
-  expect(document.querySelector('.wo-list')).not.toBeNull()
+  expect(document.querySelector('.ek-page')).not.toBeNull()
 })
 
 // --- loading skeleton (mezo-f2z) ---------------------------------------------
@@ -1900,8 +1953,10 @@ describe('ActiveWorkoutPage (real mode, pending)', () => {
     )
     setup()
     expect(await screen.findByRole('status')).toBeInTheDocument()
-    // Neither the card list nor a redirect content rendered yet.
-    expect(document.querySelector('.wo-list')).toBeNull()
+    // The loading frame keeps the way out; neither the exercises nor a redirect rendered yet.
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    expect(document.querySelector('.ek-hero')).toBeNull()
+    expect(document.querySelector('.ex-dock')).toBeNull()
   })
 })
 
@@ -1912,7 +1967,7 @@ describe('ActiveWorkoutPage (mock mode)', () => {
     setup()
     // The dock is itself a role="status" region, so assert the SKELETON is absent.
     expect(screen.queryByLabelText('Betöltés…')).toBeNull()
-    expect(document.querySelector('.wo-list')).not.toBeNull()
+    expect(document.querySelector('.ek-page')).not.toBeNull()
   })
 })
 
@@ -1987,7 +2042,7 @@ test('real mode: ticking a challenge on the briefing POSTs an accept decision at
   const user = userEvent.setup()
   setupBrief()
   await enterBrief()
-  await user.click(await screen.findByRole('button', { name: /Chest Supported Row · PR-kísérlet: vállalom/ }))
+  await user.click(await screen.findByRole('button', { name: /Chest Supported Row · .+: vállalom/ }))
   expect(calls.some((c) => c.startsWith('decide:'))).toBe(false) // a draft until Indulás
   await user.click(screen.getByRole('button', { name: 'Indulás · 1 küldetéssel' }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
@@ -2002,7 +2057,7 @@ test('real mode: unticking an accepted challenge POSTs an undo decision at Indul
   const user = userEvent.setup()
   setupBrief()
   await enterBrief()
-  await user.click(await screen.findByRole('button', { name: /Chest Supported Row · PR-kísérlet: vállalva/ }))
+  await user.click(await screen.findByRole('button', { name: /Chest Supported Row · .+: vállalva/ }))
   await user.click(screen.getByRole('button', { name: 'Indulás küldetés nélkül' }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:undo'))
 })
@@ -2014,7 +2069,7 @@ test('real mode: releasing a badge mid-workout POSTs an undo decision', async ()
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(await within(card(EX1)).findByRole('button', { name: 'PR-kísérlet küldetés · vállalva' }))
+  await user.click(await within(card(EX1)).findByRole('button', { name: 'Rekord-kísérlet küldetés · vállalva' }))
   await user.click(screen.getByRole('button', { name: 'Elengedem' }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:undo'))
 })
@@ -2029,7 +2084,7 @@ test('real mode: a resolved (hit) challenge badge opens its outcome, with no act
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(await within(card(EX1)).findByRole('button', { name: 'PR-kísérlet küldetés · lezárva' }))
+  await user.click(await within(card(EX1)).findByRole('button', { name: 'Rekord-kísérlet küldetés · lezárva' }))
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Elengedem|Visszaveszem/ })).not.toBeInTheDocument()
 })
@@ -2061,10 +2116,9 @@ test('a logged working set shows its RIR in the row\'s own RIR cell', async () =
   const user = userEvent.setup()
   setup()
   // Every row is a working set now — type RIR 1 into the row's own field and log it.
-  await typeInto(user, within(card(EX1)).getByLabelText(/RIR$/), 1)
+  await typeInto(user, within(card(EX1)).getByLabelText(/RIR \(0–5\)$/), 1)
   await user.click(submitOf(EX1))
-  const workingRow = within(card(EX1)).getAllByRole('button', { name: /szett szerkesztése/ })[0]
-  expect(workingRow.getAttribute('aria-label')).toContain('RIR 1')
+  expect(doneCells(EX1, 0)).toEqual(['105', '10', '1'])
 })
 
 // ---- T6 Task 5: the per-card records glass (előzmények és rekordok) ----
@@ -2076,16 +2130,16 @@ test('mock mode: the records button opens the records glass for THAT card, match
   const dialog = screen.getByRole('dialog', { name: `${EX1} előzményei és rekordjai` })
   // Chest Supported Row's mock fixture (train.ts exerciseRecordsMock) carries a real bestE1rm.
   expect(within(dialog).getByText('140 kg')).toBeInTheDocument()
-  expect(within(dialog).getByText('BECSÜLT 1RM')).toBeInTheDocument()
+  expect(within(dialog).getByText('Becsült 1RM')).toBeInTheDocument()
 })
 
 test('mock mode: Bezárás closes the records glass', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · előzmények és rekordok` }))
-  expect(document.querySelector('.gl-card')).not.toBeNull()
+  expect(screen.getByRole('dialog', { name: `${EX1} előzményei és rekordjai` })).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Bezárás' }))
-  expect(document.querySelector('.gl-card')).toBeNull()
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
 })
 
 test('real mode: no matching record (never logged before) shows em dashes, not zeros', async () => {
@@ -2120,7 +2174,7 @@ test('mock mode: a logged set row opens the edit sheet, and saving rewrites the 
   // Fix round 1 (I3): assert the EXACT rewritten label, not just "it changed" — a save
   // that silently wrote the wrong field (or the wrong index) would still pass a mere
   // inequality check.
-  expect(firstRow().getAttribute('aria-label')).toBe('1. szett szerkesztése — 105 kg × 11 — RIR 0')
+  expect(doneCells(EX1, 0)).toEqual(['105', '11', '0'])
 })
 
 test('mock mode: logging a set that earns no medal still binds its server id (the row stays tappable)', async () => {
@@ -2153,7 +2207,7 @@ test('mock mode: deleting a logged set drops one slot from the exercise', async 
   // Fix round 1 (C1(a) / I3): discriminate WHICH slot was removed. The delete addresses a
   // VISIBLE slot, so a WORKING prescription is what shifts — the hidden warm-up ramp at the
   // head of the array is never the thing that vanishes (mezo-i8ahy).
-  const idx = Array.from(card(EX1).querySelectorAll('.wo-idx')).map((n) => n.textContent)
+  const idx = slotNumbers(EX1)
   expect(idx).toEqual(['1', '2'])
   expect(doneRowsOf(EX1)).toHaveLength(0) // its logged entry went with it
 })
@@ -2183,20 +2237,24 @@ test('mock mode: deleting a logged set never takes the exercise below one slot',
 // instead of in page-level collapsible strips.
 // ============================================================
 
-test('the active phase is ONE list of cards — no collapsible reference strips, no execution card', async () => {
+test('the active phase is ONE exercise on top and the others as rows — no collapsible reference strips, no execution card', async () => {
   const { container } = setup()
-  expect(container.querySelectorAll('.wo-list')).toHaveLength(1)
-  expect(container.querySelectorAll('.wo-card')).toHaveLength(5)
+  expect(container.querySelectorAll('.ek-page')).toHaveLength(1)
+  expect(container.querySelectorAll('.ek-hero')).toHaveLength(1)
+  expect(container.querySelectorAll('.ek-row')).toHaveLength(4)
+  expect(container.querySelectorAll('.ex-sets')).toHaveLength(1)
   expect(container.querySelector('.excard')).toBeNull()
   expect(container.querySelector('.wkx-logbox')).toBeNull()
   expect(container.querySelectorAll('.mz-colstrip')).toHaveLength(0)
 })
 
-test('each card carries its own vs-last-week chip — the reference content is per exercise', async () => {
+test('each row carries its own vs-last-week chip — the reference content is per exercise', async () => {
   setup()
   // ex1 (+2,5 kg, weight lever) and ex3 (+1 rep, rep lever) each show their OWN signal.
-  expect(card(EX1).querySelector('.wo-delta')).toHaveTextContent('↑ +2,5 kg')
-  expect(card(EX3).querySelector('.wo-delta')).toHaveTextContent('↑ +1 ism.')
+  // The chip rides the exercise's ROW; bring another exercise on top to read the first one's.
+  expect(rowOf(EX3)!.querySelector('.ex-dchip')).toHaveTextContent('+1 ism.')
+  fireEvent.click(rowOf(EX2)!)
+  expect(rowOf(EX1)!.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
 })
 
 test('a fully logged exercise reads as complete and offers no editable row', async () => {
@@ -2204,22 +2262,20 @@ test('a fully logged exercise reads as complete and offers no editable row', asy
   setup()
   await completeExerciseSets(user)
   await user.click(screen.getByText('Hagyjuk')) // dismiss the debrief
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-complete'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('done'))
   expect(querySubmitOf(EX1)).toBeNull()
   expect(doneRowsOf(EX1)).toHaveLength(3)
 })
 
-// Fix wave I5: a logged row's ✓ is a plain span (it is not a pressable control, so it
-// cannot carry `aria-pressed`) — it therefore never picked up the filled "pressed" look
-// and a done row read as un-done. `.is-checked` is the span's half of that CSS rule.
-test('a done row\'s ✓ carries is-checked so it reads as filled, like a pressed tick', async () => {
+// A done row reads as done without its mark: its number capsule is FULL, the cursor row's is half, a later one empty.
+test('the set numbers are capsules: full for a logged set, half for the cursor, empty for a later one', async () => {
   const user = userEvent.setup()
   setup()
   await logSet(user)
-  const tick = doneRowsOf(EX1)[0].querySelector('.wo-check') as HTMLElement
-  expect(tick).toHaveClass('is-checked')
-  // The cursor row's ✓ is the pressable submit and stays unchecked.
-  expect(submitOf(EX1)).not.toHaveClass('is-checked')
+  const caps = Array.from(card(EX1).querySelectorAll('.ex-sets .n'))
+  expect(caps.map((c) => c.className)).toEqual(['n f', 'n h', 'n'])
+  // The cursor row's ✓ is the one pressable submit.
+  expect(submitOf(EX1)).toHaveClass('tk')
 })
 
 // Fix wave M3: the dock's "n / m szett" ran over ALL exercises while the finish CTA's
@@ -2229,12 +2285,167 @@ test('the dock\'s denominator drops when an exercise is skipped (same count as t
   const user = userEvent.setup()
   setup()
   // Mock Pull Day: 5 exercises, 15 WORKING sets in total; ex1 alone plans 3.
-  const denominator = () => document.querySelector('.wo-dock-copy strong')!.textContent
+  const denominator = () => document.querySelector('.ex-rest strong')!.textContent
   const before = denominator()!
   const beforeTotal = Number(before.split(' / ')[1].replace(' szett', ''))
-  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(menuButton())
   await user.click(screen.getByText('Gyakorlat kihagyása'))
-  await waitFor(() => expect(card(EX1)).toHaveClass('is-skipped'))
+  await waitFor(() => expect(stateOf(EX1)).toBe('skipped'))
   const afterTotal = Number(denominator()!.split(' / ')[1].replace(' szett', ''))
   expect(afterTotal).toBe(beforeTotal - 3)
+})
+
+// ============================================================
+// The focused-exercise layout (Folyadék F4, mezo-n4wf5.4, owner-approved): ONE exercise on top, the others rows.
+// Which one is on top is VIEW state only — the session model, the per-exercise cursors and the wire are untouched.
+// ============================================================
+
+const heroName = () => document.querySelector('.ek-hero')!.getAttribute('aria-label')
+const rowNames = () => Array.from(document.querySelectorAll('.ek-row strong')).map((n) => n.textContent)
+const pillOf = (name: string) => rowOf(name)!.querySelector('.fo-st')?.textContent ?? null
+
+test('focus: „Most" is on top at the start; the other exercises are rows in session order, none of them „Most"', () => {
+  setup()
+  expect(heroName()).toBe(EX1)
+  expect(rowNames()).toEqual([EX2, EX3, 'Hammer Curl', 'Face Pull'])
+  expect(rowNames().map(pillOf)).toEqual([null, null, null, null])
+  // A row says what it asks for and stands for its sets as capsules.
+  expect(rowOf(EX2)).toHaveTextContent('3 szett · cél 74,5 × 12')
+  expect(within(rowOf(EX2)!).getByRole('img', { name: '0 / 3 szett kész' })).toBeInTheDocument()
+})
+
+test('focus: tapping a row brings that exercise on top with ITS grid; the old one becomes the „Most" row', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(rowOf(EX3)!)
+  expect(heroName()).toBe(EX3)
+  expect(rowNames()).toEqual([EX1, EX2, 'Hammer Curl', 'Face Pull'])
+  expect(pillOf(EX1)).toBe('Most')
+  expect(stateOf(EX1)).toBe('now')
+  // The grid on top is ex3's own: its first slot is the cursor.
+  expect(within(heroOf(EX3)!).getByRole('textbox', { name: `${EX3}, 1. szett, súly` })).toBeInTheDocument()
+  // The vessel ring follows the exercise on top.
+  expect(screen.getByRole('button', { name: `${EX3} · 0 / 3 szett` })).toHaveAttribute('aria-current', 'true')
+})
+
+test('focus: a small vessel on top is the same switch as a row', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByRole('button', { name: 'Hammer Curl · 0 / 3 szett' }))
+  expect(heroName()).toBe('Hammer Curl')
+})
+
+test('focus: bringing an exercise on top jumps the scroller back to the top', async () => {
+  const scroller = document.createElement('div')
+  scroller.className = 'screen-content'
+  const scrollTo = vi.fn()
+  Object.assign(scroller, { scrollTo })
+  document.body.appendChild(scroller)
+  try {
+    setup()
+    scrollTo.mockClear()
+    fireEvent.click(rowOf(EX3)!)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+  } finally {
+    scroller.remove()
+  }
+})
+
+test('focus: ANY exercise is loggable at its own cursor — logging pins it on top, „Most" does not steal it back', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(rowOf(EX3)!)
+  await user.click(within(heroOf(EX3)!).getByRole('button', { name: '1. szett mentése' }))
+  // ex3 stays on top with its cursor on the SECOND slot; ex1 is untouched and still „Most".
+  expect(heroName()).toBe(EX3)
+  expect(within(heroOf(EX3)!).getByRole('button', { name: '2. szett mentése' })).toBeInTheDocument()
+  expect(pillOf(EX1)).toBe('Most')
+  expect(within(rowOf(EX1)!).getByRole('img', { name: '0 / 3 szett kész' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: `${EX3} · 1 / 3 szett` })).toBeInTheDocument()
+  // The rest is ex3's.
+  expect(screen.getByText(`pihenő · ${EX3}`)).toBeInTheDocument()
+})
+
+test('focus: closing the debrief of the exercise on top lets the page move on to „Most"', async () => {
+  const user = userEvent.setup()
+  setup()
+  await completeExerciseSets(user, EX1)
+  // The debrief is up over its OWN exercise.
+  expect(await screen.findByText(DEBRIEF_CTA)).toBeInTheDocument()
+  expect(heroName()).toBe(EX1)
+  await user.click(screen.getByText(DEBRIEF_CTA))
+  await waitFor(() => expect(heroName()).toBe(EX2))
+  expect(pillOf(EX1)).toBe('Kész')
+  expect(stateOf(EX1)).toBe('done')
+})
+
+test('focus: finishing an exercise out of order returns to the first open one, not to the next in line', async () => {
+  const user = userEvent.setup()
+  setup()
+  await completeExerciseSets(user, EX3)
+  await user.click(await screen.findByText(DEBRIEF_CTA))
+  await waitFor(() => expect(heroName()).toBe(EX1))
+  expect(pillOf(EX3)).toBe('Kész')
+})
+
+test('focus: skipping the exercise on top moves on; taking it back brings it on top again', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(menuButton())
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
+  await waitFor(() => expect(heroName()).toBe(EX2))
+  expect(pillOf(EX1)).toBe('Kihagyva')
+  // Its menu is still one tap away: on top, then the three dots.
+  await user.click(within(card(EX1)).getByRole('button', { name: `${EX1} · további műveletek` }))
+  await user.click(await screen.findByText(/Visszavesszük|Visszaveszem/))
+  await waitFor(() => expect(stateOf(EX1)).toBe('open'))
+  expect(heroName()).toBe(EX1)
+  expect(querySubmitOf(EX1)).not.toBeNull()
+})
+
+test('focus: skipping an exercise that is NOT „Most" leaves the page where it was heading', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(rowOf(EX3)!)
+  await user.click(menuButton())
+  await user.click(screen.getByText('Gyakorlat kihagyása'))
+  await waitFor(() => expect(heroName()).toBe(EX1))
+  expect(pillOf(EX3)).toBe('Kihagyva')
+})
+
+test('focus: the draft of the cursor row belongs to the exercise on top — a typed weight does not leak to another exercise', async () => {
+  const user = userEvent.setup()
+  setup()
+  await typeInto(user, kgInput(EX1), 90)
+  await user.click(rowOf(EX2)!)
+  expect(within(heroOf(EX2)!).getByRole('textbox', { name: /1\. szett, súly$/ })).toHaveValue('74,5')
+  // Coming back, the row is seeded from its slot again (an unsaved draft is not kept across a switch).
+  expect(kgInput(EX1)).toHaveValue('105')
+})
+
+test('real mode focus: a set logged on the SECOND exercise first goes to the wire under its own id and index', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        REAL_TODAY.exercises[0],
+        { ...REAL_TODAY.exercises[0], id: 'e-2', name: 'Face Pull', type: 'isolation', lastWeek: { weightKg: 27, reps: 15, rir: 2 } },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await enterList()
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(submitOf('Face Pull'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-2:0:27'))
+  expect(calls.some((c) => c.startsWith('set:w-1:e-1'))).toBe(false)
+  // Isolation work asks for the side under its grid: Bal / Mindkettő / Jobb.
+  expect(within(heroOf('Face Pull')!).getByRole('group', { name: 'Oldal' })).toBeInTheDocument()
+  // The first exercise still logs at ITS first slot afterwards.
+  await user.click(submitOf(EX1))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5'))
 })

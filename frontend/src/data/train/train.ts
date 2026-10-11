@@ -940,7 +940,7 @@ export const workout: WorkoutPlan = {
     {
       id: 'ch1',
       type: 'PR',
-      typeLabel: 'PR-attempt',
+      typeLabel: 'Rekord-kísérlet',
       exerciseId: 'ex1',
       exercise: 'Chest Supported Row',
       target: '107.5 kg × 8',
@@ -978,10 +978,10 @@ export const workout: WorkoutPlan = {
       typeLabel: 'Mélység',
       exerciseId: 'ex2',
       exercise: 'Lat Pulldown · Pronated',
-      target: 'Az utolsó szet RIR 0-ig',
+      target: 'Az utolsó szett RIR 0-ig',
       confidence: 0.81,
       risk: 'low',
-      why: 'Múlt héten RIR 2-vel zártuk — Week 3 MAV-on a 3. szet RIR 0 logikus volumen-step. A pronated grif a vállat kíméli, így biztonságos.',
+      why: 'Múlt héten RIR 2-vel zártuk — Week 3 MAV-on a 3. szett RIR 0 logikus volumen-step. A pronated grif a vállat kíméli, így biztonságos.',
       refs: [
         { kind: 'Workout', label: 'Lat Pulldown · Máj 15' },
         { kind: 'MesoPhase', label: 'Week 3 MAV' },
@@ -997,12 +997,12 @@ export const workout: WorkoutPlan = {
       typeLabel: 'Volumen',
       exerciseId: 'ex5',
       exercise: 'Face Pull',
-      target: '+1 szet · 4×15-20',
+      target: '+1 szett · 4×15-20',
       confidence: 0.68,
       risk: 'low',
-      why: 'A rear-delt MAV nálad 12 szet/hét, és ezen a héten csak 9-en vagyunk. A Face Pull alacsony fáradtság/szet — kockázat nélkül beékelhető.',
+      why: 'A rear-delt MAV nálad 12 szett/hét, és ezen a héten csak 9-en vagyunk. A Face Pull alacsony fáradtság/szett — kockázat nélkül beékelhető.',
       refs: [
-        { kind: 'Pattern', label: 'Rear-delt MAV = 12 szet/hét' },
+        { kind: 'Pattern', label: 'Rear-delt MAV = 12 szett/hét' },
       ],
       tools: [
         { type: 'compute', name: 'computeMAVDelta(muscle=rear_delt)' },

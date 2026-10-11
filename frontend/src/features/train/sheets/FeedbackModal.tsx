@@ -1,49 +1,28 @@
 // ============================================================
-// Mezo · FeedbackModal — RP-style set-debrief bottom sheet shown after
-// the last set of an exercise. Three chip-selector rows (Pump / Joint
-// pain / "Akarunk még?"), a skip button and an advance button.
-// Ported from prototype train.jsx (FeedbackModal + FeedbackRow); wraps
-// the shared Sheet primitive for the slide-up / drag-to-dismiss motion.
-// T2: the row values are lifted so the save button can persist them.
-// Üvegesítés U4 (mezo-me75u.4): a floating coral glass sheet (bible rule 15) with the muscle in
-// a lit well; the options are flat pills (the chosen one lit), "Hagyjuk" is a flat pill and the
-// save a lit flat pill. Skin: `.wos-sheet` in the `uveg edzes session` block.
+// Mezo · FeedbackModal — the debrief shown ONCE after the last set of an exercise (not per set): three short
+// questions (pumpa / ízületi fájdalom / „Akarunk még?"), „Hagyjuk" and the advance button. The row values are
+// lifted so the save button can persist them (1-based scales).
+//
+// Folyadék F4 (mezo-n4wf5.4, area C; owner, round 1): a light sheet built to the prototype's `rp` sheet
+// (docs/design_2.0/prototypes/vilagos/edzes.js). The answers are small VESSELS (`OptionVessels`): each is
+// filled to what the answer means, the chosen one in full colour; the pain scale wears ok / warn / bad; the
+// third question carries a dashed „pont jó" line across its vessels. One note line says how to read them.
 // ============================================================
 import { useRef, useState } from 'react'
 import type { LoggedWorkoutExercise } from '@/data/types'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import { Sheet } from '@/shared/ui/Sheet'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { Acts, Btn, FoSheetHead, Lab, Lk, Note, OptionVessels, type OptionVessel } from '@/shared/ui/folyadek'
+import { Mchp } from '@/features/train/components/folyadek'
 
-function FeedbackRow({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string
-  options: string[]
-  value: number
-  onChange: (idx: number) => void
-}) {
-  return (
-    <div className="wos-choice">
-      <span className="wos-choice-q">{label}</span>
-      <div className="wos-choice-opts">
-        {options.map((o, i) => (
-          <button
-            key={i}
-            type="button"
-            aria-pressed={value === i}
-            className={value === i ? 'wos-pill is-on' : 'wos-pill'}
-            onClick={() => onChange(i)}
-          >
-            {o}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+/** The level of „Pont jó" — also the dashed line across the third question's vessels. */
+const JUST_RIGHT = 64
+
+const PUMP: OptionVessel[] = [{ label: 'Semmi', pct: 5 }, { label: 'Enyhe', pct: 36 }, { label: 'Jó', pct: 68 }, { label: 'Brutális', pct: 100 }]
+const PAIN: OptionVessel[] = [
+  { label: 'Nincs', pct: 5, color: 'var(--fo-ok)' }, { label: 'Enyhe', pct: 50, color: 'var(--fo-warn)' }, { label: 'Erős', pct: 100, color: 'var(--fo-bad)' },
+]
+const WORKLOAD: OptionVessel[] = [{ label: 'Kevés volt', pct: 34 }, { label: 'Pont jó', pct: JUST_RIGHT }, { label: 'Sok volt', pct: 100 }]
 
 export interface ExerciseFeedbackValues {
   pump: number // 1–4
@@ -59,7 +38,7 @@ export function FeedbackModal({
 }: {
   ex: LoggedWorkoutExercise
   isLastExercise: boolean
-  // Both skip and save (and any Sheet dismissal — backdrop / drag / esc)
+  // Both skip and save (and any Sheet dismissal — backdrop / drag / esc / ×)
   // resolve the same way: advance the workout. Feedback is non-blocking;
   // only the explicit save button persists (onSave fires with 1-based scales).
   onResolve: () => void
@@ -79,36 +58,32 @@ export function FeedbackModal({
   }
 
   return (
-    <Sheet onClose={resolveOnce} className="glass wos-sheet">
+    <Sheet onClose={resolveOnce} labelledBy="el-debrief-title" className="fo-sheet el-sheet">
       {(close) => (
         <>
-          <div className="wos-sheet-head">
-            <span className="wos-sheet-art"><MuscleChip token={ex.muscle} size={48} /></span>
-            <span className="wos-sheet-title">
-              <span className="wos-sheet-eb">Set debrief · RP feedback</span>
-              <h3>{ex.name}</h3>
-            </span>
-          </div>
-          <div className="wos-choices">
-            <FeedbackRow label="Pump · érzed?" options={['Semmi', 'Enyhe', 'Jó', 'Brutális']} value={pump} onChange={setPump} />
-            <FeedbackRow label="Joint pain" options={['Nincs', 'Enyhe', 'Erős']} value={joint} onChange={setJoint} />
-            <FeedbackRow label="Akarunk még?" options={['Kevés volt', 'Pont jó', 'Sok volt']} value={workload} onChange={setWorkload} />
-          </div>
-          <div className="wos-sheet-two">
-            <button type="button" className="wos-pill is-block" onClick={close}>
-              Hagyjuk
-            </button>
-            <button
-              type="button"
-              className="wos-primary"
+          <FoSheetHead
+            eyebrow="Gyakorlat kész · hogy ment?" title={ex.name} titleId="el-debrief-title"
+            sub={MUSCLE_LABELS[ex.muscle] ?? ex.muscle} left={<Mchp muscle={ex.muscle} />} onClose={close}
+          />
+          <Lab>Pumpa · érzed?</Lab>
+          <OptionVessels aria-label="Pumpa · érzed?" items={PUMP} value={pump} onChange={setPump} />
+          <Lab>Ízületi fájdalom</Lab>
+          <OptionVessels aria-label="Ízületi fájdalom" items={PAIN} value={joint} onChange={setJoint} />
+          <Lab>Akarunk még?</Lab>
+          <OptionVessels aria-label="Akarunk még?" items={WORKLOAD} value={workload} onChange={setWorkload} line={JUST_RIGHT} />
+          <Note>Az edény annyira telik, amennyit a válasz jelent. A vonal a „pont jó” szint — ebből áll össze a jövő heti szettszám.</Note>
+          <Acts>
+            <Btn
+              grow
               onClick={() => {
                 onSave?.({ pump: pump + 1, jointPain: joint + 1, workload: workload + 1 })
                 close()
               }}
             >
-              {isLastExercise ? 'Edzés vége →' : 'Mentés · tovább'}
-            </button>
-          </div>
+              {isLastExercise ? 'Edzés vége' : 'Mentés · tovább'}
+            </Btn>
+            <Lk onClick={close}>Hagyjuk</Lk>
+          </Acts>
         </>
       )}
     </Sheet>

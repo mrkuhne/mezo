@@ -46,7 +46,7 @@ describe('medalValueLabel', () => {
 
   test('a medal with no weightKg/reps at all falls through to raw value + unit', () => {
     const medal: Medal = { ...base, type: 'TARGET_HIT', weightKg: null, reps: null, value: 10, unit: 'REPS' }
-    expect(medalValueLabel(medal)).toBe('10 rep')
+    expect(medalValueLabel(medal)).toBe('10 ism.')
   })
 
   // mezo-je3u: E1RM's headline is the ESTIMATE and previousValue is the prior

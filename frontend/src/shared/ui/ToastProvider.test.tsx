@@ -176,12 +176,17 @@ describe('ToastProvider — stack', () => {
 describe('ToastProvider — z-index tier', () => {
   it('a toast tier a sheetek és a level-up overlay FÖLÖTT van (DS: „Toast above Modal")', () => {
     const css = readFileSync(resolve(TEST_DIR, '../../styles/prototype.css'), 'utf8')
-    const tierOf = (selector: string) => {
-      const block = css.split(selector)[1]?.split('}')[0] ?? ''
+    const tierOf = (selector: string, sheet = css) => {
+      const block = sheet.split(selector)[1]?.split('}')[0] ?? ''
       return Number(block.match(/z-index:\s*(\d+)/)?.[1] ?? NaN)
     }
     expect(tierOf('.toast-stack {')).toBeGreaterThan(250)   // above the level-up overlay
-    expect(tierOf('.toast-solo {')).toBeGreaterThan(250)
+    // The standalone feature toast — the workout's record toast. It was `.toast-solo` (MedalToast) until the
+    // Folyadék session page (mezo-n4wf5.4); it is the Edzés-shared `RecordToast` (`.ex-mtw`) now, and the tier
+    // it must hold is the same: above the sheets (200 / 211) and the level-up overlay (250).
+    const edzes = readFileSync(resolve(TEST_DIR, '../../styles/folyadek-edzes-kozos.css'), 'utf8')
+    expect(tierOf('.ex-mtw {', edzes)).toBeGreaterThan(250)
+    expect(css).not.toContain('.toast-solo')
   })
 })
 
