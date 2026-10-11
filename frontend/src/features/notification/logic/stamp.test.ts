@@ -16,6 +16,10 @@ describe('dayLabel', () => {
 
   // Egy pontosan egy évvel korábbi nap nem „Ma": a relatív ág a NAPTÁRI napra kapuz, nem a
   // megjelenített címkére (ugyanaz a csapda, amit a groupByDay kulcsolása kerül ki).
+  it('pins the Hungarian short month for September', () => {
+    expect(dayLabel('2026-09-05T12:00:00.000Z', '2026-09-18')).toBe('szept. 5.')
+  })
+
   it('does not call a same-date different-year day today', () => {
     expect(dayLabel('2025-08-18T12:00:00.000Z', '2026-08-18')).toBe('aug. 18.')
   })

@@ -8,6 +8,7 @@ import { FrameProvider } from '@/shared/ui/folyadek'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
 import { setLang } from '@/shared/i18n'
+import { act } from '@testing-library/react'
 
 // The title bar in English (mezo-n4wf5.11): every visible word and aria-label of the frame bar and the
 // notification panel. The Hungarian cases live in TitleBar.test.tsx (the test setup pins `hu`).
@@ -93,4 +94,21 @@ test('the unread filter with nothing left says so in English', async () => {
   await user.click(await screen.findByRole('button', { name: /^Notifications/ }))
   await user.click(screen.getByRole('button', { name: 'Mark all read' }))
   expect(await screen.findByText('none new')).toBeInTheDocument()
+})
+
+test('a mounted title bar re-labels the panel day headings and the orb when the language switches', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  await user.click(await screen.findByRole('button', { name: /^Notifications/ }))
+  const panel = screen.getByRole('dialog', { name: 'Notifications' })
+  const heads = (el: HTMLElement) => within(el).getAllByRole('heading', { level: 2 }).map((h) => h.textContent)
+  const en = heads(panel)
+  expect(en.length).toBeGreaterThan(0)
+  for (const h of en) expect(h).toMatch(/^(Today|Yesterday|\d{1,2} [A-Z][a-z]{2})$/)
+  act(() => { setLang('hu', { persist: false }) })
+  const huPanel = screen.getByRole('dialog', { name: 'Értesítések' })
+  const hu = heads(huPanel)
+  expect(hu).toHaveLength(en.length)
+  for (const h of hu) expect(h).toMatch(/^(Ma|Tegnap|[a-zé]+\. \d{1,2}\.)$/)
+  expect(screen.getByRole('button', { name: /^A mai napod/ })).toBeInTheDocument()
 })

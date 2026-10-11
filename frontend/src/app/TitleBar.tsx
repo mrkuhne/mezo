@@ -37,7 +37,7 @@ import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { canGoBack, frameFor } from '@/app/navModel'
-import { useM } from '@/shared/i18n'
+import { useLang, useM } from '@/shared/i18n'
 
 /** Az értesítés-panel felső korlátja. A többi a teljes feed oldalé (`/me/ertesitesek`) — egy
  *  fejléc-panel nem a feed második példánya, és egy több százas lista görgetése ott a helyes. */
@@ -57,6 +57,7 @@ export function TitleBar({ children }: {
   children?: ReactNode
 }) {
   const t = useM().frame.titleBar
+  const lang = useLang()
   const navigate = useNavigate()
   const { pathname, search, state, key: locationKey } = useLocation()
   // The page may override what the path says (a converted page names itself) and hands over its
@@ -122,7 +123,7 @@ export function TitleBar({ children }: {
     // Ugyanaz a nap-csoportosítás, amit a teljes feed oldal használ — a két felület nem
     // mondhat két különbözőt UGYANARRA a napra (mezo-tdzy).
     return groupByDay(rows, localDateString())
-  }, [recent, activeNtfFilter])
+  }, [recent, activeNtfFilter, lang]) // day headings are text: the language is part of the key
   // Escape és kívülre kattintás: a popover-alapszerződés, amit mind az öt korábbi másolat
   // elmulasztott. Csak nyitott menü mellett iratkozunk fel.
   const anyOpen = ntfOpen
