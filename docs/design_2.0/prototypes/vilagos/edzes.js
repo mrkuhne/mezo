@@ -27,6 +27,7 @@ const tags=a=>`<div class="fh-chips">${a.map(x=>Array.isArray(x)?`<span class="i
 const stp=(l,v,sub='')=>rw({title:l,sub,right:`<span class="vs-stp"><button data-toast="−">−</button><b>${v}</b><button data-toast="+">+</button></span>`});
 /* the 1–10 scale: ten rising vessels, filled up to the chosen one */
 const scale=v=>`<div class="vs-scale">${Array.from({length:10},(_,i)=>`<button class="${i+1<v?'f':i+1===v?'a':''}" style="--h:${(i+1)*10}%" data-ve="scale:${i+1}"><i></i><b>${i+1}</b></button>`).join('')}</div>`;
+const vopt=(o,on,line)=>`<div class="vs-vo" role="group">${o.map(([l,p,c],i)=>`<button class="${i===on?'on':''}" data-ve="chip" style="--p:${p}%;--c:${c||'var(--dom)'}"><span class="v" aria-hidden="true"><i></i>${line?`<u style="bottom:${line}%"></u>`:''}</span><b>${l}</b></button>`).join('')}</div>`;
 const blk=(l,inner)=>`<div class="vs-blk"><span class="fh-lab">${l}</span>${inner}</div>`;
 const box=(icon,title,body='',c='var(--dom)')=>`<div class="vs-box">${icon?bub(icon,{s:36,c}):''}<div><b>${title}</b>${body}</div></div>`;
 const sh=(lbl,title='',sub='')=>`<div class="vs-sh"><span>${lbl}</span><button data-close aria-label="Bezárás">×</button></div>${title?`<h2>${title}</h2>`:''}${sub?`<p class="fh-txt vs-sub">${sub}</p>`:''}`;
@@ -505,9 +506,9 @@ function session(arg=''){
   const extra=[origin,e.note?['t-note',e.note,`data-sheet="note" data-arg="${fi}"`]:null,e.why?['t-info',e.why]:null].filter(Boolean);
   const tg=e.skip?`<div class="vs-tg"><span><small>Állapot</small><b>kihagyva · a már naplózott szettjeid megmaradnak</b></span></div>`
     :e.to?`<div class="vs-tg"><span><small>Állapot</small><b>lecserélve → ${e.to} · ${dn(e)} szett kész</b></span></div>`
-    :e.last?`<div class="vs-tg"><span><small>Múlt hét</small><b>${e.last}</b></span><span class="t"><small>Mai cél</small><b>${e.goal}</b>${dchip(e.chg)}</span></div>`
+    :e.last?''
     :`<div class="vs-tg"><span><small>Első alkalom</small><b>a súlyt te adod meg, innentől jön a javaslat</b></span></div>`;
-  const body=`<div class="vs-tools top"><button data-sheet="recs" data-arg="${fi}" aria-label="${e.n} · előzmények és rekordok">${bub('t-journal',{s:26})}Rekordok</button>${e.video&&!e.to?`<button data-sheet="demo" data-arg="${fi}">${bub('t-play',{s:26})}Technika</button>`:''}${e.to?'':`<button data-sheet="menu" data-arg="${fi}" aria-label="${e.n} · további műveletek">⋮ Műveletek</button>`}</div>
+  const body=`<div class="vs-tools top"><button data-sheet="recs" data-arg="${fi}" aria-label="${e.n} · előzmények és rekordok">${bub('t-journal',{s:26})}Rekordok</button>${e.video&&!e.to?`<button data-sheet="demo" data-arg="${fi}">${bub('t-play',{s:26})}Technika</button>`:''}</div>${e.to?'':`<button class="vs-dots" data-sheet="menu" data-arg="${fi}" aria-label="${e.n} · további műveletek"><i></i><i></i><i></i></button>`}
     ${tg}
     ${e.skip||e.to?'':exChal(e.n).map(q=>`<button class="vs-ql" data-sheet="qb" data-arg="${q}" aria-label="${CHAL[q].type} küldetés · ${CHAL[q].acc?'vállalva':'elengedve'}">${bub('t-quest',{s:28,c:'var(--carb)'})}<span>${CHAL[q].acc?`${CHAL[q].type} · ${CHAL[q].target}`:`elengedve · <s>${CHAL[q].target}</s>`}</span>${chev()}</button>`).join('')}
     ${extra.map(([ic,x,at])=>at?`<button class="vs-xl" ${at} aria-label="Gyakorlat-jegyzet">${bub(ic,{s:22})}<span>${x}</span></button>`:`<p class="vs-xl">${bub(ic,{s:22})}<span>${x}</span></p>`).join('')}
@@ -519,7 +520,7 @@ function session(arg=''){
   const h=page('edzes',{title:WK.title,sub:`${d} / ${TOT()} szett kész`,back:'mai'},`
   ${ST.blocked?card(box('t-info','Nem sikerült elindítani az edzést','<p>A szerver nem vette fel a mai edzést, ezért most nem tudunk szettet menteni, és lezárni sem tudjuk. Próbáld újra.</p>','var(--bad)')+acts(ve('Újra','startretry','sm')),{i:0}):''}
   <div class="vs-pv rise">${EX.map((x,i)=>`<button class="${i===fi?'on':''} ${dn(x)===x.sets.length?'full':''} ${x.skip||x.to?'off':''}" data-ve="focus:${i}" style="--c:${dk(x.k)};flex:${x.sets.length}" aria-label="${x.n} · ${dn(x)} / ${x.sets.length} szett"><span><i style="--pw:${dn(x)/x.sets.length*100}%"></i></span><small>${i+1}. · ${dn(x)}/${x.sets.length}</small></button>`).join('')}</div>
-  ${hero({lbl:`${ci<0?'Kész':fi===ci?'Most':'Megnyitva'} · ${fi+1}. gyakorlat / ${EX.length} · ${muscleLabel(e.k)}`,verdict:e.n,left:mchp(e.k),body},1)}
+  ${hero({verdict:e.n,left:mchp(e.k),body},1).replace('fh-hero ','fh-hero vs-shero ')}
   ${sec(1,'A mai sor',2)}
   ${card(ls(EX.map((x,i)=>i===fi?'':rw({m:x.k,title:x.n,cls:x.skip||x.to?'muted':'',sub:x.skip?'kihagyva':x.to?`lecserélve → ${x.to} · ${dn(x)} szett kész`:`${x.sets.length} szett · cél ${x.goal} ${dchip(x.chg)}`,ve:`focus:${i}`,right:`<span class="vs-rr cl">${rowTag(x,i)}${caps(x.sets.length,dn(x),dk(x.k),{cur:cur(x)})}</span>`})))
     +note('Koppints egy gyakorlatra, és az kerül felülre a szettjeivel — bármelyiket naplózhatod, nem csak a soron következőt. Egy kapszula egy szett: a teli megvan.'),{i:2})}
@@ -598,10 +599,9 @@ function review(arg=''){const [a0,a1,a2]=String(arg).split('.');
 /* ── LEZÁRÓ CEREMÓNIA (WorkoutCeremony két lépése; a minta marad: csillagok, számláló, egyszeri koreográfia egyetlen rAF-menetben; a szint egy kehely, ami megtelik, a rekord kicsordul) ── */
 const CUP='M24 14 H176 V62 C176 100 144 122 100 122 C56 122 24 100 24 62Z';
 const cstars=spill=>`<div class="vs-cstars" aria-hidden="true">${[0,1,2,3,4].map(i=>`<i data-star="${i}">${T('t-star-empty','off')}${T('t-star-half','half')}${T('t-star','on')}</i>`).join('')}</div>
-  <div class="vs-cup" aria-hidden="true"><svg viewBox="0 0 200 132"><defs><clipPath id="cercup"><path d="${CUP}"/></clipPath><linearGradient id="cerg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F9D06A"/><stop offset="1" stop-color="#E9892B"/></linearGradient></defs>
-    <path d="${CUP}" fill="#fff" stroke="rgba(10,42,60,.12)" stroke-width="2.5"/><g clip-path="url(#cercup)"><g class="lq"><path class="wvp" fill="url(#cerg)" d="${wv(-120,14,440,11,5)} V140 H-120Z"/></g></g>
-    ${[.2,.4,.6,.8].map(p=>`<path d="M158 ${14+108*(1-p)}h12" stroke="rgba(10,42,60,.28)" stroke-width="2" stroke-linecap="round"/>`).join('')}<path d="M40 26 V58" stroke="rgba(255,255,255,.8)" stroke-width="6" stroke-linecap="round"/></svg>
-    ${spill?'<i class="sp s1"></i><i class="sp s2"></i><i class="sp s3"></i><i class="sp s4"></i><i class="sp s5"></i>':''}</div>`;
+  <div class="vs-cup" aria-hidden="true"><svg viewBox="0 -34 200 166"><defs><clipPath id="cercup"><path d="${CUP}"/></clipPath><linearGradient id="cerg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F9D06A"/><stop offset="1" stop-color="#E9892B"/></linearGradient></defs>
+    <path d="${CUP}" fill="#fff" stroke="rgba(10,42,60,.12)" stroke-width="2.5"/><g clip-path="url(#cercup)"><g class="lq"><path class="wvp" fill="url(#cerg)" d="${wv(-120,14,440,11,5)} V140 H-120Z"/></g>
+    ${[.4,.6,.8].map(p=>`<path d="M152 ${14+108*(1-p)}h14" stroke="rgba(10,42,60,.28)" stroke-width="2" stroke-linecap="round"/>`).join('')}<path d="M40 26 V58" stroke="rgba(255,255,255,.8)" stroke-width="6" stroke-linecap="round"/></g>${spill?`<path class="sp s1" d="M72 -14.25 C78.05 -7.1 77.5 -0.5 72 -0.5 C66.5 -0.5 65.95 -7.1 72 -14.25Z"/><path class="sp s2" d="M128 -17.25 C134.05 -10.1 133.5 -3.5 128 -3.5 C122.5 -3.5 121.95 -10.1 128 -17.25Z"/><path class="sp s3" d="M90 -25.0 C94.4 -19.8 94 -15 90 -15 C86 -15 85.6 -19.8 90 -25.0Z"/><path class="sp s4" d="M112 -9.0 C116.4 -3.8 116 1 112 1 C108 1 107.6 -3.8 112 -9.0Z"/><path class="sp s5" d="M102 -31.1 C105.74 -26.68 105.4 -22.6 102 -22.6 C98.6 -22.6 98.26 -26.68 102 -31.1Z"/>`:''}</svg></div>`;
 /* a tál: a nap kerete a Fuel napjából (useFuelDay — a lezárás ma nem tölti be; ha nincs adat, a tál nem áll ki a számért) + amit a mai mozgás hozzátesz */
 function kcalBowl(base,add){const id=uid('bw'),B='M8 38 H92 C92 66 74 88 50 88 C26 88 8 66 8 38Z',Y=p=>88-p*.5;
   return `<svg class="fl-fill vs-bowl" viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${id}"><path d="${B}"/></clipPath></defs><path d="${B}" fill="#fff" stroke="rgba(10,42,60,.12)" stroke-width="1.8"/><g clip-path="url(#${id})"><path d="${wv(-10,Y(base+add),120,4,2.5)} V100 H-10Z" fill="var(--carb)"/><path d="${wv(-10,Y(base),120,4,2.5)} V100 H-10Z" fill="color-mix(in srgb,#149E6E 50%,#fff)"/></g><path d="M32 95 H68" stroke="rgba(10,42,60,.16)" stroke-width="4" stroke-linecap="round"/></svg>`}
@@ -651,7 +651,7 @@ function sportcer(arg=''){const C=ST.spc||{i:0,min:90,rpe:7,own:null},[ic,name,t
       +(xp!=null?`<div style="margin-top:14px">${ls(rw({icon:'t-coin',title:`+${xp} szerzett XP`,sub:'a mai mozgásért'}))}</div>`:''))}
     ${kc!=null?sec(2,'A mai mozgással')+card(ls(rw({left:bub('t-bowl',{s:46,c:'var(--carb)'}),title:`+${hu(kc)} kcal került a mai keretedbe`,sub:own!=null?'Saját értéked':'Becslés, nem mérés'})),{cls:'vs-gold'}):''}
     <p class="fh-note" style="margin:10px 18px 0">A csillagok az edzésidőből és az erőfeszítésből számolnak, nem gépi értékelés.</p></div></div>`,
-  {nonav:true,foot:ve(`Vissza a mai napra · ${name} elmentve`,'spdone','','style="flex:1"')})}
+  {nonav:true,foot:`<div class="vs-fcol">${ve('Vissza a mai napra','spdone')}<span class="fh-note vs-fsub">${name} · elmentve</span></div>`,pad:'150px'})}
 
 /* a futó edzés visszaút-gombja (FloatingReturnLayer): amíg nyitva van egy edzés, az app minden más oldalán ott lebeg, rajta a kész szettek száma */
 const retFab=()=>`<button class="vs-ret" data-go="session" aria-label="Vissza az edzéshez · ${DONE()} szett kész">${I('t-dumbbell')}${DONE()?`<b>${DONE()}</b>`:''}</button>`;
@@ -1367,6 +1367,7 @@ const SHEETS={
   recs:(a)=>{const [g,stt]=String(a||'0').split('.'),e=EX[+g]||EX[0],c=dk(e.k),R=stt==='ures'?null:e.rec,L=stt==='ures'?null:e.lastSet,D=e.sets.filter(isDone),tv=volOf(D),tb=D.reduce((m,s)=>!m||e1(s[0],s[1])>e1(m[0],m[1])?s:m,null),te=tb?e1(tb[0],tb[1]):0;
     const bar=(ic,l,val,since,now,target,nowL)=>{const beat=target>0&&now>target;return rw({icon:ic,title:`${l}${beat?' '+st('ma megdöntve','ok'):''}`,sub:`${since}<span class="vs-rowbar">${wlv(target?Math.min(100,now/target*100):0,beat?'var(--carb)':c,[],14)}</span>${!beat&&now>0?`<span class="vs-now">ma ${nowL}</span>`:''}`,v:val})};
     return `${shm(e.k,`${muscleLabel(e.k)}${R?` · ${R.n} alkalom`:''}`,e.n)}
+    ${e.last&&stt!=='ures'?`<div class="vs-tg"><span><small>Múlt hét</small><b>${e.last}</b></span><span class="t"><small>Mai cél</small><b>${e.goal}</b>${dchip(e.chg)}</span></div>`:''}
     ${lab('A múltkori alkalom · a legjobb munkaszetted')}${L?facts([[kg(L[0]),'kg'],[String(L[1]),'ism'],[L[2]==null?'—':String(L[2]),'RIR']]):txt('— ezt a gyakorlatot még nem csináltad.')}
     ${lab('Megdönthető rekordok · a szint, hogy ma hol jársz hozzájuk')}${D.length?'':note('Ma még nem naplóztál ehhez szettet — a szintek üresen állnak.')}
     ${ls(bar('t-ring','Becsült 1RM',R?`${f1(R.e1rm[0])} kg`:'—',R?`${R.e1rm[1]} óta áll · becslés, nem mérés`:'becslés, nem mérés',te,R?R.e1rm[0]:0,`${f1(te)} kg`),
@@ -1399,7 +1400,8 @@ const SHEETS={
     ${last?acts(`<button class="fh-lk bad" disabled>Szett törlése</button>`)+note('Az utolsó szett nem törölhető — ha ez a gyakorlat ma nem megy, hagyd ki a Műveletekben.'):acts(vl('Szett törlése',`setdel:${+i}.${+j}`,'bad'))}`},
   /* FeedbackModal: a gyakorlat UTOLSÓ szettje után egyszer (nem szettenként), utána nincs pihenő; az utolsó gyakorlatnál a gomb „Edzés vége” */
   rp:(a)=>{const [g,stt]=String(a||'0').split('.'),gi=+g||0,e=EX[gi]||EX[0],end=stt==='vege'||nowIdx()<0;return `${shm(e.k,'Gyakorlat kész · hogy ment?',e.n,muscleLabel(e.k))}
-    ${[['Pumpa · érzed?',['Semmi','Enyhe','Jó','Brutális'],2],['Ízületi fájdalom',['Nincs','Enyhe','Erős'],0],['Akarunk még?',['Kevés volt','Pont jó','Sok volt'],1]].map(([q,o,s])=>blk(q,chips(o,s))).join('')}
+    ${[['Pumpa · érzed?',[['Semmi',5],['Enyhe',36],['Jó',68],['Brutális',100]],2],['Ízületi fájdalom',[['Nincs',5,'var(--ok)'],['Enyhe',50,'var(--warn)'],['Erős',100,'var(--bad)']],0],['Akarunk még?',[['Kevés volt',34],['Pont jó',64],['Sok volt',100]],1,64]].map(([q,o,s,line])=>blk(q,vopt(o,s,line))).join('')}
+    ${note('Az edény annyira telik, amennyit a válasz jelent. A vonal a „pont jó” szint — ebből áll össze a jövő heti szettszám.')}
     ${acts(ve(end?'Edzés vége':'Mentés · tovább','rpdone:1','','style="flex:1"'),vl('Hagyjuk','rpdone'))}`},
   /* az extra szett kérdése — csak a terv szerinti sornál (planSlot); a ma hozzáadott gyakorlatnál nem nyílik */
   extra:(g)=>{const e=EX[+g]||EX[0],n=e.sets.length;return `${shm('t-weight','Extra szett hozzáadva','A tervbe is felvegyük?',`Most ${n} szett.`)}<div class="vs-shg">${caps(n,dn(e),dk(e.k),{cur:n-1,cls:'big'})}<small>az utolsó az új</small></div>
@@ -1808,6 +1810,16 @@ ${Q} .vs-sets .n{justify-self:center;width:24px;height:40px;border-radius:999px;
 ${Q} .vs-sets .n.f{color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 50%,#fff),var(--c));box-shadow:0 6px 8px -6px var(--c)}
 ${Q} .vs-sets .n.h{color:var(--ink);background:linear-gradient(180deg,#fff 0 50%,color-mix(in srgb,var(--c) 45%,#fff) 50%);box-shadow:inset 0 0 0 2px var(--c)}
 ${Q} .vs-sets .vd{width:44px;height:40px}${Q} .vs-sets .tk{border-radius:999px;background:linear-gradient(135deg,var(--liq1),var(--liq2))}${Q} .vs-sets .vin{border-radius:14px}${Q} .vs-sets .v{border-radius:14px}
+${Q} .vs-shero{position:relative}${Q} .vs-shero .fh-hrow{padding-right:46px}${Q} .vs-shero .lbl:empty{display:none}
+${Q} .vs-dots{position:absolute;top:14px;right:14px;z-index:2;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;gap:4px;background:#fff;box-shadow:inset 0 0 0 1px rgba(15,30,51,.08),0 6px 12px -8px rgba(15,30,51,.35)}${Q} .vs-dots i{width:4.5px;height:4.5px;border-radius:50%;background:var(--ink)}
+${Q} .vs-fsub{margin:0;text-align:center;overflow-wrap:anywhere}
+${Q} .vs-vo{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;margin-top:8px}
+${Q} .vs-vo button{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:0;min-height:44px;padding:10px 4px 9px;border-radius:20px;background:#EEF4F8}
+${Q} .vs-vo .v{position:relative;width:32px;height:40px;border-radius:9px 9px 15px 15px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.16);overflow:hidden}
+${Q} .vs-vo .v i{position:absolute;left:0;right:0;bottom:0;height:var(--p);background:var(--c);opacity:.3}${Q} .vs-vo .v i::before{content:'';position:absolute;left:-4px;right:-4px;top:-3px;height:6px;border-radius:50%;background:inherit}
+${Q} .vs-vo .v u{position:absolute;left:3px;right:3px;border-top:2px dashed rgba(10,42,60,.45)}
+${Q} .vs-vo b{font-size:12.5px;font-weight:650;line-height:1.15;text-align:center;color:var(--sub)}
+${Q} .vs-vo button.on{background:color-mix(in srgb,var(--c) 12%,#fff);box-shadow:inset 0 0 0 2px var(--c)}${Q} .vs-vo button.on .v i{opacity:1}${Q} .vs-vo button.on b{color:var(--ink)}
 ${Q} .vs-tools button{border-radius:999px;padding:5px 12px 5px 5px}${Q} .vs-tools button:not(:has(.fb)){padding:9px 14px}
 ${Q} .vs-tg span{border-radius:18px}${Q} .vs-ql{border-radius:999px;padding:5px 10px 5px 5px}
 ${Q} .vs-leg{display:flex;flex-wrap:wrap;gap:8px 12px;margin-top:12px;font-size:12.5px;font-weight:600}${Q} .vs-leg span{display:inline-flex;align-items:center;gap:6px}
@@ -1815,11 +1827,10 @@ ${Q} .vs-rv{position:relative;flex:0 0 auto;width:34px;height:50px;border-radius
 ${Q} .vs-rv i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(180deg,#19C7C0,#1877F2);transition:height 1s linear}
 /* ceremónia: a kehely megtelik, a rekord kicsordul */
 ${Q} .vs-cer{padding-bottom:22px}${Q} .vs-cer::before,${Q} .vs-cer::after{display:none}${Q} .vs-cer .sub{margin-top:6px}
-${Q} .vs-cup{position:relative;width:200px;max-width:74%;margin:2px auto 14px}
+${Q} .vs-cup{position:relative;width:200px;max-width:74%;margin:0 auto 14px}
 ${Q} .vs-cup svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 18px 16px rgba(233,137,43,.38))}
 ${Q} .vs-cup .lq{transform:translateY(calc((1 - var(--p)) * 108px))}
-${Q} .vs-cup .sp{position:absolute;width:11px;height:14px;border-radius:50% 50% 50% 50%/38% 38% 62% 62%;background:linear-gradient(180deg,#F9D06A,#E9892B);opacity:0;--fx:34px}
-${Q} .vs-cup .s1{left:1%;top:26%}${Q} .vs-cup .s2{right:0;top:32%;--fx:-34px}${Q} .vs-cup .s3{left:-5%;top:58%;width:8px;height:10px;--fx:44px}${Q} .vs-cup .s4{right:-6%;top:64%;width:8px;height:10px;--fx:-44px}${Q} .vs-cup .s5{right:9%;top:-9%;width:7px;height:9px;--fx:-20px}
+${Q} .vs-cup .sp{fill:#F2A93F;opacity:0;transform-box:fill-box;transform-origin:50% 50%}
 ${Q} #cerroot.b1 .vs-cup .sp{opacity:1}
 ${Q} .vs-gold .vs-rc{box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.10),0 8px 12px -8px var(--carb)}
 ${Q} .vs-bowl{width:92px;flex:0 0 auto}
@@ -1888,7 +1899,7 @@ ${Q} .vs-ft{gap:8px}${Q} .vs-ft span:nth-child(2){text-align:center;color:var(--
 }
 @media (prefers-reduced-motion:reduce){${Q} .vs-rv i,${Q} .vs-wd i{transition:none}${Q} #cerroot .vs-cres,${Q} #cerroot .vs-ccard,${Q} .vs-cstars i svg{transition:none}}
 body.still ${Q} .vs-rv i,body.still ${Q} .vs-wd i{transition:none}
-@keyframes vsspl{0%{opacity:0;transform:translate(var(--fx),-18px) scale(.3)}40%{opacity:1;transform:translate(calc(var(--fx)*.45),-34px) scale(1)}100%{opacity:1;transform:none}}
+@keyframes vsspl{0%{opacity:0;transform:translateY(26px) scale(.3)}45%{opacity:1;transform:translateY(-8px) scale(1)}100%{opacity:1;transform:none}}
 @keyframes vswv{to{transform:translateX(40px)}}
 @media (max-width:360px){${P} .vs-sets{grid-template-columns:24px 1fr 1fr 1fr 40px;gap:6px;padding:10px}${P} .vs-sets .tk,${P} .vs-sets .vd{width:40px}${P} .vs-stp button{width:30px;height:30px}${P} .vs-stp b{min-width:32px}${P} .vs-cstars i{width:40px;height:40px}${P} .vs-in{padding-left:0}${P} .vs-rest small{display:none}${P} .vs-tg b{font-size:14.5px}${P} .vs-opts{gap:6px}${P} .vs-opts button{font-size:12.5px;padding:7px 6px;gap:6px}${P} .vs-opts .fb{--s:30px!important}
   ${Q} .vs-hb,${Q} .vs-hb .vs-body{width:78px}${Q} .vs-h2 .vs-hb,${Q} .vs-h2 .vs-hb .vs-body{width:92px}${Q} .vs-hf b{font-size:21px}${Q} .vs-hf span{padding:9px 12px}${Q} .vs-duo.xl .vs-body{width:104px}${Q} .vs-duo.md .vs-body{width:88px}${Q} .vs-duo .vs-body{width:80px}${Q} .vs-duo.sm .vs-body{width:38px}
