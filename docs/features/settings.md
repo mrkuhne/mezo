@@ -2,17 +2,31 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-10-09
+updated: 2026-10-11
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
   - frontend/src/data/companion/preferencesApi.ts
   - frontend/src/data/companion/preferencesHooks.ts
   - frontend/src/app/TitleBar.tsx
+  - frontend/src/shared/i18n/messages/settings.hu.ts
 related: [_platform-design-system, companion, me, fuel, train, insights, _platform-auth-security]
 ---
 
 # Central settings
+
+> **2026-10-11 — two languages (`mezo-n4wf5.11`, slice N1).** Every Settings page (hub, Train / Me / Mezo / Nap, account, the
+> personal-context editors, `/settings/general`, `/settings/notifications`) reads its words from the `settings` area of the
+> message catalog (`frontend/src/shared/i18n/messages/settings.hu.ts` is the source, `settings.en.ts` the typed twin; the
+> English wording is the owner-approved prototype `vilagos/en.js`). Hungarian is unchanged word for word, with two approved
+> copy changes: the hub row for `/settings/general` now says „Nyelv, kalauzok, fiók, jelszó" and that page's intro says
+> „Ugyanaz a világ. A saját nyelveden és szokásaiddal." The new **„Nyelv" block** is the first section of `/settings/general`:
+> a `role="group"` pair of buttons (Magyar / English, `aria-pressed`, ≥ 44 px) that calls `useLanguageSetting().setLanguage`
+> (optimistic, stored with the account, rolled back with the save-failed toast); its rules (`.settings-lang-*`) sit in the
+> `uveg en2 beallitasok` block of `frontend/src/styles/prototype.css`. Not yet translated, still Hungarian in English mode:
+> Fuel settings, the goal settings page, the gym / sport / biometric / sleep-goal / password sheets and
+> server-provided text (the assembled context, what the user wrote). Notification category names live in the catalog
+> (`settings.notifications.categories`); `NOTIFICATION_CATEGORY_META` keeps only section / lead-chip data for rendering.
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The header notification panel's chip and row icons are the 3D set (call-site: forecast → t-orb, experiment → t-flask, habit formation → t-harvest, and since `mezo-a9bo7.13` the esti kiadás' Mezo glyph → t-chat); the deprecated notification `emoji` field is gone. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
 

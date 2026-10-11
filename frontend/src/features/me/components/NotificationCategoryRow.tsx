@@ -1,6 +1,7 @@
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Toggle } from '@/shared/ui/Toggle'
 import { cn } from '@/shared/lib/cn'
+import { useM } from '@/shared/i18n'
 import { NOTIFICATION_CATEGORY_META } from '@/data/types'
 import type { NotificationCategoryKey, NotificationPrefView } from '@/data/types'
 
@@ -50,12 +51,15 @@ interface NotificationCategoryRowProps {
  * prototypes/uveg-en2.html `.srow3`): a flat row — lit 3D icon well, name, sub-line, the lead
  * chip, a sky-lit switch — inside the page's one glass card per group. Presentational only — no
  * `@/data/*Hooks`/`@/data/hooks` import: label and lead-chip visibility come from
- * `NOTIFICATION_CATEGORY_META` (data/types.ts), so this file never hardcodes Hungarian copy;
- * the sub-line is either the caller-supplied derived `subLine` or that same meta's static
- * description. bd mezo-h4wp.6.2/.3, mezo-d20.6.8.
+ * `NOTIFICATION_CATEGORY_META` (data/types.ts: section, lead chip); the label and the static
+ * description are the current language's catalog text (`settings.notifications.categories`), so
+ * this file never hardcodes copy; the sub-line is either the caller-supplied derived `subLine`
+ * or that static description. bd mezo-h4wp.6.2/.3, mezo-d20.6.8.
  */
 export function NotificationCategoryRow({ pref, onToggle, disabled = false, subLine }: NotificationCategoryRowProps) {
+  const t = useM().settings.notifications
   const meta = NOTIFICATION_CATEGORY_META[pref.category]
+  const text = t.categories[pref.category]
   return (
     // Üveg (mezo-me75u.7): a flat, hairline-separated row inside the group's ONE glass card
     // (the prototype `.srows` pattern) — no per-row wash tile any more, never glass in glass.
@@ -64,13 +68,13 @@ export function NotificationCategoryRow({ pref, onToggle, disabled = false, subL
         <Icon3D name={CATEGORY_ICON[pref.category]} size={28} />
       </span>
       <div className="ntf-cat-tx">
-        <span className="ntf-cat-nm">{meta.label}</span>
-        <span className="ntf-cat-sb">{subLine ?? meta.description}</span>
+        <span className="ntf-cat-nm">{text.label}</span>
+        <span className="ntf-cat-sb">{subLine ?? text.description}</span>
       </div>
       {meta.showLeadChip && pref.enabled && (
-        <span className="ntf-leadch">−{pref.leadMinutes} perc</span>
+        <span className="ntf-leadch">{t.lead(pref.leadMinutes)}</span>
       )}
-      <Toggle glass on={pref.enabled} onToggle={onToggle} ariaLabel={meta.label} disabled={disabled} />
+      <Toggle glass on={pref.enabled} onToggle={onToggle} ariaLabel={text.label} disabled={disabled} />
     </div>
   )
 }

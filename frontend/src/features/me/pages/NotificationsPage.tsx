@@ -31,17 +31,15 @@ import { forecastToday, type NotificationForecastAnchors } from '@/features/me/l
 import { localDateString } from '@/shared/lib/dates'
 import { NOTIFICATION_CATEGORY_META } from '@/data/types'
 import type { NotificationCategoryKey, PushErrorCode } from '@/data/types'
+import { useM, type Messages } from '@/shared/i18n'
 
 /** Honest, per-cause copy for a failed opt-in — a toggle that silently snaps back tells the
  *  user nothing and leaves nothing to diagnose. `vapid-missing` is called out separately
  *  because it is a BUILD misconfiguration (the exact state a fresh deploy hits), so the line
- *  has to point at the app rather than invite a pointless retry. */
-const PUSH_ERROR_COPY: Record<PushErrorCode, string> = {
-  'vapid-missing':
-    'Ez a build nem kapott push-kulcsot, így az értesítések nem kapcsolhatók be. Ez alkalmazásoldali hiba — nem a te eszközöddel van gond.',
-  'register-failed':
-    'Az eszköz feliratkozott, de a szerver nem vette nyilvántartásba. Próbáld újra kicsit később.',
-  failed: 'Az értesítések beállítása nem sikerült. Próbáld újra.',
+ *  has to point at the app rather than invite a pointless retry. The text is the current
+ *  language's catalog text, looked up at render time (never captured at module load). */
+function pushErrorCopy(code: PushErrorCode, t: Messages['settings']['notifications']): string {
+  return code === 'vapid-missing' ? t.pushErrorVapid : code === 'register-failed' ? t.pushErrorRegister : t.pushErrorFailed
 }
 
 /** ISO 1=Mon..7=Sun, converted from JS's 0=Sun..6=Sat. */
@@ -49,8 +47,6 @@ function isoWeekday(date: Date): number {
   const day = date.getDay()
   return day === 0 ? 7 : day
 }
-
-const WEEKDAY_HU = ['vasárnap', 'hétfő', 'kedd', 'szerda', 'csütörtök', 'péntek', 'szombat']
 
 /** The anchors a live sub-line can be derived from — every field the settings page already
  *  reads for the preview header (fix round 1, mezo-h4wp.6.3 review): the sub-line the user
@@ -64,7 +60,7 @@ interface SubLineContext {
   medicationDay: boolean
   medCycleDay: number
   fuelSlotCount: number
-  todayHu: string
+  todayName: string
 }
 
 /**
@@ -80,22 +76,22 @@ interface SubLineContext {
  * `NOTIFICATION_CATEGORY_META` description already IS the derived value, unlike the retired
  * `weekly`'s wake-anchored one, so it needs no case here either.
  */
-function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx: SubLineContext): string {
+function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx: SubLineContext, t: Messages['settings']['notifications']): string {
   switch (category) {
     case 'briefing':
-      return `${ctx.wake} · ébredési horgony`
+      return t.subBriefing(ctx.wake)
     case 'gym':
-      return ctx.gymBlock ? `ma ${ctx.gymBlock.time} · ${ctx.gymBlock.label}` : fallback
+      return ctx.gymBlock ? t.subGym(ctx.gymBlock.time, ctx.gymBlock.label) : fallback
     case 'ritual':
-      return `${ctx.ritualOpensAt} · ablak nyílása`
+      return t.subRitual(ctx.ritualOpensAt)
     case 'lights_out':
       return ctx.bedTime
     case 'wind_down':
       return ctx.ritualPrepStartsAt
     case 'medication':
-      return ctx.medicationDay ? `${ctx.todayHu} · D${ctx.medCycleDay}` : fallback
+      return ctx.medicationDay ? t.subMedication(ctx.todayName, ctx.medCycleDay) : fallback
     case 'fuel_slot':
-      return ctx.fuelSlotCount > 0 ? `${ctx.fuelSlotCount} slot / nap` : fallback
+      return ctx.fuelSlotCount > 0 ? t.subFuelSlots(ctx.fuelSlotCount) : fallback
     default:
       return fallback
   }
@@ -110,11 +106,14 @@ function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx:
  *  wrong gate for it. Instead the *button's visibility* is gated on `push.enabled` (nothing
  *  to test before a subscription exists), and it's disabled while `push.busy`. */
 export function NotificationsPage() {
+  const m = useM()
+  const t = m.settings.notifications
   const navigate = useNavigate()
   const origin = useSettingsOrigin()
   const push = usePushSubscription()
   const { prefs, setPref } = useNotificationPrefs()
-  const [testResult, setTestResult] = useState<string | null>(null)
+  // The raw outcome, never the sentence: the sentence is built at render so it follows the language.
+  const [testResult, setTestResult] = useState<{ sent: number; attempted: number } | null>(null)
 
   // ── Preview-header + sub-line inputs (N3, design spec §7) — every hook called
   // unconditionally, before the install-gate's early return, per the rules of hooks. ─────────
@@ -171,7 +170,7 @@ export function NotificationsPage() {
     // buildDayPlan's FuelSlot mapper) — the count the user reads here must match what actually
     // shows up in the "Mai" timeline, not the raw zone count.
     fuelSlotCount: protocolSlots.filter((s) => s.entries.some((e) => !e.skippedToday)).length,
-    todayHu: WEEKDAY_HU[new Date().getDay()],
+    todayName: t.weekday(new Date().getDay()),
   }
 
   // iOS grants Web Push to home-screen-installed PWAs only: when the app is not standalone
@@ -187,8 +186,8 @@ export function NotificationsPage() {
       // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
       // a number about notifications that cannot happen.
       <MozaikPage tone="sky" className="ntf-page">
-        <PageHead glass onBack={() => navigate('/settings', { state: origin.state })} label="Beállítások" />
-        <PageHero art="t-bell" accent="var(--dv-sky)" name="Értesítés-beállítások" />
+        <PageHead glass onBack={() => navigate('/settings', { state: origin.state })} label={m.settings.frame.settings} />
+        <PageHero art="t-bell" accent="var(--dv-sky)" name={t.pageName} />
         <PageBody>
           <EntranceGroup className="col gap-md">
             <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
@@ -204,10 +203,10 @@ export function NotificationsPage() {
   // doesn't surface (e.g. no "prompt" vs "default" distinction beyond what Notification.permission gives).
   const statusLine =
     push.permission === 'denied'
-      ? 'Az eszközön letiltva — az iOS beállításokban engedélyezhető újra.'
+      ? t.statusDenied
       : push.enabled
-        ? 'iPhone · engedélyezve'
-        : 'Nincs engedélyezve'
+        ? t.statusOn
+        : t.statusOff
 
   const onToggle = async () => {
     if (push.enabled) await push.unsubscribe()
@@ -216,11 +215,7 @@ export function NotificationsPage() {
 
   const onTest = async () => {
     const { attempted, sent } = await push.sendTest()
-    setTestResult(
-      sent > 0
-        ? `Elküldve ${sent}/${attempted} eszközre.`
-        : `Egyik eszköz sem fogadta el (${attempted} próbálkozás).`,
-    )
+    setTestResult({ sent, attempted })
   }
 
   const proseCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'prose')
@@ -229,16 +224,16 @@ export function NotificationsPage() {
 
   return (
     <MozaikPage tone="sky" className="ntf-page">
-      <PageHead glass onBack={() => navigate('/settings', { state: origin.state })} label="Beállítások" />
+      <PageHead glass onBack={() => navigate('/settings', { state: origin.state })} label={m.settings.frame.settings} />
       {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
           qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
           forecast the card below draws), never asserted — a crowded day says so instead. */}
       <PageHero
         art="t-bell"
         accent="var(--dv-sky)"
-        name="Értesítés-beállítások"
+        name={t.pageName}
         big={forecast.total}
-        sub={forecast.denseWindows.length === 0 ? 'tervezett ma · nyugodt ritmus' : 'tervezett ma · sűrű ablak'}
+        sub={forecast.denseWindows.length === 0 ? t.subCalm : t.subBusy}
       />
       <PageBody>
       <EntranceGroup className="col gap-md">
@@ -248,7 +243,7 @@ export function NotificationsPage() {
         <div className="ntf-masterrow glass rise" style={{ '--d': '40ms', '--c': 'var(--dv-sky)' } as React.CSSProperties}>
           <span className="ntf-mic uv-well" aria-hidden="true"><Icon3D name="t-bell" size={28} /></span>
           <div className="ntf-master-tx">
-            <span className="ntf-master-nm">Push értesítések</span>
+            <span className="ntf-master-nm">{t.push}</span>
             <span className="ntf-master-sb">{statusLine}</span>
           </div>
           {/* Visible-but-inert when denied — the status line already tells the user it's
@@ -259,7 +254,7 @@ export function NotificationsPage() {
             glass
             on={push.enabled}
             onToggle={onToggle}
-            ariaLabel="Push értesítések"
+            ariaLabel={t.push}
             disabled={push.busy || push.permission === 'denied'}
           />
         </div>
@@ -269,7 +264,7 @@ export function NotificationsPage() {
             the washed row (an alert reads oddly nested in a colored tile). */}
         {push.error && (
           <p className="text-error ntf-err" role="alert">
-            {PUSH_ERROR_COPY[push.error]}
+            {pushErrorCopy(push.error, t)}
           </p>
         )}
 
@@ -277,24 +272,24 @@ export function NotificationsPage() {
           <div className="ntf-testrow rise" style={{ '--d': '70ms' } as React.CSSProperties}>
             <CtaPrimary className="ntf-testbtn" onClick={onTest} disabled={push.busy}>
               <Icon3D name="t-send" size={22} />
-              Teszt értesítés küldése
+              {t.sendTest}
             </CtaPrimary>
             {testResult && (
               <p className="text-tertiary ntf-testres">
-                {testResult}
+                {testResult.sent > 0 ? t.testSent(testResult.sent, testResult.attempted) : t.testRefused(testResult.attempted)}
               </p>
             )}
           </div>
         )}
 
         <div className="rise" style={{ '--d': '100ms' } as React.CSSProperties}>
-          <Eyebrow>Mezo megszólal</Eyebrow>
+          <Eyebrow>{t.prose}</Eyebrow>
           <div className="ntf-cats glass" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
             {proseCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
                 pref={pref}
-                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
+                subLine={deriveSubLine(pref.category, t.categories[pref.category].description, subLineCtx, t)}
                 onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
               />
             ))}
@@ -302,13 +297,13 @@ export function NotificationsPage() {
         </div>
 
         <div className="rise" style={{ '--d': '140ms' } as React.CSSProperties}>
-          <Eyebrow>Emlékeztetők</Eyebrow>
+          <Eyebrow>{t.reminders}</Eyebrow>
           <div className="ntf-cats glass" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
             {reminderCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
                 pref={pref}
-                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
+                subLine={deriveSubLine(pref.category, t.categories[pref.category].description, subLineCtx, t)}
                 onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
               />
             ))}
@@ -316,18 +311,18 @@ export function NotificationsPage() {
         </div>
 
         <div className="rise" style={{ '--d': '180ms' } as React.CSSProperties}>
-          <Eyebrow>Az agy eseményei</Eyebrow>
+          <Eyebrow>{t.brain}</Eyebrow>
           <div className="ntf-cats glass" style={{ '--c': 'var(--dv-sky)' } as React.CSSProperties}>
             {brainCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
                 pref={pref}
-                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
+                subLine={deriveSubLine(pref.category, t.categories[pref.category].description, subLineCtx, t)}
                 onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
               />
             ))}
           </div>
-          <p className="ntf-foot">Eseményvezérelt — nem szerepel a napi terhelés előnézetben.</p>
+          <p className="ntf-foot">{t.brainFoot}</p>
         </div>
       </EntranceGroup>
       </PageBody>
