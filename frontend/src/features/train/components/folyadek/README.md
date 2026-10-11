@@ -105,6 +105,22 @@ Build target: the F4 routes of `docs/design_2.0/prototypes/vilagos/edzes.js` (ow
 (this chapter's pieces, the page cut, the focus model, the derivations) is on the branch; the five areas below convert the
 screens. **Read (e) before you write a floating element.**
 
+> **Built and integrated (2026-10-11).** The five areas are converted; this chapter stays as the map of the flow.
+> What the integration step changed against the tables below:
+> - **Folded into the kit** (`@/shared/ui/folyadek`): `TitleRow` — the title row of a chrome-free route (`context title
+>   backLabel? onBack mark? headingRef?` + `data-*`; pinned; was `.es-top` / `.ei-top` / `.ek-top` / `.ec-top`) ·
+>   `RowEnd` (`stack?`) — a mark beside the capsules, or a pill over them (was `.ei-rr` / `.ek-rr` / `.eo-rr` /
+>   `.el-scope-caps`) · `Pair` items take `disabled` and `data` · a sheet ending in a text link needs nothing local
+>   (kit rule for every `.fo-sheet`) · visually hidden text is `.sr-only`.
+> - **Labels at the source**: `challengeTypeLabel` says „Rekord-kísérlet", `MEDAL_UNIT_LABEL.REPS` is „ism.",
+>   `progressionChip().text` carries no arrow. No component maps these locally.
+> - **`RecordToast`** sits in the toast tier (z 300): above an open sheet. Keep the page root free of anything that
+>   forms a stacking context.
+> - **(d) is history**: the old rules are deleted from `styles/prototype.css` (zero-usage proof per rule); the
+>   structure guard pins them as gone.
+> - **Left unused on purpose** (a cleanup issue takes them): `components/MedalChip.tsx`, `components/ProgressionBanner.tsx`,
+>   `WorkoutSummary`'s `closing` mode, `WorkoutCeremony`'s `settled` prop has no caller either.
+
 ## (a) Prototype helper / class → React piece → props
 
 ### Kit (`@/shared/ui/folyadek`, CSS `folyadek-kit.css`)

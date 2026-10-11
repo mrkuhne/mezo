@@ -324,3 +324,45 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
   in the browser and which are covered by tests only; do not call a route verified because its default face is.
 - **F3.12 — A network failure kills a background agent, not its work.** Resume the same agent with the state of
   the tree („only this file is modified, check `git diff`"); a fresh agent would redo or contradict it.
+
+**F4 — Edzés közben (`mezo-n4wf5.4`, 2026-10-11)**
+
+- **F4.1 — A red main found at session start is fixed before the slice; a 320 px text fit needs real slack.**
+  The F3 merge left main red: the Linux CI runner lays „Gyomorrontás" out wider than macOS, and the 6 px a
+  reason chip had to spare was not enough (`mezo-noec7`). A fit measured on one machine needs ~20 px of slack
+  at ≤360 px, or the word breaks on another.
+- **F4.2 — A prototype layout that differs from the live page is a decision, recorded with its mapping to the
+  unchanged state model.** The card list became „one exercise on top, the rest rows". The foundation wrote a
+  pure view model (`logic/sessionFocus.ts`: who is on top, how the focus moves) over the SAME session model, so
+  the look changed and no write path did. Name the one thing the new layout costs (a draft is dropped when
+  another exercise comes on top) instead of discovering it later.
+- **F4.3 — The foundation cuts a big page so that exactly one builder owns the page file.** Two areas needed
+  `ActiveWorkoutPage`; its markup moved, unchanged, into a view and a sheets component first, and the page
+  hands each ONE typed object (`v`, `s`). The object is frozen between the two builders: a field one of them
+  misses is reported and added by the page's owner, never grown on the side.
+- **F4.4 — Builders report shared tests, the integration step owns them.** Structure guards, nav tests, the
+  layout specs and the kalauz registry are read by every area; five builders each fixing „their" lines would
+  have rewritten the same guard five ways. They went red on purpose and were rewritten once, to the new truth.
+- **F4.5 — A chrome-free route needs its title-row piece in the kit from the start.** Four screens without a
+  title bar each drew the bar's sub-page row locally (`.es-top`, `.ei-top`, `.ek-top`, `.ec-top`) — one pinned,
+  three not. It is `TitleRow` now, pinned like the bar it stands in for. List „what does a page draw when the
+  frame draws nothing" among the second-level pieces (F3.6).
+- **F4.6 — A pinned heading no longer scrolls into view on focus.** The old closing screens reached their top
+  by focusing the heading. Inside a sticky title row the heading is always in view, so step two opened under
+  step one's scroll offset. A screen swapped in without a route change resets the scroller itself.
+- **F4.7 — Decorative marks positioned around an SVG by CSS percentages drift out of the graphic.** The
+  spilled drops over the cup were placed in the card's coordinates and left the cup as the width changed (owner
+  round 1). Draw them inside the SVG's own `viewBox`; they scale with the vessel.
+- **F4.8 — One number, one rounding.** The stage lights half a star only within a tenth of its fifth; the
+  printed count rounded to the nearest half — the approved prototype itself said „4,5 csillag" over four lit
+  stars. When a graphic and a number state one fact, derive both from one function (`ratioStars`).
+- **F4.9 — Label maps that live in logic files are a controller task.** „PR-kísérlet", „rep" and the arrow on
+  the step chip came from `challengeDisplay`, `medalLabels` and `progressionChip`; three areas patched them
+  locally. A wording table is not done until the source of each word is named and one owner changes it.
+- **F4.10 — A floating piece's layer is a contract with everything above it.** The record toast must show over
+  an open sheet. It is a sticky child of the page with the toast tier's z-index, which holds only while no
+  ancestor up to the phone frame forms a stacking context. Write that next to the rule and test the tier.
+- **F4.11 — Dead-CSS proof: absence assertions and block markers.** A class that only tests mention — to
+  assert it is gone — still counts as „used" by a token scan; review those hits and list them explicitly. Guards
+  that REQUIRE the old rules are rewritten first (F3.8). A block's marker pair leaves only with its last
+  rule (an orphaned keyframe counts as a rule), and a surviving block must keep both markers.

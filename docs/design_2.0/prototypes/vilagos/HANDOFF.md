@@ -329,3 +329,56 @@ slice: eligazítás, edzés közben, review, ceremonies (F4) — their prototype
   `WorkoutCard`, `WorkoutBriefing`, `WorkoutCeremony`, `WorkoutSummary`, `WorkoutDock`, the workout glass
   sheets, `SetEditSheet`, `ExerciseScopeSheet`, `FeedbackModal`, `MedalChip`, `SportCeremony`. The exercise
   picker is converted and opens in the new look from the old-skin session.
+
+## 2026-10-11 — F4 · Edzés közben: reality pass, owner answers, built — deviations from the prototype
+
+Slice F4 (`mezo-n4wf5.4`) converted the in-workout flow on `feat/folyadek-edzes-kozben`: Eligazítás, the session
+page with its dock and every sheet, both closing ceremonies (edzés, sport), the review and its one-exercise
+view, and the way back into a running workout. Build target: the F4 routes of `vilagos/edzes.js`
+(`indulas`, `session`, `cer`, `sportcer`, `review`, `mai.folyamatban`). Built by a foundation step (kit +
+Edzés-shared pieces, `logic/sessionFocus.ts`, the page cut, the README chapter F4), five parallel areas and
+an integration step.
+
+### What the reality pass changed in the prototype (before the OK)
+
+- **One data structure** feeds the session, the ceremony and the review (hand-typed totals removed).
+- **Added from the live app:** the idle dock (done work + „Lezárás"), the debrief once per EXERCISE (not per
+  set) with the real rest lengths, the skipped / swapped / added faces, loading and error faces (failed start,
+  failed change, quest pending / failed / none), the sport closing screen, the return button, the record toast.
+- **Removed as invented:** a technique sheet, a per-set debrief.
+
+### The owner's answers (round 1)
+
+- **The exercise hero is lean**: name, tools, quests, the set grid. „Múlt hét / Mai cél" moved to the
+  **Rekordok** sheet (two cells with the step chip).
+- **Further actions sit in the corner** behind three dots, not in a row of buttons.
+- **The debrief answers are vessels** that fill to what the answer means, with a dashed „pont jó" line.
+- **The cup's spill is drawn inside the graphic** (placed around it, the drops left the cup as the width changed).
+- **Technika = the exercise's own video**; an exercise without one has no button.
+- **Sport: the XP stands on the closing screen**; the level-up overlay is not raised there.
+
+### Deviations from the prototype (built app)
+
+- **Title rows have no bell.** `/train/session` and `/train/sport/log` are chrome-free: the screen draws the
+  title row itself (kit `TitleRow`), with the kalauz `?` where the route has a guide. The review is in the app
+  frame and has the full bar.
+- **Eligazítás.** The quest loader is a static box (the rotating status lines are gone); a quest's target is
+  printed as „kg · ism." chips; the niggle text is the server's own sentence.
+- **Session page.** ONE mark per done row — a record takes the verdict's place; reps and RIR are text inputs
+  with the same bounds as before (no steppers on the cursor row); an unsaved cursor draft is dropped when
+  another exercise is brought on top; the resting dock drops its label at ≤360 px (as drawn).
+- **Sheets.** The menu has no „Videó" row without a video; the records sheet's levels stay empty until something
+  comparable is logged today; the finish confirm draws every slot of a pending exercise (done filled, left empty).
+- **Ceremony.** The quest outcome pill says „teljesült" (the review says „megvan"); the kcal bowl's frame is
+  read from the Fuel day, with a no-frame face (the bowl glyph and the number) and a no-kcal face; **the
+  overline prints the stars the stage draws** (the prototype printed the rounded score — „4,5" over four lit
+  stars; the verdict still follows the score's ladder). Each step opens at the top of the page.
+- **Review.** The comparison colours ONLY an improvement (no „worse" tone); the previous / next pair shows when
+  either exists, the missing end disabled; on the one-exercise view the set rows are numbered, a logged warm-up
+  is drawn as a quiet tube and row, and the dashed line on a set tube is the LOW end of the rep range.
+- **Return button.** The chat route's bar is drawn light. Mock mode never has an open instance, so the button
+  was looked at with its own markup stood into the frame; its behaviour is test-covered.
+- **Kept though unused:** `WorkoutSummary`'s `closing` mode (the live close is the ceremony), `MedalChip`,
+  `ProgressionBanner` (a cleanup issue takes them).
+- **Not converted in this slice** — `VoiceField` (the mic tile in the note fields, F8), `GlassBox` (other domains
+  use it), the level-up overlay (`LevelUpScreen` / `LevelUpProvider`, progression), the meal ceremony.
