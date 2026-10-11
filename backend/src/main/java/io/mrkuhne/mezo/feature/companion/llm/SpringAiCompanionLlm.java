@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.UserLanguage;
 import io.mrkuhne.mezo.feature.companion.ChatHistory;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.config.ModelTier;
@@ -71,6 +72,7 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     private final LlmCallRecorder llmCallRecorder;
     private final LlmCallContextHolder llmCallContextHolder;
     private final LlmUsageExtractor llmUsageExtractor;
+    private final UserLanguage userLanguage;
 
     /**
      * @param chatModel         the provider's ChatModel. Subclasses MUST inject it with a
@@ -86,7 +88,9 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     protected SpringAiCompanionLlm(ChatModel chatModel, LlmUsageExtractor llmUsageExtractor,
                                    LlmModelRouter llmModelRouter, LlmProvider provider,
                                    LlmCallRecorder llmCallRecorder,
-                                   LlmCallContextHolder llmCallContextHolder) {
+                                   LlmCallContextHolder llmCallContextHolder,
+                                   UserLanguage userLanguage) {
+        this.userLanguage = userLanguage;
         this.llmCallRecorder = llmCallRecorder;
         this.llmCallContextHolder = llmCallContextHolder;
         this.llmUsageExtractor = llmUsageExtractor;
@@ -111,6 +115,36 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
      */
     protected abstract ChatOptions.Builder<?> optionsFor(String model, ModelTier tier, boolean carriesTools);
 
+
+    /**
+     * The acting account's output-language directive appended to {@code prompt} (mezo-n4wf5.11), or
+     * {@code prompt} itself for Hungarian, an unknown actor and the exempt slugs. Called exactly
+     * once per call, on the CALLER's thread, at the entry point that first receives the prompt —
+     * the result is both what is sent and what is audited. Never applied by a method that merely
+     * delegates to another entry point (the 5-arg overloads, the OpenAI media hand-off to Gemini).
+     */
+    private String withLanguage(String prompt) {
+        return OutputLanguageDirective.apply(prompt, userLanguage.current(), llmCallContextHolder.get().feature());
+    }
+
+    /**
+     * The two instruction halves with the directive on the very end of what the model reads: on the
+     * turn context when there is one (it is the later of the two system messages and the cacheable
+     * system prefix stays untouched), else on the system prompt.
+     */
+    private Instructions withLanguage(String systemPrompt, String turnContext) {
+        if (turnContext == null || turnContext.isBlank()) {
+            return new Instructions(withLanguage(systemPrompt), turnContext);
+        }
+        return new Instructions(systemPrompt, withLanguage(turnContext));
+    }
+
+    private record Instructions(String systemPrompt, String turnContext) {
+        String joined() {
+            return CompanionLlm.joinInstructions(systemPrompt, turnContext);
+        }
+    }
+
     /** The model this call resolves to — sent to the provider AND recorded on the audit row. */
     private String route(ModelTier tier, CallKind kind) {
         return llmModelRouter.modelFor(provider, tier, kind);
@@ -122,7 +156,8 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
      * smart-tier call sites to the wrong model — silently, with no error anywhere.
      */
     @Override
-    public String completeSmart(String systemPrompt, String userMessage) {
+    public String completeSmart(String basePrompt, String userMessage) {
+        String systemPrompt = withLanguage(basePrompt);
         String model = route(ModelTier.SMART, CallKind.SMART);
         CallSpec spec = CallSpec.of(CallKind.SMART, model, systemPrompt, userMessage);
         LlmRoundUsage tally = new LlmRoundUsage();
@@ -139,11 +174,14 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
      * cheap tier, silently, with no error anywhere.
      */
     @Override
-    public String completeSmart(String systemPrompt, String turnContext, List<Turn> history,
+    public String completeSmart(String basePrompt, String baseContext, List<Turn> history,
                                 String userMessage) {
+        Instructions in = withLanguage(basePrompt, baseContext);
+        String systemPrompt = in.systemPrompt();
+        String turnContext = in.turnContext();
         String model = route(ModelTier.SMART, CallKind.SMART);
         CallSpec spec = new CallSpec(CallKind.SMART, model,
-            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
+            in.joined(), userMessage,
             ChatHistory.render(history), null, null, null, false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
@@ -154,11 +192,15 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
 
     /** Streamed twin of {@link #completeSmart(String, String, List, String)}. Also tool-free. */
     @Override
-    public Flux<String> streamSmart(String systemPrompt, String turnContext, List<Turn> history,
+    public Flux<String> streamSmart(String basePrompt, String baseContext, List<Turn> history,
                                     String userMessage) {
+        // Resolved HERE, on the submitting thread: the stream itself runs on a pool thread.
+        Instructions in = withLanguage(basePrompt, baseContext);
+        String systemPrompt = in.systemPrompt();
+        String turnContext = in.turnContext();
         String model = route(ModelTier.SMART, CallKind.SMART);
         CallSpec spec = new CallSpec(CallKind.SMART, model,
-            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
+            in.joined(), userMessage,
             ChatHistory.render(history), null, null, null, true);
         return streamRecorded(spec, model, ModelTier.SMART, systemPrompt, turnContext, history,
             userMessage, List.of(), Map.of());
@@ -171,14 +213,17 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public String complete(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
+    public String complete(String basePrompt, String baseContext, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
+        Instructions in = withLanguage(basePrompt, baseContext);
+        String systemPrompt = in.systemPrompt();
+        String turnContext = in.turnContext();
         // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
         // count arrives per-call via the LlmRoundUsage tally (mezo-58ig).
         CallKind kind = tools.isEmpty() ? CallKind.CHAT : CallKind.TOOL;
         String model = route(ModelTier.CHEAP, kind);
         CallSpec spec = new CallSpec(kind, model,
-            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
+            in.joined(), userMessage,
             ChatHistory.render(history), null, null, null, false);
         LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
@@ -188,7 +233,8 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
+    public String complete(String basePrompt, String userMessage, List<InlineImage> images) {
+        String systemPrompt = withLanguage(basePrompt);
         // Image MARKERS only — the bytes are ephemeral by contract and must never reach the log.
         String model = route(ModelTier.CHEAP, CallKind.VISION);
         CallSpec spec = new CallSpec(CallKind.VISION, model, systemPrompt, userMessage, null,
@@ -213,6 +259,8 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
 
     @Override
     public String complete(String systemPrompt, String userMessage, InlineAudio audio) {
+        // No output-language directive here: a transcript is the user's own words, verbatim
+        // (mezo-n4wf5.11). The call site's slug is the generic "companion", so the exemption is the overload itself.
         // Audio MARKERS only — like the vision path, the bytes are ephemeral and never logged.
         // They ride the same image_* columns (count/bytes/mime), which are the generic media block.
         String model = route(ModelTier.CHEAP, CallKind.TRANSCRIBE);
@@ -241,13 +289,17 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public Flux<String> stream(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
+    public Flux<String> stream(String basePrompt, String baseContext, List<Turn> history, String userMessage,
                                List<ToolCallback> tools, Map<String, Object> toolContext) {
+        // Resolved HERE, on the submitting thread: the stream itself runs on a pool thread.
+        Instructions in = withLanguage(basePrompt, baseContext);
+        String systemPrompt = in.systemPrompt();
+        String turnContext = in.turnContext();
         // Both the context and the routing decision are read HERE, on the caller's thread: a
         // re-subscription runs the defer elsewhere, where the feature slug is no longer bound.
         String model = route(ModelTier.CHEAP, CallKind.CHAT_STREAM);
         CallSpec spec = new CallSpec(CallKind.CHAT_STREAM, model,
-            CompanionLlm.joinInstructions(systemPrompt, turnContext), userMessage,
+            in.joined(), userMessage,
             ChatHistory.render(history), null, null, null, true);
         return streamRecorded(spec, model, ModelTier.CHEAP, systemPrompt, turnContext, history, userMessage,
             tools, toolContext);

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.UserLanguage;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
@@ -72,9 +73,10 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
                               @Qualifier("openAiUsageExtractor") LlmUsageExtractor llmUsageExtractor,
                               GeminiCompanionLlm geminiCompanionLlm,
-                              LlmActorResolver llmActorResolver) {
+                              LlmActorResolver llmActorResolver,
+                              UserLanguage userLanguage) {
         super(chatModel, llmUsageExtractor, llmModelRouter, LlmProvider.OPENAI,
-            llmCallRecorder, llmCallContextHolder);
+            llmCallRecorder, llmCallContextHolder, userLanguage);
         this.geminiCompanionLlm = geminiCompanionLlm;
         this.perCallKind = companionProperties.llm().perCallKind();
         this.llmCallContextHolder = llmCallContextHolder;

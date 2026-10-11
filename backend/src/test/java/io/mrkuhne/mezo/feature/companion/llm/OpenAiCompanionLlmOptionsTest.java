@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.UserLanguage;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -148,7 +149,7 @@ class OpenAiCompanionLlmOptionsTest {
             }
         };
         return new OpenAiCompanionLlm(chatModel, properties, router, record -> { }, contextHolder,
-            new OpenAiUsageExtractor(), null, actorResolver);
+            new OpenAiUsageExtractor(), null, actorResolver, new UserLanguage(null));
     }
 
     private static Tier tier(Tier.ReasoningEffort reasoningEffort) {
