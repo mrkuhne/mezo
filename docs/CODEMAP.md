@@ -195,7 +195,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-10-11, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -368,9 +368,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/companion.md](features/companion.md) (updated 2026-10-09, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-10-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-10-11, mixed) ·
   [docs/features/settings.md](features/settings.md) (updated 2026-10-09, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-10-11, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -740,7 +740,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-10-07, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-10-11, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -1006,8 +1006,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-10-10, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-10-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-10-09, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-10-11, mixed) ·
+  [docs/features/today.md](features/today.md) (updated 2026-10-11, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-06, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-10-09, mixed)
 
@@ -1113,7 +1113,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### needs
 
-*BE + API + FE-data* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-10-10, done)
+*BE + API + FE-data* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-10-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/needs`
   - **entities→tables:** `NeedsDayEntity`→`needs_day`
@@ -1221,7 +1221,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-10-09, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-10-11, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`, `PersonFactEntity`→`person_fact`
@@ -1249,7 +1249,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### proactive
 
 *BE + API* · read next: [docs/features/contextual-feed-evaluation.md](features/contextual-feed-evaluation.md) (updated 2026-09-24, complete) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-09, complete)
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-11, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -1400,7 +1400,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### quickinput
 
-*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed)
+*FE-ui* · read next: [docs/features/today.md](features/today.md) (updated 2026-10-11, mixed)
 
 - **FE ui** `frontend/src/features/quickinput`
   - **sheets:** QuickInputSheet.tsx, QuickSleepSheet.tsx
@@ -1428,7 +1428,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### ritual
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-10-10, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-10-11, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/ritual`
   - **entities→tables:** `RitualDayEntity`→`ritual_day`
@@ -1483,10 +1483,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-10-10, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-10-10, done) ·
-  [docs/features/needs.md](features/needs.md) (updated 2026-10-10, done) ·
-  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-09, complete) ·
-  [docs/features/ritual.md](features/ritual.md) (updated 2026-10-10, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-10-10, mixed)
+  [docs/features/needs.md](features/needs.md) (updated 2026-10-11, done) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-10-11, complete) ·
+  [docs/features/ritual.md](features/ritual.md) (updated 2026-10-11, done) ·
+  [docs/features/today.md](features/today.md) (updated 2026-10-11, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckInPlan`, `useCheckinDayRating`,
