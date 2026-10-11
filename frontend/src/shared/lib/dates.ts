@@ -1,4 +1,4 @@
-import { getLang } from '@/shared/i18n'
+import { getLang } from '@/shared/i18n/lang'
 import { fmtDate, isoDay } from './format'
 
 /** YYYY-MM-DD in the user's local timezone (UTC slicing shifts evening entries to the wrong day). */

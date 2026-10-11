@@ -1,4 +1,4 @@
-import { getLang } from '@/shared/i18n'
+import { getLang } from '@/shared/i18n/lang'
 import { fmtGrouped, fmtNum } from './format'
 
 /** 1-decimal number: comma separator in Hungarian, point in English, trailing zero stripped (78.6 → "78,6", 73 → "73"). */

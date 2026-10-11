@@ -98,7 +98,7 @@ export const settingsEn: Shape<typeof settingsHu> = {
     loadError: 'Your daily rhythm is not available right now.',
     unset: 'Set your own wake-up time or bedtime.',
     wakeRow: { title: 'Wake-up and bedtime', description: 'Shared with your sleep goal · change it in one place' },
-    checkinRow: { title: 'Check-in and day close', description: 'When it speaks up, and which signals stay' },
+    checkinRow: { title: 'Check-in and day close', description: 'When Mezo speaks up, and which signals stay' },
     mealRow: { title: 'Meal rhythm', description: 'Number of meals, caffeine and time windows' },
     note: 'You still edit the exact steps of your routines on the Routine page. Here you will find the shared daily rhythm and the reminders.',
   },

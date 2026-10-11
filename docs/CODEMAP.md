@@ -1715,9 +1715,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### shared (domain-free FE primitives) — `frontend/src/shared`
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
-- **i18n:** LanguageProvider.tsx, LoadingFallback.tsx, index.ts, lang.ts, messages/frame.en.ts, messages/frame.hu.ts,
-  messages/index.ts, messages/kit.en.ts, messages/kit.hu.ts, messages/settings.en.ts, messages/settings.hu.ts,
-  plural.ts, shape.ts
+- **i18n:** LanguageBoundary.tsx, LanguageProvider.tsx, LoadingFallback.tsx, catalog.ts, index.ts, lang.ts,
+  messages/frame.en.ts, messages/frame.hu.ts, messages/index.ts, messages/kit.en.ts, messages/kit.hu.ts,
+  messages/settings.en.ts, messages/settings.hu.ts, plural.ts, shape.ts
 - **lib:** audio.ts, autoGrow.ts, backNav.ts, cn.ts, dates.ts, daypart.ts, format.ts, grams.ts, huNum.ts, huText.ts,
   markdown.tsx, pct.ts, resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts,
   tutorialSeen.ts, userScope.ts, voice/useVoiceInput.ts

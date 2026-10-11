@@ -128,4 +128,35 @@ describe('a date-only string is not shifted by the time zone', () => {
     en()
     expect(isoDay(wed)).toBe('2026-10-07')
   })
+
+  it('isoDay equals the per-call en-CA formatter it replaced, for every day across DST edges and year ends', () => {
+    const perCall = (d: Date) => new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(d)
+    for (let n = 0; n < 800; n++) {
+      for (const hour of [0, 2, 3, 12, 23]) {
+        const d = new Date(2025, 11, 1 + n, hour, 30)
+        expect(isoDay(d)).toBe(perCall(d))
+      }
+    }
+    expect(isoDay(new Date(2026, 0, 1))).toBe('2026-01-01')
+    expect(isoDay(new Date(2026, 11, 31, 23, 59, 59))).toBe('2026-12-31')
+  })
+
+  // NO module reset here on purpose: a live app that crosses a time zone keeps its modules, and "today" must follow.
+  it('isoDay follows the zone the device is in NOW, not the zone of its first use', () => {
+    const original = process.env.TZ
+    const instant = new Date('2026-10-07T23:30:00Z')
+    try {
+      process.env.TZ = 'America/Los_Angeles'
+      expect(new Date(instant).getHours()).toBe(16) // the zone really switched
+      expect(isoDay(instant)).toBe('2026-10-07')
+      process.env.TZ = 'Pacific/Kiritimati'
+      expect(new Date(instant).getHours()).toBe(13)
+      expect(isoDay(instant)).toBe('2026-10-08')
+      process.env.TZ = 'America/Los_Angeles'
+      expect(isoDay(instant)).toBe('2026-10-07')
+    } finally {
+      if (original === undefined) delete process.env.TZ
+      else process.env.TZ = original
+    }
+  })
 })

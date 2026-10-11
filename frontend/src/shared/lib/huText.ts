@@ -1,7 +1,7 @@
 // Small Hungarian text helpers shared by the converted pages (Folyadék F3, mezo-n4wf5.3): one home for the
 // article / suffix / casing rules three Edzés areas each wrote for themselves.
 
-import { getLang } from '@/shared/i18n'
+import { getLang } from '@/shared/i18n/lang'
 
 const VOWEL_START = /^[aáeéiíoóöőuúüű]/i
 

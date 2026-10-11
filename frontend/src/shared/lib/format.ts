@@ -1,7 +1,7 @@
 // The one place dates and numbers are formatted for display (mezo-n4wf5.11). The locale ALWAYS comes
 // from the app language (`getLang()`), never from the device. Hungarian output is the hand-rolled
 // strings the app always showed; English uses en-GB (day first, no ordinal, no dots, 24-hour clock).
-import { getLang } from '@/shared/i18n'
+import { getLang } from '@/shared/i18n/lang'
 
 export type FmtDateStyle = 'weekdayLong' | 'weekdayShort' | 'monthDay' | 'monthDayWeekday' | 'full' | 'frame'
 
@@ -49,8 +49,14 @@ function enPart(date: Date, type: 'weekday' | 'month'): string {
   return parts.find((p) => p.type === type)?.value ?? ''
 }
 
-/** 'YYYY-MM-DD' of a Date in the browser's local zone (machine format, not a display format). */
-export const isoDay = (d: Date): string => dateFormatter('en-CA', {}).format(d)
+const pad = (n: number, width: number) => String(n).padStart(width, '0')
+
+/**
+ * 'YYYY-MM-DD' of a Date in the browser's local zone (machine format, not a display format).
+ * Built from the Date's own local fields, never from a cached Intl formatter: a formatter keeps the
+ * zone it was created in, so a live app that crosses a time zone would keep computing "today" in the old one.
+ */
+export const isoDay = (d: Date): string => `${pad(d.getFullYear(), 4)}-${pad(d.getMonth() + 1, 2)}-${pad(d.getDate(), 2)}`
 
 export function fmtDate(input: Date | string, style: FmtDateStyle): string {
   const date = toDate(input)
