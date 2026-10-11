@@ -61,6 +61,33 @@ export function setLang(l: Lang, opts?: { persist?: boolean }): void {
   listeners.forEach((fn) => fn())
 }
 
+let unannounced = false
+
+/**
+ * Align the store with an account language that is already known while a component renders:
+ * no subscriber is notified (notifying during render is illegal), so the first paint is in the
+ * right language. `announceLang` finishes the job from an effect.
+ */
+export function alignLang(l: Lang): void {
+  const next = normalizeLang(l)
+  if (!next || next === current) return
+  current = next
+  unannounced = true
+}
+
+/** Persist the cache and `<html lang>` for the current language and tell subscribers about a silent `alignLang`. */
+export function announceLang(): void {
+  applyHtmlLang(current)
+  if (!unannounced) return
+  unannounced = false
+  try {
+    localStorage.setItem(LANG_KEY, current)
+  } catch {
+    /* ignore */
+  }
+  listeners.forEach((fn) => fn())
+}
+
 export function subscribe(fn: () => void): () => void {
   listeners.add(fn)
   return () => {
