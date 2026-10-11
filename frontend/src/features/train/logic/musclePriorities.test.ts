@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   EMPHASIZE_CAP,
   TIER_GROUPS,
-  TIER_LABELS,
   setTier,
   tierOf,
   tierTargetOf,
@@ -11,10 +10,6 @@ import {
 describe('musclePriorities', () => {
   it('TIER_GROUPS lists the 9 landmark groups, no traps/core', () => {
     expect(TIER_GROUPS).toEqual(['chest', 'back', 'shoulder', 'biceps', 'triceps', 'quad', 'ham', 'glute', 'calf'])
-  })
-
-  it('TIER_LABELS maps each tier to its English label', () => {
-    expect(TIER_LABELS).toEqual({ emphasize: 'Emphasize', grow: 'Grow', maintain: 'Maintain' })
   })
 
   it('EMPHASIZE_CAP is 2', () => {

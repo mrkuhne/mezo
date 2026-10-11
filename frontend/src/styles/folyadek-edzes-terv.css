@@ -1,18 +1,7 @@
 /* ── Folyadék · Edzés · terv (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.ep-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* the page's own back button, drawn only where no title bar is mounted (a page rendered alone) — the same pill as `.nb-back` / `.er-back` */
-.ep-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer;
-  background: #fff; color: var(--fo-ink); font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; box-shadow: 0 4px 10px -6px rgba(10, 42, 60, .3), inset 0 0 0 1px rgba(10, 42, 60, .08); }
-.ep-back:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 
-/* ── the hero's graphic slot and the three captions under it (edzes.js `.vs-hg`, `.vs-ft`) ── */
-.ep-hg { margin-top: 14px; }
-.ep-hg.ar { margin: 12px -4px 0; }
-.ep-ft { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 11.5px; color: var(--fo-faint); }
-.ep-ft span:nth-child(2) { text-align: center; color: var(--fo-sub); }
-/* the quiet white line under the hero's button, on the liquid */
-.fo-hero-acts > .ep-actnote { margin: 0; flex-basis: 100%; color: #fff; }
 /* a body silhouette beside the hero text keeps its place; the text starts a little lower (`.fh-hrow:has(.vs-hb)`) */
 .ep-page .fo-hero-row:has(.ex-hb) { flex-wrap: nowrap; align-items: flex-start; }
 .ep-page .fo-hero-row:has(.ex-hb) > .fo-hero-tx { min-width: 0; padding-top: 6px; }
@@ -21,7 +10,6 @@
 .fo-card > .fo-lg.ep-lgtop { margin: 0 0 14px; }
 .ep-page .fo-card > .fo-note:only-child, .ep-page .fo-card > .fo-note.ep-solo { margin: 0; }
 .ep-st { margin-left: 4px; vertical-align: 1px; }
-.ep-rowchev { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 
 /* ── the week list (`MesoWeekDays` / `MesoDayCard`; edzes.js `.vs-dcs`, `.vs-dc`) ── owner 2026-10-10: only today is the
    full card (body, three facts, muscle chips); every other training day is one row; rest / sport / kímélő days are quiet. */
@@ -57,13 +45,6 @@ button.ep-dc:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2
 .ep-mini { display: inline-flex; align-items: flex-end; gap: 2px; height: 28px; flex: 0 0 auto; }
 .ep-mini i { position: relative; display: block; width: 6px; height: 100%; border-radius: 999px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px rgba(10, 42, 60, .16); }
 .ep-mini b { position: absolute; left: 0; right: 0; bottom: 0; background: var(--c); }
-/* Monday's forecast as chips led by a muscle chip (edzes.js `.fh-chips` with `mchp`). Local, not the kit's `Tags`: its
-   `.fo-tags span` rule also re-dresses the muscle chip's own span. */
-.ep-roll { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.ep-roll > span { display: inline-flex; align-items: center; gap: 6px; padding: 2px 11px 2px 2px; border-radius: 999px; background: rgba(255, 255, 255, .8);
-  box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); font-size: 12px; font-weight: 550; color: var(--fo-ink); }
-.ep-roll > span.tx { padding: 5px 11px; }
-.ep-roll b { font-weight: 800; }
 
 /* ── one exercise of a day, read-only (`MesoDayPage`; edzes.js `.vs-ex`) ── */
 .ep-ex { padding: 14px 0; border-top: 1px solid var(--fo-hair); }
@@ -114,14 +95,11 @@ button.ep-dc:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2
 .ep-queue small { display: block; margin-top: 5px; font-size: 10.5px; font-weight: 600; color: var(--fo-sub); line-height: 1.2; overflow-wrap: anywhere; }
 
 /* ── a block of a card's list: a row plus what hangs under it (edzes.js `.vs-log`, `.vs-in`, `.vs-tk`) ── */
-.ep-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
-.ep-log:first-child { border-top: 0; padding-top: 0; }
 .ep-log:last-child { padding-bottom: 0; }
 .ep-log > .fo-row { padding: 0; border-top: 0; }
 .ep-log .fo-row-main { min-height: 44px; }
 .ep-log .fo-facts { margin: 10px 0 0; }
 .ep-log > .fo-note { margin: 8px 0 0; }
-.ep-in { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 10px 0 0 50px; font-size: 12.5px; color: var(--fo-sub); line-height: 1.4; }
 .ep-tk { display: grid; place-items: center; width: 26px; height: 40px; border-radius: 999px; border: 2px solid var(--fo-faint); flex: 0 0 auto; color: #fff; font-size: 13px; }
 .ep-tk.on { background: linear-gradient(180deg, var(--liq1), var(--liq2)); border-color: var(--liq2); }
 .ep-tk b { font-size: 13px; }
@@ -129,7 +107,6 @@ button.ep-dc:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2
 /* ── the two run-lifecycle sheets (`MesoCloseSheet`, `MesoStartSheet`; edzes.js `.vs-shg`, `.btn.bad`) ── */
 .ep-shg { display: flex; align-items: center; gap: 12px; margin: 10px 0 14px; }
 .ep-shg small { font-size: 12.5px; color: var(--fo-sub); }
-.fo-btn.ep-bad { background: var(--fo-bad); box-shadow: 0 10px 20px -10px var(--fo-bad); }
 .ep-sheet textarea.fo-in { display: block; width: 100%; min-height: 84px; resize: none; line-height: 1.45; }
 .ep-adj.warn { color: var(--fo-warn); }
 
@@ -141,12 +118,9 @@ button.ep-dc:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2
   .ep-cyl { width: 60px; margin-right: 104px; }
   .ep-cyl .wl em { width: 94px; font-size: 10.5px; }
   .ep-cylw .ex-hb { --w: 66px; }
-  .ep-in { padding-left: 0; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .ep-cyl .l { animation: fo-fillv 1.4s cubic-bezier(.2, .8, .2, 1) both .2s; }
 }
 
-/* a disabled text link („Felülír · hamarosan"; edzes.js `.fh-lk:disabled`) — the kit has no disabled face for `Lk` yet */
-.ep-page .fo-lk:disabled { opacity: .35; cursor: default; }

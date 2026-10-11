@@ -9,7 +9,6 @@
 .nr2-back, .nck2-back { margin: 12px 14px 0; }
 /* the day links of the hero's liquid row */
 .nr2-day { min-height: 44px; padding: 0 4px; white-space: nowrap; }
-.nr2-day:disabled { opacity: .35; cursor: default; }
 
 /* ════ Check-in page (/nap/checkin) · prefix nck2- ════ (prototype `checkin()`, `.np-slot` `.np-slh` `.np-cells`) */
 .nck2-slot { padding: 14px 0; border-top: 1px solid var(--fo-hair); }

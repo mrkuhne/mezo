@@ -101,11 +101,11 @@ export function MesoTervPage() {
         verdict={`A ${meso.weeks} hétből a ${meso.currentWeek}. héten jársz.`}
         sub={weekLine(meso)}
         actions={<Btn onClick={() => navigate(`/train/mesocycles/${meso.id}`)}>A terv oldala</Btn>}>
-        <div className="ep-hg">
+        <div className="fo-hero-g">
           <MesoTubes curve={meso.phaseCurve} values={weekTotals} now={meso.currentWeek} nowDone={weekTotals ? doneSets : null}
             ariaLabel={weekTotals ? 'A terv hetei: heti szettszám' : 'A terv hetei: a terv íve'} />
         </div>
-        <div className="ep-ft">
+        <div className="fo-ft">
           <span>{huDate(meso.startDate)}</span>
           <span>{weekTotals ? 'heti szettszám' : 'a terv íve'}</span>
           <span>{huDate(meso.endDate)}</span>

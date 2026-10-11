@@ -55,7 +55,7 @@ import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
 import {
   buildLibraryRows, exerciseKey, medalsForExercise, nextTarget, sinceFact, whereUsed,
 } from '@/features/train/logic/exerciseLibrary'
-import { MedalRow } from '@/features/train/pages/MedalsPage'
+import { MedalRow } from '@/features/train/components/folyadek'
 import {
   Acts, Card, EmptyTank, FrameBack, Hero, Level, Note, Page, Row, Section, Skel, useFrameTitle,
 } from '@/shared/ui/folyadek'
@@ -84,7 +84,7 @@ export function ExerciseStoryPage() {
   const rows = pendingAll ? [] : buildLibraryRows(exerciseLibrary, exerciseRecords, medals)
   const row = rows.find((r) => r.key === key)
   useFrameTitle({ title: row?.name ?? 'Gyakorlat', eyebrow: 'Gyakorlatok' })
-  const back = <FrameBack className="er-back" onBack={goBack}>‹ Gyakorlatok</FrameBack>
+  const back = <FrameBack className="fo-backpill" onBack={goBack}>‹ Gyakorlatok</FrameBack>
 
   if (pendingAll) return <Page className="er-page">{back}<Skel blocks={[260, 78, 78, 78]} /></Page>
 
@@ -185,7 +185,6 @@ export function ExerciseStoryPage() {
           left={<Mchp muscle={row.muscle} />}
           actions={(
             <InfoButton
-              link
               eyebrow="Az erőd íve"
               title="Mit mutat a vonal?"
               copy="A becsült egyismétléses maximumod alakulása alkalomról alkalomra. Becslés, nem mérés."
@@ -216,7 +215,7 @@ export function ExerciseStoryPage() {
               // number that is not there.
               sub={[e1rmDelta != null && `+${hu1(e1rmDelta)} kg a korábbi csúcsod óta`, hasE1rm && 'Becslés, nem mérés'].filter(Boolean).join(' · ') || undefined}
               more={e1rmShare != null && (
-                <span className="er-rowbar"><Level pct={e1rmShare} color={deepMuscle(row.muscle)} height={10} /></span>
+                <span className="fo-rowbar"><Level pct={e1rmShare} color={deepMuscle(row.muscle)} height={10} /></span>
               )}
               value={hasE1rm ? `${hu1(bestE1rm!)} kg` : '—'}
             />
@@ -240,7 +239,6 @@ export function ExerciseStoryPage() {
             />
             <Acts>
               <InfoButton
-                link
                 eyebrow="Rekordjaid"
                 title="Mi számít rekordnak?"
                 copy="A legjobb szett a legnagyobb súly a hozzá tartozó ismétléssel. A becsült maximum egy képletből jön a szettjeidből — becslés, nem mérés. A volumen egy alkalom összes megmozgatott súlya."

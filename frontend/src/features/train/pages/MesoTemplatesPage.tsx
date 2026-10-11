@@ -26,7 +26,6 @@ import MesoTemplatesSkeleton from '@/features/train/pages/MesoTemplatesSkeleton'
 import {
   Btn, Caps, Card, Chev, Facts, FrameBack, Hero, Note, Page, Section, Tags, useFrameTitle,
 } from '@/shared/ui/folyadek'
-import { Icon3D } from '@/shared/ui/clay'
 
 /** The capsule's caption: the weekday's shortest form (the day keys are Hét … Vas). */
 const DAY_CAP: Record<string, string> = { Hét: 'H', Kedd: 'K', Sze: 'Sze', Csü: 'Cs', Pén: 'P', Szo: 'Szo', Vas: 'V' }
@@ -46,11 +45,11 @@ export function MesoTemplatesPage() {
 
   return (
     <Page className="er-page">
-      <FrameBack className="er-back" history fallback="/train/mesocycles/konyvtar">
+      <FrameBack className="fo-backpill" history fallback="/train/mesocycles/konyvtar">
         ‹ Edzéstervek
       </FrameBack>
       <Hero
-        className="er-hasart"
+        art="t-template"
         label="Sablonjaid"
         verdict={templates.length > 0 ? `${templates.length} sablonból indíthatsz.` : 'Még nincs sablonod.'}
         sub="Egy sablon a recept — futamot indítasz belőle, és az már a te terved."
@@ -58,11 +57,10 @@ export function MesoTemplatesPage() {
           <>
             {/* The create affordance — the one loud button. */}
             <Btn onClick={() => navigate('/train/mesocycles/new')}>Új terv összeállítása</Btn>
-            <Note className="er-heronote">Sablonból indulsz, vagy nulláról építed</Note>
+            <Note>Sablonból indulsz, vagy nulláról építed</Note>
           </>
         )}
       >
-        <span className="er-art" aria-hidden="true"><Icon3D name="t-template" size={96} /></span>
         <Tags items={[
           { icon: 't-template', label: `${templates.length} sablon` },
           { icon: 't-play', label: `${runsOut} futam indult belőlük` },

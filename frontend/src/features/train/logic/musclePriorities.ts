@@ -11,12 +11,6 @@ import type { MusclePriorities, MuscleTier } from '@/data/types'
 
 export const TIER_GROUPS = ['chest', 'back', 'shoulder', 'biceps', 'triceps', 'quad', 'ham', 'glute', 'calf'] as const
 
-export const TIER_LABELS: Record<MuscleTier, string> = {
-  emphasize: 'Emphasize',
-  grow: 'Grow',
-  maintain: 'Maintain',
-}
-
 // Spec cap: at most this many groups can be Emphasize at once — the ramp only
 // has room for a couple of MRV-target groups before the weekly budget breaks.
 export const EMPHASIZE_CAP = 2

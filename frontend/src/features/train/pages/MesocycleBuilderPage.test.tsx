@@ -78,7 +78,7 @@ test('„Hol tartasz": the week row navigates, the rollover forecast does not', 
   expect(screen.queryByRole('button', { name: /Hétfőn jön/ })).not.toBeInTheDocument()
   expect(screen.getByText('A heti váltás hajnalban magától lefut.')).toBeInTheDocument()
   // the forecast chips: five muscles, then „+N" (meso-hyp-04 tracks 8 groups)
-  const chips = [...document.querySelectorAll('.ep-roll > span')]
+  const chips = [...document.querySelectorAll('.fo-tags > span')]
   expect(chips).toHaveLength(6)
   expect(chips[5].textContent).toBe('+3')
   expect(chips[0].querySelector('.ex-mchp')).not.toBeNull()

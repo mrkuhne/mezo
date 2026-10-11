@@ -34,7 +34,7 @@ export function MesoDayEditPage() {
     eyebrow: day ? `${DAY_LABELS[day.day] ?? day.day} · ${day.type}` : 'A nap',
   })
   // Back returns to where the user came from; a direct link falls back to the day page.
-  const back = <FrameBack history fallback={dayPath} className="ee-back">‹</FrameBack>
+  const back = <FrameBack history fallback={dayPath} className="fo-backpill">‹</FrameBack>
 
   // Real mode: the plan list is still in flight — wait, do not accuse the link.
   if (workoutPending) {

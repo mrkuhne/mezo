@@ -12,7 +12,7 @@
 import { useId, useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import type { Icon3DName } from '@/shared/ui/clay'
-import { FoSheetHead, Lab, Pill, Pills, Scale, SheetActs, TextArea } from '@/shared/ui/folyadek'
+import { FoSheetHead, Lab, Pill, Pills, Scale, SheetActs, Stepper, TextArea } from '@/shared/ui/folyadek'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
 import { SPORT_LABELS, type SportKind } from '@/features/train/logic/sportKinds'
@@ -36,7 +36,7 @@ const KIND_ICON: Record<string, Icon3DName> = { volleyball: 't-volley', cross: '
 // min/max clamp the stepped value to the API contract bounds so the sheets can
 // never produce a payload the backend's @Valid rejects with a 400. The value in the
 // middle is tap-to-edit (type the value in); the same min/max clamp on blur. It is the
-// kit's stepper row (`.fo-row` + `.fo-stp`) with an input where the kit shows a number.
+// kit's `Stepper` row with `input` (the typeable value).
 export function NumberStep({
   label,
   hint,
@@ -57,14 +57,9 @@ export function NumberStep({
 }) {
   const editable = useEditableNumber({ value: val, onChange, min, max, integer: true })
   return (
-    <div className="fo-row es-num">
-      <span className="g"><strong>{label}</strong>{hint && <small>{hint}</small>}</span>
-      <span className="fo-stp">
-        <button type="button" aria-label={`${label} csökkentése`} onClick={() => onChange(Math.max(min, val - step))}>−</button>
-        <input {...editable} aria-label={label} className="es-numin" />
-        <button type="button" aria-label={`${label} növelése`} onClick={() => onChange(max != null ? Math.min(max, val + step) : val + step)}>+</button>
-      </span>
-    </div>
+    <Stepper label={label} sub={hint || undefined} input={editable}
+      onDec={() => onChange(Math.max(min, val - step))}
+      onInc={() => onChange(max != null ? Math.min(max, val + step) : val + step)} />
   )
 }
 

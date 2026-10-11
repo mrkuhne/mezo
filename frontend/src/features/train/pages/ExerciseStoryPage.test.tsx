@@ -156,7 +156,7 @@ test('the three record rows carry the real figures', async () => {
   expect(cards.map((c) => c.querySelector('strong')!.textContent)).toEqual(['Becsült 1RM', 'Legjobb szett', 'Legtöbb volumen'])
   expect(cards[0].querySelector('.v')!.textContent).toBe('133,3 kg')
   // where the latest estimate stands against the best one: a level in the row
-  expect(cards[0].querySelector('.er-rowbar .fo-level')).not.toBeNull()
+  expect(cards[0].querySelector('.fo-rowbar .fo-level')).not.toBeNull()
   // the record estimate beat the best estimate that stood before the session that set it
   expect(cards[0].textContent).toContain('+2,1 kg a korábbi csúcsod óta')
   expect(cards[0].textContent).toContain('Becslés, nem mérés')
@@ -279,7 +279,7 @@ test('a logged exercise with no series gets the honest empty line, not a flat on
 test('only THIS exercise’s medals are listed', async () => {
   const { container } = renderStory(ROW)
   await screen.findByText('Chest Supported Row')
-  const rows = Array.from(section(container, 'Medáljaid').querySelectorAll('.er-medal'))
+  const rows = Array.from(section(container, 'Medáljaid').querySelectorAll('.ex-medal'))
   expect(rows).toHaveLength(1)
   // here the row is titled by the medal's kind, with its date and the beaten record under it
   expect(rows[0].querySelector('strong')!.textContent).toBe('Súly-rekord REKORD')
@@ -294,7 +294,7 @@ test('no medal on this exercise is an honest sentence, not an empty box', async 
   const { container } = renderStory(FRESH)
   await screen.findByText('Lateral Raise')
   expect(screen.getByText('Ezen a gyakorlaton még nincs medálod.')).toBeInTheDocument()
-  expect(container.querySelector('.er-medal')).toBeNull()
+  expect(container.querySelector('.ex-medal')).toBeNull()
 })
 
 // ── Hol szerepel ──────────────────────────────────────────────────────────────────────
@@ -367,7 +367,7 @@ test('the back pill says ‹ Gyakorlatok', async () => {
   // Drawn by the page only where no title bar is mounted (as here); in the app the bar draws it.
   const back = screen.getByRole('button', { name: 'Vissza' })
   expect(back.textContent).toBe('‹ Gyakorlatok')
-  expect(back).toHaveClass('er-back')
+  expect(back).toHaveClass('fo-backpill')
 })
 
 // ── the Folyadék structure (mezo-n4wf5.3, prototype vilagos/edzes.js `exercise()`) ─────

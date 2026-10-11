@@ -1,15 +1,7 @@
 /* ── Folyadék · Edzés · terheles (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.et-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* ── the page's own back pill ── only where no title bar is mounted (a page rendered alone); inside the app frame the
-   title bar draws the back control and `FrameBack` renders nothing. */
-.et-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer;
-  font-family: var(--ff-body); font-size: 14px; font-weight: 650; color: var(--fo-ink); background: var(--fo-card, #fff); box-shadow: inset 0 0 0 1px var(--fo-hair); }
 
-/* ── no running mesocycle (`noMeso`) ── the hero with the mountain in its corner (kit.js `.fh-art`) */
-.et-art { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; transform: rotate(8deg); pointer-events: none; }
-.et-art svg { display: block; width: 96px; height: 96px; filter: drop-shadow(0 14px 16px rgba(15, 30, 51, .3)); }
-.et-hero-art .fo-hero-lbl, .et-hero-art .fo-hero-verdict { padding-right: 92px; }
 
 /* ── Terhelés · the map doorway (`.vs-mapc`) ── */
 .et-mapc { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
@@ -21,20 +13,14 @@
 .et-mapc .chev { width: 18px; height: 18px; color: var(--fo-faint); flex: 0 0 auto; }
 
 /* ── the group rows ── a row opens its sheet without a chevron (prototype `nochev`); „sok" is the plan's own flag */
-.et-grp .chev { display: none; }
 .et-much { color: var(--fo-warn); }
 .et-grp .fo-st { vertical-align: 1px; margin-left: 2px; }
 
 /* ── a level standing alone under a sheet head (`.vs-rowbar`) ── */
-.et-bar { display: block; margin-top: 7px; }
-.et-bar .fo-level { width: 100%; }
 .et-bar-info { margin-top: 14px; }
 .et-grp-rows { margin-top: 18px; }
 .et-grp-none { margin-top: 18px; }
 
-/* ── sport stimulus as drops: under a muscle of the group sheet, under an event of the weekly order (`.vs-evc`) ── */
-.et-evc { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 6px; }
-.et-evc em { display: inline-flex; align-items: center; gap: 5px; font-style: normal; font-size: 12px; font-weight: 550; line-height: 1.35; color: var(--fo-ink); }
 
 /* ── Sport a héten ── the big numeral opens the card; the reach rows follow the sentence */
 .et-sport .fo-bigrow { margin: 0; }

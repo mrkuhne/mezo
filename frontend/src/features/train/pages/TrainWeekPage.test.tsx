@@ -167,7 +167,7 @@ test('a group the sport reaches shows the stimulus as drops, with the estimate n
   renderPage()
   fireEvent.click(screen.getByRole('button', { name: 'Váll — ezen a héten' }))
   const sheet = await screen.findByRole('dialog', { name: 'Váll · ezen a héten' })
-  const sources = [...sheet.querySelectorAll('.et-evc em')] as HTMLElement[]
+  const sources = [...sheet.querySelectorAll('.fo-evc em')] as HTMLElement[]
   expect(sources.length).toBeGreaterThan(0)
   expect(sources[0].querySelectorAll('.fo-dm i')).toHaveLength(3)
   expect(sources[0].querySelectorAll('.fo-dm i.f').length).toBeGreaterThan(0)
@@ -505,7 +505,7 @@ test('no active mesocycle: the hero says so and leads to the planner', async () 
   const { container } = renderPage()
   expect(await screen.findByText('A heti terhelésed itt jelenik majd meg.')).toBeInTheDocument()
   expect(screen.getByText('Előbb tervezz egy mesociklust.')).toBeInTheDocument()
-  expect(container.querySelector('.et-art use')?.getAttribute('href')).toBe('#t-peak')
+  expect(container.querySelector('.fo-hero-art use')?.getAttribute('href')).toBe('#t-peak')
   expect(container.querySelector('.fo-tank')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: '+ Tervezz mesociklust' }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/new')

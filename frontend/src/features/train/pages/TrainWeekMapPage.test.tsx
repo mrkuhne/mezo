@@ -56,7 +56,7 @@ test('renders the Izomtérkép hero with its verdict and the page’s own back p
   expect(within(hero).getByText('Amit már megmozgattál, sötétebben telik — ami még vár, az halvány marad.')).toBeInTheDocument()
   // rendered alone (no title bar) the page keeps its own back control: history, else Terhelés
   const back = screen.getByRole('button', { name: /Terhelés/ })
-  expect(back).toHaveClass('et-back')
+  expect(back).toHaveClass('fo-backpill')
   fireEvent.click(back)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week')
 })

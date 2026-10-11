@@ -22,7 +22,7 @@ export function DoneBar({
   ariaLabel?: string
 }) {
   return (
-    <div className="em-in em-done">
+    <div className="fo-under em-done">
       <span>
         <span className="em-in-ic" role="img" aria-label="kész"><Bub icon="t-tick" size={24} color="var(--fo-ok)" /></span>
         <b>{summary}</b>

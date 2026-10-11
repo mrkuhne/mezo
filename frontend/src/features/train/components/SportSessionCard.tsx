@@ -26,7 +26,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
   const amount = isVolleyball ? `setek ${session.setsPlayed ?? '–'}` : `körök ${session.rounds ?? '–'}`
 
   return (
-    <div className="es-log">
+    <div className="fo-log es-log">
       <Row
         icon={kindIcon(kind)}
         title={`${session.date} · ${session.time}`}

@@ -6,7 +6,7 @@ import { FrameBack, Page, Skel } from '@/shared/ui/folyadek'
 export default function SportSkeleton() {
   return (
     <Page className="es-page">
-      <FrameBack history fallback="/train" className="es-back">‹ Edzés</FrameBack>
+      <FrameBack history fallback="/train" className="fo-backpill">‹ Edzés</FrameBack>
       <Skel blocks={[300, 60, 330]} />
     </Page>
   )

@@ -31,7 +31,7 @@ export function CustomWorkoutSheet({ onClose }: { onClose: () => void }) {
               <Row key={w.id} as="div" icon="t-dumbbell" title={w.name}
                 sub={`${w.exercises.length} gyakorlat · ${w.exercises.reduce((a, e) => a + e.workingSets, 0)} szett`}
                 more={(
-                  <span className="em-rowbar">
+                  <span className="fo-rowbar">
                     {w.exercises.map((e) => <Caps key={e.id} n={e.workingSets} done={0} color={deepMuscle(e.muscle)} />)}
                   </span>
                 )}

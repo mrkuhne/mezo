@@ -119,7 +119,11 @@ button.fo-vial { cursor: pointer; }
 .fo-level { position: relative; height: var(--h); border-radius: 999px; overflow: hidden; background: linear-gradient(180deg, #fff, #F3FAFC); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .08); }
 .fo-level i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--c) 60%, #fff), var(--c)); }
 .fo-level span, .fo-level b { position: absolute; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; }
-.fo-level span { left: 10px; color: #fff; }
+.fo-level span { left: 10px; color: var(--fo-ink); white-space: nowrap; }
+/* the caption is ink on the empty vessel and white where the liquid stands behind it (bible §8.8): the white copy lives in
+   the liquid itself and is cut off with it */
+.fo-level i { overflow: hidden; }
+.fo-level i[data-l]::after { content: attr(data-l); position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap; }
 .fo-level b { right: 10px; color: var(--fo-ink); }
 .fo-fill { display: block; height: auto; overflow: visible; filter: drop-shadow(0 14px 16px color-mix(in srgb, var(--liq2) 35%, transparent)); }
 .fo-area { display: block; width: 100%; height: auto; overflow: visible; }
@@ -304,7 +308,7 @@ button.fo-row, button.fo-step { cursor: pointer; }
 .fo-row.now + .fo-row { border-top-color: transparent; }
 .fo-row.done strong { color: var(--fo-sub); font-weight: 500; }
 .fo-row.dim { opacity: .5; }
-.fo-row .v small { display: inline; font-family: var(--ff-body); font-size: 11.5px; font-weight: 500; color: var(--fo-sub); margin: 0 0 0 2px; }
+.fo-row .v small { display: inline; font-family: var(--ff-body); font-size: 11px; font-weight: 500; color: var(--fo-sub); margin: 0 0 0 2px; }
 .fo-row .g .fo-level { margin-top: 7px; }
 .fo-row .g .fo-chips { margin-top: 8px; }
 .fo-row > .fo-mini { margin-right: 2px; }
@@ -355,15 +359,20 @@ button.fo-dr::after { content: ''; position: absolute; left: 0; right: 0; top: -
 
 /* ── the 1–10 scale = ten small vials · step dots ── */
 .fo-scale { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin-top: 10px; }
-.fo-scale button { position: relative; overflow: hidden; height: 66px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; text-align: center;
-  background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--dom) 5%, #fff)); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .10);
+/* The liquid is a background layer of the vial itself (clipped by the radius, so the vial needs no `overflow: hidden`), which
+   leaves room for the touch area: `::after` reaches to the middle of the gap on both sides. Ten vials across a phone cannot
+   each be 44px wide — the row has no dead gaps instead, and every vial is 66px tall. */
+.fo-scale button { --fa: 0%; position: relative; height: 66px; padding: 0; border: 0; border-radius: 999px; cursor: pointer; text-align: center;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--liq1) var(--fa), transparent), color-mix(in srgb, var(--liq2) var(--fa), transparent)) bottom / 100% calc(24px + var(--k) * 4.2px) no-repeat,
+    linear-gradient(180deg, #fff, color-mix(in srgb, var(--dom) 5%, #fff));
+  box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .10);
   font-family: var(--ff-display); font-size: 13px; font-weight: 700; color: var(--fo-sub); }
-.fo-scale button::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: calc(24px + var(--k) * 4.2px); background: linear-gradient(180deg, var(--liq1), var(--liq2)); opacity: 0; }
+.fo-scale button::after { content: ''; position: absolute; inset: 0 -2px; }
 .fo-scale button span { position: absolute; left: 0; right: 0; bottom: 7px; z-index: 1; }
 .fo-scale button.f { color: var(--fo-ink); }
-.fo-scale button.f::before { opacity: .42; }
-.fo-scale button.a { background: #fff; color: #fff; box-shadow: inset 0 0 0 2px var(--liq2), 0 10px 14px -8px var(--liq2); }
-.fo-scale button.a::before { opacity: 1; }
+.fo-scale button.f { --fa: 42%; }
+.fo-scale button.a { --fa: 100%; color: #fff; box-shadow: inset 0 0 0 2px var(--liq2), 0 10px 14px -8px var(--liq2);
+  background: linear-gradient(180deg, var(--liq1), var(--liq2)) bottom / 100% calc(24px + var(--k) * 4.2px) no-repeat, #fff; }
 .fo-ends { display: flex; justify-content: space-between; gap: 10px; font-size: 11.5px; color: var(--fo-faint); margin-top: 6px; }
 .fo-dots { display: flex; gap: 5px; margin: 2px 0 0; }
 .fo-dots i { flex: 1; height: 5px; border-radius: 3px; background: var(--fo-line); }
@@ -435,6 +444,7 @@ button.fo-tank-air { cursor: pointer; width: calc(100% - 44px); }
 @media (max-width: 350px) {
   .fo-vials.xs .fo-vial small { font-size: 9px; }
   .fo-scale { gap: 3px; }
+  .fo-scale button::after { inset: 0 -1.5px; }
   .fo-tank-airs { max-width: 210px; }
   .fo-bigrow { gap: 10px; }
   /* a numeral with a vessel on one side and a chip on the other gives way */
@@ -460,7 +470,6 @@ button.fo-tank-air { cursor: pointer; width: calc(100% - 44px); }
   .fo-fill-wv { animation: fo-flw 6s linear infinite; }
   .fo-drop.alive .body { animation: fo-breathe 4.6s ease-in-out infinite; }
   .fo-drop.alive .wave { animation: fo-dropwave 3.6s ease-in-out infinite; }
-  .fo-scale button::before { transition: opacity .15s; }
   .fo-btn, .fo-pill, .fo-tk { transition: transform .12s ease; }
   .fo-btn:active:not(:disabled), .fo-pill:active, .fo-tk:active { transform: scale(.96); }
 }
@@ -575,11 +584,11 @@ button.fo-vial:focus-visible { outline: 2px solid var(--fo-ink); outline-offset:
 .fo-box p { color: var(--fo-sub); margin-top: 2px; font-size: 13px; }
 .fo-sheet .fo-box { background: var(--fo-page); box-shadow: none; }
 .fo-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-.fo-tags span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: rgba(255, 255, 255, .8); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); font-size: 12px; font-weight: 550; color: var(--fo-ink); }
-.fo-tags span.tx { padding: 5px 11px; }
-.fo-tags span.ic { padding: 2px 11px 2px 2px; }
-.fo-tags span.ic .fo-bub .t-ico { width: 74%; height: 74%; }
-.fo-hero .fo-tags span { background: #fff; }
+.fo-tags > span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px; background: rgba(255, 255, 255, .8); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); font-size: 12px; font-weight: 550; color: var(--fo-ink); }
+.fo-tags > span.tx { padding: 5px 11px; }
+.fo-tags > span.ic { padding: 2px 11px 2px 2px; }
+.fo-tags > span.ic .fo-bub .t-ico { width: 74%; height: 74%; }
+.fo-hero .fo-tags > span { background: #fff; }
 .fo-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .fo-pair > button, .fo-pair > a { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; padding: 14px 12px; border: 0; border-radius: 22px; background: var(--fo-page); cursor: pointer; text-align: left; text-decoration: none;
   font-family: var(--ff-display); font-size: 15px; font-weight: 600; line-height: normal; color: var(--fo-ink); }
@@ -629,3 +638,78 @@ button.fo-vial:focus-visible { outline: 2px solid var(--fo-ink); outline-offset:
   .fo-stp button:active:not(:disabled), .fo-pair > :active { transform: scale(.96); }
 }
 @keyframes fo-sk { from { opacity: .55; } to { opacity: 1; } }
+
+/* ══ F3 integration (mezo-n4wf5.3) ══ the pieces the seven Edzés areas (and Nap before them) each built locally, folded
+   into one recipe. Values are the prototype's (vilagos/kit.js `.fh-*`, vilagos/edzes.js `.vs-*`). */
+
+/* ── the page's own back pill (`<FrameBack className="fo-backpill">`) ── drawn only where no title bar is mounted (a page
+   rendered alone); inside the app frame the title bar draws the back control and `FrameBack` renders nothing. */
+.fo-backpill { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer;
+  font-family: var(--ff-body); font-size: 14px; font-weight: 650; color: var(--fo-ink); background: #fff; box-shadow: inset 0 0 0 1px var(--fo-hair); }
+.fo-backpill:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* ── hero: the corner glyph (`art`) · the big verdict (`big`) · the graphic slot · captions · the white note on the liquid ── */
+.fo-hero-art { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; transform: rotate(8deg); pointer-events: none; }
+.fo-hero-art .t-ico { display: block; width: 96px; height: 96px; filter: drop-shadow(0 14px 16px rgba(15, 30, 51, .3)); }
+.fo-hero.has-art .fo-hero-lbl, .fo-hero.has-art .fo-hero-verdict { padding-right: 92px; }
+.fo-hero.has-art .fo-hero-verdict { hyphens: manual; }
+.fo-hero.big .fo-hero-verdict { font-size: 28px; }
+.fo-hero-g { margin-top: 14px; }
+.fo-hero-g.ar { margin: 12px -4px 0; }
+.fo-ft { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 11.5px; color: var(--fo-faint); }
+.fo-ft span:nth-child(2) { color: var(--fo-sub); }
+.fo-ft span:nth-child(2):not(:last-child) { text-align: center; }
+.fo-ft span:nth-child(2):last-child { text-align: right; white-space: nowrap; }
+.fo-hero-acts > .fo-note { margin: 0; flex-basis: 100%; color: #fff; }
+
+/* ── row: the right slot with a chevron (`chev` + `right`) · the disabled button · a line of levels / capsules under the
+   text (`.fo-rowbar`, edzes.js `.vs-rowbar`) · the quiet indented line under a row or step (`.fo-under`, edzes.js `.vs-in`) ── */
+.fo-row-end { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+button.fo-row:disabled, .fo-row-main:disabled { opacity: .5; cursor: default; }
+.fo-rowbar { display: block; margin-top: 7px; }
+.fo-rowbar .fo-level { width: 100%; }
+/* the bar owns the space above its capsules (the kit's `.fo-row .g .fo-caps` margin is for capsules standing alone) */
+.fo-rowbar .fo-caps, .fo-row .g .fo-rowbar .fo-caps { margin-top: 0; margin-right: 2px; }
+.fo-under { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 0 0 12px 50px; font-size: 12.5px; color: var(--fo-sub); line-height: 1.4; }
+.fo-under b { color: var(--fo-ink); font-weight: 650; }
+.fo-under small { font-size: inherit; color: inherit; }
+.fo-under .fo-bub { display: inline-grid; vertical-align: middle; margin-right: 4px; }
+.fo-under.col { display: block; }
+.fo-under.col p { margin: 0; }
+.fo-under.col p + p { margin-top: 8px; }
+.fo-under.col .fo-box { margin-top: 0; background: var(--fo-page); box-shadow: none; }
+/* under a row that keeps no padding of its own (a block of a list): the space is above the line */
+.fo-under.top { padding: 10px 0 0 50px; }
+/* inside a hero, or under a callout, the line is not indented */
+.fo-hero .fo-under, .fo-under.flush { padding: 8px 0 0; }
+@media (max-width: 360px) { .fo-under, .fo-under.top { padding-left: 0; } }
+
+/* ── the danger tone (`bad`) on a link, a button, a row's title · the disabled text link (edzes.js `.fh-lk.bad`, `.btn.bad`, `.fh-lk:disabled`) ── */
+.fo-lk.bad, .fo-row.bad strong { color: var(--fo-bad); }
+.fo-btn.bad { background: var(--fo-bad); box-shadow: 0 10px 20px -10px var(--fo-bad); }
+.fo-lk:disabled { opacity: .35; cursor: default; }
+
+/* ── the typeable stepper (`Stepper input`) ── an input standing where the number is */
+.fo-stp input { width: 46px; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: none; text-align: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700;
+  font-variant-numeric: tabular-nums; line-height: 34px; color: var(--fo-ink); -moz-appearance: textfield; appearance: textfield; }
+.fo-stp input::-webkit-outer-spin-button, .fo-stp input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.fo-stp input:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+@media (max-width: 360px) { .fo-stp input { width: 38px; } }
+
+/* ── a block of a card's list: a row and what hangs under it (`.fo-log`, edzes.js `.vs-log`) · drops + a label as quiet chips (`.fo-evc`, `.vs-evc`) ── */
+.fo-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
+.fo-log:first-child { border-top: 0; padding-top: 0; }
+.fo-evc { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 6px; }
+.fo-evc em { display: inline-flex; align-items: center; gap: 5px; font-style: normal; font-size: 12px; font-weight: 550; line-height: 1.35; color: var(--fo-ink); }
+
+/* ── `SortableList` (shared/ui/SortableList.tsx) on a white card: `<Card className="fo-sortable">` ── its markup and drag
+   behaviour are untouched; rows are split by hairlines, the grip leads the row and answers on 44px (edzes.js `.vs-grip`). */
+.fo-sortable > .col { gap: 0; }
+.fo-sortable [data-sortable-row] { align-items: flex-start; gap: 10px; border-top: 1px solid var(--fo-hair); }
+.fo-sortable [data-sortable-row]:first-child { border-top: 0; }
+.fo-sortable [data-sortable-row] > button:first-child { position: relative; width: 14px !important; height: 76px; color: var(--fo-faint) !important; flex: 0 0 auto; }
+.fo-sortable [data-sortable-row]:first-child > button:first-child { height: 64px; }
+.fo-sortable [data-sortable-row] > button:first-child::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-70%, -50%); }
+.fo-sortable [data-sortable-row] > button:first-child:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fo-sortable .srt-chev { align-self: flex-start; height: 76px; }
+.fo-sortable .srt-chev-focus:not(:focus-within) { margin-left: -10px; }

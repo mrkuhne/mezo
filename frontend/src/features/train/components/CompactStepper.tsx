@@ -2,9 +2,9 @@
 // Mezo · CompactStepper — a stepper row of the running-plan editor (kör / mp pihenő).
 // The value in the middle is tap-to-edit (type the number straight in).
 // Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `stv()`): the kit's stepper row
-// (`.fo-row` + `.fo-stp`: the label on the left, − value + on the right) with an input
-// where the kit shows a number.
+// (`Stepper` with `input`: the label on the left, − value + on the right, the value typeable).
 // ============================================================
+import { Stepper } from '@/shared/ui/folyadek'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
 
 export function CompactStepper({
@@ -33,14 +33,5 @@ export function CompactStepper({
   const increment = () => onChange(clamp(integer ? value + step : +(value + step).toFixed(1)))
   const editable = useEditableNumber({ value, onChange, min, max, integer })
 
-  return (
-    <div className="fo-row es-num">
-      <span className="g"><strong>{label}</strong></span>
-      <span className="fo-stp">
-        <button type="button" aria-label={`${label} csökkentése`} onClick={decrement}>−</button>
-        <input {...editable} aria-label={label} className="es-numin" />
-        <button type="button" aria-label={`${label} növelése`} onClick={increment}>+</button>
-      </span>
-    </div>
-  )
+  return <Stepper label={label} input={editable} onDec={decrement} onInc={increment} />
 }

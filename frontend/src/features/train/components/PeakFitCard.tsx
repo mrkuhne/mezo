@@ -7,9 +7,9 @@
 // Explains, never scolds: a quiet warning pill with the day count, never red, never opens
 // by itself. Renders nothing when there is nothing to flag.
 // ============================================================
-import { useState } from 'react'
 import type { PeakDayFit } from '@/features/train/logic/peakWeekFit'
-import { Row, St } from '@/shared/ui/folyadek'
+import { CheckRow } from '@/features/train/components/folyadek'
+import { St } from '@/shared/ui/folyadek'
 
 function copyFor(f: PeakDayFit): string {
   return f.direction === 'over'
@@ -18,18 +18,10 @@ function copyFor(f: PeakDayFit): string {
 }
 
 export function PeakFitCard({ fits }: { fits: PeakDayFit[] }) {
-  const [open, setOpen] = useState(false)
   if (fits.length === 0) return null
-
   return (
-    <>
-      <Row className="ee-chk" icon="t-clock" title="Csúcshét · időbecslés" onClick={() => setOpen((v) => !v)} aria-expanded={open}
-        right={<><St tone="warn">{`${fits.length} nap`}</St><span className="ee-cv" aria-hidden="true">{open ? '▲' : '▼'}</span></>} />
-      {open && (
-        <div className="ee-in">
-          {fits.map((f, i) => <p key={`${f.day}-${i}`}>{copyFor(f)}</p>)}
-        </div>
-      )}
-    </>
+    <CheckRow icon="t-clock" title="Csúcshét · időbecslés" stamp={<St tone="warn">{`${fits.length} nap`}</St>}>
+      {fits.map((f, i) => <p key={`${f.day}-${i}`}>{copyFor(f)}</p>)}
+    </CheckRow>
   )
 }

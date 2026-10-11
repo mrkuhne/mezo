@@ -25,16 +25,16 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { useMesocycleVolumeArc } from '@/data/train/mesoArcHooks'
 import type { Mesocycle } from '@/data/types'
-import { nextRolloverChips, phaseChip, runBands, type Phase } from '@/features/train/logic/mesoBands'
+import { deciderSentence, nextRolloverChips, phaseChip, runBands, type Phase } from '@/features/train/logic/mesoBands'
 import { huDate } from '@/features/train/logic/mesoDates'
 import { isOffDay } from '@/features/train/logic/offDay'
-import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
 import { MesoWeekDays } from '@/features/train/components/MesoWeekDays'
-import { MesoTubes, arcWeekTotals, azA } from '@/features/train/components/MesoTubes'
+import { MesoTubes, arcWeekTotals } from '@/features/train/components/MesoTubes'
+import { azA } from '@/shared/lib/huText'
 import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
 import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 import {
-  Area, Btn, Card, Chev, EmptyTank, FrameBack, Hero, Msg, Note, Page, Row, Section, useFrameTitle,
+  Area, Btn, Card, EmptyTank, FrameBack, Hero, Msg, Note, Page, Row, Section, Tags, useFrameTitle,
 } from '@/shared/ui/folyadek'
 import type { CSSProperties } from 'react'
 
@@ -45,27 +45,6 @@ const PHASE_LABEL: Record<Phase, string> = { Rámpa: 'Emelkedés', Csúcs: 'Csú
  *  inside the row whatever the plan's landmarks are. */
 function barCeiling(bands: { ceiling: number }[]): number {
   return Math.max(...bands.map((b) => b.ceiling), 1)
-}
-
-/** Mezo's one sentence about the latest volume change, in plain words (the same recompute
- *  row `deciderSentence` reads — logic/mesoBands.ts — reworded per the prototype). */
-function mezoNote(meso: Mesocycle): string | null {
-  const change = meso.volumeRecompute?.changes[0]
-  if (!change) return null
-  const label = BUDGET_GROUP_LABELS[change.muscle] ?? change.muscle
-  const current = meso.volumePerMuscle?.[change.muscle]?.current
-  switch (change.reason) {
-    case 'tartás':
-      return current === undefined
-        ? `A ${label.toLowerCase()} a múlt héten nehezen ment, ezért most tartjuk a szettszámot — az emelés folytatódik, amint visszaáll a tempó.`
-        : `A ${label.toLowerCase()} a múlt héten nehezen ment, ezért most tartjuk a ${current} szettet — az emelés folytatódik, amint visszaáll a tempó.`
-    case 'cél teljesítve, nincs grind':
-      return `Jól ment a hét: a ${label.toLowerCase()} 2 szettel többet kap.`
-    case 'deload':
-      return `Pihenőhét: a ${label.toLowerCase()} fele annyi szettel pihen.`
-    default:
-      return `${label}: ${change.change}.`
-  }
 }
 
 /** „Az 5. hét a csúcs, a 6. a pihenőhét." — read off the plan's own phase curve. */
@@ -121,7 +100,7 @@ export function MesocycleBuilderPage() {
     return <Navigate to={`/train/mesocycles/${meso.id}/report`} replace />
   }
 
-  const back = <FrameBack history fallback="/train/mesocycles" label="Edzésterv" className="ep-back">‹ Terv</FrameBack>
+  const back = <FrameBack history fallback="/train/mesocycles" label="Edzésterv" className="fo-backpill">‹ Terv</FrameBack>
 
   if (!meso) {
     return (
@@ -150,10 +129,10 @@ export function MesocycleBuilderPage() {
               Aktiválás · {startsOn ?? meso.startDate}
             </Btn>
           ) : undefined}>
-          <div className="ep-hg">
+          <div className="fo-hero-g">
             <MesoTubes curve={meso.phaseCurve} weeks={meso.weeks} now={0} height={92} ariaLabel="A terv hetei: a terv íve" />
           </div>
-          <div className="ep-ft"><span>{startsOn}</span><span>a terv íve</span><span>{endsOn}</span></div>
+          <div className="fo-ft"><span>{startsOn}</span><span>a terv íve</span><span>{endsOn}</span></div>
         </Hero>
         {trainingDays.length > 0 && (
           <>
@@ -169,7 +148,7 @@ export function MesocycleBuilderPage() {
   const totalSets = bands.reduce((a, b) => a + b.current, 0)
   const ramping = bands.filter((b) => b.step === 'up').length
   const holding = bands.length - ramping
-  const note = mezoNote(meso)
+  const note = deciderSentence(meso)
   const rollover = nextRolloverChips(meso)
   const groupOf = new Map(bands.map((b) => [b.label, b.group]))
 
@@ -185,7 +164,7 @@ export function MesocycleBuilderPage() {
         sub={weekTotals ? `Most ${azA(meso.currentWeek)} ${meso.currentWeek}. héten jársz: ${weekTotals[nowIdx] ?? totalSets} szett.` : `Most ${azA(meso.currentWeek)} ${meso.currentWeek}. héten jársz.`}
         actions={<Btn onClick={() => navigate(`/train/mesocycles/${meso.id}/week`)}>Heti vizsgálat</Btn>}>
         {weekTotals ? (
-          <div className="ep-hg ar" role="img" aria-label={`A terv íve: heti szettszám, ${weekTotals.join(', ')}`}>
+          <div className="fo-hero-g ar" role="img" aria-label={`A terv íve: heti szettszám, ${weekTotals.join(', ')}`}>
             <Area values={weekTotals} height={150}
               labels={weekTotals.map((_, i) => (i === weekTotals.length - 1 ? `${i + 1}. hét` : `${i + 1}.`))}
               min={Math.max(0, Math.round(Math.min(...weekTotals) / 2))} max={Math.max(...weekTotals) + 8}
@@ -196,7 +175,7 @@ export function MesocycleBuilderPage() {
           </div>
         ) : (
           <>
-            <div className="ep-hg">
+            <div className="fo-hero-g">
               <MesoTubes curve={meso.phaseCurve} weeks={meso.weeks} now={meso.currentWeek} ariaLabel="A terv hetei: a terv íve" />
             </div>
             {!arcPending && <Note>A hetek szettszáma az első edzésed után jelenik meg — addig a terv íve látszik.</Note>}
@@ -215,16 +194,14 @@ export function MesocycleBuilderPage() {
       <Card>
         <Row icon="t-muscle" title="Heti vizsgálat" sub={`${totalSets} szett · ${ramping} emelkedik · ${holding} tart`}
           onClick={() => navigate(`/train/mesocycles/${meso.id}/week`)}
+          chev
           right={(
-            <span className="ep-rowchev">
-              <span className="ep-mini" aria-hidden="true">
-                {bands.slice(0, 5).map((b) => (
-                  <i key={b.group} style={{ '--c': deepMuscle(b.group) } as CSSProperties}>
-                    <b style={{ height: `${Math.min(100, Math.max(15, Math.round((b.current / barCeiling(bands)) * 100)))}%` }} />
-                  </i>
-                ))}
-              </span>
-              <Chev />
+            <span className="ep-mini" aria-hidden="true">
+              {bands.slice(0, 5).map((b) => (
+                <i key={b.group} style={{ '--c': deepMuscle(b.group) } as CSSProperties}>
+                  <b style={{ height: `${Math.min(100, Math.max(15, Math.round((b.current / barCeiling(bands)) * 100)))}%` }} />
+                </i>
+              ))}
             </span>
           )} />
         {/* A FORECAST, not a destination — the rollover runs on its own, so this row has no onClick. */}
@@ -232,15 +209,13 @@ export function MesocycleBuilderPage() {
         {/* Five muscles, then a „+N" — the forecast reads at a glance; a ten-muscle plan wrapped
             into an unreadable wall of chips. */}
         {rollover.length > 0 && (
-          <div className="ep-roll">
-            {rollover.slice(0, 5).map((c) => (
-              <span key={c.label}>
-                <Mchp muscle={groupOf.get(c.label) ?? ''} size={24} />
-                {c.tone === 'sage' ? <b>{c.text}</b> : c.text}
-              </span>
-            ))}
-            {rollover.length > 5 && <span className="tx">{`+${rollover.length - 5}`}</span>}
-          </div>
+          <Tags items={[
+            ...rollover.slice(0, 5).map((c) => ({
+              left: <Mchp muscle={groupOf.get(c.label) ?? ''} size={24} />,
+              label: c.tone === 'sage' ? <b>{c.text}</b> : c.text,
+            })),
+            ...(rollover.length > 5 ? [`+${rollover.length - 5}`] : []),
+          ]} />
         )}
       </Card>
 

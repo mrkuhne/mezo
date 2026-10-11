@@ -7,16 +7,15 @@
 // with its „↺ javaslat"), the volume switch, the Finomhangolás disclosure (RIR, Rep min,
 // Rep max) and Törlés. Behaviour is the pre-Folyadék one, knob for knob; a − / + that
 // would do nothing at its bound is drawn disabled.
-// The row head, the stepper line and the switch are shared with ExerciseRecipeRow.
+// The row head is shared with ExerciseRecipeRow; the stepper line, the switch and the panel are the Edzés-shared
+// pieces of components/folyadek/lines.tsx.
 // ============================================================
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
 import { countsForVolume, setStyle } from '@/features/train/logic/setBudget'
-import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
-import { Acts, Caps, Lk, Pill, Pills, Row, Stepper } from '@/shared/ui/folyadek'
-
-export const kgText = (v: number) => String(v).replace('.', ',')
+import { KnobLine, KnobPanel, Mchp, StepLine, AnchorLine, VolumeSwitch, deepMuscle } from '@/features/train/components/folyadek'
+import { Acts, Caps, Lk, Pill, Pills, Row } from '@/shared/ui/folyadek'
 
 /** The collapsed face of an editor row: chip, name, a summary line, the sets as capsules, the warning. */
 export function ExRowHead({ ex, summary, open, onToggle, ariaLabel, controls }: {
@@ -30,7 +29,7 @@ export function ExRowHead({ ex, summary, open, onToggle, ariaLabel, controls }: 
       sub={`${MUSCLE_LABELS[ex.muscle] ?? ex.muscle} · ${summary}`}
       more={(
         <>
-          <span className="ee-rowbar">
+          <span className="fo-rowbar">
             <Caps n={ex.warmupSets} color="var(--fo-faint)" size="xs" />
             <Caps n={ex.workingSets} done={ex.workingSets} color={deepMuscle(ex.muscle)} />
           </span>
@@ -42,44 +41,6 @@ export function ExRowHead({ ex, summary, open, onToggle, ariaLabel, controls }: 
       aria-label={ariaLabel}
       aria-controls={controls}
     />
-  )
-}
-
-/** One knob of the open panel: its label on the left, − value + on the right. `name` scopes the buttons' names. */
-export function StepLine({ label, name, value, auto, onDec, onInc, lo, hi }: {
-  label: ReactNode; name: string; value: ReactNode; auto?: boolean; onDec: () => void; onInc: () => void; lo?: boolean; hi?: boolean
-}) {
-  return (
-    <div className="ee-sjl">
-      <span>{label}</span>
-      <Stepper name={name} value={value} auto={auto} onDec={onDec} onInc={onInc} decDisabled={lo} incDisabled={hi} />
-    </div>
-  )
-}
-
-/** The nullable starting weight: 2.5 kg steps from 20, „auto" when unset (below 2.5 it falls back to auto). */
-export function AnchorLine({ name, value, onChange }: { name: string; value: number | null | undefined; onChange: (v: number | null) => void }) {
-  const STEP = 2.5
-  const START = 20
-  const round = (n: number) => Math.round(n * 100) / 100
-  const isAuto = value == null
-  const dec = () => {
-    if (isAuto) return
-    const next = round(value - STEP)
-    onChange(next < STEP ? null : next)
-  }
-  const inc = () => onChange(isAuto ? START : Math.min(999, round(value + STEP)))
-  return <StepLine label="Kiinduló kg" name={name} value={isAuto ? 'auto' : kgText(value)} auto={isAuto} onDec={dec} onInc={inc} lo={isAuto} />
-}
-
-/** „Számít a volumenbe" — a switch on its own line. */
-export function VolumeSwitch({ name, label, on, onChange }: { name: string; label: ReactNode; on: boolean; onChange: (next: boolean) => void }) {
-  return (
-    <div className="ee-sjl">
-      <span>{label}</span>
-      <button type="button" role="switch" aria-checked={on} aria-label={`${name} · számít a volumenbe`}
-        className={on ? 'ee-sw on' : 'ee-sw'} onClick={() => onChange(!on)} />
-    </div>
   )
 }
 
@@ -107,7 +68,7 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
         summary={`${ex.workingSets}×${ex.repMin}–${ex.repMax} · ${isFailure ? 'Failure' : 'Volume'}`} />
 
       {expanded && (
-        <div className="ee-sjp">
+        <KnobPanel className="ee-sjp">
           <Pills>
             <Pill on={isFailure} onClick={() => onChange({ targetRIR: 0 })}>Failure</Pill>
             <Pill on={!isFailure} onClick={() => onChange({ targetRIR: 2 })}>Volume</Pill>
@@ -127,17 +88,16 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
             onInc={() => onChange({ warmupSets: Math.min(10, ex.warmupSets + 1) })}
             lo={ex.warmupSets <= 0} hi={ex.warmupSets >= 10} />
           {suggestedWarmup !== undefined && suggestedWarmup !== ex.warmupSets && (
-            <div className="ee-sjl">
-              <span />
+            <KnobLine label="">
               <Lk onClick={() => onChange({ warmupSets: suggestedWarmup })} aria-label={`${n} · bemelegítés javaslat alkalmazása`}>
                 ↺ javaslat: {suggestedWarmup}
               </Lk>
-            </div>
+            </KnobLine>
           )}
           <VolumeSwitch name={n} label="Számít a volumenbe" on={countsForVolume(ex)} onChange={(v) => onChange({ countsTowardVolume: v })} />
-          <div className="ee-sjl">
+          <KnobLine>
             <Lk aria-expanded={fineTuneOpen} onClick={() => setFineTuneOpen((v) => !v)}>Finomhangolás {fineTuneOpen ? '▴' : '▾'}</Lk>
-          </div>
+          </KnobLine>
           {fineTuneOpen && (
             <>
               <StepLine label="RIR" name={`${n} · RIR`} value={ex.targetRIR}
@@ -155,9 +115,9 @@ export function ExerciseAccordionRow({ ex, expanded, onToggle, onRemove, onChang
             </>
           )}
           <Acts>
-            <Lk className="ee-bad" onClick={onRemove} aria-label={`${n} törlése`}>Törlés</Lk>
+            <Lk bad onClick={onRemove} aria-label={`${n} törlése`}>Törlés</Lk>
           </Acts>
-        </div>
+        </KnobPanel>
       )}
     </div>
   )

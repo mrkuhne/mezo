@@ -11,7 +11,19 @@ it('renders every export once with realistic props and logs no console error', (
       <K.Hero label="Mai állapot" verdict="Ma jó nap egy közepes edzéshez." sub="Hét óra negyven alvás." actions={<button className="btn">Check-in</button>} />
       <K.Hero verdict="Nincs adat." warn />
       <K.Hero label="Mezo" verdict="Három új üzenet." sub="Kettő választ vár." left={<K.Badge member="mezo" size={64} />} role="group" aria-label="Üzenetek" />
-      <K.Section n={1} title="Mai szintek" link="Mind" />
+      <K.Hero big art="t-peak" label="Terv" verdict="Hypertrophy 04" actions={<><K.Btn>Indítás</K.Btn><K.Btn bad>Lezárás</K.Btn><K.Note>Sablonból indulsz</K.Note></>}>
+        <K.HeroGraphic wide><K.Level pct={20} label="12 szett megvan" value="60" /></K.HeroGraphic>
+        <K.Ft items={['máj. 1.', 'a terv íve', 'jún. 12.']} />
+      </K.Hero>
+      <K.Card className="fo-sortable">
+        <K.Row icon="t-scroll" title="Lezárt futam" onClick={() => {}} chev right={<K.St tone="ok">riport</K.St>} />
+        <K.Row icon="t-trash" bad title="Törlés" disabled onClick={() => {}} />
+        <K.Row icon="t-muscle" title="Mell" onClick={() => {}} chev={false} more={<span className="fo-rowbar"><K.Caps n={4} done={2} /></span>} />
+        <div className="fo-under"><K.Lk bad disabled>Kivesz</K.Lk></div>
+        <div className="fo-log"><K.Stepper label="Körök" input={{ value: '4', onChange: () => {} }} onDec={() => {}} onInc={() => {}} /></div>
+        <K.Tags items={[{ icon: 't-flame', color: 'var(--fo-warn)', label: 'becslés' }]} />
+      </K.Card>
+      <K.Section n={1} title="Mai szintek" link="Mind" className="x" />
       <K.Card><K.Row icon="t-flame" title="Kalória" sub="1 040 van még" value="2 060" onClick={() => {}} right={<K.Mini pct={66} />} /></K.Card>
       <K.Tank pct={68} num="68" cap="pont" label="Mai állapot" verdict="Jó nap" marks={[100, 50, 0]} cta="Délutáni check-in" onCta={() => {}} />
       <K.Vials items={[{ label: 'Kalória', value: '2 060', pct: 66, icon: 't-flame', color: '#1877F2', mark: '3 100', note: '1 040 van még' }, { label: 'Fehérje', value: '148 g', pct: 67, icon: 't-meat', color: '#E8615C' }]} />
@@ -104,7 +116,7 @@ it('renders every export once with realistic props and logs no console error', (
   )
   expect(container.querySelectorAll('svg').length).toBeGreaterThan(10)
   // every kit export is a component or a constant this gallery knows: a new export must be rendered above
-  const rendered = ['Hero', 'Section', 'Card', 'Row', 'Tank', 'Vials', 'Mini', 'Level', 'Fill', 'Area', 'Linked', 'Stream', 'PerDay', 'Bub', 'Badge', 'Drop',
+  const rendered = ['Hero', 'HeroGraphic', 'Ft', 'Section', 'Card', 'Row', 'Tank', 'Vials', 'Mini', 'Level', 'Fill', 'Area', 'Linked', 'Stream', 'PerDay', 'Bub', 'Badge', 'Drop',
     'Page', 'Foot', 'TwoBtn', 'Btn', 'Lk', 'Acts', 'Pill', 'Pills', 'Seg', 'St', 'Chips', 'Facts', 'Note', 'Txt', 'Why', 'Lab', 'Empty', 'ErrorRow', 'Head',
     'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big',
     'Tubes', 'Caps', 'LevelMarks', 'Split', 'Pour', 'Legend', 'DropsMeter', 'EmptyTank', 'Skel', 'Box', 'Tags', 'Stepper', 'Slider', 'Pair', 'SheetActs', 'InfoSheet']

@@ -14,10 +14,10 @@ import { Icon3D } from '@/shared/ui/clay'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import type { DayStripItem } from '@/features/train/logic/dayStripItems'
+import { DAY_SHORT } from '@/features/train/components/WeekdayGrid'
 
 /** The chip's short weekday caption (prototype `WKD`). */
-const SHORT = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V']
-const shortDay = (day: string) => SHORT[DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])] ?? day
+const shortDay = (day: string) => DAY_SHORT[DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])] ?? day
 
 /** Spoken done-state of a chip — the visual tick / dots / `pihenő` marker in words. */
 function doneLabel(it: DayStripItem): string {

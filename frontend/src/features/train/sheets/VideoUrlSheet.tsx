@@ -57,7 +57,7 @@ export function VideoUrlSheet({ exercise, onClose }: VideoUrlSheetProps) {
           <Acts>
             <Btn grow disabled={saving} onClick={() => persist(videoUrl.trim() || null, close)}>Mentés</Btn>
             {hadVideo
-              ? <Lk className="er-bad" disabled={saving} onClick={() => persist(null, close)}>Eltávolítás</Lk>
+              ? <Lk bad disabled={saving} onClick={() => persist(null, close)}>Eltávolítás</Lk>
               : <Lk onClick={close}>Mégse</Lk>}
           </Acts>
         </>

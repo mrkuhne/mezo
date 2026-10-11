@@ -41,11 +41,11 @@ describe('RunningPage (mock mode)', () => {
     // active block rb-active-01: currentWeek 3 / 8 weeks — stated ONCE, in the hero
     expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('A 8 hetes blokk 3. hetében jársz.')
     expect(container.querySelector('.fo-hero-sub')).toHaveTextContent(/^Robbanékonyság 01 · e héten \d \/ 2 edzés kész\.$/)
-    const tubes = container.querySelectorAll('.fo-hero .es-hg .fo-vial')
+    const tubes = container.querySelectorAll('.fo-hero .fo-hero-g .fo-vial')
     expect(tubes).toHaveLength(8)
     expect(tubes[2]).toHaveClass('now')
     // the weeks still ahead are dry ghost tubes under the „full week" waterline
-    expect(container.querySelectorAll('.fo-hero .es-hg .fo-vial.ghost')).toHaveLength(5)
+    expect(container.querySelectorAll('.fo-hero .fo-hero-g .fo-vial.ghost')).toHaveLength(5)
     expect(tubes[7].querySelector('.wl')).not.toBeNull()
     expect(screen.queryByRole('heading', { name: 'Intervallum' })).not.toBeInTheDocument()
     // the old skin is gone from the page

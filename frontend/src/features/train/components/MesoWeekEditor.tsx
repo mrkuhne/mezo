@@ -126,7 +126,7 @@ export function MesoWeekEditor({
 
   return (
     <WeekFace mode={mode} name={name}>
-      <FrameBack className="ew-back" onBack={onBack}>‹ Terv</FrameBack>
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ Terv</FrameBack>
       <Hero
         className="ew-hero"
         label={mode === 'draft' ? 'Vázlat · még nincs mentve' : 'Sablon · mentve'}
@@ -148,7 +148,7 @@ export function MesoWeekEditor({
           ? <Msg member="mezo">{note}</Msg>
           : <Box icon="t-note" title="A sablon célja"><p>{note}</p></Box>)}
         {weekRows.length > 0 && (
-          <div className="ew-hg">
+          <div className="fo-hero-g ew-hg">
             <Tubes
               size="sm" height={86} gap={6}
               items={weekRows.slice(0, 5).map((r) => ({

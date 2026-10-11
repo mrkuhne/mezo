@@ -83,7 +83,7 @@ export function MesoDayEditor({
 
   return (
     <DayFace eyebrow={eyebrow} title={`${DAY_LABELS[day.day] ?? day.day} · ${day.type}`}>
-      <FrameBack className="ew-back" onBack={onBack}>‹ A heted</FrameBack>
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ A heted</FrameBack>
       <Hero
         className="ew-hero"
         label={mode === 'draft' ? 'Vázlat · egy nap' : 'Sablon · egy nap'}
@@ -108,7 +108,7 @@ export function MesoDayEditor({
         />
         <Note>✎ koppints a névre az átnevezéshez</Note>
         {rows.length > 0 && (
-          <div className="ew-hg n3">
+          <div className="fo-hero-g ew-hg n3">
             <Tubes
               size="sm" height={86}
               items={rows.slice(0, 3).map((r) => ({

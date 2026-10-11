@@ -55,14 +55,28 @@ button.ex-mus:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 
 .phone-screen[data-domain="train"] .fo-page > .fo-seg { margin: 14px 14px 0; background: rgba(15, 30, 51, .07); box-shadow: none; }
 .phone-screen[data-domain="train"] .fo-seg button { overflow: hidden; text-overflow: ellipsis; }
 
-/* ── the ⓘ of the explain layer (`InfoButton`) ── a 22px flat round chip; as a link it is the kit's `Lk`.
-   `.pl-info` stays on the element for the layout probe (tests/layout/layout.spec.ts) and keeps its left-anchored 44px
-   `::after` hit box from prototype.css; these rules neutralise the old `.pl-info` look (opacity .75, bare glyph) and the
-   `.tw-load .pl-info` re-dress. Delete the pair together when the old Edzés skin goes. */
-.pl-info.ex-info, .tw-load .pl-info.ex-info { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; opacity: 1; vertical-align: middle;
-  background: color-mix(in srgb, var(--dom) 8%, #fff); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 16%, #fff); }
-.pl-info.ex-info .t-ico, .pl-info.ex-info svg, .tw-load .pl-info.ex-info svg { width: 14px; height: 14px; display: block; filter: none; }
-.pl-info.ex-info:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+/* ── the label–value line and the indented breakdown under a row (`KnobLine`, `KnobPanel`; edzes.js `.vs-sjl`, `.vs-sjp`) ── */
+.ex-sjl { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 13.5px; color: var(--fo-ink); }
+.ex-sjl > span:first-child { min-width: 0; }
+.ex-sjp { padding: 0 0 12px 12px; margin: 0 0 6px 14px; border-left: 3px solid color-mix(in srgb, var(--dom) 35%, #fff); }
+.ex-sjp > .fo-lab:first-child { margin-top: 0; }
+.ex-sjp .fo-acts { margin-top: 10px; }
+/* the switch (`.vs-sw`) */
+.ex-sw { position: relative; flex: 0 0 auto; width: 44px; height: 26px; padding: 0; border: 0; border-radius: 13px; background: rgba(15, 30, 51, .16); cursor: pointer; }
+.ex-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(15, 30, 51, .25); }
+.ex-sw::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.ex-sw.on { background: var(--dom); }
+.ex-sw.on::after { left: 21px; }
+.ex-sw:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* the ▲/▼ mark of a check that opens in place (`CheckRow`; edzes.js `.vs-cv`) */
+.ex-cv { color: var(--fo-sub); font-size: 10px; margin-left: 8px; flex: 0 0 auto; }
+
+/* ── a medal as a row (`MedalRow`) · five stars (`StarRow`) ── */
+.ex-medal small .ex-prev { display: block; }
+.ex-medal strong .fo-st { margin-left: 4px; vertical-align: 1px; }
+.ex-stars { display: inline-flex; gap: 2px; }
+.ex-stars .t-ico { width: 18px; height: 18px; }
 
 @media (max-width: 360px) {
   .ex-hb { --w: 78px; }
@@ -72,4 +86,7 @@ button.ex-mus:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 
   .ex-duo.sm .ex-body { --w: 38px; }
   .ex-mus .fo-level, .ex-mus .fo-split { width: 54px; }
   .fo-tube-nd .ex-mchp { --s: 24px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ex-sw::after { transition: left .2s; }
 }

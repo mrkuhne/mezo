@@ -99,7 +99,9 @@ export function Box(p: { icon?: Icon3DName; color?: string; left?: ReactNode; ti
   )
 }
 
-export interface TagItem { label: ReactNode; icon?: Icon3DName; left?: ReactNode }
+export interface TagItem { label: ReactNode; icon?: Icon3DName; left?: ReactNode
+  /** The colour of the icon's bubble (default: the domain's). */
+  color?: string }
 
 /** Fact tags without the leading drop of `Chips`: plain text, or a small bubble icon / custom node (a muscle chip) in front. */
 export function Tags(p: { items: (TagItem | string)[]; className?: string }) {
@@ -107,7 +109,7 @@ export function Tags(p: { items: (TagItem | string)[]; className?: string }) {
     <div className={cx('fo-tags', p.className)}>
       {p.items.map((x, i) => {
         const it: TagItem = typeof x === 'string' ? { label: x } : x
-        const lead = it.left ?? (it.icon && <Bub icon={it.icon} size={28} />)
+        const lead = it.left ?? (it.icon && <Bub icon={it.icon} size={28} color={it.color} />)
         return <span key={i} className={it.left != null ? undefined : lead ? 'ic' : 'tx'}>{lead}{it.label}</span>
       })}
     </div>

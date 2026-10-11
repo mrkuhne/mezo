@@ -2,37 +2,13 @@
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference).
    Screens: a lezárt futam riportja, az összevetés, Sablonjaid + egy sablon, Gyakorlatok + egy gyakorlat, Medálok; sheets: gyakorlat a katalógusban, demó videó. */
 
-/* The page's own back control — drawn only where no title bar is mounted (a page rendered alone). */
-.er-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer;
-  font-family: var(--ff-body); font-size: 14px; font-weight: 650; color: var(--fo-ink); background: var(--fo-card, #fff); box-shadow: inset 0 0 0 1px var(--fo-hair); }
 
 /* ── shared by the area ── */
-.er-hg { margin-top: 14px; }                                   /* .vs-hg — the hero's graphic */
-.er-hg.ar { margin: 12px -4px 0; }
 .fo-note.er-none { margin: 0; }                                         /* a card's one quiet sentence */
-.fo-note.er-heronote { margin: 0; flex-basis: 100%; color: #fff; }      /* the white line under the hero's button */
-.er-rowbar { display: block; margin-top: 7px; }                 /* .vs-rowbar — a level under a row's text */
-.er-rowbar .fo-level { width: 100%; }
-.er-bad { color: var(--fo-bad); }
-.fo-lk.er-bad { color: var(--fo-bad); }
 .er-cards .fo-row .v { text-align: right; }
-.er-chev { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.er-chev .chev { width: 18px; height: 18px; color: var(--fo-faint); }
-/* a row that is a plain button with a disabled state (the kit Row takes no `disabled`) */
 /* a row wrapped for its own confirm line keeps the hairline the kit drops on a first child */
 .er-del > .fo-row:first-child { border-top: 1px solid var(--fo-hair); padding-top: 12px; }
 .er-del > .fo-acts { margin: 0 0 4px; }
-button.er-act:disabled { opacity: .5; cursor: default; }
-/* .fh-art — the hero's big tilted glyph, top right */
-.er-hasart { position: relative; }
-.er-art { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; transform: rotate(8deg); pointer-events: none; }
-.er-art .t-ico { width: 96px; height: 96px; filter: drop-shadow(0 14px 16px rgba(15, 30, 51, .3)); }
-.er-hasart .fo-hero-lbl, .er-hasart .fo-hero-verdict { padding-right: 92px; }
-.er-hasart .fo-hero-lbl { display: block; }
-.er-hasart .fo-hero-verdict { hyphens: manual; }
-/* .vs-in — a quiet line with a link beside it */
-.er-in { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 8px 0 0; font-size: 12.5px; color: var(--fo-sub); line-height: 1.4; }
-.er-in > span { display: inline-flex; align-items: center; gap: 6px; }
 /* .vs-kv — a described number */
 .er-kv { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--fo-hair); font-size: 13px; }
 .er-kv:first-of-type { border-top: 0; }
@@ -40,13 +16,11 @@ button.er-act:disabled { opacity: .5; cursor: default; }
 .er-kv small { display: block; font-size: 11.5px; color: var(--fo-faint); margin-top: 2px; }
 .er-kv > b { white-space: nowrap; font-family: var(--ff-display); font-weight: 700; }
 .er-kv .fo-tags { margin: 0; justify-content: flex-end; }
-.er-kv .fo-tags span:has(> .add) { background: none; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .14); }
+.er-kv .fo-tags > span:has(> .add) { background: none; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .14); }
 .er-kv .fo-tags b { font-weight: 700; }
 
 /* ── riport ── */
 .er-ms { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13.5px; font-weight: 600; }
-.er-stars { display: inline-flex; gap: 2px; }
-.er-stars .t-ico { width: 18px; height: 18px; }
 .er-quote { margin-top: 4px; }
 .er-det { margin: 14px 0 4px; padding: 12px 14px; border-radius: 20px; background: var(--fo-page); }
 .er-det summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; min-height: 44px; margin: -7px 0; font-size: 14px; font-weight: 650; }   /* 30px drawn, 44px to tap */
@@ -70,8 +44,6 @@ button.er-act:disabled { opacity: .5; cursor: default; }
 .er-ab.sd > div { background: var(--fo-page); box-shadow: none; }
 .er-ab.sd b { font-family: var(--ff-display); font-size: 16px; font-weight: 800; }
 .er-ab.sd b.win, .er-cmp .win { color: var(--fo-ok); }
-.er-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
-.er-log:first-child { border-top: 0; padding-top: 0; }
 .er-log-h { display: block; padding: 0 0 8px; font-size: 13px; }
 .er-log-h b { display: block; font-family: var(--ff-body); font-weight: 650; color: var(--fo-ink); }
 .er-log-h small { display: block; font-size: 11.5px; color: var(--fo-faint); margin-top: 2px; }
@@ -115,30 +87,22 @@ button.er-act:disabled { opacity: .5; cursor: default; }
 
 /* ── gyakorlatok ── */
 .er-filter { margin-top: 12px; }
-.er-ft { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--fo-faint); margin-top: 4px; }   /* .vs-ft — under the curve */
-.er-ft span:nth-child(2) { text-align: right; color: var(--fo-sub); white-space: nowrap; }
 .er-curve .fo-bigrow { margin-top: 14px; }
 
 /* ── medálok ── */
 .er-shelf { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px 4px; margin-top: 16px; justify-items: center; }
 .er-shelf i { width: 24px; height: 30px; border-radius: 50% 50% 50% 50% / 38% 38% 62% 62%; background: linear-gradient(180deg, #FBEBC0, #F3C766); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .85), 0 8px 10px -8px #E9892B; }
 .er-shelf i.new { background: linear-gradient(180deg, #F9D06A, #E9892B); }
-.er-medal small .er-prev { display: block; }
-.er-medal strong .fo-st { margin-left: 4px; vertical-align: 1px; }
 .er-group + .er-group { margin-top: 6px; }
 .er-group + .er-group > .fo-lab { margin-top: 14px; }
 
 /* ── sheets ── */
 .er-catm small { display: block; margin: 10px 0 6px; font-size: 11.5px; font-weight: 650; color: var(--fo-sub); }
 .er-catm small:first-child { margin-top: 0; }
-.er-sjl { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 13.5px; }   /* .vs-sjl — label + stepper */
-.er-sjl.first { margin-top: 12px; }
+.er-sjl-first { margin-top: 12px; }
 
 @media (max-width: 360px) {
   .er-shelf i { width: 20px; height: 26px; }
-  .er-art { width: 76px; height: 76px; }
-  .er-art .t-ico { width: 76px; height: 76px; }
-  .er-hasart .fo-hero-lbl, .er-hasart .fo-hero-verdict { padding-right: 74px; }
   .er-tday .dh { flex-wrap: wrap; }
   .er-tday .dh span { white-space: normal; }
   .er-tday .ex .v { white-space: normal; text-align: right; }

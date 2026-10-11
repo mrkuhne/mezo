@@ -42,7 +42,7 @@ import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { Sheet } from '@/shared/ui/Sheet'
 import {
-  Acts, Box, Btn, Bub, Card, FoSheetHead, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Seg, Slider,
+  Acts, Box, Btn, Bub, Card, FoSheetHead, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Seg, Slider, Stepper,
 } from '@/shared/ui/folyadek'
 import { SportCeremony } from '@/features/train/components/SportCeremony'
 import { sportStars } from '@/features/train/logic/sportScore'
@@ -241,19 +241,15 @@ function FieldRow({ spec, value, onChange }: {
     onChange(Math.min(spec.max, Math.max(spec.min, Number(value) + delta)))
   return (
     <div className="es-vl es-fl" data-sp-key={spec.key}>
-      <div className="fo-row es-num">
-        <span className="g"><strong>{spec.label} · {spec.unit}</strong></span>
-        <span className="fo-stp">
-          <button type="button" aria-label={`${spec.label} csökkentése`} onClick={() => stepBy(-spec.step)}>−</button>
-          <input
-            id={id} className="es-numin" type="number" min={spec.min} max={spec.max} step={spec.step} aria-label={spec.label}
-            value={Number(value)}
-            onChange={(e) => onChange(Number(e.target.value))}
-            onBlur={(e) => onChange(Math.min(spec.max, Math.max(spec.min, Number(e.target.value))))}
-          />
-          <button type="button" aria-label={`${spec.label} növelése`} onClick={() => stepBy(spec.step)}>+</button>
-        </span>
-      </div>
+      <Stepper
+        label={`${spec.label} · ${spec.unit}`} name={spec.label}
+        onDec={() => stepBy(-spec.step)} onInc={() => stepBy(spec.step)}
+        input={{
+          id, type: 'number', min: spec.min, max: spec.max, step: spec.step, value: Number(value),
+          onChange: (e) => onChange(Number(e.target.value)),
+          onBlur: (e) => onChange(Math.min(spec.max, Math.max(spec.min, Number(e.target.value)))),
+        }}
+      />
     </div>
   )
 }

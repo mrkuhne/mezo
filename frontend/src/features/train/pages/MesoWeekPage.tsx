@@ -92,7 +92,7 @@ export function MesoWeekPage() {
   const loading = workoutPending || arcPending
   useFrameTitle({ title: 'Heti vizsgálat', eyebrow: !loading && meso && arc ? `${arc.currentWeek}. hét` : 'A terved' })
 
-  const back = <FrameBack history fallback={`/train/mesocycles/${id}`} className="ep-back">‹ A terved</FrameBack>
+  const back = <FrameBack history fallback={`/train/mesocycles/${id}`} className="fo-backpill">‹ A terved</FrameBack>
 
   if (loading) return <Page className="ep-page">{back}<Skel blocks={WEEK_SKELETON_BLOCKS} /></Page>
 

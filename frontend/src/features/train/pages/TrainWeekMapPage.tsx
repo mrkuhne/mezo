@@ -49,7 +49,7 @@ export function TrainWeekMapPage() {
   const [mode, setMode] = useState<MapMode>('done')
   useFrameTitle({ title: 'Izomtérkép', eyebrow: 'Terhelés' })
 
-  const back = <FrameBack history fallback="/train/week" label="Vissza: Terhelés" className="et-back">‹ Terhelés</FrameBack>
+  const back = <FrameBack history fallback="/train/week" label="Vissza: Terhelés" className="fo-backpill">‹ Terhelés</FrameBack>
 
   if (workoutPending || runningPending || weekLog.pending) return <TrainWeekSkeleton blocks={[430, 90, 90]} />
 
@@ -105,7 +105,6 @@ export function TrainWeekMapPage() {
           : 'Amit már megmozgattál, sötétebben telik — ami még vár, az halvány marad.'}
         actions={(
           <InfoButton
-            link
             eyebrow="Izomtérkép"
             title="Miből rajzoljuk?"
             copy="A futó terved e heti szettjeiből: minden izom annyira telik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott a teltebb izom többet kérő izmot jelent."

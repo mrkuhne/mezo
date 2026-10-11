@@ -2,6 +2,7 @@ import type { ReadinessTodayResponse } from '@/data/train/readinessApi'
 import { useTodayReadiness } from '@/data/hooks'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { Box, Btn, Bub, Hero, Lk, Note, Tubes } from '@/shared/ui/folyadek'
+import { article } from '@/shared/lib/huText'
 import { useToast } from '@/shared/ui/ToastProvider'
 
 // ============================================================
@@ -32,11 +33,6 @@ const TOAST = {
   undo: 'Visszaállítva az eredeti terv',
 } as const
 
-/** Hungarian definite article: „az" before a vowel sound, else „a" (capitalised, sentence-initial). */
-function article(word: string): string {
-  return /^[aáeéiíoóöőuúüű]/i.test(word) ? 'Az' : 'A'
-}
-
 /** „X", „X és Y", „X, Y és Z". */
 function joinNames(names: string[]): string {
   if (names.length <= 1) return names[0] ?? ''
@@ -57,7 +53,7 @@ export function ReadinessCard({ readiness, onLighten, onKeep, onUndo, busy = fal
     return (
       <Hero className="em-ready is-lightened" aria-label="Mai állapot"
         label="Mai állapot · könnyítve" verdict="Ma egy fokkal lejjebb"
-        sub={`Minden gyakorlatnál a múlt heti súly marad, nem emelünk.${names.length > 0 ? ` ${article(names[0])} ${joinNames(names)} nehéz szettjei kimaradnak.` : ''}`}
+        sub={`Minden gyakorlatnál a múlt heti súly marad, nem emelünk.${names.length > 0 ? ` ${article(names[0], true)} ${joinNames(names)} nehéz szettjei kimaradnak.` : ''}`}
         left={<Bub icon="t-tick" size={56} color="var(--fo-ok)" />}
         actions={<Lk onClick={onUndo} disabled={busy}>Visszaállítom a tervet</Lk>} />
     )

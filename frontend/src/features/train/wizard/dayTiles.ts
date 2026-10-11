@@ -8,7 +8,23 @@ import type { MesoDay } from '@/data/types'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { dayTone, type DayTone } from '@/features/train/logic/mesoLoad'
 import { daySessionBreakdown } from '@/features/train/logic/setBudget'
-import type { DayTileMuscle } from '@/features/train/wizard/DayTile'
+
+/** One muscle of a day in the planner's per-day summary. */
+export interface DayTileMuscle {
+  label: string
+  sets: number
+  /** the muscle family's deep token (a CSS var reference) */
+  color: string
+  /** over the per-session muscle cap — the model will reshuffle it */
+  over: boolean
+  /**
+   * The group's representative catalog token ('back-mid', 'quad', …) — the SAME
+   * `colorMuscle` the colour is derived from. U5's day card draws the anatomy
+   * (MuscleChip + BodyMap) from it, so the chip and the bar can never disagree
+   * about which muscle a row is (mezo-me75u.5).
+   */
+  token: string
+}
 
 export { dayTone }
 export type { DayTone }

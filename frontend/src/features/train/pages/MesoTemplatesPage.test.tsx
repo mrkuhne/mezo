@@ -43,7 +43,7 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.getByText('2 sablonból indíthatsz.')).toHaveClass('fo-hero-verdict')
     expect(screen.getByText(/Egy sablon a recept/)).toBeInTheDocument()
     // the big tilted template glyph of the hero
-    expect(document.querySelector('.fo-hero .er-art use')!.getAttribute('href')).toBe('#t-template')
+    expect(document.querySelector('.fo-hero .fo-hero-art use')!.getAttribute('href')).toBe('#t-template')
     // The fixture shelf: 2 templates, 1 run ever started out of them.
     expect(screen.getByText('2 sablon')).toBeInTheDocument()
     // 2 + 0: the PPL template's runCount covers both the active meso-hyp-04 and the closed
@@ -55,7 +55,7 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     const user = userEvent.setup()
     setup()
     const back = screen.getByRole('button', { name: 'Vissza' })
-    expect(back).toHaveClass('er-back')
+    expect(back).toHaveClass('fo-backpill')
     expect(back).toHaveTextContent('‹ Edzéstervek')
     await user.click(back)
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/konyvtar')

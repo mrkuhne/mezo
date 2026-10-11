@@ -94,7 +94,7 @@ export function ExercisePickerSheet({
     </>
   )
   const thumb = (e: ExerciseLibraryItem) => (
-    <ExerciseImage start={e.imageStartUrl} end={e.imageEndUrl} name={e.name} muscle={e.muscle} variant="thumb" />
+    <ExerciseImage start={e.imageStartUrl} name={e.name} muscle={e.muscle} />
   )
 
   return (

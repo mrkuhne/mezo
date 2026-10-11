@@ -32,7 +32,7 @@ export function DayLoadPanel({ day, minutes, onBack }: DayLoadPanelProps) {
 
   return (
     <Page className="ew-page">
-      <FrameBack className="ew-back" onBack={onBack}>‹ {day.type}</FrameBack>
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ {day.type}</FrameBack>
       <Hero
         className="ew-hero"
         label={`Napi terhelés · ${day.day} · ${day.type}`}
@@ -40,7 +40,7 @@ export function DayLoadPanel({ day, minutes, onBack }: DayLoadPanelProps) {
         sub={`${sets} szett · ~${minutes} perc · ${day.exercises.length} gyakorlat`}
       >
         {rows.length > 0 && (
-          <div className="ew-hg">
+          <div className="fo-hero-g ew-hg">
             <Tubes
               size="sm" height={92} gap={6}
               items={rows.map((r) => ({

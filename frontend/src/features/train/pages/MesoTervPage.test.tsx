@@ -53,7 +53,7 @@ test('the weeks stand as vessels: past full, this week ringed with done / planne
   expect(vials[2].querySelector('small')?.textContent).toBe('3. hétmost')
   expect(vials[4].querySelector('small')?.textContent).toBe('5. hétcsúcs')
   expect(vials[5].querySelector('small')?.textContent).toBe('6. hétpihenő')
-  expect(hero().querySelector('.ep-ft')).toHaveTextContent('heti szettszám')
+  expect(hero().querySelector('.fo-ft')).toHaveTextContent('heti szettszám')
   // no progress ring anywhere (bible rule 4)
   expect(document.querySelector('.pl-ring, circle')).toBeNull()
 })
@@ -160,7 +160,7 @@ describe('before the first workout', () => {
     expect(await screen.findByText('A hetek szettszáma az első edzésed után jelenik meg — addig a terv íve látszik.')).toBeInTheDocument()
     expect(tubes.querySelectorAll('.fo-vial')).toHaveLength(6)
     expect(tubes.querySelectorAll('.fo-vial > b')).toHaveLength(0)
-    expect(hero().querySelector('.ep-ft')).toHaveTextContent('a terv íve')
+    expect(hero().querySelector('.fo-ft')).toHaveTextContent('a terv íve')
   })
 })
 

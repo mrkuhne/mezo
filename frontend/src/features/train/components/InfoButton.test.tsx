@@ -5,7 +5,7 @@ import { InfoButton } from '@/features/train/components/InfoButton'
 
 // InfoButton (mezo-b516k, Task 1) — the Train explain layer's one primitive.
 // Since Folyadék F3 (mezo-n4wf5.3) it is the prototype's `info()` + `tinfo` sheet
-// (docs/design_2.0/prototypes/vilagos/edzes.js): a flat round ⓘ opening the kit's light InfoSheet.
+// (docs/design_2.0/prototypes/vilagos/edzes.js): a text link showing the title, opening the kit's light InfoSheet.
 
 const TITLE = 'Mit mutat a sáv?'
 const COPY =
@@ -19,16 +19,15 @@ function trigger() {
   return screen.getByRole('button', { name: `${TITLE} — mit jelent?` })
 }
 
-test('renders an icon-only button carrying the aria-label verbatim', () => {
+test('renders the kit text link showing the title, with the aria-label verbatim', () => {
   renderButton()
   const btn = trigger()
-  // `pl-info` stays for the layout probe's hit-box check; `ex-info` is the Folyadék chip
-  expect(btn).toHaveClass('pl-info', 'ex-info')
+  expect(btn).toHaveClass('fo-lk', 'ex-info-lk')
+  // the round ⓘ chip and its legacy class left with the approved prototype
+  expect(btn).not.toHaveClass('pl-info')
   expect(btn).toHaveAttribute('type', 'button')
-  // Icon-only: no visible text at all, only the aria-label (it sits inside an <h3>, where
-  // any rendered text would read as part of the heading).
-  expect(btn.textContent).toBe('')
-  expect(btn.querySelector('use')?.getAttribute('href')).toBe('#t-info')
+  expect(btn.textContent).toBe(TITLE)
+  expect(btn.querySelector('svg')).toBeNull()
 })
 
 test('the sheet is closed until the button is tapped', () => {
@@ -62,15 +61,22 @@ test('the open sheet carries the info bubble, the title and the copy paragraph',
   expect(within(dialog).getByText(COPY)).toHaveClass('fo-txt')
 })
 
-test('`eyebrow` puts the context line above the title; `link` shows the title as a text link with the same name', async () => {
+test('`eyebrow` puts the context line above the title; `icon` changes the sheet bubble', async () => {
   const user = userEvent.setup()
-  renderButton(<InfoButton title={TITLE} copy={COPY} eyebrow="Izomcsoportok" link />)
-  const btn = trigger()
-  expect(btn).toHaveClass('fo-lk')
-  expect(btn).not.toHaveClass('pl-info')
-  expect(btn.textContent).toBe(TITLE)
-  await user.click(btn)
-  expect(screen.getByRole('dialog', { name: TITLE }).querySelector('.fo-she span')?.textContent).toBe('Izomcsoportok')
+  renderButton(<InfoButton title={TITLE} copy={COPY} eyebrow="Izomcsoportok" icon="t-peak" />)
+  await user.click(trigger())
+  const dialog = screen.getByRole('dialog', { name: TITLE })
+  expect(dialog.querySelector('.fo-she span')?.textContent).toBe('Izomcsoportok')
+  expect(dialog.querySelector('.fo-shh .fo-bub use')?.getAttribute('href')).toBe('#t-peak')
+})
+
+test('`children` are drawn in the sheet under the copy', async () => {
+  const user = userEvent.setup()
+  renderButton(<InfoButton title={TITLE} copy={COPY}><p data-testid="drawn">12 szett megvan</p></InfoButton>)
+  expect(screen.queryByTestId('drawn')).not.toBeInTheDocument()
+  await user.click(trigger())
+  const dialog = screen.getByRole('dialog', { name: TITLE })
+  expect(within(dialog).getByText(COPY).nextElementSibling).toBe(within(dialog).getByTestId('drawn'))
 })
 
 test('Escape closes the sheet', async () => {

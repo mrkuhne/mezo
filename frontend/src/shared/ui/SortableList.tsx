@@ -35,6 +35,7 @@ export interface SortableListProps<T extends SortableItem> {
   chevrons?: 'always' | 'focus'
 }
 
+/** On a Folyadék card the list wears the kit's `.fo-sortable` dress (folyadek-kit.css): put the class on the wrapping `Card`. */
 export function SortableList<T extends SortableItem>({
   items,
   onReorder,

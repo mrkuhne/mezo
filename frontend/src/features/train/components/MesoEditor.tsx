@@ -199,7 +199,7 @@ export function MesoEditor({
       {!off && (
         <>
           <Section n={++n} title="Sorrend és előírás" />
-          <Card className="ee-list">
+          <Card className="fo-sortable ee-list">
             {day.exercises.length === 0 ? (
               <Note className="ee-none">Ezen a napon még nincs gyakorlat.</Note>
             ) : (

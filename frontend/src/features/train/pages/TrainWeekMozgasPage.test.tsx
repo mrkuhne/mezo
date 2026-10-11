@@ -136,7 +136,7 @@ test('renders the Minden mozgásod hero with the total minutes in its verdict an
   const [gym, sport] = tubes(container).map((t) => Number(/^(\d+) perc$/.exec(t.querySelector('b')!.textContent ?? '')?.[1]))
   expect(gym + sport).toBe(total)
   const back = screen.getByRole('button', { name: /Terhelés/ })
-  expect(back).toHaveClass('et-back')
+  expect(back).toHaveClass('fo-backpill')
   fireEvent.click(back)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week')
 })
@@ -274,7 +274,7 @@ test('the sport/futás event list renders each event\'s title, day/time and its 
   expect(first.querySelector('.et-event-title')?.textContent).not.toBe('')
   expect(first.querySelector('.et-event-when')?.textContent).not.toBe('')
   expect(first.querySelector('use')?.getAttribute('href')).toMatch(/^#t-/)
-  const loads = [...first.querySelectorAll('.et-evc em')]
+  const loads = [...first.querySelectorAll('.fo-evc em')]
   expect(loads.length).toBeGreaterThan(0)
   for (const l of loads) {
     expect(l.querySelectorAll('.fo-dm i')).toHaveLength(3)

@@ -48,7 +48,7 @@ export function SkippedBlock({ skip, inner, onReason, onUndo }: {
 }) {
   if (inner) {
     return (
-      <div className="em-in col">
+      <div className="fo-under col">
         <SkippedBox skip={skip} />
         <div className="em-skacts"><SkippedActs skip={skip} onReason={onReason} onUndo={onUndo} /></div>
       </div>
@@ -116,7 +116,7 @@ export function RecoveryBlock(p: {
 /** A protected occurrence under its row (prototype `kmIn()`): one quiet indented line. */
 export function KimeloInner() {
   return (
-    <div className="em-in em-kmin">
+    <div className="fo-under em-kmin">
       <span><Bub icon="t-kimelo" size={24} /> <b>{KIMELO.innerTitle}</b> · {KIMELO.innerSub}</span>
     </div>
   )
@@ -125,7 +125,7 @@ export function KimeloInner() {
 /** The next planned run during the comeback (prototype `rampOn` line): „Visszatérő futás". */
 export function RunRampInner() {
   return (
-    <div className="em-in em-rampin">
+    <div className="fo-under em-rampin">
       <span><Bub icon="t-sprout" size={24} /> <b>{KIMELO.runRampTitle}</b> · {KIMELO.runRamp}</span>
     </div>
   )

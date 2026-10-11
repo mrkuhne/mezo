@@ -84,7 +84,7 @@ test('onSkip: the Kihagyom link stands beside the action link', () => {
   const onSkip = vi.fn()
   const onLog = vi.fn()
   const { container } = render(<TodaySessionCard {...base} tone="run" onLog={onLog} onSkip={onSkip} />)
-  const cta = container.querySelector('.em-in.em-sess-cta')!
+  const cta = container.querySelector('.fo-under.em-sess-cta')!
   const buttons = [...cta.querySelectorAll('button')]
   expect(buttons.map((b) => b.textContent)).toEqual(['Naplózd a futást', 'Kihagyom'])
   expect(buttons.every((b) => b.classList.contains('fo-lk'))).toBe(true)
@@ -113,7 +113,7 @@ test('skipped: is-skip, the „Kihagyva" chip, the indented skipped box instead 
   expect(container.querySelector('.em-sess.is-skip')).toBeInTheDocument()
   expect(screen.getByText('Kihagyva')).toHaveClass('is-skip')
   expect(screen.queryByText('Most')).not.toBeInTheDocument()
-  expect(container.querySelector('.em-in.col .fo-box.em-skipd')).toBeInTheDocument()
+  expect(container.querySelector('.fo-under.col .fo-box.em-skipd')).toBeInTheDocument()
   expect(screen.getByText('Kihagyva · Fáradt vagyok')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
@@ -137,8 +137,8 @@ test('kimelo: the „Kímélő mód" chip, the calm kímélő line, no skip and 
   )
   expect(container.querySelector('.em-sess.is-skip')).toBeInTheDocument()
   expect(screen.getByText('Kímélő mód', { selector: '.fo-st' })).toHaveClass('is-skip', 'q')
-  expect(container.querySelector('.em-in.em-kmin use')?.getAttribute('href')).toBe('#t-kimelo')
-  expect(container.querySelector('.em-in.em-kmin')?.textContent).toContain('Kímélő mód · Magától kimarad · nem számít mulasztásnak.')
+  expect(container.querySelector('.fo-under.em-kmin use')?.getAttribute('href')).toBe('#t-kimelo')
+  expect(container.querySelector('.fo-under.em-kmin')?.textContent).toContain('Kímélő mód · Magától kimarad · nem számít mulasztásnak.')
   expect(screen.queryByText(/Kihagyva/)).toBeNull()
   expect(screen.queryByRole('button', { name: 'Kihagyom' })).toBeNull()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).toBeNull()
@@ -153,8 +153,8 @@ test('kimelo never hides a logged session', () => {
 test('rampNote: the „Visszatérő futás" line above the action', () => {
   const { container } = render(<TodaySessionCard {...base} tone="run" onLog={() => {}} rampNote />)
   expect(screen.getByText('Visszatérő futás')).toBeInTheDocument()
-  expect(container.querySelector('.em-in.em-rampin')?.textContent).toContain('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')
-  expect(container.querySelector('.em-in.em-rampin use')?.getAttribute('href')).toBe('#t-sprout')
+  expect(container.querySelector('.fo-under.em-rampin')?.textContent).toContain('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')
+  expect(container.querySelector('.fo-under.em-rampin use')?.getAttribute('href')).toBe('#t-sprout')
   expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
 })
 

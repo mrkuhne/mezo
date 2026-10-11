@@ -13,7 +13,7 @@ import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
 import { setStyle } from '@/features/train/logic/setBudget'
 import { formatDecimal, parseDecimal } from '@/features/train/logic/decimalInput'
-import { Mchp } from '@/features/train/components/folyadek'
+import { KnobLine, Mchp } from '@/features/train/components/folyadek'
 import { Note, Pill, Pills } from '@/shared/ui/folyadek'
 
 /** targetRIR values the two style buttons write — mirrors ExerciseAccordionRow's toggle. */
@@ -147,14 +147,14 @@ export function ExerciseCard({
           onCommit={(v) => onChange({ targetRIR: v ?? 0 })} />
       </div>
 
-      <div className="ew-sjl">
+      <KnobLine>
         <Pills>
           <Pill on={isFailure} onClick={() => onChange({ targetRIR: FAILURE_RIR })}>Failure</Pill>
           <Pill on={!isFailure} onClick={() => onChange({ targetRIR: VOLUME_RIR })}>Volume</Pill>
         </Pills>
         <NumField className="ew-bem" label="Bemelegítő szettek" value={ex.warmupSets} min={0} max={5}
           onCommit={(v) => onChange({ warmupSets: v ?? 0 })} />
-      </div>
+      </KnobLine>
 
       <Note>
         Hozzájárulás ·{' '}

@@ -33,9 +33,9 @@ test('with a reason: its glyph, the label, „Másik ok"; inner = the indented f
   )
   expect(screen.getByText('Kihagyva · Beteg vagyok')).toBeInTheDocument()
   expect(screen.getByText('Nem számít mulasztásnak. Jobbulást!')).toBeInTheDocument()
-  const block = container.querySelector('.em-in.col > .fo-box.em-skipd')!
+  const block = container.querySelector('.fo-under.col > .fo-box.em-skipd')!
   expect(hrefs(block)).toEqual(['#t-ill'])
-  expect(container.querySelector('.em-in.col > .em-skacts')).toBeInTheDocument()
+  expect(container.querySelector('.fo-under.col > .em-skacts')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Másik ok' })).toBeInTheDocument()
   const undo = screen.getByRole('button', { name: 'Visszavonom' })
   expect(undo).toHaveClass('fo-lk')
@@ -94,12 +94,12 @@ test('recovery variant: buttons disabled while a write is in flight', () => {
 
 test('kmInner: the indented kímélő line; the run-ramp line', () => {
   const { container, unmount } = render(<KimeloInner />)
-  const block = container.querySelector('.em-in.em-kmin')!
+  const block = container.querySelector('.fo-under.em-kmin')!
   expect(hrefs(block)).toEqual(['#t-kimelo'])
   expect(screen.getByText('Kímélő mód')).toBeInTheDocument()
   expect(block.textContent).toContain('Kímélő mód · Magától kimarad · nem számít mulasztásnak.')
   unmount()
   const r = render(<RunRampInner />)
-  expect(hrefs(r.container.querySelector('.em-in.em-rampin')!)).toEqual(['#t-sprout'])
-  expect(r.container.querySelector('.em-in.em-rampin')!.textContent).toContain('Visszatérő futás · Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')
+  expect(hrefs(r.container.querySelector('.fo-under.em-rampin')!)).toEqual(['#t-sprout'])
+  expect(r.container.querySelector('.fo-under.em-rampin')!.textContent).toContain('Visszatérő futás · Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')
 })

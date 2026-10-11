@@ -20,13 +20,7 @@ import type { SessionTone } from '@/features/train/logic/sportKinds'
 import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 import { SESSION_STATE_LABEL } from '@/features/train/logic/sessionState'
 import { KIMELO } from '@/features/train/logic/skipCopy'
-
-/** The wire labels are upper-case („FUTÁS", „MOST"); on white they read as words („Futás", „Most"). */
-const KEEP_CAPS = new Set(['TRX'])
-export function sentenceCase(s: string): string {
-  if (KEEP_CAPS.has(s) || s !== s.toLocaleUpperCase('hu')) return s
-  return s.charAt(0) + s.slice(1).toLocaleLowerCase('hu')
-}
+import { sentenceCase } from '@/shared/lib/huText'
 
 interface TodaySessionCardProps {
   tone: SessionTone
@@ -102,7 +96,7 @@ export function TodaySessionCard({
       )
     }
     return (
-      <Hero className={cn(cls, 'em-sess-hero')}
+      <Hero big className={cn(cls, 'em-sess-hero')}
         label={[eyebrow, time, sentenceCase(tag)].filter(Boolean).join(' · ')}
         verdict={name}
         sub={state || rest ? <>{state && <span className={stateCls}>{state}</span>}{state && rest ? ' · ' : ''}{rest}</> : undefined}
@@ -153,7 +147,7 @@ export function TodaySessionCard({
         <>
           {rampNote && <RunRampInner />}
           {(interactive || onSkip) && (
-            <div className="em-in em-sess-cta">
+            <div className="fo-under em-sess-cta">
               {interactive && <Lk onClick={onLog}>{ctaLabel}</Lk>}
               {onSkip && <Lk onClick={onSkip}>{skipLabel}</Lk>}
             </div>

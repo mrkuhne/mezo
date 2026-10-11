@@ -8,22 +8,20 @@
 // második szerkesztő).
 // ============================================================
 import type { Dispatch } from 'react'
-import type { MesoPhase } from '@/data/types'
+import { DAY_ORDER } from '@/data/train/train'
+import { MesoTubes } from '@/features/train/components/MesoTubes'
+import { DAY_SHORT } from '@/features/train/components/WeekdayGrid'
 import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
 import { phaseCurve, splitLine, weekTotals } from '@/features/train/logic/mesoPlan'
 import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
 import {
-  Acts, Box, Btn, Card, Facts, FrameBack, Hero, Lk, Note, Page, Pill, Pills, Section, TextArea, Tubes, Txt, useFrameTitle,
+  Acts, Box, Btn, Card, Facts, FrameBack, Hero, Lk, Note, Page, Pill, Pills, Section, TextArea, Txt, useFrameTitle,
 } from '@/shared/ui/folyadek'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
 
-/** The prototype's 7 round chips — short label per DAY_ORDER token. */
-const DAY_CHIPS: { day: string; short: string }[] = [
-  { day: 'Hét', short: 'H' }, { day: 'Kedd', short: 'K' }, { day: 'Sze', short: 'Sze' },
-  { day: 'Csü', short: 'Cs' }, { day: 'Pén', short: 'P' }, { day: 'Szo', short: 'Szo' },
-  { day: 'Vas', short: 'V' },
-]
+/** The prototype's 7 weekday vessels — the one list of day letters (`DAY_SHORT`) over the DAY_ORDER tokens. */
+const DAY_CHIPS = DAY_ORDER.map((day, i) => ({ day: day as string, short: DAY_SHORT[i] as string }))
 
 const COUNTS: { n: number; sub: string }[] = [
   { n: 2, sub: 'full body' }, { n: 3, sub: 'full body' }, { n: 4, sub: 'upper/lower' },
@@ -37,9 +35,6 @@ const WEEK_CHOICES = [4, 5, 6, 7, 8]
 function canGenerate(state: WizardState): boolean {
   return state.daysOfWeek.length >= 2 && state.daysOfWeek.length <= 6
 }
-
-/** How high the waterline of a week stands in the hero's arc (prototype `PH_H`): the phase's weight, not a set count. */
-const PHASE_LEVEL: Record<MesoPhase, number> = { MEV: 34, MAV: 66, MRV: 100, Deload: 26 }
 
 interface InterviewStepProps {
   state: WizardState
@@ -59,7 +54,6 @@ export function InterviewStep({ state, dispatch, onGenerate, generating, failed 
 
   const gateOpen = canGenerate(state)
   const curve = phaseCurve(state.weeks)
-  const short = curve.length > 6
   const [splitHead, splitBody] = splitLine(days).split(' · ')
 
   useFrameTitle({ title: 'Új terv', eyebrow: 'Pár kérdés' })
@@ -73,7 +67,7 @@ export function InterviewStep({ state, dispatch, onGenerate, generating, failed 
         </Btn>
       )}
     >
-      {onBack && <FrameBack className="ew-back" onBack={onBack}>‹ Terv</FrameBack>}
+      {onBack && <FrameBack className="fo-backpill" onBack={onBack}>‹ Terv</FrameBack>}
       <Hero
         className="ew-hero"
         label="Új terv"
@@ -87,20 +81,9 @@ export function InterviewStep({ state, dispatch, onGenerate, generating, failed 
             </Box>
           </div>
         )}
-        <div className="ew-hg">
-          <Tubes
-            size="wk" height={64} gap={short ? 4 : 6}
-            aria-label={`A terv íve: ${state.weeks - 1} emelkedő hét és egy pihenőhét`}
-            items={curve.map((ph, i) => ({
-              label: short ? `${i + 1}.` : `${i + 1}. hét`,
-              note: ph === 'Deload' ? 'pihenő' : ph === 'MRV' ? 'csúcs' : undefined,
-              pct: 0,
-              wl: PHASE_LEVEL[ph] * 0.94,
-              ghost: true,
-              hatch: ph === 'Deload',
-              mark: ph === 'Deload' ? '↓' : ph === 'MRV' ? '▲' : undefined,
-            }))}
-          />
+        <div className="fo-hero-g ew-hg">
+          <MesoTubes curve={curve} now={0} height={64}
+            ariaLabel={`A terv íve: ${state.weeks - 1} emelkedő hét és egy pihenőhét`} />
         </div>
         <Note>{state.weeks} hét = {state.weeks - 1} emelkedő hét + 1 pihenőhét</Note>
       </Hero>

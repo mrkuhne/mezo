@@ -78,7 +78,7 @@ export function RunningBlockBuilderPage() {
   useFrameTitle({ title: block ? (draft.title || block.title) : 'Futóterv', eyebrow: 'Edzés · Futás' })
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const back = <FrameBack onBack={backToList} className="es-back">‹ Futás</FrameBack>
+  const back = <FrameBack onBack={backToList} className="fo-backpill">‹ Futás</FrameBack>
 
   if (!block) {
     return (
@@ -197,7 +197,7 @@ export function RunningBlockBuilderPage() {
               <div className="es-vl">
                 <Row icon="t-repeat" title="Duplikálás"
                   onClick={() => { close(); saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList }) }} />
-                <Row icon="t-trash" className="es-danger" title="Törlés"
+                <Row icon="t-trash" bad title="Törlés"
                   onClick={() => { close(); deleteRunningBlock(block.id, { onSuccess: backToList }) }} />
               </div>
             </>

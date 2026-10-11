@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { SportPage, outOf } from '@/features/train/pages/SportPage'
+import { SportPage } from '@/features/train/pages/SportPage'
+import { outOf } from '@/shared/lib/huText'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
@@ -43,11 +44,11 @@ test('hero says the verdict — logged of scheduled — and draws the week as se
   expect(container.querySelector('.fo-hero-lbl')).toHaveTextContent('Sport · ezen a héten')
   // logged-this-week out of the scheduled slots — both derived, never fabricated
   expect(container.querySelector('.fo-hero-verdict')?.textContent).toMatch(/^\d+ session megvolt a \d+-b[óő]l ezen a héten\.$/)
-  const tubes = container.querySelectorAll('.fo-hero .es-hg .fo-vial')
+  const tubes = container.querySelectorAll('.fo-hero .fo-hero-g .fo-vial')
   expect(tubes).toHaveLength(7)
   // a free day is a hatched tube, a scheduled day carries its minutes and its start time
-  expect(container.querySelectorAll('.fo-hero .es-hg .fo-vial.hatch').length).toBeGreaterThan(0)
-  expect(container.querySelector('.fo-hero .es-hg .fo-vial:not(.hatch) b')?.textContent).toMatch(/^\d+′$/)
+  expect(container.querySelectorAll('.fo-hero .fo-hero-g .fo-vial.hatch').length).toBeGreaterThan(0)
+  expect(container.querySelector('.fo-hero .fo-hero-g .fo-vial:not(.hatch) b')?.textContent).toMatch(/^\d+′$/)
   expect(screen.queryByText(/RPE = Rate of Perceived Exertion/)).not.toBeInTheDocument()
 })
 
@@ -279,7 +280,7 @@ test('real mode: a day with TRX + volleyball slots renders both rows with sport 
   // Folyadék: the hours read with the Hungarian decimal comma (prototype `d1`).
   expect(screen.getByRole('heading', { name: /Heti ritmus · 2,5 ó/ })).toBeInTheDocument()
   // both slots share Tuesday: one tube, the two sessions' minutes together, the first one's time
-  const tube = document.body.querySelectorAll('.fo-hero .es-hg .fo-vial')[1]
+  const tube = document.body.querySelectorAll('.fo-hero .fo-hero-g .fo-vial')[1]
   expect(tube.querySelector('b')).toHaveTextContent('150′')
   expect(tube.querySelector('em')).toHaveTextContent('12:00')
 })

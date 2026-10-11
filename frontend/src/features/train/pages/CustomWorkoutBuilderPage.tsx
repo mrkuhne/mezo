@@ -90,7 +90,7 @@ export function CustomWorkoutBuilderPage() {
   })
 
   useFrameTitle({ title: existing || id ? 'Saját edzés' : 'Új saját edzés', eyebrow: 'Edzés' })
-  const back = <FrameBack history fallback="/train/gym" className="ee-back">‹</FrameBack>
+  const back = <FrameBack history fallback="/train/gym" className="fo-backpill">‹</FrameBack>
 
   // An id that resolves to nothing is either still loading or gone — never an empty "new" form.
   if (id && !existing) {
@@ -115,7 +115,7 @@ export function CustomWorkoutBuilderPage() {
           <>
             <Btn disabled={!valid || savePending} onClick={startNow}>Indítás ma</Btn>
             <Btn ghost disabled={!valid || savePending} onClick={() => save(() => goBack())}>Mentés</Btn>
-            {hint && <p className="ee-hint">{hint}</p>}
+            {hint && <Note>{hint}</Note>}
           </>
         )}>
         <Lab htmlFor="cw-name">Edzés neve</Lab>
@@ -129,7 +129,7 @@ export function CustomWorkoutBuilderPage() {
       </Hero>
 
       <Section n={1} title={`Gyakorlatok · ${exercises.length} gyakorlat · ${totalSets} szett`} />
-      <Card className="ee-list">
+      <Card className="fo-sortable ee-list">
         {exercises.length === 0 ? (
           <EmptyTank icon="t-dumbbell">
             Még nincs gyakorlat. Add hozzá az elsőt — kap egy jó alapbeállítást, amit utána finomíthatsz.

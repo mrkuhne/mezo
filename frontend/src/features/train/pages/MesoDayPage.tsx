@@ -55,7 +55,7 @@ export function MesoDayPage() {
     : 'A terved'
   useFrameTitle({ title: day ? `${day.type} nap` : 'A nap', eyebrow: context })
 
-  const back = <FrameBack history fallback={`/train/mesocycles/${id}`} className="ep-back">‹ A terved</FrameBack>
+  const back = <FrameBack history fallback={`/train/mesocycles/${id}`} className="fo-backpill">‹ A terved</FrameBack>
 
   // Real mode: the plan list is still in flight — wait, do not accuse the link.
   if (workoutPending) return <Page className="ep-page">{back}<Skel blocks={DAY_SKELETON_BLOCKS} /></Page>
@@ -108,7 +108,7 @@ export function MesoDayPage() {
             ))}
             <Legend items={[{ kind: 'line', label: 'nyolc szett: fölötte már nem hoz többet' }]} />
             <Acts>
-              <InfoButton link eyebrow="Mit terhel ez a nap" title="Miért nyolcnál a jelölés?"
+              <InfoButton eyebrow="Mit terhel ez a nap" title="Miért nyolcnál a jelölés?"
                 copy="Egy izomra egy edzésen belül nagyjából nyolc szett fölött már nem hoz többet a munka. Nem tiltás — csak egy jelölés, hogy lásd, hol jársz." />
             </Acts>
           </Card>
@@ -142,7 +142,7 @@ export function MesoDayPage() {
             `?add=1` opens the picker on arrival so this link still adds an exercise. */}
         <Acts>
           <Lk onClick={() => navigate(`${editRoute}?add=1`)}>＋ Gyakorlat hozzáadása</Lk>
-          <InfoButton link eyebrow="A nap gyakorlatai" title="Mikortól él a változtatás?"
+          <InfoButton eyebrow="A nap gyakorlatai" title="Mikortól él a változtatás?"
             copy="Amit itt átírsz, a következő edzésedtől számít. A most futó edzésedet nem írja át — azt végigviszed úgy, ahogy elkezdted." />
         </Acts>
       </Card>

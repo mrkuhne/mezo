@@ -88,12 +88,12 @@ import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { runStars } from '@/features/train/logic/libraryStory'
 import { InfoButton } from '@/features/train/components/InfoButton'
-import { Mchp, Rcap, deepMuscle } from '@/features/train/components/folyadek'
+import { Mchp, Rcap, StarRow, deepMuscle } from '@/features/train/components/folyadek'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import type { Icon3DName } from '@/shared/ui/clay'
 import {
-  Acts, Btn, Bub, Card, Chev, EmptyTank, Facts, Fill, FrameBack, Hero, Lab, Legend, LevelMarks, Lk, Note, Page, Row,
+  Acts, Btn, Bub, Card, EmptyTank, Facts, Fill, FrameBack, Hero, Lab, Legend, LevelMarks, Lk, Note, Page, Row,
   Section, Skel, Tags, Tubes, Txt, useFrameTitle,
 } from '@/shared/ui/folyadek'
 
@@ -149,35 +149,6 @@ function peakBands(arcs: MuscleVolumeArc[]): PeakBandRow[] {
 }
 
 // --- the star hero + then-vs-now (T10 Task 4, mezo-88iwa.11) ---
-
-/** Hungarian decimal comma for the stars' screen-reader label (the ceremony's own idiom). */
-const huStars = (stars: number): string => String(stars).replace('.', ',')
-
-/**
- * Five stars, halves included — the full, half and empty star glyphs of the sprite
- * (prototype `stars5`), the same halves the workout ceremony's row draws.
- */
-function StarRow({ stars }: { stars: number }) {
-  return (
-    <span className="er-stars" role="img" aria-label={`${huStars(stars)} csillag az ötből`}>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <Icon3D key={i} name={stars >= i + 1 ? 't-star' : stars >= i + 0.5 ? 't-star-half' : 't-star-empty'} size={18} />
-      ))}
-    </span>
-  )
-}
-
-/** A live action as a row: a real button, so it can be `disabled` while a mutation runs (the kit
- *  Row has no such state) — the kit row's own markup and classes. */
-function ActRow(p: { icon: Icon3DName; title: string; onClick: () => void; disabled?: boolean }) {
-  return (
-    <button type="button" className="fo-row er-act" disabled={p.disabled} onClick={p.onClick}>
-      <span className="si"><Icon3D name={p.icon} size={26} /></span>
-      <span className="g"><strong>{p.title}</strong></span>
-      <Chev />
-    </button>
-  )
-}
 
 /** One muscle, twice: what it peaked at in the closed run, what the active plan gives it now. */
 export interface VersusPair {
@@ -372,7 +343,7 @@ export function MesoReportPage() {
   const span = report ? `${day(report.startDate)}${report.endDate ? ` – ${day(report.endDate)}` : ''}` : null
 
   useFrameTitle({ title, eyebrow: span ? `Lezárt futam · ${span}` : 'Lezárt futam' })
-  const back = <FrameBack className="er-back" onBack={goBack}>Vissza</FrameBack>
+  const back = <FrameBack className="fo-backpill" onBack={goBack}>Vissza</FrameBack>
   /** One empty vessel: every state without a report (prototype `ghost`). */
   const ghost = (icon: Icon3DName, text: string, action?: { label: string; onClick: () => void }) => (
     <Page className="er-page">
@@ -478,7 +449,6 @@ export function MesoReportPage() {
             ]} />
             <Acts>
               <InfoButton
-                link
                 eyebrow="Izmonként"
                 title="Hogyan olvasd?"
                 copy="Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét."
@@ -609,7 +579,7 @@ export function MesoReportPage() {
                 {report.aiEvalStatus === 'ready' && report.aiEval ? (
                   <>
                     {report.aiEval.split(/\n\n+/).map((para, i) => <Txt key={i}>{para}</Txt>)}
-                    <div className="er-in">
+                    <div className="fo-under flush">
                       {report.aiEvalGeneratedAt && <span>{`Generálva · ${day(report.aiEvalGeneratedAt)}`}</span>}
                       <Lk onClick={fireRegenerate} disabled={regenerating}>
                         {regenerating ? 'Riport készül…' : 'Újragenerálás'}
@@ -617,9 +587,9 @@ export function MesoReportPage() {
                     </div>
                   </>
                 ) : report.aiEvalStatus === 'pending' ? (
-                  <div className="er-in"><span><Bub icon="t-flask" size={24} /> Az értékelés készül…</span></div>
+                  <div className="fo-under flush"><span><Bub icon="t-flask" size={24} /> Az értékelés készül…</span></div>
                 ) : (
-                  <div className="er-in">
+                  <div className="fo-under flush">
                     <span>Nem sikerült az értékelés.</span>
                     <Lk onClick={fireRegenerate} disabled={regenerating}>
                       {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
@@ -633,8 +603,8 @@ export function MesoReportPage() {
 
         {/* The closed run's other live affordances. The fork is only offered once the run itself
             resolved — it copies its DAY PLAN, which lives on the run, not in the frozen report. */}
-        {meso && <ActRow icon="t-template" title="Sablon mentése ebből a futamból" onClick={saveAsTemplate} />}
-        <ActRow
+        {meso && <Row icon="t-template" title="Sablon mentése ebből a futamból" onClick={saveAsTemplate} />}
+        <Row
           icon="t-repeat"
           title={regenerating ? 'Riport készül…' : 'Riport újragenerálása'}
           disabled={regenerating}

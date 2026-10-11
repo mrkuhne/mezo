@@ -4,7 +4,7 @@
 // A régi csempe mini-gauge-ai a hero edényeibe költöztek; itt a szám és a jelzések száma maradt.
 // A napi terhelést a nap-arc hero-gombja nyitja.
 // ============================================================
-import { Chev, Row, St } from '@/shared/ui/folyadek'
+import { Row, St } from '@/shared/ui/folyadek'
 
 interface LoadTileProps {
   title: string
@@ -22,7 +22,8 @@ export function LoadTile({ title, value, unit, flags = 0, onOpen }: LoadTileProp
       icon="t-muscle"
       title={title}
       sub={`${value} ${unit}`}
-      right={<span className="ew-end">{flags > 0 && <St tone="warn">{flags} jelzés</St>}<Chev /></span>}
+      right={flags > 0 ? <St tone="warn">{flags} jelzés</St> : undefined}
+      chev
       onClick={onOpen}
     />
   )

@@ -16,13 +16,10 @@
 // ============================================================
 import { useMedals } from '@/data/hooks'
 import type { Medal } from '@/data/train/medalTypes'
+import { MedalRow } from '@/features/train/components/folyadek'
+import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import {
-  MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel,
-} from '@/features/train/logic/medalLabels'
-import { Rcap } from '@/features/train/components/folyadek'
-import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
-import {
-  Card, EmptyTank, FrameBack, Hero, Lab, Legend, Note, Page, Row, Section, Skel, St, Tags, useFrameTitle,
+  Card, EmptyTank, FrameBack, Hero, Lab, Legend, Note, Page, Section, Skel, Tags, useFrameTitle,
 } from '@/shared/ui/folyadek'
 
 interface DateGroup { date: string; medals: Medal[] }
@@ -39,45 +36,6 @@ function groupByDate(medals: Medal[]): DateGroup[] {
   return [...byDate.entries()]
     .sort(([a], [b]) => (a < b ? 1 : a > b ? -1 : 0))
     .map(([date, ms]) => ({ date, medals: ms }))
-}
-
-/** Where the old record stood inside the new one, in % — the capsule's dashed line. Only when
- *  both numbers are real and comparable (a RECORD with a positive previous value). */
-function previousShare(medal: Medal): number | null {
-  if (medal.tier !== 'RECORD' || medal.previousValue == null || !(medal.value > 0) || medal.previousValue <= 0) return null
-  return (medal.previousValue / medal.value) * 100
-}
-
-/** One medal as a row (prototype `medalRow`). `titled="exercise"` names the exercise and puts the
- *  medal's kind under it (the cabinet); `titled="type"` names the kind and puts the date under it
- *  (the exercise's own page, where the name would only repeat the title). */
-export function MedalRow({ medal, titled = 'exercise', date }: { medal: Medal; titled?: 'exercise' | 'type'; date?: string }) {
-  const tier = MEDAL_TIER_COPY[medal.tier]
-  const typeLabel = MEDAL_TYPE_LABEL[medal.type] ?? medal.type
-  const target = medal.tier === 'TARGET'
-  return (
-    <Row
-      className="er-medal"
-      data-tier={medal.tier}
-      left={target ? <Rcap color="var(--fo-ok)" /> : <Rcap prev={previousShare(medal)} />}
-      title={<>{titled === 'exercise' ? medal.exerciseName : typeLabel} <St tone={target ? 'ok' : 'warn'}>{tier.tag}</St></>}
-      sub={(
-        <>
-          <span>{titled === 'exercise' ? typeLabel : date}</span>
-          {/* RECORD only — TARGET_HIT never carries a previousValue (nothing beaten).
-              previousDate can be null (mock-mode medalEvaluator shape) — drop the
-              "…óta állt" clause cleanly rather than render a dangling date. */}
-          {medal.tier === 'RECORD' && medal.previousValue != null && (
-            <span className="er-prev">
-              {`Előző: ${formatMedalNumber(medal.previousValue)} ${MEDAL_UNIT_LABEL[medal.unit] ?? ''}`.trim()}
-              {medal.previousDate ? ` · ${huMonthDay(medal.previousDate)} óta állt` : ''}
-            </span>
-          )}
-        </>
-      )}
-      value={medalValueLabel(medal)}
-    />
-  )
 }
 
 function Groups({ groups }: { groups: DateGroup[] }) {
@@ -98,7 +56,7 @@ function Groups({ groups }: { groups: DateGroup[] }) {
 export function MedalsPage() {
   const { data: medals, isPending } = useMedals()
   useFrameTitle({ title: 'Medálok', eyebrow: 'Edzés' })
-  const back = <FrameBack className="er-back" history fallback="/train">‹ Edzés</FrameBack>
+  const back = <FrameBack className="fo-backpill" history fallback="/train">‹ Edzés</FrameBack>
 
   if (isPending) return <Page className="er-page">{back}<Skel blocks={[230, 64, 150, 150]} /></Page>
 

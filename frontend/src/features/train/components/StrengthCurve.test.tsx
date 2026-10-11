@@ -39,7 +39,7 @@ test('the caption carries the YEAR on a date old enough to be misread', () => {
   const { container } = render(
     <StrengthCurve points={[{ date: '2025-09-03', e1rm: 100 }, { date: '2026-09-01', e1rm: 120 }]} />,
   )
-  expect(container.querySelector('.er-ft')!.textContent).toContain('2025. Szep 3 óta')
+  expect(container.querySelector('.fo-ft')!.textContent).toContain('2025. Szep 3 óta')
   expect(screen.getByRole('img').getAttribute('aria-label')).toContain('2025. Szep 3 óta')
 })
 

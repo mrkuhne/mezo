@@ -166,7 +166,7 @@ test('rest day: the hero draws the week as seven tubes and offers the Saját edz
     const { container } = renderView()
     const hero = container.querySelector('.fo-hero.em-rest') as HTMLElement
     expect(within(hero).getByText('Ma pihenőnap van.')).toBeInTheDocument()
-    const tubes = [...hero.querySelectorAll('.em-hg .fo-tubes .fo-vial')]
+    const tubes = [...hero.querySelectorAll('.fo-hero-g .fo-tubes .fo-vial')]
     expect(tubes).toHaveLength(7)
     expect(tubes.some((t) => t.classList.contains('hatch'))).toBe(true)
     expect(within(hero).getByRole('button', { name: '+ Saját edzés' })).toBeInTheDocument()

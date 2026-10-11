@@ -41,7 +41,8 @@ import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { cn } from '@/shared/lib/cn'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { outOf } from '@/shared/lib/huText'
+import type { Icon3DName } from '@/shared/ui/clay'
 import { Acts, Big, Box, Btn, Bub, Card, Head, Hero, Legend, Lk, Note, Page, Pair, Row, Section, Split, Tubes, useFrameTitle, type VialItem } from '@/shared/ui/folyadek'
 import { BodyLiq, MuscleRow, MuscleTags, deepMuscle, type BodyLiqEntry } from '@/features/train/components/folyadek'
 import { shapesFor } from '@/features/train/logic/bodyMapShapes'
@@ -107,13 +108,6 @@ function topMuscle(plan: MuscleSets[]): string | null {
   const by = new Map<string, number>()
   for (const e of plan) by.set(e.muscle, (by.get(e.muscle) ?? 0) + e.sets)
   return [...by.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
-}
-
-/** „16-ból" / „12-ből": the elative suffix after a number, by Hungarian vowel harmony. */
-function outOf(n: number): string {
-  const units = n % 10, tens = Math.floor(n / 10) % 10
-  const back = units !== 0 ? [3, 6, 8].includes(units) : tens !== 0 ? [2, 3, 6, 8].includes(tens) : n !== 0
-  return `${n}-${back ? 'ból' : 'ből'}`
 }
 
 /** The hero's caption under the body: whose turn it is today, by the day's heaviest region. */
@@ -240,16 +234,14 @@ export function TrainTodayPage() {
       <Page className="em-page em-nomeso">
         {/* prototype `mai('ures')`: the page's hero is the invitation itself — the peak (the
             mesocycle's meaning) beside the sentence, the two doors on the liquid row. */}
-        <Hero className="em-arthero" label="Mai nap" verdict="Itt fog élni a mai edzésed."
+        <Hero art="t-peak" label="Mai nap" verdict="Itt fog élni a mai edzésed."
           sub="Előbb tervezz egy mesociklust."
           actions={(
             <>
               <Btn onClick={() => navigate('/train/mesocycles/new')}>+ Tervezz mesociklust</Btn>
               <Lk onClick={() => setCustomOpen(true)}>+ Saját edzés</Lk>
             </>
-          )}>
-          <span className="em-art" aria-hidden="true"><Icon3D name="t-peak" size={96} /></span>
-        </Hero>
+          )} />
         {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       </Page>
     )
@@ -642,6 +634,7 @@ export function TrainTodayPage() {
         gymHero = (
           <Hero
             key="hero-gym"
+            big
             className={cn('em-hero rise', heroState === 'done' ? 'is-done' : heroState === 'live' && 'is-live',
               (heroSkip || protectedPlan) && 'is-skip', protectedPlan && 'is-km', comeback && 'is-cbk')}
             style={rise(120)}
@@ -703,7 +696,7 @@ export function TrainTodayPage() {
                 <Box icon="t-kimelo" className="em-kmrel" title={releasedLight ? relTitle : KIMELO.releasedFull}>
                   {releasedLight && relBody ? <p>{relBody.charAt(0).toLocaleUpperCase('hu') + relBody.slice(1)}.</p> : null}
                 </Box>
-                <div className="em-in em-kmrel-acts">
+                <div className="fo-under em-kmrel-acts">
                   <Lk disabled={recoveryBusy} onClick={() => onUnrelease(shownIso)}>Mégse</Lk>
                   {releasedLight && (
                     <Lk disabled={recoveryBusy} onClick={() => onFullLoad(shownIso)}>Kikapcsolom a könnyítést</Lk>
@@ -956,7 +949,7 @@ export function TrainTodayPage() {
   if (!hero && resumeOpen) {
     const n = todaySession!.openWorkout!.sets.filter((s) => !s.skipped).length
     hero = (
-      <Hero className="em-resume rise" style={rise(120)} label="Saját edzés · folyamatban"
+      <Hero big className="em-resume rise" style={rise(120)} label="Saját edzés · folyamatban"
         verdict={<span className="em-hero-title">{workout!.title}</span>}
         sub={<span className="em-hero-state">Folyamatban · {n} szett kész</span>}
         left={<Bub icon="t-dumbbell" size={60} />}
@@ -995,15 +988,13 @@ export function TrainTodayPage() {
         sub="Nincs tervezett edzés mára — a heti rended a Terv fülön találod."
         left={<Bub icon="t-moon" size={56} />}
         actions={<Btn onClick={() => setCustomOpen(true)}>+ Saját edzés</Btn>}>
-        <div className="em-hg"><Tubes items={weekTubes} height={96} size="wk" gap={6} aria-label="A heted" /></div>
+        <div className="fo-hero-g"><Tubes items={weekTubes} height={96} size="wk" gap={6} aria-label="A heted" /></div>
         <Note>A heted: a teli edények megvoltak, a szaggatott vonal a még hátralévő napok terve.</Note>
       </Hero>
     ) : (
-      <Hero className="em-rest em-arthero rise" style={rise(120)}
+      <Hero className="em-rest rise" style={rise(120)} art="t-moon"
         label={`${dayFull}${shownDay?.date ? ` · ${huMonthDay(shownDay.date).toLocaleLowerCase('hu')}.` : ''}`}
-        verdict="Ezen a napon nincs tervezett edzés.">
-        <span className="em-art" aria-hidden="true"><Icon3D name="t-moon" size={96} /></span>
-      </Hero>
+        verdict="Ezen a napon nincs tervezett edzés." />
     )
   }
 

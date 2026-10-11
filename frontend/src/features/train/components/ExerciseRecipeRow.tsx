@@ -8,7 +8,8 @@
 // ============================================================
 import type { GymExercise } from '@/data/types'
 import { countsForVolume } from '@/features/train/logic/setBudget'
-import { AnchorLine, ExRowHead, StepLine, VolumeSwitch, kgText } from '@/features/train/components/ExerciseAccordionRow'
+import { ExRowHead } from '@/features/train/components/ExerciseAccordionRow'
+import { AnchorLine, KnobPanel, StepLine, VolumeSwitch, kgText } from '@/features/train/components/folyadek'
 import { Acts, Lab, Lk } from '@/shared/ui/folyadek'
 
 export function recipeSummary(ex: GymExercise): string {
@@ -38,7 +39,7 @@ export function ExerciseRecipeRow({ ex, open, onToggle, onRemove, onChange, onMo
     <div className="ee-ex">
       <ExRowHead ex={ex} open={open} onToggle={onToggle} controls={panelId} summary={recipeSummary(ex)} />
       {open && (
-        <div className="ee-sjp" id={panelId}>
+        <KnobPanel className="ee-sjp" id={panelId}>
           <Lab>Szettek</Lab>
           {step('Bemelegítő', 'Bemelegítő', 'warmupSets', 0, 10)}
           {step('Munka', 'Working', 'workingSets', 1, 10)}
@@ -52,9 +53,9 @@ export function ExerciseRecipeRow({ ex, open, onToggle, onRemove, onChange, onMo
           <Acts>
             <Lk disabled={!onMoveUp} onClick={onMoveUp}>Feljebb</Lk>
             <Lk disabled={!onMoveDown} onClick={onMoveDown}>Lejjebb</Lk>
-            <Lk className="ee-bad" aria-label={`${n} törlése`} onClick={onRemove}>Kivesz</Lk>
+            <Lk bad aria-label={`${n} törlése`} onClick={onRemove}>Kivesz</Lk>
           </Acts>
-        </div>
+        </KnobPanel>
       )}
     </div>
   )

@@ -123,7 +123,7 @@ export function ExercisesPage() {
                 </>
               )}
               more={row.bestE1rm != null && topE1rm > 0 && (
-                <span className="er-rowbar"><Level pct={(row.bestE1rm / topE1rm) * 100} color={deepMuscle(row.muscle)} height={10} /></span>
+                <span className="fo-rowbar"><Level pct={(row.bestE1rm / topE1rm) * 100} color={deepMuscle(row.muscle)} height={10} /></span>
               )}
               // Logged, but the estimate can still be unknowable (bodyweight-only history,
               // every set above the rep cap) → an em dash, never a 0.

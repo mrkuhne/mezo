@@ -57,7 +57,7 @@ describe('MesoReportPage (mock mode · the meso-rec-03 fixture report)', () => {
   it('draws its own back control where no title bar is mounted, neutrally labeled', () => {
     renderAt('meso-rec-03')
     const back = screen.getByRole('button', { name: 'Vissza' })
-    expect(back).toHaveClass('er-back')
+    expect(back).toHaveClass('fo-backpill')
     expect(back).toHaveTextContent('Vissza')
   })
 

@@ -1,4 +1,4 @@
-export { Hero, type HeroProps } from './Hero'
+export { Hero, HeroGraphic, Ft, type HeroProps } from './Hero'
 export { Section } from './Section'
 export { Card } from './Card'
 export { Row, Chev, type RowProps } from './Row'

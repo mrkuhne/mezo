@@ -59,13 +59,13 @@ export function MesoKonyvtarPage() {
 
   return (
     <Page className="ep-page">
-      <FrameBack className="ep-back" history fallback="/train/mesocycles">‹ A terved</FrameBack>
+      <FrameBack className="fo-backpill" history fallback="/train/mesocycles">‹ A terved</FrameBack>
       <Hero data-kalauz-anchor="konyvtar-hero" label="Edzéstervek" verdict="Itt élnek a terveid."
         sub="Ami fut, ami jön, és ami már mögötted van."
         actions={(
           <>
             <Btn onClick={() => navigate('/train/mesocycles/new')}>Új terv összeállítása</Btn>
-            <Note className="ep-actnote">Sablonból indulsz, vagy nulláról építed</Note>
+            <Note>Sablonból indulsz, vagy nulláról építed</Note>
           </>
         )}>
         {queue.length > 0 && (
@@ -114,7 +114,7 @@ export function MesoKonyvtarPage() {
               return (
                 // No one-tap activation here — the row opens the plan's own page, whose dated
                 // „Aktiválás · <date>" button is the deliberate path; the line below says what „opens" means.
-                <div key={m.id} className="ep-log">
+                <div key={m.id} className="fo-log ep-log">
                   <Row icon="t-calendar" title={m.title} sub={splitHead(m.split)} value={`${huDate(m.startDate)}-tól`}
                     aria-label={`Tervezett · ${m.title}`} onClick={() => openRun(m.id)} />
                   <Facts items={[[m.weeks, 'hét'], ...(freq ? [[freq.replace('/hét', ''), 'hetente'] as [string, string]] : [])]} />

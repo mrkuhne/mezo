@@ -402,7 +402,7 @@ export function NapMezoPage() {
   const replyNo = olderRows.length > 0 ? olderNo + 1 : olderNo
   return (
     <Page className="nb-page">
-      <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
+      <FrameBack history className="fo-backpill" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
       <Seg tabs className="nb-pre" data-kalauz-anchor="uzenetek-tabs" aria-label="Mezo tartalom" value={tab} onChange={setTab} items={[
           { key: 'uzenetek', label: 'Üzenetek', dot: !!dots?.uzenetek && tab !== 'uzenetek' },
           { key: 'eletjelek', label: 'Életjelek', dot: !!dots?.eletjelek && tab !== 'eletjelek' },

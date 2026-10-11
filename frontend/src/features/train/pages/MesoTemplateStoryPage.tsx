@@ -20,11 +20,10 @@
 //
 // A bad/stale :id is a dead link and says so, never an empty page pretending to be a template.
 // ============================================================
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import type { MesoDay, MesoTemplate } from '@/data/types'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { huDate, huKg } from '@/features/train/logic/mesoDates'
 import { isLegacyPlan } from '@/features/train/logic/mesoPlan'
 import { InfoButton } from '@/features/train/components/InfoButton'
@@ -41,7 +40,7 @@ import { toDayInputs } from '@/features/train/logic/mesoDays'
 import { isOffDay } from '@/features/train/logic/offDay'
 import { estimateSessionMinutes } from '@/features/train/logic/sessionLength'
 import {
-  Acts, Btn, Caps, Card, Chev, EmptyTank, FrameBack, Hero, Lk, Note, Page, Row, Section, Skel, Tags, Tubes,
+  Acts, Btn, Caps, Card, EmptyTank, FrameBack, Hero, Lk, Note, Page, Row, Section, Skel, Tags, Tubes,
   useFrameTitle, type TagItem, type VialItem,
 } from '@/shared/ui/folyadek'
 
@@ -50,18 +49,6 @@ import {
 const daySets = (day: MesoDay) => day.exercises.reduce((n, e) => n + e.workingSets, 0)
 
 const clampPct = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v))
-
-/** A management row that is a real button with a `disabled` state (the kit Row has none): the
- *  kit row's own markup and classes. */
-function ActRow(p: { icon: Icon3DName; title: ReactNode; sub: ReactNode; onClick: () => void; disabled?: boolean; ariaLabel?: string }) {
-  return (
-    <button type="button" className="fo-row er-act" aria-label={p.ariaLabel} disabled={p.disabled} onClick={p.onClick}>
-      <span className="si"><Icon3D name={p.icon} size={26} /></span>
-      <span className="g"><strong>{p.title}</strong><small>{p.sub}</small></span>
-      <Chev />
-    </button>
-  )
-}
 
 export function MesoTemplateStoryPage() {
   const { id } = useParams<{ id: string }>()
@@ -75,7 +62,7 @@ export function MesoTemplateStoryPage() {
   const goBack = () => navigate('/train/templates')
   const template = templates.find((t) => t.id === id)
   useFrameTitle({ title: template?.title ?? 'Sablon', eyebrow: 'Sablonjaid' })
-  const back = <FrameBack className="er-back" history fallback="/train/templates">‹ Sablonjaid</FrameBack>
+  const back = <FrameBack className="fo-backpill" history fallback="/train/templates">‹ Sablonjaid</FrameBack>
 
   // Care on Törlés (Task 3 fix round, mezo-88iwa.11): the armed confirm auto-disarms the
   // moment the user taps anything else on the page — a capture-phase document listener
@@ -169,13 +156,13 @@ export function MesoTemplateStoryPage() {
         actions={(
           <>
             <Btn onClick={() => setStartOpen(true)}>Futam indítása ebből</Btn>
-            <Note className="er-heronote">A sablon marad, a terv a tiéd lesz</Note>
+            <Note>A sablon marad, a terv a tiéd lesz</Note>
           </>
         )}
       >
         {hasWeek ? (
           <>
-            <div className="er-hg"><Tubes items={weekTubes} height={96} size="wk" gap={6} aria-label={`${template.title} — a hét napjai`} /></div>
+            <div className="fo-hero-g"><Tubes items={weekTubes} height={96} size="wk" gap={6} aria-label={`${template.title} — a hét napjai`} /></div>
             {muscles.length > 0 && <MuscleTags items={muscles.slice(0, 5).map((m) => ({ muscle: m.colorMuscle, label: m.label }))} />}
           </>
         ) : (
@@ -240,7 +227,6 @@ export function MesoTemplateStoryPage() {
             {/* The explanation lives BEHIND the link, as the prototype keeps it (mezo-b516k). */}
             <Acts>
               <InfoButton
-                link
                 eyebrow="Heti szettek izmonként"
                 title="Mit jelent a szám?"
                 copy="Ennyi munkaszettet kap az izom egy héten, ha ebből a sablonból indítasz. A futam első hete indul ennyivel — onnan hétről hétre emelkedhet."
@@ -258,12 +244,8 @@ export function MesoTemplateStoryPage() {
             icon="t-peak"
             title={runs.active.title}
             sub={`Most fut — ${runs.active.currentWeek}. hét a ${runs.active.weeks}-ból`}
-            right={(
-              <span className="er-chev">
-                <Caps n={runs.active.weeks} done={runs.active.currentWeek - 1} cur={runs.active.currentWeek - 1} />
-                <Chev />
-              </span>
-            )}
+            chev
+            right={<Caps n={runs.active.weeks} done={runs.active.currentWeek - 1} cur={runs.active.currentWeek - 1} />}
             aria-label={`Most fut · ${runs.active.title}`}
             onClick={() => navigate('/train/mesocycles')}
           />
@@ -300,18 +282,19 @@ export function MesoTemplateStoryPage() {
           onClick={() => openEditor(template.id)}
         />
         {/* The lifecycle pair — kept reachable here. */}
-        <ActRow
+        <Row
           icon="t-repeat"
           title="Másolat készítése"
           sub="Egy saját változat, amit szabadon átírhatsz"
-          ariaLabel="Másolat készítése"
+          aria-label="Másolat készítése"
           disabled={createPending}
           onClick={() => duplicate(template)}
         />
         <div ref={deleteRowRef} className="er-del">
-          <ActRow
+          <Row
             icon="t-trash"
-            title={<span className="er-bad">{confirmDelete ? 'Biztos? Törlés' : 'Sablon törlése'}</span>}
+            bad
+            title={confirmDelete ? 'Biztos? Törlés' : 'Sablon törlése'}
             sub="A már elindult futamok és a riportjaik megmaradnak"
             disabled={deletePending}
             onClick={() => (confirmDelete ? remove() : setConfirmDelete(true))}

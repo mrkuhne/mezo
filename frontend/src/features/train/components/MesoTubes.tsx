@@ -23,12 +23,6 @@ export const PHASE_WORD: Record<MesoPhase, string> = { MEV: 'Emelkedés', MAV: '
  *  carries before its first session. */
 const PHASE_HEIGHT: Record<MesoPhase, number> = { MEV: 34, MAV: 66, MRV: 100, Deload: 26 }
 
-/** „a" or „az" before a numeral read aloud (1 → egy, 5 → öt, 50–59 → ötven…). */
-export function azA(n: number, capital = false): string {
-  const az = n === 1 || n === 5 || (n >= 50 && n < 60)
-  return capital ? (az ? 'Az' : 'A') : (az ? 'az' : 'a')
-}
-
 /** The plan's per-week set totals off the volume arc (every muscle's planned sets, week by week). */
 export function arcWeekTotals(arc: { weeks: number; muscles: { weeks: { week: number; planned: number }[] }[] }): number[] {
   return Array.from({ length: arc.weeks }, (_, i) =>

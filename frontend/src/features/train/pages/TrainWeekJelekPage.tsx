@@ -36,7 +36,7 @@ export function TrainWeekJelekPage() {
 
   return (
     <Page className="et-page">
-      <FrameBack history fallback="/train/week/terkep" label="Vissza: Izomtérkép" className="et-back">‹ Izomtérkép</FrameBack>
+      <FrameBack history fallback="/train/week/terkep" label="Vissza: Izomtérkép" className="fo-backpill">‹ Izomtérkép</FrameBack>
       <Hero
         label="Izomtérkép · minden izomcsoport, saját jellel"
         verdict={workedCount > 0

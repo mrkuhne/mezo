@@ -2,16 +2,12 @@
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
 /* ── page frame ── */
-/* the page's own back pill, drawn only where no title bar is mounted (a page rendered alone) */
-.es-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; font-family: var(--ff-body); font-size: 13.5px; font-weight: 650; color: var(--fo-ink); background: #fff; box-shadow: 0 6px 14px -8px rgba(10, 42, 60, .4); }
-.es-back:focus-visible, .es-spg button:focus-visible, .es-pyr button:focus-visible, .es-wks .pm:focus-visible, .es-numin:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.es-spg button:focus-visible, .es-pyr button:focus-visible, .es-wks .pm:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 /* the title row of the chrome-free log flow (`/train/sport/log`): the title bar's sub-page row, drawn by the page */
 .es-top { padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; color: var(--fo-ink); font-family: var(--ff-body); }
 
 .es-top .fo-ib::after { content: ''; position: absolute; inset: -1px; }
 
-/* ── hero graphics (prototype `.vs-hg`) ── */
-.es-hg { margin-top: 14px; }
 
 /* ── list blocks inside a card or a sheet ── */
 /* a group of rows standing after other content (prototype `<div class="vl" style="margin-top:12px">`) */
@@ -21,8 +17,6 @@
 /* a labelled block: label + its control (prototype `blk`) */
 .es-blk > .fo-scale { margin-top: 0; }
 /* one logged session / one prescribed session: a row and what hangs under it (prototype `.vs-log`) */
-.es-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
-.es-log:first-child { border-top: 0; padding-top: 0; }
 .es-log .fo-tags { margin-top: 8px; }
 .es-log + .fo-note { margin-top: 0; }
 /* two labelled levels under a logged session (prototype `.vs-l2`) */
@@ -33,10 +27,8 @@
 .es-q { display: block; margin-top: 5px; color: var(--fo-sub); }
 /* the quiet "not yet" state on the right of a future session (prototype `.vs-later`) */
 .es-later { font-size: 13px; font-weight: 600; color: var(--fo-faint); white-space: nowrap; flex: 0 0 auto; }
-.es-rowbar { margin-top: 7px; }
 .es-page .fo-row strong .fo-st { vertical-align: 1px; }
 .es-day abbr { text-decoration: none; }
-.es-danger strong { color: var(--fo-bad); }
 
 /* ── the interval tube (prototype `.vs-ivl`): a session as one vessel, the level follows the pace ── */
 .es-ivl { display: flex; align-items: flex-end; gap: 2px; height: 40px; margin: 10px 0 2px; padding: 5px 8px 0; border-radius: 16px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .07); }
@@ -44,9 +36,6 @@
 .es-ivl i.s { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
 .es-ivl i.w { background: color-mix(in srgb, var(--dom) 46%, #fff); }
 
-/* ── stepper rows with a typeable value (the kit's `.fo-stp` with an input for its number) ── */
-.es-numin { width: 46px; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: none; text-align: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 34px; color: var(--fo-ink); -moz-appearance: textfield; appearance: textfield; }
-.es-numin::-webkit-outer-spin-button, .es-numin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
 /* ── sport log flow (prototype `.vs-spg`, `.vs-form`) ── */
 .es-spg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 8px; }
@@ -92,6 +81,5 @@ label.es-gymday { cursor: pointer; }
 
 @media (max-width: 360px) {
   .es-spg { gap: 12px 4px; }
-  .es-numin { width: 38px; }
   .es-slot { padding: 10px; }
 }

@@ -148,7 +148,7 @@ export function MesoComparePage() {
   const B = useMesoReport(valid ? bId : null)
   const { mesocycles } = useTrain()
   useFrameTitle({ title: 'Összevetés', eyebrow: 'Két lezárt futam' })
-  const back = <FrameBack className="er-back" onBack={goBack}>‹ Mezociklus</FrameBack>
+  const back = <FrameBack className="fo-backpill" onBack={goBack}>‹ Mezociklus</FrameBack>
 
   if (!valid) {
     // A hand-typed / stale link, or a selection that never got two runs.
@@ -301,7 +301,7 @@ export function MesoComparePage() {
             {strengthRows.map((r) => {
               const better = betterSide(r)
               return (
-                <div key={r.exerciseName} className="er-log" data-testid="compare-strength-row">
+                <div key={r.exerciseName} className="fo-log" data-testid="compare-strength-row">
                   <span className="er-log-h">
                     <b data-testid="compare-exercise">{r.exerciseName}</b>
                     <small>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</small>

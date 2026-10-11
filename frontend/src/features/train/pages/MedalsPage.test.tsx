@@ -60,8 +60,8 @@ test('RECORD is the gold capsule with the old record as its line, TARGET_HIT the
   const { container } = renderView()
   await screen.findByText('Chest Supported Row')
   // Folyadék (mezo-n4wf5.3): the tier rides the visible REKORD / CÉL tag and the capsule.
-  const recordRow = screen.getByText('Chest Supported Row').closest('.er-medal') as HTMLElement
-  const targetRow = screen.getByText('Hip Thrust').closest('.er-medal') as HTMLElement
+  const recordRow = screen.getByText('Chest Supported Row').closest('.ex-medal') as HTMLElement
+  const targetRow = screen.getByText('Hip Thrust').closest('.ex-medal') as HTMLElement
   expect(recordRow).toHaveAttribute('data-tier', 'RECORD')
   expect(targetRow).toHaveAttribute('data-tier', 'TARGET')
   expect(within(recordRow).getByText('REKORD')).toHaveClass('fo-st', 'warn')
@@ -80,7 +80,7 @@ test('RECORD is the gold capsule with the old record as its line, TARGET_HIT the
 test('the cabinet is kit rows in a white card — no glass, no old skin', async () => {
   const { container } = renderView()
   await screen.findByText('Chest Supported Row')
-  const rows = Array.from(container.querySelectorAll('.er-medal'))
+  const rows = Array.from(container.querySelectorAll('.ex-medal'))
   expect(rows.length).toBe(3)
   for (const row of rows) {
     expect(row).toHaveClass('fo-row')
@@ -95,7 +95,7 @@ test('the cabinet is kit rows in a white card — no glass, no old skin', async 
 // a "previous" that is itself a volume, and read as an indistinguishable WEIGHT row.
 test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not the set', async () => {
   renderView()
-  const row = (await screen.findByText('Leg Press')).closest('.er-medal') as HTMLElement
+  const row = (await screen.findByText('Leg Press')).closest('.ex-medal') as HTMLElement
   expect(within(row).getByText('820 kg')).toBeInTheDocument()
   expect(within(row).queryByText(/102,5 kg × 8/)).not.toBeInTheDocument()
   expect(within(row).getByText(/Előző: 800 kg/)).toBeInTheDocument()
@@ -103,7 +103,7 @@ test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not 
 
 test('a TARGET_HIT medal never renders a previous-value slot (nothing was beaten)', async () => {
   renderView()
-  const row = (await screen.findByText('Hip Thrust')).closest('.er-medal') as HTMLElement
+  const row = (await screen.findByText('Hip Thrust')).closest('.ex-medal') as HTMLElement
   expect(within(row).queryByText(/Előző/)).not.toBeInTheDocument()
 })
 
@@ -141,7 +141,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
   test('newest date group renders first, older date group after', async () => {
     const { container } = renderView()
     await screen.findByText('Bench Press')
-    const cards = Array.from(container.querySelectorAll('.er-medal'))
+    const cards = Array.from(container.querySelectorAll('.ex-medal'))
     const names = cards.map((c) => c.textContent)
     const benchIdx = names.findIndex((t) => t?.includes('Bench Press'))
     const rowIdx = names.findIndex((t) => t?.includes('Row Machine'))
@@ -157,7 +157,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
 
   test('a RECORD medal with previousValue but null previousDate drops the date cleanly', async () => {
     renderView()
-    const row = (await screen.findByText('Squat')).closest('.er-medal') as HTMLElement
+    const row = (await screen.findByText('Squat')).closest('.ex-medal') as HTMLElement
     expect(within(row).getByText(/Előző: 135 kg/)).toBeInTheDocument()
     // never a dangling "null"/"undefined" or trailing separator
     expect(row.textContent).not.toMatch(/null|undefined/i)
@@ -166,7 +166,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
 
   test('a RECORD medal WITH a previousDate renders the "…óta állt" phrasing', async () => {
     renderView()
-    const row = (await screen.findByText('Bench Press')).closest('.er-medal') as HTMLElement
+    const row = (await screen.findByText('Bench Press')).closest('.ex-medal') as HTMLElement
     expect(within(row).getByText(new RegExp(`Előző: 145 kg · ${huMonthDay('2026-06-20')} óta állt`))).toBeInTheDocument()
   })
 })
@@ -180,7 +180,7 @@ test('empty cabinet: an honest single line, no ghost rows, no counter chip, no b
     await screen.findByText('Még nincs medálod — az első megdöntött rekord ide kerül.'),
   ).toBeInTheDocument()
   expect(screen.getByText('Medálok')).toBeInTheDocument()
-  expect(container.querySelectorAll('.er-medal').length).toBe(0)
+  expect(container.querySelectorAll('.ex-medal').length).toBe(0)
   // the empty vessel in the hero, and the verdict says it too
   expect(container.querySelector('.fo-hero .fo-ev')).not.toBeNull()
   expect(screen.getByText('Még nincs medálod.')).toHaveClass('fo-hero-verdict')
@@ -212,7 +212,7 @@ describe('MedalsPage (mock mode)', () => {
 
   it('groups the seeded cabinet by date, newest first', () => {
     const { container } = renderView()
-    const cards = Array.from(container.querySelectorAll('.er-medal'))
+    const cards = Array.from(container.querySelectorAll('.ex-medal'))
     const names = cards.map((c) => c.textContent ?? '')
     // 2026-07-27 (Hammer Curl E1RM + TARGET_HIT) is the newest date in the seed —
     // it must render before 2026-06-15 (the oldest Hammer Curl WEIGHT medal).

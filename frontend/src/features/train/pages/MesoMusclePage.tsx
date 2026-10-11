@@ -103,7 +103,7 @@ export function MesoMusclePage() {
   const profile = meso?.volumePerMuscle?.[muscle ?? '']
   useFrameTitle({ title: tile && profile ? tile.label : 'Izom', eyebrow: 'Heti vizsgálat' })
 
-  const back = <FrameBack history fallback={`/train/mesocycles/${id}/week`} className="ep-back">‹ Heti vizsgálat</FrameBack>
+  const back = <FrameBack history fallback={`/train/mesocycles/${id}/week`} className="fo-backpill">‹ Heti vizsgálat</FrameBack>
 
   if (loading) return <Page className="ep-page">{back}<Skel blocks={MUSCLE_SKELETON_BLOCKS} /></Page>
 
@@ -188,7 +188,7 @@ export function MesoMusclePage() {
         verdict={`A ${name} hetente ${tile.current} szettet kap.`}
         sub={`${say} ${next}`}
         actions={(
-          <InfoButton link eyebrow="Hol tartasz" title="Mit jelentenek a jelölések?"
+          <InfoButton eyebrow="Hol tartasz" title="Mit jelentenek a jelölések?"
             copy="Az alsó jelölés alatt nincs elég inger ahhoz, hogy ez az izom fejlődjön. A felső érték az, ameddig ebben a tervben elmész — ezt a fókuszod szabja meg." />
         )}>
         <div className="ep-cylw">

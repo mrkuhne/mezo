@@ -61,7 +61,7 @@ export function MesoCloseSheet({ mesoId, title, onClose }: {
             </VoiceField>
             {/* closing ENDS the plan: the confirm wears the warning colour */}
             <Acts>
-              <Btn grow className="ep-bad" onClick={confirm} disabled={saving}>Lezárás</Btn>
+              <Btn grow bad onClick={confirm} disabled={saving}>Lezárás</Btn>
               <Lk onClick={close}>Mégse</Lk>
             </Acts>
           </>

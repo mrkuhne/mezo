@@ -12,7 +12,6 @@
 // ============================================================
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Icon3D } from '@/shared/ui/clay'
 import { Btn, Hero, Page, Skel } from '@/shared/ui/folyadek'
 
 export default function TrainWeekSkeleton({ blocks = [356, 110, 340] }: { blocks?: number[] }) {
@@ -30,14 +29,12 @@ export function TerhelesNoPlan({ label, verdict, back }: { label: string; verdic
     <Page className="et-page">
       {back}
       <Hero
-        className="et-hero-art"
+        art="t-peak"
         label={label}
         verdict={verdict}
         sub="Előbb tervezz egy mesociklust."
         actions={<Btn onClick={() => navigate('/train/mesocycles/new')}>+ Tervezz mesociklust</Btn>}
-      >
-        <span className="et-art" aria-hidden="true"><Icon3D name="t-peak" size={96} /></span>
-      </Hero>
+      />
     </Page>
   )
 }

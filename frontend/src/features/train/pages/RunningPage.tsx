@@ -79,7 +79,7 @@ export function RunningPage() {
     saveRunningBlock(null, newDraft(start, end), { onSuccess: (b) => openBuilder(b.id) })
   }
 
-  const back = <FrameBack history fallback="/train" className="es-back">‹ Edzés</FrameBack>
+  const back = <FrameBack history fallback="/train" className="fo-backpill">‹ Edzés</FrameBack>
 
   // Real-mode initial load: the page's own shape as quiet blocks until the query resolves, so
   // the no-active-block state doesn't flash before data lands. Mock mode is synchronous
@@ -347,7 +347,7 @@ function RunBlockRow({ block, onOpen }: { block: RunningBlockResponse; onOpen: (
         icon="t-run"
         title={<>{block.title} {pill}</>}
         sub={[block.goal, span, `Hét ${block.currentWeek} / ${block.weeks}`].filter(Boolean).join(' · ')}
-        more={<Caps n={block.weeks} done={block.currentWeek - 1} cur={block.currentWeek - 1} size="wide" className="es-rowbar" />}
+        more={<Caps n={block.weeks} done={block.currentWeek - 1} cur={block.currentWeek - 1} size="wide" />}
         onClick={() => onOpen(block.id)}
       />
     )

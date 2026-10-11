@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { type Icon3DName } from '@/shared/ui/clay'
 import { Btn, Lk, Acts } from './Btn'
@@ -7,9 +7,12 @@ import { clamp, cx, type PassProps } from './util'
 
 /** − value +. With `label` it is a whole list row (label + sub on the left, the control on the right); without, the bare control.
  *  `min` / `max` disable the ends; `auto` shows the value as a quiet word (e.g. „auto"). `name` is what the buttons are called
- *  for screen readers (default: the label). */
-export function Stepper({ label, sub, value, onDec, onInc, min, max, n, auto, name, decDisabled, incDisabled, className, ...rest }: PassProps & {
-  label?: ReactNode; sub?: ReactNode; value: ReactNode; onDec: () => void; onInc: () => void
+ *  for screen readers (default: the label). With `input` the value is typeable: the props go on an `<input>` standing where
+ *  the number is, and that field alone carries the name (one label for `getByLabelText`). */
+export function Stepper({ label, sub, value, onDec, onInc, min, max, n, auto, name, decDisabled, incDisabled, input, className, ...rest }: PassProps & {
+  label?: ReactNode; sub?: ReactNode; value?: ReactNode; onDec: () => void; onInc: () => void
+  /** Makes the value a text field (value, onChange, onBlur, inputMode… from the caller). */
+  input?: InputHTMLAttributes<HTMLInputElement>
   /** The numeric value behind `value`, for the `min` / `max` bounds. */
   n?: number; min?: number; max?: number; auto?: boolean; name?: string; decDisabled?: boolean; incDisabled?: boolean; className?: string
 }) {
@@ -17,9 +20,11 @@ export function Stepper({ label, sub, value, onDec, onInc, min, max, n, auto, na
   const lo = decDisabled || (n != null && min != null && n <= min)
   const hi = incDisabled || (n != null && max != null && n >= max)
   const ctl = (
-    <span className={cx('fo-stp', label == null && className)} role="group" aria-label={who || undefined} {...(label == null ? rest : {})}>
+    <span className={cx('fo-stp', label == null && className)} role={input ? undefined : 'group'} aria-label={input ? undefined : who || undefined} {...(label == null ? rest : {})}>
       <button type="button" aria-label={`${who} csökkentése`.trim()} disabled={lo} onClick={onDec}>−</button>
-      <b className={auto ? 'auto' : undefined} aria-live="polite">{value}</b>
+      {input
+        ? <input aria-label={who || undefined} {...input} />
+        : <b className={auto ? 'auto' : undefined} aria-live="polite">{value}</b>}
       <button type="button" aria-label={`${who} növelése`.trim()} disabled={hi} onClick={onInc}>+</button>
     </span>
   )

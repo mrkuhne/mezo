@@ -147,7 +147,7 @@ export function StrengthCurve({ points, muscle, recordDates }: StrengthCurveProp
           record itself is the „Becsült 1RM" row below. */}
       <Big value={hu1(last.e1rm)} unit="kg most" />
       <div
-        className="er-hg ar"
+        className="fo-hero-g ar"
         role="img"
         aria-label={
           `Becsült maximumod alakulása ${huMonthDayAged(first.date)} óta: ${points.length} mérés, ` +
@@ -166,7 +166,7 @@ export function StrengthCurve({ points, muscle, recordDates }: StrengthCurveProp
           marks={marks}
         />
       </div>
-      <div className="er-ft">
+      <div className="fo-ft">
         <span>ami eddig megtörtént · {huMonthDayAged(first.date)} óta</span>
         <span>becslés, nem mérés</span>
       </div>

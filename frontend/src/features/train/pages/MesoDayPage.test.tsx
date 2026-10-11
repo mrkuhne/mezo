@@ -117,7 +117,7 @@ test('the page ends at the exercise card — no duplicate list, no editor chrome
   expect(card.nextElementSibling).toBeNull()
   expect(card.lastElementChild).toHaveClass('fo-acts')
   // none of the old skin is left on the page
-  expect(document.querySelector('.fo-page .glass, .fo-page [class*="pl-"]:not(.pl-info), .fo-page .body-map')).toBeNull()
+  expect(document.querySelector('.fo-page .glass, .fo-page [class*="pl-"], .fo-page .body-map')).toBeNull()
 })
 
 test('the day\'s editing lives one route down — the card\'s tail carries the only add link', async () => {

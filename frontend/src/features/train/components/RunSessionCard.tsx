@@ -82,7 +82,7 @@ export function RunSessionCard({ session, ctaState, onLog }: {
   const sub = [dayLabel, session.timeOfDay, `RPE ${min}–${max}`].filter(Boolean).join(' · ')
 
   return (
-    <div className="es-log">
+    <div className="fo-log es-log">
       <Row
         icon="t-run"
         title={<>{session.label}{ctaState === 'today' && <> <St tone="plan">Ma</St></>}</>}

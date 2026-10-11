@@ -42,7 +42,7 @@ export function ComebackPill({ comeback, exercises, busy, onWaive, onUndo }: {
           ))}
         </div>
       )}
-      <div className="em-in em-cbacts">
+      <div className="fo-under em-cbacts">
         <Lk disabled={busy} onClick={onWaive}>Kikapcsolom a könnyítést</Lk>
         {onUndo && <Lk disabled={busy} onClick={onUndo}>Mégsem vagyok jól</Lk>}
       </div>

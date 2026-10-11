@@ -21,8 +21,6 @@
 .em-day.rest { opacity: .5; }
 .em-day:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 
-/* ── the heroes ── a session's name is the verdict, one size up (edzes.js `hero({big:true})`) */
-.em-hero .fo-hero-verdict, .em-sess-hero .fo-hero-verdict, .em-resume .fo-hero-verdict { font-size: 28px; }
 .em-herowrap { display: contents; }
 /* the body + the fact column (`.vs-h2`: `.vs-hb` 112px + `.vs-hf`) */
 .em-h2 { display: flex; gap: 14px; align-items: center; margin-top: 12px; }
@@ -31,13 +29,6 @@
 .em-hf span { display: flex; align-items: baseline; gap: 8px; padding: 10px 14px; border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .07); }
 .em-hf b { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.6px; line-height: 1; }
 .em-hf small { font-size: 12px; color: var(--fo-sub); }
-/* a graphic under the hero text (the rest day's week) */
-.em-hg { margin-top: 14px; }
-/* the big glyph of a hero that has no graphic of its own (kit.js `.fh-art`): no plan yet, another day's rest */
-.em-art { position: absolute; right: 10px; top: 8px; width: 96px; height: 96px; transform: rotate(8deg); pointer-events: none; }
-.em-art .t-ico { display: block; width: 96px; height: 96px; filter: drop-shadow(0 14px 16px rgba(15, 30, 51, .3)); }
-.em-arthero .fo-hero-lbl, .em-arthero .fo-hero-verdict { padding-right: 92px; }
-.em-arthero .fo-hero-verdict { font-size: 19px; }
 /* the comeback session's sets (`.vs-cb`) */
 .em-cbsets { margin-top: 10px; }
 .em-cbsets > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 2px; font-size: 13px; border-top: 1px solid var(--fo-hair); }
@@ -52,17 +43,9 @@
 .em-rd .fo-tube, .em-ramp .fo-tube { max-width: 60px; }
 
 /* ── the indented line under a step (`.vs-in`, `kmIn`, `doneIn`) ── */
-.em-in { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 0 0 12px 50px; font-size: 12.5px; color: var(--fo-sub); line-height: 1.4; }
-.em-in b { color: var(--fo-ink); font-weight: 650; }
-.em-in small { font-size: inherit; color: inherit; }
-.em-in .fo-bub { display: inline-grid; vertical-align: middle; margin-right: 4px; }
 .em-in-ic { display: inline; }
-.em-in.col { display: block; }
-.em-in.col > .em-skacts { display: flex; gap: 16px; margin-top: 8px; }
-.em-in.col .fo-box { margin-top: 0; background: var(--fo-page); box-shadow: none; }
-.em-sess:last-child > .em-in:last-child { padding-bottom: 0; }
-/* inside a hero the line is not indented (`thero()`: `.vs-in` with `padding: 8px 0 0`) */
-.fo-hero .em-in { padding: 8px 0 0; }
+.fo-under.col > .em-skacts { display: flex; gap: 16px; margin-top: 8px; }
+.em-sess:last-child > .fo-under:last-child { padding-bottom: 0; }
 
 /* ── the day's other sessions (`ls(others.map(sessStep))`) ── steps in one card, a hairline between two sessions */
 .em-sess + .em-sess { border-top: 1px solid var(--fo-hair); padding-top: 10px; }
@@ -104,15 +87,12 @@
 /* ── „Üdv újra!" · „Saját edzés" ── */
 .em-udvl { margin-top: 14px; }
 .em-udvl > .fo-row:first-child, .em-cwl > .fo-row:first-child, .em-navrows > .fo-row:first-child { border-top: 0; padding-top: 0; }
-.em-rowbar { display: block; margin-top: 7px; }
-.em-rowbar .fo-caps { margin-right: 2px; }
 
 @media (max-width: 360px) {
   .em-ds { gap: 4px; padding-inline: 10px; }
   .em-h2 .ex-hb { --w: 92px; }
   .em-hf b { font-size: 21px; }
   .em-hf span { padding: 9px 12px; }
-  .em-in { padding-left: 0; }
   .em-opts { gap: 6px; }
   .em-opts button { font-size: 12.5px; padding: 7px 6px; gap: 6px; }
   .em-opts button .fo-bub { --s: 30px !important; }

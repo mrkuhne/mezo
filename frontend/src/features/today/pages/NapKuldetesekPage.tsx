@@ -88,7 +88,7 @@ export function NapKuldetesekPage() {
     <CheckInSheet slot={checkins[checkInIdx]} slotIdx={checkInIdx}
       onClose={() => setCheckInIdx(null)} onSave={(d) => saveCheckIn(checkInIdx, d)} />
   )
-  const back = <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
+  const back = <FrameBack history className="fo-backpill" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
 
   if (quests.length === 0) {
     return (

@@ -27,6 +27,7 @@ import {
 } from '@/shared/ui/folyadek'
 import { DayNum } from '@/features/train/components/folyadek'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { outOf } from '@/shared/lib/huText'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { dateForDayOfWeek } from '@/data/train/runningAgenda'
 import type { SportEventResponse } from '@/data/train/trainApi'
@@ -49,14 +50,6 @@ const SUB_VIEWS: SegItem<SportSubView>[] = [
 
 /** One decimal, Hungarian comma — the prototype's `d1()`. */
 const d1 = (n: number) => (Math.round(n * 10) / 10).toString().replace('.', ',')
-
-/** „3-ból" / „2-ből": the Hungarian suffix follows the vowels of the spoken number. */
-export function outOf(n: number): string {
-  const last = Math.abs(n) % 10
-  const tens = Math.abs(n) % 100
-  const back = last === 0 ? [0, 20, 30, 60, 80].includes(tens) : [3, 6, 8].includes(last)
-  return `${n}-${back ? 'ból' : 'ből'}`
-}
 
 /** A full tube stops just under the rim; the tallest session of the scale is two hours (prototype `s[3]/120*94`). */
 const FULL = 94
@@ -112,7 +105,7 @@ export function SportPage() {
 
   return (
     <Page className="es-page es-sport">
-      <FrameBack history fallback="/train" className="es-back">‹ Edzés</FrameBack>
+      <FrameBack history fallback="/train" className="fo-backpill">‹ Edzés</FrameBack>
       <Hero
         label="Sport · ezen a héten"
         verdict={volleyball ? `${week?.sessions ?? 0} session megvolt a ${outOf(slotCount)} ezen a héten.` : 'Még nincs heti sport-rended.'}
@@ -123,7 +116,7 @@ export function SportPage() {
         actions={<Btn onClick={() => navigate('/train/sport/log')}>＋ Log</Btn>}
       >
         {volleyball && (
-          <div className="es-hg">
+          <div className="fo-hero-g">
             <Tubes items={weekTubes(volleyball, sport.sessions)} height={92} size="wk" gap={6} aria-label="A hét sportnapjai" />
           </div>
         )}

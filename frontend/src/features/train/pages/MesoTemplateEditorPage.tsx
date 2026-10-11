@@ -95,7 +95,7 @@ function TemplateLoading({ onBack }: { onBack: () => void }) {
   useFrameTitle({ title: 'Szerkesztés', eyebrow: 'Sablon betöltése…' })
   return (
     <Page className="ew-page">
-      <FrameBack className="ew-back" onBack={onBack}>‹ Vissza</FrameBack>
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ Vissza</FrameBack>
       <Skel blocks={[300, 64, 64, 64, 64, 64]} label="Sablon betöltése…" />
     </Page>
   )
@@ -106,7 +106,7 @@ function TemplateMissing({ onBack }: { onBack: () => void }) {
   useFrameTitle({ title: 'Sablon', eyebrow: 'Sablonjaid' })
   return (
     <Page className="ew-page">
-      <FrameBack className="ew-back" onBack={onBack}>‹ Vissza</FrameBack>
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ Vissza</FrameBack>
       <Card>
         <EmptyTank icon="t-other" actions={<Btn sm onClick={() => navigate('/train/templates')}>Sablonjaid</Btn>}>
           Ez a sablon nem található.

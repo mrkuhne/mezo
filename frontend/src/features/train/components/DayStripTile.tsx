@@ -6,7 +6,7 @@
 // napok figyelmeztetése. Koppintásra a nap saját szerkesztője nyílik.
 // ============================================================
 import { DayNum } from '@/features/train/components/folyadek'
-import { Chev, Pour, Row, St } from '@/shared/ui/folyadek'
+import { Pour, Row, St } from '@/shared/ui/folyadek'
 
 export interface DayStripMuscle {
   label: string
@@ -43,7 +43,8 @@ export function DayStripTile({ day, name, sets, minutes, muscles, flagged, rest,
       more={!rest && muscles.length > 0 && (
         <Pour sm parts={muscles.map((m) => ({ n: m.sets, color: m.color }))} />
       )}
-      right={<span className="ew-end">{flagged && <St tone="warn">átfedés</St>}<Chev /></span>}
+      right={flagged ? <St tone="warn">átfedés</St> : undefined}
+      chev
       aria-label={`${day} · ${name} · szerkesztés`}
       onClick={onOpen}
     />

@@ -9,7 +9,7 @@
 import { useState } from 'react'
 import type { MesoDay, MusclePriorities, MuscleTier } from '@/data/types'
 import { ZoneBar } from '@/features/train/components/ZoneBar'
-import { DuoBody, Mchp } from '@/features/train/components/folyadek'
+import { DuoBody, KnobLine, KnobPanel, Mchp } from '@/features/train/components/folyadek'
 import { adjacentDayConflicts, weekMuscleLoad, type Landmark } from '@/features/train/logic/mesoLoad'
 import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
 import { structureLint } from '@/features/train/logic/structureLint'
@@ -79,7 +79,7 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
 
   return (
     <Page className="ew-page">
-      <FrameBack className="ew-back" onBack={onBack}>‹ A heted</FrameBack>
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ A heted</FrameBack>
       <Hero
         className="ew-hero"
         label="Heti terhelés · izmonként"
@@ -115,7 +115,7 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
               key={r.group}
               data-testid="week-load-card"
               data-group={r.group}
-              className={`ew-log${expanded ? ' open' : ''}`}
+              className={`fo-log ew-log${expanded ? ' open' : ''}`}
             >
               <Row
                 left={<Mchp muscle={r.colorMuscle} sm />}
@@ -147,14 +147,14 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
                 onClick={() => setOpen((cur) => (cur === r.group ? null : r.group))}
               />
               {expanded && (
-                <div className="ew-sjp">
+                <KnobPanel className="ew-sjp">
                   {r.contributions.map((c) => (
-                    <div className="ew-sjl" key={c.day}>
+                    <KnobLine key={c.day}>
                       <b>{c.day}</b>
                       <Tags items={c.exercises.map((e) => `${e.name} +${e.sets}`)} />
-                    </div>
+                    </KnobLine>
                   ))}
-                </div>
+                </KnobPanel>
               )}
             </div>
           )

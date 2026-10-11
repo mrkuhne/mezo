@@ -83,7 +83,7 @@ test('a logged exercise shows its estimated 1RM and its medal count', async () =
   expect(row.querySelector('.v')).toHaveTextContent('133,3 kg')
   expect(row.querySelector('small')).toHaveTextContent('Hát (közép) · becsült 1RM · 1 medál')
   // …and its level against the catalogue's strongest estimate
-  expect(row.querySelector('.er-rowbar .fo-level')).not.toBeNull()
+  expect(row.querySelector('.fo-rowbar .fo-level')).not.toBeNull()
 })
 
 test('a logged exercise with an e1RM but no medals shows no medal segment at all — never a bare 0 (parity P2)', async () => {

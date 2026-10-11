@@ -121,7 +121,7 @@ test('„⋯ Több" opens the actions as a light sheet: Duplikálás and Törlé
   const sheet = await screen.findByRole('dialog', { name: 'További műveletek' })
   expect(sheet).toHaveClass('fo-sheet')
   expect(within(sheet).getByRole('button', { name: 'Duplikálás' })).toBeInTheDocument()
-  expect(within(sheet).getByRole('button', { name: 'Törlés' })).toHaveClass('es-danger')
+  expect(within(sheet).getByRole('button', { name: 'Törlés' })).toHaveClass('fo-row', 'bad')
 })
 
 test('a planned block says it has not started; an archived one shows its summary and no status action', () => {

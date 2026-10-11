@@ -21,7 +21,8 @@ import { REGION_MUSCLES, REGION_LABELS } from '@/features/train/logic/muscleColo
 import type { CatalogExerciseCreateRequest } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Acts, FoSheetHead, Input, Lab, Lk, Pill, Pills, SheetActs, Stepper } from '@/shared/ui/folyadek'
+import { Acts, FoSheetHead, Input, Lab, Lk, Pill, Pills, SheetActs } from '@/shared/ui/folyadek'
+import { StepLine } from '@/features/train/components/folyadek'
 
 // The 21 head/zone-specific catalog muscle tokens (mezo-wu1s), region-grouped for the
 // picker below. This mirrors the contract's CatalogExerciseCreateRequest.muscle enum;
@@ -41,15 +42,14 @@ const dec2 = (n: number) => n.toFixed(2).replace('.', ',')
 // --- DecimalStep: label + the kit − value + stepper over a 0–1 / step-0.05 range ---
 function DecimalStep({ label, val, onChange, first }: { label: string; val: number; onChange: (n: number) => void; first?: boolean }) {
   return (
-    <div className={first ? 'er-sjl first' : 'er-sjl'}>
-      <span>{label}</span>
-      <Stepper
-        name={label}
-        value={dec2(val)}
-        onDec={() => onChange(round2(Math.max(0, val - 0.05)))}
-        onInc={() => onChange(round2(Math.min(1, val + 0.05)))}
-      />
-    </div>
+    <StepLine
+      className={first ? 'er-sjl-first' : undefined}
+      label={label}
+      name={label}
+      value={dec2(val)}
+      onDec={() => onChange(round2(Math.max(0, val - 0.05)))}
+      onInc={() => onChange(round2(Math.min(1, val + 0.05)))}
+    />
   )
 }
 
@@ -159,7 +159,7 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
           {isEdit && (
             <Acts>
               <Lk
-                className="er-bad"
+                bad
                 aria-label="Gyakorlat törlése"
                 onClick={() => {
                   if (!confirmDelete) { setConfirmDelete(true); return }

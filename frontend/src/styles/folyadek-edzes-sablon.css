@@ -1,20 +1,15 @@
 /* ── Folyadék · Edzés · sablon (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.ew-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* the page's own back button, where no title bar is mounted (a page rendered alone) */
-.ew-back { display: inline-flex; align-items: center; min-height: 44px; margin: 8px 14px 0; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer;
-  font-family: var(--ff-body); font-size: 14px; font-weight: 650; color: var(--fo-ink); background: var(--fo-card, #fff); box-shadow: inset 0 0 0 1px var(--fo-hair); }
 
 /* ── hero body: the name field, the callout, the tubes (prototype `.vs-hg`) ── */
 .ew-hero .fo-lab { margin-top: 14px; }
 .ew-hero .fo-msg { margin-top: 12px; }
-.ew-hg { margin-top: 14px; }
 .ew-hg.n3 { max-width: 290px; margin-left: auto; margin-right: auto; }
 .ew-hg .fo-tube { max-width: 64px; }
 .ew-hg.n3 .fo-tube { max-width: 60px; }
 
 /* ── the week face: one row per day (prototype `rw({left:num(…)})` + `.vs-pour.sm`) ── */
-.ew-day .ew-end { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .ew-day .fo-pour { margin-top: 7px; }
 
 /* ── the day face: the always-open exercise cards (prototype `.vs-ex`, `.eh`, `.eg.in`, `.vs-mv`, `.vs-bem`) ── */
@@ -41,9 +36,8 @@
 .ew-ex .eg .rp i { font-style: normal; font-weight: 700; color: var(--fo-sub); }
 .ew-ex .eg .rp small { flex-basis: 100%; }
 .ew-ex .eg > :focus-within, .ew-bem:focus-within { box-shadow: inset 0 0 0 2px var(--dom); }
-.ew-sjl { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 13.5px; }
-.ew-ex .ew-sjl { margin-top: 8px; }
-.ew-ex .ew-sjl .fo-pills { flex: 1; min-width: 0; }
+.ew-ex .ex-sjl { margin-top: 8px; }
+.ew-ex .ex-sjl .fo-pills { flex: 1; min-width: 0; }
 .ew-bem { display: block; width: 84px; flex: 0 0 auto; padding: 7px 4px; border-radius: 14px; background: var(--fo-page); text-align: center; cursor: text; }
 .ew-bem small { display: block; font-size: 10px; color: var(--fo-sub); line-height: 1.15; }
 .ew-ex .fo-note { margin: 6px 0 0; }
@@ -51,7 +45,6 @@
 .ew-ex .fo-note b + b { margin-left: 6px; }
 
 /* ── the load pages (prototype `.vs-log`, `.vs-sjp`, `.vs-rowbar`) ── */
-.ew-log { padding: 12px 0; border-top: 1px solid var(--fo-hair); }
 .ew-log:first-of-type { border-top: 0; padding-top: 0; }
 .ew-log > .fo-row { padding: 0; border-top: 0; }
 .ew-log .fo-row strong .fo-st, .ew-dl strong .fo-st { margin-left: 6px; vertical-align: 1px; }
@@ -60,8 +53,9 @@
 .ew-dir-dn { color: var(--fo-warn); }
 .ew-zb { display: block; margin-top: 7px; }
 .ew-zb .fo-wlv { margin-top: 0; }
-.ew-sjp { padding: 0 0 2px 12px; margin: 10px 0 0 14px; border-left: 3px solid color-mix(in srgb, var(--dom) 35%, #fff); }
-.ew-sjp .ew-sjl > b { font-weight: 700; flex: 0 0 auto; }
+/* what a muscle's number is made of (`KnobPanel`): it hangs under its row, inside the block */
+.ew-sjp { padding-bottom: 2px; margin: 10px 0 0 14px; }
+.ew-sjp .ex-sjl > b { font-weight: 700; flex: 0 0 auto; }
 .ew-sjp .fo-tags { margin: 0; justify-content: flex-end; }
 .ew-lg { margin: 0 0 14px; font-size: 11.5px; gap: 4px 14px; }
 .ew-dl .fo-tags { margin-top: 8px; }

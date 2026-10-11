@@ -60,7 +60,7 @@ test('the sheet wears the Folyadék look and the reworded copy', () => {
   expect(dialog.querySelector('.glass, [class*="uvl-"]')).toBeNull()
   expect(screen.getByText('Edzésterv · zárás')).toBeInTheDocument()
   expect(screen.getByPlaceholderText('Hogy sikerült a terv? (opcionális)')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Lezárás' })).toHaveClass('fo-btn', 'ep-bad')
+  expect(screen.getByRole('button', { name: 'Lezárás' })).toHaveClass('fo-btn', 'bad')
   expect(screen.getByRole('button', { name: 'Mégse' })).toHaveClass('fo-lk')
   expect(dialog.textContent).not.toMatch(/mesociklus|blokk\?/i)
 })

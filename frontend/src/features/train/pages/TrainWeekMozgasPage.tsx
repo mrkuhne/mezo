@@ -61,7 +61,7 @@ export function TrainWeekMozgasPage() {
   const { data: timingProfile } = useTimingProfile()
   useFrameTitle({ title: 'Minden mozgásod', eyebrow: 'Terhelés' })
 
-  const back = <FrameBack history fallback="/train/week" label="Vissza: Terhelés" className="et-back">‹ Terhelés</FrameBack>
+  const back = <FrameBack history fallback="/train/week" label="Vissza: Terhelés" className="fo-backpill">‹ Terhelés</FrameBack>
 
   if (workoutPending || runningPending || weekLog.pending) {
     return <TrainWeekSkeleton blocks={[330, 260, 300]} />
@@ -139,7 +139,6 @@ export function TrainWeekMozgasPage() {
         sub="A terem és a sport együtt, eddig a héten — a kettő máshogy számít, ezért külön is mutatjuk."
         actions={(
           <InfoButton
-            link
             eyebrow="Minden mozgásod"
             title="Miért becslés?"
             copy="A gym percei a szettjeidből becsültek, a röplabdát te naplóztad. A kalória mindkettőnél becslés a mozgás jellegéből — nem mérés."
@@ -171,6 +170,7 @@ export function TrainWeekMozgasPage() {
           <Row
             key={g.group}
             className="et-grp"
+            chev={false}
             data-group={g.group}
             left={<Mchp muscle={g.colorMuscle} sm />}
             title={<>{g.label}{sportyGroups.has(g.group) && <> <St tone="plan">sport is</St></>}</>}
@@ -180,7 +180,6 @@ export function TrainWeekMozgasPage() {
         ))}
         <Acts>
           <InfoButton
-            link
             eyebrow="Izomcsoportok, sporttal együtt"
             title="Hogyan olvasd?"
             copy="A sáv a gym szettjeidet mutatja a heti tervhez képest. A „sport is” jel azt jelzi, hogy a sport is dolgoztatta a csoportot — ez becslés, és nem adódik hozzá a szettekhez."
@@ -200,7 +199,7 @@ export function TrainWeekMozgasPage() {
             title={<><span className="et-event-title">{e.title}</span> <St>{EVENT_TAG[e.kind]}</St></>}
             sub={<span className="et-event-when">{DAY_LABELS[e.day] ?? e.day}{e.time ? ` · ${e.time}` : ''}</span>}
             more={(
-              <span className="et-evc">
+              <span className="fo-evc">
                 {e.regionLoads.map((rl) => (
                   <em key={rl.region}>
                     {rl.label}

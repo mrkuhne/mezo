@@ -35,7 +35,7 @@ import {
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { Sheet } from '@/shared/ui/Sheet'
 import {
-  Acts, Big, Card, Chev, DropsMeter, FoSheetHead, InfoSheet, Level, LevelMarks, Lk, Note, Page, Row, Section, Tank, Txt,
+  Acts, Big, Card, Chev, DropsMeter, FoSheetHead, Level, LevelMarks, Lk, Note, Page, Row, Section, Tank, Txt,
   useFrameTitle,
 } from '@/shared/ui/folyadek'
 import { DuoBody, Mchp, deepMuscle } from '@/features/train/components/folyadek'
@@ -65,36 +65,26 @@ function heroSay(totals: LoadWeek, untouchedCount: number): string {
   return `${untouchedCount} izomcsoport még munkára vár ezen a héten.`
 }
 
-const SZAM_TITLE = 'Miből áll össze a szám?'
-
 /**
  * The „Miből áll össze a szám?" link under the map doorway (prototype `info` sheet, arg
- * `szam`). It is the explain layer's own trigger — same accessible name as an `InfoButton`
- * — but its sheet also DRAWS the number it explains (done sets in the week's vessel), which
- * the shared button cannot carry, so it opens the kit's `InfoSheet` itself.
+ * `szam`): the explain layer's `InfoButton`, whose sheet also DRAWS the number it explains —
+ * the done sets in the week's vessel.
  */
 function SzamInfo({ totals }: { totals: LoadWeek }) {
-  const [open, setOpen] = useState(false)
   const doneLine = `${totals.doneSets} szett megvan`
   return (
-    <>
-      <Lk aria-label={`${SZAM_TITLE} — mit jelent?`} onClick={() => setOpen(true)}>{SZAM_TITLE}</Lk>
-      {open && (
-        <InfoSheet
-          eyebrow="Terhelés"
-          title={SZAM_TITLE}
-          copy="A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké."
-          onClose={() => setOpen(false)}
-        >
-          {/* The caption rides on the liquid only once there is enough of it to carry white text
-              (bible §8.8); under that it stands below the vessel. */}
-          <div className="et-bar et-bar-info">
-            <Level pct={totals.percent} height={22} label={totals.percent >= 45 ? doneLine : undefined} value={String(totals.plannedSets)} />
-          </div>
-          {totals.percent < 45 && <Note className="et-bar-cap">{doneLine}</Note>}
-        </InfoSheet>
-      )}
-    </>
+    <InfoButton
+      eyebrow="Terhelés"
+      title="Miből áll össze a szám?"
+      copy="A futó terved e heti szettjeit számoljuk: amit már elvégeztél, osztva azzal, amit a hét kér. A sport perceit külön mutatjuk — az a pihenésed része, nem a szetteké."
+    >
+      {/* The caption rides on the liquid only once there is enough of it to carry white text
+          (bible §8.8); under that it stands below the vessel. */}
+      <div className="fo-rowbar et-bar-info">
+        <Level pct={totals.percent} height={22} label={totals.percent >= 45 ? doneLine : undefined} value={String(totals.plannedSets)} />
+      </div>
+      {totals.percent < 45 && <Note className="et-bar-cap">{doneLine}</Note>}
+    </InfoButton>
   )
 }
 
@@ -128,7 +118,7 @@ function GroupSheetBody({ group, days, sportSlots, runSessions, labelId, onClose
         sub={group.word}
         onClose={onClose}
       />
-      <div className="et-bar">
+      <div className="fo-rowbar">
         <LevelMarks pct={sharePct(group)} color={deepMuscle(group.colorMuscle)} height={20} />
       </div>
       {rows.length === 0 ? (
@@ -145,7 +135,7 @@ function GroupSheetBody({ group, days, sportSlots, runSessions, labelId, onClose
                 title={MUSCLE_LABELS[r.muscle] ?? r.muscle}
                 sub={`${r.workingSets} szett · ${r.repMinTotal}–${r.repMaxTotal} ismétlés · ${r.gymFrequency}×/hét — a heti tervből`}
                 more={sources.length > 0 && (
-                  <span className="et-evc">
+                  <span className="fo-evc">
                     {sources.map((s) => (
                       <em key={s.kind}>
                         <DropsMeter n={s.load} color={deepMuscle(r.muscle)} label={`${s.load} / 3 terhelés`} />
@@ -283,6 +273,7 @@ export function TrainWeekPage() {
             <Row
               key={g.group}
               className="et-grp"
+              chev={false}
               data-plan={much ? 'over' : undefined}
               left={<Mchp muscle={g.colorMuscle} sm />}
               // The week's plan asks for a lot here — a flag in the warn colour, never an alarm.
@@ -298,7 +289,6 @@ export function TrainWeekPage() {
         <Note>Az edény széle a heti terv, a folyadék az elvégzett szett. Koppints egy csoportra a részletekért.</Note>
         <Acts>
           <InfoButton
-            link
             eyebrow="Izomcsoportok"
             title="Mit mutat a sáv?"
             copy="A színes rész az elvégzett szett, a halvány a hét teljes kérése. Egy csoportra koppintva látod, melyik része mennyit kapott."
@@ -331,7 +321,6 @@ export function TrainWeekPage() {
             <Note>Becslés — a szettszámokba nem számít bele.</Note>
             <Acts>
               <InfoButton
-                link
                 eyebrow="Sport a héten"
                 title="A sport és a szettek"
                 copy="A sportod a heti mozgásod és a pihenésed része — a szettszámokba nem számít bele, mert ott a terved emelkedését követjük. A regenerációnál viszont figyelembe vesszük."

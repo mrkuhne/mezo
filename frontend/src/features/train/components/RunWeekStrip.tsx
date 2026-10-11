@@ -35,7 +35,7 @@ export function RunWeekStrip({ weeks, currentWeek, done = [], planned = [] }: {
     }
   })
   return (
-    <div className="es-hg" data-weeks={weeks}>
+    <div className="fo-hero-g" data-weeks={weeks}>
       <Tubes items={items} height={70} size="wk" gap={5}
         aria-label={`A blokk hetei: ${currentWeek}. hét a ${weeks}-ból`} />
     </div>

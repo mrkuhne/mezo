@@ -33,7 +33,7 @@ import { runToTemplate } from '@/features/train/logic/runToTemplate'
 import { huDate } from '@/features/train/logic/mesoDates'
 import MesoFutamokSkeleton from '@/features/train/pages/MesoFutamokSkeleton'
 import {
-  Btn, Card, Chev, EmptyTank, FrameBack, Hero, Lk, Note, Page, Row, Section, St, Tubes, useFrameTitle,
+  Btn, Card, EmptyTank, FrameBack, Hero, Lk, Note, Page, Row, Section, St, Tubes, useFrameTitle,
 } from '@/shared/ui/folyadek'
 
 /** The hero holds this many vessels; a longer history stays whole in the list below. */
@@ -104,7 +104,7 @@ export function MesoFutamokPage() {
       .catch(() => {})
   }
 
-  const back = <FrameBack className="ep-back" history fallback="/train/mesocycles/konyvtar">‹ Edzéstervek</FrameBack>
+  const back = <FrameBack className="fo-backpill" history fallback="/train/mesocycles/konyvtar">‹ Edzéstervek</FrameBack>
   const sheet = startTemplate && (
     <MesoStartSheet templateId={startTemplate.id} title={startTemplate.title} onClose={() => setStartTemplate(null)} />
   )
@@ -142,10 +142,10 @@ export function MesoFutamokPage() {
           <>
             {ready && <Btn onClick={openCompare}>Összevetés megnyitása</Btn>}
             <Btn ghost={ready} aria-pressed={compareMode} onClick={toggleCompareMode}>{selecting ? 'Mégsem' : 'Összevetés'}</Btn>
-            {ready && <Note className="ep-actnote">A két kiválasztott futam egymás mellett</Note>}
+            {ready && <Note>A két kiválasztott futam egymás mellett</Note>}
           </>
         ) : undefined}>
-        <div className="ep-hg">
+        <div className="fo-hero-g">
           <Tubes className={heroRuns.length > 3 ? 'ep-n3 many' : 'ep-n3'} height={124} size={heroRuns.length > 3 ? 'wk' : undefined}
             aria-label="Lezárt futamaid: egy edény egy futam"
             items={heroRuns.map((m) => {
@@ -174,7 +174,7 @@ export function MesoFutamokPage() {
             </>
           )
           return (
-            <div key={m.id} className="ep-log">
+            <div key={m.id} className="fo-log ep-log">
               {selecting ? (
                 <Row as="div" title={m.title} sub={sub}
                   left={<span className={at >= 0 ? 'ep-tk on' : 'ep-tk'} aria-hidden="true">{at >= 0 && <b>{at + 1}</b>}</span>}
@@ -186,12 +186,12 @@ export function MesoFutamokPage() {
                       finding that out only after tapping through is a dead end. A plain stamp, never a
                       button — the row is what opens the report. */}
                   <Row icon="t-scroll" title={m.title} sub={sub}
-                    right={<span className="ep-rowchev"><St tone={m.hasReport ? 'ok' : 'q'}>{m.hasReport ? 'riport' : 'nincs riport'}</St><Chev /></span>}
+                    chev right={<St tone={m.hasReport ? 'ok' : 'q'}>{m.hasReport ? 'riport' : 'nincs riport'}</St>}
                     aria-label={`Lezárt futam · ${m.title}`}
                     onClick={() => tap(m)} />
                   {/* While selecting, the only meaningful tap is the selection itself — BOTH
                       actions step aside (mezo-meyc.4 / mezo-tlwa). */}
-                  <div className="ep-in">
+                  <div className="fo-under top">
                     <Lk onClick={() => saveAsTemplate(m)}>Sablonná</Lk>
                     <Lk onClick={() => rerunMeso(m.id, m.title)}>Újrafuttatás</Lk>
                   </div>

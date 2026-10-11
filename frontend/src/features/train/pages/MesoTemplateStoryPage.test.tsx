@@ -302,7 +302,7 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     setup()
     await user.click(screen.getByRole('button', { name: /Sablon törlése/ }))
     // inline two-step confirm: the same row, now asking, in the destructive tone
-    expect(screen.getByText('Biztos? Törlés')).toHaveClass('er-bad')
+    expect(screen.getByText('Biztos? Törlés').closest('.fo-row')).toHaveClass('bad')
     expect(screen.queryByRole('dialog')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Mégsem' }))
