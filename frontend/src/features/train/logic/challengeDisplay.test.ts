@@ -14,7 +14,7 @@ describe('challengeDisplay (mezo-oy91i)', () => {
 
   test('challengeTypeLabel drops a leading emoji and speaks Hungarian', () => {
     expect(challengeTypeLabel('⚡ Túlterhelés')).toBe('Túlterhelés')
-    expect(challengeTypeLabel('PR-attempt')).toBe('PR-kísérlet')
+    expect(challengeTypeLabel('PR-attempt')).toBe('Rekord-kísérlet')
     expect(challengeTypeLabel('Mélység')).toBe('Mélység')
   })
 

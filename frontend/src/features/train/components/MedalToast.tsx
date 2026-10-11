@@ -6,7 +6,7 @@
 // ============================================================
 import { huMonthDay } from '@/shared/lib/dates'
 import type { Medal } from '@/data/train/medalTypes'
-import { formatMedalNumber as fmt, medalValueLabel } from '@/features/train/logic/medalLabels'
+import { MEDAL_UNIT_LABEL, formatMedalNumber as fmt, medalValueLabel } from '@/features/train/logic/medalLabels'
 import { RecordToast } from '@/features/train/components/folyadek'
 
 // The eyebrow's own short forms — deliberately NOT the shared MEDAL_TYPE_LABEL copy („Súly-rekord" et al.), which
@@ -17,12 +17,11 @@ const TYPE_LABEL: Record<string, string> = {
   E1RM: '1RM',
   SESSION_VOLUME: 'volumen',
 }
-const UNIT: Record<string, string> = { KG: 'kg', REPS: 'ism.' }
 
 export function MedalToast({ medal, extraCount = 0 }: { medal: Medal; extraCount?: number }) {
   // The achieving set (weightKg × reps) covers WEIGHT / REPS_AT_WEIGHT; a derived record (1RM, volume) shows its value.
   const note = medal.previousValue != null
-    ? `Eddigi legjobbad ${fmt(medal.previousValue)} ${UNIT[medal.unit] ?? ''} volt`
+    ? `Eddigi legjobbad ${fmt(medal.previousValue)} ${MEDAL_UNIT_LABEL[medal.unit] ?? ''} volt`
       + (medal.previousDate ? ` — ${huMonthDay(medal.previousDate)} óta állt.` : '.')
       + (extraCount > 0 ? ` +${extraCount} további medál` : '')
     : undefined

@@ -29,7 +29,7 @@ export const MEDAL_TYPE_LABEL: Record<MedalType, string> = {
   TARGET_HIT: 'Cél teljesítve',
 }
 
-export const MEDAL_UNIT_LABEL: Record<MedalUnit, string> = { KG: 'kg', REPS: 'rep' }
+export const MEDAL_UNIT_LABEL: Record<MedalUnit, string> = { KG: 'kg', REPS: 'ism.' }
 
 /**
  * Tier → 3D icon + tag + accent, the two-tier split every medal row surface uses (mezo-wp6n):

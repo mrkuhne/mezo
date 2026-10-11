@@ -7,13 +7,14 @@ import type { ProgressionSignal } from '@/data/types'
 
 const fmt = (n: number) => n.toLocaleString('hu-HU')
 
+/** The step in words; the direction is the `tone` (the chip's colour says it — no arrow glyph, Folyadék F4). */
 export function progressionChip(p: ProgressionSignal): { text: string; tone: 'up' | 'hold' | 'down' } {
   if (p.deltaKg != null && p.deltaKg !== 0) {
     return p.deltaKg > 0
-      ? { text: `↑ +${fmt(p.deltaKg)} kg`, tone: 'up' }
-      : { text: `↓ −${fmt(Math.abs(p.deltaKg))} kg`, tone: 'down' }
+      ? { text: `+${fmt(p.deltaKg)} kg`, tone: 'up' }
+      : { text: `−${fmt(Math.abs(p.deltaKg))} kg`, tone: 'down' }
   }
-  if (p.lever === 'rep' && p.deltaReps != null && p.deltaReps > 0) return { text: `↑ +${p.deltaReps} ism.`, tone: 'up' }
+  if (p.lever === 'rep' && p.deltaReps != null && p.deltaReps > 0) return { text: `+${p.deltaReps} ism.`, tone: 'up' }
   return { text: 'tartjuk', tone: 'hold' }
 }
 

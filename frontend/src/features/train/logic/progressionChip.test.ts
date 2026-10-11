@@ -7,10 +7,15 @@ const sig = (over: Partial<ProgressionSignal>): ProgressionSignal => ({
 })
 
 describe('progressionChip', () => {
-  it('weight up', () => expect(progressionChip(sig({ lever: 'weight', deltaKg: 2.5 }))).toEqual({ text: '↑ +2,5 kg', tone: 'up' }))
-  it('weight down', () => expect(progressionChip(sig({ lever: 'weight', deltaKg: -2.5 }))).toEqual({ text: '↓ −2,5 kg', tone: 'down' }))
-  it('deload', () => expect(progressionChip(sig({ lever: 'deload', deltaKg: -10 }))).toEqual({ text: '↓ −10 kg', tone: 'down' }))
-  it('rep build', () => expect(progressionChip(sig({ lever: 'rep', deltaReps: 1 }))).toEqual({ text: '↑ +1 ism.', tone: 'up' }))
+  it('weight up', () => expect(progressionChip(sig({ lever: 'weight', deltaKg: 2.5 }))).toEqual({ text: '+2,5 kg', tone: 'up' }))
+  it('weight down', () => expect(progressionChip(sig({ lever: 'weight', deltaKg: -2.5 }))).toEqual({ text: '−2,5 kg', tone: 'down' }))
+  it('deload', () => expect(progressionChip(sig({ lever: 'deload', deltaKg: -10 }))).toEqual({ text: '−10 kg', tone: 'down' }))
+  it('rep build', () => expect(progressionChip(sig({ lever: 'rep', deltaReps: 1 }))).toEqual({ text: '+1 ism.', tone: 'up' }))
+  it('never carries an arrow glyph — the tone is the direction (Folyadék F4)', () => {
+    for (const s of [sig({ lever: 'weight', deltaKg: 2.5 }), sig({ lever: 'weight', deltaKg: -2.5 }), sig({ lever: 'rep', deltaReps: 1 })]) {
+      expect(progressionChip(s).text).not.toMatch(/[↑↓]/)
+    }
+  })
   it('hold', () => expect(progressionChip(sig({ lever: 'hold' }))).toEqual({ text: 'tartjuk', tone: 'hold' }))
 })
 
