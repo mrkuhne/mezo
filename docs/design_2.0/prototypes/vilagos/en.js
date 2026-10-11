@@ -4,6 +4,7 @@
 (function(){
 const {I,mchp,page,sec,card,head,hero,btn,lk,step,row,bar,stat,grid,facts,seg,pills,st,note,txt,msg,chev,act,register,
   tank,vials,mini,level,fill,area,linked,stream,bub,wave,uid}=F;
+const L=F.L;
 const E='.phone[data-v="feher"][data-d="en"]', Q='.phone.foly[data-s="elo"][data-d="en"]';
 const S={period:'30d',swin:'7d',celv:'het',wk:0,dp:false,df:false,life:false,pf:'mind',tit:'letra',dec:'open',stn:-1};
 const WAVE=`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E")`;
@@ -644,106 +645,121 @@ function ertesitesek(arg){
 }
 
 /* ═══════════ BEÁLLÍTÁSOK ═══════════ */
+/* N1 (2026-10-11): the Settings pages are the first screens written in both languages — L(hu,en), English written
+   as English (bible §2.5). The „Nyelv" block lives on „Megjelenés és alkalmazás" (b-alt). */
 const DOMI={fuel:'c-i-tanyer',train:'c-i-edzes',mezo:'c-i-mezo',en:'c-i-emberek',nap:'c-i-nap'};
 const srow=(icn,t,s,go,v)=>row({icon:icn,title:t,sub:s,v,on:go?(go[0]==='#'?go.slice(1):{toast:go}):null});
 const sth=(lbl,h,p,icon,acts)=>hero({lbl,verdict:h,sub:p,left:hart(icon),acts});
+const dec=v=>window.LANG==='en'?String(v).replace(/,/g,'.'):v;
 function beall(){
-  const D=[['fuel','Fuel','Táplálkozás, ahogy neked jó.','Kalória és makrók · étkezési ritmus','Fuel beállítások (a Fuel-körben kész)'],['train','Edzés','Helyet a mozgásnak.','Gym-időpontok · rendszeres sport','#b-train'],['mezo','Mezo','A közös nyelvünk.','Rólam · instrukciók · személyes kontextus','#b-mezo'],['en','Én','A tested. A céljaid.','Testprofil · súlycél · alvás','#b-me'],['nap','Nap','Jó reggeltől a pihenésig.','Napi horgonyok · emlékeztetők','#b-nap']];
-  return P({title:'Beállítások',sub:'Mezo · beállítások',back:'mai'},`
-  ${sth('Innen érkeztél: Én','Legyen a tiéd.','Egy helyen minden, ami hozzád igazítja a Mezót.','t-gear',btn('Én beállításai','b-me'))}
-  ${sec(1,'A te területeid',1)}
+  const D=[['fuel','Fuel',L('Táplálkozás, ahogy neked jó.','Eating that suits you.'),L('Kalória és makrók · étkezési ritmus','Calories and macros · meal rhythm'),L('Fuel beállítások (a Fuel-körben kész)','Fuel settings (done in the Fuel round)')],
+    ['train',L('Edzés','Training'),L('Helyet a mozgásnak.','Make room to move.'),L('Gym-időpontok · rendszeres sport','Gym times · regular sport'),'#b-train'],
+    ['mezo','Mezo',L('A közös nyelvünk.','How we talk.'),L('Rólam · instrukciók · személyes kontextus','About me · instructions · personal context'),'#b-mezo'],
+    ['en',L('Én','Me'),L('A tested. A céljaid.','Your body. Your goals.'),L('Testprofil · súlycél · alvás','Body profile · weight goal · sleep'),'#b-me'],
+    ['nap',L('Nap','Today'),L('Jó reggeltől a pihenésig.','From good morning to rest.'),L('Napi horgonyok · emlékeztetők','Daily anchors · reminders'),'#b-nap']];
+  return P({title:L('Beállítások','Settings'),sub:L('Mezo · beállítások','Mezo · settings'),back:'mai'},`
+  ${sth(L('Innen érkeztél: Én','You came from: Me'),L('Legyen a tiéd.','Make it yours.'),L('Egy helyen minden, ami hozzád igazítja a Mezót.','Everything that fits Mezo to you, in one place.'),'t-gear',btn(L('Én beállításai','Me settings'),'b-me'))}
+  ${sec(1,L('A te területeid','Your areas'),1)}
   ${card(D.map(d=>srow(DOMI[d[0]],`${d[1]} <span class="en-meta">${d[2]}</span>`,d[3],d[4])).join(''),{i:1})}
-  ${sec(2,'Az app körülötted',2)}
-  ${card(srow('t-bell','Értesítések','Mikor és miről szóljon a Mezo','#b-ert')+srow('t-palette','Megjelenés és alkalmazás','Kalauzok, fiók, jelszó','#b-alt')+srow('t-key','Fiókod','Név és e-mail-cím','#b-fiok')
-    +note('Minden terület ugyanazokat az alapadatokat használja. Amit itt javítasz, az appban is követ.'),{i:2})}`);
+  ${sec(2,L('Az app körülötted','The app around you'),2)}
+  ${card(srow('t-bell',L('Értesítések','Notifications'),L('Mikor és miről szóljon a Mezo','When Mezo speaks up, and about what'),'#b-ert')+srow('t-palette',L('Megjelenés és alkalmazás','Appearance and app'),L('Nyelv, kalauzok, fiók, jelszó','Language, guides, account, password'),'#b-alt')+srow('t-key',L('Fiókod','Your account'),L('Név és e-mail-cím','Name and email'),'#b-fiok')
+    +note(L('Minden terület ugyanazokat az alapadatokat használja. Amit itt javítasz, az appban is követ.','Every area uses the same basics. What you correct here changes across the app.')),{i:2})}`);
 }
 function btrain(){
-  return P({title:'Edzés',sub:'Beállítások · edzés',back:'beall'},`
-  ${sth('Edzés','Helyet a mozgásnak.','A terved mondja, mit. Te döntöd el, mikor. A hét többi része igazodik.','c-i-edzes')}
-  ${sec(1,'A heted',1)}
-  ${card(cells([['4','','gym-időpont / hét'],['2','','sportalkalom / hét']])+`<div class="en-wk7">${[['H','07:00'],['K','—',1],['Sze','07:00'],['Cs','17:30'],['P','07:00'],['Szo','10:00'],['V','—',1]].map(d=>`<span class="${d[2]?'off':''}">${d[0]}<b>${d[1]}</b></span>`).join('')}</div>`,{i:1})}
-  ${sec(2,'Időpontok',2)}
-  ${card(srow('t-dumbbell','Heti gym-időpontok','4 alkalom · reggel','Gym-időpontok szerkesztése (lap)')+srow('t-volley','Rendszeres sport','Röplabda · Cs, Szo','Sport-időpontok szerkesztése (lap)')+srow('t-bell','Edzésemlékeztetők','Edzés előtt 30 perccel','#b-ert')
-    +note('Az időpontokból tudja a Nap és a Fuel, mikor edzel.'),{i:2})}`);
+  const W=window.LANG==='en'?['Mo','Tu','We','Th','Fr','Sa','Su']:['H','K','Sze','Cs','P','Szo','V'], T=['07:00','—','07:00','17:30','07:00','10:00','—'];
+  return P({title:L('Edzés','Training'),sub:L('Beállítások · edzés','Settings · training'),back:'beall'},`
+  ${sth(L('Edzés','Training'),L('Helyet a mozgásnak.','Make room to move.'),L('A terved mondja, mit. Te döntöd el, mikor. A hét többi része igazodik.','Your plan says what. You decide when. The rest of the week follows.'),'c-i-edzes')}
+  ${sec(1,L('A heted','Your week'),1)}
+  ${card(cells([['4','',L('gym-időpont / hét','gym times / week')],['2','',L('sportalkalom / hét','sport sessions / week')]])+`<div class="en-wk7">${W.map((d,i)=>`<span class="${T[i]==='—'?'off':''}">${d}<b>${T[i]}</b></span>`).join('')}</div>`,{i:1})}
+  ${sec(2,L('Időpontok','Times'),2)}
+  ${card(srow('t-dumbbell',L('Heti gym-időpontok','Weekly gym times'),L('4 alkalom · reggel','4 sessions · mornings'),L('Gym-időpontok szerkesztése (lap)','Edit gym times (sheet)'))+srow('t-volley',L('Rendszeres sport','Regular sport'),L('Röplabda · Cs, Szo','Volleyball · Thu, Sat'),L('Sport-időpontok szerkesztése (lap)','Edit sport times (sheet)'))+srow('t-bell',L('Edzésemlékeztetők','Workout reminders'),L('Edzés előtt 30 perccel','30 minutes before a workout'),'#b-ert')
+    +note(L('Az időpontokból tudja a Nap és a Fuel, mikor edzel.','Today and Fuel read these times to know when you train.')),{i:2})}`);
 }
 function bme(){
-  return P({title:'Én',sub:'Beállítások · én',back:'beall'},`
-  ${sth('Én','A tested, a céljaid, a pihenésed.','Az alapok változnak. A beállításaid követhetik.','c-i-emberek')}
-  ${sec(1,'Alapok',1)}
-  ${card(cells([['180','cm','magasság · testprofil'],['8','óra','alváscél']]),{i:1})}
-  ${sec(2,'Amit állíthatsz',2)}
-  ${card(srow('t-person','Testprofil','34 év · 180 cm · 15% testzsír','Testprofil szerkesztése (lap)')+srow('t-weight','Súlycél','Fogyás · 76 kg · −0,4 kg/hét','#b-cel')+srow('t-sleep','Alvás és napi horgony','23:00 lefekvés · 07:00 ébredés','Alváscél szerkesztése (lap)')+srow('t-orb','Mit tud rólam Mezo?','A személyes alapjaid','#b-szemely.about'),{i:2})}`);
+  return P({title:L('Én','Me'),sub:L('Beállítások · én','Settings · me'),back:'beall'},`
+  ${sth(L('Én','Me'),L('A tested, a céljaid, a pihenésed.','Your body, your goals, your rest.'),L('Az alapok változnak. A beállításaid követhetik.','The basics change. Your settings can keep up.'),'c-i-emberek')}
+  ${sec(1,L('Alapok','Basics'),1)}
+  ${card(cells([['180','cm',L('magasság · testprofil','height · body profile')],['8',L('óra','h'),L('alváscél','sleep goal')]]),{i:1})}
+  ${sec(2,L('Amit állíthatsz','What you can change'),2)}
+  ${card(srow('t-person',L('Testprofil','Body profile'),L('34 év · 180 cm · 15% testzsír','34 years · 180 cm · 15% body fat'),L('Testprofil szerkesztése (lap)','Edit body profile (sheet)'))+srow('t-weight',L('Súlycél','Weight goal'),L('Fogyás · 76 kg · −0,4 kg/hét','Weight loss · 76 kg · −0.4 kg/week'),'#b-cel')+srow('t-sleep',L('Alvás és napi horgony','Sleep and daily anchors'),L('23:00 lefekvés · 07:00 ébredés','Bedtime 23:00 · wake-up 07:00'),L('Alváscél szerkesztése (lap)','Edit sleep goal (sheet)'))+srow('t-orb',L('Mit tud rólam Mezo?','What does Mezo know about me?'),L('A személyes alapjaid','Your personal basics'),'#b-szemely.about'),{i:2})}`);
 }
 function bcel(){
-  return P({title:'Súlycél',sub:'Én beállításai · fogyás · aktív',back:'b-me'},`
-  ${hero({lbl:'Fogyás · aktív · 76 kg célsúly',verdict:'Reális: a tempó belefér.',sub:'<b>78,4 kg</b> most · még <b>2,4 kg</b> · 38% teljesült',left:jar(38,{val:'38%',label:'teljesült'}),body:cells([['78,4','','most'],['2,4','kg','hátra'],['76','kg','célsúly']]),acts:btn('Cél szerkesztése',{toast:'Cél szerkesztése (lap)'})})}
-  ${sec(1,'A te tempódban · célból dátum',1)}
-  ${card(two(fld('Célsúly (kg)','76,0'),fld('Céltempó (kg/hét)','0,4'))+row({icon:'t-calendar',title:'Becsült céldátum · számított',sub:'reális, a tempó belefér',v:'nov. 2.'}),{i:1,cls:'en-form'})}
-  ${sec(2,'Jelenleg mentett cél',2)}
-  ${card([['Irány','Fogyás'],['Súlyút','80,0 → 76,0 kg'],['Célablak','W 4 / 10'],['Céltempó','−0,4 kg/hét'],['Várható céldátum','nov. 2.']].map(r=>row({title:r[0],v:r[1]})).join('')+lab('Védőkorlátok')+chips([['t-shield','Erővédelem'],['t-shield','Izomvédelem']]),{i:2})}`);
+  return P({title:L('Súlycél','Weight goal'),sub:L('Én beállításai · fogyás · aktív','Me settings · weight loss · active'),back:'b-me'},`
+  ${hero({lbl:L('Fogyás · aktív · 76 kg célsúly','Weight loss · active · target 76 kg'),verdict:L('Reális: a tempó belefér.','Realistic: the pace fits.'),sub:L('<b>78,4 kg</b> most · még <b>2,4 kg</b> · 38% teljesült','<b>78.4 kg</b> now · <b>2.4 kg</b> to go · 38% done'),left:jar(38,{val:'38%',label:L('teljesült','done')}),body:cells([[dec('78,4'),'',L('most','now')],[dec('2,4'),'kg',L('hátra','to go')],['76','kg',L('célsúly','target')]]),acts:btn(L('Cél szerkesztése','Edit goal'),{toast:L('Cél szerkesztése (lap)','Edit goal (sheet)')})})}
+  ${sec(1,L('A te tempódban · célból dátum','At your pace · from goal to date'),1)}
+  ${card(two(fld(L('Célsúly (kg)','Target weight (kg)'),dec('76,0')),fld(L('Céltempó (kg/hét)','Target pace (kg/week)'),dec('0,4')))+row({icon:'t-calendar',title:L('Becsült céldátum · számított','Estimated date · calculated'),sub:L('reális, a tempó belefér','realistic, the pace fits'),v:L('nov. 2.','2 Nov')}),{i:1,cls:'en-form'})}
+  ${sec(2,L('Jelenleg mentett cél','Goal saved now'),2)}
+  ${card([[L('Irány','Direction'),L('Fogyás','Weight loss')],[L('Súlyút','Weight path'),dec('80,0 → 76,0 kg')],[L('Célablak','Goal window'),L('W 4 / 10','Week 4 of 10')],[L('Céltempó','Target pace'),L('−0,4 kg/hét','−0.4 kg/week')],[L('Várható céldátum','Expected date'),L('nov. 2.','2 Nov')]].map(r=>row({title:r[0],v:r[1]})).join('')+lab(L('Védőkorlátok','Guardrails'))+chips([['t-shield',L('Erővédelem','Strength protection')],['t-shield',L('Izomvédelem','Muscle protection')]]),{i:2})}`);
 }
 function bmezo(){
-  return P({title:'Mezo és te',sub:'Beállítások · mezo',back:'beall'},`
-  ${sth('Mezo és te','Legyen világos, mit tud rólad.','És hogyan szóljon hozzád. Amit itt megírsz, azt Mezo minden beszélgetésben szem előtt tartja.','c-i-mezo')}
-  ${sec(1,'A közös nyelvünk',1)}
-  ${card(txt('<b>Egy közös alap, amit te is alakítasz.</b>')+srow('t-person','Rólam','A saját szavaimmal · te alakítod','#b-szemely.about')+srow('t-chat','Így beszélj velem','Saját instrukció és tanult stílus','#b-szemely.communication'),{i:1})}
-  ${sec(2,'Átlátható működés',2)}
-  ${card(srow('t-orb','Ezt kapja meg Mezo','A pontos összeállított szöveg','#b-szemely.context')+srow('t-bell','Mezo jelzései','Minták, előrejelzések, összegzések','#b-ert'),{i:2})}`);
+  return P({title:L('Mezo és te','Mezo and you'),sub:L('Beállítások · mezo','Settings · mezo'),back:'beall'},`
+  ${sth(L('Mezo és te','Mezo and you'),L('Legyen világos, mit tud rólad.','Be clear about what it knows about you.'),L('És hogyan szóljon hozzád. Amit itt megírsz, azt Mezo minden beszélgetésben szem előtt tartja.','And how it should talk to you. Mezo keeps what you write here in mind in every conversation.'),'c-i-mezo')}
+  ${sec(1,L('A közös nyelvünk','How we talk'),1)}
+  ${card(txt(L('<b>Egy közös alap, amit te is alakítasz.</b>','<b>A shared base that you shape too.</b>'))+srow('t-person',L('Rólam','About me'),L('A saját szavaimmal · te alakítod','In my own words · you shape it'),'#b-szemely.about')+srow('t-chat',L('Így beszélj velem','How to talk to me'),L('Saját instrukció és tanult stílus','Your instruction and the learned style'),'#b-szemely.communication'),{i:1})}
+  ${sec(2,L('Átlátható működés','How it works, in the open'),2)}
+  ${card(srow('t-orb',L('Ezt kapja meg Mezo','What Mezo receives'),L('A pontos összeállított szöveg','The exact assembled text'),'#b-szemely.context')+srow('t-bell',L('Mezo jelzései','Signals from Mezo'),L('Minták, előrejelzések, összegzések','Patterns, predictions, summaries'),'#b-ert'),{i:2})}`);
 }
 function bnap(){
-  return P({title:'Nap',sub:'Beállítások · nap',back:'beall'},`
-  ${sth('Nap','A ritmus, ami összefogja a napodat.','Jó reggeltől a lecsendesedésig.','c-i-nap')}
-  ${sec(1,'A két horgony',1)}
-  ${card(cells([['07:00','','ébredés'],['23:00','','pihenés']])+`<div class="en-day24" role="img" aria-label="Ébren 07:00 és 23:00 között"><i style="left:29.2%;right:4.2%"></i>${bub('t-dawn',{s:30,cls:'a'}).replace('style="','style="left:29.2%;')}${bub('t-moon',{s:30}).replace('style="','style="left:95.8%;')}</div><div class="en-ax">${[0,6,12,18,24].map(x=>`<span>${x}</span>`).join('')}</div>`+note('A nap vízszintje: a két horgony között vagy ébren, előtte és utána apály.'),{i:1})}
-  ${sec(2,'Amit állíthatsz',2)}
-  ${card(srow('t-dawn','Ébredés és lefekvés','A napod két horgonya','Alvás és napi ritmus (Én beállításai)')+srow('t-checkin','Check-in és napzárás','Emlékeztetők','#b-ert')+srow('t-plate','Étkezési ritmus','Étkezési ablakok','Fuel beállítások (a Fuel-körben kész)')
-    +note('A Nap a többi terület időpontjaiból rakja össze a ritmusod.'),{i:2})}`);
+  return P({title:L('Nap','Today'),sub:L('Beállítások · nap','Settings · today'),back:'beall'},`
+  ${sth(L('Nap','Today'),L('A ritmus, ami összefogja a napodat.','The rhythm that holds your day together.'),L('Jó reggeltől a lecsendesedésig.','From good morning to winding down.'),'c-i-nap')}
+  ${sec(1,L('A két horgony','The two anchors'),1)}
+  ${card(cells([['07:00','',L('ébredés','wake-up')],['23:00','',L('pihenés','rest')]])+`<div class="en-day24" role="img" aria-label="${L('Ébren 07:00 és 23:00 között','Awake between 07:00 and 23:00')}"><i style="left:29.2%;right:4.2%"></i>${bub('t-dawn',{s:30,cls:'a'}).replace('style="','style="left:29.2%;')}${bub('t-moon',{s:30}).replace('style="','style="left:95.8%;')}</div><div class="en-ax">${[0,6,12,18,24].map(x=>`<span>${x}</span>`).join('')}</div>`+note(L('A nap vízszintje: a két horgony között vagy ébren, előtte és utána apály.','The day’s water level: you are awake between the two anchors, with low tide before and after.')),{i:1})}
+  ${sec(2,L('Amit állíthatsz','What you can change'),2)}
+  ${card(srow('t-dawn',L('Ébredés és lefekvés','Wake-up and bedtime'),L('A napod két horgonya','The two anchors of your day'),L('Alvás és napi ritmus (Én beállításai)','Sleep and daily rhythm (Me settings)'))+srow('t-checkin',L('Check-in és napzárás','Check-in and day close'),L('Emlékeztetők','Reminders'),'#b-ert')+srow('t-plate',L('Étkezési ritmus','Meal rhythm'),L('Étkezési ablakok','Meal windows'),L('Fuel beállítások (a Fuel-körben kész)','Fuel settings (done in the Fuel round)'))
+    +note(L('A Nap a többi terület időpontjaiból rakja össze a ritmusod.','Today builds your rhythm from the times set in the other areas.')),{i:2})}`);
 }
 function balt(){
-  return P({title:'Megjelenés és alkalmazás',sub:'Beállítások · alkalmazás',back:'beall'},`
-  ${sth('Megjelenés és alkalmazás','Otthon az appban.','Ugyanaz a világ. A saját fényeiddel és szokásaiddal.','t-palette')}
-  ${sec(1,'Fiók',1)}
-  ${card(srow('t-person','Daniel','daniel@pelda.hu','#b-fiok')+srow('t-key','Jelszó módosítása','A belépésed maradjon a tiéd','Jelszó módosítása (lap)')+srow('t-exit','Kijelentkezés','','Kijelentkezés'),{i:1})}
-  ${sec(2,'Ami körülvesz',2)}
-  ${card(srow('t-bell','Értesítések','18 / 22 kategória','#b-ert')+srow('t-compass','Kalauzok újranézése','Minden oldal kalauza újra megjelenik','Kész: a kalauzok újra megjelennek'),{i:2})}
-  ${sec(3,'Tulajdonosi eszközök',3)}
-  ${card(srow('t-coin','AI-napló','Költség és hívások','Tulajdonosi konzol (a 10. szeletben)')+srow('t-people','Admin','Meghívók · felhasználók','Tulajdonosi konzol (a 10. szeletben)'),{i:3})}`);
+  const en=window.LANG==='en';
+  return P({title:L('Megjelenés és alkalmazás','Appearance and app'),sub:L('Beállítások · alkalmazás','Settings · app'),back:'beall'},`
+  ${sth(L('Megjelenés és alkalmazás','Appearance and app'),L('Otthon az appban.','At home in the app.'),L('Ugyanaz a világ. A saját nyelveden és szokásaiddal.','The same world. In your language, with your habits.'),'t-palette')}
+  ${sec(1,L('Nyelv','Language'),1)}
+  ${card(`<div class="fh-seg en-lang" role="group" aria-label="${L('Az app nyelve','App language')}"><button class="${en?'':'on'}" data-lang="hu" aria-pressed="${!en}">Magyar</button><button class="${en?'on':''}" data-lang="en" aria-pressed="${en}">English</button></div>`
+    +txt(L('Az app, a csapat és a Mezo ezen a nyelven szól hozzád. Amit eddig írtál vagy kaptál, úgy marad, ahogy íródott.','The app, the team and Mezo speak to you in this language. What you wrote or received before stays as it was written.'))
+    +note(L('Az angol változat készül, egyes oldalak még magyarul jelennek meg.','English is in progress — some pages still appear in Hungarian.')),{i:1})}
+  ${sec(2,L('Fiók','Account'),2)}
+  ${card(srow('t-person','Daniel','daniel@pelda.hu','#b-fiok')+srow('t-key',L('Jelszó módosítása','Change password'),L('A belépésed maradjon a tiéd','Keep your sign-in yours'),L('Jelszó módosítása (lap)','Change password (sheet)'))+srow('t-exit',L('Kijelentkezés','Sign out'),'',L('Kijelentkezés','Sign out')),{i:2})}
+  ${sec(3,L('Ami körülvesz','Around you'),3)}
+  ${card(srow('t-bell',L('Értesítések','Notifications'),L('18 / 22 kategória','18 of 22 categories'),'#b-ert')+srow('t-compass',L('Kalauzok újranézése','Replay the guides'),L('Minden oldal kalauza újra megjelenik','Every page’s guide shows again'),L('Kész: a kalauzok újra megjelennek','Done: the guides will show again')),{i:3})}
+  ${sec(4,L('Tulajdonosi eszközök','Owner tools'),4)}
+  ${card(srow('t-coin',L('AI-napló','AI log'),L('Költség és hívások','Cost and calls'),L('Tulajdonosi konzol (a 10. szeletben)','Owner console (in slice 10)'))+srow('t-people','Admin',L('Meghívók · felhasználók','Invites · users'),L('Tulajdonosi konzol (a 10. szeletben)','Owner console (in slice 10)')),{i:4})}`);
 }
 function bert(){
-  const cat=(icn,t,s,on,min)=>row({icon:icn,title:t,sub:`${s}${min?` · −${min} perc`:''}`,right:tgl(on,t)});
+  const cat=(icn,t,s,on,min)=>row({icon:icn,title:t,sub:`${s}${min?` · −${min} ${L('perc','min')}`:''}`,right:tgl(on,t)});
   const hrs=[0,0,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0,1,0,2,1,1,0];
-  return P({title:'Értesítések',sub:'Beállítások · értesítések',back:'beall'},`
-  ${nhero({lbl:'Tervezett ma',n:'9',unit:'értesítés',art:'t-bell',verdict:'Nyugodt ritmus, egy sűrű ablakkal.',sub:'20 és 22 óra között 4 értesítés esne.',
-    body:`<div class="en-chart" role="img" aria-label="Napi terhelés óránként: 9 értesítés, a legsűrűbb 20 és 22 óra között">${area(hrs.map((h,i)=>(h+(hrs[i-1]||0)*.35+(hrs[i+1]||0)*.35)),{h:92,min:0,max:3,labels:['0','4','8','12','16','20','24']})}</div><p class="fh-note" style="margin-top:6px">A nap mint árapály: éjjel 23 és 7 között apály (csend), este 20–22 között a dagály.</p>`,
-    acts:btn('Teszt értesítés küldése',{toast:'Teszt értesítés elküldve'})})}
-  ${sec(1,'Csatorna',1)}
-  ${card(row({icon:'t-bell',title:'Push értesítések',sub:'iPhone · engedélyezve',right:tgl(1,'Push')}),{i:1})}
-  ${sec(2,'Mezo megszólal',2)}
-  ${card([['t-dawn','Reggeli briefing','07:15',1],['t-note','Déli jegyzet','12:30',1],['t-score','Heti elemzés','vasárnap 19:00',1],['t-calendar','Heti összefoglaló','hétfő 08:00',0],['t-dawn','Napzárás','21:30',1,15],['t-sleep','Alvás-reakció','ébredés után',1],['t-weight','Súly-reakció','mérés után',1]].map(c=>cat(...c)).join(''),{i:2})}
-  ${sec(3,'Emlékeztetők',3)}
-  ${card([['t-dumbbell','Edzés előtt','30 perccel előtte',1,30],['t-syringe','Gyógyszer beadás','hétfő 20:00',1],['t-clock','Napzárás','22:00',0],['t-moon','Villanyoltás','22:45',1],['t-rested','Lecsendesítés','22:15',1],['t-checkin','Check-in','09:00',1],['t-supps','Fuel & stack','étkezésekhez',1]].map(c=>cat(...c)).join(''),{i:3})}
-  ${sec(4,'Az agy eseményei',4)}
-  ${card([['t-pattern','Minták','ha új jel rajzolódik ki',1],['t-book','Tudástár','új tény',0],['t-orb','Előrejelzések','ha beteljesül',1],['t-flask','Kísérletek','napi állás',1],['t-quest','Kihívások','indulás, zárás',1],['t-stack','Memória','új emlék',0],['t-compass','Döntés visszanézés','ha esedékes',1],['t-shield','Közbelépések','ha Mezo szól',1]].map(c=>cat(...c)).join('')
-    +note('Az agy eseményei eseményvezéreltek: nem szerepelnek a napi terhelés előnézetben.'),{i:4})}`);
+  return P({title:L('Értesítések','Notifications'),sub:L('Beállítások · értesítések','Settings · notifications'),back:'beall'},`
+  ${nhero({lbl:L('Tervezett ma','Planned today'),n:'9',unit:L('értesítés','notifications'),art:'t-bell',verdict:L('Nyugodt ritmus, egy sűrű ablakkal.','A calm rhythm with one busy window.'),sub:L('20 és 22 óra között 4 értesítés esne.','4 notifications would land between 20:00 and 22:00.'),
+    body:`<div class="en-chart" role="img" aria-label="${L('Napi terhelés óránként: 9 értesítés, a legsűrűbb 20 és 22 óra között','Load by hour: 9 notifications, busiest between 20:00 and 22:00')}">${area(hrs.map((h,i)=>(h+(hrs[i-1]||0)*.35+(hrs[i+1]||0)*.35)),{h:92,min:0,max:3,labels:['0','4','8','12','16','20','24']})}</div><p class="fh-note" style="margin-top:6px">${L('A nap mint árapály: éjjel 23 és 7 között apály (csend), este 20–22 között a dagály.','The day as a tide: low tide (quiet) from 23:00 to 07:00, high tide from 20:00 to 22:00.')}</p>`,
+    acts:btn(L('Teszt értesítés küldése','Send a test notification'),{toast:L('Teszt értesítés elküldve','Test notification sent')})})}
+  ${sec(1,L('Csatorna','Channel'),1)}
+  ${card(row({icon:'t-bell',title:L('Push értesítések','Push notifications'),sub:L('iPhone · engedélyezve','iPhone · allowed'),right:tgl(1,'Push')}),{i:1})}
+  ${sec(2,L('Mezo megszólal','When Mezo speaks'),2)}
+  ${card([['t-dawn',L('Reggeli briefing','Morning briefing'),'07:15',1],['t-note',L('Déli jegyzet','Midday note'),'12:30',1],['t-score',L('Heti elemzés','Weekly analysis'),L('vasárnap 19:00','Sunday 19:00'),1],['t-calendar',L('Heti összefoglaló','Weekly summary'),L('hétfő 08:00','Monday 08:00'),0],['t-dawn',L('Napzárás','Day close'),'21:30',1,15],['t-sleep',L('Alvás-reakció','Sleep reaction'),L('ébredés után','after waking'),1],['t-weight',L('Súly-reakció','Weight reaction'),L('mérés után','after weighing'),1]].map(c=>cat(...c)).join(''),{i:2})}
+  ${sec(3,L('Emlékeztetők','Reminders'),3)}
+  ${card([['t-dumbbell',L('Edzés előtt','Before a workout'),L('30 perccel előtte','30 minutes before'),1,30],['t-syringe',L('Gyógyszer beadás','Medication'),L('hétfő 20:00','Monday 20:00'),1],['t-clock',L('Napzárás','Day close'),'22:00',0],['t-moon',L('Villanyoltás','Lights out'),'22:45',1],['t-rested',L('Lecsendesítés','Wind-down'),'22:15',1],['t-checkin','Check-in','09:00',1],['t-supps','Fuel & stack',L('étkezésekhez','with meals'),1]].map(c=>cat(...c)).join(''),{i:3})}
+  ${sec(4,L('Az agy eseményei','Events from the brain'),4)}
+  ${card([['t-pattern',L('Minták','Patterns'),L('ha új jel rajzolódik ki','when a new signal takes shape'),1],['t-book',L('Tudástár','Knowledge base'),L('új tény','a new fact'),0],['t-orb',L('Előrejelzések','Predictions'),L('ha beteljesül','when one comes true'),1],['t-flask',L('Kísérletek','Experiments'),L('napi állás','daily status'),1],['t-quest',L('Kihívások','Challenges'),L('indulás, zárás','start and finish'),1],['t-stack',L('Memória','Memory'),L('új emlék','a new memory'),0],['t-compass',L('Döntés visszanézés','Decision look-back'),L('ha esedékes','when it is due'),1],['t-shield',L('Közbelépések','Interventions'),L('ha Mezo szól','when Mezo steps in'),1]].map(c=>cat(...c)).join('')
+    +note(L('Az agy eseményei eseményvezéreltek: nem szerepelnek a napi terhelés előnézetben.','Events from the brain are triggered by what happens, so they are not in the daily load preview.')),{i:4})}`);
 }
 function bfiok(){
-  return P({title:'A fiókod',sub:'Beállítások · fiók',back:'b-alt'},`
-  ${sth('A fiókod','A neved és a címed.','Amivel belépsz.','t-key')}
-  ${sec(1,'Adatok',1)}
-  ${card(fld('Név','Daniel')+fld('E-mail-cím','daniel@pelda.hu')+`<div class="fh-acts">${btn('Fiókadatok mentése',{toast:'Fiókadatok mentve.'})}</div>`,{i:1,cls:'en-form'})}`);
+  return P({title:L('A fiókod','Your account'),sub:L('Beállítások · fiók','Settings · account'),back:'b-alt'},`
+  ${sth(L('A fiókod','Your account'),L('A neved és a címed.','Your name and your address.'),L('Amivel belépsz.','What you sign in with.'),'t-key')}
+  ${sec(1,L('Adatok','Details'),1)}
+  ${card(fld(L('Név','Name'),'Daniel')+fld(L('E-mail-cím','Email'),'daniel@pelda.hu')+`<div class="fh-acts">${btn(L('Fiókadatok mentése','Save account details'),{toast:L('Fiókadatok mentve.','Account details saved.')})}</div>`,{i:1,cls:'en-form'})}`);
 }
 function bszemely(mode){
-  const M={about:['Rólam, a saját szavaimmal','Amit még tudj rólam','Hétköznap szoftverfejlesztő vagyok, este röpizek. A reggelek a legjobb időszakom…','t-person'],communication:['Így beszélj velem','Az én kérésem','Legyél tömör és egyenes. Ne dicsérj feleslegesen, mondd meg, ha hibázok…','t-chat'],context:['Ezt kapja meg Mezo','','','t-orb']};
+  /* the two free texts are what the user wrote: they stay as written in both languages (owner decision, N1) */
+  const M={about:[L('Rólam, a saját szavaimmal','About me, in my own words'),L('Amit még tudj rólam','What else you should know'),'Hétköznap szoftverfejlesztő vagyok, este röpizek. A reggelek a legjobb időszakom…','t-person'],communication:[L('Így beszélj velem','How to talk to me'),L('Az én kérésem','My request'),'Legyél tömör és egyenes. Ne dicsérj feleslegesen, mondd meg, ha hibázok…','t-chat'],context:[L('Ezt kapja meg Mezo','What Mezo receives'),'','','t-orb']};
   mode=M[mode]?mode:'about'; const m=M[mode];
-  const sw=`<div class="en-sw rise">${seg([['Rólam','b-szemely.about',mode==='about'],['Stílus','b-szemely.communication',mode==='communication'],['Kontextus','b-szemely.context',mode==='context']])}</div>`;
-  const o={title:'Mezo és te',sub:'Beállítások · '+(mode==='about'?'rólam':mode==='communication'?'stílus':'kontextus'),back:'b-mezo'};
-  const top=sw+sth('Mezo · beállítások',m[0],mode==='context'?'Pontosan ez kerül minden beszélgetés elejére.':'Csak te szerkeszted. A következő beszélgetéstől érvényes.',m[3]);
-  if(mode==='context') return P(o,top+sec(1,'Ami bekerül',1)+card([['Személyes alapok','bekerül','Fiók · testadatok','Daniel, 34 éves, 180 cm, 78,4 kg.'],['Saját bemutatkozás','bekerül','Rólam','Hétköznap szoftverfejlesztő vagyok…'],['Tanult stílus','nem kerül be','Így beszélj velem','A tanult profil ki van kapcsolva.']].map(s=>`<div class="fh-row en-ctx"><span class="g"><strong>${s[0]} ${st(s[1],s[1]==='bekerül'?'ok':'q')}</strong><small>forrás: ${s[2]}</small><span class="en-body">${s[3]}</span>${lk(`${s[0]} javítása ›`,{toast:'Javítás'})}</span></div>`).join('')+`<div class="fh-acts">${btn('Pontos összeállított szöveg',{toast:'Kinyitva'},'sm ghost')}</div>`,{i:1}));
+  const sw=`<div class="en-sw rise">${seg([[L('Rólam','About me'),'b-szemely.about',mode==='about'],[L('Stílus','Style'),'b-szemely.communication',mode==='communication'],[L('Kontextus','Context'),'b-szemely.context',mode==='context']])}</div>`;
+  const o={title:L('Mezo és te','Mezo and you'),sub:L('Beállítások · ','Settings · ')+(mode==='about'?L('rólam','about me'):mode==='communication'?L('stílus','style'):L('kontextus','context')),back:'b-mezo'};
+  const top=sw+sth(L('Mezo · beállítások','Mezo · settings'),m[0],mode==='context'?L('Pontosan ez kerül minden beszélgetés elejére.','Exactly this goes at the start of every conversation.'):L('Csak te szerkeszted. A következő beszélgetéstől érvényes.','Only you edit this. It applies from the next conversation.'),m[3]);
+  const IN=L('bekerül','included'), OUT=L('nem kerül be','not included');
+  if(mode==='context') return P(o,top+sec(1,L('Ami bekerül','What goes in'),1)+card([[L('Személyes alapok','Personal basics'),IN,L('Fiók · testadatok','Account · body data'),L('Daniel, 34 éves, 180 cm, 78,4 kg.','Daniel, 34 years old, 180 cm, 78.4 kg.')],[L('Saját bemutatkozás','Your own introduction'),IN,L('Rólam','About me'),'Hétköznap szoftverfejlesztő vagyok…'],[L('Tanult stílus','Learned style'),OUT,L('Így beszélj velem','How to talk to me'),L('A tanult profil ki van kapcsolva.','The learned profile is switched off.')]].map(s=>`<div class="fh-row en-ctx"><span class="g"><strong>${s[0]} ${st(s[1],s[1]===IN?'ok':'q')}</strong><small>${L('forrás','source')}: ${s[2]}</small><span class="en-body">${s[3]}</span>${lk(L(`${s[0]} javítása ›`,`Correct: ${s[0]} ›`),{toast:L('Javítás','Correct')})}</span></div>`).join('')+`<div class="fh-acts">${btn(L('Pontos összeállított szöveg','The exact assembled text'),{toast:L('Kinyitva','Opened')},'sm ghost')}</div>`,{i:1}));
   let k=1;
-  return P(o,top+(mode==='about'?sec(k++,'Az alapok, amiket ismer',1)+card(txt('Daniel · 34 év · 180 cm · fogyás 76 kg-ig · heti 4 edzés'),{i:1})+sec(k++,'A tények forrása',2)+card(srow('t-key','Név és fiók','','#b-fiok')+srow('t-heart','Testadatok és életkor','','#b-me')+srow('t-weight','Súly- és edzéscéljaim','','#b-cel'),{i:2}):'')
-    +sec(k++,m[1],3)+card(ta('',m[2])+`<p class="fh-note en-cnt"><span>Csak te szerkeszted</span><span>${m[2].length} / 4000</span></p>`+(mode==='communication'?row({title:'Tanult kommunikációs profil használata',right:tgl(1,'Tanult profil')}):'')+`<div class="fh-acts">${btn('Változtatások mentése',{toast:'Mentve. A következő beszélgetési fordulótól érvényes.'})}</div>`,{i:3,cls:'en-form'})
-    +(mode==='communication'?sec(k++,'Amit Mezo tanult a stílusodról',4)+card(msg('mezo','<b>Tömör, adatvezérelt.</b> Rövid válaszokat szeretsz, számokkal. Az érzelmi kérdéseknél lassabb tempót.','tanult profil'),{i:4}):'')
-    +sec(k++,'Átláthatóság',5)+card(srow('t-orb','Nézd meg, mi kerül be','','#b-szemely.context'),{i:5}));
+  return P(o,top+(mode==='about'?sec(k++,L('Az alapok, amiket ismer','The basics it knows'),1)+card(txt(L('Daniel · 34 év · 180 cm · fogyás 76 kg-ig · heti 4 edzés','Daniel · 34 years · 180 cm · losing weight to 76 kg · 4 workouts a week')),{i:1})+sec(k++,L('A tények forrása','Where the facts come from'),2)+card(srow('t-key',L('Név és fiók','Name and account'),'','#b-fiok')+srow('t-heart',L('Testadatok és életkor','Body data and age'),'','#b-me')+srow('t-weight',L('Súly- és edzéscéljaim','My weight and training goals'),'','#b-cel'),{i:2}):'')
+    +sec(k++,m[1],3)+card(ta('',m[2])+`<p class="fh-note en-cnt"><span>${L('Csak te szerkeszted','Only you edit this')}</span><span>${m[2].length} / 4000</span></p>`+(mode==='communication'?row({title:L('Tanult kommunikációs profil használata','Use the learned communication profile'),right:tgl(1,L('Tanult profil','Learned profile'))}):'')+`<div class="fh-acts">${btn(L('Változtatások mentése','Save changes'),{toast:L('Mentve. A következő beszélgetési fordulótól érvényes.','Saved. It applies from the next turn of the conversation.')})}</div>`,{i:3,cls:'en-form'})
+    +(mode==='communication'?sec(k++,L('Amit Mezo tanult a stílusodról','What Mezo has learned about your style'),4)+card(msg('mezo',L('<b>Tömör, adatvezérelt.</b> Rövid válaszokat szeretsz, számokkal. Az érzelmi kérdéseknél lassabb tempót.','<b>Brief and data-led.</b> You like short answers with numbers, and a slower pace on emotional questions.'),L('tanult profil','learned profile')),{i:4}):'')
+    +sec(k++,L('Átláthatóság','Transparency'),5)+card(srow('t-orb',L('Nézd meg, mi kerül be','See what goes in'),'','#b-szemely.context'),{i:5}));
 }
 function ikonok(){
   const NEW=[['Felfedezések · Jelöltek','t-lens','a heti felfedezések sora, a jelöltek'],['Jelek','t-signal','„Jelek · mit figyel a rendszer”'],['Légzés','t-breath','éjszakai mód · vezetett légzés'],['Ideje felkelni','t-candle','éjszakai mód · 20 perces szabály'],['LIFE Lv 5','t-brain','kitüntetések · jelvény'],['Első küldetés','t-flag','kitüntetések · jelvény'],['Jelszó és fiók','t-key','fiókod, jelszó'],['Kijelentkezés','t-exit','megjelenés és alkalmazás'],['Megjelenés','t-palette','a beállítások „Megjelenés” sora'],['Tevékenység','t-pencil','a Fejlődés tevékenység-sorai']];
@@ -775,6 +791,8 @@ const routes={mai:hub,en:hub,celok,cel,celuj,jelek,sulycel,sulyresz,sulyuj,test,
   beall,'b-train':btrain,'b-me':bme,'b-cel':bcel,'b-mezo':bmezo,'b-nap':bnap,'b-alt':balt,'b-ert':bert,'b-fiok':bfiok,'b-szemely':bszemely,ikonok};
 const live=()=>{const ph=document.getElementById('phone');return F.D==='en'&&ph&&ph.dataset.v==='feher'?ph:null};
 function soft(){const ph=live();if(!ph)return;const sc=ph.querySelector('.scroll');const y=sc?sc.scrollTop:0;ph.innerHTML=(routes[F.R]||hub)(F.ARG);ph.querySelectorAll('.rise').forEach(e=>e.classList.remove('rise'));const s2=ph.querySelector('.scroll');if(s2)s2.scrollTop=y}
+/* N1: the language choice on „Megjelenés és alkalmazás" switches the whole prototype at once */
+document.addEventListener('click',e=>{const l=e.target.closest('[data-lang]');if(!l)return;e.preventDefault();const en=l.dataset.lang==='en';window.setLang(l.dataset.lang);F.toast(en?'The app is now in English':'Az app mostantól magyarul szól')});
 document.addEventListener('click',e=>{
   if(!live())return; const el=e.target.closest('[data-ev]'); if(!el)return;
   e.preventDefault(); const raw=el.dataset.ev, c=raw.indexOf(':'), k=c<0?raw:raw.slice(0,c), v=c<0?'':raw.slice(c+1);
@@ -791,7 +809,7 @@ document.addEventListener('click',e=>{
 /* the kit's title-bar bell and gear only toast; in the Én domain they open the Én pages the live app opens */
 document.addEventListener('click',e=>{
   if(!live())return; const b=e.target.closest('.fh-top .fh-ib[aria-label]'); if(!b||b.dataset.go)return;
-  const to=b.getAttribute('aria-label')==='Értesítések'?'ertesitesek':b.getAttribute('aria-label')==='Beállítások'?'beall':'';
+  const to=b.dataset.fr==='bell'?'ertesitesek':b.dataset.fr==='gear'?'beall':'';
   if(!to)return; e.preventDefault();e.stopPropagation();F.go(to);
 },true);
 register('en',{title:'Én',

@@ -1679,6 +1679,7 @@ h2.t{font-family:var(--disp);font-weight:var(--dispw);letter-spacing:var(--dispt
   </div>
   <label hidden><input type="checkbox" id="vilagos"></label><label hidden><input type="checkbox" id="meleg"></label>
   <label><input type="checkbox" id="still"> mozgás nélkül</label>
+  <label><input type="checkbox" id="angol"> English (angol szöveg)</label>
 </div>
 
 <div class="stage">
@@ -1907,6 +1908,12 @@ let tt;function toast(m){const t=$('#toast');if(!t)return;t.textContent=m;t.clas
 $('#still').addEventListener('change',e=>document.body.classList.toggle('still',e.target.checked));
 $('#meleg').addEventListener('change',e=>{WARM=e.target.checked;render()});
 $('#vilagos').addEventListener('change',e=>{LIGHT=e.target.checked;render()});
+/* N1 (2026-10-11): the language switch. window.LANG is read by F.L(hu,en) and the kit's frame dictionary;
+   screens not translated yet stay Hungarian, exactly like the app while the programme runs. */
+window.LANG=/[?&]lang=en/.test(location.search)?'en':'hu';
+window.setLang=l=>{window.LANG=l==='en'?'en':'hu';$('#angol').checked=window.LANG==='en';document.documentElement.lang=window.LANG;render()};
+$('#angol').checked=window.LANG==='en';
+$('#angol').addEventListener('change',e=>window.setLang(e.target.checked?'en':'hu'));
 if(/still/.test(location.search)){document.body.classList.add('still');$('#still').checked=true}
 if(/vilagos/.test(location.search)){LIGHT=true;$('#vilagos').checked=true}
 window.addEventListener('hashchange',()=>{fromHash();render()});
