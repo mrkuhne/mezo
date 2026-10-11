@@ -13,7 +13,8 @@ import { useId } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
-import { activeDomainId, activeTabRoute, domainById, isHubPath } from '@/app/navModel'
+import { activeDomainId, activeTabRoute, domainById, domainName, isHubPath, tabLabel } from '@/app/navModel'
+import { useM } from '@/shared/i18n'
 
 /** The tab whose pill carries the Mezo thread's unread count. */
 const THREAD_TAB = '/nap/uzenetek'
@@ -30,6 +31,7 @@ export interface TopTabsProps {
 export function TopTabs({ dots }: TopTabsProps = {}) {
   const { pathname } = useLocation()
   const { unread } = useMezoThread()
+  const t = useM().frame.topTabs
   const idBase = useId()
   const domain = domainById(activeDomainId(pathname))
   if (!domain || !isHubPath(domain, pathname)) return null
@@ -38,7 +40,7 @@ export function TopTabs({ dots }: TopTabsProps = {}) {
     // `train-tabs` anchors the Edzés kalauz's tab-row orientation card (mezo-88iwa.5): this
     // strip IS the négy fül. Scoped to the train domain so the other domains' strips do not
     // spuriously satisfy the anchor lookup.
-    <nav className="fo-tabs" aria-label={`${domain.name} oldalai`}
+    <nav className="fo-tabs" aria-label={t.pagesOf(domainName(domain))}
       data-kalauz-anchor={domain.id === 'train' ? 'train-tabs' : undefined}>
       {domain.tabs.map((tab, i) => {
         const active = tab.route === activeRoute
@@ -50,7 +52,7 @@ export function TopTabs({ dots }: TopTabsProps = {}) {
         return (
           <Link key={tab.route} to={tab.route} className={cn(active && 'on')}
             aria-current={active ? 'page' : undefined} aria-describedby={markId}>
-            {tab.label}
+            {tabLabel(domain.id, tab)}
             {dot && <i className="td" aria-hidden="true" />}
             {count > 0 && <b className="tn" aria-hidden="true">{count}</b>}
           </Link>
@@ -62,7 +64,7 @@ export function TopTabs({ dots }: TopTabsProps = {}) {
         if (!dot && count === 0) return null
         return (
           <span key={`m-${tab.route}`} id={`${idBase}-m${i}`} className="sr-only">
-            {dot ? 'kész a tegnapi értékelés' : `${count} olvasatlan`}
+            {dot ? t.dotMark : t.unreadMark(count)}
           </span>
         )
       })}

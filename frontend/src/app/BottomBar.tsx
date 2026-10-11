@@ -13,7 +13,8 @@ import { useEffect, type CSSProperties } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Drop } from '@/shared/ui/folyadek'
-import { DOMAINS, activeDomainId, rememberRoute, routeForDomain } from '@/app/navModel'
+import { DOMAINS, activeDomainId, domainName, rememberRoute, routeForDomain } from '@/app/navModel'
+import { useM } from '@/shared/i18n'
 
 /** The drop colour of each domain (kit.js `DOM`). */
 export const DOMAIN_COLOR: Record<string, string> = {
@@ -29,18 +30,19 @@ export function navDropSpec(id: string, active: boolean) {
 
 export function BottomBar() {
   const { pathname } = useLocation()
+  const frame = useM().frame
   // Last-tab memory: record every navigation that lands on (or under) one of a domain's tabs.
   useEffect(() => { rememberRoute(pathname) }, [pathname])
   // A path outside the five domain roots lights Nap, so the bar always shows a coherent state.
   const active = activeDomainId(pathname) ?? 'nap'
   return (
-    <nav className="fo-nav" aria-label="Területek">
+    <nav className="fo-nav" aria-label={frame.nav.domains}>
       {DOMAINS.map((d) => (
         <Link key={d.id} to={routeForDomain(d.id)} className={cn('fo-nav-item', d.id === active && 'on')}
           aria-current={d.id === active ? 'true' : undefined} data-domain={d.id}
           style={{ '--c': DOMAIN_COLOR[d.id] } as CSSProperties}>
           <Drop {...navDropSpec(d.id, d.id === active)} alive={d.id === active} />
-          <span>{d.name}</span>
+          <span>{domainName(d)}</span>
         </Link>
       ))}
     </nav>

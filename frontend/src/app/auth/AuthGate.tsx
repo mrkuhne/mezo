@@ -14,16 +14,12 @@ import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ChangePasswordPage } from '@/features/auth/pages/ChangePasswordPage'
 import { OnboardingPage } from '@/features/auth/pages/OnboardingPage'
 import { ClaySprites, Icon3D } from '@/shared/ui/clay'
+import { useM } from '@/shared/i18n'
 
 /** Backoff between boot attempts (mezo-l0k0 semantics kept from the old owner bootstrap). */
 const BOOT_RETRY_DELAYS_MS = [500, 1500, 4000]
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-const SIGN_OUT_NOTICE: Record<SignOutReason, string | undefined> = {
-  expired: 'A munkameneted lejárt, jelentkezz be újra.',
-  disabled: 'Ezt a fiókot letiltották.',
-  manual: undefined,
-}
 
 /**
  * Boot gate (S1, mezo-qw37.1): decides between the auth pages and the app from the persisted
@@ -37,6 +33,7 @@ const SIGN_OUT_NOTICE: Record<SignOutReason, string | undefined> = {
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const mock = isMockMode()
+  const frame = useM().frame
   // Mock mode's phase starts at 'ready' below, so `children` mount on THIS render pass —
   // React runs descendant effects before the parent's own `useEffect`, so writing the scope
   // there (as the real-mode path does, safely, because its phase starts 'pending') would let
@@ -48,7 +45,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const client = useQueryClient()
   const [phase, setPhase] = useState<AuthPhase>(mock ? 'ready' : 'pending')
   const [authView, setAuthView] = useState<'login' | 'register'>('login')
-  const [notice, setNotice] = useState<string | undefined>(undefined)
+  // The reason, not its text: the message is looked up at render so it follows the language.
+  const [notice, setNotice] = useState<Exclude<SignOutReason, 'manual'> | undefined>(undefined)
   const [attemptNonce, setAttemptNonce] = useState(0)
 
   // Bumped every time a sign-out fires (mid-boot or otherwise). The boot loop below captures
@@ -109,7 +107,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setCurrentUserId(null)
     signOutGen.current += 1
     client.clear()
-    setNotice(SIGN_OUT_NOTICE[reason])
+    setNotice(reason === 'manual' ? undefined : reason)
     setAuthView('login')
     setPhase('signedOut')
   }), [client])
@@ -168,7 +166,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (phase === 'pending') return null
   if (phase === 'signedOut') {
     return authView === 'login'
-      ? <LoginPage notice={notice} noticeIcon={notice === SIGN_OUT_NOTICE.expired ? 't-clock' : 't-info'} onSuccess={onAuthenticated} onRegister={() => setAuthView('register')} />
+      ? <LoginPage notice={notice ? frame.auth[notice] : undefined} noticeIcon={notice === 'expired' ? 't-clock' : 't-info'} onSuccess={onAuthenticated} onRegister={() => setAuthView('register')} />
       : <RegisterPage onSuccess={onAuthenticated} onBack={() => setAuthView('login')} />
   }
   if (phase === 'mustChangePassword') return <ChangePasswordPage forced onSuccess={onAuthenticated} />
@@ -184,10 +182,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
         <ClaySprites />
         <div className="auth-down">
           <Icon3D name="t-signal" size={88} className="auth-down-art" />
-          <h1>Nem érem el a szervert</h1>
-          <p>Az app nem tud bejelentkezni — lehet, hogy a backend épp újraindul. Adatot most nem tudsz menteni.</p>
+          <h1>{frame.auth.downTitle}</h1>
+          <p>{frame.auth.downBody}</p>
           <button type="button" className="auth-cta is-coral" onClick={() => setAttemptNonce((n) => n + 1)}>
-            Újra
+            {frame.auth.retry}
           </button>
         </div>
       </div>

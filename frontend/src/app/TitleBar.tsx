@@ -37,6 +37,7 @@ import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { canGoBack, frameFor } from '@/app/navModel'
+import { useM } from '@/shared/i18n'
 
 /** Az értesítés-panel felső korlátja. A többi a teljes feed oldalé (`/me/ertesitesek`) — egy
  *  fejléc-panel nem a feed második példánya, és egy több százas lista görgetése ott a helyes. */
@@ -55,6 +56,7 @@ export function TitleBar({ children }: {
   /** The top-tabs slot: rendered under the title on a hub, so the whole block pins as one. */
   children?: ReactNode
 }) {
+  const t = useM().frame.titleBar
   const navigate = useNavigate()
   const { pathname, search, state, key: locationKey } = useLocation()
   // The page may override what the path says (a converted page names itself) and hands over its
@@ -100,15 +102,15 @@ export function TitleBar({ children }: {
   // ne egy már nem létező szűrő mögött ürüljön ki.
   const ntfChips = useMemo(() => {
     const chips: { id: NtfFilter; label: string; icon?: ClayIconName; n: number }[] =
-      [{ id: 'all', label: 'Mind', n: recent.length }]
+      [{ id: 'all', label: t.panel.chipAll, n: recent.length }]
     const unread = recent.filter((n) => n.readAt === null).length
-    if (unread > 0) chips.push({ id: 'unread', label: 'Olvasatlan', n: unread })
+    if (unread > 0) chips.push({ id: 'unread', label: t.panel.chipUnread, n: unread })
     for (const c of NOTIFICATION_CATEGORIES) {
       const n = recent.filter((r) => notificationCategory(r.kind) === c.id).length
-      if (n > 0) chips.push({ id: c.id, label: c.label, icon: c.icon, n })
+      if (n > 0) chips.push({ id: c.id, label: t.categories[c.id], icon: c.icon, n })
     }
     return chips
-  }, [recent])
+  }, [recent, t])
   const activeNtfFilter = ntfChips.some((c) => c.id === ntfFilter) ? ntfFilter : 'all'
 
   const ntfGroups = useMemo(() => {
@@ -169,7 +171,7 @@ export function TitleBar({ children }: {
   // ott a pont fölösleges).
   const help = kalauz.current && (
     <button type="button" className={cn('fo-help', qUnseenDot && 'new', kalauz.openId === kalauz.current.id && 'is-open')}
-      aria-label="Kalauz ehhez az oldalhoz" aria-haspopup="dialog"
+      aria-label={t.guide} aria-haspopup="dialog"
       onClick={() => { setNtfOpen(false); kalauz.open(kalauz.current!.id) }}>
       ?
     </button>
@@ -181,7 +183,7 @@ export function TitleBar({ children }: {
   const bell = (
     <button type="button" className={cn('fo-ib', ntfOpen && 'is-open')}
       aria-haspopup="dialog" aria-expanded={ntfOpen}
-      aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
+      aria-label={unreadNtf > 0 ? t.notificationsUnread(unreadNtf) : t.notifications}
       onClick={() => { setNtfOpen((o) => !o) }}>
       <Icon3D name="t-bell" size={24} />
       {unreadNtf > 0 && <b className="fo-badge-n">{unreadNtf}</b>}
@@ -196,18 +198,18 @@ export function TitleBar({ children }: {
           <div className="fo-btns">
             {/* Az oldal-leltár bejárata (mezo-ju4j6.17): a nyugdíjazott területváltó alsó sora
                 ide költözött. A horgony a JELENLEGI területre nyitja a listát. */}
-            <button type="button" className="fo-ib" aria-label="Minden oldal"
+            <button type="button" className="fo-ib" aria-label={t.allPages}
               onClick={() => navigate(`/minden#${derived.domain.id}`)}>
               <Icon3D name="t-grid" size={24} />
             </button>
             <button type="button" className="fo-ib"
-              aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}
+              aria-label={unreadMsgs > 0 ? t.messagesUnread(unreadMsgs) : t.messages}
               onClick={() => navigate('/nap/uzenetek')}>
               <Icon3D name="t-chat" size={24} />
               {unreadMsgs > 0 && <b className="fo-badge-n">{unreadMsgs}</b>}
             </button>
             {bell}
-            <button type="button" className="fo-ib" aria-label="Beállítások"
+            <button type="button" className="fo-ib" aria-label={t.settings}
               onClick={() => navigate('/settings', { state: { from: pathname.startsWith('/settings') ? state?.from : pathname + search } })}>
               <Icon3D name="t-gear" size={24} />
             </button>
@@ -223,7 +225,7 @@ export function TitleBar({ children }: {
         {children}
       </> : (
         <div className="fo-trow">
-          <button type="button" className="fo-ib fo-back" aria-label="Vissza" onClick={goBack}>
+          <button type="button" className="fo-ib fo-back" aria-label={t.back} onClick={goBack}>
             <span aria-hidden="true">‹</span>
           </button>
           <div className="fo-title">
@@ -245,11 +247,11 @@ export function TitleBar({ children }: {
         <div className="nap-ntfscrim" aria-hidden="true" onClick={() => setNtfOpen(false)} />
         {/* `dialog`, nem `menu`: a panel szűrő-chipeket és egy „Mind olvasott" gombot is
             tartalmaz, amik nem `menuitem`-ek — egy `role="menu"` alattuk hazug fa lenne. */}
-        <div className="nap-ntfpanel" role="dialog" aria-label="Értesítések">
+        <div className="nap-ntfpanel" role="dialog" aria-label={t.panel.title}>
           <div className="nap-ntfhd">
-            <span className="nap-ntfeyebrow">Értesítések</span>
+            <span className="nap-ntfeyebrow">{t.panel.title}</span>
             <span className={cn('nap-ntfcnt', unreadNtf === 0 && 'is-none')}>
-              {unreadNtf > 0 ? `${unreadNtf} új` : 'nincs új'}
+              {unreadNtf > 0 ? t.panel.newCount(unreadNtf) : t.panel.noneNew}
             </span>
             {unreadNtf > 0 && (
               // A repó fire-and-forget idiómája: a `.catch(() => {})` KIÍRVA — a `markAllRead`
@@ -257,16 +259,16 @@ export function TitleBar({ children }: {
               // visszagörgetést az `onError` már elvégezte (NotificationFeedPage.tsx).
               <button type="button" className="nap-ntfallread"
                 onClick={() => { void markAllRead().catch(() => {}) }}>
-                Mind olvasott
+                {t.panel.markAllRead}
               </button>
             )}
           </div>
-          <div className="nap-ntftabs" role="group" aria-label="Szűrés">
+          <div className="nap-ntftabs" role="group" aria-label={t.panel.filter}>
             {ntfChips.map((c) => (
               // Kiírt `aria-label`: a címke és a darabszám két szomszédos span, amikből az
               // elérhető név szóköz nélkül tapadna össze („Mind3").
               <button key={c.id} type="button" aria-pressed={c.id === activeNtfFilter}
-                aria-label={`${c.label}, ${c.n} értesítés`}
+                aria-label={t.panel.chipLabel(c.label, c.n)}
                 className={cn(c.id === activeNtfFilter && 'on')}
                 onClick={() => setNtfFilter(c.id)}>
                 {c.icon && <ContentIcon name={ntfIcon(c.icon)} size={17} />}
@@ -278,9 +280,7 @@ export function TitleBar({ children }: {
           <div className="nap-ntfscroll">
             {ntfGroups.length === 0 ? (
               <p className="nap-ntfempty">
-                {activeNtfFilter === 'unread'
-                  ? 'Minden értesítésedet elolvastad.'
-                  : 'Nincs ilyen értesítésed.'}
+                {activeNtfFilter === 'unread' ? t.panel.emptyUnread : t.panel.emptyFiltered}
               </p>
             ) : ntfGroups.map((g) => (
               <div key={g.day} className="nap-ntfgroup" role="group" aria-labelledby={`nph-${g.day}`}>
@@ -310,7 +310,7 @@ export function TitleBar({ children }: {
                         <span className="nap-ntf-dot" aria-hidden="true" />
                         {/* Az osztály és a pötty csak látó felhasználónak létezik — a repó
                             `sr-only` helperje viszi hangba is (a feed sorok ugyanezt teszik). */}
-                        <span className="sr-only">Olvasatlan</span>
+                        <span className="sr-only">{t.panel.unreadMark}</span>
                       </>}
                     </button>
                   )
@@ -321,7 +321,7 @@ export function TitleBar({ children }: {
           <div className="nap-ntfft">
             <button type="button"
               onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-              Összes értesítés ›
+              {t.panel.all}
             </button>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { AuthGate } from '@/app/auth/AuthGate'
 import { invalidateTodayDay } from '@/data/me/liveDay'
 import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { emitToast } from '@/shared/lib/toastBus'
+import { m } from '@/shared/i18n'
 
 // `client` is referenced by its own `mutationCache`'s `onSuccess`, so the cache is built first
 // and handed a `let`-hoisted client reference rather than the other way round.
@@ -18,7 +19,7 @@ const mutationCache = new MutationCache({
     const trace = error instanceof ApiError ? error.messages[0]?.exceptionTraceId : undefined
     emitToast({
       kind: 'error',
-      text: trace ? `Mentés sikertelen — próbáld újra (${trace.slice(0, 8)})` : 'Mentés sikertelen — próbáld újra',
+      text: trace ? m().frame.toast.saveFailedTrace(trace.slice(0, 8)) : m().frame.toast.saveFailed,
     })
   },
   // A napom S3: today is LIVE — any successful write (a meal, a set, a check-in, a sleep or

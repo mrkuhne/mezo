@@ -21,8 +21,9 @@ import { useEffect, type CSSProperties } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { Boop, Icon3D } from '@/shared/ui/clay'
-import { DOMAINS, activeTabRoute, type NavDomain } from '@/app/navModel'
+import { DOMAINS, activeTabRoute, domainName, pageLabel, tabLabel, type NavDomain } from '@/app/navModel'
 import { PAGE_INDEX, type IndexedPage } from '@/app/pageIndex'
+import { m, useM } from '@/shared/i18n'
 
 /** The §2.1 wash each domain's section wears — the same ramp the retired switcher cards used. */
 const DOMAIN_WASH: Record<string, string> = {
@@ -39,15 +40,12 @@ function PageLink({ page }: { page: IndexedPage }) {
   return (
     <li>
       <Link to={page.route} className="mno-l">
-        <span className="mno-l-tx"><b>{page.label}</b><small>{page.hint}</small></span>
+        <span className="mno-l-tx"><b>{pageLabel(page)}</b><small>{page.hint}</small></span>
         <span className="mno-chev" aria-hidden="true">›</span>
       </Link>
     </li>
   )
 }
-
-/** Pages that belong to no tab still belong somewhere — and saying so is the point. */
-const ORPHAN_GROUP = 'Máshonnan elérhető'
 
 export interface PageGroup { heading: string; pages: IndexedPage[] }
 
@@ -72,10 +70,11 @@ export function groupsForDomain(domain: NavDomain, pages: IndexedPage[]): PageGr
     else byTab.set(tabRoute, [...(byTab.get(tabRoute) ?? []), page])
   }
   const groups = domain.tabs
-    .map((tab) => ({ heading: tab.label, pages: byTab.get(tab.route) ?? [] }))
+    .map((tab) => ({ heading: tabLabel(domain.id, tab), pages: byTab.get(tab.route) ?? [] }))
     .filter((group) => group.pages.length > 0)
   for (const [heading, groupPages] of overrides) groups.push({ heading, pages: groupPages })
-  if (orphans.length > 0) groups.push({ heading: ORPHAN_GROUP, pages: orphans })
+  // Pages that belong to no tab still belong somewhere — and saying so is the point.
+  if (orphans.length > 0) groups.push({ heading: m().frame.minden.orphans, pages: orphans })
   return groups
 }
 
@@ -96,6 +95,7 @@ export function pagesOfDomain(domainId: string): IndexedPage[] {
 }
 
 export default function MindenOldalPage() {
+  const t = useM().frame.minden
   const navigate = useNavigate()
   const { hash } = useLocation()
 
@@ -110,10 +110,10 @@ export default function MindenOldalPage() {
 
   return (
     <MozaikPage tone="lav" className="mno-page mno-u10">
-      <PageHead glass history label="Vissza" onBack={() => navigate(-1)} />
+      <PageHead glass history label={t.back} onBack={() => navigate(-1)} />
       <PageBody>
-        <PageHero art="t-grid" accent="var(--dv-amber)" eyebrow="LELTÁR" name="Minden oldal"
-          sub={`Az app ${PAGE_INDEX.length} oldala, területenként, a menü szerinti bontásban.`} />
+        <PageHero art="t-grid" accent="var(--dv-amber)" eyebrow={t.eyebrow} name={t.title}
+          sub={t.intro(PAGE_INDEX.length)} />
 
         {DOMAINS.map((domain) => {
           const groups = groupsForDomain(domain, pagesOfDomain(domain.id))
@@ -123,8 +123,8 @@ export default function MindenOldalPage() {
               style={{ '--c': DOMAIN_ACCENT[domain.id] } as CSSProperties}>
               <div className="mno-dh">
                 <Boop domain={domain.id} size={44} />
-                <strong>{domain.name}</strong>
-                <small>{count} oldal</small>
+                <strong>{domainName(domain)}</strong>
+                <small>{t.pageCount(count)}</small>
               </div>
               {groups.map((group) => (
                 <div key={group.heading} className="mno-group">
@@ -138,11 +138,11 @@ export default function MindenOldalPage() {
         <section id="settings" className="mno-domain glass is-neutral" data-wash="lav">
           <div className="mno-dh">
             <span className="uv-well mno-well"><Icon3D name="t-gear" size={30} /></span>
-            <strong>Beállítások</strong>
-            <small>{settingsPages.length} oldal</small>
+            <strong>{t.settings}</strong>
+            <small>{t.pageCount(settingsPages.length)}</small>
           </div>
           <div className="mno-group">
-            <h2>Közös beállítások</h2>
+            <h2>{t.commonSettings}</h2>
             <ul>{settingsPages.map((page) => <PageLink key={page.route} page={page} />)}</ul>
           </div>
         </section>

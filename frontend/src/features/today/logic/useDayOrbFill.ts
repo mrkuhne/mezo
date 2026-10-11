@@ -16,6 +16,7 @@
 // Spec: docs/superpowers/specs/2026-09-03-napi-orb-fejlec-design.md
 // ============================================================
 import { useMemo } from 'react'
+import { m } from '@/shared/i18n'
 import {
   useCheckins, useDayEvaluation, useFuelDay, useJournalNotes, useRunning, useSleep, useTrain, useWeight,
   normalizeDayEvaluation,
@@ -101,8 +102,8 @@ export function useDayOrbFill(): DayOrbState {
     return {
       ...fill,
       label: fill.present === 0
-        ? 'A mai napod · még nincs adat'
-        : `A mai napod · ${fill.present} a ${fill.denominator} jelből megvan`,
+        ? m().frame.titleBar.dayOrbNone
+        : m().frame.titleBar.dayOrbSome(fill.present, fill.denominator),
     }
   }, [
     todayIso, yesterdayIso, sleepLog, weightLog, fuel.meals, checkins, journalToday,
