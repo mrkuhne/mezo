@@ -55,7 +55,21 @@ async function bootAs(language: 'hu' | 'en') {
 const cached = () => localStorage.getItem(LANG_KEY)
 const cachedMe = () => client.getQueryData<MeResponse>(ME_QUERY_KEY)
 
-afterEach(() => { client?.clear(); vi.unstubAllEnvs(); setToken(null); setLang('hu') })
+/**
+ * Waits until no mutation is in flight. `setting.pending` cannot say this: the switch remounts the
+ * caller, and the fresh hook instance starts out not pending. The observable truth is the client's
+ * mutation cache (a mutation leaves "pending" only after its error/success handlers have run, so
+ * the rollback or the cached `me` write is complete by then).
+ */
+const settled = () => waitFor(() => expect(client.isMutating()).toBe(0))
+
+// A write still in flight when its test ends would complete inside a LATER test and write its
+// stale `me` into that test's cache (the module-level client survives `clear()`), flipping the
+// language under it. Every test therefore ends only once its writes have settled.
+afterEach(async () => {
+  if (client) await settled()
+  client?.clear(); vi.unstubAllEnvs(); setToken(null); setLang('hu')
+})
 
 describe('real mode', () => {
   beforeEach(() => { vi.stubEnv('VITE_USE_MOCK', 'false'); setToken('t') })
@@ -86,6 +100,7 @@ describe('real mode', () => {
     expect(cachedMe()?.language).toBe('en')
     expect(mounts).toBeGreaterThan(mountsBefore) // the subtree really remounted mid-flight
     await waitFor(() => expect(body).toEqual({ language: 'en' }))
+    await settled()
     await waitFor(() => expect(setting.pending).toBe(false))
     expect(getLang()).toBe('en')
     expect(cachedMe()?.language).toBe('en')
@@ -101,6 +116,7 @@ describe('real mode', () => {
     act(() => setting.setLanguage('en'))
     await act(async () => { await new Promise((r) => setTimeout(r, 40)) })
     expect(getLang()).toBe('en') // still en while pending
+    await settled()
     await waitFor(() => expect(setting.pending).toBe(false))
     expect(getLang()).toBe('en')
   })
@@ -119,6 +135,7 @@ describe('real mode', () => {
     expect(getLang()).toBe('en')
     await waitFor(() => expect(toasts.length).toBe(1))
     expect(toasts[0]).toMatchObject({ kind: 'error' })
+    await settled() // the toast is emitted a tick BEFORE the rollback handler runs
     expect(getLang()).toBe('hu')
     expect(cached()).toBe('hu')
     expect(cachedMe()?.language).toBe('hu')
