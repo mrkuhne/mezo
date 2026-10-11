@@ -4,15 +4,16 @@
    On the experiment page the three top tabs open the drawn versions:
      napom (+ nap.<date>)  the day as one drawing — a pipe starts under the day's vessel in the week strip and
                            every unit is its own vessel on it; the pipe's bends are the dividers and the spacing
-     uzenetek              the conversation as the day's stream — every message is a drop on it, at its time
+     mai                   the hub on the same pipe — the four "Mai szintek" tubes stay (the owner likes them), fed by it
+     uzenetek (+ .eletjelek, .eszrevetelek)  the conversation as the day's stream — every message is a drop on it
      rutin                 the chain as a string of vessels that winds down the page, for any number of habits
-   The approved list versions stay reachable as napom-lista / uzenetek-lista / rutin-lista.
+   The approved list versions stay reachable as mai-lista / napom-lista / uzenetek-lista / rutin-lista.
    Data is copied from nap.js (NDT, NDY, RUTIN, messages): same numbers, same sentences. */
 (function(){
 const F=window.F,nap=window.FREG&&FREG.nap;if(!nap)return;
 const {I,page,badge}=F;
 const P='.phone.foly[data-s="elo"][data-d="nap"]';
-const O={napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
+const O={mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
 const DROP='M32 6C41 19 50 28 50 39A18 18 0 0 1 14 39C14 28 23 19 32 6Z';
 const MOON='M46 41A21 21 0 1 1 25 11A17 17 0 0 0 46 41Z';
 const DUMB='M8 24A4 4 0 0 1 12 20H16A4 4 0 0 1 20 24V28H44V24A4 4 0 0 1 48 20H52A4 4 0 0 1 56 24V40A4 4 0 0 1 52 44H48A4 4 0 0 1 44 40V36H20V40A4 4 0 0 1 16 44H12A4 4 0 0 1 8 40Z';
@@ -68,6 +69,9 @@ const V={
     ${xs.map((x,i)=>i<o.n?`<path class="ng-glass" d="${tube(x)}"/>${liq(ids[i],40,o.g)}<path class="ng-line" d="${tube(x)}"/><path class="ng-hi" d="M${x-3.5} 46V66"/>`
       :`<path class="ng-glass" d="${tube(x)}"/><path class="ng-open q" d="${tube(x)}"/>`).join('')}
     <path class="ng-rim" d="M4 90H100"/>${pipe('M52 90V104')}`},
+  /* a full drop with a white glyph: the thing to do now */
+  drop:o=>`${pipe('M52 0V6')}<path class="ng-nd" transform="translate(-4 -6) scale(1.75)" d="${DROP}"/><path class="ng-hi" d="M30 60C32 50 37 42 43 35"/>
+    <svg class="ic" x="35" y="45" width="34" height="34" viewBox="0 0 64 64" style="--ic:#fff;--ic2:rgba(255,255,255,.5)"><use href="#${o.ic}"/></svg>${pipe('M52 93V104')}`,
   /* Ritmus — a coil: the pipe itself swings, and the liquid has climbed p% of it */
   rhythm:o=>{const d='M52 104C52 96 82 98 82 88S22 80 22 68S82 60 82 48S22 40 22 28S52 12 52 0';
     return `<path class="ng-coil a" d="${d}"/><path class="ng-coil b" d="${d}"/><path class="ng-coil c ${o.g}" pathLength="100" stroke-dasharray="${cl(o.p,0,100)} 100" d="${d}"/>`}
@@ -75,11 +79,12 @@ const V={
 const wrap=(t,n)=>{const out=[];let cur='';t.split(' ').forEach(w=>{if((cur+' '+w).trim().length>n&&cur){out.push(cur);cur=w}else cur=(cur+' '+w).trim()});if(cur)out.push(cur);return out};
 /* one station: the vessel on its side of the page, the words on the other */
 function station(s,side,y){const L=side==='L',cx=L?72:288,tx=L?146:214,an=L?'start':'end';
-  return `<g class="ng-st ${s.none?'none':''}" ${s.tap?`data-ngs="${s.key}" role="button" tabindex="0"`:''}>${s.tap?`<rect class="ng-hit" x="6" y="${y}" width="348" height="104"/>`:''}
+  return `<g class="ng-st ${s.none?'none':''}" ${s.tap?`data-ngs="${s.key}" role="button" tabindex="0"`:s.attr?`${s.attr} role="button" tabindex="0"`:''}>${s.tap||s.attr?`<rect class="ng-hit" x="6" y="${y}" width="348" height="104"/>`:''}
     <g class="ng-ves" transform="translate(${cx-52} ${y})">${V[s.key](s.v)}</g>
     <text class="ng-t" x="${tx}" y="${y+30}" text-anchor="${an}">${s.title}${s.tag?`<tspan class="ng-k ${s.sk}" dx="7">${s.tag}</tspan>`:''}</text>
     <text class="ng-v" x="${tx}" y="${y+62}" text-anchor="${an}">${s.val}${s.unit?`<tspan class="ng-u" dx="4">${s.unit}</tspan>`:''}</text>
-    ${s.sub.map((t,i)=>`<text class="ng-s" x="${tx}" y="${y+82+i*16}" text-anchor="${an}">${t}</text>`).join('')}</g>`}
+    ${s.sub.map((t,i)=>`<text class="ng-s" x="${tx}" y="${y+82+i*16}" text-anchor="${an}">${t}</text>`).join('')}
+    ${s.go?`<text class="ng-go" x="${tx}" y="${y+84+s.sub.length*16}" text-anchor="${an}">${s.go} ›</text>`:''}</g>`}
 const badgeN=(x,y,n,t,an='start')=>`<g class="ng-b"><path transform="translate(${x-32*.66} ${y-34*.66}) scale(.66)" d="${DROP}"/><text x="${x}" y="${y+7.5}" text-anchor="middle">${n}</text></g>
   <text class="ng-h" x="${an==='start'?x+20:x-20}" y="${y+6}" text-anchor="${an}">${t}</text>`;
 /* stations from y0, alternating sides; returns [svg, yEnd] — the S-bends between two stations are the dividers */
@@ -187,7 +192,7 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-ngs]');if(
 /* ═══ BESZÉLGETÉS · the day's stream: every message is a drop on it, at its time ═══ */
 const TC={szunya:'#8F7FD0',mocor:'#3F8FDB',falat:'#3FA277',mezo:'#6F7F95'},TG={szunya:'t-sleep',mocor:'t-dumbbell',falat:'t-bowl',mezo:'t-orb'},TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',mezo:'Mezo'};
 const node=(k,cls='')=>`<span class="nb-node ${cls}" style="--c:${TC[k]}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg>${I(TG[k])}</span>`;
-const BS={adv:false,fb:false,exp:{}};
+const BS={adv:false,fb:false,exp:{}};const TICK_='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
 function streamBody(){
   const m=(k,time,kind,text,extra='',cls='new')=>`<article class="nb-m ${cls}"><time>${time}</time>${node(k,cls)}<div class="nb-b"><p class="nb-h"><b>${TN[k]}</b>${kind}</p><p class="nb-t">${text}</p>${extra}</div></article>`;
   const fb=no=>`<div class="nb-a"><span>Segített?</span><button class="btn sm ghost" data-toast="Köszönöm — ezt megjegyzem">Segített</button><button class="btn sm ghost" ${no?'data-nb="fb"':'data-toast="Köszönöm, finomítok"'}>Nem talált</button></div>`;
@@ -198,7 +203,7 @@ function streamBody(){
     <span class="nb-duo">${badge('szunya',{s:30})}${badge('mocor',{s:30})}</span><span class="nb-tt"><b>A csapat most erről beszél</b><small>belefér-e ma az esti röpi a rövid éjszaka után</small></span></button>
   <p class="nb-mark"><span>Ma</span></p>
   ${m('falat','10:12','étkezési javaslat','A reggelid 420 kcal volt, 22 g fehérjével. Ha az ebédhez legalább 40 g-ot teszel, estére nem marad nagy hiány.',
-    `<div class="nb-a">${BS.adv?`<span class="nb-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv">Szólj az ebédnél</button>`}</div>${fb(false)}`)}
+    `<div class="nb-a">${BS.adv?`<span class="nb-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv">Szólj az ebédnél</button>`}</div>${fb(false)}`)}
   ${m('mezo','06:30','reggeli briefing','Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, ma a hátad pihen.<br><br>Az alvásod 7,4 óra volt, a reggeli check-in nyugodt. Ma délben érdemes a fehérjét előrehozni.',
     `<p class="nb-l">Amire épült</p><div class="ng-chips"><span>Push Day · tegnap</span><span>Chest Row 105,8 · márc 4</span><span>késő szénhidrát ↔ alvás</span></div>
      <p class="nb-l">Miből gondolom</p><div class="nb-f"><span>${I('t-sleep')}7,4 óra alvás, 2 ébredés</span><span>${I('t-checkin')}Reggeli check-in: energia 7/10</span></div>${fb(true)}
@@ -208,12 +213,72 @@ function streamBody(){
     :`<button class="nb-m old fold" data-nb="exp:${i}"><time>${t}</time>${node(k,'old')}<span class="nb-b"><span class="nb-h"><b>${TN[k]}</b>${kind}</span><span class="nb-t">${p.slice(0,38)}…</span></span></button>`).join('')}
   <button class="nb-end" data-toast="Mezo · Chat"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><span><b>Beszélgess Mezóval</b><small>kérdezz, mesélj, vagy beszéljük át a napot</small></span></button>
   </div>`}
-function uzenetek(tab){if(tab&&tab!=='uzenetek')return O.uzenetek(tab);
-  const TABS=[['uzenetek','Üzenetek'],['eletjelek','Életjelek'],['eszrevetelek','Észrevételek']];
-  return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k==='uzenetek'?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div><div id="nb-root">${streamBody()}</div>`)}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb;
-  if(a==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok')}else if(a==='fb')BS.fb=!BS.fb;else if(a.startsWith('exp:')){const i=a.slice(4);BS.exp[i]=!BS.exp[i]}
-  const r=document.getElementById('nb-root');if(r)r.innerHTML=streamBody()});
+/* observations (shared by Beszélgetés · Észrevételek and Mai): a message on the stream with its evidence as small tubes */
+const OBS=[
+  {k:'anna',h:'Anna és az alvásod',lbl:'megfigyelés',st:'Gyűlik',hits:4,miss:0,minN:7,x:'Amikor <b>Anna</b> szerepel a hála-naplódban, másnap átlag <b>40 perccel többet</b> alszol. Négy nap adata, ez még kevés. Figyeljem tovább?',ev:['4 hála-bejegyzés','4 éjszaka','+1 nap eltolás'],acts:['Igen, figyeld','Nem stimmel','Mesélj erről']},
+  {k:'keso',h:'Késői vacsora és az alvás',lbl:'figyelem',st:'Figyelem',hits:5,miss:1,minN:6,x:'Amikor 21:00 után eszel, az alvásod minősége átlag <b>1,2 ponttal</b> alacsonyabb.',ev:['6 késői vacsora','6 éjszaka'],acts:['Így van','Kivétel volt']}];
+const OS={done:{},ev:{}};
+const obsBlock=(o,all)=>`<article class="nb-m new"><time>${o.hits+o.miss}/${o.minN}</time>${node('mezo')}<div class="nb-b">
+    <p class="nb-h"><b>${o.h}</b>${o.lbl}<i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></p>
+    <div class="nb-tally" role="img" aria-label="Bizonyíték: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${o.minN-o.hits-o.miss} még hiányzik">${Array.from({length:o.minN},(_,i)=>`<i class="${i<o.hits?'p':i<o.hits+o.miss?'m':''}"></i>`).join('')}</div>
+    <p class="nb-leg"><b>Bizonyíték · ${o.hits+o.miss} / ${o.minN} nap</b><span><i class="p"></i>egybevág</span><span><i class="m"></i>ellene szól</span><span><i></i>még hiányzik</span></p>
+    <p class="nb-t">${o.x}</p>
+    ${OS.ev[o.k]?`<p class="nb-l">Miből látom</p><div class="ng-chips">${o.ev.map(e=>`<span>${e}</span>`).join('')}</div>`:''}
+    <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span><button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla</button>`
+      :o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')+`<button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem':'Miből látod?'}</button>`}</div>
+    ${o.st==='Gyűlik'||all?`<div class="nb-a">${o.st==='Gyűlik'?'<button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button>':''}${all?'<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes észrevétel ›</button>':''}</div>`:''}
+  </div></article>`;
+function obsBody(){const left=OBS.filter(o=>!OS.done[o.k]).length;
+  return `<div class="nb"><div class="nb-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2>
+    <p>Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok. A bal oldali szám: hány nap bizonyíték gyűlt össze.</p></div>
+  ${OBS.map(o=>obsBlock(o)).join('')}
+  <button class="nb-end" data-toast="Mezo · Chat"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><span><b>Beszéljük meg</b><small>ha valamelyik nem stimmel, mondd el</small></span></button></div>`}
+/* the vials the owner likes: taken as they are from the approved page, fed by a manifold on the pipe */
+const cutOut=(html,a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);if(i<0||j<0)return '';let t=html.slice(i,j);/* keep the fragment balanced */
+  let d=(t.match(/<div\b/g)||[]).length-(t.match(/<\/div>/g)||[]).length;while(d-->0)t+='</div>';while(d++<-1&&/<\/div>\s*$/.test(t))t=t.replace(/<\/div>\s*$/,'');return t};
+const manifold=(n,from=72)=>{const xs=Array.from({length:n},(_,i)=>Math.round(360*(i+.5)/n)),x0=xs[0],x1=xs[n-1];
+  return svg(46,pipe(`M${from} 0V18M${x0} 32V26Q${x0} 18 ${x0+8} 18H${x1-8}Q${x1} 18 ${x1} 26V32${xs.slice(1,-1).map(x=>`M${x} 18V32`).join('')}`)+xs.map((x,i)=>drip(x,42,i*.4)).join(''))};
+function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh np-six">','<div class="fh-acts">');
+  return `<div class="nb"><div class="nb-lead"><small>Életjelek · ma · átlag 60</small><h2>A mozgás az egyetlen, ami figyelmet kér.</h2>
+    <p>A többi öt jel rendben van. Koppints bármelyikre a részletekért.</p><p><button class="fh-lk" data-go="eletjel">Részletek ›</button></p></div></div>
+  ${manifold(6)}<div class="np-pad nb-six">${v}</div>
+  <div class="nb nb2"><p class="nb-mark"><span>Amit a csapat mond</span></p>
+  <article class="nb-m new"><time>34%</time>${node('mocor')}<div class="nb-b"><p class="nb-h"><b>Mozgás</b>a mozgás jele</p><p class="nb-t"><b>Ma még alig mozdultál.</b> Egy 10 perces séta ebéd után elég, hogy a szint megmozduljon. Nem kell edzés.</p>
+    <div class="nb-a"><button class="btn sm ghost" data-toast="Edzés · Mai">Megnézem</button></div></div></article></div>`}
+const RR={nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>`<div class="nb">${obsBlock(OBS[0],true)}</div>`};
+function uzenetek(tab){tab=tab||'uzenetek';
+  const TABS=[['uzenetek','Üzenetek'],['eletjelek','Életjelek'],['eszrevetelek','Észrevételek']];if(!TABS.some(t=>t[0]===tab))return O.uzenetek(tab);
+  return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
+    ${tab==='eletjelek'?vitalsBody():`<div data-rr="${tab==='uzenetek'?'nb':'ob'}">${RR[tab==='uzenetek'?'nb':'ob']()}</div>`}`)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
+  if(a==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok')}else if(a==='fb')BS.fb=!BS.fb;else if(k==='exp')BS.exp[x]=!BS.exp[x];
+  else if(k==='obs'){OS.done[x]=true;F.toast('Megjegyeztem a válaszod')}else if(k==='ev')OS.ev[x]=!OS.ev[x];
+  document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
+
+/* ═══ MAI · the hub on the same pipe. The four tubes of "Mai szintek" stay as they are. ═══ */
+function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
+  const NX=[
+    {key:'drop',title:'Délutáni check-in',tag:'most',sk:'q',val:'14:00',sub:['9 koppintás, kb. fél perc'],go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"'},
+    {key:'training',title:'Pull Day',tag:'nyitva',sk:'warn',val:'ma',sub:['a mai edzés még hátravan'],go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
+    {key:'nutrition',title:'Vacsora',tag:'',sk:'q',val:'19:30',sub:['722 kcal van még','18 g fehérje hiányzik'],go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
+  const [stSvg,yEnd]=stations(NX,62,150);
+  const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760','data-dom="fuel"'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','✓','data-go="checkin"'],['09:15','Reggeli','Túrós zabkása áfonyával','420','data-dom="fuel"'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','✓','data-go="checkin"']];
+  const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"']];
+  return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
+  <div class="ng-lead first"><small>Mai állapot · 14:20</small><h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2>
+    <p class="ng-cnt"><b>60</b> a 100-ból · hat életjel átlaga</p>
+    <p><button class="btn" data-n="ck:open">Délutáni check-in</button></p></div>
+  ${svg(52,pipe('M72 0V14M72 38V52')+badgeN(72,26,1,'Mai szintek · hol tartasz a célhoz'))}${manifold(4)}
+  ${lv}
+  ${svg(yEnd+8,pipe('M72 6V24M72 48V62')+badgeN(72,36,2,'Most következik · 3 teendő')+stSvg+pipe(`M72 ${yEnd}V${yEnd+8}`))}
+  ${svg(60,pipe('M72 0V18M72 42V60')+badgeN(72,30,3,'Észrevétel · megerősített minta'))}
+  <div data-rr="mo">${RR.mo()}</div>
+  ${svg(60,pipe('M72 0V18M72 42V60')+badgeN(72,30,4,'Mai napló')+`<text class="ng-go" x="346" y="36" text-anchor="end" data-go="gyors" role="button" tabindex="0">+ Új bejegyzés</text>`)}
+  <div class="nb">${LOG.map(([t,ti,sub,r,attr])=>`<button class="nb-m log" ${attr}><time>${t}</time><i class="nb-dot"></i><span class="nb-b"><span class="nb-h"><b>${ti}</b></span><span class="nb-t">${sub}</span></span><em>${r}</em></button>`).join('')}</div>
+  ${svg(86,pipe('M72 0V18M72 42C72 74 180 54 180 86')+badgeN(72,30,5,'Továbbiak · ami még a naphoz tartozik'))}${manifold(4,180)}
+  <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b><small>${sub}</small></button>`).join('')}</div>
+  <div class="mt-acts"><button class="btn sm" data-go="gyors">+ Új bejegyzés</button><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
+  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b><small>Kímélő mód: betegség, sérülés vagy utazás idejére</small></span></button>`)}
 
 /* ═══ RUTIN · the chain as a string of vessels that winds down the page — three per row, any number of rows.
        The vessel's level is the habit's 28-day strength; the pipe behind it is full up to where you have got today. ═══ */
@@ -248,7 +313,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
   const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody()});
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
-nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
+nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a?O.napom(a):today();nap.routes.nap=day;nap.routes.napomg=today;nap.routes.napomt=today;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
@@ -312,20 +377,48 @@ ${P} .ng-sh{font:800 22px var(--disp,inherit);letter-spacing:-.02em}${P} .ng-sh 
 ${P} .sheet .ng-who{margin-top:16px}
 
 /* Beszélgetés */
-${P} .nb{position:relative;padding:6px 16px 0 0;--rail:62px}
-${P} .nb::before{content:"";position:absolute;left:calc(var(--rail) - 4px);top:0;bottom:36px;width:8px;border-radius:4px;background:color-mix(in srgb,var(--liq1) 52%,#E9F2F8)}
-${P} .nb-lead{position:relative;padding:8px 6px 14px calc(var(--rail) + 22px)}
+${P} .nb{position:relative;--rail:calc(14px + (100% - 28px)*.2)}
+${P} .nb::before{content:"";position:absolute;left:calc(var(--rail) - (100% - 28px)*4/360);top:-2px;bottom:-2px;width:calc((100% - 28px)*8/360);background:color-mix(in srgb,var(--liq1) 52%,#E9F2F8)}
+${P} .nb:has(>.nb-end)::before{bottom:40px}
+${P} .nb.nb2{margin-top:10px}${P} .nb.nb2::before{top:14px;border-radius:4px 4px 0 0}
+${P} .nb-six{margin-bottom:4px}${P} .nb-six .np-vh{margin-top:0}
+${P} .nb-st{font-style:normal;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:var(--dom);background:color-mix(in srgb,var(--dom) 10%,#fff)}
+${P} .nb-st.w{color:#8A5F06;background:color-mix(in srgb,var(--warn) 18%,#fff)}
+${P} .nb-tally{display:flex;gap:5px;margin-top:10px}
+${P} .nb-tally i,${P} .nb-leg i{display:block;width:16px;height:30px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.16)}
+${P} .nb-tally i.p,${P} .nb-leg i.p{background:linear-gradient(180deg,var(--liq1),var(--liq2));box-shadow:none}
+${P} .nb-tally i.m,${P} .nb-leg i.m{background:none;box-shadow:none;border:1.5px dashed var(--warn)}
+${P} .nb-leg{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:11px;color:var(--sub)}${P} .nb-leg b{flex:1 1 100%;color:var(--ink)}
+${P} .nb-leg span{display:flex;align-items:center;gap:4px}${P} .nb-leg i{width:8px;height:14px}
+${P} .nb-m.log{display:flex;align-items:flex-start;gap:8px;padding-top:9px;padding-bottom:9px;padding-left:calc(var(--rail) + 22px)}
+${P} .nb-m.log time{top:12px}
+${P} .nb-dot{position:absolute;left:calc(var(--rail) - 8px);top:11px;width:16px;height:16px;border-radius:50%;background:linear-gradient(160deg,var(--liq1),var(--liq2));box-shadow:0 0 0 3px #E9F2F8}
+${P} .nb-m.log .nb-b{flex:1;min-width:0}${P} .nb-m.log .nb-t{font-size:12.5px;line-height:1.4;color:var(--sub);margin-top:1px}
+${P} .nb-m.log em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;padding-top:2px}
+${P} .ng-lead.first{padding-top:16px}${P} .ng-lead.first::before{top:10px;border-radius:4px 4px 0 0}
+${P} .ng-lead .btn{margin-top:4px}
+${P} .mt-lv>.k2-vials{margin:0}
+${P} text.ng-go[data-go]{cursor:pointer}
+${P} .mt-more{display:grid;grid-template-columns:repeat(4,1fr);margin:0 14px}
+${P} .mt-more button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 3px;text-align:center;min-width:0}
+${P} .mt-bub{display:grid;place-items:center;width:58px;height:58px;border-radius:50% 50% 50% 50%/42% 42% 58% 58%;background:#fff;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--liq1) 45%,#fff),0 10px 14px -10px var(--liq2)}
+${P} .mt-bub>svg.ic{width:28px;height:28px}
+${P} .mt-more b{margin-top:5px;font-size:12px;font-weight:700;line-height:1.2;color:var(--ink)}${P} .mt-more small{font-size:10.5px;line-height:1.25;color:var(--sub)}
+${P} .mt-acts{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;margin:20px 16px 0}
+${P} .mt-km{display:flex;align-items:center;gap:12px;width:calc(100% - 44px);margin:18px 22px 0;text-align:left}
+${P} .mt-km>svg.ic{width:32px;height:32px;flex:none}${P} .mt-km b{display:block;font-size:14.5px;font-weight:700;color:var(--ink)}${P} .mt-km small{font-size:12px;color:var(--sub)}
+${P} .nb-lead{position:relative;padding:8px 22px 14px calc(var(--rail) + 22px)}
 ${P} .nb-lead small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
 ${P} .nb-lead h2{margin:6px 0 0;font:800 23px/1.12 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink)}
 ${P} .nb-lead p{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--sub)}
-${P} .nb-trib{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:0;text-align:left}
+${P} .nb-trib{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-height:64px;padding:0 14px 0 0;text-align:left}
 ${P} .nb-trib>svg{position:absolute;left:calc(var(--rail) - 22px);top:0;width:120px;height:64px;overflow:visible}
 ${P} .nb-duo{position:relative;display:flex;flex-direction:column;gap:4px;margin-left:calc(var(--rail) + 58px)}
 ${P} .nb-tt b{display:block;font-size:14px;font-weight:700;color:var(--ink)}${P} .nb-tt small{display:block;font-size:12px;line-height:1.35;color:var(--sub)}
 ${P} .nb-mark{position:relative;margin:18px 0 6px;height:22px}
-${P} .nb-mark::before{content:"";position:absolute;left:14px;right:-2px;top:10px;height:0;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 30%,#fff)}
+${P} .nb-mark::before{content:"";position:absolute;left:14px;right:14px;top:10px;height:0;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 30%,#fff)}
 ${P} .nb-mark span{position:absolute;left:calc(var(--rail) + 22px);top:0;padding:2px 10px;border-radius:999px;background:#EAF2F8;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--sub)}
-${P} .nb-m{position:relative;display:block;width:100%;padding:12px 0 14px calc(var(--rail) + 36px);text-align:left}
+${P} .nb-m{position:relative;display:block;width:100%;padding:12px 16px 14px calc(var(--rail) + 36px);text-align:left}
 ${P} .nb-m time{position:absolute;left:8px;top:25px;width:calc(var(--rail) - 34px);text-align:right;font:500 11px var(--mono,ui-monospace,monospace);color:var(--sub)}
 ${P} .nb-node{position:absolute;left:calc(var(--rail) - 24px);top:6px;width:48px;height:48px;display:grid;place-items:center}
 ${P} .nb-node>svg:first-child{position:absolute;inset:0;width:100%;height:100%;overflow:visible;filter:drop-shadow(0 5px 6px color-mix(in srgb,var(--c) 40%,transparent))}
@@ -340,7 +433,7 @@ ${P} .nb-l{margin-top:12px;font-size:11px;font-weight:700;letter-spacing:.06em;t
 ${P} .nb-f{display:grid;gap:6px;margin-top:8px}${P} .nb-f span{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}${P} .nb-f svg.ic{width:20px;height:20px;flex:none}
 ${P} .nb-a{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}${P} .nb-a>span{font-size:12.5px;font-weight:600;color:var(--sub)}
 ${P} .nb-ok{display:flex;align-items:center;gap:6px;color:var(--ok)!important}${P} .nb-ok svg{width:16px;height:16px;fill:none;stroke:var(--ok);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-${P} .nb-end{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin-top:10px;padding:0 0 0 calc(var(--rail) - 36px);text-align:left}
+${P} .nb-end{position:relative;display:flex;align-items:center;gap:14px;width:100%;margin-top:10px;padding:0 16px 0 calc(var(--rail) - 36px);text-align:left}
 ${P} .nb-end svg{width:72px;height:72px;flex:none;overflow:visible;filter:drop-shadow(0 8px 9px rgba(24,119,242,.3))}${P} .nb-end path{fill:url(#ng-g-dom)}
 ${P} .nb-end b{display:block;font:800 18px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}${P} .nb-end small{display:block;font-size:12.5px;color:var(--sub)}
 
@@ -397,9 +490,10 @@ ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}
 @keyframes ng-dr{0%{opacity:0;translate:0 -6px}25%{opacity:1}100%{opacity:0;translate:0 12px}}
 @keyframes rt-now{50%{transform:scale(1.06)}}
 `);
-window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Ezen az oldalon a három fül a rajzolt változatot nyitja: nincs nagy edény, nincs kártya, nincs lista.</p>
-<ul><li><a href="#w-nap-napom"><b>A napom</b></a> — a mai nap: a nap edényéből cső indul, minden egység a saját edénye rajta. Lezárt napok: <a href="#w-nap-nap.2026-09-23">szerda</a>, <a href="#w-nap-nap.2026-09-22">kedd</a>; kevés adat: <a href="#w-nap-nap.2026-09-21">hétfő</a>.</li>
-<li><a href="#w-nap-uzenetek"><b>Beszélgetés</b></a> — a nap folyama: minden üzenet egy csepp rajta, a maga idejében.</li>
+window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Ezen az oldalon a négy fül a rajzolt változatot nyitja: nincs nagy edény, nincs kártya, nincs lista.</p>
+<ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap központja ugyanazon a csövön; a négy „Mai szintek” kémcső maradt, a cső táplálja őket.</li>
+<li><a href="#w-nap-napom"><b>A napom</b></a> — a mai nap: a nap edényéből cső indul, minden egység a saját edénye rajta. Lezárt napok: <a href="#w-nap-nap.2026-09-23">szerda</a>, <a href="#w-nap-nap.2026-09-22">kedd</a>; kevés adat: <a href="#w-nap-nap.2026-09-21">hétfő</a>.</li>
+<li><a href="#w-nap-uzenetek"><b>Beszélgetés</b></a> — a nap folyama: minden üzenet egy csepp rajta, a maga idejében. Belső fülek: <a href="#w-nap-uzenetek.eletjelek">Életjelek</a>, <a href="#w-nap-uzenetek.eszrevetelek">Észrevételek</a>.</li>
 <li><a href="#w-nap-rutin"><b>Rutin</b></a> — a lánc edények füzére, ami soronként kanyarodik: akárhány szokásra. Másik láncok: <a href="#w-nap-rutin.este">este</a>, <a href="#w-nap-rutin.napkozben">napközben</a>.</li></ul>
-<p>Összevetésnek a mostani, listás oldalak: <a href="#w-nap-napom-lista">A napom</a> · <a href="#w-nap-uzenetek-lista">Beszélgetés</a> · <a href="#w-nap-rutin-lista">Rutin</a>.</p>`+(window.FNOTES_FOLY||'');
+<p>Összevetésnek a mostani, listás oldalak: <a href="#w-nap-mai-lista">Mai</a> · <a href="#w-nap-napom-lista">A napom</a> · <a href="#w-nap-uzenetek-lista">Beszélgetés</a> · <a href="#w-nap-rutin-lista">Rutin</a>.</p>`+(window.FNOTES_FOLY||'');
 })();
