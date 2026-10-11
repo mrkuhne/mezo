@@ -139,6 +139,8 @@ function napomg(){const base=nap.routes.napom('');
     <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p>
     <p class="ng-foot">A 7/10 az esti check-in utolsó kérdéséből jön („Milyen volt a napod összességében?”). A napod többi része nem változik.</p>`+base.slice(b)}
 nap.routes.napomg=napomg;
+/* the week strip navigates to nap.<date>: coming back to today must land on the drawing, not on the list */
+const origDay=nap.routes.nap;nap.routes.nap=a=>(!a||a==='2026-09-24')?napomg():origDay(a);
 nap.routes.napomt=napomg; /* the removed variant's address: a tab left open on it must not fall back to Mai */
 
 F.css(`/* kiserlet-napom */
