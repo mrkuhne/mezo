@@ -1,8 +1,8 @@
 /* vilagos/kiserlet-napom.js — EXPERIMENT (owner idea, 2026-10-11): "A napom" without cards and lists.
    NOT part of the build target: it is loaded only by ../kiserlet-napom-grafika.html, never by the shell
    (klinikai-iranyok.html), so the approved #w-nap-napom stays what the builders read.
-   Route: #w-nap-napomg — the week strip and the hero tank are the approved ones; everything under the
-   hero is ONE drawing: the day's liquid runs down a pipe, and every unit is its own vessel on that pipe.
+   Route: #w-nap-napomg — the week strip is the approved one; there is no hero tank (owner, round 3);
+   everything under the strip is ONE drawing: the day's liquid runs down a pipe, and every unit is its own vessel on that pipe.
    The vessel is the frame, the pipe's bends are the dividers and the spacing. Same data as nap.js (NDT). */
 (function(){
 const F=window.F,nap=window.FREG&&FREG.nap;if(!nap)return;
