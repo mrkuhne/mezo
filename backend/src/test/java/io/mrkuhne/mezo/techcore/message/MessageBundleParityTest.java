@@ -62,4 +62,36 @@ class MessageBundleParityTest {
             }
         }
     }
+
+    /**
+     * A value with a {n} placeholder goes through {@link java.text.MessageFormat}, where a single
+     * apostrophe opens a quoted section: it disappears from the output and swallows the placeholders
+     * after it ("Couldn't save {0}" renders as "Couldnt save {0}"). It must be written doubled ('').
+     */
+    @Test
+    void no_placeholder_value_holds_a_lone_apostrophe() throws IOException {
+        for (String bundle : new String[] {"messages_hu.properties", "messages_en.properties"}) {
+            Properties p = load(bundle);
+            for (String key : p.stringPropertyNames()) {
+                String value = p.getProperty(key);
+                if (placeholders(value).isEmpty()) {
+                    continue;
+                }
+                assertThat(loneApostrophe(value)).as("lone ' in %s of %s: %s", key, bundle, value).isFalse();
+            }
+        }
+    }
+
+    @Test
+    void the_lone_apostrophe_check_tells_single_from_doubled() {
+        assertThat(loneApostrophe("Couldn't save {0}")).isTrue();
+        assertThat(loneApostrophe("Couldn''t save {0}")).isFalse();
+        assertThat(loneApostrophe("''{0}'' is taken")).isFalse();
+        assertThat(loneApostrophe("{0} is the user''s '")).isTrue();
+        assertThat(loneApostrophe("No apostrophe {0}")).isFalse();
+    }
+
+    private static boolean loneApostrophe(String value) {
+        return value.replace("''", "").indexOf('\'') >= 0;
+    }
 }

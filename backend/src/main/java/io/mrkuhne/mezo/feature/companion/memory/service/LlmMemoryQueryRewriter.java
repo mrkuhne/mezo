@@ -23,7 +23,7 @@ public class LlmMemoryQueryRewriter implements MemoryQueryRewriter {
             + "keresőkérdéssé a megadott rövid beszélgetési előzmény alapján. "
             + "Csak a keresőkérdést add vissza, magyarázat, címke és idézőjel nélkül.";
 
-    private static final String FEATURE_COMPANION_RECALL = "companion_recall";
+    private static final String FEATURE_COMPANION_RECALL = LlmCallContext.FEATURE_COMPANION_RECALL;
     private static final String OPERATION = "query_rewrite";
 
     private static final LlmCallContext CALL_CONTEXT =

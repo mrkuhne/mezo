@@ -56,7 +56,7 @@ public class MemoryReembeddingService {
         List<float[]> embeddings;
         try {
             embeddings = llmCallContextHolder.runWith(
-                    new LlmCallContext("embed_memory", "reembedding_batch", "memory_item", null),
+                    new LlmCallContext(LlmCallContext.FEATURE_EMBED_MEMORY, "reembedding_batch", "memory_item", null),
                     () -> embeddingPort.embedDocuments(items.stream()
                             .map(MemoryItemEntity::getContent)
                             .toList()));

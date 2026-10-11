@@ -122,7 +122,7 @@ public class MemoryProjectionWriter {
         float[] resolvedEmbedding = embedding == null
                 ? llmCallContextHolder.runWith(
                         new io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext(
-                                "embed_memory", "document_chunk", command.sourceKind(), command.sourceId()),
+                                io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext.FEATURE_EMBED_MEMORY, "document_chunk", command.sourceKind(), command.sourceId()),
                         () -> embeddingPort.getObject().embedDocuments(List.of(command.content()))).getFirst()
                 : embedding;
         vector.setEmbedding(resolvedEmbedding);

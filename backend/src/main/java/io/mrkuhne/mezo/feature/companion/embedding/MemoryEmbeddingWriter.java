@@ -288,7 +288,7 @@ public class MemoryEmbeddingWriter {
                 .ifPresentOrElse(existing -> {
                     String capped = cap(content);
                     float[] vector = llmCallContextHolder.runWith(
-                            new LlmCallContext("embed_memory", "document", kind, refId),
+                            new LlmCallContext(LlmCallContext.FEATURE_EMBED_MEMORY, "document", kind, refId),
                             () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
                     existing.setContent(capped);
                     existing.setEmbedding(vector);
@@ -314,7 +314,7 @@ public class MemoryEmbeddingWriter {
         }
         String capped = cap(content);
         float[] vector = llmCallContextHolder.runWith(
-                new LlmCallContext("embed_memory", "document", kind, refId),
+                new LlmCallContext(LlmCallContext.FEATURE_EMBED_MEMORY, "document", kind, refId),
                 () -> embeddingPort.embedDocuments(List.of(capped))).getFirst();
         MemoryEmbeddingEntity entity = new MemoryEmbeddingEntity();
         entity.setCreatedBy(createdBy);
