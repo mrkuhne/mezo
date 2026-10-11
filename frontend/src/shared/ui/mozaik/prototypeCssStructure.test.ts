@@ -2,6 +2,15 @@ import { describe, expect, test } from 'vitest'
 import rawCss from '@/styles/prototype.css?raw'
 import frameCss from '@/styles/folyadek-frame.css?raw'
 import napEpitesCss from '@/styles/folyadek-nap-epites.css?raw'
+import kitCss from '@/styles/folyadek-kit.css?raw'
+import edzesKozosCss from '@/styles/folyadek-edzes-kozos.css?raw'
+import edzesMaiCss from '@/styles/folyadek-edzes-mai.css?raw'
+import edzesTerhelesCss from '@/styles/folyadek-edzes-terheles.css?raw'
+import edzesSportCss from '@/styles/folyadek-edzes-sport.css?raw'
+import edzesTervCss from '@/styles/folyadek-edzes-terv.css?raw'
+import edzesNapszerkCss from '@/styles/folyadek-edzes-napszerk.css?raw'
+import edzesSablonCss from '@/styles/folyadek-edzes-sablon.css?raw'
+import edzesRiportCss from '@/styles/folyadek-edzes-riport.css?raw'
 
 /**
  * Structural guard for `styles/prototype.css` (mezo-d20.9.1).
@@ -623,308 +632,148 @@ describe('GlassBox stacks correctly with Sheet (mezo-88iwa.13 fix round 1)', () 
 })
 
 /**
- * Section registration (mezo-88iwa.13, T12 Task 3 · re-dressed mezo-ju4j6.12): the
- * Terhelés (TrainWeekPage) face's `.ld-*` section — the hero halo band, the two doorway
- * cards, the group cards and the group-glass body. The marker lost its `titanium` suffix
- * with the re-dress and this describe moved in the SAME commit, as the house rule requires.
- * It also carries the banished-material guards (style bible A.2 rule 4), so the dark-ground
- * literals and the accent glows this pass removed cannot creep back onto this slice.
+ * The pre-Folyadék Edzés skin retired in Folyadék F3 (mezo-n4wf5.3). Edzés renders the kit now (`fo-*`),
+ * the Edzés-shared pieces (`.ex-*`, styles/folyadek-edzes-kozos.css) and one stylesheet per area
+ * (`.em- .et- .es- .ep- .ee- .ew- .er-` in styles/folyadek-edzes-*.css); the old rules nothing
+ * renders any more were deleted from prototype.css with a zero-usage proof (bible F1.13).
+ *
+ * This block replaces the guards that used to REQUIRE those rules: `train terheles` (`ld-`),
+ * `train izomjel` (`mm-`), `train gyakorlatok` (`gy-`), `terv` (`pl-`, incl. the `.pl-info` 44px
+ * hit box — the explain trigger is the kit's text link now, see `.fo-lk::after` below), `train sport`
+ * (`sp-`), the sport form CTA (`.sp-foot`), and the Üveg blocks `uveg edzes terheles / sport /
+ * gyakorlatok`, `uveg edzes2 *`, `uveg sajat edzes`, `uveg lezaras edzes`. Each entry: the block's
+ * marker name (null = the block survives, cut down) and selectors that must have NO rule left
+ * anywhere in the stylesheet (comments stripped — surviving prose may still name them).
+ *
+ * What is NOT retired (slice F4 and other domains still wear it): `train session`, `train ceremony`,
+ * `uveg edzes session`, `uveg edzes zaras`, the shared `.tr-eyebrow`, and from `uveg edzes mai` the
+ * reason sheet + duration row that Fuel and Nap render (`.trm-why*`, `.trm-inpmic`, `.trm-kmd*`).
  */
-describe('the train terheles section is registered and re-dressed (mezo-ju4j6.12)', () => {
-  const START_MARKER = '── train terheles ('
-  const END_MARKER = '── /train terheles '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
+const RETIRED_EDZES_BLOCKS: Array<[string | null, string, string[]]> = [
+  ['train terheles', 'Terhelés (ld-)', ['.ld-hero', '.ld-map', '.ld-group', '.ld-sport', '.ld-move', '.ld-glass', '.ld-h3',
+    '.ld-eyebrow', '.ld-event', '.ld-legend', '@keyframes ld-']],
+  ['train izomjel', 'Minden izomjel (mm-)', ['.mm-head', '.mm-region', '.mm-grid', '.mm-cell']],
+  ['train gyakorlatok', 'Gyakorlatok + medálok (gy-)', ['.gy-card', '.gy-rec', '.gy-curve', '.gy-medal', '.gy-hero', '.gy-list',
+    '.gy-search', '.gy-next']],
+  ['terv', 'Terv (pl-)', ['.pl-poster', '.pl-week', '.pl-phase', '.pl-ring', '.pl-arc', '.pl-day', '.pl-dest', '.pl-item',
+    '.pl-dhero', '.pl-ex', '.pl-scale', '.pl-lhero', '.pl-lib', '.pl-tpl', '.pl-wload', '.pl-versus', '.pl-stars', '.pl-h3',
+    '.pl-info {', '.pl-info::after', '.pl-info .icon', '@keyframes pl-']],
+  ['train sport', 'Sport-rögzítés (sp-)', ['.sp-page', '.sp-head', '.sp-grid', '.sp-tile', '.sp-form', '.sp-field', '.sp-chips',
+    '.sp-range', '.sp-number', '.sp-kcal', '.sp-note', '.sp-foot']],
+  ['uveg edzes terheles', '/train/week + /train/gym (Üveg)', ['.tw-load', '.tw-map', '.tw-move', '.tw-glass', '.tw-custom',
+    '.tw-signals']],
+  ['uveg edzes sport', '/train/sport, /train/futas (Üveg)', ['.uvs-', '.spw-', '.stag-run', '.capture-tone-sport',
+    '.capture-tone-run', '.uv-gb-kcal']],
+  ['uveg edzes gyakorlatok', '/train/medals, /train/exercises (Üveg)', ['.gyx-']],
+  ['uveg edzes2 terv', 'a terv hete (Üveg)', ['.tv-day', '.tv-dayrest']],
+  ['uveg edzes2 run', 'a futó terv oldala (Üveg)', ['.tv-run', '.mz-wdots', '.mz-arcline', '.mz-phchip', '.mz-coach', '.mz-wmini',
+    '.mz-rollchips', '.mz-mband', '.mz-livebanner', '.mz-livedot']],
+  ['uveg edzes2 nap', 'egy nap + szerkesztője (Üveg)', ['.tv-day-page', '.tv-dayedit', '.mz-band', '.mz-tchip', '.mz-stepchip',
+    '.mz-habnote', '.mz-dsteps', '.mz-dstep', '.mz-dnum', '.mz-dcells', '.mz-dcell', '.mz-dadj', '.mz-eff', '.mz-confbar']],
+  ['uveg edzes2 izmok', 'heti vizsgálat + egy izom (Üveg)', ['.tv-week', '.tv-muscle']],
+  ['uveg edzes2 konyvtar', 'könyvtár, futamok, riport, összevetés (Üveg)', ['.tv-lib', '.tv-runs', '.tv-report', '.tv-cmp']],
+  ['uveg edzes2 sablonok', 'sablonok, sablon-szerkesztő, új terv (Üveg)', ['.tv-tpl', '.tv-wizard', '.mz-dst', '.mz-lt-', '.mz-zb',
+    '.mz-lcard', '.mz-exc', '.mz-wbhero', '.mz-dayrow', '.mz-dayhero', '.mz-addex', '.mz-draftfoot', '.mz-confirm',
+    '.mz-stepcard', '.mz-lint', '.mz-arr-', '.mz-eb-', '.mz-dct', '.mz-dcgrid', '.mz-daypick', '.mz-dtile', '.mz-wfoot']],
+  ['uveg edzes2 het', 'izomtérkép, izomjelek, minden mozgás (Üveg)', ['.ld-map-page', '.tw-map .']],
+  ['uveg sajat edzes', 'saját edzés (Üveg)', ['.uvx-cw']],
+  ['uveg lezaras edzes', 'az U11 záró javításai', ['.tv-wizard .mz-wfoot', '.pl-poster .pl-week', '.tw-move .ld-move-box']],
+  [null, 'Mai (az `uveg edzes mai` blokkból)', ['.trm .', '.trm-hero', '.trm-start', '.trm-sess', '.trm-energy', '.trm-mus',
+    '.trm-alt', '.trm-add', '.trm-day', '.trm-stpill', '.trm-skipd', '.trm-kmq', '.trm-kmrel', '.trm-cbsets', '.trd', '.mtr',
+    '.donebar', '.uvl-cw', '.uvl-new']],
+  [null, 'a gyakorlatválasztó és a régi lapok (az `uveg reteg lap` blokkból)', ['.uvl-edzes', '.uvl-exlist', '.uvl-exitem',
+    '.uvl-exrow', '.uvl-stim', '.uvl-subh', '.uvl-none', '.exdemo']],
+]
 
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the Titanium-era marker name is gone — one block, renamed', () => {
-    expect(rawCss).not.toContain('train terheles titanium')
-  })
-
-  test('the section actually carries the ld- class family, not just the markers', () => {
-    for (const cls of [
-      '.ld-hero', '.ld-hero-bar', '.ld-hero-pct', '.ld-eyebrow', '.ld-map-card',
-      '.ld-move-card', '.ld-groups', '.ld-group-bar', '.ld-group-note', '.ld-sport', '.ld-glass-rows',
-    ]) {
-      expect(section(), `${cls} missing from the train terheles section`).toContain(cls)
+describe.each(RETIRED_EDZES_BLOCKS)('the retired Edzés skin stays out: %s — %s (Folyadék F3, mezo-n4wf5.3)', (marker, _what, sels) => {
+  test('its marker pair is gone (or, for a surviving block, still paired)', () => {
+    if (marker) {
+      expect(rawCss).not.toContain(`── ${marker} (`)
+      expect(rawCss).not.toContain(`── /${marker} `)
+    } else {
+      for (const name of ['uveg edzes mai', 'uveg reteg lap']) {
+        expect(rawCss.split(`── ${name} (mezo-`).length - 1).toBe(1)
+        expect(rawCss.split(`── /${name} ──`).length - 1).toBe(1)
+      }
     }
   })
 
-  // A blokk 13 `#ffffffXX` fóliát vitt — mindet egy SÖTÉT alapra tervezve. A `.titan-dark`
-  // hatókör a 2. fázisban megszűnt, úgyhogy ezek világos lapon vagy láthatatlanok, vagy
-  // szürke hártyát húznak a mosott csempére. Kommentek nélkül nézzük: a blokk saját prózája
-  // NEVEZI a száműzött anyagokat.
-  test('the white-film literals are gone — this screen lives in the LIGHT world now', () => {
-    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-  })
-
-  // §2.3: nincs akcens-izzás. A hős sávja 16px-es neon szórást vitt, a Titán gyűrűk pedig
-  // végtelenül forogtak — mindkettő a rossz irány jellegzetes jele.
-  test('no accent glow and no infinite spin survive on this slice', () => {
-    const css = rules()
-    expect(css).not.toMatch(/box-shadow:\s*0 0 \d+px/)
-    expect(css).not.toMatch(/animation:[^;]*ld-spin[^;]*infinite/)
-  })
-
-  // A doménszín a ház Edzés-akcense, nem a Titán nav-lime (`--tag-gym`) — A.2 1. szabály.
-  test('the domain accent is --dv-coral, not the Titanium --tag-gym', () => {
-    expect(rules()).toContain('--ld-accent: var(--dv-coral)')
-  })
-
-  // A hős a stíluskönyv §2.2 C halo-sávja: keret és doboz nélküli atmoszféra.
-  test('the hero is a halo band, not a bordered poster', () => {
-    expect(rules()).toMatch(/\.ld-hero \{[^}]*background: var\(--halo-coral\)/)
-  })
-
-  // The bars are drawn-on-reveal: the FINAL width is the base rule (so the portaled
-  // group glass and a settled 'pop' arrival both show a full bar), and only the armed
-  // `.mz-play` subtree animates the growth — the `.gr-tbar` idiom. A future edit that
-  // flips this (base scaleX(0)) silently blanks every bar outside an entrance group.
-  test('the ld- bars default to their final width and only grow inside .mz-play', () => {
-    expect(rawCss).toContain('.mz-play .ld-hero-bar i, .mz-play .ld-group-bar i')
-    expect(rawCss).toMatch(/@keyframes ld-fill \{ from \{ transform: scaleX\(0\); \}/)
-  })
-
-  // §8.6 „egy lendület, aztán nyugalom": minden, amit ez a szelet animál, kap egy
-  // csökkentett-mozgás ágat ugyanabban a blokkban.
-  test('every added animation has a reduced-motion branch', () => {
-    const css = rules()
-    const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'))
-    for (const sel of ['.ld-hero-art i', '.ld-hero-pct', '.body-map-shape']) {
-      expect(reduced, `${sel} has no reduced-motion branch`).toContain(sel)
-    }
+  test('none of its selectors has a rule left anywhere in the stylesheet', () => {
+    const rules = stripComments(rawCss)
+    const left = sels.filter((sel) => rules.includes(sel))
+    expect(left, `retired Edzés selectors are back in prototype.css: ${left.join(', ')}`).toEqual([])
   })
 })
 
 /**
- * Section registration (mezo-lf3cv, P2 Task 1 · re-dressed mezo-ju4j6.12): the „Minden
- * izomjel" subpage's `.mm-*` section — the head, the six region boxes, their 3-wide grid
- * and the muscle cells. Re-dressed with its Terhelés parent, so it carries the same guard.
+ * Where the Edzés rules live now, and the truths the retired guards protected, re-pointed:
+ *  · one stylesheet per area, each speaking its own prefix (bible F2.3);
+ *  · motion only for people who accept it (was: „every added animation has a reduced-motion branch");
+ *  · the domain accent comes from the frame's tokens — never the Titanium `--tag-gym`, never glass;
+ *  · the 44px touch area of the explain link is the kit's (was: `.pl-info::after`);
+ *  · one recipe per thing: the pieces folded into the kit do not grow local copies again.
  */
-describe('the train izomjel section is registered and re-dressed (mezo-ju4j6.12)', () => {
-  const START_MARKER = '── train izomjel ('
-  const END_MARKER = '── /train izomjel '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
+const EDZES_SHEETS: Array<[string, string, string]> = [
+  ['kozos', '.ex-', edzesKozosCss], ['mai', '.em-', edzesMaiCss], ['terheles', '.et-', edzesTerhelesCss],
+  ['sport', '.es-', edzesSportCss], ['terv', '.ep-', edzesTervCss], ['napszerk', '.ee-', edzesNapszerkCss],
+  ['sablon', '.ew-', edzesSablonCss], ['riport', '.er-', edzesRiportCss],
+]
 
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
+describe.each(EDZES_SHEETS)('the Folyadék Edzés sheet folyadek-edzes-%s.css (%s) (mezo-n4wf5.3)', (_name, prefix, raw) => {
+  const css = stripComments(raw)
+
+  test('carries rules of its own prefix and scans clean', () => {
+    expect(css).toContain(prefix)
+    const scan = scanCss(raw)
+    expect(scan.unclosedBraces).toEqual([])
+    expect(scan.strayCloseBraces).toEqual([])
+    expect(scan.unterminatedComment).toBeNull()
+    expect(scan.strayCommentEnds).toEqual([])
   })
 
-  test('the Titanium-era marker name is gone — one block, renamed', () => {
-    expect(rawCss).not.toContain('train izomjel titanium')
-  })
-
-  test('the section actually carries the mm- class family, not just the markers', () => {
-    for (const cls of ['.mm-head', '.mm-region', '.mm-grid', '.mm-cell']) {
-      expect(section(), `${cls} missing from the train izomjel section`).toContain(cls)
-    }
-  })
-
-  test('the white-film literal and the black icon shadow are gone', () => {
-    const css = rules()
-    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-    expect(css).not.toMatch(/rgba\(0, ?0, ?0/)
-  })
-})
-
-/**
-/**
- * Section registration (mezo-lf3cv, P2 Task 3 · re-dressed mezo-ju4j6.13): the Gyakorlatok
- * tab's own `.gy-*` section — the catalogue rows, the detail hero, the record stat cards,
- * the `.gy-next` nudge, the strength-curve graphic and the medal rows. The marker lost its
- * `titanium` suffix with the re-dress and this describe moved in the SAME commit, as the
- * house rule requires; it also carries the banished-material guards (style bible A.2 rule 4)
- * and the §3.4 ranking this slice was actually about.
- */
-describe('the train gyakorlatok section is registered and re-dressed (mezo-ju4j6.13)', () => {
-  const START_MARKER = '── train gyakorlatok ('
-  const END_MARKER = '── /train gyakorlatok '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
-
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the Titanium-era marker name is gone — one block, renamed', () => {
-    expect(rawCss).not.toContain('train gyakorlatok titanium')
-  })
-
-  test('the section actually carries the gy- class family, not just the markers', () => {
-    for (const cls of [
-      '.gy-card', '.gy-rec', '.gy-curve', '.gy-medal', '.gy-next', '.gy-hero',
-    ]) {
-      expect(section(), `${cls} missing from the train gyakorlatok section`).toContain(cls)
-    }
-  })
-
-  // A blokk a prototípus fehér-alfáit hozta, mind SÖTÉT alapra tervezve. A `.titan-dark`
-  // hatókör a 2. fázisban megszűnt; világos lapon ezek vagy láthatatlanok, vagy szürke
-  // hártyát húznak a lapra (C 11. szabály).
-  test('the white-film literals are gone — this tab lives in the LIGHT world now', () => {
-    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-  })
-
-  // §8.6: a hős mögötti két végtelen szaggatott pörgés volt az utolsó hurok a blokkban,
-  // és az `ld-spin` keyframe vele együtt ment (A.3 6. szabály: a re-dress nem hagy maga
-  // után halott `@keyframes`-t).
-  test('the infinite spins are gone, and so is the keyframe they orphaned', () => {
-    expect(rules()).not.toContain('infinite')
-    expect(rawCss).not.toContain('@keyframes ld-spin')
-  })
-
-  // A.2 1. szabály: a doménszín a ház akcense, nem a Titán `--tag-gym`.
-  test('the runtime hue falls back to --dv-coral, not the Titanium --tag-gym', () => {
-    const css = rules()
-    expect(css).toContain('var(--mus-color, var(--dv-coral))')
+  test('wears the light kit: no glass, no Titanium accent, no dark-skin halo', () => {
+    expect(css).not.toMatch(/\.glass\b/)
     expect(css).not.toContain('--tag-gym')
+    expect(css).not.toMatch(/\.uv-(halo|empty|flat|sheet)\b/)
   })
 
-  // §3.4 — EZ a szelet lényege. A katalógus sora ház-sor (a poszter a hangos felület),
-  // a becsült maximum viszont mosott csempe a §3.2 számjeggyel.
-  test('the catalogue row is a house row, not a wash tile', () => {
-    const card = /\.gy-card \{([^}]*)\}/.exec(rules())
-    expect(card, '.gy-card rule not found').not.toBeNull()
-    expect(card![1]).toContain('background: var(--surface-1)')
-    expect(card![1]).toContain('inset 0 0 0 1px var(--border-subtle)')
+  test('motion lives only in a prefers-reduced-motion branch', () => {
+    const still = css.replace(/@media\s*\(prefers-reduced-motion:\s*(?:no-preference|reduce)\)\s*\{(?:[^{}]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\})*[^{}]*\}/g, '')
+    expect(still).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
   })
 
-  test('the estimated 1RM is the hero: a wash tile with the §3.2 numeral', () => {
-    const css = rules()
-    expect(css).toMatch(/\.gy-rec:first-child \{[^}]*linear-gradient\(150deg/)
-    expect(css).toMatch(/\.gy-rec:first-child strong \{[^}]*font-weight: 200;/)
-    expect(css).toMatch(/\.gy-rec:first-child strong \{[^}]*font-variant-numeric: tabular-nums;/)
-    // …and the two lesser records sit a grade below it, side by side.
-    expect(css).toMatch(/\.gy-recs \{[^}]*grid-template-columns: 1fr 1fr;/)
-    expect(css).toMatch(/\.gy-rec:nth-child\(n \+ 2\) \{[^}]*background: var\(--surface-1\)/)
-  })
-
-  // A.2 5. szabály: minden méret-lépés után 320px-ellenőrzés, és a lépcső a blokkon belül.
-  test('the two-up record cells step back to one column on a narrow phone', () => {
-    expect(rules()).toMatch(/@media \(max-width: 360px\) \{[^@]*\.gy-recs \{ grid-template-columns: 1fr; \}/)
+  test('does not rebuild a piece the kit owns (one recipe per thing)', () => {
+    if (prefix === '.ex-') return // the Edzés-shared sheet IS the one home of `.ex-sjl` and friends
+    const local = ['-back {', '-hg {', '-ft {', '-art {', '-rowbar', '-in {', '-sjl {', '-numin', '-actnote', '-heronote', '-hint {',
+      '-rowchev', '-end {', '-bad', '-evc', '-roll'].map((tail) => prefix + tail.replace(/^-/, ''))
+    const back = local.filter((sel) => css.includes(sel))
+    expect(back, `folded pieces are local again: ${back.join(', ')}`).toEqual([])
   })
 })
 
-/**
- * Same registration guard (mezo-88iwa.10, T9 · re-dressed mezo-ju4j6.12) for the Terv
- * tab's `.pl-*` section — the mesocycle landing poster, the day-by-day week list, a day's
- * own hero + exercise cells, and the muscle detail's gauge. The marker lost its `titanium`
- * suffix with the re-dress and this describe moved in the SAME commit, as the house rule
- * requires; it also carries the banished-material guards (style bible A.2 rule 4).
- */
-describe('the terv section is registered and re-dressed (mezo-ju4j6.12)', () => {
-  const START_MARKER = '── terv ('
-  const END_MARKER = '── /terv '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
+test('the kit owns the pieces the Edzés areas shared (mezo-n4wf5.3)', () => {
+  const kit = stripComments(kitCss)
+  for (const sel of ['.fo-backpill {', '.fo-hero-art {', '.fo-hero.big .fo-hero-verdict {', '.fo-hero-g {', '.fo-ft {',
+    '.fo-hero-acts > .fo-note {', '.fo-row-end {', '.fo-rowbar {', '.fo-under {', '.fo-log {', '.fo-evc {', '.fo-lk.bad',
+    '.fo-btn.bad {', '.fo-lk:disabled {', '.fo-stp input {', '.fo-tags > span {', '.fo-sortable ']) {
+    expect(kit, `${sel} missing from folyadek-kit.css`).toContain(sel)
+  }
+  // the old descendant selector dressed the bubble INSIDE a tag as a tag
+  expect(kit).not.toMatch(/\.fo-tags span\b/)
+  const kozos = stripComments(edzesKozosCss)
+  for (const sel of ['.ex-sjl {', '.ex-sjp {', '.ex-sw {', '.ex-cv {', '.ex-medal ', '.ex-stars {']) {
+    expect(kozos, `${sel} missing from folyadek-edzes-kozos.css`).toContain(sel)
+  }
+})
 
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the Titanium-era marker name is gone — one block, renamed', () => {
-    expect(rawCss).not.toContain('terv titanium')
-  })
-
-  test('the section actually carries the pl- class family, not just the markers', () => {
-    for (const cls of [
-      '.pl-poster', '.pl-ring', '.pl-arc', '.pl-day', '.pl-dest', '.pl-dhero',
-      '.pl-ex', '.pl-item', '.pl-scale-bar', '.pl-versus',
-    ]) {
-      expect(section(), `${cls} missing from the terv section`).toContain(cls)
-    }
-  })
-
-  // T10 Task 1: the plan library families the T9 port stopped short of — the library
-  // hero/cards, the star rating, the template-detail exercise rows, the wizard's load
-  // bars (ported renamed to .pl-wload/.pl-wload-row) and the small quiet-row idiom.
-  test('the T10 library sub-block carries its own class family', () => {
-    for (const cls of [
-      '.pl-lib-card', '.pl-lhero', '.pl-stars', '.pl-tpl-ex', '.pl-wload', '.pl-row',
-    ]) {
-      expect(section(), `${cls} missing from the terv section`).toContain(cls)
-    }
-  })
-
-  // A blokk 40 fölötti `#ffffffXX` fóliát vitt, mind SÖTÉT alapra tervezve. A `.titan-dark`
-  // hatókör a 2. fázisban megszűnt; világos lapon ezek vagy láthatatlanok, vagy szürke
-  // hártyát húznak a mosott csempére.
-  test('the white-film literals are gone — this tab lives in the LIGHT world now', () => {
-    expect(rules()).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-  })
-
-  // §2.3: nincs fém-csillanás, nincs akcens-izzás, és nincs végtelen hurok (§8.6 — az
-  // egyetlen engedett hurok a „most"-pulzus és a companion-orb lélegzése).
-  test('the sheen, the accent glows and the infinite spins are gone', () => {
-    const css = rules()
-    expect(css).not.toMatch(/box-shadow: 0 0 \d+px/)
-    expect(css).not.toMatch(/filter: drop-shadow\(0 0 /)
-    expect(css).not.toContain('infinite')
-    expect(css).not.toContain('pl-sheen')
-  })
-
-  // A doménszín a ház Edzés-akcense, nem a Titán `--tag-gym` (A.2 1. szabály).
-  test('the domain accent is --dv-coral, not the Titanium --tag-gym', () => {
-    const css = rules()
-    expect(css).toContain('--tr-accent: var(--dv-coral)')
-    expect(css).not.toContain('--tag-gym')
-  })
-
-  // A poszter a stíluskönyv §2.2 C halo-sávja: keret és doboz nélküli atmoszféra.
-  test('the poster is a halo band, not a bordered poster', () => {
-    expect(rules()).toMatch(/\.pl-poster \{[^}]*background: var\(--halo-coral\)/)
-  })
-
-  // §4.4: a pihenőnap SZAGGATOTT keretet kap, nem 45%-ra halványítást — a régi világ nem
-  // opacitással mond „kevésbé fontosat".
-  test('the rest day is dashed, never dimmed', () => {
-    const rest = /\.pl-day\.is-rest \{([^}]*)\}/.exec(rules())
-    expect(rest, '.pl-day.is-rest rule not found').not.toBeNull()
-    expect(rest![1]).toContain('dashed')
-    expect(rest![1]).not.toContain('opacity: .45')
-  })
-
-  // mezo-b516k Task 1: the ⓘ explain layer's own sub-block — the 22px icon-only
-  // button (ported from plan.css:313-314) and the glass copy paragraph (ported from
-  // load.css:179's `.info-glass-copy`, renamed with the house `pl-` prefix).
-  test('the explain-layer sub-block carries .pl-info and .pl-info-copy', () => {
-    for (const cls of ['.pl-info', '.pl-info-copy']) {
-      expect(section(), `${cls} missing from the terv section`).toContain(cls)
-    }
-  })
-
-  // The prototype's glyph is 22px; the house tap-target rule is 44px. The button must
-  // grow its HIT AREA, not the glyph — a `::after` hit box, so a future edit that
-  // "simplifies" it back to a bare 22px control fails here instead of shipping a
-  // 22px touch target.
-  test('.pl-info keeps the 22px glyph but carries a 44px hit box', () => {
-    const ruleMatch = /(?:^|\n)\.pl-info \{([^}]*)\}/.exec(section())
-    expect(ruleMatch, '.pl-info standalone rule not found in the terv section').not.toBeNull()
-    expect(ruleMatch![1]).toContain('width: 22px')
-    const hit = /(?:^|\n)\.pl-info::after \{([^}]*)\}/.exec(section())
-    expect(hit, '.pl-info::after hit box not found — the 44px tap target is gone').not.toBeNull()
-    expect(hit![1]).toContain('44px')
-  })
+test("the explain link keeps a 44px touch area: the kit's `.fo-lk::after` (was `.pl-info::after`, mezo-b516k)", () => {
+  const kit = stripComments(kitCss)
+  const m = /([^{}]*\.fo-lk::after[^{}]*)\{([^}]*)\}/.exec(kit)
+  expect(m, 'the kit rule carrying .fo-lk::after is gone — the text links lost their touch area').not.toBeNull()
+  expect(m![2]).toMatch(/width:\s*max\(100%,\s*44px\)/)
+  expect(m![2]).toMatch(/height:\s*max\(100%,\s*44px\)/)
+  // and the legacy override pair that kept `.pl-info` alive on the new chip is gone with it
+  expect(stripComments(edzesKozosCss)).not.toContain('.pl-info')
 })
 
 /**
@@ -1057,82 +906,6 @@ describe('the train ceremony section is registered and wears the restored materi
     expect(css).not.toContain('infinite')
     expect(css).toContain('@media (prefers-reduced-motion: reduce)')
     expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
-  })
-})
-
-/**
-/**
- * Section registration (mezo-88iwa.9, T8 Task 3 · re-dressed mezo-ju4j6.13): the sport-
- * logging flow's own `.sp-*` section — the picker grid/tiles and the per-sport form. The
- * ceremony families are NOT here: the shared `.cer-*` section serves that. Marker renamed
- * and this describe moved in the SAME commit.
- */
-describe('the train sport section is registered and re-dressed (mezo-ju4j6.13)', () => {
-  const START_MARKER = '── train sport ('
-  const END_MARKER = '── /train sport '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
-
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the Titanium-era marker name is gone — one block, renamed', () => {
-    expect(rawCss).not.toContain('train sport titanium')
-  })
-
-  test('the section actually carries the sp- class family, not just the markers', () => {
-    for (const cls of [
-      '.sp-grid', '.sp-tile', '.sp-field', '.sp-chips', '.sp-kcal', '.sp-note',
-    ]) {
-      expect(section(), `${cls} missing from the train sport section`).toContain(cls)
-    }
-  })
-
-  test('the white films and the dark input grounds are gone', () => {
-    const css = rules()
-    expect(css).not.toMatch(/#ffffff[0-9a-f]{2}/i)
-    // `#090e1366` — the prototype's near-black field, a black strip on a cream page.
-    expect(css).not.toMatch(/#090e13/i)
-  })
-
-  // §3.4 + A.5 10. szabály: a tizenegy csempe §2.2 B CELLA (lapos színfolt, árnyék
-  // nélkül), nem mosott csempe — de nem is csupasz pajzs, mert minden sport ábrája
-  // ugyanaz az agyaggömb, és a szín az egyetlen megkülönböztető jel.
-  test('the picker tiles are flat colour cells, not wash tiles', () => {
-    const tile = /\.sp-tile \{([^}]*)\}/.exec(rules())
-    expect(tile, '.sp-tile rule not found').not.toBeNull()
-    expect(tile![1]).toContain('box-shadow: none')
-    expect(tile![1]).toContain('color-mix(in srgb, var(--sp-color) 18%, var(--surface-card))')
-  })
-
-  // A lap hőse a PERC: §2.2 A mosás + §3.2 számjegy, `[data-sp-key]` horgonyon
-  // (SportLogPage `FieldRow`) — a mezősorrend sportonként más, ezért pozíciós szelektor
-  // rossz választ adna.
-  test('the minutes stepper is the one wash tile on the form', () => {
-    const css = rules()
-    expect(css).toMatch(/\.sp-field\[data-sp-key="minutes"\] \.sp-number \{[^}]*linear-gradient\(150deg/)
-    expect(css).toMatch(/\.sp-field\[data-sp-key="minutes"\] \.sp-number input \{[^}]*font-size: 40px/)
-    expect(css).toMatch(/\.sp-number \{[^}]*background: var\(--surface-1\)/)
-  })
-})
-
-/**
- * C rule 13, found while re-dressing the sport form (mezo-ju4j6.13): `.sp-foot`'s
- * „Naplózom" CTA was reached by NEITHER `.gl-card .wo-close-cta` nor `.cer-cta
- * .wo-close-cta`, so on the restored light page it rendered as a bare, unstyled button.
- * It is the third arm of that rule now — the one big action is the house primary.
- */
-describe('the sport form CTA is the house primary (mezo-ju4j6.13)', () => {
-  test('.sp-foot joins the .wo-close-cta rule and takes --gradient-cta', () => {
-    const rule = /\.gl-card \.wo-close-cta, \.cer-cta \.wo-close-cta, \.sp-foot \.wo-close-cta \{([^}]*)\}/.exec(rawCss)
-    expect(rule, 'the three-armed .wo-close-cta rule not found').not.toBeNull()
-    expect(rule![1]).toContain('background: var(--gradient-cta)')
-    expect(rule![1]).toContain('box-shadow: var(--shadow-cta)')
   })
 })
 
@@ -1713,18 +1486,15 @@ test('the U3 capture sheet floats under `.glass` (U1 rules 1–3, U2 rule 15)', 
  * inside them flat or lit; free space dashed; the dock never sweeps; never glass in glass.
  */
 const U4_BLOCKS: Array<[string, string[]]> = [
-  ['mai', ['.trm .trm-hero', '.trm .trm-start.glass', '.trm .trm-sess.glass', '.trm .trm-energy.glass',
-    '.trm .trm-mus.glass', '.trm .trm-alt-tile.glass', '.trm .trm-add.uv-empty', '.trm .trm-day']],
+  // 'mai' is cut down to what Fuel and Nap still wear (Folyadék F3, mezo-n4wf5.3): the reason sheet and the duration row
+  ['mai', ['.sheet.glass.uv-sheet.trm-whysheet', '.trm-whyg', '.trm-whyc', '.trm-whynote', '.trm-inpmic', '.trm-kmdur-eb',
+    '.trm-kmdc > button']],
   ['session', ['.wos .wo-card.glass', '.wos .wos-fresh.glass', '.wo-dock.glass', '.wo-dock.glass.is-resting',
     '.wos .warmstrip.wos-warn', '.wos form.wo-row.is-current', '.gl-card.glass.uv-gb.wos-gbx', '.sheet.glass.wos-sheet']],
   ['zaras', ['.cer-card.cer-records', '.cer-card.cer-sum', '.cer-quest-res', '.cer-tchip', '.cer-kcal.uv-halo',
     '.cer-mstars.glass', '.wsum-hero.uv-halo', '.wr-cmp.glass', '.wr-extile.glass', '.wsum-note-add.uv-empty']],
-  ['terheles', ['.tw-load .ld-hero', '.tw-load .ld-map-card.glass', '.tw-load .ld-group.glass', '.tw-load .ld-sport.glass',
-    '.tw-load .ld-move-card.glass', '.tw-load .tw-custom', '.tw-glass .ld-glass-xp']],
-  ['sport', ['.uvs-sport .spw-day.has.glass', '.uvs-sport .spw-day.empty.uv-empty', '.uvs-ssc.glass', '.uvs-xl.glass',
-    '.uvs-blk.glass', '.uvs-rsc.glass', '.uvs-hrc.glass', '.uvs-bform.glass', '.uvs-log .sp-tile.glass', '.uvs-primary.is-warn']],
-  ['gyakorlatok', ['.gyx-medals .mz-facttile.gyx-medal.glass', '.gyx-catalog .gy-card.glass', '.gyx-story .gy-rec.glass',
-    '.gy-curve-box.glass', '.gy-medal.glass', '.gyx-page .gyx-empty.uv-empty', '.sheet.glass.gyx-sheet']],
+  // 'terheles', 'sport' and 'gyakorlatok' left in Folyadék F3 (mezo-n4wf5.3): those pages wear `.et-` / `.es-` / `.er-`
+  // (styles/folyadek-edzes-*.css); their absence is pinned in RETIRED_EDZES_BLOCKS above.
 ]
 
 describe.each(U4_BLOCKS)('the uveg edzes %s section carries the glass ranking (mezo-me75u.4)', (name, sels) => {
@@ -2008,7 +1778,8 @@ const U10_BLOCKS: Array<[string, string[]]> = [
     '.lvu-cell {', '.lvu-robust {', '.levelup.lvu .lvu-cta.glass {']],
   ['ablak', ['.gl-card.glass.uv-gb {', '.uv-gb .gl-x {', '.abl-pill {', '.dp-cal.glass {', '.dp-day.is-sel',
     '.float-fab.float-fab-train.glass.is-round {', '.float-return.glass.is-still {', '.abl-err.glass {']],
-  ['lap', ['.sheet.glass.uv-sheet.uvl-fuel', '.sheet.glass.uv-sheet.uvl-edzes', '.sheet.glass.uv-sheet.uvl-en',
+  ['lap', [// `.uvl-edzes` left with the Edzés sheets (Folyadék F3, mezo-n4wf5.3 — they are kit sheets now)
+    '.sheet.glass.uv-sheet.uvl-fuel', '.sheet.glass.uv-sheet.uvl-en',
     '.sheet.glass.uv-sheet.uvl-fiok', '.uvl-cta', '.uvl-err', '.toast-stack .toast.glass.uvl-tst', '.toast-stack .uvl-tst .t-lvup']],
   ['kalauz', ['.sheet.glass.uv-sheet.kalauz-sheet', '.kalauz-sheet .kalauz-art .kalauz-art-ico', '.kalauz-sheet .kalauz-fogalom',
     '.kalauz-sheet .kalauz-cta', '.welcome.uv-welcome', '.uv-welcome .wel-dpart.glass', '.uv-welcome .wel-domvoice.glass',
@@ -2045,8 +1816,7 @@ describe.each(U10_BLOCKS)('the uveg reteg %s section carries the glass ranking (
 // U11 · Lezárás (mezo-me75u.11): the app-wide sweep's fixes — two builders, one block each. Pinned so a
 // later whole-file save that drops one fails CI (bible rule 41).
 const U11_BLOCKS: Array<[string, string[]]> = [
-  ['edzes', ['.pl-poster .pl-week small', '.tw-move .ld-move-box em', '.tv-wizard .mz-wfoot .cta-primary',
-    '.tv-dayrest .tv-day-stamp.is-today', ".tv-wizard .mz-daypick button[aria-pressed='true']", '.tv-wizard .mz-dct small']],
+  // 'edzes' left in Folyadék F3 (mezo-n4wf5.3): every page it patched wears the kit; pinned as gone in RETIRED_EDZES_BLOCKS.
   ['egyeb', ['.alv-page .alv-sec-head .eyebrow', '.gr-ma .gr-chip .gr-chip-mk.gr-mk3d', '.enc-celok .lg-dimchip.empty',
     // the two `.napom-page` fixes left with the page's Üveg skin (Folyadék F2, mezo-n4wf5.2)
     '.fsx-band.glass .fsx-check > span .t-ico']],

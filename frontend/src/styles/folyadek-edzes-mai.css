@@ -72,9 +72,8 @@
 .em-inpmic textarea.fo-in { min-height: 84px; }
 .em-why > .fo-acts, .em-udv > .fo-acts, .em-custom > .fo-acts { margin-top: 14px; }
 /* the shared „Meddig tarthat?" row keeps its `trm-kmdur` markup (the Fuel and Nap sheets and the layout specs key on it);
-   here it wears the kit's field label + pills. These rules neutralise the old `.trm-kmdur-eb` / `.trm-kmdc` look of
-   prototype.css — delete the pair together when that block goes. */
-.em-why .trm-kmdur { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; }
+   here it wears the kit's field label + pills. These rules override the `.trm-kmdur-eb` / `.trm-kmdc` look that stays in
+   prototype.css for those two domains (the `uveg edzes mai` block) — they go when Fuel and Nap stop wearing it. */
 .em-why .trm-kmdur-eb { display: block; margin: 14px 0 6px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; letter-spacing: 0; text-transform: lowercase; color: var(--fo-sub); }
 .em-why .trm-kmdur-eb::first-letter { text-transform: uppercase; }
 .em-why .trm-kmdc { display: flex; flex-wrap: wrap; gap: 8px; }
