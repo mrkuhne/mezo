@@ -44,6 +44,7 @@ function toDate(d: Date | string): Date {
 }
 
 function enPart(date: Date, type: 'weekday' | 'month'): string {
+  // only reached when the language is English, so 'en-GB' is exactly locale()
   const parts = dateFormatter('en-GB', { weekday: 'long', month: 'long' }).formatToParts(date)
   return parts.find((p) => p.type === type)?.value ?? ''
 }

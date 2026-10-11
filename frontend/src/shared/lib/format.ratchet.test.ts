@@ -94,6 +94,7 @@ describe('hand-rolled locale formatting', () => {
       .map((p) => relative(SRC, p).split(sep).join('/'))
       .filter((f) => f !== HOME && PATTERN.test(readFileSync(join(SRC, f), 'utf8')))
       .sort()
+    expect(ALLOWLIST, 'ALLOWLIST must be sorted and free of duplicates').toEqual([...ALLOWLIST].sort())
     const added = found.filter((f) => !ALLOWLIST.includes(f))
     const removed = ALLOWLIST.filter((f) => !found.includes(f))
     expect(added, `New file(s) format dates/numbers by hand: use shared/lib/format instead: ${added.join(', ')}`).toEqual([])

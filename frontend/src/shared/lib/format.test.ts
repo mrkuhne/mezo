@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setLang } from '@/shared/i18n'
 import { frameDate } from '@/app/navModel'
 import { fmtDate, fmtGrouped, fmtInt, fmtNum, isoDay, locale } from './format'
@@ -88,7 +88,6 @@ describe('English', () => {
 
 describe('a date-only string is not shifted by the time zone', () => {
   it('is read by its parts (the 7th, whatever the zone)', () => {
-    // vitest cannot change the process time zone mid-run, so the parsing path is tested directly:
     // a string never goes through `new Date('YYYY-MM-DD')` (UTC midnight), whose local day is the 6th west of UTC.
     expect(fmtDate('2026-10-07', 'monthDay')).toBe('Okt 7')
     expect(fmtDate('2026-10-07', 'weekdayLong')).toBe('Szerda')
@@ -96,6 +95,33 @@ describe('a date-only string is not shifted by the time zone', () => {
     expect(fmtDate('2026-10-07', 'frame')).toBe('Wednesday, 7 October')
     expect(fmtDate('2026-01-01', 'monthDay')).toBe('1 Jan')
     expect(fmtDate('2026-12-31', 'monthDay')).toBe('31 Dec')
+  })
+
+  // Real zones: assigning process.env.TZ switches Node's zone at runtime. The module caches Intl formatters
+  // (they keep the zone they were built in), so each zone gets a FRESH module graph (resetModules + dynamic import).
+  describe.each(['America/Los_Angeles', 'Asia/Tokyo', 'Pacific/Kiritimati'])('under %s', (zone) => {
+    const original = process.env.TZ
+    beforeEach(() => { process.env.TZ = zone; vi.resetModules() })
+    afterEach(() => {
+      if (original === undefined) delete process.env.TZ
+      else process.env.TZ = original
+      vi.resetModules()
+    })
+
+    it('2026-10-07 is the 7th in both languages', async () => {
+      expect(new Date(2026, 9, 7, 12).getDate()).toBe(7) // the zone really switched
+      const i18n = await import('@/shared/i18n')
+      const fmt = await import('./format')
+      const dates = await import('./dates')
+      i18n.setLang('hu', { persist: false })
+      expect(fmt.fmtDate('2026-10-07', 'monthDay')).toBe('Okt 7')
+      expect(dates.huMonthDay('2026-10-07')).toBe('Okt 7')
+      i18n.setLang('en', { persist: false })
+      expect(fmt.fmtDate('2026-10-07', 'monthDay')).toBe('7 Oct')
+      expect(fmt.fmtDate('2026-10-07', 'frame')).toBe('Wednesday, 7 October')
+      expect(dates.huMonthDay('2026-10-07')).toBe('7 Oct')
+      i18n.setLang('hu', { persist: false })
+    })
   })
 
   it('isoDay stays the machine format in every language', () => {
