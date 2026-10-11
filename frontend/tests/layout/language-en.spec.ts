@@ -243,3 +243,20 @@ test('loaded directly in English, the Fuel settings page carries its save bar', 
   await expect(save).toBeVisible()
   expect(await save.evaluate((el) => document.body.contains(el))).toBe(true)
 })
+
+test('in English the title bar of the Settings sub-pages reads the English page title', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 820 })
+  await seed(page, 'en')
+  const titles: Array<[string, string]> = [
+    ['/settings/notifications', 'Notification settings'],
+    ['/settings/account', 'Account details'],
+    ['/settings/train', 'Training settings'],
+    ['/settings/me', 'Personal basics'],
+    ['/settings/mezo', 'Mezo settings'],
+    ['/settings/nap', 'Daily rhythm'],
+  ]
+  for (const [route, title] of titles) {
+    await page.goto(route)
+    await expect(page.locator('.fo-top h1')).toHaveText(title)
+  }
+})

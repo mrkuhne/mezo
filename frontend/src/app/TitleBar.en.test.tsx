@@ -71,6 +71,11 @@ test('the settings and all-pages routes are titled in English', () => {
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Settings')
 })
 
+test('a Settings sub-page title bar reads its English page title', () => {
+  renderAt('/settings/train/gym')
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Gym times')
+})
+
 test('the notification panel reads English: heading, count, mark all read, filter, chips, footer', async () => {
   const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   renderAt('/nap')

@@ -103,7 +103,7 @@ describe('navModel lookups', () => {
     const today = new Date(2026, 9, 7)
     expect(frameFor('/settings', today)).toMatchObject({ title: 'Settings', eyebrow: 'Settings' })
     expect(frameFor('/minden', today)).toMatchObject({ title: 'All pages', eyebrow: 'Map of the app' })
-    expect(frameFor('/settings/notifications', today).title).toBe('Értesítés-beállítások')
+    expect(frameFor('/settings/fuel', today).title).toBe('Fuel beállítások')
   })
 
   test('a label with an English entry is translated; one without falls back to Hungarian', () => {
@@ -112,6 +112,37 @@ describe('navModel lookups', () => {
     expect(pageLabel(byRoute('/nap'))).toBe('Now')
     expect(pageLabel(byRoute('/fuel/trendek'))).toBe('Trends')
     expect(pageLabel(byRoute('/fuel/kamra'))).toBe('Kamra')
+  })
+
+  const SETTINGS_TITLES: Array<[string, string, string]> = [
+    ['/settings/notifications', 'Értesítés-beállítások', 'Notification settings'],
+    ['/settings/account', 'Fiókadatok', 'Account details'],
+    ['/settings/train', 'Edzés beállításai', 'Training settings'],
+    ['/settings/train/gym', 'Gym időpontok', 'Gym times'],
+    ['/settings/train/sport', 'Sport időpontok', 'Sport times'],
+    ['/settings/me', 'Személyes alapadatok', 'Personal basics'],
+    ['/settings/me/biometrics', 'Testprofil', 'Body profile'],
+    ['/settings/me/sleep', 'Alváscél', 'Sleep goal'],
+    ['/settings/mezo', 'Mezo beállításai', 'Mezo settings'],
+    ['/settings/mezo/context', 'Személyes prompt', 'Personal prompt'],
+    ['/settings/nap', 'Napi ritmus', 'Daily rhythm'],
+  ]
+
+  test.each(SETTINGS_TITLES)('%s: English title in English, the Hungarian label in Hungarian', (route, hu, en) => {
+    const page = PAGE_INDEX.find((p) => p.route === route)!
+    expect(page.label).toBe(hu)
+    expect(pageLabel(page)).toBe(en)
+    expect(frameFor(route, new Date(2026, 9, 7)).title).toBe(en)
+    setLang('hu', { persist: false })
+    expect(pageLabel(page)).toBe(hu)
+    expect(frameFor(route, new Date(2026, 9, 7)).title).toBe(hu)
+  })
+
+  test('the Settings pages owned by other slices still fall back to Hungarian in English', () => {
+    for (const route of ['/settings/fuel', '/settings/fuel/slots', '/settings/me/goal']) {
+      const page = PAGE_INDEX.find((p) => p.route === route)!
+      expect(pageLabel(page)).toBe(page.label)
+    }
   })
 
   test('the Hungarian catalog is word-for-word the source (domains, tabs, titles, indexed labels)', () => {
