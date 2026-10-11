@@ -1,15 +1,17 @@
-import { SettingsFrame, SettingsRow, SettingsRows } from '@/features/settings/components/SettingsFrame'
+import { Lines, SettingsFrame, SettingsRow, SettingsRows } from '@/features/settings/components/SettingsFrame'
+import { useM } from '@/shared/i18n'
 export function MezoSettingsPage() {
-  return <SettingsFrame title="Mezo és te" subtitle="Legyen világos, mit tud rólad. És hogyan szóljon hozzád.">
-    <section className="settings-wash glass"><p className="settings-editorial">Egy közös alap,<br />amit te is alakítasz.</p><p>A személyes adataid, a saját szavaid és Mezo tanult kommunikációs mintái külön is ellenőrizhetők.</p></section>
-    <h2 className="settings-section-label">A KÖZÖS NYELVÜNK</h2>
+  const t = useM().settings.mezo
+  return <SettingsFrame title={t.title} subtitle={t.subtitle}>
+    <section className="settings-wash glass"><p className="settings-editorial"><Lines text={t.editorial} /></p><p>{t.body}</p></section>
+    <h2 className="settings-section-label">{t.common}</h2>
     <SettingsRows>
-      <SettingsRow to="/settings/mezo/about" title="Rólam" description="Alapadatok, élethelyzet és ami fontos neked" icon="t-person" badge="Te alakítod" />
-      <SettingsRow to="/settings/mezo/communication" title="Így beszélj velem" description="Saját instrukció és tanult kommunikációs minta" icon="t-chat" />
+      <SettingsRow to="/settings/mezo/about" title={t.aboutRow.title} description={t.aboutRow.description} icon="t-person" badge={t.aboutRow.badge} />
+      <SettingsRow to="/settings/mezo/communication" title={t.talkRow.title} description={t.talkRow.description} icon="t-chat" />
     </SettingsRows>
-    <h2 className="settings-section-label">ÁTLÁTHATÓ MŰKÖDÉS</h2>
-    <SettingsRows domain="nap"><SettingsRow to="/settings/mezo/context" title="Ezt kapja meg Mezo" description="A mentett személyes kontextusod, egyben" icon="t-lens" domain="nap" /></SettingsRows>
+    <h2 className="settings-section-label">{t.open}</h2>
+    <SettingsRows domain="nap"><SettingsRow to="/settings/mezo/context" title={t.contextRow.title} description={t.contextRow.description} icon="t-lens" domain="nap" /></SettingsRows>
     <div className="settings-gap" />
-    <SettingsRows><SettingsRow to="/settings/notifications" title="Mezo jelzései" description="Üzenetek, felismerések és összefoglalók" icon="t-bell" /></SettingsRows>
+    <SettingsRows><SettingsRow to="/settings/notifications" title={t.signalsRow.title} description={t.signalsRow.description} icon="t-bell" /></SettingsRows>
   </SettingsFrame>
 }

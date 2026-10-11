@@ -1,9 +1,21 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Boop, type BoopDomain } from '@/shared/ui/clay/boop/Boop'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek'
+import { useM } from '@/shared/i18n'
 import '@/features/settings/settings.css'
+
+/** A catalog text with `\n` line breaks, drawn as lines separated by <br />. */
+export function Lines({ text }: { text: string }) {
+  const lines = text.split('\n')
+  return <>{lines.map((line, i) => <Fragment key={i}>{i > 0 && <br />}{line}</Fragment>)}</>
+}
+
+/** A catalog text with `**bold**` runs, drawn with <strong>. */
+export function Marked({ text }: { text: string }) {
+  return <>{text.split('**').map((part, i) => i % 2 === 1 ? <strong key={i}>{part}</strong> : part)}</>
+}
 
 export function useSettingsOrigin() {
   const { state } = useLocation()
@@ -20,6 +32,7 @@ export function SettingsFrame({ title, subtitle, domain = 'mezo', parent = '/set
   title: string; subtitle: string; domain?: BoopDomain; parent?: string | null; children: ReactNode
 }) {
   const origin = useSettingsOrigin()
+  const t = useM().settings.frame
   // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the ONE back control and runs
   // this handler — the same target and the same carried origin as the page's own pill, which
   // stays only where no title bar is mounted.
@@ -27,8 +40,8 @@ export function SettingsFrame({ title, subtitle, domain = 'mezo', parent = '/set
   useFrameBack(() => navigate(parent ?? origin.from, { state: origin.state }))
   const shellHasBack = useHasTitleBar()
   return <main className={`settings-page settings-${domain}`}>
-    <nav className="settings-breadcrumb">{!shellHasBack && <Link className="settings-back glass is-still" to={parent ?? origin.from} state={origin.state} aria-label={parent ? 'Vissza a beállításokhoz' : 'Vissza az oldalra'}><b aria-hidden="true">‹</b>{parent ? 'Beállítások' : 'Vissza'}</Link>}<span>SAJÁT RITMUSODRA</span></nav>
-    <header className="settings-hero"><div><span className="settings-kicker">MEZO · BEÁLLÍTÁSOK</span><h1>{title}</h1><p>{subtitle}</p></div><Boop domain={domain} size={92} /></header>
+    <nav className="settings-breadcrumb">{!shellHasBack && <Link className="settings-back glass is-still" to={parent ?? origin.from} state={origin.state} aria-label={parent ? t.backToSettings : t.backToPage}><b aria-hidden="true">‹</b>{parent ? t.settings : t.back}</Link>}<span>{t.tag}</span></nav>
+    <header className="settings-hero"><div><span className="settings-kicker">{t.kicker}</span><h1>{title}</h1><p>{subtitle}</p></div><Boop domain={domain} size={92} /></header>
     {children}
   </main>
 }
