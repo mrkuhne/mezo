@@ -149,6 +149,12 @@ Hungarian; English is covered by added tests, never by rewriting.
   splash, the kit's own strings (Back, Close, Cancel, Loading…, Retry, decrease / increase),
   team field names, the frame date; and all Settings pages (hub, general, account,
   notifications, the Mezo and domain settings pages).
+- Page titles: the frame translates the domain names, the top tabs, the hub titles and the
+  Settings entries of `pageIndex`. A sub-page's title (the other ~100 `pageIndex` labels) is
+  translated by the slice that owns the page, with the page.
+- Tab names approved on the Artifact (`vilagos/kit.js`, `FR_EN`): Now · My day · Chat ·
+  Routine; Today · Plan · Load · Exercises; Today · Supplements · Trends · Kitchen; Wall ·
+  The team · About you · Memories; Overview · Body · Goals · Journal.
 - The Settings pages keep their current look (their conversion is F8); only their words and the
   new block change. The prototype shows the Folyadék target of the block.
 - Everything else stays Hungarian in English mode until its slice.

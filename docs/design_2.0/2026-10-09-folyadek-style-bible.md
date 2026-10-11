@@ -56,6 +56,29 @@ drops to 25 px (21 px on sub-pages) and hero verdicts hyphenate.
   a person.
 - Upright text only. No italic paragraphs.
 
+### 2.5 English copy (owner decisions 2026-10-11, slice N1)
+The app speaks Hungarian and English; the mechanism is in
+`docs/superpowers/specs/2026-10-11-nyelv-alap-design.md`. Hungarian is the source.
+- **Written, not converted.** Say the same thing the way an English speaker would, in the same
+  calm voice. Short words, sentence case, no exclamation marks. A draft from a tool is a draft:
+  read every sentence on the screen, at 320 px.
+- **The verdict comes first** and stays a judgement ("Realistic: the pace fits."), never a
+  description of the screen.
+- **Names.** Domains: Nap → **Today**, Edzés → **Training**, Fuel → **Fuel**, Mezo → **Mezo**,
+  Én → **Me**. Team fields: Alvás → **Sleep**, Mozgás → **Movement**, Étkezés → **Food**,
+  Közérzet → **Mood**, Mezo → **Mezo**, Szkeptikus → **Skeptic**. Top tabs: the table in
+  `vilagos/kit.js` (`FR_EN`) is the approved list; the Today domain's first tab is **Now**.
+- **A field name is still a label.** "Sleep says…" is wrong; write "your sleep…", or turn the
+  sentence to "we". "Mezo" is the one name that may act.
+- **Address:** "you / your". The user's own things are "my" only where they speak ("About me").
+- **Units and formats:** kg, km, cm and the 24-hour clock in both languages. English dates are
+  day first with the month written out and no ordinal ("Wednesday, 7 October", "2 Nov");
+  decimals take a point (78.4 kg); the minus sign is "−"; ranges use an en dash.
+- **Never translated:** what the user wrote and what was already said or stored (journal, names
+  of meals / exercises / habits he typed, old messages, memories), and proper names.
+- **One message, with slots.** No sentence is glued from halves; plural forms are written out
+  per language.
+
 ### 2.4 Navigation (the only behaviour changes, both owner-approved)
 - **Bottom bar = domains; the domain's pages = top tabs.** No hidden domain switcher.
 - **Back returns to where the user came from** (history), never to a fixed "parent". A fixed

@@ -201,8 +201,9 @@ also deliver their own screens and their domain's server-written sentences in En
 
 ## Language (every slice after N1)
 
-N1's spec is the authority on the mechanism once it exists
-(`docs/superpowers/specs/` — link it here when written). Until then, and as the frame around it:
+N1's spec is the authority on the mechanism:
+`docs/superpowers/specs/2026-10-11-nyelv-alap-design.md` (owner decisions in its §2; English copy
+rules in the bible §2.5). The frame around it:
 
 - **Hungarian is the source language and the default**; English is the second. Existing tests
   keep asserting Hungarian — never mass-rewrite tests for this; add English-mode checks.
