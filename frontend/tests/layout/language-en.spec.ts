@@ -18,9 +18,22 @@ const HUBS = [
   { route: '/me', domain: 'Me', tabs: ['Overview', 'Body', 'Goals', 'Journal'] },
 ] as const
 const SETTINGS = ['/settings', '/settings/general', '/settings/notifications', '/settings/account'] as const
+/**
+ * What each Settings route must give the checks to measure, so a renamed class cannot turn them vacuous.
+ * `buttons` = the BTN set (wrap check); `controls` = every button and link in the content (containment
+ * check); `anchor` = the page's own root, asserted visible. Real counts on 2026-10-11 in mock mode:
+ * /settings is a hub of links (no buttons), /settings/notifications shows only its iOS note (no
+ * controls) -- both zero on purpose, with the anchor standing in.
+ */
+const EXPECT: Record<(typeof SETTINGS)[number], { buttons: number; controls: number; anchor: string }> = {
+  '/settings': { buttons: 0, controls: 4, anchor: '.screen-content' },
+  '/settings/general': { buttons: 2, controls: 4, anchor: '.settings-lang-choice' },
+  '/settings/notifications': { buttons: 0, controls: 0, anchor: '.ntf-page' },
+  '/settings/account': { buttons: 1, controls: 1, anchor: '.settings-account-wash, .cta-primary' },
+}
 const BOTTOM_BAR = ['Today', 'Training', 'Fuel', 'Mezo', 'Me']
 /** The buttons the Settings pages dress as primary / ghost / open-editor buttons. */
-const BTN = 'button.cta-primary, button.cta-ghost, button.settings-open-button'
+const BTN = 'button.cta-primary, button.cta-ghost, button.settings-open-button, button.settings-lang-choice'
 
 async function seed(page: Page, lang: 'en' | null) {
   await seedKalauzSeen(page)
@@ -94,13 +107,19 @@ for (const width of [390, 320]) {
         await expect(page.locator('html')).toHaveAttribute('lang', 'en')
         expect(await noSidewaysScroll(page)).toBe(true)
         const buttons = page.locator(BTN)
+        const want = EXPECT[route]
+        await expect(page.locator(want.anchor).first()).toBeVisible()
+        expect(await buttons.count()).toBeGreaterThanOrEqual(want.buttons)
         if (width === 390) expect(await wraps(buttons)).toEqual([])
         // (the title bar's round icon buttons are the frame's, and their unread badge overhangs on purpose)
         // at 320 a two-line label is the known narrow-phone behaviour (bible trap 5) — it must still be contained
-        for (const button of await page.locator('.screen-content button:not(.fo-ib)').all()) {
+        let measured = 0
+        for (const button of await page.locator('.screen-content button:not(.fo-ib), .screen-content a').all()) {
           if (!(await button.isVisible())) continue
+          measured++
           expect(await button.evaluate((el) => el.getBoundingClientRect().right <= innerWidth + 0.5 && el.scrollWidth <= el.clientWidth + 1)).toBe(true)
         }
+        expect(measured).toBeGreaterThanOrEqual(want.controls)
       })
     }
 
@@ -168,4 +187,31 @@ test('pressing English / Magyar in Settings switches the words in place, no navi
   await page.getByRole('button', { name: 'Vissza', exact: true }).first().click()
   await expect(page).toHaveURL(/\/me$/)
   await expect(bar('Területek')).toHaveText(['Nap', 'Edzés', 'Fuel', 'Mezo', 'Én'])
+})
+
+test('after the switch the Fuel settings page still carries its save bar (portal target survives the remount)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 820 })
+  await seed(page, null)
+  await page.goto('/me')
+  await page.getByRole('button', { name: 'Beállítások', exact: true }).click()
+  await page.getByRole('link', { name: /Megjelenés és alkalmazás/ }).click()
+  await page.getByRole('group', { name: 'Az app nyelve' }).getByRole('button', { name: 'English' }).click()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  await page.getByRole('button', { name: 'Back', exact: true }).first().click()
+  await expect(page).toHaveURL(/\/settings$/)
+  await page.getByRole('link', { name: /^Fuel/ }).first().click()
+  await expect(page).toHaveURL(/\/settings\/fuel$/)
+  const save = page.locator('.fset-savebar button')
+  await expect(save).toBeVisible()
+  expect(await save.evaluate((el) => document.body.contains(el))).toBe(true)
+})
+
+test('loaded directly in English, the Fuel settings page carries its save bar', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 820 })
+  await seed(page, 'en')
+  await page.goto('/fuel/settings')
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en')
+  const save = page.locator('.fset-savebar button')
+  await expect(save).toBeVisible()
+  expect(await save.evaluate((el) => document.body.contains(el))).toBe(true)
 })

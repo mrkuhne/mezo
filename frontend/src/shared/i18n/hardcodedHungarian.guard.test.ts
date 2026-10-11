@@ -23,6 +23,8 @@ import { describe, expect, it } from 'vitest'
 // LIMIT: this is an accent detector. Hungarian written without an accented letter ('Vissza',
 // 'Mai', 'Terv', 'Fuel') is invisible to it; the catalog completeness test
 // (catalog.completeness.test.ts) and review cover that. A string with no accent is never flagged.
+// A second known false negative: a `//` inside JSX text hides the rest of that line from the comment
+// stripper's point of view, so Hungarian after it on the same line is not seen.
 // ============================================================
 
 /** Source paths (relative to src/) whose texts all live in the catalog. A directory ends in `/`. */
@@ -52,7 +54,7 @@ const ALLOWLIST: AllowEntry[] = [
   },
   {
     file: 'app/pageIndex.ts',
-    match: /./,
+    match: /./, // broad on purpose (pure data); the exports test below pins that no code hides behind it
     reason:
       'PAGE_INDEX (labels, hints) and NOT_INDEXED (reasons) are the Hungarian page inventory, keyed by route. pageLabel() already ' +
       'swaps in the catalog for the pages that have an English name; the rest wait for their own slice. Delete this entry when the ' +
@@ -309,5 +311,14 @@ describe('no hard-coded Hungarian in the translated areas', () => {
   it('only allowlists files that are in a translated area', () => {
     const inArea = new Set(files.map(rel))
     expect(ALLOWLIST.filter((e) => !inArea.has(e.file)).map((e) => e.file)).toEqual([])
+  })
+
+  it('keeps app/pageIndex.ts pure data, so its blanket allowlist entry hides no executable code', () => {
+    const code = readFileSync(join(SRC_DIR, 'app/pageIndex.ts'), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '')
+    const exported = [...code.matchAll(/^export\s+(?:const|interface|type|function|class|let)\s+(\w+)/gm)].map((x) => x[1])
+    expect(exported).toEqual(['IndexedPage', 'PAGE_INDEX', 'NOT_INDEXED', 'PARAM_ROUTES_ARE_INSTANCES'])
+    expect(code).not.toMatch(/=>|\bfunction\b|\bimport\b|\bclass\b|\bif\s*\(/)
   })
 })
