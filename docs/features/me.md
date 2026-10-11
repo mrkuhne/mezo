@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-10-09
+updated: 2026-10-11
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-design-system, _platform-notifications
 ---
 
 # Me Area — Feature Documentation
+
+> **2026-10-11 — reviewed after Folyadék F2/F3 (`mezo-n4wf5.3`).** The routine pages under `frontend/src/features/me` wear the Folyadék look since F2 (described in `today.md`); F3 only moved their standalone back pill to the kit rule `.fo-backpill`. Behaviour, routes and data as described below.
 
 > **2026-10-08 — Kihagyás S3 review (`mezo-q4xt2.3`).** The `me-week` contract's `MeWeekDay` gained a nullable `unjudgedDay` flag: on a kímélő day whose kcal target is not judged (GUIDANCE / ESTIMATE) `kcalTarget` / `proteinTargetG` are null and the week context line carries „ · kímélő nap (nincs értékelve)" (see [`companion.md`](companion.md), [`fuel.md`](fuel.md)).
 

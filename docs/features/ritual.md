@@ -2,7 +2,7 @@
 title: Ritual — Napzárás Sleep-Anchored Daily Closing
 type: feature-domain
 status: done
-updated: 2026-10-10
+updated: 2026-10-11
 tags: [today, habit, growth, intention, proactive, companion, backend, frontend, data-layer, progression, needs, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/ritual
@@ -16,6 +16,8 @@ related: [today, habit, growth, intention, proactive, _platform-design-system, n
 ---
 
 # Ritual — Napzárás Sleep-Anchored Daily Closing
+
+> **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** No change to the ritual in F3; the F2 note below is current.
 
 > **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** **`/ritual` is light** (owner decision 2026-10-10): the six acts are rebuilt on the Folyadék kit, and the evening mood is the deeper „dusk" liquid (`<Page tone="dusk">`), not a dark screen. `RitualPage` no longer forces the dark theme. Each act is a hero + numbered cards + its own foot bar (`RitualFoot`: „Kilépés" and the act's buttons); the page draws only the six step dots. Act 1 is the day's jar, act 2 the day arc as a liquid surface, act 3 the evening verdict as a jar, act 4 one vial per loop, act 5 one vessel with a layer per XP source (the confetti is gone), act 6 the full jar with its lid. **„Esti rutin indítása" now hands off to `/nap/rutin?dp=este`** (it was `/nap`). The act machine, the single `close()` on entering act 5, the advance-only writes of act 3 and every data read are unchanged. Page rules: `.nrz-*` in `frontend/src/styles/folyadek-nap-rogzites.css`; the two guards (`ritualCssTokens`, `reducedMotionGuard`) now read that file. Look: [Folyadék style bible](../design_2.0/2026-10-09-folyadek-style-bible.md); build target [`vilagos/nap.js`](../design_2.0/prototypes/vilagos/nap.js) `napzaras.1…6`; deviations in [`vilagos/HANDOFF.md`](../design_2.0/prototypes/vilagos/HANDOFF.md).
 

@@ -111,6 +111,8 @@ related: [_platform-data-layer, _platform-notifications, today, train, me, fuel,
 
 # Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0 → Titanium → restored Mozaik 2.0) — Feature Documentation
 
+> **2026-10-11 — reviewed after the F3 integration (`mezo-n4wf5.3`).** `prototype.css` lost the old Edzés skin (27 699 → 23 560 lines, zero-usage proof per rule) and the structure guard pins the retired blocks; the quick-log button is hidden on `/train/mesocycles/new` (the planner has its own action bar).
+
 > **2026-09-24 — Üveg U4 (`mezo-me75u.4`).** The Mozaik page frame gained its üveg variant: `PageHead glass` (a glass back pill `‹ label`) and `PageHero art` + `accent` (a frameless halo hero with a 3D icon), with the CSS at the end of the `── uveg kit (` section. Two new sprite icons (`t-muscle`, `t-bandage`, drawn in `titanium-custom.svg`, regenerated with `scripts/gen-titanium-sprite.mjs`) and five context-free `CLAY_TO_3D` entries (`i-trend-fel/le`, `i-erem`, `i-meso`). Six `── uveg edzes <area> (` blocks in `prototype.css`, guarded by `prototypeCssStructure.test.ts`.
 
 > ## ⚠️ 2026-09-23 — the Üveg direction (owner decision, epic `mezo-me75u`) — *superseded 2026-10-09 by Folyadék (light only, white cards); kept as history*
