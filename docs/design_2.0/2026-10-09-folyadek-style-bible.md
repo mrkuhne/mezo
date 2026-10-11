@@ -393,11 +393,13 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
 **N1 — Nyelv alap (`mezo-n4wf5.11`, 2026-10-11)**
 
 - **N1.1 — A keyed remount detaches every portal that resolves its target during render.** The language switch
-  remounts the tree with a `key`; the new tree's render ran while the old `.phone-screen` was still in the DOM,
+  remounts the screens with a `key`; the new tree's render ran while the old `.phone-screen` was still in the DOM,
   so `document.querySelector('.phone-screen')` returned the node about to be removed and the portal's content
-  (Fuel settings' save bar) landed in a detached subtree. Fourteen files resolve a target this way. The fix is a
-  two-phase remount: commit the children as unmounted (`null`), then mount the new tree from a layout effect — it
-  then renders against a DOM like a cold start. Do not go back to a single `key`, and test with a portal child.
+  (Fuel settings' save bar) landed in a detached subtree. Fourteen files resolve a target this way. The final
+  design: `LanguageBoundary` sits inside each shell (`AppLayout`, `AdminLayout`) just above the routed screens and
+  remounts in two phases — commit the children as unmounted (`null`), then mount the new tree from a layout effect,
+  so it renders against a DOM like a cold start. `.phone-screen` and every app-root provider stay mounted, so the
+  lookup finds the live node. Do not go back to a single `key`, and test with a portal child.
 - **N1.2 — When the account language is already known, the store is aligned before the children render.** The
   store starts from the device cache or the device language; applying the account value afterwards flipped it a
   moment later and mounted the whole tree twice. Write the known value silently during render (`alignLang`) and
@@ -445,3 +447,17 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
 - **N1.14 — A shared test file or catalog is the controller's, and a sequential order beats a parallel one.** Three
   catalog areas touched the same index; running the converters one after another cost only time. Reviewers may run
   on a finished task's diff while the next implementer works; a fix round waits until that implementer commits.
+- **N1.15 — A remount boundary resets everything with app-root lifetime beneath it — list what lives under it
+  before you place it.** The first design remounted at the app root: the startup splash (three seconds, the app
+  inert) replayed on every language switch and a just-shown toast was wiped. No test saw the splash, because every
+  spec seeds the splash skip; the case that guards it now does not seed it. Put the boundary just above the routed
+  screens, keep providers with their own lifetime above it (they render their words through `useM()`), and keep the
+  above / below list in the boundary's header.
+- **N1.16 — A toast emitted before a remount dies with the tree — assert on the rendered toast, not the bus.** The
+  global mutation-error toast fires before the mutation's own rollback, so it spoke the language being left, and
+  with the toast host under the remount it vanished. The mutation now rolls back first and emits the toast itself,
+  and the test looks for the toast element on screen, in the rolled-back language; a spy on the toast bus passed
+  while the user saw nothing.
+- **N1.17 — A formatter cached once freezes the time zone it was created in.** `isoDay` kept an `en-CA` `Intl`
+  formatter, so a live app that crossed a zone computed "today" in the old one. Build a machine date from the
+  date's own parts; keep cached formatters for display only, keyed by locale and options.

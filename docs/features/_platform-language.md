@@ -7,6 +7,7 @@ tags: [platform, frontend, backend, auth, ai]
 key_files:
   - frontend/src/shared/i18n
   - frontend/src/shared/lib/format.ts
+  - frontend/src/shared/i18n/LanguageBoundary.tsx
   - frontend/src/data/auth/languageHooks.ts
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
   - backend/src/main/java/io/mrkuhne/mezo/techcore/message
@@ -28,11 +29,11 @@ Owner decision 2026-10-11: the app must be usable in English; Hungarian stays. N
 
 - **A stored preference** — `app_user.language` (`hu` | `en`), `MeResponse.language`, `PUT /api/auth/me/language`, `RegisterRequest.language`.
 - **A typed client catalog, no library** — `frontend/src/shared/i18n`: Hungarian is the source object, English is typed `Shape<typeof hu>`, so a missing or mis-shaped English entry is a compile error.
-- **A provider that switches without a reload** — `LanguageProvider` remounts everything under it.
+- **A switch without a reload** — `LanguageProvider` aligns the store with the account and remounts nothing; `LanguageBoundary`, inside each shell just above the routed screens, remounts the screens (the title bar, top tabs, page and bottom bar) while everything with app-root lifetime (splash, toasts, ceremony / tutorial / arrival providers, theme, router) stays mounted.
 - **One formatting module** — `shared/lib/format.ts` (`hu-HU` / `en-GB`), with a ratchet that stops new hand-rolled formats.
 - **Server sentences in the user's language** — two message bundles, `UserMessages`, `Accept-Language` for requests with no account.
 - **The LLM answers in the user's language** — an output-language directive appended to the system prompt of every call that a person reads.
-- **Five guards** that keep all of this from rotting.
+- **Six guards** that keep all of this from rotting.
 
 Owner decisions (spec §2, 2026-10-11, not to be re-litigated): history is never translated; a new account takes the device language (Hungarian device → `hu`, anything else → `en`) and existing accounts stay `hu`; English names are Today · Training · Fuel · Mezo · Me and Sleep · Movement · Food · Mood · Mezo · Skeptic; built-in catalogs (exercises, habits, quests, titles, pantry) are translated in N3 and user-created items stay as written; units do not change (kg, km, 24-hour clock); the Settings note „Az angol változat készül, egyes oldalak még magyarul jelennek meg." / "English is in progress — some pages still appear in Hungarian." stays until F9.
 
@@ -52,7 +53,7 @@ Driving design: [`docs/superpowers/specs/2026-10-11-nyelv-alap-design.md`](../su
 
 ## 2. User-facing behavior
 
-- **Settings → Beállítások (`/settings/general`) → first section „Nyelv" / "Language".** Two buttons, *Magyar* and *English* (`aria-pressed`, ≥ 44 px, one row at 320 px), a one-sentence body and the „in progress" note (both in the language that is active). Pressing the other language changes the whole app at once, with no reload and without losing the URL or the query cache. Pressing the current one does nothing. The choice survives a restart and a second device (stored with the account); if the save fails the app returns to the previous language and shows the generic save-failed toast.
+- **Settings → Beállítások (`/settings/general`) → first section „Nyelv" / "Language".** Two buttons, *Magyar* and *English* (`aria-pressed`, ≥ 44 px, one row at 320 px), a one-sentence body and the „in progress" note (both in the language that is active). Pressing the other language changes the whole app at once, with no reload and without losing the URL or the query cache. Pressing the current one does nothing. The choice survives a restart and a second device (stored with the account); if the save fails the app returns to the previous language and then shows the save-failed toast, in that previous language. Two quick taps (Magyar → English → Magyar) end on the last choice, whatever order the server answers in.
 - **First start.** A fresh device with no cache resolves from `navigator.language` (starts with `hu` → Hungarian, else English). The login and register screens read the same value; registration sends it, so a new account starts in the language its first screen was in.
 - **What is English today:** the title bar (labels, notification panel and its day headings), the top tabs, the bottom bar, the splash, the floating „back to your workout" bar, the kit's own strings (Back, Close, Cancel, Loading…, Retry, steppers), the team field names, the frame date, every Settings page, the frame-level server errors (`AUTH_*`, `VALIDATION_*`, `RESOURCE_NOT_FOUND`, `INTERNAL_ERROR`, `METHOD_NOT_ALLOWED`, account settings) and every new LLM answer.
 - **What stays Hungarian in English mode (known, by design until its slice):** all other screens; 94 of the 117 `PAGE_INDEX` page labels (they fall back to the Hungarian label); the Settings-reachable Fuel settings pages, the goal settings page, the gym / sport / biometric / sleep-goal / change-password sheets and the learned-profile card; server-provided text (assembled context, what the user wrote); everything already stored (old AI messages, memories, summaries, journal, meal and exercise names).
@@ -71,7 +72,7 @@ account (me.language)  →  device cache (localStorage 'mezo-lang')  →  device
 | Source | Written by | Read by |
 |---|---|---|
 | Account `app_user.language` | `PUT /api/auth/me/language` (targeted `@Modifying` update, never a whole-entity save); registration | `GET /api/auth/me` → `useMe()` → `LanguageProvider` |
-| Device cache `mezo-lang` | `setLang()` (a switch), `announceLang()` (whenever the account value is known) | `resolveInitialLang()` at module load, the login/register screens, everything outside the query provider, the mock account |
+| Device cache `mezo-lang` | `setLang()` (a switch), `announceLang()` (whenever the account value is known, also when it already equals the store) | `resolveInitialLang()` at module load, the login/register screens, everything outside the query provider, the mock account |
 | Device language | the browser | `deviceLang()` only when the cache is empty or garbage |
 
 The store (`lang.ts`) is a module-level value with subscribers (`useSyncExternalStore`), so code outside React (`m()`, `format.ts`, label maps) reads the same language as components. `<html lang>` follows it. `src/test/setup.ts` pins `hu` before every test (jsdom reports `en-US`).
@@ -80,22 +81,44 @@ The store (`lang.ts`) is a module-level value with subscribers (`useSyncExternal
 
 ```
 Nyelv button → useLanguageSetting().setLanguage(next)            data/auth/languageHooks.ts
-  onMutate (synchronous): cache the old language + old `me`; patch cached `me.language`; setLang(next) → store + device cache + <html lang>
-  mutationFn: PUT /api/auth/me/language  (mock mode: resolves locally, nothing fetched)
-  onSuccess: cache the server's `me`          onError: restore `me`, setLang(previous); the default mutation-error toast shows
-→ LanguageProvider sees the new language → two-phase remount (below)
+  onMutate (synchronous): cancel in-flight `me` reads; remember the rollback point (first write of a chain only);
+                          patch cached `me.language`; setLang(next) → store + device cache + <html lang>
+  mutationFn: PUT /api/auth/me/language  (mock mode: resolves locally, nothing fetched)   — serialised: scope { id: 'language' }
+  onSuccess: the rollback point moves to what the server confirmed; only the NEWEST write may cache the server's `me`
+  onError:   only the newest write acts: restore `me` and setLang(rollback point), THEN emitSaveFailedToast(error)
+→ the store notifies → LanguageBoundary remounts the screens (below)
 ```
 
-Everything is in mutation-level options because the caller unmounts mid-mutation (the provider remounts its subtree); per-call callbacks would never run.
+- **Everything is in mutation-level options** because the caller unmounts mid-mutation (the boundary remounts the screen that holds the button); per-call callbacks would never run.
+- **Quick double switches.** Writes are serialised (`scope`), so the server sees them in tap order. `latest` (a module counter) names the newest write: a response to an older tap is confirmed silently and never flips the app back. `base` (module state, not component state, because every tap gets a fresh hook instance) is the rollback point of the whole chain: taken when the first write starts, moved forward by every write the server confirms. If both fail the app returns to where the chain began; if the first lands and the second fails it returns to what the server holds.
+- **The failed-switch toast is emitted by the hook, after the rollback.** The default mutation-error toast (`QueryProvider`'s mutation cache) fires before any `onError`, i.e. in the language the user just left. This mutation therefore opts out with `meta: { ownErrorToast: true }` (`OWN_ERROR_TOAST`) and calls `emitSaveFailedToast(error)` (`data/_client/saveFailedToast.ts`) itself once the store is back, so the words are in the language the app now shows. The toast host (`ToastProvider`) is above the boundary and survives the switch; a toast keeps the words it was emitted with.
 
 ### `LanguageProvider` — the contract
 
-Mounted in `main.tsx` inside `QueryProvider`, above the router and `Suspense` (`ErrorBoundary` is outside it and builds its fallback lazily, so it reads the language when it crashes). Two rules, each learned from a bug:
+Mounted in `AppProviders` (`app/providers/AppProviders.tsx`, the one provider stack `main.tsx` renders; tests mount the same component) inside `QueryProvider`, above `ThemeProvider`, the splash, the router and `Suspense` (`ErrorBoundary` is outside it and builds its fallback lazily, so it reads the language when it crashes). It **only aligns the language store with the account and remounts nothing**:
 
-1. **Store aligned before children render.** When the account language is already known at render (cached `me`, mock `initialData`), the provider writes it to the store *during render* (`alignLang`, silent — no subscriber is notified mid-render) and announces it from an effect (`announceLang`: cache, `<html lang>`, subscribers). The first paint is already right. Without this the store starts on the device language, the account value flips it a moment later, and the whole tree mounts twice.
-2. **A change after mount remounts in two phases.** The provider renders `null` first (old tree unmounted), then a layout effect sets the mounted language and renders `<Fragment key={lang}>` (no painted blank frame). **Why:** fourteen source files create a portal whose target is resolved *during render* with `document.querySelector('.phone-screen') ?? document.body`. With a plain keyed remount, the new tree's render runs while the old nodes are still in the DOM, so the query returns the old, about-to-be-removed `.phone-screen` and the portal's content lands in a detached node — Fuel settings' save bar disappeared. With two phases the new tree renders against a DOM without the old nodes, exactly like a cold start. Cost: one extra synchronous commit per switch.
+- **Store aligned before children render.** When the account language is already known at render (cached `me`, mock `initialData`), the provider writes it to the store *during render* (`alignLang`, silent — no subscriber is notified mid-render) and announces it from an effect (`announceLang`: device cache, `<html lang>`, subscribers). The first paint is already right. Without this the store starts on the device language, the account value flips it a moment later, and the whole tree mounts twice. The device cache is written whenever the account language is known, also when it already equals the store.
+- Signing out keeps the last language, so the login screen stays in the language last used.
 
-Signing out keeps the last language, so the login screen stays in the language last used.
+### `LanguageBoundary` — the remount, and what lives on either side
+
+The remount exists because some code reads the catalog with the non-hook `m()` (label maps, logic files, values captured in state) and cannot re-render by itself. `LanguageBoundary` (`shared/i18n/LanguageBoundary.tsx`) is mounted in `AppLayout` and `AdminLayout`, around the title bar / top tabs / routed page / bottom bar / floating layers. It is **two-phase**: on a change it first commits its children as unmounted (`null`), then a layout effect mounts the new tree under `<Fragment key={lang}>` (no painted blank frame). **Why two phases:** fourteen source files create a portal whose target is resolved *during render* with `document.querySelector('.phone-screen') ?? document.body`. With a plain keyed remount the new tree's render runs while the old nodes are still in the DOM, so a target inside the old tree is found and the portal's content lands in a detached node (Fuel settings' save bar disappeared). With two phases the new tree renders against a DOM without the old nodes, like a cold start; and because `.phone-screen` itself sits above the boundary and stays mounted, the lookup finds the LIVE node. Cost: one extra synchronous commit per switch.
+
+The boundary used to sit at the app root. That reset everything with app-root lifetime on every switch: the startup splash replayed (three seconds, the app inert) and a toast that was just shown was wiped. Placing it just above the routed screens fixed that; the reviewed list is the header comment of `LanguageBoundary.tsx`.
+
+| Above the boundary — survives a switch | Below the boundary — remounted |
+|---|---|
+| `QueryProvider` / `AuthGate` (query cache, session) | `MezoThreadProvider` (its state is in localStorage, re-read on mount) |
+| `LanguageProvider` (account sync) | `FrameProvider` (the mounted page re-registers title / back) |
+| `ThemeProvider`, `CircadianTheme`, `PhoneFrame` / `.phone-screen`, `ClaySprites` | `ScreenContent` (remembered scroll offsets — a switch lands at the top) |
+| `StartupSplash` (its intro plays once) | `TitleBar`, `TopTabs`, the routed page (`Outlet`), `BottomBar`, `QuickLogFab`, `FloatingReturnLayer` |
+| the router and the Suspense fallback | the admin rail and the admin page |
+| `AppLayout` itself (once-per-session effects: schedule snapshot, screen telemetry) | |
+| `ToastProvider` (visible toasts are state) | |
+| `ArrivalProvider`, `MealCeremonyProvider`, `LevelUpProvider`, `TutorialProvider` (refs / open ceremony / once-per-session guards) | |
+| `AdminLayout`'s `ToastProvider`, `ArrivalProvider` and owner check | |
+
+**Authoring rule.** Whatever sits ABOVE the boundary renders its words through `useM()` / `useLang()` (hooks), because nothing remounts it — the splash label, the toast close label, the auth pages and the Suspense fallback do. The non-hook `m()` is safe only BELOW the boundary, or in code called at render of a component that subscribes. Before moving or adding a provider, check which side its state belongs on: anything that must live through a switch goes above, and a component below the boundary must be fine being unmounted mid-gesture.
 
 ### Message catalog
 
@@ -117,13 +140,15 @@ frontend/src/shared/i18n/messages/index.ts       registers each area in `catalog
 
 > **No translated text is cached without the language in the cache key.** A `useMemo`, a `useState` initialiser, a `useRef`, a module constant or a query-selected value that holds *text* must either list the language in its dependencies/key or hold *data* (ids, numbers, `{ sent, attempted }`) and build the sentence at render time.
 
-The provider's remount hides this today — it resets every memo — but it is the contract: two reviewed bugs (`useDayOrbFill` label and the title bar's notification day headings) memoised translated text with the language missing from the deps and would have gone stale the day the remount is narrowed. Module-level label maps (`navModel.DOMAINS` labels, `MEMBER_LABEL`, `PUSH_ERROR_COPY`, `WEEKDAY_HU`) are turned into lookup functions that read `m()` when called (`domainName`, `tabLabel`, `tabTitle`, `pageLabel`, `memberLabel`, `memberMeta`). `DOMAINS` itself keeps the Hungarian values as **source ids** (tests, `pageIndex` and the leltár key on them); only display goes through the lookups.
+The boundary's remount hides this today — it resets every memo below it — but it is the contract: two reviewed bugs (`useDayOrbFill` label and the title bar's notification day headings) memoised translated text with the language missing from the deps and would have gone stale the day the remount is narrowed (and anything above the boundary is not reset at all). Module-level label maps (`navModel.DOMAINS` labels, `MEMBER_LABEL`, `PUSH_ERROR_COPY`, `WEEKDAY_HU`) are turned into lookup functions that read `m()` when called (`domainName`, `tabLabel`, `tabTitle`, `pageLabel`, `memberLabel`, `memberMeta`). `DOMAINS` itself keeps the Hungarian values as **source ids** (tests, `pageIndex` and the leltár key on them); only display goes through the lookups.
 
 ### Formatting — `shared/lib/format.ts`
 
-The locale is **always the app language** (`locale()` → `hu-HU` | `en-GB`), never the device. `fmtDate(d, style)` (`weekdayLong | weekdayShort | monthDay | monthDayWeekday | full | frame`), `fmtNum`, `fmtGrouped`, `fmtInt`, `isoDay` (machine format, not display). Hungarian keeps the hand-rolled strings the app always showed (verified characterisation tests); English is built from `Intl.DateTimeFormat('en-GB')` parts (day first, no ordinal, no dots). `Intl` formatters are cached per locale + options. A date-only string (`'2026-10-07'`) is read by its parts, never parsed as UTC, so it is the 7th in every time zone (the time-zone test runs the module in several zones and was shown red against `new Date(d)`).
+The locale is **always the app language** (`locale()` → `hu-HU` | `en-GB`), never the device. `fmtDate(d, style)` (`weekdayLong | weekdayShort | monthDay | monthDayWeekday | full | frame`), `fmtNum`, `fmtGrouped`, `fmtInt`, `isoDay` (machine format, not display; built from the date's own local year / month / day, never from a cached `Intl` formatter, which would keep the time zone of its first use). Hungarian keeps the hand-rolled strings the app always showed (verified characterisation tests); English is built from `Intl.DateTimeFormat('en-GB')` parts (day first, no ordinal, no dots). Display `Intl` formatters are cached per locale + options. A date-only string (`'2026-10-07'`) is read by its parts, never parsed as UTC, so it is the 7th in every time zone (the time-zone test runs the module in several zones and was shown red against `new Date(d)`).
 
 `shared/lib/dates.ts` and `huNum.ts` keep their exported names and delegate to `format.ts`, so their ~300 importers follow the language without edits. The Hungarian grammar helpers (`huFrom`, `huArticle`, `article`, `azA`, `outOf`) have an English branch that returns the plain form („the", „of 5"); sentences built on them are rewritten as messages by the slice that owns the screen.
+
+**Import rule.** The leaf utilities `format.ts`, `dates.ts`, `huNum.ts` and `huText.ts` (hundreds of importers) import the store and the plural rule from `@/shared/i18n/lang` / `@/shared/i18n/plural`, never from the `@/shared/i18n` barrel: the barrel re-exports `LanguageProvider`, which would drag the auth data hooks and react-query in behind every formatter. `shared/lib/i18nLeafImports.guard.test.ts` enforces it.
 
 **What does not change with the language:** kg, km, cm, the 24-hour clock, machine formats (`isoDay`, wire dates), ids and enum values.
 
@@ -151,7 +176,7 @@ UserMessages.text(key, args…) → MessageSource (messages_hu / messages_en) �
 - **Hungarian → nothing.** The method returns the same instance, so every prompt is byte-identical: golden prompt tests, the fake LLM's `startsWith` dispatch and the OpenAI prompt-cache prefix are untouched.
 - **English → a `[OUTPUT LANGUAGE]` block appended to the end** (never prepended): the instructions and data above are Hungarian; write every sentence a person reads in natural English; keep JSON keys, enum values, tool names, ids and fixed options exactly as specified; do not translate names or quoted user text.
 - **Where it rides.** When the call has a turn context (the volatile second system message), the directive goes on the *turn context* so the cacheable system prefix stays untouched; otherwise on the system prompt. It is applied exactly once per call, on the caller's thread, at the entry point that first receives the prompt — the result is both what is sent and what the audit row stores — and never by an overload that merely delegates (the 5-arg overloads, the OpenAI → Gemini media hand-off).
-- **Exempt** by feature slug (`LlmCallContextHolder`): `embed_memory` (embeddings) and `companion_recall` (the recall query rewriter and reranker, internal, never shown). The audio transcription overload (`complete(..., InlineAudio)`) is exempt by overload: a transcript is the user's own words. The slugs are string literals in `OutputLanguageDirective.EXEMPT_SLUGS`.
+- **Exempt** by feature slug (`LlmCallContextHolder`): `embed_memory` (embeddings), `companion_recall` (the recall query embedding, rewriter and reranker, internal, never shown) and `admin_replay` (the admin dry-run replay re-runs the recall rewriter / reranker under its own slug with the *inspected user* as actor; without the exemption a replay for an English account would send a prompt production never sends and stop being a replay). The audio transcription overload (`complete(..., InlineAudio)`) is exempt by overload: a transcript is the user's own words. The slugs are the shared constants `LlmCallContext.FEATURE_EMBED_MEMORY` / `FEATURE_COMPANION_RECALL` / `FEATURE_ADMIN_REPLAY`, used by every call site and by `OutputLanguageDirective.EXEMPT_SLUGS`, so a renamed slug cannot silently drop out of the set. A call with no slug (null) is simply not exempt.
 - **Known limit until N3:** prompts and the context fed to the model are Hungarian, so an English answer can drift back to Hungarian, especially in long chats with Hungarian history. N1 does not translate prompts.
 
 ### Mock mode
@@ -171,7 +196,7 @@ UserMessages.text(key, args…) → MessageSource (messages_hu / messages_en) �
 
 ## 5. Integrations
 
-- **Auth & account** ([`_platform-auth-security.md`](_platform-auth-security.md)). *Contract:* `me.language` is the account value of the resolution order; `LanguageProvider` is the only place that aligns the store with it. Registration sends the resolved language.
+- **Auth & account** ([`_platform-auth-security.md`](_platform-auth-security.md)). *Contract:* `me.language` is the account value of the resolution order; `LanguageProvider` is the only place that aligns the store with it (and it remounts nothing — `LanguageBoundary` does). Registration sends the resolved language.
 - **Design system / kit** ([`_platform-design-system.md`](_platform-design-system.md)). *Contract:* the Folyadék kit's own strings (`kit` catalog), the frame (`frame` catalog) and `FrameProvider` titles read the catalog; a kit piece takes text as props and owns only its fixed words (Back, Close, …). `memberLabel` / `memberMeta` give the team field names.
 - **Settings** ([`settings.md`](settings.md)). *Contract:* the Nyelv block is the one writer of the preference (`useLanguageSetting`); the Settings pages read the `settings` catalog.
 - **Companion / every LLM call** ([`companion.md`](companion.md) §5.3). *Contract:* the `CompanionLlm` port adapter (`SpringAiCompanionLlm`) applies the directive from `UserLanguage.current()`; call sites change nothing.
@@ -223,7 +248,8 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 | Catalog completeness | `shared/i18n/catalog.completeness.test.ts` | does nothing: it walks every registered area — same keys, same leaf kind, same arity, no empty English leaf (the walker is itself tested against a broken twin) |
 | No hard-coded Hungarian | `shared/i18n/hardcodedHungarian.guard.test.ts` | adds its directories to `TRANSLATED` (relative to `src/`, a directory ends in `/`); moves every hit into the catalog; deletes the `ALLOWLIST` entries it made obsolete. The guard fails on an allowlist entry that no longer matches anything (rot check) and on one pointing outside `TRANSLATED`. It tokenises source (comments, quote strings, template chunks, regex literals, JSX text) and flags any accented Hungarian letter |
 | Formatting ratchet | `shared/lib/format.ratchet.test.ts` | removes the lines of the files it converted; the list is asserted sorted and may only shrink |
-| Backend bundle parity | `backend/src/test/.../techcore/message/MessageBundleParityTest.java` | adds keys to both bundles or the test fails |
+| Backend bundle parity | `backend/src/test/.../techcore/message/MessageBundleParityTest.java` | adds keys to both bundles or the test fails; a value with a `{n}` placeholder may not hold a lone apostrophe (`MessageFormat` would swallow it and the placeholders), checked in both bundles |
+| Leaf imports | `shared/lib/i18nLeafImports.guard.test.ts` | does nothing: `format.ts`, `dates.ts`, `huNum.ts`, `huText.ts` may import only `@/shared/i18n/lang` or `/plural`, never the barrel (the scan is itself tested on every import form) |
 | English layout | `frontend/tests/layout/language-en.spec.ts` | adds its routes: no sideways scroll, one-line bottom-bar labels, whole top-tab words, no wrapped button at 390 and 320 px; every check asserts a non-empty set first (a layout check over an empty set passes) |
 
 ---
@@ -231,13 +257,13 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 ## 8. Testing
 
 **Frontend** (both data modes must stay green):
-- `shared/i18n/lang.test.tsx` — resolution order, cache, `alignLang`/`announceLang`. `LanguageProvider.test.tsx` — children render once with a known account language (no flip), a render-time portal stays attached across a switch, every unmount precedes every mount (the first two were shown RED against the single-phase provider).
-- `data/auth/languageHooks.test.tsx` — optimistic switch, rollback on 500 and on a network error, the in-flight write not overwritten by a stale account value; `afterEach` awaits `client.isMutating() === 0` so a leaked write cannot reach a later case. `data/auth/authMock.test.ts` — the mock account follows the cache.
-- `shared/lib/format.test.ts` (+ `huFormat.characterization.test.ts`) — both languages, the time-zone case run per zone; `format.ratchet.test.ts`.
+- `shared/i18n/lang.test.tsx` — resolution order, cache, `alignLang`/`announceLang`. `LanguageProvider.test.tsx` — children render once with a known account language (no flip); the provider alone remounts nothing; the device cache is written when the account language equals the store and left alone while it is unknown; with the boundary: a render-time portal stays attached across a switch, every unmount precedes every mount, and a host above the boundary stays mounted with the portal landing in that live node. `app/providers/AppProviders.language.test.tsx` mounts the real provider stack (`AppProviders`): the intro plays once (also when the switch comes while it is still playing), and a failed save shows the toast in the rolled-back language, asserted on the rendered toast.
+- `data/auth/languageHooks.test.tsx` — optimistic switch, rollback on 500 and on a network error, the in-flight write not overwritten by a stale account value, two quick taps (a late answer never flips the app back; both fail → back to the start with one toast; first lands, second fails → back to what the server holds); `afterEach` awaits `client.isMutating() === 0` so a leaked write cannot reach a later case. `data/auth/authMock.test.ts` — the mock account follows the cache.
+- `shared/lib/format.test.ts` (+ `huFormat.characterization.test.ts`) — both languages, the time-zone case run per zone, `isoDay` following a zone change; `format.ratchet.test.ts`; `i18nLeafImports.guard.test.ts`. `shared/ui/ToastProvider.test.tsx` — the close label follows the language.
 - `app/frame.en.test.tsx`, `app/TitleBar.en.test.tsx`, `shared/ui/folyadek/kit.i18n.test.tsx`, `features/settings/pages/SettingsPages.en.test.tsx`, `features/me/pages/BeallitasokPage.language.test.tsx`, `features/me/pages/NotificationsPage.en.test.tsx` — English rendering plus a runtime switch on one DOM node.
-- Layout: `tests/layout/language-en.spec.ts` (21 cases, hubs and Settings at 390/320, the switch pressed in Settings, `/fuel/settings` save bar after a switch), `tests/layout/settings-language.spec.ts` (the Nyelv block).
+- Layout: `tests/layout/language-en.spec.ts` (hubs and Settings at 390/320, the switch pressed in Settings, `/fuel/settings` save bar after a switch, and the startup intro NOT replaying on a switch — that case deliberately does not seed the splash skip), `tests/layout/settings-language.spec.ts` (the Nyelv block).
 
-**Backend:** `feature/auth/LanguageIT` (register with a language, the PUT, `me.language`, an English error for an English account, `Accept-Language` for an unauthenticated request), `techcore/message/MessageBundleParityTest`, `feature/companion/llm/OutputLanguageDirectiveTest` and `SpringAiCompanionLlmLanguageTest` (directive appended once, on the turn context when present, absent for `hu`, exempt slugs and the audio overload untouched, the audited prompt equals the sent one). Focused tests miss ArchUnit and the codemap — run `ArchitectureTest` and `node scripts/gen-codemap.mjs` too.
+**Backend:** `feature/auth/LanguageIT` (register with a language, the PUT, `me.language`, an English error for an English account, `Accept-Language` for an unauthenticated request), `techcore/message/MessageBundleParityTest`, `feature/companion/llm/OutputLanguageDirectiveTest` and `SpringAiCompanionLlmLanguageTest` (directive appended once, on the turn context when present, absent for `hu`, exempt slugs (including `admin_replay`) and the audio overload untouched, a null slug safe, the audited prompt equals the sent one). Focused tests miss ArchUnit and the codemap — run `ArchitectureTest` and `node scripts/gen-codemap.mjs` too.
 
 **Commands:** `cd frontend && CI=true pnpm test` and `CI=true VITE_USE_MOCK=false pnpm test` (file filters after `--` are ignored; unset `VITE_USE_MOCK` means mock mode), `pnpm test:layout`, `pnpm build`; `cd backend && ./mvnw test -Dmezo.test.use-testcontainers=true`.
 
@@ -254,10 +280,12 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 - **English short month and ICU.** `stamp.ts` in the notification logic formats an English short month through `Intl` directly; ICU can render „Sept". Route such formats through `format.ts`, which builds month names from parts and slices them.
 - **The LLM can drift back to Hungarian** until the prompts and the context are translated (N3). Verify with a real answer; do not assert it in a test.
 - **History is never translated.** Old AI messages, memories, summaries, the user's journal and names stay as written; there is no language marker on stored AI text yet (N3). Persisted server text is rendered once.
-- **Portals and the provider remount.** Any code that resolves a portal target during render with `document.querySelector('.phone-screen')` is sensitive to a keyed remount; the two-phase provider is what keeps it correct. Do not "simplify" it back to a single `key`, and do not narrow the remount without fixing the memo rule first.
-- **`Msg` / `memberLabel` read `m()` (non-hook)** and rely on the remount; prefer `useM()` in the component.
+- **Portals and the remount.** Any code that resolves a portal target during render with `document.querySelector('.phone-screen')` is sensitive to a keyed remount; the two-phase `LanguageBoundary` is what keeps it correct. Do not "simplify" it back to a single `key`, and do not narrow the remount without fixing the memo rule first.
+- **A remount boundary resets everything with app-root lifetime beneath it.** Placed at the app root it replayed the startup splash on every switch and wiped a just-shown toast. List what lives under a boundary before placing or moving it (table in §3); no spec noticed the splash because every spec seeds the splash skip.
+- **Time zone.** A cached `Intl.DateTimeFormat` keeps the zone it was created in; `isoDay` is built from the date's own parts for that reason. Do not reintroduce a module-level formatter for a machine format.
+- **`Msg` / `memberLabel` read `m()` (non-hook)** and rely on the boundary's remount (they sit below it); prefer `useM()` in the component, and never use them above the boundary.
 - **Hungarian copy changes shipped with N1** (prototype is the build target): Settings hub row „Nyelv, kalauzok, fiók, jelszó"; `/settings/general` intro „Ugyanaz a világ. A saját nyelveden és szokásaiddal."
-- **Deferred (minor, from review):** `UserMessages` reads the actor's language once per message; `UserLanguage.current()` is one `findById` per LLM call; exempt slugs are literals; `NOTIFICATION_CATEGORY_META.label/description` are dead duplicates of the catalog; `Lines`/`Marked` (catalog text renderers) live in `features/settings` and are imported by `features/me`; `frame.tag` / `frame.kicker` uppercase English literals; some short English server texts lack the next step their Hungarian twin has; `AUTH_ACCOUNT_DISABLED` English adds a sentence with no Hungarian counterpart.
+- **Deferred (minor, from review):** `UserMessages` reads the actor's language once per message; `UserLanguage.current()` is one `findById` per LLM call; `NOTIFICATION_CATEGORY_META.label/description` are dead duplicates of the catalog; `Lines`/`Marked` (catalog text renderers) live in `features/settings` and are imported by `features/me`; `frame.tag` / `frame.kicker` uppercase English literals; some short English server texts lack the next step their Hungarian twin has; `AUTH_ACCOUNT_DISABLED` English adds a sentence with no Hungarian counterpart.
 - **Later slices:** N2 (Nap, Edzés, Edzés közben into both languages; owner approves the "Gentle mode" term), N3 (prompts, team voice, notifications, built-in catalogs, cross-language memory recall, a language marker on stored AI text), F5–F8 bilingual from the first line, F9 the full English audit and removal of the Settings note.
 
 ---
@@ -266,17 +294,17 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 
 **Frontend core** (`frontend/src/shared/i18n/`):
 - `lang.ts` — the store: `Lang`, `getLang`/`setLang`/`subscribe`/`useLang`, `resolveInitialLang`, `deviceLang`, `alignLang`/`announceLang`, `LANG_KEY = 'mezo-lang'`.
-- `LanguageProvider.tsx` — account alignment before children, two-phase keyed remount. `LoadingFallback.tsx` — the Suspense fallback that re-renders in the current language.
+- `LanguageProvider.tsx` — account alignment before children; remounts nothing. `LanguageBoundary.tsx` — the two-phase keyed remount inside each shell, with the reviewed above / below list in its header. `LoadingFallback.tsx` — the Suspense fallback that re-renders in the current language.
 - `index.ts` — `m()`, `useM()`, re-exports. `shape.ts` — `Shape<T>`. `plural.ts` — `plural(n, forms)`.
 - `messages/{index,frame.hu,frame.en,kit.hu,kit.en,settings.hu,settings.en}.ts` — the catalogs.
-- `catalog.completeness.test.ts`, `hardcodedHungarian.guard.test.ts`, `lang.test.tsx`, `LanguageProvider.test.tsx` — the guards and core tests.
+- `catalog.completeness.test.ts`, `hardcodedHungarian.guard.test.ts`, `lang.test.tsx`, `LanguageProvider.test.tsx` — the guards and core tests; `frontend/src/shared/lib/i18nLeafImports.guard.test.ts` — the leaf-import guard.
 - `frontend/src/shared/lib/format.ts` (+ `format.test.ts`, `format.ratchet.test.ts`), `shared/lib/dates.ts`, `shared/lib/huNum.ts`, `shared/lib/huText.ts` — formatting and grammar helpers.
 
 **Frontend data / UI:**
-- `frontend/src/data/auth/languageHooks.ts` — `useLanguageSetting()`; `authApi.ts` (`updateLanguage`, `register`); `authMock.ts` (language getter); `data/_client/api.ts` (`Accept-Language`).
+- `frontend/src/data/auth/languageHooks.ts` — `useLanguageSetting()`; `data/_client/saveFailedToast.ts` — `emitSaveFailedToast`, `OWN_ERROR_TOAST`; `app/providers/AppProviders.tsx` — the app-root provider stack; `authApi.ts` (`updateLanguage`, `register`); `authMock.ts` (language getter); `data/_client/api.ts` (`Accept-Language`).
 - `frontend/src/app/navModel.ts` — `domainName`, `tabLabel`, `tabTitle`, `pageLabel`, `frameDate`; `app/pageIndex.ts`; `app/FloatingReturnLayer.tsx`.
 - `frontend/src/shared/ui/folyadek/Msg.tsx` — `memberLabel`, `memberMeta`.
-- `frontend/src/features/me/pages/BeallitasokPage.tsx` — the Nyelv block; `frontend/src/main.tsx` — provider order.
+- `frontend/src/features/me/pages/BeallitasokPage.tsx` — the Nyelv block; `frontend/src/app/AppLayout.tsx`, `frontend/src/features/admin/AdminLayout.tsx` — where the boundary is mounted.
 - `frontend/tests/layout/language-en.spec.ts`, `frontend/tests/layout/settings-language.spec.ts`.
 
 **Backend:**
