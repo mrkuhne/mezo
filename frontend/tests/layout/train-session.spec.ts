@@ -46,21 +46,36 @@ const toBottom = async (page: Page) => {
   await page.waitForTimeout(150)
 }
 
-/** The topmost open sheet: is it inside the viewport, does it overflow sideways, and how much does its inside scroll. */
-const sheetBox = (page: Page) => page.evaluate(() => {
-  const sh = Array.from(document.querySelectorAll('.sheet')).pop() as HTMLElement
-  const sc = sh.querySelector('.sheet-scroll') as HTMLElement
-  const r = sh.getBoundingClientRect()
-  const frame = (document.querySelector('.phone-screen') as HTMLElement).getBoundingClientRect()
-  return {
-    cls: sh.className,
-    inside: r.left >= -0.5 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5,
-    sideways: sh.scrollWidth - sh.clientWidth,
-    scrolls: sc.scrollHeight - sc.clientHeight,
-    // below the frame's max height the sheet FITS: its inside must not scroll at all
-    fits: r.height < frame.height * 0.86 - 2,
-  }
-})
+/**
+ * The sheet that holds `text`: is it inside the viewport, does it overflow sideways, and how much does its inside scroll.
+ * Addressed by its content and measured only once it is the ONLY sheet and has stopped moving — a sheet that is still
+ * leaving (the menu, when the prompt it opened is already up) must never be the one measured.
+ */
+const sheetBox = async (page: Page, text: string) => {
+  await expect(page.locator('.sheet')).toHaveCount(1)
+  const sheet = page.locator('.sheet', { hasText: text })
+  await expect(sheet).toBeVisible()
+  await expect.poll(async () => {
+    const a = await sheet.boundingBox()
+    await page.waitForTimeout(80)
+    const b = await sheet.boundingBox()
+    return a && b ? Math.abs(a.y - b.y) + Math.abs(a.height - b.height) : 1
+  }).toBe(0)
+  return sheet.evaluate((el) => {
+    const sh = el as HTMLElement
+    const sc = sh.querySelector('.sheet-scroll') as HTMLElement
+    const r = sh.getBoundingClientRect()
+    const frame = (document.querySelector('.phone-screen') as HTMLElement).getBoundingClientRect()
+    return {
+      cls: sh.className,
+      inside: r.left >= -0.5 && r.right <= innerWidth + 0.5 && r.bottom <= innerHeight + 0.5,
+      sideways: sh.scrollWidth - sh.clientWidth,
+      scrolls: sc.scrollHeight - sc.clientHeight,
+      // below the frame's max height the sheet FITS: its inside must not scroll at all
+      fits: r.height < frame.height * 0.86 - 2,
+    }
+  })
+}
 
 async function startSession(page: Page) {
   await page.goto('/train/session')
@@ -133,7 +148,7 @@ test('train · the session sheets stay inside the frame and a sheet that fits do
   await page.getByRole('button', { name: /· további műveletek$/ }).click()
   const menu = page.getByRole('dialog')
   await expect(menu.getByText('Gyakorlat kihagyása')).toBeVisible()
-  let box = await sheetBox(page)
+  let box = await sheetBox(page, 'Gyakorlat kihagyása')
   expect(box.cls).toContain('fo-sheet')
   expect(box.cls).not.toContain('glass')
   expect(box.inside).toBe(true)
@@ -149,8 +164,7 @@ test('train · the session sheets stay inside the frame and a sheet that fits do
   await page.getByRole('dialog').getByRole('button', { name: /^Szett hozzáadása/ }).click()
   const prompt = page.getByRole('dialog')
   await expect(prompt.getByRole('button', { name: 'Csak ma' })).toBeVisible()
-  await page.waitForTimeout(450) // the sheet's rise
-  box = await sheetBox(page)
+  box = await sheetBox(page, 'Csak ma')
   expect(box.inside).toBe(true)
   expect(box.sideways).toBeLessThanOrEqual(1)
   expect(box.fits, 'the extra-set prompt is a short sheet at 320×700').toBe(true)
@@ -161,14 +175,14 @@ test('train · the session sheets stay inside the frame and a sheet that fits do
   })
   expect(link.h, 'the closing link keeps its 44px target').toBeGreaterThanOrEqual(44)
   await prompt.getByRole('button', { name: 'Csak ma' }).click()
+  await expect(page.locator('.sheet')).toHaveCount(0)
 
   // The finish confirm: the tally on the primary, the pending rows, both ways out in view.
   await toBottom(page)
   await page.getByRole('button', { name: 'Edzés befejezése' }).click()
   const fin = page.getByRole('dialog')
   await expect(fin.getByRole('button', { name: /Befejezem így/ })).toBeVisible()
-  await page.waitForTimeout(450)
-  box = await sheetBox(page)
+  box = await sheetBox(page, 'Befejezem így')
   expect(box.inside).toBe(true)
   expect(box.sideways).toBeLessThanOrEqual(1)
   await fin.getByRole('button', { name: 'Mégse, visszamegyek' }).scrollIntoViewIfNeeded()
