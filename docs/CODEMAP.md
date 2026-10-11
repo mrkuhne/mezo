@@ -1512,7 +1512,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-10-09, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-10-07, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-10-09, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-10-11, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-10-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
@@ -1616,29 +1616,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** CatalogExerciseSheet.tsx, CustomWorkoutSheet.tsx, ExercisePickerSheet.tsx, ExerciseScopeSheet.tsx,
     FeedbackModal.tsx, GymScheduleSheet.tsx, MesoCloseSheet.tsx, MesoStartSheet.tsx, RunLogSheet.tsx, SetEditSheet.tsx,
     SportEventSheet.tsx, SportLogSheet.tsx, SportScheduleSheet.tsx, VideoUrlSheet.tsx
-  - **components:** BodyMap.tsx, ChallengeGenerationLoader.tsx, ComebackPill.tsx, CompactStepper.tsx, CrossLoadRow.tsx,
-    DayBreakdownCard.tsx, DayLoadPanel.tsx, DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx, DoneBar.tsx,
-    ExerciseAccordionRow.tsx, ExerciseCard.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx, ExerciseReview.tsx,
-    FinishConfirmGlass.tsx, InfoButton.tsx, LoadTile.tsx, MedalChip.tsx, MedalToast.tsx, MesoDayCard.tsx,
-    MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoWeekDays.tsx, MesoWeekEditor.tsx,
-    MiniStat.tsx, MorningTrainingCard.tsx, MuscleChip.tsx, MusclePriorityPicker.tsx, PeakFitCard.tsx,
-    ProgressionBanner.tsx, ReadinessCard.tsx, RecoveryDurationRow.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx,
-    RunWeekEditor.tsx, RunWeekStrip.tsx, SetStepper.tsx, SkipReasonSheet.tsx, SkippedBlock.tsx, SportCeremony.tsx,
-    SportSessionCard.tsx, StrengthCurve.tsx, StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx,
-    WeekLoadPanel.tsx, WeekdayGrid.tsx, WeeklyBandsCard.tsx, WelcomeBackSheet.tsx, WorkoutBriefing.tsx,
-    WorkoutCard.tsx, WorkoutCeremony.tsx, WorkoutDock.tsx, WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx,
-    WorkoutRecordsGlass.tsx, WorkoutSummary.tsx, ZoneBar.tsx
+  - **components:** BodyLiq.tsx, BodyMap.tsx, ChallengeGenerationLoader.tsx, ComebackPill.tsx, CompactStepper.tsx,
+    CrossLoadRow.tsx, DayBreakdownCard.tsx, DayLoadPanel.tsx, DayStrip.tsx, DayStripTile.tsx, DerivationSteps.tsx,
+    DoneBar.tsx, ExerciseAccordionRow.tsx, ExerciseCard.tsx, ExerciseImage.tsx, ExerciseRecipeRow.tsx,
+    ExerciseReview.tsx, FinishConfirmGlass.tsx, InfoButton.tsx, LoadTile.tsx, Mchp.tsx, MedalChip.tsx, MedalToast.tsx,
+    MesoDayCard.tsx, MesoDayEditor.tsx, MesoEditor.tsx, MesoEditorHero.tsx, MesoExercises.tsx, MesoTubes.tsx,
+    MesoWeekDays.tsx, MesoWeekEditor.tsx, MiniStat.tsx, MorningTrainingCard.tsx, MuscleChip.tsx,
+    MusclePriorityPicker.tsx, PeakFitCard.tsx, ProgressionBanner.tsx, README.md, ReadinessCard.tsx,
+    RecoveryDurationRow.tsx, RunCrossLoadCard.tsx, RunSessionCard.tsx, RunWeekEditor.tsx, RunWeekStrip.tsx,
+    SetStepper.tsx, SkipReasonSheet.tsx, SkippedBlock.tsx, SportCeremony.tsx, SportSessionCard.tsx, StrengthCurve.tsx,
+    StructureLintCard.tsx, TodaySessionCard.tsx, VideoDemo.tsx, WeekLoadPanel.tsx, WeekdayGrid.tsx,
+    WeeklyBandsCard.tsx, WelcomeBackSheet.tsx, WorkoutBriefing.tsx, WorkoutCard.tsx, WorkoutCeremony.tsx,
+    WorkoutDock.tsx, WorkoutMenuGlass.tsx, WorkoutOverloadLine.tsx, WorkoutRecordsGlass.tsx, WorkoutSummary.tsx,
+    ZoneBar.tsx, index.ts, lines.tsx, medals.tsx, muscleLiquid.ts, rows.tsx
   - **logic:** actualDuration.ts, agenda.ts, bodyGeometry.gen.ts, bodyMapShapes.ts, briefing.ts, cerScore.ts,
     challengeDisplay.ts, dayImpact.ts, dayStripItems.ts, decimalInput.ts, exerciseDefaults.ts, exerciseLibrary.ts,
-    growthForecast.ts, gymDayTarget.ts, libraryStory.ts, loadWeek.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts,
-    mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, mesoWeekDone.ts, morningWindow.ts,
-    muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts, plannedSkips.ts,
-    progressionChip.ts, recordFor.ts, recovery.ts, repEquivalence.ts, restTimer.ts, rir.ts, runToTemplate.ts,
-    sessionLength.ts, sessionState.ts, setBudget.ts, skipCopy.ts, sportKinds.ts, sportMuscleLoad.ts, sportScore.ts,
-    sports.ts, structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts,
+    growthForecast.ts, gymDayTarget.ts, libraryStory.ts, loadLiquid.ts, loadWeek.ts, medalLabels.ts, mesoBands.ts,
+    mesoCompare.ts, mesoDates.ts, mesoDays.ts, mesoLoad.ts, mesoPlan.ts, mesoWeek.ts, mesoWeekDone.ts,
+    morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts, offDay.ts, peakWeekFit.ts,
+    plannedSkips.ts, progressionChip.ts, recordFor.ts, recovery.ts, repEquivalence.ts, restTimer.ts, rir.ts,
+    runToTemplate.ts, sessionLength.ts, sessionState.ts, setBudget.ts, skipCopy.ts, sportKinds.ts, sportMuscleLoad.ts,
+    sportScore.ts, sports.ts, structureLint.ts, summaryStats.ts, tierLabel.ts, trainDayEnergy.ts, useEditableNumber.ts,
     useRecoveryBetter.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts,
     workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
-  - **root:** DayTile.tsx, InterviewStep.tsx, dayTiles.ts, wizardState.ts
+  - **root:** InterviewStep.tsx, dayTiles.ts, wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 92 IT + 24 unit
   - **ITs:** `CatalogMediaResolutionIT`, `CatalogWriteContractIT`, `ClosingBlockIT`, `ClosingBlockSwitchOffIT`,
     `ClosingBlockVolumeFlagIT`, `ComebackTodayIT`, `CrossDayWorkoutIT`, `CustomWorkoutIT`, `ExerciseCatalogContractIT`,
@@ -1705,8 +1706,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### shared (domain-free FE primitives) — `frontend/src/shared`
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
-- **lib:** audio.ts, autoGrow.ts, backNav.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, markdown.tsx, pct.ts,
-  resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts,
+- **lib:** audio.ts, autoGrow.ts, backNav.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, huText.ts, markdown.tsx,
+  pct.ts, resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts,
   userScope.ts, voice/useVoiceInput.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
@@ -1715,14 +1716,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, capture.css, clay/boop/Boop.tsx, clay/boop/boop.svg,
   clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx, clay/titanium-icons.svg, evidence/EvidenceList.tsx,
   evidence/observationEvidence.ts, folyadek/Area.tsx, folyadek/Badge.tsx, folyadek/Btn.tsx, folyadek/Bub.tsx,
-  folyadek/Card.tsx, folyadek/Dots.tsx, folyadek/Drop.tsx, folyadek/DropChain.tsx, folyadek/Field.tsx,
-  folyadek/Fill.tsx, folyadek/FoSheetHead.tsx, folyadek/Hero.tsx, folyadek/Jar.tsx, folyadek/Level.tsx,
-  folyadek/Linked.tsx, folyadek/Mini.tsx, folyadek/Msg.tsx, folyadek/Page.tsx, folyadek/PerDay.tsx, folyadek/Pick.tsx,
-  folyadek/Row.tsx, folyadek/Scale.tsx, folyadek/Section.tsx, folyadek/Step.tsx, folyadek/Stream.tsx,
-  folyadek/Tank.tsx, folyadek/Text.tsx, folyadek/Tick.tsx, folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx,
-  folyadek/index.ts, folyadek/util.ts, kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx,
-  mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css,
-  voice/VoiceBubble.tsx, voice/VoiceField.css, voice/VoiceField.tsx
+  folyadek/Caps.tsx, folyadek/Card.tsx, folyadek/Controls.tsx, folyadek/Dots.tsx, folyadek/Drop.tsx,
+  folyadek/DropChain.tsx, folyadek/Field.tsx, folyadek/Fill.tsx, folyadek/FoSheetHead.tsx, folyadek/Hero.tsx,
+  folyadek/InfoSheet.tsx, folyadek/Jar.tsx, folyadek/Level.tsx, folyadek/Linked.tsx, folyadek/Liquids.tsx,
+  folyadek/Mini.tsx, folyadek/Msg.tsx, folyadek/Page.tsx, folyadek/PerDay.tsx, folyadek/Pick.tsx, folyadek/Row.tsx,
+  folyadek/Scale.tsx, folyadek/Section.tsx, folyadek/Step.tsx, folyadek/Stream.tsx, folyadek/Tank.tsx,
+  folyadek/Text.tsx, folyadek/Tick.tsx, folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx, folyadek/index.ts,
+  folyadek/util.ts, kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx,
+  mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css, voice/VoiceBubble.tsx,
+  voice/VoiceField.css, voice/VoiceField.tsx
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
