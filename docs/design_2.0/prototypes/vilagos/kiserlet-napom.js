@@ -139,6 +139,7 @@ function napomg(){const base=nap.routes.napom('');
     <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p>
     <p class="ng-foot">A 7/10 az esti check-in utolsó kérdéséből jön („Milyen volt a napod összességében?”). A napod többi része nem változik.</p>`+base.slice(b)}
 nap.routes.napomg=napomg;
+nap.routes.napomt=napomg; /* the removed variant's address: a tab left open on it must not fall back to Mai */
 
 F.css(`/* kiserlet-napom */
 ${P} svg.ng-top{margin-top:6px}
