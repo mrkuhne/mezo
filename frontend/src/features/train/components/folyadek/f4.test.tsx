@@ -218,6 +218,11 @@ describe('Edzés · F4 · the dock', () => {
     expect(z).toBeGreaterThan(211)   // .sheet 200 / .sheet-nested 211 (styles/prototype.css)
   })
 
+  it('CSS: `StarRow`\'s stars fill with the full liquid (at 18px a tinted star reads as an empty one)', () => {
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../../styles/folyadek-edzes-kozos.css'), 'utf8')
+    expect(css).toMatch(/\.ex-stars \.t-ico \{[^}]*--ic2: var\(--dom2\)/)
+  })
+
   it('portals into .phone-screen when there is one', () => {
     document.body.insertAdjacentHTML('beforeend', '<div class="phone-screen"></div>')
     render(<SessionDock {...props()} />)

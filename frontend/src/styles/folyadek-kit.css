@@ -765,7 +765,9 @@ button.fo-row:disabled, .fo-row-main:disabled { opacity: .5; cursor: default; }
 .fo-cer-stage .fo-hero-sub { margin-top: 6px; }
 .fo-cer-stars { display: flex; justify-content: center; gap: 6px; margin: 14px 0; }
 .fo-cer-stars > i { position: relative; display: block; width: 46px; height: 46px; }
-.fo-cer-stars > i > .t-ico { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* A star is a level, not an icon beside a label: it fills with the FULL liquid (the prototype's `--ic2: var(--dom2)`), not
+   the 55 % tint the app gives a glyph by default — tinted, a lit star read as an empty one. */
+.fo-cer-stars > i > .t-ico { position: absolute; inset: 0; width: 100%; height: 100%; --ic2: var(--dom2); }
 .fo-cer-stars > i > .on, .fo-cer-stars > i > .half { opacity: 0; transform: scale(.6); }
 .fo-cer-stars > i.is-lit > .on, .fo-cer-stars > i.is-half > .half { opacity: 1; transform: none; }
 .fo-cer-stars > i.is-lit > .off, .fo-cer-stars > i.is-half > .off, .fo-cer-stars > i.is-lit > .half { opacity: 0; }

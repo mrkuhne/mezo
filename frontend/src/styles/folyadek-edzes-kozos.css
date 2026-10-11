@@ -76,7 +76,7 @@ button.ex-mus:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 
 .ex-medal small .ex-prev { display: block; }
 .ex-medal strong .fo-st { margin-left: 4px; vertical-align: 1px; }
 .ex-stars { display: inline-flex; gap: 2px; }
-.ex-stars .t-ico { width: 18px; height: 18px; }
+.ex-stars .t-ico { width: 18px; height: 18px; --ic2: var(--dom2); }   /* full liquid: at 18px a tinted star reads as an empty one */
 
 /* ══ F4 (mezo-n4wf5.4) — the in-workout flow's shared pieces. Ported in values from vilagos/edzes.js. ══ */
 

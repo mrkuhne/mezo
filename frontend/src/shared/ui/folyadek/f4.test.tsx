@@ -220,6 +220,11 @@ describe('folyadék kit · F4 integration folds', () => {
     expect(KIT_CSS).toMatch(/\.fo-pair > button:disabled \{[^}]*opacity/)
   })
 
+  it('a star is a level: the stage\'s stars fill with the FULL liquid, not the glyph default\'s 55% tint', () => {
+    // styles/folyadek.css gives every `.t-ico` `--ic2: 55% liquid`; tinted, a lit star read as an empty one.
+    expect(KIT_CSS).toMatch(/\.fo-cer-stars > i > \.t-ico \{[^}]*--ic2: var\(--dom2\)/)
+  })
+
   it('a sheet that ends in a text link: the link\'s 44px hit area has its room INSIDE the scroller (no stray scroll), 22px in all', () => {
     // `.fo-lk::after` reaches (44 - line height) / 2 ≈ 13px past the link; the scroller's own bottom padding holds it.
     const frame = /\.sheet\.fo-sheet \{ padding-bottom: calc\((\d+)px \+ env\(safe-area-inset-bottom, 0px\)\); \}/.exec(KIT_CSS)
