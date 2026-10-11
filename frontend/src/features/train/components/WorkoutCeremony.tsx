@@ -43,6 +43,7 @@ import {
 } from '@/shared/ui/folyadek'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 
 /** One record row of the step-one records card: the exercise, the medal type label
  *  (MEDAL_TYPE_LABEL) and the plain achieved values as chips ('105 kg', '10 ism.'). */
@@ -107,9 +108,6 @@ export function ceremonyChallenges(challenges: Challenge[], accepted: Record<str
 
 export interface WorkoutCeremonyProps {
   score: CerScore
-  /** Not drawn any more: the Folyadék stage's overline is „Így sikerült · N csillag az ötből" and the title row says
-   *  „Edzés lezárva". Still accepted so the page compiles unchanged; drop it at the call site. */
-  eyebrow?: string
   /** The title row's context line — the workout's own name and day („Pull Day · szept 24."). OPTIONAL: without it
    *  the row says „Edzés · ma". */
   context?: string
@@ -211,10 +209,17 @@ export function WorkoutCeremony({
   const shown = revisited ? { ...pass, told: true, instant: true } : pass
   const headingRef = useRef<HTMLHeadingElement>(null)
 
-  // The title is where each step starts, for a screen reader and for the keyboard.
-  useEffect(() => { headingRef.current?.focus() }, [step])
+  // The title is where each step starts, for a screen reader and for the keyboard — and the step starts at the TOP: a
+  // step flip is not a route change, so the screen resets the scroller itself (the title row is pinned, so focusing the
+  // heading no longer scrolls anything; without this, step two opened under step one's offset).
+  useEffect(() => {
+    scrollToTop(screenScroller())
+    headingRef.current?.focus({ preventScroll: true })
+  }, [step])
 
   const verdict = verdictFor(score.stars)
+  // The stars the stage DRAWS (the pass's thresholds), and the number printed beside them: one value, so the overline
+  // never says „4,5" over four lit stars. The verdict keeps the score's own rounding (`score.stars`, cerScore.ts).
   const stars = ratioStars(score.ratio)
 
   // ---------- step two: what the session did, the note, and the way out ----------
@@ -241,7 +246,7 @@ export function WorkoutCeremony({
             ? <KcalHero kcal={kcal.value} dayKcal={dayKcal} stars={stars} verdict={verdict} onGoFuel={onGoFuel} />
             : <FuelFramedKcalHero kcal={kcal.value} stars={stars} verdict={verdict} onGoFuel={onGoFuel} />
         ) : (
-          <Hero className="ec-quiet" label="Így sikerült" verdict={verdict} sub={`${huStars(score.stars)} csillag az ötből.`}>
+          <Hero className="ec-quiet" label="Így sikerült" verdict={verdict} sub={`${huStars(stars)} csillag az ötből.`}>
             <div className="ec-ms"><StarRow stars={stars} /></div>
           </Hero>
         )}
@@ -301,7 +306,7 @@ export function WorkoutCeremony({
         onBack={onClose} headingRef={headingRef}
       />
       <CeremonyRoot pass={shown} className="ec-cer">
-        <CupStage pass={shown} spill={records.length > 0} label={`Így sikerült · ${huStars(score.stars)} csillag az ötből`}>
+        <CupStage pass={shown} spill={records.length > 0} label={`Így sikerült · ${huStars(stars)} csillag az ötből`}>
           <CeremonyReveal beat={1}>
             <p className="fo-hero-verdict">{verdict}</p>
             <p className="fo-hero-sub">

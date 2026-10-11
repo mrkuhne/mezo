@@ -47,6 +47,28 @@ test('the stage\'s overline names the sport, the day and the stars with a Hungar
   expect(screen.getByText('A kehely az edzésidőből és az erőfeszítésből telt meg.')).toBeInTheDocument()
 })
 
+test('the closing screen starts at the top of the app scroller (it replaces the form without a route change)', () => {
+  const sc = document.createElement('div')
+  sc.className = 'screen-content'
+  const scrollTo = vi.fn()
+  sc.scrollTo = scrollTo as unknown as typeof sc.scrollTo
+  document.body.appendChild(sc)
+  try {
+    render(<SportCeremony {...props()} />)
+    expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' })
+    expect(screen.getByRole('heading', { level: 1 })).toHaveFocus()
+  } finally {
+    sc.remove()
+  }
+})
+
+test('the overline names the stars the stage draws, not the score\'s rounding (0.37 → 1,5, never 2)', () => {
+  const { container } = render(<SportCeremony {...props({ score: { ratio: 0.37, stars: 2 } })} />)
+  expect(container.querySelectorAll('.fo-cer-stars i.is-lit')).toHaveLength(1)
+  expect(container.querySelectorAll('.fo-cer-stars i.is-half')).toHaveLength(1)
+  expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent('Kerékpár · ma · 1,5 csillag az ötből')
+})
+
 test('the screen draws its own title row (the route is chrome-free); the title takes focus and the back is the way out', async () => {
   const user = userEvent.setup()
   const onClose = vi.fn()

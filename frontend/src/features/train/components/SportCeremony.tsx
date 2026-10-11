@@ -22,10 +22,11 @@
 // ============================================================
 import { useEffect, useRef, type ReactNode } from 'react'
 import { verdictFor } from '@/features/train/logic/cerScore'
+import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import type { SportScore } from '@/features/train/logic/sportScore'
 import {
   Btn, Bub, Card, CeremonyCount, CeremonyReveal, CeremonyRoot, CupStage, Facts, FootCol, Note, Page, Row, Section,
-  TitleRow, useCeremonyPass,
+  TitleRow, ratioStars, useCeremonyPass,
 } from '@/shared/ui/folyadek'
 
 export interface SportCeremonyProps {
@@ -61,7 +62,12 @@ export function SportCeremony({ score, sportName, minutes, rpe, kcal, xpGained, 
   const headingRef = useRef<HTMLHeadingElement>(null)
 
   // The title is where the screen starts, for a screen reader and for the keyboard.
-  useEffect(() => { headingRef.current?.focus() }, [])
+  // The closing screen replaces the form without a route change: it starts at the top (the title row is pinned, so
+  // focusing the heading scrolls nothing by itself).
+  useEffect(() => {
+    scrollToTop(screenScroller())
+    headingRef.current?.focus({ preventScroll: true })
+  }, [])
 
   const counters: [ReactNode, ReactNode][] = [
     [<CeremonyCount key="m" pass={pass} value={minutes} />, 'perc'],
@@ -79,7 +85,7 @@ export function SportCeremony({ score, sportName, minutes, rpe, kcal, xpGained, 
         onBack={onClose} headingRef={headingRef}
       />
       <CeremonyRoot pass={pass} className="ec-cer">
-        <CupStage pass={pass} label={`${sportName} · ma · ${huStars(score.stars)} csillag az ötből`}>
+        <CupStage pass={pass} label={`${sportName} · ma · ${huStars(ratioStars(score.ratio))} csillag az ötből`}>
           <CeremonyReveal beat={1}>
             <p className="fo-hero-verdict">{verdictFor(score.stars)}</p>
             <p className="fo-hero-sub">A kehely az edzésidőből és az erőfeszítésből telt meg.</p>

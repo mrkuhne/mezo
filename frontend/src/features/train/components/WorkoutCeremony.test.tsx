@@ -99,14 +99,56 @@ test('the title row is the screen\'s heading and takes focus; the stage says the
   expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent('Így sikerült · 4,5 csillag az ötből')
 })
 
+// A step flip is not a route change (README (e)): each step starts at the top of the app scroller. The title row is
+// pinned, so focusing the heading scrolls nothing by itself — the screen asks for the reset (integration, mezo-n4wf5.4).
+test('each step resets the app scroller to the top, instantly', async () => {
+  const sc = document.createElement('div')
+  sc.className = 'screen-content'
+  const scrollTo = vi.fn()
+  sc.scrollTo = scrollTo as unknown as typeof sc.scrollTo
+  document.body.appendChild(sc)
+  try {
+    const user = userEvent.setup()
+    render(<WorkoutCeremony {...props()} />)
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' })
+    scrollTo.mockClear()
+    await goToDetails(user)
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+    expect(scrollTo).toHaveBeenLastCalledWith({ top: 0, behavior: 'instant' })
+    expect(screen.getByRole('heading', { level: 1, name: 'Részletek' })).toHaveFocus()
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: 'Vissza az értékeléshez' }))
+    expect(scrollTo).toHaveBeenCalledTimes(1)
+  } finally {
+    sc.remove()
+  }
+})
+
+// The number in the overline is the number of stars the stage DRAWS (integration, mezo-n4wf5.4): the score's own
+// rounding (`starsFor`: round to the nearest half) can sit half a star above what the pass lights (a star is half only
+// within a tenth of its fifth). 0.369 → the score says 2, the stage lights 1 and a half — the overline says 1,5.
+test('the overline never says more stars than the stage lights (a ratio where the two roundings part)', async () => {
+  const user = userEvent.setup()
+  const { container } = render(<WorkoutCeremony {...props({ score: { ...SCORE, ratio: 0.369, stars: 2 } })} />)
+  const lit = container.querySelectorAll('.fo-cer-stars i.is-lit').length
+  const half = container.querySelectorAll('.fo-cer-stars i.is-half').length
+  expect([lit, half]).toEqual([1, 1])
+  expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent('Így sikerült · 1,5 csillag az ötből')
+  // the verdict keeps the score's own ladder (2 → „Elindult.")
+  expect(screen.getByText('Elindult.')).toBeInTheDocument()
+  // and the details step's recap draws the same stars it names
+  await goToDetails(user)
+  expect(container.querySelector('.ec-details .ex-stars')).toHaveAccessibleName('1,5 csillag az ötből')
+})
+
 test('the title row\'s context line is the caller\'s workout („Pull Day · szept 24."), with a plain fallback', () => {
   const { container, rerender } = render(<WorkoutCeremony {...props()} />)
   expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Edzés · ma')
   rerender(<WorkoutCeremony {...props({ context: 'Pull Day · szept 24.' })} />)
   expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Pull Day · szept 24.')
   // The Üveg overline is gone (README (c): „EDZÉS LEZÁRVA" → „Így sikerült · N csillag az ötből").
-  rerender(<WorkoutCeremony {...props({ eyebrow: 'EDZÉS LEZÁRVA' })} />)
   expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
+  expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent(/^Így sikerült · /)
 })
 
 test('the title row\'s back button is the way out to Mai', async () => {

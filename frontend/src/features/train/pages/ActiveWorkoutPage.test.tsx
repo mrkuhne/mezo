@@ -11,6 +11,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { resetMockMedalHistory } from '@/data/train/medalEvaluator'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import { huMonthDay, localDateString } from '@/shared/lib/dates'
 
 // Asserts Phase-1 mock workout data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -879,6 +880,10 @@ test('the finish CTA lands straight on the closing ceremony — NO level-up over
   expect(screen.getByText('+480')).toBeInTheDocument()
   expect(screen.getByText('szerzett XP')).toBeInTheDocument()
   expect(screen.getByText(/csillag az ötből/)).toBeInTheDocument()
+  // The title row's context line names the workout and its day (controller wiring, mezo-n4wf5.4) — and the old
+  // Üveg overline is not drawn any more.
+  expect(document.querySelector('.fo-ptop small')).toHaveTextContent(`Pull Day · ${huMonthDay(localDateString())}`)
+  expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
   // Step ONE has exactly one way on (mezo-e1ii9 Task 3): the close CTA is on step two.
   expect(screen.queryByRole('button', { name: /Vissza a mai napra/ })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Részletek/ })).toBeInTheDocument()
@@ -901,6 +906,28 @@ test('nothing logged: the finish CTA reads "Edzés kihagyása" and opens the con
   await user.click(cta)
   expect(await screen.findByText('Egy szettet sem rögzítettél ma.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Kihagyom a mai edzést/ })).toBeInTheDocument()
+})
+
+// Controller wiring (mezo-n4wf5.4): each pending row of the finish confirm carries the exercise's WHOLE set count, so
+// its capsules show the done ones filled beside the empty ones — not only the empty ones.
+test('the finish confirm draws every slot of a pending exercise: the logged ones filled, the rest empty', async () => {
+  const user = userEvent.setup()
+  setup()
+  await logSet(user)
+  await skipRest(user)
+  await user.click(screen.getByRole('button', { name: 'Edzés befejezése' }))
+  const dialog = await screen.findByRole('dialog')
+  const row = Array.from(dialog.querySelectorAll('.fo-row')).find((r) => r.textContent?.includes(EX1)) as HTMLElement
+  expect(row, `${EX1} is still pending and must be listed`).toBeTruthy()
+  const caps = Array.from(row.querySelectorAll('.fo-caps > i'))
+  const total = rowsOf(EX1).length
+  expect(total).toBeGreaterThan(1)
+  expect(caps).toHaveLength(total)
+  expect(caps.filter((c) => c.classList.contains('f'))).toHaveLength(1)
+  // an untouched exercise: all of its slots, none filled
+  const other = Array.from(dialog.querySelectorAll('.fo-row')).find((r) => r.textContent?.includes(EX2)) as HTMLElement
+  expect(other.querySelectorAll('.fo-caps > i').length).toBeGreaterThan(1)
+  expect(other.querySelector('.fo-caps > i.f')).toBeNull()
 })
 
 test('the confirm glass\'s Mégse closes it without finishing — the active phase stays put', async () => {
