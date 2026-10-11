@@ -182,7 +182,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PUT /api/auth/me/language · POST /api/auth/change-password · POST /api/auth/onboarding-complete
 - **FE data** `frontend/src/data/auth`
   - **hooks (via `@/data/hooks`):** `ME_QUERY_KEY`, `useAuthActions`, `useMe`, `useOnboardingActions`
-  - **modules:** authApi.ts, authHooks.ts, authMock.ts, onboardingHooks.ts
+  - **modules:** authApi.ts, authHooks.ts, authMock.ts, languageHooks.ts, onboardingHooks.ts
 - **FE ui** `frontend/src/features/auth`
   - **pages:** ChangePasswordPage.tsx, LoginPage.tsx, OnboardingPage.tsx, RegisterPage.tsx
   - **sheets:** ChangePasswordSheet.tsx

@@ -2,6 +2,7 @@ import { act, render, renderHook, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LANG_KEY, deviceLang, getLang, normalizeLang, resolveInitialLang, setLang, subscribe } from './lang'
 import { LanguageProvider } from './LanguageProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
 import { LoadingFallback } from './LoadingFallback'
 import { m, plural, useM } from './index'
 
@@ -88,7 +89,7 @@ describe('the catalog', () => {
       mounts += 1
       return <p>{t.frame.loading}</p>
     }
-    render(<LanguageProvider><Probe /></LanguageProvider>)
+    render(<QueryWrapper><LanguageProvider><Probe /></LanguageProvider></QueryWrapper>)
     expect(screen.getByText('Betöltés…')).toBeInTheDocument()
     const before = mounts
     act(() => setLang('en', { persist: false }))
@@ -107,7 +108,7 @@ describe('the catalog', () => {
 
 describe('LoadingFallback', () => {
   it('follows the language switch', () => {
-    render(<LanguageProvider><LoadingFallback /></LanguageProvider>)
+    render(<QueryWrapper><LanguageProvider><LoadingFallback /></LanguageProvider></QueryWrapper>)
     expect(screen.getByText('Betöltés…')).toBeInTheDocument()
     act(() => setLang('en', { persist: false }))
     expect(screen.getByText('Loading…')).toBeInTheDocument()
