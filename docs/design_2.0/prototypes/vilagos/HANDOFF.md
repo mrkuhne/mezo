@@ -391,3 +391,20 @@ an integration step.
   `ProgressionBanner` (a cleanup issue takes them).
 - **Not converted in this slice** — `VoiceField` (the mic tile in the note fields, F8), `GlassBox` (other domains
   use it), the level-up overlay (`LevelUpScreen` / `LevelUpProvider`, progression), the meal ceremony.
+
+## N1 shipped (2026-10-11, `mezo-n4wf5.11`, v2.395.0) — prototype vs production
+
+Recorded deviations (the prototype stays the build target for F8, which converts the Settings look):
+- **Look.** Production's Settings pages keep their current look (Boop, glass rows); only the words and the
+  Nyelv block shipped. The prototype's `#w-en-b-*` routes show the Folyadék target.
+- **Sub-page titles.** Production takes a Settings sub-page's title-bar title from the page index, whose
+  Hungarian labels differ from the prototype's titles (e.g. „Értesítés-beállítások" / "Notification settings"
+  where the prototype says „Értesítések" / "Notifications"; „Fiókadatok" / "Account details"; „Napi ritmus" /
+  "Daily rhythm"; „Személyes prompt" / "Personal prompt"). F8 decides which wording wins.
+- **Still Hungarian in English mode, reachable from Settings:** Fuel settings and meal windows, the weight-goal
+  page, the gym / sport / body-profile / sleep-goal / password sheets, the learned-profile card and the
+  assembled-context sections (server text), the dictation button's label, the login / register pages, the kalauz.
+- **English strings written during the build, not on the Artifact** (owner told in the N1 report): the
+  notification panel of the title bar, the pre-login gate messages, the all-pages map's own text, the return bar
+  ("Back to your workout", "N sets done"), Settings states and errors (push permission, guide replay lines,
+  load / save errors), eleven Settings sub-page titles.
