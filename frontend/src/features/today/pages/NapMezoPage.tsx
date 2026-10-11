@@ -40,7 +40,7 @@ import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { localDateString } from '@/shared/lib/dates'
 import {
-  Acts, Badge, Btn, Card, DropChain, ErrorRow, FrameBack, Hero, Lab, Lk, MEMBER_LABEL, Msg, Note, Page, Row, Section, Seg, Txt,
+  Acts, Badge, Btn, Card, DropChain, ErrorRow, FrameBack, Hero, Lab, Lk, memberLabel, Msg, Note, Page, Row, Section, Seg, Txt,
   type HeroProps, type Member,
 } from '@/shared/ui/folyadek'
 
@@ -443,7 +443,7 @@ export function NapMezoPage() {
                 ) : (
                   <Row key={m.id} className="nb-oldrow" aria-expanded={false} onClick={() => expand(m.id)}
                     left={<Badge member={messageMember(m)} size={36} />}
-                    title={MEMBER_LABEL[messageMember(m)]}
+                    title={memberLabel(messageMember(m))}
                     sub={messageHead(m)}
                     more={<>{m.meta && <small className="nb-mt">{m.meta}</small>}<small className="nb-pv">{m.paragraphs[0]}</small></>}
                     right={<span className="chev" aria-hidden="true"><Icon name="chevron-down" size={14} /></span>} />
@@ -540,7 +540,7 @@ function TeamChatRow({ latest, openLabels, faces, onOpen }: {
           <span className="nb-pv">
             {openLabels.length > 0
               ? openLabels.join(' · ')
-              : latest && <><b>{MEMBER_LABEL[teamMember(latest.speaker)]}:</b> {renderInline(latest.text, { boldOnly: true })}</>}
+              : latest && <><b>{memberLabel(teamMember(latest.speaker))}:</b> {renderInline(latest.text, { boldOnly: true })}</>}
           </span>
         )} />
     </Card>

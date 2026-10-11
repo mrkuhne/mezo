@@ -2,6 +2,7 @@ import type { HTMLAttributes, ReactNode } from 'react'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Acts, Btn, Lk } from './Btn'
 import { Bub } from './Bub'
+import { useM } from '@/shared/i18n'
 import { cx, type PassProps } from './util'
 
 /** A status pill with its leading dot. q = quiet, plan = planned, ok / warn / bad = state. */
@@ -63,11 +64,12 @@ export function Empty(p: { icon?: Icon3DName; actions?: ReactNode; className?: s
 
 /** A load-error row: the info glyph, the message, a retry button. */
 export function ErrorRow(p: { message: ReactNode; onRetry?: () => void; retryLabel?: string }) {
+  const M = useM()
   return (
     <div className="fo-row" role="alert">
       <span className="si"><Icon3D name="t-info" size={26} /></span>
       <span className="g"><strong>{p.message}</strong></span>
-      {p.onRetry && <Btn sm ghost onClick={p.onRetry}>{p.retryLabel ?? 'Újra'}</Btn>}
+      {p.onRetry && <Btn sm ghost onClick={p.onRetry}>{p.retryLabel ?? M.kit.retry}</Btn>}
     </div>
   )
 }
