@@ -1,14 +1,13 @@
-/** Hungarian 1-decimal number: comma separator, trailing ",0" stripped (78.6 → "78,6", 73 → "73"). */
-export const hu1 = (v: number): string => v.toFixed(1).replace(/\.0$/, '').replace('.', ',')
+import { getLang } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from './format'
 
-/** Hungarian thousands grouping with a regular space, no decimals (1300 → "1 300"), the
- *  KeretBelt.tsx/KeretHero.tsx precedent (not `toLocaleString('hu-HU')`, which only groups from
- *  5 digits up). Negative values use the Unicode minus (U+2212), never the ASCII hyphen. */
-export const huInt = (v: number): string => {
-  const neg = v < 0
-  const grouped = Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-  return neg ? `−${grouped}` : grouped
-}
+/** 1-decimal number: comma separator in Hungarian, point in English, trailing zero stripped (78.6 → "78,6", 73 → "73"). */
+export const hu1 = (v: number): string => fmtNum(v, 1)
+
+/** Thousands grouping, no decimals (1300 → "1 300" in Hungarian with a regular space, "1,300" in English), the
+ *  KeretBelt.tsx/KeretHero.tsx precedent (not the browser's number formatting, which only groups from
+ *  5 digits up in Hungarian). Negative values use the Unicode minus (U+2212), never the ASCII hyphen. */
+export const huInt = (v: number): string => fmtGrouped(v)
 
 /** USD literal, 2 decimals — the admin hub's own LLM-cost figures (mezo-d5iy.11/.19). Was
  *  triplicated verbatim across AdminOverviewPage/AdminUserDetailPage/AdminUsersPage; consolidated
@@ -43,7 +42,9 @@ const startsWithVowel = (n: number): boolean => {
 }
 
 /** „32-ből", „30-ból" — the elative (-ból/-ből) of a non-negative integer in digits. */
-export const huFrom = (n: number): string => `${n}-${endsBack(Math.abs(Math.round(n))) ? 'ból' : 'ből'}`
+export const huFrom = (n: number): string =>
+  getLang() === 'hu' ? `${n}-${endsBack(Math.abs(Math.round(n))) ? 'ból' : 'ből'}` : String(n)
 
-/** „a" / „az" before a number in digits: „az 5", „a 32". */
-export const huArticle = (n: number): 'a' | 'az' => (startsWithVowel(Math.abs(Math.round(n))) ? 'az' : 'a')
+/** „a" / „az" before a number in digits: „az 5", „a 32". English: always „the". */
+export const huArticle = (n: number): string =>
+  getLang() === 'hu' ? (startsWithVowel(Math.abs(Math.round(n))) ? 'az' : 'a') : 'the'

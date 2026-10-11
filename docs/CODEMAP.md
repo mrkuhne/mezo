@@ -1714,9 +1714,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
 - **i18n:** LanguageProvider.tsx, index.ts, lang.ts, messages/frame.en.ts, messages/frame.hu.ts, messages/index.ts,
   messages/kit.en.ts, messages/kit.hu.ts, messages/settings.en.ts, messages/settings.hu.ts, plural.ts, shape.ts
-- **lib:** audio.ts, autoGrow.ts, backNav.ts, cn.ts, dates.ts, daypart.ts, grams.ts, huNum.ts, huText.ts, markdown.tsx,
-  pct.ts, resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts, tutorialSeen.ts,
-  userScope.ts, voice/useVoiceInput.ts
+- **lib:** audio.ts, autoGrow.ts, backNav.ts, cn.ts, dates.ts, daypart.ts, format.ts, grams.ts, huNum.ts, huText.ts,
+  markdown.tsx, pct.ts, resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts,
+  tutorialSeen.ts, userScope.ts, voice/useVoiceInput.ts
 - **ui:** AdherenceBar.tsx, CaptureArt.tsx, CaptureHeader.tsx, Chip.tsx, CoachBubble.tsx, CountUp.tsx, Cta.tsx,
   DatePicker.tsx, DayNavigator.tsx, DayOrb.tsx, Display.tsx, ErrorBoundary.tsx, Eyebrow.tsx, GhostState.tsx, Icon.tsx,
   NumberInput.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx, SheetHead.tsx,

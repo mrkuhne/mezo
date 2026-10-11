@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import { Icon3D } from '@/shared/ui/clay'
 import { cx, useSvgId } from './util'
+import { fmtInt } from '@/shared/lib/format'
 
 /** The pass's timing (ms): the whole pass, the stars + level part, and the three beats that reveal the reading. */
 export const CEREMONY_MS = { total: 2700, stars: 1700, b1: 1750, b2: 2050, b3: 2350 } as const
@@ -23,7 +24,7 @@ export function ratioStars(ratio: number): number {
   return [0, 1, 2, 3, 4].reduce((a, i) => a + ({ lit: 1, half: 0.5, off: 0 })[starState(i, ratio)], 0)
 }
 
-const huCount = (n: number) => Math.round(n).toLocaleString('hu-HU').replace(/[  ]/g, ' ')
+const huCount = (n: number) => fmtInt(n)
 
 function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -94,7 +95,7 @@ export function CeremonyReveal({ beat, className, children }: { beat: 1 | 2; cla
   return <div className={cx(beat === 1 ? 'fo-cer-res' : 'fo-cer-card', className)}>{children}</div>
 }
 
-/** A number the pass counts up to (whole numbers, hu-HU grouping). Shows the end value when the pass is told. */
+/** A number the pass counts up to (whole numbers, locale grouping). Shows the end value when the pass is told. */
 export function CeremonyCount({ pass, value }: { pass: CeremonyPass; value: number }) {
   return <b data-cer-count="" data-value={value}>{pass.told ? huCount(value) : '0'}</b>
 }

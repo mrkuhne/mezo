@@ -17,6 +17,7 @@
 // ============================================================
 import type { BoopDomain, ClayIconName } from '@/shared/ui/clay'
 import { PAGE_INDEX } from '@/app/pageIndex'
+import { fmtDate } from '@/shared/lib/format'
 
 export interface NavTab {
   label: string
@@ -243,14 +244,9 @@ export interface Frame {
   fallback: string
 }
 
-const HU_LONG_DATE = new Intl.DateTimeFormat('hu-HU', { weekday: 'long', month: 'long', day: 'numeric' })
-
-/** „Szerda, október 7." — the hub's context line. */
+/** „Szerda, október 7." / "Wednesday, 7 October" — the hub's context line. */
 export function frameDate(today: Date): string {
-  const s = HU_LONG_DATE.format(today) // „október 7., szerda"
-  const [monthDay, weekday] = s.split(', ')
-  const text = weekday ? `${weekday}, ${monthDay}` : s
-  return text.charAt(0).toUpperCase() + text.slice(1)
+  return fmtDate(today, 'frame')
 }
 
 /** The leltár label of the page whose route is the LONGEST prefix of the path, if any. */
