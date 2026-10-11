@@ -149,6 +149,7 @@ function drawing2(){
 
   <!-- 1 · most érdemes: the drop that hangs from the day's tank -->
   <g class="ng-next" data-toast="Edzés megnyitása" role="button" tabindex="0" aria-label="Most érdemes: még hátravan a mai edzés. Edzés megnyitása">
+    <rect class="ng-hit" x="10" y="70" width="340" height="180"/>
     <path class="ng-nd" d="M104 2C122 44 192 94 192 156A88 88 0 0 1 16 156C16 94 86 44 104 2Z"/>
     <path class="ng-hi" d="M54 116C60 102 68 90 78 78"/>
     <g transform="translate(83 72) scale(.66)"><path class="ng-ng" d="${DUMB}"/><path class="ng-ng" d="M3 28V36M61 28V36"/></g>
