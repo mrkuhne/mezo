@@ -26,6 +26,17 @@ public record LlmCallContext(String feature, String operation, String entityKind
      */
     public static final String FEATURE_ADMIN_REPLAY = "admin_replay";
 
+    /**
+     * Memory recall's internal helper calls: the query embedding, the query rewriter and the
+     * reranker. Shared for the same reason as {@link #FEATURE_ADMIN_REPLAY}: the call sites tag
+     * with it and the output-language directive exempts it, so one renamed copy would silently
+     * drop the exemption (mezo-n4wf5.11).
+     */
+    public static final String FEATURE_COMPANION_RECALL = "companion_recall";
+
+    /** Document embedding for the memory store — vectors, never read by a person. */
+    public static final String FEATURE_EMBED_MEMORY = "embed_memory";
+
     /** True when this context is the admin explorer's dry-run replay. */
     public boolean isAdminReplay() {
         return FEATURE_ADMIN_REPLAY.equals(feature);

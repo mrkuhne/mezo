@@ -16,6 +16,7 @@
 // Spec: docs/superpowers/specs/2026-09-03-napi-orb-fejlec-design.md
 // ============================================================
 import { useMemo } from 'react'
+import { m, useLang } from '@/shared/i18n'
 import {
   useCheckins, useDayEvaluation, useFuelDay, useJournalNotes, useRunning, useSleep, useTrain, useWeight,
   normalizeDayEvaluation,
@@ -39,6 +40,8 @@ export interface DayOrbState {
 
 export function useDayOrbFill(): DayOrbState {
   const now = useMinuteTick()
+  // The label is text: the language is part of the memo's key (a mounted orb follows a language switch).
+  const lang = useLang()
   const todayIso = localDateString(now)
   const yesterdayIso = addDays(todayIso, -1)
 
@@ -101,12 +104,12 @@ export function useDayOrbFill(): DayOrbState {
     return {
       ...fill,
       label: fill.present === 0
-        ? 'A mai napod · még nincs adat'
-        : `A mai napod · ${fill.present} a ${fill.denominator} jelből megvan`,
+        ? m().frame.titleBar.dayOrbNone
+        : m().frame.titleBar.dayOrbSome(fill.present, fill.denominator),
     }
   }, [
     todayIso, yesterdayIso, sleepLog, weightLog, fuel.meals, checkins, journalToday,
     gymDoneDates, completedTodayWorkout, sportSessions, runSessions,
-    gymWeeklyTimes, sportScheduleSessions, plannedSkips, evaluationData,
+    gymWeeklyTimes, sportScheduleSessions, plannedSkips, evaluationData, lang,
   ])
 }

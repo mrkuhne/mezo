@@ -77,7 +77,7 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
         String code = inviteService.create(ownerId, label, null).getCode();
         String email = label.toLowerCase().replaceAll("[^a-z0-9]", "") + "-" + UUID.randomUUID().toString().substring(0, 8) + "@test.local";
         TokenResponse token = postForBody("/api/auth/register",
-            new RegisterRequest(code, email, "teszt-jelszo-1", label), null, HttpStatus.OK, TokenResponse.class);
+            new RegisterRequest(code, email, "teszt-jelszo-1", label, null), null, HttpStatus.OK, TokenResponse.class);
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token.getToken());
         UUID id = appUserRepository.findByEmail(email).orElseThrow().getId();

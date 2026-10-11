@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useM } from '@/shared/i18n'
 import { QuickInputSheet } from '@/features/quickinput/sheets/QuickInputSheet'
 
 // Design 2.0 decision B (mezo-d20.1.1): the quick log lives on a floating FAB
@@ -11,6 +12,7 @@ export function QuickLogFab() {
   const [open, setOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
+  const label = useM().frame.nav.quickLog
   const onNapHub = location.pathname === '/nap'
   return (
     <>
@@ -18,7 +20,7 @@ export function QuickLogFab() {
         type="button"
         // Folyadék (mezo-n4wf5.1): a round drop of the active domain's liquid (kit.js `fab`).
         className="fo-fab"
-        aria-label="Gyors logolás"
+        aria-label={label}
         onClick={() => (onNapHub ? navigate('/nap/gyors') : setOpen(true))}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">

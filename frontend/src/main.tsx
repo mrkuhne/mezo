@@ -1,13 +1,11 @@
-import { StrictMode, Suspense } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider, createBrowserRouter } from 'react-router-dom'
-import { ThemeProvider } from '@/app/ThemeProvider'
-import { StartupSplash } from '@/app/StartupSplash'
-import { QueryProvider } from '@/app/providers/QueryProvider'
+import { AppProviders } from '@/app/providers/AppProviders'
 import { routes } from '@/app/router'
-import { ClaySprites } from '@/shared/ui/clay'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { installAutoGrow } from '@/shared/lib/autoGrow'
+import { m } from '@/shared/i18n'
 import '@/index.css'
 
 const router = createBrowserRouter(routes)
@@ -33,38 +31,21 @@ createRoot(document.getElementById('root')!).render(
             background: '#fff',
             boxShadow: 'inset 0 0 0 1px rgba(78,107,122,.18), 0 18px 30px -22px rgba(10,42,60,.45)',
           }}>
-            <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Valami elromlott.</p>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{m().frame.crash.title}</p>
             <button type="button" onClick={() => window.location.reload()} style={{
               marginTop: 16, padding: '11px 22px', border: 0, borderRadius: 999, cursor: 'pointer',
               font: 'inherit', fontSize: 14, fontWeight: 700, color: '#fff', background: '#1877F2',
               boxShadow: '0 10px 18px -10px rgba(24,119,242,.7)',
             }}>
-              Újratöltés
+              {m().frame.crash.reload}
             </button>
           </div>
         </div>
       )}
     >
-      <QueryProvider>
-        <ThemeProvider>
-          {/* A clay <symbol> defek EGYETLEN mountja (mezo-ju4j6.3). Korábban minden
-              shell-réteg (AppLayout, AdminLayout) külön mountolta őket — az indító-
-              képernyő viszont MINDKETTŐ fölött él, és a visszaállított jele agyag-gömb,
-              tehát neki is látnia kell a defeket. Egy közös, gyökérszintű példány mindhárom
-              fogyasztót kiszolgálja, duplikált id-k nélkül. */}
-          <ClaySprites />
-          <StartupSplash>
-            {/* App-root boundary for the FIRST lazily-loaded chunk (mezo-d5iy.9): AdminLayout
-                itself is behind a React.lazy(), so a Suspense mounted only inside it can't
-                cover its own load — this one catches the gap between navigating to /admin
-                and that chunk (plus every other lazy admin page) arriving. Every non-admin
-                route already renders synchronously, so this fallback is otherwise inert. */}
-            <Suspense fallback={<div className="ad-loading">Betöltés…</div>}>
-              <RouterProvider router={router} />
-            </Suspense>
-          </StartupSplash>
-        </ThemeProvider>
-      </QueryProvider>
+      <AppProviders>
+        <RouterProvider router={router} />
+      </AppProviders>
     </ErrorBoundary>
   </StrictMode>,
 )

@@ -44,7 +44,7 @@ public class LlmMemoryReranker implements MemoryReranker {
             + "Rendezd relevancia szerint a kapott memóriaazonosítókat. "
             + "Csak egy JSON UUID-tömböt adj vissza, új azonosítót ne találj ki.";
 
-    private static final String FEATURE_COMPANION_RECALL = "companion_recall";
+    private static final String FEATURE_COMPANION_RECALL = LlmCallContext.FEATURE_COMPANION_RECALL;
     private static final String OPERATION = "rerank";
 
     private static final LlmCallContext CALL_CONTEXT =

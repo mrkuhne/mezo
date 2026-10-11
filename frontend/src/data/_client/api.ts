@@ -1,5 +1,6 @@
 import { tokenStore } from '@/data/_client/tokenStore'
 import { authEvents } from '@/data/_client/authEvents'
+import { getLang } from '@/shared/i18n/lang'
 
 /** Single source of truth for the backend origin — MSW handlers import this too. */
 export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8090'
@@ -46,6 +47,11 @@ function handleAuthFailure(path: string, status: number, messages: SystemMessage
   }
 }
 
+/** Every request names the interface language; the server answers unauthenticated errors in it. */
+function langHeader(): Record<string, string> {
+  return { 'Accept-Language': getLang() }
+}
+
 function authHeader(): Record<string, string> {
   const token = tokenStore.get()
   return token ? { Authorization: `Bearer ${token}` } : {}
@@ -59,6 +65,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     ...init,
     headers: {
       ...(isForm ? {} : { 'Content-Type': 'application/json' }),
+      ...langHeader(),
       ...authHeader(),
       ...(init.headers ?? {}),
     },
@@ -113,6 +120,7 @@ export async function* apiSse(
     headers: {
       'Content-Type': 'application/json',
       Accept: 'text/event-stream, application/json',
+      ...langHeader(),
       ...authHeader(),
       ...(init.headers ?? {}),
     },

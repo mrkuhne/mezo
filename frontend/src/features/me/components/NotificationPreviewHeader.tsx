@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import { Icon3D } from '@/shared/ui/clay'
 import { cn } from '@/shared/lib/cn'
+import { useM } from '@/shared/i18n'
 import type { NotificationForecast } from '@/features/me/logic/notificationForecast'
 
 const HOUR_TICKS = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22]
@@ -20,6 +21,7 @@ const hourOf = (hhmm: string) => Number(hhmm.slice(0, 2))
  * (`.ntf-prev`), no inline hexes.
  */
 export function NotificationPreviewHeader({ forecast }: { forecast: NotificationForecast }) {
+  const t = useM().settings.notifications
   const max = Math.max(1, ...forecast.perHour)
   const denseWindow = forecast.denseWindows[0] ?? null
   const inDense = (hour: number) =>
@@ -28,8 +30,8 @@ export function NotificationPreviewHeader({ forecast }: { forecast: Notification
   return (
     <div className="ntf-prev glass rise" style={{ '--c': 'var(--dv-sky)' } as CSSProperties}>
       <div className="ntf-prev-top">
-        <span className="ntf-prev-eb">Napi terhelés</span>
-        <span className="ntf-prev-total">{forecast.total} / nap</span>
+        <span className="ntf-prev-eb">{t.previewTitle}</span>
+        <span className="ntf-prev-total">{t.previewTotal(forecast.total)}</span>
       </div>
 
       <div className="ntf-prev-bars" data-testid="spark">
@@ -54,7 +56,7 @@ export function NotificationPreviewHeader({ forecast }: { forecast: Notification
         // The old ⚠ glyph is the 3D info icon; "Sűrű ablak" carries the meaning in words.
         <p className="ntf-prev-warn" data-testid="dense-window-warning">
           <Icon3D name="t-info" size={20} />
-          <span>Sűrű ablak — {denseWindow.fromHHmm} és {denseWindow.toHHmm} között {denseWindow.count} értesítés esne</span>
+          <span>{t.previewDense(denseWindow.fromHHmm, denseWindow.toHHmm, denseWindow.count)}</span>
         </p>
       )}
     </div>

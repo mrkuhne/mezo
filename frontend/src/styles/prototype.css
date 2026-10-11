@@ -16058,7 +16058,7 @@ main.settings-page {
 /* ── the glass bodies, restated (rule 11: the feature sheets load after this file) ── */
 .settings-page .settings-current.glass, .settings-page .settings-domain.glass,
 .settings-page .settings-wash.glass, .settings-page .settings-rows.glass,
-.settings-page .settings-account-wash.glass, .settings-page .personal-editor.glass,
+.settings-page .settings-account-wash.glass, .settings-page .settings-lang.glass, .settings-page .personal-editor.glass,
 .settings-page .personal-core.glass, .settings-page .personal-learned.glass,
 .settings-page .personal-context-list.glass {
   --c: var(--sa); border: 0;
@@ -16412,6 +16412,21 @@ main.settings-page {
   .settings-page .settings-day strong { font-size: 9.5px; }
   .goal-detail-settings-page .goal-pace-fields { grid-template-columns: 1fr; }
 }
+
+/* ── Nyelv block, /settings/general (mezo-n4wf5.11): a two-button choice (the parked theme picker's choice
+   styling: 2px border, lav ink when pressed), then the body sentence and the in-progress note ── */
+.settings-page .settings-lang.glass { display: block; margin: 0; padding: 14px; border-radius: 22px; }
+.settings-page .settings-lang-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.settings-page .settings-lang-choice {
+  min-width: 0; min-height: 48px; padding: 0 12px; border: 2px solid transparent; border-radius: 16px;
+  background: var(--mz-cellbg); color: var(--text-primary); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.settings-page .settings-lang-choice[aria-pressed="true"] {
+  border-color: var(--mz-cell-lav-ink); background: color-mix(in srgb, var(--mz-cell-lav-ink) 14%, var(--mz-cellbg));
+}
+.settings-page .settings-lang-choice:focus-visible { outline: 2px solid var(--mz-cell-lav-ink); outline-offset: 2px; }
+.settings-page .settings-lang-body { margin: 12px 0 0; font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.settings-page .settings-lang-note { margin: 8px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
 
 /* ── /uveg en2 beallitasok ── */
 /* ── uveg mezo1 chat (mezo-me75u.8) ── /mezo/chat: own header, thread, tool strip, refs, recalled memories, feedback, composer + picker / actions sheets ── */

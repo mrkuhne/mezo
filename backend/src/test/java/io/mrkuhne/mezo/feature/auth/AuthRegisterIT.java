@@ -30,7 +30,7 @@ class AuthRegisterIT extends ApiIntegrationTest {
     }
 
     private RegisterRequest req(String code, String email) {
-        return new RegisterRequest(code, email, "titkos-jelszo-1", "Béla");
+        return new RegisterRequest(code, email, "titkos-jelszo-1", "Béla", null);
     }
 
     @Test
@@ -101,7 +101,7 @@ class AuthRegisterIT extends ApiIntegrationTest {
     void testRegister_shouldReturn400_whenPasswordTooShort() {
         InviteEntity invite = inviteService.create(ownerId(), null, null);
         String body = postForBody("/api/auth/register",
-            new RegisterRequest(invite.getCode(), "short@test.local", "1234567", "Rövid"),
+            new RegisterRequest(invite.getCode(), "short@test.local", "1234567", "Rövid", null),
             null, HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "password", "VALIDATION_INVALID_VALUE");
     }
@@ -141,7 +141,7 @@ class AuthRegisterIT extends ApiIntegrationTest {
         InviteEntity invite = inviteService.create(ownerId(), null, null);
         String oversizedPassword = "á".repeat(40); // 40 chars (<= 72), 80 UTF-8 bytes (> 72)
         String body = postForBody("/api/auth/register",
-            new RegisterRequest(invite.getCode(), "bytes@test.local", oversizedPassword, "Teszt"),
+            new RegisterRequest(invite.getCode(), "bytes@test.local", oversizedPassword, "Teszt", null),
             null, HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "password", "VALIDATION_INVALID_VALUE");
         assertThat(appUserRepository.existsByEmail("bytes@test.local")).isFalse();

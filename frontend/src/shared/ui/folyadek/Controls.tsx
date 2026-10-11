@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { type Icon3DName } from '@/shared/ui/clay'
 import { Btn, Lk, Acts } from './Btn'
 import { Bub } from './Bub'
+import { useM } from '@/shared/i18n'
 import { clamp, cx, type PassProps } from './util'
 
 /** − value +. With `label` it is a whole list row (label + sub on the left, the control on the right); without, the bare control.
@@ -16,16 +17,17 @@ export function Stepper({ label, sub, value, onDec, onInc, min, max, n, auto, na
   /** The numeric value behind `value`, for the `min` / `max` bounds. */
   n?: number; min?: number; max?: number; auto?: boolean; name?: string; decDisabled?: boolean; incDisabled?: boolean; className?: string
 }) {
+  const M = useM()
   const who = name ?? (typeof label === 'string' ? label : '')
   const lo = decDisabled || (n != null && min != null && n <= min)
   const hi = incDisabled || (n != null && max != null && n >= max)
   const ctl = (
     <span className={cx('fo-stp', label == null && className)} role={input ? undefined : 'group'} aria-label={input ? undefined : who || undefined} {...(label == null ? rest : {})}>
-      <button type="button" aria-label={`${who} csökkentése`.trim()} disabled={lo} onClick={onDec}>−</button>
+      <button type="button" aria-label={M.kit.decrease(who).trim()} disabled={lo} onClick={onDec}>−</button>
       {input
         ? <input aria-label={who || undefined} {...input} />
         : <b className={auto ? 'auto' : undefined} aria-live="polite">{value}</b>}
-      <button type="button" aria-label={`${who} növelése`.trim()} disabled={hi} onClick={onInc}>+</button>
+      <button type="button" aria-label={M.kit.increase(who).trim()} disabled={hi} onClick={onInc}>+</button>
     </span>
   )
   if (label == null) return ctl
@@ -75,10 +77,11 @@ export function Pair(p: { items: PairItem[]; className?: string }) {
 
 /** The foot of a sheet: the primary button takes the row, „Mégse" is the link beside it (prototype `two`). */
 export function SheetActs(p: { label: ReactNode; onSave?: () => void; onCancel: () => void; cancelLabel?: ReactNode; disabled?: boolean; submit?: boolean; className?: string }) {
+  const M = useM()
   return (
     <Acts className={p.className}>
       <Btn grow type={p.submit ? 'submit' : 'button'} onClick={p.onSave} disabled={p.disabled}>{p.label}</Btn>
-      <Lk onClick={p.onCancel}>{p.cancelLabel ?? 'Mégse'}</Lk>
+      <Lk onClick={p.onCancel}>{p.cancelLabel ?? M.kit.cancel}</Lk>
     </Acts>
   )
 }

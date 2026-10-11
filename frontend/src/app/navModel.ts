@@ -16,7 +16,9 @@
 //             INDEX, here it keys the tab's full ROUTE).
 // ============================================================
 import type { BoopDomain, ClayIconName } from '@/shared/ui/clay'
-import { PAGE_INDEX } from '@/app/pageIndex'
+import { PAGE_INDEX, type IndexedPage } from '@/app/pageIndex'
+import { fmtDate } from '@/shared/lib/format'
+import { m } from '@/shared/i18n'
 
 export interface NavTab {
   label: string
@@ -145,6 +147,57 @@ export const DOMAINS: NavDomain[] = [
   },
 ]
 
+// --- Display text in the current language ---
+// `DOMAINS` keeps the Hungarian `name` / `label` / `title` as SOURCE IDS (tests, `pageIndex` and the
+// leltár key on them). What the screen SHOWS goes through these lookups, which read `m().frame` at
+// CALL time (the language can change at runtime) and fall back to the Hungarian source text.
+
+/** Stable catalog keys of each domain's four tabs, in bar order (`frame.tabs.<domain>.<key>`). */
+const TAB_KEYS: Record<string, readonly string[]> = {
+  nap: ['mai', 'napom', 'uzenetek', 'rutin'],
+  train: ['mai', 'terv', 'terheles', 'gyakorlatok'],
+  fuel: ['mai', 'kiegeszitok', 'trendek', 'konyha'],
+  mezo: ['uzenofal', 'csapat', 'rolad', 'emlekek'],
+  me: ['holtartok', 'test', 'celok', 'naplo'],
+}
+
+function tabText(domainId: string, tab: NavTab): { label: string; title: string } | undefined {
+  const domain = domainById(domainId)
+  const key = domain ? TAB_KEYS[domainId]?.[domain.tabs.indexOf(tab)] : undefined
+  if (!key) return undefined
+  const tabs = m().frame.tabs as Record<string, Record<string, { label: string; title: string }>>
+  return tabs[domainId]?.[key]
+}
+
+/** The domain's name in the current language ("Nap" / "Today"). */
+export function domainName(domain: NavDomain): string {
+  return (m().frame.domains as Record<string, string>)[domain.id] ?? domain.name
+}
+
+/** The tab's label in the current language ("Mai" / "Now" on Nap, "Today" elsewhere). */
+export function tabLabel(domainId: string, tab: NavTab): string {
+  return tabText(domainId, tab)?.label ?? tab.label
+}
+
+/** The tab's page title (the title bar's hub heading) in the current language. */
+export function tabTitle(domainId: string, tab: NavTab): string {
+  return tabText(domainId, tab)?.title ?? tab.title ?? tab.label
+}
+
+/**
+ * A leltár page's label in the current language: an own catalog entry (keyed by route), else the tab
+ * label when the page IS a tab page, else its Hungarian label until the page's own slice translates it.
+ */
+export function pageLabel(page: IndexedPage): string {
+  const own = (m().frame.pages as Record<string, string | undefined>)[page.route]
+  if (own) return own
+  for (const domain of DOMAINS) {
+    const tab = domain.tabs.find((t) => t.route === page.route && t.label === page.label)
+    if (tab) return tabLabel(domain.id, tab)
+  }
+  return page.label
+}
+
 /** `route` is a prefix of `pathname` iff they're equal or `pathname` sits under `route/`. */
 function isPrefix(route: string, pathname: string): boolean {
   return pathname === route || pathname.startsWith(route + '/')
@@ -243,23 +296,18 @@ export interface Frame {
   fallback: string
 }
 
-const HU_LONG_DATE = new Intl.DateTimeFormat('hu-HU', { weekday: 'long', month: 'long', day: 'numeric' })
-
-/** „Szerda, október 7." — the hub's context line. */
+/** „Szerda, október 7." / "Wednesday, 7 October" — the hub's context line. */
 export function frameDate(today: Date): string {
-  const s = HU_LONG_DATE.format(today) // „október 7., szerda"
-  const [monthDay, weekday] = s.split(', ')
-  const text = weekday ? `${weekday}, ${monthDay}` : s
-  return text.charAt(0).toUpperCase() + text.slice(1)
+  return fmtDate(today, 'frame')
 }
 
 /** The leltár label of the page whose route is the LONGEST prefix of the path, if any. */
 function indexedLabel(pathname: string): string | null {
-  let best: { route: string; label: string } | null = null
+  let best: IndexedPage | null = null
   for (const page of PAGE_INDEX) {
     if (isPrefix(page.route, pathname) && (best === null || page.route.length > best.route.length)) best = page
   }
-  return best?.label ?? null
+  return best ? pageLabel(best) : null
 }
 
 /** A hub page: a tab's own route, or a `hubChild` tab's single parameter segment. The title bar
@@ -274,10 +322,11 @@ export function frameFor(pathname: string, today: Date): Frame {
   if (!domain) {
     // Outside the five domains the frame wears Nap's colour and is always a sub-page.
     const map = isPrefix('/minden', pathname)
+    const outside = m().frame.outside
     return {
       domain: DOMAINS[0], tab: null, isHub: false,
-      title: indexedLabel(pathname) ?? (map ? 'Minden oldal' : 'Beállítások'),
-      eyebrow: map ? 'Az app térképe' : 'Beállítások',
+      title: indexedLabel(pathname) ?? (map ? outside.all : outside.settings),
+      eyebrow: map ? outside.appMap : outside.settings,
       fallback: '/nap',
     }
   }
@@ -285,12 +334,12 @@ export function frameFor(pathname: string, today: Date): Frame {
   const tab = domain.tabs.find((t) => t.route === tabRoute) ?? null
   const isHub = isHubPath(domain, pathname)
   if (isHub && tab) {
-    return { domain, tab, isHub: true, title: tab.title ?? tab.label, eyebrow: frameDate(today), fallback: tab.route }
+    return { domain, tab, isHub: true, title: tabTitle(domain.id, tab), eyebrow: frameDate(today), fallback: tab.route }
   }
   return {
     domain, tab, isHub: false,
-    title: indexedLabel(pathname) ?? tab?.label ?? domain.name,
-    eyebrow: tab ? `${domain.name} · ${tab.label}` : domain.name,
+    title: indexedLabel(pathname) ?? (tab ? tabLabel(domain.id, tab) : domainName(domain)),
+    eyebrow: tab ? `${domainName(domain)} · ${tabLabel(domain.id, tab)}` : domainName(domain),
     fallback: tab?.route ?? domain.tabs[0].route,
   }
 }

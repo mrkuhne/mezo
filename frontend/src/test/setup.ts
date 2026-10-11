@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { server } from '@/test/msw/server'
 import { resetMemoryRetrievalFeedbackState, resetTutorialProgressState } from '@/test/msw/handlers'
 import { setCurrentUserId } from '@/shared/lib/userScope'
+import { setLang } from '@/shared/i18n'
 
 // The other half of the mezo-0121 load-flake policy (see vite.config.ts): findBy*/waitFor
 // default to 1s, which under whole-suite contention is the "Unable to find an element"
@@ -94,6 +95,14 @@ beforeEach(() => {
     /* ignore */
   }
   setCurrentUserId(null)
+})
+
+// jsdom reports navigator.language = 'en-US', and the existing suite asserts Hungarian: pin it
+// at setup time (module-level code in test files) and before every test. persist:false keeps
+// localStorage untouched.
+setLang('hu', { persist: false })
+beforeEach(() => {
+  setLang('hu', { persist: false })
 })
 
 afterAll(() => server.close())

@@ -249,8 +249,11 @@ test('the quiet principle note closes the card', async () => {
 // Titánium Nap/Mai (mezo-mhum, manifest C4): az Életjel-CSEMPE beolvadt a társba — a
 // szükségletek színe a társ auráját festi, és MAGA a társ az ajtó ide. A hub-oldali belépő
 // tehát nem tűnt el, csak gazdát cserélt; a teszt ugyanazt az utat járja a mai gombbal.
-test('the hub companion navigates to /nap/eletjel', async () => {
-  render(
+// The hub swaps its daytime vessel for the evening napzárás one from 20:00 local time, once the ritual read
+// settles -- in real mode that swap lands between finding the button and clicking it, so the click hit a
+// detached node. Each test therefore pins the clock (Date only: timers keep running for the async reads).
+function renderHub() {
+  return render(
     <QueryWrapper>
       <ToastProvider>
         <LevelUpProvider>
@@ -264,6 +267,20 @@ test('the hub companion navigates to /nap/eletjel', async () => {
       </ToastProvider>
     </QueryWrapper>,
   )
+}
+afterEach(() => vi.useRealTimers())
+
+test('the hub companion navigates to /nap/eletjel', async () => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 7, 10, 0, 0) })
+  renderHub()
   await userEvent.click(await screen.findByRole('button', { name: 'Életjelek' }))
+  expect(await screen.findByText('eletjel-page')).toBeInTheDocument()
+})
+
+test('the hub companion navigates to /nap/eletjel in the evening napzárás face too', async () => {
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date(2026, 9, 7, 21, 0, 0) })
+  renderHub()
+  await screen.findByText('Tegyük le a napot.')
+  await userEvent.click(screen.getByRole('button', { name: 'Életjelek' }))
   expect(await screen.findByText('eletjel-page')).toBeInTheDocument()
 })

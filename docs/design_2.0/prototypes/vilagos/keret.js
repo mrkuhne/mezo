@@ -119,10 +119,12 @@ ${Q} .scroll:has(.at-if){display:flex;flex-direction:column;overflow:hidden;padd
 .mn-dr b{font:800 15px/1 var(--disp,inherit);color:var(--ink);margin-top:4px}.mn-dr small{font-size:10.5px;font-weight:600;color:var(--sub)}
 `);
 
-/* owner-facing notes for the slice (prepended to every domain's panel while F1 is open) */
-const N1=`<h2>F1 · most ezt nézd meg</h2>
-<p><b>1 · Megnyitó animáció</b> — az edény megtelik az öt terület színével, aztán egyenként elengedi őket: öt csepp esik a helyére az alsó sávba. <a href="#w-nap-indito">Lejátszás</a></p>
-<p><b>2 · A fejléc</b> — fent a dátum és öt gomb: Minden oldal, Mezo üzenetei, értesítések, beállítások, a napi gömb. Alatta a cím, mellette a kalauz „?”. Nézd meg <a href="#w-nap-mai">a Napon</a>, <a href="#w-fuel-stack">egy hosszú című oldalon</a> és <a href="#w-fuel-meal.ebed">egy aloldalon</a>. A Mezo üzenetei gomb a <a href="#w-nap-uzenetek">Beszélgetésre</a> visz, a gömb <a href="#w-nap-napom">A napomra</a>.</p>
-<p><b>3 · Átmeneti kinézet</b> (világosra hangolva, ahogy kérted): <a href="#w-nap-atmenet">Nap</a> · <a href="#w-edzes-atmenet">Edzés</a> · <a href="#w-fuel-atmenet">Fuel</a> · <a href="#w-mezo-atmenet">Mezo</a> · <a href="#w-en-atmenet">Én</a></p>`;
+/* owner-facing notes for the open slice (prepended to every domain's panel) — rewritten by each slice */
+const N1=`<h2>Nyelv · most ezt nézd meg</h2>
+<p><i>2026-10-11 · az app angolul is (N1 szelet)</i></p>
+<p><b>1 · A nyelvválasztó</b> — <a href="#w-en-b-alt">Beállítások · Megjelenés és alkalmazás</a>, legfelül a „Nyelv” rész. Koppints az <b>English</b>-re: az egész keret azonnal átvált. Ugyanezt teszi fent a „English (angol szöveg)” pipa.</p>
+<p><b>2 · A keret angolul</b> — az alsó sáv, a felső fülek és a címek mind az öt területen: <a href="#w-nap-mai">Nap</a> · <a href="#w-edzes-mai">Edzés</a> · <a href="#w-fuel-mai">Fuel</a> · <a href="#w-mezo-mai">Mezo</a> · <a href="#w-en-mai">Én</a>. Az oldalak belseje még magyar: azok a saját szeletükben jönnek.</p>
+<p><b>3 · A Beállítások angolul</b> — olvasd végig: <a href="#w-en-beall">főoldal</a> · <a href="#w-en-b-train">Edzés</a> · <a href="#w-en-b-me">Én</a> · <a href="#w-en-b-cel">Súlycél</a> · <a href="#w-en-b-mezo">Mezo és te</a> · <a href="#w-en-b-szemely.about">Rólam</a> · <a href="#w-en-b-szemely.communication">Stílus</a> · <a href="#w-en-b-szemely.context">Kontextus</a> · <a href="#w-en-b-nap">Nap</a> · <a href="#w-en-b-ert">Értesítések</a> · <a href="#w-en-b-fiok">Fiók</a>.</p>
+<p>Amit te írtál (a bemutatkozásod, a kérésed), az angol módban is magyar marad — ahogy megbeszéltük.</p>`;
 window.FNOTES_FOLY=N1+(window.FNOTES_FOLY||'');
 })();

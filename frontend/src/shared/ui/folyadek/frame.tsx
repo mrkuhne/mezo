@@ -1,4 +1,5 @@
 import { UNSAFE_LocationContext, useNavigate } from 'react-router-dom'
+import { useM } from '@/shared/i18n'
 import { canGoBack } from '@/shared/lib/backNav'
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
@@ -97,9 +98,10 @@ export function useFrameFallback(route?: string): void {
 
 /** The page's own „back where you came from" button, for where no title bar is mounted: pops
  *  history when there is any, else goes to `fallback` — the same rule the title bar applies. */
-export function HistoryBackButton({ fallback, label = 'Vissza', className, children }: {
+export function HistoryBackButton({ fallback, label, className, children }: {
   fallback: string; label?: string; className?: string; children?: ReactNode
 }) {
+  const M = useM()
   const navigate = useNavigate()
   // The location key through the context (the PhoneFrame idiom), not `useLocation()`: a page
   // rendered outside a router (unit tests that stub `useNavigate`) has no location — it is then
@@ -109,7 +111,7 @@ export function HistoryBackButton({ fallback, label = 'Vissza', className, child
     if (canGoBack(typeof window !== 'undefined' ? window.history.state : null, key)) navigate(-1)
     else navigate(fallback)
   }
-  return <button type="button" className={className} onClick={go} aria-label={label}>{children}</button>
+  return <button type="button" className={className} onClick={go} aria-label={label ?? M.kit.back}>{children}</button>
 }
 
 /**
@@ -123,7 +125,7 @@ export function HistoryBackButton({ fallback, label = 'Vissza', className, child
  * title bar is mounted (a chrome-free full-screen route, a page rendered alone) the page keeps
  * its button exactly as it was — `className`, label and glyph are the page's.
  */
-export function FrameBack({ onBack, history = false, fallback, label = 'Vissza', className, children }: {
+export function FrameBack({ onBack, history = false, fallback, label, className, children }: {
   onBack?: () => void
   /** Back is „go back in history": nothing is handed to the frame as a handler, so the title
    *  bar's default applies — history when there is in-app history, else the fallback route. */
@@ -132,9 +134,10 @@ export function FrameBack({ onBack, history = false, fallback, label = 'Vissza',
   fallback?: string
   label?: string; className?: string; children?: ReactNode
 }) {
+  const M = useM()
   useFrameBack(history ? undefined : onBack)
   useFrameFallback(history ? fallback : undefined)
   if (useHasTitleBar()) return null
   if (history && fallback) return <HistoryBackButton fallback={fallback} label={label} className={className}>{children}</HistoryBackButton>
-  return <button type="button" className={className} onClick={onBack} aria-label={label}>{children}</button>
+  return <button type="button" className={className} onClick={onBack} aria-label={label ?? M.kit.back}>{children}</button>
 }

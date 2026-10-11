@@ -15,7 +15,8 @@
 // ============================================================
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { PhoneFrame } from '@/app/PhoneFrame'
-import { DOMAINS, activeDomainId } from '@/app/navModel'
+import { DOMAINS, activeDomainId, domainName } from '@/app/navModel'
+import { useM } from '@/shared/i18n'
 import { navDropSpec } from '@/app/BottomBar'
 import { Drop } from '@/shared/ui/folyadek'
 import {
@@ -78,11 +79,12 @@ const TIMELINE = {
 
 /** The vessel, the wordmark and the (non-interactive) bar of drops the stack lands in. */
 function SplashScene() {
+  const label = useM().frame.splash.label
   // The drop that lands „on" is the domain the app opens on (read once from the URL — the stage
   // lives outside the router), so the scene dissolves into the real bar without a size jump.
   const opening = activeDomainId(typeof window !== 'undefined' ? window.location.pathname : '') ?? 'nap'
   return (
-    <div className="fo-sp" role="status" aria-label="Boop betöltése"
+    <div className="fo-sp" role="status" aria-label={label}
       data-motion={prefersStill() ? 'still' : 'play'} style={TIMELINE}>
       <div className="fo-sp-ves" aria-hidden="true">
         <div className="fo-sp-stk">
@@ -104,7 +106,7 @@ function SplashScene() {
             <div key={d.id} className={on ? 'fo-nav-item on' : 'fo-nav-item'} data-domain={d.id}
               style={{ '--c': spec.color, '--i': i } as CSSProperties}>
               <span className="fo-sp-dx"><span className="fo-sp-dr"><Drop {...spec} /></span></span>
-              <span className="fo-sp-l">{d.name}</span>
+              <span className="fo-sp-l">{domainName(d)}</span>
             </div>
           )
         })}

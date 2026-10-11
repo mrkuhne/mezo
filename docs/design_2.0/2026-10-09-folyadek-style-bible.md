@@ -56,6 +56,29 @@ drops to 25 px (21 px on sub-pages) and hero verdicts hyphenate.
   a person.
 - Upright text only. No italic paragraphs.
 
+### 2.5 English copy (owner decisions 2026-10-11, slice N1)
+The app speaks Hungarian and English; the mechanism is in
+`docs/superpowers/specs/2026-10-11-nyelv-alap-design.md`. Hungarian is the source.
+- **Written, not converted.** Say the same thing the way an English speaker would, in the same
+  calm voice. Short words, sentence case, no exclamation marks. A draft from a tool is a draft:
+  read every sentence on the screen, at 320 px.
+- **The verdict comes first** and stays a judgement ("Realistic: the pace fits."), never a
+  description of the screen.
+- **Names.** Domains: Nap → **Today**, Edzés → **Training**, Fuel → **Fuel**, Mezo → **Mezo**,
+  Én → **Me**. Team fields: Alvás → **Sleep**, Mozgás → **Movement**, Étkezés → **Food**,
+  Közérzet → **Mood**, Mezo → **Mezo**, Szkeptikus → **Skeptic**. Top tabs: the table in
+  `vilagos/kit.js` (`FR_EN`) is the approved list; the Today domain's first tab is **Now**.
+- **A field name is still a label.** "Sleep says…" is wrong; write "your sleep…", or turn the
+  sentence to "we". "Mezo" is the one name that may act.
+- **Address:** "you / your". The user's own things are "my" only where they speak ("About me").
+- **Units and formats:** kg, km, cm and the 24-hour clock in both languages. English dates are
+  day first with the month written out and no ordinal ("Wednesday, 7 October", "2 Nov");
+  decimals take a point (78.4 kg); the minus sign is "−"; ranges use an en dash.
+- **Never translated:** what the user wrote and what was already said or stored (journal, names
+  of meals / exercises / habits he typed, old messages, memories), and proper names.
+- **One message, with slots.** No sentence is glued from halves; plural forms are written out
+  per language.
+
 ### 2.4 Navigation (the only behaviour changes, both owner-approved)
 - **Bottom bar = domains; the domain's pages = top tabs.** No hidden domain switcher.
 - **Back returns to where the user came from** (history), never to a fixed "parent". A fixed
@@ -366,3 +389,75 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
   assert it is gone — still counts as „used" by a token scan; review those hits and list them explicitly. Guards
   that REQUIRE the old rules are rewritten first (F3.8). A block's marker pair leaves only with its last
   rule (an orphaned keyframe counts as a rule), and a surviving block must keep both markers.
+
+**N1 — Nyelv alap (`mezo-n4wf5.11`, 2026-10-11)**
+
+- **N1.1 — A keyed remount detaches every portal that resolves its target during render.** The language switch
+  remounts the screens with a `key`; the new tree's render ran while the old `.phone-screen` was still in the DOM,
+  so `document.querySelector('.phone-screen')` returned the node about to be removed and the portal's content
+  (Fuel settings' save bar) landed in a detached subtree. Fourteen files resolve a target this way. The final
+  design: `LanguageBoundary` sits inside each shell (`AppLayout`, `AdminLayout`) just above the routed screens and
+  remounts in two phases — commit the children as unmounted (`null`), then mount the new tree from a layout effect,
+  so it renders against a DOM like a cold start. `.phone-screen` and every app-root provider stay mounted, so the
+  lookup finds the live node. Do not go back to a single `key`, and test with a portal child.
+- **N1.2 — When the account language is already known, the store is aligned before the children render.** The
+  store starts from the device cache or the device language; applying the account value afterwards flipped it a
+  moment later and mounted the whole tree twice. Write the known value silently during render (`alignLang`) and
+  announce it from an effect; the first paint is already right and nothing remounts.
+- **N1.3 — No translated text is cached without the language in the cache key.** A `useMemo`, a state initialiser,
+  a module constant or a query-selected value that holds a sentence goes stale on a switch. Two reviewed cases (the
+  day orb's label, the notification panel's day headings) were hidden only because the remount resets every memo.
+  Put the language in the deps, or store data (`{ sent, attempted }`) and build the sentence at render.
+- **N1.4 — A prototype-only "mixed" state is drawn in the prototype too.** The app is bilingual with some screens
+  still Hungarian; the prototype shows the same: the switch changes the frame and Settings, untranslated screens
+  stay Hungarian on purpose (`?lang=en`, side-panel checkbox, `F.L(hu, en)`, the kit's `FR_EN` table). A prototype
+  that looks fully English promises what the build cannot yet deliver.
+- **N1.5 — Scope creep through a Settings link into another feature's page is refused and listed.** Fuel settings,
+  the goal page and several sheets are reachable from Settings but belong to F5/F6/N2. Converting them ad hoc is
+  what F2.12 forbids; the slice report lists every such page so the owner knows what is still Hungarian.
+- **N1.6 — A test that waits on a remounted hook's state waits on nothing.** The switch remounts the caller, so a
+  fresh `useLanguageSetting` starts with `pending = false` and the test's `waitFor(pending === false)` passed at
+  once. The write outlived the case and landed in a later one (a whole-suite-only flake, reproduced only by moving
+  the leak into the failure window). Wait on the cache's `isMutating() === 0`, in an `afterEach` that also clears.
+- **N1.7 — A layout check over an empty set passes.** `/settings` is a hub of links and `/settings/notifications`
+  showed only a note, so the "no wrapped button" loops measured zero elements and were green. Every check asserts
+  its set is non-empty (or states the zero on purpose, with an anchor element standing in).
+- **N1.8 — A guard's allowlist needs a rot check.** The hard-coded-Hungarian guard fails on an entry that matches
+  nothing and on one outside the translated list, and a second test pins the one broad entry (`pageIndex.ts`) to
+  data only. Without both, a list only grows and slowly stops guarding. The same sorted-and-shrink rule holds for
+  the formatting ratchet.
+- **N1.9 — A time-zone test must be shown RED.** The first date-only test ran in the machine's zone and could not
+  fail on the bug it named. It now runs the module per zone and was run against `new Date(d)` to see it fail. Any
+  test that claims to guard a zone, locale or clock detail is shown failing before it is trusted.
+- **N1.10 — Server messages that were English in a Hungarian app are a defect, not a parity target.** Splitting
+  the bundle made `INTERNAL_ERROR` and `AUTH_LOGIN_INVALID_CREDENTIALS` Hungarian in Hungarian mode. "Word for
+  word unchanged" applies to Hungarian text; record the ruling, and keep the stable `code` as the contract.
+- **N1.11 — Mock data decides what a runtime pass can see.** In mock mode `me.language` used to override the
+  device cache on every load, so a layout spec could not open a route in English. The mock account now follows the
+  cache (never `navigator.language`, so tests stay Hungarian). Say per route which languages and states were looked
+  at in the browser and which only in tests.
+- **N1.12 — The directive is appended, never prepended.** The fake LLM dispatches on the start of the prompt and
+  the OpenAI cache keys on the prefix; Hungarian returns the same instance, so prompts stay byte-identical. Where a
+  turn context exists the directive rides on it. Exempt what a person never reads (embeddings, recall rewriter and
+  reranker) and what must stay the speaker's words (transcription).
+- **N1.13 — An accent detector does not see unaccented Hungarian.** „Vissza", „Mai", „Terv" pass the guard, as does
+  Hungarian after a `//` in JSX text. The completeness test and a read-through on the screen, in both languages at
+  320 px, cover the rest; a leftover found by the guard (the floating return bar) is moved into the catalog, never
+  allowlisted.
+- **N1.14 — A shared test file or catalog is the controller's, and a sequential order beats a parallel one.** Three
+  catalog areas touched the same index; running the converters one after another cost only time. Reviewers may run
+  on a finished task's diff while the next implementer works; a fix round waits until that implementer commits.
+- **N1.15 — A remount boundary resets everything with app-root lifetime beneath it — list what lives under it
+  before you place it.** The first design remounted at the app root: the startup splash (three seconds, the app
+  inert) replayed on every language switch and a just-shown toast was wiped. No test saw the splash, because every
+  spec seeds the splash skip; the case that guards it now does not seed it. Put the boundary just above the routed
+  screens, keep providers with their own lifetime above it (they render their words through `useM()`), and keep the
+  above / below list in the boundary's header.
+- **N1.16 — A toast emitted before a remount dies with the tree — assert on the rendered toast, not the bus.** The
+  global mutation-error toast fires before the mutation's own rollback, so it spoke the language being left, and
+  with the toast host under the remount it vanished. The mutation now rolls back first and emits the toast itself,
+  and the test looks for the toast element on screen, in the rolled-back language; a spy on the toast bus passed
+  while the user saw nothing.
+- **N1.17 — A formatter cached once freezes the time zone it was created in.** `isoDay` kept an `en-CA` `Intl`
+  formatter, so a live app that crossed a zone computed "today" in the old one. Build a machine date from the
+  date's own parts; keep cached formatters for display only, keyed by locale and options.

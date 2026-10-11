@@ -52,6 +52,11 @@ public class AppUserEntity {
     @Column(nullable = false, length = 64)
     private String timezone = "Europe/Budapest";
 
+    /** DB CHECK ck_app_user_language: "hu" (default, source language) or "en". */
+    @NotNull @Size(max = 2)
+    @Column(nullable = false, length = 2)
+    private String language = "hu";
+
     @Column(name = "onboarded_at")
     private Instant onboardedAt;
 

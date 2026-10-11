@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.UserLanguage;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -77,7 +78,8 @@ class GeminiCompanionLlmPromptOrderTest {
                 new LlmModelRouter(minimalCompanionProperties(), contextHolder),
                 new NoOpLlmCallRecorder(),
                 contextHolder,
-                new GoogleGenAiUsageExtractor());
+                new GoogleGenAiUsageExtractor(),
+                new UserLanguage(null));
 
         adapter.complete("RENDSZER", List.of(
                 new Turn(Role.USER, "korábbi kérdés"),
@@ -178,7 +180,8 @@ class GeminiCompanionLlmPromptOrderTest {
                 new LlmModelRouter(minimalCompanionProperties(), contextHolder),
                 recorder,
                 contextHolder,
-                new GoogleGenAiUsageExtractor());
+                new GoogleGenAiUsageExtractor(),
+                new UserLanguage(null));
     }
 
     /** Egy szolgáltató tiere, model-override nélkül (mezo-ozri.4). */

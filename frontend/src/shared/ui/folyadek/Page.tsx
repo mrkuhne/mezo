@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode, Ref } from 'react'
+import { useM } from '@/shared/i18n'
 import { cx } from './util'
 
 /** The floating bottom action bar of a full-screen flow. `nonav` = the bottom bar is hidden, so it sits at the screen edge. */
@@ -22,13 +23,14 @@ export function TwoBtn({ three, className, ...rest }: HTMLAttributes<HTMLDivElem
  *  (`.sticky-top`, the bar's frosted ground); `headingRef` makes the title a focus target (a ceremony step moves the focus there). The back
  *  handler is the caller's — a stateful back (leave the session, step back) or `useBackNav`, never a bare `navigate(-1)`.
  *  `data-*` land on the root. */
-export function TitleRow({ context, title, backLabel = 'Vissza', onBack, mark, headingRef, className, ...rest }: Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
+export function TitleRow({ context, title, backLabel, onBack, mark, headingRef, className, ...rest }: Omit<HTMLAttributes<HTMLDivElement>, 'title'> & {
   context: ReactNode; title: ReactNode; backLabel?: string; onBack: () => void; mark?: ReactNode; headingRef?: Ref<HTMLHeadingElement>
 }) {
+  const M = useM()
   return (
     <div className={cx('fo-ptop sticky-top', className)} {...rest}>
       <div className="fo-trow">
-        <button type="button" className="fo-ib fo-back" aria-label={backLabel} onClick={onBack}><span aria-hidden="true">‹</span></button>
+        <button type="button" className="fo-ib fo-back" aria-label={backLabel ?? M.kit.back} onClick={onBack}><span aria-hidden="true">‹</span></button>
         <div className="fo-title">
           <small><i aria-hidden="true" /><span>{context}</span></small>
           <div className="fo-h sm"><h1 tabIndex={headingRef ? -1 : undefined} ref={headingRef}>{title}</h1>{mark}</div>

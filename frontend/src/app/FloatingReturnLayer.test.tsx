@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createMemoryRouter, useLocation } from 'react-router-dom'
 import { FloatingReturnLayer } from '@/app/FloatingReturnLayer'
 import type { WorkoutTodayResponse } from '@/data/train/trainApi'
+import { m, setLang } from '@/shared/i18n'
 
 function LocationProbe() {
   const { pathname } = useLocation()
@@ -106,4 +107,19 @@ test('an open workout with nothing logged yet shows the disc without a count', (
 test('the layer carries no legacy float / glass classes', () => {
   renderAt('/nap', openToday)
   expect(document.querySelector('[class*="float-"], .glass')).toBeNull()
+})
+
+test('in English the return bar and the FAB speak English, with the set count pluralised', () => {
+  act(() => setLang('en', { persist: false }))
+  try {
+    renderAt('/mezo/chat', openToday)
+    const bar = screen.getByRole('button', { name: /Back to your workout/ })
+    expect(bar).toHaveTextContent('Pull Day')
+    expect(bar).toHaveTextContent('2 sets done')
+    expect(bar).toHaveTextContent('Back')
+    expect(m().frame.returnBar.setsDone(1)).toBe('1 set done')
+    expect(m().frame.returnBar.setsDone(2)).toBe('2 sets done')
+  } finally {
+    act(() => setLang('hu', { persist: false }))
+  }
 })

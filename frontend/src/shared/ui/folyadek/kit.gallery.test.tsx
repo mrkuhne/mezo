@@ -140,7 +140,7 @@ it('renders every export once with realistic props and logs no console error', (
     'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big',
     'Tubes', 'Caps', 'LevelMarks', 'Split', 'Pour', 'Legend', 'DropsMeter', 'EmptyTank', 'Skel', 'Box', 'Tags', 'Stepper', 'Slider', 'Pair', 'SheetActs', 'InfoSheet',
     'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass', 'RowEnd', 'TitleRow']
-  const known = [...rendered, 'Wave', 'MEMBER_LABEL', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar', 'starState', 'ratioStars', 'CEREMONY_MS']
+  const known = [...rendered, 'Wave', 'memberLabel', 'memberMeta', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar', 'starState', 'ratioStars', 'CEREMONY_MS']
   expect(Object.keys(K).filter((k) => !known.includes(k))).toEqual([])
   expect(container.querySelector('[data-testid="pg"]')).toHaveClass('fo-page', 'fo-dusk', 'has-foot', 'nonav')
   expect(container.querySelector('[data-testid="card"]')).toHaveAttribute('aria-label', 'Rutin')

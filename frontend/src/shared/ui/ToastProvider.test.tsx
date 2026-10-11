@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emitToast } from '@/shared/lib/toastBus'
 import { ToastProvider, useToast } from '@/shared/ui/ToastProvider'
+import { LanguageBoundary, setLang } from '@/shared/i18n'
 
 // ESM test file (no __dirname) — resolve relative to this file's own URL,
 // matching the convention used elsewhere in the repo (e.g. dualMode.guard.test.ts).
@@ -241,5 +242,20 @@ describe('ToastProvider — reward variáns', () => {
     act(() => emitToast({ kind: 'reward', eyebrow: 'Szokás', title: 'Pipa' }))
     act(() => { vi.advanceTimersByTime(4000 + 500) })
     expect(items()).toHaveLength(0)
+  })
+})
+
+describe('ToastProvider — a language switch (mezo-n4wf5.11)', () => {
+  afterEach(() => setLang('hu', { persist: false }))
+
+  it('a visible toast survives the switch when the screens remount beneath the host; the close label follows the language', () => {
+    render(<ToastProvider><LanguageBoundary><p>page</p></LanguageBoundary></ToastProvider>)
+    act(() => emitToast({ kind: 'error', text: 'Mentés sikertelen — próbáld újra' }))
+    const toast = items()[0]
+    expect(screen.getByRole('button', { name: 'Bezárás' })).toBeInTheDocument()
+    act(() => setLang('en', { persist: false }))
+    expect(items()).toEqual([toast]) // the same node: the host was not remounted
+    expect(toast).toHaveTextContent('Mentés sikertelen — próbáld újra') // a toast keeps the words it was emitted with
+    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument()
   })
 })

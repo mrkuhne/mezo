@@ -56,6 +56,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/me/language": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Switch the authenticated user's interface and AI language */
+        put: operations["updateLanguage"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/change-password": {
         parameters: {
             query?: never;
@@ -5516,6 +5533,14 @@ export interface components {
             /** @description One letter per bucket, chronological from bedtime */
             stages: string;
         };
+        /**
+         * @description Interface and AI language of an account (hu is the default)
+         * @enum {string}
+         */
+        Language: "hu" | "en";
+        UpdateLanguageRequest: {
+            language: components["schemas"]["Language"];
+        };
         UpdateAccountRequest: {
             name: string;
             /** Format: email */
@@ -5540,6 +5565,7 @@ export interface components {
             email: string;
             password: string;
             name: string;
+            language?: components["schemas"]["Language"];
         };
         MeResponse: {
             /** Format: uuid */
@@ -5552,6 +5578,7 @@ export interface components {
             mustChangePassword: boolean;
             /** @example Europe/Budapest */
             timezone: string;
+            language: components["schemas"]["Language"];
         };
         ChangePasswordRequest: {
             currentPassword: string;
@@ -12942,6 +12969,48 @@ export interface operations {
             };
             /** @description Email already used (AUTH_EMAIL_TAKEN) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateLanguage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLanguageRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated current account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Unsupported language */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

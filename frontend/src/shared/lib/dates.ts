@@ -1,6 +1,8 @@
+import { getLang } from '@/shared/i18n/lang'
+import { fmtDate, isoDay } from './format'
+
 /** YYYY-MM-DD in the user's local timezone (UTC slicing shifts evening entries to the wrong day). */
-export const localDateString = (d: Date = new Date()) =>
-  new Intl.DateTimeFormat('en-CA').format(d)
+export const localDateString = (d: Date = new Date()) => isoDay(d)
 
 /**
  * Offset-bearing ISO-8601 datetime (`YYYY-MM-DDThh:mm:ss±hh:mm`) for a chosen local `date` + `time`.
@@ -32,40 +34,32 @@ export function addDays(iso: string, n: number): string {
   return localDateString(new Date(y, m - 1, d + n))
 }
 
-// Hungarian month abbreviations + day-of-week labels, matching the Phase-1
-// mock display strings. Used to format backend ISO dates (`2026-05-01`) into
-// the HU display labels the UI expects (`Máj 1`, `Máj 20 · Sze`).
-const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
-const HU_MONTHS_FULL = ['Január', 'Február', 'Március', 'Április', 'Május', 'Június',
-  'Július', 'Augusztus', 'Szeptember', 'Október', 'November', 'December']
-const HU_DOW = ['Vas', 'Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo']
-const HU_DOW_FULL = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat']
+// Display dates follow the app language through `fmtDate` (Hungarian output is unchanged:
+// `Máj 1`, `Máj 20 · Sze`). The names stay `hu*` — they are called from many places.
 
-/** Full Hungarian weekday name for a Date — the Today header's real-mode dayLabel. */
-export const huWeekdayFull = (d: Date = new Date()) => HU_DOW_FULL[d.getDay()]
+/** Full weekday name for a Date ("Szerda" / "Wednesday") — the Today header's real-mode dayLabel. */
+export const huWeekdayFull = (d: Date = new Date()) => fmtDate(d, 'weekdayLong')
 
-/** '2026-05-20' -> 'Sze' (SHORT Hungarian day-of-week, derived from the real date — never
+/** '2026-05-20' -> 'Sze' (SHORT weekday, derived from the real date — never
  *  from a hardcoded Monday-first axis, where Szerda and Szombat collide as 'Sz'). */
 export function huDow(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return HU_DOW[new Date(y, m - 1, d).getDay()]
+  return fmtDate(iso, 'weekdayShort')
 }
 
-/** '2026-05-20' -> 'Szerda' (FULL Hungarian weekday for an ISO date — accessible names). */
+/** '2026-05-20' -> 'Szerda' (FULL weekday for an ISO date — accessible names). */
 export function huWeekdayFullIso(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return HU_DOW_FULL[new Date(y, m - 1, d).getDay()]
+  return fmtDate(iso, 'weekdayLong')
 }
 
-/** '2026-05-01' -> 'Máj 1' (Hungarian month abbrev, no leading zero). */
+/** '2026-05-01' -> 'Máj 1' (month abbrev, no leading zero; English '1 May'). */
 export function huMonthDay(iso: string): string {
-  const [, m, d] = iso.split('-').map(Number)
-  return `${HU_MONTHS[m - 1]} ${d}`
+  return fmtDate(iso, 'monthDay')
 }
 
 /**
  * '2026-05-01' -> 'Máj 1', but '2025-09-03' -> '2025. Szep 3' — `huMonthDay` with the YEAR
  * spelled out once the date is no longer recent (older than ~10 months, or in a future year).
+ * English: '3 Sep 2025'.
  *
  * `huMonthDay` is right where the date is inherently recent (this week's log, this block's
  * days), and it stays that way for its many callers. It is WRONG wherever a date is stated as
@@ -79,21 +73,20 @@ export function huMonthDayAged(iso: string, today: Date = new Date()): string {
   const at = new Date(y, m - 1, d)
   const cutoff = new Date(today.getFullYear(), today.getMonth() - 10, today.getDate())
   const nextYear = new Date(today.getFullYear() + 1, 0, 1)
-  return at < cutoff || at >= nextYear ? `${y}. ${HU_MONTHS[m - 1]} ${d}` : huMonthDay(iso)
+  if (!(at < cutoff || at >= nextYear)) return huMonthDay(iso)
+  const md = huMonthDay(iso) // 'Szep 3' / '3 Sep'
+  return getLang() === 'hu' ? `${y}. ${md}` : `${md} ${y}`
 }
 
 /** '2026-05-20' -> 'Máj 20 · Sze' (TRUE day-of-week — mock fixtures are not authoritative here). */
 export function huMonthDayDow(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return `${huMonthDay(iso)} · ${HU_DOW[new Date(y, m - 1, d).getDay()]}`
+  return fmtDate(iso, 'monthDayWeekday')
 }
 
 /** '2026-09-09' -> 'Szeptember 9., szerda' — a Fuel Mai kétsoros dátumsorának teljes
  *  címkéje (a jóváhagyott prototípus `dayDescriptor`-ának megfelelője). */
 export function huFullDate(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  const month = HU_MONTHS_FULL[m - 1]
-  return `${month} ${d}., ${HU_DOW_FULL[new Date(y, m - 1, d).getDay()].toLowerCase()}`
+  return fmtDate(iso, 'full')
 }
 
 /** ISO Monday (YYYY-MM-DD) of the week containing `iso` — Sunday belongs to the PREVIOUS week. */

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.UserLanguage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -369,7 +370,8 @@ class GeminiCompanionLlmRecordingTest {
     private GeminiCompanionLlm adapter(ChatModel chatModel, CompanionProperties.Llm.Tier geminiTier) {
         LlmModelRouter router = new LlmModelRouter(geminiTier, geminiTier, contextHolder);
         return new GeminiCompanionLlm(
-            chatModel, router, recorder, contextHolder, new GoogleGenAiUsageExtractor());
+            chatModel, router, recorder, contextHolder, new GoogleGenAiUsageExtractor(),
+            new UserLanguage(null));
     }
 
     private static CompanionProperties.Llm.Tier tier(String chatModel, String smartModel) {

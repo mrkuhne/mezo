@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { Acts } from './Btn'
 import { Bub } from './Bub'
+import { useM } from '@/shared/i18n'
 import { clamp, cx } from './util'
 
 export interface LevelMark { at: number; dashed?: boolean; label?: ReactNode }
@@ -82,8 +83,9 @@ export function EmptyTank(p: { icon?: Icon3DName; actions?: ReactNode; className
 
 /** The loading face in the shape of the page: one block per px height (hero, cards). */
 export function Skel(p: { blocks?: number[]; label?: string; className?: string }) {
+  const M = useM()
   return (
-    <div className={cx('fo-sk', p.className)} role="status" aria-label={p.label ?? 'Betöltés…'}>
+    <div className={cx('fo-sk', p.className)} role="status" aria-label={p.label ?? M.kit.loading}>
       {(p.blocks ?? [320, 130, 190]).map((h, i) => <i key={i} style={{ height: h }} />)}
     </div>
   )

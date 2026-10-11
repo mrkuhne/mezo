@@ -4,6 +4,23 @@
 const {I,csepp,mchp,muscleColor,css,esc}=K;
 window.FH_LIVE=true;
 const DOM=[['nap','Nap','c-i-nap','#1F6FEB'],['edzes','Edzés','c-i-edzes','#F26A3D'],['fuel','Fuel','c-i-tanyer','#1E9E6A'],['mezo','Mezo','c-i-mezo','#6D5BD0'],['en','Én','c-i-emberek','#0E9AA7']];
+/* N1 — two languages. L(hu,en): a sentence written in both; tr(s): the frame's own words (domain names, top tabs,
+   hub titles, team fields) looked up in FR_EN, so the domain files' `tabs` and `title` need no change.
+   English is written, not converted (bible §2.5); anything not in the dictionary stays Hungarian. */
+const L=(hu,en)=>window.LANG==='en'&&en!=null?en:hu;
+const FR_EN={'Nap':'Today','Edzés':'Training','Fuel':'Fuel','Mezo':'Mezo','Én':'Me',
+  'Mai':'Today','A napom':'My day','Beszélgetés':'Chat','Rutin':'Routine',
+  'Terv':'Plan','Terhelés':'Load','Gyakorlatok':'Exercises',
+  'Kiegészítők':'Supplements','Trendek':'Trends','Konyha':'Kitchen',
+  'Üzenőfal':'Wall','A csapat':'The team','Rólad':'About you','Emlékek':'Memories',
+  'Hol tartok':'Overview','Test':'Body','Célok':'Goals','Napló':'Journal',
+  'Mai nap':'Today','Ma':'Today',
+  /* the frame date: day first, month written out, no ordinal (en-GB), 24-hour clock, metric units */
+  'Szerda, október 7.':'Wednesday, 7 October',
+  'Alvás':'Sleep','Mozgás':'Movement','Étkezés':'Food','Közérzet':'Mood','Szkeptikus':'Skeptic',
+  'pihenés':'rest','terhelés':'load','étrend':'diet','hangulat':'mood','összkép':'the whole picture'};
+/* the Today domain's first tab would repeat the domain's name; in English it is "Now" */
+const tr=(s,d,r)=>window.LANG!=='en'?s:(d==='nap'&&r==='mai'&&s==='Mai')?'Now':(FR_EN[s]||s);
 const SEARCH=`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>`;
 css(`
 .phone[data-v="feher"]{--page:#F2F5F9;--card:#FFFFFF;--card2:#F2F5F9;--hair:rgba(15,30,51,.10);--ink:#0F1E33;--sub:#52627A;--faint:#8A97AB;
@@ -242,25 +259,25 @@ const act=o=>{if(!o)return'';if(typeof o==='string')return ` data-go="${o}"`;ret
    The morning dot of "A napom" and the unread count of "Beszélgetés" ride the top tabs. */
 const TABMARK={nap:{napom:'dot',uzenetek:2}};
 const DAY=72;
-const HELP=d=>`<button class="fh-help${d==='edzes'?' new':''}" data-toast="Kalauz ehhez az oldalhoz" aria-label="Kalauz ehhez az oldalhoz">?</button>`;
+const HELP=d=>`<button class="fh-help${d==='edzes'?' new':''}" data-toast="${L('Kalauz ehhez az oldalhoz','Guide to this page')}" aria-label="${L('Kalauz ehhez az oldalhoz','Guide to this page')}">?</button>`;
 function top(d,o){const reg=FREG[d]||{tabs:[]},tm=TABMARK[d]||{};
-  if(o.back)return `<header class="fh-top sub"><div class="fh-trow"><button class="fh-ib fh-back" data-go="${o.back}" aria-label="Vissza">‹</button>
-    <div class="fh-title"><small><i></i><span>${o.sub||''}</span></small><h1 class="sm">${o.title}${o.nohelp?'':HELP(d)}</h1></div>
-    <button class="fh-ib" data-toast="Értesítések" aria-label="Értesítések">${I('c-i-ertesites')}<b>3</b></button></div></header>`;
-  return `<header class="fh-top"><div class="fh-trow hub"><small class="fh-eb"><i></i><span>${o.sub||''}</span></small><div class="fh-btns">
-    <button class="fh-ib" data-go="mindenoldal" aria-label="Minden oldal">${I('t-grid')}</button>
-    <a class="fh-ib" href="#w-nap-uzenetek" aria-label="Mezo üzenetei, 2 olvasatlan">${I('t-chat')}<b>2</b></a>
-    <button class="fh-ib" data-toast="Értesítések" aria-label="Értesítések">${I('c-i-ertesites')}<b>3</b></button>
-    <button class="fh-ib" data-toast="Beállítások és profil" aria-label="Beállítások">${I('c-i-beallitas')}</button>
-    <a class="fh-ib fh-day" href="#w-nap-napom" aria-label="A mai napod · ${DAY}%">${csepp('ok',DAY,{s:30,color:'#1877F2',alive:false})}</a></div></div>
-    <div class="fh-title"><h1>${o.title}${o.nohelp?'':HELP(d)}</h1></div>
-    <nav class="fh-tabs">${reg.tabs.map(([l,r])=>`<button class="${r===o.tab?'on':''}" data-go="${r}">${l}${tm[r]==='dot'?'<i class="td" aria-label="kész a tegnapi értékelés"></i>':tm[r]?`<b class="tn">${tm[r]}</b>`:''}</button>`).join('')}</nav></header>`}
+  if(o.back)return `<header class="fh-top sub"><div class="fh-trow"><button class="fh-ib fh-back" data-go="${o.back}" aria-label="${L('Vissza','Back')}">‹</button>
+    <div class="fh-title"><small><i></i><span>${tr(o.sub||'')}</span></small><h1 class="sm">${tr(o.title)}${o.nohelp?'':HELP(d)}</h1></div>
+    <button class="fh-ib" data-fr="bell" data-toast="${L('Értesítések','Notifications')}" aria-label="${L('Értesítések','Notifications')}">${I('c-i-ertesites')}<b>3</b></button></div></header>`;
+  return `<header class="fh-top"><div class="fh-trow hub"><small class="fh-eb"><i></i><span>${tr(o.sub||'')}</span></small><div class="fh-btns">
+    <button class="fh-ib" data-go="mindenoldal" aria-label="${L('Minden oldal','All pages')}">${I('t-grid')}</button>
+    <a class="fh-ib" href="#w-nap-uzenetek" aria-label="${L('Mezo üzenetei, 2 olvasatlan','Messages from Mezo, 2 unread')}">${I('t-chat')}<b>2</b></a>
+    <button class="fh-ib" data-fr="bell" data-toast="${L('Értesítések','Notifications')}" aria-label="${L('Értesítések','Notifications')}">${I('c-i-ertesites')}<b>3</b></button>
+    <button class="fh-ib" data-fr="gear" data-toast="${L('Beállítások és profil','Settings and profile')}" aria-label="${L('Beállítások','Settings')}">${I('c-i-beallitas')}</button>
+    <a class="fh-ib fh-day" href="#w-nap-napom" aria-label="${L('A mai napod','Your day today')} · ${DAY}%">${csepp('ok',DAY,{s:30,color:'#1877F2',alive:false})}</a></div></div>
+    <div class="fh-title"><h1>${tr(o.title)}${o.nohelp?'':HELP(d)}</h1></div>
+    <nav class="fh-tabs">${reg.tabs.map(([l,r])=>`<button class="${r===o.tab?'on':''}" data-go="${r}">${tr(l,d,r)}${tm[r]==='dot'?`<i class="td" aria-label="${L('kész a tegnapi értékelés','yesterday’s review is ready')}"></i>`:tm[r]?`<b class="tn">${tm[r]}</b>`:''}</button>`).join('')}</nav></header>`}
 /* the five drops: the active one is fuller */
 const FILL={nap:70,edzes:34,fuel:62,mezo:50,en:58};
-const nav=d=>window.FH_FOLY?`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${csepp('ok',k===d?86:FILL[k],{s:k===d?40:34,color:c,alive:k===d})}<span>${l}</span></button>`).join('')}</nav>`:`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${l}</span></button>`).join('')}</nav>`;
+const nav=d=>window.FH_FOLY?`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${csepp('ok',k===d?86:FILL[k],{s:k===d?40:34,color:c,alive:k===d})}<span>${tr(l)}</span></button>`).join('')}</nav>`:`<nav class="fh-nav">${DOM.map(([k,l,ic,c])=>`<button class="${k===d?'on':''}" style="--c:${c}" data-dom="${k}">${I(ic)}<span>${tr(l)}</span></button>`).join('')}</nav>`;
 /* the floating quick-log button: on every page of the live app except full-screen flows, pages with their own
    bottom action bar, the Nap hub (its hero carries it) and the quick-log page itself */
-const fab=(d,x)=>!window.FH_FOLY||window.FH_NOFAB||x.foot||x.nonav||x.nofab||(d==='nap'&&/^(mai|gyors)$/.test(K.R))?'':`<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>`;
+const fab=(d,x)=>!window.FH_FOLY||window.FH_NOFAB||x.foot||x.nonav||x.nofab||(d==='nap'&&/^(mai|gyors)$/.test(K.R))?'':`<a class="fh-fab" href="#w-nap-gyors" aria-label="${L('Gyors logolás','Quick log')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>`;
 /* page(domain, {title, sub, tab | back}, innerHtml, {foot, nonav, pad}) */
 function page(d,o,inner,x={}){
   return `<div class="scroll" ${x.pad?`style="padding-bottom:${x.pad}"`:x.foot?'style="padding-bottom:190px"':''}>${top(d,o)}${inner}</div>${x.foot?`<div class="fh-foot ${x.nonav?'nonav':''}">${x.foot}</div>`:''}${x.nonav?'':nav(d)}${fab(d,x)}<div class="toast" id="toast"></div><div class="sheet" id="sheet"></div><div class="scrim" id="scrim"></div>`}
@@ -306,9 +323,9 @@ const AVG={szunya:'sleep',mocor:'dumbbell',falat:'bowl',deru:'heart',mezo:'orb',
 const badge=(k,{s=36,p=null,val=null,label=null}={})=>{const c=k==='szk'?'#8494A6':(TEAM[k]||TEAM.mezo)[2],big=s>=88;
   return `<span class="fh-av${big?' big':''}${p!=null?' lv':''}" data-fixic="1" style="--s:${s}px;--c:${c}${p!=null?`;--p:${Math.max(0,Math.min(100,p))}%`:''}"><svg class="ic jel" aria-hidden="true"><use href="#tc-${AVG[k]||'orb'}"/></svg>${big&&val!=null?`<strong>${val}</strong>${label?`<small>${label}</small>`:''}`:val!=null?`<b>${val}</b>`:''}</span>`};
 const who=(k,s=36)=>badge(k,{s});
-const msg=(k,text,meta='')=>{const t=TEAM[k]||TEAM.mezo;/* the name already says the field: drop a meta that repeats it */if(meta){const lo=t[0].toLowerCase();const parts=meta.split(' · ').filter(x=>![lo,'étel','kedv','táplálkozás'].includes(x.trim().toLowerCase())||k==='mezo');meta=parts.join(' · ')}return `<div class="fh-msg"><span class="who">${who(k)}</span><div class="b"><span class="nm">${t[0]}<small>${meta||t[1]}</small></span><p class="fh-txt" style="margin-top:2px">${text}</p></div></div>`};
+const msg=(k,text,meta='')=>{const t=TEAM[k]||TEAM.mezo;/* the name already says the field: drop a meta that repeats it */if(meta){const lo=t[0].toLowerCase();const parts=meta.split(' · ').filter(x=>![lo,'étel','kedv','táplálkozás'].includes(x.trim().toLowerCase())||k==='mezo');meta=parts.join(' · ')}return `<div class="fh-msg"><span class="who">${who(k)}</span><div class="b"><span class="nm">${tr(t[0])}<small>${meta||tr(t[1])}</small></span><p class="fh-txt" style="margin-top:2px">${text}</p></div></div>`};
 function register(d,def){FREG[d]=def;if(def.css)css(def.css)}
-window.F={I,csepp,mchp,muscleColor,css,esc,page,sec,card,head,hero,btn,lk,step,row,bar,stat,grid,facts,seg,pills,st,ring,note,txt,empty,TEAM,who,badge,msg,chev,act,register,
+window.F={L,tr,I,csepp,mchp,muscleColor,css,esc,page,sec,card,head,hero,btn,lk,step,row,bar,stat,grid,facts,seg,pills,st,ring,note,txt,empty,TEAM,who,badge,msg,chev,act,register,
   go:(...a)=>K.go(...a),toast:(...a)=>K.toast(...a),openSheet:(...a)=>K.openSheet(...a),closeSheet:(...a)=>K.closeSheet(...a),get R(){return K.R},get ARG(){return K.ARG},get D(){return K.D}};
 window.FNOTES_ELO=`<h2>Világos · élő</h2><p>Minden oldal ugyanúgy épül fel: fent a terület neve és a fülek, alatta egy színes fő kártya az állapottal és egy gombbal, aztán számozott szakaszok fehér kártyákban. Alul mindig az öt terület.</p>`;
 })();

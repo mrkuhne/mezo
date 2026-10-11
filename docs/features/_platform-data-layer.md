@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-10-06
+updated: 2026-10-11
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -323,6 +323,8 @@ pnpm build                      # tsc -b && vite build
 - **Gotcha — `usePushSubscription` is the one dual-mode hook that is deliberately NOT `useDualQuery`** (N1, `mezo-h4wp.6.1`): every other dual-mode read in this doc follows the `useDualQuery`/`realEmpty` recipe above because the server is the source of truth; push subscription state is not — the **browser** (`PushManager.getSubscription()`) is, so there is no server query to wrap. **Confirmed by N2/N3** (`mezo-h4wp.6.2`/`.6.3`, shipped): `useNotificationPrefs` (server-owned `notification_pref`) IS an ordinary `useDualQuery`, and `useScheduleSnapshotWriter` (the FE-owned `notification_schedule` write) is a write-only, no-query-key hook — neither needed the browser-source-of-truth exception `usePushSubscription` does. See [`_platform-notifications.md`](_platform-notifications.md) §6.
 - **Deferred / Phase 3 (null in real mode by design)**: Train `challenges` (`toWorkoutPlan` returns `[]`) and `niggleWarning`, `sport.crossLoad` (always null), the sport-week trend (`shoulderLoadTrend: 'stabil'` constant, not rendered), schedule `team`/`season`, gym schedule `time`/`duration` (no schedule-template table in Phase 2). Insights/Knowledge/Chat will be seed-only even when their backend lands (Slice D) — AI populates them in Phase 3.
 - **Deferred infra**: offline-queue / PWA cache is noted as "later" in the design spec §3 — not built.
+
+- **Language rides the data layer (N1, `mezo-n4wf5.11`).** `apiFetch` and `apiSse` add an `Accept-Language: hu|en` header (`langHeader()` in `data/_client/api.ts`, read from the language store) to every request, so the server answers frame-level errors for requests with no account in the right language; `authApi.updateLanguage` / `useLanguageSetting` (`data/auth/languageHooks.ts`) write the account preference, the default mutation-error toast in `QueryProvider`'s mutation cache calls `emitSaveFailedToast` (`data/_client/saveFailedToast.ts`), which reads `frame.toast.saveFailed` / `saveFailedTrace` from the catalog (`m()`) in the language current at that moment, and `LanguageProvider` (mounted inside `QueryProvider`, reading `useMe()`) aligns the store with it. **A mutation that rolls something visible back opts out of that global toast** with `meta: { ownErrorToast: true }` (`OWN_ERROR_TOAST`): the mutation cache's `onError` runs before the mutation's own `onError`, i.e. before the rollback, so the generic toast would speak the language the user just left. `useLanguageSetting` is the one such mutation: it rolls back first and then calls `emitSaveFailedToast` itself, in the rolled-back language. A hook that selects *translated text* out of query data must put the language in its query key or select data and build the sentence at render. See [`_platform-language.md`](_platform-language.md).
 
 ## 10. Key files
 

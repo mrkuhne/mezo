@@ -223,3 +223,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202610071200_mezo-q4xt2.3_planned_skip_meal.sql
+  - changeSet:
+      id: "1.1.0:202610111200_mezo-n4wf5.11_app_user_language"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202610111200_mezo-n4wf5.11_app_user_language.sql

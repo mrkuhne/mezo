@@ -46,7 +46,7 @@ public class MemoryRecallService {
         // W3.3 (mezo-b3pp.14): tagged like the ambient path so `/me/ai-usage`'s `companion_recall`
         // row is recall's whole cost share.
         float[] queryVector = llmCallContextHolder.runWith(
-                new LlmCallContext("companion_recall", "recall_embed", "tool", null),
+                new LlmCallContext(LlmCallContext.FEATURE_COMPANION_RECALL, "recall_embed", "tool", null),
                 () -> embeddingPort.embedQuery(query));
         List<MemoryMatch> candidates = memoryEmbeddingRepository.findNearest(userId,
                 MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,

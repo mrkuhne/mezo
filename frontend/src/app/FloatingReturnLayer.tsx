@@ -15,6 +15,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Bub } from '@/shared/ui/folyadek'
 import { ReturnFab } from '@/features/train/components/folyadek'
 import { useOpenWorkout } from '@/data/hooks'
+import { useM } from '@/shared/i18n'
 
 /** Same exact-match list idea as AppLayout's `hideChrome` — these two screens are
  *  intentionally free of every piece of chrome (light discipline / ritual focus). */
@@ -22,6 +23,7 @@ const HIDDEN_ROUTES = ['/me/sleep/night', '/ritual']
 
 export function FloatingReturnLayer() {
   const { pathname } = useLocation()
+  const t = useM().frame.returnBar
   const navigate = useNavigate()
   const { openWorkout, title, doneSets } = useOpenWorkout()
 
@@ -30,15 +32,15 @@ export function FloatingReturnLayer() {
   if (!inProgress) return null
 
   if (pathname === '/mezo/chat') {
-    const meta = [title, doneSets > 0 ? `${doneSets} szett kész` : null].filter(Boolean).join(' · ')
+    const meta = [title, doneSets > 0 ? t.setsDone(doneSets) : null].filter(Boolean).join(' · ')
     return (
       <button type="button" className="ek-retbar" onClick={() => navigate('/train/session')}>
         <Bub icon="t-dumbbell" size={36} />
         <span className="g">
-          <strong>Vissza az edzéshez</strong>
+          <strong>{t.title}</strong>
           {meta && <small>{meta}</small>}
         </span>
-        <span className="go" aria-hidden="true">Vissza</span>
+        <span className="go" aria-hidden="true">{t.go}</span>
       </button>
     )
   }

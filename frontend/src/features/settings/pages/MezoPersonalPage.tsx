@@ -11,79 +11,86 @@ import { Icon3D } from '@/shared/ui/clay'
 import '@/features/settings/personal-settings.css'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
+import { useM } from '@/shared/i18n'
 
 type Mode = 'about' | 'communication' | 'context'
-const titles = { about: 'Rólam, a saját szavaimmal', communication: 'Így beszélj velem', context: 'Ezt kapja meg Mezo' }
-const subtitles = { about: 'A tények a forrásukból jönnek. Ami mögöttük van, azt te mondod el.', communication: 'Saját instrukció és tanult stílus — külön, a te kezedben.', context: 'Átlátható személyes háttér, ellenőrizhető forrásokkal.' }
 export function MezoPersonalPage({ mode }: { mode: Mode }) {
+  const t = useM().settings.personal
+  const titles = { about: t.titleAbout, communication: t.titleCommunication, context: t.titleContext }
+  const subtitles = { about: t.subtitleAbout, communication: t.subtitleCommunication, context: t.subtitleContext }
   return <SettingsFrame title={titles[mode]} subtitle={subtitles[mode]} parent="/settings/mezo">
     {mode === 'context' ? <ContextPreview /> : <PersonalEditor key={mode} mode={mode} />}
   </SettingsFrame>
 }
 function PersonalEditor({ mode }: { mode: 'about' | 'communication' }) {
+  const t = useM().settings.personal
   const query = useCompanionPreferences()
   const [draft, setDraft] = useState<CompanionPreferences | null>(null)
   const [saved, setSaved] = useState(false)
   const values = draft ?? query.data
   const dirty = draft !== null && JSON.stringify(draft) !== JSON.stringify(query.data)
   const change = (patch: Partial<CompanionPreferences>) => { if (values) setDraft({ ...values, ...patch }); setSaved(false) }
-  if (query.isError) return <div role="alert">Nem sikerült betölteni a beállításaidat. <button onClick={query.refetch}>Újrapróbálom</button></div>
-  if (!values) return <p role="status">Beállítások betöltése…</p>
+  if (query.isError) return <div role="alert">{t.loadError} <button onClick={query.refetch}>{t.retry}</button></div>
+  if (!values) return <p role="status">{t.loading}</p>
   const about = mode === 'about'
   const value = about ? values.aboutMe : values.customInstructions
   return <>
     <UnsavedChangesGuard dirty={dirty} />
-    {about && <div className="personal-sources"><CoreFacts /><span className="settings-kicker">A TÉNYEK FORRÁSA</span>
+    {about && <div className="personal-sources"><CoreFacts /><span className="settings-kicker">{t.sources}</span>
       <SettingsRows domain="me">
-        <SettingsRow to="/settings/account" title="Név és fiók" description="A megszólításod innen származik." icon="t-person" domain="me" />
-        <SettingsRow to="/settings/me/biometrics" title="Testadatok és életkor" description="Magasság, születési dátum, aktivitás." icon="t-heart" domain="me" />
-        <SettingsRow to="/settings/me/goal" title="Súly- és edzéscéljaim" description="Az aktív cél és a mért adatok a saját helyükön javíthatók." icon="t-weight" domain="train" />
+        <SettingsRow to="/settings/account" title={t.nameRow.title} description={t.nameRow.description} icon="t-person" domain="me" />
+        <SettingsRow to="/settings/me/biometrics" title={t.bodyRow.title} description={t.bodyRow.description} icon="t-heart" domain="me" />
+        <SettingsRow to="/settings/me/goal" title={t.goalsRow.title} description={t.goalsRow.description} icon="t-weight" domain="train" />
       </SettingsRows>
     </div>}
     <form className="personal-editor glass" onSubmit={async (event) => {
       event.preventDefault()
       try { await query.save(values); setDraft(null); setSaved(true) } catch { setSaved(false) }
     }}>
-      <label htmlFor="personal-text"><span className="settings-kicker">{about ? 'AMIT MÉG TUDJ RÓLAM' : 'AZ ÉN KÉRÉSEM'}</span><h2>{about ? 'Saját bemutatkozás' : 'Saját instrukció'}</h2></label>
-      <p>{about ? 'Mi fontos neked? Mivel foglalkozol, milyen szokásokat szeretnél tartani? Az ide írt szöveget Mezo nem írja át.' : 'Például: légy tömör; mondd ki, ha bizonytalan vagy; előbb kérdezz, mielőtt új tervet javasolsz.'}</p>
+      <label htmlFor="personal-text"><span className="settings-kicker">{about ? t.kickerAbout : t.kickerCommunication}</span><h2>{about ? t.headingAbout : t.headingCommunication}</h2></label>
+      <p>{about ? t.hintAbout : t.hintCommunication}</p>
       <VoiceField domain="me" onTranscript={t => { const next = appendDictation(value, t, 4000); change(about ? { aboutMe: next } : { customInstructions: next }) }}>
-        <textarea id="personal-text" aria-label={about ? 'Saját bemutatkozás' : 'Saját instrukció'} maxLength={4000} disabled={query.saving} rows={7} value={value} onChange={e => change(about ? { aboutMe: e.target.value } : { customInstructions: e.target.value })} />
+        <textarea id="personal-text" aria-label={about ? t.headingAbout : t.headingCommunication} maxLength={4000} disabled={query.saving} rows={7} value={value} onChange={e => change(about ? { aboutMe: e.target.value } : { customInstructions: e.target.value })} />
       </VoiceField>
-      <div className="personal-field-foot"><span>Csak te szerkeszted</span><span>{value.length} / 4000</span></div>
-      {!about && <label className="personal-switch"><span><strong>Tanult kommunikációs profil használata</strong><small>A saját kérésed elsőbbséget kap a tanult stílussal szemben. Az alkalmazás szabályai továbbra is érvényesek.</small></span><input type="checkbox" aria-label="Tanult kommunikációs profil használata" disabled={query.saving} checked={values.useLearnedProfile} onChange={e => change({ useLearnedProfile: e.target.checked })} /></label>}
-      {query.saveError && <p role="alert">A mentés nem sikerült. A szöveged megmaradt, próbáld újra.</p>}
-      {saved && <p role="status">Mentve — a következő beszélgetési fordulótól érvényes.</p>}
-      <button className="cta-primary" type="submit" disabled={!dirty || query.saving}>{query.saving ? 'Mentés…' : 'Változtatások mentése'}</button>
+      <div className="personal-field-foot"><span>{t.onlyYou}</span><span>{value.length} / 4000</span></div>
+      {!about && <label className="personal-switch"><span><strong>{t.learnedSwitch}</strong><small>{t.learnedSwitchHint}</small></span><input type="checkbox" aria-label={t.learnedSwitch} disabled={query.saving} checked={values.useLearnedProfile} onChange={e => change({ useLearnedProfile: e.target.checked })} /></label>}
+      {query.saveError && <p role="alert">{t.saveError}</p>}
+      {saved && <p role="status">{t.saved}</p>}
+      <button className="cta-primary" type="submit" disabled={!dirty || query.saving}>{query.saving ? t.saving : t.save}</button>
     </form>
     {!about && <LearnedProfile />}
-    <SettingsRows domain="nap"><SettingsRow to="/settings/mezo/context" title="Nézd meg, mi kerül be" description="A mentett személyes blokkok pontos előnézete." icon="t-lens" domain="nap" /></SettingsRows>
+    <SettingsRows domain="nap"><SettingsRow to="/settings/mezo/context" title={t.previewRow.title} description={t.previewRow.description} icon="t-lens" domain="nap" /></SettingsRows>
   </>
 }
 function LearnedProfile() {
+  const m = useM()
+  const t = m.settings.personal
   const { nodes, isPending, isError, refetch } = useKnowledgeGraphNodes()
   const { archive, pending } = useKnowledgeGraphActions()
   const node = nodes.find(n => n.sourceKind === PROFILE_SOURCE_KIND)
-  return <section className="personal-learned glass"><h2>Amit Mezo tanult a stílusodról</h2>{isError ? <p role="alert">A tanult profil nem tölthető be. <button onClick={refetch}>Újrapróbálom</button></p> : isPending ? <p>Betöltés…</p> : node ? <ProfileNodeCard node={node} onArchive={() => { if (!pending) archive(node.id) }} /> : <p>Még nincs tanult kommunikációs profil.</p>}<p>Az archiválás törli az aktív összegzést; a tanulás később újat készíthet. A kapcsolóval a felhasználását állítod.</p></section>
+  return <section className="personal-learned glass"><h2>{t.learnedTitle}</h2>{isError ? <p role="alert">{t.learnedError} <button onClick={refetch}>{t.retry}</button></p> : isPending ? <p>{m.frame.loading}</p> : node ? <ProfileNodeCard node={node} onArchive={() => { if (!pending) archive(node.id) }} /> : <p>{t.learnedEmpty}</p>}<p>{t.learnedNote}</p></section>
 }
 function ContextPreview() {
+  const t = useM().settings.personal
   const query = usePersonalContext()
   const { state } = useSettingsOrigin()
   return <>
-    <p className="personal-scope">Ez a személyes háttér, nem a teljes rendszerprompt: az alkalmazás szabályai és az adott beszélgetéshez előhívott emlékek külön kerülnek mellé.</p>
-    {isMockMode() && <p className="personal-scope">Demó előnézet — itt nincs háttérben futó Mezo-beszélgetés.</p>}
-    {query.isError ? <p role="alert">Az előnézet nem tölthető be. <button onClick={query.refetch}>Újrapróbálom</button></p> : !query.data ? <p role="status">Személyes háttér betöltése…</p> : <>
+    <p className="personal-scope">{t.contextScope}</p>
+    {isMockMode() && <p className="personal-scope">{t.contextDemo}</p>}
+    {query.isError ? <p role="alert">{t.contextError} <button onClick={query.refetch}>{t.retry}</button></p> : !query.data ? <p role="status">{t.contextLoading}</p> : <>
       <div className="personal-context-list glass">{query.data.sections.map(section => <section key={section.id} className="personal-context-section">
-        <header><h2>{section.title}</h2><span data-included={section.included ? 'true' : 'false'}><Icon3D name={section.included ? 't-tick' : 't-skip'} size={16} />{section.included ? 'Bekerül' : 'Nem kerül be'}</span></header><small>{section.source}</small>
-        <p>{section.text || 'Nincs hozzáadott tartalom.'}</p>
-        {section.editPath?.startsWith('/settings/') && <Link to={section.editPath} state={state}>{section.title} javítása</Link>}
+        <header><h2>{section.title}</h2><span data-included={section.included ? 'true' : 'false'}><Icon3D name={section.included ? 't-tick' : 't-skip'} size={16} />{section.included ? t.included : t.notIncluded}</span></header><small>{section.source}</small>
+        <p>{section.text || t.noContent}</p>
+        {section.editPath?.startsWith('/settings/') && <Link to={section.editPath} state={state}>{t.correct(section.title)}</Link>}
       </section>)}</div>
-      <details className="personal-raw"><summary>Pontos összeállított szöveg</summary><pre>{query.data.renderedText || 'A személyes háttér üres.'}</pre></details>
+      <details className="personal-raw"><summary>{t.rawSummary}</summary><pre>{query.data.renderedText || t.rawEmpty}</pre></details>
     </>}
   </>
 }
 
 function CoreFacts() {
+  const t = useM().settings.personal
   const query = usePersonalContext()
   const core = query.data?.sections.find(section => section.id === 'core')
-  return <section className="personal-core glass"><h2>Az alapok, amiket ismer</h2>{query.isError ? <p role="alert">Az alapadatok most nem tölthetők be. <button onClick={query.refetch}>Újrapróbálom</button></p> : !query.data ? <p role="status">Alapadatok betöltése…</p> : <p>{core?.text || 'Még nincs személyes alapadat.'}</p>}</section>
+  return <section className="personal-core glass"><h2>{t.coreTitle}</h2>{query.isError ? <p role="alert">{t.coreError} <button onClick={query.refetch}>{t.retry}</button></p> : !query.data ? <p role="status">{t.coreLoading}</p> : <p>{core?.text || t.coreEmpty}</p>}</section>
 }

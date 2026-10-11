@@ -48,7 +48,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MemoryQueryEmbedder {
 
-    private static final String FEATURE_COMPANION_RECALL = "companion_recall";
+    private static final String FEATURE_COMPANION_RECALL = LlmCallContext.FEATURE_COMPANION_RECALL;
     private static final String OPERATION = "recall_embed";
 
     private static final LlmCallContext CALL_CONTEXT =

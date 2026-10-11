@@ -396,7 +396,7 @@ export const handlers = [
   http.get(`${API_BASE}/api/auth/me`, () =>
     HttpResponse.json({
       id: '00000000-0000-0000-0000-000000000001', email: 'owner@mezo.local', name: 'Owner',
-      role: 'OWNER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest',
+      role: 'OWNER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest', language: 'hu',
     }),
   ),
   http.post(`${API_BASE}/api/auth/change-password`, () => new HttpResponse(null, { status: 204 })),

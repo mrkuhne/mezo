@@ -1,10 +1,13 @@
 // Small Hungarian text helpers shared by the converted pages (Folyadék F3, mezo-n4wf5.3): one home for the
 // article / suffix / casing rules three Edzés areas each wrote for themselves.
 
+import { getLang } from '@/shared/i18n/lang'
+
 const VOWEL_START = /^[aáeéiíoóöőuúüű]/i
 
 /** The definite article before a WORD: „az" before a vowel sound, else „a". `capital` = sentence-initial. */
 export function article(word: string, capital = false): string {
+  if (getLang() !== 'hu') return capital ? 'The' : 'the'
   const az = VOWEL_START.test(word.trim())
   return capital ? (az ? 'Az' : 'A') : az ? 'az' : 'a'
 }
@@ -12,6 +15,7 @@ export function article(word: string, capital = false): string {
 /** The definite article before a NUMERAL, as it is read aloud: „az 1." (egy), „az 5." (öt), „az 52." (ötvenkettő),
  *  „az 1000" (ezer) — but „a 10." (tíz), „a 100" (száz). */
 export function azA(n: number, capital = false): string {
+  if (getLang() !== 'hu') return capital ? 'The' : 'the'
   const s = String(Math.abs(Math.trunc(n)))
   const az = s[0] === '5' || (s[0] === '1' && s.length % 3 === 1)
   return capital ? (az ? 'Az' : 'A') : az ? 'az' : 'a'
@@ -20,6 +24,7 @@ export function azA(n: number, capital = false): string {
 /** „3-ból" / „2-ből" — the elative suffix after a number, by the vowel harmony of its LAST spoken word
  *  (három → -ból, kettő → -ből, húsz → -ból, negyven → -ből, száz → -ból, ezer → -ből, nulla → -ból). */
 export function outOf(n: number): string {
+  if (getLang() !== 'hu') return `of ${n}`
   const v = Math.abs(Math.trunc(n))
   const units = v % 10
   const tens = Math.floor(v / 10) % 10

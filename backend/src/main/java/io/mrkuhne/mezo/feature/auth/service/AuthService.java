@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.auth.service;
 
 import io.mrkuhne.mezo.api.dto.ChangePasswordRequest;
+import io.mrkuhne.mezo.api.dto.Language;
 import io.mrkuhne.mezo.api.dto.LoginRequest;
 import io.mrkuhne.mezo.api.dto.MeResponse;
 import io.mrkuhne.mezo.api.dto.RegisterRequest;
+import io.mrkuhne.mezo.api.dto.UpdateLanguageRequest;
 import io.mrkuhne.mezo.api.dto.TokenResponse;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
@@ -64,6 +66,7 @@ public class AuthService {
         user.setName(req.getName().trim());
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
         user.setRole(AppUserEntity.UserRole.USER);
+        user.setLanguage(UserLanguage.normalize(req.getLanguage() == null ? null : req.getLanguage().getValue()));
         try {
             // saveAndFlush (not save): forces the uq_app_user_email constraint to fire HERE, inside
             // this try, rather than being deferred to end-of-transaction flush where it would
@@ -82,7 +85,8 @@ public class AuthService {
 
     public MeResponse me(AppUserEntity user) {
         return new MeResponse(user.getId(), user.getEmail(), user.getName(), user.getRole().name(),
-            user.isOnboarded(), user.isMustChangePassword(), user.getTimezone());
+            user.isOnboarded(), user.isMustChangePassword(), user.getTimezone(),
+            Language.fromValue(UserLanguage.normalize(user.getLanguage())));
     }
 
     @Transactional
@@ -101,6 +105,19 @@ public class AuthService {
         } catch (DataIntegrityViolationException e) {
             throw new SystemRuntimeErrorException(SystemMessage.error("AUTH_EMAIL_TAKEN").build(), HttpStatus.CONFLICT);
         }
+        return me(appUserRepository.findById(user.getId()).orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("AUTH_TOKEN_MISSING").build(), HttpStatus.UNAUTHORIZED)));
+    }
+
+    /** Targeted update, same reason as {@link #updateAccount}: never merge a stale snapshot over other columns. */
+    @Transactional
+    public MeResponse updateLanguage(AppUserEntity user, UpdateLanguageRequest request) {
+        String language = request.getLanguage() == null ? null : request.getLanguage().getValue();
+        if (language == null || !UserLanguage.SUPPORTED.contains(language)) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", "language").build(), HttpStatus.BAD_REQUEST);
+        }
+        appUserRepository.updateLanguage(user.getId(), language);
         return me(appUserRepository.findById(user.getId()).orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("AUTH_TOKEN_MISSING").build(), HttpStatus.UNAUTHORIZED)));
     }

@@ -127,7 +127,7 @@ public class PromptMemoryAssembler {
         }
         try {
             float[] queryVector = llmCallContextHolder.runWith(
-                    new LlmCallContext("companion_recall", "recall_embed", "conversation", conversationId),
+                    new LlmCallContext(LlmCallContext.FEATURE_COMPANION_RECALL, "recall_embed", "conversation", conversationId),
                     () -> embeddingPort.embedQuery(userMessage));
             String literal = MemoryEmbeddingRepository.toVectorLiteral(queryVector);
             CompanionProperties.Recall recall = properties.recall();

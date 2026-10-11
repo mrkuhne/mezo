@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
+import io.mrkuhne.mezo.feature.auth.service.UserLanguage;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.config.ModelTier;
@@ -46,9 +47,10 @@ public class GeminiCompanionLlm extends SpringAiCompanionLlm {
     public GeminiCompanionLlm(@Qualifier("googleGenAiChatModel") ChatModel chatModel,
                               LlmModelRouter llmModelRouter,
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
-                              @Qualifier("googleGenAiUsageExtractor") LlmUsageExtractor llmUsageExtractor) {
+                              @Qualifier("googleGenAiUsageExtractor") LlmUsageExtractor llmUsageExtractor,
+                              UserLanguage userLanguage) {
         super(chatModel, llmUsageExtractor, llmModelRouter, LlmProvider.GEMINI,
-            llmCallRecorder, llmCallContextHolder);
+            llmCallRecorder, llmCallContextHolder, userLanguage);
     }
 
     /**
