@@ -2,6 +2,7 @@ import { act, render, renderHook, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LANG_KEY, deviceLang, getLang, normalizeLang, resolveInitialLang, setLang, subscribe } from './lang'
 import { LanguageProvider } from './LanguageProvider'
+import { LoadingFallback } from './LoadingFallback'
 import { m, plural, useM } from './index'
 
 function stubNav(language: string) {
@@ -15,9 +16,12 @@ afterEach(() => {
 
 describe('language resolution', () => {
   it('falls back to a supported language for a stale or foreign cache value', () => {
-    for (const bad of ['de', '', 'garbage', 'HU']) {
-      localStorage.setItem(LANG_KEY, bad)
-      expect(resolveInitialLang()).toMatch(/^(hu|en)$/)
+    for (const device of ['hu-HU', 'en-US']) {
+      stubNav(device)
+      for (const bad of ['de', '', 'garbage', 'HU']) {
+        localStorage.setItem(LANG_KEY, bad)
+        expect(resolveInitialLang()).toBe(deviceLang())
+      }
     }
     expect(normalizeLang('de')).toBeNull()
     expect(normalizeLang(undefined)).toBeNull()
@@ -98,5 +102,14 @@ describe('the catalog', () => {
     expect(plural(2, { one: 'day', other: 'days' })).toBe('days')
     setLang('hu', { persist: false })
     expect(plural(1, { one: 'nap', other: 'nap' })).toBe('nap')
+  })
+})
+
+describe('LoadingFallback', () => {
+  it('follows the language switch', () => {
+    render(<LanguageProvider><LoadingFallback /></LanguageProvider>)
+    expect(screen.getByText('Betöltés…')).toBeInTheDocument()
+    act(() => setLang('en', { persist: false }))
+    expect(screen.getByText('Loading…')).toBeInTheDocument()
   })
 })
