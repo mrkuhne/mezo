@@ -43,7 +43,8 @@ test('the day editor shows the hero, the weekly band card and that day\'s exerci
   expect(screen.getByText(/Heti terhelés:/)).toBeInTheDocument()
   // The week-scope card is still week-scope on a one-day page (weekDays), never a
   // single Thursday pretending to be the week.
-  expect(screen.getByText('Heti szetek · izmonként')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: /Heti szettek · izmonként/ })).toBeInTheDocument()
+  expect(screen.getByRole('group', { name: 'Heti szettek · izmonként' })).toBeInTheDocument()
   expect(screen.getAllByText('Chest Supported Row').length).toBeGreaterThan(0)
 })
 

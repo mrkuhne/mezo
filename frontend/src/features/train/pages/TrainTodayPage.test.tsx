@@ -106,7 +106,7 @@ const currentUrl = () => screen.getByTestId('loc').textContent
 // time lives in the card's tag row, not in the title, so scope time asserts to
 // the returned card (the weekly rows repeat both title and time) — mezo-lruy.
 const findTodayCard = async (title: string) =>
-  (await screen.findByText(title, { selector: '.trm-sess-title' })).closest('.trm-sess') as HTMLElement
+  (await screen.findByText(title, { selector: '.em-sess-title' })).closest('.em-sess') as HTMLElement
 
 // ---- Titanium face (mezo-88iwa.6, T5) ----
 // The legacy `.page-header` (Eyebrow + „Mai nap” h1 + „← Ma”) is gone: the poster names
@@ -120,17 +120,64 @@ const backToToday = () => fireEvent.click(screen.getByRole('tab', { name: /· ma
 
 test('today gym hero renders (the weekly list + load tiles + note now live on Heti)', () => {
   const { container } = renderView()
-  // "Pull Day" is the poster's title (h2); the poster itself is unique via .trm-hero.
+  // "Pull Day" is the poster's verdict; the poster itself is unique via .em-hero.
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(container.querySelector('.trm-hero')).not.toBeNull()
+  expect(container.querySelector('.em-hero')).not.toBeNull()
   const start = screen.getByRole('button', { name: /Indítsuk/ })
   expect(start).toBeInTheDocument()
-  // nothing logged today yet ⇒ the poster's status pill reads BETERVEZVE
-  expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
-  // fresh-state poster: the `.trm-start.is-go` CTA opens the active session (mirrors the
+  // nothing logged today yet ⇒ the poster's state line reads „Betervezve"
+  expect(screen.getByText('Betervezve')).toBeInTheDocument()
+  // fresh-state poster: the `.em-start.is-go` button opens the active session (mirrors the
   // is-review/is-resume CTAs' own navigate assertions below).
   fireEvent.click(start)
   expect(mockNavigate).toHaveBeenCalledWith('/train/session')
+})
+
+// Folyadék (mezo-n4wf5.3, prototype `thero()` / `mai()`): the hero's graphic is the body filled
+// muscle by muscle (owner decision), with the three facts beside it and the region tags under it;
+// the page below is numbered sections, and nothing of the old skin is left.
+test('the gym hero draws the body with its facts and tags; the page is numbered sections without the old skin', () => {
+  const { container } = renderView()
+  const hero = container.querySelector('.fo-hero.em-hero') as HTMLElement
+  expect(hero.querySelector('.em-h2 .ex-hb .ex-body')).not.toBeNull()
+  expect(hero.querySelector('.ex-hb small')!.textContent).toBe('ennyit kér ma a hátadtól') // Pull Day: Hát leads
+  expect([...hero.querySelectorAll('.em-hf span')].map((f) => f.querySelector('small')!.textContent)).toEqual(['gyakorlat', 'szett', 'perc'])
+  expect([...hero.querySelectorAll('.em-mchips > span')].map((t) => t.textContent)).toEqual(expect.arrayContaining(['Hát', 'Váll', 'Kar']))
+  // numbered sections, in order
+  const secs = [...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)
+  expect(secs).toEqual(['1Mielőtt elkezded', '2A mai keretedhez', '3Hatás az izomzatodra', '4Vagy inkább', '5Reggeli edzés-ablak'])
+  // the two nav rows live in the „Vagy inkább" card, under the quick pair
+  expect(container.querySelector('.em-nav .fo-pair')).not.toBeNull()
+  expect(container.querySelectorAll('.em-nav .em-navrows .fo-row')).toHaveLength(2)
+  expect(container.querySelector('.glass, .uv-well, .uv-empty, [class*="trm-"], .t-ico.uv-float')).toBeNull()
+})
+
+// prototype `mai('pihen')` / `restWeek()`: the rest day's hero shows the week — one tube per day,
+// hatched for a day without gym, a dashed plan line for a gym day still ahead.
+test('rest day: the hero draws the week as seven tubes and offers the Saját edzés button', () => {
+  trainOverride = (real) => ({
+    gymSchedule: real.gymSchedule
+      ? { ...real.gymSchedule, weeklyTimes: real.gymSchedule.weeklyTimes.map((d) => (d.day === 'Csü' ? { ...d, active: false } : d)) }
+      : real.gymSchedule,
+  })
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday — no run folds into the day
+  try {
+    const { container } = renderView()
+    const hero = container.querySelector('.fo-hero.em-rest') as HTMLElement
+    expect(within(hero).getByText('Ma pihenőnap van.')).toBeInTheDocument()
+    const tubes = [...hero.querySelectorAll('.fo-hero-g .fo-tubes .fo-vial')]
+    expect(tubes).toHaveLength(7)
+    expect(tubes.some((t) => t.classList.contains('hatch'))).toBe(true)
+    expect(within(hero).getByRole('button', { name: '+ Saját edzés' })).toBeInTheDocument()
+    // without the gym poster the nav rows stand alone as „Innen tovább" (no quick pair)
+    expect([...container.querySelectorAll('.fo-sec')].some((h) => h.textContent!.endsWith('Innen tovább'))).toBe(true)
+    expect(container.querySelector('.em-nav .fo-pair')).toBeNull()
+    // exactly one one-off-workout entry (the hero's), not a second link in the nav card
+    expect(screen.getAllByRole('button', { name: /Saját edzés/ })).toHaveLength(1)
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 // The one-day rework (mezo-9bbc) dropped the unconditional `+ Saját edzés`
@@ -161,7 +208,7 @@ test('day strip: selecting another day swaps the rendered sessions, no refetch',
   expect(shownDayLabel()).toBe('Csütörtök')
   fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
   expect(shownDayLabel()).toBe('Kedd')
-  expect(await screen.findByText('Volleyball', { selector: '.trm-sess-title' })).toBeInTheDocument()
+  expect(await screen.findByText('Volleyball', { selector: '.em-sess-title' })).toBeInTheDocument()
   // back to today — today's own chip
   backToToday()
   expect(shownDayLabel()).toBe('Csütörtök')
@@ -184,7 +231,7 @@ test('a non-today gym day renders a read-only-capable card with a direct-start C
     renderView()
     // Sze (Wed) carries a not-yet-done gym slot in the mock week.
     fireEvent.click(screen.getByRole('tab', { name: /Szerda|Sze/ }))
-    expect(await screen.findByText('Pull Day', { selector: '.trm-sess-title' })).toBeInTheDocument()
+    expect(await screen.findByText('Pull Day', { selector: '.em-sess-title' })).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Kezdjük el/ }))
     // Mock MesoDay fixtures carry no `id`, so gymDayTarget resolves the plain route.
     expect(mockNavigate).toHaveBeenCalledWith('/train/session')
@@ -199,7 +246,7 @@ test('the weekly list and load tiles moved to Heti — Mai renders neither', () 
   expect(container.querySelectorAll('.loadtile')).toHaveLength(0)
   expect(screen.queryByText('Heti terv')).not.toBeInTheDocument()
   // the strip replaces them
-  expect(container.querySelectorAll('.trm-day')).toHaveLength(7)
+  expect(container.querySelectorAll('.em-day')).toHaveLength(7)
 })
 
 test('?day= initialises the selection (drill-in from Heti)', () => {
@@ -260,10 +307,10 @@ test('the Titanium face drops the page-header — the poster and the strip name 
   expect(screen.queryByText('Edzés · Csütörtök · W3')).not.toBeInTheDocument()
   // the poster carries the place instead: „MA {idő} · {fázis} · GYM” over-line + the
   // session title, and the strip's selected chip says which day that is.
-  const poster = container.querySelector('.trm-hero') as HTMLElement
+  const poster = container.querySelector('.em-hero') as HTMLElement
   expect(poster).not.toBeNull()
-  expect(within(poster).getByText(/^MA .* · GYM$/)).toBeInTheDocument()
-  expect(within(poster).getByRole('heading', { name: 'Pull Day' })).toBeInTheDocument()
+  expect(poster.querySelector('.fo-hero-lbl')!.textContent).toMatch(/^Ma .* · Gym( · .+)?$/)
+  expect(within(poster).getByText('Pull Day', { selector: '.em-hero-title' })).toBeInTheDocument()
   expect(shownDayLabel()).toBe('Csütörtök')
 })
 
@@ -290,7 +337,8 @@ test('the Sport entry row navigates to /train/sport', () => {
 test('morning-training card lists the late gym slots and one-tap reschedules them', async () => {
   renderView()
   // mock gym slots Kedd/Csü 18:30 vs mock wake 06:45 -> window 07:45–12:45
-  expect(screen.getByText(/Kedd 18:30 · Csü 18:30/)).toBeInTheDocument()
+  expect(screen.getByText('Kedd 18:30 → 07:45')).toBeInTheDocument()
+  expect(screen.getByText('Csü 18:30 → 07:45')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Áthelyezés a reggeli ablakba' }))
   // cache mutated (setQueryData) -> both slots at 07:45 -> nothing offending -> card gone.
   // waitFor: the RQ observer notification lands past the click's synchronous act flush
@@ -315,9 +363,9 @@ test('mock mode: the flagged day IS today for the date math, so today\'s run car
     expect(shownDayLabel()).toBe('Csütörtök') // the fixture's flagged day IS what renders
     // Friday's prescribed run is merged into today's row by `todayRuns`
     const runCard = await findTodayCard('Piramis-intervallum')
-    expect(within(runCard).getByText('MA')).toBeInTheDocument()
+    expect(within(runCard).getByText('Ma')).toBeInTheDocument()
     expect(within(runCard).getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
-    expect(within(runCard).queryByText(/TERVEZETT|ELMARADT/)).not.toBeInTheDocument()
+    expect(within(runCard).queryByText(/Tervezett|Elmaradt/)).not.toBeInTheDocument()
   } finally {
     vi.useRealTimers()
   }
@@ -334,18 +382,18 @@ test('mock mode: a retroactive Pótold lands on the selected day, not on today',
   try {
     renderAt('/train?day=1') // Kedd — volleyball 17:00, before the fixture's Csü "today"
     const before = await findTodayCard('Volleyball')
-    expect(within(before).getByText('ELMARADT')).toBeInTheDocument()
+    expect(within(before).getByText('Elmaradt')).toBeInTheDocument()
     fireEvent.click(within(before).getByRole('button', { name: /Pótold/ }))
     fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
     // Kedd — the day it was logged FOR — flips to done
     await waitFor(() =>
-      expect(within(screen.getByText('Volleyball', { selector: '.trm-sess-title' }).closest('.trm-sess') as HTMLElement)
-        .getByText(/MEGVAN/)).toBeInTheDocument())
+      expect(within(screen.getByText('Volleyball', { selector: '.em-sess-title' }).closest('.em-sess') as HTMLElement)
+        .getByText(/Megvan/)).toBeInTheDocument())
     // …and Szerda — the wall-clock day the old mock wrote to — does NOT
     fireEvent.click(screen.getByRole('tab', { name: /^Szerda ·/ }))
     const wed = await findTodayCard('Volleyball')
-    expect(within(wed).queryByText(/MEGVAN/)).not.toBeInTheDocument()
-    expect(within(wed).getByText('ELMARADT')).toBeInTheDocument()
+    expect(within(wed).queryByText(/Megvan/)).not.toBeInTheDocument()
+    expect(within(wed).getByText('Elmaradt')).toBeInTheDocument()
   } finally {
     vi.useRealTimers()
   }
@@ -410,7 +458,8 @@ test('real mode renders the today card and agenda from the active meso + /today'
   //   total = leadInSeconds(480) + 900 + 0 = 1380 seconds = 23 minutes
   // The workoutMinutes render is gated on the profile query settling (no flash from static
   // to calibrated), so this must be awaited rather than asserted synchronously.
-  expect(await screen.findByText('~23 perc')).toBeInTheDocument()
+  // (the hero's fact column: the big number over its unit)
+  expect((await screen.findByText('~23')).parentElement!.textContent).toBe('~23perc')
 })
 
 // The Task 3 (Terhelés reface) test-migration table cited this page's Kész-hero test (:805,
@@ -477,7 +526,7 @@ test('real mode: an open instance of an off-day template offers Folytassuk on th
   renderView()
   fireEvent.click(await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) }))
   const resume = await screen.findByRole('button', { name: /Folytassuk/ })
-  expect(screen.getByText('FOLYAMATBAN')).toBeInTheDocument()
+  expect(screen.getByText('Folyamatban')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Kezdjük el/ })).not.toBeInTheDocument()
   fireEvent.click(resume)
   expect(mockNavigate).toHaveBeenCalledWith('/train/session?day=d-1')
@@ -499,7 +548,7 @@ test('real mode: an off-day template completed today marks THAT day done, not to
   const chip = await screen.findByRole('tab', { name: new RegExp(`^${DAY_LABELS[otherDayLabel]} ·`) })
   await waitFor(() => expect(chip).toHaveAccessibleName(/1\/1 kész$/))
   fireEvent.click(chip)
-  const card = (await screen.findByText('Pull Day', { selector: '.trm-sess-title' })).closest('.trm-sess')!
+  const card = (await screen.findByText('Pull Day', { selector: '.em-sess-title' })).closest('.em-sess')!
   expect(card.className).toContain('is-logged')
 })
 
@@ -513,10 +562,10 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  expect(await screen.findByText(/Ma pihenőnap/)).toBeInTheDocument()
+  expect(await screen.findByText('Ma pihenőnap van.')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
   // Zero-guard: an absent workout (`{}` — no exercises at all) must render no duration chip.
-  expect(screen.queryByText(/~\d+ perc/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/^~\d+$/)).not.toBeInTheDocument()
 })
 
 // Review fix (mezo-9bbc): a genuine rest day flags NO agenda row `isToday` at all
@@ -532,7 +581,7 @@ test('real mode: a rest day still highlights today\'s own DayStrip chip', async 
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  await screen.findByText(/Ma pihenőnap/)
+  await screen.findByText('Ma pihenőnap van.')
   // The chip's accessible name is `{weekday} · {day number}. · {done marker}`
   // (mezo-9bbc final review — the number + marker used to be announced to nobody),
   // so anchor on the weekday and assert the spoken rest marker too.
@@ -566,11 +615,12 @@ test('real mode: an open custom instance on a rest day renders a resume card, no
     ),
   )
   renderView()
-  // the resume card's status pill (the old `●` glyph is a lit dot element now, bible U3 rule 19)
-  expect(await screen.findByText('Folyamatban', { selector: '.trm-stpill' })).toBeInTheDocument()
+  // the resume hero (prototype `mai('pihen-sajat')`): its eyebrow and state line say it is in progress
+  expect(await screen.findByText('Saját edzés · folyamatban')).toBeInTheDocument()
+  expect(screen.getByText('Folyamatban · 1 szett kész', { selector: '.em-resume .em-hero-state' })).toBeInTheDocument()
   expect(screen.getByText('Saját HIIT')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Folytassuk/ })).toBeInTheDocument()
-  expect(screen.getByText(/Folytassuk → · 1 szett kész/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Folytassuk · 1 szett kész' })).toBeInTheDocument()
   expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
 })
 
@@ -597,7 +647,7 @@ test('real mode: today\'s OWN chip on a rest day still reads as today (Mai nap +
   renderAt(todayDrillIn())
   // today-ness is what this test guards: today's rest copy + the today-only Saját edzés
   // entry (both vanish the moment the page decides the drilled-in day is NOT today).
-  expect(await screen.findByText(/Ma pihenőnap/)).toBeInTheDocument()
+  expect(await screen.findByText('Ma pihenőnap van.')).toBeInTheDocument()
   expect(shownDayLabel()).toBe(DAY_LABELS[todayLabel()])
   expect(screen.getByRole('button', { name: /Saját edzés/ })).toBeInTheDocument()
 })
@@ -621,10 +671,11 @@ test('real mode: today\'s OWN chip on a rest day keeps the in-progress resume ca
     ),
   )
   renderAt(todayDrillIn())
-  // the resume card's status pill (the old `●` glyph is a lit dot element now, bible U3 rule 19)
-  expect(await screen.findByText('Folyamatban', { selector: '.trm-stpill' })).toBeInTheDocument()
+  // the resume hero (prototype `mai('pihen-sajat')`): its eyebrow and state line say it is in progress
+  expect(await screen.findByText('Saját edzés · folyamatban')).toBeInTheDocument()
+  expect(screen.getByText('Folyamatban · 1 szett kész', { selector: '.em-resume .em-hero-state' })).toBeInTheDocument()
   expect(shownDayLabel()).toBe(DAY_LABELS[todayLabel()])
-  expect(screen.getByText(/Folytassuk → · 1 szett kész/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Folytassuk · 1 szett kész' })).toBeInTheDocument()
 })
 
 test('real mode: today\'s OWN chip on a run-only day still reads as today', async () => {
@@ -670,9 +721,10 @@ test('real mode: a completed custom (saját) workout renders its own card on Mai
   )
   renderView()
   const card = await findTodayCard('Pihenőnapi felső')
-  // permanently-logged gym-tone card: SAJÁT · MEGVAN eyebrow, no state chip
-  expect(within(card).getByText(/SAJÁT · MEGVAN/)).toBeInTheDocument()
-  expect(card.className).toContain('trm-sess-gym')
+  // permanently logged, gym tone: the day's only session is the hero — „Ma · Saját" eyebrow, „Megvan" state
+  expect(card.querySelector('.fo-hero-lbl')!.textContent).toBe('Ma · Saját')
+  expect(within(card).getByText('Megvan')).toBeInTheDocument()
+  expect(card.className).toContain('em-sess-gym')
   expect(card.className).toContain('is-logged')
   // the day is no longer a rest day, and its strip chip stops claiming `pihenő`
   expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
@@ -682,7 +734,9 @@ test('real mode: a completed custom (saját) workout renders its own card on Mai
   expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-c1')
 })
 
-test('real mode orders the morning run hero above the evening gym hero', async () => {
+// Folyadék (mezo-n4wf5.3, prototype `mai()`): one hero per screen — today's gym session is the
+// poster whatever its hour, and the day's other sessions are steps of the „Ma még" card under it.
+test('real mode: today\'s gym is the poster, the morning run a step of „Ma még" under it', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayIdx = (new Date().getDay() + 6) % 7
   const runBlock = {
@@ -718,12 +772,15 @@ test('real mode orders the morning run hero above the evening gym hero', async (
     ),
   )
   renderView()
-  // both heroes present (K3: emoji lives in the icon shield now, the eyebrow tag is text-only —
-  // scope to .trm-tag-run, since the weekly row's own .stag-run tag reads the same "FUTÁS").
-  const runTag = await screen.findByText('FUTÁS', { selector: '.trm-tag-run' })
-  const startBtn = await screen.findByRole('button', { name: /Indítsuk/ }) // gym poster CTA
-  // run hero (08:00) must precede gym hero (18:30) in the DOM
-  expect(runTag.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  const startBtn = await screen.findByRole('button', { name: /Indítsuk/ }) // gym poster button
+  const run = await findTodayCard('Reggeli sprint')
+  expect(startBtn.closest('.em-hero')).not.toBeNull()
+  // the run (08:00) is a step, not a second hero, in the „Ma még" card after the poster
+  expect(run).not.toHaveClass('fo-hero')
+  expect(run.closest('.fo-card.em-steps')).not.toBeNull()
+  expect(run.querySelector('.em-sess-facts')!.textContent).toMatch(/^Futás · /)
+  expect(screen.getByRole('heading', { name: /Ma még/ })).toBeInTheDocument()
+  expect(startBtn.compareDocumentPosition(run) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
 
 test('real mode renders the run hero (no rest-day note) when only a run is prescribed today', async () => {
@@ -756,10 +813,10 @@ test('real mode renders the run hero (no rest-day note) when only a run is presc
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  // the run hero IS rendered (typetag + log CTA are hero-unique — scope to .trm-tag-run,
-  // since the weekly row's own .stag-run tag reads the same "FUTÁS";
-  // "Reggeli sprint" itself also appears in the weekly row, hence not asserted alone) ...
-  expect(await screen.findByText('FUTÁS', { selector: '.trm-tag-run' })).toBeInTheDocument()
+  // the run IS the day's hero (its eyebrow carries the tag) ...
+  const runHero = await findTodayCard('Reggeli sprint')
+  expect(runHero).toHaveClass('fo-hero', 'em-sess-run')
+  expect(runHero.querySelector('.fo-hero-lbl')!.textContent).toBe('Ma · 08:00 · Futás')
   expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
   expect(screen.getAllByText('Reggeli sprint').length).toBeGreaterThan(0)
   // ... and the rest-day note is NOT (a prescribed run is not a rest day)
@@ -780,7 +837,7 @@ test('real mode shows the volleyball today-card when a slot falls on today', asy
     ),
   )
   renderView()
-  expect(within(await findTodayCard('Volleyball')).getByText('18:15')).toBeInTheDocument()
+  expect((await findTodayCard('Volleyball')).querySelector('.fo-hero-lbl')!.textContent).toBe('Ma · 18:15 · Röpi')
   expect(screen.getByRole('button', { name: /Logold a session-t/ })).toBeInTheDocument()
   // gym rest day + vb today -> no rest-day card
   expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
@@ -805,12 +862,11 @@ test('real mode: volleyball logged today ⇒ hero flips to the done summary, not
     ),
   )
   renderView()
-  // K3: once logged, the eyebrow time is gone — the time only survives inside the
-  // DoneBar's "18:15-kor logolva" detail line.
-  expect(within(await findTodayCard('Volleyball')).getByText(/18:15/)).toBeInTheDocument()
+  // once logged, the done box carries the „18:15-kor logolva" detail line
+  expect(within(await findTodayCard('Volleyball')).getByText('18:15-kor logolva')).toBeInTheDocument()
   // done state: muted summary present, the "log it" CTA gone, the eyebrow reads "MEGVAN"
   expect(screen.getByText(/RPE 7 · 90p/)).toBeInTheDocument()
-  expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
+  expect(screen.getByText(/Megvan/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
@@ -878,21 +934,21 @@ test('real mode: a volleyball session logged today does not leak into another da
     )
     renderView()
     // sanity check: today's own card IS logged (contrast for the assertions below)
-    expect(await screen.findByText(/MEGVAN/)).toBeInTheDocument()
+    expect(await screen.findByText(/Megvan/)).toBeInTheDocument()
 
     // FUTURE day: not logged, and read-only — no CTA of any kind
     fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${DAY_LABELS[DAY_ORDER[futureDow]]} ·`) }))
     const future = await findTodayCard('Volleyball')
-    expect(within(future).queryByText(/MEGVAN/)).not.toBeInTheDocument()
-    expect(within(future).getByText('TERVEZETT')).toBeInTheDocument()
+    expect(within(future).queryByText(/Megvan/)).not.toBeInTheDocument()
+    expect(within(future).getByText('Tervezett')).toBeInTheDocument()
     expect(within(future).queryByRole('button', { name: /Logold a session-t|Pótold/ })).not.toBeInTheDocument()
 
     // PAST day: not logged either — but it DOES offer the retroactive Pótold (Task 9),
     // never today's own „Logold a session-t” copy.
     fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${DAY_LABELS[DAY_ORDER[pastDow]]} ·`) }))
     const past = await findTodayCard('Volleyball')
-    expect(within(past).queryByText(/MEGVAN/)).not.toBeInTheDocument()
-    expect(within(past).getByText('ELMARADT')).toBeInTheDocument()
+    expect(within(past).queryByText(/Megvan/)).not.toBeInTheDocument()
+    expect(within(past).getByText('Elmaradt')).toBeInTheDocument()
     expect(within(past).getByRole('button', { name: /Pótold/ })).toBeInTheDocument()
     expect(within(past).queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
   } finally {
@@ -960,11 +1016,11 @@ test('real mode: a completed today instance renders the Kész hero with Megnéze
     ),
   )
   renderView()
-  // done-state poster: KÉSZ pill + the `.trm-start.is-review` CTA carrying the same
-  // 3-non-skipped-set count, and no start CTA. The CTA opens the read-only review.
-  const review = await screen.findByRole('button', { name: /Eredmény/ })
-  expect(screen.getByText('KÉSZ')).toBeInTheDocument()
-  expect(screen.getByText('3 szett · megnézem')).toBeInTheDocument()
+  // done-state poster: the „Kész · N szett a M-ból" state line + the `.em-start.is-review` button
+  // carrying the same 3-non-skipped-set count, and no start button. It opens the read-only review.
+  const review = await screen.findByRole('button', { name: 'Eredmény · 3 szett' })
+  expect(review).toHaveClass('em-start', 'is-review')
+  expect(screen.getByText(/^Kész · 3 szett a \d+-(ból|ből)$/, { selector: '.em-hero.is-done .em-hero-state' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
   // Kihagyás S1: a finished day never offers a skip
   expect(screen.queryByRole('button', { name: /Kihagyom/ })).not.toBeInTheDocument()
@@ -997,11 +1053,10 @@ test('real mode: an open instance renders the Folyamatban hero with Folytassuk',
     ),
   )
   renderView()
-  // in-progress poster: FOLYAMATBAN pill + the `.trm-start.is-resume` CTA carrying the
-  // same 2-non-skipped-set count.
-  expect(await screen.findByText('FOLYAMATBAN')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Folytassuk/ })).toBeInTheDocument()
-  expect(screen.getByText('2 szett kész')).toBeInTheDocument()
+  // in-progress poster: the „Folyamatban · N szett kész a M-ból" state line + the
+  // `.em-start.is-resume` button carrying the same 2-non-skipped-set count.
+  expect(await screen.findByText(/^Folyamatban · 2 szett kész a \d+-(ból|ből)$/, { selector: '.em-hero.is-live .em-hero-state' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Folytassuk · 2 szett kész' })).toHaveClass('em-start', 'is-resume')
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
   // Kihagyás S1: a started session never offers a skip
   expect(screen.queryByRole('button', { name: /Kihagyom/ })).not.toBeInTheDocument()
@@ -1038,10 +1093,11 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  // Scope to .trm-tag-run (the weekly row's own .stag-run chip reads the same plain
-  // "FUTÁS"), and assert the logged eyebrow itself reads "FUTÁS · MEGVAN" — the same
-  // guarantee the volleyball/TRX logged tests check via /MEGVAN/.
-  expect(await screen.findByText(/MEGVAN/, { selector: '.trm-tag-run' })).toBeInTheDocument()
+  // the run hero's own state reads „Megvan" — the same guarantee the volleyball/TRX logged
+  // tests check via /Megvan/.
+  const runHero = await findTodayCard('Reggeli sprint')
+  expect(runHero).toHaveClass('em-sess-run', 'is-logged')
+  expect(within(runHero).getByText('Megvan')).toBeInTheDocument()
   // exact match: the weekly row's own fact pill also reads "RPE 9–10" (the prescribed
   // range), so an unanchored "RPE 9" substring would be ambiguous.
   expect(screen.getByText('RPE 9 · 6 kör')).toBeInTheDocument()
@@ -1062,30 +1118,14 @@ describe('TrainTodayPage (real mode, pending)', () => {
     renderView()
     const status = await screen.findByRole('status')
     expect(status).toBeInTheDocument()
-    // The skeleton must mirror the CURRENT Mai — a 7-cell DayStrip placeholder on the real
-    // `.trm-daystrip` grid — and NOT the five-row weekly timeline that moved to Heti,
-    // otherwise the swap to content reflows, the one thing this skeleton exists to
-    // prevent (mezo-9bbc final review, I4).
-    const sk = Array.from(status.querySelectorAll('.sk')) as HTMLElement[]
-    expect(status.querySelectorAll('.trm-daystrip .trm-sk-day')).toHaveLength(7)
-    // the hero's glass CTA row — 70px, the real `.trm-start` height (padding 12px + the
-    // 46px art + 12px), üveg geometry (mezo-me75u.4).
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '70px')).toHaveLength(1)
-    // the energy card (`.trm-energy`, ~192px) and the muscle-impact card (`.trm-mus`,
-    // ~264px) — both glass cards now — the two sections that sit BETWEEN the poster and
-    // the „Vagy inkább" pair (Task 5, mezo-88iwa.6); their derivation is documented in
-    // TrainTodaySkeleton.tsx next to each placeholder.
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '192px')).toHaveLength(1)
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '264px')).toHaveLength(1)
-    // the „Vagy inkább" pair (`.trm-alt`) — two ~110px glass tiles, now that the pair
-    // always renders AFTER the two cards above (not directly under the poster any more).
-    expect(sk.filter((el) => el.style.width === '100%' && el.style.height === '110px')).toHaveLength(2)
-    // Order matters — this is the one thing the skeleton exists to get right: poster
-    // CTA → energy card → impact card → alt pair, matching the real document order.
-    const order = sk
-      .map((el) => el.style.height)
-      .filter((h) => ['70px', '192px', '264px', '110px'].includes(h))
-    expect(order).toEqual(['70px', '192px', '264px', '110px', '110px'])
+    // Folyadék (mezo-n4wf5.3, prototype `mai('tolt')` → `skel(T0, [62, 340, 140, 200])`): quiet
+    // blocks in the page's own shape — the day strip, the hero, the readiness card, one section
+    // card — in document order, so the swap to content does not jump. No old glass placeholders.
+    expect(status).toHaveClass('fo-sk')
+    expect(status.closest('.fo-page.em-page')).not.toBeNull()
+    expect([...status.querySelectorAll(':scope > i')].map((el) => (el as HTMLElement).style.height))
+      .toEqual(['62px', '340px', '140px', '200px'])
+    expect(document.querySelector('.trm, .glass, .sk')).toBeNull()
   })
 })
 
@@ -1116,10 +1156,10 @@ test('real mode: a TRX slot renders its own hero, sport-matched done-state, and 
   )
   renderView()
   // TRX hero with its own tag + title, NOT done (the logged session is volleyball).
-  // K3: the emoji lives in the icon shield, so the tag itself is text-only — scope
-  // to .trm-tag-trx (title also reads "TRX", so an unscoped text match is ambiguous).
-  expect(within(await findTodayCard('TRX')).getByText('12:00')).toBeInTheDocument()
-  expect(screen.getByText('TRX', { selector: '.trm-tag-trx' })).toBeInTheDocument()
+  // The eyebrow carries the time and the tag (TRX keeps its capitals).
+  const trx = await findTodayCard('TRX')
+  expect(trx).toHaveClass('em-sess-trx')
+  expect(trx.querySelector('.fo-hero-lbl')!.textContent).toBe('Ma · 12:00 · TRX')
   const cta = screen.getByRole('button', { name: /Logold a session-t/ })
   // The log sheet opens preselected to TRX
   fireEvent.click(cta)
@@ -1144,9 +1184,9 @@ test('real mode: a TRX slot logged today shows the done hero (no váll segment) 
   )
   renderView()
   // TRX hero, done state: "MEGVAN" eyebrow, summary with no "váll" segment (volleyball-only).
-  // K3: once logged the eyebrow time is gone — "12:00" only survives in the DoneBar detail.
-  expect(within(await findTodayCard('TRX')).getByText(/12:00/)).toBeInTheDocument()
-  expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
+  // the done box carries the „12:00-kor logolva" detail.
+  expect(within(await findTodayCard('TRX')).getByText('12:00-kor logolva')).toBeInTheDocument()
+  expect(screen.getByText(/Megvan/)).toBeInTheDocument()
   const summary = screen.getByText(/RPE 7 · 60p$/)
   expect(summary).toBeInTheDocument()
   // Clicking the done summary re-opens the sheet, preselected to TRX. The DoneBar's
@@ -1185,7 +1225,7 @@ test('a past unlogged sport slot offers Pótold and logs it on that day', async 
       }),
     )
     render(<QueryWrapper><MemoryRouter initialEntries={[`/train?day=${pastIdx}`]}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
-    expect(await screen.findByText('ELMARADT')).toBeInTheDocument()
+    expect(await screen.findByText('Elmaradt')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Pótold/ }))
     fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
     await waitFor(() => expect(posted).toHaveLength(1))
@@ -1213,7 +1253,7 @@ test('a future slot renders no log CTA', async () => {
       ])),
     )
     render(<QueryWrapper><MemoryRouter initialEntries={[`/train?day=${futureIdx}`]}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
-    expect(await screen.findByText('TERVEZETT')).toBeInTheDocument()
+    expect(await screen.findByText('Tervezett')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Logold|Pótold/ })).not.toBeInTheDocument()
   } finally {
     vi.useRealTimers()
@@ -1259,7 +1299,7 @@ test('a past unlogged run slot offers Pótold and logs it on that day', async ()
       }),
     )
     render(<QueryWrapper><MemoryRouter initialEntries={[`/train?day=${pastIdx}`]}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
-    expect(await screen.findByText('ELMARADT')).toBeInTheDocument()
+    expect(await screen.findByText('Elmaradt')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Pótold/ }))
     fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
     await waitFor(() => expect(posted).toHaveLength(1))
@@ -1276,7 +1316,7 @@ test('a past unlogged run slot offers Pótold and logs it on that day', async ()
 // tap so a swapped day stages in instead of snapping.
 test("the day body staggers inside an armed entrance group", async () => {
   const { container } = renderView()
-  await screen.findByText("Pull Day", { selector: ".trm-hero h2" })
+  await screen.findByText("Pull Day", { selector: ".em-hero .em-hero-title" })
   const play = container.querySelector(".mz-play")
   expect(play).not.toBeNull()
   const risen = [...play!.querySelectorAll(".rise")] as HTMLElement[]
@@ -1395,16 +1435,18 @@ test('energy card (mock): shows the served logged movement off the same fixture 
   const { container } = renderView()
   const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
   const earned = mockFuelDayEnergy.plannedMovementKcal + mockFuelDayEnergy.extraMovementKcal
-  expect(within(card).getByText(String(earned), { selector: '.trm-energy-main strong' })).toBeInTheDocument()
-  expect(card.querySelector('.trm-energy-main')!.textContent).toBe(`+${earned}kcal`)
-  const doneSpan = card.querySelector('.trm-energy-split span:first-child')!
+  // Folyadék: the big numeral over one split vessel (in the budget | still to come) and its key
+  expect(card).toHaveClass('fo-card', 'em-energy')
+  expect(card.querySelector('.fo-split.big')).not.toBeNull()
+  expect(card.querySelector('.em-energy-main .fo-big')!.textContent).toBe(`+${earned}kcal`)
+  const doneSpan = card.querySelector('.em-energy-split > span:first-child')!
   expect(doneSpan.textContent).toBe(`${earned} kcal már a keretedben`)
   // the mock fixture's still-unlogged evening run rides along as the pending preview.
   const pending = mockFuelDayEnergy.pendingMovementKcal ?? 0
   expect(pending).toBeGreaterThan(0)
-  expect(card.querySelectorAll('.trm-energy-split span')[1].textContent).toBe(`+${pending} kcal még jön, ha megcsinálod`)
+  expect(card.querySelectorAll('.em-energy-split > span')[1].textContent).toBe(`+${pending} kcal még jön, ha megcsinálod`)
   expect(within(card).getByText(/Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./)).toBeInTheDocument()
-  expect(container.querySelector('.trm-energy-note')!.textContent).not.toMatch(/^A folyamatban lévő edzés/)
+  expect(container.querySelector('.em-energy-note')!.textContent).not.toMatch(/^A folyamatban lévő edzés/)
 })
 
 test('energy card (real mode): shows the served logged movement and the pending preview', async () => {
@@ -1425,9 +1467,8 @@ test('energy card (real mode): shows the served logged movement and the pending 
   )
   renderView()
   const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
-  expect(within(card).getByText('190', { selector: '.trm-energy-main strong' })).toBeInTheDocument()
-  expect(card.querySelector('.trm-energy-main')!.textContent).toBe('+190kcal')
-  const spans = card.querySelectorAll('.trm-energy-split span')
+  expect(card.querySelector('.em-energy-main .fo-big')!.textContent).toBe('+190kcal')
+  const spans = card.querySelectorAll('.em-energy-split > span')
   expect(spans[0].textContent).toBe('190 kcal már a keretedben')
   expect(spans[1].textContent).toBe('+460 kcal még jön, ha megcsinálod')
   expect(within(card).getByText(/Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./)).toBeInTheDocument()
@@ -1445,7 +1486,7 @@ test('adds the in-progress note while a gym session is open', async () => {
   })
   const { container } = renderView()
   await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
-  expect(container.querySelector('.trm-energy-note')!.textContent).toMatch(
+  expect(container.querySelector('.em-energy-note')!.textContent).toMatch(
     /^A folyamatban lévő edzés a befejezéskor kerül a keretedbe\. Ugyanez a szám áll a Fuel keretében\. Becslés, nem mérés\./,
   )
 })
@@ -1467,7 +1508,7 @@ test('shows no card when there is no served energy and no pending/logged movemen
     ),
   )
   const { container } = renderView()
-  expect(container.querySelector('.trm-energy')).toBeNull()
+  expect(container.querySelector('.em-energy')).toBeNull()
 })
 
 // "No numeric flash-then-swap" (same rule the poster's own fields follow): while
@@ -1475,18 +1516,18 @@ test('shows no card when there is no served energy and no pending/logged movemen
 test('energy card: held entirely while useFuelDay is pending, appears once resolved', () => {
   fuelDayOverride = (real) => ({ fuel: real.fuel, isPending: true })
   const { container, rerender } = renderView()
-  expect(container.querySelector('.trm-energy')).toBeNull()
+  expect(container.querySelector('.em-energy')).toBeNull()
   fuelDayOverride = null
   rerender(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
-  expect(container.querySelector('.trm-energy')).not.toBeNull()
+  expect(container.querySelector('.em-energy')).not.toBeNull()
 })
 
 test('a non-today selection hides the energy and the muscle-impact card', () => {
   const { container } = renderView()
-  expect(container.querySelector('.trm-energy')).not.toBeNull() // sanity: today shows it
+  expect(container.querySelector('.em-energy')).not.toBeNull() // sanity: today shows it
   fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
-  expect(container.querySelector('.trm-energy')).toBeNull()
-  expect(container.querySelector('.trm-mus')).toBeNull()
+  expect(container.querySelector('.em-energy')).toBeNull()
+  expect(container.querySelector('.em-mus')).toBeNull()
 })
 
 test('muscle-impact card: the ladder word tracks planned volume, and earned never overflows planned', () => {
@@ -1499,29 +1540,33 @@ test('muscle-impact card: the ladder word tracks planned volume, and earned neve
     },
   })
   const { container } = renderView()
-  const rows = [...container.querySelectorAll('.trm-mus-row')]
-  const hatRow = rows.find((r) => r.querySelector('.trm-mus-name')?.textContent === 'Hát')!
+  const rows = [...container.querySelectorAll('.em-mus-row')]
+  const hatRow = rows.find((r) => r.querySelector('.em-mus-name')?.textContent === 'Hát')!
   expect(hatRow).toBeTruthy()
-  expect(hatRow.querySelector('.trm-mus-word')!.textContent).toBe('erős') // 10 planned sets > 6
-  const planW = (hatRow.querySelector('.trm-mus-track i.plan') as HTMLElement).style.getPropertyValue('--w')
-  const doneW = (hatRow.querySelector('.trm-mus-track i.done') as HTMLElement).style.getPropertyValue('--w')
-  expect(doneW).toBe(planW) // capped at the row's own planned width, not the 15 raw logged sets
+  expect(hatRow.querySelector('.em-mus-word')!.textContent).toBe('erős') // 10 planned sets > 6
+  // one split vessel: the deep liquid (done) fills the row's whole planned width and nothing is
+  // left hatched — capped at the plan, not the 15 raw logged sets
+  const done = hatRow.querySelector('.fo-split i') as HTMLElement
+  const left = hatRow.querySelector('.fo-split u') as HTMLElement
+  expect(done.style.width).toBe('100%') // Hát is the day's heaviest region = the full vessel
+  expect(left.style.width).toBe('0%')
+  expect(hatRow.querySelector('.v')!.textContent).toMatch(/^(\d+) \/ \1 szett$/)
 })
 
 test('rest day with a sport slot: the impact card falls back to the sport heuristic, never an all-zero gym table', () => {
   trainOverride = (real) => ({ ...inactivateGym(real), ...addTodaySportSlot(real, false) })
   const { container } = renderView()
   expect(screen.queryByText('Pull Day')).not.toBeInTheDocument() // the gym plan itself is gone
-  const rows = [...container.querySelectorAll('.trm-mus-row')]
-  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.trm-mus-name')!.textContent, r]))
+  const rows = [...container.querySelectorAll('.em-mus-row')]
+  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.em-mus-name')!.textContent, r]))
   // volleyball's static heuristic (sportMuscleLoad.ts): shoulder-front 3/shoulder-rear 1 -> Váll
   // (max 3, erős), quad 2/calf 2 -> Láb (közepes), core 1 -> Core (enyhe). Mell/Hát/Kar absent.
-  expect(byName['Váll'].querySelector('.trm-mus-word')!.textContent).toBe('erős')
-  expect(byName['Láb'].querySelector('.trm-mus-word')!.textContent).toBe('közepes')
-  expect(byName['Core'].querySelector('.trm-mus-word')!.textContent).toBe('enyhe')
+  expect(byName['Váll'].querySelector('.em-mus-word')!.textContent).toBe('erős')
+  expect(byName['Láb'].querySelector('.em-mus-word')!.textContent).toBe('közepes')
+  expect(byName['Core'].querySelector('.em-mus-word')!.textContent).toBe('enyhe')
   expect(byName['Hát']).toBeUndefined()
   expect(byName['Mell']).toBeUndefined()
-  expect(container.querySelector('.trm-mus-note')!.textContent).toMatch(/^A sáv a sport becsült terhelése/)
+  expect(container.querySelector('.em-mus-note')!.textContent).toMatch(/^A folyadék a sport becsült terhelése/)
 })
 
 // Sweep finding f (mezo-88iwa.6): a gym day that ALSO carries a sport slot only ever
@@ -1532,8 +1577,8 @@ test('gym day with a sport slot too: the impact footer admits the sport load is 
   trainOverride = (real) => addTodaySportSlot(real, false) // Pull Day stays active, plus a Csü volleyball slot
   const { container } = renderView()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0) // the gym plan is still the source of the table
-  const note = container.querySelector('.trm-mus-note')!.textContent!
-  expect(note).toMatch(/^A halvány sáv a tervezett terhelés/) // still the gym-table note, not the sport-estimate one
+  const note = container.querySelector('.em-mus-note')!.textContent!
+  expect(note).toMatch(/^A halvány folyadék a tervezett terhelés/) // still the gym-table note, not the sport-estimate one
   expect(note).toMatch(/gym terved látod itt.*sportod terhelését külön, becsléssel/)
 })
 
@@ -1543,7 +1588,7 @@ test('nothing planned today: the muscle-impact card does not render (never an al
   trainOverride = (real) => inactivateGym(real) // Csü rest day, mock carries no sport slot on Csü by default
   withFrozenThursday(() => {
     const { container } = renderView()
-    expect(container.querySelector('.trm-mus')).toBeNull()
+    expect(container.querySelector('.em-mus')).toBeNull()
   })
 })
 
@@ -1584,15 +1629,15 @@ const addTwoTodaySportSlots = (real: ReturnType<typeof import('@/data/hooks').us
 test('two sports today, logging one earns only its own regions (per-event attribution)', () => {
   trainOverride = (real) => ({ ...inactivateGym(real), ...addTwoTodaySportSlots(real, 'volleyball') })
   const { container } = renderView()
-  const rows = [...container.querySelectorAll('.trm-mus-row')]
-  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.trm-mus-name')!.textContent, r]))
+  const rows = [...container.querySelectorAll('.em-mus-row')]
+  const byName = Object.fromEntries(rows.map((r) => [r.querySelector('.em-mus-name')!.textContent, r]))
   // cross (planned, NOT logged) is the only sport touching Kar (rose, triceps-medial) —
   // volleyball never does, so Kar's earned bar must stay at zero width.
-  const karDone = byName['Kar'].querySelector('.trm-mus-track i.done') as HTMLElement
-  expect(karDone.style.getPropertyValue('--w')).toBe('0%')
+  const karDone = byName['Kar'].querySelector('.fo-split i') as HTMLElement
+  expect(karDone.style.width).toBe('0%')
   // volleyball (logged) touches Váll (lav, shoulder-front) — its earned bar must light.
-  const vallDone = byName['Váll'].querySelector('.trm-mus-track i.done') as HTMLElement
-  expect(vallDone.style.getPropertyValue('--w')).not.toBe('0%')
+  const vallDone = byName['Váll'].querySelector('.fo-split i') as HTMLElement
+  expect(vallDone.style.width).not.toBe('0%')
 })
 
 // Finding 3: MuscleChip renders null for an empty token — every impact row (gym-day
@@ -1600,20 +1645,20 @@ test('two sports today, logging one earns only its own regions (per-event attrib
 // drawable token.
 test('every impact row renders a chip (no empty token, gym day)', () => {
   const { container } = renderView()
-  const rows = [...container.querySelectorAll('.trm-mus-row')]
+  const rows = [...container.querySelectorAll('.em-mus-row')]
   expect(rows.length).toBeGreaterThan(0)
   for (const row of rows) {
-    expect(row.querySelector('.trm-mchp .muscle-chip')).not.toBeNull()
+    expect(row.querySelector('.ex-mchp .muscle-chip')).not.toBeNull()
   }
 })
 
 test('every impact row renders a chip (no empty token, rest day with sport)', () => {
   trainOverride = (real) => ({ ...inactivateGym(real), ...addTodaySportSlot(real, false) })
   const { container } = renderView()
-  const rows = [...container.querySelectorAll('.trm-mus-row')]
+  const rows = [...container.querySelectorAll('.em-mus-row')]
   expect(rows.length).toBeGreaterThan(0)
   for (const row of rows) {
-    expect(row.querySelector('.trm-mchp .muscle-chip')).not.toBeNull()
+    expect(row.querySelector('.ex-mchp .muscle-chip')).not.toBeNull()
   }
 })
 
@@ -1639,17 +1684,17 @@ describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
 
   it('hero: Kihagyom → sheet → Fáradt vagyok → Kész shows the skipped hero; Visszavonom restores Indítsuk', async () => {
     const { container } = renderSkips()
-    expect(screen.getByText(/MAI ÁLLAPOT/)).toBeInTheDocument()
+    expect(screen.getByText(/Mai állapot/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Kihagyom' }))
     // the reason sheet opens straight away, and the page confirms the skip
     expect(await screen.findByText('Miért marad ki?')).toBeInTheDocument()
     expect(await screen.findByText('Kihagyva — bármikor visszavonhatod')).toBeInTheDocument()
-    const hero = container.querySelector('.trm-hero')!
+    const hero = container.querySelector('.em-hero')!
     expect(hero).toHaveClass('is-skip')
-    expect(within(hero as HTMLElement).getByText('KIHAGYVA')).toHaveClass('is-skip')
+    expect(within(hero as HTMLElement).getByText('Kihagyva', { selector: '.em-hero-state' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
     // readiness („Mai állapot") stands down on a skipped day
-    expect(screen.queryByText(/MAI ÁLLAPOT/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Mai állapot/)).not.toBeInTheDocument()
     // (the strip's own skip mark is asserted on a past day below — mock mode's date-keyed
     // gymDoneDates already ticks today's chip done, and a done session never reads as skipped)
 
@@ -1658,14 +1703,14 @@ describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
     fireEvent.click(screen.getByRole('button', { name: /Kész/ }))
     await waitFor(() => expect(screen.queryByText('Miért marad ki?')).not.toBeInTheDocument())
     expect(within(hero as HTMLElement).getByText('Kihagyva · Fáradt vagyok')).toBeInTheDocument()
-    expect(hero.querySelector('.trm-skipd.glass')).toBeInTheDocument()
+    expect(hero.querySelector('.fo-box.em-skipd')).toBeInTheDocument()
 
     fireEvent.click(within(hero as HTMLElement).getByRole('button', { name: /Visszavonom/ }))
     expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
     expect(await screen.findByText('Visszavonva — újra a tervben')).toBeInTheDocument()
-    expect(container.querySelector('.trm-hero')).not.toHaveClass('is-skip')
-    expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
-    expect(screen.getByText(/MAI ÁLLAPOT/)).toBeInTheDocument()
+    expect(container.querySelector('.em-hero')).not.toHaveClass('is-skip')
+    expect(screen.getByText('Betervezve')).toBeInTheDocument()
+    expect(screen.getByText(/Mai állapot/)).toBeInTheDocument()
   })
 
   // mezo-tb3s2 × Kihagyás S1: the energy card mirrors the SERVED Fuel energy, and the backend's
@@ -1698,25 +1743,25 @@ describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
     )
     const { container } = renderSkips()
     const card = await screen.findByRole('region', { name: /Amit a mozgásod hozzáad/ })
-    await waitFor(() => expect(card.querySelectorAll('.trm-energy-split span')[1]?.textContent)
+    await waitFor(() => expect(card.querySelectorAll('.em-energy-split > span')[1]?.textContent)
       .toBe('+460 kcal még jön, ha megcsinálod'))
     fireEvent.click(await screen.findByRole('button', { name: 'Kihagyom' }))
     await waitFor(() => expect(skipped).toBe(true))
-    await waitFor(() => expect(container.querySelectorAll('.trm-energy-split span')).toHaveLength(1))
-    expect(container.querySelector('.trm-energy-main strong')!.textContent).toBe('190')
+    await waitFor(() => expect(container.querySelectorAll('.em-energy-split > span')).toHaveLength(1))
+    expect(container.querySelector('.em-energy-main .fo-big')!.textContent).toBe('+190kcal')
   })
 
   it('a planned sport card offers Kihagyom; skipping it swaps the CTA row for the skipped block', async () => {
     renderSkips('/train?day=4') // Pén — volleyball 18:15, planned
     const card = await findTodayCard('Volleyball')
-    expect(within(card).getByText('TERVEZETT')).toBeInTheDocument()
+    expect(within(card).getByText('Tervezett')).toBeInTheDocument()
     fireEvent.click(within(card).getByRole('button', { name: 'Kihagyom' }))
     expect(await screen.findByText('Miért marad ki?')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Most nem mondom' }))
     await waitFor(() => expect(screen.queryByText('Miért marad ki?')).not.toBeInTheDocument())
     const skipped = await findTodayCard('Volleyball')
     expect(skipped).toHaveClass('is-skip')
-    expect(within(skipped).getByText('KIHAGYVA')).toBeInTheDocument()
+    expect(within(skipped).getByText('Kihagyva')).toBeInTheDocument()
     expect(within(skipped).getByText('Kihagyva · ok nélkül')).toBeInTheDocument()
     expect(within(skipped).getByRole('button', { name: 'Okot adok' })).toBeInTheDocument()
   })
@@ -1724,7 +1769,7 @@ describe('Kihagyás S1 — skipping a planned occurrence on Mai', () => {
   it('a past missed gym day and its missed sport both offer „Kihagytam" next to their catch-up CTA', async () => {
     renderSkips('/train?day=1') // Kedd — Legs gym + volleyball 17:00, both ELMARADT
     const gym = await findTodayCard('Legs')
-    expect(within(gym).getByText('ELMARADT')).toHaveClass('is-miss')
+    expect(within(gym).getByText('Elmaradt')).toHaveClass('is-miss')
     expect(within(gym).getByRole('button', { name: 'Kihagytam' })).toBeInTheDocument()
     expect(within(gym).getByRole('button', { name: /Kezdjük el/ })).toBeInTheDocument()
     const vb = await findTodayCard('Volleyball')
@@ -1766,14 +1811,14 @@ test('real mode: a stored GYM skip for today shows the skipped hero; a completed
   )
   const view = renderView()
   expect(await screen.findByText('Kihagyva · Úton vagyok')).toBeInTheDocument()
-  expect(screen.getByText('KIHAGYVA')).toBeInTheDocument()
+  expect(screen.getByText('Kihagyva')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
   view.unmount()
 
   server.use(http.get(`${API_BASE}/api/train/workouts/today`, () => today(true)))
   renderView()
   expect(await screen.findByRole('button', { name: /Eredmény/ })).toBeInTheDocument()
-  expect(screen.queryByText('KIHAGYVA')).not.toBeInTheDocument()
+  expect(screen.queryByText('Kihagyva')).not.toBeInTheDocument()
 })
 
 // ── Kímélő mód S2 (mezo-q4xt2.2, prototype elo/edzes.html `kmHero`/`thero`/`udvSheet`/`cbBlock`) ──
@@ -1807,17 +1852,18 @@ describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
     const { container } = renderKm()
     await openKm(screen.getByRole('button', { name: 'Kihagyom' }), '2–3 nap')
     expect(await screen.findByText('Kímélő mód bekapcsolva', { selector: '.toast *, .toast' })).toBeInTheDocument()
-    const hero = container.querySelector('.trm-hero')! as HTMLElement
+    const hero = container.querySelector('.em-hero')! as HTMLElement
     expect(hero).toHaveClass('is-skip')
-    expect(within(hero).getByText('KÍMÉLŐ MÓD · 1. nap')).toHaveClass('is-skip')
+    expect(hero).toHaveClass('is-km')
+    expect(within(hero).getByText('Kímélő mód · 1. nap', { selector: '.em-hero-state' })).toBeInTheDocument()
     expect(within(hero).getByText('Beteg vagy · becslés: 2–3 nap')).toBeInTheDocument()
     expect(within(hero).getByText('Az edzés ma magától kimarad. Nem számít mulasztásnak, a sorozatod marad.')).toBeInTheDocument()
-    expect(hero.querySelector('.trm-skipd use')?.getAttribute('href')).toBe('#t-ill')
+    expect(hero.querySelector('.fo-box.em-skipd use')?.getAttribute('href')).toBe('#t-ill')
     // the period replaced today's skip; no skip, no start, no readiness on a protected day
-    expect(screen.queryByText('KIHAGYVA')).not.toBeInTheDocument()
+    expect(screen.queryByText('Kihagyva')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
-    expect(screen.queryByText(/MAI ÁLLAPOT/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Mai állapot/)).not.toBeInTheDocument()
     // the strip marks the protected days kímélő (mock mode's date-keyed done signal ticks today's
     // own chip done, and a done session is never muted — so read tomorrow's chip)
     expect(screen.getByRole('tab', { name: /^Péntek.*kímélő mód/ })).toBeInTheDocument()
@@ -1825,12 +1871,13 @@ describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
     fireEvent.click(within(hero).getByRole('button', { name: /Ma mégis edzek/ }))
     expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
     expect(await screen.findByText('Rendben — ma edzel, holnaptól újra kímélő mód')).toBeInTheDocument()
-    expect(screen.getByText('Kímélő mód közben edzel · csak ma, könnyítve: kevesebb sorozat, kb. 10%-kal kisebb súly')).toBeInTheDocument()
+    expect(screen.getByText('Kímélő mód közben edzel · csak ma, könnyítve')).toBeInTheDocument()
+    expect(screen.getByText('Kevesebb sorozat, kb. 10%-kal kisebb súly.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Kikapcsolom a könnyítést' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: 'Mégse' }))
-    expect(await screen.findByText('KÍMÉLŐ MÓD · 1. nap')).toBeInTheDocument()
+    expect(await screen.findByText('Kímélő mód · 1. nap')).toBeInTheDocument()
     expect(await screen.findByText('Visszaállítva · ma pihensz')).toBeInTheDocument()
 
     // day 1: the server has no return for a same-day recovery — „Jobban vagyok" ends it
@@ -1838,7 +1885,7 @@ describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
     expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
     expect(await screen.findByText('Kímélő mód befejezve')).toBeInTheDocument()
     expect(screen.queryByText('Üdv újra!')).not.toBeInTheDocument()
-    expect(screen.getByText('BETERVEZVE')).toBeInTheDocument()
+    expect(screen.getByText('Betervezve')).toBeInTheDocument()
   })
 
   it('released day: Kikapcsolom a könnyítést trains it at full load', async () => {
@@ -1857,8 +1904,8 @@ describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
     fireEvent.click(screen.getByRole('tab', { name: /^Péntek/ })) // Pén — volleyball 18:15, protected
     const vb = await findTodayCard('Volleyball')
     expect(vb).toHaveClass('is-skip')
-    expect(within(vb).getByText('KÍMÉLŐ MÓD')).toBeInTheDocument()
-    expect(within(vb).getByText('Magától kimarad · nem számít mulasztásnak.')).toBeInTheDocument()
+    expect(within(vb).getAllByText('Kímélő mód').length).toBeGreaterThan(0)
+    expect(vb.textContent).toContain('Magától kimarad · nem számít mulasztásnak.')
     expect(within(vb).queryByRole('button', { name: 'Kihagyom' })).not.toBeInTheDocument()
     // a past day's skip with a serious reason: no „Meddig tarthat?" — the period is already open
     fireEvent.click(screen.getByRole('tab', { name: /^Hétfő/ }))
@@ -1875,36 +1922,38 @@ describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
     const legs = await findTodayCard('Legs')
     await openKm(within(legs).getByRole('button', { name: 'Kihagytam' }), '2–3 nap')
     backToToday()
-    const hero = container.querySelector('.trm-hero')! as HTMLElement
-    expect(await within(hero).findByText('KÍMÉLŐ MÓD · 3. nap')).toBeInTheDocument()
+    const hero = container.querySelector('.em-hero')! as HTMLElement
+    expect(await within(hero).findByText('Kímélő mód · 3. nap')).toBeInTheDocument()
 
     fireEvent.click(within(hero).getByRole('button', { name: /Jobban vagyok/ }))
     expect(await screen.findByRole('heading', { name: 'Üdv újra!' })).toBeInTheDocument()
-    expect(screen.getByText('KÍMÉLŐ MÓD VÉGE')).toBeInTheDocument()
-    const lines = [...document.querySelectorAll('.trm-udvl .trm-whynote')].map((n) => n.textContent)
+    expect(screen.getByText('Kímélő mód vége')).toBeInTheDocument()
+    const lines = [...document.querySelectorAll('.em-udvl .fo-row')]
+      .map((n) => `${n.querySelector('strong')?.textContent} · ${n.querySelector('small')?.textContent}`)
     expect(lines[0]).toBe('2 nap kiesés · a program megy tovább a naptár szerint.')
-    expect(lines[1]).toBe('Az első edzés könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.')
+    expect(lines[1]).toBe('Könnyített kezdés · Az első edzés könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly.')
     fireEvent.click(screen.getByRole('button', { name: /Rendben/ }))
     await waitFor(() => expect(screen.queryByText('Üdv újra!')).not.toBeInTheDocument())
     expect(await screen.findByText('Üdv újra! · könnyített visszatérés')).toBeInTheDocument()
 
-    const back = container.querySelector('.trm-hero')! as HTMLElement
-    expect(within(back).getByText('VISSZATÉRŐ EDZÉS · 1/1')).toHaveClass('is-cbk')
+    const back = container.querySelector('.em-hero')! as HTMLElement
+    expect(back).toHaveClass('is-cbk')
+    expect(within(back).getByText('Visszatérő edzés · 1/1', { selector: '.em-hero-state' })).toBeInTheDocument()
     expect(within(back).getByText('Könnyített: harmadával kevesebb sorozat, kb. 10%-kal kisebb súly')).toBeInTheDocument()
-    expect(back.querySelectorAll('.trm-cbsets > div').length).toBeGreaterThan(0)
+    expect(back.querySelectorAll('.em-cbsets > div').length).toBeGreaterThan(0)
     expect(within(back).getByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
     expect(within(back).getByRole('button', { name: 'Mégsem vagyok jól' })).toBeInTheDocument()
     // the next planned run (Péntek) carries the half-length note while the ramp is on
     fireEvent.click(screen.getByRole('tab', { name: /^Péntek/ }))
     const nextRun = await findTodayCard('Piramis-intervallum')
     expect(within(nextRun).getByText('Visszatérő futás')).toBeInTheDocument()
-    expect(within(nextRun).getByText('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')).toBeInTheDocument()
+    expect(nextRun.textContent).toContain('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')
     backToToday()
 
-    fireEvent.click(within(container.querySelector('.trm-hero') as HTMLElement).getByRole('button', { name: 'Kikapcsolom a könnyítést' }))
+    fireEvent.click(within(container.querySelector('.em-hero') as HTMLElement).getByRole('button', { name: 'Kikapcsolom a könnyítést' }))
     expect(await screen.findByText('Könnyítés kikapcsolva · teljes edzés')).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByText('BETERVEZVE')).toBeInTheDocument())
-    expect(screen.queryByText(/VISSZATÉRŐ EDZÉS/)).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.getByText('Betervezve')).toBeInTheDocument())
+    expect(screen.queryByText(/Visszatérő edzés/)).not.toBeInTheDocument()
     // with the ramp off, the next run is a normal run again
     fireEvent.click(screen.getByRole('tab', { name: /^Péntek/ }))
     const run = await findTodayCard('Piramis-intervallum')
@@ -1920,14 +1969,14 @@ describe('Kímélő mód S2 — recovery on Mai (mock mode)', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: 'Mégsem vagyok jól' }))
     expect(await screen.findByText('Rendben — marad a kímélő mód')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByText('Üdv újra!')).not.toBeInTheDocument())
-    expect(within(container.querySelector('.trm-hero') as HTMLElement).getByText('KÍMÉLŐ MÓD · 3. nap')).toBeInTheDocument()
+    expect(within(container.querySelector('.em-hero') as HTMLElement).getByText('Kímélő mód · 3. nap')).toBeInTheDocument()
   })
 
   it('the estimate has passed: „… volt", the question, Még nem → toast and the question goes', async () => {
     const { container } = renderKm('/train?day=1')
     await openKm(within(await findTodayCard('Legs')).getByRole('button', { name: 'Kihagytam' }), 'Csak ma')
     backToToday()
-    const hero = container.querySelector('.trm-hero')! as HTMLElement
+    const hero = container.querySelector('.em-hero')! as HTMLElement
     expect(await within(hero).findByText('Beteg vagy · becslés: csak ma volt')).toBeInTheDocument()
     expect(within(hero).getByText('A becsült idő letelt — hogy vagy?')).toBeInTheDocument()
     fireEvent.click(within(hero).getByRole('button', { name: 'Még nem' }))
@@ -1963,17 +2012,17 @@ test('real mode: a protected today shows the recovery hero from the template; Ma
     }),
   )
   render(<QueryWrapper><ToastProvider><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></ToastProvider></QueryWrapper>)
-  expect(await screen.findByText('KÍMÉLŐ MÓD · 2. nap')).toBeInTheDocument()
-  expect(screen.getByText('Pull Day', { selector: '.trm-hero-title' })).toBeInTheDocument()
+  expect(await screen.findByText('Kímélő mód · 2. nap')).toBeInTheDocument()
+  expect(screen.getByText('Pull Day', { selector: '.em-hero-title' })).toBeInTheDocument()
   expect(screen.getByText('Sérülés / fájdalom · becslés: kb. egy hét')).toBeInTheDocument()
-  expect(screen.queryByText(/MAI ÁLLAPOT/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Mai állapot/)).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: /Ma mégis edzek/ }))
   await waitFor(() => expect(released).toEqual({ date: today, body: { lighten: true } }))
 })
 
 // Real mode: the served comeback drives the hero pill (index 2 keeps the weight), with the
 // served (already reduced) set counts.
-test('real mode: /today comeback index 2 shows VISSZATÉRŐ EDZÉS · 2/2 and „a súly nem nő"', async () => {
+test('real mode: /today comeback index 2 shows „Visszatérő edzés · 2/2" and „a súly nem nő"', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
@@ -1986,9 +2035,9 @@ test('real mode: /today comeback index 2 shows VISSZATÉRŐ EDZÉS · 2/2 and �
     })),
   )
   render(<QueryWrapper><ToastProvider><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></ToastProvider></QueryWrapper>)
-  expect(await screen.findByText('VISSZATÉRŐ EDZÉS · 2/2')).toBeInTheDocument()
+  expect(await screen.findByText('Visszatérő edzés · 2/2')).toBeInTheDocument()
   expect(screen.getByText('Könnyített: harmadával kevesebb sorozat, a súly nem nő')).toBeInTheDocument()
-  expect(document.querySelector('.trm-cbsets')?.textContent).toBe('Row3 szett')
+  expect(document.querySelector('.em-cbsets')?.textContent).toBe('Row 3 szett')
   expect(screen.queryByRole('button', { name: 'Mégsem vagyok jól' })).not.toBeInTheDocument()
 })
 

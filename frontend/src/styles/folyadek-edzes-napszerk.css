@@ -1,0 +1,66 @@
+/* ── Folyadék · Edzés · napszerk (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.ee-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
+   Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the two heroes (`napszerk()`, `sajat()`) ── the kit Hero; the name field and the poured vessel stand in it */
+.ee-hero .fo-lab { margin-top: 14px; }
+.ee-hero .fo-hero-acts .fo-btn:disabled { opacity: .45; cursor: default; }
+
+/* ── the sortable list ── its Folyadék dress is the kit's `.fo-sortable` (folyadek-kit.css); these are the editor's own additions */
+/* the open panel hangs from the card's edge, under the grip (the grip column is 14px + the 10px gap) */
+.ee-list .ee-none { margin: 0; }
+
+/* ── an editor row (`edRow()` / `sjRow()`): the head is a kit Row, the open panel hangs under it ── */
+.ee-ex { min-width: 0; }
+.ee-ex > .ee-exh { padding: 12px 0; border-top: 0; }
+.ee-list [data-sortable-row]:first-child .ee-exh { padding-top: 0; }
+.ee-exh .chev { transition: transform .2s; }
+.ee-exh.open > .chev { transform: rotate(90deg); }
+.ee-exh strong { overflow-wrap: anywhere; }
+.ee-warn { display: block; margin-top: 3px; font-size: 12.5px; line-height: 1.35; font-weight: 600; color: var(--fo-warn); }
+/* the open panel (`KnobPanel`) hangs from the card's edge, under the grip */
+.ee-sjp { margin-left: -10px; }
+
+
+/* ── the day pills and the day-name field (only when the editor holds several days) ── */
+.fo-page > .ee-days { margin: 12px 14px 0; }
+.ee-days .fo-pill { position: relative; }
+.ee-dayoff { opacity: .6; }
+.ee-daydot { position: absolute; top: 3px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--fo-warn); }
+.fo-page > .ee-rename { margin: 12px 14px 0; width: auto; }
+
+/* ── „Ma · izmonként" · „Heti szettek · izmonként" ── */
+.ee-key { margin: 0 0 14px; gap: 4px 14px; font-size: 11.5px; }
+.ee-day .fo-row .v small { margin: 0; }
+.ee-bands .fo-row strong { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+
+/* ── „Ellenőrzés": two collapsible rows (`.vs-cv`, `.vs-in.col`) ── */
+
+/* ── the exercise picker (`xpick`, `xpBody()`) ── */
+.ee-xph { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 10px; }
+.ee-xph > span { font-size: 12.5px; font-weight: 650; color: var(--fo-ok); }
+.ee-xq { margin-bottom: 10px; }
+.ee-xsub { margin-top: 8px; }
+.ee-xlist { margin-top: 8px; }
+.ee-xrow { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.ee-xrow > .fo-row-main { grid-area: 1 / 1; min-height: 44px; }
+.ee-xrow strong { overflow-wrap: anywhere; }
+.ee-stim { display: flex; align-items: center; gap: 6px; margin-top: 7px; }
+.ee-stim em { font-style: normal; font-size: 9.5px; font-weight: 700; letter-spacing: .5px; color: var(--fo-faint); }
+.ee-plus { width: 30px; height: 30px; border-radius: 50%; background: var(--fo-page); display: grid; place-items: center; font-size: 18px; font-weight: 600; color: var(--dom); flex: 0 0 auto; }
+/* the demo link stands in the STIM line (after the 32px chip, the caption and the five drops), over the row button */
+.ee-demo { grid-area: 1 / 1; align-self: end; justify-self: start; z-index: 1; margin-left: 152px; font-size: 12px; }
+.ee-vid { position: relative; grid-column: 1; margin: 10px 0 0; border-radius: 18px; overflow: hidden; background: var(--fo-page); }
+.ee-vid iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.ee-xnone { margin-top: 14px; }
+/* the row's leading chip: the demo photo cropped to a muscle chip's size, or the muscle chip itself */
+img.ee-thumb, span.ee-thumb:not(.ex-mchp) { display: grid; place-items: center; flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--fo-page);
+  box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .1); font-family: var(--ff-display); font-size: 13px; font-weight: 700; color: var(--fo-sub); }
+
+@media (max-width: 360px) {
+  .ee-demo { margin-left: 148px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+}
+@media (prefers-reduced-motion: reduce) {
+  .ee-exh .chev { transition: none; }
+}

@@ -1,10 +1,9 @@
 // ============================================================
-// Mezo · MesoTemplateEditorPage (mezo-meyc.1) — the template's own day-plan
-// editor at /train/mesocycles/templates/:id. Full-screen sibling route (no
-// sub-nav): the page resolves the template, then renders the UNIFIED
-// MesoWeekEditor (mezo-yty6) in `template` mode — the very same editor the
-// wizard's third step renders. The old `pghead-np` head + <details> chrome is
-// retired: one task, one UI.
+// Mezo · MesoTemplateEditorPage (mezo-meyc.1; Folyadék mezo-n4wf5.3, prototype
+// vilagos/edzes.js `sablonszerk()` → `weekEd('sablonszerk')`, states `tolt` / `nincs`) —
+// the template's own day-plan editor at /train/mesocycles/templates/:id. The page resolves
+// the template, then renders the UNIFIED MesoWeekEditor (mezo-yty6) in `template` mode —
+// the very same editor the planner's draft renders: one task, one UI.
 //
 // Persistence mirrors MesoExercises: local day-state is authoritative and
 // updates synchronously (instant UI), each add/remove/change/reorder fires a
@@ -14,18 +13,16 @@
 // write, so re-seeding would swap the ids out from under the open accordion.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMesoTemplates, useTimingProfile } from '@/data/hooks'
 import type { GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { CtaGhost } from '@/shared/ui/Cta'
-import { GhostState } from '@/shared/ui/GhostState'
 import { MesoWeekEditor } from '@/features/train/components/MesoWeekEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
 import { seedDays, toDayInputs } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
-import { useFrameBack, useHasTitleBar } from '@/shared/ui/folyadek'
+import { Btn, Card, EmptyTank, FrameBack, Page, Skel, useFrameTitle } from '@/shared/ui/folyadek'
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
 // every edit on this page (day plan, rename, tiers) travels through this one helper.
@@ -74,45 +71,10 @@ export function MesoTemplateEditorPage() {
   const { templates, pending, updateTemplate } = useMesoTemplates()
   const template = templates.find((t) => t.id === id)
 
-  // Folyadék frame (mezo-n4wf5.1): the shell's title bar draws the back control and runs this
-  // handler; the page keeps its own sticky back bar only where no title bar is mounted.
-  useFrameBack(goBack)
-  const shellHasBack = useHasTitleBar()
-  const backBar = shellHasBack ? null : (
-    <div className="sticky-top" style={{ padding: '8px 24px' }}>
-      <button type="button" onClick={goBack} className="row gap-sm">
-        <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
-        <span className="eyebrow">Vissza</span>
-      </button>
-    </div>
-  )
-
   // Real-mode load: the list query is what resolves the template, so wait it out
   // before deciding "not found" (mock seeds synchronously → never shows).
-  if (pending) {
-    return (
-      <div>
-        {backBar}
-        <div style={{ padding: '12px 24px' }}>
-          <GhostState lines={3} message="Sablon betöltése…" />
-        </div>
-      </div>
-    )
-  }
-
-  if (!template) {
-    return (
-      <div>
-        {backBar}
-        <div style={{ padding: '12px 24px' }}>
-          <p className="text-secondary" style={{ fontSize: 14 }}>Ez a sablon nem található.</p>
-          <div className="mt-lg">
-            <CtaGhost onClick={goBack}>← Mesociklusok</CtaGhost>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  if (pending) return <TemplateLoading onBack={goBack} />
+  if (!template) return <TemplateMissing onBack={goBack} />
 
   // Remounts (and reseeds) only when the route points at another template.
   return (
@@ -125,6 +87,32 @@ export function MesoTemplateEditorPage() {
           // next change retries the whole document.
           .catch(() => {})}
     />
+  )
+}
+
+/** The loading face in the shape of the editor: the hero, then the day rows. */
+function TemplateLoading({ onBack }: { onBack: () => void }) {
+  useFrameTitle({ title: 'Szerkesztés', eyebrow: 'Sablon betöltése…' })
+  return (
+    <Page className="ew-page">
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ Vissza</FrameBack>
+      <Skel blocks={[300, 64, 64, 64, 64, 64]} label="Sablon betöltése…" />
+    </Page>
+  )
+}
+
+function TemplateMissing({ onBack }: { onBack: () => void }) {
+  const navigate = useNavigate()
+  useFrameTitle({ title: 'Sablon', eyebrow: 'Sablonjaid' })
+  return (
+    <Page className="ew-page">
+      <FrameBack className="fo-backpill" onBack={onBack}>‹ Vissza</FrameBack>
+      <Card>
+        <EmptyTank icon="t-other" actions={<Btn sm onClick={() => navigate('/train/templates')}>Sablonjaid</Btn>}>
+          Ez a sablon nem található.
+        </EmptyTank>
+      </Card>
+    </Page>
   )
 }
 

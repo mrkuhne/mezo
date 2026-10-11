@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-10-10
+updated: 2026-10-11
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -16,6 +16,8 @@ related: [today, ritual, _platform-data-layer, growth]
 ---
 
 # Needs — Életjel-ringek (Sims-style Needs)
+
+> **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** `EletjelPage` changed in one line: its standalone back pill is the kit's `.fo-backpill` (the local `.nb-back` copy is gone). Nothing else moved.
 
 > **2026-10-10 — Folyadék F2 · Nap (`mezo-n4wf5.2`).** No ring is drawn anywhere any more (bible §1.4): each need is a **level in a vessel**. The Életjelek page (`/nap/eletjel`) is six vials + six rows with a level; the Beszélgetés tab „Életjelek" opens with the same six vials (`EletjelStrip`); and **Mai's big number is the average of the six** (`needsAverage`, `frontend/src/features/today/logic/needsAverage.ts` — owner decision 2026-10-10). Only a need in the red / critical band takes the warn colour and the „figyelj" mark. Nudge copy says „szint" instead of „ring", and a nudge speaks in the field of its need (Étkezés, Alvás, Mozgás, Közérzet, Mezo). The engine (`needs.ts`, `needsInputs.ts`, `useNeeds.ts`), the day-close backend and the XP rule are unchanged. Look: [Folyadék style bible](../design_2.0/2026-10-09-folyadek-style-bible.md); build target [`vilagos/nap.js`](../design_2.0/prototypes/vilagos/nap.js) `eletjel()`.
 

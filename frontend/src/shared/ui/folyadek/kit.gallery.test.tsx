@@ -11,7 +11,19 @@ it('renders every export once with realistic props and logs no console error', (
       <K.Hero label="Mai állapot" verdict="Ma jó nap egy közepes edzéshez." sub="Hét óra negyven alvás." actions={<button className="btn">Check-in</button>} />
       <K.Hero verdict="Nincs adat." warn />
       <K.Hero label="Mezo" verdict="Három új üzenet." sub="Kettő választ vár." left={<K.Badge member="mezo" size={64} />} role="group" aria-label="Üzenetek" />
-      <K.Section n={1} title="Mai szintek" link="Mind" />
+      <K.Hero big art="t-peak" label="Terv" verdict="Hypertrophy 04" actions={<><K.Btn>Indítás</K.Btn><K.Btn bad>Lezárás</K.Btn><K.Note>Sablonból indulsz</K.Note></>}>
+        <K.HeroGraphic wide><K.Level pct={20} label="12 szett megvan" value="60" /></K.HeroGraphic>
+        <K.Ft items={['máj. 1.', 'a terv íve', 'jún. 12.']} />
+      </K.Hero>
+      <K.Card className="fo-sortable">
+        <K.Row icon="t-scroll" title="Lezárt futam" onClick={() => {}} chev right={<K.St tone="ok">riport</K.St>} />
+        <K.Row icon="t-trash" bad title="Törlés" disabled onClick={() => {}} />
+        <K.Row icon="t-muscle" title="Mell" onClick={() => {}} chev={false} more={<span className="fo-rowbar"><K.Caps n={4} done={2} /></span>} />
+        <div className="fo-under"><K.Lk bad disabled>Kivesz</K.Lk></div>
+        <div className="fo-log"><K.Stepper label="Körök" input={{ value: '4', onChange: () => {} }} onDec={() => {}} onInc={() => {}} /></div>
+        <K.Tags items={[{ icon: 't-flame', color: 'var(--fo-warn)', label: 'becslés' }]} />
+      </K.Card>
+      <K.Section n={1} title="Mai szintek" link="Mind" className="x" />
       <K.Card><K.Row icon="t-flame" title="Kalória" sub="1 040 van még" value="2 060" onClick={() => {}} right={<K.Mini pct={66} />} /></K.Card>
       <K.Tank pct={68} num="68" cap="pont" label="Mai állapot" verdict="Jó nap" marks={[100, 50, 0]} cta="Délutáni check-in" onCta={() => {}} />
       <K.Vials items={[{ label: 'Kalória', value: '2 060', pct: 66, icon: 't-flame', color: '#1877F2', mark: '3 100', note: '1 040 van még' }, { label: 'Fehérje', value: '148 g', pct: 67, icon: 't-meat', color: '#E8615C' }]} />
@@ -75,20 +87,46 @@ it('renders every export once with realistic props and logs no console error', (
         <K.Tank pct={66} num="87" height={430} tone="dusk" label="Szerda · lezárva" verdict="Jó nap." air="Hajnalban megírom." onAir={() => {}} airLabel="A nap részletei"
           extra={<button type="button" className="fo-tank-shift" aria-expanded={false}><span>alap 89</span><span>a Mezo szerint <b>−2</b></span></button>} />
         <K.FoSheetHead icon="t-sleep" title="Alvás" titleId="sh" sub="Tegnap éjjel" onBack={() => {}} onClose={() => {}} />
+        <K.FoSheetHead eyebrow="Izomcsoportok" icon="t-info" title="Mit mutat a sáv?" onClose={() => {}} />
+        <K.Card>
+          <K.Tubes aria-label="A terv hetei" size="wk" gap={6} items={[52, 61, 75, 75, 84, 38].map((n, i) => ({ label: `${i + 1}.`, value: n, pct: n, wl: i === 2 ? 80 : undefined, now: i === 2, ghost: i > 2, hatch: i === 5, over: i === 4, mark: i === 4 ? 'MRV' : undefined, icon: i === 0 ? 't-dumbbell' as const : undefined, onClick: i === 2 ? () => {} : undefined }))} />
+          <K.Caps n={4} done={2} cur={2} label="2 / 4 szett" />
+          <K.Caps n={7} on={[0, 1, 3]} size="wide" labels={['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V']} />
+          <K.LevelMarks pct={64} marks={[{ at: 80, label: 'múlt hét' }, { at: 95, dashed: true }]} />
+          <K.Split a={45} b={30} big />
+          <K.Pour parts={[{ n: 4, color: '#3A7CA5' }, { n: 3, color: '#8A6FC0' }]} aria-label="7 szett" />
+          <K.Pour parts={[]} empty="Még nincs gyakorlat" />
+          <K.Legend items={[{ label: 'kész' }, { label: 'még jön', kind: 'hatch' }, { label: 'nyolc szett', kind: 'line' }, { label: 'múlt hét', kind: 'dash' }, { label: 'az edény széle', kind: 'vessel' }]} />
+          <K.DropsMeter n={2} />
+          <K.EmptyTank icon="t-dumbbell" actions={<K.Btn>Új terv</K.Btn>}>Még nincs futó terved.</K.EmptyTank>
+          <K.Skel />
+          <K.Box icon="t-info" title="Rear Delt Fly"><p>Fáj a jobb vállad. Ma óvatosan.</p></K.Box>
+          <K.Tags items={['5 gyakorlat', { icon: 't-record', label: '3 medál' }]} />
+          <K.Stepper label="Szettek" sub="gyakorlatonként" value="3" n={3} min={1} max={6} onDec={() => {}} onInc={() => {}} />
+          <K.Stepper name="Ismétlés" value="auto" auto onDec={() => {}} onInc={() => {}} />
+          <K.Slider aria-label="Megélt terhelés (RPE)" value={7} onChange={() => {}} />
+          <K.Pair items={[{ icon: 't-dumbbell', small: 'Gyors indítás', label: 'Egyedi edzés', onClick: () => {} }, { icon: 't-volley', small: 'Gyors indítás', label: 'Sport naplózása', to: '/train/sport' }]} />
+          <K.SheetActs label="Mentés" onSave={() => {}} onCancel={() => {}} />
+          <K.Area values={[52, 61, 75, 75, 84, 38]} min={20} max={92} marks={[{ i: 2, label: 'most · 75', kind: 'now' }, { i: 4, label: 'csúcs · 84', kind: 'pr' }]} />
+        </K.Card>
+        <K.InfoSheet eyebrow="Izomcsoportok" title="Mit mutat a sáv?" copy="A színes rész az elvégzett szett, a halvány a hét teljes kérése." onClose={() => {}} />
         <K.Foot><K.Btn grow>Kész</K.Btn></K.Foot>
       </K.Page>
     </K.FrameProvider></MemoryRouter>,
   )
   expect(container.querySelectorAll('svg').length).toBeGreaterThan(10)
   // every kit export is a component or a constant this gallery knows: a new export must be rendered above
-  const rendered = ['Hero', 'Section', 'Card', 'Row', 'Tank', 'Vials', 'Mini', 'Level', 'Fill', 'Area', 'Linked', 'Stream', 'PerDay', 'Bub', 'Badge', 'Drop',
+  const rendered = ['Hero', 'HeroGraphic', 'Ft', 'Section', 'Card', 'Row', 'Tank', 'Vials', 'Mini', 'Level', 'Fill', 'Area', 'Linked', 'Stream', 'PerDay', 'Bub', 'Badge', 'Drop',
     'Page', 'Foot', 'TwoBtn', 'Btn', 'Lk', 'Acts', 'Pill', 'Pills', 'Seg', 'St', 'Chips', 'Facts', 'Note', 'Txt', 'Why', 'Lab', 'Empty', 'ErrorRow', 'Head',
-    'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big']
+    'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big',
+    'Tubes', 'Caps', 'LevelMarks', 'Split', 'Pour', 'Legend', 'DropsMeter', 'EmptyTank', 'Skel', 'Box', 'Tags', 'Stepper', 'Slider', 'Pair', 'SheetActs', 'InfoSheet']
   const known = [...rendered, 'Wave', 'MEMBER_LABEL', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar']
   expect(Object.keys(K).filter((k) => !known.includes(k))).toEqual([])
   expect(container.querySelector('[data-testid="pg"]')).toHaveClass('fo-page', 'fo-dusk', 'has-foot', 'nonav')
   expect(container.querySelector('[data-testid="card"]')).toHaveAttribute('aria-label', 'Rutin')
   expect(container.querySelectorAll('.fo-foot')).toHaveLength(2)
+  // the info sheet is portalled out of the page
+  expect(document.body.querySelector('.sheet.fo-sheet [role="dialog"], .sheet.fo-sheet')).not.toBeNull()
   expect(container.querySelector('circle[stroke-dasharray]')).toBeNull()
   expect(container.textContent).not.toMatch(/Szunya|Mocor|Falat|Derű/)
   expect(err).not.toHaveBeenCalled()

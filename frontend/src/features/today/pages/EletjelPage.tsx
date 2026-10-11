@@ -99,7 +99,7 @@ export function EletjelPage() {
 
   return (
     <Page className="nb-page">
-      <FrameBack history className="nb-back" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
+      <FrameBack history className="fo-backpill" onBack={() => navigate(-1)}>‹ Ma</FrameBack>
       <Hero
           data-kalauz-anchor="eletjel-gyuru"
           label={avg == null ? 'A hat jel' : `A hat jel · átlag ${avg}`}

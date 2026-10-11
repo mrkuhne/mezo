@@ -1,89 +1,60 @@
 // ============================================================
-// Mezo · TrainWeekMapPage („Izomtérkép") — Terhelés subpage (Train Titanium
-// T12 Task 4). Source of truth: docs/design_2.0/prototypes/companion-titanium
-// /load-pages.js (`mapScreen`, `mapFigure`) + load.css `.ld-map-page`/`.ld-legend`
-// /`.ld-wait`, ported onto the `.ld-` house section (styles/prototype.css).
+// Mezo · TrainWeekMapPage („Izomtérkép") — Terhelés subpage, Folyadék face (mezo-n4wf5.3,
+// slice F3). Prototype: docs/design_2.0/prototypes/vilagos/edzes.js `terkep()` (route
+// `#w-edzes-terkep`, args `terv` / `megvan` / `ures` / `tolt`), sheet `info` (arg `terkep`).
 //
-// The doorway from TrainWeekPage lands here with the SAME `doneRows`/`heatRows`
-// split it itself reads (loadWeek.ts header note) — this page just draws more of
-// it: the full front+back BodyMap, a mode toggle that re-renders the SAME heat
-// (never re-derives it from scratch), the untouched-muscle list, and the sport-
-// reach note. The mode toggle re-renders heat ONLY:
-//   · „Eddig megvolt" — mapWeekHeat(doneRows, heatRows), the Task-3 honesty cut
-//     (an 'over' status must come from LOGGED work, never tonight's unlogged plan).
-//   · „A heti terv" — mapHeat(heatRows, 'planned'), the plan's own bucket per group.
-// The legend speaks WORDS, not a status enum: 'entering' rides, unlabeled,
-// between „elkezdted" and „jó úton" (BodyMap.tsx's own OPACITY comment — it is an
-// interpolated, transient state, not a fourth named bucket).
+// The doorway from TrainWeekPage lands here with the SAME `doneRows`/`heatRows` split it
+// itself reads (loadWeek.ts header note) — this page just draws more of it: the body from
+// both sides as a vessel, a mode toggle that re-pours the SAME heat (never re-derives it
+// from scratch), the untouched-group list, the sport-reach note and the doorway to every
+// muscle sign. The mode toggle changes the liquid ONLY:
+//   · „Eddig megvolt" — mapWeekHeat(doneRows, heatRows), the honesty cut (an 'over' status
+//     must come from LOGGED work, never tonight's unlogged plan). The whole plan stands in
+//     pale liquid; the logged work rises in it, deep.
+//   · „A heti terv" — mapHeat(heatRows, 'planned'), the plan's own bucket per group: the
+//     more the week asks, the fuller.
+// The levels are the live logic's (loadLiquid.ts HEAT_FILL), not the prototype's
+// done/planned approximation; the key under the body names each group with its real numbers
+// and the WORD of its real level ('entering' is still below the floor in logged work, so it
+// reads „elkezdted").
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useRunning, useWeekMuscleLog } from '@/data/hooks'
-import { useBackNav } from '@/shared/hooks/useBackNav'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { Icon3D } from '@/shared/ui/clay'
-import { BodyMap, type BodyHeat } from '@/features/train/components/BodyMap'
+import {
+  Card, FrameBack, Hero, Legend, Note, Page, Row, Section, Seg, Txt, useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { DuoBody, Mchp, deepMuscle } from '@/features/train/components/folyadek'
 import { InfoButton } from '@/features/train/components/InfoButton'
 import { weekZoneRows } from '@/features/train/logic/weekZone'
-import { mapHeat, mapWeekHeat, sportReach, untouchedMuscles } from '@/features/train/logic/loadWeek'
+import { loadGroups, mapHeat, mapWeekHeat, sportReach, untouchedMuscles } from '@/features/train/logic/loadWeek'
+import { HEAT_WORD, heatEntries } from '@/features/train/logic/loadLiquid'
 import { sportLoadForWeek } from '@/features/train/logic/sportMuscleLoad'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { LIVE_MUSCLES } from '@/features/train/logic/muscleColors'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
+import TrainWeekSkeleton, { TerhelesNoPlan } from '@/features/train/pages/TrainWeekSkeleton'
 
 type MapMode = 'done' | 'planned'
 
-const LEGEND: Array<{ level: BodyHeat['level']; word: string }> = [
-  { level: 'none', word: 'még vár' },
-  { level: 'below', word: 'elkezdted' },
-  { level: 'in', word: 'jó úton' },
-  { level: 'over', word: 'megvan' },
+const MODES: { key: MapMode; label: string }[] = [
+  { key: 'done', label: 'Eddig megvolt' },
+  { key: 'planned', label: 'A heti terv' },
 ]
-
-function MapSkeleton() {
-  return (
-    <div role="status" aria-label="Betöltés…">
-      <div style={{ position: 'relative', padding: '58px 24px 20px' }}>
-        <Skeleton width={90} height={11} />
-        <div style={{ marginTop: 10 }}><Skeleton width={200} height={26} /></div>
-        <div style={{ marginTop: 10 }}><Skeleton width="88%" height={12} /></div>
-      </div>
-      <div style={{ padding: '0 24px 19px' }}>
-        <Skeleton width={140} height={30} radius={999} />
-        <div style={{ marginTop: 16 }}><Skeleton width="70%" height={220} /></div>
-        <div className="col gap-sm" style={{ marginTop: 20 }}>
-          {Array.from({ length: 3 }, (_, i) => (
-            <SkeletonCard key={i} style={{ height: 48, borderRadius: 14 }}>
-              <Skeleton width="60%" height={12} />
-            </SkeletonCard>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export function TrainWeekMapPage() {
   const { sport, activeMeso, workoutPending, workout, completedTodayWorkout } = useTrain()
   const { activeRunningBlock, runningPending } = useRunning()
   const weekLog = useWeekMuscleLog()
   const navigate = useNavigate()
-  const goBack = useBackNav('/train/week')
   const [mode, setMode] = useState<MapMode>('done')
+  useFrameTitle({ title: 'Izomtérkép', eyebrow: 'Terhelés' })
 
-  if (workoutPending || runningPending || weekLog.pending) return <MapSkeleton />
+  const back = <FrameBack history fallback="/train/week" label="Vissza: Terhelés" className="fo-backpill">‹ Terhelés</FrameBack>
+
+  if (workoutPending || runningPending || weekLog.pending) return <TrainWeekSkeleton blocks={[430, 90, 90]} />
 
   if (!activeMeso) {
-    return (
-      <MozaikPage tone="gold">
-        <PageBody className="tw-map">
-          <GhostState lines={3} message="Az izomtérkép itt jelenik majd meg — előbb tervezz egy mesociklust."
-            ctaLabel="+ Tervezz mesociklust" onCta={() => navigate('/train/mesocycles/new')} />
-        </PageBody>
-      </MozaikPage>
-    )
+    return <TerhelesNoPlan label="Izomtérkép" verdict="Az izomtérkép itt jelenik majd meg." back={back} />
   }
 
   const days = activeMeso.days ?? []
@@ -102,103 +73,101 @@ export function TrainWeekMapPage() {
     : null
   const heatRows = weekZoneRows({ plannedDays: days, completed: weekLog.details, todayPlan })
 
-  const heat = mode === 'done' ? mapWeekHeat(doneRows, heatRows) : mapHeat(heatRows, 'planned')
+  const doneHeat = mapWeekHeat(doneRows, heatRows)
+  const heat = mode === 'done' ? doneHeat : mapHeat(heatRows, 'planned')
+  // mapWeekHeat keeps heatRows' order, so the level of a group is the heat row at its index.
+  const levelOf = new Map(heatRows.map((r, i) => [r.group, doneHeat[i]?.level ?? 'none'] as const))
+  const groups = loadGroups(doneRows)
   const waiting = untouchedMuscles(doneRows)
   const plannedSets = doneRows.reduce((t, r) => t + r.plannedSets, 0)
   const reach = sportReach(sportLoadForWeek(sportSlots, runSessions))
+  const planned = mode === 'planned'
+
+  const allReached = 'Minden izomcsoportod sorra került ezen a héten.'
+  const verdict = plannedSets === 0
+    ? 'Ezen a héten még nincs betervezett szett.'
+    : planned
+      ? `${plannedSets} szettet kér tőled ez a hét.`
+      : waiting.length > 0 ? `${waiting.length} izomcsoport még munkára vár ezen a héten.` : allReached
+  // the numbered drops count only the sections this week actually has
+  const nWait = plannedSets > 0 ? 1 : 0
+  const nSport = nWait + (reach.length > 0 ? 1 : 0)
 
   return (
-    <MozaikPage tone="gold">
-      <EntranceGroup>
-        <header className="ld-hero is-slim rise" style={{ '--d': '40ms' } as CSSProperties}>
-          <span className="ld-hero-wash" />
-          <button type="button" className="mz-backbtn ld-back" onClick={goBack}>‹ Terhelés</button>
-          <span className="ld-eyebrow">Izomtérkép</span>
-          <p className="ld-hero-say" style={{ fontSize: 17, fontWeight: 400, color: 'var(--text-primary)', marginTop: 8 }}>
-            Hol tart a tested?
-          </p>
-          <p className="ld-hero-say">
-            Amit már megmozgattál, erősebben világít — ami még vár, az csak körvonal.{' '}
-            <InfoButton
-              title="Miből rajzoljuk?"
-              copy="A futó terved e heti szettjeiből: minden izom annyira fénylik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott az erősebb szín többet kérő izmot jelent."
+    <Page className="et-page">
+      {back}
+      <Hero
+        className="et-maphero"
+        label={planned ? 'Izomtérkép · a heti terv' : 'Izomtérkép · eddig megvolt'}
+        verdict={verdict}
+        sub={planned
+          ? 'Minél többet kér a hét egy izomtól, annál teltebb.'
+          : 'Amit már megmozgattál, sötétebben telik — ami még vár, az halvány marad.'}
+        actions={(
+          <InfoButton
+            eyebrow="Izomtérkép"
+            title="Miből rajzoljuk?"
+            copy="A futó terved e heti szettjeiből: minden izom annyira telik, amennyi a heti munkájából már megvan. A terv nézet azt festi fel, mit kér a hét — ott a teltebb izom többet kérő izmot jelent."
+          />
+        )}
+      >
+        <Seg className="et-modes" aria-label="Nézet" items={MODES} value={mode} onChange={setMode} />
+        <span className="et-map" data-mode={mode} data-heat={heat.map((h) => `${h.token}:${h.level}`).join(' ')}>
+          <DuoBody entries={heatEntries(heat, mode)} size="xl" ariaLabel="Elöl és hátul: a heti terhelésed" />
+        </span>
+        <div className="et-sides" aria-hidden="true"><span>elölről</span><span>hátulról</span></div>
+        <Legend
+          center
+          className="et-key"
+          items={groups.map((g) => ({
+            color: deepMuscle(g.colorMuscle),
+            label: planned
+              ? <>{g.label} <b>{g.plannedSets}</b></>
+              : <>{g.label} <b>{g.doneSets}/{g.plannedSets}</b> {HEAT_WORD[levelOf.get(g.group) ?? 'none']}</>,
+          }))}
+        />
+        <Note>
+          {planned
+            ? 'Minél többet kér a hét, annál teltebb az izom.'
+            : 'Négy állapot: még vár · elkezdted · jó úton · megvan. A szín az izomcsoporté, nem ítélet.'}
+        </Note>
+      </Hero>
+
+      {plannedSets > 0 && (
+        <>
+          <Section n={nWait} title="Még munkára vár" />
+          <Card className="et-wait">
+            {waiting.length > 0
+              ? waiting.map((r) => (
+                <Row key={r.label} left={<Mchp muscle={r.colorMuscle} sm />} title={r.label} sub={`${r.plannedSets} szett vár a héten`} />
+              ))
+              : <Txt>{allReached}</Txt>}
+          </Card>
+        </>
+      )}
+
+      {reach.length > 0 && (
+        <>
+          <Section n={nSport} title="A sport is dolgozott" />
+          <Card>
+            <Row
+              icon="t-volley"
+              title={`A sport ezeket is dolgoztatta: ${reach.join(', ')}.`}
+              sub="Becslés, nem mérés — a szettszámokba nem számít bele."
             />
-          </p>
-        </header>
+          </Card>
+        </>
+      )}
 
-        {/* `.pl-sub` only re-widths the quiet `.pl-row` doorway below (prototype.css:15215)
-            — the prototype's own subpage container carries it for exactly that reason. */}
-        <PageBody className="pl-sub tw-map">
-          <div className="segtabs ld-modes" role="group" aria-label="Nézet">
-            <button type="button" className="segtab" aria-pressed={mode === 'done'} onClick={() => setMode('done')}>
-              Eddig megvolt
-            </button>
-            <button type="button" className="segtab" aria-pressed={mode === 'planned'} onClick={() => setMode('planned')}>
-              A heti terv
-            </button>
-          </div>
-
-          <div className="ld-map-stage rise" style={{ '--d': '90ms' } as CSSProperties}>
-            <BodyMap heat={heat} views="both" className="ld-map-big" ariaLabel="Elöl és hátul: a heti terhelésed" />
-            <div className="ld-map-sides"><span>elölről</span><span>hátulról</span></div>
-            {mode === 'done' ? (
-              <div className="ld-legend">
-                {LEGEND.map((l) => (
-                  <span key={l.level} className={`is-${l.level}`}><i />{l.word}</span>
-                ))}
-              </div>
-            ) : (
-              <div className="ld-legend">
-                <span className="is-planned"><i />minél többet kér a hét, annál erősebb a szín</span>
-              </div>
-            )}
-          </div>
-
-          {plannedSets === 0 ? null : waiting.length > 0 ? (
-            <>
-              <h3 className="ld-h3">Még munkára vár</h3>
-              <div className="ld-wait rise" style={{ '--d': '130ms' } as CSSProperties}>
-                {waiting.map((r) => (
-                  <span key={r.label} className="ld-wait-row" style={{ '--mus-color': muscleColor(r.colorMuscle).rail } as CSSProperties}>
-                    <strong>{r.label}</strong>
-                    <small>{r.plannedSets} szett vár a héten</small>
-                  </span>
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="ld-wait-done rise" style={{ '--d': '130ms' } as CSSProperties}>
-              Minden izomcsoportod sorra került ezen a héten.
-            </p>
-          )}
-
-          {reach.length > 0 && (
-            <p className="ld-sport-note rise" style={{ '--d': '150ms' } as CSSProperties}>
-              <Icon3D name="t-volley" size={20} />
-              <span>
-                A sport ezeket is dolgoztatta: {reach.join(', ')}.
-                <em>Becslés, nem mérés — a szettszámokba nem számít bele.</em>
-              </span>
-            </p>
-          )}
-
-          {/* The doorway to „Minden izomjel" — the prototype's own quiet row at the foot of
-              `mapScreen()` (load-pages.js:140-141), BELOW the sport footnote (line 139 runs
-              first). Copy verbatim (parity P2 Task 1, matrix §13). */}
-          <button
-            type="button"
-            className="pl-row is-quiet rise"
-            style={{ '--d': '160ms' } as CSSProperties}
-            onClick={() => navigate('/train/week/jelek')}
-          >
-            <span>
-              <strong>Minden izomjel</strong>
-              <small>A 21 izom, saját jellel, régiónként</small>
-            </span>
-            <b aria-hidden="true">›</b>
-          </button>
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+      <Section n={nSport + 1} title="Mélyebben" />
+      <Card>
+        <Row
+          icon="t-pattern"
+          title="Minden izomjel"
+          sub={`A ${LIVE_MUSCLES.length} izom, saját jellel, régiónként`}
+          onClick={() => navigate('/train/week/jelek')}
+        />
+      </Card>
+    </Page>
   )
 }

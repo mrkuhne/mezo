@@ -65,7 +65,7 @@ async function pick(name: string | RegExp) {
 test('the picker renders all eleven tiles with their target minutes', async () => {
   const { container } = renderPage()
   expect(await screen.findByText('Mi volt ma mozgás?')).toBeInTheDocument()
-  expect(container.querySelectorAll('.sp-grid .sp-tile')).toHaveLength(11)
+  expect(container.querySelectorAll('.es-spg > button')).toHaveLength(11)
   for (const name of [
     'Röplabda', 'CrossFit / HIIT', 'TRX / funkcionális', 'Kerékpár', 'Úszás', 'Foci',
     'Kosárlabda', 'Tenisz', 'Túra', 'Egyéb mozgás', 'Futás',
@@ -145,7 +145,7 @@ test('the override dialog round-trips the athlete\'s own kcal into the request',
   await userEvent.clear(field)
   await userEvent.type(field, '640')
   await userEvent.click(screen.getByRole('button', { name: /Ezt mentem/ }))
-  expect(await screen.findByText('Saját értéket adtál meg — ezt mentjük, nem a becslést.')).toBeInTheDocument()
+  expect(await screen.findByText(/^Saját értéket adtál meg \(\d+ kcal\) — ezt mentjük, nem a becslést\.$/)).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
   await waitFor(() => expect(logged).toHaveLength(1))
   expect(logged[0].kcalOverride).toBe(640)
@@ -161,7 +161,7 @@ test('the override is clearable — the request then carries no kcalOverride', a
   await userEvent.click(screen.getByRole('button', { name: /Ezt mentem/ }))
   await userEvent.click(await screen.findByRole('button', { name: 'Töröld a saját értéket' }))
   await waitFor(() =>
-    expect(screen.queryByText('Saját értéket adtál meg — ezt mentjük, nem a becslést.')).not.toBeInTheDocument())
+    expect(screen.queryByText(/Saját értéket adtál meg/)).not.toBeInTheDocument())
   await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
   await waitFor(() => expect(logged).toHaveLength(1))
   expect(logged[0].kcalOverride).toBeUndefined()
@@ -180,7 +180,7 @@ test.each(['0', '9999'])('the override dialog refuses %s — it never reaches th
   await userEvent.click(screen.getByRole('button', { name: /Ezt mentem/ }))
   // The dialog stays open with an inline refusal, and no override is taken.
   expect(await screen.findByText('Adj meg egy értéket 1 és 5000 kcal között.')).toBeInTheDocument()
-  expect(screen.queryByText('Saját értéket adtál meg — ezt mentjük, nem a becslést.')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Saját értéket adtál meg/)).not.toBeInTheDocument()
 })
 
 test('the Kalória input carries the contract\'s own min of 1, not 0', async () => {
@@ -197,10 +197,17 @@ test('a failed save surfaces a Hungarian line and re-enables the CTA', async () 
   renderPage()
   await pick(/Foci/)
   await userEvent.click(screen.getByRole('button', { name: /Naplózom/ }))
-  expect(await screen.findByText('Nem sikerült elmenteni a mozgást. Nézd meg a kapcsolatot, és próbáld újra.'))
-    .toBeInTheDocument()
+  // Folyadék (prototype `sportlog('hiba')`): the failure is its own card — what happened, what to do, „Újra".
+  const alert = await screen.findByRole('alert')
+  expect(alert).toHaveTextContent('Nem sikerült elmenteni a mozgást.')
+  expect(alert).toHaveTextContent('Nézd meg a kapcsolatot, és próbáld újra.')
   // No ceremony — the form is still there, and the CTA can be pressed again.
   expect(screen.getByRole('button', { name: /Naplózom/ })).toBeEnabled()
+  // „Újra" retries the same save; once the wire answers, the ceremony takes over.
+  wire.fails = false
+  await userEvent.click(within(alert).getByRole('button', { name: 'Újra' }))
+  expect(logged).toHaveLength(2)
+  expect(await screen.findByText('FOCI · MA')).toBeInTheDocument()
 })
 
 // ---- the save: which field lands where on the wire ----
@@ -294,7 +301,51 @@ test('no emoji anywhere on either step — the art is the 3D sprite', async () =
   await pick(/Röplabda/)
   await screen.findByLabelText('Időtartam')
   expect(container.textContent ?? '').not.toMatch(emoji)
-  // the art is a Titanium 3D sprite <svg><use> reference (the sport's own glyph), never a glyph
+  // the art is a sprite <svg><use> reference (the sport's own glyph) in the hero, never a text glyph
   expect(within(container).getByLabelText('Időtartam')).toBeInTheDocument()
-  expect(container.querySelector('.sp-head-art svg use')?.getAttribute('href')).toBe('#t-volley')
+  expect(container.querySelector('.fo-hero .es-sportart svg use')?.getAttribute('href')).toBe('#t-volley')
+})
+
+// ---- Folyadék structure (mezo-n4wf5.3, prototype `sportlog()`) ----
+
+test('the picker is a closed hero + one numbered card; the page draws its own title row (the route has no chrome)', async () => {
+  const { container } = renderPage()
+  expect(await screen.findByRole('heading', { level: 1, name: 'Naplózás' })).toBeInTheDocument()
+  expect(container.querySelector('.es-top small')).toHaveTextContent('Sport · ma')
+  expect(container.querySelector('.fo-hero')).toHaveAttribute('data-closed', 'true')
+  expect(screen.getByRole('heading', { name: /Válassz sportot/ })).toBeInTheDocument()
+  // every tile carries its own glyph in a bubble
+  const tiles = container.querySelectorAll('.es-spg > button')
+  tiles.forEach((tile) => expect(tile.querySelector('.fo-bub use')).not.toBeNull())
+  expect(container.querySelector('.glass, [class*="sp-"], [class*="uvs-"]')).toBeNull()
+})
+
+test('the form is hero (glyph + mode switch) → 1 Idő és terhelés → 2 Kalória → the floating save', async () => {
+  const { container } = renderPage()
+  await pick(/Röplabda/)
+  expect(await screen.findByRole('heading', { level: 1, name: 'Röplabda' })).toBeInTheDocument()
+  expect(container.querySelector('.es-top small')).toHaveTextContent('Naplózás · ma')
+  expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('Hogy ment?')
+  // the mode switch lives in the hero, named by the field
+  expect(within(container.querySelector('.fo-hero') as HTMLElement).getByRole('group', { name: 'Típus' })).toBeInTheDocument()
+  expect([...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual(['1Idő és terhelés', '2Kalória'])
+  // a number is the kit's stepper row, labelled „<mező> · <egység>"
+  expect(screen.getByText('Időtartam · perc').closest('.fo-row')?.querySelector('.fo-stp')).not.toBeNull()
+  // the save floats in the page's foot and names the minutes it will log
+  expect(container.querySelector('.fo-foot.nonav')).toHaveTextContent('Naplózom · 90 perc')
+  await userEvent.click(screen.getByRole('button', { name: 'Időtartam növelése' }))
+  expect(container.querySelector('.fo-foot')).toHaveTextContent('Naplózom · 95 perc')
+  expect(container.querySelector('.glass, [class*="sp-"]:not([data-sp-key]), [class*="uvs-"], .wo-close-cta')).toBeNull()
+})
+
+test('the kcal override opens as a light sheet and closes on save', async () => {
+  renderPage()
+  await pick(/Foci/)
+  await userEvent.click(await screen.findByRole('button', { name: /Saját érték/ }))
+  const sheet = await screen.findByRole('dialog', { name: 'Aktív kalória (ha az órád mérte)' })
+  expect(sheet).toHaveClass('fo-sheet')
+  await userEvent.type(within(sheet).getByLabelText('Kalória'), '520')
+  await userEvent.click(within(sheet).getByRole('button', { name: 'Ezt mentem' }))
+  expect(await screen.findByText('Saját értéket adtál meg (520 kcal) — ezt mentjük, nem a becslést.')).toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 })

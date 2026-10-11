@@ -7,6 +7,7 @@ import { MesoCloseSheet } from '@/features/train/sheets/MesoCloseSheet'
 import { MesoReportPage } from '@/features/train/pages/MesoReportPage'
 import { useTrain } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
@@ -48,6 +49,20 @@ test('names the run being closed and explains that the report freezes the close-
   setup()
   expect(screen.getByText(/Lifecycle blokk/)).toBeInTheDocument()
   expect(screen.getByText(/a riport a zárás pillanatának állapotát rögzíti/)).toBeInTheDocument()
+})
+
+// Folyadék F3 (prototype sheet `close`): a light kit sheet in plain words — „edzésterv", never „mesociklus" / „blokk";
+// the confirm is the warning-coloured button, „Mégse" the link beside it.
+test('the sheet wears the Folyadék look and the reworded copy', () => {
+  setup()
+  const dialog = screen.getByRole('dialog', { name: 'Futam lezárása' })
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(dialog.querySelector('.glass, [class*="uvl-"]')).toBeNull()
+  expect(screen.getByText('Edzésterv · zárás')).toBeInTheDocument()
+  expect(screen.getByPlaceholderText('Hogy sikerült a terv? (opcionális)')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Lezárás' })).toHaveClass('fo-btn', 'bad')
+  expect(screen.getByRole('button', { name: 'Mégse' })).toHaveClass('fo-lk')
+  expect(dialog.textContent).not.toMatch(/mesociklus|blokk\?/i)
 })
 
 test('a self-eval note is posted in the close body and the sheet lands on the report', async () => {
@@ -107,10 +122,15 @@ describe('MesoCloseSheet (mock mode)', () => {
     const { mesocycles } = useTrain()
     return <div data-testid="status">{mesocycles.find((m) => m.id === MOCK_MESO)?.status}</div>
   }
+  /** The frame's title (what the title bar would print): the report names the run there since Folyadék F3. */
+  function TitleProbe() {
+    return <div data-testid="frame-title">{useFrame().title}</div>
+  }
 
   test('close archives the run and lands on a report carrying the submitted note', async () => {
     render(
       <QueryWrapper>
+        <FrameProvider>
         <MemoryRouter initialEntries={[`/train/mesocycles/${MOCK_MESO}`]}>
           <Routes>
             <Route
@@ -122,10 +142,16 @@ describe('MesoCloseSheet (mock mode)', () => {
             <Route path="/train/mesocycles/:id/report" element={<MesoReportPage />} />
           </Routes>
           <StatusProbe />
+          <TitleProbe />
         </MemoryRouter>
+        </FrameProvider>
       </QueryWrapper>,
     )
     expect(screen.getByTestId('status')).toHaveTextContent('active')
+    // the weeks of the plan stand as capsules: two done, the third (this week) half, three to come
+    const caps = screen.getByRole('img', { name: '3. hét a 6-ból' })
+    expect([...caps.querySelectorAll('i')].map((i) => i.className)).toEqual(['f', 'f', 'h', '', '', ''])
+    expect(screen.getByText('most a 3. hétnél tartasz a 6-ból')).toBeInTheDocument()
 
     // `fireEvent.change`, not `user.type`: typing the note is 19 separate async keystrokes,
     // and under full-suite CPU contention the click could read a half-committed `selfEval`
@@ -154,11 +180,9 @@ describe('MesoCloseSheet (mock mode)', () => {
       () => expect(screen.getByText('Offline demo zárás.', { selector: 'p' })).toBeInTheDocument(),
       { timeout: 3000 },
     )
-    // ...titled from the run itself, not from mockClose's last-resort literal (the report's
-    // Titanium star hero puts the run's name in the page heading, T10 Task 4)...
-    expect(
-      await screen.findByRole('heading', { name: 'Hypertrophy 04 · Tavasz' }, { timeout: 3000 }),
-    ).toBeInTheDocument()
+    // ...titled from the run itself, not from mockClose's last-resort literal (the report hands
+    // the run's name to the frame's title bar)...
+    await waitFor(() => expect(screen.getByTestId('frame-title')).toHaveTextContent('Hypertrophy 04 · Tavasz'), { timeout: 3000 })
     // ...and nothing claims the run is still going.
     expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()
   })

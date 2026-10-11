@@ -1,0 +1,44 @@
+/* ── Folyadék · Edzés · terheles (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.et-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
+   Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+
+
+/* ── Terhelés · the map doorway (`.vs-mapc`) ── */
+.et-mapc { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.et-mapc:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 4px; border-radius: 14px; }
+.et-mapc .et-map { display: flex; flex: 0 0 auto; }
+.et-mapc .g { flex: 1; min-width: 0; }
+.et-mapc strong { display: block; font-size: 14.5px; font-weight: 650; }
+.et-mapc small { display: block; font-size: 12.5px; color: var(--fo-sub); margin-top: 2px; line-height: 1.35; }
+.et-mapc .chev { width: 18px; height: 18px; color: var(--fo-faint); flex: 0 0 auto; }
+
+/* ── the group rows ── a row opens its sheet without a chevron (prototype `nochev`); „sok" is the plan's own flag */
+.et-much { color: var(--fo-warn); }
+.et-grp .fo-st { vertical-align: 1px; margin-left: 2px; }
+
+/* ── a level standing alone under a sheet head (`.vs-rowbar`) ── */
+.et-bar-info { margin-top: 14px; }
+.et-grp-rows { margin-top: 18px; }
+.et-grp-none { margin-top: 18px; }
+
+
+/* ── Sport a héten ── the big numeral opens the card; the reach rows follow the sentence */
+.et-sport .fo-bigrow { margin: 0; }
+.et-reach { margin-top: 10px; }
+
+/* ── Izomtérkép ── the mode switch in the hero, the two sides' captions under the body (`.vs-sides`) */
+.et-modes.fo-seg { margin: 14px 0 12px; }
+.et-maphero .et-map { display: block; }
+.et-sides { display: flex; justify-content: center; gap: 86px; margin-top: 6px; font-size: 11px; font-weight: 600; color: var(--fo-faint); }
+
+/* ── Minden izomjel ── the region tubes in the hero (`.vs-hg`), the signs of a region (`.vs-mm`) */
+.et-regions { margin-top: 14px; }
+.et-mm { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 6px; }
+.et-sign { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 550; text-align: center; line-height: 1.25; opacity: .35; }
+.et-sign.is-live { opacity: 1; }
+
+/* ── Minden mozgásod ── the two tubes of the hero (`.vs-vs`) */
+.et-vs { max-width: 230px; margin: 14px auto 0; }
+.et-vs .fo-tube { max-width: 60px; }
+.et-event-when { display: block; }
+.et-bar-cap.fo-note { margin-top: 6px; }

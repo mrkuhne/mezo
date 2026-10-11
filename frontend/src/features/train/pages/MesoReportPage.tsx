@@ -3,8 +3,7 @@
 // closed run. Full-screen sibling route /train/mesocycles/:id/report (no Train
 // sub-nav), reached from a Történet card tap, from MesoCloseSheet right after a
 // close, and by an archived run's builder visit (which redirects here — a closed
-// run has no builder). Shell mirrors MesoOverviewPage: sticky back breadcrumb,
-// compact header, then the report's blocks.
+// run has no builder).
 //
 // Everything on the page is a SNAPSHOT taken at close time, not a live read —
 // the only live things are the two actions (regenerate, rerun). Blocks render
@@ -17,23 +16,24 @@
 // weight, more reps" is 0 kg but a real percentage gain, and a weightless lift
 // has neither (only its reps moved).
 //
-// Train Titanium T10 Task 4 (mezo-88iwa.11) gave the page its two Titanium halves,
-// ported from the prototype's `planLibraryClosed`
-// (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:519-566):
-//   · the STAR HERO (`.pl-lhero.is-closed`) — the run's five clay stars over
-//     `runStars(report.adherence.completionPct)` (the ceremony's own `starsFor`
-//     scale, never a second rating rule), its one plain sentence, and the share
-//     DRAWN as a numeral + bar (the `.ld-hero-pct`/`.ld-hero-bar` idiom the weekly
-//     load hero already uses), labelled „A teljesített edzések aránya". It replaces
-//     the DS `PageHero` only for a run that HAS a report; the loading/404/error
-//     branches keep the plain hero, since there is no rating to draw yet.
-//   · „A mostani tervedhez képest" (`.pl-versus`) — the closed run's PEAK weekly
-//     sets against the ACTIVE plan's CURRENT-week target, one pair per muscle the
-//     two share. The „most" number comes from the active run's volume arc — the
-//     same source `MesoMusclePage` reads its versus rows from — so the two pages
-//     can never disagree. The block exists ONLY when there is an active run AND at
-//     least one shared muscle: no active plan, or no overlap, means no block at all
-//     (never an empty shell, never a 0 standing in for "we don't know").
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `riport()`), top to bottom:
+//   hero — a cup filled to the completion share, the run's five stars over
+//     `runStars(report.adherence.completionPct)` (the ceremony's own `starsFor` scale, never a
+//     second rating rule) with the share beside them, its one plain sentence as the verdict;
+//     „Újrafuttatás" and „Sablon megnyitása" on the liquid row.
+//   1 · Hogy ment — the two adherence facts and the „Ezt akartad" quote.
+//   2 · Izmonként — per muscle a vessel whose rim is the ceiling: the level is the peak, the
+//     dashed waterline is where it started.
+//   3 · Erő — a capsule per lift (the old top-set load as the dashed line) and both deltas.
+//   4 · Rekordok — the run's medals.
+//   5 · A futam után — the self-evaluation, „A mostani tervedhez képest" (the closed run's PEAK
+//     weekly sets as a waterline in tubes filled to the ACTIVE plan's CURRENT-week target, one
+//     tube per muscle the two share; the „most" number comes from the active run's volume arc —
+//     the same source `MesoMusclePage` reads — and the block exists ONLY when there is an active
+//     run AND at least one shared muscle), the collapsed context disclosure, and the two other
+//     live actions (save as template, regenerate).
+// Loading, read error (+ retry), not found, still running, no report (+ generate) and
+// generating are each one empty vessel.
 //
 // Train parity P1 Task 5 (mezo-e1ii9) ended the page where the prototype's
 // closed-run story ends. Three pre-Titanium leftovers went, each of them a SECOND
@@ -73,7 +73,7 @@
 // sentence — rendered ONLY when both the measured average AND a real target exist, because
 // a fabricated target would read as a verdict about the owner's eating.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMesoReport, useMesoTemplates, useTrain } from '@/data/hooks'
 import { useMesocycleVolumeArc } from '@/data/train/mesoArcHooks'
@@ -87,21 +87,18 @@ import type { MedalType } from '@/data/train/medalTypes'
 import type { MesoVolumeArc, MuscleVolumeArc } from '@/data/types'
 import { MEDAL_TYPE_LABEL } from '@/features/train/logic/medalLabels'
 import { runStars } from '@/features/train/logic/libraryStory'
-import { muscleColor } from '@/features/train/logic/muscleColors'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { InfoButton } from '@/features/train/components/InfoButton'
-import { ClayIcon } from '@/shared/ui/clay'
+import { Mchp, Rcap, StarRow, deepMuscle } from '@/features/train/components/folyadek'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
-import { StatStrip } from '@/shared/ui/StatStrip'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Icon } from '@/shared/ui/Icon'
-import { CtaGhost } from '@/shared/ui/Cta'
-import { Spinner } from '@/shared/ui/Spinner'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { FrameBack } from '@/shared/ui/folyadek'
+import type { Icon3DName } from '@/shared/ui/clay'
+import {
+  Acts, Btn, Bub, Card, EmptyTank, Facts, Fill, FrameBack, Hero, Lab, Legend, LevelMarks, Lk, Note, Page, Row,
+  Section, Skel, Tags, Tubes, Txt, useFrameTitle,
+} from '@/shared/ui/folyadek'
+
+/** The cup of the hero (prototype `SH_CUP`, 0 0 100 100). */
+const SH_CUP = 'M20 9 H80 V34 C80 55 67 67 55 70 V81 H70 V93 H30 V81 H45 V70 C33 67 20 55 20 34Z'
 
 const fmt = (n: number): string => n.toLocaleString('hu-HU')
 const signed = (n: number): string => `${n > 0 ? '+' : ''}${fmt(n)}`
@@ -152,26 +149,6 @@ function peakBands(arcs: MuscleVolumeArc[]): PeakBandRow[] {
 }
 
 // --- the star hero + then-vs-now (T10 Task 4, mezo-88iwa.11) ---
-
-/** Hungarian decimal comma for the stars' screen-reader label (the ceremony's own idiom). */
-const huStars = (stars: number): string => String(stars).replace('.', ',')
-
-/**
- * Five clay stars, halves included — the prototype's `starRow` (plan-pages.js:330). It draws
- * three different glyphs; the clay set has one, so a half/empty star is the SAME glyph dimmed
- * and desaturated, exactly the way the workout ceremony draws its own row (`.cer-stars`).
- */
-function StarRow({ stars }: { stars: number }) {
-  return (
-    <span className="pl-stars" role="img" aria-label={`${huStars(stars)} csillag az ötből`}>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <i key={i} className={stars >= i + 1 ? 'is-lit' : stars >= i + 0.5 ? 'is-half' : undefined}>
-          <ClayIcon name="i-termes" size={18} className="icon" />
-        </i>
-      ))}
-    </span>
-  )
-}
 
 /** One muscle, twice: what it peaked at in the closed run, what the active plan gives it now. */
 export interface VersusPair {
@@ -356,9 +333,6 @@ export function MesoReportPage() {
   }
 
   const arcs = toMuscleArcs(report?.volume)
-  const heroSub = report
-    ? `${report.closedAt ? `Lezárva · ${day(report.closedAt)}` : 'Futam · riport'} · ${report.weeks} hét`
-    : undefined
   // The run's rating — the ceremony's own star scale over the frozen completion share.
   const rating = report ? runStars(report.adherence.completionPct) : null
   const pairs = versusPairs(arcs, activeArc)
@@ -366,441 +340,277 @@ export function MesoReportPage() {
   // The run-window lifestyle rows (fix round, mezo-e1ii9) — absent only when the report
   // itself carries no context at all (async aggregation never ran, or the run predates it).
   const ctxRows = report?.context ? contextRows(report.context.totals, report.context.weeks ?? []) : []
+  const span = report ? `${day(report.startDate)}${report.endDate ? ` – ${day(report.endDate)}` : ''}` : null
+
+  useFrameTitle({ title, eyebrow: span ? `Lezárt futam · ${span}` : 'Lezárt futam' })
+  const back = <FrameBack className="fo-backpill" onBack={goBack}>Vissza</FrameBack>
+  /** One empty vessel: every state without a report (prototype `ghost`). */
+  const ghost = (icon: Icon3DName, text: string, action?: { label: string; onClick: () => void }) => (
+    <Page className="er-page">
+      {back}
+      <Card>
+        <EmptyTank icon={icon} actions={action ? <Btn sm onClick={action.onClick}>{action.label}</Btn> : undefined}>{text}</EmptyTank>
+      </Card>
+    </Page>
+  )
+  const loading = <Page className="er-page">{back}<Skel blocks={[300, 90, 200, 200]} label="Riport betöltése…" /></Page>
+
+  // Loading / no-report-yet states. An EXISTING report renders as soon as it lands — it is
+  // self-contained, so it never waits on the meso list. Only the no-report branch needs the run
+  // itself (to tell "closed but ungenerated" from "still running"), so that is the only branch
+  // gated on `workoutPending`.
+  if (pending) return loading
+  // A genuine read failure (the contract's 404 is `notFound` below, not this) — a terminal
+  // state with a retry, never a blank page (§7a).
+  if (error) return ghost('t-info', 'Nem sikerült betölteni a riportot.', { label: 'Újrapróbálás', onClick: refetch })
+  if (notFound) {
+    if (workoutPending) return loading
+    if (!meso) return ghost('t-other', 'Ez a futam nem található.')
+    if (meso.status !== 'archived') return ghost('t-clock', 'Ez a futam még fut — a riport a lezárás pillanatában készül el.')
+    return regenerating
+      ? ghost('t-flask', 'Riport készül…')
+      : ghost('t-scroll', 'Ehhez a lezárt futamhoz még nincs riport — generáld le a rögzített adatokból.', { label: 'Riport generálása', onClick: fireRegenerate })
+  }
+  if (!report || !rating) return <Page className="er-page">{back}</Page>
+
+  const pct = report.adherence.completionPct
+  const heroTags = [`${report.weeks} hét`]
+  if (report.closedAt) heroTags.push(`Lezárva · ${day(report.closedAt)}`)
+  let n = 0
 
   return (
-    <MozaikPage tone="gold">
-      <EntranceGroup>
-        {report && rating ? (
-          // The Titanium star hero. Only for a run that HAS a report: the rating, the
-          // sentence and the drawn share all come from the frozen completion share, and
-          // without one there is nothing honest to draw. The back pill is DOCKED INSIDE
-          // it — the sibling pages' own rule (MesoKonyvtarPage/MesoTemplateStoryPage) —
-          // not a separate PageHead floating above (fix round, mezo-88iwa.11).
-          <header
-            className="pl-dhero pl-lhero is-closed rise"
-            style={{ '--mus-color': 'var(--tag-gym)', '--ld-accent': 'var(--tag-gym)', '--d': '40ms' } as CSSProperties}
-          >
-            <span className="pl-dhero-wash" aria-hidden="true" />
-            <FrameBack className="mz-backbtn" onBack={goBack}>
-              Vissza
-            </FrameBack>
-            <span className="pl-dhero-tag tr-eyebrow">
-              {`Lezárt futam · ${day(report.startDate)}${report.endDate ? ` – ${day(report.endDate)}` : ''}`}
-            </span>
-            <h2>{title}</h2>
-            <div className="pl-lhero-stars"><StarRow stars={rating.stars} /></div>
-            <p className="pl-say">{rating.say}</p>
-            {/* The share is DRAWN, not merely spelled out — the weekly load hero's own
-                numeral + bar idiom (`.ld-hero-pct` / `.ld-hero-bar`). */}
-            <div className="ld-hero-pct"><b>{report.adherence.completionPct}</b><em>%</em></div>
-            <p className="ld-hero-sub">A teljesített edzések aránya</p>
-            <div className="ld-hero-bar">
-              <i style={{ '--w': `${Math.max(0, Math.min(100, report.adherence.completionPct))}%` } as CSSProperties} />
-            </div>
-            <div className="pl-poster-foot">
-              <span>{`${report.weeks} hét`}</span>
-              {report.closedAt && <span>{`Lezárva · ${day(report.closedAt)}`}</span>}
-            </div>
-          </header>
-        ) : (
+    <Page className="er-page er-cards">
+      {back}
+      {/* The share is DRAWN (the cup's level) and spelled once beside the stars — the facts
+          below do not repeat it: the same 88% twice on one screen reads as two measurements. */}
+      <Hero
+        label={`Lezárt futam · ${span}`}
+        verdict={rating.say}
+        sub="A teljesített edzések aránya"
+        left={<Fill d={SH_CUP} pct={Math.max(0, Math.min(100, pct)) * 0.9} size={86} color="#F9D06A" color2="#E9892B" />}
+        actions={(
           <>
-            <PageHead glass onBack={goBack} label="Vissza" />
-            <PageHero icon="i-meso" name={`${title} · riport`} sub={heroSub} />
+            <Btn onClick={rerunMeso}>Újrafuttatás</Btn>
+            {report.templateId && (
+              <Lk onClick={() => navigate(`/train/mesocycles/templates/${report.templateId}`)}>Sablon megnyitása</Lk>
+            )}
           </>
         )}
-        <PageBody className="tv-report">
-      {report?.templateId && (
-        <div style={{ padding: '0 0 8px' }}>
-          <button
-            type="button"
-            className="chip tapchip"
-            onClick={() => navigate(`/train/mesocycles/templates/${report.templateId}`)}
-          >
-            <Icon name="chevron-right" size={10} /> Sablon megnyitása
-          </button>
-        </div>
+      >
+        <div className="er-ms"><StarRow stars={rating.stars} /><span>{pct}%</span></div>
+        <Tags items={heroTags} />
+      </Hero>
+
+      {/* Adherence — the "did the plan actually happen" glance. */}
+      <Section n={++n} title="Hogy ment" />
+      <Card>
+        <Facts items={[
+          [`${report.adherence.completedSessions}/${report.adherence.plannedSessions}`, 'Edzés'],
+          [`${report.adherence.completedWeeks}/${report.adherence.plannedWeeks}`, 'Hét'],
+        ]} />
+        {/* „Ezt akartad" — the wizard's freeform goal text, read back once the block is done,
+            next to the one honest line the close captured (meso.summary). A run without notes
+            (nothing typed, or a legacy run predating the field) simply has no quote to show. */}
+        {meso?.notes && (
+          <div className="er-quote" data-testid="meso-report-quote">
+            <Lab>Ezt akartad</Lab>
+            <Txt>{`„${meso.notes}”`}</Txt>
+            {meso.summary && <Note>{`— és ez lett: ${meso.summary}`}</Note>}
+          </div>
+        )}
+      </Card>
+
+      {/* The muscle journeys: where each muscle started, the loudest week it reached, and its
+          ceiling. */}
+      {arcs.length > 0 && (
+        <>
+          <Section n={++n} title="Izmonként · indulás → elért csúcs / felső érték" />
+          <Card data-testid="meso-report-bands">
+            {peakBands(arcs).map((r) => (
+              <Row
+                key={r.muscle}
+                data-testid="report-band-row"
+                left={<Mchp muscle={r.muscle} sm />}
+                title={r.label}
+                more={(
+                  <LevelMarks
+                    pct={r.ceiling > 0 ? Math.min(100, (r.peak / r.ceiling) * 100) : 0}
+                    color={deepMuscle(r.muscle)}
+                    height={14}
+                    marks={r.start != null && r.ceiling > 0 ? [{ at: (r.start / r.ceiling) * 100, dashed: true }] : []}
+                  />
+                )}
+                value={`${dash(r.start)} → ${fmt(r.peak)} / ${fmt(r.ceiling)}`}
+              />
+            ))}
+            <Legend items={[
+              { label: 'innen indult', kind: 'dash' },
+              { label: 'az edény széle a felső érték', kind: 'vessel' },
+            ]} />
+            <Acts>
+              <InfoButton
+                eyebrow="Izmonként"
+                title="Hogyan olvasd?"
+                copy="Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét."
+              />
+            </Acts>
+          </Card>
+        </>
       )}
 
-      {/* Loading / no-report-yet states. An EXISTING report renders as soon as it lands — it
-          is self-contained, so it never waits on the meso list. Only the no-report branch
-          needs the run itself (to tell "closed but ungenerated" from "still running"), so
-          that is the only branch gated on `workoutPending`. */}
-      {pending ? (
-        <div style={{ padding: '16px 0' }}>
-          <GhostState lines={3} message="Riport betöltése…" />
-        </div>
-      ) : error ? (
-        // A genuine read failure (the contract's 404 is `notFound` below, not this) —
-        // a terminal state with a retry, never a blank page (§7a).
-        <div style={{ padding: '16px 0' }}>
-          <GhostState
-            lines={2}
-            message="Nem sikerült betölteni a riportot."
-            ctaLabel="Újrapróbálás"
-            onCta={refetch}
-          />
-        </div>
-      ) : notFound ? (
-        <div style={{ padding: '16px 0' }}>
-          {workoutPending ? (
-            <GhostState lines={3} message="Riport betöltése…" />
-          ) : !meso ? (
-            <GhostState lines={2} message="Ez a futam nem található." />
-          ) : meso.status !== 'archived' ? (
-            <GhostState
-              lines={2}
-              message="Ez a futam még fut — a riport a lezárás pillanatában készül el."
-            />
-          ) : (
-            <GhostState
-              lines={3}
-              message={
-                regenerating
-                  ? 'Riport készül…'
-                  : 'Ehhez a lezárt futamhoz még nincs riport — generáld le a rögzített adatokból.'
-              }
-              ctaLabel={regenerating ? undefined : 'Riport generálása'}
-              onCta={regenerating ? undefined : fireRegenerate}
-            />
-          )}
-        </div>
-      ) : report ? (
+      {/* Strength — LOAD move and e1RM percentage labelled apart */}
+      {report.strength.length > 0 && (
         <>
-          {/* Adherence — the "did the plan actually happen" glance. The completion SHARE is
-              not repeated here: the hero above draws it (numeral + bar), and printing the
-              same 88% twice on one screen reads as two different measurements. */}
-          <div style={{ padding: '16px 0 8px' }}>
-            <StatStrip
-              cells={[
-                {
-                  label: 'Edzés',
-                  value: `${report.adherence.completedSessions}/${report.adherence.plannedSessions}`,
-                },
-                {
-                  label: 'Hét',
-                  value: `${report.adherence.completedWeeks}/${report.adherence.plannedWeeks}`,
-                },
-              ]}
+          <Section n={++n} title={`Erő · ${report.strength.length} gyakorlat`} />
+          <Card data-testid="meso-report-strength">
+            {report.strength.map((s) => {
+              // The LOAD delta — absent when nothing was loaded, hidden when flat. The e1RM delta
+              // is the one that credits extra reps at the same load; hidden at exactly 0 for the
+              // same reason: a flat lift has no verdict to badge.
+              const kgTxt = s.deltaKg != null && s.deltaKg !== 0 ? `${signed(s.deltaKg)} kg` : null
+              const pctTxt = s.deltaPct != null && s.deltaPct !== 0 ? `${signed(s.deltaPct)}% becsült 1RM` : null
+              const loaded = s.firstTopKg != null && s.lastTopKg != null && s.lastTopKg > 0
+              return (
+                <Row
+                  key={`${s.catalogId ?? s.exerciseName}-${s.firstWeek}`}
+                  data-testid="strength-row"
+                  left={<Rcap prev={loaded ? (s.firstTopKg! / s.lastTopKg!) * 92 : null} color={deepMuscle(s.muscle)} />}
+                  title={s.exerciseName}
+                  sub={(
+                    <>
+                      {`${s.firstWeek}. hét → ${s.lastWeek}. hét · ${movementLabel(s)}`}
+                      <br />
+                      {[kgTxt, pctTxt, MUSCLE_LABELS[s.muscle] ?? s.muscle].filter(Boolean).join(' · ')}
+                    </>
+                  )}
+                  value={kgTxt ?? (s.deltaPct != null && s.deltaPct !== 0 ? `${signed(s.deltaPct)}%` : undefined)}
+                />
+              )
+            })}
+          </Card>
+        </>
+      )}
+
+      {/* Records earned inside the run's window */}
+      <Section n={++n} title={`Rekordok · ${report.records.medalCount} medál`} />
+      <Card data-testid="meso-report-records">
+        {report.records.top.length === 0 ? (
+          <Note className="er-none">Ebben a futamban nem született rekord.</Note>
+        ) : report.records.top.map((r) => (
+          <Row
+            key={`${r.exerciseName}-${r.kind}-${r.date}`}
+            left={<Rcap />}
+            title={r.exerciseName}
+            sub={`${MEDAL_TYPE_LABEL[r.kind as MedalType] ?? r.kind} · ${day(r.date)}`}
+            value={r.value != null ? fmt(r.value) : undefined}
+          />
+        ))}
+      </Card>
+
+      <Section n={++n} title="A futam után" />
+      <Card>
+        {/* The owner's own verdict, captured by MesoCloseSheet — read-only here */}
+        {report.selfEval && (
+          <>
+            <Lab>Saját értékelés</Lab>
+            <Txt>{report.selfEval}</Txt>
+          </>
+        )}
+
+        {/* „A mostani tervedhez képest" — the closed run's peak weekly sets against what the
+            RUNNING plan gives the same muscle this week. No active plan, or no muscle in common,
+            and the block is absent entirely. */}
+        {pairs.length > 0 && (
+          <div data-testid="meso-report-versus">
+            <Lab>A mostani tervedhez képest</Lab>
+            <Note className="er-none">Ugyanazok az izmok — mennyit bírtak akkor a csúcson, és mennyit kapnak most.</Note>
+            <Tubes
+              height={92}
+              size="sm"
+              gap={6}
+              items={pairs.map((p) => ({
+                node: <Mchp muscle={p.muscle} size={28} />,
+                label: <span data-testid="versus-pair">{p.label}</span>,
+                value: fmt(p.now),
+                note: `akkor ${fmt(p.then)}`,
+                pct: (p.now / versusScale) * 94,
+                wl: (p.then / versusScale) * 94,
+                color: deepMuscle(p.muscle),
+              }))}
             />
           </div>
+        )}
 
-          {/* „Ezt akartad" — the wizard's freeform goal text, read back once the block is
-              done, next to the one honest line the close captured (report.summary). Notes
-              are the wizard step-0 goal text; a run without one (nothing typed, or a legacy
-              run predating the field) simply has no quote to show. */}
-          {meso?.notes && (
-            <div className="card col gap-xs" style={{ padding: 'var(--sp-4)' }} data-testid="meso-report-quote">
-              <Eyebrow>Ezt akartad</Eyebrow>
-              <p style={{ fontSize: 14, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--text-primary)' }}>
-                {`„${meso.notes}"`}
-              </p>
-              {meso.summary && (
-                <span className="text-secondary" style={{ fontSize: 12 }}>{`— és ez lett: ${meso.summary}`}</span>
-              )}
-            </div>
-          )}
-
-          {/* The muscle journeys — the prototype's „Izmaid ebben a futamban" in production
-              words: where each muscle started, the loudest week it reached, and its ceiling.
-              The week-by-week chart that used to sit above this said the same thing in
-              MEV/MAV/MRV/Deload legend jargon, so it went (T-P1 Task 5, mezo-e1ii9). */}
-          {arcs.length > 0 && (
-            <>
-              {/* The ⓘ's anchor here is the Eyebrow, not a heading — production
-                  renamed this section (mezo-e1ii9). Its TITLE is „Hogyan olvasd?" and not
-                  the prototype's „Mit mutat a sáv?" only until the surfaces slice
-                  (mezo-fsz2r) brings the bars back; the COPY is verbatim (mezo-b516k). */}
-              <div className="row" style={{ padding: '12px 0 0', alignItems: 'center', gap: 7 }}>
-                <Eyebrow>Izmonként · indulás → elért csúcs / plafon</Eyebrow>
-                <InfoButton
-                  title="Hogyan olvasd?"
-                  copy="Honnan indult és meddig jutott az izom heti szettszáma a futam alatt. A csúcs a pihenőhét előtti utolsó hét."
-                />
-              </div>
-              <div className="card col" style={{ padding: '8px 12px' }} data-testid="meso-report-bands">
-                {peakBands(arcs).map((r) => (
-                  <div
-                    key={r.muscle}
-                    className="col"
-                    style={{ padding: '7px 0', borderTop: '0.5px solid var(--border-subtle)' }}
-                    data-testid="report-band-row"
-                  >
-                    <div className="row" style={{ alignItems: 'center', gap: 8 }}>
-                      <span className="chip">{r.label}</span>
-                      <span style={{ flex: 1 }} />
-                      <span className="label-mono" style={{ fontSize: 12, fontWeight: 700 }}>
-                        {`${dash(r.start)} → ${fmt(r.peak)} / ${fmt(r.ceiling)}`}
-                      </span>
-                    </div>
-                    <div style={{ height: 9, borderRadius: 5, background: 'var(--surface-1)', overflow: 'hidden', marginTop: 5 }}>
-                      <div
-                        style={{
-                          width: `${r.ceiling > 0 ? Math.min(100, (r.peak / r.ceiling) * 100) : 0}%`,
-                          height: '100%',
-                          background: 'var(--sage-deep)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Strength — LOAD move and e1RM percentage labelled apart */}
-          {report.strength.length > 0 && (
-            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-strength">
-              <Eyebrow>Erő · {report.strength.length} gyakorlat</Eyebrow>
-              {report.strength.map((s) => (
-                <div
-                  key={`${s.catalogId ?? s.exerciseName}-${s.firstWeek}`}
-                  className="card col gap-xs"
-                  style={{ padding: 'var(--sp-4)' }}
-                  data-testid="strength-row"
-                >
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>{s.exerciseName}</span>
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                      {`W${s.firstWeek} → W${s.lastWeek}`}
+        {/* The one collapsed disclosure — a home for two things that both need a quiet place:
+            the machine's own read of the run and the run-window lifestyle averages. Either half
+            can exist without the other (`aiEvalEnabled` off, or a report with no `context`), so
+            the block renders whenever EITHER has something to show — never an empty shell.
+            `ready` with a null `aiEval` (should not happen server-side) deliberately falls
+            through to the `failed` branch — a defensive guard, not a fourth state. */}
+        {(report.aiEvalEnabled || ctxRows.length > 0) && (
+          <details className="er-det" data-testid="meso-report-ai">
+            <summary>
+              <Bub icon="t-chat" size={30} />
+              <span>{report.aiEvalEnabled ? 'Mit olvas ki ebből a gép?' : 'Életmód a futam alatt'}</span>
+              <i aria-hidden="true">▾</i>
+            </summary>
+            {/* The lifestyle rows — plain prose-and-number. A metric this run never measured
+                shows '–', never 0; an averaged or summed figure says so in its own description. */}
+            {ctxRows.length > 0 && (
+              <div data-testid="meso-report-context">
+                <Note>A futam napjainak összesítése — nem napi mérés, hanem a teljes ablak átlaga/összege.</Note>
+                {ctxRows.map((r) => (
+                  <div key={r.key} className="er-kv" data-testid="context-row">
+                    <span>
+                      {r.descriptor}
+                      {/* The kcal row's target comparison — present ONLY when the run had both a
+                          measured average and a real target (fix wave, mezo-e1ii9). */}
+                      {r.note && <small data-testid="context-row-note">{r.note}</small>}
                     </span>
-                  </div>
-                  <span className="text-secondary" style={{ fontSize: 13 }}>{movementLabel(s)}</span>
-                  <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-                    {/* The LOAD delta — absent when nothing was loaded, hidden when flat. */}
-                    {s.deltaKg != null && s.deltaKg !== 0 && (
-                      <span className="chip" style={{ color: s.deltaKg > 0 ? 'var(--sage-deep)' : 'var(--error)' }}>
-                        {`${signed(s.deltaKg)} kg`}
-                      </span>
-                    )}
-                    {/* The e1RM delta — this is the one that credits extra reps at the same load.
-                        Hidden at exactly 0 for the same reason the kg pill is: a flat lift has no
-                        verdict to badge, and `0% e1RM` in a signal colour would invent one. */}
-                    {s.deltaPct != null && s.deltaPct !== 0 && (
-                      <span className="chip" style={{ color: s.deltaPct > 0 ? 'var(--sage-deep)' : 'var(--error)' }}>
-                        {`${signed(s.deltaPct)}% e1RM`}
-                      </span>
-                    )}
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                      {MUSCLE_LABELS[s.muscle] ?? s.muscle}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Records earned inside the run's window */}
-          <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-records">
-            <Eyebrow>Rekordok · {report.records.medalCount} medál</Eyebrow>
-            {report.records.top.length === 0 ? (
-              <span className="text-secondary" style={{ fontSize: 13 }}>
-                Ebben a futamban nem született rekord.
-              </span>
-            ) : (
-              <div className="col gap-sm">
-                {report.records.top.map((r) => (
-                  <div key={`${r.exerciseName}-${r.kind}-${r.date}`} className="card row" style={{ padding: 'var(--sp-4)', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div className="col">
-                      <span style={{ fontSize: 15, fontWeight: 600 }}>{r.exerciseName}</span>
-                      <span className="text-secondary" style={{ fontSize: 13 }}>
-                        {MEDAL_TYPE_LABEL[r.kind as MedalType] ?? r.kind}
-                      </span>
-                    </div>
-                    <div className="col" style={{ alignItems: 'flex-end' }}>
-                      {r.value != null && (
-                        <span className="label-mono" style={{ fontSize: 11 }}>{fmt(r.value)}</span>
-                      )}
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                        {day(r.date)}
-                      </span>
-                    </div>
+                    <b>{r.value}</b>
                   </div>
                 ))}
               </div>
             )}
-          </div>
 
-          {/* The owner's own verdict, captured by MesoCloseSheet — read-only here */}
-          {report.selfEval && (
-            <div className="col gap-sm" style={{ padding: '12px 0' }}>
-              <Eyebrow>Saját értékelés</Eyebrow>
-              <div className="card" style={{ padding: 'var(--sp-4)' }}>
-                <p className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{report.selfEval}</p>
-              </div>
-            </div>
-          )}
-
-          {/* „A mostani tervedhez képest" (T10 Task 4) — the closed run's peak weekly sets
-              against what the RUNNING plan gives the same muscle this week. No active plan,
-              or no muscle in common, and the block is absent entirely. */}
-          {pairs.length > 0 && (
-            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-versus">
-              <h3 className="pl-h3" style={{ margin: '0 0 2px' }}>A mostani tervedhez képest</h3>
-              <p className="pl-foot-say" style={{ margin: 0 }}>
-                Ugyanazok az izmok — mennyit bírtak akkor a csúcson, és mennyit kapnak most.
-              </p>
-              <div className="pl-versus pl-lib-versus">
-                {pairs.map((p) => (
-                  <div
-                    key={p.muscle}
-                    className="pl-versus-pair"
-                    style={{ '--mus-color': muscleColor(p.muscle).rail } as CSSProperties}
-                    data-testid="versus-pair"
-                  >
-                    <span className="pl-versus-name">
-                      <MuscleChip token={p.muscle} size={20} />
-                      {p.label}
-                    </span>
-                    <div className="pl-versus-row">
-                      <span>akkor</span>
-                      <span className="pl-versus-bar">
-                        <i style={{ '--w': `${(p.then / versusScale) * 100}%` } as CSSProperties} />
-                      </span>
-                      <b>{fmt(p.then)}</b>
+            {report.aiEvalEnabled && (
+              <>
+                <Note>A program írta a futam adataiból — vélemény és becslés, nem mérés. A fenti számok a biztosak.</Note>
+                {report.aiEvalStatus === 'ready' && report.aiEval ? (
+                  <>
+                    {report.aiEval.split(/\n\n+/).map((para, i) => <Txt key={i}>{para}</Txt>)}
+                    <div className="fo-under flush">
+                      {report.aiEvalGeneratedAt && <span>{`Generálva · ${day(report.aiEvalGeneratedAt)}`}</span>}
+                      <Lk onClick={fireRegenerate} disabled={regenerating}>
+                        {regenerating ? 'Riport készül…' : 'Újragenerálás'}
+                      </Lk>
                     </div>
-                    <div className="pl-versus-row is-now">
-                      <span>most</span>
-                      <span className="pl-versus-bar">
-                        <i style={{ '--w': `${(p.now / versusScale) * 100}%` } as CSSProperties} />
-                      </span>
-                      <b>{fmt(p.now)}</b>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* The foot's one collapsed disclosure — a home for two things that both need a
-              quiet place, not the story's main flow: the machine's own read of the run (a
-              REAL backend feature the prototype's closed-run story has no counterpart for,
-              T-P1 Task 5, mezo-e1ii9), and — since the fix round — the run-window lifestyle
-              averages. Those averages have exactly one OTHER surface, `MesoComparePage`'s
-              `contextDiff`, and that page is reachable only once a second closed run exists
-              (`MesoFutamokPage` gates it behind `archived.length >= 2`); a first closed run,
-              or any run reviewed alone, had no path to them at all until this fold-in. Either
-              half can exist without the other (`aiEvalEnabled` off, or a report with no
-              `context`), so the details block itself renders whenever EITHER has something to
-              show — never an empty shell for a run with neither. `ready` with a null `aiEval`
-              (should not happen server-side) deliberately falls through to the `failed`
-              branch below — a defensive guard, not a fourth state. */}
-          {(report.aiEvalEnabled || ctxRows.length > 0) && (
-            <details
-              className="card"
-              data-testid="meso-report-ai"
-              style={{ padding: '12px var(--sp-4)', margin: '4px 0 0' }}
-            >
-              <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>
-                {report.aiEvalEnabled ? 'Mit olvas ki ebből a gép?' : 'Életmód a futam alatt'}
-              </summary>
-              <div className="col gap-md" style={{ paddingTop: 10 }}>
-                {/* The lifestyle rows — plain prose-and-number, no emoji pills (those were
-                    the T-P1 Task 5 removal), no per-week table (the MEV/MAV/MRV spreadsheet
-                    stays retired). A metric this run never measured shows '–', never 0; an
-                    averaged or summed figure says so in its own description rather than
-                    posing as a single measurement. */}
-                {ctxRows.length > 0 && (
-                  <div className="col gap-xs" data-testid="meso-report-context">
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                      A futam napjainak összesítése — nem napi mérés, hanem a teljes ablak átlaga/összege.
-                    </span>
-                    {ctxRows.map((r) => (
-                      <div
-                        key={r.key}
-                        className="row"
-                        style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}
-                        data-testid="context-row"
-                      >
-                        <span className="col" style={{ gap: 1, minWidth: 0 }}>
-                          <span className="text-secondary" style={{ fontSize: 12.5, lineHeight: 1.4 }}>{r.descriptor}</span>
-                          {/* The kcal row's target comparison — present ONLY when the run had
-                              both a measured average and a real target (fix wave, mezo-e1ii9). */}
-                          {r.note && (
-                            <span style={{ fontSize: 11, lineHeight: 1.4, color: 'var(--text-tertiary)' }} data-testid="context-row-note">
-                              {r.note}
-                            </span>
-                          )}
-                        </span>
-                        <span className="label-mono" style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                          {r.value}
-                        </span>
-                      </div>
-                    ))}
+                  </>
+                ) : report.aiEvalStatus === 'pending' ? (
+                  <div className="fo-under flush"><span><Bub icon="t-flask" size={24} /> Az értékelés készül…</span></div>
+                ) : (
+                  <div className="fo-under flush">
+                    <span>Nem sikerült az értékelés.</span>
+                    <Lk onClick={fireRegenerate} disabled={regenerating}>
+                      {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
+                    </Lk>
                   </div>
                 )}
-
-                {report.aiEvalEnabled && (
-                  <div className="col gap-sm">
-                    <p className="text-secondary" style={{ fontSize: 11.5, lineHeight: 1.5, margin: 0, color: 'var(--text-tertiary)' }}>
-                      A program írta a futam adataiból — vélemény és becslés, nem mérés. A fenti számok a biztosak.
-                    </p>
-                    {report.aiEvalStatus === 'ready' && report.aiEval ? (
-                      <>
-                        {report.aiEval.split(/\n\n+/).map((para, i) => (
-                          <p key={i} className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{para}</p>
-                        ))}
-                        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                          {report.aiEvalGeneratedAt ? (
-                            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                              {`Generálva · ${day(report.aiEvalGeneratedAt)}`}
-                            </span>
-                          ) : (
-                            <span />
-                          )}
-                          <CtaGhost onClick={fireRegenerate} disabled={regenerating} style={{ padding: '8px 14px' }}>
-                            {regenerating ? 'Riport készül…' : 'Újragenerálás'}
-                          </CtaGhost>
-                        </div>
-                      </>
-                    ) : report.aiEvalStatus === 'pending' ? (
-                      <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                        <Spinner size="sm" />
-                        <span className="text-secondary" style={{ fontSize: 13 }}>Az értékelés készül…</span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-secondary" style={{ fontSize: 13 }}>Nem sikerült az értékelés.</span>
-                        <CtaGhost
-                          onClick={fireRegenerate}
-                          disabled={regenerating}
-                          style={{ alignSelf: 'flex-start', padding: '8px 14px' }}
-                        >
-                          {regenerating ? 'Riport készül…' : 'Újrapróbálás'}
-                        </CtaGhost>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            </details>
-          )}
-
-          {/* Actions — a closed run's only live affordances */}
-          <div className="col gap-sm" style={{ padding: '16px 0 32px' }}>
-            <CtaGhost style={{ padding: 12 }} onClick={rerunMeso}>
-              <Icon name="sparkle" size={14} /> Újrafuttatás
-            </CtaGhost>
-            {/* Only offered once the run itself resolved — the fork copies its DAY PLAN,
-                which lives on the run, not in the frozen report. */}
-            {meso && (
-              <CtaGhost style={{ padding: 12 }} onClick={saveAsTemplate}>
-                <Icon name="bookmark" size={14} /> Sablon mentése ebből a futamból
-              </CtaGhost>
+              </>
             )}
-            <button
-              type="button"
-              className="chip tapchip"
-              onClick={fireRegenerate}
-              disabled={regenerating}
-              style={{ alignSelf: 'center' }}
-            >
-              {regenerating ? 'Riport készül…' : 'Riport újragenerálása'}
-            </button>
-          </div>
-        </>
-      ) : null}
-        </PageBody>
-      </EntranceGroup>
+          </details>
+        )}
+
+        {/* The closed run's other live affordances. The fork is only offered once the run itself
+            resolved — it copies its DAY PLAN, which lives on the run, not in the frozen report. */}
+        {meso && <Row icon="t-template" title="Sablon mentése ebből a futamból" onClick={saveAsTemplate} />}
+        <Row
+          icon="t-repeat"
+          title={regenerating ? 'Riport készül…' : 'Riport újragenerálása'}
+          disabled={regenerating}
+          onClick={fireRegenerate}
+        />
+      </Card>
 
       {startTemplate && (
         <MesoStartSheet
@@ -809,6 +619,6 @@ export function MesoReportPage() {
           onClose={() => setStartTemplate(null)}
         />
       )}
-    </MozaikPage>
+    </Page>
   )
 }

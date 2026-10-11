@@ -1,39 +1,31 @@
 // ============================================================
 // Mezo · ExerciseStoryPage — ONE exercise's whole story at `/train/exercises/:key`.
 //
-// Train parity P2 Task 5 (mezo-lf3cv), ported from the prototype's `gyDetail`
-// (docs/design_2.0/prototypes/companion-titanium/gyak-pages.js:70-124). Until this
+// Train parity P2 Task 5 (mezo-lf3cv), first ported from the Titanium prototype's exercise detail. Until this
 // page existed, Task 4's catalogue routed every card here and the router's catch-all
 // dropped the reader on `/nap`; and the ONLY per-exercise story production had was the
 // pre-Titanium `REKORDOK` modal (`sheets/ExerciseRecordSheet.tsx`, retired with this
 // commit — this page is its replacement, and it had no other caller).
 //
-// Anatomy, top to bottom — 1:1 with `gyDetail`:
-//   `‹ Gyakorlatok`      the back pill (house `PageHead`).
-//   `.pl-dhero.gy-hero`  the poster: muscle eyebrow, the name, the AUTHORSHIP stamp
-//                        (`Saját` / `Közös · {név}` — see below), and for a logged
-//                        exercise the three foot facts `N alkalom · <dátum> óta ·
-//                        N t összsúly`. The middle fact is only an absolute date when
-//                        the series covers the whole history; a wire-capped series says
-//                        „ebből az utolsó N látszik" instead (`sinceFact`), and every
-//                        date old enough to be misread carries its year (`huMonthDayAged`).
-//                        A never-logged exercise gets the prototype's own empty-state
-//                        sentence instead.
-//   `Rekordjaid`         the three `.gy-rec` stat cards. Every absent figure is an
-//                        EM DASH — a record you do not have is never a 0.
-//   `Következő cél`      `.gy-next`, derived from the real best set (`nextTarget`).
-//   `Az erőd íve`        `StrengthCurve` over Task 2's `e1rmSeries`.
-//   `Medáljaid`          this exercise's medals, filtered from `useMedals`.
-//   `Hol szerepel`       the running plan's days + the shelf's templates that
-//                        prescribe it, derived client-side (`whereUsed`) — no endpoint.
-//   `Gyakorlat kezelése` the AUTHORING row(s) — see below.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `exercise()`), top to bottom:
+//   hero                 the muscle chip, „{izom} · Saját / Közös · {név}" as the label (the
+//                        AUTHORSHIP stamp, server-derived), the NEXT TARGET as the verdict
+//                        (`nextTarget` over the real best set — a target, not a forecast), the
+//                        three facts `N alkalom · <dátum> óta · N t összsúly` in the support
+//                        line, and `StrengthCurve` (the liquid area with the „now" mark and the
+//                        record drops). The middle fact is only an absolute date when the series
+//                        covers the whole history; a wire-capped series says „ebből az utolsó N
+//                        látszik" instead (`sinceFact`). A never-logged exercise gets its own
+//                        empty-state sentence and the empty vessel.
+//   Rekordjaid           three rows. Every absent figure is an EM DASH — a record you do not
+//                        have is never a 0.
+//   Medáljaid            this exercise's medals, filtered from `useMedals`.
+//   Hol szerepel         the running plan's days + the shelf's templates that prescribe it,
+//                        derived client-side (`whereUsed`) — no endpoint.
+//   Gyakorlat kezelése   the AUTHORING row(s) — see below.
 //
-// OMITTED from the prototype, deliberately:
-//   · the hero's CUE PROSE („Talpak lent. Stabil lapockák…") — no production field
-//     carries per-exercise cue text, and inventing one would be writing coaching copy
-//     out of nothing. Recorded in the plan + matrix §17.
-//   · the curve's DASHED projected branch and its „a terv várakozása" caption — there
-//     is no model behind it (see StrengthCurve's own header).
+// NOT here, deliberately: a technique sheet and „alternatives" (nothing in production carries
+// per-exercise cue text or a substitution model), and a projected branch on the curve.
 //
 // THREE capabilities that had no reachable home after Task 4 retired the old catalogue
 // shell, and that live here now (the house rule: no feature dies silently):
@@ -43,63 +35,35 @@
 //   · the DEMO-VIDEO url → `VideoUrlSheet`, gated the same way on `mediaEditable`.
 //     WATCHING a demo already survives elsewhere (the workout card glass, the picker);
 //     this is the AUTHORING half, and it is one quiet row that also states whether a
-//     video is attached — production's `videoUrl` and demo stills get no section of
-//     their own here, because the prototype's story has none and a player would be a
-//     new section rather than a ported one.
+//     video is attached.
 //   · the `Saját` / `Közös · {név}` AUTHORSHIP stamps (`authoredByMe` / `authorName`,
 //     mapped in trainHooks.ts since mezo-qw37.5 and rendered nowhere in the app until
 //     now) — they sit in the hero, where the exercise says who it belongs to.
 //
-// Üveg re-dress (mezo-me75u.4, prototypes/uveg-edzes.html#exercise): the glass back pill;
-// a frameless halo hero in the muscle color with the big anatomy in a lit well; the three
-// records as amber glass tiles (t-ring / t-weight / t-protocol) with pale-gold values; the
-// next target an amber callout with t-record (was the clay i-erme); the curve ONE glass card
-// in the muscle color (StrengthCurve wears the glass itself, so its honest empty lines stay
-// plain text); the medals amber glass rows with a t-record well; „Hol szerepel" and
-// „Gyakorlat kezelése" flat rows with 3D icons. CSS: the `── uveg edzes gyakorlatok (`
-// block of prototype.css, scoped to `.gyx-story`.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMedals, useMesoTemplates, useTrain } from '@/data/hooks'
 import { huMonthDayAged } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import { useBackNav } from '@/shared/hooks/useBackNav'
-import { Icon3D } from '@/shared/ui/clay'
-import { GhostState } from '@/shared/ui/GhostState'
-import { Skeleton } from '@/shared/ui/Skeleton'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
 import { InfoButton } from '@/features/train/components/InfoButton'
 import { StrengthCurve } from '@/features/train/components/StrengthCurve'
+import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
 import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
 import {
   buildLibraryRows, exerciseKey, medalsForExercise, nextTarget, sinceFact, whereUsed,
 } from '@/features/train/logic/exerciseLibrary'
-import { MEDAL_TYPE_LABEL, medalValueLabel } from '@/features/train/logic/medalLabels'
-import { muscleColor, muscleRegion, REGION_TONE } from '@/features/train/logic/muscleColors'
-import type { PageTone } from '@/shared/ui/mozaik'
-
-const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
+import { MedalRow } from '@/features/train/components/folyadek'
+import {
+  Acts, Card, EmptyTank, FrameBack, Hero, Level, Note, Page, Row, Section, Skel, useFrameTitle,
+} from '@/shared/ui/folyadek'
 
 /** Volume in reader units: tonnes above 1 t, whole kg below it. */
 const volumeLabel = (kg: number) => (kg >= 1000 ? `${hu1(kg / 1000)} t` : `${huInt(kg)} kg`)
 
-/** Mirrors the hero + the three stat cards + the curve box below. */
-function StorySkeleton() {
-  return (
-    <div role="status" aria-label="Betöltés…">
-      <Skeleton width={90} height={12} style={{ margin: '12px 0 0 24px' }} />
-      <Skeleton height={190} style={{ margin: '10px 0 14px' }} />
-      <div className="col gap-sm" style={{ padding: '0 24px 24px' }}>
-        {Array.from({ length: 3 }, (_, i) => <Skeleton key={i} variant="card" height={78} />)}
-        <Skeleton variant="card" height={120} />
-      </div>
-    </div>
-  )
-}
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
 
 export function ExerciseStoryPage() {
   const { key } = useParams<{ key: string }>()
@@ -116,27 +80,24 @@ export function ExerciseStoryPage() {
   // still-loading `useMedals()` answers `[]`, which would paint „Még nincs medálod" as
   // if that were the answer. The PLAN queries are NOT in this gate — they only feed
   // „Hol szerepel" at the foot, which carries its own wait below.
-  if (exercisesPending || medalsPending) return <StorySkeleton />
-
-  const rows = buildLibraryRows(exerciseLibrary, exerciseRecords, medals)
+  const pendingAll = exercisesPending || medalsPending
+  const rows = pendingAll ? [] : buildLibraryRows(exerciseLibrary, exerciseRecords, medals)
   const row = rows.find((r) => r.key === key)
+  useFrameTitle({ title: row?.name ?? 'Gyakorlat', eyebrow: 'Gyakorlatok' })
+  const back = <FrameBack className="fo-backpill" onBack={goBack}>‹ Gyakorlatok</FrameBack>
+
+  if (pendingAll) return <Page className="er-page">{back}<Skel blocks={[260, 78, 78, 78]} /></Page>
 
   if (!row) {
     return (
-      <MozaikPage tone="gold" className="gyx-page gyx-story">
-        <PageHead glass onBack={goBack} label="Gyakorlatok" />
-        <PageBody>
-          <GhostState message="Ez a gyakorlat nincs a tárban." />
-        </PageBody>
-      </MozaikPage>
+      <Page className="er-page">
+        {back}
+        <Card><EmptyTank icon="t-other">Ez a gyakorlat nincs a tárban.</EmptyTank></Card>
+      </Page>
     )
   }
 
   const item = exerciseLibrary.find((e) => exerciseKey(e) === row.key)
-  const region = muscleRegion(row.muscle)
-  const tone: PageTone = region ? REGION_TONE[region] : 'gold'
-  const musColor = muscleColor(row.muscle).rail
-  const accent = { '--mus-color': musColor } as CSSProperties
   const record = row.record
   const since = record ? sinceFact(record) : null
   const target = record ? nextTarget(record) : null
@@ -193,230 +154,161 @@ export function ExerciseStoryPage() {
       ? `Közös · ${item.authorName}`
       : null
 
+  // The record drops on the curve: the days an estimated-1RM record was set on this exercise.
+  const recordDates = myMedals.filter((m) => m.type === 'E1RM').map((m) => m.date)
+
+  const facts = record ? [
+    `${record.sessionCount} alkalom`,
+    // An absolute „óta" only when the series covers the whole history; a bounded one says so
+    // (see `sinceFact`) rather than passing a window start off as a start.
+    since && (since.kind === 'since' ? `${huMonthDayAged(since.date)} óta` : `ebből az utolsó ${since.sessions} látszik`),
+    // A bodyweight exercise really has moved 0 kg — that is not a missing figure to em-dash,
+    // it is a different fact, so it says the true one.
+    record.totalVolume > 0 ? `${volumeLabel(record.totalVolume)} összsúly` : `${huInt(record.totalReps)} ismétlés`,
+  ].filter(Boolean).join(' · ') : ''
+  const heroLabel = authorStamp ? `${row.muscleLabel} · ${authorStamp}` : row.muscleLabel
+  const canManage = !!item && (item.editable || item.mediaEditable)
+  let n = 0
+
   return (
-    <MozaikPage tone={tone} className="gyx-page gyx-story">
-      <PageHead glass onBack={goBack} label="Gyakorlatok" />
-      <EntranceGroup>
-        <header
-          className="gyx-hero is-story uv-halo rise"
-          style={{ ...accent, '--c': musColor, ...delay(40) } as CSSProperties}
+    <Page className="er-page er-cards">
+      {back}
+      {record ? (
+        <Hero
+          label={heroLabel}
+          // A TARGET, not a forecast: the app is not predicting this, it is naming the
+          // smallest next step past a record you already hold.
+          verdict={target
+            ? `Következő cél: ${target.kg != null ? `${hu1(target.kg)} kg × ${target.reps}` : `${target.reps} ismétlés`}.`
+            : `${record.sessionCount} naplózott alkalom.`}
+          sub={target ? `${cap(target.note)}. · ${facts}` : facts}
+          left={<Mchp muscle={row.muscle} />}
+          actions={(
+            <InfoButton
+              eyebrow="Az erőd íve"
+              title="Mit mutat a vonal?"
+              copy="A becsült egyismétléses maximumod alakulása alkalomról alkalomra. Becslés, nem mérés."
+            />
+          )}
         >
-          <span className="gyx-mchp is-lg" aria-hidden="true">
-            <MuscleChip token={row.muscle} size={68} />
-          </span>
-          <span className="gyx-hero-copy">
-            <span className="gyx-hero-tagrow">
-              <span className="gyx-hero-tag uv-eyebrow">{row.muscleLabel}</span>
-              {/* The authorship stamp — server-derived, and the app's FIRST renderer for it. */}
-              {authorStamp && <span className="gyx-stamp">{authorStamp}</span>}
-            </span>
-            <h2>{row.name}</h2>
-            {record ? (
-              <div className="gyx-foot">
-                <span>{record.sessionCount} alkalom</span>
-                {/* An absolute „óta" only when the series covers the whole history; a bounded
-                    one says so (see `sinceFact`) rather than passing a window start off as a start. */}
-                {since && (
-                  <span>
-                    {since.kind === 'since'
-                      ? `${huMonthDayAged(since.date)} óta`
-                      : `ebből az utolsó ${since.sessions} látszik`}
-                  </span>
-                )}
-                {/* A bodyweight exercise really has moved 0 kg — that is not a missing
-                    figure to em-dash, it is a different fact, so it says the true one. */}
-                {record.totalVolume > 0
-                  ? <span>{volumeLabel(record.totalVolume)} összsúly</span>
-                  : <span>{huInt(record.totalReps)} ismétlés</span>}
-              </div>
-            ) : (
-              <p className="gyx-say">
-                Ezzel a gyakorlattal még nincs naplózott alkalmad — az első edzés után itt gyűlnek a rekordjaid.
-              </p>
-            )}
-          </span>
-        </header>
+          <StrengthCurve points={series} muscle={row.muscle} recordDates={recordDates} />
+        </Hero>
+      ) : (
+        <Hero
+          label={heroLabel}
+          verdict="Ezzel a gyakorlattal még nincs naplózott alkalmad."
+          sub="Az első edzés után itt gyűlnek a rekordjaid."
+          left={<Mchp muscle={row.muscle} />}
+        >
+          <StrengthCurve points={[]} />
+        </Hero>
+      )}
 
-        <PageBody className="pl-sub">
-          {record && (
-            <>
-              <h3 className="pl-h3">
-                Rekordjaid
-                <InfoButton
-                  title="Mi számít rekordnak?"
-                  copy="A legjobb szett a legnagyobb súly a hozzá tartozó ismétléssel. A becsült maximum egy képletből jön a szettjeidből — becslés, nem mérés. A volumen egy alkalom összes megmozgatott súlya."
-                />
-              </h3>
-              <div className="gy-recs rise" style={{ ...accent, ...delay(70) }}>
-                <div className="gy-rec glass" style={{ '--i': 0 } as CSSProperties}>
-                  <Icon3D name="t-ring" size={34} />
-                  <span className="tr-eyebrow">Becsült 1RM</span>
-                  <strong>{hasE1rm ? <>{hu1(bestE1rm!)} <small>kg</small></> : '—'}</strong>
-                  {hasE1rm && (
-                    <i className="gy-rec-bar uv-bar">
-                      {e1rmShare != null && <b style={{ '--w': `${e1rmShare}%` } as CSSProperties} />}
-                    </i>
-                  )}
-                  {e1rmDelta != null && <small>+{hu1(e1rmDelta)} kg a korábbi csúcsod óta</small>}
-                  {/* The caption belongs to the FIGURE — under an em dash it would caption
-                      a number that is not there. */}
-                  {hasE1rm && <small>Becslés, nem mérés</small>}
-                </div>
-                <div className="gy-rec glass" style={{ '--i': 1 } as CSSProperties}>
-                  <Icon3D name="t-weight" size={34} />
-                  <span className="tr-eyebrow">Legjobb szett</span>
-                  <strong>
-                    {record.bestSet
-                      ? record.bestSet.weightKg != null && record.bestSet.weightKg > 0
-                        ? <>{hu1(record.bestSet.weightKg)} <small>kg × {record.bestSet.reps}</small></>
-                        : <>{record.bestSet.reps} <small>ismétlés</small></>
-                      : '—'}
-                  </strong>
-                  {/* Same rule as the 1RM card above: no figure ⇒ no rail, no fill, no
-                      caption. The full bar means „ez A rekord" — under an em dash it would
-                      be painting a record that does not exist, and the date caption would
-                      be an em dash captioning an em dash. */}
-                  {record.bestSet && (
-                    <>
-                      <i className="gy-rec-bar uv-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
-                      <small>{huMonthDayAged(record.bestSet.date)}</small>
-                    </>
-                  )}
-                </div>
-                <div className="gy-rec glass" style={{ '--i': 2 } as CSSProperties}>
-                  <Icon3D name="t-protocol" size={34} />
-                  <span className="tr-eyebrow">Legtöbb volumen</span>
-                  <strong>
-                    {record.bestSessionVolume
-                      ? <>{huInt(record.bestSessionVolume.volumeKg)} <small>kg × rep</small></>
-                      : '—'}
-                  </strong>
-                  {record.bestSessionVolume && (
-                    <>
-                      <i className="gy-rec-bar uv-bar"><b style={{ '--w': '100%' } as CSSProperties} /></i>
-                      <small>
-                        {`${huMonthDayAged(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`}
-                      </small>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {target && (
-                // A TARGET, not a forecast: the app is not predicting this, it is naming
-                // the smallest next step past a record you already hold.
-                <p className="gy-next rise" style={{ ...accent, ...delay(100) }}>
-                  <Icon3D name="t-record" size={24} />
-                  <span>
-                    Következő cél:{' '}
-                    <b>{target.kg != null ? `${hu1(target.kg)} kg × ${target.reps}` : `${target.reps} ismétlés`}</b>
-                    {' '}— {target.note}.
-                  </span>
-                </p>
+      {record && (
+        <>
+          <Section n={++n} title="Rekordjaid" />
+          <Card>
+            <Row
+              icon="t-ring"
+              title="Becsült 1RM"
+              // The caption belongs to the FIGURE — under an em dash it would caption a
+              // number that is not there.
+              sub={[e1rmDelta != null && `+${hu1(e1rmDelta)} kg a korábbi csúcsod óta`, hasE1rm && 'Becslés, nem mérés'].filter(Boolean).join(' · ') || undefined}
+              more={e1rmShare != null && (
+                <span className="fo-rowbar"><Level pct={e1rmShare} color={deepMuscle(row.muscle)} height={10} /></span>
               )}
+              value={hasE1rm ? `${hu1(bestE1rm!)} kg` : '—'}
+            />
+            <Row
+              icon="t-weight"
+              title="Legjobb szett"
+              sub={record.bestSet ? huMonthDayAged(record.bestSet.date) : undefined}
+              value={record.bestSet
+                ? record.bestSet.weightKg != null && record.bestSet.weightKg > 0
+                  ? `${hu1(record.bestSet.weightKg)} kg × ${record.bestSet.reps}`
+                  : `${record.bestSet.reps} ismétlés`
+                : '—'}
+            />
+            <Row
+              icon="t-protocol"
+              title="Legtöbb volumen"
+              sub={record.bestSessionVolume
+                ? `${huMonthDayAged(record.bestSessionVolume.date)} a csúcs · ${volumeLabel(record.totalVolume)} összesen`
+                : undefined}
+              value={record.bestSessionVolume ? `${huInt(record.bestSessionVolume.volumeKg)} kg × rep` : '—'}
+            />
+            <Acts>
+              <InfoButton
+                eyebrow="Rekordjaid"
+                title="Mi számít rekordnak?"
+                copy="A legjobb szett a legnagyobb súly a hozzá tartozó ismétléssel. A becsült maximum egy képletből jön a szettjeidből — becslés, nem mérés. A volumen egy alkalom összes megmozgatott súlya."
+              />
+            </Acts>
+          </Card>
+        </>
+      )}
 
-              <h3 className="pl-h3">
-                Az erőd íve
-                <InfoButton
-                  title="Mit mutat a vonal?"
-                  copy="A becsült egyismétléses maximumod alakulása alkalomról alkalomra. A szaggatott rész a terv várakozása a következő hetekre — becslés, nem ígéret."
-                />
-              </h3>
-              <div className="rise" style={{ ...accent, ...delay(130) }}>
-                <StrengthCurve points={series} />
-              </div>
-            </>
-          )}
+      <Section n={++n} title="Medáljaid" />
+      <Card>
+        {myMedals.length > 0
+          ? myMedals.map((m, i) => <MedalRow key={`${m.date}-${m.type}-${i}`} medal={m} titled="type" date={huMonthDayAged(m.date)} />)
+          : <Note className="er-none">Ezen a gyakorlaton még nincs medálod.</Note>}
+      </Card>
 
-          <h3 className="pl-h3">Medáljaid</h3>
-          {myMedals.length > 0 ? (
-            <div className="gy-medal-rows rise" style={delay(160)}>
-              {myMedals.map((m, i) => (
-                <span
-                  key={`${m.date}-${m.type}-${i}`}
-                  className="gy-medal glass"
-                  style={{ '--i': i } as CSSProperties}
-                >
-                  <span className="uv-well gyx-well" aria-hidden="true"><Icon3D name="t-record" size={34} /></span>
-                  <span className="gyx-grow">
-                    <span className="gyx-type">{MEDAL_TYPE_LABEL[m.type] ?? m.type}</span>
-                    <strong className="gy-medal-date">{huMonthDayAged(m.date)}</strong>
-                  </span>
-                  <b className="gyx-val">{medalValueLabel(m)}</b>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="pl-foot-say">Ezen a gyakorlaton még nincs medálod.</p>
+      <Section n={++n} title="Hol szerepel" />
+      {usedPending ? (
+        <Skel blocks={[78]} />
+      ) : (
+        <Card>
+          {used.days.length + used.templates.length === 0 && (
+            <Note className="er-none">Ez a gyakorlat most egyetlen tervedben és sablonodban sem szerepel.</Note>
           )}
+          {used.days.map((d) => (
+            <Row
+              key={`${d.mesoId}-${d.day}`}
+              icon="t-peak"
+              title={d.type}
+              sub={`A futó tervedben · ${d.day}`}
+              onClick={() => navigate(`/train/mesocycles/${d.mesoId}/days/${encodeURIComponent(d.day)}`)}
+            />
+          ))}
+          {used.templates.map((t) => (
+            <Row
+              key={t.id}
+              icon="t-stack"
+              title={t.name}
+              sub="Sablon a polcodon"
+              onClick={() => navigate(`/train/templates/${t.id}`)}
+            />
+          ))}
+        </Card>
+      )}
 
-          <h3 className="pl-h3">Hol szerepel</h3>
-          {usedPending ? (
-            <Skeleton variant="card" height={56} />
-          ) : used.days.length + used.templates.length === 0 ? (
-            <p className="pl-foot-say">Ez a gyakorlat most egyetlen tervedben és sablonodban sem szerepel.</p>
-          ) : (
-            <div className="rise" style={delay(190)}>
-              {used.days.map((d) => (
-                <button
-                  key={`${d.mesoId}-${d.day}`}
-                  type="button"
-                  className="pl-row"
-                  onClick={() => navigate(`/train/mesocycles/${d.mesoId}/days/${encodeURIComponent(d.day)}`)}
-                >
-                  <Icon3D name="t-peak" size={30} />
-                  <span><strong>{d.type}</strong><small>A futó tervedben · {d.day}</small></span>
-                  <b aria-hidden="true">›</b>
-                </button>
-              ))}
-              {used.templates.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className="pl-row"
-                  onClick={() => navigate(`/train/templates/${t.id}`)}
-                >
-                  <Icon3D name="t-stack" size={30} />
-                  <span><strong>{t.name}</strong><small>Sablon a polcodon</small></span>
-                  <b aria-hidden="true">›</b>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* The authoring half — only what the server says this viewer may do. Nothing
-              renders at all for a read-only row, so the section cannot promise an
-              affordance that would come back 403. */}
-          {item && (item.editable || item.mediaEditable) && (
-            <>
-              <h3 className="pl-h3">Gyakorlat kezelése</h3>
-              <div className="rise" style={delay(220)}>
-                {item.editable && (
-                  <button type="button" className="pl-row" onClick={() => setEditing(true)}>
-                    <Icon3D name="t-note" size={30} />
-                    <span><strong>Szerkesztés</strong><small>Név, izom, típus — és a törlés</small></span>
-                    <b aria-hidden="true">›</b>
-                  </button>
-                )}
-                {item.mediaEditable && (
-                  <button type="button" className="pl-row" onClick={() => setVideoing(true)}>
-                    <Icon3D name="t-camera" size={30} />
-                    <span>
-                      <strong>Demó videó</strong>
-                      <small>{item.videoUrl ? 'Csere vagy eltávolítás' : 'Még nincs videó — tegyél fel egyet'}</small>
-                    </span>
-                    <b aria-hidden="true">›</b>
-                  </button>
-                )}
-              </div>
-            </>
-          )}
-        </PageBody>
-      </EntranceGroup>
+      {/* The authoring half — only what the server says this viewer may do. Nothing
+          renders at all for a read-only row, so the section cannot promise an
+          affordance that would come back 403. */}
+      {canManage && (
+        <>
+          <Section n={++n} title="Gyakorlat kezelése" />
+          <Card>
+            {item.editable && (
+              <Row icon="t-note" title="Szerkesztés" sub="Név, izom, típus — és a törlés" onClick={() => setEditing(true)} />
+            )}
+            {item.mediaEditable && (
+              <Row
+                icon="t-camera"
+                title="Demó videó"
+                sub={item.videoUrl ? 'Csere vagy eltávolítás' : 'Még nincs videó — tegyél fel egyet'}
+                onClick={() => setVideoing(true)}
+              />
+            )}
+          </Card>
+        </>
+      )}
 
       {editing && item && (
         // A DELETE from this sheet removes the row this route names; the page then falls
-        // to its own „nincs a tárban" ghost above, which still carries the back pill.
+        // to its own „nincs a tárban" face above, which still carries the back control.
         // No redirect is fired from here: the catalogue query is invalidated by the
         // mutation, and reading a stale closure to decide would be guessing.
         <CatalogExerciseSheet edit={item} onClose={() => setEditing(false)} />
@@ -427,6 +319,6 @@ export function ExerciseStoryPage() {
           onClose={() => setVideoing(false)}
         />
       )}
-    </MozaikPage>
+    </Page>
   )
 }

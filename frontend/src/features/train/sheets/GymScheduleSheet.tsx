@@ -5,15 +5,15 @@
 // across mesocycles — the editor only sets the WHEN; the WHAT comes
 // from the active meso's gym days (deriveGymSchedule joins them).
 // Mirrors SportScheduleSheet, minus the volleyball-only fields.
-// Üveg (U10, mezo-me75u.10, `uveg-reteg` `SH.gym`): a coral glass sheet, the calendar 3D head,
-// seven flat day cells with flat time fields, Mégse flat ghost + the lit coral „Mentés" pill.
+// Folyadék (mezo-n4wf5.3): the prototype has no route for this sheet (it opens only from
+// Settings), so it is written in the shared sheet language — the calendar glyph head, one
+// row per weekday (the day badge, the day's name, its time field), „Mentés" + „Mégse".
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { SheetError, SheetHead } from '@/shared/ui/SheetHead'
-import { Icon3D } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
-import { DAY_ORDER } from '@/data/train/train'
+import { Box, FoSheetHead, Input, SheetActs } from '@/shared/ui/folyadek'
+import { DayNum } from '@/features/train/components/folyadek'
+import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import type { GymScheduleSlotInput } from '@/data/train/trainApi'
 import type { GymScheduleSlot } from '@/data/types'
 
@@ -42,34 +42,27 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
   }
 
   return (
-    <Sheet glass onClose={onClose} labelledBy="gym-schedule-title" className="uvl-edzes">
+    <Sheet onClose={onClose} labelledBy="gym-schedule-title" className="fo-sheet es-sheet">
       {(close) => (
-        <div className="uvl-body">
-          <SheetHead icon="t-calendar" eyebrow="Gym · heti idő" title="Heti gym-időpontok" titleId="gym-schedule-title" onClose={close} />
+        <>
+          <FoSheetHead titleId="gym-schedule-title" icon="t-calendar" eyebrow="Gym · heti idő" title="Heti gym-időpontok" onClose={close} />
 
-          {/* Day editors — one time per weekday, each a flat cell (a set day lit coral) */}
-          <div className="uvl-rows">
+          {/* Day editors — one time per weekday (a set day reads in ink, an unset one quiet) */}
+          <div className="es-vl">
             {DAY_ORDER.map((day, i) => (
-              <label key={day} className={cn('uvl-cell', times[i] && 'is-set')}>
-                <span className="uvl-cell-day">{day}</span>
-                <input
-                  type="time"
-                  aria-label={`${day} időpont`}
-                  value={times[i]}
-                  onChange={(e) => patch(i, e.target.value)}
-                />
+              <label key={day} className={times[i] ? 'fo-row es-gymday is-set' : 'fo-row es-gymday'}>
+                <DayNum>{day}</DayNum>
+                <span className="g"><strong>{DAY_LABELS[day]}</strong></span>
+                <Input type="time" aria-label={`${day} időpont`} value={times[i]} onChange={(e) => patch(i, e.target.value)} />
               </label>
             ))}
           </div>
 
-          {saveError && <SheetError>Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</SheetError>}
-          <div className="uvl-foot">
-            <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
-            <button type="button" className="uvl-cta" disabled={saving} onClick={() => save(close)}>
-              <Icon3D name="t-tick" size={20} />{saving ? 'Mentés…' : 'Mentés'}
-            </button>
-          </div>
-        </div>
+          {saveError && (
+            <div role="alert"><Box icon="t-info" color="var(--fo-bad)" title="Nem sikerült menteni."><p>A módosításaid megmaradtak; próbáld újra.</p></Box></div>
+          )}
+          <SheetActs label={saving ? 'Mentés…' : 'Mentés'} disabled={saving} onSave={() => save(close)} onCancel={close} />
+        </>
       )}
     </Sheet>
   )

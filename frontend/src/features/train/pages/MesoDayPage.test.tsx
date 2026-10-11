@@ -29,45 +29,61 @@ function setup(day = 'Csü', mesoId = MESO_ID) {
   return router
 }
 
-test('the day opens on a body-map hero naming the day, its type and its working-set numeral', () => {
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
+
+// Folyadék F3 (prototype vilagos/edzes.js `nap()`): the day's name rides the title bar; the hero is the body as a
+// vessel plus the verdict.
+test('the day opens on a body hero naming the day, its type and its working sets as a verdict', () => {
   setup()
   expect(screen.getByText('Pull nap')).toBeInTheDocument()
-  expect(screen.getByRole('img', { name: 'Pull nap — érintett izmok' })).toBeInTheDocument()
-  // Csü · Pull: 16 working sets in the mock fixture — the ONE dominant poster numeral.
-  const numeral = document.querySelector('.pl-dhero-number')!
-  expect(numeral.textContent).toBe('16szett')
+  const body = screen.getByRole('img', { name: 'Pull nap — érintett izmok' })
+  expect(hero()).toContainElement(body)
+  expect(body).toHaveClass('ex-body')
+  // a Pull day is mostly drawn on the back — and the caption says which side you are looking at
+  expect(body).toHaveAttribute('data-view', 'back')
+  expect(hero().querySelector('.ex-hb small')?.textContent).toBe('hátulról')
+  // Csü · Pull: 16 working sets, 5 exercises in the mock fixture.
+  expect(hero().querySelector('.fo-hero-verdict')?.textContent).toBe('16 szett, 5 gyakorlat.')
+  expect(hero().querySelector('.fo-hero-lbl')?.textContent).toBe('Csütörtök · a terv 3. hete')
 })
 
-test('the minutes and the week-share ride along as pills — the share is a bar + words, never a bare percent', () => {
+test('the minutes and the week-share ride along — the share is a level, not only a number', () => {
   setup()
-  const pills = document.querySelector('.pl-dhero-pills')!
-  expect(pills.textContent).toMatch(/\d+ perc/)
-  expect(pills.textContent).toContain('5 gyakorlat')
   // Csü carries 16 of the week's 75 planned sets (16+12+19+16+12) → 21%.
-  const share = document.querySelector('.pl-share')!
-  expect(share.textContent).toBe('a heted 21%-a')
-  // The graphic, not just the words: a mini bar sized off the same percentage.
-  const bar = share.querySelector('i')!
-  expect(bar.style.getPropertyValue('--w')).toBe('21%')
+  expect(hero().querySelector('.fo-hero-sub')?.textContent).toMatch(/^\d+ perc · a heted 21%-a$/)
+  const level = hero().querySelector('.fo-level')!
+  expect(level.textContent).toBe('a heted21%')
+  expect((level.querySelector('i') as HTMLElement).style.width).toBe('21%')
 })
 
-test('per-muscle rows break the day down, each with its own bar to the shared 8-set marker', () => {
+test('per-muscle rows break the day down, each with its own level to the shared 8-set marker', () => {
   setup()
-  const rows = document.querySelector('.pl-mrows')!
-  expect(rows.textContent).toContain('Hát')
-  expect(rows.textContent).toContain('Bicepsz')
-  expect(document.querySelectorAll('.pl-mrow-bar u').length).toBeGreaterThan(0)
+  const rows = [...document.querySelectorAll('.ep-dayload .fo-row')]
+  expect(rows.length).toBeGreaterThan(0)
+  const text = rows.map((r) => r.textContent).join(' ')
+  expect(text).toContain('Hát')
+  expect(text).toContain('Bicepsz')
+  for (const r of rows) {
+    expect(r.querySelector('.ex-mchp')).not.toBeNull()
+    // the marker stands at the same place in every row (SESSION_CAP_PIN_PCT)
+    expect((r.querySelector('.fo-wlv u') as HTMLElement).style.left).toBe('80%')
+  }
+  expect(screen.getByText('nyolc szett: fölötte már nem hoz többet')).toBeInTheDocument()
 })
 
-test('the exercise view cells summarize each row read-only', () => {
+test('the exercise blocks summarize each row read-only, the working sets as capsules', () => {
   setup()
-  const cells = document.querySelectorAll('.pl-ex')
+  const cells = document.querySelectorAll('.ep-ex')
   expect(cells.length).toBe(5) // Csü · Pull has 5 exercises in the mock fixture
   const first = cells[0]
+  expect(first.textContent).toContain('01')
   expect(first.textContent).toContain('Chest Supported Row')
   expect(first.textContent).toContain('4 × 8–10') // szett × ismétlés
   expect(first.textContent).toContain('RIR')
+  expect(first.textContent).toContain('kg induló')
   expect(first.textContent).toContain('bemelegítő')
+  expect(first.querySelectorAll('.fo-caps i')).toHaveLength(4) // one capsule per working set
+  expect(first.querySelector('input, select, textarea')).toBeNull()
 })
 
 test('the page shows ONE day — this day\'s exercises, not another day\'s', () => {
@@ -91,18 +107,20 @@ test('none of the pre-Titanium editor markers survive anywhere on the page', () 
   }
 })
 
-test('the page ends at the exercise cells — no duplicate list, no editor chrome below them', () => {
+test('the page ends at the exercise card — no duplicate list, no editor chrome below it', () => {
   setup()
-  // The read-only cells are the ONLY exercise list: the editor's accordion rows are gone.
-  expect(document.querySelectorAll('.pl-ex').length).toBe(5)
+  // The read-only blocks are the ONLY exercise list: the editor's accordion rows are gone.
+  expect(document.querySelectorAll('.ep-ex').length).toBe(5)
   expect(document.querySelector('.mz-editor, .ex-accordion, .ex-card')).toBeNull()
-  // …and the last thing on the page is the day's own tail, not an editor.
-  const body = document.querySelector('.pl-dayfoot')!
-  expect(body).toBeInTheDocument()
-  expect(body.nextElementSibling).toBeNull()
+  // …and the last thing on the page is the exercise card, whose own tail is the two links.
+  const card = document.querySelector('.ep-dayex')!
+  expect(card.nextElementSibling).toBeNull()
+  expect(card.lastElementChild).toHaveClass('fo-acts')
+  // none of the old skin is left on the page
+  expect(document.querySelector('.fo-page .glass, .fo-page [class*="pl-"], .fo-page .body-map')).toBeNull()
 })
 
-test('the day\'s editing lives one route down — the tail carries the only add-CTA and a quiet edit link', async () => {
+test('the day\'s editing lives one route down — the card\'s tail carries the only add link', async () => {
   const router = setup()
   // ONE add-CTA (the prototype\'s end-of-screen `.pl-add`), not the old duplicate pair.
   const add = screen.getAllByRole('button', { name: /Gyakorlat hozzáadása/ })
@@ -112,7 +130,7 @@ test('the day\'s editing lives one route down — the tail carries the only add-
   expect(router.state.location.search).toBe('?add=1')
 })
 
-test('„A nap szerkesztése" opens the day\'s editor route', async () => {
+test('the hero\'s „A nap szerkesztése" opens the day\'s editor route', async () => {
   const router = setup()
   await userEvent.click(screen.getByRole('button', { name: 'A nap szerkesztése' }))
   expect(router.state.location.pathname).toBe(`/train/mesocycles/${MESO_ID}/days/Cs%C3%BC/edit`)
@@ -144,7 +162,7 @@ describe('MesoDayPage (real mode)', () => {
     setup('Csü', REAL_MESO_ID)
     expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
     expect(screen.queryByText('Ez a nap nincs a tervedben.')).not.toBeInTheDocument()
-    expect(screen.queryByText('Ez a mesociklus nem található.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Ez az edzésterv nem található.')).not.toBeInTheDocument()
 
     expect(await screen.findByText('Pull nap')).toBeInTheDocument()
     expect(screen.getAllByText('Chest Supported Row').length).toBe(1)
@@ -159,7 +177,7 @@ describe('MesoDayPage (real mode)', () => {
   test('an unknown block id resolves to the not-found ghost, not an endless skeleton', async () => {
     server.use(http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])))
     setup('Csü', REAL_MESO_ID)
-    expect(await screen.findByText('Ez a mesociklus nem található.')).toBeInTheDocument()
+    expect(await screen.findByText('Ez az edzésterv nem található.')).toBeInTheDocument()
   })
 
   // The honest-words contract: 0 kg is a real "no weight tracked here" answer (bodyweight
@@ -196,7 +214,7 @@ describe('MesoDayPage (real mode)', () => {
     )
     setup('Csü', CUSTOM_MESO_ID)
     expect(await screen.findByText('saját testsúly')).toBeInTheDocument()
-    const holdCell = document.querySelectorAll('.pl-ex')[1]
+    const holdCell = document.querySelectorAll('.ep-ex')[1]
     expect(holdCell.textContent).toContain('3 × tartás')
     // The day's tail is the page's last word — the editor no longer scrolls below it.
     expect(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ })).toBeInTheDocument()
@@ -205,14 +223,16 @@ describe('MesoDayPage (real mode)', () => {
 })
 
 // ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
-// The button beside the heading, the prototype's copy word for word. The aria-label is
+// The text link under the card, the prototype's copy word for word. The aria-label is
 // the prototype's own `"<title> — mit jelent?"`.
 
-test('ⓘ beside „Mit terhel ez a nap" explains the eight-set marking, word for word', async () => {
+test('the link under „Mit terhel ez a nap" explains the eight-set marking, word for word', async () => {
   const user = userEvent.setup()
   setup()
   const btn = screen.getByRole('button', { name: 'Miért nyolcnál a jelölés? — mit jelent?' })
-  expect(btn.closest('h3')?.textContent).toBe('Mit terhel ez a nap')
+  // the prototype's text link at the foot of the card it explains
+  expect(btn).toHaveTextContent('Miért nyolcnál a jelölés?')
+  expect(btn.closest('.ep-dayload')).not.toBeNull()
   await user.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Miért nyolcnál a jelölés?' })).getByText(
@@ -221,11 +241,12 @@ test('ⓘ beside „Mit terhel ez a nap" explains the eight-set marking, word fo
   ).toBeInTheDocument()
 })
 
-test('ⓘ beside „A nap gyakorlatai" explains when an edit starts counting, word for word', async () => {
+test('the link under „A nap gyakorlatai" explains when an edit starts counting, word for word', async () => {
   const user = userEvent.setup()
   setup()
   const btn = screen.getByRole('button', { name: 'Mikortól él a változtatás? — mit jelent?' })
-  expect(btn.closest('h3')?.textContent).toBe('A nap gyakorlatai')
+  expect(btn).toHaveTextContent('Mikortól él a változtatás?')
+  expect(btn.closest('.ep-dayex')).not.toBeNull()
   await user.click(btn)
   expect(
     within(screen.getByRole('dialog', { name: 'Mikortól él a változtatás?' })).getByText(

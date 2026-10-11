@@ -36,3 +36,18 @@ test('keeps edited values visible after failed persistence', async () => {
   expect(await screen.findByRole('alert')).toHaveTextContent('Nem sikerült menteni')
   expect(screen.getByLabelText('Kedd időpont')).toHaveValue('18:30')
 })
+
+// Folyadék (mezo-n4wf5.3): the light sheet with the kit head and fields — none of the old capture / glass skin.
+test('the sheet wears the Folyadék sheet language', async () => {
+  render(<GymScheduleSheet slots={[{ dayOfWeek: 1, time: '18:30' }] as never} onClose={() => {}} onSave={vi.fn()} />)
+  const sheet = document.querySelector('.sheet.fo-sheet') as HTMLElement
+  expect(sheet).not.toBeNull()
+  expect(screen.getByRole('heading', { name: 'Heti gym-időpontok' })).toBeInTheDocument()
+  expect(screen.getByText('Gym · heti idő')).toBeInTheDocument()
+  // one row per weekday, each with its day badge; a set day reads in ink
+  expect(sheet.querySelectorAll('.es-gymday')).toHaveLength(7)
+  expect(sheet.querySelectorAll('.es-gymday.is-set')).toHaveLength(1)
+  expect(screen.getByLabelText('Kedd időpont')).toHaveValue('18:30')
+  expect(sheet.querySelector('.glass, [class*="capture-"], [class*="uvs-"], [class*="uvl-"], .chip, .stepper')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Mégse' })).toHaveClass('fo-lk')
+})

@@ -56,9 +56,8 @@ test('picking keeps the sheet open, counts adds, and flashes the row', async () 
   expect(screen.getByText('Mit pakolunk be?')).toBeInTheDocument()
   expect(picks).toEqual(['Hip Thrust'])
   expect(screen.getByText('1 hozzáadva')).toBeInTheDocument()
-  // the „added" mark is the word + the t-tick 3D icon (no ✓ glyph, bible rule 19)
-  expect(screen.getByText('Hozzáadva')).toBeInTheDocument()
-  expect(screen.getByText('Hozzáadva').querySelector('use')?.getAttribute('href')).toBe('#t-tick')
+  // the „added" mark is the ok status pill in place of the row's + (no ✓ glyph)
+  expect(screen.getByText('Hozzáadva')).toHaveClass('fo-st', 'ok')
   await userEvent.click(screen.getByText('Hip Thrust'))
   expect(picks).toEqual(['Hip Thrust', 'Hip Thrust']) // duplicates allowed
   expect(screen.getByText('2 hozzáadva')).toBeInTheDocument()
@@ -77,8 +76,41 @@ test('Kész closes the sheet and reflects the added count', async () => {
 test('each picker row leads with the exercise thumbnail', async () => {
   render(<ExercisePickerSheet onClose={() => {}} onPick={() => {}} />, { wrapper: QueryWrapper })
   const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  // Present for every row: an <img> when the catalog row has stills, the
-  // muscle-wash fallback tile when it does not — the left edge never goes ragged.
+  // Present for every row: the photo when the catalog row has stills, the muscle chip when it
+  // does not — the left edge never goes ragged.
   // (Chest Supported Row is deliberately imageless: one of the 37 unmapped slugs.)
-  expect(row.querySelector('.exdemo-thumb')).not.toBeNull()
+  expect(row.querySelector('.ee-thumb')).not.toBeNull()
+})
+
+// Folyadék (mezo-n4wf5.3, prototype `xpick`)
+test('the light sheet: context line, the stimulus as five drops, the type in plain words', async () => {
+  render(<ExercisePickerSheet onClose={() => {}} onPick={() => {}} dayLabel="Csü · Pull" />, { wrapper: QueryWrapper })
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(dialog).not.toHaveClass('glass')
+  expect(screen.getByText('Gyakorlat választás · Csü · Pull')).toBeInTheDocument()
+  expect(screen.getByRole('searchbox', { name: 'Keresés' })).toBeInTheDocument()
+  const row = screen.getByRole('button', { name: /Chest Supported Row/ })
+  expect(row).toHaveTextContent('összetett')
+  expect(row).not.toHaveTextContent('compound')
+  expect(row.querySelectorAll('.fo-dm i')).toHaveLength(5)
+  expect(screen.getByRole('button', { name: 'Összes' })).toHaveAttribute('aria-pressed', 'true')
+})
+
+test('single mode: no Kész, a pick closes; the similar group leads the list', async () => {
+  const onClose = vi.fn()
+  const picks: string[] = []
+  render(
+    <ExercisePickerSheet mode="single" eyebrow="Csere" title="Mire cseréled?" similarTo="back-mid"
+      excludeNames={['Chest Supported Row']} onClose={onClose} onPick={(i) => picks.push(i.name)} />,
+    { wrapper: QueryWrapper },
+  )
+  expect(screen.getByText('Mire cseréled?')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^Kész/ })).not.toBeInTheDocument()
+  expect(screen.queryByText('Chest Supported Row')).not.toBeInTheDocument()
+  const similar = screen.getByRole('group', { name: 'Hasonló gyakorlatok' })
+  const first = similar.querySelector('button')!
+  await userEvent.click(first)
+  expect(picks).toHaveLength(1)
+  await waitFor(() => expect(onClose).toHaveBeenCalled())
 })

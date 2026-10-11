@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-10-09
+updated: 2026-10-11
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,6 +13,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
+
+> **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** `NapMezoPage` changed in one line: its standalone back pill is the kit's `.fo-backpill`. Nudge logic and surfaces as described below.
 
 > **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** The three flags `UNDER_EATING`-family keys (under-eating, logging-gap, meal-rhythm) are `unavailable(RECOVERY_MODE)` during a kímélő period, and `LoadFuelMismatchRule` skips unjudged days; the FE only gained a skipped-window filter in the Nap Fuel preview data (`frontend/src/data/today`). See [`companion.md`](companion.md) and [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 

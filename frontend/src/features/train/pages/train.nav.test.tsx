@@ -69,11 +69,11 @@ test('the active workout session is a full-screen flow without the sub-nav', () 
 })
 
 // „Sablonjaid" stays reachable on its own route — the library landing's doorway links
-// here (mezo-tlwa; refaced into the Titanium list in T10 Task 3, mezo-88iwa.11, so the
-// page's name now lives in its poster hero's h2, not in a DS h1).
+// here (mezo-tlwa; Folyadék since mezo-n4wf5.3: the hero's verdict counts the shelf and the
+// list is the one numbered section).
 test('Sablonjaid stays reachable on its own route', async () => {
   renderApp('/train/templates')
-  expect(await screen.findByRole('heading', { name: 'Amiből indíthatsz' })).toBeInTheDocument()
+  expect(await screen.findByRole('heading', { name: /Sablonok · egy kapszula egy nap/ })).toBeInTheDocument()
 })
 
 // A template's own READ-FIRST page (T10 Task 3) — a real route under the list, NOT the
@@ -90,15 +90,16 @@ test('the mesocycle planner is a full-screen flow without the sub-nav', () => {
   const { container } = renderApp('/train/mesocycles/new')
   expect(container.querySelector('.np-pills')).toBeNull()
   expect(screen.getByText('Mikor edzel — és mire gyúrsz?')).toBeInTheDocument()
-  expect(screen.getByText('Új blokk · interjú')).toBeInTheDocument()
+  // Folyadék F3 (mezo-n4wf5.3): the interview opens with its hero vessel on the Folyadék page.
+  expect(container.querySelector('.ew-page .fo-hero')).not.toBeNull()
 })
 
 // The template editor moved off the pre-redesign DS page shell onto the same Mozaik
 // scaffold the wizard's editor uses (mezo-yty6 Task 10) — one editor, one face.
-test('the template editor is a full-screen Mozaik flow without the sub-nav', async () => {
+test('the template editor is a full-screen flow without the sub-nav', async () => {
   const { container } = renderApp('/train/mesocycles/templates/b20f0000-0000-4000-8000-000000000000')
-  expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Upper/Lower Power')
-  expect(container.querySelector('.mz-page')).not.toBeNull()
+  expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toHaveValue('Upper/Lower Power')
+  expect(container.querySelector('.ew-page')).not.toBeNull()
   expect(container.querySelector('.np-pills')).toBeNull()
   expect(container.querySelector('.pghead-np')).toBeNull()
 })

@@ -1,29 +1,31 @@
 // ============================================================
-// Mezo · RunningPage (Futás) — Mozaik 2.0 re-face (mezo-d20.11), üveg re-dress
-// (mezo-me75u.4, prototype docs/design_2.0/prototypes/src/uveg-edzes-body.html
-// `futas()`): glass back pill (+ the Tervek-only lit sky `＋ Új terv` pill) → the
-// frameless sky halo hero (t-run, `Hét cur/weeks`) → three flat stat cells → the
-// flat segmented control (active segment filled sky) → the segment.
+// Mezo · RunningPage (Futás) — Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `futas()`,
+// args `het` · `naplo` · `tervek` · `nincs` · `het-nincs` · `naplo-ures` · `tervek-ures` · `tolt`).
 //
-// Ranking (bible §3.4): the block card, the prescribed session cards, the
-// cross-load note, the HR-recovery card and the logged-run rows are sky `.glass`
-// (the planned block lavender); chips/segments/week cells inside them flat; the
-// archived blocks flat rows; every empty state dashed (`.uv-empty`).
-// With no active block the big number is `—`, never a fabricated `0/0`.
+// Hero: the block's weeks as tubes (RunWeekStrip — a past week holds what was logged, the
+// current one is ringed, the rest wait under the waterline) under the verdict „A N hetes
+// blokk M. hetében jársz.", three facts, and ONE button: the first session of the week that
+// can be logged („Naplózd · …" / „Pótold · …"), or „＋ Új terv" on the Tervek view. With no
+// active block the hero says so and shows the library's own honest counts.
+// Then the three views behind the segmented control:
+//   E heti edzés — 1 the prescribed sessions (RunSessionCard: row + interval tube + tags),
+//                  2 the cross-load note;
+//   Napló        — 1 the heart-rate-recovery trend as a liquid surface, 2 the logged runs;
+//   Tervek       — Aktív / Tervezett / Archív, one card of rows each (a row opens the editor).
 //
-// The stag-run FUTÁS type tag on session rows/cards is unchanged, as is every
-// data hook and mutation.
+// Every data hook and mutation is unchanged.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
 import { useRunning } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest, RunPrescribedSession } from '@/data/train/runningApi'
+import type { RunningBlockResponse, RunSessionLogResponse, RunPrescribedSession, RunSegment } from '@/data/train/runningApi'
 import { newDraft } from '@/data/train/runningDraft'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageHero, PageBody, StatCell } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import {
+  Area, Big, Btn, Bub, Caps, Card, EmptyTank, Facts, FrameBack, Hero, Note, Page, Row, Section, Seg, Skel, St,
+  type SegItem,
+} from '@/shared/ui/folyadek'
 import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import { RunWeekStrip } from '@/features/train/components/RunWeekStrip'
 import { RunSessionCard, type RunCtaState } from '@/features/train/components/RunSessionCard'
@@ -31,16 +33,17 @@ import { RunCrossLoadCard } from '@/features/train/components/RunCrossLoadCard'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { todayIdx, dateForDayOfWeek } from '@/data/train/runningAgenda'
 
-const SKY = { '--c': 'var(--dv-sky)' } as CSSProperties
-
-type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number; date: string }
+type RunLogCtx = {
+  blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean
+  defaultRounds?: number; date: string; segments: RunSegment[]
+}
 
 type RunSubView = 'week' | 'log' | 'blocks'
 
-const SUB_VIEWS: { id: RunSubView; label: string }[] = [
-  { id: 'week', label: 'E heti edzés' },
-  { id: 'log', label: 'Napló' },
-  { id: 'blocks', label: 'Tervek' },
+const SUB_VIEWS: SegItem<RunSubView>[] = [
+  { key: 'week', label: 'E heti edzés' },
+  { key: 'log', label: 'Napló' },
+  { key: 'blocks', label: 'Tervek' },
 ]
 
 // sessionKey → display label for the log (the prescribed labels live on the
@@ -57,15 +60,8 @@ const STATUS_LABELS: Record<RunningBlockResponse['status'], string> = {
   archived: 'archív',
 }
 
-/** The dashed empty state (bible §3 rank 4): no glass, no glow. */
-function UvEmpty({ art, message }: { art: Icon3DName; message: string }) {
-  return (
-    <div className="uvs-ghost uv-empty rise" style={SKY}>
-      <Icon3D name={art} size={56} />
-      <p className="uv-voice">{message}</p>
-    </div>
-  )
-}
+/** „A 8 hetes" / „Az 5 hetes": the article follows the spoken number (egy, öt, ezer start with a vowel). */
+const article = (n: number) => (n === 1 || n === 5 || String(n).startsWith('5') || (n >= 1000 && n < 2000) ? 'Az' : 'A')
 
 export function RunningPage() {
   const { runningBlocks, activeRunningBlock, runSessions, runningPending, saveRunningBlock, logRunSession } = useRunning()
@@ -73,6 +69,8 @@ export function RunningPage() {
   // the user left from (e.g. Tervek), not the default — see useStickyTab.
   const [view, setView] = useStickyTab<RunSubView>('train.futas.view', 'week')
   const navigate = useNavigate()
+  const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
+  const { showLevelUp } = useLevelUp()
 
   const openBuilder = (id: string) => navigate(`/train/futas/${id}`)
   const createBlock = () => {
@@ -81,359 +79,286 @@ export function RunningPage() {
     saveRunningBlock(null, newDraft(start, end), { onSuccess: (b) => openBuilder(b.id) })
   }
 
-  // Hero + stat strip: `Hét cur/weeks` over the active block, and the three live
-  // cells beneath it. With NO active block the big number is `—` (never a
-  // fabricated 0/0) and the strip switches to the library's own honest counts.
-  const activeWeek = activeRunningBlock?.structure.weeks.find(
-    (w) => w.weekNumber === activeRunningBlock.currentWeek,
-  )
+  const back = <FrameBack history fallback="/train" className="fo-backpill">‹ Edzés</FrameBack>
+
+  // Real-mode initial load: the page's own shape as quiet blocks until the query resolves, so
+  // the no-active-block state doesn't flash before data lands. Mock mode is synchronous
+  // (pending === false) so this never triggers there.
+  if (runningPending) {
+    return <Page className="es-page es-futas">{back}<Skel blocks={[300, 60, 300]} /></Page>
+  }
+
+  const block = activeRunningBlock
+  const activeWeek = block?.structure.weeks.find((w) => w.weekNumber === block.currentWeek)
   const prescribed = activeWeek?.sessions ?? []
-  const doneThisWeek = prescribed.filter((s) =>
-    runSessions.some(
-      (l) => l.blockId === activeRunningBlock?.id
-        && l.weekNumber === activeRunningBlock?.currentWeek
-        && l.sessionKey === s.key,
-    ),
-  ).length
-
-  return (
-    <MozaikPage tone="sky" className="uvs-page uvs-futas">
-      <PageHead glass history fallback="/train" label="Edzés">
-        {/* `＋ Új terv` lives on the Tervek (blocks) segment — a lit sky pill */}
-        {view === 'blocks' && (
-          <button type="button" onClick={createBlock} className="mz-pgact uvs-act" style={SKY}>
-            ＋ Új terv
-          </button>
-        )}
-      </PageHead>
-      {/* One-shot entrance choreography, re-armed on a segment switch. */}
-      <EntranceGroup replayKey={view}>
-        <PageHero
-          art="t-run"
-          accent="var(--dv-sky)"
-          name="Futás"
-          big={activeRunningBlock
-            ? <>{activeRunningBlock.currentWeek}<small>/{activeRunningBlock.weeks}</small></>
-            : '—'}
-          sub={activeRunningBlock ? `hét a blokkból · ${activeRunningBlock.title}` : undefined}
-        />
-        <PageBody>
-          <div className="mz-statstrip uvs-strip rise" style={{ '--d': '30ms' } as CSSProperties}>
-            {activeRunningBlock ? (
-              <>
-                <StatCell value={`${doneThisWeek}/${prescribed.length}`} label="e heti edzés" />
-                <StatCell value={`${prescribed.length}×`} label="/ hét" />
-                <StatCell value={`${activeRunningBlock.weeks} hét`} label="blokk" />
-              </>
-            ) : (
-              <>
-                <StatCell value={0} label="aktív terv" />
-                <StatCell value={runningBlocks.filter((b) => b.status === 'planned').length} label="tervezett" />
-                <StatCell value={runSessions.length} label="logolt futás" />
-              </>
-            )}
-          </div>
-
-          {/* View switcher — the flat segmented control, active segment filled sky. */}
-          <div className="segtabs uvs-seg rise" data-kalauz-anchor="futas-tabs" style={{ '--d': '60ms', ...SKY } as CSSProperties}>
-            {SUB_VIEWS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                aria-pressed={view === v.id}
-                onClick={() => setView(v.id)}
-                className="segtab"
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
-
-          {view === 'week' && <RunWeekView block={activeRunningBlock} sessions={runSessions} pending={runningPending} onLog={logRunSession} />}
-          {view === 'log' && <RunLogView sessions={runSessions} />}
-          {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
-  )
-}
-
-// === E heti edzés: the active block card + this week's prescribed sessions ===
-function RunWeekView({ block, sessions: logs, pending, onLog }: {
-  block: RunningBlockResponse | null
-  sessions: RunSessionLogResponse[]
-  pending: boolean
-  onLog: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void
-}) {
-  const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
-  const { showLevelUp } = useLevelUp()
-
-  // Real-mode initial load: a neutral placeholder until the query resolves, so the
-  // no-active-block empty state doesn't flash before data lands. Mock mode is
-  // synchronous (pending === false) so this never triggers there.
-  if (pending) return <UvEmpty art="t-clock" message="Betöltés…" />
-
-  if (!block) return <UvEmpty art="t-run" message="Nincs aktív futóterved — a Tervek fülön aktiválj egyet." />
-
-  const week = block.structure.weeks.find((w) => w.weekNumber === block.currentWeek)
-  const prescribed = week?.sessions ?? []
+  const isDone = (key: string, weekNumber = block?.currentWeek) =>
+    runSessions.some((l) => l.blockId === block?.id && l.weekNumber === weekNumber && l.sessionKey === key)
+  const doneThisWeek = prescribed.filter((s) => isDone(s.key)).length
   const today = todayIdx()
-  const isDone = (key: string) => logs.some((l) => l.blockId === block.id && l.weekNumber === block.currentWeek && l.sessionKey === key)
   const ctaStateFor = (s: RunPrescribedSession): RunCtaState =>
     isDone(s.key) ? 'done' : s.dayOfWeek === today ? 'today' : s.dayOfWeek < today ? 'past' : 'future'
+  const openLog = (s: RunPrescribedSession) => {
+    if (!block) return
+    setLogCtx({
+      blockId: block.id,
+      weekNumber: block.currentWeek,
+      sessionKey: s.key,
+      label: s.label,
+      isSprint: s.kind === 'sprint',
+      // Sprint carries an explicit round count; pyramid has none (it's a
+      // ladder), so the honest default is its prescribed segment count.
+      defaultRounds: s.rounds ?? s.segments.filter((seg) => seg.type === 'work').length,
+      date: dateForDayOfWeek(s.dayOfWeek),
+      segments: s.segments,
+    })
+  }
+
+  // The hero's one button: today's session first, else the earliest one still to make up.
+  const loggable = prescribed.find((s) => ctaStateFor(s) === 'today') ?? prescribed.find((s) => ctaStateFor(s) === 'past')
+  const newPlan = <Btn onClick={createBlock}>＋ Új terv</Btn>
+  const heroActions = view === 'blocks'
+    ? newPlan
+    : loggable
+      ? <Btn onClick={() => openLog(loggable)}>{ctaStateFor(loggable) === 'today' ? 'Naplózd' : 'Pótold'} · {loggable.label}</Btn>
+      : undefined
+
+  // Per week: what the plan prescribes and what the log holds — the hero's tubes.
+  const plannedByWeek = block ? Array.from({ length: block.weeks }, (_, i) =>
+    block.structure.weeks.find((w) => w.weekNumber === i + 1)?.sessions.length ?? 0) : []
+  const doneByWeek = block ? Array.from({ length: block.weeks }, (_, i) => {
+    const sessions = block.structure.weeks.find((w) => w.weekNumber === i + 1)?.sessions ?? []
+    return sessions.filter((s) => isDone(s.key, i + 1)).length
+  }) : []
 
   return (
-    <div className="uvs-sec">
-      {/* Block card — goal eyebrow, the block's name, the phase label and the week
-          strip. The `Hét cur/weeks` numeral lives in the PAGE hero, stated once. */}
-      <article className="uvs-blk glass rise" style={{ '--d': '90ms', ...SKY } as CSSProperties}>
-        <span className="uv-eyebrow uv-tint">{block.goal || 'Intervallum-blokk'}</span>
-        <strong>{block.title}</strong>
-        {week?.phaseLabel && <small>{week.phaseLabel}</small>}
-        <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
-      </article>
-
-      {/* This week's sessions */}
-      {week ? (
-        <>
-          <div className="uvs-sechead rise" style={{ '--d': '120ms' } as CSSProperties}>
-            <span className="uv-eyebrow">E hét · {prescribed.length} edzés</span>
-          </div>
-          <div className="uvs-list">
-            {prescribed.map((s, i) => {
-              const cta = ctaStateFor(s)
-              const loggable = cta === 'today' || cta === 'past'
-              return (
-                <div key={s.key} className="rise" style={{ '--d': `${150 + i * 45}ms`, '--i': i + 1 } as CSSProperties}>
-                  <RunSessionCard
-                    session={s}
-                    ctaState={cta}
-                    onLog={loggable ? () => setLogCtx({
-                      blockId: block.id,
-                      weekNumber: block.currentWeek,
-                      sessionKey: s.key,
-                      label: s.label,
-                      isSprint: s.kind === 'sprint',
-                      // Sprint carries an explicit round count; pyramid has none (it's a
-                      // ladder), so the honest default is its prescribed segment count.
-                      defaultRounds: s.rounds ?? s.segments.filter((seg) => seg.type === 'work').length,
-                      date: dateForDayOfWeek(s.dayOfWeek),
-                    }) : undefined}
-                  />
-                </div>
-              )
-            })}
-          </div>
-          {/* Derived cross-load → gym leg volume (static in Phase 2) */}
-          <div
-            className="uvs-sec rise"
-            style={{ '--d': `${150 + prescribed.length * 45}ms` } as CSSProperties}
-          >
-            <RunCrossLoadCard />
-          </div>
-        </>
+    <Page className="es-page es-futas">
+      {back}
+      {block ? (
+        <Hero
+          label={[block.goal || 'Intervallum-blokk', activeWeek?.phaseLabel].filter(Boolean).join(' · ')}
+          verdict={`${article(block.weeks)} ${block.weeks} hetes blokk ${block.currentWeek}. hetében jársz.`}
+          sub={`${block.title} · e héten ${doneThisWeek} / ${prescribed.length} edzés kész.`}
+          actions={heroActions}
+        >
+          <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} done={doneByWeek} planned={plannedByWeek} />
+          <Facts items={[
+            [`${doneThisWeek}/${prescribed.length}`, 'e heti edzés'],
+            [`${prescribed.length}×`, '/ hét'],
+            [`${block.weeks} hét`, 'blokk'],
+          ]} />
+        </Hero>
       ) : (
-        <UvEmpty art="t-calendar" message={`Az aktuális hét (${block.currentWeek}) nincs a tervben.`} />
+        // No active block: never a fabricated 0/0 — the library's own honest counts instead.
+        <Hero
+          label="Futás"
+          verdict="Nincs aktív futóterved."
+          sub="A Tervek fülön aktiválj egyet."
+          left={<Bub icon="t-run" size={60} />}
+          actions={view === 'blocks' ? newPlan : undefined}
+        >
+          <Facts items={[
+            [0, 'aktív terv'],
+            [runningBlocks.filter((b) => b.status === 'planned').length, 'tervezett'],
+            [runSessions.length, 'logolt futás'],
+          ]} />
+        </Hero>
       )}
+
+      <Seg items={SUB_VIEWS} value={view} onChange={setView} data-kalauz-anchor="futas-tabs" />
+
+      {view === 'week' && (
+        <RunWeekView block={block} week={activeWeek != null} prescribed={prescribed} ctaStateFor={ctaStateFor} onLog={openLog} />
+      )}
+      {view === 'log' && <RunLogView sessions={runSessions} />}
+      {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
 
       {logCtx && (
         <RunLogSheet
           ctx={logCtx}
           date={logCtx.date}
           onClose={() => setLogCtx(null)}
-          onSave={(body, done) => onLog(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
+          onSave={(body, done) => logRunSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}
-    </div>
+    </Page>
   )
 }
 
-// === Napló: logged run sessions, newest first ===
-function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
-  if (sessions.length === 0) return <UvEmpty art="t-journal" message="Még nincs logolt futás." />
-  const ordered = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
-  return (
-    <div className="uvs-sec">
-      <div className="rise" style={{ '--d': '30ms' } as CSSProperties}>
-        <RunHrTrend logs={ordered} />
-      </div>
-      <div className="uvs-sechead rise" style={{ '--d': '60ms' } as CSSProperties}>
-        <span className="uv-eyebrow">Utolsó {ordered.length} futás</span>
-      </div>
-      <div className="uvs-list">
-        {ordered.map((s, i) => (
-          <div key={s.id} className="rise" style={{ '--d': `${90 + i * 45}ms`, '--i': i } as CSSProperties}>
-            <RunLogCard session={s} />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Pulzus-megnyugvás (HR-recovery) trend — lower mp = better recovery, so a
-// non-positive delta reads as improvement, a rise reads as amber (never red — a
-// slower recovery isn't a failure state). `logs` is newest-first. A sky glass
-// card: the delta big, the line glowing sky, each point's value + date flat below.
-const HR_W = 300
-const HR_H = 100
-function RunHrTrend({ logs }: { logs: RunSessionLogResponse[] }) {
-  const withHr = logs.filter((l) => l.hrRecoverySec != null).slice(0, 6).reverse()
-  if (withHr.length < 2) return null
-  const vals = withHr.map((l) => l.hrRecoverySec!)
-  const lo = Math.min(...vals)
-  const hi = Math.max(...vals)
-  const span = Math.max(1, hi - lo)
-  const pts = vals.map((v, i) => [
-    10 + (i * (HR_W - 20)) / (vals.length - 1),
-    HR_H - 12 - ((v - lo) / span) * (HR_H - 24),
-  ] as const)
-  const delta = vals[vals.length - 1] - vals[0]
-  return (
-    <article className="uvs-hrc glass" style={SKY}>
-      <div className="uvs-chead">
-        <Icon3D name="t-heart" size={40} />
-        <span className="uv-eyebrow uv-tint">Pulzus-megnyugvás · utolsó {withHr.length} futás</span>
-      </div>
-      <div className={delta <= 0 ? 'uvs-hr-delta is-better' : 'uvs-hr-delta is-worse'}>
-        <b>{delta <= 0 ? '' : '+'}{delta} mp</b>
-      </div>
-      <svg className="uvs-hr-line" viewBox={`0 0 ${HR_W} ${HR_H}`} aria-hidden="true">
-        <path d={`M${pts.map((p) => p.join(' ')).join(' L')}`} />
-        {pts.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 5 : 3.5} className={i === pts.length - 1 ? 'is-last' : undefined} />
-        ))}
-      </svg>
-      {/* one label per point, spread edge to edge so each sits under its dot */}
-      <div className="uvs-hr-cols">
-        {withHr.map((l) => (
-          <div key={l.id}>
-            <b>{l.hrRecoverySec}</b>
-            <small>{huMonthDay(l.date)}</small>
-          </div>
-        ))}
-      </div>
-      <p className="uvs-fnote">mp a nyugalmi pulzusig — alacsonyabb = jobb regeneráció</p>
-    </article>
-  )
-}
-
-function RunLogCard({ session }: { session: RunSessionLogResponse }) {
-  return (
-    <article className="uvs-rsc glass" style={SKY}>
-      <div className="uvs-tagl">
-        <span className="stag stag-run">FUTÁS</span>
-        <em>{huMonthDayDow(session.date)}</em>
-        <strong>{sessionKeyLabel(session.sessionKey)}</strong>
-      </div>
-      {(session.rpeActual != null || session.completedRounds != null || session.hrRecoverySec != null) && (
-        <div className="uvs-chips">
-          {session.rpeActual != null && <span className="uvs-chip">RPE {session.rpeActual}</span>}
-          {session.completedRounds != null && <span className="uvs-chip">{session.completedRounds} kör</span>}
-          {session.hrRecoverySec != null && (
-            <span className="uvs-chip"><Icon3D name="t-heart" size={16} />{session.hrRecoverySec}mp pulzus</span>
-          )}
-        </div>
-      )}
-      {session.notes && <p className="uvs-rsc-note">{session.notes}</p>}
-    </article>
-  )
-}
-
-// === Tervek: Aktív / Tervezett / Archív sections (read-only library) ===
-function RunBlocksView({ blocks, onOpen }: { blocks: RunningBlockResponse[]; onOpen: (id: string) => void }) {
-  const active = blocks.filter((b) => b.status === 'active')
-  const planned = blocks.filter((b) => b.status === 'planned')
-  const archived = blocks.filter((b) => b.status === 'archived')
-
-  if (blocks.length === 0) return <UvEmpty art="t-calendar" message="Még nincs futóterved — itt fognak élni a blokkjaid." />
-
-  // One running stagger index across the three status sections, so the whole
-  // library reads as a single entrance rather than three restarts.
-  let d = 30
-  const nextD = () => { const v = d; d += 45; return v }
-  const sections: { label: string; list: RunningBlockResponse[]; render: (b: RunningBlockResponse) => React.ReactNode }[] = [
-    { label: 'Aktív', list: active, render: (b) => <RunActiveBlockCard block={b} onOpen={onOpen} /> },
-    { label: 'Tervezett', list: planned, render: (b) => <RunCompactBlockCard block={b} onOpen={onOpen} /> },
-    { label: 'Archív', list: archived, render: (b) => <RunCompactBlockCard block={b} onOpen={onOpen} /> },
-  ]
+// === E heti edzés: this week's prescribed sessions + the cross-load note ===
+function RunWeekView({ block, week, prescribed, ctaStateFor, onLog }: {
+  block: RunningBlockResponse | null
+  /** The current week exists in the block's structure. */
+  week: boolean
+  prescribed: RunPrescribedSession[]
+  ctaStateFor: (s: RunPrescribedSession) => RunCtaState
+  onLog: (s: RunPrescribedSession) => void
+}) {
+  if (!block) {
+    return (
+      <>
+        <Section n={1} title="E heti edzés" />
+        <Card><EmptyTank icon="t-run">Nincs aktív futóterved — a Tervek fülön aktiválj egyet.</EmptyTank></Card>
+      </>
+    )
+  }
+  if (!week) {
+    return (
+      <>
+        <Section n={1} title="E heti edzés" />
+        <Card><EmptyTank icon="t-calendar">Az aktuális hét ({block.currentWeek}) nincs a tervben.</EmptyTank></Card>
+      </>
+    )
+  }
   return (
     <>
-      {sections.map((sec) => (
-        <div key={sec.label} className="uvs-sec">
-          <div className="uvs-sechead rise" style={{ '--d': `${nextD()}ms` } as CSSProperties}>
-            <span className="uv-eyebrow">{sec.label} · {sec.list.length}</span>
-          </div>
-          <div className="uvs-list">
-            {sec.list.map((b, i) => (
-              <div key={b.id} className="rise" style={{ '--d': `${nextD()}ms`, '--i': i } as CSSProperties}>
-                {sec.render(b)}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      <Section n={1} title={`E hét · ${prescribed.length} edzés`} />
+      <Card className="es-logs">
+        {prescribed.map((s) => {
+          const cta = ctaStateFor(s)
+          return (
+            <RunSessionCard key={s.key} session={s} ctaState={cta}
+              onLog={cta === 'today' || cta === 'past' ? () => onLog(s) : undefined} />
+          )
+        })}
+        <Note>A cső szintje az iram: magas a sprint, alacsony a séta, a két vége a bemelegítés és a levezetés.</Note>
+      </Card>
+      {/* Derived cross-load → gym leg volume (static in Phase 2) */}
+      <Section n={2} title="Keresztterhelés · futás és láb" />
+      <RunCrossLoadCard />
     </>
   )
 }
 
-function RunStatusChip({ status }: { status: RunningBlockResponse['status'] }) {
-  return <span className={`uvs-status is-${status}`}>{STATUS_LABELS[status]}</span>
-}
-
-/** Enter/Space open a role=button card — kept from the pre-üveg cards. */
-const openOnKey = (open: () => void) => (e: React.KeyboardEvent) => {
-  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() }
-}
-
-function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
+// === Napló: the heart-rate-recovery trend + the logged run sessions, newest first ===
+function RunLogView({ sessions }: { sessions: RunSessionLogResponse[] }) {
+  if (sessions.length === 0) {
+    return (
+      <>
+        <Section n={1} title="Napló" />
+        <Card><EmptyTank icon="t-journal">Még nincs logolt futás.</EmptyTank></Card>
+      </>
+    )
+  }
+  const ordered = [...sessions].sort((a, b) => b.date.localeCompare(a.date))
+  // Pulzus-megnyugvás (HR-recovery) trend — lower mp = better recovery. Needs two points.
+  const withHr = ordered.filter((l) => l.hrRecoverySec != null).slice(0, 6).reverse()
+  const trend = withHr.length >= 2
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(block.id)}
-      onKeyDown={openOnKey(() => onOpen(block.id))}
-      className="uvs-plan glass"
-      style={SKY}
-    >
-      <div className="uvs-plan-top">
-        <div className="uvs-plan-copy">
-          {block.goal && <span className="uv-eyebrow uv-tint">{block.goal}</span>}
-          <strong>{block.title}</strong>
-          <small>{huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét</small>
-        </div>
-        <RunStatusChip status="active" />
-      </div>
-      <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
-      <div className="uvs-plan-foot">
-        <span className="uv-eyebrow">Hét {block.currentWeek} / {block.weeks}</span>
-        <span className="uvs-plan-go">Builder ›</span>
-      </div>
-    </div>
+    <>
+      {trend && (
+        <>
+          <Section n={1} title={`Pulzus-megnyugvás · utolsó ${withHr.length} futás`} />
+          <RunHrTrend logs={withHr} />
+        </>
+      )}
+      <Section n={trend ? 2 : 1} title={`Utolsó ${ordered.length} futás`} />
+      <Card className="es-runs">
+        {ordered.map((s) => <RunLogRow key={s.id} session={s} />)}
+      </Card>
+    </>
   )
 }
 
-function RunCompactBlockCard({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
-  const isArchived = block.status === 'archived'
-  // Archived = a flat row (history, not a live object); planned = a lavender glass card.
+// The trend as a liquid surface (in the cool sleep/pulse blue, not the Edzés orange): the big
+// number is the change since the first of the shown runs, the ink point is the latest one.
+// `logs` is oldest-first, every one carries a value.
+function RunHrTrend({ logs }: { logs: RunSessionLogResponse[] }) {
+  const vals = logs.map((l) => l.hrRecoverySec!)
+  const lo = Math.min(...vals)
+  const hi = Math.max(...vals)
+  const delta = vals[vals.length - 1] - vals[0]
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <Card className={delta <= 0 ? 'es-hr is-better' : 'es-hr is-worse'}>
+      <Big value={delta === 0 ? '0' : `${delta < 0 ? '−' : '+'}${Math.abs(delta)}`} unit="mp az első óta" />
+      <Area
+        values={vals} height={120} labels={logs.map((l) => huMonthDay(l.date))}
+        color="#19C7C0" color2="#1877F2" min={lo - Math.max(8, (hi - lo) / 2)} max={hi + 4}
+        marks={[{ i: vals.length - 1, label: `${vals[vals.length - 1]} mp`, kind: 'now' }]}
+      />
+      <Note>mp a nyugalmi pulzusig — alacsonyabb = jobb regeneráció</Note>
+    </Card>
+  )
+}
+
+function RunLogRow({ session }: { session: RunSessionLogResponse }) {
+  const facts = [
+    huMonthDayDow(session.date),
+    session.rpeActual != null ? `RPE ${session.rpeActual}` : null,
+    session.completedRounds != null ? `${session.completedRounds} kör` : null,
+  ].filter(Boolean).join(' · ')
+  return (
+    <Row
+      icon="t-run"
+      title={<>{sessionKeyLabel(session.sessionKey)} <St>Futás</St></>}
+      sub={<>{facts}{session.notes && <span className="es-q">{session.notes}</span>}</>}
+      value={session.hrRecoverySec != null ? <>{session.hrRecoverySec} <small>mp pulzus</small></> : undefined}
+    />
+  )
+}
+
+// === Tervek: Aktív / Tervezett / Archív sections (read-only library; a row opens the editor) ===
+function RunBlocksView({ blocks, onOpen }: { blocks: RunningBlockResponse[]; onOpen: (id: string) => void }) {
+  if (blocks.length === 0) {
+    return (
+      <>
+        <Section n={1} title="Tervek" />
+        <Card><EmptyTank icon="t-calendar">Még nincs futóterved — itt fognak élni a blokkjaid.</EmptyTank></Card>
+      </>
+    )
+  }
+  const sections: { status: RunningBlockResponse['status']; label: string }[] = [
+    { status: 'active', label: 'Aktív' },
+    { status: 'planned', label: 'Tervezett' },
+    { status: 'archived', label: 'Archív' },
+  ]
+  return (
+    <>
+      {sections.map((sec, i) => {
+        const list = blocks.filter((b) => b.status === sec.status)
+        return (
+          <RunBlockSection key={sec.status} n={i + 1} title={`${sec.label} · ${list.length}`} list={list} onOpen={onOpen} />
+        )
+      })}
+    </>
+  )
+}
+
+function RunBlockSection({ n, title, list, onOpen }: {
+  n: number; title: string; list: RunningBlockResponse[]; onOpen: (id: string) => void
+}) {
+  return (
+    <>
+      <Section n={n} title={title} />
+      {list.length > 0 && (
+        <Card className="es-plans">
+          {list.map((b) => <RunBlockRow key={b.id} block={b} onOpen={onOpen} />)}
+        </Card>
+      )}
+    </>
+  )
+}
+
+function RunBlockRow({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
+  const span = `${huMonthDay(block.startDate)} – ${huMonthDay(block.endDate)} · ${block.weeks} hét`
+  const pill = <St tone={block.status === 'active' ? 'ok' : 'q'}>{STATUS_LABELS[block.status]}</St>
+  if (block.status === 'active') {
+    return (
+      <Row
+        icon="t-run"
+        title={<>{block.title} {pill}</>}
+        sub={[block.goal, span, `Hét ${block.currentWeek} / ${block.weeks}`].filter(Boolean).join(' · ')}
+        more={<Caps n={block.weeks} done={block.currentWeek - 1} cur={block.currentWeek - 1} size="wide" />}
+        onClick={() => onOpen(block.id)}
+      />
+    )
+  }
+  const archived = block.status === 'archived'
+  return (
+    <Row
+      icon={archived ? 't-history' : 't-calendar'}
+      title={<>{block.title} {pill}</>}
+      sub={<>{span}{archived && block.summary && <span className="es-q">{block.summary}</span>}</>}
       onClick={() => onOpen(block.id)}
-      onKeyDown={openOnKey(() => onOpen(block.id))}
-      className={isArchived ? 'uvs-arch uv-flat' : 'uvs-plan is-compact glass'}
-      style={isArchived ? undefined : ({ '--c': 'var(--dv-lav)' } as CSSProperties)}
-    >
-      <div className="uvs-plan-top">
-        {isArchived && <Icon3D name="t-history" size={30} />}
-        <div className="uvs-plan-copy">
-          <strong>{block.title}</strong>
-          <small>{huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét</small>
-        </div>
-        <RunStatusChip status={block.status} />
-      </div>
-      {isArchived && block.summary && <p className="uvs-arch-sum">{block.summary}</p>}
-    </div>
+    />
   )
 }

@@ -1,31 +1,34 @@
 // ============================================================
-// Mezo · DerivationSteps — „Honnan a sáv · levezetés", extracted from
-// VolumeBar's 01/02/03 derivation body (mesocycle pages v2, mezo-d20.15
-// Task 4) and restyled as the prototype's #page-muscle 4-step numbered
-// timeline: 01 Baseline (RP tábla) → 02 Fókusz-sáv (the tier's own ramp) →
-// 03 Rád szabva (VolumeProfile.source.adjustments, honestly empty when the
-// engine made none) → 04 Eredő (the arc's own week-by-week planned series).
-// Data source is unchanged (VolumeProfile.source) — only the layout moved;
-// VolumeBar.tsx itself is untouched and keeps serving the builder's
-// provenance list. `onOverride` mirrors VolumeBar's own Felülír chip, which
-// has never had a real path (no onClick there either) — same inert default.
+// Mezo · DerivationSteps — „Honnan jön ez a szám": the four layers behind a muscle's
+// weekly set count (mezo-d20.15; Folyadék F3 mezo-n4wf5.3, prototype vilagos/edzes.js
+// `izom()` section 4). Four numbered rows in plain words:
+//   1 Kiinduló ajánlás — the baseline table's three landmarks (VolumeProfile.source.baseline)
+//   2 Fókusz · {tier}  — the tier's own ramp: where it starts, its ceiling, the weekly step
+//   3 Rád szabva       — the engine's adjustments (source.adjustments), honestly empty when
+//                        it made none
+//   4 Ebben a tervben  — the arc's own week-by-week planned series up to now, and Monday
+// then how sure the band is (source.confidence) as a level, and the „Felülír" link, which
+// has never had a real path (inert unless `onOverride` is given).
+// The data source is unchanged — only the face and the words: no MEV / MAV / MRV, no
+// „baseline", no „plafon".
 // ============================================================
 import type { MuscleTier, VolumeProfile } from '@/data/types'
-import { Icon, type IconName } from '@/shared/ui/Icon'
+import { DayNum } from '@/features/train/components/folyadek'
 import { tierLabel } from '@/features/train/logic/tierLabel'
+import { Acts, Level, Lk, Row } from '@/shared/ui/folyadek'
 
-function adjustmentIcon(kind: string): IconName {
-  switch (kind) {
-    case 'niggle': return 'warning'
-    case 'pattern': return 'sparkle'
-    case 'recovery': return 'today'
-    case 'sport-cross': return 'train'
-    default: return 'tool'
-  }
-}
+/** The three landmarks in the owner's words. */
+const LANDMARK: Record<'mev' | 'mav' | 'mrv', string> = { mev: 'az alsó jelölés', mav: 'a közép', mrv: 'a felső érték' }
 
-function deltaText(delta: Partial<Record<'mev' | 'mav' | 'mrv', number>>): string {
-  return Object.entries(delta).map(([k, v]) => `${k.toUpperCase()} ${v! > 0 ? '+' : ''}${v}`).join(' · ')
+/** „2-vel", „3-mal" — the instrumental suffix of a numeral read aloud (1–10; beyond that the plain number). */
+const WITH: Record<number, string> = { 1: '1-gyel', 2: '2-vel', 3: '3-mal', 4: '4-gyel', 5: '5-tel', 6: '6-tal', 7: '7-tel', 8: '8-cal', 9: '9-cel', 10: '10-zel' }
+
+/** One adjustment's effect in words: „a felső érték 2-vel lejjebb". */
+export function effectText(delta: Partial<Record<'mev' | 'mav' | 'mrv', number>>): string {
+  return (Object.entries(delta) as ['mev' | 'mav' | 'mrv', number][])
+    .filter(([, v]) => v !== 0)
+    .map(([k, v]) => `${LANDMARK[k]} ${WITH[Math.abs(v)] ?? `${Math.abs(v)} szettel`} ${v > 0 ? 'feljebb' : 'lejjebb'}`)
+    .join(', ')
 }
 
 export interface DerivationStepsProps {
@@ -44,102 +47,38 @@ export interface DerivationStepsProps {
 export function DerivationSteps({ profile, tier, ceiling, weekOneValue, series, step, onOverride }: DerivationStepsProps) {
   const { source } = profile
   const confidencePct = Math.round(source.confidence * 100)
+  const stepText = step > 0 ? `+${step}` : '='
 
   return (
-    <div className="col">
-      <div className="mz-dsteps">
-        {/* 01 · Baseline */}
-        <div className="mz-dstep">
-          <span className="mz-dnum mz-dnum-baseline" aria-hidden="true">1</span>
-          <div className="mz-grow">
-            <div className="mz-dt">Baseline · RP tábla</div>
-            <div className="mz-dcells">
-              <div className="mz-dcell"><b>{source.baseline.mev}</b><small>MEV</small></div>
-              <div className="mz-dcell"><b>{source.baseline.mav}</b><small>MAV</small></div>
-              <div className="mz-dcell"><b>{source.baseline.mrv}</b><small>MRV</small></div>
-            </div>
-          </div>
-        </div>
-
-        {/* 02 · Fókusz-sáv */}
-        <div className="mz-dstep">
-          <span className="mz-dnum" style={{ background: 'var(--coral)' }} aria-hidden="true">2</span>
-          <div className="mz-grow">
-            <div className="mz-dt">Fókusz-sáv · {tierLabel(tier)}</div>
-            {tier === 'maintain' ? (
-              <div className="mz-dcells">
-                <div className="mz-dcell"><b>{profile.mev}</b><small>tart</small></div>
-                <div className="mz-dcell"><b>0</b><small>/ hét</small></div>
-              </div>
-            ) : (
-              <div className="mz-dcells">
-                <div className="mz-dcell"><b>{weekOneValue}</b><small>indul</small></div>
-                <div className="mz-dcell"><b>{ceiling}</b><small>plafon</small></div>
-                <div className="mz-dcell"><b>{step > 0 ? `+${step}` : '='}</b><small>/ hét</small></div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 03 · Rád szabva */}
-        <div className="mz-dstep">
-          <span className="mz-dnum mz-dnum-custom" aria-hidden="true">3</span>
-          <div className="mz-grow">
-            <div className="mz-dt">Rád szabva</div>
-            {source.adjustments.length === 0 ? (
-              <div className="mz-mut" style={{ fontSize: 9, marginTop: 4 }}>nincs igazítás — a baseline érvényes</div>
-            ) : (
-              source.adjustments.map((a, i) => (
-                <div className="mz-dadj" key={i}>
-                  <Icon name={adjustmentIcon(a.kind)} size={11} color={a.warning ? 'var(--warning)' : 'var(--coral)'} />
-                  <span className="mz-tx">{a.label}</span>
-                  <span
-                    className="mz-eff"
-                    style={{
-                      background: a.warning ? 'var(--mz-cell-gold-bg)' : 'var(--mz-cell-sage-bg)',
-                      color: a.warning ? 'var(--mz-cell-gold-ink)' : 'var(--mz-cell-sage-ink)',
-                    }}
-                  >
-                    {deltaText(a.delta)}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* 04 · Eredő */}
-        <div className="mz-dstep" style={{ paddingBottom: 4 }}>
-          <span className="mz-dnum mz-dnum-final" aria-hidden="true">4</span>
-          <div className="mz-grow">
-            <div className="mz-dt">Eredő · a blokkban</div>
-            <div className="mz-dcells">
-              {series.map((s, i) => (
-                <div className={i === series.length - 1 ? 'mz-dcell hot' : 'mz-dcell'} key={s.week}>
-                  <b>{s.planned}</b>
-                  <small>W{s.week}{i === series.length - 1 ? ' · most' : ''}</small>
-                </div>
-              ))}
-              <div className="mz-dcell hot"><b>{step > 0 ? `+${step}` : '='}</b><small>hétfőn</small></div>
-            </div>
-          </div>
-        </div>
+    <>
+      <Row left={<DayNum>1</DayNum>} title="Kiinduló ajánlás"
+        sub={`ennyitől fejlődik: ${source.baseline.mev} · közép: ${source.baseline.mav} · legfeljebb: ${source.baseline.mrv}`} />
+      <Row left={<DayNum>2</DayNum>} title={`Fókusz · ${tierLabel(tier)}`}
+        sub={tier === 'maintain'
+          ? `tart: ${profile.mev} · hetente +0`
+          : `indul: ${weekOneValue} · felső érték: ${ceiling} · hetente ${stepText}`} />
+      <Row left={<DayNum>3</DayNum>} title="Rád szabva"
+        sub={source.adjustments.length === 0
+          ? 'nincs igazítás — a kiinduló ajánlás érvényes'
+          : source.adjustments.map((a, i) => (
+              <span key={i} className={a.warning ? 'ep-adj warn' : 'ep-adj'}>
+                {i > 0 && <br />}
+                {a.label}{effectText(a.delta) && ` — ${effectText(a.delta)}`}
+              </span>
+            ))} />
+      <Row left={<DayNum>4</DayNum>} title="Ebben a tervben"
+        sub={[
+          ...series.map((s, i) => `${s.week}. hét${i === series.length - 1 ? ' · most' : ''}: ${s.planned}`),
+          `hétfőn: ${stepText}`,
+        ].join(' · ')} />
+      <div className="ep-hero-level">
+        <Level pct={confidencePct} height={18} label="Mennyire biztos a sáv" value={`${confidencePct}%`} />
       </div>
-
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-        <span className="mz-mut" style={{ fontSize: 9 }}>Mennyire biztos a sáv · {confidencePct}%</span>
-        <button
-          type="button"
-          className="chip"
-          style={{ fontSize: 9, padding: '3px 10px' }}
-          disabled={!onOverride}
-          title={onOverride ? undefined : 'hamarosan'}
-          onClick={onOverride}
-        >
-          <Icon name="tool" size={10} /> Felülír
-        </button>
-      </div>
-      <div className="mz-confbar"><div style={{ width: `${confidencePct}%` }} /></div>
-    </div>
+      <Acts>
+        <Lk disabled={!onOverride} title={onOverride ? undefined : 'hamarosan'} onClick={onOverride}>
+          {onOverride ? 'Felülír' : 'Felülír · hamarosan'}
+        </Lk>
+      </Acts>
+    </>
   )
 }

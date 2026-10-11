@@ -9,6 +9,14 @@
 @import "./styles/folyadek-nap-rutin.css";
 @import "./styles/folyadek-nap-rogzites.css";
 @import "./styles/folyadek-nap-epites.css";
+@import "./styles/folyadek-edzes-kozos.css";
+@import "./styles/folyadek-edzes-mai.css";
+@import "./styles/folyadek-edzes-terheles.css";
+@import "./styles/folyadek-edzes-sport.css";
+@import "./styles/folyadek-edzes-terv.css";
+@import "./styles/folyadek-edzes-napszerk.css";
+@import "./styles/folyadek-edzes-sablon.css";
+@import "./styles/folyadek-edzes-riport.css";
 @import "./styles/folyadek-frame.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.

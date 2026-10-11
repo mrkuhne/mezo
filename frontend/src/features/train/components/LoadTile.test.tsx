@@ -3,33 +3,27 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi } from 'vitest'
 import { LoadTile } from '@/features/train/components/LoadTile'
 
-const GAUGES = [
-  { label: 'Hát', value: 7, max: 8, color: 'var(--tag-gym)', warn: true },
-  { label: 'Váll', value: 4, max: 8, color: 'var(--lav-deep)' },
-]
-
 describe('LoadTile', () => {
-  test('renders the headline number, unit and one gauge per muscle', () => {
-    render(<LoadTile tone="day" eyebrow="Napi terhelés · Hét" value={13} unit="szett · ~57′" gauges={GAUGES} onOpen={vi.fn()} />)
-    expect(screen.getByText('Napi terhelés · Hét')).toBeInTheDocument()
-    expect(screen.getByText('13')).toBeInTheDocument()
-    expect(screen.getByText('szett · ~57′')).toBeInTheDocument()
-    expect(screen.getByText('Hát')).toBeInTheDocument()
-    expect(screen.getByText('Váll')).toBeInTheDocument()
+  test('renders the title and the headline number with its unit', () => {
+    render(<LoadTile title="Heti terhelés · izmonként" value={46} unit="szett · 1. hét" onOpen={vi.fn()} />)
+    expect(screen.getByText('Heti terhelés · izmonként')).toBeInTheDocument()
+    expect(screen.getByText('46 szett · 1. hét')).toBeInTheDocument()
   })
 
   test('opens on click', async () => {
     const user = userEvent.setup()
     const onOpen = vi.fn()
-    render(<LoadTile tone="week" eyebrow="Heti terhelés" value={46} unit="szett · W1" gauges={GAUGES} onOpen={onOpen} />)
+    render(<LoadTile title="Heti terhelés" value={46} unit="szett · 1. hét" onOpen={onOpen} />)
     await user.click(screen.getByRole('button', { name: /Heti terhelés/ }))
     expect(onOpen).toHaveBeenCalled()
   })
 
-  test('a flagged tile carries an amber dot', () => {
-    const { container } = render(
-      <LoadTile tone="week" eyebrow="Heti terhelés" value={46} unit="szett" gauges={GAUGES} flagged onOpen={vi.fn()} />,
-    )
-    expect(container.querySelector('.mz-lt-dot')).toBeInTheDocument()
+  // Folyadék (mezo-n4wf5.3): the amber dot became a worded pill that counts the lints.
+  test('a flagged row counts its lints in an amber pill; an unflagged one has none', () => {
+    const { unmount } = render(<LoadTile title="Heti terhelés" value={46} unit="szett" flags={2} onOpen={vi.fn()} />)
+    expect(screen.getByText('2 jelzés')).toHaveClass('fo-st', 'warn')
+    unmount()
+    render(<LoadTile title="Heti terhelés" value={46} unit="szett" onOpen={vi.fn()} />)
+    expect(screen.queryByText(/jelzés/)).not.toBeInTheDocument()
   })
 })

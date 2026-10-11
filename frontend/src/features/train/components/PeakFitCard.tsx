@@ -1,18 +1,15 @@
 // ============================================================
-// Mezo · PeakFitCard — peak-week session-time fit signal (mezo-3m5m,
-// spec GD6). Renders the days whose PROJECTED peak-week session length
-// (peakWeekFit — the week once every group actually reaches its tier's
-// landmark target) falls outside SESSION_LENGTH_BAND. This is a DISTINCT
-// surface from StructureLintCard's R8 (plan AD7): R8 reads the
-// template's OWN minutes, this card reads the projected PEAK week's —
-// neither merges into nor silences the other. Modeled on
-// StructureLintCard: soft grey rows, count pill in the header, never
-// red, never force-opens — same MacroFactor "explain, don't scold"
-// register. Renders null when there is nothing to flag.
+// Mezo · PeakFitCard — the „Csúcshét · időbecslés" check of the day editor (mezo-3m5m,
+// spec GD6; Folyadék mezo-n4wf5.3, prototype vilagos/edzes.js `napszerk()` section 4).
+// A collapsible row: the days whose PROJECTED peak-week session length (peakWeekFit — the
+// week once every group reaches its tier's target) falls outside SESSION_LENGTH_BAND. A
+// different signal from StructureLintCard's own-minutes rule; neither silences the other.
+// Explains, never scolds: a quiet warning pill with the day count, never red, never opens
+// by itself. Renders nothing when there is nothing to flag.
 // ============================================================
-import { useState } from 'react'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import type { PeakDayFit } from '@/features/train/logic/peakWeekFit'
+import { CheckRow } from '@/features/train/components/folyadek'
+import { St } from '@/shared/ui/folyadek'
 
 function copyFor(f: PeakDayFit): string {
   return f.direction === 'over'
@@ -21,50 +18,10 @@ function copyFor(f: PeakDayFit): string {
 }
 
 export function PeakFitCard({ fits }: { fits: PeakDayFit[] }) {
-  const [open, setOpen] = useState(false)
   if (fits.length === 0) return null
-
   return (
-    <div className="card" style={{ padding: 16 }}>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="row"
-        style={{
-          width: '100%', justifyContent: 'space-between', alignItems: 'center',
-          background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', padding: 0,
-        }}
-      >
-        <Eyebrow brand>Csúcshét · időbecslés</Eyebrow>
-        <span className="row" style={{ gap: 8, alignItems: 'center' }}>
-          <span
-            style={{
-              fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
-              background: 'var(--wash-amber)', color: 'var(--amber-deep)',
-            }}
-          >
-            {`${fits.length} nap`}
-          </span>
-          <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>{open ? '▴' : '▾'}</span>
-        </span>
-      </button>
-
-      {open && (
-        <div className="col" style={{ gap: 8, marginTop: 12 }}>
-          {fits.map((f, i) => (
-            <div
-              key={`${f.day}-${i}`}
-              style={{
-                borderRadius: 12, padding: '9px 11px', fontSize: 11.5, lineHeight: 1.45,
-                background: 'var(--surface-2)', color: 'var(--text-secondary)',
-              }}
-            >
-              {copyFor(f)}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+    <CheckRow icon="t-clock" title="Csúcshét · időbecslés" stamp={<St tone="warn">{`${fits.length} nap`}</St>}>
+      {fits.map((f, i) => <p key={`${f.day}-${i}`}>{copyFor(f)}</p>)}
+    </CheckRow>
   )
 }

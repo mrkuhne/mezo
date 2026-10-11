@@ -32,7 +32,9 @@ describe('mesoBands', () => {
     expect(weekDots(meso)[5].deload).toBe(true)
   })
   it('turns the recompute change into a Hungarian sentence and the next-rollover chips', () => {
-    expect(deciderSentence(meso)).toContain('Mell')
+    // the prototype's wording: the muscle in lower case mid-sentence, none of the engine's words
+    expect(deciderSentence(meso)).toMatch(/^A mell a múlt héten nehezen ment, ezért most tartjuk a \d+ szettet — az emelés folytatódik, amint visszaáll a tempó\.$/)
+    expect(deciderSentence(meso)).not.toMatch(/grind|RIR|rámpa|deload/i)
     // `chest` is grind-HELD (reason 'tartás'), so its chip reads `tart` — the same thing the
     // week mosaic's own tile says. Before mezo-d20.15's fix wave the chip promised „Mell +2"
     // next to a tile reading „= tartás".
@@ -83,7 +85,7 @@ describe('mesoBands', () => {
       volumeRecompute: { lastRun: '', nextRun: '', trigger: '', changes: [{ muscle: 'shoulder', change: 'tart (12)', reason: 'tartás' }] },
     } as unknown as Mesocycle
     const sentence = deciderSentence(noProfile)
-    expect(sentence).toContain('Váll')
+    expect(sentence).toBe('A váll a múlt héten nehezen ment, ezért most tartjuk a szettszámot — az emelés folytatódik, amint visszaáll a tempó.')
     expect(sentence).not.toContain('undefined')
   })
 })

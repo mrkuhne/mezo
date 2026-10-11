@@ -98,3 +98,23 @@ test('a failed start keeps the sheet open (no false success)', async () => {
   expect(onClose).not.toHaveBeenCalled()
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles')
 })
+
+// Folyadék F3 (prototype sheet `start`): a light kit sheet; the status is two pills with a plain hint under them —
+// „edzésterv" and „a heted", never „mesociklus" / „a Gym hete".
+test('the sheet wears the Folyadék look; the status pills swap the plain hint', async () => {
+  const user = userEvent.setup()
+  setup()
+  const dialog = screen.getByRole('dialog', { name: 'Mikor kezdjük?' })
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(dialog.querySelector('.glass, [class*="uvl-"]')).toBeNull()
+  expect(screen.getByText('Edzésterv · indítás')).toBeInTheDocument()
+  const group = screen.getByRole('group', { name: 'Futam állapota' })
+  expect(group).toHaveClass('fo-pills')
+  expect(screen.getByRole('button', { name: 'Aktív' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('Most kezdem — a heted ettől a tervtől fut.')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Tervezett' }))
+  expect(screen.getByRole('button', { name: 'Tervezett' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('Csak beütemezem — később aktiválom.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Indítás' })).toHaveClass('fo-btn')
+  expect(screen.getByRole('button', { name: 'Mégse' })).toHaveClass('fo-lk')
+})

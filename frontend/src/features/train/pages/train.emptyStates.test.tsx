@@ -73,11 +73,11 @@ test('SportPage ghosts the weekly plan and shows an empty log message', async ()
   await waitFor(() =>
     expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument(),
   )
-  expect(container.querySelector('.mz-bignum')).toHaveTextContent('—')
-  expect(container.querySelectorAll('.mz-statstrip .mz-statcell b')).toHaveLength(3)
-  container.querySelectorAll('.mz-statstrip .mz-statcell b').forEach((b) => {
-    expect(b).toHaveTextContent('—')
-  })
+  // Folyadék F3 (mezo-n4wf5.3): no schedule → the hero says so and the three facts stay `—`.
+  expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('Még nincs heti sport-rended.')
+  const facts = container.querySelectorAll('.fo-hero .fo-facts b')
+  expect(facts).toHaveLength(3)
+  facts.forEach((b) => expect(b).toHaveTextContent('—'))
   await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
   expect(await screen.findByText(/Még nincs logolt session/i)).toBeInTheDocument()
 })
@@ -89,12 +89,12 @@ test('SportPage ghosts the weekly plan and shows an empty log message', async ()
 // itself already exercised the current page).
 test('MesoTervPage shows the empty hint when there are no mesocycles', async () => {
   renderApp('/train/mesocycles')
-  await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('Még nincs edzésterved.')).toBeInTheDocument())
 })
 
 // The OTHER no-active-meso branch (T9 fix round 1, review finding 5): at least one
 // mesocycle exists — just none of them is `active` — so the page says so with the
-// honest "Most nem fut terv" line, never falling back to the "Még nincs mesociklusod"
+// honest "Most nem fut terv" line, never falling back to the "Még nincs edzésterved"
 // first-run copy above.
 test('MesoTervPage shows the honest "no running plan" line when a mesocycle exists but none is active', async () => {
   server.use(
@@ -121,6 +121,6 @@ test('MesoTervPage shows the honest "no running plan" line when a mesocycle exis
     ),
   )
   renderApp('/train/mesocycles')
-  await waitFor(() => expect(screen.getByText(/Most nem fut terv/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('Most nem fut terv.')).toBeInTheDocument())
   expect(screen.getByRole('button', { name: 'Edzéstervek' })).toBeInTheDocument()
 })

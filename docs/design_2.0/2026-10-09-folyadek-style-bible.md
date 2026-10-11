@@ -273,3 +273,54 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
   `FeedbackChips`, `RefChips`, `AskTeamRow`, `EvidenceList`, the `VoiceField` mic tile). Record the list in
   the hand-off and leave them: converting one ad hoc changes every other page that uses it, outside the
   slice's prototype and its tests.
+
+**F3 — Edzés (`mezo-n4wf5.3`, 2026-10-11)**
+
+- **F3.1 — Audit the prototype against the live pages before the OK, per area, with file:line evidence.** Two
+  read-only audits (inventory → parity → reality → live copy) found what no screenshot shows: two prototype
+  pages drawn for ONE live page with contradictory numbers (`terheles` and `gym`), other days' sessions mixed
+  into today's list, a single stepper where the app has a week selector, and no loading / empty / error face on
+  any of forty routes. The auditor that read the code then applies its own findings to the prototype.
+- **F3.2 — One source for a week's numbers in the prototype.** Totals typed by hand per page drift apart
+  (55/83 on one page, 58/94 on the next). Derive every figure of a demo week from one data structure
+  (`GR` summed from `DAYS`); a builder who sees two numbers for one fact has to guess.
+- **F3.3 — Two agents in one prototype file run one after the other, with an explicit hand-over.** The second
+  re-reads the file (line numbers in its audit are stale), is told what the first changed (data sources,
+  renamed sheet args), which routes and side-panel paragraphs are not its own, and appends its routes to the
+  shared sweep script so one command covers the slice.
+- **F3.4 — „Computable" is a third category beside real and invented.** A graphic may show data the page
+  already loads but does not print (per-day done sets, sport load drops) or data from an existing hook the page
+  does not call yet (per-week set totals from the volume arc). Keep it, name the hook in a prototype comment,
+  draw the fallback face for when the data is missing (`terv.elso`), and list these for the owner. Invented
+  means no source anywhere — that is removed.
+- **F3.5 — A state is a route arg, never a control on the screen.** Demo switches drawn on a page („Próbáld
+  ki", „Demó:" links) get built (F2.2). Every face — loading, empty, error, not found, planned, expired —
+  is reachable as `#w-<domain>-<route>.<arg>` and listed in the side panel.
+- **F3.6 — Shared pieces first, then seven areas at once: the foundation step writes the mapping table.**
+  Before the parallel builders, one agent extends the kit, builds the domain-shared pieces
+  (`features/train/components/folyadek`: body-as-vessel, muscle chip on white, record capsule) and writes a
+  README „prototype helper → React piece → props". Builders code from the table. What still came back as local
+  twins was the layer between kit and page: the standalone back pill (six copies), the hero's corner glyph and
+  big verdict, a row's chevron and under-line, a disabled / danger link, label–value lines. List these
+  second-level pieces in the foundation too.
+- **F3.7 — Ownership is by file, and shared files are named in the plan.** The import map (who uses which
+  component) is computed before the areas are cut. A component used by a later slice (the in-workout flow)
+  stays untouched; a sheet opened from other domains keeps its props, and its consumers' tests are run by the
+  area that converts it. A shared test file (`train.emptyStates`, `train.nav`, `navigation`) belongs to the
+  controller — builders report it instead of each fixing their own lines.
+- **F3.8 — A guard that pinned a retired detail is rewritten to the new truth.** The ⓘ chip beside a heading
+  became a text link under the card; its hit-box probe and its unit guard were re-pointed at the link (visible,
+  the tap resolves to it, 44 px, no overlap), and the unused round variant was removed with them.
+- **F3.9 — A descendant selector in a kit rule dresses whatever is nested later.** `.fo-tags span` re-dressed
+  the bubble and the muscle chip inside a tag; two areas wrote local workarounds. Kit rules address their own
+  children (`>`), and a kit piece that accepts a node is tested with a nested kit piece inside.
+- **F3.10 — Wording changes travel with the look, and they are a list.** The prototype replaced jargon
+  (mesociklus / blokk → edzésterv / terv; rámpa / deload → emelkedő hét / pihenőhét; Emphasize / Grow /
+  Maintain → Hangsúly / Építés / Tartás; plafon → felső érték; W1 → 1. hét; compound / isolation → összetett /
+  izolált). Give the builders the table, or each area translates differently; group labels that come from
+  logic files (`Hamstring`, `Farizom`) do not change with markup and need their own decision.
+- **F3.11 — Mock data decides what a runtime pass can see.** With no logged workouts in the mock week, filled
+  levels, „sok", kímélő and done faces were only reachable in tests. Say per route which states were looked at
+  in the browser and which are covered by tests only; do not call a route verified because its default face is.
+- **F3.12 — A network failure kills a background agent, not its work.** Resume the same agent with the state of
+  the tree („only this file is modified, check `git diff`"); a fresh agent would redo or contradict it.

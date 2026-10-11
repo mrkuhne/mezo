@@ -9,10 +9,10 @@
 // The mutation's onSuccess closes the sheet (animated). Follows the
 // ExercisePickerSheet / SportLogSheet visual idiom (chip picker + notch cards).
 //
-// Üveg (mezo-me75u.4, bible U2 rule 15): ONE floating amber glass sheet (10px off the
-// edges, 30px radius), the t-muscle 3D art in the head; every control inside is a flat
-// cell or a lit flat pill (never glass in glass) — the active chip / type filled amber,
-// Mentés a lit amber pill. CSS: the `── uveg edzes gyakorlatok (` block, `.gyx-sheet`.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js sheet `cat`): the light sheet with the
+// kit head (t-muscle bubble), the kit text field, pills for the muscle (grouped by region) and
+// the type, the kit − value + stepper for Stim / Fáradtság, the delete as a red text link, and
+// the kit sheet foot (Mentés + Mégse).
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -21,9 +21,8 @@ import { REGION_MUSCLES, REGION_LABELS } from '@/features/train/logic/muscleColo
 import type { CatalogExerciseCreateRequest } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Icon3D } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
+import { Acts, FoSheetHead, Input, Lab, Lk, Pill, Pills, SheetActs } from '@/shared/ui/folyadek'
+import { StepLine } from '@/features/train/components/folyadek'
 
 // The 21 head/zone-specific catalog muscle tokens (mezo-wu1s), region-grouped for the
 // picker below. This mirrors the contract's CatalogExerciseCreateRequest.muscle enum;
@@ -33,28 +32,24 @@ const DEFAULT_MUSCLE: MuscleKey = 'back-mid'
 
 const TYPES = ['compound', 'isolation', 'plyo'] as const
 type ExType = (typeof TYPES)[number]
+/** The type as the owner reads it (the wire keeps the English token). */
+const TYPE_LABEL: Record<ExType, string> = { compound: 'összetett', isolation: 'izolált', plyo: 'plyo' }
 
 // Clamp + round to a 0.05 grid without float drift (0.7 + 0.05 → 0.75, not 0.7500001).
 const round2 = (n: number) => Math.round(n * 100) / 100
+const dec2 = (n: number) => n.toFixed(2).replace('.', ',')
 
-// --- DecimalStep: label + display + 44px ± buttons over a 0–1 / step-0.05 range ---
-function DecimalStep({ label, val, onChange }: { label: string; val: number; onChange: (n: number) => void }) {
+// --- DecimalStep: label + the kit − value + stepper over a 0–1 / step-0.05 range ---
+function DecimalStep({ label, val, onChange, first }: { label: string; val: number; onChange: (n: number) => void; first?: boolean }) {
   return (
-    <div className="gyx-sh-field">
-      <div className="gyx-sh-steprow">
-        <span className="uv-eyebrow">{label}</span>
-        <span className="gyx-sh-num">{val.toFixed(2)}</span>
-      </div>
-      <div className="gyx-sh-stepper uv-flat">
-        <button type="button" aria-label={`${label} csökkentése`} onClick={() => onChange(round2(Math.max(0, val - 0.05)))}>
-          <Icon name="minus" size={14} />
-        </button>
-        <span className="gyx-sh-stepval" aria-hidden="true">{val.toFixed(2)}</span>
-        <button type="button" aria-label={`${label} növelése`} onClick={() => onChange(round2(Math.min(1, val + 0.05)))}>
-          <Icon name="plus" size={14} />
-        </button>
-      </div>
-    </div>
+    <StepLine
+      className={first ? 'er-sjl-first' : undefined}
+      label={label}
+      name={label}
+      value={dec2(val)}
+      onDec={() => onChange(round2(Math.max(0, val - 0.05)))}
+      onInc={() => onChange(round2(Math.min(1, val + 0.05)))}
+    />
   )
 }
 
@@ -104,127 +99,79 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="catalog-exercise-title" className="glass is-still gyx-sheet">
+    <Sheet onClose={onClose} labelledBy="catalog-exercise-title" className="fo-sheet">
       {(close) => (
         <>
-          {/* Header */}
-          <div className="gyx-shh">
-            <Icon3D name="t-muscle" size={48} />
-            <div className="gyx-shh-copy">
-              <span className="uv-eyebrow">Gyakorlat · Katalógus</span>
-              <h3 id="catalog-exercise-title">{isEdit ? 'Gyakorlat szerkesztése' : 'Új gyakorlat'}</h3>
-            </div>
-            <button type="button" className="gyx-shh-x" onClick={close} aria-label="Bezárás">
-              <Icon name="x" size={14} />
-            </button>
-          </div>
+          <FoSheetHead
+            icon="t-muscle"
+            eyebrow="Gyakorlat · Katalógus"
+            title={isEdit ? 'Gyakorlat szerkesztése' : 'Új gyakorlat'}
+            titleId="catalog-exercise-title"
+            onClose={close}
+          />
 
-          {/* Name */}
-          <div className="gyx-sh-field">
-            <span className="uv-eyebrow">Név</span>
-            <input
-              aria-label="Név"
-              className="gyx-sh-input"
-              placeholder="pl. Cable Pull-Around"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
+          <Lab htmlFor="catalog-exercise-name">Név</Lab>
+          <Input
+            id="catalog-exercise-name"
+            aria-label="Név"
+            placeholder="pl. Cable Pull-Around"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
 
           {/* Muscle picker (21 tokens, region-grouped) */}
-          <div className="gyx-sh-field">
-            <span className="uv-eyebrow">Izomcsoport</span>
-            <div className="gyx-sh-groups" role="group" aria-label="Izomcsoport">
-              {REGION_MUSCLES.map((g) => (
-                <div key={g.region} className="gyx-sh-group">
-                  <span className="gyx-sh-sub">{REGION_LABELS[g.region]}</span>
-                  <div className="gyx-sh-chips">
-                    {g.muscles.map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        aria-pressed={muscle === m}
-                        onClick={() => setMuscle(m as MuscleKey)}
-                        className={cn('gyx-chip', muscle === m && 'is-on')}
-                      >
-                        {MUSCLE_LABELS[m] ?? m}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <Lab>Izomcsoport</Lab>
+          <div className="er-catm" role="group" aria-label="Izomcsoport">
+            {REGION_MUSCLES.map((g) => (
+              <div key={g.region}>
+                <small>{REGION_LABELS[g.region]}</small>
+                <Pills>
+                  {g.muscles.map((m) => (
+                    <Pill key={m} on={muscle === m} onClick={() => setMuscle(m as MuscleKey)}>
+                      {MUSCLE_LABELS[m] ?? m}
+                    </Pill>
+                  ))}
+                </Pills>
+              </div>
+            ))}
           </div>
 
-          {/* Type segmented */}
-          <div className="gyx-sh-field">
-            <span className="uv-eyebrow">Típus</span>
-            <div className="gyx-sh-types" role="group" aria-label="Típus">
-              {TYPES.map((t) => {
-                const active = type === t
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => setType(t)}
-                    className={cn('gyx-chip gyx-sh-type', active && 'is-on')}
-                  >
-                    {t}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <Lab>Típus</Lab>
+          <Pills role="group" aria-label="Típus">
+            {TYPES.map((t) => (
+              <Pill key={t} on={type === t} onClick={() => setType(t)}>{TYPE_LABEL[t]}</Pill>
+            ))}
+          </Pills>
 
-          {/* Stim + fatigue steppers */}
-          <div className="gyx-sh-steps">
-            <DecimalStep label="Stim" val={stim} onChange={setStim} />
-            <DecimalStep label="Fáradtság" val={fatigue} onChange={setFatigue} />
-          </div>
+          <DecimalStep first label="Stim" val={stim} onChange={setStim} />
+          <DecimalStep label="Fáradtság" val={fatigue} onChange={setFatigue} />
 
-          {/* Video URL */}
-          <div className="gyx-sh-field">
-            <span className="uv-eyebrow">Videó URL</span>
-            <input
-              aria-label="Videó URL"
-              className="gyx-sh-input"
-              placeholder="https://youtu.be/…"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-            />
-          </div>
+          <Lab htmlFor="catalog-exercise-video">Videó URL</Lab>
+          <Input
+            id="catalog-exercise-video"
+            aria-label="Videó URL"
+            placeholder="https://youtu.be/…"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+          />
 
           {/* Delete — edit mode only; two-tap confirm, then the mutation closes the sheet */}
           {isEdit && (
-            <button
-              type="button"
-              className={cn('gyx-sh-del', confirmDelete && 'is-armed')}
-              aria-label="Gyakorlat törlése"
-              onClick={() => {
-                if (!confirmDelete) { setConfirmDelete(true); return }
-                deleteCatalogExercise(edit.catalogId ?? edit.id, { onSuccess: close })
-              }}
-            >
-              <Icon name="trash" size={13} />
-              {confirmDelete ? 'Biztos? Koppints a törléshez' : 'Gyakorlat törlése'}
-            </button>
+            <Acts>
+              <Lk
+                bad
+                aria-label="Gyakorlat törlése"
+                onClick={() => {
+                  if (!confirmDelete) { setConfirmDelete(true); return }
+                  deleteCatalogExercise(edit.catalogId ?? edit.id, { onSuccess: close })
+                }}
+              >
+                {confirmDelete ? 'Biztos? Koppints a törléshez' : 'Gyakorlat törlése'}
+              </Lk>
+            </Acts>
           )}
 
-          {/* Footer */}
-          <div className="gyx-sh-two">
-            <button type="button" className="gyx-sh-btn" onClick={close}>
-              Mégse
-            </button>
-            <button
-              type="button"
-              className="gyx-sh-btn is-primary"
-              disabled={!trimmed || saving}
-              onClick={() => submit(close)}
-            >
-              <Icon3D name="t-tick" size={20} /> Mentés
-            </button>
-          </div>
+          <SheetActs label="Mentés" disabled={!trimmed || saving} onSave={() => submit(close)} onCancel={close} />
         </>
       )}
     </Sheet>

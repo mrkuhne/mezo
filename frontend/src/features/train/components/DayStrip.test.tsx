@@ -36,31 +36,33 @@ const items: DayStripItem[] = [
 
 test('renders one chip per day with tone-coloured dots', () => {
   const { container } = render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
-  expect(container.querySelectorAll('.trm-day')).toHaveLength(4)
-  expect(container.querySelectorAll('.trm-day')[1].querySelectorAll('.dot-cross, .dot-run, .dot-sport')).toHaveLength(3)
+  expect(container.querySelectorAll('.em-ds .em-day')).toHaveLength(4)
+  expect(container.querySelectorAll('.em-day')[1].querySelectorAll('.em-dots u.cross, .em-dots u.run, .em-dots u.sport')).toHaveLength(3)
 })
 
 test('marks today, the selection and an empty rest day distinctly', () => {
   const { container } = render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
-  const chips = container.querySelectorAll('.trm-day')
+  const chips = container.querySelectorAll('.em-day')
   expect(chips[1].className).toContain('today')
-  expect(chips[1].className).toContain('sel')
+  expect(chips[1]).toHaveClass('on')
   expect(chips[3].className).toContain('rest')
   // today's chip is labelled MA, the others by their day key
   expect(screen.getByText('MA')).toBeInTheDocument()
-  expect(screen.getByText('Hét')).toBeInTheDocument()
+  // the short weekday captions of the prototype (H · K · Sze …); the full name is in the label
+  expect(screen.getByText('H')).toBeInTheDocument()
+  expect(screen.getByText('Sze')).toBeInTheDocument()
 })
 
 // ÜVEG (mezo-me75u.4): the `✓` glyphs became one small 3D t-tick per logged session, and the
 // `—` of an unlogged scheduled day is gone (its modality dots already say "scheduled") —
 // the spoken state lives in the chip's aria-label (asserted below).
-test('shows a 3D tick per logged session, none when nothing is logged, pihenő on a rest day', () => {
+test('shows a tick per logged session, none when nothing is logged, pihenő on a rest day', () => {
   const { container } = render(<DayStrip items={items} selected="Kedd" onSelect={() => {}} />)
-  const ticks = (i: number) => [...container.querySelectorAll('.trm-day')[i].querySelectorAll('.trm-day-ck use')]
-    .map((u) => u.getAttribute('href'))
-  expect(ticks(0)).toEqual(['#t-tick', '#t-tick'])  // Hét: 2 of 2
-  expect(ticks(1)).toEqual(['#t-tick'])             // Kedd: 1 of 3
-  expect(ticks(2)).toEqual([])                      // Sze: scheduled, nothing logged
+  const ticks = (i: number) => container.querySelectorAll('.em-day')[i].querySelectorAll('.em-day-ck svg.em-ds-ok').length
+  expect(ticks(0)).toBe(2)  // Hét: 2 of 2
+  expect(ticks(1)).toBe(1)  // Kedd: 1 of 3
+  expect(ticks(2)).toBe(0)  // Sze: scheduled, nothing logged
+  expect(container.querySelectorAll('.em-day')[0].querySelector('.em-day-ck')).toHaveClass('ok')
   expect(screen.getByText('pihenő')).toBeInTheDocument()// Vas: no sessions
   // no text glyph marks survive
   expect(screen.queryByText(/✓|—/)).not.toBeInTheDocument()
@@ -90,7 +92,7 @@ test('centres the selected chip on mount', () => {
   const spy = stubScrollIntoView()
   const { container } = render(<DayStrip items={items} selected="Vas" onSelect={() => {}} />)
   expect(spy).toHaveBeenCalledTimes(1)
-  expect(spy.mock.instances[0]).toBe(container.querySelectorAll('.trm-day')[3])
+  expect(spy.mock.instances[0]).toBe(container.querySelectorAll('.em-day')[3])
   expect(spy.mock.calls[0][0]).toMatchObject({ inline: 'center' })
 })
 
@@ -112,8 +114,8 @@ test('a day with a skipped session carries the t-skip mark and says so', () => {
       onSelect={() => {}}
     />,
   )
-  const ck = container.querySelector('.trm-day-ck')!
-  expect(ck.querySelector('.trm-day-sk use')?.getAttribute('href')).toBe('#t-skip')
+  const ck = container.querySelector('.em-day-ck')!
+  expect(ck.querySelector('.em-day-sk use')?.getAttribute('href')).toBe('#t-skip')
   expect(screen.getByRole('tab', { name: /1 kihagyva/ })).toBeInTheDocument()
 })
 
@@ -127,8 +129,8 @@ test('a protected day carries the t-kimelo mark and says kímélő mód', () => 
       onSelect={() => {}}
     />,
   )
-  const ck = container.querySelector('.trm-day-ck')!
-  expect(ck.querySelector('.trm-day-km use')?.getAttribute('href')).toBe('#t-kimelo')
-  expect(ck.querySelector('.trm-day-sk')).toBeNull()
+  const ck = container.querySelector('.em-day-ck')!
+  expect(ck.querySelector('.em-day-km use')?.getAttribute('href')).toBe('#t-kimelo')
+  expect(ck.querySelector('.em-day-sk')).toBeNull()
   expect(screen.getByRole('tab', { name: /kímélő mód/ })).toBeInTheDocument()
 })

@@ -1,19 +1,29 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
+// The page's title lives in the frame's title bar — this stands in for it.
+function TitleProbe() {
+  const f = useFrame()
+  return <h1 data-testid="frame-title">{f.eyebrow} · {f.title}</h1>
+}
+
 const renderAt = (path: string) => render(
   <QueryWrapper>
     <MemoryRouter initialEntries={[path]}>
+      <FrameProvider>
+      <TitleProbe />
       <Routes>
         <Route path="/train/custom/new" element={<CustomWorkoutBuilderPage />} />
         <Route path="/train/custom/:id" element={<CustomWorkoutBuilderPage />} />
       </Routes>
+      </FrameProvider>
     </MemoryRouter>
   </QueryWrapper>,
 )
@@ -48,11 +58,11 @@ test('editing an existing custom workout prefills name + exercises', () => {
   expect(screen.getByText('Lateral Raise')).toBeInTheDocument()
 })
 
-// Reads the numeric value shown by an ExerciseRecipeRow stepper — the value <b> carries a
-// name-scoped test id (`${exerciseName} · ${field} érték`). A freshly picked exercise opens its
-// own row (mezo-7ugb5), so the steppers are mounted right after the pick.
+// Reads the value shown by an ExerciseRecipeRow stepper — each is a name-scoped group
+// (`${exerciseName} · ${field}`) holding − value +. A freshly picked exercise opens its own
+// row (mezo-7ugb5), so the steppers are mounted right after the pick.
 function stepperValue(exerciseName: string, field: string): string | null {
-  return screen.getByTestId(`${exerciseName} · ${field} érték`).textContent
+  return within(screen.getByRole('group', { name: `${exerciseName} · ${field}` })).getByText(/^\d+$|^auto$/).textContent
 }
 
 test('mezo-szsi item 1: adding a plyo via the picker yields the fixed weightless PLYO scheme (3x5 RIR0, 0 warmup)', async () => {
@@ -113,6 +123,25 @@ test('an unknown id shows not-found instead of an empty new form', () => {
 
 test('new composer title and the empty lead', () => {
   renderAt('/train/custom/new')
-  expect(screen.getByText('Új saját edzés')).toBeInTheDocument()
+  expect(screen.getByTestId('frame-title')).toHaveTextContent('Edzés · Új saját edzés')
   expect(screen.getByText(/Még nincs gyakorlat/)).toBeInTheDocument()
+  // the empty vessel waits for the exercises; both actions sit on the hero's liquid row
+  expect(screen.getByText('üres — ide töltődnek a gyakorlatok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Indítás ma' })).toBeDisabled()
+  expect(screen.getByRole('heading', { name: /Gyakorlatok · 0 gyakorlat · 0 szett/ })).toBeInTheDocument()
+})
+
+// Folyadék (mezo-n4wf5.3, prototype `sajat()`)
+test('edit: the hero pours the workout into one vessel and the heading counts it', () => {
+  const { container } = renderAt('/train/custom/custom-1')
+  expect(screen.getByTestId('frame-title')).toHaveTextContent('Edzés · Saját edzés')
+  expect(screen.getByText('Összerakod, amit ma csinálni akarsz.')).toBeInTheDocument()
+  const layers = container.querySelectorAll('.fo-hero .fo-pour > i')
+  expect(layers.length).toBe(container.querySelectorAll('.ee-ex').length)
+  expect(screen.getByRole('heading', { name: new RegExp(`Gyakorlatok · ${layers.length} gyakorlat · \\d+ szett`) })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mentés' })).toBeEnabled()
+  expect(screen.queryByText(/Adj nevet|Adj hozzá/)).not.toBeInTheDocument()
+  expect(screen.getByText(/Húzd a sorokat a sorrendhez/)).toBeInTheDocument()
+  // the old skin is gone
+  expect(container.querySelector('.glass, [class*="uvx-cw"], .uvs-primary')).toBeNull()
 })

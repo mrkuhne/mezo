@@ -49,9 +49,12 @@ describe('MesoDayEditor', () => {
     expect(props.onRename).toHaveBeenLastCalledWith('Húzónap')
   })
 
-  test('one always-open card per exercise, above them the daily load tile', () => {
+  test('one always-open card per exercise, above them the hero with the daily load button', () => {
     setup()
-    expect(screen.getByText('Napi terhelés · Hét')).toBeInTheDocument()
+    expect(screen.getByText('7 szett, ~31 perc, 2 gyakorlat.')).toBeInTheDocument()
+    expect(screen.getByText('Sablon · egy nap')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Napi terhelés · Hét' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /Gyakorlatok · 2 gyakorlat · 7 szett/ })).toBeInTheDocument()
     expect(screen.getAllByRole('spinbutton', { name: 'Munkaszettek' })).toHaveLength(2)
     expect(screen.getAllByLabelText(/törlése$/)).toHaveLength(2)
   })
@@ -69,10 +72,20 @@ describe('MesoDayEditor', () => {
     expect(screen.getByRole('button', { name: 'Press lejjebb' })).toBeDisabled()
   })
 
-  test('the load tile opens the daily load page and back returns to the day', async () => {
+  test('a draft day says so in the hero', () => {
+    setup({ mode: 'draft' })
+    expect(screen.getByText('Vázlat · egy nap')).toBeInTheDocument()
+  })
+
+  test('a day without exercises says so instead of an empty card', () => {
+    setup({ day: { ...DAY, exercises: [], exerciseCount: 0 } })
+    expect(screen.getByText('Ezen a napon még nincs gyakorlat.')).toBeInTheDocument()
+  })
+
+  test('the load button opens the daily load page and back returns to the day', async () => {
     const user = userEvent.setup()
     setup()
-    await user.click(screen.getByRole('button', { name: /Napi terhelés · Hét/ }))
+    await user.click(screen.getByRole('button', { name: 'Napi terhelés · Hét' }))
     expect(screen.getByText('Napi terhelés · Hét · Upper')).toBeInTheDocument()
     const backButton = screen.getByRole('button', { name: 'Vissza' })
     expect(backButton).toHaveTextContent('‹ Upper')
@@ -83,7 +96,9 @@ describe('MesoDayEditor', () => {
   test('the add button asks the parent to open the picker', async () => {
     const user = userEvent.setup()
     const props = setup()
-    await user.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
+    const add = screen.getByRole('button', { name: /Gyakorlat hozzáadása/ })
+    expect(add).toHaveTextContent('＋ Gyakorlat')
+    await user.click(add)
     expect(props.onAdd).toHaveBeenCalled()
   })
 
@@ -95,13 +110,14 @@ describe('MesoDayEditor', () => {
     const { rerender, container } = render(<MesoDayEditor {...props} />)
     // first paint: the cards carry the staggered entrance
     expect(screen.getByTestId('exercise-list')).toHaveAttribute('data-entered', 'false')
-    expect(container.querySelectorAll('[data-testid="exercise-list"] > .rise')).toHaveLength(2)
+    expect(container.querySelectorAll('[data-testid="exercise-list"] > .ew-rise')).toHaveLength(2)
 
     // an edit re-renders the list — no entrance class, so nothing flashes
     const moved: MesoDay = { ...DAY, exercises: [DAY.exercises[1], DAY.exercises[0]] }
     rerender(<MesoDayEditor {...props} day={moved} />)
     expect(screen.getByTestId('exercise-list')).toHaveAttribute('data-entered', 'true')
-    expect(container.querySelectorAll('[data-testid="exercise-list"] > .rise')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-testid="exercise-list"] > .ew-rise')).toHaveLength(0)
+    expect(container.querySelectorAll('[data-testid="exercise-list"] > .ew-exw')).toHaveLength(2)
   })
 
   test('the back button reaches onBack', async () => {

@@ -23,7 +23,7 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
   [deployment architecture](../infrastructure/deployment-k3s-argocd.md). Goal doubles as hands-on practice
   with the stack Daniel's clients use.
 
-## Epics in flight (state as of 2026-10-10)
+## Epics in flight (state as of 2026-10-11)
 
 The phase list above is the long arc; this is the **current working set** — the epics that own the
 day-to-day slices. Authoritative status is always `bd show <id>`; this table is the index over it.
@@ -55,13 +55,34 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-ju4j6` — **Boop visszaöltöztetés** | ✅ closed | Titanium visual rollback to Mozaik/Clay, functionality kept. See the milestone log (2026-09-20). |
 | `mezo-a9bo7` / `mezo-ui5by` — **Boop csapat-üzenőfal** | ✅ closed | Social wall + karakter-narratíva; `mezo-ui5by` a duplikátum. See the milestone log (2026-09-27). |
 | `mezo-ck2` — **Check-in 2.0** | ✅ shipped 2026-09-28 | 14-item check-in (5 core + time-of-day items + adaptive „A nap kérdése"), feeding chat, flags, patterns, detectors, life goals, meal coach, training readiness, Napom, ritual, rings. Follow-ups: `persistent_pain` lighten action, day-review reading the day rating. See the milestone log (2026-09-28). [`today.md`](../features/today.md), [`me.md`](../features/me.md). |
-| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ 2/9 slices | Light-only identity, structure-first pages, everything is a level that fills. F1 (foundation + frame + kit) done 2026-10-09; **F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10**. Seven slices left: F3 Edzés, F4 Edzés közben, F5 Fuel, F6 Én, F7 Mezo, F8 átfedők (overlays), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md). |
+| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ 3/9 slices | Light-only identity, structure-first pages, everything is a level that fills. F1 (foundation + frame + kit) done 2026-10-09; F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10; **F3 (Edzés — Mai, Terv, Terhelés, Gyakorlatok, Sport, Futás, both editors, the planner, the reports) done 2026-10-11**. Six slices left: F4 Edzés közben, F5 Fuel, F6 Én, F7 Mezo, F8 átfedők (overlays), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md). |
 | `mezo-me75u` — **Üvegesítés** | ✅ closed | Whole app onto the dark glass material (U1–U11). See the milestone log (2026-09-27). |
 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
 
+- **2026-10-11 — Folyadék F3 · Edzés — az Edzés terület oldalai az új arculatban (`mezo-n4wf5.3`).**
+  A második terület, amely átöltözött: a Mai, a Terhelés (az izomtérképpel, az izomjelekkel és a heti
+  mozgással), a Terv (az edzésterv saját oldala, egy nap és a szerkesztője, a heti vizsgálat, egy izom
+  története, az edzéstervek, a lezárt futamok, a riport és az összevetés, a sablonok, az új terv
+  összeállítása), a Gyakorlatok (egy gyakorlat története és a medálok), a Sport, a sportnaplózás, a Futás,
+  a futóterv szerkesztője és a saját edzés. Minden oldal ugyanúgy épül fel, mint a Nap oldalai: felül egy
+  edény egy mondattal és egy fő gombbal, alatta számozott fehér kártyák. A számok itt is szintek: a Mai
+  oldalon a test rajza telik meg izmonként (halvány a mai terv, sötét a már elvégzett szett), a Terhelésnél
+  egy tartály mutatja, hol tartasz a héten, a Terven a hetek kémcsövek (a pihenőhét sraffozott), a rekord
+  kapszula, benne a régi rekord szaggatott vonala.
+  **Két döntés:** (1) a Mai oldal fő rajza a test maradt, nem a súlyzó; (2) a Terven csak a mai nap
+  teljes kártya, a többi edzésnap egy-egy sor. **A szavak is egyszerűbbek lettek:** edzésterv (nem
+  mesociklus), emelkedő hét és pihenőhét, Hangsúly / Építés / Tartás, „felső érték". A magyarázó „i" gomb
+  helyett egy rövid kérdés áll a kártyán („Mit mutat a sáv?"), amely világos lapon válaszol. A rajzról még
+  az elfogadás előtt kikerült minden kitalált elem (hathetes grafikon, technika-lap és alternatívák,
+  teljesítés-százalék a lezárt futamok listáján, mentés előtti kalóriaszám, hangulat-gombok a lezárásnál).
+  A működés nem változott: ugyanazok az adatok, ugyanazok a gombok, ugyanoda vezetnek.
+  **Ami még a régi külsőt viseli:** maga az edzés közbeni képernyő (eligazítás, szettek rögzítése, a záró
+  ünneplés, az edzés utáni áttekintő) — ez a következő szelet (F4). [Stílus-biblia](../design_2.0/2026-10-09-folyadek-style-bible.md)
+  (F3 tanulságok), [eltérések a rajztól](../design_2.0/prototypes/vilagos/HANDOFF.md),
+  [építési terv](../superpowers/plans/2026-10-10-folyadek-f3-edzes.md), [`train.md`](../features/train.md).
 - **2026-10-10 — Folyadék F2 · Nap — a Nap terület minden oldala az új arculatban (`mezo-n4wf5.2`).**
   Az első terület, amely teljesen átöltözött: a Mai, A napom, a Beszélgetés (mindhárom füle), a Rutin és
   a rutinépítő oldalai, a Check-in, az Életjelek, a Küldetések, a Gyors logolás és a Napzárás. Minden oldal

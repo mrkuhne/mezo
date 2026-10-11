@@ -270,3 +270,62 @@ Also decided with the build, following the approved prototype: a day picked on A
   `LogFlowPage` (Fuel, F5); `SportLogSheet`, `WelcomeBackSheet`, `RecoveryDurationRow` (Edzés, F3);
   `GratitudeRows` (F6); `FeedbackChips`, `RefChips`, `AskTeamRow`, `EvidenceList` (Mezo, F7); the
   `VoiceField` mic tile (F8).
+
+## 2026-10-11 — F3 · Edzés: reality pass, owner answers, built — deviations from the prototype
+
+Slice F3 (`mezo-n4wf5.3`) converted the Edzés domain on `feat/folyadek-edzes`: Mai, Terhelés (+ térkép, jelek,
+mozgás), Terv (+ the plan page, day, day editor, heti vizsgálat, izom, edzéstervek, lezárt futamok, riport,
+összevetés, sablonok, template editor, új terv), Gyakorlatok (+ one exercise, medálok), Sport, sport log,
+Futás, the futóterv editor, saját edzés, and their sheets. Build target: `vilagos/edzes.js`. Not in this
+slice: eligazítás, edzés közben, review, ceremonies (F4) — their prototype routes are untouched.
+
+### What the reality pass changed in the prototype (before the OK)
+
+- **One week, one set of numbers** (45 of 75 sets, from `GR`); `terheles` and `gym` are one page.
+- **Mai** shows only the selected day; every strip day opens; new faces: done / future / missed other days,
+  logged sport and run, completed custom workout, unscheduled sport, rest day with sport, resume card, morning
+  training card, skeleton. Impact words use the live thresholds.
+- **Removed as invented:** the six-week chart and „Időpontok" on Terhelés; per-day rows in the group sheet;
+  „Tételesen" on Mozgás; club / season / event titles and the linked vessels on Sport; the pre-save kcal number;
+  completion % on the closed-runs list; the technique sheet and alternatives on an exercise; the dashed target
+  line; mood chips on close; „mit kíméljünk" and the fake progress page in the planner; struck-through set
+  counts; every „Demó" control.
+- **Added from the live app:** both real editors (run-day editor with accordion rows and the checks; template /
+  draft editor with week face → day face → load panels), the planned-plan face with „Aktiválás", all report
+  states and sections, the full compare page, the real planner interview, catalogue / video / event sheets,
+  per-sport log fields, the futóterv week selector and session editor, loading / empty / error / not-found
+  faces on every route.
+- **Computable, kept:** per-week set totals on Terv and the plan page (volume arc; plain tubes before the first
+  workout), week tubes on Sport / Futás / the rest day, record drops on the strength curve, capsule lines for
+  old vs new records.
+
+### The owner's answers (2026-10-10)
+
+- **Mai's hero is the body** filled with today's muscles (not the dumbbell).
+- **Terv: only today is a full day card**, every other training day is a row.
+
+### Deviations from the prototype (built app)
+
+- **Muscle colours** are the app's region colours, not the prototype's pastels; the mixes are the same. Group
+  labels are the live ones („Hamstring", „Farizom"), not „Lábhajlító", „Far".
+- **Mai.** Zero-planned big-family rows stay in the impact card; the body caption names the day's heaviest
+  region; a logged session keeps its „Megnézem"; other-day gym heroes keep skip / resume; rest-week tubes use the
+  real done signal.
+- **Terhelés.** Groups are the live budget groups (nine in mock), the map key uses the real four levels,
+  conditional sections keep the live conditions, the Mozgás tubes scale to the larger value.
+- **Sport / Futás.** Hero tubes are not tappable; a day with several slots is one tube; „Egyszeri események" is
+  always shown; Futás past weeks show logged against prescribed; the hero button opens the log sheet for the
+  first loggable session; loading is a whole-page skeleton; the builder keeps a third „Mentés…" state and its
+  overflow is a sheet. The sport log route draws its own title row (chrome-free route).
+- **Terv.** An off-day that is today keeps its „Ma" pill; the planned plan marks no day as today; day-page
+  muscle rows are by group; long histories are capped in the hero graphics (4 plans, 6 runs).
+- **Editors.** Picker rows keep the catalogue photo where there is one; the rest day in the run-day editor is
+  the hero only; a stepper at its bound is disabled; rest days in the template week list stay tappable; the
+  goal field and the close sheet keep the shared mic tile.
+- **Riport / Gyakorlatok.** The curve cannot break over long pauses (the sentence about it is dropped); compare
+  keeps „A / B riportja" in every state and gains a tie verdict; records rows in the report have no old-record
+  line; the template hero is the week as tubes.
+- **Not converted in this slice** — `VoiceField` (F8) and everything the in-workout flow owns (F4):
+  `WorkoutCard`, `WorkoutBriefing`, `WorkoutCeremony`, `WorkoutSummary`, `WorkoutDock`, the workout glass
+  sheets, `SetEditSheet`, `ExerciseScopeSheet`, `FeedbackModal`, `MedalChip`, `SportCeremony`. The exercise
+  picker is converted and opens in the new look from the old-skin session.

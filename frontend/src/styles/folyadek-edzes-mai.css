@@ -1,0 +1,101 @@
+/* ── Folyadék · Edzés · mai (mezo-n4wf5.3, slice F3) ── rules of this area only, class prefix `.em-`; shared pieces live in folyadek-kit.css and folyadek-edzes-kozos.css (`.ex-`).
+   Ported in values from docs/design_2.0/prototypes/vilagos/edzes.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the day strip (`DayStrip`) ── edzes.js `dstrip()`: `.ds` (kit.js) + `.vs-dots`: seven white pills, the shown one filled */
+.em-ds { display: flex; gap: 6px; padding: 12px 14px 0; }
+.em-day { flex: 1 1 0; min-width: 0; min-height: 81px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 0 7px; border: 0; border-radius: 999px; cursor: pointer;
+  background: #fff; box-shadow: 0 4px 10px -8px rgba(15, 30, 51, .4); color: var(--fo-ink); font-family: var(--ff-body); }
+.em-day small { display: block; font-size: 10px; font-weight: 600; letter-spacing: .6px; line-height: 13px; color: var(--fo-faint); }
+.em-day b { display: block; font-family: var(--ff-display); font-size: 17px; font-weight: 700; line-height: 21px; }
+.em-day .em-dots { display: flex; justify-content: center; gap: 3px; height: 5px; margin: 3px 0 1px; }
+.em-day .em-dots u { width: 5px; height: 5px; border-radius: 50%; background: var(--dom); text-decoration: none; }
+.em-day .em-dots u.sport, .em-day .em-dots u.cross, .em-day .em-dots u.trx { background: #E06BB5; }
+.em-day .em-dots u.run { background: #1877F2; }
+.em-day-ck { display: flex; justify-content: center; align-items: center; gap: 1px; min-height: 14px; font-style: normal; font-size: 9px; line-height: 14px; color: var(--fo-faint); }
+.em-day-ck.ok { color: var(--fo-ok); }
+.em-day-ck svg, .em-day-ck .t-ico { width: 12px; height: 12px; flex: 0 0 auto; display: block; }
+.em-day.on { background: var(--dom); box-shadow: 0 10px 18px -10px var(--dom); }
+.em-day.on small, .em-day.on b, .em-day.on .em-day-ck { color: #fff; }
+.em-day.on .em-dots u { background: #fff; }
+.em-day.on .t-ico { --ic: #fff; --ic2: rgba(255, 255, 255, .4); --icf: transparent; }
+.em-day.rest { opacity: .5; }
+.em-day:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+.em-herowrap { display: contents; }
+/* the body + the fact column (`.vs-h2`: `.vs-hb` 112px + `.vs-hf`) */
+.em-h2 { display: flex; gap: 14px; align-items: center; margin-top: 12px; }
+.em-h2 .ex-hb { --w: 112px; }
+.em-hf { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.em-hf span { display: flex; align-items: baseline; gap: 8px; padding: 10px 14px; border-radius: 18px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .07); }
+.em-hf b { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.6px; line-height: 1; }
+.em-hf small { font-size: 12px; color: var(--fo-sub); }
+/* the comeback session's sets (`.vs-cb`) */
+.em-cbsets { margin-top: 10px; }
+.em-cbsets > div { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 2px; font-size: 13px; border-top: 1px solid var(--fo-hair); }
+.em-cbsets > div:first-child { border-top: 0; }
+.em-cbsets > div > span:first-child { min-width: 0; }
+.em-cbsets > div > span:last-child { white-space: nowrap; color: var(--fo-sub); }
+.em-cbsets b { color: var(--fo-ink); }
+.em-cbsets .fo-caps { vertical-align: middle; }
+/* the readiness tubes (`.vs-ts.rd`) and the „Üdv újra!" ramp (`.vs-ramp`) */
+.em-rd.fo-tubes { max-width: 270px; margin: 14px auto 0; }
+.em-ramp.fo-tubes { max-width: 230px; margin: 16px auto 0; }
+.em-rd .fo-tube, .em-ramp .fo-tube { max-width: 60px; }
+
+/* ── the indented line under a step (`.vs-in`, `kmIn`, `doneIn`) ── */
+.em-in-ic { display: inline; }
+.fo-under.col > .em-skacts { display: flex; gap: 16px; margin-top: 8px; }
+.em-sess:last-child > .fo-under:last-child { padding-bottom: 0; }
+
+/* ── the day's other sessions (`ls(others.map(sessStep))`) ── steps in one card, a hairline between two sessions */
+.em-sess + .em-sess { border-top: 1px solid var(--fo-hair); padding-top: 10px; }
+.em-steps > .em-sess > .fo-step { padding-top: 0; }
+.em-steps > .em-sess > .fo-step:last-child { padding-bottom: 0; }
+.em-steps > .em-sess:not(:last-child) > .fo-step:last-child { padding-bottom: 10px; }
+.em-sess .fo-step small .fo-st { margin-left: 4px; vertical-align: 1px; }
+.em-skwhen > .fo-note { margin: 0; }
+
+/* ── energy · impact · the quick pair ── */
+.em-energy .fo-bigrow { margin-top: 0; }
+.em-mus .ex-mus:first-of-type { border-top: 0; }
+.em-navrows:not(:first-child) { margin-top: 14px; }
+.em-nav > .fo-acts { margin-top: 10px; }
+
+/* ── „Miért marad ki?" (`whySheet()`) ── the options (`.vs-opts`), the note box */
+.em-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.em-opts button { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 44px; padding: 8px; border: 0; border-radius: 20px; background: var(--fo-page); cursor: pointer;
+  font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: 1.2; color: var(--fo-ink); text-align: left; }
+.em-opts button.on { background: color-mix(in srgb, var(--dom) 12%, #fff); box-shadow: inset 0 0 0 2px var(--dom); }
+.em-opts button .fo-bub { flex: 0 0 auto; }
+.em-opts button > span:last-child { min-width: 0; overflow-wrap: break-word; }
+.em-opts button:focus-visible, .em-why .trm-kmdc > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.em-inpmic textarea.fo-in { min-height: 84px; }
+.em-why > .fo-acts, .em-udv > .fo-acts, .em-custom > .fo-acts { margin-top: 14px; }
+/* the shared „Meddig tarthat?" row keeps its `trm-kmdur` markup (the Fuel and Nap sheets and the layout specs key on it);
+   here it wears the kit's field label + pills. These rules override the `.trm-kmdur-eb` / `.trm-kmdc` look that stays in
+   prototype.css for those two domains (the `uveg edzes mai` block) — they go when Fuel and Nap stop wearing it. */
+.em-why .trm-kmdur-eb { display: block; margin: 14px 0 6px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; letter-spacing: 0; text-transform: lowercase; color: var(--fo-sub); }
+.em-why .trm-kmdur-eb::first-letter { text-transform: uppercase; }
+.em-why .trm-kmdc { display: flex; flex-wrap: wrap; gap: 8px; }
+.em-why .trm-kmdc > button { display: inline-flex; align-items: center; min-height: 44px; padding: 7px 14px; border: 0; border-radius: 999px; font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal;
+  color: var(--fo-ink); background: var(--fo-page); box-shadow: none; cursor: pointer; opacity: 1; }
+.em-why .trm-kmdc > button.on { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: none; }
+.em-why .trm-kmdc > button:disabled { cursor: default; }
+.em-why .trm-kmdc > button:disabled:not(.on) { opacity: .55; }
+
+/* ── „Üdv újra!" · „Saját edzés" ── */
+.em-udvl { margin-top: 14px; }
+.em-udvl > .fo-row:first-child, .em-cwl > .fo-row:first-child, .em-navrows > .fo-row:first-child { border-top: 0; padding-top: 0; }
+
+@media (max-width: 360px) {
+  .em-ds { gap: 4px; padding-inline: 10px; }
+  .em-h2 .ex-hb { --w: 92px; }
+  .em-hf b { font-size: 21px; }
+  .em-hf span { padding: 9px 12px; }
+  .em-opts { gap: 6px; }
+  .em-opts button { font-size: 12.5px; padding: 7px 6px; gap: 6px; }
+  .em-opts button .fo-bub { --s: 30px !important; }
+}
+/* seven chips cannot each be 44px wide on a narrow phone: the tap area overhangs the 3px gaps */
+.em-day { position: relative; }
+.em-day::after { content: ''; position: absolute; inset: 0 -3px; }

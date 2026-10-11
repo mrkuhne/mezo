@@ -1,13 +1,10 @@
 // ============================================================
-// Mezo · DoneBar — the shared "this session is done" bar (mezo-9bbc).
-// A done mark + bold summary + optional quiet detail line.
-// Worn by TodaySessionCard's logged state, so every modality reports
-// completion the same way.
-// ÜVEG (mezo-me75u.4, prototypes/uveg-edzes.html `.sess .donebar`): a flat cell inside the
-// glass card (never glass in glass); the done mark is the 3D t-tick, its meaning („kész”)
-// spoken through the mark's accessible name.
+// Mezo · DoneBar — the „this session is done" line under a session's row (mezo-9bbc).
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `doneIn()`): an indented line under the step —
+// the small green tick bubble, the bold summary, the quiet detail after a middle dot, and
+// „Megnézem" as a text link when the logged session can be opened.
 // ============================================================
-import { Icon3D } from '@/shared/ui/clay'
+import { Bub, Lk } from '@/shared/ui/folyadek'
 
 export function DoneBar({
   summary,
@@ -15,28 +12,23 @@ export function DoneBar({
   onClick,
   ariaLabel,
 }: {
-  /** Bold first line — the logged effort, e.g. `RPE 8 · 60 perc`. */
+  /** Bold first part — the logged effort, e.g. `RPE 8 · 60 perc`. */
   summary: string
-  /** Quiet second line (when known), e.g. `07:12-kor logolva`. */
+  /** Quiet second part (when known), e.g. `07:12-kor logolva`. */
   detail?: string | null
-  /** When present the whole bar becomes the tap target. */
+  /** When present the line carries the „Megnézem" link. */
   onClick?: () => void
-  /** Accessible name for the tappable variant. */
+  /** Accessible name of the link. */
   ariaLabel?: string
 }) {
-  const inner = (
-    <>
-      <span className="donebar-check" role="img" aria-label="kész"><Icon3D name="t-tick" size={22} /></span>
-      <span className="donebar-txt">
-        {summary}
-        {detail ? <small className="donebar-detail">{detail}</small> : null}
-      </span>
-    </>
-  )
-  if (!onClick) return <div className="donebar">{inner}</div>
   return (
-    <button type="button" className="donebar np-press" onClick={onClick} aria-label={ariaLabel}>
-      {inner}
-    </button>
+    <div className="fo-under em-done">
+      <span>
+        <span className="em-in-ic" role="img" aria-label="kész"><Bub icon="t-tick" size={24} color="var(--fo-ok)" /></span>
+        <b>{summary}</b>
+        {detail ? <> · <small className="em-done-detail">{detail}</small></> : null}
+      </span>
+      {onClick && <Lk onClick={onClick} aria-label={ariaLabel}>Megnézem</Lk>}
+    </div>
   )
 }

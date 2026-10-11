@@ -9,15 +9,14 @@
 // toast, unlike the owner-only full edit in CatalogExerciseSheet. The contract
 // pattern accepts a YouTube watch/short URL or an Instagram reel/post
 // permalink; anything else comes back 400.
-// Mirrors the CatalogExerciseSheet visual idiom.
-// Üveg (U10, mezo-me75u.10): a coral glass sheet, the play 3D head, one flat URL field, the
-// coral-outline „Eltávolítás" (destructive, rule 29) or flat Mégse + the lit „Mentés" pill.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js sheet `video`): the light sheet with the
+// kit head (t-play bubble), one kit URL field, and the foot — Mentés, with „Eltávolítás" as the
+// red text link when a video exists, „Mégse" otherwise.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { Sheet } from '@/shared/ui/Sheet'
-import { SheetHead } from '@/shared/ui/SheetHead'
-import { Icon3D } from '@/shared/ui/clay'
+import { Acts, Btn, FoSheetHead, Input, Lab, Lk } from '@/shared/ui/folyadek'
 
 interface VideoUrlSheetProps {
   // The catalog row to target: its id (catalog uuid), display name, current video.
@@ -40,36 +39,28 @@ export function VideoUrlSheet({ exercise, onClose }: VideoUrlSheetProps) {
   }
 
   return (
-    <Sheet glass onClose={onClose} labelledBy="video-url-title" className="uvl-edzes">
+    <Sheet onClose={onClose} labelledBy="video-url-title" className="fo-sheet">
       {(close) => (
-        <div className="uvl-body">
-          <SheetHead icon="t-play" eyebrow={`Videó · ${exercise.name}`} title="Demo videó" titleId="video-url-title" onClose={close} />
+        <>
+          <FoSheetHead icon="t-play" eyebrow={`Videó · ${exercise.name}`} title="Demo videó" titleId="video-url-title" onClose={close} />
 
-          {/* Video URL */}
-          <label className="uvl-field">
-            <span className="uvl-flabel">Videó URL</span>
-            <input
-              aria-label="Videó URL"
-              placeholder="https://youtu.be/… vagy https://instagram.com/reel/…"
-              value={videoUrl}
-              onChange={(e) => setVideoUrl(e.target.value)}
-            />
-          </label>
+          <Lab htmlFor="video-url-input">Videó URL</Lab>
+          <Input
+            id="video-url-input"
+            aria-label="Videó URL"
+            placeholder="https://youtu.be/… vagy https://instagram.com/reel/…"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+          />
 
-          {/* Footer — Eltávolítás clears an existing video; Mégse just closes when there is none */}
-          <div className="uvl-foot">
-            {hadVideo ? (
-              <button type="button" className="uvl-warn" disabled={saving} onClick={() => persist(null, close)}>
-                <Icon3D name="t-trash" size={20} />Eltávolítás
-              </button>
-            ) : (
-              <button type="button" className="uvl-ghost" onClick={close}>Mégse</button>
-            )}
-            <button type="button" className="uvl-cta" disabled={saving} onClick={() => persist(videoUrl.trim() || null, close)}>
-              <Icon3D name="t-tick" size={20} />Mentés
-            </button>
-          </div>
-        </div>
+          {/* Foot — Eltávolítás clears an existing video; Mégse just closes when there is none */}
+          <Acts>
+            <Btn grow disabled={saving} onClick={() => persist(videoUrl.trim() || null, close)}>Mentés</Btn>
+            {hadVideo
+              ? <Lk bad disabled={saving} onClick={() => persist(null, close)}>Eltávolítás</Lk>
+              : <Lk onClick={close}>Mégse</Lk>}
+          </Acts>
+        </>
       )}
     </Sheet>
   )

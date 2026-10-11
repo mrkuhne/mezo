@@ -12,52 +12,53 @@ function sk(over: Partial<PlannedSkip> = {}): PlannedSkip {
 
 const hrefs = (el: Element) => [...el.querySelectorAll('use')].map((u) => u.getAttribute('href'))
 
-test('no reason: t-skip icon, „ok nélkül", the free-pass shield, „Okot adok"', () => {
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `skBlock()` / `skActs()`): a kit callout box + text links.
+test('no reason: the skip glyph, „ok nélkül", the free-pass line, „Okot adok"', () => {
   const onReason = vi.fn()
   const { container } = render(<SkippedBlock skip={sk()} onReason={onReason} onUndo={() => {}} />)
   expect(screen.getByText('Kihagyva · ok nélkül')).toBeInTheDocument()
   expect(screen.getByText('A heti szabadjegyed fedezi — a sorozatod marad.')).toBeInTheDocument()
-  const block = container.querySelector('.trm-skipd')!
-  expect(block).toHaveClass('glass')
-  expect(hrefs(block)).toEqual(['#t-skip', '#t-shield'])
+  const block = container.querySelector('.fo-box.em-skipd')!
+  expect(container.querySelector('.glass, [class*="trm-"]')).toBeNull()
+  expect(hrefs(block)).toEqual(['#t-skip'])
+  expect([...container.querySelectorAll('.em-skacts button')].map((b) => b.textContent)).toEqual(['Okot adok', 'Visszavonom'])
   fireEvent.click(screen.getByRole('button', { name: 'Okot adok' }))
   expect(onReason).toHaveBeenCalled()
 })
 
-test('with a reason: its icon, the label, „Másik ok"; inner = flat (no glass in glass)', () => {
+test('with a reason: its glyph, the label, „Másik ok"; inner = the indented form under a row', () => {
   const onUndo = vi.fn()
   const { container } = render(
     <SkippedBlock inner skip={sk({ reasonCategory: 'ILLNESS', serious: true, freePass: false })} onReason={() => {}} onUndo={onUndo} />,
   )
   expect(screen.getByText('Kihagyva · Beteg vagyok')).toBeInTheDocument()
   expect(screen.getByText('Nem számít mulasztásnak. Jobbulást!')).toBeInTheDocument()
-  const block = container.querySelector('.trm-skipd')!
-  expect(block).not.toHaveClass('glass')
-  expect(block).toHaveClass('is-in')
+  const block = container.querySelector('.fo-under.col > .fo-box.em-skipd')!
   expect(hrefs(block)).toEqual(['#t-ill'])
+  expect(container.querySelector('.fo-under.col > .em-skacts')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Másik ok' })).toBeInTheDocument()
   const undo = screen.getByRole('button', { name: 'Visszavonom' })
-  expect(hrefs(undo)).toEqual(['#t-repeat'])
+  expect(undo).toHaveClass('fo-lk')
   fireEvent.click(undo)
   expect(onUndo).toHaveBeenCalled()
 })
 
-// ── Kímélő mód S2 (mezo-q4xt2.2) — prototype kmHero() / kmInner() / the rCb run card ──
+// ── Kímélő mód S2 (mezo-q4xt2.2) — prototype `thero()` km branch / `kmIn()` / the comeback run line ──
 const period = (over: Partial<Parameters<typeof RecoveryBlock>[0]['period']> = {}) => ({
   category: 'ILLNESS' as const, estimate: 'FEW_DAYS' as const, estimateExpired: false, checkedInToday: false, ...over,
 })
 
-test('recovery variant: category icon, „Beteg vagy · becslés: 2–3 nap", the sub-line, both buttons', () => {
+test('recovery variant: category glyph, „Beteg vagy · becslés: 2–3 nap", the sub-line, the button and the link', () => {
   const h = { onRelease: vi.fn(), onBetter: vi.fn(), onNotYet: vi.fn() }
   const { container } = render(<RecoveryBlock period={period()} {...h} />)
-  const block = container.querySelector('.trm-skipd')!
-  expect(block).toHaveClass('glass')
+  const block = container.querySelector('.fo-box.em-skipd')!
   expect(hrefs(block)).toEqual(['#t-ill'])
   expect(screen.getByText('Beteg vagy · becslés: 2–3 nap')).toBeInTheDocument()
   expect(screen.getByText('Az edzés ma magától kimarad. Nem számít mulasztásnak, a sorozatod marad.')).toBeInTheDocument()
   expect(screen.queryByText('A becsült idő letelt — hogy vagy?')).toBeNull()
-  const btns = [...container.querySelectorAll('.trm-skacts button')].map((b) => b.textContent)
-  expect(btns).toEqual(['Ma mégis edzek', 'Jobban vagyok'])
+  const btns = [...container.querySelectorAll('.em-skacts button')].map((b) => b.textContent)
+  expect(btns).toEqual(['Jobban vagyok', 'Ma mégis edzek'])
+  expect(screen.getByRole('button', { name: 'Jobban vagyok' })).toHaveClass('fo-btn')
   fireEvent.click(screen.getByRole('button', { name: 'Ma mégis edzek' }))
   expect(h.onRelease).toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Jobban vagyok' }))
@@ -67,10 +68,10 @@ test('recovery variant: category icon, „Beteg vagy · becslés: 2–3 nap", th
 test('recovery variant, estimate passed: „… volt", the question, Jobban vagyok / Még nem + the quiet link', () => {
   const h = { onRelease: vi.fn(), onBetter: vi.fn(), onNotYet: vi.fn() }
   const { container } = render(<RecoveryBlock period={period({ category: 'STOMACH', estimate: 'TODAY', estimateExpired: true })} {...h} />)
-  expect(hrefs(container.querySelector('.trm-skipd')!)).toEqual(['#t-digestion'])
+  expect(hrefs(container.querySelector('.fo-box.em-skipd')!)).toEqual(['#t-digestion'])
   expect(screen.getByText('Gyomorrontás · becslés: csak ma volt')).toBeInTheDocument()
   expect(screen.getByText('A becsült idő letelt — hogy vagy?')).toBeInTheDocument()
-  expect([...container.querySelectorAll('.trm-skacts button')].map((b) => b.textContent)).toEqual(['Jobban vagyok', 'Még nem'])
+  expect([...container.querySelectorAll('.em-skacts button')].map((b) => b.textContent)).toEqual(['Jobban vagyok', 'Még nem', 'Ma mégis edzek'])
   fireEvent.click(screen.getByRole('button', { name: 'Még nem' }))
   expect(h.onNotYet).toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Ma mégis edzek' }))
@@ -91,16 +92,14 @@ test('recovery variant: buttons disabled while a write is in flight', () => {
   expect(screen.getByRole('button', { name: 'Jobban vagyok' })).toBeDisabled()
 })
 
-test('kmInner: flat t-kimelo block „Kímélő mód"; the run-ramp inner block', () => {
+test('kmInner: the indented kímélő line; the run-ramp line', () => {
   const { container, unmount } = render(<KimeloInner />)
-  const block = container.querySelector('.trm-skipd')!
-  expect(block).toHaveClass('is-in')
-  expect(block).not.toHaveClass('glass')
+  const block = container.querySelector('.fo-under.em-kmin')!
   expect(hrefs(block)).toEqual(['#t-kimelo'])
   expect(screen.getByText('Kímélő mód')).toBeInTheDocument()
-  expect(screen.getByText('Magától kimarad · nem számít mulasztásnak.')).toBeInTheDocument()
+  expect(block.textContent).toContain('Kímélő mód · Magától kimarad · nem számít mulasztásnak.')
   unmount()
   const r = render(<RunRampInner />)
-  expect(hrefs(r.container.querySelector('.trm-skipd')!)).toEqual(['#t-sprout'])
-  expect(screen.getByText('Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')).toBeInTheDocument()
+  expect(hrefs(r.container.querySelector('.fo-under.em-rampin')!)).toEqual(['#t-sprout'])
+  expect(r.container.querySelector('.fo-under.em-rampin')!.textContent).toContain('Visszatérő futás · Első futás kihagyás után: kb. fele olyan hosszú, laza tempóban.')
 })

@@ -97,15 +97,17 @@ export function deciderSentence(meso: Mesocycle): string | null {
   if (!change) return null
   const label = BUDGET_GROUP_LABELS[change.muscle] ?? change.muscle
   const current = meso.volumePerMuscle?.[change.muscle]?.current
+  // The owner's words (Folyadék F3 prototype): no grind / RIR / rámpa / deload on the page.
+  const name = label.toLowerCase()
   switch (change.reason) {
     case 'tartás':
       return current === undefined
-        ? `A ${label} a múlt héten grindelt (RIR-rés), ezért most tartjuk a szettszámot — a rámpa folytatódik, amint visszaáll a tempó.`
-        : `A ${label} a múlt héten grindelt (RIR-rés), ezért most tartjuk a ${current} szettet — a rámpa folytatódik, amint visszaáll a tempó.`
+        ? `A ${name} a múlt héten nehezen ment, ezért most tartjuk a szettszámot — az emelés folytatódik, amint visszaáll a tempó.`
+        : `A ${name} a múlt héten nehezen ment, ezért most tartjuk a ${current} szettet — az emelés folytatódik, amint visszaáll a tempó.`
     case 'cél teljesítve, nincs grind':
-      return `Produktív hét: a ${label} +2 szettet kap.`
+      return `Jól ment a hét: a ${name} 2 szettel többet kap.`
     case 'deload':
-      return `Deload hét: a ${label} fél volumenen pihen.`
+      return `Pihenőhét: a ${name} fele annyi szettel pihen.`
     default:
       return `${label}: ${change.change}.`
   }

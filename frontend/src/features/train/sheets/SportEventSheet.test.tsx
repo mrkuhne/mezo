@@ -39,3 +39,20 @@ test('the trimmed location joins the payload only when non-empty', async () => {
     expect.any(Function),
   )
 })
+
+// Folyadék (mezo-n4wf5.3): the light sheet with the kit head and fields — none of the old capture / glass skin.
+test('the sheet wears the Folyadék sheet language', async () => {
+  render(<SportEventSheet onSave={vi.fn()} onClose={vi.fn()} />)
+  const sheet = document.querySelector('.sheet.fo-sheet') as HTMLElement
+  expect(sheet).not.toBeNull()
+  expect(screen.getByText('Sport · egyszeri esemény')).toBeInTheDocument()
+  expect(sheet.querySelector('.fo-shh use')?.getAttribute('href')).toBe('#t-calendar')
+  // the sport and the kind are pills; the kind is asked for volleyball only
+  expect(screen.getByRole('group', { name: 'Esemény sportja' })).toHaveClass('fo-pills')
+  expect(screen.getByRole('group', { name: 'Esemény típusa' })).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'TRX' }))
+  expect(screen.queryByRole('group', { name: 'Esemény típusa' })).not.toBeInTheDocument()
+  expect(screen.getByLabelText('Hossz · perc')).toHaveValue('90')
+  expect(sheet.querySelector('.glass, [class*="capture-"], [class*="uvs-"], [class*="uvl-"], .chip, .stepper')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Mégse' })).toHaveClass('fo-lk')
+})

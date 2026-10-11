@@ -6,16 +6,16 @@
 // (full-replace). Real-mode-only affordance: mock mode keeps the
 // static Phase-1 schedule (a read-only seed, no write path), so the
 // editor entry points are hidden there.
-// Üveg re-dress (mezo-me75u.4): the shared floating capture sheet (one rose glass
-// surface, bible U2 rule 15) with the capture header; the day editors and slots are
-// flat cells, the chips flat with the chosen one solid rose, fields flat, Mégse flat
-// and Mentés the one lit primary.
+// Folyadék (mezo-n4wf5.3): the prototype has no route for this sheet (it opens only from
+// Settings), so it is written in the same sheet language as `SHEETS.sportev` — the calendar
+// glyph head, one block per weekday (the day badge + its slots), each slot: sport pills +
+// „törlés", time + kind pills, the length stepper, place and intensity fields; a text link
+// adds a slot; „Mentés" + „Mégse". Every field and its accessible name is unchanged.
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon3D } from '@/shared/ui/clay'
-import { CaptureHeader } from '@/shared/ui/CaptureHeader'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { Box, FoSheetHead, Input, Lk, Pill, Pills, SheetActs } from '@/shared/ui/folyadek'
+import { DayNum } from '@/features/train/components/folyadek'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import type { SportScheduleSlotInput } from '@/data/train/trainApi'
 import type { VolleyballSession } from '@/data/types'
@@ -80,122 +80,62 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
   }
 
   return (
-    <Sheet onClose={onClose} labelledBy="sport-schedule-title" className="capture-sheet capture-tone-sport glass uvs-sheet">
+    <Sheet onClose={onClose} labelledBy="sport-schedule-title" className="fo-sheet es-sheet">
       {(close) => (
         <>
-          <CaptureHeader id="sport-schedule-title" title="Heti rend" eyebrow="Sport · heti terv" kind="sport" onClose={close} />
+          <FoSheetHead titleId="sport-schedule-title" icon="t-calendar" eyebrow="Sport · heti terv" title="Heti rend" onClose={close} />
 
           {/* Day editors */}
-          <div className="col gap-sm">
+          <div className="es-days">
             {DAY_ORDER.map((day, di) => (
-              <div key={day} className={days[di].length ? 'uvs-day card has' : 'uvs-day card'}>
-                <span className="uvs-day-lbl">{day}</span>
-                <div className="col gap-sm mt-sm">
-                  {days[di].map((d, si) => {
-                    const slotName = `${DAY_LABELS[day]} ${si + 1}.`
-                    return (
-                      <div key={si} className="uvs-slot">
-                        <div className="row gap-xs" role="group" aria-label={`${slotName} sport`}>
+              <div key={day} className={days[di].length ? 'es-dayed has' : 'es-dayed'}>
+                <div className="es-dayed-h">
+                  <DayNum>{day}</DayNum>
+                  <strong>{DAY_LABELS[day]}</strong>
+                  <Lk aria-label={`${DAY_LABELS[day]} sport hozzáadása`} onClick={() => addSlot(di)}>+ Sport hozzáadása</Lk>
+                </div>
+                {days[di].map((d, si) => {
+                  const slotName = `${DAY_LABELS[day]} ${si + 1}.`
+                  return (
+                    <div key={si} className="es-slot">
+                      <div className="es-slot-top">
+                        <Pills role="group" aria-label={`${slotName} sport`}>
                           {SCHEDULE_SPORT_KINDS.map((k) => (
-                            <button
+                            <Pill
                               key={k}
-                              type="button"
-                              className="chip flex-1"
-                              aria-pressed={d.sport === k}
+                              on={d.sport === k}
                               aria-label={`${slotName} ${SPORT_LABELS[k]}`}
                               onClick={() => patch(di, si, { sport: k, ...(k !== 'volleyball' ? { kind: 'training' as const } : {}) })}
                             >
                               {SPORT_LABELS[k]}
-                            </button>
+                            </Pill>
                           ))}
-                          <button
-                            type="button"
-                            className="chip"
-                            aria-label={`${slotName} slot törlése`}
-                            onClick={() => removeSlot(di, si)}
-                          >
-                            törlés
-                          </button>
-                        </div>
-                        <div className="col gap-sm mt-md">
-                          <div className="row gap-sm">
-                            <input
-                              type="time"
-                              aria-label={`${slotName} idő`}
-                              value={d.time}
-                              onChange={(e) => patch(di, si, { time: e.target.value })}
-                              className="uvs-inp is-time"
-                            />
-                            {d.sport === 'volleyball' && (
-                              <>
-                                <button
-                                  type="button"
-                                  className="chip flex-1"
-                                  aria-pressed={d.kind === 'training'}
-                                  aria-label={`${slotName} edzés`}
-                                  onClick={() => patch(di, si, { kind: 'training' })}
-                                >
-                                  edzés
-                                </button>
-                                <button
-                                  type="button"
-                                  className="chip flex-1"
-                                  aria-pressed={d.kind === 'match'}
-                                  aria-label={`${slotName} meccs`}
-                                  onClick={() => patch(di, si, { kind: 'match' })}
-                                >
-                                  meccs
-                                </button>
-                              </>
-                            )}
-                          </div>
-                          <NumberStep
-                            label="Hossz · perc"
-                            val={d.durationMin}
-                            step={15}
-                            min={15}
-                            max={360}
-                            onChange={(v) => patch(di, si, { durationMin: v })}
-                          />
-                          <input
-                            aria-label={`${slotName} helyszín`}
-                            placeholder="Helyszín"
-                            value={d.location}
-                            onChange={(e) => patch(di, si, { location: e.target.value })}
-                            className="uvs-inp"
-                          />
-                          <input
-                            aria-label={`${slotName} intenzitás`}
-                            placeholder="Intenzitás · pl. közepes"
-                            value={d.intensityLabel}
-                            onChange={(e) => patch(di, si, { intensityLabel: e.target.value })}
-                            className="uvs-inp"
-                          />
-                        </div>
+                        </Pills>
+                        <Lk aria-label={`${slotName} slot törlése`} onClick={() => removeSlot(di, si)}>törlés</Lk>
                       </div>
-                    )
-                  })}
-                  <button
-                    type="button"
-                    className="uvs-addslot uv-empty"
-                    aria-label={`${DAY_LABELS[day]} sport hozzáadása`}
-                    onClick={() => addSlot(di)}
-                  >
-                    + Sport hozzáadása
-                  </button>
-                </div>
+                      <div className="es-slot-when">
+                        <Input type="time" aria-label={`${slotName} idő`} value={d.time} onChange={(e) => patch(di, si, { time: e.target.value })} />
+                        {d.sport === 'volleyball' && (
+                          <Pills>
+                            <Pill on={d.kind === 'training'} aria-label={`${slotName} edzés`} onClick={() => patch(di, si, { kind: 'training' })}>edzés</Pill>
+                            <Pill on={d.kind === 'match'} aria-label={`${slotName} meccs`} onClick={() => patch(di, si, { kind: 'match' })}>meccs</Pill>
+                          </Pills>
+                        )}
+                      </div>
+                      <NumberStep label="Hossz · perc" val={d.durationMin} step={15} min={15} max={360} onChange={(v) => patch(di, si, { durationMin: v })} />
+                      <Input aria-label={`${slotName} helyszín`} placeholder="Helyszín" value={d.location} onChange={(e) => patch(di, si, { location: e.target.value })} />
+                      <Input aria-label={`${slotName} intenzitás`} placeholder="Intenzitás · pl. közepes" value={d.intensityLabel} onChange={(e) => patch(di, si, { intensityLabel: e.target.value })} />
+                    </div>
+                  )
+                })}
               </div>
             ))}
           </div>
 
-          {saveError && <p className="capture-warn capture-section" role="alert">Nem sikerült menteni. A módosításaid megmaradtak; próbáld újra.</p>}
-          {/* Footer */}
-          <div className="capture-actions">
-            <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="capture-save flex-1" disabled={saving} onClick={() => save(close)}>
-              <Icon3D name="t-tick" size={22} /> {saving ? 'Mentés…' : 'Mentés'}
-            </CtaPrimary>
-          </div>
+          {saveError && (
+            <div role="alert"><Box icon="t-info" color="var(--fo-bad)" title="Nem sikerült menteni."><p>A módosításaid megmaradtak; próbáld újra.</p></Box></div>
+          )}
+          <SheetActs label={saving ? 'Mentés…' : 'Mentés'} disabled={saving} onSave={() => save(close)} onCancel={close} />
         </>
       )}
     </Sheet>

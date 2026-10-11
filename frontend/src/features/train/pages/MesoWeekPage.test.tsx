@@ -33,35 +33,35 @@ function setup(path = `/train/mesocycles/${MESO_ID}/week`) {
   return router
 }
 
+const hero = () => document.querySelector('.fo-hero') as HTMLElement
+
+// Folyadék F3 (prototype vilagos/edzes.js `het()`).
 test('the hero names this week, the total and the delta vs. last week', () => {
   setup()
   expect(screen.getByText('Heti vizsgálat · 3. hét')).toBeInTheDocument()
-  expect(screen.getByText('Melyik izmod hol tart')).toBeInTheDocument()
+  expect(hero().querySelector('.fo-hero-verdict')?.textContent).toBe('8 izomcsoportot edzel ezen a héten.')
   expect(screen.getByText(/a múlt héthez képest/)).toBeInTheDocument()
 })
 
-// Was „the stat strip carries four cells" (T9 Task 5): the four `StatCell`s are gone — the
-// Titanium hero says the same four facts as ONE sentence (the owner's rule: the sentence is
-// the page), and the raw word „rámpázik" the old `up` cell carried is itself on the banned
-// list. Same contract, re-pinned on the sentence: the total, and how many muscles are
-// growing / capped / merely held.
+// The hero says the week as ONE support line (the owner's rule: the sentence is the page): how many muscles
+// are growing / capped / merely held; the total is the one big numeral.
 test('the hero sentence counts the growing, the capped and the held muscles', () => {
   setup()
-  const hero = document.querySelector('.pl-dhero')!
   // meso-hyp-04 @ W3: chest 12/14 and back 14/16 still have room; five sit at their
   // ceiling; shoulder is the maintain group.
-  expect(hero.textContent).toContain('8 izomcsoportot edzel ezen a héten')
-  expect(hero.textContent).toContain('2 izomban van még hova nőni')
-  expect(hero.textContent).toContain('5 elérte a felső értéket')
-  expect(hero.textContent).toContain('1 izmot csak szinten tartasz')
-  expect(hero.querySelector('.pl-dhero-number')?.textContent).toContain('88')
+  expect(hero().textContent).toContain('8 izomcsoportot edzel ezen a héten')
+  expect(hero().textContent).toContain('2 izomban van még hova nőni')
+  expect(hero().textContent).toContain('5 elérte a felső értéket')
+  expect(hero().textContent).toContain('1 izmot csak szinten tartasz')
+  expect(hero().querySelector('.fo-big')?.textContent).toBe('88szett ezen a héten')
 })
 
-test('the hero carries the week body map — both sides, since a week touches both', () => {
+test('the hero carries the week body — both sides, since a week touches both', () => {
   setup()
   const map = screen.getByRole('img', { name: 'A heted izomtérképe' })
-  expect(map).toHaveClass('body-map-duo')
-  expect(document.querySelector('.pl-dhero-art')).toContainElement(map)
+  expect(map).toHaveClass('ex-duo')
+  expect(hero()).toContainElement(map)
+  expect([...map.querySelectorAll('.ex-body')].map((b) => b.getAttribute('data-view'))).toEqual(['front', 'back'])
 })
 
 test('one row per arc muscle, with landmarks, no percentages', () => {
@@ -86,20 +86,41 @@ test('the rows rank by room to the ceiling, the capped ones last', () => {
 
 // The three verdict SENTENCES the slice pins — each prefixed by the Hungarian tier word
 // (tierLabel), never a raw English tier and never a bare number pair.
-test('each row says its verdict in words, prefixed by the tier', () => {
+test('each row says its tier as a pill and its verdict in words', () => {
   setup()
-  const say = (label: string) =>
-    screen.getByRole('button', { name: `${label} részletek` }).querySelector('.pl-item-say')?.textContent
-  expect(say('Hát')).toBe('Építés · Még 2 szett fér bele.')
-  expect(say('Váll')).toBe('Tartás · Ezt most szinten tartod.')
-  expect(say('Bicepsz')).toBe('Építés · Elérte a felső értéket ebben a tervben.')
+  const row = (label: string) => screen.getByRole('button', { name: `${label} részletek` })
+  const say = (label: string) => row(label).querySelector('small')?.textContent
+  const tier = (label: string) => row(label).querySelector('.fo-st')
+  expect(say('Hát')).toBe('Még 2 szett fér bele.')
+  expect(tier('Hát')?.textContent).toBe('Építés')
+  expect(say('Váll')).toBe('Ezt most szinten tartod.')
+  expect(tier('Váll')?.textContent).toBe('Tartás')
+  expect(tier('Váll')).toHaveClass('q')
+  expect(say('Bicepsz')).toBe('Elérte a felső értéket ebben a tervben.')
   expect(document.body.textContent).not.toMatch(/Emphasize|Maintain|Grow/)
 })
 
-// The one thing on this page that talks about the FUTURE — nothing else carries it.
-test('the live-rollover banner stays', () => {
+// The vessel's rim is the ceiling of this plan; the lower threshold stands in it as a line — and a muscle
+// you only hold (threshold === ceiling) carries no line at all.
+test('each row draws where the muscle stands against its ceiling, the lower threshold marked', () => {
   setup()
-  expect(screen.getByText(/Élő rendszer/)).toBeInTheDocument()
+  const bar = (label: string) => screen.getByRole('button', { name: `${label} részletek` }).querySelector('.fo-wlv')!
+  // back: 14 of ceiling 16 → 87.5%; mev 10 of 16 → 62.5%
+  expect((bar('Hát').querySelector('i') as HTMLElement).style.width).toBe('87.5%')
+  expect((bar('Hát').querySelector('u') as HTMLElement).style.left).toBe('62.5%')
+  expect(bar('Váll').querySelector('u')).toBeNull()
+  expect(screen.getByText('ennyitől fejlődik')).toBeInTheDocument()
+  expect(screen.getByText('az edény széle: eddig mész el')).toBeInTheDocument()
+})
+
+// The one thing on this page that talks about the FUTURE — nothing else carries it.
+test('the Monday rollover card stays', () => {
+  setup()
+  expect(screen.getByText('Hétfőtől változik')).toBeInTheDocument()
+  const row = screen.getByText('A következő heti váltás hétfő hajnalban').closest('.fo-row')!
+  // five muscles, then „+N"
+  expect(row.querySelector('small')?.textContent).toMatch(/^(.+ · ){5}\+3$/)
+  expect(document.body.textContent).not.toMatch(/Élő rendszer|görgetés/)
 })
 
 test('tapping a row navigates to the muscle page', async () => {
@@ -115,7 +136,7 @@ test('a mesocycle with no volume profile shows the ghost state, not a broken mos
 
 test('an unknown mesocycle id says so instead of crashing', () => {
   setup('/train/mesocycles/nope/week')
-  expect(screen.getByText('Ez a mesociklus nem található.')).toBeInTheDocument()
+  expect(screen.getByText('Ez az edzésterv nem található.')).toBeInTheDocument()
 })
 
 // ── Real mode ────────────────────────────────────────────────────────────────
@@ -230,15 +251,15 @@ describe('MesoWeekPage (real mode)', () => {
       ),
     )
     setup(`/train/mesocycles/${REAL_MESO_ID}/week`)
-    const hero = await screen.findByText('Heti vizsgálat · 3. hét')
-    const dhero = hero.closest('.pl-dhero')!
+    const label = await screen.findByText('Heti vizsgálat · 3. hét')
+    const dhero = label.closest('.fo-hero')!
     // Counted as capped (statusTone 'gold'), never as „van még hova nőni" — a room-based
     // count would have said the opposite, disagreeing with the gold heat the map paints.
     expect(dhero.textContent).toContain('1 izomcsoportot edzel ezen a héten.')
     expect(dhero.textContent).toContain('1 elérte a felső értéket')
     expect(dhero.textContent).not.toContain('van még hova nőni')
     // Its own row gets the grind-held verdict, not the plain „Még N szett fér bele."
-    const say = screen.getByRole('button', { name: 'Mell részletek' }).querySelector('.pl-item-say')?.textContent
-    expect(say).toBe('Építés · Most szinten tartod — múlt héten nehezen ment.')
+    const say = screen.getByRole('button', { name: 'Mell részletek' }).querySelector('small')?.textContent
+    expect(say).toBe('Most szinten tartod — múlt héten nehezen ment.')
   })
 })

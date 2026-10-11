@@ -2,9 +2,11 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-10-10
+updated: 2026-10-11
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs, napom]
 # 8 load-bearing paths. A napom's entry points are pages (NapomPage), components (napom/*),
+
+> **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** The Nap pages changed only where F3 folded shared pieces into the kit: the standalone back pill is `.fo-backpill` (local `.nb-back` removed), a disabled text link dims through the kit (`.fo-lk:disabled`), `Section` takes a `className`. `WelcomeBackSheet` (opened from the kímélő card) now wears the Folyadék sheet look. Behaviour unchanged.
 # logic (napom.ts), data/me/liveDay.ts, router.tsx and DayReviewWarmupJob. TitleBar.tsx is
 # settings.md's; backend biometrics (check-in included) is me.md's — both named in the body.
 # quickinput stays: this is its only feature doc (CODEMAP would orphan it).

@@ -563,71 +563,74 @@ test('a részletek fejlécében a pont-chip és a mikor-kártya nem fedi egymás
   expect(boxes.score!.bottom).toBeLessThanOrEqual(boxes.when!.top + 1)
 })
 
-// ── The ⓘ explain button's hit box, off the glyph's LEADING edge (mezo-b516k fix round 1) ──
-// `.pl-info::after` gives the 22px glyph a 44px hit box (the house touch-target rule). A
-// box CENTRED on the glyph overflowed 11px per side while `.pl-h3`/`.ld-h3` puts only a
-// 7px gap between the heading text and the button, so the box reached ~4px INTO the
-// heading's own text — a tap meant for the heading could open the explain glass instead.
-// jsdom computes no layout, so the unit-level guard (InfoButton.headingHitArea.test.tsx)
-// can only prove the WIRING is correct, never the geometry. This is the real probe: at a
-// real phone viewport, `elementFromPoint` at the heading text's own right edge must
-// resolve to the heading, and at the glyph's centre must resolve to the button.
-test('the ⓘ hit box overhangs the button, never the heading text (mezo-b516k fix round 1)', async ({ page }) => {
+// ── The explain link's hit area (mezo-b516k fix round 1; rewritten in Folyadék F3, mezo-n4wf5.3) ──
+// This probe used to pin a round ⓘ glyph inside a heading (`.pl-info` in `h3.ld-h3`), whose 44px
+// hit box must not reach into the heading's own text. That decision left with the approved Folyadék
+// prototype: the explain trigger is now the text link „Mit mutat a sáv?" in the card's action row,
+// under a quiet note and the last group row. The new truth, on the real page at a phone viewport:
+// the link is visible; `elementFromPoint` at its centre resolves to it; its touch area (the kit's
+// centred `.fo-lk::after`) is at least 44px tall; and that area reaches neither the row above nor
+// the note — a tap on either still lands on its own element.
+// jsdom computes no layout, so the unit-level guard (InfoButton.headingHitArea.test.tsx) can only
+// prove the WIRING; this is the geometry.
+test('the explain link „Mit mutat a sáv?" has a 44px hit area that overlaps neither the row above nor the note (mezo-n4wf5.3)', async ({ page }) => {
   await page.setViewportSize({ width: 393, height: 852 })
   await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
   await page.goto('/train/week')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
-  // The app-root StartupSplash overlays the phone frame for 3-5 REAL seconds on every
-  // fresh load (StartupSplash.tsx) — `inert`/`aria-hidden`, but still the TOPMOST
-  // painted layer, so `elementFromPoint` hits its artwork instead of the page beneath
-  // until it unmounts. Other checks in this file outlive it incidentally (several
-  // locator round-trips); this probe needs the app interactive FAST, so it waits for
-  // the splash to actually leave the DOM first.
+  // The app-root StartupSplash overlays the phone frame for 3-5 REAL seconds on every fresh load
+  // (StartupSplash.tsx) — `inert`/`aria-hidden`, but still the TOPMOST painted layer, so
+  // `elementFromPoint` hits its artwork instead of the page beneath until it unmounts.
   await page.waitForSelector('.startup-stage', { state: 'detached', timeout: 8000 }).catch(() => {})
 
-  const heading = page.locator('h3.ld-h3', { hasText: 'Izomcsoportok ezen a héten' })
-  await heading.scrollIntoViewIfNeeded()
-  const info = heading.locator('.pl-info')
-  await expect(info).toBeVisible()
+  const link = page.getByRole('button', { name: 'Mit mutat a sáv? — mit jelent?' })
+  await link.scrollIntoViewIfNeeded()
+  await expect(link).toBeVisible()
+  await expect(link).toHaveText('Mit mutat a sáv?')
+  // centre it, so neither sticky bar covers the link or its neighbours
+  await link.evaluate((el) => el.scrollIntoView({ block: 'center' }))
 
-  const probe = await page.evaluate(() => {
-    const headingEl = Array.from(document.querySelectorAll('h3.ld-h3'))
-      .find((h) => h.textContent?.startsWith('Izomcsoportok ezen a héten')) as HTMLElement
-    const btn = headingEl.querySelector('.pl-info') as HTMLElement
-    // The heading's OWN text lives in its first child text node (the button is the
-    // second child). A Range over just the text's LAST character gives an unambiguous
-    // point inside a real glyph — its own centre, not an edge a sub-pixel device-scale
-    // rounding could tip onto a neighbour — so the probe is a solid "this is definitely
-    // still heading text" point rather than a hairline boundary case.
-    const textNode = Array.from(headingEl.childNodes).find((n) => n.nodeType === Node.TEXT_NODE)!
-    const length = (textNode.textContent ?? '').length
+  const probe = await link.evaluate((btn: HTMLElement) => {
+    const card = btn.closest('.fo-card') as HTMLElement
+    const rows = Array.from(card.querySelectorAll<HTMLElement>('.fo-row'))
+    const lastRow = rows[rows.length - 1]
+    const note = card.querySelector<HTMLElement>('.fo-note')!
+    const b = btn.getBoundingClientRect()
+    const after = getComputedStyle(btn, '::after')
+    const hitH = parseFloat(after.height)
+    const hitW = parseFloat(after.width)
+    const cx = b.left + b.width / 2
+    const cy = b.top + b.height / 2
+    const hit = { left: cx - hitW / 2, right: cx + hitW / 2, top: cy - hitH / 2, bottom: cy + hitH / 2 }
+    const rowBox = lastRow.getBoundingClientRect()
+    // the note's own text: a Range over its text node gives the painted lines, not the block
     const range = document.createRange()
-    range.setStart(textNode, length - 1)
-    range.setEnd(textNode, length)
-    const textBox = range.getBoundingClientRect()
-    const btnBox = btn.getBoundingClientRect()
-    const textEdgeX = textBox.left + textBox.width / 2
-    const textEdgeY = textBox.top + textBox.height / 2
-    const glyphCenterX = btnBox.left + btnBox.width / 2
-    const glyphCenterY = btnBox.top + btnBox.height / 2
-    const atTextEdge = document.elementFromPoint(textEdgeX, textEdgeY)
-    const atGlyphCenter = document.elementFromPoint(glyphCenterX, glyphCenterY)
-    const tagOf = (el: Element | null) =>
-      el ? `${el.tagName}${el.className ? '.' + String(el.className).replace(/\s+/g, '.') : ''}` : 'null'
+    range.selectNodeContents(note)
+    const lines = Array.from(range.getClientRects())
+    const lastLine = lines[lines.length - 1]
+    const at = (x: number, y: number) => document.elementFromPoint(x, y)
+    const tagOf = (el: Element | null) => (el ? `${el.tagName}.${String(el.className).replace(/\s+/g, '.')}` : 'null')
+    const atCentre = at(cx, cy)
+    const atNote = at(lastLine.left + Math.min(20, lastLine.width / 2), lastLine.top + lastLine.height / 2)
+    const atRow = at(rowBox.left + rowBox.width / 2, rowBox.bottom - 4)
     return {
-      textEdgeX, textEdgeY, glyphCenterX, glyphCenterY,
-      atTextEdgeIsHeading: atTextEdge === headingEl || headingEl.contains(atTextEdge),
-      atTextEdgeIsButton: atTextEdge === btn || btn.contains(atTextEdge),
-      atGlyphCenterIsButton: atGlyphCenter === btn || btn.contains(atGlyphCenter),
-      atTextEdgeTag: tagOf(atTextEdge),
-      atGlyphCenterTag: tagOf(atGlyphCenter),
+      hitH, hitW, hitTop: hit.top, rowBottom: rowBox.bottom, noteBottom: lastLine.bottom,
+      centreIsLink: atCentre === btn || btn.contains(atCentre), centreTag: tagOf(atCentre),
+      noteIsLink: atNote === btn || btn.contains(atNote), noteIsNote: !!atNote && note.contains(atNote), noteTag: tagOf(atNote),
+      rowIsLink: atRow === btn || btn.contains(atRow), rowIsRow: !!atRow && lastRow.contains(atRow), rowTag: tagOf(atRow),
     }
   })
 
-  expect(probe.atTextEdgeIsButton, `heading's own text edge (${probe.textEdgeX}, ${probe.textEdgeY}) hit the ⓘ button — the hit box still overhangs the heading`).toBe(false)
-  expect(probe.atTextEdgeIsHeading, `heading's own text edge (${probe.textEdgeX}, ${probe.textEdgeY}) resolved to ${probe.atTextEdgeTag}, not the heading`).toBe(true)
-  expect(probe.atGlyphCenterIsButton, `the glyph's own centre (${probe.glyphCenterX}, ${probe.glyphCenterY}) resolved to ${probe.atGlyphCenterTag}, not the ⓘ button`).toBe(true)
+  expect(probe.centreIsLink, `the link's own centre resolved to ${probe.centreTag}, not the link`).toBe(true)
+  expect(probe.hitH, "the link's touch area is under 44px tall").toBeGreaterThanOrEqual(44)
+  expect(probe.hitW, "the link's touch area is under 44px wide").toBeGreaterThanOrEqual(44)
+  expect(probe.hitTop, `the touch area (top ${probe.hitTop}) reaches into the row above (bottom ${probe.rowBottom})`).toBeGreaterThanOrEqual(probe.rowBottom)
+  expect(probe.hitTop, `the touch area (top ${probe.hitTop}) reaches into the note's text (bottom ${probe.noteBottom})`).toBeGreaterThanOrEqual(probe.noteBottom - 0.5)
+  expect(probe.noteIsLink, "a tap on the note's text hit the explain link").toBe(false)
+  expect(probe.noteIsNote, `the note's own text resolved to ${probe.noteTag}, not the note`).toBe(true)
+  expect(probe.rowIsLink, 'a tap on the last group row hit the explain link').toBe(false)
+  expect(probe.rowIsRow, `the last group row resolved to ${probe.rowTag}, not the row`).toBe(true)
 })
 
 // ── A napom (mezo-yjzhw.5): today live, and a closed/scored day, at 320px ────────────────────
@@ -803,14 +806,14 @@ test('Edzés Mai · the readiness card stays contained and its taps are reachabl
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
 
-  const card = page.locator('.trd')
+  const card = page.locator('.em-ready')
   await card.scrollIntoViewIfNeeded()
   await expect(card).toBeVisible()
   const box = await page.evaluate(() => {
-    const el = document.querySelector('.trd') as HTMLElement
+    const el = document.querySelector('.em-ready') as HTMLElement
     const sc = document.querySelector('.screen-content') as HTMLElement
     const r = el.getBoundingClientRect()
-    const children = Array.from(el.querySelectorAll('.trd-chip, .trd-care, .trd-pill')) as HTMLElement[]
+    const children = Array.from(el.querySelectorAll('.fo-vial, .em-care, .fo-btn')) as HTMLElement[]
     return {
       cardOverflow: el.scrollWidth - el.clientWidth,
       pageOverflow: sc.scrollWidth - sc.clientWidth,

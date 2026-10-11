@@ -5,7 +5,8 @@
 // Instagram reel/post/tv permalink → instagram.com/{kind}/{code}/embed (9:16,
 // since reels are portrait). The iframe lazy-mounts only after the user opens
 // it. Renders nothing when there is no url or it is unrecognized.
-// Used in the workout runner, the exercise browser sheet, and the picker.
+// Used in the workout runner, the exercise browser sheet, and the picker (the picker asks for the
+// Folyadék face with `fo`).
 // ============================================================
 import { useState } from 'react'
 
@@ -48,10 +49,25 @@ export function videoEmbed(url: string | null | undefined): EmbedTarget | null {
   return null
 }
 
-export function VideoDemo({ url }: { url: string | null | undefined }) {
+/** `fo` (opt-in, the Folyadék exercise picker): the toggle is the kit's text link and the player a rounded
+ *  vessel — two siblings without a wrapper, so the caller's row lays them out (`.ee-demo`, `.ee-vid`).
+ *  Without it the component renders exactly as before (the in-workout menu's and the catalogue's look). */
+export function VideoDemo({ url, fo }: { url: string | null | undefined; fo?: boolean }) {
   const [open, setOpen] = useState(false)
   const embed = videoEmbed(url)
   if (!embed) return null
+  if (fo) {
+    return (
+      <>
+        <button type="button" className="fo-lk ee-demo" aria-expanded={open} onClick={() => setOpen((v) => !v)}>▶ Demo</button>
+        {open && (
+          <div className="ee-vid" style={{ aspectRatio: embed.aspectRatio }}>
+            <iframe title="Demo videó" loading="lazy" allowFullScreen src={embed.src} />
+          </div>
+        )}
+      </>
+    )
+  }
   return (
     <div className="col gap-sm">
       <button

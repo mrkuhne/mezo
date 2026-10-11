@@ -1,55 +1,75 @@
 // ============================================================
-// Mezo · RunSessionCard — pure presentational card for ONE prescribed
-// running session (sprint / pyramid / steady). Üveg re-dress (mezo-me75u.4,
-// prototype uveg-edzes-body.html `futas('het')` `.rsc`): a sky glass card —
-// the tag line (stag-run FUTÁS + day · time, the RPE target as a flat chip),
-// the session name (+ a lit MA pill), flat segment chips tinted by role, and
-// the CTA: a lit sky „Naplózd ›"/„Pótold ›" pill, a quiet „Naplózás ›" for a
-// future day, or KÉSZ with the 3D tick. No hooks — props in, markup out.
+// Mezo · RunSessionCard — pure presentational block for ONE prescribed
+// running session (sprint / pyramid / steady). No hooks — props in, markup out.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `futas('het')` `.vs-log` + `ivl`):
+// a row (run glyph, the session's name + a „Ma" pill, day · time · RPE target, and the
+// state on the right: „Kész", a quiet „Naplózás ›" for a future day, or the
+// „Naplózd ›" / „Pótold ›" link), then the interval tube — the session as one vessel
+// whose level follows the pace — and the segment tags.
 // ============================================================
 import type { CSSProperties } from 'react'
 import type { RunPrescribedSession, RunSegment } from '@/data/train/runningApi'
 import { DAY_ORDER } from '@/data/train/train'
-import { Icon3D } from '@/shared/ui/clay'
-
-// Segment chips are flat (they sit inside the glass): work = sky-tinted,
-// warmup/cooldown = amber-tinted, rest/notes = neutral.
-function Pill({ text, tone }: { text: string; tone: 'work' | 'warm' | 'rest' }) {
-  return <span className={`uvs-chip is-${tone}`}>{text}</span>
-}
+import { Lk, Row, St, Tags } from '@/shared/ui/folyadek'
 
 const secLabel = (sec: number) => `${Math.round(sec / 60)}p`
 const find = (segs: RunSegment[], type: RunSegment['type']) => segs.find((s) => s.type === type)
 
-// Build the summary pills for a session from its segments + kind.
-function segmentPills(session: RunPrescribedSession): { key: string; text: string; tone: 'work' | 'warm' | 'rest' }[] {
+/** How high the liquid stands per segment kind (prototype `ivSprint` / `ivPyr`): the sprint is full, the walk a sliver. */
+const LEVEL: Record<string, number> = { warmup: 0.4, work: 1, rest: 0.18, cooldown: 0.3 }
+const KIND: Record<string, 'w' | 's' | 'r'> = { warmup: 'w', work: 's', rest: 'r', cooldown: 'w' }
+/** Warm-up and cool-down are minutes long; in the tube they take the width of a minute so the intervals stay readable. */
+const EDGE_SEC = 60
+
+/**
+ * The interval tube (prototype `ivl`): one flex cell per segment, width = its seconds, level = its pace.
+ * A sprint stores ONE work + rest pair and a round count — `rounds` repeats the pair.
+ */
+export function IntervalTube({ segments, rounds }: { segments: RunSegment[]; rounds?: number | null }) {
+  const edge = (g: RunSegment) => g.type === 'warmup' || g.type === 'cooldown'
+  const lead = segments.filter((g, i) => edge(g) && i === 0)
+  const tail = segments.filter((g, i) => edge(g) && i > 0)
+  const mid = segments.filter((g) => !edge(g))
+  const body = rounds && rounds > 1 && mid.length <= 2 ? Array.from({ length: rounds }, () => mid).flat() : mid
+  const cells = [...lead, ...body, ...tail]
+  if (cells.length === 0) return null
+  return (
+    <span className="es-ivl" aria-hidden="true">
+      {cells.map((g, i) => (
+        <i key={i} className={KIND[g.type] ?? 'r'}
+          style={{ flex: Math.max(1, edge(g) ? Math.min(g.durationSec, EDGE_SEC) : g.durationSec), '--h': `${(LEVEL[g.type] ?? 0.18) * 100}%` } as CSSProperties} />
+      ))}
+    </span>
+  )
+}
+
+// Build the summary tags for a session from its segments + kind.
+function segmentTags(session: RunPrescribedSession): string[] {
   const segs = session.segments
   const warmup = find(segs, 'warmup')
   const cooldown = find(segs, 'cooldown')
-  const pills: { key: string; text: string; tone: 'work' | 'warm' | 'rest' }[] = []
+  const tags: string[] = []
 
-  if (warmup) pills.push({ key: 'warm', text: `${secLabel(warmup.durationSec)} bemelegítés`, tone: 'warm' })
+  if (warmup) tags.push(`${secLabel(warmup.durationSec)} bemelegítés`)
 
   if (session.kind === 'pyramid') {
     const work = segs.filter((s) => s.type === 'work')
-    if (work.length) pills.push({ key: 'work', text: `${work.map((s) => s.durationSec).join('／')} mp`, tone: 'work' })
+    if (work.length) tags.push(`${work.map((s) => s.durationSec).join('／')} mp`)
   } else {
     const work = find(segs, 'work')
     const rest = find(segs, 'rest')
-    if (work) pills.push({ key: 'work', text: `${session.rounds ?? ''}${session.rounds ? '× · ' : ''}${work.durationSec}mp`, tone: 'work' })
-    if (rest) pills.push({ key: 'rest', text: `${rest.durationSec}mp séta`, tone: 'rest' })
+    if (work) tags.push(`${session.rounds ?? ''}${session.rounds ? '× · ' : ''}${work.durationSec}mp`)
+    if (rest) tags.push(`${rest.durationSec}mp séta`)
   }
 
   // Pyramid rest is derived (segment × 2, wired into the block draft) — the
-  // card surfaces that as an honest note pill instead of restating a number.
-  if (session.kind === 'pyramid' && segs.some((s) => s.type === 'rest')) {
-    pills.push({ key: 'restnote', text: 'pihenő = szakasz × 2', tone: 'rest' })
-  }
-  if (cooldown) pills.push({ key: 'cool', text: `${secLabel(cooldown.durationSec)} levezetés`, tone: 'warm' })
-  return pills
+  // card surfaces that as an honest note tag instead of restating a number.
+  if (session.kind === 'pyramid' && segs.some((s) => s.type === 'rest')) tags.push('pihenő = szakasz × 2')
+  if (cooldown) tags.push(`${secLabel(cooldown.durationSec)} levezetés`)
+  return tags
 }
 
-/** MA → Naplózd (today, not yet logged) · múlt → Pótold · jövő → disabled grey · done → KÉSZ. */
+/** MA → Naplózd (today, not yet logged) · múlt → Pótold · jövő → quiet text · done → Kész. */
 export type RunCtaState = 'today' | 'past' | 'future' | 'done'
 
 export function RunSessionCard({ session, ctaState, onLog }: {
@@ -59,38 +79,20 @@ export function RunSessionCard({ session, ctaState, onLog }: {
 }) {
   const dayLabel = DAY_ORDER[session.dayOfWeek] ?? ''
   const { min, max } = session.rpeTarget
-  // High-intensity sprint targets (min >= 9) get the coral chip; otherwise amber.
-  const hot = session.kind === 'sprint' && min >= 9
+  const sub = [dayLabel, session.timeOfDay, `RPE ${min}–${max}`].filter(Boolean).join(' · ')
 
   return (
-    <article className="uvs-rsc glass" style={{ '--c': 'var(--dv-sky)' } as CSSProperties}>
-      <div className="uvs-rsc-top">
-        <span className="uvs-tagl">
-          <span className="stag stag-run">FUTÁS</span>
-          <em>{dayLabel}{session.timeOfDay ? ` · ${session.timeOfDay}` : ''}</em>
-        </span>
-        <span className={hot ? 'uvs-chip is-rpe is-hot' : 'uvs-chip is-rpe'}>RPE {min}–{max}</span>
-      </div>
-      <div className="uvs-rsc-name">
-        <strong>{session.label}</strong>
-        {ctaState === 'today' && <span className="uvs-tag is-lit">MA</span>}
-      </div>
-      <div className="uvs-chips">
-        {segmentPills(session).map((p) => (
-          <Pill key={p.key} text={p.text} tone={p.tone} />
-        ))}
-      </div>
-      <div className="uvs-rsc-cta">
-        {ctaState === 'done' ? (
-          <span className="uvs-ok"><Icon3D name="t-tick" size={18} />KÉSZ</span>
-        ) : ctaState === 'future' ? (
-          <span className="uvs-later">Naplózás ›</span>
-        ) : (
-          <button type="button" className="uvs-pill" onClick={onLog}>
-            {ctaState === 'today' ? 'Naplózd ›' : 'Pótold ›'}
-          </button>
-        )}
-      </div>
-    </article>
+    <div className="fo-log es-log">
+      <Row
+        icon="t-run"
+        title={<>{session.label}{ctaState === 'today' && <> <St tone="plan">Ma</St></>}</>}
+        sub={sub}
+        right={ctaState === 'done' ? <St tone="ok">Kész</St>
+          : ctaState === 'future' ? <span className="es-later">Naplózás ›</span>
+          : <Lk onClick={onLog}>{ctaState === 'today' ? 'Naplózd ›' : 'Pótold ›'}</Lk>}
+      />
+      <IntervalTube segments={session.segments} rounds={session.kind === 'sprint' ? session.rounds : null} />
+      <Tags items={segmentTags(session)} />
+    </div>
   )
 }

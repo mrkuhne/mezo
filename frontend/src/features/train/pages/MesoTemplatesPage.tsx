@@ -1,34 +1,18 @@
 // ============================================================
 // Mezo · MesoTemplatesPage — „Sablonjaid" at /train/templates.
-//
-// Train Titanium T10 Task 3 (mezo-88iwa.11): THE REFACE. Was the DS-era page-header +
-// template poster-card list (mezo-tlwa/mezo-3a9a, since removed); this is the Titanium list,
-// ported from the prototype's `planLibraryTemplates` + `templateCard`
-// (docs/design_2.0/prototypes/companion-titanium/plan-pages.js:393-434):
-//   `.pl-lhero.is-slim` — a slim poster hero with the back pill DOCKED INSIDE it (the
-//                   Task 2 idiom, `.pl-lhero > .mz-backbtn`) pointing back at the
-//                   „Edzéstervek" landing, one plain sentence, and a REAL count fact
-//                   („N sablon · N futam indult belőlük").
-//   `.pl-lib-card`  — one card per template: name + split, the three fact boxes (hét,
-//                   nap hetente, ~perc when the week actually carries sessions), the
-//                   muscles as `MuscleChip` minis, and ONE plain line about where the
-//                   template stands (`templateUseLine` over `templateStory`).
-//   `.pl-lib-new`   — the create affordance the DS page carried twice (the head's „+ Új"
-//                   chip and the dashed footer CTA), kept as the one loud button → the
-//                   planner. Nothing else was lost: a card tap now opens the template's
-//                   own READ-FIRST page (`/train/templates/:id`), from which the editor,
-//                   the start sheet and the lifecycle pair (Duplikálás / Törlés) hang —
-//                   the list itself carries no destructive action any more.
-//
-// Language: plain Hungarian, no jargon. Clay icons + anatomy chips, never emoji.
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `sablonok()`): the hero counts the
+// templates and the runs started from them (real counts) and carries the one create door
+// („Új terv összeállítása" → the planner); then ONE card, a block per template: name + split,
+// the week as seven capsules (a training day is a full one), the muscles as overlapping chips,
+// the three facts (hét, nap hetente, ~perc when the week actually carries sessions) and ONE
+// plain line about where the template stands (`templateUseLine` over `templateStory`).
+// A block opens the template's own READ-FIRST page (`/train/templates/:id`), from which the
+// editor, the start sheet and the lifecycle pair hang — the list carries no destructive action.
 // ============================================================
-import type { CSSProperties } from 'react'
+import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { MuscleChip } from '@/features/train/components/MuscleChip'
+import { MuscleStack } from '@/features/train/components/folyadek'
 import {
   splitLabel,
   templateSessionMinutes,
@@ -37,18 +21,22 @@ import {
   templateWeekSets,
   trainingDayCount,
 } from '@/features/train/logic/libraryStory'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { isOffDay } from '@/features/train/logic/offDay'
 import MesoTemplatesSkeleton from '@/features/train/pages/MesoTemplatesSkeleton'
-import { FrameBack } from '@/shared/ui/folyadek'
+import {
+  Btn, Caps, Card, Chev, Facts, FrameBack, Hero, Note, Page, Section, Tags, useFrameTitle,
+} from '@/shared/ui/folyadek'
 
-const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
+/** The capsule's caption: the weekday's shortest form (the day keys are Hét … Vas). */
+const DAY_CAP: Record<string, string> = { Hét: 'H', Kedd: 'K', Sze: 'Sze', Csü: 'Cs', Pén: 'P', Szo: 'Szo', Vas: 'V' }
 
 export function MesoTemplatesPage() {
   const { templates, pending } = useMesoTemplates()
   const { mesocycles, workoutPending } = useTrain()
   const navigate = useNavigate()
+  useFrameTitle({ title: 'Sablonjaid', eyebrow: 'Edzéstervek' })
 
-  // Real-mode loading: both queries feed the cards (the story line is a read across the
+  // Real-mode loading: both queries feed the blocks (the story line is a read across the
   // runs), so wait them both out behind the layout-matched skeleton. Mock seeds
   // synchronously → never shows. After all hooks.
   if (pending || workoutPending) return <MesoTemplatesSkeleton />
@@ -56,96 +44,75 @@ export function MesoTemplatesPage() {
   const runsOut = templates.reduce((n, t) => n + t.runCount, 0)
 
   return (
-    <MozaikPage tone="gold">
-      <EntranceGroup>
-        <header
-          className="pl-dhero pl-lhero is-slim rise"
-          style={{ '--mus-color': 'var(--tag-gym)', ...delay(40) } as CSSProperties}
-        >
-          <span className="pl-dhero-wash" aria-hidden="true" />
-          <FrameBack className="mz-backbtn" history fallback="/train/mesocycles/konyvtar">
-            ‹ Edzéstervek
-          </FrameBack>
-          <span className="pl-lhero-art" aria-hidden="true">
-            <Icon3D name="t-template" size={60} className="icon" />
-            <i />
-            <i />
-          </span>
-          <span className="pl-dhero-tag tr-eyebrow">Sablonjaid</span>
-          <h2>Amiből indíthatsz</h2>
-          <p className="pl-say">Egy sablon a recept — futamot indítasz belőle, és az már a te terved.</p>
-          <div className="pl-poster-foot">
-            <span>{templates.length} sablon</span>
-            <span>{runsOut} futam indult belőlük</span>
-          </div>
-        </header>
+    <Page className="er-page">
+      <FrameBack className="fo-backpill" history fallback="/train/mesocycles/konyvtar">
+        ‹ Edzéstervek
+      </FrameBack>
+      <Hero
+        art="t-template"
+        label="Sablonjaid"
+        verdict={templates.length > 0 ? `${templates.length} sablonból indíthatsz.` : 'Még nincs sablonod.'}
+        sub="Egy sablon a recept — futamot indítasz belőle, és az már a te terved."
+        actions={(
+          <>
+            {/* The create affordance — the one loud button. */}
+            <Btn onClick={() => navigate('/train/mesocycles/new')}>Új terv összeállítása</Btn>
+            <Note>Sablonból indulsz, vagy nulláról építed</Note>
+          </>
+        )}
+      >
+        <Tags items={[
+          { icon: 't-template', label: `${templates.length} sablon` },
+          { icon: 't-play', label: `${runsOut} futam indult belőlük` },
+        ]} />
+      </Hero>
 
-        <PageBody className="pl-lib pl-sub tv-tpls">
-          {templates.length === 0 && (
-            <p className="pl-foot-say rise" style={delay(90)}>
-              Még nincs sablonod — az elsőt alább állíthatod össze.
-            </p>
-          )}
-
-          {templates.map((t, i) => {
-            const days = trainingDayCount(t)
-            const minutes = templateSessionMinutes(t)
-            const muscles = templateWeekSets(t)
-            const split = splitLabel(t)
-            const story = templateStory(t.id, t.title, mesocycles)
-            return (
-              <button
-                key={t.id}
-                type="button"
-                className="pl-lib-card glass rise"
-                style={delay(90 + i * 30)}
-                aria-label={`Sablon · ${t.title}`}
-                onClick={() => navigate(`/train/templates/${t.id}`)}
-              >
-                <span className="pl-lib-head">
+      <Section n={1} title="Sablonok · egy kapszula egy nap" />
+      <Card>
+        {templates.length === 0 && <Note className="er-none">Még nincs sablonod — az elsőt fent állíthatod össze.</Note>}
+        {templates.map((t) => {
+          const week = t.days ?? []
+          const days = trainingDayCount(t)
+          const minutes = templateSessionMinutes(t)
+          const muscles = templateWeekSets(t)
+          const split = splitLabel(t)
+          const story = templateStory(t.id, t.title, mesocycles)
+          const facts: [ReactNode, ReactNode][] = [[t.weeks, 'hét'], [days, 'nap hetente']]
+          if (minutes > 0) facts.push([`~${minutes}`, 'perc'])
+          return (
+            <button
+              key={t.id}
+              type="button"
+              className="er-tpl"
+              aria-label={`Sablon · ${t.title}`}
+              onClick={() => navigate(`/train/templates/${t.id}`)}
+            >
+              <span className="er-tpl-hd">
+                <span className="g">
                   <strong>{t.title}</strong>
-                  {split && <em>{split}</em>}
-                  <b aria-hidden="true">›</b>
+                  {split && <small>{split}</small>}
                 </span>
-                <span className="pl-day-facts">
-                  <i><Icon3D name="t-calendar" size={22} className="icon" /><b>{t.weeks}</b><small>hét</small></i>
-                  <i><Icon3D name="t-dumbbell" size={22} className="icon" /><b>{days}</b><small>nap hetente</small></i>
-                  {minutes > 0 && (
-                    <i><Icon3D name="t-clock" size={22} className="icon" /><b>~{minutes}</b><small>perc</small></i>
+                <Chev />
+              </span>
+              {(week.length > 0 || muscles.length > 0) && (
+                <span className="er-tpl-wk">
+                  {week.length > 0 && (
+                    <Caps
+                      n={week.length}
+                      on={week.flatMap((d, i) => (isOffDay(d) ? [] : [i]))}
+                      size="wide"
+                      labels={week.map((d) => DAY_CAP[d.day] ?? d.day)}
+                    />
                   )}
+                  {muscles.length > 0 && <MuscleStack muscles={muscles.map((m) => m.colorMuscle)} max={4} />}
                 </span>
-                {muscles.length > 0 && (
-                  <span className="pl-lib-mus">
-                    {muscles.map((m) => (
-                      <i key={m.group} style={{ '--mus-color': muscleColor(m.colorMuscle).rail } as CSSProperties}>
-                        <MuscleChip token={m.colorMuscle} size={21} />
-                      </i>
-                    ))}
-                  </span>
-                )}
-                <small className="pl-lib-note">{templateUseLine(story, t.runCount)}</small>
-              </button>
-            )
-          })}
-
-          {/* The create affordance, kept from the DS page (its „+ Új" chip and dashed
-              footer CTA were the same door) — one loud button now. */}
-          <button
-            type="button"
-            className="pl-lib-new rise"
-            style={delay(120 + templates.length * 30)}
-            aria-label="Új terv összeállítása"
-            onClick={() => navigate('/train/mesocycles/new')}
-          >
-            <span className="pl-lib-new-art"><Icon3D name="t-flask" size={30} className="icon" /></span>
-            <span>
-              <strong>Új terv összeállítása</strong>
-              <small>Sablonból indulsz, vagy nulláról építed</small>
-            </span>
-            <b aria-hidden="true">＋</b>
-          </button>
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+              )}
+              <Facts items={facts} />
+              <small className="er-tpl-use">{templateUseLine(story, t.runCount)}</small>
+            </button>
+          )
+        })}
+      </Card>
+    </Page>
   )
 }

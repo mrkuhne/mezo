@@ -64,3 +64,12 @@ test('an Instagram reel permalink is passed through to setExerciseVideo unchange
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(setExerciseVideo).toHaveBeenCalledWith('cat-9', reel, expect.anything())
 })
+
+// Folyadék (mezo-n4wf5.3): the light kit sheet with its head.
+test('the sheet is the light kit sheet with the „Demo videó” head, no glass', () => {
+  render(<VideoUrlSheet exercise={{ id: 'cat-9', name: 'Box Jump', videoUrl: null }} onClose={vi.fn()} />)
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toHaveClass('fo-sheet')
+  expect(dialog.querySelector('.glass, [class*="uvl-"]')).toBeNull()
+  expect(screen.getByRole('heading', { name: 'Demo videó' })).toBeInTheDocument()
+})

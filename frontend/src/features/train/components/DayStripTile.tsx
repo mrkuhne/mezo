@@ -1,9 +1,13 @@
 // ============================================================
-// Mezo · DayStripTile — a szerkesztő vízszintesen görgethető nap-csempesorának
-// egy csempéje (mezo-yty6). A wizard régi 2-oszlopos DayTile-mozaikját váltja:
-// fix szélesség, scroll-snap, arányos izom-sáv, borostyán pötty ha a napot
-// lint érinti. Koppintásra a nap saját szerkesztője nyílik.
+// Mezo · DayStripTile — a szerkesztő heti arcának egy napja (mezo-yty6; Folyadék mezo-n4wf5.3,
+// prototype vilagos/edzes.js `weekEd()` → „A heted · koppints egy napra"). A vízszintesen görgethető
+// csempesor helyett egy SOR: a nap kerek jele, a nap neve, szett · perc, alatta az izmok egy
+// edénybe öntve (arányos rétegek), és az „átfedés" jelző, ha a napot érinti az egymást követő
+// napok figyelmeztetése. Koppintásra a nap saját szerkesztője nyílik.
 // ============================================================
+import { DayNum } from '@/features/train/components/folyadek'
+import { Pour, Row, St } from '@/shared/ui/folyadek'
+
 export interface DayStripMuscle {
   label: string
   sets: number
@@ -11,42 +15,38 @@ export interface DayStripMuscle {
 }
 
 interface DayStripTileProps {
-  /** Weekday key ('Hét'…'Vas') — the eyebrow. */
+  /** Weekday key ('Hét'…'Vas') — the round badge. */
   day: string
   /**
-   * The (renameable) day name shown big. MesoDay has no separate name field, so a rename
-   * writes `day.type` and this IS the split type until the user renames it — which is why
-   * the tile must not render it twice (mezo-yty6 final review, I5: the eyebrow used to
-   * repeat the very same string under the heading).
+   * The (renameable) day name. MesoDay has no separate name field, so a rename writes
+   * `day.type` and this IS the split type until the user renames it — which is why the row
+   * must not render it twice (mezo-yty6 final review, I5).
    */
   name: string
   sets: number
   minutes: number
   muscles: DayStripMuscle[]
-  tone: 'coral' | 'sage' | 'rose' | 'gold'
   flagged?: boolean
+  /** A day with no training on it: a quiet row (still opens — that is how a rest day gets work). */
+  rest?: boolean
   onOpen: () => void
 }
 
-export function DayStripTile({
-  day, name, sets, minutes, muscles, tone, flagged, onOpen,
-}: DayStripTileProps) {
+export function DayStripTile({ day, name, sets, minutes, muscles, flagged, rest, onOpen }: DayStripTileProps) {
   return (
-    <button
-      type="button"
-      className={`mz-dst mz-dst-${tone}`}
+    <Row
+      className="ew-day"
+      state={rest ? 'dim' : undefined}
+      left={<DayNum>{day}</DayNum>}
+      title={rest && name === 'Rest' ? 'Pihenőnap' : name}
+      sub={rest ? undefined : `${sets} szett · ~${minutes}′`}
+      more={!rest && muscles.length > 0 && (
+        <Pour sm parts={muscles.map((m) => ({ n: m.sets, color: m.color }))} />
+      )}
+      right={flagged ? <St tone="warn">átfedés</St> : undefined}
+      chev
       aria-label={`${day} · ${name} · szerkesztés`}
       onClick={onOpen}
-    >
-      {flagged && <span className="mz-dst-dot" aria-hidden="true" />}
-      <span className="mz-dst-tt">{day}</span>
-      <span className="mz-dst-nm">{name}</span>
-      <span className="mz-dst-meta">{sets} szett · ~{minutes}′</span>
-      <span className="mz-dst-rail">
-        {muscles.map((m) => (
-          <i key={m.label} style={{ flexGrow: m.sets, background: m.color }} />
-        ))}
-      </span>
-    </button>
+    />
   )
 }

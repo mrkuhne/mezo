@@ -55,59 +55,73 @@ function loggedWorkout(muscle: string): WorkoutDetailResponse {
   } as unknown as WorkoutDetailResponse
 }
 
-test('the head carries the prototype eyebrow, strong line and lead verbatim', async () => {
+const READY = 'Egy régió — egy sziluett. A kiemelt rész mondja meg, melyik fejről van szó.'
+
+test('the hero carries the prototype label, verdict and lead', async () => {
   const { container } = renderPage()
-  await screen.findByText('Minden izomcsoport, saját jellel')
-  const head = container.querySelector('.mm-head') as HTMLElement
-  expect(head).not.toBeNull()
-  expect(within(head).getByText('Izomtérkép')).toHaveClass('ld-eyebrow')
-  expect(within(head).getByText('Egy régió — egy sziluett. A kiemelt rész mondja meg, melyik fejről van szó.')).toBeInTheDocument()
+  await screen.findByText(READY)
+  const hero = container.querySelector('.fo-hero') as HTMLElement
+  expect(within(hero).getByText('Izomtérkép · minden izomcsoport, saját jellel')).toHaveClass('fo-hero-lbl')
+  expect(within(hero).getByText('Ezen a héten még egy izmod sincs naplózva.')).toHaveClass('fo-hero-verdict')
+  expect(within(hero).getByText(READY)).toHaveClass('fo-hero-sub')
 })
 
-test('the back pill reads „‹ Izomtérkép" and is docked inside the hero', async () => {
-  const { container } = renderPage()
-  await screen.findByText('Minden izomcsoport, saját jellel')
-  const hero = container.querySelector('.ld-hero.is-slim') as HTMLElement
-  expect(hero).not.toBeNull()
-  const back = within(hero).getByRole('button', { name: /Izomtérkép/ })
-  expect(back).toHaveClass('ld-back')
+test('the back pill reads „‹ Izomtérkép" and returns to the map', async () => {
+  renderPage()
+  await screen.findByText(READY)
+  const back = screen.getByRole('button', { name: /Izomtérkép/ })
+  expect(back).toHaveClass('fo-backpill')
+  expect(back.textContent).toBe('‹ Izomtérkép')
   fireEvent.click(back)
   expect(mockNavigate).toHaveBeenCalledWith('/train/week/terkep')
 })
 
-test('six region blocks, the prototype\'s exact counts, all 21 muscles', async () => {
+test('six region sections, the prototype\'s exact counts, all 21 muscles', async () => {
   const { container } = renderPage()
-  await screen.findByText('Minden izomcsoport, saját jellel')
-  const regions = [...container.querySelectorAll('.mm-region')]
+  await screen.findByText(READY)
+  const regions = [...container.querySelectorAll('.et-region')]
   expect(regions.length).toBe(6)
 
   const expected: Array<[string, number]> = [
     ['Mell', 3], ['Hát', 4], ['Váll', 3], ['Kar', 6], ['Láb', 4], ['Core', 1],
   ]
   expected.forEach(([label, count], i) => {
-    const head = regions[i].querySelector('.mm-region-head') as HTMLElement
-    expect(within(head).getByText(label)).toBeInTheDocument()
-    expect(within(head).getByText(`${count} izom`)).toBeInTheDocument()
-    expect(regions[i].querySelectorAll('.mm-grid .mm-cell').length).toBe(count)
+    expect(regions[i].querySelector('.fo-sec')!.textContent).toBe(`${i + 1}${label} · ${count} izom`)
+    expect(regions[i].querySelectorAll('.fo-card .et-mm .et-sign').length).toBe(count)
   })
 
-  const cells = [...container.querySelectorAll('.mm-cell')]
+  const cells = [...container.querySelectorAll('.et-sign')]
   expect(cells.length).toBe(21)
   expect(cells.map((c) => c.getAttribute('data-muscle'))).toEqual(LIVE_MUSCLES)
-  // Every cell draws its own silhouette through the shipped MuscleChip path — never an
-  // emoji, never a second geometry path.
-  await waitFor(() => expect(container.querySelectorAll('.mm-cell svg.muscle-chip').length).toBe(21))
+  // Every cell draws its own silhouette through the shipped MuscleChip path (on white through
+  // Mchp) — never an emoji, never a second geometry path.
+  await waitFor(() => expect(container.querySelectorAll('.et-sign .ex-mchp svg.muscle-chip').length).toBe(21))
 })
 
-test('a muscle worked this week is marked live; one that was not stays unlit', async () => {
+// The hero's one graphic: a tube per region, its level = how many of its muscles were worked.
+test('the hero holds one tube per region with its worked / all count', async () => {
   weekLogOverride = [loggedWorkout('chest-mid')]
   const { container } = renderPage()
-  await screen.findByText('Minden izomcsoport, saját jellel')
-  const cell = (token: string) => container.querySelector(`.mm-cell[data-muscle="${token}"]`) as HTMLElement
+  await screen.findByText(READY)
+  const tubes = [...container.querySelectorAll('.fo-hero .et-regions .fo-vial')] as HTMLElement[]
+  expect(tubes.map((t) => t.querySelector('small')!.textContent)).toEqual(['Mell', 'Hát', 'Váll', 'Kar', 'Láb', 'Core'])
+  expect(tubes.map((t) => t.querySelector('b')!.textContent)).toEqual(['1/3', '0/4', '0/3', '0/6', '0/4', '0/1'])
+  // a dry tube at zero, liquid where there is work
+  expect(tubes[0].querySelector('.fo-tube .l')).not.toBeNull()
+  expect(tubes[1].querySelector('.fo-tube .l')).toBeNull()
+  expect(screen.getByText('1 izmon dolgoztál már ezen a héten a 21-ből.')).toHaveClass('fo-hero-verdict')
+  expect(screen.getByText('A teli jelek azok az izmok, amiken ezen a héten már dolgoztál.')).toBeInTheDocument()
+})
+
+test('a muscle worked this week is marked live; one that was not stays pale', async () => {
+  weekLogOverride = [loggedWorkout('chest-mid')]
+  const { container } = renderPage()
+  await screen.findByText(READY)
+  const cell = (token: string) => container.querySelector(`.et-sign[data-muscle="${token}"]`) as HTMLElement
   expect(cell('chest-mid')).toHaveClass('is-live')
   expect(cell('chest-upper')).not.toHaveClass('is-live')
   expect(cell('quad')).not.toHaveClass('is-live')
-  expect(container.querySelectorAll('.mm-cell.is-live').length).toBe(1)
+  expect(container.querySelectorAll('.et-sign.is-live').length).toBe(1)
 })
 
 // The honesty cut: a week whose only logged set was SKIPPED worked nothing, and the page
@@ -117,15 +131,23 @@ test('a skipped-only logged exercise lights nothing, and the page says the week 
   skipped.exercises[0].sets[0].skipped = true
   weekLogOverride = [skipped]
   const { container } = renderPage()
-  await screen.findByText('Minden izomcsoport, saját jellel')
-  expect(container.querySelectorAll('.mm-cell.is-live').length).toBe(0)
+  await screen.findByText(READY)
+  expect(container.querySelectorAll('.et-sign.is-live').length).toBe(0)
   expect(screen.getByText(/még egy izmod sincs naplózva/)).toBeInTheDocument()
+  expect(screen.getByText('Amint egy edzés lezárul, a jele megtelik.')).toBeInTheDocument()
 })
 
 test('mock-empty honesty: with no logged week nothing is lit and no active set is fabricated', async () => {
   const { container } = renderPage()
-  await screen.findByText('Minden izomcsoport, saját jellel')
-  expect(container.querySelectorAll('.mm-cell.is-live').length).toBe(0)
+  await screen.findByText(READY)
+  expect(container.querySelectorAll('.et-sign.is-live').length).toBe(0)
+  expect(container.querySelectorAll('.et-regions .fo-tube .l')).toHaveLength(0)
+})
+
+test('folyadék: no old sign classes, no glass', async () => {
+  const { container } = renderPage()
+  await screen.findByText(READY)
+  expect(container.querySelector('[class*="mm-"], [class*="ld-"], [class*="tw-"], .mz-page, .glass')).toBeNull()
 })
 
 test('the Terhelés tab stays lit on /train/week/jelek', () => {

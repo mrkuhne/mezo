@@ -2,25 +2,28 @@
 // Mezo · SportLogPage — sport logging as its OWN full-screen flow
 // (`/train/sport/log`, mezo-88iwa.9 · Train Titanium T8 Task 4).
 //
-// Ported from the prototype's step machine
-// (docs/design_2.0/prototypes/companion-titanium/sport.js:12-115) onto the
-// `sp-` house section (styles/prototype.css) and the eleven-sport vocabulary
-// (features/train/logic/sports.ts):
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `sportlog()`, args none · `<i>` ·
+// `sajat` · `hiba`; sheet `kcal`). The route is chrome-free, so the page draws its own title
+// row (back · context · title) the way the title bar would. The step machine and the
+// eleven-sport vocabulary (features/train/logic/sports.ts) are unchanged:
 //
-//   pick  — the eleven tiles. Ten of them open the form; Futás is not a sport
-//           session at all (running is its own feature + its own wire), so its
+//   pick  — a closed hero („Mi volt ma mozgás?") and one card with the eleven tiles
+//           (glyph bubble, name, „~N perc"). Ten of them open the form; Futás is not a
+//           sport session at all (running is its own feature + its own wire), so its
 //           tile only ROUTES to `/train/futas`.
-//   form  — only the fields THAT sport actually asks (`SPORTS[x].fields`,
-//           `onlyMode` siblings gated by the chosen mode), duration prefilled
-//           from the sport's target, and the felt-effort slider that becomes
-//           the wire's required `rpe`.
+//   form  — the hero („Hogy ment?", the sport's glyph, the mode switch when the sport has
+//           one), 1 „Idő és terhelés": only the fields THAT sport actually asks
+//           (`SPORTS[x].fields`, `onlyMode` siblings gated by the chosen mode) — a number is
+//           a stepper row, the felt effort a liquid range, a choice a row of pills;
+//           2 „Kalória": the override row; a failed save as its own card with „Újra"; the
+//           floating „Naplózom · N perc".
 //   save  — `useQuickLogSport().logSportSession` → `onSaved(response)`.
 //
 // HONESTY — why there is no kcal number on this page. The burn is the
 // BACKEND's call: a MET table folded with the athlete's own body, which this
 // page cannot see and must never re-derive (a second formula would drift from
 // the wire's and quietly lie). The prototype previewed a number because its
-// whole model lived in the browser; ours does not. So the `.sp-kcal` row is
+// whole model lived in the browser; ours does not. So the Kalória row is
 // purely the OVERRIDE affordance — "Kalória: becslést mentünk" plus the
 // athlete's right to overrule it — and the actual figure is whatever the
 // response reports (Task 5's ceremony shows it).
@@ -32,13 +35,15 @@
 // response `levelUp` opens the shared LevelUpProvider overlay BEFORE the
 // switch, same as every other finish path (ActiveWorkoutPage, RunningPage).
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuickLogSport } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { Icon3D } from '@/shared/ui/clay'
-import { GlassBox } from '@/shared/ui/mozaik/GlassBox'
+import { Sheet } from '@/shared/ui/Sheet'
+import {
+  Acts, Box, Btn, Bub, Card, FoSheetHead, Hero, Input, Lab, Lk, Note, Page, Pill, Pills, Row, Section, Seg, Slider, Stepper,
+} from '@/shared/ui/folyadek'
 import { SportCeremony } from '@/features/train/components/SportCeremony'
 import { sportStars } from '@/features/train/logic/sportScore'
 import {
@@ -54,6 +59,10 @@ const isRunTile = (s: Sport | RunTile): s is RunTile => s.id === 'run'
  *  ever see as a save that silently did nothing. The dialog refuses it instead. */
 const KCAL_MIN = 1
 const KCAL_MAX = 5000
+
+/** The failed save's two lines (the box's title and what to do about it). */
+interface SaveError { title: string; body: string }
+const SAVE_FAILED: SaveError = { title: 'Nem sikerült elmenteni a mozgást.', body: 'Nézd meg a kapcsolatot, és próbáld újra.' }
 
 /** One captured answer per field key. Text fields hold a string, everything else a number. */
 type FormValues = Record<string, number | string>
@@ -134,44 +143,51 @@ export function toCreateRequest(
   }
 }
 
-// Üveg re-dress (mezo-me75u.4, prototype uveg-edzes-body.html `sportlog()`): the picker
-// is a 3-col grid of glass tiles, each with the sport's OWN 3D icon (`art3d`, rose; Futás
-// sky); the form is one rose glass card with flat steppers/chips/range inside, the kcal
-// door a sage glass card, and the save a lit rose primary in a sticky blurred foot bar.
-// Every rule is scoped to `.uvs-log` (prototype.css `uveg edzes sport`).
-const tileAccent = (s: Sport | RunTile) => (s.id === 'run' ? 'var(--dv-sky)' : 'var(--dv-rose)')
+/** Futás is the Nap-blue door among the Edzés-orange tiles (prototype `c: ic==='t-run' ? '#1877F2' : 'var(--dom)'`). */
+const tileColor = (s: Sport | RunTile) => (s.id === 'run' ? '#1877F2' : undefined)
+
+/** The page's own title row — this route has no title bar (AppLayout hides the chrome), so the
+ *  page draws the bar's sub-page row itself: round back, the context line, the title. */
+function TopRow({ eyebrow, title, backLabel, onBack }: { eyebrow: string; title: ReactNode; backLabel: string; onBack: () => void }) {
+  return (
+    <div className="es-top">
+      <div className="fo-trow">
+        <button type="button" className="fo-ib fo-back" aria-label={backLabel} onClick={onBack}><span aria-hidden="true">‹</span></button>
+        <div className="fo-title">
+          <small><i aria-hidden="true" /><span>{eyebrow}</span></small>
+          <div className="fo-h sm"><h1>{title}</h1></div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ── step one: which sport ────────────────────────────────────────────────────
 
 function SportPickGrid({ onPick, onLeave }: { onPick: (id: string) => void; onLeave: () => void }) {
   return (
-    <div className="sp-page uvs-log">
-      <header className="sp-head">
-        <button type="button" className="glass is-round" aria-label="Vissza" onClick={onLeave}>‹</button>
-        <span>
-          <small>NAPLÓZÁS</small>
-          <strong>Mi volt ma mozgás?</strong>
-        </span>
-      </header>
-      <p className="sp-lead">
-        Válaszd ki, mit csináltál. A következő lapon csak azt kérdezem, ami annál a sportnál tényleg számít.
-      </p>
-      <div className="sp-grid">
-        {SPORTS.map((sport, i) => (
-          <button
-            key={sport.id}
-            type="button"
-            className="sp-tile glass"
-            style={{ '--sp-color': sport.color, '--c': tileAccent(sport), '--i': i } as CSSProperties}
-            onClick={() => onPick(sport.id)}
-          >
-            <span className="sp-tile-art"><Icon3D name={sport.art3d} size={50} /></span>
-            <strong>{sport.name}</strong>
-            <small>~{('fields' in sport && sport.fields.find((f) => f.key === 'minutes')?.value) || sport.targetMinutes} perc</small>
-          </button>
-        ))}
-      </div>
-    </div>
+    <Page nonav className="es-page es-logflow">
+      <TopRow eyebrow="Sport · ma" title="Naplózás" backLabel="Vissza" onBack={onLeave} />
+      <Hero
+        label="Naplózás"
+        verdict="Mi volt ma mozgás?"
+        sub="Válaszd ki, mit csináltál. A következő lapon csak azt kérdezem, ami annál a sportnál tényleg számít."
+      />
+      <Section n={1} title="Válassz sportot" />
+      <Card>
+        <div className="es-spg">
+          {SPORTS.map((sport) => (
+            <button key={sport.id} type="button" onClick={() => onPick(sport.id)}>
+              <Bub icon={sport.art3d} size={52} color={tileColor(sport)} />
+              <span>
+                {sport.name}
+                <small>~{('fields' in sport && sport.fields.find((f) => f.key === 'minutes')?.value) || sport.targetMinutes} perc</small>
+              </span>
+            </button>
+          ))}
+        </div>
+      </Card>
+    </Page>
   )
 }
 
@@ -182,70 +198,58 @@ function FieldRow({ spec, value, onChange }: {
   value: number | string
   onChange: (next: number | string) => void
 }) {
-  // `data-sp-key` is a STYLE hook only (prototype.css `train sport`): the restored form
-  // gives the minutes stepper the §2.2 A wash tile and the §3.2 numeral, and leaves every
-  // other number field a shield, so the page has a first read. It carries no behaviour —
-  // the field order differs per sport (Kerékpár and Úszás ask distance first), so
-  // „the first stepper" is not the minutes one and a positional selector would be wrong.
+  // `data-sp-key` names the field for the stylesheet and the tests; it carries no behaviour —
+  // the field order differs per sport (Kerékpár and Úszás ask distance first).
   const id = `sp-${spec.key}`
   if (spec.type === 'chips') {
     return (
-      <div className="sp-field" data-sp-key={spec.key}>
-        {/* A chip row is a group of buttons, not a labelable control — the accessible name
+      <div className="es-blk" data-sp-key={spec.key}>
+        {/* A pill row is a group of buttons, not a labelable control — the accessible name
             rides the group, not a dangling `for`. */}
-        <label>{spec.label}</label>
-        <div className="sp-chips" id={id} role="group" aria-label={spec.label}>
+        <Lab>{spec.label}</Lab>
+        <Pills id={id} role="group" aria-label={spec.label}>
           {spec.options.map((option) => (
-            <button key={option} type="button" aria-pressed={option === value} onClick={() => onChange(option)}>
-              {option}
-            </button>
+            <Pill key={option} on={option === value} onClick={() => onChange(option)}>{option}</Pill>
           ))}
-        </div>
+        </Pills>
       </div>
     )
   }
   if (spec.type === 'range') {
     return (
-      <div className="sp-field" data-sp-key={spec.key}>
-        <label htmlFor={id}>{spec.label}<b>{value} {spec.unit}</b></label>
-        <input
-          id={id} className="sp-range" type="range" min={spec.min} max={spec.max} step={1}
-          value={Number(value)} onChange={(e) => onChange(Number(e.target.value))}
-        />
+      <div className="es-blk" data-sp-key={spec.key}>
+        <Lab htmlFor={id}>{spec.label}</Lab>
+        <Slider id={id} aria-label={spec.label} min={spec.min} max={spec.max} step={1} unit={spec.unit}
+          value={Number(value)} onChange={(v) => onChange(v)} />
       </div>
     )
   }
   if (spec.type === 'text') {
     return (
-      <div className="sp-field" data-sp-key={spec.key}>
-        <label htmlFor={id}>{spec.label}</label>
-        <input
-          id={id} className="sp-text" type="text" maxLength={40} placeholder={spec.placeholder}
-          value={String(value ?? '')} onChange={(e) => onChange(e.target.value)}
-        />
+      <div className="es-blk" data-sp-key={spec.key}>
+        <Lab htmlFor={id}>{spec.label}</Lab>
+        <Input id={id} type="text" maxLength={40} placeholder={spec.placeholder}
+          value={String(value ?? '')} onChange={(e) => onChange(e.target.value)} />
       </div>
     )
   }
-  // The mode switch is its own row ABOVE the form (prototype `.sp-modes`) — it never
+  // The mode switch lives in the hero (prototype `hero({body: fh-seg})`) — it never
   // renders inside the field list.
   if (spec.type === 'modes') return null
-  // number — the prototype's ± stepper, clamped to the field's own contract bounds
+  // number — the ± stepper row, clamped to the field's own contract bounds; the value is typeable
   const stepBy = (delta: number) =>
     onChange(Math.min(spec.max, Math.max(spec.min, Number(value) + delta)))
   return (
-    <div className="sp-field" data-sp-key={spec.key}>
-      <label htmlFor={id}>{spec.label}</label>
-      <div className="sp-number">
-        <button type="button" aria-label={`${spec.label} csökkentése`} onClick={() => stepBy(-spec.step)}>−</button>
-        <input
-          id={id} type="number" min={spec.min} max={spec.max} step={spec.step}
-          value={Number(value)}
-          onChange={(e) => onChange(Number(e.target.value))}
-          onBlur={(e) => onChange(Math.min(spec.max, Math.max(spec.min, Number(e.target.value))))}
-        />
-        <span>{spec.unit}</span>
-        <button type="button" aria-label={`${spec.label} növelése`} onClick={() => stepBy(spec.step)}>＋</button>
-      </div>
+    <div className="es-vl es-fl" data-sp-key={spec.key}>
+      <Stepper
+        label={`${spec.label} · ${spec.unit}`} name={spec.label}
+        onDec={() => stepBy(-spec.step)} onInc={() => stepBy(spec.step)}
+        input={{
+          id, type: 'number', min: spec.min, max: spec.max, step: spec.step, value: Number(value),
+          onChange: (e) => onChange(Number(e.target.value)),
+          onBlur: (e) => onChange(Math.min(spec.max, Math.max(spec.min, Number(e.target.value)))),
+        }}
+      />
     </div>
   )
 }
@@ -256,7 +260,7 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
   mode: string | null
   kcalOverride: number | null
   saving: boolean
-  saveError: string | null
+  saveError: SaveError | null
   onValue: (key: string, next: number | string) => void
   onMode: (next: string) => void
   onAskKcal: () => void
@@ -267,64 +271,60 @@ function SportForm({ sport, values, mode, kcalOverride, saving, saveError, onVal
   const modesField = sport.fields.find((f): f is Extract<SportField, { type: 'modes' }> => f.type === 'modes')
   const title = sport.id === 'other' && values.name ? String(values.name) : sport.name
   return (
-    <div className="sp-page uvs-log" style={{ '--sp-color': sport.color, '--c': 'var(--dv-rose)' } as CSSProperties}>
-      <header className="sp-head">
-        <button type="button" className="glass is-round" aria-label="Vissza a sportválasztóhoz" onClick={onBack}>‹</button>
-        <span className="sp-head-art"><Icon3D name={sport.art3d} size={44} /></span>
-        <span><small>NAPLÓZÁS · MA</small><strong>{title}</strong></span>
-      </header>
+    <Page nonav className="es-page es-logflow"
+      foot={<Btn grow disabled={saving} onClick={onSave}>Naplózom · {values.minutes} perc</Btn>}>
+      <TopRow eyebrow="Naplózás · ma" title={title} backLabel="Vissza a sportválasztóhoz" onBack={onBack} />
+      <Hero
+        label="Naplózás · ma"
+        verdict="Hogy ment?"
+        sub="Csak az, ami ennél a sportnál számít."
+        left={<span className="es-sportart"><Bub icon={sport.art3d} size={64} /></span>}
+      >
+        {modesField && (
+          <Seg className="es-modes" aria-label={modesField.label}
+            items={modesField.options.map((m) => ({ key: m.id, label: m.label }))}
+            value={mode ?? modesField.value} onChange={onMode} />
+        )}
+      </Hero>
 
-      {modesField && (
-        <div className="sp-modes" role="group" aria-label={modesField.label}>
-          {modesField.options.map((m) => (
-            <button key={m.id} type="button" aria-pressed={m.id === mode} onClick={() => onMode(m.id)}>
-              {m.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="sp-form glass" style={{ '--c': 'var(--dv-rose)' } as CSSProperties}>
+      <Section n={1} title="Idő és terhelés" />
+      <Card className="es-form">
         {visibleFields(sport, mode)
           .filter((f) => f.type !== 'modes')
           .map((f) => (
             <FieldRow key={f.key} spec={f} value={values[f.key]} onChange={(next) => onValue(f.key, next)} />
           ))}
-      </div>
+      </Card>
 
       {/* The estimate is the backend's; the last word is the athlete's. No number here —
           see the honesty note at the top of the file. */}
-      <button type="button" className="sp-kcal glass" style={{ '--c': 'var(--dv-sage)' } as CSSProperties} onClick={onAskKcal}>
-        <span className="sp-kcal-art"><Icon3D name="t-plate" size={40} /></span>
-        <span className="sp-kcal-copy">
-          <strong>Kalória: becslést mentünk</strong>
-          <small>A pontos értéket mentés után mutatjuk — a te súlyodból és a mozgás fajtájából jön.</small>
-        </span>
-        <b>Saját érték</b>
-      </button>
-      {kcalOverride !== null && (
-        <>
-          <p className="sp-note">Saját értéket adtál meg — ezt mentjük, nem a becslést.</p>
-          <button type="button" className="sp-note-clear" onClick={onClearKcal}>Töröld a saját értéket</button>
-        </>
-      )}
+      <Section n={2} title="Kalória" />
+      <Card className="es-kcal">
+        <Row
+          icon="t-plate"
+          title="Kalória: becslést mentünk"
+          sub="A pontos értéket mentés után mutatjuk — a te súlyodból és a mozgás fajtájából jön."
+          right={<Lk onClick={onAskKcal}>Saját érték</Lk>}
+        />
+        {kcalOverride !== null && (
+          <>
+            <Note>Saját értéket adtál meg ({kcalOverride} kcal) — ezt mentjük, nem a becslést.</Note>
+            <Acts><Lk onClick={onClearKcal}>Töröld a saját értéket</Lk></Acts>
+          </>
+        )}
+      </Card>
 
       {/* Surfaced failure (T8 Task 4 final review): a rejected save — the contract's
           `kcalOverride` bounds, an offline real mode — used to vanish silently and leave
-          the CTA disabled forever. The line sits directly above the CTA, which `onError`
+          the CTA disabled forever. Its own card above the floating CTA, which `onError`
           re-enables, so a retry is one tap away. */}
       {saveError && (
-        <p className="sp-note is-error" role="alert">{saveError}</p>
+        <Card className="es-saveerr" role="alert">
+          <Box icon="t-info" color="var(--fo-bad)" title={saveError.title}><p>{saveError.body}</p></Box>
+          <Acts><Btn sm disabled={saving} onClick={onSave}>Újra</Btn></Acts>
+        </Card>
       )}
-
-      <div className="sp-foot">
-        <button type="button" className="wo-close-cta" disabled={saving} onClick={onSave}>
-          <span className="wo-close-art"><Icon3D name={sport.art3d} size={26} /></span>
-          <span><strong>Naplózom</strong><small>{values.minutes} perc</small></span>
-          <u className="chip-sheen" />
-        </button>
-      </div>
-    </div>
+    </Page>
   )
 }
 
@@ -355,7 +355,7 @@ export function SportLogPage() {
   const [saving, setSaving] = useState(false)
   // The save's own failure line (T8 Task 4 final review). Cleared on every new attempt
   // and on a sport switch, so it can never outlive the request it describes.
-  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<SaveError | null>(null)
   // The ceremony step (Task 5): set only on a successful save, from that save's own
   // captured minutes/rpe/sport (not `values`/`chosen`, which the ceremony no longer needs
   // and which a stray re-render must not be able to change under it).
@@ -406,7 +406,7 @@ export function SportLogPage() {
     const savedRpe = Number(values.intensity)
     logSportSession(toCreateRequest(chosen, values, mode, kcalOverride), {
       onSuccess: (r) => onSaved(chosen, savedMinutes, savedRpe, r),
-      onError: () => setSaveError('Nem sikerült elmenteni a mozgást. Nézd meg a kapcsolatot, és próbáld újra.'),
+      onError: () => setSaveError(SAVE_FAILED),
       onSettled: () => setSaving(false),
     })
   }
@@ -448,46 +448,46 @@ export function SportLogPage() {
         />
       )}
 
-      <GlassBox open={kcalOpen} onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} label="Aktív kalória (ha az órád mérte)" tint="var(--dv-coral)"
-        className="uv-gb-kcal" art={<Icon3D name="t-plate" size={30} />}>
-        {/* üveg U10 (mezo-me75u.10): a coral glass (the Edzés area colour, one accent — the pill
-            matches it); copy, field, error and the lit pill inside are flat. */}
-        <p className="uv-gb-copy">
-          Csak a mozgás többletét írd be — az órád »aktív« kalóriáját, ne az összeset.
-        </p>
-        <label className="uv-gb-field">
-          <span>Kalória</span>
-          <input
-            className="uv-gb-input" type="number" min={KCAL_MIN} max={KCAL_MAX} step={10} aria-label="Kalória"
-            value={kcalDraft} onChange={(e) => { setKcalDraft(e.target.value); setKcalDraftError(null) }}
-          />
-        </label>
-        {kcalDraftError && (
-          <p className="uv-gb-err" role="alert"><Icon3D name="t-info" size={18} />{kcalDraftError}</p>
-        )}
-        <button
-          type="button" className="abl-pill is-wide"
-          onClick={() => {
-            // The wire's own bounds (`SportSessionCreateRequest.kcalOverride`, @Min(1)
-            // @Max(5000)). Before this, a 0 sailed through to a silent 400 — and in mock,
-            // where nothing rejects it, the ceremony cheerfully celebrated "+0 kcal".
-            // An empty box means "no override" (the existing clear affordance); anything
-            // outside 1..5000 is refused HERE, inline, and never becomes a request.
-            if (kcalDraft.trim() === '') { setKcalOverride(null); setKcalDraftError(null); setKcalOpen(false); return }
-            const next = Math.round(Number(kcalDraft))
-            if (!Number.isFinite(next) || next < KCAL_MIN || next > KCAL_MAX) {
-              setKcalDraftError(`Adj meg egy értéket ${KCAL_MIN} és ${KCAL_MAX} kcal között.`)
-              return
-            }
-            setKcalOverride(next)
-            setKcalDraftError(null)
-            setKcalOpen(false)
-          }}
-        >
-          <Icon3D name="t-tick" size={20} />
-          <span>Ezt mentem</span>
-        </button>
-      </GlassBox>
+      {kcalOpen && (
+        <Sheet onClose={() => { setKcalDraftError(null); setKcalOpen(false) }} labelledBy="sport-kcal-title" className="fo-sheet es-sheet">
+          {(close) => (
+            <>
+              <FoSheetHead titleId="sport-kcal-title" icon="t-plate" eyebrow="Kalória" title="Aktív kalória (ha az órád mérte)"
+                sub="Csak a mozgás többletét írd be — az órád »aktív« kalóriáját, ne az összeset." onClose={close} />
+              <Lab htmlFor="sport-kcal-input">Kalória</Lab>
+              <Input
+                id="sport-kcal-input" type="number" inputMode="numeric" min={KCAL_MIN} max={KCAL_MAX} step={10} aria-label="Kalória"
+                value={kcalDraft} onChange={(e) => { setKcalDraft(e.target.value); setKcalDraftError(null) }}
+              />
+              {kcalDraftError && (
+                <div role="alert"><Box icon="t-info" color="var(--fo-bad)" title={kcalDraftError} /></div>
+              )}
+              <Acts>
+                <Btn grow
+                  onClick={() => {
+                    // The wire's own bounds (`SportSessionCreateRequest.kcalOverride`, @Min(1)
+                    // @Max(5000)). Before this, a 0 sailed through to a silent 400 — and in mock,
+                    // where nothing rejects it, the ceremony cheerfully celebrated "+0 kcal".
+                    // An empty box means "no override" (the existing clear affordance); anything
+                    // outside 1..5000 is refused HERE, inline, and never becomes a request.
+                    if (kcalDraft.trim() === '') { setKcalOverride(null); setKcalDraftError(null); close(); return }
+                    const next = Math.round(Number(kcalDraft))
+                    if (!Number.isFinite(next) || next < KCAL_MIN || next > KCAL_MAX) {
+                      setKcalDraftError(`Adj meg egy értéket ${KCAL_MIN} és ${KCAL_MAX} kcal között.`)
+                      return
+                    }
+                    setKcalOverride(next)
+                    setKcalDraftError(null)
+                    close()
+                  }}
+                >
+                  Ezt mentem
+                </Btn>
+              </Acts>
+            </>
+          )}
+        </Sheet>
+      )}
     </>
   )
 }

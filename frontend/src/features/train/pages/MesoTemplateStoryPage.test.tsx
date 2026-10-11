@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · MesoTemplateStoryPage tests — one template, read-first, at /train/templates/:id
-// (Train Titanium T10 Task 3, mezo-88iwa.11).
+// (Train Titanium T10 Task 3, mezo-88iwa.11; Folyadék look mezo-n4wf5.3).
 //
 // Fixtures (data/train/train.ts): b20f… „Upper/Lower Power" — 5 weeks, 4 training days
 // (Sze/Szo/Vas rest), never run; a10e… „Hypertrophy 04 · Tavasz" — the active run
@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { MesoTemplateStoryPage } from '@/features/train/pages/MesoTemplateStoryPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
@@ -24,18 +25,34 @@ function LocationProbe() {
   return <div data-testid="loc">{pathname}</div>
 }
 
+/** The template's name is the TITLE BAR's since Folyadék (`useFrameTitle`); the probe stands in
+ *  for the bar and prints what the page handed it. */
+function TitleProbe() {
+  const { title, eyebrow } = useFrame()
+  return <div data-testid="frame-title" data-eyebrow={eyebrow}>{title}</div>
+}
+
 function setup(id: string = POWER) {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={[`/train/templates/${id}`]}>
-        <Routes>
-          <Route path="/train/templates/:id" element={<MesoTemplateStoryPage />} />
-          <Route path="*" element={null} />
-        </Routes>
+        <FrameProvider>
+          <TitleProbe />
+          <Routes>
+            <Route path="/train/templates/:id" element={<MesoTemplateStoryPage />} />
+            <Route path="*" element={null} />
+          </Routes>
+        </FrameProvider>
         <LocationProbe />
       </MemoryRouter>
     </QueryWrapper>,
   )
+}
+
+/** The card under a numbered section heading. */
+const section = (container: HTMLElement, heading: string) => {
+  const h = [...container.querySelectorAll('.fo-sec')].find((el) => el.querySelector('span')?.textContent === heading)
+  return h!.nextElementSibling as HTMLElement
 }
 
 describe('MesoTemplateStoryPage (mock mode)', () => {
@@ -44,15 +61,32 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
 
   // --- the hero ---------------------------------------------------------------
 
-  test('the hero carries the name, the split eyebrow, weeks × days and the muscles', () => {
+  test('the hero carries the split label, weeks × days as its verdict, and the muscles; the name goes to the title bar', () => {
     const { container } = setup()
-    expect(screen.getByRole('heading', { name: 'Upper/Lower Power' })).toBeInTheDocument()
-    expect(screen.getByText('Sablon · Upper / Lower')).toBeInTheDocument()
-    expect(screen.getByText('5 hét, hetente 4 edzésnap.')).toBeInTheDocument()
-    const hero = container.querySelector('.pl-lhero')!
-    expect(hero.querySelectorAll('.pl-lib-mus i').length).toBeGreaterThan(3)
-    // the back pill is docked INSIDE the hero (the `.pl-lhero > .mz-backbtn` rule)
-    expect(screen.getByRole('button', { name: 'Vissza' }).parentElement).toBe(hero)
+    expect(screen.getByTestId('frame-title')).toHaveTextContent('Upper/Lower Power')
+    expect(screen.getByTestId('frame-title')).toHaveAttribute('data-eyebrow', 'Sablonjaid')
+    expect(screen.getByText('Sablon · Upper / Lower')).toHaveClass('fo-hero-lbl')
+    expect(screen.getByText('5 hét, hetente 4 edzésnap.')).toHaveClass('fo-hero-verdict')
+    const hero = container.querySelector('.fo-hero')!
+    // the top muscles as chips with their names (at most five)
+    const chips = hero.querySelectorAll('.fo-tags .ex-mchp')
+    expect(chips.length).toBeGreaterThan(3)
+    expect(chips.length).toBeLessThanOrEqual(5)
+    expect(hero).toHaveTextContent('8 izomcsoport')
+    expect(hero.textContent).toMatch(/~\d+ perc egy edzés/)
+  })
+
+  test('the hero draws the week as seven tubes: a training day filled to its sets, an off day hatched with the moon', () => {
+    const { container } = setup()
+    const tubes = [...container.querySelectorAll('.fo-hero .fo-tubes .fo-vial')]
+    expect(tubes.map((t) => t.querySelector('small')!.textContent)).toEqual(['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'])
+    expect(tubes.map((t) => t.classList.contains('hatch'))).toEqual([false, false, true, false, false, true, true])
+    // Monday: 4 + 4 + 3 working sets; a rest day reads „–" and holds no liquid
+    expect(tubes[0].querySelector('b')!.textContent).toBe('11')
+    expect(tubes[0].querySelector('.fo-tube em')!.textContent).toBe('Upper')
+    expect(tubes[2].querySelector('b')!.textContent).toBe('–')
+    expect(tubes[2].querySelector('.fo-tube .l')).toBeNull()
+    expect(tubes[2].querySelector('use')!.getAttribute('href')).toBe('#t-moon')
   })
 
   test('the old-model mark follows isLegacyPlan, not a guess', () => {
@@ -81,13 +115,18 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
   test('every training day is a card that spells out EVERY exercise of the fixture', () => {
     const { container } = setup()
     expect(screen.getByText('A hét felépítése')).toBeInTheDocument()
-    const cards = [...container.querySelectorAll('.pl-lib-card.is-open')]
+    const cards = [...container.querySelectorAll('.er-tday:not(.muted)')]
     expect(cards).toHaveLength(4) // Hét · Kedd · Csü · Pén
+    // the whole week sits in ONE card under section 1
+    expect(new Set(cards.map((c) => c.closest('.fo-card'))).size).toBe(1)
+    expect(section(container, 'A hét felépítése')).toContainElement(cards[0] as HTMLElement)
 
-    const byDay = Object.fromEntries(cards.map((c) => [c.querySelector('strong')!.textContent, c]))
-    expect(byDay['Hét']).toHaveTextContent('Upper A')
+    const byDay = Object.fromEntries(cards.map((c) => [c.querySelector('.dh b')!.textContent!.split(' · ')[0], c]))
+    expect(byDay['Hét']!.querySelector('.dh b')).toHaveTextContent('Hét · Upper A')
+    // the day's facts in one line
+    expect(byDay['Hét']!.querySelector('.dh span')!.textContent).toMatch(/^3 gyakorlat · 11 szett · ~\d+ perc$/)
     // all three exercises of the Monday fixture, with their szett×ismétlés targets
-    const monday = [...byDay['Hét']!.querySelectorAll('.pl-tpl-ex')].map((e) => e.textContent)
+    const monday = [...byDay['Hét']!.querySelectorAll('.ex')].map((e) => e.textContent)
     expect(monday).toHaveLength(3)
     expect(monday[0]).toContain('Barbell Bench Press')
     expect(monday[0]).toContain('4×5–7')
@@ -104,24 +143,29 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     // anchorWeightKg: 42.5 → the formatted kg value
     expect(monday[2]).toContain('42,5 kg')
     // the whole week's exercises, spelled out: 3 + 3 + 3 + 3
-    expect(container.querySelectorAll('.pl-tpl-ex')).toHaveLength(12)
+    expect(container.querySelectorAll('.er-tday .ex')).toHaveLength(12)
+    // each exercise line leads with its muscle chip
+    expect(container.querySelectorAll('.er-tday .ex .ex-mchp')).toHaveLength(12)
   })
 
   test('rest days stay visible as quiet rows — a week is also its off days', () => {
     const { container } = setup()
-    const quiet = [...container.querySelectorAll('.pl-row.is-quiet')]
+    const quiet = [...container.querySelectorAll('.er-tday.muted')]
       .map((r) => r.textContent)
       .filter((t) => t?.includes('Pihenő'))
     expect(quiet).toHaveLength(3) // Sze · Szo · Vas
     expect(quiet[0]).toContain('Sze')
   })
 
-  // --- the hero's body map (fix round 1, mezo-88iwa.11) ------------------------
+  // --- the hero's graphic is the week, not a body map (Folyadék, mezo-n4wf5.3) ---
 
-  test('the hero carries the body map, highlighted by the template\'s own muscles', () => {
+  test('the hero no longer carries the body map — the old skin is gone from the page', () => {
     const { container } = setup()
-    expect(container.querySelector('.pl-lhero-map')).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: /érintett izmok/ })).toBeInTheDocument()
+    expect(container.querySelector('.body-map, [class*="pl-l"], [class*="pl-d"], .pl-row, .glass, .mz-play')).toBeNull()
+    expect(screen.queryByRole('img', { name: /érintett izmok/ })).toBeNull()
+    expect([...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual([
+      '1A hét felépítése', '2Heti szettek izmonként', '3Futamok ebből a sablonból', '4A sablon kezelése',
+    ])
   })
 
   // --- the week-sets explainer (fix round 1, mezo-88iwa.11; moved behind the ⓘ in
@@ -144,15 +188,17 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
   test('the weekly load bars carry the summed sets per muscle, biggest first', () => {
     const { container } = setup()
     expect(screen.getByText('Heti szettek izmonként')).toBeInTheDocument()
-    const rows = [...container.querySelectorAll('.pl-wload-row')].map((r) => ({
-      label: r.querySelector('small')!.textContent,
-      sets: r.querySelector('b')!.textContent,
-      width: (r.querySelector('i') as HTMLElement).style.getPropertyValue('--w'),
+    const rows = [...section(container, 'Heti szettek izmonként').querySelectorAll('.ex-mus')].map((r) => ({
+      label: r.querySelector('.l')!.textContent,
+      sets: r.querySelector('.v')!.textContent!.replace(' szett', ''),
+      width: (r.querySelector('.fo-level i') as HTMLElement).style.width,
     }))
-    // three muscles tie at 7 (the week's biggest → full-width bars), alphabetically by group
+    // three muscles tie at 7 (the week's biggest → full levels), alphabetically by group
     expect(rows[0]).toEqual({ label: 'Hát', sets: '7', width: '100%' })    // row 4 + pulldown 3
     expect(rows[1]).toEqual({ label: 'Mell', sets: '7', width: '100%' })   // bench 4 + incline DB 3
     expect(rows[2]).toEqual({ label: 'Comb', sets: '7', width: '100%' })   // squat 4 + leg press 3
+    // every row leads with the muscle chip
+    expect(section(container, 'Heti szettek izmonként').querySelectorAll('.ex-mus .ex-mchp')).toHaveLength(rows.length)
     const byLabel = Object.fromEntries(rows.map((r) => [r.label, r.sets]))
     expect(byLabel['Vádli']).toBe('6')  // 3 + 3
     expect(byLabel['Váll']).toBe('3')
@@ -174,6 +220,9 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     setup(HYP)
     const row = screen.getByRole('button', { name: 'Most fut · Hypertrophy 04 · Tavasz' })
     expect(row).toHaveTextContent('Most fut — 3. hét a 6-ból')
+    // the run's weeks as capsules: two done, the third half
+    const caps = [...row.querySelectorAll('.fo-caps i')]
+    expect(caps.map((c) => c.className)).toEqual(['f', 'f', 'h', '', '', ''])
     await user.click(row)
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles')
   })
@@ -213,8 +262,11 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
     setup()
     await user.click(screen.getByRole('button', { name: 'Futam indítása ebből' }))
     expect(await screen.findByRole('heading', { name: 'Mikor kezdjük?' })).toBeInTheDocument()
-    // the sheet names the template it will stamp a run from (the hero says it too)
+    // the sheet names the template it will stamp a run from (the title bar says it too)
     expect(screen.getAllByText('Upper/Lower Power').length).toBeGreaterThan(1)
+    // the button stands on the hero's liquid row, with its promise under it
+    expect(document.querySelector('.fo-hero-acts')).toContainElement(screen.getByRole('button', { name: 'Futam indítása ebből' }))
+    expect(screen.getByText('A sablon marad, a terv a tiéd lesz')).toBeInTheDocument()
   })
 
   test('„Szerkesztés" opens the raw day-plan editor', async () => {
@@ -247,13 +299,15 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
 
   test('the armed Törlés carries destructive tone and a Mégsem escape that disarms it', async () => {
     const user = userEvent.setup()
-    const { container } = setup()
+    setup()
     await user.click(screen.getByRole('button', { name: /Sablon törlése/ }))
-    const armedRow = container.querySelector('.pl-row.is-danger')
-    expect(armedRow).toBeInTheDocument()
+    // inline two-step confirm: the same row, now asking, in the destructive tone
+    expect(screen.getByText('Biztos? Törlés').closest('.fo-row')).toHaveClass('bad')
+    expect(screen.queryByRole('dialog')).toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Mégsem' }))
-    expect(container.querySelector('.pl-row.is-danger')).toBeNull()
+    expect(screen.queryByText('Biztos? Törlés')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Mégsem' })).toBeNull()
     expect(screen.getByText('Sablon törlése')).toBeInTheDocument()
     // Mégsem never fires the delete — still on the template's own page.
     expect(screen.getByTestId('loc')).toHaveTextContent(`/train/templates/${POWER}`)
@@ -261,13 +315,13 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
 
   test('arming Törlés then tapping anything else on the page disarms it too', async () => {
     const user = userEvent.setup()
-    const { container } = setup()
+    setup()
     await user.click(screen.getByRole('button', { name: /Sablon törlése/ }))
-    expect(container.querySelector('.pl-row.is-danger')).toBeInTheDocument()
+    expect(screen.getByText('Biztos? Törlés')).toBeInTheDocument()
 
     // A tap on an unrelated, inert part of the page — not the armed row itself.
     await user.click(screen.getByText('Heti szettek izmonként'))
-    expect(container.querySelector('.pl-row.is-danger')).toBeNull()
+    expect(screen.queryByText('Biztos? Törlés')).toBeNull()
     expect(screen.getByText('Sablon törlése')).toBeInTheDocument()
   })
 
@@ -275,7 +329,7 @@ describe('MesoTemplateStoryPage (mock mode)', () => {
 
   test('an unknown template id is an honest not-found, not an empty page', () => {
     setup('nincs-ilyen-sablon')
-    expect(screen.getByText('Ez a sablon nem található.')).toBeInTheDocument()
+    expect(screen.getByText('Ez a sablon nem található.').closest('.fo-ev')).not.toBeNull()
     expect(screen.queryByText('A hét felépítése')).toBeNull()
   })
 })
@@ -326,11 +380,11 @@ describe('MesoTemplateStoryPage (real mode)', () => {
     // the hero's edzésnap count still matches trainingDayCount — Csü + Pén, not Vas
     expect(await screen.findByText('5 hét, hetente 2 edzésnap.')).toBeInTheDocument()
 
-    const emptyDayRow = screen.getByText('Push · még nincs gyakorlat').closest('.pl-row')!
-    expect(emptyDayRow).toHaveClass('is-quiet')
+    const emptyDayRow = screen.getByText('Push · még nincs gyakorlat').closest('.er-tday')!
+    expect(emptyDayRow).toHaveClass('muted')
     expect(emptyDayRow).not.toHaveTextContent('Pihenő')
 
-    const restRow = screen.getByText('Pihenő').closest('.pl-row')!
+    const restRow = screen.getByText('Pihenő').closest('.er-tday')!
     expect(restRow).toHaveTextContent('Vas')
   })
 
@@ -364,18 +418,19 @@ describe('MesoTemplateStoryPage (real mode)', () => {
 })
 
 // ── the ⓘ explain layer (mezo-b516k, Task 2) ──────────────────────────────────────────
-// The button beside the heading, the prototype's copy word for word. The aria-label is
+// A text link under the levels, the prototype's copy word for word. The aria-label is
 // the prototype's own `"<title> — mit jelent?"`.
 
 describe('MesoTemplateStoryPage · the ⓘ explain layer', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('ⓘ beside „Heti szettek izmonként" explains the number, word for word', async () => {
+  test('„Mit jelent a szám?" under the weekly levels explains the number, word for word', async () => {
     const user = userEvent.setup()
-    setup()
+    const { container } = setup()
     const btn = await screen.findByRole('button', { name: 'Mit jelent a szám? — mit jelent?' })
-    expect(btn.closest('h3')?.textContent).toBe('Heti szettek izmonként')
+    expect(section(container, 'Heti szettek izmonként')).toContainElement(btn)
+    expect(btn).toHaveTextContent('Mit jelent a szám?')
     await user.click(btn)
     expect(
       within(screen.getByRole('dialog', { name: 'Mit jelent a szám?' })).getByText(

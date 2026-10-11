@@ -91,16 +91,17 @@ describe('MesoTemplateEditorPage (mock mode)', () => {
         </ThemeProvider>
       </QueryWrapper>,
     )
-    expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Upper/Lower Power')
-    // the Mozaik scaffold, not the pre-redesign DS page shell
-    expect(container.querySelector('.mz-page')).not.toBeNull()
+    expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toHaveValue('Upper/Lower Power')
+    // the Folyadék page (hero + numbered cards), not the Mozaik scaffold it replaced
+    expect(container.querySelector('.fo-page.ew-page .fo-hero')).not.toBeNull()
+    expect(container.querySelector('.mz-page, .glass, [class*="mz-"]')).toBeNull()
     expect(screen.getByText('A heted · koppints egy napra')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Upper A · szerkesztés$/ })).toBeInTheDocument()
   })
 
   it('the template editor renders the unified editor, not the old page head', async () => {
     setupPage(MOCK_TPL)
-    expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toBeInTheDocument()
     expect(screen.getByText('Sablon · mentve')).toBeInTheDocument()
     expect(screen.getByText('A heted · koppints egy napra')).toBeInTheDocument()
     // the retired chrome: the DS page head and the <details> tier picker
@@ -108,9 +109,19 @@ describe('MesoTemplateEditorPage (mock mode)', () => {
     expect(screen.queryByText('Fókusz')).not.toBeInTheDocument()
   })
 
-  it('shows an honest not-found line for an unknown template', () => {
-    setupPage('b20f0000-0000-4000-8000-0000000000ff')
-    expect(screen.getByText(/nem található/i)).toBeInTheDocument()
+  it('shows an honest not-found line for an unknown template, with the way to the template list', async () => {
+    const user = userEvent.setup()
+    const router = createMemoryRouter(
+      [
+        { path: '/train/mesocycles/templates/:id', element: <MesoTemplateEditorPage /> },
+        { path: '/train/templates', element: <p>sablonlista</p> },
+      ],
+      { initialEntries: ['/train/mesocycles/templates/b20f0000-0000-4000-8000-0000000000ff'] },
+    )
+    render(<QueryWrapper><RouterProvider router={router} /></QueryWrapper>)
+    expect(screen.getByText('Ez a sablon nem található.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Sablonjaid' }))
+    expect(router.state.location.pathname).toBe('/train/templates')
   })
 
   it('opens a day on its own editor page and renames it in place', async () => {
@@ -122,9 +133,9 @@ describe('MesoTemplateEditorPage (mock mode)', () => {
     await user.clear(nameField)
     await user.type(nameField, 'Húzónap')
     expect(nameField).toHaveValue('Húzónap')
-    // back out of the day page — PageHead's back button is labelled "Vissza"
+    // back out of the day page — the page's own back button is labelled "Vissza"
     await user.click(screen.getByRole('button', { name: 'Vissza' }))
-    expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toBeInTheDocument()
     // the renamed day is what the week strip now shows
     expect(screen.getByRole('button', { name: /Húzónap · szerkesztés$/ })).toBeInTheDocument()
   })
@@ -145,7 +156,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     setupPage(REAL_TPL)
 
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
     await editWorkingSets(user, '5')
 
     await waitFor(() => expect(puts.length).toBeGreaterThan(0))
@@ -173,7 +184,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     setupPage(REAL_TPL)
 
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
     await editWorkingSets(user, '5')
 
     await waitFor(() => expect(puts.length).toBeGreaterThan(0))
@@ -206,7 +217,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     setupPage(REAL_TPL)
 
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
     // 1) Day edit: set the working-set count — updates local `days` and fires a background
     // PUT whose GET-refetch this test never awaits.
     await editWorkingSets(user, '5')
@@ -214,7 +225,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     await user.click(screen.getByRole('button', { name: 'Vissza' }))
 
     // 2) Rename, fired before any refetch could land (GET is static above).
-    const nameField = await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    const nameField = await screen.findByRole('textbox', { name: 'A terv neve' })
     await user.type(nameField, '!')
 
     await waitFor(() => expect(puts[puts.length - 1].title).toBe('Hypertrophy 04 · Tavasz!'))
@@ -226,13 +237,22 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     expect(renamePut.musclePriorities).toEqual({ back: 'emphasize' })
   })
 
+  it('shows the loading face in the shape of the editor until the template list resolves', async () => {
+    setupPage(REAL_TPL)
+    // real mode: the list query is still pending on the first paint — never „not found"
+    expect(screen.getByRole('status', { name: 'Sablon betöltése…' })).toBeInTheDocument()
+    expect(screen.queryByText('Ez a sablon nem található.')).not.toBeInTheDocument()
+    expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toBeInTheDocument()
+    expect(screen.queryByRole('status', { name: 'Sablon betöltése…' })).not.toBeInTheDocument()
+  })
+
   it('seeds the buffered name field from the fetched title', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/meso-templates`, () =>
         HttpResponse.json([{ ...REAL_TPL_FIXTURE, title: 'Kívülről átnevezve' }])),
     )
     setupPage(REAL_TPL)
-    expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Kívülről átnevezve')
+    expect(await screen.findByRole('textbox', { name: 'A terv neve' })).toHaveValue('Kívülről átnevezve')
   })
 
   it('debounces the rename PUT: typing several characters fires exactly one write, carrying the final title (mezo-yty6)', async () => {
@@ -250,7 +270,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     setupPage(REAL_TPL)
 
-    const nameField = await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    const nameField = await screen.findByRole('textbox', { name: 'A terv neve' })
     await user.type(nameField, 'XYZ')
     // The local field is authoritative immediately — no wait needed for the UI.
     expect(nameField).toHaveValue('Hypertrophy 04 · TavaszXYZ')
@@ -278,7 +298,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     const { unmount } = setupPage(REAL_TPL)
 
-    const nameField = await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    const nameField = await screen.findByRole('textbox', { name: 'A terv neve' })
     await user.type(nameField, '!')
     // Unmount immediately, well inside the debounce window — the pending write must still
     // fire rather than being silently lost.
@@ -306,7 +326,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     setupPage(REAL_TPL)
 
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
     const tile = (await screen.findAllByRole('button', { name: /· szerkesztés$/ }))[0]
     await user.click(tile)
     // Three keystrokes into the empty (placeholder "auto") starting-weight field: pre-fix
@@ -338,7 +358,7 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     const user = userEvent.setup()
     const { unmount } = setupPage(REAL_TPL)
 
-    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await screen.findByRole('textbox', { name: 'A terv neve' })
     await editWorkingSets(user, '7')
     // Unmount well inside the debounce window — the pending write must still fire.
     unmount()

@@ -1,18 +1,44 @@
-import type { CSSProperties } from 'react'
-import { Icon3D } from '@/shared/ui/clay'
-import { cn } from '@/shared/lib/cn'
+import { Acts, Box, Btn, Bub, Lk } from '@/shared/ui/folyadek'
 import type { RecoveryPeriod } from '@/data/train/recoveryApi'
 import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 import { KIMELO, reasonOf, recoveryIcon, skipEffect, skipLabel } from '@/features/train/logic/skipCopy'
 import { categoryCopy, estimateCopy } from '@/features/train/logic/recovery'
 
+// ============================================================
+// What a skipped or protected planned occurrence shows instead of its start action (Kihagyás S1
+// mezo-q4xt2.1, Kímélő mód S2 mezo-q4xt2.2). Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js
+// `skBlock()` / `skActs()` / `thero()` km branch / `kmIn()` / the „Visszatérő futás" line): a
+// callout box and its text links. On a hero the box stands in the body and the links on the liquid
+// action row, so both halves are exported on their own; the combined components are the form used
+// under a session's row (`inner`) and anywhere outside a hero.
+// ============================================================
+
+/** The box of a skipped occurrence: the reason's glyph (or the skip mark), „Kihagyva · {reason}", the calm effect line. */
+export function SkippedBox({ skip }: { skip: PlannedSkip }) {
+  // An advice skip (coach suggestion) reads as reasonless: the skip glyph, „Okot adok".
+  const reason = skip.source === 'ADVICE' ? undefined : reasonOf(skip)
+  return (
+    <Box icon={reason?.icon ?? 't-skip'} title={`Kihagyva · ${skipLabel(skip)}`} className="em-skipd">
+      <p>{skipEffect(skip)}</p>
+    </Box>
+  )
+}
+
+/** The two links of a skipped occurrence: „Másik ok" / „Okot adok" and „Visszavonom". */
+export function SkippedActs({ skip, onReason, onUndo }: { skip: PlannedSkip; onReason(): void; onUndo(): void }) {
+  const reason = skip.source === 'ADVICE' ? undefined : reasonOf(skip)
+  return (
+    <>
+      <Lk onClick={onReason}>{reason ? 'Másik ok' : 'Okot adok'}</Lk>
+      <Lk onClick={onUndo}>Visszavonom</Lk>
+    </>
+  )
+}
+
 /**
- * What a skipped planned occurrence shows instead of its start CTA (Kihagyás S1, mezo-q4xt2.1 —
- * prototype elo/edzes.html `skBlock()`): the reason's 3D icon (or the skip mark), „Kihagyva ·
- * {reason}", the calm effect line (the free-pass shield when the week's pass covers it), then
- * „Másik ok"/„Okot adok" and „Visszavonom". `inner` is the flat variant for use inside a glass
- * card (never glass in glass); the default wears its own glass (the Today hero). Styles:
- * prototype.css `── Kihagyás S1`.
+ * The skipped block as one piece. `inner` is the indented form under a session's row (prototype
+ * `.vs-in.col`: the box on the page ground, the two links under it); the default is the box with its
+ * link row, for use outside a hero.
  */
 export function SkippedBlock({ skip, inner, onReason, onUndo }: {
   skip: PlannedSkip
@@ -20,100 +46,87 @@ export function SkippedBlock({ skip, inner, onReason, onUndo }: {
   onReason(): void
   onUndo(): void
 }) {
-  // An advice skip (coach suggestion) reads as reasonless: t-skip icon, „Okot adok".
-  const reason = skip.source === 'ADVICE' ? undefined : reasonOf(skip)
+  if (inner) {
+    return (
+      <div className="fo-under col">
+        <SkippedBox skip={skip} />
+        <div className="em-skacts"><SkippedActs skip={skip} onReason={onReason} onUndo={onUndo} /></div>
+      </div>
+    )
+  }
   return (
     <>
-      <div className={cn('trm-skipd', inner ? 'is-in' : 'glass')}>
-        <Icon3D name={reason?.icon ?? 't-skip'} size={inner ? 28 : 34} />
-        <span>
-          <b>Kihagyva · {skipLabel(skip)}</b>
-          <small>
-            {skip.freePass && skip.source === 'USER' && <Icon3D name="t-shield" size={15} />}
-            {skipEffect(skip)}
-          </small>
-        </span>
-      </div>
-      <div className="trm-skacts">
-        <button type="button" className="trm-skact np-press" onClick={onReason}>
-          {reason ? 'Másik ok' : 'Okot adok'}
-        </button>
-        <button type="button" className="trm-skact np-press" onClick={onUndo}>
-          <Icon3D name="t-repeat" size={18} />Visszavonom
-        </button>
-      </div>
+      <SkippedBox skip={skip} />
+      <Acts className="em-skacts"><SkippedActs skip={skip} onReason={onReason} onUndo={onUndo} /></Acts>
     </>
   )
 }
 
-/**
- * The `recovery` variant (Kímélő mód S2, mezo-q4xt2.2 — prototype elo/edzes.html `kmHero()`): the
- * gym hero on a protected day. The category icon, „{Beteg vagy} · becslés: {2–3 nap}", the calm
- * sub-line, then „Ma mégis edzek" / „Jobban vagyok". Once the estimate has passed (and today's
- * check-in is not in yet) it asks „A becsült idő letelt — hogy vagy?" with Jobban vagyok / Még nem,
- * and „Ma mégis edzek" steps down to a quiet link. Presentational: the page owns the writes.
- */
-export function RecoveryBlock({ period, busy, onRelease, onBetter, onNotYet }: {
-  period: Pick<RecoveryPeriod, 'category' | 'estimate' | 'estimateExpired' | 'checkedInToday'>
+type RecoveryFace = Pick<RecoveryPeriod, 'category' | 'estimate' | 'estimateExpired' | 'checkedInToday'>
+const asks = (p: RecoveryFace) => p.estimateExpired && !p.checkedInToday
+
+/** The box of a protected day's gym hero (prototype `thero()` km): the category glyph, „{Beteg vagy} · becslés: {2–3 nap}",
+ *  the calm sub-line, and — once the estimate has passed and today's check-in is not in — the question. */
+export function RecoveryBox({ period }: { period: RecoveryFace }) {
+  const who = categoryCopy(period.category) ?? KIMELO.innerTitle
+  return (
+    <Box icon={recoveryIcon(period.category)} title={`${who} · ${estimateCopy(period.estimate, period.estimateExpired)}`} className="em-skipd">
+      <p>{KIMELO.heroSub}</p>
+      {asks(period) && <p><b className="em-kmq">{KIMELO.ask}</b></p>}
+    </Box>
+  )
+}
+
+/** The hero's actions on a protected day: „Jobban vagyok" (the button), „Még nem" while the question is open, „Ma mégis edzek". */
+export function RecoveryActs({ period, busy, onRelease, onBetter, onNotYet }: {
+  period: RecoveryFace
   busy?: boolean
   onRelease(): void
   onBetter(): void
   onNotYet(): void
 }) {
-  const who = categoryCopy(period.category) ?? KIMELO.innerTitle
-  const ask = period.estimateExpired && !period.checkedInToday
-  const better = (
-    <button type="button" className="trm-pill np-press" style={{ '--c': 'var(--dv-sage)' } as CSSProperties}
-      disabled={busy} onClick={onBetter}>
-      <Icon3D name="t-tick" size={18} />Jobban vagyok
-    </button>
-  )
   return (
     <>
-      <div className="trm-skipd glass">
-        <Icon3D name={recoveryIcon(period.category)} size={34} />
-        <span>
-          <b>{who} · {estimateCopy(period.estimate, period.estimateExpired)}</b>
-          <small>{KIMELO.heroSub}</small>
-          {ask && <em className="trm-kmq">{KIMELO.ask}</em>}
-        </span>
-      </div>
-      <div className="trm-skacts">
-        {ask ? (
-          <>
-            {better}
-            <button type="button" className="trm-skact np-press" disabled={busy} onClick={onNotYet}>Még nem</button>
-          </>
-        ) : (
-          <>
-            <button type="button" className="trm-skact np-press" disabled={busy} onClick={onRelease}>
-              <Icon3D name="t-dumbbell" size={18} />Ma mégis edzek
-            </button>
-            {better}
-          </>
-        )}
-      </div>
-      {ask && <button type="button" className="trm-kmlink" disabled={busy} onClick={onRelease}>Ma mégis edzek</button>}
+      <Btn disabled={busy} onClick={onBetter}>Jobban vagyok</Btn>
+      {asks(period) && <Lk disabled={busy} onClick={onNotYet}>Még nem</Lk>}
+      <Lk disabled={busy} onClick={onRelease}>Ma mégis edzek</Lk>
     </>
   )
 }
 
-/** A protected occurrence inside a glass card (prototype `kmInner()`): flat, never glass in glass. */
+/**
+ * The `recovery` variant as one piece (Kímélő mód S2 — prototype `thero()` km branch): the box, then
+ * the actions. Presentational: the page owns the writes.
+ */
+export function RecoveryBlock(p: {
+  period: RecoveryFace
+  busy?: boolean
+  onRelease(): void
+  onBetter(): void
+  onNotYet(): void
+}) {
+  return (
+    <>
+      <RecoveryBox period={p.period} />
+      <Acts className="em-skacts"><RecoveryActs {...p} /></Acts>
+    </>
+  )
+}
+
+/** A protected occurrence under its row (prototype `kmIn()`): one quiet indented line. */
 export function KimeloInner() {
   return (
-    <div className="trm-skipd is-in">
-      <Icon3D name="t-kimelo" size={28} />
-      <span><b>{KIMELO.innerTitle}</b><small>{KIMELO.innerSub}</small></span>
+    <div className="fo-under em-kmin">
+      <span><Bub icon="t-kimelo" size={24} /> <b>{KIMELO.innerTitle}</b> · {KIMELO.innerSub}</span>
     </div>
   )
 }
 
-/** The next planned run during the comeback (prototype `rCb` card): „Visszatérő futás". */
+/** The next planned run during the comeback (prototype `rampOn` line): „Visszatérő futás". */
 export function RunRampInner() {
   return (
-    <div className="trm-skipd is-in">
-      <Icon3D name="t-sprout" size={28} />
-      <span><b>{KIMELO.runRampTitle}</b><small>{KIMELO.runRamp}</small></span>
+    <div className="fo-under em-rampin">
+      <span><Bub icon="t-sprout" size={24} /> <b>{KIMELO.runRampTitle}</b> · {KIMELO.runRamp}</span>
     </div>
   )
 }

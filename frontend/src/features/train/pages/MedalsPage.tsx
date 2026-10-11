@@ -1,38 +1,26 @@
 // ============================================================
-// Mezo · MedalsPage (Medálok) — Mozaik 2.0 re-face (mezo-d20.3.2).
-// Source of truth: docs/design_2.0/prototypes/src/edzes-body.html #page-medal
-// (p-gold tone, ×1.18): compact-subpage-hero (s-medal spot + total count, "ebből
-// N e hónapban" sub) → date-grouped `.mz-facttile` cabinet rows (REKORD/CÉL
-// chip mirrors the prototype's qxp pill) → the honest backfill line. The
-// server replays the entire existing set history to build this (spec
-// 2026-07-30-medal-collection-design.md §3/§13), so the cabinet can already be
-// full of medals on first open — the backfill line says so rather than
-// letting it read as if every row happened live.
+// Mezo · MedalsPage (Medálok) — Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `medals()`).
+// The hero is a shelf of drops, one per medal (this month's deeper), with its key and the
+// count; then the cabinet in two numbered cards — „E hónapban" and „Korábbról" — grouped by
+// date. A medal is a capsule (`Rcap`): the liquid stands above the dashed line of the OLD
+// record (previousValue / value); a reached target is the green capsule with no line.
 //
-// Grouped by date, newest first. Within a date the incoming (server) order is
-// kept — unlike WorkoutSummary's medal block, which sorts RECORD-first for a
-// single session's recap, the cabinet is a chronological record and must not
-// re-sort by tier. Every data hook + the grouping/labels are verbatim from
-// before this slice — only the face changed.
+// The server replays the entire existing set history to build this (spec
+// 2026-07-30-medal-collection-design.md §3/§13), so the cabinet can already be full on first
+// open — the hero's support line says so rather than letting it read as if every row
+// happened live.
 //
-// Üveg re-dress (mezo-me75u.4, prototypes/uveg-edzes.html#medals): the glass back
-// pill + the PageHero halo variant (t-record art, amber) replace the clay s-medal spot
-// hero; each cabinet row is ONE amber glass row (sage for a target) with its tier icon
-// in a lit well and a small lit REKORD/CÉL tag above the value; the chip is a flat
-// amber-lit pill; the empty cabinet is the dashed `.uv-empty`. CSS: the
-// `── uveg edzes gyakorlatok (` block of prototype.css, scoped to `.gyx-medals`.
+// Grouped by date, newest first. Within a date the incoming (server) order is kept — the
+// cabinet is a chronological record and must not re-sort by tier. Every data hook, the
+// grouping and the labels are verbatim from before this slice — only the face changed.
 // ============================================================
 import { useMedals } from '@/data/hooks'
 import type { Medal } from '@/data/train/medalTypes'
+import { MedalRow } from '@/features/train/components/folyadek'
+import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import {
-  MEDAL_TIER_COPY, MEDAL_TYPE_LABEL, MEDAL_UNIT_LABEL, formatMedalNumber, medalValueLabel,
-} from '@/features/train/logic/medalLabels'
-import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
-import { cn } from '@/shared/lib/cn'
-import { Icon3D } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
+  Card, EmptyTank, FrameBack, Hero, Lab, Legend, Note, Page, Section, Skel, Tags, useFrameTitle,
+} from '@/shared/ui/folyadek'
 
 interface DateGroup { date: string; medals: Medal[] }
 
@@ -50,138 +38,78 @@ function groupByDate(medals: Medal[]): DateGroup[] {
     .map(([date, ms]) => ({ date, medals: ms }))
 }
 
-function MedalRow({ medal, index }: { medal: Medal; index: number }) {
-  const tier = MEDAL_TIER_COPY[medal.tier]
-  const typeLabel = MEDAL_TYPE_LABEL[medal.type] ?? medal.type
+function Groups({ groups }: { groups: DateGroup[] }) {
   return (
-    <div
-      className={cn('mz-facttile mz-w-gold gyx-medal glass', medal.tier === 'TARGET' && 'is-target')}
-      data-tier={medal.tier}
-      style={{ '--c': tier.accent, '--i': index } as React.CSSProperties}
-    >
-      <span className="uv-well gyx-well" aria-hidden="true"><Icon3D name={tier.icon} size={34} /></span>
-      <span className="gyx-grow">
-        <span className="gyx-type">{typeLabel}</span>
-        <strong className="gyx-name">{medal.exerciseName}</strong>
-        {/* RECORD only — TARGET_HIT never carries a previousValue (nothing beaten).
-            previousDate can be null (mock-mode medalEvaluator shape) — drop the
-            "…óta állt" clause cleanly rather than render a dangling date. */}
-        {medal.tier === 'RECORD' && medal.previousValue != null && (
-          <span className="gyx-prev">
-            {`Előző: ${formatMedalNumber(medal.previousValue)} ${MEDAL_UNIT_LABEL[medal.unit] ?? ''}`.trim()}
-            {medal.previousDate ? ` · ${huMonthDay(medal.previousDate)} óta állt` : ''}
-          </span>
-        )}
-      </span>
-      <span className="gyx-end">
-        <span className="gyx-tag">{tier.tag}</span>
-        <b className="gyx-val">{medalValueLabel(medal)}</b>
-      </span>
-    </div>
-  )
-}
-
-function MedalsLoadingSkeleton() {
-  return (
-    <div role="status" aria-label="Betöltés…">
-      <div className="mz-page-head"><Skeleton width={60} height={16} /></div>
-      <div style={{ display: 'grid', justifyItems: 'center', gap: 8, padding: '9px 17px 14px' }}>
-        <Skeleton width={110} height={18} />
-        <Skeleton variant="circle" width={58} height={58} />
-        <Skeleton width={70} height={40} />
-      </div>
-      <div style={{ padding: '2px 17px 19px' }}>
-        <div className="col gap-sm">
-          {Array.from({ length: 3 }, (_, i) => (
-            <SkeletonCard key={i} style={{ padding: 13 }}>
-              <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                <Skeleton variant="circle" width={20} height={20} />
-                <div className="col gap-xs flex-1">
-                  <Skeleton width="55%" height={13} />
-                  <Skeleton width="35%" height={9} />
-                </div>
-                <Skeleton width={40} height={9} />
-              </div>
-            </SkeletonCard>
+    <>
+      {groups.map((g) => (
+        <div key={g.date} className="er-group">
+          <Lab>{huMonthDayDow(g.date)}</Lab>
+          {g.medals.map((m, i) => (
+            <MedalRow key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`} medal={m} />
           ))}
         </div>
-      </div>
-    </div>
+      ))}
+    </>
   )
 }
 
 export function MedalsPage() {
   const { data: medals, isPending } = useMedals()
+  useFrameTitle({ title: 'Medálok', eyebrow: 'Edzés' })
+  const back = <FrameBack className="fo-backpill" history fallback="/train">‹ Edzés</FrameBack>
 
-  if (isPending) return <MedalsLoadingSkeleton />
+  if (isPending) return <Page className="er-page">{back}<Skel blocks={[230, 64, 150, 150]} /></Page>
 
-  const groups = groupByDate(medals)
+  if (medals.length === 0) {
+    return (
+      <Page className="er-page">
+        {back}
+        <Hero label="Medálok" verdict="Még nincs medálod." sub="Az első megdöntött rekord ide kerül." data-kalauz-anchor="medals-hero">
+          <EmptyTank icon="t-record">Még nincs medálod — az első megdöntött rekord ide kerül.</EmptyTank>
+        </Hero>
+      </Page>
+    )
+  }
+
   const thisMonth = localDateString().slice(0, 7)
+  const groups = groupByDate(medals)
+  const now = groups.filter((g) => g.date.startsWith(thisMonth))
+  const earlier = groups.filter((g) => !g.date.startsWith(thisMonth))
   const monthCount = medals.filter((m) => m.date.startsWith(thisMonth)).length
+  const capsNote = <Note>A kapszulán a vonal a régi rekord — a folyadék fölötte áll. A zöld kapszula teljesített cél.</Note>
 
   return (
-    <MozaikPage tone="gold" className="gyx-page gyx-medals">
-      <PageHead glass history fallback="/train" label="Edzés" />
-      <EntranceGroup>
-        <PageHero
-          art="t-record"
-          accent="var(--dv-amber)"
-          big={medals.length}
-          name="Medálok"
-          sub={medals.length > 0 ? `ebből ${monthCount} e hónapban` : undefined}
-          kalauzAnchor="medals-hero"
-        />
-        <PageBody>
-          {medals.length === 0 ? (
-            <div className="gyx-empty uv-empty">
-              <Icon3D name="t-record" size={70} />
-              <p>Még nincs medálod — az első megdöntött rekord ide kerül.</p>
-            </div>
-          ) : (
-            <>
-              <div className="gyx-chiprow">
-                <span className="gyx-count uv-flat"><Icon3D name="t-record" size={18} />{medals.length} medál</span>
-              </div>
-              {/* Honest backfill note (spec §13 "Backfill surprise"): the server replays
-                  the whole existing set history, so the cabinet can already be full on
-                  first open — this says so instead of implying every row was live. */}
-              <p className="gyx-note">
-                A medálok visszamenőleg, a korábban logolt szetteid alapján épültek fel — nem mindegyiket élőben szerezted.
-              </p>
-              {/* The prototype's #page-medal stagger: each date group's eyebrow +
-                  its cards ride one running 60ms cadence (40 · 100 · 160 …). The
-                  armed EntranceGroup above was shipping with nothing to animate. */}
-              <div className="gyx-groups">
-                {(() => {
-                  let d = 40
-                  const nextD = () => { const v = d; d += 60; return v }
-                  return groups.map((g) => (
-                    <div key={g.date}>
-                      <span
-                        className="mz-eyebrow uv-eyebrow gyx-date rise"
-                        style={{ '--d': `${nextD()}ms` } as React.CSSProperties}
-                      >
-                        {huMonthDayDow(g.date)}
-                      </span>
-                      <div className="gyx-list">
-                        {g.medals.map((m, i) => (
-                          <div
-                            key={`${m.type}-${m.exerciseName}-${m.date}-${m.setIndex ?? i}`}
-                            className="rise"
-                            style={{ '--d': `${nextD()}ms` } as React.CSSProperties}
-                          >
-                            <MedalRow medal={m} index={i} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                })()}
-              </div>
-            </>
-          )}
-        </PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+    <Page className="er-page er-cards">
+      {back}
+      {/* Honest backfill line (spec §13 "Backfill surprise"): the server replays the whole
+          existing set history, so the cabinet can already be full on first open. */}
+      <Hero
+        label="Medálok"
+        verdict={`${medals.length} medál, ebből ${monthCount} e hónapban.`}
+        sub="A medálok visszamenőleg, a korábban logolt szetteid alapján épültek fel — nem mindegyiket élőben szerezted."
+        data-kalauz-anchor="medals-hero"
+      >
+        <div className="er-shelf" aria-hidden="true">
+          {medals.map((_, i) => <i key={i} className={i < monthCount ? 'new' : undefined} />)}
+        </div>
+        <Legend items={[
+          { label: <><b>{monthCount}</b> e hónapban</>, color: 'var(--fo-gold)' },
+          { label: <><b>{medals.length - monthCount}</b> korábbról</>, color: '#F3C766' },
+        ]} />
+        <Tags items={[{ icon: 't-record', label: `${medals.length} medál` }]} />
+      </Hero>
+      {now.length > 0 && (
+        <>
+          <Section n={1} title="E hónapban" />
+          <Card><Groups groups={now} />{capsNote}</Card>
+        </>
+      )}
+      {earlier.length > 0 && (
+        <>
+          <Section n={now.length > 0 ? 2 : 1} title="Korábbról" />
+          <Card><Groups groups={earlier} />{now.length === 0 && capsNote}</Card>
+        </>
+      )}
+    </Page>
   )
 }

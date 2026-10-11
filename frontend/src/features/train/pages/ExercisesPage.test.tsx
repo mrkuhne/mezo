@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
@@ -8,7 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// The Titanium catalogue (parity P2 Task 4, mezo-lf3cv) — the retired page's top-5 shell
+// The catalogue in the Folyadék look (mezo-n4wf5.3; behaviour from parity P2 Task 4, mezo-lf3cv) — the retired page's top-5 shell
 // („Top gyakorlatok · rekordjaid", the dashed ghost rows, the ⋯/▶ sheets) is gone, so this
 // suite was rewritten from scratch rather than extended.
 //
@@ -34,54 +34,56 @@ const renderPage = () =>
     </QueryWrapper>,
   )
 
-const cards = () => Array.from(document.querySelectorAll<HTMLElement>('.gy-card'))
+const cards = () => Array.from(document.querySelectorAll<HTMLElement>('.er-list .fo-row'))
+const hero = () => document.querySelector<HTMLElement>('.fo-hero')!
 
-test('the poster carries the prototype eyebrow, title and lead verbatim', async () => {
-  const { container } = renderPage()
-  await screen.findByText('A mozdulataid')
-  const hero = container.querySelector('.gyx-hero')!
-  expect(within(hero as HTMLElement).getByText('Gyakorlatok')).toBeInTheDocument()
-  expect(within(hero as HTMLElement).getByText(
+test('the hero carries the label, the verdict with the two REAL counts, and the lead verbatim', async () => {
+  renderPage()
+  expect(await screen.findByText('A mozdulataid')).toHaveClass('fo-hero-lbl')
+  // 6 catalogue rows; 3 of them carry a record (Dead Hang's record has no catalogue row).
+  expect(within(hero()).getByText('6 gyakorlat, 3 rekorddal.')).toHaveClass('fo-hero-verdict')
+  expect(within(hero()).getByText(
     'Minden gyakorlat egy helyen — a rekordjaiddal és a medáljaiddal együtt.',
   )).toBeInTheDocument()
 })
 
-test('the poster foot shows three REAL counts (katalógus · rekordos sorok · medálok)', async () => {
-  const { container } = renderPage()
+test('the hero graphic is the kettlebell filled to the share of exercises with a record', async () => {
+  renderPage()
   await screen.findByText('A mozdulataid')
-  const foot = container.querySelector('.gyx-foot')!
-  // 6 catalogue rows; 3 of them carry a record (Dead Hang's record has no catalogue row);
-  // 2 medals land on catalogue rows (Leg Press's medal has no catalogue row).
-  expect(foot.textContent).toBe('6 gyakorlat3 rekorddal2 medál')
+  const fill = hero().querySelector('.fo-hero-left svg.fo-fill')
+  expect(fill).not.toBeNull()
+  // 3 of 6 → the liquid's surface stands at half height (viewBox 0 0 100 100)
+  expect(fill!.querySelector('.fo-fill-wv path')!.getAttribute('d')).toMatch(/^M-100 50 /)
 })
 
 test('the counts stay honest at zero — an empty catalogue says 0 of everything', async () => {
   server.use(
     http.get(`${API_BASE}/api/train/exercises`, () => HttpResponse.json([])),
   )
-  const { container } = renderPage()
+  renderPage()
   await screen.findByText('A mozdulataid')
-  expect(container.querySelector('.gyx-foot')!.textContent).toBe('0 gyakorlat0 rekorddal0 medál')
+  expect(within(hero()).getByText('0 gyakorlat, 0 rekorddal.')).toBeInTheDocument()
+  expect(within(hero()).getByRole('button', { name: /medál/ })).toHaveTextContent('0 medál')
   expect(screen.getByText('Nincs ilyen gyakorlat a tárban.')).toBeInTheDocument()
 })
 
-test('one card per catalogue exercise: art, name, muscle label', async () => {
+test('one row per catalogue exercise: muscle chip, name, muscle label', async () => {
   renderPage()
   await screen.findByText('A mozdulataid')
   expect(cards()).toHaveLength(6)
   const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
-  expect(within(row).getByText('Hát (közép)')).toBeInTheDocument()
-  expect(row.querySelector('.muscle-chip')).toBeTruthy()
+  expect(row.querySelector('small')).toHaveTextContent(/^Hát \(közép\)/)
+  expect(row.querySelector('.ex-mchp .muscle-chip')).toBeTruthy()
 })
 
 test('a logged exercise shows its estimated 1RM and its medal count', async () => {
   renderPage()
   await screen.findByText('A mozdulataid')
   const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
-  const best = row.querySelector('.gy-card-best')!
-  expect(within(best as HTMLElement).getByText('133,3 kg')).toBeInTheDocument()
-  expect(within(best as HTMLElement).getByText('becsült 1RM')).toBeInTheDocument()
-  expect(row.querySelector('.gy-medals')!.textContent).toContain('1')
+  expect(row.querySelector('.v')).toHaveTextContent('133,3 kg')
+  expect(row.querySelector('small')).toHaveTextContent('Hát (közép) · becsült 1RM · 1 medál')
+  // …and its level against the catalogue's strongest estimate
+  expect(row.querySelector('.fo-rowbar .fo-level')).not.toBeNull()
 })
 
 test('a logged exercise with an e1RM but no medals shows no medal segment at all — never a bare 0 (parity P2)', async () => {
@@ -91,18 +93,16 @@ test('a logged exercise with an e1RM but no medals shows no medal segment at all
   renderPage()
   await screen.findByText('A mozdulataid')
   const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
-  const best = row.querySelector('.gy-card-best')!
-  expect(within(best as HTMLElement).getByText('133,3 kg')).toBeInTheDocument()
-  expect(row.querySelector('.gy-medals')).toBeNull()
-  expect(within(row).queryByText('0')).toBeNull()
+  expect(row.querySelector('.v')).toHaveTextContent('133,3 kg')
+  expect(row.querySelector('small')!.textContent).toBe('Hát (közép) · becsült 1RM')
+  expect(row.textContent).not.toMatch(/medál/)
 })
 
 test('a logged exercise with an e1RM and a medal shows the medal segment (parity P2)', async () => {
   renderPage()
   await screen.findByText('A mozdulataid')
   const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
-  expect(row.querySelector('.gy-medals')).not.toBeNull()
-  expect(row.querySelector('.gy-medals')!.textContent).toContain('1')
+  expect(row.querySelector('small')!.textContent).toMatch(/ · 1 medál$/)
 })
 
 test('a logged exercise with no trustworthy estimate shows an em dash, never a zero', async () => {
@@ -110,8 +110,10 @@ test('a logged exercise with no trustworthy estimate shows an em dash, never a z
   await screen.findByText('A mozdulataid')
   // Box Jump is logged (plyo, 6 sessions) but carries no bestE1rm.
   const row = cards().find((c) => c.textContent?.includes('Box Jump'))!
-  expect(within(row).getByText('—')).toBeInTheDocument()
-  expect(within(row).queryByText('még nincs naplózva')).toBeNull()
+  expect(row.querySelector('.v')).toHaveTextContent('—')
+  expect(row.textContent).not.toMatch(/még nincs naplózva/)
+  // no estimate → no level to draw
+  expect(row.querySelector('.fo-level')).toBeNull()
 })
 
 test('a name-grouped record still attaches to its catalogue row', async () => {
@@ -126,8 +128,9 @@ test('an unlogged exercise says „még nincs naplózva"', async () => {
   renderPage()
   await screen.findByText('A mozdulataid')
   const row = cards().find((c) => c.textContent?.includes('Lateral Raise'))!
-  expect(within(row).getByText('még nincs naplózva')).toBeInTheDocument()
-  expect(row.querySelector('.gy-card-best')).toBeNull()
+  expect(row.querySelector('small')).toHaveTextContent(/ · még nincs naplózva$/)
+  expect(row.querySelector('.v')).toBeNull()
+  expect(row.querySelector('.fo-level')).toBeNull()
 })
 
 test('search matches the name, the muscle label, and is accent-blind', async () => {
@@ -195,32 +198,38 @@ test('a card’s accessible name carries its e1RM, its medal count and the empty
   expect(empty).toBeInTheDocument()
 })
 
-test('the poster foot’s medal count is a doorway to the medal vitrine — the other two facts are not (fix round 1)', async () => {
+test('the hero’s medal button is the doorway to the medal vitrine (fix round 1)', async () => {
   const user = userEvent.setup()
-  const { container } = renderPage()
+  renderPage()
   await screen.findByText('A mozdulataid')
-  const foot = container.querySelector('.gyx-foot')!
-
-  // Only the medal segment is a button; „gyakorlat" and „rekorddal" stay plain text.
-  expect(within(foot as HTMLElement).getAllByRole('button')).toHaveLength(1)
-
-  const medalLink = within(foot as HTMLElement).getByRole('button', { name: /medál/ })
+  // 2 medals land on catalogue rows (Leg Press's medal has no catalogue row).
+  const medalLink = within(hero()).getByRole('button', { name: /medál/ })
+  expect(medalLink).toHaveTextContent('2 medál')
   expect(medalLink).toHaveAccessibleName('2 medál · a medálvitrinbe')
   await user.click(medalLink)
   expect(screen.getByTestId('loc')).toHaveTextContent('/train/medals')
 })
 
-test('a quiet „＋ Új gyakorlat" row at the list’s foot opens the creation sheet (fix round 1)', async () => {
+test('„＋ Új gyakorlat" stands on the hero and at the list’s foot; both open the creation sheet (fix round 1)', async () => {
   const user = userEvent.setup()
   renderPage()
   await screen.findByText('A mozdulataid')
   expect(screen.queryByLabelText('Név')).toBeNull()
 
-  await user.click(screen.getByRole('button', { name: '＋ Új gyakorlat' }))
-  expect(await screen.findByLabelText('Név')).toBeInTheDocument()
-  expect(screen.getByLabelText('Videó URL')).toBeInTheDocument()
-  // Create mode only — no delete affordance reachable from here (Task 5's, not this door's).
-  expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).toBeNull()
+  const doors = screen.getAllByRole('button', { name: '＋ Új gyakorlat' })
+  expect(doors).toHaveLength(2)
+  expect(hero()).toContainElement(doors[0])
+  expect(hero()).not.toContainElement(doors[1])
+  for (const door of doors) {
+    await user.click(door)
+    expect(await screen.findByLabelText('Név')).toBeInTheDocument()
+    expect(screen.getByLabelText('Videó URL')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Új gyakorlat' })).toBeInTheDocument()
+    // Create mode only — no delete affordance reachable from here.
+    expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Mégse' }))
+    await waitFor(() => expect(screen.queryByLabelText('Név')).toBeNull())
+  }
 })
 
 test('the medals query’s own pending state is folded into the skeleton gate — no fake „0 medál" while it loads (fix round 1)', async () => {
@@ -237,24 +246,17 @@ test('the medals query’s own pending state is folded into the skeleton gate �
   expect(screen.queryByRole('status', { name: 'Betöltés…' })).not.toBeInTheDocument()
 })
 
-// Üvegesítés (mezo-me75u.4, prototypes/uveg-edzes.html#exercises): the ranking, not the paint.
-test('üveg: a halo hero with the 3D t-muscle art, glass cards tinted by their own muscle, t-record medal counts', async () => {
+// Folyadék (mezo-n4wf5.3, prototype vilagos/edzes.js `exercises()`): the structure, not the paint.
+test('folyadék: hero → 1 Keresés és szűrés → 2 Lista, kit rows on white cards, the old skin is gone', async () => {
   const { container } = renderPage()
   await screen.findByText('A mozdulataid')
-  const hero = container.querySelector('.gyx-hero')!
-  expect(hero).toHaveClass('uv-halo')
-  expect(hero).not.toHaveClass('glass')
-  expect(hero.querySelector('use')!.getAttribute('href')).toBe('#t-muscle')
-  for (const card of cards()) {
-    expect(card).toHaveClass('glass')
-    // the hue is published on the element that wears the glass (bible U1 rule 4)
-    expect(card.style.getPropertyValue('--c')).not.toBe('')
-    expect(card.querySelector('.glass')).toBeNull()
-  }
-  const row = cards().find((c) => c.textContent?.includes('Chest Supported Row'))!
-  expect(row.querySelector('.gy-medals use')!.getAttribute('href')).toBe('#t-record')
-  // the region chips are flat pills; the active one says so to assistive tech too
+  expect(container.querySelector('.fo-page')).not.toBeNull()
+  expect(Array.from(container.querySelectorAll('.fo-sec')).map((h) => h.textContent))
+    .toEqual(['1Keresés és szűrés', '2Lista'])
+  for (const card of cards()) expect(card.closest('.fo-card')).not.toBeNull()
+  expect(container.querySelector('.glass, [class*="gyx-"], [class*="gy-card"], [class*="uv-"], .mz-play')).toBeNull()
+  // the region pills say their state to assistive tech
   const chips = screen.getByRole('group', { name: 'Izomcsoport-szűrő' })
-  expect(within(chips).getByRole('button', { name: 'Mind' })).toHaveClass('is-on')
-  expect(chips.querySelector('.glass')).toBeNull()
+  expect(within(chips).getByRole('button', { name: 'Mind' })).toHaveAttribute('aria-pressed', 'true')
+  expect(within(chips).getByRole('button', { name: 'Láb' })).toHaveAttribute('aria-pressed', 'false')
 })

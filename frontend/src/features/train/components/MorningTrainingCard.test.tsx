@@ -18,7 +18,11 @@ test('lists offending slots with the target and fires both actions', () => {
     />,
   )
   expect(screen.getByText(/07:45–12:45/)).toBeInTheDocument()
-  expect(screen.getByText(/Kedd 18:30 · Csü 18:30/)).toBeInTheDocument()
+  // Folyadék (mezo-n4wf5.3, prototype `mtrCard()`): one row per gym slot that would move
+  expect(screen.getByText('Kedd 18:30 → 07:45')).toBeInTheDocument()
+  expect(screen.getByText('Csü 18:30 → 07:45')).toBeInTheDocument()
+  expect(screen.getAllByText('ezt az edzőtermi időpontot tennénk át')).toHaveLength(2)
+  expect(screen.getByRole('region', { name: 'Reggeli edzés-ablak' })).toHaveClass('fo-card')
   fireEvent.click(screen.getByRole('button', { name: 'Áthelyezés a reggeli ablakba' }))
   expect(onApply).toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Maradjon így' }))
