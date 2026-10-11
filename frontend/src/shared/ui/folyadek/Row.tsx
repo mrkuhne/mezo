@@ -7,6 +7,12 @@ export const Chev = () => (
   <svg className="chev" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
 )
 
+/** The end of a row that carries TWO things: a mark beside the capsules (`<RowEnd>`: a quest glyph + `Caps`), or a pill
+ *  stacked over them (`<RowEnd stack>`: a state / record tag over the set capsules). Goes into `Row right`. */
+export function RowEnd({ stack, className, children }: { stack?: boolean; className?: string; children: ReactNode }) {
+  return <span className={cx('fo-rr', stack && 'cl', className)}>{children}</span>
+}
+
 export interface RowProps extends PassProps {
   icon?: Icon3DName; title: ReactNode; sub?: ReactNode; value?: ReactNode; right?: ReactNode; onClick?: () => void
   /** Makes the row a real link (with the chevron). */

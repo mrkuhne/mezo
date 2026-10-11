@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -195,6 +198,24 @@ describe('Edzés · F4 · the dock', () => {
     expect(p.onExtend).toHaveBeenCalled()
     expect(p.onSkipRest).toHaveBeenCalled()
     expect(screen.queryByRole('button', { name: 'Lezárás' })).toBeNull()
+  })
+
+  it('the label of either face is the polite live region — never the ticking m:ss or the count', () => {
+    const { rerender } = render(<SessionDock {...props()} />)
+    expect(dock().querySelector('[aria-live]')).toHaveTextContent('Elvégzett munka')
+    expect(dock().querySelector('strong')!.closest('[aria-live]')).toBeNull()
+    rerender(<SessionDock {...props({ resting: true, remaining: 90, total: 150, exerciseName: 'Húzódzkodás' })} />)
+    const live = dock().querySelectorAll('[aria-live="polite"]')
+    expect(live).toHaveLength(1)
+    expect(live[0]).toHaveTextContent('pihenő · Húzódzkodás')
+  })
+
+  it('CSS: at ≤360px the RESTING dock drops its label (the timer and two buttons must fit); the toast sits in the toast tier, above a sheet', () => {
+    const css = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../../styles/folyadek-edzes-kozos.css'), 'utf8')
+    const narrow = css.slice(css.indexOf('@media (max-width: 360px)'))
+    expect(narrow).toMatch(/\.ex-dock\.is-resting \.ex-rest small \{ display: none; \}/)
+    const z = Number(/\.ex-mtw \{[^}]*z-index: (\d+)/.exec(css)?.[1])
+    expect(z).toBeGreaterThan(211)   // .sheet 200 / .sheet-nested 211 (styles/prototype.css)
   })
 
   it('portals into .phone-screen when there is one', () => {

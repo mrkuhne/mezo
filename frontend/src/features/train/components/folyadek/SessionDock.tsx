@@ -41,7 +41,7 @@ export function SessionDock(p: SessionDockProps) {
         <>
           <span className="ex-rest idle">
             <span className="g">
-              <small>Elvégzett munka</small>
+              <small aria-live="polite">Elvégzett munka</small>
               <strong>{p.doneSets} / {p.plannedSets} szett</strong>
               <LevelMarks pct={p.plannedSets > 0 ? (p.doneSets / p.plannedSets) * 100 : 0} height={10} />
             </span>

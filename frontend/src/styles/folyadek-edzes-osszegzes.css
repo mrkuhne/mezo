@@ -15,8 +15,7 @@
 .eo-nums .fo-facts + .fo-facts { margin-top: 8px; }
 .eo-nums .fo-facts:last-child { margin-bottom: 0; }
 
-/* ── a row's end: the record tag over the set capsules (prototype `.vs-rr.cl`) ── */
-.eo-rr { display: inline-flex; flex-direction: column; align-items: flex-end; gap: 5px; flex: 0 0 auto; }
+/* ── a row of the exercise list (its end is the kit's `RowEnd stack`) ── */
 .eo-top { color: var(--fo-ink); font-weight: 700; }
 
 /* ── the set rows: a warm-up and a set without a rep range carry their number where the verdict mark would stand;

@@ -125,6 +125,8 @@ it('renders every export once with realistic props and logs no console error', (
           <K.SheetGraphic note="2 / 4 szett kész"><K.Caps n={4} done={2} size="big" /></K.SheetGraphic>
           <K.OptionVessels aria-label="Akarunk még?" value={1} onChange={() => {}} line={64} items={[{ label: 'Kevés volt', pct: 34 }, { label: 'Pont jó', pct: 64 }, { label: 'Sok volt', pct: 100 }]} />
           <K.FootCol sub="Röplabda · elmentve"><K.Btn>Vissza a mai napra</K.Btn></K.FootCol>
+          <K.Row title="Evezés" sub="4 szett" right={<K.RowEnd stack><K.St tone="warn">Rekord</K.St><K.Caps n={4} done={4} /></K.RowEnd>} />
+          <K.TitleRow sticky context="3 / 15 szett kész" title="Pull Day" onBack={() => {}} />
         </K.Card>
         <Ceremony />
         <K.Foot><K.Btn grow>Kész</K.Btn></K.Foot>
@@ -137,7 +139,7 @@ it('renders every export once with realistic props and logs no console error', (
     'Page', 'Foot', 'TwoBtn', 'Btn', 'Lk', 'Acts', 'Pill', 'Pills', 'Seg', 'St', 'Chips', 'Facts', 'Note', 'Txt', 'Why', 'Lab', 'Empty', 'ErrorRow', 'Head',
     'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big',
     'Tubes', 'Caps', 'LevelMarks', 'Split', 'Pour', 'Legend', 'DropsMeter', 'EmptyTank', 'Skel', 'Box', 'Tags', 'Stepper', 'Slider', 'Pair', 'SheetActs', 'InfoSheet',
-    'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass']
+    'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass', 'RowEnd', 'TitleRow']
   const known = [...rendered, 'Wave', 'MEMBER_LABEL', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar', 'starState', 'ratioStars', 'CEREMONY_MS']
   expect(Object.keys(K).filter((k) => !known.includes(k))).toEqual([])
   expect(container.querySelector('[data-testid="pg"]')).toHaveClass('fo-page', 'fo-dusk', 'has-foot', 'nonav')

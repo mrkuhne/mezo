@@ -1,9 +1,15 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { createRef } from 'react'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   Card, CeremonyCount, CeremonyReveal, CeremonyRoot, CupStage, DotsBtn, FootCol, Hero, OptionVessels, RangeBand, SheetGraphic,
-  CEREMONY_MS, ratioStars, starState, useCeremonyPass, Btn, Caps,
+  CEREMONY_MS, ratioStars, starState, useCeremonyPass, Btn, Caps, Pair, Row, RowEnd, St, TitleRow,
 } from './index'
+
+const KIT_CSS = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../styles/folyadek-kit.css'), 'utf8')
 
 describe('folyadék kit · F4 pieces', () => {
   it('RangeBand: liquid to lo, hatch on to hi, on a scale that ends at the next round step; ticks keep clear of the range', () => {
@@ -144,5 +150,82 @@ describe('folyadék kit · the ceremony stage', () => {
     const ids = [...container.querySelectorAll('clipPath')].map((c) => c.id)
     expect(new Set(ids).size).toBe(2)
     ids.forEach((id) => expect(id).toMatch(/^[a-zA-Z0-9_-]+$/))
+  })
+})
+
+// The pieces the five in-workout areas each built locally, folded into the kit at integration (bible F2.4 / F3.6).
+describe('folyadék kit · F4 integration folds', () => {
+  it('TitleRow: the sub-page row of a chrome-free route — a named back button, the context line with the dot, the title as h1', () => {
+    const back = vi.fn()
+    const { container } = render(<TitleRow context="Pull Day · Okt 11" title="Edzés lezárva" backLabel="Bezárás" onBack={back} data-kalauz-anchor="session-start" />)
+    const root = container.querySelector('.fo-ptop') as HTMLElement
+    expect(root).toHaveAttribute('data-kalauz-anchor', 'session-start')
+    expect(root).not.toHaveClass('sticky-top')
+    expect(root.querySelector('.fo-trow > .fo-title > small > i')).toHaveAttribute('aria-hidden', 'true')
+    expect(root.querySelector('small')).toHaveTextContent('Pull Day · Okt 11')
+    const h1 = screen.getByRole('heading', { level: 1, name: 'Edzés lezárva' })
+    // not a focus target unless the screen asks for it
+    expect(h1).not.toHaveAttribute('tabindex')
+    fireEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
+    expect(back).toHaveBeenCalledTimes(1)
+  })
+
+  it('TitleRow: `sticky` pins it, `mark` sits beside the title, `headingRef` makes the title a focus target; back says „Vissza" by default', () => {
+    const ref = createRef<HTMLHeadingElement>()
+    const { container } = render(
+      <TitleRow sticky context="3 / 15 szett kész" title="Pull Day" onBack={() => {}} headingRef={ref} mark={<button type="button" className="fo-help" aria-label="Kalauz ehhez az oldalhoz">?</button>} />,
+    )
+    expect(container.querySelector('.fo-ptop')).toHaveClass('sticky-top')
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveClass('fo-back')
+    expect(container.querySelector('.fo-h.sm > h1 + .fo-help')).not.toBeNull()
+    expect(ref.current).toBe(screen.getByRole('heading', { level: 1 }))
+    expect(ref.current).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('TitleRow CSS: the back disc gets its 44px target and the pinned row its own frosted ground on ::before', () => {
+    expect(KIT_CSS).toMatch(/\.fo-ptop \.fo-ib::after \{[^}]*inset: -1px/)
+    expect(KIT_CSS).toMatch(/\.fo-ptop\.sticky-top::before \{[^}]*backdrop-filter/)
+    // the row itself carries no backdrop-filter (it would capture fixed descendants — F1.6)
+    expect(KIT_CSS).not.toMatch(/\.fo-ptop(\.sticky-top)? \{[^}]*backdrop-filter/)
+  })
+
+  it('RowEnd: a mark beside the capsules, or (`stack`) a pill over them — with nested kit pieces left alone', () => {
+    const { container, rerender } = render(<Row title="Evezés" right={<RowEnd><Caps n={3} done={1} /></RowEnd>} />)
+    const end = container.querySelector('.fo-row > .fo-rr') as HTMLElement
+    expect(end).not.toHaveClass('cl')
+    expect(end.querySelectorAll('.fo-caps > i')).toHaveLength(3)
+    rerender(<Row title="Evezés" right={<RowEnd stack><St tone="warn">Rekord</St><Caps n={3} done={3} /></RowEnd>} />)
+    const stacked = container.querySelector('.fo-rr.cl') as HTMLElement
+    expect([...stacked.children].map((c) => c.className.split(' ')[0])).toEqual(['fo-st', 'fo-caps'])
+    expect(KIT_CSS).toMatch(/\.fo-rr\.cl \{[^}]*flex-direction: column/)
+  })
+
+  it('Pair: a button tile can be switched off and carry data-*; a link tile is never disabled', () => {
+    const add = vi.fn(); const fin = vi.fn()
+    render(
+      <Pair items={[
+        { icon: 't-addex', label: 'Gyakorlat hozzáadása', disabled: true, onClick: add },
+        { icon: 't-tick', label: 'Edzés befejezése', data: { 'data-finish': 'full' }, onClick: fin },
+      ]} />,
+    )
+    const off = screen.getByRole('button', { name: 'Gyakorlat hozzáadása' })
+    expect(off).toBeDisabled()
+    fireEvent.click(off)
+    expect(add).not.toHaveBeenCalled()
+    const on = screen.getByRole('button', { name: 'Edzés befejezése' })
+    expect(on).toBeEnabled()
+    expect(on).toHaveAttribute('data-finish', 'full')
+    fireEvent.click(on)
+    expect(fin).toHaveBeenCalledTimes(1)
+    expect(KIT_CSS).toMatch(/\.fo-pair > button:disabled \{[^}]*opacity/)
+  })
+
+  it('a sheet that ends in a text link: the link\'s 44px hit area has its room INSIDE the scroller (no stray scroll), 22px in all', () => {
+    // `.fo-lk::after` reaches (44 - line height) / 2 ≈ 13px past the link; the scroller's own bottom padding holds it.
+    const frame = /\.sheet\.fo-sheet \{ padding-bottom: calc\((\d+)px \+ env\(safe-area-inset-bottom, 0px\)\); \}/.exec(KIT_CSS)
+    const scroller = /\.sheet\.fo-sheet > \.sheet-scroll \{ padding-bottom: (\d+)px; \}/.exec(KIT_CSS)
+    expect(frame && scroller).toBeTruthy()
+    expect(Number(scroller![1])).toBeGreaterThanOrEqual(13)
+    expect(Number(frame![1]) + Number(scroller![1])).toBe(22)
   })
 })

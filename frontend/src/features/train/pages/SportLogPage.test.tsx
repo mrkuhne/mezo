@@ -347,7 +347,7 @@ test('no emoji anywhere on either step — the art is the 3D sprite', async () =
 test('the picker is a closed hero + one numbered card; the page draws its own title row (the route has no chrome)', async () => {
   const { container } = renderPage()
   expect(await screen.findByRole('heading', { level: 1, name: 'Naplózás' })).toBeInTheDocument()
-  expect(container.querySelector('.es-top small')).toHaveTextContent('Sport · ma')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Sport · ma')
   expect(container.querySelector('.fo-hero')).toHaveAttribute('data-closed', 'true')
   expect(screen.getByRole('heading', { name: /Válassz sportot/ })).toBeInTheDocument()
   // every tile carries its own glyph in a bubble
@@ -360,7 +360,7 @@ test('the form is hero (glyph + mode switch) → 1 Idő és terhelés → 2 Kal�
   const { container } = renderPage()
   await pick(/Röplabda/)
   expect(await screen.findByRole('heading', { level: 1, name: 'Röplabda' })).toBeInTheDocument()
-  expect(container.querySelector('.es-top small')).toHaveTextContent('Naplózás · ma')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Naplózás · ma')
   expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('Hogy ment?')
   // the mode switch lives in the hero, named by the field
   expect(within(container.querySelector('.fo-hero') as HTMLElement).getByRole('group', { name: 'Típus' })).toBeInTheDocument()

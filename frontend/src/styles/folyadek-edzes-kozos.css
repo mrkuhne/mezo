@@ -180,8 +180,11 @@ button.ex-xl { width: 100%; padding: 0; border: 0; background: none; font-family
 .ex-rv { position: relative; flex: 0 0 auto; width: 34px; height: 50px; border-radius: 13px 13px 17px 17px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .12); }
 .ex-rv > i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, #19C7C0, #1877F2); }
 
-/* ── the record toast (`RecordToast`; edzes.js `.vs-mtw`, `.vs-mtoast`) ── sticky under the title bar, takes no room */
-.ex-mtw { position: sticky; top: calc(var(--fo-top-h, 0px) + 10px); height: 0; z-index: 40; }
+/* ── the record toast (`RecordToast`; edzes.js `.vs-mtw`, `.vs-mtoast`) ── sticky under the title bar, takes no room.
+   Its tier is the app's toast tier (styles/prototype.css `.toast-solo`, 300): ABOVE an open sheet (200 / 211) — a record on
+   an exercise's last set shows while the debrief is open. The page scroller is no stacking context, so the number competes
+   in the phone frame; nothing between the toast and the frame may become one (no transform / isolation on the page root). */
+.ex-mtw { position: sticky; top: calc(var(--fo-top-h, 0px) + 10px); height: 0; z-index: 300; }
 .ex-mtoast { position: absolute; left: 12px; right: 12px; top: 0; display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 24px; background: #fff; box-shadow: 0 20px 34px -18px rgba(233, 137, 43, .75), inset 0 0 0 2px color-mix(in srgb, var(--fo-gold) 50%, #fff); }
 .ex-mtoast > div { min-width: 0; }
 .ex-mtoast small { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .2px; color: color-mix(in srgb, var(--fo-gold) 62%, var(--fo-ink)); }
@@ -212,6 +215,9 @@ button.ex-xl { width: 100%; padding: 0; border: 0; background: none; font-family
   .ex-sets .v { font-size: 16px; }
   .ex-mstar > .ex-stars .t-ico { width: 14px; height: 14px; }
   .ex-pv { gap: 6px; margin-left: 14px; margin-right: 14px; }
+  /* the dock at 320: the timer and its two buttons fit, the rest label goes (edzes.js `.vs-rest small{display:none}`);
+     the idle face keeps its label — it has the room */
+  .ex-dock.is-resting .ex-rest small { display: none; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .ex-sw::after { transition: left .2s; }

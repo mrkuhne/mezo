@@ -15,7 +15,7 @@ import { ChallengeGenerationLoader } from '@/features/train/components/Challenge
 import { DeltaChip, Mchp, QuestTick, QuestType, QuestWhy, deepMuscle } from '@/features/train/components/folyadek'
 import { WorkoutOverloadLine, overloadMoves } from '@/features/train/components/WorkoutOverloadLine'
 import { challengeConfidenceLine, challengeTypeIcon, challengeTypeLabel, targetChips } from '@/features/train/logic/challengeDisplay'
-import { Acts, Box, Btn, Bub, Caps, Card, EmptyTank, Facts, Hero, Lk, Note, Page, RangeBand, Row, Section } from '@/shared/ui/folyadek'
+import { Acts, Box, Btn, Bub, Caps, Card, EmptyTank, Facts, Hero, Lk, Note, Page, RangeBand, Row, RowEnd, Section, TitleRow } from '@/shared/ui/folyadek'
 
 export interface BriefingExercise {
   id: string
@@ -51,15 +51,6 @@ export interface WorkoutBriefingProps {
   kalauzButton?: ReactNode
 }
 
-/** The quest type as the wording table names it (the wire label's own translation still says „PR-kísérlet"). */
-const questTypeLabel = (label: string) => {
-  const hu = challengeTypeLabel(label)
-  return hu === 'PR-kísérlet' ? 'Rekord-kísérlet' : hu
-}
-
-/** The chip says the step, its colour says the direction — the arrow of the old skin is dropped. */
-const chipText = (text: string) => text.replace(/^[↑↓]\s*/, '')
-
 export function WorkoutBriefing({
   title, eyebrow, minutes, exerciseCount, setCount, niggle, challenges, pending, failed, onRetry,
   ticked, onToggle, overload, exercises, onBack, onStart, kalauzButton,
@@ -81,15 +72,7 @@ export function WorkoutBriefing({
         </Btn>
       )}
     >
-      <div className="ei-top" data-kalauz-anchor="session-start">
-        <div className="fo-trow">
-          <button type="button" className="fo-ib fo-back" aria-label="Vissza" onClick={onBack}><span aria-hidden="true">‹</span></button>
-          <div className="fo-title">
-            <small><i aria-hidden="true" /><span>{eyebrow}</span></small>
-            <div className="fo-h sm"><h1>Eligazítás</h1>{kalauzButton}</div>
-          </div>
-        </div>
-      </div>
+      <TitleRow data-kalauz-anchor="session-start" context={eyebrow} title="Eligazítás" onBack={onBack} mark={kalauzButton} />
 
       <Hero
         aria-label={`${title} · várható időtartam`}
@@ -130,7 +113,7 @@ export function WorkoutBriefing({
             {challenges.map((c) => {
               const on = !!ticked[c.id]
               const why = openWhy === c.id
-              const type = questTypeLabel(c.typeLabel)
+              const type = challengeTypeLabel(c.typeLabel)
               return [
                 <Row
                   key={c.id}
@@ -186,19 +169,19 @@ export function WorkoutBriefing({
             sub={(
               <>
                 {e.sets} szett{e.goal ? ` · cél ${e.goal}` : ''}
-                {e.chip && <> <DeltaChip tone={e.chip.tone}>{chipText(e.chip.text)}</DeltaChip></>}
+                {e.chip && <> <DeltaChip tone={e.chip.tone}>{e.chip.text}</DeltaChip></>}
                 {e.why && <span className="ei-warn">{e.why}</span>}
               </>
             )}
             right={(
-              <span className="ei-rr">
+              <RowEnd>
                 {questOn(e.id) && (
                   <span className="ei-rq" role="img" aria-label="Van vállalt küldetés">
                     <Bub icon="t-quest" size={26} color="var(--fo-gold)" />
                   </span>
                 )}
                 <Caps n={e.sets} done={0} color={deepMuscle(e.muscle)} />
-              </span>
+              </RowEnd>
             )}
           />
         ))}

@@ -1,20 +1,5 @@
 /* ── Folyadék · Edzés · eligazitas (mezo-n4wf5.4, slice F4) ── Eligazítás (WorkoutBriefing). Rules of this area only, class prefix `.ei-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-edzes-kozos.css (`.ex-`). Motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* ── the title row ── `/train/session` is chrome-free (no title bar is mounted), so the page draws the bar's sub-page
-   row itself (round back, the context line, the title + the kalauz mark) — the recipe of `.es-top` (sport log flow). */
-.ei-top { padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; color: var(--fo-ink); font-family: var(--ff-body); }
-.ei-top .fo-ib::after { content: ''; position: absolute; inset: -1px; }
-/* The kalauz mark is handed in by the page as a button: whatever class it wears, it is the title bar's 22px help mark
-   (folyadek-frame.css `.fo-help`) with its 44px target. */
-.ei-top .fo-h > button:not(.fo-help) {
-  position: relative; width: 22px; height: 22px; margin-left: 8px; padding: 0; border: 0; vertical-align: middle; border-radius: 50%;
-  display: inline-grid; place-items: center; cursor: pointer; font: 800 12.5px/1 var(--ff-display); letter-spacing: 0;
-  color: color-mix(in srgb, var(--dom) 80%, var(--fo-ink)); background: #fff; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--dom) 30%, #fff);
-  transform: none; transition: none;
-}
-.ei-top .fo-h > button:not(.fo-help)::before { content: ''; position: absolute; inset: -11px; }
-.ei-top .fo-h > button:not(.fo-help):focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
-
 /* ── the quest card ── the first box / empty vessel of the card sits at its top edge */
 .ei-load > .fo-box, .ei-page .fo-card > .fo-box:first-child, .ei-page .fo-card > .fo-ev:first-child { margin-top: 0; }
 /* a quest row: the bold target stays ink on the quiet sub line (prototype `.fh-row small b`) */
@@ -23,12 +8,6 @@
 /* the note under the quests */
 .ei-page .fo-card > .fo-row + .fo-note, .ei-page .fo-card > .ex-why + .fo-note { margin-top: 12px; }
 
-/* ── the day's list ── the reason line under a row (prototype `.vs-warn`) · the row's end: quest mark + capsules (`.vs-rr`) */
+/* ── the day's list ── the reason line under a row (prototype `.vs-warn`); the row's end is the kit's `RowEnd` */
 .ei-warn { display: block; margin-top: 3px; color: var(--fo-warn); font-weight: 600; }
-.ei-rr { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .ei-rq { display: inline-grid; }
-
-/* ── 320px ── the capsules keep their place, the text wraps */
-@media (max-width: 360px) {
-  .ei-rr { gap: 5px; }
-}

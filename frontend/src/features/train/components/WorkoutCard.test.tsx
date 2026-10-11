@@ -503,7 +503,7 @@ test('row: the name, the sets and the goal, the vs-last-week chip, one capsule p
   expect(row).toHaveAttribute('data-state', 'now')
   expect(row).toHaveTextContent('Chest Supported Row')
   expect(row).toHaveTextContent('3 szett · cél 105 × 10')
-  expect(row.querySelector('.ex-dchip')).toHaveTextContent('↑ +2,5 kg')
+  expect(row.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
   expect(within(row).getByText('Most')).toHaveClass('fo-st', 'plan')
   const caps = within(row).getByRole('img', { name: '1 / 3 szett kész' })
   expect([...caps.querySelectorAll('i')].map((i) => i.className)).toEqual(['f', 'h', ''])

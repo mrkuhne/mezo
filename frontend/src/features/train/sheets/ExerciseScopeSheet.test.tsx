@@ -32,7 +32,7 @@ test('csere: a light sheet titled „old → new", the chosen exercise as a row,
   expect(within(dialog).getByText('a Hypertrophy 04 hátralévő 3 hetében is. A mentett sablonod nem változik.')).toBeInTheDocument()
   expect(within(dialog).queryByText(/Mezociklus/i)).not.toBeInTheDocument()
   // nothing logged on the old one: only the new one's empty capsules
-  const caps = dialog.querySelectorAll('.el-scope-caps .fo-caps')
+  const caps = dialog.querySelectorAll('.fo-rr .fo-caps')
   expect(caps).toHaveLength(1)
   expect(caps[0].querySelectorAll('i')).toHaveLength(3)
   expect(caps[0].querySelectorAll('i.f')).toHaveLength(0)
@@ -41,7 +41,7 @@ test('csere: a light sheet titled „old → new", the chosen exercise as a row,
 test('csere-kesz: the logged sets stay with the old exercise — said in the lead and drawn as full capsules', () => {
   render(<ExerciseScopeSheet {...props({ loggedOnReplaced: 2, newSets: 2 })} />)
   expect(screen.getByText('A 2 kész szett a Húzódzkodás-nál marad, a hátralévő 2 szett az újé.')).toBeInTheDocument()
-  const caps = document.querySelectorAll('.el-scope-caps .fo-caps')
+  const caps = document.querySelectorAll('.fo-rr .fo-caps')
   expect(caps).toHaveLength(2)
   expect(caps[0].querySelectorAll('i.f')).toHaveLength(2)
   expect(caps[1].querySelectorAll('i')).toHaveLength(2)

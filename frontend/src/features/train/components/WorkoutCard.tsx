@@ -31,7 +31,7 @@ import {
   Cell, Cells, DeltaChip, InfoLine, Mchp, QuestLine, SetGrid, ToolBtn, ToolRow, deepMuscle,
   type SetGridRow, type SetVerdict,
 } from '@/features/train/components/folyadek'
-import { Caps, DotsBtn, Hero, Row, St } from '@/shared/ui/folyadek'
+import { Caps, DotsBtn, Hero, Row, RowEnd, St } from '@/shared/ui/folyadek'
 import {
   type Session,
   type SetSide,
@@ -308,10 +308,10 @@ export function WorkoutRow({ exercise, session, tag, onFocus }: WorkoutRowProps)
       onClick={onFocus}
       chev
       right={(
-        <span className="ek-rr">
+        <RowEnd stack>
           {tag && <St tone={TAG[tag].tone}>{TAG[tag].text}</St>}
           <Caps n={count} done={done} cur={skipped || swappedOut ? undefined : done} color={deepMuscle(exercise.muscle)} label={`${done} / ${count} szett kész`} />
-        </span>
+        </RowEnd>
       )}
     />
   )

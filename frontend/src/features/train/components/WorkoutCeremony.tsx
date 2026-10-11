@@ -28,7 +28,7 @@
 // input is unknown is not rendered — never a 0 (minutes, XP, kcal). The one thing it reads
 // itself is the Fuel day's frame for the bowl, in a small child on step 2 only.
 // ============================================================
-import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Challenge } from '@/data/types'
 import type { Medal } from '@/data/train/medalTypes'
 import { useFuelDay } from '@/data/fuel/fuelHooks'
@@ -39,7 +39,7 @@ import { KcalBowl, MuscleStarRow, QuestCapsule, QuestType, Rcap, StarRow, kcalBo
 import type { Icon3DName } from '@/shared/ui/clay'
 import {
   Btn, Bub, Card, CeremonyCount, CeremonyReveal, CeremonyRoot, CupStage, Facts, FootCol, Hero, Legend, Lk, Note, Page, Row,
-  Section, St, TextArea, ratioStars, useCeremonyPass,
+  Section, St, TextArea, TitleRow, ratioStars, useCeremonyPass,
 } from '@/shared/ui/folyadek'
 import { VoiceField } from '@/shared/ui/voice/VoiceField'
 import { appendDictation } from '@/shared/lib/voice/useVoiceInput'
@@ -163,27 +163,6 @@ const CHALLENGE_OUTCOME: Record<CeremonyChallenge['status'], { label: string; to
   inconclusive: { label: 'nem értékelhető', tone: 'q' },
 }
 
-/**
- * The closing screens' own title row. `/train/session` and `/train/sport/log` are chrome-free (AppLayout mounts no title
- * bar there), so the screen draws the bar's sub-page row itself: round back, the context line, the title. The title is
- * the screen's `h1` and its focus target. Shared with `SportCeremony`.
- */
-export function CeremonyTop({ context, title, backLabel, onBack, headingRef }: {
-  context: ReactNode; title: ReactNode; backLabel: string; onBack: () => void; headingRef?: Ref<HTMLHeadingElement>
-}) {
-  return (
-    <div className="ec-top">
-      <div className="fo-trow">
-        <button type="button" className="fo-ib fo-back" aria-label={backLabel} onClick={onBack}><span aria-hidden="true">‹</span></button>
-        <div className="fo-title">
-          <small><i aria-hidden="true" /><span>{context}</span></small>
-          <div className="fo-h sm"><h1 tabIndex={-1} ref={headingRef}>{title}</h1></div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /** Step two's hero when the workout earned kcal: the bowl of the day with today's movement on top — or, without the
  *  day's frame, only the bowl glyph and the number. The whole hero opens Fuel (the link inside is its button). */
 function KcalHero({ kcal, dayKcal, stars, verdict, onGoFuel }: {
@@ -253,7 +232,7 @@ export function WorkoutCeremony({
           </FootCol>
         )}
       >
-        <CeremonyTop
+        <TitleRow
           context={`Edzés lezárva · ${verdict}`} title="Részletek" backLabel="Vissza"
           onBack={() => setStep('summary')} headingRef={headingRef}
         />
@@ -317,7 +296,7 @@ export function WorkoutCeremony({
         </Btn>
       )}
     >
-      <CeremonyTop
+      <TitleRow
         context={context ?? 'Edzés · ma'} title="Edzés lezárva" backLabel="Bezárás"
         onBack={onClose} headingRef={headingRef}
       />

@@ -238,10 +238,10 @@ test('mock mode: the hero is lean — no vs-last-week chip, no Múlt hét / Mai 
   expect(heroOf(EX1)!.querySelector('.ex-dchip')).toBeNull()
   expect(heroOf(EX1)!.querySelector('.pobanner')).toBeNull()
   expect(within(heroOf(EX1)!).queryByText('Múlt hét')).toBeNull()
-  expect(rowOf(EX2)!.querySelector('.ex-dchip')).toHaveTextContent('↑ +2,5 kg')
+  expect(rowOf(EX2)!.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
   // …and it is the same chip for the first exercise once another one is on top.
   fireEvent.click(rowOf(EX2)!)
-  expect(rowOf(EX1)!.querySelector('.ex-dchip')).toHaveTextContent('↑ +2,5 kg')
+  expect(rowOf(EX1)!.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
 })
 
 // ---- Execution card v2 (mezo-8xmf) → calm re-face (mezo-d20.3.9): the muscle-themed
@@ -297,11 +297,11 @@ test('mock mode: the small vessels on top are one per exercise; the one on top i
 
 test('the title row shows the workout title, the live set counter and Vissza — the menu moved to the hero', async () => {
   const { container } = setup()
-  expect(container.querySelector('.ek-top h1')).toHaveTextContent('Pull Day')
+  expect(container.querySelector('.fo-ptop h1')).toHaveTextContent('Pull Day')
   // The title row only carries the session's own set progress. WORKING sets only (mezo-i8ahy):
   // 15 = 3+3+3+3+3, the warm-up ramps count for nothing on screen.
-  expect(container.querySelector('.ek-top small')).toHaveTextContent('0 / 15 szett kész')
-  expect(container.querySelector('.ek-top')).toHaveAttribute('data-kalauz-anchor', 'session-start')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('0 / 15 szett kész')
+  expect(container.querySelector('.fo-ptop')).toHaveAttribute('data-kalauz-anchor', 'session-start')
   expect(container.querySelectorAll('.exdots i')).toHaveLength(0)
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Gyakorlat műveletek' })).toBeNull()
@@ -311,11 +311,11 @@ test('the title row shows the workout title, the live set counter and Vissza —
 test('completing a set marks the row done and advances the title row counter', async () => {
   const user = userEvent.setup()
   const { container } = setup()
-  expect(container.querySelector('.ek-top small')).toHaveTextContent('0 / 15 szett kész')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('0 / 15 szett kész')
   expect(doneRowsOf(EX1)).toHaveLength(0)
   await user.click(submitOf(EX1))
   expect(doneRowsOf(EX1)).toHaveLength(1)
-  expect(container.querySelector('.ek-top small')).toHaveTextContent('1 / 15 szett kész')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('1 / 15 szett kész')
 })
 
 // ---- rest wiring: "Szett kész ✓" morphs the dock into its resting look (mezo-xt65,
@@ -2042,7 +2042,7 @@ test('real mode: releasing a badge mid-workout POSTs an undo decision', async ()
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(await within(card(EX1)).findByRole('button', { name: 'PR-kísérlet küldetés · vállalva' }))
+  await user.click(await within(card(EX1)).findByRole('button', { name: 'Rekord-kísérlet küldetés · vállalva' }))
   await user.click(screen.getByRole('button', { name: 'Elengedem' }))
   await waitFor(() => expect(calls).toContain('decide:chal-1:undo'))
 })
@@ -2057,7 +2057,7 @@ test('real mode: a resolved (hit) challenge badge opens its outcome, with no act
   const user = userEvent.setup()
   setup()
   await enterList()
-  await user.click(await within(card(EX1)).findByRole('button', { name: 'PR-kísérlet küldetés · lezárva' }))
+  await user.click(await within(card(EX1)).findByRole('button', { name: 'Rekord-kísérlet küldetés · lezárva' }))
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Elengedem|Visszaveszem/ })).not.toBeInTheDocument()
 })
@@ -2225,9 +2225,9 @@ test('each row carries its own vs-last-week chip — the reference content is pe
   setup()
   // ex1 (+2,5 kg, weight lever) and ex3 (+1 rep, rep lever) each show their OWN signal.
   // The chip rides the exercise's ROW; bring another exercise on top to read the first one's.
-  expect(rowOf(EX3)!.querySelector('.ex-dchip')).toHaveTextContent('↑ +1 ism.')
+  expect(rowOf(EX3)!.querySelector('.ex-dchip')).toHaveTextContent('+1 ism.')
   fireEvent.click(rowOf(EX2)!)
-  expect(rowOf(EX1)!.querySelector('.ex-dchip')).toHaveTextContent('↑ +2,5 kg')
+  expect(rowOf(EX1)!.querySelector('.ex-dchip')).toHaveTextContent('+2,5 kg')
 })
 
 test('a fully logged exercise reads as complete and offers no editable row', async () => {

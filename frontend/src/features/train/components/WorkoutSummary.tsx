@@ -30,7 +30,7 @@ import { ExerciseReview, ReviewMedalRow } from '@/features/train/components/Exer
 import { Mchp, Rcap, deepMuscle } from '@/features/train/components/folyadek'
 import type { Icon3DName } from '@/shared/ui/clay'
 import {
-  Acts, Btn, Caps, Card, Facts, FrameBack, Hero, HeroGraphic, Lab, LevelMarks, Lk, Note, Page, Row, Section, St, Tags,
+  Acts, Btn, Caps, Card, Facts, FrameBack, Hero, HeroGraphic, Lab, LevelMarks, Lk, Note, Page, Row, RowEnd, Section, St, Tags,
   TextArea, Tubes, Txt, useFrameTitle, type VialItem,
 } from '@/shared/ui/folyadek'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
@@ -274,10 +274,10 @@ export function WorkoutSummary({
               ? 'kihagyva · nincs szett'
               : <>top szett <b className="eo-top">{e.topChip ? `${hu(e.topChip.weight)} × ${e.topChip.reps}` : '—'}</b>{e.noteCount > 0 && ` · ${e.noteCount} jegyzet`}</>}
             right={(
-              <span className="eo-rr">
+              <RowEnd stack>
                 {e.hasRecord && <St tone="warn">Rekord</St>}
                 <Caps n={Math.max(e.plannedSets, e.doneSets)} done={e.doneSets} color={deepMuscle(e.muscle)} />
-              </span>
+              </RowEnd>
             )}
             chev
             aria-label={`${e.name} — ${setsWord(e)}`}

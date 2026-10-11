@@ -788,3 +788,33 @@ button.fo-row:disabled, .fo-row-main:disabled { opacity: .5; cursor: default; }
 }
 @keyframes fo-spill { 0% { opacity: 0; transform: translateY(26px) scale(.3); } 45% { opacity: 1; transform: translateY(-8px) scale(1); } 100% { opacity: 1; transform: none; } }
 @keyframes fo-cupwv { to { transform: translateX(40px); } }
+
+/* ══ F4 integration (mezo-n4wf5.4) ══ the pieces the five in-workout areas each built locally, folded into one recipe. */
+
+/* ── the title row of a chrome-free route (`TitleRow`; four local twins before: `.es-top`, `.ei-top`, `.ek-top`, `.ec-top`) ──
+   the app title bar's sub-page row (`.fo-trow`, folyadek-frame.css), drawn by the page because no title bar is mounted. */
+.fo-ptop { padding: calc(18px + env(safe-area-inset-top, 0px)) 18px 12px; color: var(--fo-ink); font-family: var(--ff-body); }
+.fo-ptop .fo-ib::after { content: ''; position: absolute; inset: -1px; }   /* 42px disc → a 44px hit area */
+.fo-ptop h1:focus { outline: none; }
+.fo-ptop h1:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; border-radius: 6px; }
+/* pinned (`sticky`): `.sticky-top` gives top: 0 (no bar above); the frosted ground sits on ::before, as the title bar's does
+   (a backdrop-filter on the row itself would capture fixed descendants — F1.6). */
+.fo-ptop.sticky-top { z-index: 30; background: none; isolation: isolate; }
+.fo-ptop.sticky-top::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: color-mix(in srgb, #F8FCFD 78%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); }
+@media (max-width: 360px) { .fo-ptop.sticky-top { padding-left: 14px; padding-right: 14px; } }
+
+/* ── a row's end with two things (`RowEnd`; edzes.js `.vs-rr` / `.vs-rr.cl`) ── a mark beside the capsules, or (`.cl`)
+   a pill stacked over them. */
+.fo-rr { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.fo-rr.cl { flex-direction: column; align-items: flex-end; gap: 5px; }
+@media (max-width: 360px) { .fo-rr:not(.cl) { gap: 5px; } }
+
+/* ── a switched-off tile of `Pair` ── */
+.fo-pair > button:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: no-preference) { .fo-pair > button:disabled:active { transform: none; } }
+
+/* ── a sheet that ENDS in a text link („Mégse", „Hagyjuk") ── the link's 44 px hit area (`.fo-lk::after`) reaches past the
+   link's own box; as the last thing in the scroller it added ~13 px of stray scroll to a sheet that fits. The room for
+   it moves from the frame's bottom padding into the scroller (22 px in all, as before): nothing moves on screen. */
+.sheet.fo-sheet { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+.sheet.fo-sheet > .sheet-scroll { padding-bottom: 14px; }

@@ -23,10 +23,9 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { verdictFor } from '@/features/train/logic/cerScore'
 import type { SportScore } from '@/features/train/logic/sportScore'
-import { CeremonyTop } from '@/features/train/components/WorkoutCeremony'
 import {
   Btn, Bub, Card, CeremonyCount, CeremonyReveal, CeremonyRoot, CupStage, Facts, FootCol, Note, Page, Row, Section,
-  useCeremonyPass,
+  TitleRow, useCeremonyPass,
 } from '@/shared/ui/folyadek'
 
 export interface SportCeremonyProps {
@@ -75,7 +74,7 @@ export function SportCeremony({ score, sportName, minutes, rpe, kcal, xpGained, 
       nonav className="ec-page ec-sport"
       foot={<FootCol sub={`${sportName} · elmentve`}><Btn onClick={onClose}>Vissza a mai napra</Btn></FootCol>}
     >
-      <CeremonyTop
+      <TitleRow
         context={`${sportName} · ma`} title="Mozgás lezárva" backLabel="Bezárás"
         onBack={onClose} headingRef={headingRef}
       />

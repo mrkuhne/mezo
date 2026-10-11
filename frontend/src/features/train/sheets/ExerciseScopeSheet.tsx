@@ -11,7 +11,7 @@
 import type { ExerciseLibraryItem } from '@/data/types'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { Mchp, deepMuscle } from '@/features/train/components/folyadek'
-import { Caps, FoSheetHead, Lab, Note, Row } from '@/shared/ui/folyadek'
+import { Caps, FoSheetHead, Lab, Note, Row, RowEnd } from '@/shared/ui/folyadek'
 import { Sheet } from '@/shared/ui/Sheet'
 
 export type ChangeScope = 'TODAY' | 'MESO'
@@ -71,10 +71,10 @@ export function ExerciseScopeSheet({
                 left={<Mchp muscle={item.muscle} />} title={item.name}
                 sub={`${MUSCLE_LABELS[item.muscle] ?? item.muscle} · ${lastTop ? `múltkor ${lastTop} — innen jön a javaslat` : 'még nem csináltad — a súlyt te adod meg'}`}
                 right={(
-                  <span className="el-scope-caps">
+                  <RowEnd>
                     {kept > 0 && <Caps n={kept} done={kept} color={deepMuscle(replacedMuscle ?? item.muscle)} />}
                     <Caps n={newSets} done={0} color={deepMuscle(item.muscle)} />
-                  </span>
+                  </RowEnd>
                 )}
               />
             </div>

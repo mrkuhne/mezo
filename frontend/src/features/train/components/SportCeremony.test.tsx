@@ -54,8 +54,8 @@ test('the screen draws its own title row (the route is chrome-free); the title t
   const heading = screen.getByRole('heading', { level: 1 })
   expect(heading).toHaveTextContent('Mozgás lezárva')
   expect(heading).toHaveFocus()
-  expect(container.querySelector('.ec-top small')).toHaveTextContent('Kerékpár · ma')
-  await user.click(container.querySelector('.ec-top .fo-back') as HTMLElement)
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Kerékpár · ma')
+  await user.click(container.querySelector('.fo-ptop .fo-back') as HTMLElement)
   expect(onClose).toHaveBeenCalledTimes(1)
 })
 

@@ -94,16 +94,16 @@ test('the title row is the screen\'s heading and takes focus; the stage says the
   const heading = screen.getByRole('heading', { level: 1 })
   expect(heading).toHaveTextContent('Edzés lezárva')
   expect(heading).toHaveFocus()
-  expect(container.querySelector('.ec-top .fo-trow .fo-back')).not.toBeNull()
+  expect(container.querySelector('.fo-ptop .fo-trow .fo-back')).not.toBeNull()
   // The stars in words — the old sr-only announcement is the stage's visible overline now.
   expect(container.querySelector('.fo-cer-stage .fo-hero-lbl')).toHaveTextContent('Így sikerült · 4,5 csillag az ötből')
 })
 
 test('the title row\'s context line is the caller\'s workout („Pull Day · szept 24."), with a plain fallback', () => {
   const { container, rerender } = render(<WorkoutCeremony {...props()} />)
-  expect(container.querySelector('.ec-top small')).toHaveTextContent('Edzés · ma')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Edzés · ma')
   rerender(<WorkoutCeremony {...props({ context: 'Pull Day · szept 24.' })} />)
-  expect(container.querySelector('.ec-top small')).toHaveTextContent('Pull Day · szept 24.')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Pull Day · szept 24.')
   // The Üveg overline is gone (README (c): „EDZÉS LEZÁRVA" → „Így sikerült · N csillag az ötből").
   rerender(<WorkoutCeremony {...props({ eyebrow: 'EDZÉS LEZÁRVA' })} />)
   expect(screen.queryByText('EDZÉS LEZÁRVA')).not.toBeInTheDocument()
@@ -405,9 +405,9 @@ test('step two opens on the kcal hero (with step one\'s stars and verdict in it)
   const { container } = render(<WorkoutCeremony {...props({ kcal: { value: 420, known: true }, dayKcal: 3100 })} />)
   await goToDetails(user)
   const page = container.querySelector('.ec-details') as HTMLElement
-  const order = [...page.querySelectorAll(':scope > .ec-top, :scope > .ec-kc, :scope > .ec-muscles, :scope > .ec-note, :scope > .fo-foot')]
-    .map((el) => el.className.split(' ').find((c) => c.startsWith('ec-') || c === 'fo-foot'))
-  expect(order).toEqual(['ec-top', 'ec-kc', 'ec-muscles', 'ec-note', 'fo-foot'])
+  const order = [...page.querySelectorAll(':scope > .fo-ptop, :scope > .ec-kc, :scope > .ec-muscles, :scope > .ec-note, :scope > .fo-foot')]
+    .map((el) => el.className.split(' ').find((c) => c.startsWith('ec-') || c === 'fo-foot' || c === 'fo-ptop'))
+  expect(order).toEqual(['fo-ptop', 'ec-kc', 'ec-muscles', 'ec-note', 'fo-foot'])
   // The recap: step one's verdict in one line, so step two reads as its sequel.
   const recap = page.querySelector('.ec-kc .ec-ms') as HTMLElement
   expect(recap).toHaveTextContent('Erős nap.')
@@ -603,7 +603,7 @@ test('step two takes focus on its own title even when the session has no muscle 
   const heading = screen.getByRole('heading', { level: 1 })
   expect(heading).toHaveTextContent('Részletek')
   expect(heading).toHaveFocus()
-  expect(container.querySelector('.ec-top small')).toHaveTextContent('Edzés lezárva · Erős nap.')
+  expect(container.querySelector('.fo-ptop small')).toHaveTextContent('Edzés lezárva · Erős nap.')
   expect(screen.queryByText('A mai edzésen · izomcsoportok')).not.toBeInTheDocument()
   // „Hogy ment?" is then the first numbered section.
   expect([...container.querySelectorAll('.fo-sec')].map((h) => h.textContent)).toEqual(['1Hogy ment?'])
@@ -625,7 +625,7 @@ test('both ways back return to step one — and never replay the ceremony', asyn
   expect(container.querySelector('.ec-tally [data-cer-count]')).toHaveTextContent('9')
   // The title row's back on step two does the same.
   await goToDetails(user)
-  await user.click(container.querySelector('.ec-top .fo-back') as HTMLElement)
+  await user.click(container.querySelector('.fo-ptop .fo-back') as HTMLElement)
   expect(container.querySelector('.ec-summary')).not.toBeNull()
   expect(raf).not.toHaveBeenCalled()
 })

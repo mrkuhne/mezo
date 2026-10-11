@@ -151,7 +151,7 @@ export function WorkoutVideoGlass({ open, exercise, onClose }: WorkoutVideoGlass
         <>
           <FoSheetHead
             eyebrow="Videó" titleId="wo-video-title" onClose={close}
-            title={exercise ? <>{exercise.name}{' '}<span className="el-sr">· videó</span></> : 'Videó'}
+            title={exercise ? <>{exercise.name}{' '}<span className="sr-only">· videó</span></> : 'Videó'}
             sub={exercise ? muscleLabel(exercise.muscle) : undefined}
             left={exercise ? <Mchp muscle={exercise.muscle} /> : undefined}
           />
@@ -214,7 +214,7 @@ export function ChallengeDetailGlass({ open, challenge, state, onToggle, onClose
         <>
           <FoSheetHead
             eyebrow={outcome ? 'Küldetés' : state === 'accepted' ? 'Küldetés · vállalva' : 'Küldetés · elengedve'}
-            title={<>{label}{' '}<span className="el-sr">küldetés</span></>} titleId="wo-quest-title"
+            title={<>{label}{' '}<span className="sr-only">küldetés</span></>} titleId="wo-quest-title"
             sub={challenge.exercise || undefined} icon={challengeTypeIcon(challenge.type)} onClose={close}
           />
           <p className="el-qd-target">{targetLine(challenge.target)}</p>

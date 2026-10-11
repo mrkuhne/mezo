@@ -1,11 +1,7 @@
 /* ── Folyadék · Edzés · kozben-lapok (mezo-n4wf5.4, slice F4) ── the session sheets (menu, video, quest, records, finish confirm, set edit, scope, debrief, note, extra-set prompt). Rules of this area only, class prefix `.el-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-edzes-kozos.css (`.ex-`). Motion only inside @media (prefers-reduced-motion: no-preference). */
 
 /* ── the sheet itself ── every session sheet is `.fo-sheet.el-sheet`; the kit owns the frame, the head and the pieces */
-/* the inside scrolls, never the frame — and the 44 px hit area of a closing text link („Mégse", „Hagyjuk") must not add a
-   stray scroll to a sheet that fits: the room for it moves from the frame's bottom padding into the scroller */
-.sheet.fo-sheet.el-sheet { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
-.el-sheet > .sheet-scroll { padding-bottom: 14px; }
-.el-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+/* the inside scrolls, never the frame (the kit keeps a closing text link's hit area inside the scroller) */
 /* a long title (an exercise name, „A → B") wraps instead of pushing the × out */
 .el-sheet .fo-shh h2 { overflow-wrap: anywhere; }
 /* a list of rows standing straight in the sheet (prototype `ls`): the kit's hairlines, first row flush */
@@ -46,8 +42,6 @@
 .el-set .fo-pills .fo-pill { min-width: 36px; justify-content: center; }
 .el-sheet .el-side { margin-top: 14px; }
 
-/* ── scope (`scope`) ── what stays with the old exercise + what the new one gets (`.vs-rr`) */
-.el-scope-caps { display: inline-flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 
 /* ── note (`note`) ── the field with the mic tile beside it (the tile keeps its own look until F8) */
 .el-note textarea.fo-in { min-height: 84px; border-radius: 18px; }

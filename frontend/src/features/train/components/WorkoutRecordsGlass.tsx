@@ -122,7 +122,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, goal, o
         <>
           <FoSheetHead
             eyebrow={`${MUSCLE_LABELS[exercise.muscle] ?? exercise.muscle}${record ? ` · ${record.sessionCount} alkalom` : ''}`}
-            title={<>{exercise.name}{' '}<span className="el-sr">előzményei és rekordjai</span></>} titleId="wo-records-title"
+            title={<>{exercise.name}{' '}<span className="sr-only">előzményei és rekordjai</span></>} titleId="wo-records-title"
             left={<Mchp muscle={exercise.muscle} />} onClose={close}
           />
 
@@ -131,7 +131,7 @@ export function WorkoutRecordsGlass({ open, exercise, record, todaySets, goal, o
               <Cell label="Múlt hét" value={`${setShort(last.weight, last.reps)} · RIR ${last.rir}`} />
               {goal && (
                 <Cell label="Mai cél" value={goal} target>
-                  {chip && <DeltaChip tone={chip.tone}>{chip.text.replace(/^[↑↓]\s*/, '')}</DeltaChip>}
+                  {chip && <DeltaChip tone={chip.tone}>{chip.text}</DeltaChip>}
                 </Cell>
               )}
             </Cells>

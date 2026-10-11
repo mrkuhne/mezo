@@ -23,7 +23,7 @@ import { WorkoutDock } from '@/features/train/components/WorkoutDock'
 import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
 import type { SessionGlass, SessionPick } from '@/features/train/components/WorkoutSessionSheets'
 import { ProgressVessels, VerdictLegend, deepMuscle } from '@/features/train/components/folyadek'
-import { Acts, Box, Btn, Bub, Card, Lk, Note, Page, Section } from '@/shared/ui/folyadek'
+import { Acts, Box, Btn, Card, Lk, Note, Page, Pair, Section, TitleRow } from '@/shared/ui/folyadek'
 
 /** What the page hands over. Every field is the page's own local of the same name. */
 export interface WorkoutSessionViewState {
@@ -72,22 +72,6 @@ export interface WorkoutSessionViewState {
 
 const FINISH_ICON = { skip: 't-skip', full: 't-tick', partial: 't-star' } as const
 
-/** The title row of the chrome-free session route: the app title bar's sub-page row (`.fo-trow`), drawn by the page.
- *  `sticky-top` pins it; the kalauz anchor and its mini ? live here (the shell's own ? does not exist on this route). */
-export function SessionTop({ title, eyebrow, onBack, kalauz }: { title: string; eyebrow: ReactNode; onBack: () => void; kalauz?: ReturnType<typeof useTutorial> }) {
-  return (
-    <div className="ek-top sticky-top" data-kalauz-anchor="session-start">
-      <div className="fo-trow">
-        <button type="button" className="fo-ib fo-back" aria-label="Vissza" onClick={onBack}><span aria-hidden="true">‹</span></button>
-        <div className="fo-title">
-          <small><i aria-hidden="true" /><span>{eyebrow}</span></small>
-          <div className="fo-h sm"><h1>{title}</h1>{kalauz && <KalauzButton kalauz={kalauz} />}</div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /** The mini ? that re-opens this route's kalauz (D11) — nothing when the route has none. */
 export function KalauzButton({ kalauz }: { kalauz: ReturnType<typeof useTutorial> }) {
   if (!kalauz.current) return null
@@ -114,13 +98,14 @@ export function WorkoutSessionView({ v, overlays, after }: { v: WorkoutSessionVi
     return e ? [{ ...x, off: x.off || !!e.replacedByName, label: `${e.name} · ${x.done} / ${x.planned} szett`, color: deepMuscle(e.muscle) }] : []
   })
   return (
-    // `wo-list`: interim marker only — tests/layout/layout.spec.ts waits for it after Indulás (bible F2.7); the old
-    // `.wo-list` rules are switched off by `.ek-page.wo-list` in folyadek-edzes-kozben.css. Delete the pair together.
-    <Page className="ek-page wo-list" nonav>
+    <Page className="ek-page" nonav>
       {/* First child: sticky, takes no room, floats over the title row for its few seconds. */}
       {toastMedal && <MedalToast medal={toastMedal.medal} extraCount={toastMedal.extra} />}
       {overlays}
-      <SessionTop title={W.title} eyebrow={`${doneSets} / ${totalSets} szett kész`} onBack={onExit} kalauz={kalauz} />
+      {/* The title row of the chrome-free route, pinned; the kalauz anchor and its mini ? live here (the shell's own ? does
+          not exist on this route). */}
+      <TitleRow sticky data-kalauz-anchor="session-start" title={W.title} context={`${doneSets} / ${totalSets} szett kész`}
+        onBack={onExit} mark={<KalauzButton kalauz={kalauz} />} />
 
       {/* A failed start is LOUD (mezo-e1ii9 fix round 1): the sets have nowhere to go, so the page says so and offers
           the retry instead of quietly eating them. */}
@@ -181,15 +166,11 @@ export function WorkoutSessionView({ v, overlays, after }: { v: WorkoutSessionVi
             <Acts><Lk onClick={() => setChangeFailed(false)}>Rendben</Lk></Acts>
           </div>
         )}
-        {/* The kit's `Pair` cannot switch a tile off: the same two tiles on its recipe (`.fo-pair`), with `disabled`. */}
-        <div className="fo-pair ek-pair">
-          <button type="button" disabled={!canChange} onClick={() => setPick({ mode: 'add' })}>
-            <Bub icon="t-addex" size={44} />Gyakorlat hozzáadása
-          </button>
-          <button type="button" data-finish={finishState} disabled={logBlocked} onClick={handleFinishTap}>
-            <Bub icon={FINISH_ICON[finishState]} size={44} />{finishState === 'skip' ? 'Edzés kihagyása' : 'Edzés befejezése'}
-          </button>
-        </div>
+        <Pair items={[
+          { icon: 't-addex', label: 'Gyakorlat hozzáadása', disabled: !canChange, onClick: () => setPick({ mode: 'add' }) },
+          { icon: FINISH_ICON[finishState], label: finishState === 'skip' ? 'Edzés kihagyása' : 'Edzés befejezése', disabled: logBlocked,
+            data: { 'data-finish': finishState }, onClick: handleFinishTap },
+        ]} />
         <VerdictLegend />
         <Note>
           A pipa menti a szettet, a sor végén az ítélet áll — a kész sor koppintva szerkeszthető. Két szett között a

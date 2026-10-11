@@ -16,7 +16,7 @@ function renderBriefing(over: Partial<WorkoutBriefingProps> = {}) {
     pending: false, failed: false, ticked: { a: true, b: false }, onToggle: vi.fn(),
     overload: null,
     exercises: [
-      { id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 10', chip: { text: '↑ +2,5 kg', tone: 'up' } },
+      { id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 10', chip: { text: '+2,5 kg', tone: 'up' } },
       { id: 'ex2', name: 'Lat Pulldown', muscle: 'back-wide', sets: 3, goal: null, chip: null },
     ],
     onBack: vi.fn(), onStart: vi.fn(), ...over,
@@ -29,8 +29,8 @@ describe('WorkoutBriefing', () => {
   it('explains a target past the range top, and only there (mezo-bk7sn)', () => {
     renderBriefing({
       exercises: [
-        { id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 9', chip: { text: '↑ +2,5 kg', tone: 'up' }, why: null },
-        { id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', sets: 3, goal: '15 × 13', chip: { text: '↑ +1 ism.', tone: 'up' },
+        { id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 9', chip: { text: '+2,5 kg', tone: 'up' }, why: null },
+        { id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', sets: 3, goal: '15 × 13', chip: { text: '+1 ism.', tone: 'up' },
           why: 'A 17,5 kg +17% ugrás lenne → előbb 13 ismétlés 15 kg-mal' },
       ],
     })
@@ -64,7 +64,7 @@ describe('WorkoutBriefing', () => {
     const { container } = render(<WorkoutBriefing {...renderBriefingProps({
       challenges: [ch('a', 'ex1')], ticked: { a: true }, niggle: { muscle: 'shoulder', muscleLabel: 'Jobb váll', detail: 'óvatosan' },
       overload: { weightUp: 1, weightDown: 0, repUp: 0, hold: 0 },
-      exercises: [{ id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 10', chip: { text: '↑ +2,5 kg', tone: 'up' } }],
+      exercises: [{ id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, goal: '105 × 10', chip: { text: '+2,5 kg', tone: 'up' } }],
     })} />)
     expect(container.querySelector('[class*="wbr"], [class*="wos-"], [class*="wo-"], [class*="cer-"], .glass, .uv-flat')).toBeNull()
     expect(container.querySelector('.fo-page.nonav.has-foot')).not.toBeNull()
@@ -138,9 +138,9 @@ describe('WorkoutBriefing', () => {
     const chip = screen.getByText('+2,5 kg')
     expect(chip).toHaveClass('ex-dchip', 'up')
     // every row ends in its empty set capsules, one per set
-    const rows = [...document.querySelectorAll('.ei-rr')]
+    const rows = [...document.querySelectorAll('.fo-rr')]
     expect(rows.map((r) => r.querySelectorAll('.fo-caps > i').length)).toEqual([4, 3])
-    expect(document.querySelector('.ei-rr .fo-caps > i.f')).toBeNull()
+    expect(document.querySelector('.fo-rr .fo-caps > i.f')).toBeNull()
     expect(screen.getByRole('heading', { level: 2, name: /A mai sor · 7 szett vár megtöltésre/ })).toBeInTheDocument()
   })
 

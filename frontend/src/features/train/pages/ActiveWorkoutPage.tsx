@@ -23,13 +23,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useGoal, useTimingProfile, useTrain, useWorkoutNote } from '@/data/hooks'
-import { localDateString } from '@/shared/lib/dates'
+import { huMonthDay, localDateString } from '@/shared/lib/dates'
 import { screenScroller, scrollToTop } from '@/shared/lib/screenScroll'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
-import { KalauzButton, SessionTop, WorkoutSessionView } from '@/features/train/components/WorkoutSessionView'
+import { KalauzButton, WorkoutSessionView } from '@/features/train/components/WorkoutSessionView'
 import { type FocusEvent, dockNumbers, finishState as finishStateOf, heroExerciseId, nextFocus } from '@/features/train/logic/sessionFocus'
 import { WorkoutSessionSheets } from '@/features/train/components/WorkoutSessionSheets'
 import type { ChallengeBadgeState } from '@/features/train/components/WorkoutMenuGlass'
@@ -64,7 +64,7 @@ import {
   unskipExercise as unskipExerciseModel,
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
-import { Page, Skel } from '@/shared/ui/folyadek'
+import { Page, Skel, TitleRow } from '@/shared/ui/folyadek'
 import type { ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutCeremony, ceremonyChallenges, ceremonyRecord } from '@/features/train/components/WorkoutCeremony'
 import { cerScore, muscleStarRows } from '@/features/train/logic/cerScore'
@@ -187,7 +187,7 @@ function SessionSkeleton() {
   const goBack = useBackNav('/train')
   return (
     <Page className="ek-page" nonav>
-      <SessionTop title="Edzés" eyebrow="Betöltés…" onBack={goBack} />
+      <TitleRow sticky title="Edzés" context="Betöltés…" onBack={goBack} />
       <Skel blocks={[40, 430, 220]} />
     </Page>
   )
@@ -862,7 +862,8 @@ function ActiveWorkoutSession({
     return (
       <WorkoutCeremony
         score={score}
-        eyebrow="EDZÉS LEZÁRVA"
+        // The title row's context line: the workout's own name and its day.
+        context={`${W.title} · ${huMonthDay(localToday)}`}
         // The MEASURED duration (mezo-1jm8), now really wired (mezo-e1ii9, Task 3). T7 read it
         // off `todaySession.openWorkout`, which is indeed always stale — but the finish POST's
         // own response is not: `WorkoutInstanceResponse` carries startedAt/finishedAt/
@@ -956,7 +957,7 @@ function ActiveWorkoutSession({
   const pendingTotal = pendingSetCount(session)
   const pendingRows = pendingByExercise(session).map(({ id, left }) => {
     const e = exerciseById(id)
-    return { id, left, name: e?.name ?? '', muscle: e?.muscle ?? '' }
+    return { id, left, total: effectiveSetCount(session, id), name: e?.name ?? '', muscle: e?.muscle ?? '' }
   })
   const finishState = finishStateOf(session)
 
