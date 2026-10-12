@@ -159,7 +159,7 @@ describe('Fuel Mai in English', () => {
     expect(screen.getByRole('button', { name: 'Gentle mode, injury, day 2' })).toHaveTextContent('Gentle mode · injury · day 2')
     expect(screen.getByText('No dieting while you are injured')).toBeInTheDocument()
     expect(container.textContent).toContain('tissue rebuilds from it. This is not medical advice.')
-    expect(screen.getByText('You are travelling, estimating is fine')).toBeInTheDocument()
+    expect(screen.getByText('You are travelling: estimates are fine')).toBeInTheDocument()
     expect(screen.getByText('Gentle mode · stomach bug · day 2')).toBeInTheDocument()
     expect(screen.getByText('No calorie target today.')).toBeInTheDocument()
     expect(container.querySelector('.fa-gh .fo-hero-sub')).toHaveTextContent(
@@ -217,7 +217,7 @@ describe('Fuel Mai · loading and error', () => {
     })
 
   it.each([['hu', 'Most nem sikerült betölteni a napodat.', 'Amit eddig felírtál, megvan; csak megmutatni nem tudom.', 'Újrapróbálom'],
-    ['en', 'Your day could not be loaded just now.', 'What you have logged is safe; I just cannot show it.', 'Try again']] as const)(
+    ['en', 'Your day could not be loaded just now.', 'What you logged is safe. It just cannot be shown right now.', 'Try again']] as const)(
     'error (%s): one calm sentence and the retry', async (lang, title, sub, retry) => {
       setLang(lang, { persist: false })
       hoisted.state = 'error'

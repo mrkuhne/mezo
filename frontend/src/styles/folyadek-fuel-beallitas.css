@@ -12,11 +12,13 @@
 /* the tide (fuel.js `tide`, `.fh-chart`, `.fu-tide`): the meal windows as vessels on the 06–24 line */
 .fb-tide { display: block; width: 100%; height: auto; overflow: visible; margin: 12px 0 10px; }
 .fb-tide text { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; fill: var(--fo-sub); }
-.fb-tide text.val { fill: var(--fo-ink); font-weight: 650; }
+.fb-tide text.val { fill: var(--fo-ink); font-weight: 650; paint-order: stroke; stroke: #fff; stroke-width: 4px; stroke-linejoin: round; } /* the cut-off line may run behind a number: it never strikes it through */
 .fb-tide text.nm { fill: var(--fo-ink); font-weight: 600; }
 .fb-tide text.w { fill: var(--fo-warn); font-weight: 700; }
 
 /* ── fields side by side (fuel.js `.fx-two`, `.fc-ws`, `.fc-3`) ── */
+/* the windows row follows a note in the rhythm card: the first row of a card has no top padding of its own */
+.fb-rhythm > .fo-note + .fo-row { margin-top: 12px; }
 .fb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; align-items: end; }
 .fb-two > div { min-width: 0; }
 .fb-two.fb-ws { align-items: start; }

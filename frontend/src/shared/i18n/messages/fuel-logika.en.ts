@@ -72,7 +72,7 @@ export const fuelLogikaEn: Shape<typeof fuelLogikaHu> = {
     window: {
       morningSnack: 'Morning snack',
       eveningSnack: 'Evening snack',
-      preWorkoutSnack: 'Pre-workout snack',
+      preWorkoutSnack: 'Pre-training snack',
     },
     betweenMeals: 'Between meals',
     betweenMealsAt: (time) => `Between meals · ${time}`,
@@ -106,7 +106,7 @@ export const fuelLogikaEn: Shape<typeof fuelLogikaHu> = {
         body: 'Protein and fibre release the sugar slowly: this plate evens itself out.',
       },
       dress: {
-        title: 'Dress the carbs',
+        title: 'Pair the carbs',
         body: 'The sweet part is absorbed fast on its own. A little protein or fat with it (yoghurt, nuts) flattens the peak a lot.',
       },
       walk: {
@@ -118,13 +118,13 @@ export const fuelLogikaEn: Shape<typeof fuelLogikaHu> = {
         body: 'A few bites of vegetables or salad before the carbs slow the absorption, so the hill is flatter.',
       },
       order: {
-        title: 'Good direction, with one small thing',
+        title: 'On the right track, with one small tweak',
         body: 'If you can, eat the vegetables and the protein first and the carbs last: the order alone smooths the curve.',
       },
     },
     step: {
       halfSweet: {
-        title: 'Half the sweet part',
+        title: 'Halve the sweet part',
         body: 'Half of the sweet ingredient (honey, jam, juice, sugary dressing) is enough: it is the part absorbed fastest.',
       },
       smallerSide: {
@@ -147,13 +147,13 @@ export const fuelLogikaEn: Shape<typeof fuelLogikaHu> = {
     rubric: { standard: 'general', pre_workout: 'before training', post_workout: 'after training' },
   },
   recipeSlotFace: { fallback: 'Meal' },
-  energyBreakdown: { plannedLogged: 'Planned workout · logged', unplanned: 'Unplanned movement', plannedWeeklyAvg: 'Planned movement · weekly average' },
+  energyBreakdown: { plannedLogged: 'Planned training · logged', unplanned: 'Unplanned movement', plannedWeeklyAvg: 'Planned movement · weekly average' },
   stack: {
     zone: {
       wake: 'Wake-up',
       breakfast: 'Breakfast',
-      pre_workout: 'Pre-workout',
-      post_workout: 'Post-workout',
+      pre_workout: 'Before training',
+      post_workout: 'After training',
       lunch: 'Lunch',
       dinner: 'Dinner',
       evening: 'Evening',

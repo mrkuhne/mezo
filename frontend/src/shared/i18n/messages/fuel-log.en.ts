@@ -5,7 +5,7 @@ import type { fuelLogHu } from './fuel-log.hu'
 export const fuelLogEn: Shape<typeof fuelLogHu> = {
   page: {
     log: 'Log',
-    late: 'Late entry',
+    late: 'Late',
     edit: 'Edit',
     outside: 'Between meals',
     meal: 'Meal',
@@ -16,7 +16,7 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
     eyebrowNow: (kind, rel, time) => `${kind} · ${rel} · ${time}`,
     windowLabel: (label, span) => `${label} · ${span} · window`,
     free: 'Free entry · you pick the time',
-    pastNote: (day) => `What you log here is booked to **${day}**; it gets a score too.`,
+    pastNote: (day) => `What you log here goes to **${day}**; it gets a score too.`,
     saveLate: (day) => `Late entry · ${day}`,
   },
   composer: {
@@ -110,7 +110,7 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
     remove: 'Remove photo',
     take: 'Take a photo of the plate',
     tap: 'Tap to take a photo',
-    note: 'Take a photo, or write what you ate straight away above.',
+    note: 'Take a photo, or just write what you ate above.',
   },
   override: {
     kcal: (kcal) => `${kcal} kcal`,
@@ -124,7 +124,7 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
   pick: {
     pantryTitle: 'Pick from the shelf',
     pantrySub: 'Pantry · add',
-    pantrySearch: 'Search the Pantry…',
+    pantrySearch: 'Search the pantry…',
     pantrySearchAria: 'Search the pantry',
     catGroup: 'Category filter',
     all: 'All',
@@ -138,7 +138,7 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
     recipeSearchAria: 'Search the recipes',
     starred: 'starred',
     recipeNone: 'No such recipe.',
-    recipeRow: { one: (n) => `${n} ingredient · serving`, other: (n) => `${n} ingredients · serving` },
+    recipeRow: { one: (n) => `${n} ingredient · per serving`, other: (n) => `${n} ingredients · per serving` },
     perServing: 'kcal /serving',
   },
   cer: {
@@ -146,7 +146,7 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
     title: 'Now part of your day',
     context: (meal, time) => `${meal} · ${time}`,
     close: 'Close',
-    stars: (n) => `${n} of five stars`,
+    stars: (n) => `${n} of 5 stars`,
     cupAria: (score) => `Mezo’s rating: ${score} out of ten`,
     rating: 'Mezo’s rating',
     verdict: {

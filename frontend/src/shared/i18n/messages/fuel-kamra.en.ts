@@ -25,7 +25,7 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
   items,
   recipes: (n) => `${n} ${plural(n, { one: 'recipe', other: 'recipes' })}`,
   price: (amount, unit) => `${amount} ${unit}`,
-  back: { kitchen: 'Back to the Kitchen', pantry: 'Back to the Pantry' },
+  back: { kitchen: 'Back to Kitchen', pantry: 'Back to Pantry' },
 
   konyha: {
     eyebrow: (recipes) => `Fuel · ${recipes}`,
@@ -89,7 +89,7 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
   item: {
     eyebrow: 'Pantry',
     notFoundTitle: 'No such item',
-    notFound: 'You may have taken it off the shelf. Everything you still have is in the Pantry.',
+    notFound: 'You may have taken it off the shelf. Everything you still have is in your pantry.',
     kcalPer: (per) => `kcal / ${per}`,
     oneDose: 'one dose',
     zone: {
@@ -127,7 +127,7 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
     inYourDay: 'In your day',
     notScheduled: 'Not scheduled',
     amongSupplements: (zone, time) => `among your supplements · ${zone} ${time}`,
-    supplementsHint: 'You tick it on Supplements. Your schedule is there too',
+    supplementsHint: 'Tick it on Supplements; your schedule is there too',
     macros: 'Macros',
     quality: (per) => `Quality · per ${per}`,
     processing: 'Processing',
@@ -173,7 +173,7 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
   import: {
     title: 'New pantry item',
     sub: 'Import · photo and link',
-    lead: 'Photograph the product label or paste a product page link. Mezo reads out the name, macros and nutrients.',
+    lead: 'Photograph the product label or paste a product page link. Mezo reads the name, macros and nutrients from it.',
     photo: 'Photo',
     link: 'Link',
     labelPhoto: 'Label photo',
@@ -196,7 +196,7 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
     addFront: '+ front photo (name, brand)',
     addFrontAria: 'Add a front photo',
     nonePhoto: 'I found nothing usable in the photo. Try a sharper one, add a front photo (name, brand), or enter it by hand.',
-    noneLink: 'I found no nutrition values on this page. Enter it by hand in the Pantry.',
+    noneLink: 'I found no nutrition values on this page. Enter them by hand in your pantry.',
     errLink: 'The page couldn’t be read. Check the link or try again later.',
     errPhoto: 'The photo couldn’t be read. Try a sharper one or enter it by hand.',
     errTooBig: 'The image is too large (JPEG, PNG or WebP, 5 MB at most).',

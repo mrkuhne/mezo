@@ -90,9 +90,9 @@ describe('the shared Fuel logic speaks English', () => {
     en()
     const high = glycemicBand({ c: 90, sugarG: 50, fiberG: 1, p: 5, f: 2 })!
     expect(high.label).toBe('high')
-    expect(high.tip.title).toBe('Dress the carbs')
+    expect(high.tip.title).toBe('Pair the carbs')
     expect(high.expect.energy).toBe('A quick boost, then a dip')
-    expect(high.improve!.steps.map(s => s.title)).toContain('Half the sweet part')
+    expect(high.improve!.steps.map(s => s.title)).toContain('Halve the sweet part')
     expect(high.facts.map(f => f.label)).toEqual(['carbs', 'of which sugar', 'fibre', 'protein'])
     const low = glycemicBand({ c: 20, sugarG: null, fiberG: 8, p: 30, f: 10 })!
     expect(low.label).toBe('low')
@@ -127,7 +127,7 @@ describe('the shared Fuel logic speaks English', () => {
       energy: { base: 2272, planned: 900, extra: 120, balance: 0, target: 3292 },
       blocks: [], weightKg: 86, tdeeBootstrap: { bmr: 1893, neat: 1.2, formula: 'KATCH' }, segment: null, activityLabel: '', goalLabel: '',
     })!
-    expect(bd.movement.parts!.map(p => p.label)).toEqual(['Planned workout · logged', 'Unplanned movement'])
+    expect(bd.movement.parts!.map(p => p.label)).toEqual(['Planned training · logged', 'Unplanned movement'])
   })
 
   it('projectStackDay + the zone and day-part maps', () => {
@@ -143,13 +143,13 @@ describe('the shared Fuel logic speaks English', () => {
     })
     expect(slots.map(s => [s.label, s.anchorNote])).toEqual([
       ['Breakfast', 'with a meal'],
-      ['Pre-workout', `training −${PRE_WORKOUT_STACK_LEAD_MIN} min`],
+      ['Before training', `training −${PRE_WORKOUT_STACK_LEAD_MIN} min`],
       ['Bedtime', 'bed −30 min'],
     ])
     // the stored supplement name is never translated; a deleted item gets the catalog's placeholder
     expect(slots[0].entries[0].name).toBe('Kreatin')
     expect(slots[1].entries[0].name).toBe('(deleted pantry item)')
-    expect(STACK_ZONE_LABEL.post_workout).toBe('Post-workout')
+    expect(STACK_ZONE_LABEL.post_workout).toBe('After training')
     expect(Object.values(ZONE_LABELS)).toEqual(['Morning', 'Midday', 'Afternoon', 'Evening'])
   })
 

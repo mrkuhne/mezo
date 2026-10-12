@@ -115,7 +115,8 @@ function renderAt(id: string, search = '') {
 }
 
 // Folyadék (mezo-n4wf5.5): a hős a nap tálja, amibe az étkezés beleömlött — mellette a kcal, a nap-részesedés és a
-// logolás ideje; az ítélet az értékelés címsora (itt még nincs: „Rögzítve; az értékelés készül."), a gomb Mezo értékelése.
+// logolás ideje; az ítélet az értékelés címsora; ha a pontszám megvan, de címsor nincs, a pontszám áll ott („Mezo értékelése: 8,2.") —
+// a „Rögzítve; az értékelés készül." csak pontszám nélkül igaz. A gomb Mezo értékelése.
 test('a hős a jóváhagyott elrendezésben áll', () => {
   const { container } = renderAt('meal-1')
   const hero = container.querySelector('.fo-hero')!
@@ -124,7 +125,7 @@ test('a hős a jóváhagyott elrendezésben áll', () => {
   expect(hero.querySelector('.fx-pour')).not.toBeNull()
   expect(hero.querySelector('.fe-facts')).toHaveTextContent('a napod 18%-a a 2 400 kcal-os keretből · 16:40-kor logoltad')
   expect(hero.querySelector('.fx-pk')).toHaveTextContent('előtte üres volt a tál')
-  expect(hero.querySelector('.fo-hero-verdict')).toHaveTextContent('Rögzítve; az értékelés készül.')
+  expect(hero.querySelector('.fo-hero-verdict')).toHaveTextContent('Mezo értékelése: 8,2.')
   expect(within(hero as HTMLElement).getByRole('button', { name: 'Mezo értékelése 8,2' })).toBeInTheDocument()
   expect(within(hero as HTMLElement).getByRole('button', { name: /^Vércukor · (alacsony|közepes|magas)$/ })).toBeInTheDocument()
 })
@@ -320,6 +321,7 @@ test('értékelés nélkül a hős kimondja, hogy folyamatban van, és nincs gom
   DAY.meals.push(unscored)
   try {
     const { container } = renderAt('meal-unscored')
+    expect(container.querySelector('.fo-hero-verdict')).toHaveTextContent('Rögzítve; az értékelés készül.')
     expect(container.querySelector('.fe-pendl')).toHaveTextContent('Az értékelés folyamatban')
     expect(screen.queryByRole('button', { name: /Mezo értékelése/ })).not.toBeInTheDocument()
   } finally { DAY.meals.pop() }

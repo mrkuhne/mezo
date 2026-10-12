@@ -93,6 +93,8 @@
 .fe-mclock:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 
 @media (max-width: 360px) {
+  /* the bowl sits in a role=img wrapper here, so the shared narrow rule (`.gg > .fx-pour`) does not reach it */
+  .fe-mealhero .fx-ng > .gg > span > .fx-pour { width: 118px !important; }
   .fe-sc > .fo-big { font-size: 44px; }
   .fe-8 > .fo-vials { gap: 5px; }
   .fe-8 > .fo-vials > .fo-vial > small { font-size: 10px; }

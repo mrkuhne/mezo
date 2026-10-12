@@ -116,6 +116,14 @@ async function open(page: Page, route: string, lang: 'hu' | 'en') {
   await expect(page.locator('html')).toHaveAttribute('lang', lang)
 }
 
+/** Where the lit top tab sits in its row: the air on each side (negative = cut off), and whether the row scrolls. */
+const litTab = (page: Page) => page.evaluate(() => {
+  const nav = document.querySelector('.fo-top .fo-tabs') as HTMLElement
+  const row = nav.getBoundingClientRect()
+  const pill = nav.querySelector('a[aria-current="page"]')!.getBoundingClientRect()
+  return { left: Math.round(pill.left - row.left), right: Math.round(row.right - pill.right), scrolls: nav.scrollWidth > nav.clientWidth + 1, scrollLeft: nav.scrollLeft, name: nav.querySelector('a[aria-current="page"]')!.textContent }
+})
+
 for (const lang of LANGS) {
   for (const vp of WIDTHS) {
     for (const route of ROUTES) {
@@ -190,6 +198,10 @@ for (const lang of LANGS) {
           await expect(bar.locator('.fo-tabs a')).toHaveCount(4)
           await expect(bar.locator('.fo-tabs a[aria-current="page"]')).toHaveCount(1)
           await expect(bar.locator('.fo-back')).toHaveCount(0)
+          // the lit tab is whole inside the row's visible box, whatever the row had to scroll (bible F5.5)
+          const lit = await litTab(page)
+          expect(lit.left, 'the lit tab starts left of the tab row').toBeGreaterThanOrEqual(0)
+          expect(lit.right, 'the lit tab ends right of the tab row').toBeGreaterThanOrEqual(0)
         } else {
           await expect(page.locator('.fo-top.sub')).toHaveCount(1)
           await expect(bar.locator('.fo-tabs')).toHaveCount(0)
@@ -302,3 +314,28 @@ for (const route of ROUTES.filter((r) => r.hub)) {
     expect(later.invisible).toEqual([])
   })
 }
+
+// ── The four English tab names do not fit 320 px: the row scrolls, and the lit tab is always on screen (F5.5) ──
+// A frame rule (app/TopTabs), checked where it bites: on arrival at each Fuel hub and after every switch, forwards
+// and back, without the PAGE moving sideways. The row must really scroll here, or the check proves nothing.
+test('Fuel · Folyadék · en @ 320px: the lit top tab is on screen on arrival and after every switch', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 })
+  const hubs = ROUTES.filter((r) => r.hub)
+  expect(hubs.length).toBe(4)
+  for (const hub of hubs) {
+    await open(page, hub.path, 'en')
+    const lit = await litTab(page)
+    expect(lit.scrolls, 'the English tab row is wider than a 320 px screen').toBe(true)
+    expect(lit.left, `${hub.path}: ${lit.name} starts left of the row on arrival`).toBeGreaterThanOrEqual(0)
+    expect(lit.right, `${hub.path}: ${lit.name} ends right of the row on arrival`).toBeGreaterThanOrEqual(0)
+  }
+  // the last hub opened is Kitchen (the row is scrolled to its end): walk the tabs back and forth in place
+  for (const name of ['Trends', 'Today', 'Kitchen', 'Supplements', 'Today']) {
+    await page.locator('.fo-top .fo-tabs').getByRole('link', { name, exact: true }).click()
+    await expect(page.locator('.fo-top .fo-tabs a[aria-current="page"]')).toHaveText(name)
+    const lit = await litTab(page)
+    expect(lit.left, `${name} starts left of the row after the switch`).toBeGreaterThanOrEqual(0)
+    expect(lit.right, `${name} ends right of the row after the switch`).toBeGreaterThanOrEqual(0)
+    expect(await page.evaluate(() => document.documentElement.scrollLeft + (document.querySelector('.screen-content') as HTMLElement).scrollLeft)).toBe(0)
+  }
+})

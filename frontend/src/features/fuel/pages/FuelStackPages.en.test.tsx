@@ -37,7 +37,7 @@ describe('Kiegészítők in English', () => {
     expect(screen.getByText(/^What do I take today\? · \d of 8 taken$/)).toBeInTheDocument()
     const verdict = screen.getByText(/^Next: .+\.$/)
     // dose · zone, nothing after it (in Hungarian the stored reason follows)
-    expect(verdict.nextElementSibling?.textContent).toMatch(/ · (Wake-up|Breakfast|Pre-workout|Post-workout|Lunch|Dinner|Evening|Bedtime)$/)
+    expect(verdict.nextElementSibling?.textContent).toMatch(/ · (Wake-up|Breakfast|Before training|After training|Lunch|Dinner|Evening|Bedtime)$/)
     expect(screen.getByRole('button', { name: 'Mark as taken' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /^Today’s doses by time of day: \d of 8 taken$/ })).toBeInTheDocument()
     expect(screen.getAllByText('due now')).toHaveLength(1)
@@ -91,7 +91,7 @@ describe('Kiegészítők in English', () => {
     expect(screen.getByRole('heading', { name: /With meals · \d/ })).toBeInTheDocument()
     expect(screen.getAllByText(/· (automatic|manual)/).length).toBeGreaterThan(0)
     expect(screen.getByRole('region', { name: 'Meal matches' })).toHaveTextContent(/Meal match · macros and micros/)
-    expect(screen.getByRole('region', { name: 'Meal matches' })).toHaveTextContent(/\d+ g fat per serving · .+ wants a meal with fat\./)
+    expect(screen.getByRole('region', { name: 'Meal matches' })).toHaveTextContent(/\d+ g fat per serving · .+ is best taken with a meal that has fat\./)
     expect(screen.getByText('For information, not medical advice. If you take medication, always ask your doctor.')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Kreatin monohidrát settings' }))
@@ -156,7 +156,7 @@ describe('Kiegészítők in English', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
     const confirm = screen.getByRole('group', { name: 'Confirm stopping' })
-    expect(confirm).toHaveTextContent('Teszt gyógyszer will stop. The dose history stays; Fuel pages no longer count with it.')
+    expect(confirm).toHaveTextContent('Teszt gyógyszer will stop. The dose history stays; the Fuel pages no longer take it into account.')
     fireEvent.click(within(confirm).getByRole('button', { name: 'Cancel' }))
 
     fireEvent.click(screen.getByRole('button', { name: '+ Dose' }))

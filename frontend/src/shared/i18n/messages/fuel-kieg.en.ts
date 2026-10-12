@@ -22,7 +22,7 @@ export const fuelKiegEn: Shape<typeof fuelKiegHu> = {
     close: 'Close',
     cancel: 'Cancel',
     form: (raw, n) => (FORMS[raw] ? FORMS[raw][n === 1 ? 0 : 1] : raw),
-    stockUnit: (raw) => (raw === 'db' ? 'pcs' : raw),
+    stockUnit: (raw) => (raw === 'db' ? 'pcs' : raw === 'adag' ? 'doses' : raw),
   },
   hub: {
     eyebrow: (taken, total) => `Fuel · today · ${taken} / ${total}`,
@@ -114,9 +114,9 @@ export const fuelKiegEn: Shape<typeof fuelKiegHu> = {
     fatPerServing: (g) => `${g} g fat per serving`,
     proteinPerServing: (g) => `${g} g protein per serving`,
     fat: (g) => `${g} g fat`,
-    wantsFat: (name) => `${name} wants a meal with fat.`,
-    wantsProtein: (name) => `${name} wants a meal with protein.`,
-    advice: (name) => `${name} wants a meal with fat. Next time pair it with a fattier dish, or move it to dinner.`,
+    wantsFat: (name) => `${name} is best taken with a meal that has fat.`,
+    wantsProtein: (name) => `${name} is best taken with a meal that has protein.`,
+    advice: (name) => `${name} is best taken with a meal that has fat. Next time pair it with a fattier dish, or move it to dinner.`,
   },
   ref: {
     d3: {
@@ -268,7 +268,7 @@ export const fuelKiegEn: Shape<typeof fuelKiegHu> = {
     edit: 'Edit',
     stop: 'Stop',
     stopAria: 'Confirm stopping',
-    stopText: (name) => `${name} will stop. The dose history stays; Fuel pages no longer count with it.`,
+    stopText: (name) => `${name} will stop. The dose history stays; the Fuel pages no longer take it into account.`,
     stopYes: 'Stop it',
   },
   timing: {

@@ -75,6 +75,9 @@
 .fr-mr > .v > b { color: var(--fo-ink); font-weight: 700; }
 .fr-mr > .fo-level { width: 76px; flex: 0 0 auto; }
 .fr-fact strong { font-weight: 700; }
+/* the sheet's own door row (open / fill in the day) follows a list, a tip or a note: the kit strips the top padding of a row that
+   follows a non-row, so it would sit on the block above it */
+.fr-day :not(.fo-row) + button.fo-row { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--fo-hair); }
 
 @media (max-width: 360px) {
   .fr-wn { gap: 5px; margin: 12px 10px 0; }

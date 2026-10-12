@@ -67,6 +67,12 @@
 @media (max-width: 360px) {
   .fp-pot .fo-fill { width: 84px !important; }
   .fp-shelf .fo-stat > .fo-stat-n > em { font-size: 15px; letter-spacing: -.3px; }
+  /* a 123 px tile left the name 55 px beside the 40 px glyph: "Csirkemell" broke mid-word. A smaller glyph and tighter
+     padding give the name 75 px; `anywhere` stays as the fallback for a word longer than that */
+  .fp-shelf .fo-stat { padding: 12px 10px; }
+  .fp-shelf .fo-stat > .fo-stat-ic { right: 6px; top: 6px; width: 28px; height: 28px; }
+  .fp-shelf .fo-stat > .fo-stat-ic > svg { width: 18px; height: 18px; }
+  .fp-shelf .fo-stat > .fo-stat-k { padding-right: 28px; font-size: 11.5px; letter-spacing: -.01em; min-height: 30px; }
   .fp-n > .fp-dn { font-size: 17px; }
   .fp-4 { grid-template-columns: 1fr 1fr; }
   .fp-swap > div:first-child { flex-wrap: wrap; }

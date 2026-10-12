@@ -123,8 +123,8 @@ class MealScoringLanguageTest {
                 + " · 220 g protein / 380 g carbs / 95 g fat for a 3100 kcal day");
         assertThat(dim(b, "micro").detail()).isEqualTo("Fibre 13.6 g against a share of 10.8 g for this meal (126%).");
         assertThat(dim(b, "who").detail())
-            .isEqualTo("Sugar is 9% of the energy (WHO ≤10%) · salt is at 70% of its budget");
-        assertThat(row(dim(b, "who"), 1)).isEqualTo("Salt = 1 g / 1.4 g budget");
+            .isEqualTo("Sugar is 9% of the energy (WHO ≤10%) · salt is at 70% of its allowance");
+        assertThat(row(dim(b, "who"), 1)).isEqualTo("Salt = 1 g / 1.4 g allowance");
         assertThat(dim(b, "fat_quality").detail())
             .isEqualTo("Saturated fat 3.1 g: 3.2% of the energy · 17% of the total fat.");
         assertThat(dim(b, "plant_diversity").detail()).isEqualTo("2 different plant categories against a target of 3.");
@@ -169,7 +169,7 @@ class MealScoringLanguageTest {
         assertThat(dim(a, "portion").detail()).isEqualTo("Egy adag a alapértelmezett büdzsé 43%-a.");
         assertThat(dim(b, "portion").detail()).isEqualTo("One serving is 43% of the default budget.");
         assertThat(row(dim(a, "portion"), 1)).isEqualTo("Slot-büdzsé = 930 kcal (alap 30%)");
-        assertThat(row(dim(b, "portion"), 1)).isEqualTo("Slot budget = 930 kcal (default 30%)");
+        assertThat(row(dim(b, "portion"), 1)).isEqualTo("Window budget = 930 kcal (default 30%)");
     }
 
     private static void assertNoHungarian(MealBreakdownJson b) {

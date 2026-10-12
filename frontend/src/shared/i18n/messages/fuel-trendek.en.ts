@@ -10,7 +10,7 @@ export const fuelTrendekEn: Shape<typeof fuelTrendekHu> = {
     first: 'This is your first week. There’s no earlier week to go back to yet.',
   },
   hero: {
-    label: (n) => `${n} of 7 days logged · this is what the week is built from`,
+    label: (n) => `${n} of 7 days logged · the week’s picture`,
     labelLoading: 'Days logged',
     loading: 'Loading your week…',
     none: 'No days logged this week yet.',
@@ -18,8 +18,8 @@ export const fuelTrendekEn: Shape<typeof fuelTrendekHu> = {
     some: (n) => plural(n, { one: `${n} day is logged this week.`, other: `${n} days are logged this week.` }),
     someSub: 'The rest of the week is still ahead; we leave it empty rather than guess.',
     level: 'Weekdays and the weekend run at about the same level.',
-    weekend: (pct) => `At the weekend you ate ${pct}% more against your budget than on weekdays, on average.`,
-    weekday: (pct) => `On weekdays you ate ${pct}% more against your budget than at the weekend, on average.`,
+    weekend: (pct) => `At the weekend you ate ${pct}% more of your budget than on weekdays, on average.`,
+    weekday: (pct) => `On weekdays you ate ${pct}% more of your budget than at the weekend, on average.`,
     soItWent: 'That’s how it went, and now you can see it.',
     hint: 'The number is the day’s meal score. Tap a vessel for details.',
   },
@@ -79,7 +79,7 @@ export const fuelTrendekEn: Shape<typeof fuelTrendekHu> = {
   },
   patterns: {
     title: (n) => `Patterns · ${n}`,
-    note: 'Patterns live in Mezo; from here you step over to them, you don’t see a copy.',
+    note: 'Patterns live in Mezo. A tap takes you there; this is not a copy.',
     status: {
       confirmed: 'Confirmed',
       monitoring: 'Watching',

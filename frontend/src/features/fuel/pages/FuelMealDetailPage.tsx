@@ -137,7 +137,8 @@ function MealDetail({ meal, day, meals, dayTarget }: { meal: FuelMeal; day: stri
   const band = glycemicBand({ c: meal.c, sugarG: mealFacts.sugarG, fiberG: mealFacts.fiberG, p: meal.p, f: meal.f })
   const scoreTen = meal.score == null ? null : fmtFixed(Math.round(meal.score * 100) / 10, 1)
   const b = meal.breakdown
-  const verdict = b?.tagline ? (/[.!?…]$/.test(b.tagline.trim()) ? b.tagline.trim() : `${b.tagline.trim()}.`) : T.verdictPending
+  const verdict = b?.tagline ? (/[.!?…]$/.test(b.tagline.trim()) ? b.tagline.trim() : `${b.tagline.trim()}.`) 
+    : scoreTen != null ? M.fuelEtkezes.score.verdictFallback(scoreTen) : T.verdictPending
 
   const toScore = () => navigate(`/fuel/etkezes/${meal.id}/ertekeles${day ? `?d=${day}` : ''}`)
   // A8 (S1c, mezo-33k6): a javítás ajtaja. A `&d=` akkor is megy, ha az étkezés korábbi napra esik.

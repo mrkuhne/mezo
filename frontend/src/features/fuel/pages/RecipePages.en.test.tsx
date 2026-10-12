@@ -52,7 +52,7 @@ describe('Recipes in English', () => {
     expect([...filters.querySelectorAll('button')].map(b => b.firstChild?.textContent))
       .toEqual(['All', 'Breakfast', 'Lunch', 'Dinner', 'Snack', 'Starred'])
     expect(screen.getByText('The number is one serving’s calories. The three bars are its protein, carbs and fat.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Back to the kitchen' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Back to Kitchen' })).toBeInTheDocument()
     // stored: the recipe's name stays Hungarian; its system labels are English
     const row = document.querySelector('.fc-list > .fx-it') as HTMLElement
     expect(row).toHaveTextContent(/Breakfast|Lunch|Dinner|Snack/)
@@ -111,7 +111,7 @@ describe('Recipes in English', () => {
     ]} />)
     expect(screen.getByText('Breakfast')).toBeInTheDocument()
     expect(screen.getAllByText('today 07:05')).toHaveLength(2)
-    expect(screen.getByText('+1 points against the recipe’s rating.')).toBeInTheDocument()
+    expect(screen.getByText('+1 points compared with the recipe’s rating.')).toBeInTheDocument()
     expect(screen.getByText('1,420')).toBeInTheDocument()
     // a stored window name is never translated; a log without a score says it is in progress
     expect(screen.getByText('Délutáni falat')).toBeInTheDocument()

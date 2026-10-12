@@ -32,7 +32,7 @@ describe('Fuel · Trends in English', () => {
     expect(screen.getByRole('button', { name: /This week/ })).toBeDisabled()
     expect(screen.getByText('5–11 Oct')).toBeInTheDocument()
     const hero = container.querySelector('.fr-hero')!
-    expect(hero).toHaveTextContent('5 of 7 days logged · this is what the week is built from')
+    expect(hero).toHaveTextContent('5 of 7 days logged · the week’s picture')
     expect(hero).toHaveTextContent('The number is the day’s meal score. Tap a vessel for details.')
     expect(screen.getByRole('group', { name: 'The seven days of the week against their budget' })).toBeInTheDocument()
     expect([...container.querySelectorAll('.fr-wd > b')].map((n) => n.textContent)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
@@ -41,7 +41,7 @@ describe('Fuel · Trends in English', () => {
     expect(screen.getByRole('heading', { name: /Weekdays and weekend/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Longer term · 7 weeks/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /Patterns · \d/ })).toBeInTheDocument()
-    expect(screen.getByText('Patterns live in Mezo; from here you step over to them, you don’t see a copy.')).toBeInTheDocument()
+    expect(screen.getByText('Patterns live in Mezo. A tap takes you there; this is not a copy.')).toBeInTheDocument()
   })
 
   it('the tiles: names, decimal point, the change from last week as direction and amount', () => {
@@ -120,7 +120,7 @@ describe('Fuel · Trends in English', () => {
     expect(weekend).toHaveTextContent('Szo')
     expect(screen.getAllByText('Döntésre vár').length).toBeGreaterThan(0)
     act(() => setLang('en', { persist: false }))
-    expect(hero).toHaveTextContent('5 of 7 days logged · this is what the week is built from')
+    expect(hero).toHaveTextContent('5 of 7 days logged · the week’s picture')
     expect(weekend).toHaveTextContent('Sat')
     expect(screen.getAllByText('Awaiting your decision').length).toBeGreaterThan(0)
     expect(screen.queryByText('Döntésre vár')).toBeNull()

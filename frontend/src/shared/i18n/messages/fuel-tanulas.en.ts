@@ -7,7 +7,7 @@ const weeks = (n: number) => plural(n, { one: 'week', other: 'weeks' })
 const weighIns = (n: number) => plural(n, { one: 'weigh-in', other: 'weigh-ins' })
 
 export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
-  saveFailed: 'Could not save, try again',
+  saveFailed: 'Could not save. Try again.',
   close: 'Close',
 
   page: {
@@ -67,7 +67,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     loading: 'Loading your days…',
     counts: (day) => `${day} counts`,
     sub: (kcal, status) => `${kcal} kcal · ${status}`,
-    note: 'Today is still going: I count it in next Monday. With the switch you tell me whether a day was complete; I recalculate at once. A day with no log cannot be marked: there is nothing to count.',
+    note: 'Today is still going: it is counted next Monday. The switch tells me whether a day was complete; I recalculate at once. A day with no log cannot be marked: there is nothing to count.',
   },
 
   how: {
@@ -111,8 +111,8 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
       moved: '− what you burned by moving',
       movedSub: 'logged movement, daily average',
       total: '= what you burn without movement',
-      whySure: (applied, simple, step) => `**Why ${applied} and not ${simple}?** Because I do not jump your budget there at once: I step towards it week by week (step ${step}).`,
-      whyUnsure: (applied, simple, step) => `**Why ${applied} and not ${simple}?** Because I am still unsure, I do not jump your budget there at once: I step towards it week by week (step ${step}).`,
+      whySure: (applied, simple, step) => `**Why ${applied} and not ${simple}?** Because I do not move your budget there in one go: I step towards it week by week (step ${step}).`,
+      whyUnsure: (applied, simple, step) => `**Why ${applied} and not ${simple}?** Because I am still unsure, I do not move your budget there in one go: I step towards it week by week (step ${step}).`,
       note: 'The real calculation moves day by day, and every weigh-in sharpens it a little. This is the rounded, simple version.',
     },
     filtered: {
@@ -127,7 +127,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
       markedText: (n) => (n === 1 ? 'You marked this one incomplete, so I left it out.' : 'You marked these incomplete, so I left them out.'),
       dayKcal: (date, kcal) => `${date} · ${kcal}`,
       water: (date) => `Water, not fat · around ${date}`,
-      waterText: (kg) => `Your weight jumped by about ${kg} kg. That is water and glycogen, so I did not count it as gaining.`,
+      waterText: (kg) => `Your weight jumped by about ${kg} kg. That is water and glycogen, so I did not count it as weight gain.`,
       unlogged: (n) => `${n} ${days(n)} with no log`,
       unloggedText: 'I learned nothing from these days, and I did not guess in their place.',
     },
@@ -146,7 +146,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
       earlier: 'with your earlier adjustments',
       thisWeek: 'this week’s step',
       now: 'now',
-      text: 'I take only a small step each week, and only half a step in a new direction at first; this way one odd week does not yank the budget.',
+      text: 'I take only a small step each week, and only half a step in a new direction at first; this way one odd week cannot pull the budget off course.',
     },
   },
 
@@ -168,7 +168,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     undo: 'Undo',
     wasIncomplete: 'It was incomplete',
     wasComplete: 'It was complete',
-    note: 'If you leave them alone, I keep these days left out.',
+    note: 'If you leave them as they are, these days stay left out.',
     details: 'Details',
     hidden: 'Hidden; I will not show this week again',
   },
@@ -203,7 +203,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     scheduled: 'Scheduled movement',
     todayMovement: 'Today’s movement',
     weeklyAvg: 'Weekly average · scheduled ÷ 7',
-    doneBlocks: 'The estimated extra of today’s workouts, for information',
+    doneBlocks: 'The estimated extra from today’s workouts, for information',
     pendingBlocks: 'Still to come if you do it · not in the budget yet',
     block: (label, min) => `${label} · ${min} min`,
     blockPlanned: (label, min) => `${label} · planned · ${min} min`,
@@ -219,7 +219,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
 
   water: {
     title: 'How much did you drink?',
-    sub: 'A sip of a break.',
+    sub: 'A short break for a sip.',
     glassAria: (now, target) => `${now} of ${target} litres so far today`,
     amountAria: 'Amount of water to log',
     soFar: (now, target) => `${now} / ${target} l so far today`,
@@ -229,6 +229,6 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     manual: 'ml by hand',
     save: 'Save',
     undo: 'Undo the last one',
-    undone: 'Undid the last one',
+    undone: 'Last one undone',
   },
 }

@@ -62,7 +62,7 @@ describe('mealForecast', () => {
     const f = mealForecast({ ...base, energyText: 'Stable energy for 2–3 hours' })
     expect(f.rows.map(r => r.title)).toEqual(['Energy', 'When you will be hungry', 'The rhythm of the day'])
     expect(f.rows[0].body).toBe('Stable energy for 2–3 hours.')
-    expect(f.rows[1].body).toBe('Hunger signals again around 12:16. So the tízórai window can be a little later, or a smaller portion is enough.')
+    expect(f.rows[1].body).toBe('Hunger returns around 12:16. So the tízórai window can be a little later, or a smaller portion is enough.')
     expect(f.rows[2].body).toBe('It keeps the 3–4 hour protein rhythm, and the day’s other windows stay in place.')
   })
 

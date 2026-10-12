@@ -29,7 +29,7 @@ const ENERGY: EnergyBreakdown = {
   base: { kcal: 2480, bmr: 1893, neat: 1.2, neatLabel: '', formula: 'KATCH', source: 'learned', formulaKcal: 2400, sdKcal: 150, confidence: 'medium' },
   movement: {
     kcal: 950, isWeeklyAvg: false, pending: 300,
-    parts: [{ key: 'planned', label: 'Planned workout · logged', kcal: 420 }, { key: 'extra', label: 'Unplanned movement', kcal: 530 }],
+    parts: [{ key: 'planned', label: 'Planned training · logged', kcal: 420 }, { key: 'extra', label: 'Unplanned movement', kcal: 530 }],
     blocks: [{ label: 'Felsőtest A', kind: 'gym', min: 58, kcal: 420, done: true }, { label: 'Futás', kind: 'run', min: 30, kcal: 300, done: false }],
   },
   deficit: { kcal: -330, rateKgPerWk: 0.3, goalLabel: 'Nyári cut' },
@@ -53,7 +53,7 @@ describe('Fuel · learning in English', () => {
     expect(screen.getByText('Tap a week for its numbers. Where there is no row the line breaks; I do not fill it in.')).toBeInTheDocument()
     expect(screen.getByText('By the formula')).toBeInTheDocument()
     expect(screen.getByText('Complete days')).toBeInTheDocument()
-    expect(screen.getByText(/^Today is still going: I count it in next Monday\./)).toBeInTheDocument()
+    expect(screen.getByText(/^Today is still going: it is counted next Monday\./)).toBeInTheDocument()
     expect(screen.getAllByRole('switch')[0]).toHaveAccessibleName(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d+ [A-Z][a-z]{2} counts$/)
     expect(screen.getByRole('button', { name: /What I looked at\d+ complete days · \d+ weigh-ins · \d+ weeks/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /How it changed/ })).toBeInTheDocument()
@@ -100,7 +100,7 @@ describe('Fuel · learning in English', () => {
     expect(within(sheet).getByText('1,180 kcal · looked incomplete')).toBeInTheDocument()
     expect(within(sheet).getByRole('button', { name: 'It was complete' })).toBeInTheDocument()
     expect(within(sheet).getByRole('button', { name: 'Undo' })).toBeInTheDocument()
-    expect(within(sheet).getByText('If you leave them alone, I keep these days left out.')).toBeInTheDocument()
+    expect(within(sheet).getByText('If you leave them as they are, these days stay left out.')).toBeInTheDocument()
     expect(within(sheet).getByRole('button', { name: 'Details' })).toBeInTheDocument()
     unmount()
     mount(<WeeklyLearningSheet card={{ ...CARD, status: 'holding', stepKcal: 0, usableDays: 3, weighInDays: 1 }} onClose={() => {}} />)
@@ -120,7 +120,7 @@ describe('Fuel · learning in English', () => {
     expect(within(sheet).getByRole('button', { name: /Learned base · Fairly sure · ±150 kcalHow I learned: week by week, and your days/ })).toBeInTheDocument()
     expect(within(sheet).getByText('Movement · logged today · +950')).toBeInTheDocument()
     expect(within(sheet).getByText('Today’s movement')).toBeInTheDocument()
-    expect(within(sheet).getByText('The estimated extra of today’s workouts, for information')).toBeInTheDocument()
+    expect(within(sheet).getByText('The estimated extra from today’s workouts, for information')).toBeInTheDocument()
     expect(within(sheet).getByText('Felsőtest A · 58 min')).toBeInTheDocument() // the workout's name is the user's: never translated
     expect(within(sheet).getByText('Futás · planned · 30 min')).toBeInTheDocument()
     expect(within(sheet).getByText('Deficit · Nyári cut · −330')).toBeInTheDocument()
@@ -132,7 +132,7 @@ describe('Fuel · learning in English', () => {
   it('the water sheet, and its runtime switch', async () => {
     mount(<WaterLogSheet currentMl={1300} targetMl={2500} onLog={() => {}} onClose={() => {}} onUndo={() => {}} canUndo />)
     const sheet = screen.getByRole('dialog', { name: 'How much did you drink?' })
-    expect(within(sheet).getByText('A sip of a break.')).toBeInTheDocument()
+    expect(within(sheet).getByText('A short break for a sip.')).toBeInTheDocument()
     expect(within(sheet).getByRole('img', { name: '1.3 of 2.5 litres so far today' })).toBeInTheDocument()
     expect(within(sheet).getByText('1.3 / 2.5 l so far today')).toBeInTheDocument()
     expect(within(sheet).getByRole('status', { name: 'Amount of water to log' })).toHaveTextContent('0ml')

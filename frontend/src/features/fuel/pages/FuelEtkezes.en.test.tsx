@@ -93,7 +93,7 @@ describe('Fuel · meal and rating in English', () => {
     expect(within(micro).getByText('no data')).toBeInTheDocument()
     expect(within(micro).getByText('This is what we store today. Vitamins and minerals are still on the way.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Edit this meal/ })).toHaveTextContent('you can change the items and the time')
-    expect(screen.getByRole('button', { name: /Save it as a recipe/ })).toHaveTextContent('the Workshop opens with this meal')
+    expect(screen.getByRole('button', { name: /Save it as a recipe/ })).toHaveTextContent('the workshop opens with this meal')
     expect(ownText(container, ['Túrós zabkása · áfonyával', 'Zabpehely', 'Akácméz', MEAL.breakdown!.tagline!, MEAL.breakdown!.summary!]))
       .not.toMatch(/[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]/)
   })
@@ -163,7 +163,7 @@ describe('Fuel · meal and rating in English', () => {
     const box = screen.getByRole('dialog')
     expect(within(box).getByRole('heading', { level: 2 })).toHaveTextContent(/^High$/)
     expect(within(box).getByText('Blood sugar response · expected effect')).toBeInTheDocument()
-    expect(within(box).getByText('This one lifts it.')).toBeInTheDocument()
+    expect(within(box).getByText('This one pushes it up.')).toBeInTheDocument()
     expect(box.querySelector('.fe-gcv')!.getAttribute('aria-label')).toBe('The expected shape of the blood sugar response over three hours: peak')
     expect(Array.from(box.querySelectorAll('.fe-gcv text')).map(t => t.textContent)).toEqual(['baseline', 'peak', 'dip', 'meal', '+1 h', '+2 h', '+3 h'])
     expect(within(box).getByText(/^We do not know the amount of sugar/)).toBeInTheDocument()
@@ -201,7 +201,7 @@ describe('Fuel · meal and rating in English', () => {
     for (const label of ['Why then?', 'Between two main meals', 'How it fits your day', 'Movement today', 'Meal plan']) {
       expect(within(box).getByText(label)).toBeInTheDocument()
     }
-    expect(within(box).getByText('Meal 2 of 4. By the plan, about 311 kcal of the daily budget goes to it.')).toBeInTheDocument()
+    expect(within(box).getByText('Meal 2 of 4. The plan gives it about 311 kcal of the daily budget.')).toBeInTheDocument()
     expect(within(box).getByText(/^The window is a guide\./)).toBeInTheDocument()
     expect(within(box).getByRole('button', { name: 'OK' })).toBeInTheDocument()
     expect(box.textContent).not.toMatch(/[áéíóöőúüűÁÉÍÓÖŐÚÜŰ]/)
