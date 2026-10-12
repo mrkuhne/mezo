@@ -352,16 +352,15 @@ let face='reggel';
 const rAttr=(r,i,g)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='intention'?'data-sheet="intention"':r[6]==='ritual'?'data-go="napzaras.1"':`data-rt="${g}:${i}"`;
 const rVerb=r=>r[6]==='reflect'?'Válaszolok':r[6]==='intention'?'Leírom':r[6]==='ritual'?'Napzárás indítása':'Megvan, pipálom';
 function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).length;
-  return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=c+1,dir=i===N-1?'':c===2?'wrap':'rt';
+  return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}${G.stat?`<span class="rt-perf"><strong>${G.stat[0]}</strong>${G.stat[1]}</span>`:''}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=c+1,dir=i===N-1?'':c===2?'wrap':'rt';
     return `<button class="rt-b ${d?'done':''} ${i===nx?'now':''} ${dir} ${str==null?'ns':''}" style="grid-column:${col};grid-row:${row+1};--p:${str??0}%" ${rAttr(r,i,k)} aria-label="${nm}${d?' · kész':''}">
       <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b><small>${i===nx?'<em>Most jön</em>':str!=null?'erő '+str+'%':s}</small></button>`}).join('')}</div></section>`}
-function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0,strs=R.rows.filter(r=>r[3]!=null),avg=Math.round(strs.reduce((a,r)=>a+r[3],0)/strs.length);
+function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0;
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="rt-lead"><small>${R.title} · ${done}/${R.rows.length} kész</small><h2>${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
     <div class="rt-acts"><button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></div>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
-  <section class="bd ${order.length%2?'':'w'} last"><p class="fh-n"><b>${order.length+1}</b>A lánc ereje</p>
-  <div class="rt-flasks">${[...(R.stat?[[R.stat[0],R.stat[1],Math.round(parseInt(R.stat[0])/30*100)]]:[]),[`${avg}%`,'lánc-erő · 28 nap',avg],[`+${R.xp}`,'XP ma',null]].map(([b,l,p])=>`<div class="rt-fl ${p==null?'np':''}" style="--p:${p??0}%"><span><b>${b}</b></span><small>${l}</small></div>`).join('')}</div>
+  <section class="bd ${order.length%2?'':'w'} last">
   <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b></span><i>›</i></button></section>`}
 const rutinFoot=()=>{const R=RUT[face],nx=R.rows.findIndex(r=>!r[4]);return nx<0?`<span class="rt-fdone">Mind megvan mára. Szép munka.</span>`
   :`<span class="rt-fn"><small>Most jön</small><b>${R.rows[nx][0]}</b></span><button class="btn" ${rAttr(R.rows[nx],nx,face)}>${rVerb(R.rows[nx])}</button>`};
@@ -633,6 +632,10 @@ ${P} .sheet .ng-adj2{margin-top:10px;font-size:13.5px;line-height:1.45;color:var
 ${P} text.ng-go[data-ngm]{cursor:pointer}
 ${P} .jr-air{padding:0;height:34px}
 /* Rutin */
+${P} .fh-n:has(.rt-perf){display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px}
+${P} .rt-perf{margin-left:auto;display:inline-flex;align-items:baseline;gap:6px;font:600 12.5px var(--ff,inherit);letter-spacing:0;color:var(--sub)}
+${P} .rt-perf strong{font:800 17px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}
+${P} .bd.last .rt-edit{margin-top:14px}
 ${P} .rt-foot{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 ${P} .rt-fn{flex:1;min-width:0;padding-left:8px}${P} .rt-fn small{display:block;font-size:12px;font-weight:700;color:var(--dom)}${P} .rt-fn b{display:block;font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 ${P} .rt-fdone{flex:1;padding:10px 8px;font-size:14px;font-weight:700;color:var(--ink);text-align:center}
