@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.PantrySource;
 import io.mrkuhne.mezo.api.dto.PantrySuggestionResponse;
 import io.mrkuhne.mezo.feature.pantry.config.PantrySuggestionProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
  *       (Live catalog NOVA is currently NULL-heavy — mezo-32ko — so this yields honest-empty
  *       until the backfill; the math is fixture-proven.)</li>
  * </ol>
+ * The reason is a {@code PANTRY_SUGGESTION_*} bundle sentence in the account's language.
  * Output is capped at {@code maxItems}, ordered by category name for stable rendering.
  */
 @Service
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 public class PantrySuggestionService {
 
     private final PantrySuggestionProperties props;
+    private final UserMessages messages;
 
     public List<PantrySuggestionResponse> suggest(List<PantryItemEntity> items) {
         Map<String, List<PantryItemEntity>> byCategory = items.stream()
@@ -63,7 +66,8 @@ public class PantrySuggestionService {
             if (BigDecimal.valueOf(cheap.getPriceHuf()).compareTo(threshold) > 0) continue;
             int savedPct = 100 - BigDecimal.valueOf(cheap.getPriceHuf() * 100L)
                 .divide(BigDecimal.valueOf(dear.getPriceHuf()), 0, RoundingMode.HALF_UP).intValue();
-            add(out, seen, cheap, "Olcsóbb, mint a(z) " + dear.getCatalog().getName() + " (−" + savedPct + "%)");
+            add(out, seen, cheap, messages.text("PANTRY_SUGGESTION_CHEAPER",
+                dear.getCatalog().getName(), Integer.toString(savedPct)));
         }
     }
 
@@ -75,8 +79,9 @@ public class PantrySuggestionService {
         PantryItemEntity low = withNova.stream().filter(e -> e.getCatalog().getNova() <= 2)
             .min(Comparator.comparing(e -> e.getCatalog().getNova())).orElse(null);
         if (high == null || low == null) return;
-        add(out, seen, low, "NOVA " + high.getCatalog().getNova() + " → NOVA " + low.getCatalog().getNova()
-            + " csere a(z) " + high.getCatalog().getName() + " helyett");
+        add(out, seen, low, messages.text("PANTRY_SUGGESTION_LOW_NOVA",
+            String.valueOf(high.getCatalog().getNova()), String.valueOf(low.getCatalog().getNova()),
+            high.getCatalog().getName()));
     }
 
     private void add(List<PantrySuggestionResponse> out, Set<String> seen,

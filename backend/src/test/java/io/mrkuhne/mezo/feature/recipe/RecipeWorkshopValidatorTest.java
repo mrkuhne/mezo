@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.recipe.config.RecipeWorkshopProperties;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeWorkshopValidator;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeWorkshopValidator.RawDraft;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeWorkshopValidator.RawLine;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class RecipeWorkshopValidatorTest {
 
     private final RecipeWorkshopValidator validator =
-            new RecipeWorkshopValidator(new RecipeWorkshopProperties(30, 20, 20));
+            new RecipeWorkshopValidator(new RecipeWorkshopProperties(30, 20, 20), UserMessages.fixed("hu"));
 
     private static PantryItemEntity pantry(UUID id, String name) {
         PantryCatalogEntity c = new PantryCatalogEntity();

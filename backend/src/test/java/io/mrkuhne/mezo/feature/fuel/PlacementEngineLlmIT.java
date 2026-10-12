@@ -40,7 +40,7 @@ class PlacementEngineLlmIT extends AbstractIntegrationTest {
 
         assertThat(p.source()).isEqualTo("llm");
         assertThat(p.slotKey()).isEqualTo("evening");
-        assertThat(p.reasonHu()).isNotBlank();
+        assertThat(p.reason()).isNotBlank();
     }
 
     @Test

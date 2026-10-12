@@ -2,7 +2,7 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-10-09
+updated: 2026-10-12
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
@@ -223,6 +223,8 @@ Commands: backend focused `./mvnw clean test -Dtest='Pantry*,...' -Dmezo.test.us
 - **`ResetDatabase` ordering** — `pantry_catalog` rows must TRUNCATE before `app_user` (the FK is `SET NULL`, not `CASCADE`, so order still matters for a clean re-seed).
 - **The 147-item seed's `stockQty`/`priceHuf` fields are ignored by `PantryCatalogLoader`** — the loader only ever writes definition columns; no `pantry_item` is created by the loader for anyone but populators/tests that explicitly ask for one.
 - **Deferred:** catalog moderation/merge UI (duplicate near-miss detection beyond the exact natural key), per-user definition overrides (K2 — explicitly REJECTED in the spec, not merely deferred), `usedInRecipes`/`lastUsed` on `IngredientResponse` are still hardcoded constants (pre-dates S4).
+
+- **The „Okosabb csere" reason follows the account language (slice F5, `mezo-n4wf5.5`).** `PantrySuggestionService` renders `PANTRY_SUGGESTION_CHEAPER` / `PANTRY_SUGGESTION_LOW_NOVA` through `UserMessages` (computed at read, never stored); item names are the user's words and are never translated. `price` (`"2500 Ft/kg"`) is unchanged. Source labels, category labels and NOVA short names are composed on the client from `source` / `category` / `nova`. Pattern: [`_platform-language.md`](_platform-language.md) §3 *Server-written sentences*.
 
 ## 10. Key files
 

@@ -6,35 +6,36 @@ import lombok.NoArgsConstructor;
 
 /** Deterministic placement rules (mezo-vx9v). Ordered — first matching rule wins. Needles are
  *  lowercase name substrings (accent-safe stems where possible). restDayFallback: zone key,
- *  "skip", or null (= keep the zone on rest days too). */
+ *  "skip", or null (= keep the zone on rest days too). The reason and the daily-total hint are
+ *  message-bundle keys ({@code FUEL_PLACEMENT_*}), rendered in the account's language by
+ *  {@link PlacementEngine} (mezo-n4wf5.5). */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PlacementRules {
 
     public record Rule(List<String> needles, String slotKey, String restDayFallback,
-                       String reasonHu, String dailyTotalHintHu) {}
+                       String reasonKey, String dailyTotalHintKey) {}
 
     public static final List<Rule> RULES = List.of(
         new Rule(List.of("kreatin", "creatine"), "wake", null,
-            "Kreatin ébredés után vízben — étkezéstől független, a napi konzisztencia számít.",
-            "ajánlott napi összmennyiség 15–20g — érdemes 3-4 bevételre osztani"),
+            "FUEL_PLACEMENT_REASON_CREATINE", "FUEL_PLACEMENT_HINT_CREATINE"),
         new Rule(List.of("kávé", "espresso", "koffein", "caffeine"), "wake", null,
-            "Koffein a nap elején — bőven a 14:00-s cutoff előtt.", null),
+            "FUEL_PLACEMENT_REASON_CAFFEINE", null),
         new Rule(List.of("pwo", "pre-workout", "pump", "aakg", "arginin",
                 "béta-alanin", "beta-alanin", "betaalanin", "citrullin"), "pre_workout", "skip",
-            "Pump-stack ~40 perccel edzés előtt — plazmacsúcs edzéskezdésre; pihenőnapon kimarad.", null),
+            "FUEL_PLACEMENT_REASON_PUMP", null),
         new Rule(List.of("whey", "protein", "fehérje"), "post_workout", "breakfast",
-            "Fehérje az edzés utáni ablakban — pihenőnapon reggelihez.", null),
+            "FUEL_PLACEMENT_REASON_PROTEIN", null),
         new Rule(List.of("d3", "k2", "omega", "halolaj", "krill", "kurkum", "q10", "koenzim"),
             "lunch", null,
-            "Zsírban oldódó — zsíros étkezéssel 3–4× jobb a felszívódás.", null),
+            "FUEL_PLACEMENT_REASON_FAT_SOLUBLE", null),
         new Rule(List.of("magn", "magné"), "evening", null,
-            "Magnézium este — GABA-moduláció, mélyalvás-támogatás, lefekvés előtt ~2 órával.", null),
+            "FUEL_PLACEMENT_REASON_MAGNESIUM", null),
         new Rule(List.of("zma", "melatonin", "glicin"), "bedtime", null,
-            "Közvetlenül lefekvés előtt hat a legjobban.", null),
+            "FUEL_PLACEMENT_REASON_BEDTIME", null),
         new Rule(List.of("cink", "zinc"), "dinner", null,
-            "Cink vacsorához — távol a reggeli koffeintől és ásványi interakcióktól.", null),
+            "FUEL_PLACEMENT_REASON_ZINC", null),
         new Rule(List.of("multivitamin", "vitamin"), "breakfast", null,
-            "Reggelihez kötve — étellel kímélőbb, könnyű rutin.", null));
+            "FUEL_PLACEMENT_REASON_VITAMIN", null));
 
     /** Secondary signal: the pantry item's own timing hint → zone key (null = no mapping). */
     public static String zoneForTiming(String timing) {

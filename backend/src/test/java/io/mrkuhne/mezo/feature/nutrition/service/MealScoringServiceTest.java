@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.WorkoutWindow;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
@@ -50,7 +51,7 @@ class MealScoringServiceTest {
                 new MealScoringProperties.WhoRefs(0.20, 5),
                 new MealScoringProperties.NovaGroupScores(1.0, 0.88, 0.7, 0.45))));
 
-    private final MealScoringService service = new MealScoringService(props, targets);
+    private final MealScoringService service = new MealScoringService(props, targets, UserMessages.fixed("hu"));
 
     /** Target-proportional lunch, 800 kcal NOVA-1 line + 285 kcal NOVA-4 line, facts on line 1 only. */
     private List<ScoredLine> lunchLines() {
@@ -182,7 +183,7 @@ class MealScoringServiceTest {
             props.who(), props.fatQuality(), props.plantDiversity(), props.energyDensity(),
             props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance(),
             props.minExpectedSlotShareFactor(), props.preLeadMin(), props.postTrailMin(), props.roles());
-        MealScoringService symmetricService = new MealScoringService(symmetric, targets);
+        MealScoringService symmetricService = new MealScoringService(symmetric, targets, UserMessages.fixed("hu"));
 
         var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
         var dim = dimension(symmetricService.scoreMeal("lunch", lines, LocalTime.NOON), "macro");

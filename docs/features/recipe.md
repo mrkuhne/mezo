@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-10-09
+updated: 2026-10-12
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -103,6 +103,8 @@ Backend: `RecipeApiIT`, `RecipeServiceIT`, `RecipeRepositoryIT`, `RecipeMapperTe
 - **The S4 auto-add-at-turn-time trade-off**: like the Meal AI draft (see [`pantry.md`](pantry.md) §9), a Workshop turn that matches a catalog name puts the definition on the caller's shelf immediately — a discarded draft still leaves that shelf row behind.
 - A literal `"Daniel:"` string that used to live in `buildUserMessage` was removed in S6's persona work ([`_platform-auth-security.md`](_platform-auth-security.md) §4) — every prompt site now carries `{{NÉV}}` via `PromptPersona`.
 - **Deferred:** nothing epic-scale is currently deferred on the recipe side beyond the general Phase-3 AI-brain items tracked in [`insights.md`](insights.md).
+
+- **Server words follow the account language (slice F5, `mezo-n4wf5.5`).** The workshop's fallback reply and the default draft name are bundle keys (`RECIPE_WORKSHOP_REPLY_FALLBACK`, `RECIPE_WORKSHOP_DEFAULT_NAME`); the three `RECIPE_WORKSHOP_*` error codes had no bundle sentence at all (the client received the bare code as `message`) and now have one in both languages. The template score's labels and sentences come from `MealScoringService` (`FUEL_SCORE_*`, rendered on read). The workshop and the breakdown-prose prompts send an English account a variant without the demand for Hungarian (`SYSTEM_PROMPT_HEAD_NEUTRAL`, `SYSTEM_PROMPT_NEUTRAL`). A recipe's cached AI envelope (`recipe.breakdown`, `fits_for`) stays in the language it was written in until its numbers change. `RecipeResponse.createdDate` is an ISO instant and `lastLogged` a constant „—": the client formats. Pattern: [`_platform-language.md`](_platform-language.md) §3 *Server-written sentences*.
 
 ## 10. Key files
 

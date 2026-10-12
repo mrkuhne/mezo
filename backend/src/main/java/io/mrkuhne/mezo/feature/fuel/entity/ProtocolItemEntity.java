@@ -63,7 +63,7 @@ public class ProtocolItemEntity extends OwnedEntity {
     @Column(name = "placement_source", nullable = false)
     private String placementSource = "rule";
 
-    /** One Hungarian sentence: why this zone. */
+    /** One sentence: why this zone — in the account's language when it was placed, kept as written. */
     @Column(name = "placement_reason")
     private String placementReason;
 

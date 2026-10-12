@@ -696,9 +696,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     FuelWaterModule.tsx, FuelWeekDayGlass.tsx, GlassBox.tsx, GlycemicGlass.tsx, KamraCard.tsx, LearningDaysList.tsx,
     LearningHistoryChart.tsx, MacroCells.tsx, MacroPanel.tsx, MealClock.tsx, MealClockBox.tsx, MealComposer.tsx,
     MealTimingStrip.tsx, MedicationCycleBar.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx,
-    RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx, RecipeOverrideRow.tsx,
-    ServingToggle.tsx, SourceBadge.tsx, StackMealMatch.tsx, StackPageScaffold.tsx, StackTimeline.tsx,
-    SuggestionCard.tsx, WeeklyLearningDot.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, mealClockWindow.ts
+    README.md, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
+    RecipeOverrideRow.tsx, ServingToggle.tsx, SourceBadge.tsx, StackMealMatch.tsx, StackPageScaffold.tsx,
+    StackTimeline.tsx, SuggestionCard.tsx, WeeklyLearningDot.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx,
+    chips.tsx, index.ts, macros.tsx, mealClockWindow.ts, rows.tsx, vessels.tsx
   - **logic:** amountGuard.ts, backfillWindow.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts,
     compileTemplate.ts, dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, doseAdvice.ts,
     eatingTimePlacement.ts, formatImpact.ts, fuelMode.ts, fuelPatternRefs.ts, fuelSettingsPreview.ts, fuelSwimlane.ts,
@@ -708,9 +709,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     recipeSlotFace.ts, resolveDayType.ts, scoreArithmetic.ts, stackBands.ts, useStackIntakeToggle.ts, usualMeals.ts,
     validateSlotPlan.ts
   - **root:** MealCeremonyProvider.tsx
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 12 IT + 0 unit
-  - **ITs:** `FuelApiIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`, `PlacementEngineIT`,
-    `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/fuel` — 13 IT + 1 unit
+  - **ITs:** `FuelApiIT`, `FuelLanguageIT`, `FuelSettingsApiIT`, `FuelSettingsSwitchOffApiIT`, `IntakeServiceIT`,
+    `PlacementEngineIT`, `PlacementEngineLlmIT`, `ProtocolSeedDataIT`, `ProtocolServiceIT`, `SlotPlanEvaluateApiIT`,
     `SlotPlanEvaluateLlmUnavailableApiIT`, `SlotPlanEvaluateSwitchOffApiIT`, `SlotTemplateApiIT`
   - **populators:** `DatabasePopulator`, `MealSlotTemplatePopulator`, `PantryItemPopulator`, `ProtocolPopulator`,
     `SupplementIntakePopulator`
@@ -1086,7 +1087,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 27 IT + 8 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 27 IT + 9 unit
   - **ITs:** `FuelDayMovementIT`, `FuelDayRecoveryIT`, `FuelDayServiceIT`, `GoalDailyIntakeAdapterIT`,
     `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`,
     `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`,
@@ -1189,7 +1190,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **other:** `MealBreakdownJson`
 - **Contract** `api/feature/diet-settings/diet-settings.yml` — 3 operations
   - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 3 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`, `GoalSuggestionPopulator`,
     `TrainPopulator`
@@ -1426,7 +1427,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/recipe/recipe.yml` — 7 operations
   - **endpoints:** GET /api/recipe · POST /api/recipe · GET /api/recipe/{id} · PUT /api/recipe/{id} ·
     DELETE /api/recipe/{id} · GET /api/recipe/{id}/breakdown · POST /api/recipe/workshop/turn
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/recipe` — 8 IT + 5 unit
   - **ITs:** `RecipeApiIT`, `RecipeBreakdownApiIT`, `RecipeBreakdownFallbackApiIT`, `RecipeRepositoryIT`,
     `RecipeServiceIT`, `RecipeWorkshopApiIT`, `RecipeWorkshopLlmUnavailableApiIT`, `RecipeWorkshopSwitchOffApiIT`
   - **populators:** `DatabasePopulator`, `PantryItemPopulator`, `RecipePopulator`
@@ -1716,8 +1717,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **hooks:** useBackNav.ts, useReducedMotion.ts, useStickyTab.ts
 - **i18n:** LanguageBoundary.tsx, LanguageProvider.tsx, LoadingFallback.tsx, catalog.ts, index.ts, lang.ts,
-  messages/frame.en.ts, messages/frame.hu.ts, messages/index.ts, messages/kit.en.ts, messages/kit.hu.ts,
-  messages/settings.en.ts, messages/settings.hu.ts, plural.ts, shape.ts
+  messages/frame.en.ts, messages/frame.hu.ts, messages/fuel-beallitas.en.ts, messages/fuel-beallitas.hu.ts,
+  messages/fuel-etkezes.en.ts, messages/fuel-etkezes.hu.ts, messages/fuel-kamra.en.ts, messages/fuel-kamra.hu.ts,
+  messages/fuel-kieg.en.ts, messages/fuel-kieg.hu.ts, messages/fuel-kozos.en.ts, messages/fuel-kozos.hu.ts,
+  messages/fuel-log.en.ts, messages/fuel-log.hu.ts, messages/fuel-logika.en.ts, messages/fuel-logika.hu.ts,
+  messages/fuel-mai.en.ts, messages/fuel-mai.hu.ts, messages/fuel-recept.en.ts, messages/fuel-recept.hu.ts,
+  messages/fuel-tanulas.en.ts, messages/fuel-tanulas.hu.ts, messages/fuel-trendek.en.ts, messages/fuel-trendek.hu.ts,
+  messages/index.ts, messages/kit.en.ts, messages/kit.hu.ts, messages/settings.en.ts, messages/settings.hu.ts,
+  plural.ts, shape.ts
 - **lib:** audio.ts, autoGrow.ts, backNav.ts, cn.ts, dates.ts, daypart.ts, format.ts, grams.ts, huNum.ts, huText.ts,
   markdown.tsx, pct.ts, resizeImage.ts, safeMarkdown.tsx, screenScroll.ts, seenMessages.ts, theme.ts, toastBus.ts,
   tutorialSeen.ts, userScope.ts, voice/useVoiceInput.ts
@@ -1733,11 +1740,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   folyadek/Hero.tsx, folyadek/InfoSheet.tsx, folyadek/Jar.tsx, folyadek/Level.tsx, folyadek/Linked.tsx,
   folyadek/Liquids.tsx, folyadek/Mini.tsx, folyadek/Msg.tsx, folyadek/Options.tsx, folyadek/Page.tsx,
   folyadek/PerDay.tsx, folyadek/Pick.tsx, folyadek/Range.tsx, folyadek/Row.tsx, folyadek/Scale.tsx,
-  folyadek/Section.tsx, folyadek/Step.tsx, folyadek/Stream.tsx, folyadek/Tank.tsx, folyadek/Text.tsx,
-  folyadek/Tick.tsx, folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx, folyadek/index.ts, folyadek/util.ts,
-  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx, mozaik/arrival.tsx, mozaik/index.tsx,
-  mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css, voice/VoiceBubble.tsx, voice/VoiceField.css,
-  voice/VoiceField.tsx
+  folyadek/Section.tsx, folyadek/Stat.tsx, folyadek/Step.tsx, folyadek/Stream.tsx, folyadek/Switch.tsx,
+  folyadek/Tank.tsx, folyadek/Text.tsx, folyadek/Tick.tsx, folyadek/Vials.tsx, folyadek/Wave.tsx, folyadek/frame.tsx,
+  folyadek/index.ts, folyadek/util.ts, kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/GlassBox.tsx,
+  mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts, voice/VoiceBubble.css,
+  voice/VoiceBubble.tsx, voice/VoiceField.css, voice/VoiceField.tsx
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 

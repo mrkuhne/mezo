@@ -2,7 +2,7 @@
 title: Language (Hungarian + English)
 type: feature-platform
 status: mixed
-updated: 2026-10-11
+updated: 2026-10-12
 tags: [platform, frontend, backend, auth, ai]
 key_files:
   - frontend/src/shared/i18n
@@ -166,8 +166,38 @@ UserMessages.text(key, args…) → MessageSource (messages_hu / messages_en) �
 - **Bundles.** `messages_hu.properties` and `messages_en.properties`, 184 keys each; there is **no** base `messages.properties` — Hungarian is a bundle like English and the host locale must never pick a language. `MessageSourceConfiguration` declares the `MessageSource` bean (`ResourceBundleMessageSource`, UTF-8, `fallbackToSystemLocale=false`); `spring.messages.*` would stay inert without a base bundle. `MessageBundleParityTest` fails on a key present in one bundle only.
 - **`UserMessages`** (`techcore/message`): `text(key, args…)` resolves with the acting account's language; with no account (login, register, a missing token) it takes the first two letters of the `Accept-Language` header, which the client sends on every request and SSE call (`data/_client/api.ts`); else Hungarian. If loading the account fails (the database is the failure being reported) it falls back to Hungarian rather than mask the error. `GlobalExceptionHandler` resolves every `SystemMessage` through it.
 - **The stable `code` stays the contract.** Where the client maps codes to its own copy (`authErrorText.ts`) it keeps doing so — through the catalog now.
-- **Pattern for domain sentences** (applied by each slice, not yet by N1): a rule-based sentence a service produces is a bundle key with arguments rendered by `UserMessages`. Text that is **persisted** (feed rows, push bodies, summaries) is rendered once, in the user's language at that moment, and stays as written; it is never re-translated on a later switch.
+- **Pattern for domain sentences** (first applied by Fuel, slice F5 — see the subsection below): a rule-based sentence a service produces is a bundle key with arguments rendered by `UserMessages`. Text that is **persisted** (feed rows, push bodies, summaries, a meal's score envelope, a stack item's placement reason) is rendered once, in the user's language at that moment, and stays as written; it is never re-translated on a later switch.
 - **Formerly English server messages are Hungarian in Hungarian mode now** (`INTERNAL_ERROR`, `AUTH_LOGIN_INVALID_CREDENTIALS`, …): an English sentence shown to a Hungarian user was a defect, not a parity target. "Gentle mode" is the provisional English of „kímélő mód" in the `TRAIN_RECOVERY_*` keys until N2 settles the term.
+
+### Server-written sentences: the pattern (set by Fuel, `mezo-n4wf5.5`)
+
+A service that writes a word a person reads injects `UserMessages` and renders a bundle key. Nothing else — no language parameter on method signatures, no second code path.
+
+```java
+// PlacementRules: the rule table carries KEYS, not sentences
+new Rule(List.of("kreatin", "creatine"), "wake", null,
+    "FUEL_PLACEMENT_REASON_CREATINE", "FUEL_PLACEMENT_HINT_CREATINE")
+
+// PlacementEngine: rendered where the sentence is produced
+return new Placement(rule.slotKey(), "rule", messages.text(rule.reasonKey()), rule.restDayFallback());
+```
+
+```properties
+# messages_hu.properties — the former literal, byte for byte
+FUEL_PLACEMENT_REASON_CREATINE=Kreatin ébredés után vízben — étkezéstől független, a napi konzisztencia számít.
+# messages_en.properties — written, not converted
+FUEL_PLACEMENT_REASON_CREATINE=Creatine in water after waking. It does not depend on meals; taking it every day is what counts.
+```
+
+The five rules:
+
+1. **Numbers go in as strings.** `MessageFormat` groups and localises a `Number` ("3 100", "3,100"); a caller formats (`Long.toString`, `String.format(Locale.ROOT, "%.1f", …)`) and passes text, so the Hungarian output is exactly what `String.format` used to print. Units that are not language (`kcal`, `g`, `kcal/100g`) may stay in code.
+2. **One message per sentence.** Where the old code glued two halves (`"%s · %s"` with a variant on each side), each combination is its own key (`FUEL_SCORE_WHO_TEXT`, `…_SUGAR_ONLY`, `…_SALT_ONLY`; the four `FUEL_SCORE_MACRO_ORIGIN_*`). A plural that differs in English is a second key (`FUEL_SCORE_PLANT_TEXT_ONE`); Hungarian repeats its one form. A slot may hold a *name* (a slot label, an item name), never half a sentence.
+3. **Many texts, one lookup.** A composer that renders a whole envelope takes `messages.pinned()` once and renders everything through it (`MealScoringService` — ~40 texts per score, one account lookup).
+4. **No request behind the thread → bind the owner.** `UserMessages` (and the LLM directive) resolve the language from `LlmActorContext`. A backfill or an `@Async` listener has no principal: wrap the write in `LlmActorContext.runAs(ownerId, …)` (`MealService.rescore`, `MealCoachEagerListener`), otherwise an English account gets Hungarian text.
+5. **Pure services stay unit-testable.** `UserMessages.fixed("hu" | "en")` is a renderer with no account or request behind it: `new MealScoringService(props, targets, UserMessages.fixed("en"))`.
+
+**An LLM prompt that demands Hungarian fights the directive.** Prompts stay Hungarian until N3, but a line such as „Válaszolj … magyarul" contradicts the appended English directive. Each such service keeps its prompt as a constant and derives a second one with only the language demands removed (`SYSTEM_PROMPT_NEUTRAL = SYSTEM_PROMPT.replace(…)`), chosen with `"hu".equals(messages.language())`. Hungarian accounts get the original constant (same instance, byte-identical); the prefix is unchanged, so the fake LLM's marker dispatch and the provider's prompt cache still hold; JSON keys keep their names even when they say `Hu` (`reasonHu`). A unit test per service asserts that the neutral prompt contains no „magyar" / "Hungarian" — a reworded prompt that no longer matches the `replace` fails there.
 
 ### The LLM directive
 
@@ -265,6 +295,8 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 
 **Backend:** `feature/auth/LanguageIT` (register with a language, the PUT, `me.language`, an English error for an English account, `Accept-Language` for an unauthenticated request), `techcore/message/MessageBundleParityTest`, `feature/companion/llm/OutputLanguageDirectiveTest` and `SpringAiCompanionLlmLanguageTest` (directive appended once, on the turn context when present, absent for `hu`, exempt slugs (including `admin_replay`) and the audio overload untouched, a null slug safe, the audited prompt equals the sent one). Focused tests miss ArchUnit and the codemap — run `ArchitectureTest` and `node scripts/gen-codemap.mjs` too.
 
+**Backend, domain sentences (Fuel, `mezo-n4wf5.5`):** `techcore/message/UserMessagesTest` (`fixed`, `pinned`, numbers as strings), `feature/nutrition/service/MealScoringLanguageTest` (exact Hungarian and English sentences, same numbers in both, no Hungarian letter in an English envelope), `feature/fuel/service/FuelPlacementLanguageTest` (rule reasons in both languages, every rule key present, the two neutral prompts), `feature/recipe/service/RecipeLanguageTest`, `feature/meal/service/MealPromptLanguageTest`, `PantrySuggestionServiceTest` (English reason), and `feature/fuel/FuelLanguageIT` (an English account's meal envelope and stack reason over HTTP, kept as written after a switch, re-score in the owner's language).
+
 **Commands:** `cd frontend && CI=true pnpm test` and `CI=true VITE_USE_MOCK=false pnpm test` (file filters after `--` are ignored; unset `VITE_USE_MOCK` means mock mode), `pnpm test:layout`, `pnpm build`; `cd backend && ./mvnw test -Dmezo.test.use-testcontainers=true`.
 
 ---
@@ -285,7 +317,7 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 - **Time zone.** A cached `Intl.DateTimeFormat` keeps the zone it was created in; `isoDay` is built from the date's own parts for that reason. Do not reintroduce a module-level formatter for a machine format.
 - **`Msg` / `memberLabel` read `m()` (non-hook)** and rely on the boundary's remount (they sit below it); prefer `useM()` in the component, and never use them above the boundary.
 - **Hungarian copy changes shipped with N1** (prototype is the build target): Settings hub row „Nyelv, kalauzok, fiók, jelszó"; `/settings/general` intro „Ugyanaz a világ. A saját nyelveden és szokásaiddal."
-- **Deferred (minor, from review):** `UserMessages` reads the actor's language once per message; `UserLanguage.current()` is one `findById` per LLM call; `NOTIFICATION_CATEGORY_META.label/description` are dead duplicates of the catalog; `Lines`/`Marked` (catalog text renderers) live in `features/settings` and are imported by `features/me`; `frame.tag` / `frame.kicker` uppercase English literals; some short English server texts lack the next step their Hungarian twin has; `AUTH_ACCOUNT_DISABLED` English adds a sentence with no Hungarian counterpart.
+- **Deferred (minor, from review):** `UserMessages.text` reads the actor's language once per message (a composer that renders many takes `pinned()`); `UserLanguage.current()` is one `findById` per LLM call; `NOTIFICATION_CATEGORY_META.label/description` are dead duplicates of the catalog; `Lines`/`Marked` (catalog text renderers) live in `features/settings` and are imported by `features/me`; `frame.tag` / `frame.kicker` uppercase English literals; some short English server texts lack the next step their Hungarian twin has; `AUTH_ACCOUNT_DISABLED` English adds a sentence with no Hungarian counterpart.
 - **Later slices:** N2 (Nap, Edzés, Edzés közben into both languages; owner approves the "Gentle mode" term), N3 (prompts, team voice, notifications, built-in catalogs, cross-language memory recall, a language marker on stored AI text), F5–F8 bilingual from the first line, F9 the full English audit and removal of the Settings note.
 
 ---
@@ -309,7 +341,7 @@ export const domainName = (d: NavDomain) => (m().frame.domains as Record<string,
 
 **Backend:**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java` — the account language lookup.
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/message/UserMessages.java` — message resolution for the acting user / `Accept-Language`.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/message/UserMessages.java` — message resolution for the acting user / `Accept-Language`; `pinned()`, `fixed(language)`, `language()` for domain composers.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/MessageSourceConfiguration.java` — the `MessageSource` bean.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OutputLanguageDirective.java`, `SpringAiCompanionLlm.java` — the directive and where it is applied.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/exception/GlobalExceptionHandler.java` — resolves through `UserMessages`.

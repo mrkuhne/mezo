@@ -35,7 +35,7 @@ class PlacementEngineIT extends AbstractIntegrationTest {
         PlacementEngine.Placement p = engine.place(supplement("Kreatin monohidrát"));
         assertThat(p.slotKey()).isEqualTo("wake");
         assertThat(p.source()).isEqualTo("rule");
-        assertThat(p.reasonHu()).isNotBlank();
+        assertThat(p.reason()).isNotBlank();
     }
 
     @Test

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,7 +39,9 @@ public class MealCoachEagerListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onMealSaved(MealSavedEvent event) {
         try {
-            coach.generateForMeal(event.userId(), event.mealId());
+            // This pool thread carries no request principal: bind the meal's owner so the verdict is
+            // written in the owner's language (and its LLM call is booked to them).
+            LlmActorContext.runAs(event.userId(), () -> coach.generateForMeal(event.userId(), event.mealId()));
         } catch (RuntimeException e) {
             // e.g. the meal was deleted in between (404) — the lazy path covers anything left over.
             log.debug("Eager meal coach skipped for {}: {}", event.mealId(), e.getMessage());

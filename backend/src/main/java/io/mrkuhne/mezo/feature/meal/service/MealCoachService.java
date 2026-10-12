@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.train.service.RecoveryFuelMode;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -62,7 +63,7 @@ public class MealCoachService {
     private static final int GLUCOSE_MAX = 2;
     private static final int GLUCOSE_TITLE_MAX = 48;
 
-    private static final String SYSTEM_PROMPT = """
+    static final String SYSTEM_PROMPT = """
         Egy fitness-alkalmazás étkezés-coach rétege vagy: a felhasználó MÁR LOGOLT étkezéseiről
         adsz rövid, kontextusos szakvéleményt.
         Megkapod az étkezéseket, a determinisztikus pontszámukat dimenziónként, a szerepüket
@@ -116,6 +117,12 @@ public class MealCoachService {
         - Minden kapott mealId-hoz pontosan egy objektum tartozzon.
         """;
 
+    /** For an English account: the one line that demands Hungarian is reduced to the tone, so it
+     *  cannot fight the appended output-language directive (mezo-n4wf5.5). Hungarian accounts
+     *  keep {@link #SYSTEM_PROMPT} byte for byte. */
+    static final String SYSTEM_PROMPT_NEUTRAL =
+        SYSTEM_PROMPT.replace("- Magyarul, tegeződve, tömören.", "- Tegeződve, tömören.");
+
     /** LLM answer contract — permissive shapes; a malformed answer degrades, never errors. */
     record ExtractedImprove(String text, String impact) {
     }
@@ -139,6 +146,7 @@ public class MealCoachService {
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final MealCoachContextReader contextReader;
+    private final UserMessages messages;
 
     /**
      * A day's verdicts: everything already cached, plus — when {@code allowGenerate} — ONE batched
@@ -198,9 +206,10 @@ public class MealCoachService {
             // The subject is a single meal only when exactly one is narrated (an opened score sheet);
             // a day batch is about the day, so it leaves the entity id honestly empty (mezo-2zyu).
             UUID subject = blocks.size() == 1 ? blocks.keySet().iterator().next() : null;
+            String systemPrompt = "hu".equals(messages.language()) ? SYSTEM_PROMPT : SYSTEM_PROMPT_NEUTRAL;
             String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("meal_coach", "verdict", "meal", subject),
-                () -> port.complete(SYSTEM_PROMPT, userMessage));
+                () -> port.complete(systemPrompt, userMessage));
             String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
             ExtractedAnswer parsed = objectMapper.readValue(json, ExtractedAnswer.class);
             return persist(userId, parsed, blocks.keySet());
