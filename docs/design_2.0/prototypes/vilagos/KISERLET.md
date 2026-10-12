@@ -34,6 +34,8 @@ plans or "which direction wins" decisions until he asks.
 - **Words are left-aligned, always.** The vessel may change sides; the text block never flips its alignment.
 - **Length:** a hub page aims at three phone screens at most; long repeating content shows the newest three and
   opens the rest on a tap (the jar on Mai). On a hub, a unit that has its own page appears in its short form.
+- **No explanatory sub-lines** (owner, 2026-10-12, on Mai): a section heading stands alone; under a number only its
+  name (Kalória, Fehérje…); under an action only its name and its "… ›" line. Grey helper sentences go.
 - **No repeats:** two pages never open with the same sentence; one action has one entry point per page.
 - **One thing moves per screen** (the pipe's flow on A napom, the next vessel on Rutin). Levels and drops stand still.
 - **A drawing explains itself in words, not with a legend** ("4 nap egybevág · 3 még hiányzik", "erő 82%").

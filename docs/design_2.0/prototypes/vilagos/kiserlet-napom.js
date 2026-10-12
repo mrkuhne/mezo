@@ -284,7 +284,7 @@ function dayArc(){const T0=6,T1=22,now=14+20/60,pt=h=>{const t=(h-T0)/(T1-T0);re
     <text class="ar-big" x="180" y="118" text-anchor="middle">60</text><text class="ng-s" x="180" y="138" text-anchor="middle">a 100-ból · hat életjel átlaga</text>
     <text class="ar-t" x="20" y="170" text-anchor="middle">06:00</text><text class="ar-t" x="340" y="170" text-anchor="middle">22:00</text>
     <text class="ng-s f" x="180" y="170" text-anchor="middle">6 bejegyzés mögötted · 3 teendő előtted</text></svg>`}
-const KH=(t,sub,link='')=>`<div class="mx-h"><b>${t}</b>${link||`<span>${sub}</span>`}</div>`;
+const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
   const NX=[
     {key:'drop',t:'14:00',title:'Délutáni check-in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
@@ -294,18 +294,18 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
   <section class="bd"><div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Most a délutáni check‑in jön, utána a Pull&nbsp;Day.</h2></div>
   ${dayArc()}</section>
-  <section class="bd w">${KH('Most következik','3 teendő · időrendben')}
-  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><small>${x.sub}</small><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div>
-  </section><section class="bd">${KH('Mai szintek','hol tartasz a célhoz')}${lv}</section>
-  <section class="bd w">${KH('Észrevétel','Mezo · megerősített minta')}
+  <section class="bd w">${KH('Most következik')}
+  <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div>
+  </section><section class="bd">${KH('Mai szintek')}${lv}</section>
+  <section class="bd w">${KH('Észrevétel')}
   <div data-rr="mo">${RR.mo()}</div></section>
   <section class="bd">${KH('Mai napló','',`<button class="btn sm" data-go="gyors">+ Új bejegyzés</button>`)}
   <div class="jr"><div class="jr-in"><p class="jr-air">a nap még tart · ide kerül a következő</p>
     <div data-rr="jar">${RR.jar()}</div></div></div>
-  </section><section class="bd w last">${KH('Továbbiak','ami még a naphoz tartozik')}
-  <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b><small>${sub}</small></button>`).join('')}</div>
+  </section><section class="bd w last">${KH('Továbbiak')}
+  <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
   <div class="mt-acts"><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
-  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b><small>Kímélő mód: betegség, sérülés vagy utazás idejére</small></span></button></section>`)}
+  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section>`)}
 
 /* ═══ NAPI KÜLDETÉSEK · three flasks on offer; what a finished one holds is poured into the day's XP collector ═══ */
 const QS=[
@@ -467,7 +467,7 @@ ${P} .nb-m.log .nb-b{flex:1;min-width:0}${P} .nb-m.log .nb-t{font-size:12.5px;li
 ${P} .nb-m.log em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;padding-top:2px}
 ${P} .ng-lead.first{padding-top:16px}${P} .ng-lead.first::before{top:10px;border-radius:4px 4px 0 0}
 ${P} .ng-lead .btn{margin-top:4px}
-${P} .mt-lv>.k2-vials{margin:0}
+${P} .bd .k2-vial small i{display:none}
 ${P} text.ng-go[data-go]{cursor:pointer}
 ${P} .mt-more{display:grid;grid-template-columns:repeat(4,1fr);margin:0 14px}
 ${P} .mt-more button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 3px;text-align:center;min-width:0}
