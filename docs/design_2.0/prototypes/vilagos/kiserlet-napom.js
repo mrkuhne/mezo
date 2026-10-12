@@ -83,13 +83,13 @@ const V={
 };
 const wrap=(t,n)=>{const out=[];let cur='';t.split(' ').forEach(w=>{if((cur+' '+w).trim().length>n&&cur){out.push(cur);cur=w}else cur=(cur+' '+w).trim()});if(cur)out.push(cur);return out};
 /* one station: the vessel on its side of the page, the words on the other */
-function station(s,side,y){const L=side==='L',cx=L?72:288,tx=L?146:214,an=L?'start':'end';
+function station(s,side,y){const L=side==='L',cx=L?72:288,tx=L?146:20,an='start';
   return `<g class="ng-st ${s.none?'none':''}" ${s.tap?`data-ngs="${s.key}" role="button" tabindex="0"`:s.attr?`${s.attr} role="button" tabindex="0"`:''}>${s.tap||s.attr?`<rect class="ng-hit" x="6" y="${y}" width="348" height="104"/>`:''}
     <g class="ng-ves" transform="translate(${cx-52} ${y})">${V[s.key](s.v)}</g>
     <text class="ng-t" x="${tx}" y="${y+30}" text-anchor="${an}">${s.title}${s.tag?`<tspan class="ng-k ${s.sk}" dx="7">${s.tag}</tspan>`:''}</text>
     <text class="ng-v" x="${tx}" y="${y+62}" text-anchor="${an}">${s.val}${s.unit?`<tspan class="ng-u" dx="4">${s.unit}</tspan>`:''}</text>
-    ${s.sub.map((t,i)=>`<text class="ng-s" x="${tx}" y="${y+82+i*16}" text-anchor="${an}">${t}</text>`).join('')}
-    ${s.go?`<text class="ng-go" x="${tx}" y="${y+84+s.sub.length*16}" text-anchor="${an}">${s.go} ›</text>`:''}</g>`}
+    ${s.sub.map((t,i)=>`<text class="ng-s" x="${tx}" y="${y+83+i*17}" text-anchor="${an}">${t}</text>`).join('')}
+    ${s.go?`<text class="ng-go" x="${tx}" y="${y+86+s.sub.length*17}" text-anchor="${an}">${s.go} ›</text>`:''}</g>`}
 const badgeN=(x,y,n,t,an='start')=>`<g class="ng-b"><path transform="translate(${x-32*.66} ${y-34*.66}) scale(.66)" d="${DROP}"/><text x="${x}" y="${y+7.5}" text-anchor="middle">${n}</text></g>
   <text class="ng-h" x="${an==='start'?x+20:x-20}" y="${y+6}" text-anchor="${an}">${t}</text>`;
 /* stations from y0, alternating sides; returns [svg, yEnd] — the S-bends between two stations are the dividers */
@@ -137,15 +137,15 @@ function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)r
       <g clip-path="url(#ng-c-ur)"><path class="ng-wv" fill="url(#ng-g-ok)" d="M132 ${U+46}${' q12 -5 24 0 t24 0'.repeat(4)} V${U+200} H132Z"/></g></g>
     <path class="ng-line" d="${UU}"/><path class="ng-hi" d="M104 ${U+70}V${U+112}"/><path class="ng-hi" d="M220 ${U+62}V${U+112}"/></g>
   <path class="ng-mark" d="M152 ${U+55}H208M152 ${U+46}H208"/>
-  <g data-toast="Az app pontszáma: a hat terület súlyozott átlaga" role="button" tabindex="0"><rect class="ng-hit" x="50" y="${U}" width="130" height="198"/>
+  <g>
     <text class="ng-un" x="122" y="${U+96}" text-anchor="middle">64</text><text class="ng-uu" x="122" y="${U+112}" text-anchor="middle">/ 100</text>
     <text class="ng-t" x="108" y="${U+176}" text-anchor="middle">az app szerint</text><text class="ng-s" x="108" y="${U+193}" text-anchor="middle">közepes nap</text></g>
-  <g data-toast="A te ítéleted: az esti check-in utolsó kérdése" role="button" tabindex="0"><rect class="ng-hit" x="180" y="${U}" width="130" height="198"/>
+  <g>
     <text class="ng-un" x="238" y="${U+96}" text-anchor="middle">7</text><text class="ng-uu" x="238" y="${U+112}" text-anchor="middle">/ 10</text>
     <text class="ng-t" x="252" y="${U+176}" text-anchor="middle">szerinted</text><text class="ng-s" x="252" y="${U+193}" text-anchor="middle">jó nap</text></g>
   </svg>
   <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p>
-  <p class="ng-foot">A 7/10 az esti check-in utolsó kérdéséből jön („Milyen volt a napod összességében?”). A napod többi része nem változik.</p>`+fr[1]}
+  <p class="ng-foot">Az app 64 pontja a hat terület súlyozott átlaga. A te 7/10-ed az esti check-in utolsó kérdéséből jön („Milyen volt a napod összességében?”).</p>`+fr[1]}
 
 /* ═══ A NAPOM · a closed day (the overnight evaluation) ═══ */
 const NDY={score:87,base:89,corr:-2,label:'A hét legjobb napja',
@@ -161,8 +161,8 @@ const DIM=[['nutrition','Tápanyag'],['quality','Minőség'],['training','Edzés
 const DAYN={'2026-09-21':['Hétfő','szept 21'],'2026-09-22':['Kedd','szept 22'],'2026-09-23':['Szerda','szept 23']};
 const dimV=(k,sc)=>{const g=sc>=80?'ok':'dom';return k==='nutrition'?{p:sc,prot:98,g}:k==='quality'?{p:sc,a:71,b:100,g}:k==='logging'?{n:2,g}:{p:sc,g}};
 function closed(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,[dn,dd]=DAYN[iso];
-  const ST=DIM.map(([k,l])=>({key:k,title:l,tag:`súly ${v.weight[k]}%`,sk:'w',val:v.dims[k][0],sub:v.dims[k][1].split(' · ').slice(0,2),v:dimV(k,v.dims[k][0]),tap:true}));
-  const [stSvg,yEnd]=stations(ST,148),C=yEnd+92,last=iso==='2026-09-23';
+  const ST=DIM.map(([k,l])=>({key:k,title:l,tag:`súly ${v.weight[k]}%`,sk:'w',val:v.dims[k][0],sub:v.dims[k][1].split(' · ').slice(0,1),go:'Részletek',v:dimV(k,v.dims[k][0]),tap:true}));
+  const [stSvg,yEnd]=stations(ST,166),C=yEnd+92,last=iso==='2026-09-23';
   /* the three highlights: small drops on the pipe */
   const hl=v.hl.map(([e,t],i)=>{const y=20+i*38;return `<g class="ng-hl"><path transform="translate(${72-32*.5} ${y-34*.5}) scale(.5)" d="${DROP}"/><text class="ng-t" x="96" y="${y+1}">${t}</text><text class="ng-s f" x="96" y="${y+16}">${e}</text></g>`}).join('');
   return fr[0]+topPipe(iso)+lead(`<small>${dn} · ${dd} · lezárva, hajnali 3:04</small>
@@ -174,13 +174,13 @@ function closed(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return
   +lead(`<div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>a napodról</small></div>${v.prose.map(p=>`<p class="ng-pr">${p}</p>`).join('')}
       <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>`,'w')
   +`<svg class="ng" viewBox="0 0 360 ${C+118}" role="img" aria-label="A nap rajza: a nap kiemelései, miből jött össze a pontszám, a nap körülményei">
-  ${band(-1,106,false,true)}${band(yEnd+24,C+118)}${pipe(`M72 0V114M72 138V148M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
-  ${hl}${badgeN(72,126,2,'Miből jött össze')}${stSvg}
+  ${band(-1,122,false,true)}${band(yEnd+24,C+118)}${pipe(`M72 0V132M72 156V166M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
+  ${hl}${badgeN(72,144,2,'Miből jött össze')}${stSvg}
   ${badgeN(180,yEnd+50,3,'A nap körülményei')}
   ${v.ctx.map(([a,b],i)=>{const x=i%2?272:88,y=C+6+(i>1?56:0);return `<g class="ng-ctx"><circle cx="${x}" cy="${y}" r="5"/><text class="ng-s" x="${x}" y="${y+21}" text-anchor="middle">${a}</text><text class="ng-t" x="${x}" y="${y+38}" text-anchor="middle">${b}</text></g>`}).join('')}
   </svg>
   ${last?`<button class="ng-on" data-go="nap.2026-09-24">${svg(64,pipe('M180 0V8')+`<path class="ng-nd" transform="translate(${180-32*1.1} -2) scale(1.1)" d="${DROP}"/><path class="ng-ng" style="stroke-width:3" d="M172 42H188M182 36L188 42L182 48"/>`)}<b>Tovább a mai napra</b><small>csütörtök · élő nap</small></button>`:''}
-  <p class="ng-foot">A hat edényre koppintva látod a részleteket. A körülmények nem számítanak a pontba, ezért a csövön kívül lebegnek. Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>`+fr[1]}
+  <p class="ng-foot">A körülmények nem számítanak a pontba, ezért a csövön kívül lebegnek. Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>`+fr[1]}
 /* a day with too little data: the same six vessels, five of them empty */
 function sparse(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);const [dn,dd]=DAYN[iso];
   const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,sk:'q',val:'70',sub:['7ó 02p · minőség 6/10'],v:{p:70,g:'dom'}}
@@ -200,7 +200,7 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-ngs]');if(
 /* ═══ BESZÉLGETÉS · the day's stream: every message is a drop on it, at its time ═══ */
 const TC={szunya:'#8F7FD0',mocor:'#3F8FDB',falat:'#3FA277',mezo:'#6F7F95'},TG={szunya:'t-sleep',mocor:'t-dumbbell',falat:'t-bowl',mezo:'t-orb'},TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',mezo:'Mezo'};
 const node=(k,cls='')=>`<span class="nb-node ${cls}" style="--c:${TC[k]}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg>${I(TG[k])}</span>`;
-const BS={adv:false,fb:false,exp:{}};const TICK_='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
+const BS={adv:false,fb:false,exp:{},jar:false};const TICK_='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
 function streamBody(){
   const bub=(k,sz,cls='')=>`<span class="pl-bub ${cls}" style="--c:${TC[k]};--s:${sz}px">${I(TG[k])}</span>`;
   const fb=no=>`<div class="nb-a"><span>Segített?</span><button class="btn sm ghost" data-toast="Köszönöm — ezt megjegyzem">Segített</button><button class="btn sm ghost" ${no?'data-nb="fb"':'data-toast="Köszönöm, finomítok"'}>Nem talált</button></div>`;
@@ -211,7 +211,7 @@ function streamBody(){
   <div class="pl-air"><small>Mezo · ma · 4 üzenet</small><h2>Négy üzenet, kettő új.</h2><p>A legfrissebb a felszínen úszik, a régebbiek lejjebb süllyednek.</p>
     <button class="pl-buoy" data-toast="Mezo · Chat"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><span><b>Beszélgess Mezóval</b><small>ejtsd be, amit mondanál: kérdezz, mesélj</small></span></button></div>
   <div class="pl-water"><i class="pl-wave"></i>${o(86,40,10)}${o(92,150,6)}${o(80,300,8)}${o(90,470,12)}${o(84,640,7)}
-    <button class="pl-m duo" style="--x:6px" data-toast="Mezo · Élő beszélgetés"><span class="pl-two">${bub('szunya',36)}${bub('mocor',36)}</span><span class="pl-b"><span class="nb-h"><b>A csapat most erről beszél</b></span><span class="nb-t">belefér-e ma az esti röpi a rövid éjszaka után</span></span></button>
+    <button class="pl-m duo" style="--x:6px" data-toast="Mezo · Élő beszélgetés"><span class="pl-two">${bub('szunya',36)}${bub('mocor',36)}</span><span class="pl-b"><span class="nb-h"><b>A csapat most erről beszél</b></span><span class="nb-t">belefér-e ma az esti röpi a rövid éjszaka után</span><span class="fh-lk">Belehallgatok ›</span></span></button>
     ${m('falat',58,0,'10:12','étkezési javaslat','A reggelid 420 kcal volt, 22 g fehérjével. Ha az ebédhez legalább 40 g-ot teszel, estére nem marad nagy hiány.',
       `<div class="nb-a">${BS.adv?`<span class="nb-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv">Szólj az ebédnél</button>`}</div>${fb(false)}`)}
     ${m('mezo',50,12,'06:30','reggeli briefing','Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, ma a hátad pihen.<br><br>Az alvásod 7,4 óra volt, a reggeli check-in nyugodt. Ma délben érdemes a fehérjét előrehozni.',
@@ -221,7 +221,7 @@ function streamBody(){
   </div>
   <div class="pl-water deep"><i class="pl-wave"></i><p class="pl-day">tegnap · mélyebben</p>${o(88,60,9)}${o(78,150,6)}
     ${old.map(([k,t,kind,p,sz,x],i)=>BS.exp[i]?m(k,sz,x,t,kind,p,`<div class="nb-a"><button class="fh-lk" data-nb="exp:${i}">Összecsukom</button></div>`,'old')
-      :`<button class="pl-m old" style="--x:${x}px" data-nb="exp:${i}">${bub(k,sz,'old')}<span class="pl-b"><span class="nb-h"><b>${TN[k]}</b>${t} · ${kind}</span><span class="nb-t">${p.slice(0,38)}…</span></span></button>`).join('')}
+      :`<button class="pl-m old" style="--x:${x}px" data-nb="exp:${i}">${bub(k,sz,'old')}<span class="pl-b"><span class="nb-h"><b>${TN[k]}</b>${t} · ${kind}</span><span class="nb-t">${p.slice(0,38)}…</span><span class="fh-lk">Elolvasom ›</span></span></button>`).join('')}
   </div></div>`}
 /* observations (Beszélgetés · Észrevételek and Mai): communicating vessels — cause and effect joined by a pipe
    that has one segment per evidence day: full = agrees, dashed = against, empty = still missing */
@@ -236,12 +236,12 @@ function obsLinked(o,all){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
     <svg class="lk-g" viewBox="0 0 320 116" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
       <path class="lk-p" d="M70 40H250"/>${Array.from({length:n},(_,i)=>`<rect class="lk-s ${i<o.hits?'p':i<o.hits+o.miss?'m':''}" x="${(x0+i*(w+g)).toFixed(1)}" y="33" width="${w.toFixed(1)}" height="14" rx="7"/>`).join('')}
       ${ves(40,o.a)}${ves(280,o.b)}<text class="lk-n" x="160" y="70" text-anchor="middle">${o.hits+o.miss} / ${n} nap</text></svg>
-    <p class="nb-leg"><span><i class="p"></i>egybevág</span><span><i class="m"></i>ellene szól</span><span><i></i>még hiányzik</span></p>
+    ${all?'':'<p class="nb-leg"><span><i class="p"></i>egybevág</span><span><i class="m"></i>ellene szól</span><span><i></i>még hiányzik</span></p>'}
     <div class="ng-who">${badge('mezo',{s:28})}<b>Mezo</b><small>${o.lbl}</small></div><p class="nb-t">${o.x}</p>
     ${OS.ev[o.k]?`<p class="nb-l">Miből látom</p><div class="ng-chips">${o.ev.map(e=>`<span>${e}</span>`).join('')}</div>`:''}
     <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span><button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla</button>`
-      :o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')+`<button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem':'Miből látod?'}</button>`}</div>
-    ${o.st==='Gyűlik'||all?`<div class="nb-a">${o.st==='Gyűlik'?'<button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button>':''}${all?'<button class="fh-lk" data-go="uzenetek.eszrevetelek">Összes észrevétel ›</button>':''}</div>`:''}
+      :o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')+(all?'':`<button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem':'Miből látod?'}</button>`)}</div>
+    ${all?'<div class="nb-a" style="margin-top:0"><button class="fh-lk" data-go="uzenetek.eszrevetelek">Részletek és az összes észrevétel ›</button></div>':o.st==='Gyűlik'?'<div class="nb-a" style="margin-top:0"><button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button></div>':''}
   </article>`}
 function obsBody(){const left=OBS.filter(o=>!OS.done[o.k]).length;
   return `<div class="pg-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2>
@@ -258,13 +258,14 @@ function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh 
   <div class="rk-tag"><i class="rk-hole"></i><p class="nb-h"><b>Mozgás</b>34% · amit a csapat mond</p>
     <p class="nb-t"><b>Ma még alig mozdultál.</b> Egy 10 perces séta ebéd után elég, hogy a szint megmozduljon. Nem kell edzés.</p>
     <div class="nb-a"><button class="btn sm ghost" data-toast="Edzés · Mai">Megnézem</button></div></div>`}
-const RR={nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
+const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"','en'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760 kcal','data-dom="fuel"','fuel'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"','en'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','kész','data-go="checkin"','nap'],['09:15','Reggeli','Túrós zabkása áfonyával','420 kcal','data-dom="fuel"','fuel'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','kész','data-go="checkin"','nap']];
+const RR={jar:()=>(BS.jar?LOG:LOG.slice(0,3)).map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r==='↗'?'':r} ›</em></button>`).join('')+`<button class="jr-more" data-nb="jar">${BS.jar?'Csak a legutóbbi három':`Még ${LOG.length-3} korábbi bejegyzés`} ›</button>`,nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
 function uzenetek(tab){tab=tab||'uzenetek';
   const TABS=[['uzenetek','Üzenetek'],['eletjelek','Életjelek'],['eszrevetelek','Észrevételek']];if(!TABS.some(t=>t[0]===tab))return O.uzenetek(tab);
   return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
     ${tab==='eletjelek'?vitalsBody():`<div data-rr="${tab==='uzenetek'?'nb':'ob'}">${RR[tab==='uzenetek'?'nb':'ob']()}</div>`}`)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
-  if(a==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok')}else if(a==='fb')BS.fb=!BS.fb;else if(k==='exp')BS.exp[x]=!BS.exp[x];
+  if(a==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok')}else if(a==='fb')BS.fb=!BS.fb;else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
   else if(k==='obs'){OS.done[x]=true;F.toast('Megjegyeztem a válaszod')}else if(k==='ev')OS.ev[x]=!OS.ev[x];
   document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
 
@@ -290,7 +291,6 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
     {key:'drop',t:'14:00',title:'Délutáni check-in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
     {key:'training',t:'ma',title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
     {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
-  const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"','en'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760','data-dom="fuel"','fuel'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"','en'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','✓','data-go="checkin"','nap'],['09:15','Reggeli','Túrós zabkása áfonyával','420','data-dom="fuel"','fuel'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','✓','data-go="checkin"','nap']];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
   <section class="bd"><div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2></div>
@@ -303,8 +303,7 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   <div data-rr="mo">${RR.mo()}</div></section>
   <section class="bd">${KH('Mai napló','',`<button class="fh-lk" data-go="gyors">+ Új bejegyzés</button>`)}
   <div class="jr"><div class="jr-in"><p class="jr-air">a nap még tart · ide kerül a következő</p>
-    ${LOG.map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r}</em></button>`).join('')}</div></div>
-  <p class="rt-note" style="text-align:center">Egy réteg egy bejegyzés, a legfrissebb van felül. Zöld: étkezés · kék: check-in · türkiz: napló és aktivitás.</p>
+    <div data-rr="jar">${RR.jar()}</div></div></div>
   </section><section class="bd w last">${KH('Továbbiak','ami még a naphoz tartozik')}
   <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b><small>${sub}</small></button>`).join('')}</div>
   <div class="mt-acts"><button class="btn sm" data-go="gyors">+ Új bejegyzés</button><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
@@ -376,13 +375,27 @@ nap.routes.napom=a=>a?O.napom(a):today();nap.routes.nap=day;nap.routes.napomg=to
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
 F.css(`/* kiserlet-napom */
+/* RULES (owner-approved UX round, 2026-10-12): nothing renders under 12 px on a 360 px phone — so text inside a
+   drawing is at least 13 user units; every tappable thing has a 44 px target; a tappable drawing carries a blue
+   "… ›" line and nothing else does; words are always left-aligned. */
+${P} .scroll .fh-lk{display:inline-flex;align-items:center;min-height:44px}
+${P} .scroll .btn.sm{min-height:44px}
+${P} .np-pre .fh-seg button{min-height:44px}
+${P} .k2-vial small{font-size:12.5px}${P} .k2-vial small i{font-size:12px}
+${P} .np-week small{font-size:12px}
+${P} .mt-acts .fh-lk{min-width:44px;justify-content:center}
+${P} .k2-tube em{font-size:12px!important;font-family:var(--ff,inherit)!important;font-weight:700;top:8px!important}
+${P} .np-six .k2-vial small{font-size:12px;letter-spacing:-.35px}
+/* six tubes need ~56 px each for their label: on a narrow phone they stand in two rows of three */
+${P} .rk{container-type:inline-size}
+@container (max-width:350px){${P} .np-six .k2-vials{grid-template-columns:repeat(3,1fr)!important;row-gap:16px}}
 ${P} svg.ng{display:block;width:calc(100% - 28px);margin:0 14px;overflow:visible}
 ${P} svg.ng-top{margin-top:6px}
 ${P} .ng text{font-family:var(--ff,inherit)}
 ${P} .ng-lead{position:relative;margin:0;padding:4px 22px 16px calc(14px + (100% - 28px)*.2 + 24px)}
 ${P} .ng-lead::before{content:"";position:absolute;left:calc(14px + (100% - 28px)*68/360);top:-2px;bottom:-2px;width:calc((100% - 28px)*8/360);background:color-mix(in srgb,var(--liq1) 52%,#E9F2F8)}
-${P} .ng-lead p{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--sub)}
-${P} .ng-lead>small{display:block;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
+${P} .ng-lead p{margin-top:8px;font-size:13px;line-height:1.45;color:var(--sub)}
+${P} .ng-lead>small{display:block;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
 ${P} .ng-lead h2{margin:6px 0 0;font:800 23px/1.12 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);text-wrap:balance}
 ${P} .ng-lead .ng-cnt{margin:10px 0 0;font-size:13px;font-weight:700;color:var(--ink)}
 ${P} .ng-lead .ng-cnt b{font:800 30px var(--disp,inherit);letter-spacing:-.04em;margin-right:6px;background:linear-gradient(160deg,var(--liq1),var(--liq2));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -409,19 +422,19 @@ ${P} .ng-coil{fill:none;stroke-linecap:butt}
 ${P} .ng-coil.a{stroke:rgba(10,42,60,.22);stroke-width:13.5}${P} .ng-coil.b{stroke:#fff;stroke-width:10}${P} .ng-coil.c{stroke:#1D9BE0;stroke-width:10}${P} .ng-coil.c.ok{stroke:#1FAE7C}
 ${P} .ng-b path,${P} .ng-hl path{fill:url(#ng-g-dom)}
 ${P} .ng-b text{font:800 12px var(--disp,inherit);fill:#fff}
-${P} .ng-h{font-size:13.5px;font-weight:700;fill:var(--ink)}
+${P} .ng-h{font-size:14.5px;font-weight:700;fill:var(--ink)}
 ${P} .ng-t{font-size:14.5px;font-weight:700;fill:var(--ink)}
-${P} .ng-k{font-size:11.5px;font-weight:700;fill:var(--dom)}${P} .ng-k.ok{fill:var(--ok)}${P} .ng-k.warn{fill:var(--warn)}${P} .ng-k.w{fill:var(--faint);font-weight:600}
+${P} .ng-k{font-size:13px;font-weight:700;fill:var(--dom)}${P} .ng-k.ok{fill:var(--ok)}${P} .ng-k.warn{fill:var(--warn)}${P} .ng-k.w{fill:var(--faint);font-weight:600}
 ${P} .ng-v{font:800 28px var(--disp,inherit);letter-spacing:-.03em;fill:var(--ink)}
 ${P} .ng-u{font:600 13px var(--ff,inherit);fill:var(--sub);letter-spacing:0}
-${P} .ng-s{font-size:12.5px;fill:var(--sub)}${P} .ng-s.f{fill:var(--faint);font-size:11.5px}
+${P} .ng-s{font-size:13.5px;fill:var(--sub)}${P} .ng-s.f{fill:var(--sub);font-size:13px}
 ${P} .ng-next{cursor:pointer}
 ${P} .ng-nd{fill:url(#ng-g-dom);filter:drop-shadow(0 4px 5px rgba(24,119,242,.3))}
 ${P} .ng-ng{fill:none;stroke:#fff;stroke-width:4;stroke-linejoin:round;stroke-linecap:round}
 ${P} .ng-nt{font:800 21px var(--disp,inherit);letter-spacing:-.03em;fill:var(--ink)}
-${P} .ng-go{font-size:13px;font-weight:700;fill:var(--dom)}
+${P} .ng-go{font-size:14px;font-weight:700;fill:var(--dom)}
 ${P} .ng-un{font:800 27px var(--disp,inherit);fill:#fff;letter-spacing:-.03em}
-${P} .ng-uu{font-size:10.5px;font-weight:700;fill:#fff;opacity:.9}
+${P} .ng-uu{font-size:13px;font-weight:700;fill:#fff;opacity:.9}
 ${P} .ng-mark{fill:none;stroke:rgba(10,42,60,.3);stroke-width:1.4;stroke-dasharray:3 4}
 ${P} .ng-ctx circle{fill:none;stroke:var(--liq1);stroke-width:2;stroke-dasharray:3 3}
 ${P} .ng-hit{fill:transparent;cursor:pointer}
@@ -440,13 +453,13 @@ ${P} .nb::before{content:"";position:absolute;left:calc(var(--rail) - (100% - 28
 ${P} .nb:has(>.nb-end)::before{bottom:40px}
 ${P} .nb.nb2{margin-top:10px}${P} .nb.nb2::before{top:14px;border-radius:4px 4px 0 0}
 ${P} .nb-six{margin-bottom:4px}${P} .nb-six .np-vh{margin-top:0}
-${P} .nb-st{font-style:normal;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;color:var(--dom);background:color-mix(in srgb,var(--dom) 10%,#fff)}
+${P} .nb-st{font-style:normal;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:700;color:var(--dom);background:color-mix(in srgb,var(--dom) 10%,#fff)}
 ${P} .nb-st.w{color:#8A5F06;background:color-mix(in srgb,var(--warn) 18%,#fff)}
 ${P} .nb-tally{display:flex;gap:5px;margin-top:10px}
 ${P} .nb-tally i,${P} .nb-leg i{display:block;width:16px;height:30px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.16)}
 ${P} .nb-tally i.p,${P} .nb-leg i.p{background:linear-gradient(180deg,var(--liq1),var(--liq2));box-shadow:none}
 ${P} .nb-tally i.m,${P} .nb-leg i.m{background:none;box-shadow:none;border:1.5px dashed var(--warn)}
-${P} .nb-leg{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:11px;color:var(--sub)}${P} .nb-leg b{flex:1 1 100%;color:var(--ink)}
+${P} .nb-leg{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;font-size:12px;color:var(--sub)}${P} .nb-leg b{flex:1 1 100%;color:var(--ink)}
 ${P} .nb-leg span{display:flex;align-items:center;gap:4px}${P} .nb-leg i{width:8px;height:14px}
 ${P} .nb-m.log{display:flex;align-items:flex-start;gap:8px;padding-top:9px;padding-bottom:9px;padding-left:calc(var(--rail) + 22px)}
 ${P} .nb-m.log time{top:12px}
@@ -461,7 +474,7 @@ ${P} .mt-more{display:grid;grid-template-columns:repeat(4,1fr);margin:0 14px}
 ${P} .mt-more button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 3px;text-align:center;min-width:0}
 ${P} .mt-bub{display:grid;place-items:center;width:58px;height:58px;border-radius:50% 50% 50% 50%/42% 42% 58% 58%;background:#fff;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--liq1) 45%,#fff),0 10px 14px -10px var(--liq2)}
 ${P} .mt-bub>svg.ic{width:28px;height:28px}
-${P} .mt-more b{margin-top:5px;font-size:12px;font-weight:700;line-height:1.2;color:var(--ink)}${P} .mt-more small{font-size:10.5px;line-height:1.25;color:var(--sub)}
+${P} .mt-more b{margin-top:5px;font-size:12px;font-weight:700;line-height:1.2;color:var(--ink)}${P} .mt-more small{font-size:12px;line-height:1.25;color:var(--sub)}
 ${P} .mt-acts{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;margin:20px 16px 0}
 ${P} .mt-km{display:flex;align-items:center;gap:12px;width:calc(100% - 44px);margin:18px 22px 0;text-align:left}
 ${P} .mt-km>svg.ic{width:32px;height:32px;flex:none}${P} .mt-km b{display:block;font-size:14.5px;font-weight:700;color:var(--ink)}${P} .mt-km small{font-size:12px;color:var(--sub)}
@@ -487,7 +500,7 @@ ${P} .nb-node.old svg.ic{--ic:var(--c);--ic2:color-mix(in srgb,var(--c) 45%,#fff
 ${P} .nb-h{display:block;font-size:12px;color:var(--sub)}${P} .nb-h b{font-size:14.5px;font-weight:800;color:var(--ink);margin-right:7px}
 ${P} .nb-t{display:block;margin-top:4px;font-size:14px;line-height:1.5;color:var(--ink)}
 ${P} .nb-m.old .nb-t{color:var(--sub)}
-${P} .nb-l{margin-top:12px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+${P} .nb-l{margin-top:12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
 ${P} .nb-f{display:grid;gap:6px;margin-top:8px}${P} .nb-f span{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink)}${P} .nb-f svg.ic{width:20px;height:20px;flex:none}
 ${P} .nb-a{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px}${P} .nb-a>span{font-size:12.5px;font-weight:600;color:var(--sub)}
 ${P} .nb-ok{display:flex;align-items:center;gap:6px;color:var(--ok)!important}${P} .nb-ok svg{width:16px;height:16px;fill:none;stroke:var(--ok);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
@@ -497,20 +510,20 @@ ${P} .nb-end b{display:block;font:800 18px var(--disp,inherit);letter-spacing:-.
 
 /* shared plain lead (no rail) */
 ${P} .pg-lead{padding:16px 22px 0}
-${P} .pg-lead small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
+${P} .pg-lead small{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
 ${P} .pg-lead h2{margin:6px 0 0;font:800 24px/1.12 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);text-wrap:balance}
-${P} .pg-lead p{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--sub)}
-${P} .mx-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:30px 22px 12px}
+${P} .pg-lead p{margin-top:8px;font-size:13px;line-height:1.45;color:var(--sub)}
+${P} .mx-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:30px 22px 8px;min-height:44px}
 ${P} .mx-h b{font:800 20px var(--disp,inherit);letter-spacing:-.03em;color:var(--ink)}${P} .mx-h span{font-size:12px;color:var(--sub);text-align:right}
 
 /* Mai · grouping without cards: every logical unit is one full-width layer of the page. Layers alternate
    between the ground and a lighter one, and the lighter one has a wave edge above and below. */
-${P} .bd{position:relative;padding:2px 0 38px}
-${P} .bd.w{background:rgba(255,255,255,.72);margin:12px 0}
+${P} .bd{position:relative;padding:2px 0 26px}
+${P} .bd.w{background:rgba(255,255,255,.72);margin:10px 0}
 ${P} .bd.w::before,${P} .bd.w::after{content:"";position:absolute;left:0;right:0;height:12px;background:rgba(255,255,255,.72);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px}
 ${P} .bd.w::before{top:-11.5px}${P} .bd.w::after{bottom:-11.5px;transform:scaleY(-1);-webkit-mask-position:-45px 0;mask-position:-45px 0}
 ${P} .bd.w.last{padding-bottom:150px;margin-bottom:-118px}${P} .bd.w.last::after{display:none}
-${P} .bd .mx-h{margin-top:22px}
+${P} .bd .mx-h{margin-top:16px}
 ${P} .bd>.fh-n{margin-top:18px}${P} .bd>.rt-chain{margin-top:18px}${P} .bd .rt-b:nth-last-child(-n+3){height:118px}
 ${P} .bd.last:not(.w){padding-bottom:10px}
 ${P} .bd.w .rt-ok{box-shadow:0 0 0 2px #fff}
@@ -526,8 +539,8 @@ ${P} .ar-a,${P} .ar-b,${P} .ar-c{fill:none;stroke-linecap:round}
 ${P} .ar-a{stroke:rgba(10,42,60,.18);stroke-width:19}${P} .ar-b{stroke:#fff;stroke-width:15.5}${P} .ar-c{stroke:url(#ng-g-arc);stroke-width:15.5}
 ${P} .ar-p{fill:#fff}${P} .ar-f{fill:#fff;stroke:rgba(10,42,60,.35);stroke-width:2}
 ${P} .ar-now{fill:#fff;stroke:var(--dom);stroke-width:3.5;filter:drop-shadow(0 4px 5px rgba(24,119,242,.4))}${P} .ar-now2{fill:var(--dom)}
-${P} .ar-nl{font-size:11.5px;font-weight:800;fill:var(--dom)}
-${P} .ar-t{font:500 10.5px var(--mono,ui-monospace,monospace);fill:var(--sub)}
+${P} .ar-nl{font-size:13px;font-weight:800;fill:var(--dom)}
+${P} .ar-t{font:500 13px var(--mono,ui-monospace,monospace);fill:var(--sub)}
 ${P} .ar-big{font:800 54px var(--disp,inherit);letter-spacing:-.05em;fill:var(--ink)}
 /* Mai · the next three */
 ${P} .mx-next{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 12px}
@@ -536,25 +549,28 @@ ${P} .mx-next svg.ng{width:86px;height:86px;margin:0}
 ${P} .mx-next .ng-pipe,${P} .mx-next .ng-flow,${P} .mx-next .ng-drip{display:none}
 ${P} .mx-next em{margin-top:4px;font:800 22px var(--disp,inherit);font-style:normal;letter-spacing:-.03em;color:var(--ink)}
 ${P} .mx-next button.now em{color:var(--dom)}
-${P} .mx-next b{font-size:13px;font-weight:700;line-height:1.2;color:var(--ink)}${P} .mx-next small{font-size:11px;line-height:1.3;color:var(--sub)}
-${P} .mx-next .fh-lk{margin-top:4px;font-size:12.5px}
+${P} .mx-next b{font-size:13px;font-weight:700;line-height:1.2;color:var(--ink)}${P} .mx-next small{font-size:12px;line-height:1.3;color:var(--sub)}
+${P} .mx-next .fh-lk{margin-top:0;font-size:13.5px}
 /* Mai · the jar */
 ${P} .jr{position:relative;margin:6px 26px 10px}
 ${P} .jr::before{content:"";position:absolute;left:-10px;right:-10px;top:-4px;height:9px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 2px rgba(10,42,60,.2);z-index:2}
 ${P} .jr-in{border:2px solid rgba(10,42,60,.2);border-top:0;border-radius:0 0 44px 44px;overflow:hidden;background:#fff;box-shadow:0 18px 22px -18px rgba(24,119,242,.5)}
-${P} .jr-air{padding:16px 10px 20px;font-size:11.5px;text-align:center;color:var(--faint)}
+${P} .jr-air{padding:16px 10px 20px;font-size:12px;text-align:center;color:var(--faint)}
 ${P} .jr-l{position:relative;display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px 16px 12px;text-align:left;background:color-mix(in srgb,var(--k) var(--a,15%),#fff)}
 ${P} .jr-l::before{content:"";position:absolute;left:0;right:0;top:-8px;height:9px;background:inherit;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/72px 9px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/72px 9px}
 ${P} .jr-l:nth-of-type(even)::before{-webkit-mask-position:-30px 0;mask-position:-30px 0}
-${P} .jr-l:last-child{padding-bottom:30px}
+
 ${P} .jr-l.k-fuel{--k:#149E6E}${P} .jr-l.k-nap{--k:#1877F2}${P} .jr-l.k-en{--k:#19B9C6;--a:20%}
-${P} .jr-l time{flex:none;width:38px;padding-top:2px;font:500 11px var(--mono,ui-monospace,monospace);color:var(--sub)}
+${P} .jr-l time{flex:none;width:40px;padding-top:2px;font:500 12px var(--mono,ui-monospace,monospace);color:var(--sub)}
 ${P} .jr-l span{flex:1;min-width:0}${P} .jr-l b{display:block;font-size:14px;font-weight:700;color:var(--ink)}${P} .jr-l small{display:block;font-size:12px;line-height:1.35;color:var(--sub)}
-${P} .jr-l em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--ink);white-space:nowrap;padding-top:2px}
+${P} .jr-l em{font-style:normal;font-size:12.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));white-space:nowrap;padding-top:2px}
+${P} .jr-l{min-height:48px}
+${P} .jr-more{display:block;width:100%;min-height:52px;padding:6px 16px 22px;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--dom) 85%,var(--ink));background:color-mix(in srgb,var(--dom) 8%,#fff);text-align:center}
+${P} .jr-l:last-of-type{padding-bottom:12px}
 
 /* Beszélgetés · Üzenetek: depth */
 ${P} .pl-air{padding:16px 22px 0}
-${P} .pl-air>small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
+${P} .pl-air>small{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
 ${P} .pl-air h2{margin:6px 0 0;font:800 24px/1.12 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink)}
 ${P} .pl-air p{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--sub)}
 ${P} .pl-buoy{position:relative;z-index:2;display:flex;align-items:center;gap:12px;margin:14px 0 -30px;text-align:left}
@@ -564,7 +580,7 @@ ${P} .pl-water{position:relative;margin-top:12px;padding:34px 0 18px;background:
 ${P} .pl-water.deep{margin-top:0;padding-top:14px;padding-bottom:40px;background:linear-gradient(180deg,color-mix(in srgb,var(--dom) 24%,#fff),color-mix(in srgb,var(--dom) 34%,#fff))}
 ${P} .pl-wave{position:absolute;left:0;right:0;top:-11px;height:12px;background:color-mix(in srgb,var(--liq1) 20%,#fff);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px}
 ${P} .pl-water.deep .pl-wave{background:color-mix(in srgb,var(--dom) 24%,#fff)}
-${P} .pl-day{padding:4px 22px 6px;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:color-mix(in srgb,var(--dom) 60%,var(--ink))}
+${P} .pl-day{padding:4px 22px 6px;font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:color-mix(in srgb,var(--dom) 60%,var(--ink))}
 ${P} .pl-m{position:relative;display:flex;align-items:flex-start;gap:12px;width:100%;padding:12px 20px 14px calc(16px + var(--x,0px));text-align:left}
 ${P} .pl-b{flex:1;min-width:0}
 ${P} .pl-bub{position:relative;display:grid;place-items:center;flex:none;width:var(--s);height:var(--s);border-radius:50%;background:radial-gradient(circle at 30% 26%,color-mix(in srgb,var(--c) 55%,#fff),var(--c) 62%);box-shadow:0 8px 12px -6px color-mix(in srgb,var(--c) 70%,transparent),inset 0 0 0 2px rgba(255,255,255,.5)}
@@ -572,6 +588,7 @@ ${P} .pl-bub svg.ic{width:44%;height:44%;--ic:#fff;--ic2:rgba(255,255,255,.55)}
 ${P} .pl-bub.old{background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 55%,#fff)}
 ${P} .pl-bub.old svg.ic{--ic:var(--c);--ic2:color-mix(in srgb,var(--c) 45%,#fff)}
 ${P} .pl-two{display:flex;flex:none}${P} .pl-two .pl-bub+.pl-bub{margin-left:-12px}
+${P} .pl-m .fh-lk{display:flex}
 ${P} .pl-m.old .nb-t{font-size:13px;color:color-mix(in srgb,var(--ink) 70%,var(--dom))}${P} .pl-m.old .nb-h b{font-size:13.5px}
 ${P} .pl-o{position:absolute;width:var(--s);height:var(--s);border-radius:50%;box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.85);background:rgba(255,255,255,.25);pointer-events:none}
 
@@ -591,7 +608,7 @@ ${P} .lk-g text{font-family:var(--ff,inherit)}
 ${P} .lk-p{fill:none;stroke:rgba(10,42,60,.14);stroke-width:22;stroke-linecap:round}
 ${P} .lk-s{fill:#fff;stroke:rgba(10,42,60,.16);stroke-width:1.5}${P} .lk-s.p{fill:url(#ng-g-seg);stroke:none}${P} .lk-s.m{fill:#fff;stroke:var(--warn);stroke-width:1.8;stroke-dasharray:3 3}
 ${P} .lk-v{fill:#fff;stroke:rgba(10,42,60,.2);stroke-width:2;filter:drop-shadow(0 8px 8px rgba(24,119,242,.18))}
-${P} .lk-n{font-size:11.5px;font-weight:700;fill:var(--sub)}
+${P} .lk-n{font-size:13px;font-weight:700;fill:var(--sub)}
 ${P} .lk .nb-leg{justify-content:center}${P} .lk .ng-who{margin-top:14px}${P} .lk .nb-t{margin-top:6px}
 ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 28%,#fff)}
 
@@ -607,7 +624,7 @@ ${P} .qs-f{margin-top:8px;font-size:12px;font-weight:600;color:var(--sub)}
 
 /* Rutin */
 ${P} .rt-lead{padding:14px 22px 0}
-${P} .rt-lead small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
+${P} .rt-lead small{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
 ${P} .rt-lead h2{margin:6px 0 0;font:800 25px/1.1 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);text-wrap:balance}
 ${P} .rt-lead p{margin-top:6px;font-size:12.5px;color:var(--sub)}
 ${P} .rt-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-top:14px}
@@ -635,7 +652,7 @@ ${P} .rt-ok{position:absolute;right:-4px;bottom:-3px;display:grid;place-items:ce
 ${P} .rt-ok svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 ${P} .rt-b.now .rt-v{box-shadow:inset 0 0 0 3px var(--dom),0 0 0 5px color-mix(in srgb,var(--dom) 16%,transparent),0 10px 14px -8px var(--dom)}
 ${P} .rt-b>b{position:relative;z-index:1;margin-top:7px;font-size:12.5px;font-weight:700;line-height:1.2;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-${P} .rt-b>small{margin-top:2px;font-size:11px;color:var(--sub);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+${P} .rt-b>small{margin-top:2px;font-size:12px;color:var(--sub);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 ${P} .rt-b>small em{font-style:normal;font-weight:800;color:var(--dom)}
 ${P} .rt-b.done>b{color:var(--sub)}
 ${P} .rt-note{margin:4px 22px 0;font-size:12px;line-height:1.45;color:var(--sub)}
@@ -645,7 +662,7 @@ ${P} .rt-fl span{display:grid;place-items:center;width:78px;height:78px;border-r
   background:linear-gradient(to top,var(--liq2),var(--liq1) var(--p),#fff var(--p));box-shadow:inset 0 0 0 2px rgba(10,42,60,.14),0 10px 14px -10px var(--liq2)}
 ${P} .rt-fl b{font:800 19px var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);background:rgba(255,255,255,.82);padding:1px 7px;border-radius:999px}
 ${P} .rt-fl.np span{background:#fff;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 35%,#fff)}
-${P} .rt-fl small{font-size:11.5px;line-height:1.3;color:var(--sub)}
+${P} .rt-fl small{font-size:12px;line-height:1.3;color:var(--sub)}
 ${P} .rt-edit{display:flex;align-items:center;gap:12px;width:calc(100% - 44px);margin:22px 22px 0;padding:6px 0;text-align:left}
 ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}${P} .rt-edit b{display:block;font-size:15px;font-weight:700;color:var(--ink)}${P} .rt-edit small{font-size:12px;color:var(--sub)}${P} .rt-edit i{font-style:normal;font-size:22px;color:var(--faint)}
 @media (prefers-reduced-motion:no-preference){

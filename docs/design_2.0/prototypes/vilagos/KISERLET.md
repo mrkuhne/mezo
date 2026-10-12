@@ -23,6 +23,19 @@ plans or "which direction wins" decisions until he asks.
 6. **One page (or sub-page) per round**, in the order of the domain's page map; show it, wait for his word.
 7. It has to work for any user: variable counts (habits, messages, log entries) must just add rows/layers.
 
+## UX floor (owner-approved round, 2026-10-12) — applies to every page, old and new
+
+- **Text:** nothing renders under 12 px on a 360 px phone. Text inside a drawing scales with the drawing, so it
+  is at least 13 user units there. No faint grey for anything that carries information.
+- **Targets:** every tappable thing has a 44 px target (text links, small buttons, segment tabs), even when its
+  drawing is smaller.
+- **What is tappable says so, one way:** a blue "… ›" line (or a "›" at the row's end). A drawing without it
+  does nothing when tapped. Never make a decorative mark look tappable.
+- **Words are left-aligned, always.** The vessel may change sides; the text block never flips its alignment.
+- **Length:** a hub page aims at three phone screens at most; long repeating content shows the newest three and
+  opens the rest on a tap (the jar on Mai). On a hub, a unit that has its own page appears in its short form.
+- Measure with the audit script idea (first screen, text sizes, targets, page length) before showing a page.
+
 ## Pages
 
 | Page | Graphic | State |
