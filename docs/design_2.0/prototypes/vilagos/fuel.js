@@ -53,7 +53,8 @@ const MEALS={
     ings:[['Zabpehely · gluténmentes','t-carb','zab','kamra',223,'60 g',1,[8,35,4]],['Túró · félzsíros','t-meat','turo','kamra',325,'250 g',1,[45,9,11]],['Áfonya · fagyasztott','t-fiber',null,'becslés',57,'100 g',1,[1,14,0]],['Akácméz','t-sugar',null,'becslés',84,'25 g',2,[0,21,0]]],
     q:{base:88,dens:158,ultra:0},
     headline:'Fehérjében erős, tiszta tányér',lead:'A fehérje és a feldolgozottság viszi. Ezt nyugodtan ismételheted.',cert:98,dims:[8.6,7.6,8.3,8.4,9.1,8.2,8.7,8.5]},
-  tizorai:{slot:'Reggeli',se:'Breakfast',w:-1,name:'Whey + banán + mandulavaj',time:'10:05',kcal:356,score:7.2,macro:[29,31,13],fib:3,sugar:null,salt:.3,sat:2.1,ctx:'post',
+  /* owner decision 2026-10-12: window-less meals are titled 'Ablakon kívül · HH:mm' (behaviour change vs live, which names them after the day part) */
+  tizorai:{slot:'Ablakon kívül',se:'Between meals',w:-1,name:'Whey + banán + mandulavaj',time:'10:05',kcal:356,score:7.2,macro:[29,31,13],fib:3,sugar:null,salt:.3,sat:2.1,ctx:'post',
     ings:[['Impact Whey · csoki','t-supps','whey','kamra',120,'30 g',4,[24,2,2]],['Banán','t-carb',null,'becslés',105,'120 g',1,[1,28,0]],['Mandulavaj · 100%','t-fat','mandula','kamra',131,'20 g',2,[4,1,11]]],
     q:{base:29,dens:209,ultra:1},
     headline:'Gyors, célzott, de feldolgozott',lead:'A whey viszi a pontot, a feldolgozottság húzza le.',cert:91,dims:[8.1,6.4,8.8,7.0,5.2,6.1,7.4,8.6]},
@@ -313,8 +314,8 @@ function blockCard(V,s,i){const G=V.mode==='GUIDANCE', row=s.meal, k=row?row[1].
       <div class="fh-acts fm-ska">${btn(s.skip.c!=null?L('Másik ok','Change reason'):L('Okot adok','Add a reason'),{sheet:'mealwhy',arg:s.i},'sm ghost')}<button class="fh-lk" data-fundo="${s.i}">${L('Visszavonom','Undo')}</button><button class="fh-lk" data-fate="${s.i}">${L('Mégis ettem','I did eat')}</button></div></div>`
     :`<p class="fm-when">${G?L('Ha megy, egyél. Nincs mihez mérni.','Eat if you can. There is nothing to measure against.'):`${L('Ajánlott','Suggested')} <b>${s.from}–${s.to}</b>${V.mode&&closed?'':` · <span class="${nowIn?'now':''}">${wc}</span>`}`}</p>
       <div class="fh-acts fm-la"><button class="btn sm fm-log ${nowIn?'':'ghost'}" data-go="log.${V.arg==='tegnap'||V.arg==='ures'?'potlas-w':'w'}${s.i}" aria-label="${sl(s)} · ${L('logolás ide','log here')}"><span>+ ${L('Logolás ide','Log here')}</span><small>${logSub(s,V.now,V.mode)}</small></button>${G?'':`<button class="fh-lk" data-fskip="${s.i}" aria-label="${L(`${sl(s)} kihagyása`,`Skip ${sl(s).toLowerCase()}`)}">${closed?L('Kihagytam','I skipped it'):L('Kihagyom','Skip')}</button>`}</div>`}</section>`}
-/* ablak nélküli extra log (buildDayPlan 3b): saját blokk a logolás idejénél, keret és ablak nélkül — a napszak nevét viseli */
-const extraCard=(id,m,i)=>`<section class="fh-card fm-blk rise" style="--i:${i+3}"><div class="fm-bh">${bub(MIC[id]||'t-snack',{s:44})}<span class="g"><strong>${L(m.slot,m.se||m.slot)}</strong></span><button class="fm-clock" data-sheet="ora" data-arg="x|${id}" aria-label="${L(m.slot,m.se||m.slot)} · ${L(`logolva ${m.time}`,`logged ${m.time}`)}">${dial(null,m.time)}</button>${plainCup(m.kcal)}</div>${mealRow(id,m)}</section>`;
+/* ablak nélküli extra log (buildDayPlan 3b): saját blokk a logolás idejénél, keret és ablak nélkül — a címe „Ablakon kívül · HH:mm” (owner 2026-10-12; az élő app ma a napszak nevét adja neki) */
+const extraCard=(id,m,i)=>`<section class="fh-card fm-blk rise" style="--i:${i+3}"><div class="fm-bh">${bub(MIC[id]||'t-snack',{s:44})}<span class="g"><strong>${L(m.slot,m.se||m.slot)} · ${m.time}</strong></span><button class="fm-clock" data-sheet="ora" data-arg="x|${id}" aria-label="${L(m.slot,m.se||m.slot)} · ${L(`logolva ${m.time}`,`logged ${m.time}`)}">${dial(null,m.time)}</button>${plainCup(m.kcal)}</div>${mealRow(id,m)}</section>`;
 /* a nap jelölése a tanulásban (DayLearningMark): usable · suspicious · marked_incomplete · confirmed_complete; felírás nélküli napon és a lekérdezés alatt semmi */
 function learnMark(V){
   const st0=V.arg==='tegnap'?'suspicious':Object.keys(V.meals).length?'usable':'unlogged'; if(st0==='unlogged') return '';
