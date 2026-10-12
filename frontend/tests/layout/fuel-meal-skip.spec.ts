@@ -114,6 +114,19 @@ test('Fuel Mai · Kihagyom row and the skipped block stay contained, clear of th
   expect(sheet.durRows).toBeGreaterThan(1) // the row wraps at 320 instead of leaving the sheet
   expect(sheet.durMinH).toBeGreaterThanOrEqual(44)
   expect(await brokenChipWords(page, '.fa-why .fa-whyg > button > span:last-child, .fa-why .trm-kmdc > button')).toEqual([])
+  // real slack, not a lucky fit (bible F4.1): the widest word of a reason tile leaves ≥ 12 px in its tile on this
+  // machine, so the wider fonts of the CI runner cannot break it
+  const slack = await dialog.locator('.fa-whyg > button > span:last-child').evaluateAll((els) => Math.min(...els.map((el) => {
+    const box = (el.parentElement as HTMLElement).clientWidth - 4
+    const node = el.firstChild as Text
+    let widest = 0
+    for (const m of (node.textContent ?? '').matchAll(/\S+/g)) {
+      const r = document.createRange(); r.setStart(node, m.index!); r.setEnd(node, m.index! + m[0].length)
+      widest = Math.max(widest, r.getBoundingClientRect().width)
+    }
+    return box - widest
+  })))
+  expect(slack).toBeGreaterThanOrEqual(12)
   await dialog.getByRole('button', { name: 'Most nem mondom' }).click()
   await expect(dialog).toBeHidden()
 
