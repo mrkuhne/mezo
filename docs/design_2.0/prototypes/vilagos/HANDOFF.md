@@ -1,4 +1,4 @@
-# Folyadék — handoff (state on 2026-10-11)
+# Folyadék — handoff (state on 2026-10-12)
 
 The owner chose **Folyadék** as the app's new UI identity after eight rounds. This file is the
 memory of that journey. Read it before touching the prototype, the spec or the skill.
@@ -17,16 +17,17 @@ memory of that journey. Read it before touching the prototype, the spec or the s
   (`elo/<domain>.html`) in the same frame. Domains: `nap edzes fuel mezo en`.
   Serve: `python3 -m http.server 8731 --bind 127.0.0.1` in `docs/design_2.0/prototypes/`.
 - **Tracker:** programme epic `mezo-n4wf5` (children `.1`–`.9` = slices F1–F9; `.11`–`.13` = the language
-  track N1–N3). **State 2026-10-11: F1–F4 and N1 are built and merged** (frame + kit, Nap, Edzés, Edzés
-  közben, the language foundation); next is N2 (Nap first), then F5 Fuel, F6 Én, F7 Mezo, F8, N3, F9.
+  track N1–N3). **State 2026-10-12: F1–F5 and N1 are built** (frame + kit, Nap, Edzés, Edzés közben, the
+  language foundation, and Fuel — the first domain built bilingual from its first line); next are N2 (Nap,
+  Edzés, Edzés közben into English), F6 Én, F7 Mezo, F8 átfedők, N3, F9.
   Direction issue `mezo-juo1e` is closed. The dated sections at the end of this file record, per slice, what
   was built differently from the prototype.
 - **Language switch in the prototype (N1, 2026-10-11).** Side panel checkbox „English (angol szöveg)" or
   `?lang=en` on the shell URL (`window.LANG`, `window.setLang`). In a domain file write a sentence in both
   languages with `F.L(hu, en)`; the frame's own words (domain names, top tabs, hub titles, team fields) are
-  looked up in the kit's `FR_EN` table, so `tabs`/`title` need no change. Only the frame and the Settings
-  routes (`#w-en-beall`, `#w-en-b-*`) carry both languages; **untranslated screens stay Hungarian on
-  purpose** — the same mixed state as the app. The mechanism in the app: `docs/features/_platform-language.md`.
+  looked up in the kit's `FR_EN` table, so `tabs`/`title` need no change. The frame, the Settings routes
+  (`#w-en-beall`, `#w-en-b-*`) and, since F5, every Fuel route, sheet and state (`#w-fuel-*`) carry both
+  languages; **untranslated screens stay Hungarian on purpose** — the same mixed state as the app. The mechanism in the app: `docs/features/_platform-language.md`.
 - **Verification scripts** (scratchpad, session-local; recreate if gone): a Playwright sweep
   over every route of all five domains at 390 and 320 px (322 loads; console/page errors,
   missing `<use>` ids, `.scroll` overflow). Import Playwright from the absolute path
@@ -408,3 +409,141 @@ Recorded deviations (the prototype stays the build target for F8, which converts
   notification panel of the title bar, the pre-login gate messages, the all-pages map's own text, the return bar
   ("Back to your workout", "N sets done"), Settings states and errors (push permission, guide replay lines,
   load / save errors), eleven Settings sub-page titles.
+
+## 2026-10-12 — F5 · Fuel: reality pass, owner answers, built — deviations from the prototype
+
+Slice F5 (`mezo-n4wf5.5`) converted the whole Fuel domain on `feat/folyadek-fuel` and made it bilingual: Mai, the
+log flow and the meal ceremony, the meal page and the two score pages, Tanulás with the energy / weekly / water
+sheets, Kiegészítők (hub, Protokoll, the add wizard, Gyógyszer), Trendek, Konyha and Kamra, Receptek (list, recipe,
+editor, Műhely), Fuel settings and the meal windows. Build target: every route arg and sheet of `vilagos/fuel.js`
+(its side notes list them as links), in both languages (`?lang=en`). Built by a foundation step (four kit pieces,
+the Fuel-shared liquid pieces, eleven catalog pairs, nine area stylesheets, the logic label maps, the README mapping
+table, the plan), a backend step (the server-written Fuel sentences), nine parallel areas and an integration step.
+Plan: `docs/superpowers/plans/2026-10-12-folyadek-f5-fuel.md`; lessons: bible appendix F5.1–F5.17.
+
+### What the reality pass changed in the prototype (before the OK)
+
+Three auditors (Mai and friends · Kiegészítők and Trendek · Konyha and settings), then an eye review of every spec
+at 390 px Hungarian and 320 px English by fresh agents (175 findings), then the fixes.
+
+- **One day, one week, one total.** The file had three weeks and three daily totals; everything now derives from
+  one structure (today = Wednesday 7 October, budget 3 100 = Alap 2 480 + Mozgás 950 − Deficit 330; the windows sum
+  to it; the week is at its third day with two logged days and agrees on Mai, Trendek and Tanulás). Recipe and
+  editor numbers come from the ingredients; a meal's macros from its lines' per-100 g values.
+- **Removed as invented:** „Heti egyeztetés"; „A hét képe" on Mai; per-ingredient lists and minute labels on the
+  blood-sugar sheet; „Hatás a napra" and „Jegyzet" on the meal page; the „Növényféle" tile (meal and recipe); the
+  Keresés / Gyors / Diktálás log modes; every „Prototípus · állapotváltó" (states are route args); the „Cél felé"
+  step chart and the smoothed weight trend; a fourth „Naplózott nap" tile; invented bottom rows on patterns; the
+  stock level „készlet 42 / 90 · kb. 6 hét"; the protocol's „fehérje rendben" row; the „25 mg fölött" limit;
+  „becsült jelenlét" on medication; „Kifőzöm a Műhelyben" on Receptek; a tappable swap suggestion in Kamra; Konyha
+  goal buttons as separate launchers (they are decoration, the hero button opens the Műhely); „becslés" rows in a
+  saved recipe; a jump from an ingredient to its pantry item; recipe logs from other days; the „horgony" label on
+  recommended windows; a „Hogy tanultam?" link in settings; the manual editor's „Recept mentve" message.
+- **Added from the live app:** the day pager (the last 7 days), the skip flow and the kímélő faces (gyomorrontás,
+  betegség, sérülés with and without deficit, úton), the diet-suggestion strip, backfill and edit faces of the
+  logger (two-step delete), the photo / analysing / failed states, „Szokásosak", the recipe fine-tune rows, the
+  future-time guard; the blood-sugar sheet and the meal clock exactly as the app computes them; Tanulás' waiting /
+  off / empty faces and the six explainer steps; the add wizard's link and photo branches with every state; the
+  medication create / edit / stop flow; Kamra's four capture modes and sheets (add, import, catalogue, category
+  filter), item variants (shared, ml basis, no nutrition, supplement with nutrition); the recipe score as its own
+  page, the Műhely thread, the ingredient picker, the unsaved-changes question; loading, empty, error and not-found
+  faces everywhere.
+- **Computable — kept, with the hook named in a comment:** the Mai verdict sentence (remaining kcal and missing
+  protein from the day the page already loads); the next dose's reason on the Kiegészítők hero (`entry.reason`);
+  the weight-goal waterline (`useGoal`) and the daily measurement dots (`useWeight().weightLog`) on the Trendek
+  chart; the settings hero's named windows with their kcal (`useFuelTimeline` + the same split the editor uses).
+- **Wording:** „stack" → „kiegészítőid / kiegészítők"; recipe „Slot" → „Étkezés", windows „Slot" → „Ablak";
+  „Budget %" → „Rész %"; „AI / coach" → „Mezo"; „cutoff" → „koffein-stop"; „patch" → „javítás"; „kamra-item" →
+  „kamra-tétel"; „Vacsi" → „Vacsora", „Snack" → „Uzsonna".
+- **Shell:** the Settings hub opens Fuel settings and back returns to it; the active top tab is scrolled into
+  view (English at 320 px); a long dose wraps on a pantry tile.
+
+### The owner's answers (2026-10-12)
+
+- **Konyha hero = the empty pot**, the invitation to the Műhely; the real counts are supporting facts (there is no
+  measured level on that page).
+- **Behaviour change — a meal logged outside every window is titled „Ablakon kívül · HH:mm" / "Between meals ·
+  HH:mm"**, not after the day part, wherever its slot name is printed.
+- **Behaviour change — on Trendek a future day says „Ez a nap még előtted áll." / "This day is still ahead."**
+  and offers no backfill row.
+- **Approved additions (not in the live app before):** the Mai verdict sentence; the weight-goal waterline and the
+  daily dots on the Trendek weight chart (no line without a goal); Mai loading and error faces; „Visszavonom az
+  utolsót" on the water sheet; the medication no-dose sentence instead of „D0 / 0. nap"; the settings hero with
+  the real named windows; improve impact printed on the ten scale („+0,2").
+- **Live quirks not copied:** the recipe score header's whole-recipe kcal labelled „/ adag" (built per serving);
+  the long horizon's „needs more weeks" face keys on non-empty weeks.
+
+### Deviations from the prototype (built app)
+
+- **Mai.** On an ESTIMATE (travel) day over the reference the equation bar's right caption is left out (the
+  never-„felett" rule); a skipped share of any size draws the band; „Részletesen…" shows only with a breakdown
+  and on today; no entrance stagger; the sheet foot's „Kész" is a full row; section order is blocks → „Ablakon
+  kívül" → the learning mark.
+- **Logolás + ceremónia.** The edit route also shows the slot switch and the „Adj hozzá még" card (the live page
+  has them); the total hero carries the four-fact row; the modes keep photo / usuals / failed under the tiles when
+  lines exist; the ceremony is the kit's 2,7 s pass on a full light page, with no backdrop-tap close.
+- **Étkezés + értékelés.** One English wording pair serves the micro rows of meal and recipe; a dimension sheet is
+  richer than drawn (it keeps the live data); sheets carry the kit head's × too; the clock sheet keeps the
+  now-hand after a log; the meal score hero prints no kcal. The meal page's frame title is „Ablakon kívül" without
+  the time (the time is in the eyebrow).
+- **Tanulás + lapok.** A tap on the week chart selects the week (live behaviour), not a toast; the weekly sheet's
+  change line is inline; „Heti összegző" appears only when a card exists; the explainer is six numbered rows, each
+  opening a step sheet.
+- **Kiegészítők.** The protocol hero's vials are not tappable; no toast on „+ még egy bevétel"; sheets have no ×
+  in the head; the lists keep list semantics; the default cycle's phase words come from the catalog (an English
+  account stores Peak / Stable / Trough); the add wizard has a `scanned` state.
+- **Trendek.** The three tiles are not tappable; the day sheet has no ×; the loading hero says „Töltöm a
+  hetedet…".
+- **Konyha + Kamra.** Only the hero button opens the Műhely; the swap section stays while a filter is on (live);
+  a price prints its currency once; sheets have no × in the head; the item page draws numbered sections with the
+  shared macro vials instead of the old quality blocks.
+- **Receptek + Műhely.** The recipe hero links „Mezo értékelése 9,2 ›" (no score chip); the per-serving / whole
+  switch appears only above one serving; the Műhely dock is a card of the page, the steps an open list, save sits
+  on the hero's liquid; the composer's text is 16 px (no zoom on focus); a changed Műhely line keeps its amber
+  edge for 2,6 s.
+- **Beállítások.** Loading shows the hero alone; the save bar is the kit's page foot (no portal); the demo
+  „Kilépés" button is not built; tide windows closer than 44 units are pushed apart; **the Settings shell tints
+  both pages blue** (its own domain colour) where the prototype draws Fuel green — F8 converts the Settings shell.
+- **App shell.** The quick-log button is hidden on the add wizard and the recipe editor (their floating foot owns
+  that corner, as drawn).
+- **Not converted in this slice** — `VoiceField` (the dictation tile, F8), `FeedbackChips` under the scores
+  (insights domain), `RecoveryDurationRow` inside the meal-skip sheet (train domain; dressed from outside),
+  `UnsavedChangesGuard`'s skin and the Settings shell tint (F8). Dead files left for F9: `RecipeFitBadge`,
+  `logic/dimensionFace`, `SourceBadge`, `NovaDot`.
+
+### Still Hungarian in English mode (Fuel)
+
+The kalauz guides of the Fuel routes; the page-index hints (the „all pages" map); the quick-log tiles;
+`FeedbackChips` („Segített / Nem talált"); `RecoveryDurationRow` and the kímélő toasts in the skip sheet;
+`VoiceField`'s label; the „NOVA n" meta words; everything stored or typed (meal, recipe, pantry, supplement and
+brand names, tags, notes, already-written AI text and placement reasons); notifications and the seeded catalogs
+(N3). List: `docs/features/_platform-language.md` §9.
+
+### English written during the build, not on the Artifact
+
+The prototype's `L(hu, en)` pairs were copied as approved. Strings with no pair were written by bible §2.5 and
+have not been read by the owner on the Artifact (told in the F5 report); by area:
+
+- **Mai** — past-day and over-budget hero variants, the equation's base-formula and goal words, the weekly Alap
+  row, skipped-window guidance, the „log anything" / backfill aria texts, the learning mark's states and undo, the
+  skip sheet's „other" care line, the gentle-mode card's aria.
+- **Logolás** — composer placeholders and hints, photo alt, the fine-tune „whole" word, time errors, the override
+  rows' aria, the ceremony's dialog name.
+- **Étkezés + értékelés** — the meal facts' fallback lines, bowl / macro / tile aria texts, the short score
+  verdicts, NOVA part and warning, the clock sheet's plan line and aria, four forecast sentences and two tips.
+- **Tanulás + lapok** — save-failed, the weekly „new / held" lines, the explainer's error / empty / „how it was
+  calculated" / „how sure" texts, the weekly reasons, the energy sheet's formula rows and notes.
+- **Kiegészítők** — meal-match protein lines, zone labels of the reference table, hub and wizard toasts, protocol
+  aria texts, the medication phase verdict and cell aria, the form's template label.
+- **Trendek** — the frame's current / previous week words, „logged, no target", „budget unknown", the split's aria,
+  the meal fallback name.
+- **Konyha + Kamra** — eleven category names (Meat, Cheese, Legumes, Pasta, Bakery, Spices / sauces, Snacks,
+  Drinks, Carbs, Fat, Medication), the kind options Stimulant / Medication, the import sheet's reading / saving /
+  error lines, the item page's stock and „other" rows, the back labels.
+- **Receptek + Műhely** — „Give the recipe a name…", „from your pantry", thread and goals aria, list aria texts,
+  „eaten" on the recipe, the draft's macro group, two toasts („Recipe updated." / „Recipe saved to Recipes."), the
+  picker's „per" word.
+- **Beállítások** — nine validation sentences, the own-split verdicts for morning / evening training, the blocked
+  and no-budget hero lines, the window count words three to six.
+- **Logic words (`fuel-logika`)** — the four meal-window reasons, „Morning snack / Evening snack / Pre-workout
+  snack", the hero's role words, the stack anchors, the „saved only" learning words.

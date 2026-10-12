@@ -55,13 +55,49 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-ju4j6` — **Boop visszaöltöztetés** | ✅ closed | Titanium visual rollback to Mozaik/Clay, functionality kept. See the milestone log (2026-09-20). |
 | `mezo-a9bo7` / `mezo-ui5by` — **Boop csapat-üzenőfal** | ✅ closed | Social wall + karakter-narratíva; `mezo-ui5by` a duplikátum. See the milestone log (2026-09-27). |
 | `mezo-ck2` — **Check-in 2.0** | ✅ shipped 2026-09-28 | 14-item check-in (5 core + time-of-day items + adaptive „A nap kérdése"), feeding chat, flags, patterns, detectors, life goals, meal coach, training readiness, Napom, ritual, rings. Follow-ups: `persistent_pain` lighten action, day-review reading the day rating. See the milestone log (2026-09-28). [`today.md`](../features/today.md), [`me.md`](../features/me.md). |
-| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ F1–F4 + N1 done (5 of 12) | Light-only identity, structure-first pages, everything is a level that fills — and, since 2026-10-11, an English version of the whole app. F1 (foundation + frame + kit) done 2026-10-09; F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10; F3 (Edzés) and F4 (Edzés közben — Eligazítás, the session page and its sheets, both closing ceremonies, the review) done 2026-10-11; **N1 (Nyelv alap — the language switch and the bilingual foundation) done 2026-10-11**. **Next: N2 (Nyelv pótlás), starting with Nap** — the three domains built before the language decision get their words in both languages; then F5 Fuel, F6 Én, F7 Mezo, F8 átfedők (overlays), N3 (the AI in English), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [language spec](../superpowers/specs/2026-10-11-nyelv-alap-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md), [`_platform-language.md`](../features/_platform-language.md). |
+| `mezo-n4wf5` — **Folyadék (new UI identity)** | ◐ F1–F5 + N1 done (6 of 12) | Light-only identity, structure-first pages, everything is a level that fills — and, since 2026-10-11, an English version of the whole app. F1 (foundation + frame + kit) done 2026-10-09; F2 (Nap — every page of the domain, the routine builder, Napzárás) done 2026-10-10; F3 (Edzés) and F4 (Edzés közben — Eligazítás, the session page and its sheets, both closing ceremonies, the review) done 2026-10-11; **N1 (Nyelv alap — the language switch and the bilingual foundation) done 2026-10-11**; **F5 (Fuel — the whole domain in the new look AND in both languages, with the server-written Fuel sentences) done 2026-10-12**. **Remaining:** F6 Én, F7 Mezo, F8 átfedők (overlays, Settings shell), N2 (Nyelv pótlás — Nap, Edzés and Edzés közben, built before the language decision, get their words in both languages), N3 (the AI in English: prompts, team voice, notifications, built-in catalogs), F9 záró söprés. [Spec](../superpowers/specs/2026-10-09-folyadek-irany-design.md), [language spec](../superpowers/specs/2026-10-11-nyelv-alap-design.md), [style bible](../design_2.0/2026-10-09-folyadek-style-bible.md), [`_platform-design-system.md`](../features/_platform-design-system.md), [`_platform-language.md`](../features/_platform-language.md). |
 | `mezo-me75u` — **Üvegesítés** | ✅ closed | Whole app onto the dark glass material (U1–U11). See the milestone log (2026-09-27). |
 
 > **Milestone-log gap backfilled 2026-09-27** from `bd` + `git log --merges`, `mezo-s8wg`.
 
 ## Milestone log
 
+- **2026-10-12 — Folyadék F5 · Fuel — az egész Fuel az új arculatban, és angolul is (`mezo-n4wf5.5`, epic `mezo-n4wf5`).**
+  A harmadik terület, amely átöltözött, és az első, amely rögtön két nyelven készült el. Minden Fuel-oldal
+  ugyanúgy épül fel, mint a Nap és az Edzés oldalai: felül egy edény egy mondattal és egy fő gombbal, alatta
+  számozott fehér kártyák. **A karikák eltűntek** (csak az étkezési óra maradt kerek, mert az tényleg óra): a
+  Mai oldalon a kalória-mérő egy tál, amely a napi keretig telik, az öt makró öt kémcső, az étkezések mellett
+  kis edény mutatja az ablak keretét; a Trendeken a hét hét edény a keret vízvonalával, a súly folyadék-felszín;
+  a Kiegészítőknél a mai adagok kapszulák, a gyógyszer ciklusa hét edény; a Konyhán az üres fazék hív a
+  Receptműhelybe, a Kamra csempéin a szint a fehérje-sűrűség; a beállításoknál a nap egy árapály, rajta a mai
+  étkezési ablakok. Átöltözött a logolás és a mentés utáni rövid ünneplés, az étkezés oldala és Mezo
+  értékelése, a „Hogy tanultam?" a lapjaival, a Protokoll, az Új elem három lépése, a Gyógyszer, a Kamra a
+  tételoldallal és a lapjaival, a Receptek, a recept, a szerkesztő és a Műhely, a Fuel-beállítások és az
+  étkezési ablakok.
+  **Angolul:** a Beállításokban angolra váltva a Fuel minden oldala, lapja és állapota angol — a feliratok, a
+  mondatok, a dátumok és a számok formája is, és a szerver által írt mondatok (az értékelés sorai, a kiegészítők
+  indoklása, a kamra-javaslatok, a Műhely válaszai). Magyar marad, amit te írtál vagy ami korábban már
+  elkészült: az ételek, receptek, termékek neve, a címkék, jegyzetek, a régi értékelő szövegek.
+  **A tulajdonos döntései:** (1) a Konyha fő rajza az üres fazék, a Műhely meghívója; (2) **működésbeli
+  változás:** az ablakon kívül logolt étkezés címe „Ablakon kívül · 10:05" (nem a napszak neve); (3)
+  **működésbeli változás:** a Trendeken egy még hátralévő napra koppintva „Ez a nap még előtted áll." áll,
+  pótlás nélkül. **Új, jóváhagyott apróságok:** a Mai oldal egy mondatban megmondja, mennyi fér még bele és
+  mennyi fehérje hiányzik; a súlygrafikonon ott a súlycél vonala és a napi mérések pontjai; a víz lapján
+  „Visszavonom az utolsót"; a Mai oldalnak van betöltés- és hibaképe; a beállítások tetején a valódi, névvel
+  írt ablakok. **A szavak is egyszerűbbek lettek:** „stack" helyett kiegészítők, a receptnél „Étkezés", az
+  ablakoknál „Ablak" és „Rész %", „AI / coach" helyett Mezo, „koffein-stop". A rajzról még az elfogadás előtt
+  kikerült minden kitalált elem (heti egyeztetés, készletszint, „Cél felé" ábra, simított súlytrend és társaik).
+  A működés a fenti két döntésen kívül nem változott. **A kalauzok** szövege követte az új oldalakat, ezért a
+  Fuel kalauzait mindenki egyszer újra megkapja.
+  **Ami még a régi külsőt viseli vagy magyar marad angol módban:** a diktálás gombja, a „Segített / Nem talált"
+  visszajelző az értékelés alatt, a kímélő mód „Meddig tarthat?" sora, a Beállítások kerete (kék árnyalat a
+  Fuel-beállítások körül), a kalauzok szövege, a gyorslogolás csempéi, az értesítések és a beépített
+  katalógusok (N2 / N3 / F8). **Mi jön:** F6 · Én, F7 · Mezo, F8 · átfedők, N2, N3, F9.
+  [Stílus-biblia](../design_2.0/2026-10-09-folyadek-style-bible.md) (F5 tanulságok),
+  [eltérések a rajztól](../design_2.0/prototypes/vilagos/HANDOFF.md),
+  [építési terv](../superpowers/plans/2026-10-12-folyadek-f5-fuel.md), [`fuel.md`](../features/fuel.md),
+  [`pantry.md`](../features/pantry.md), [`recipe.md`](../features/recipe.md),
+  [`_platform-language.md`](../features/_platform-language.md).
 - **2026-10-11 — Folyadék N1 · Nyelv alap — az app angolul is tud (`mezo-n4wf5.11`).**
   A Beállítások → általános oldal első blokkja most a „Nyelv": két gomb, Magyar és English. Átváltasz, és a
   keret (címsor, felső fülek, alsó sáv, nyitóképernyő), az összes Beállítások-oldal és a közös elemek szavai
