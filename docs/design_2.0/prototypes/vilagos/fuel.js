@@ -62,7 +62,7 @@ const MEALS={
     q:{base:71,dens:null,ultra:0},
     headline:'Kiegyensúlyozott, edzés utánra ideális',lead:'Minden makró a helyén; a zsír is mértékkel.',cert:95,dims:[9.0,7.9,8.1,8.8,8.4,7.8,8.2,8.9]}
 };
-const CAT={reggeli:['Reggeli','t-sun'],ebed:['Ebéd','t-bowl'],uzsonna:['Snack','t-snack'],vacsora:['Vacsora','t-moon']};
+const CAT={reggeli:['Reggeli','t-sun'],ebed:['Ebéd','t-bowl'],uzsonna:['Uzsonna','t-snack'],vacsora:['Vacsora','t-moon']};
 /* C terület · a recept sorai: ings = [kamra-azonosító, mennyiség az EGÉSZ receptre, a sor tárolt kcal-ja] — a mentett recept minden sora Kamra-tétel (mentés-kapu), a sorok kcal-ja kiadja a receptét;
    role: '' | pre | post (RecipeRole) · last = [hány napja, idő] | null (a szerver ADATOT ad, nem mondatot) · date = [hónap, nap] · fib/sugar/salt/sat = a recept tárolt tényei az egész receptre (null = a forrás nem adta)
    today = a recept MAI logjai [étkezés-azonosító] (useRecipeLogs: csak a mai nap) · fits = fitsFor[0], prose = a bontás summary-ja (tárolt AI-szöveg: angol módban is magyar) · dims/cert/headline/lead = a sablon-bontás */
@@ -101,13 +101,13 @@ const KAM=[
   {id:'afonya',n:'Áfonya · fagyasztott',b:'Ardo',k:'food',cat:'Gyümölcs',src:'foto',sl:'Fotó',at:[5,22,'18:05'],kcal:57,p:.7,c:14,f:.3,sug:'10',salt:'0',sat:'0',nova:'Alapanyag',nv:1,price:[3490,'/kg']},
   {id:'banan',n:'Banán',b:'Chiquita',k:'food',cat:'Gyümölcs',src:'kezi',sl:'Saját bevitel',at:null,kcal:88,p:1.1,c:23,f:.3,sug:'12',salt:'0',sat:'0,1',nova:'Alapanyag',nv:1,price:null},
   {id:'rizs',n:'Barna rizs',b:'Riceland',k:'food',cat:'Gabona',src:'kat',sl:'tesco.hu',at:[6,2,'07:48'],kcal:351,p:7.5,c:73,f:2.7,sug:'0,7',salt:'0',sat:'0,6',nova:'Alapanyag',nv:1,price:[1190,'/kg']},
-  {id:'bulgur',n:'Bulgur',b:'Kifli',k:'food',cat:'Gabona',src:'link',sl:'Web',at:[9,28,'19:02'],shared:'mezo',lock:1,kcal:342,p:12,c:76,f:1.3,sug:'0,4',salt:'0',sat:'0,2',nova:'Alapanyag',nv:1,price:[990,'/kg']},
+  {id:'bulgur',n:'Bulgur',b:'Kifli',k:'food',cat:'Gabona',src:'link',sl:'Web',at:[9,28,'19:02'],shared:'Mezo',lock:1,kcal:342,p:12,c:76,f:1.3,sug:'0,4',salt:'0',sat:'0,2',nova:'Alapanyag',nv:1,price:[990,'/kg']},
   {id:'tojas',n:'Tojás · M-es',b:'Tanyasi',k:'food',cat:'Tojás',src:'kezi',sl:'Saját bevitel',at:null,kcal:143,p:12.6,c:.7,f:9.5,sug:'0,4',salt:'0,4',sat:'3,1',nova:'Alapanyag',nv:1,price:null},
   {id:'olaj',n:'Olívaolaj · extra szűz',b:'Borges',k:'food',u:'ml',cat:'Olaj / zsír',src:'kat',sl:'auchan.hu',at:[5,18,'11:30'],kcal:894,p:0,c:0,f:91,sug:'0',salt:'0',sat:'13',nova:'Konyhai összetevő',nv:2,price:[4290,'/l']},
   {id:'mez',n:'Akácméz',b:'Hungary Honey',k:'food',cat:'Egyéb',src:'foto',sl:'Fotó',at:[5,22,'18:09'],kcal:336,p:.3,c:82,f:0,sug:'82',salt:'0',sat:'0',nova:'Konyhai összetevő',nv:2,price:[4990,'/kg']},
-  {id:'whey',n:'Impact Whey · csoki',b:'MyProtein',k:'supp',cat:'Whey / protein',src:'kat',sl:'myprotein.hu',at:[5,4,'11:20'],dose:'30 g',kcal:400,p:80,c:7,f:6.5,sug:'5',salt:'0,5',sat:'4',nova:'Ultra-feldolgozott',nv:4,price:[11990,'/kg'],proto:'Fehérjés reggelihez'},
-  {id:'kreatin',n:'Kreatin-monohidrát',b:'MyProtein',k:'supp',cat:'Kiegészítő',src:'kat',sl:'myprotein.hu',at:[5,4,'11:22'],dose:'5 g',proto:'Naponta egy adag · időponttól független'},
-  {id:'aakg',n:'AAKG · L-arginin',b:'GymBeam',k:'stim',cat:'Stimuláns',src:'foto',sl:'Fotó',at:[6,10,'17:45'],dose:'6 g'},
+  {id:'whey',n:'Impact Whey · csoki',b:'MyProtein',k:'supp',cat:'Tejsavófehérje',src:'kat',sl:'myprotein.hu',at:[5,4,'11:20'],dose:'30 g',kcal:400,p:80,c:7,f:6.5,sug:'5',salt:'0,5',sat:'4',nova:'Ultra-feldolgozott',nv:4,price:[11990,'/kg'],proto:'Fehérjés reggelihez'},
+  {id:'kreatin',n:'Kreatin-monohidrát',b:'MyProtein',k:'supp',cat:'Kiegészítő',src:'kat',sl:'myprotein.hu',at:[5,4,'11:22'],dose:'5 g',proto:'Reggel, vízben oldva'},
+  {id:'aakg',n:'AAKG · L-arginin',b:'GymBeam',k:'stim',cat:'Stimuláns',src:'foto',sl:'Fotó',at:[6,10,'17:45'],dose:'6 g',proto:'Edzés előtt, vízben oldva'},
   /* B terület: a protokoll tételei birtokolt Kamra-tételek */
   {id:'gomba',n:'Tasty Dose gombakávé',b:'Tasty Dose',k:'stim',cat:'Stimuláns',src:'foto',sl:'Fotó',at:[6,12,'08:05'],dose:'8 g',proto:'Reggel, a kávé helyett'},
   {id:'pwo',n:'Origin PWO',b:'Origin',k:'stim',cat:'Stimuláns',src:'link',sl:'Web',at:[6,12,'08:09'],dose:'20 g',proto:'Edzés előtt 20–30 perccel'},
@@ -150,7 +150,7 @@ const sw=(on,label)=>`<button class="fx-sw ${on?'on':''}" role="switch" aria-che
 const tk=(on,label)=>`<button class="fx-tk ${on?'on':''}" data-ftk aria-label="${esc(label)}">${I('i-check')}</button>`;
 /* irow: tétel-sor két sorban — fent név és érték, alatta a léptető / szint (320 px-en is elfér) */
 const irow=(o)=>`<${o.on?'button':'div'} class="fh-row fx-it"${F.act(o.on)}>${o.icon?`<span class="si">${I(o.icon)}</span>`:''}<span class="g"><strong>${o.title}</strong>${o.sub?`<small>${o.sub}</small>`:''}</span>${o.v!=null?`<span class="v">${o.v}</span>`:''}<div class="fx-l2">${o.l2||''}</div></${o.on?'button':'div'}>`;
-const srch=(t,val)=>`<div class="fx-srch" ${val?'':`data-toast="${esc(t)}"`}>${bub('t-basket',{s:28})}${val?`<span>${val}</span><i>×</i>`:t}</div>`;
+const srch=(t,val)=>`<div class="fx-srch" ${val?'':`data-toast="${esc(t)}"`}>${bub('t-lens',{s:28})}${val?`<span>${val}</span><i>×</i>`:t}</div>`;
 const acts=h=>`<div class="fh-acts">${h}</div>`;
 const closeLk=(l=L('Bezárom','Close'))=>`<button class="fh-lk" data-close>${l}</button>`;
 const sh=(ic,t,sub)=>`<div class="fx-shh">${ic?bub(ic,{s:48}):''}<div><h2>${t}</h2>${sub?`<p>${sub}</p>`:''}</div></div>`;
@@ -443,7 +443,7 @@ function scoreSurface(id,m,st2,o){
   /* „Ha feljebb vinnéd”: a bontás improve listája (szöveg + hatás); a hatás a tízes skálán, ugyanabból a számból, mint a pontszám (F4.8) */
   const IMP=o.imp||[];
   return page('fuel',{...ttl,sub:o.sub},`
-  ${gHero({lbl:o.lbl,g:`<div class="fu-sc"><span class="fh-big" aria-label="${L(`Mezo értékelése: ${fmt(m.score)} a tízes skálán`,`Mezo’s rating: ${fmt(m.score)} out of ten`)}">${fmt(m.score)}</span><span class="c">${level(m.cert,{h:14,label:`${L('bizonyosság','certainty')} ${m.cert}%`})}</span></div><div class="fu-8">${vv([0,1,2,3])}${vv([4,5,6,7])}</div>`,
+  ${gHero({lbl:o.lbl,g:`<div class="fu-sc"><span class="fh-big" aria-label="${L(`Mezo értékelése: ${fmt(m.score)} a tízes skálán`,`Mezo’s rating: ${fmt(m.score)} out of ten`)}">${fmt(m.score)}</span><span class="c">${level(m.cert,{h:14,label:`${L('megbízhatóság','confidence')} ${m.cert}%`})}</span></div><div class="fu-8">${vv([0,1,2,3])}${vv([4,5,6,7])}</div>`,
     verdict:m.headline+'.',sub:pend?L('Mezo olvasata készül…','Mezo’s reading is on the way…'):m.lead,
     acts:btn(o.detail[0],o.detail[1])},1)}
   ${sec(1,L('Miből áll össze?','What is it made of?'),2)}
@@ -573,15 +573,15 @@ const POTIN=`<path d="M4 40H14M106 40H116" stroke="rgba(10,42,60,.22)" stroke-wi
 const potG=(p,s=92)=>fill(POT,{vb:POTVB,p:p?4+p*.66:0,s,inner:POTIN+(p?'':`<path d="M22 58H98" stroke="var(--liq2)" stroke-width="2" stroke-dasharray="4 5" opacity=".6"/>`)});
 const m3=(p,c,f)=>{const mx=Math.max(p||0,c||0,f||0)||1;return `<span class="fu-m3">${[[L('feh.','prot.'),p,'var(--protein)'],[L('szénh.','carbs'),c,'var(--carb)'],[L('zsír','fat'),f,'var(--fat)']].map(([l,g,col])=>`<span>${level(g==null?0:g/mx*100,{c:col,h:8})}<small><b>${g==null?'—':fmt(g)}</b>${g==null?'':' g'} ${l}</small></span>`).join('')}</span>`};
 /* ── C · címkék ── */
-const KAT={'Fehérje':'Protein','Tejtermék':'Dairy','Hal':'Fish','Gabona':'Grains','Mag / olajos':'Nuts / seeds','Zöldség':'Vegetables','Gyümölcs':'Fruit','Tojás':'Eggs','Olaj / zsír':'Oils / fats','Egyéb':'Other','Whey / protein':'Whey / protein','Kiegészítő':'Supplement','Stimuláns':'Stimulant','Lekvár':'Other'};
+const KAT={'Fehérje':'Protein','Tejtermék':'Dairy','Hal':'Fish','Gabona':'Grains','Mag / olajos':'Nuts / seeds','Zöldség':'Vegetables','Gyümölcs':'Fruit','Tojás':'Eggs','Olaj / zsír':'Oils / fats','Egyéb':'Other','Tejsavófehérje':'Whey protein','Kiegészítő':'Supplement','Stimuláns':'Stimulant','Lekvár':'Other'};
 const catL=c=>L(c,KAT[c]||c);
-const KINDL={food:['étel','food','Étel','Food'],supp:['kiegészítő','supplement','Supp','Supps'],stim:['stimuláns','stimulant','Stim','Stims'],med:['gyógyszer','medication','Gyógyszer','Meds']};
+const KINDL={food:['étel','food','Étel','Food'],supp:['kiegészítő','supplement','Kiegészítő','Supps'],stim:['stimuláns','stimulant','Stimuláns','Stims'],med:['gyógyszer','medication','Gyógyszer','Meds']};
 const kindL=k=>L(KINDL[k][0],KINDL[k][1]);
 const srcM=k=>L(SRC[k.src][1],SRC[k.src][2]);
 const srcN=k=>k.sl==='Saját bevitel'?L('Saját bevitel','Own entry'):k.sl==='Fotó'?L('Fotó','Photo'):k.sl;
 const whenT=k=>k.at?`${dS(k.at[0],k.at[1])} · ${k.at[2]}`:null;
 const priceT=k=>k.price?`${kc(k.price[0])} Ft${k.price[1]}`:null;
-const CATL={reggeli:['Reggeli','Breakfast'],ebed:['Ebéd','Lunch'],uzsonna:['Snack','Snack'],vacsora:['Vacsora','Dinner']};
+const CATL={reggeli:['Reggeli','Breakfast'],ebed:['Ebéd','Lunch'],uzsonna:['Uzsonna','Snack'],vacsora:['Vacsora','Dinner']};
 const catT=r=>L(...CATL[r.cat]);
 const ROLEL={'':['Általános','General'],pre:['Edzés előtt','Before training'],post:['Edzés után','After training']};
 const roleT=k=>L(...ROLEL[k||'']);
@@ -596,9 +596,12 @@ const kById=id=>KALL.find(k=>k.id===id);
 const hasM=k=>k.kcal!=null||k.p!=null||k.c!=null||k.f!=null;
 const num=s=>s==null?null:parseFloat(String(s).replace(',','.'));
 /* egy sor a Kamra tényeiből (contributionOf / lineContribution): mennyiség / 100 × tápérték */
-const lineOf=(k,a,kcal)=>({k,n:k.n,a,u:k.u||'g',kcal:kcal??(k.kcal==null?null:Math.round(k.kcal*a/100)),m:k.p==null?null:[Math.round(k.p*a/100),Math.round(k.c*a/100),Math.round(k.f*a/100)],nv:k.nv,src:'kamra'});
-const recLines=r=>r.ings.map(([id,a,kcal])=>lineOf(kById(id),a,kcal));
+const lineOf=(k,a,kcal,sv=1)=>({k,n:k.n,a,u:k.u||'g',kcal:kcal??(k.kcal==null?null:Math.round(k.kcal*a/100)),m:k.p==null?null:[k.p,k.c,k.f].map(x=>Math.round(x*a/sv/100)*sv),nv:k.nv,src:'kamra'});
+/* a sor makrói adagra kerekítve, × adagszám: így a recept adagja ugyanazt adja, mint a belőle logolt étkezés sorai (MEALS.ings 8. eleme) */
+const recLines=r=>r.ings.map(([id,a,kcal])=>lineOf(kById(id),a,kcal,r.serv));
 const sumM=ls=>ls.reduce((s,l)=>l.kcal==null?s:{kcal:s.kcal+l.kcal,p:s.p+(l.m?l.m[0]:0),c:s.c+(l.m?l.m[1]:0),f:s.f+(l.m?l.m[2]:0)},{kcal:0,p:0,c:0,f:0});
+/* EGY szám: a recept makrói (REC.p/c/f) a sorai összege — a recept oldala, a szerkesztője, a Műhely, a recept-választó és az értékelés is ezt olvassa */
+REC.forEach(r=>{const t=sumM(recLines(r));r.p=t.p;r.c=t.c;r.f=t.f});
 /* Minőség (qualityTiles): alapanyag-arány = a NOVA 1 sorok kcal-része · energiasűrűség = kcal / gramm × 100 (csak ha minden sor grammban van) · ultra = a NOVA 4 sorok száma; becsült sor nem ad tényt → „—” */
 const qOf=ls=>{const tot=ls.reduce((s,l)=>s+(l.kcal||0),0),nv=ls.length>0&&ls.every(l=>l.nv!=null),g=ls.length>0&&ls.every(l=>l.u==='g')?ls.reduce((s,l)=>s+l.a,0):null;
   return {base:nv&&tot?Math.round(ls.filter(l=>l.nv===1).reduce((s,l)=>s+l.kcal,0)/tot*100):null,dens:g&&tot?Math.round(tot/g*100):null,ultra:nv?ls.filter(l=>l.nv===4).length:null}};
@@ -638,7 +641,7 @@ function konyha(arg){
     +(recs.length?`<div class="fu-bubs" aria-hidden="true">${recs.slice(0,5).map(r=>bub(CAT[r.cat][1],{s:42})).join('')}</div>`:''),{i:3})}
   ${sec(3,L('Kamra','Pantry'),4)}
   ${card(row({icon:'t-stack',title:L(`${items.length} tétel a polcon`,`${nItem(items.length)} on the shelf`),sub:L('ebből főzünk, ebből számolunk','what we cook and count from'),on:'kamra'})
-    +(items.length?split([[L('Étel','Food'),food,'var(--dom)',L(`${food} étel`,pl(food,'','food','foods'))],[L('Kiegészítő','Supplements'),items.length-food,'var(--water)',L(`${items.length-food} kiegészítő`,pl(items.length-food,'','supplement','supplements'))]],{h:18}):''),{i:4})}`);
+    +(items.length?split([[L('Étel','Food'),food,'var(--dom)',String(food)],[L('Kiegészítő','Supplements'),items.length-food,'var(--water)',String(items.length-food)]],{h:18}):''),{i:4})}`);
 }
 /* ═ KAMRA: kamra · kamra.ures · kamra.tolt · kamra.szurt · kamra.nincstalalat · kamra.<id>[.torles | .hianyos] · kamra.nincs ═ */
 const KRES=['ures','tolt','szurt','nincstalalat'];
@@ -656,23 +659,23 @@ function kamra(arg){
   /* a három tengely ÉS-elve szűr: fajta ÉS kategória ÉS keresés */
   const list=none?[]:flt?KALL.filter(k=>k.k==='food'&&(k.cat==='Fehérje'||k.cat==='Tejtermék')):KALL;
   const tile=k=>k.k==='food'?stat({k:k.n,icon:kic(k),n:k.kcal==null?'—':k.kcal,unit:k.kcal==null?'':`kcal / 100 ${k.u||'g'}`,pct:k.p==null?null:Math.max(6,Math.min(100,k.p/25*100)),c:'var(--protein)',s:[k.kcal==null?L('nincs adat','no data'):k.p==null?null:L(`${fmt(k.p)} g fehérje`,`${fmt(k.p)} g protein`),k.b,srcM(k)].filter(Boolean).join(' · '),on:'kamra.'+k.id})
-    :stat({k:k.n,icon:kic(k),n:k.dose||'—',unit:L('adag','dose'),s:[kindL(k.k),k.b,srcM(k)].join(' · '),c:'var(--water)',on:'kamra.'+k.id});
+    :stat({k:k.n,icon:kic(k),n:`<span class="fc-dose">${k.dose||'—'}</span>`,unit:L('adag','dose'),s:[kindL(k.k),k.b,srcM(k)].join(' · '),c:'var(--water)',on:'kamra.'+k.id});
   return page('fuel',top,`
   ${gHero({lbl:L('A polcod · fajtánként','Your shelf · by kind'),g:jars(0),verdict:L(`${N} tétel van a polcodon: ${n('food')} étel és ${N-n('food')} kiegészítő.`,`${nItem(N)} on your shelf: ${pl(n('food'),'','food','foods')} and ${pl(N-n('food'),'','supplement','supplements')}.`),acts:tools},1)}
   ${sec(1,L('Keresés és szűrés','Search and filter'),2)}
-  ${card((none?srch('','kókusz'):`<div class="fx-srch" data-toast="${L('Keresés a kamrában','Search the pantry')}">${bub('t-basket',{s:28})}${L('Keress tételt, márkát…','Search items or brands…')}</div>`)
+  ${card((none?srch('','kókusz'):`<div class="fx-srch" data-toast="${L('Keresés a kamrában','Search the pantry')}">${bub('t-lens',{s:28})}${L('Keress tételt, márkát…','Search items or brands…')}</div>`)
     +`<div style="margin-top:10px">${pick([[L('Mind','All'),N],...['food','supp','stim','med'].map(k=>[L(KINDL[k][2],KINDL[k][3]),n(k)])],flt?L('Étel','Food'):L('Mind','All'),L('Szűrő','Filter'))}</div>`
     +(flt?`<div class="fc-cats">${['Fehérje','Tejtermék'].map(c=>`<button data-toast="${L('Szűrő levéve','Filter removed')}: ${catL(c)}" aria-label="${L(`${catL(c)} szűrő levétele`,`Remove the ${catL(c)} filter`)}">${catL(c)}<b>×</b></button>`).join('')}</div>`:'')
     +acts(lk(flt?L('Szűrők · 2 kategória','Filters · 2 categories'):L('Szűrők · kategória szerint','Filters · by category'),{sheet:'catfilter',arg:flt?'2':''})),{i:2})}
   ${sec(2,L('A polcon','On the shelf'),3)}
-  ${card(list.length?grid(list.map(tile))+note(L('Az ételeknél a csempe szintje a fehérje-sűrűség: 25 g fehérjénél tele van (100 grammban).','For foods, the tile’s level is protein density: it is full at 25 g of protein per 100 g.')):empty('t-basket',L('Nincs egyező tétel.','No matching item.')),{cls:'fu-shelf',i:3})}
+  ${card(list.length?grid(list.map(tile))+note(L('Az ételeknél a csempe szintje a fehérje-sűrűség: 25 g fehérjénél tele van (100 grammban).','For foods, the tile’s level is protein density: it is full at 25 g of protein per 100 g.')):empty('t-lens',L('Nincs egyező tétel.','No matching item.')),{cls:'fu-shelf',i:3})}
   ${none||flt?'':`${sec(3,L('Okosabb csere','A smarter swap'),4)}
   ${card(`<div class="fc-swap"><div>${bub('t-swap',{s:40})}<span><strong>Görög joghurt 10% · 500 g</strong><small>${L('katalógus','catalogue')} · kifli.hu</small></span><b>${kc(1790)} Ft</b></div><p>${L('Több fehérje 100 grammban, mint a mostani joghurtodban, hasonló áron.','More protein per 100 g than your current yoghurt, at a similar price.')}</p></div>`
     +note(L('Javaslat a polcod alapján, szabály szerint számolva. Ha nincs mit ajánlani, ez a rész nem jelenik meg.','A suggestion from your shelf, worked out by rule. When there is nothing to suggest, this part is not shown.')),{i:4})}`}`);
 }
 function kamraItem(id,st2){
   const k0=kById(id);
-  if(!k0) return page('fuel',{title:L('Nincs ilyen tétel.','No such item.'),sub:L('Kamra','Pantry'),back:'kamra'},`${card(empty('t-stack',L('Lehet, hogy közben levetted a polcról. A Kamrában minden megmaradt tételed ott van.','You may have taken it off the shelf. Everything you still have is in the Pantry.'),btn(L('Vissza a Kamrába','Back to the Pantry'),'kamra','sm')),{i:1})}`);
+  if(!k0) return page('fuel',{title:L('Nincs ilyen tétel','No such item'),sub:L('Kamra','Pantry'),back:'kamra'},`${card(empty('t-stack',L('Lehet, hogy közben levetted a polcról. A Kamrában minden megmaradt tételed ott van.','You may have taken it off the shelf. Everything you still have is in the Pantry.'),btn(L('Vissza a Kamrába','Back to the Pantry'),'kamra','sm')),{i:1})}`);
   const k=st2==='hianyos'?{...k0,f:null}:k0, food=k.k==='food', ic=kic(k), M=hasM(k), u=k.u||'g', per=`100 ${u}`, arm=st2==='torles';
   /* „a kiegészítőid között · {zóna} {idő}”: a mai protokoll-vetület (useStackDay().slots) — a B terület stackVM-je */
   const slot=food?null:stackVM('').rows.find(r=>r.id===k.id)||null;
@@ -683,17 +686,20 @@ function kamraItem(id,st2){
   const src=card(row({icon:'t-stack',title:L('A polcodon','On your shelf'),sub:k.b||(k.cat?catL(k.cat):L('nincs márka megadva','no brand given'))})
     +row({icon:SRC[k.src][0],title:L(`Így került a polcra: ${srcM(k)}`,`How it got here: ${srcM(k)}`),sub:`${srcN(k)} · ${whenT(k)||L('az időpont nincs rögzítve','time not recorded')}${k.shared?`<br>${L('közös','shared')} · ${k.shared}`:''}`})
     +(k.price?row({icon:'t-coin',title:L('Ár','Price'),v:priceT(k)}):''),{i:4});
-  const verdict=!food?(slot?L(`${zl(slot.z)} idején szeded, a kiegészítőid között van.`,`You take it at ${zl(slot.z).toLowerCase()}. It is among your supplements.`):L('Nincs időzítve; a Kiegészítők oldalon pipálod.','Not scheduled. You tick it on Supplements.'))
-    :!M?L('Ehhez a tételhez még nincs tápérték.','No nutrition values for this item yet.'):k.p!=null?L(`${fmt(k.p)} g fehérje van 100 ${u==='ml'?'milliliterében':'grammjában'}.`,`${fmt(k.p)} g of protein in every 100 ${u}.`):L('Ehhez a tételhez csak részben van tápérték.','This item has only part of its nutrition values.');
+  /* a fő mondat: ételnél a domináns makró (energia szerint), kiegészítőnél az idősáv saját mondata — egy üzenet sávonként, nem ragasztott szó */
+  const ZPH={wake:['Ébredés után szeded.','You take it when you wake up.'],breakfast:['Reggelihez szeded.','You take it with breakfast.'],pre_workout:['Edzés előtt szeded.','You take it before training.'],post_workout:['Edzés után szeded.','You take it after training.'],lunch:['Ebédhez szeded.','You take it with lunch.'],dinner:['Vacsorához szeded.','You take it with dinner.'],evening:['Este szeded.','You take it in the evening.'],bedtime:['Lefekvés előtt szeded.','You take it before bed.']};
+  const dom=k.p==null||k.c==null||k.f==null?null:[[k.p*4,0],[k.c*4,1],[k.f*9,2]].sort((x,y)=>y[0]-x[0])[0][1], uu=u==='ml'?L('milliliterben','ml'):L('grammban','g');
+  const verdict=!food?(slot?L(...ZPH[slot.z]):L('Nincs időzítve.','Not scheduled.'))
+    :!M?L('Ehhez a tételhez még nincs tápérték.','No nutrition values for this item yet.'):dom===0?L(`${fmt(k.p)} g fehérje van 100 ${u==='ml'?'milliliterében':'grammjában'}.`,`${fmt(k.p)} g of protein in every 100 ${u}.`):dom===1?L(`Főleg szénhidrát: ${fmt(k.c)} g van 100 ${uu}.`,`Mostly carbs: ${fmt(k.c)} g in every 100 ${u}.`):dom===2?L(`Főleg zsír: ${fmt(k.f)} g van 100 ${uu}.`,`Mostly fat: ${fmt(k.f)} g in every 100 ${u}.`):L('Ehhez a tételhez csak részben van tápérték.','This item has only part of its nutrition values.');
   let i=0; const S=(t)=>sec(++i,t,i+1);
-  return page('fuel',{title:k.n,sub:[L('Kamra','Pantry'),k.cat?catL(k.cat):null,srcM(k)].filter(Boolean).join(' · '),back:'kamra'},`
-  ${nh({lbl:k.b||kindL(k.k),n:food?(k.kcal==null?'—':k.kcal):(k.dose||'—'),unit:food?`kcal / ${per}`:L('egy adag','one dose'),art:ic,verdict,
+  return page('fuel',{title:k.n,sub:[L('Kamra','Pantry'),k.cat?catL(k.cat):null].filter(Boolean).join(' · '),back:'kamra'},`
+  ${nh({lbl:k.b||kindL(k.k),n:food?(k.kcal==null?'—':k.kcal):`<span class="fc-dn">${k.dose||'—'}</span>`,unit:food?`kcal / ${per}`:L('egy adag','one dose'),art:ic,verdict,
     sub:food&&!M?L('A forrás nem adott értéket. A Szerkesztésnél kézzel beírhatod.','The source gave none. You can type them in under Edit.'):'',
     body:comp&&food?lab(L(`Mi van 100 grammban?`,`What’s in 100 g?`))+split([[L('Fehérje','Protein'),k.p,'var(--protein)',fmt(k.p)+' g'],[L('Szénhidrát','Carbs'),k.c,'var(--carb)',fmt(k.c)+' g'],[L('Zsír','Fat'),k.f,'var(--fat)',fmt(k.f)+' g'],[L('Egyéb (víz, rost…)','The rest (water, fibre…)'),rest,'color-mix(in srgb,var(--water) 30%,#fff)',fmt(rest)+' g']],{h:30}):'',
     acts:(M?btn(L('Logolás · mai étkezésbe','Log it · into today’s meal'),'log.kamra-'+k.id):food?'':btn(L('Kiegészítők megnyitása','Open Supplements'),'stack'))+edit},1)}
   ${food?'':`${S(L('A napodban','In your day'))}
-  ${card(row({icon:'t-clock',title:k.proto||L('Nincs időzítve','Not scheduled'),sub:slot?L(`a kiegészítőid között · ${zl(slot.z)} ${slot.time}`,`among your supplements · ${zl(slot.z)} ${slot.time}`):L('A Kiegészítők oldalon pipálod; ott látod a protokollt is','You tick it on Supplements. The protocol is there too'),on:'stack'}),{i:2})}`}
-  ${M?`${S(L('Makrók · miből jön az energia','Macros · where the energy comes from'))}${card(macroV(k.p,k.c,k.f),{cls:'fu-mac',i:2})}
+  ${card(row({icon:'t-clock',title:k.proto||L('Nincs időzítve','Not scheduled'),sub:slot?L(`a kiegészítőid között · ${zl(slot.z)} ${slot.time}`,`among your supplements · ${zl(slot.z)} ${slot.time}`):L('A Kiegészítők oldalon pipálod; ott látod a szedési rendet is','You tick it on Supplements. Your schedule is there too'),on:'stack'}),{i:2})}`}
+  ${M?`${S(L('Makrók','Macros'))}${card(macroV(k.p,k.c,k.f),{cls:'fu-mac',i:2})}
   ${S(L(`Minőség · ${per}`,`Quality · per ${per}`))}
   ${card([[L('Cukor','Sugar'),'t-sugar',k.sug],[L('Só','Salt'),'t-salt',k.salt],[L('Telített zsír','Saturated fat'),'t-fat',k.sat]].map(([l,ic2,v])=>row({icon:ic2,title:l,v:v==null?'—':`${fmt(num(v))}<small>g</small>`})).join('')
     +row({icon:'t-processing',title:L('Feldolgozottság','Processing'),sub:k.nv?`NOVA ${k.nv}`:L('nincs adat','no data'),right:k.nv?st(L(NOVA[k.nv][0],NOVA[k.nv][1]),k.nv===1?'ok':k.nv===4?'warn':'q'):`<span class="v">—</span>`}),{i:3})}`:''}
@@ -702,35 +708,35 @@ function kamraItem(id,st2){
 }
 /* ═ RECEPTEK: receptek · receptek.ures · receptek.szurt-ures · receptek.tolt ═ */
 function receptek(arg){
-  const emp=arg==='ures', fe=arg==='szurt-ures', load=arg==='tolt', recs=emp||load?[]:REC, top=recs.slice().sort((a,b)=>b.logged-a.logged), fav=top[0];
+  const emp=arg==='ures', fe=arg==='szurt-ures', load=arg==='tolt', recs=emp||load?[]:fe?REC.map(r=>({...r,star:0})):REC, top=recs.slice().sort((a,b)=>b.logged-a.logged), fav=top[0];
   const ttl={title:L('Receptek','Recipes'),sub:load?L('Konyha','Kitchen'):`${L('Konyha','Kitchen')} · ${nRec(recs.length)}`,back:'konyha'};
-  if(load) return page('fuel',ttl,`${gHero({lbl:L('Receptkönyv','Recipe book'),g:`<div class="fu-top">${[0,1,2].map(()=>`<span class="fc-sk">${level(0,{h:14})}</span>`).join('')}</div>`,verdict:L('Betöltöm a receptjeidet…','Loading your recipes…'),sub:L('Egy pillanat, és itt lesz a könyved.','One moment and your book will be here.')},1)}`);
-  const cnt=f=>recs.filter(f).length, F2=[[L('Mind','All'),recs.length],[L('Reggeli','Breakfast'),cnt(r=>r.cat==='reggeli')],[L('Ebéd','Lunch'),cnt(r=>r.cat==='ebed')],[L('Vacsi','Dinner'),cnt(r=>r.cat==='vacsora')],['Snack',cnt(r=>r.cat==='uzsonna')],[L('Csillagos','Starred'),cnt(r=>r.star)]];
-  const none=card(empty('t-plate',L('Ebben a blokkban még nincs recepted.','No recipe in this block yet.'),btn(L('Mentsünk egyet','Save one'),'recept-uj','sm')),{i:3});
+  if(load) return page('fuel',ttl,`${gHero({lbl:L('Receptek','Recipes'),g:`<div class="fu-top">${[0,1,2].map(()=>`<span class="fc-sk">${level(0,{h:14})}</span>`).join('')}</div>`,verdict:L('Betöltöm a receptjeidet…','Loading your recipes…'),sub:L('Egy pillanat, és itt lesznek.','One moment and they will be here.')},1)}`);
+  const cnt=f=>recs.filter(f).length, F2=[[L('Mind','All'),recs.length],[L('Reggeli','Breakfast'),cnt(r=>r.cat==='reggeli')],[L('Ebéd','Lunch'),cnt(r=>r.cat==='ebed')],[L('Vacsora','Dinner'),cnt(r=>r.cat==='vacsora')],[L('Uzsonna','Snack'),cnt(r=>r.cat==='uzsonna')],[L('Csillagos','Starred'),cnt(r=>r.star)]];
+  const none=card(empty('t-plate',emp?L('Még nincs recepted.','You have no recipes yet.'):L('Erre a szűrésre nincs recepted.','No recipe matches this filter.'),lk(L('Mentsünk egyet','Save one'),'recept-uj')),{i:3});
   /* a hős: amit a legtöbbször ettél (Recipe.timesLogged — a lap betölti); ha még egyet sem ettél, szintek nélkül */
   return page('fuel',ttl,`
-  ${gHero({lbl:L('Receptkönyv · amit a legtöbbször ettél','Recipe book · what you eat most'),g:fav&&fav.logged?`<div class="fu-top">${top.slice(0,4).map(r=>`<button data-go="recept.${r.id}"><span><b>${r.n}</b><em>${r.logged}×</em></span>${level(r.logged/fav.logged*100,{h:14})}</button>`).join('')}</div>`:`<div class="fu-potc">${potG(0,120)}</div>`,
+  ${gHero({lbl:fav&&fav.logged?L('Receptek · amit a legtöbbször ettél','Recipes · what you eat most'):L('Receptek','Recipes'),g:fav&&fav.logged?`<div class="fu-top">${top.slice(0,4).map(r=>`<button data-go="recept.${r.id}"><span><b>${r.n}</b><em>${r.logged}×</em></span>${level(r.logged/fav.logged*100,{h:14})}</button>`).join('')}</div>`:`<div class="fu-potc">${potG(0,120)}</div>`,
     verdict:!recs.length?L('Még nincs recepted.','You have no recipes yet.'):fav.logged?L(`${recs.length} recepted van, a kedvencedet ${fav.logged} alkalommal etted.`,`You have ${nRec(recs.length)}. You’ve eaten your favourite ${fav.logged} times.`):L('Még egyik receptedet sem etted.','You haven’t eaten any of your recipes yet.'),
     sub:!recs.length?L('Mentsd el, amit gyakran eszel: legközelebb egy koppintás lesz felírni.','Save what you eat often: next time, logging it is one tap.'):fav.logged?L(`${fav.n} · legutóbb ${lastT(fav)}.`,`${fav.n} · last time ${lastT(fav)}.`):'',acts:btn(L('+ Új recept','+ New recipe'),'recept-uj')},1)}
   ${sec(1,L('Szűrés','Filter'),2)}
-  ${card(pick(F2,fe?L('Vacsi','Dinner'):L('Mind','All'),L('Szűrő','Filter')),{i:2})}
+  ${card(pick(F2,fe?L('Csillagos','Starred'):L('Mind','All'),L('Szűrő','Filter')),{i:2})}
   ${sec(2,L('Receptjeid','Your recipes'),3)}
   ${emp||fe?none:card(recs.map(r=>irow({icon:CAT[r.cat][1],title:r.n,sub:[catT(r),r.min?L(`${r.min} perc`,`${r.min} min`):null,r.role?roleT(r.role):null,r.serv>1?pl(r.serv,'adag','serving','servings'):null].filter(Boolean).join(' · '),v:`${kc(r.kcal/r.serv)}<small>kcal</small>`,
       l2:m3(Math.round(r.p/r.serv),Math.round(r.c/r.serv),Math.round(r.f/r.serv))+`<span class="fu-tags">${r.star?st(L('csillagos','starred'),'plan'):''}${r.score?st(L(`${fmt(r.score)} pont`,`${fmt(r.score)} points`),'ok'):st(L('értékelés folyamatban','being scored'),'q')}</span>`,on:'recept.'+r.id})).join('')
     +note(L('A szám egy adag kalóriája; a három sáv az adag fehérje-, szénhidrát- és zsírtartalma.','The number is one serving’s calories. The three bars are its protein, carbs and fat.')),{i:3})}`);
 }
 /* ═ RECEPT: recept.<id>[.egesz | .ertekel | .ujra | .nincsolvasat | .torles | .nemettem] · recept.nincs ═ */
-const recNone=()=>page('fuel',{title:L('Nincs ilyen recept.','No such recipe.'),sub:L('Receptek','Recipes'),back:'receptek'},`${card(empty('t-book',L('Lehet, hogy közben törölted. A Receptek listán minden megmaradt recepted ott van.','You may have deleted it. Everything you still have is in Recipes.'),btn(L('Vissza a Receptekhez','Back to Recipes'),'receptek','sm')),{i:1})}`);
+const recNone=()=>page('fuel',{title:L('Nincs ilyen recept','No such recipe'),sub:L('Receptek','Recipes'),back:'receptek'},`${card(empty('t-book',L('Lehet, hogy közben törölted. A Receptek listán minden megmaradt recepted ott van.','You may have deleted it. Everything you still have is in Recipes.'),btn(L('Vissza a Receptekhez','Back to Recipes'),'receptek','sm')),{i:1})}`);
 function recept(arg){
   const [id,mode]=(arg||'r1').split('.'); const r0=REC.find(x=>x.id===id); if(!r0) return recNone();
   const r=mode==='nemettem'?{...r0,logged:0,last:null,today:[]}:r0, all=mode==='egesz', d=all?1:r.serv, v=k=>Math.round(r[k]/d), ls=recLines(r);
   /* a bontás állapotai (useRecipeBreakdown): pending = első olvasat készül · refreshing = szerkesztés utáni újraértékelés (a régi szöveget nem mutatjuk késznek) · nincs olvasat */
   const busy=mode==='ertekel'||mode==='ujra', noB=busy||mode==='nincsolvasat'||r.score==null, sc=noB?null:r.score, arm=mode==='torles', nut=[r.fib,r.sugar,r.salt,r.sat].map(x=>x==null?null:x/d);
-  return page('fuel',{title:r.n,sub:[L(`${catT(r)}-recept`,`${catT(r)} recipe`),r.role?roleT(r.role):null].filter(Boolean).join(' · '),back:'receptek'},`
+  return page('fuel',{title:r.n,sub:L(`${catT(r)}-recept`,`${catT(r)} recipe`),back:'receptek'},`
   ${gHero({lbl:all?L(`Egész recept · ${r.serv} adag`,`Whole recipe · ${pl(r.serv,'','serving','servings')}`):r.serv>1?L(`Egy adag a fazékból · ${r.serv} adagos`,`One serving from the pot · serves ${r.serv}`):L('Egy adag · a teljes fazék','One serving · the whole pot'),
     g:numG(`<span class="fu-pot">${potG(all?100:100/r.serv,104)}</span>`,kc(v('kcal')),all?L('kcal · egész','kcal · whole'):L('kcal / adag','kcal / serving'),`<p>${[pl(r.serv,'adag','serving','servings'),r.min?L(`${r.min} perc alatt kész`,`ready in ${r.min} min`):L('elkészítési idő nincs megadva','no cooking time given'),'NOVA '+r.nova].join(' · ')}</p><p>${L(`létrehozva ${dS(...r.date)}`,`created ${dS(...r.date)}`)}</p>`),
     verdict:r.logged?L(`${r.logged}× etted, legutóbb ${lastT(r)}.`,`Eaten ${r.logged} times, last ${lastT(r)}.`):L('Még nem etted.','Not eaten yet.'),
-    sub:r.logged?(sc!=null?L(`Mezo értékelése: ${fmt(sc)}.`,`Mezo’s rating: ${fmt(sc)}.`):L('Az értékelés folyamatban.','The rating is in progress.')):L('Naplózd, ha elkészült.','Log it when it’s made.'),
+    sub:(r.role?roleT(r.role)+' · ':'')+(r.logged?(sc!=null?L(`Mezo értékelése: ${fmt(sc)}.`,`Mezo’s rating: ${fmt(sc)}.`):mode==='nincsolvasat'?L('Még nincs értékelés: kevés az adat.','No rating yet: too little data.'):L('Az értékelés folyamatban.','The rating is in progress.')):L('Naplózd, ha elkészült.','Log it when it’s made.')),
     body:r.serv>1?`<div style="margin-top:12px">${servSeg(r.serv,all,'recept.'+r.id,'recept.'+r.id+'.egesz')}</div>`:'',
     acts:btn(L('Ma ettem ilyet','I ate this today'),'log.recept-'+r.id)+(sc!=null?lk(`${L('Mezo értékelése','Mezo’s rating')} ${fmt(sc)} ›`,'score.r-'+r.id):'')},1)}
   ${sec(1,L('Makrók','Macros'),2)}
@@ -744,9 +750,9 @@ function recept(arg){
   ${card((busy?txt(mode==='ujra'?L('Mezo újraértékeli…','Mezo is reading it again…'):L('Mezo értékeli…','Mezo is reading it…')):r.prose&&!noB?txt(r.prose)+(r.fits?`<div class="fh-chips fu-chips"><span>${r.fits}</span></div>`:''):txt(L('Még nincs olvasat.','No reading yet.')))
     +(sc!=null?row({icon:'t-score',title:L('Mezo értékelése','Mezo’s rating'),sub:L(`8 szempont · megbízhatóság ${r.cert}%`,`8 aspects · confidence ${r.cert}%`),v:fmt(sc),on:'score.r-'+r.id})
       :`<div class="fh-row fc-off"><span class="si">${I('t-score')}</span><span class="g"><strong>${L('Mezo értékelése','Mezo’s rating')}</strong><small>${busy?L('Amint elkészül, itt nyílik.','It opens here as soon as it is ready.'):L('A sablon értékeléséhez még nincs elég adat (kcal nélküli hozzávalók).','Not enough data to rate the template yet (ingredients without kcal).')}</small></span><span class="v">—</span></div>`),{i:5})}
-  ${sec(5,L('Tovább','Next'),6)}
-  ${card(row({icon:'t-plate',title:L('Logolás · ma ettem ilyet','Log it · I ate this today'),sub:L('a logoló ezzel a recepttel nyílik','the log opens with this recipe'),on:'log.recept-'+r.id})
-    +row({icon:'t-chef',title:L('Iterálás a Műhelyben','Rework it in the workshop'),sub:L('ebből indul; mentéskor ezt a receptet frissíti','starts from this one; saving updates this recipe'),on:'muhely.recept-'+r.id})
+  ${sec(5,L('Mit tehetsz vele','What you can do'),6)}
+  ${card(row({icon:'t-plate',title:L('Logolás · ma ettem ilyet','Log it · I ate this today'),sub:L('a logolás ezzel a recepttel nyílik','logging opens with this recipe'),on:'log.recept-'+r.id})
+    +row({icon:'t-chef',title:L('Tovább alakítom a Műhelyben','Rework it in the workshop'),sub:L('ebből indul; mentéskor ezt a receptet frissíti','starts from this one; saving updates this recipe'),on:'muhely.recept-'+r.id})
     +row({icon:'t-journal',title:L(`Logok · ${r.today.length}`,`Logs · ${r.today.length}`),sub:r.today.length?L('ma is a naplódban','in today’s log too'):L('ma még nincs logolva','not logged today'),on:{sheet:'reclogs',arg:mode==='nemettem'?'':r.id}})
     +acts(btn(L('Szerkesztés','Edit'),'recept-uj.szerk-'+r.id,'sm ghost')+lk(r.star?L('Csillag le','Unstar'):L('Csillag','Star'),{toast:r.star?L('Csillag levéve','Star removed'):L('Csillagos lett','Starred')})
       +(arm?`<button class="fh-lk fx-bad" data-go="receptek">${L('Biztos? Még egy érintés a törléshez','Sure? Tap once more to delete')}</button>`:lk(L('Törlés','Delete'),'recept.'+r.id+'.torles'))),{i:6})}`);
@@ -761,14 +767,14 @@ function recScore(id,st2){
   if(!r||st2==='nincsmeg') return page('fuel',{...ttl,sub:L('Recept','Recipe'),back:'receptek'},`${card(empty('t-book',L('Ez a recept nincs meg.','This recipe is gone.'),btn(L('Vissza a Receptekhez','Back to Recipes'),'receptek','sm')),{i:1})}`);
   const rec=SCREC['r-'+id];
   if(st2==='keszul'||st2==='nincs'||!rec) return page('fuel',ttl,`${card(empty('t-score',st2==='keszul'?L('Az értékelés készül…','The rating is on its way…'):L('Ehhez a recepthez még nincs értékelés.','This recipe has no rating yet.'),btn(L('Vissza a recepthez','Back to the recipe'),back,'sm')),{i:1})}`);
-  return scoreSurface('r-'+id,rec,'',{back,lbl:L('Recept · sablon · 1 adag','Recipe · template · 1 serving'),sub:`${r.n} · ${kc(rec.kcal)} ${L('kcal / adag','kcal / serving')}`,detail:[L('A recept részletei','Recipe details'),back],imp:r.imp||[],
+  return scoreSurface('r-'+id,rec,'',{back,lbl:`${L('Recept · sablon · 1 adag','Recipe · template · 1 serving')} · ${kc(rec.kcal)} kcal`,sub:r.n,detail:[L('A recept részletei','Recipe details'),back],imp:r.imp||[],
     note:L('A recept pontszáma a sablonra szól, egy adagra vetítve; nem arra, amit végül megettél.','The score is for the recipe as written, per serving, not for what you ended up eating.')+(r.role?' '+L(`A mérce ehhez a szerephez igazodik: ${r.role==='pre'?'edzés előtti':'edzés utáni'}.`,`It is judged for its role: ${r.role==='pre'?'before training':'after training'}.`):'')+' '+L('Amit belőle logolsz, a saját étkezés-értékelését kapja.','What you log from it gets its own meal rating.')});
 }
 /* ═ KÉZI RECEPT-SZERKESZTŐ: recept-uj (üres) · .kitoltve · .x (kitöltve, egész recept) · .szerk-<id> · .nincs ═
    az élő összeg a Kamra tényeiből számol (contributionOf); mentés: név + legalább egy sor. Mentés után nincs üzenet (az élőben sincs): új → Receptek, szerkesztés → vissza a receptre. */
 function editor(arg){
   const a=String(arg||''), em=/^szerk-(.+)$/.exec(a), R0=em?REC.find(r=>r.id===em[1]):null;
-  if(a==='nincs'||(em&&!R0)) return page('fuel',{title:L('Nincs ilyen recept.','No such recipe.'),sub:L('Fuel · Receptek','Fuel · Recipes'),back:'receptek'},`${card(empty('t-book',L('Nincs ilyen recept.','No such recipe.'),btn(L('Vissza a Receptekhez','Back to Recipes'),'receptek','sm')),{i:1})}`);
+  if(a==='nincs'||(em&&!R0)) return page('fuel',{title:L('Nincs ilyen recept','No such recipe'),sub:L('Fuel · Receptek','Fuel · Recipes'),back:'receptek'},`${card(empty('t-book',L('Nincs ilyen recept.','No such recipe.'),btn(L('Vissza a Receptekhez','Back to Recipes'),'receptek','sm')),{i:1})}`);
   const filled=a==='kitoltve'||a==='x', all=a==='x';
   const D=R0?{n:R0.n,cat:R0.cat,star:R0.star,role:R0.role,serv:R0.serv,min:R0.min,tags:['whole-foods'],ls:recLines(R0)}
     :filled?{n:'Csirkés bulgur tál',cat:'ebed',star:0,role:'post',serv:2,min:25,tags:['edzés után','gyors'],ls:[lineOf(kById('csirke'),300),lineOf(kById('bulgur'),150)]}
@@ -778,16 +784,16 @@ function editor(arg){
   return page('fuel',{title:D.n||L('Új recept','New recipe'),sub:L('Fuel · Receptek','Fuel · Recipes'),back},`
   ${gHero({lbl:all?L('Makró-összeg · egész recept','Macro total · whole recipe'):L('Makró-összeg · egy adag','Macro total · one serving'),g:numG(`<span class="fu-pot">${potG(has?(all?100:100/D.serv):0,96)}</span>`,has?kc(per('kcal')):'0',all?L('kcal · egész','kcal · whole'):L('kcal / adag','kcal / serving'),m3(per('p'),per('c'),per('f'))),
     verdict:!has?L('A fazék még üres.','The pot is still empty.'):D.serv===1?L('Egy adag az egész fazék.','One serving is the whole pot.'):all?L(`${D.serv} adag van a fazékban.`,`${D.serv} servings in the pot.`):L(`Egy adag a fazék ${D.serv===2?'fele':D.serv+'-ed része'}.`,`One serving is ${D.serv===2?'half':'1/'+D.serv} of the pot.`),
-    sub:!has?L('Adj hozzá hozzávalót a kamrádból; az összeg a tényeikből számol.','Add ingredients from your pantry. The total is worked out from their facts.'):`${all?L('Egy adag','One serving'):L('Egész recept','Whole recipe')} = ${kc(oth('kcal'))} kcal · P ${oth('p')} · C ${oth('c')} · F ${oth('f')}.`,
+    sub:!has?L('Adj hozzá hozzávalót a kamrádból; az összeg a tényeikből számol.','Add ingredients from your pantry. The total is worked out from their facts.'):`${all?L('Egy adag','One serving'):L('Egész recept','Whole recipe')}: ${kc(oth('kcal'))} kcal · ${L(`${oth('p')} g fehérje · ${oth('c')} g szénhidrát · ${oth('f')} g zsír`,`${oth('p')} g protein · ${oth('c')} g carbs · ${oth('f')} g fat`)}.`,
     body:has&&!R0?`<div style="margin-top:12px">${servSeg(D.serv,all,'recept-uj.kitoltve','recept-uj.x')}</div>`:''},1)}
   ${sec(1,L('Alapok','Basics'),2)}
   ${card(fld(L('Név','Name'),D.n,L('pl. Tonhalsaláta · edzés után','e.g. Tuna salad · after training'))
-    +lab(L('Étkezés','Meal'))+`<div class="fc-pk2">${pick([L('Reggeli','Breakfast'),L('Ebéd','Lunch'),L('Vacsora','Dinner'),'Snack'],[L('Reggeli','Breakfast'),L('Ebéd','Lunch'),'Snack',L('Vacsora','Dinner')][['reggeli','ebed','uzsonna','vacsora'].indexOf(D.cat)],L('Étkezés','Meal'))}<button class="fh-pill ${D.star?'on':''}" data-ftog aria-pressed="${!!D.star}">${bub('t-star',{s:24})}${D.star?L('Csillagos','Starred'):L('Csillag','Star')}</button></div>`
+    +lab(L('Étkezés','Meal'))+`<div class="fc-pk2">${pick([L('Reggeli','Breakfast'),L('Ebéd','Lunch'),L('Vacsora','Dinner'),L('Uzsonna','Snack')],[L('Reggeli','Breakfast'),L('Ebéd','Lunch'),L('Uzsonna','Snack'),L('Vacsora','Dinner')][['reggeli','ebed','uzsonna','vacsora'].indexOf(D.cat)],L('Étkezés','Meal'))}<button class="fh-pill ${D.star?'on':''}" data-ftog aria-pressed="${!!D.star}">${bub('t-star',{s:24})}${D.star?L('Csillagos','Starred'):L('Csillag','Star')}</button></div>`
     +lab(L('Szerep','Role'))+pick([roleT(''),roleT('pre'),roleT('post')],roleT(D.role),L('Szerep','Role'))
     +note(L('A szerep dönti el, milyen mérce szerint pontozzuk: edzés körül a gyors szénhidrát üzemanyag, nem hiba.','The role decides how we score it: around training, fast carbs are fuel, not a fault.'))
-    +`<div class="fx-two"><div>${lab(L('Adag','Servings'))}${stp(D.serv,L('adag',D.serv===1?'serving':'servings'),L('Adag','Servings'))}</div><div>${lab(L('Elő + főzés','Prep + cooking'))}${stp(D.min,L('perc','min'),L('Idő','Time'))}</div></div>`,{i:2})}
+    +`<div class="fx-two fc-ws"><div>${lab(L('Adag','Servings'))}${stp(D.serv,L('adag',D.serv===1?'serving':'servings'),L('Adag','Servings'))}</div><div>${lab(L('Elő + főzés','Prep + cooking'))}${stp(D.min,L('perc','min'),L('Idő','Time'))}</div></div>`,{i:2})}
   ${sec(2,`${L('Hozzávalók','Ingredients')} · ${D.ls.length}`,3)}
-  ${card((has?D.ls.map(l=>cLine({n:l.n,ic:kic(l.k),b:l.k.b,kind:l.k.k==='food'?'':L(...({supp:['Kieg.','Supp.'],stim:['Stim.','Stim.'],med:['Gyógyszer','Med.']})[l.k.k]),a:l.a,u:l.u,kcal:l.kcal,m:l.m})).join(''):empty('t-stack',L('Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.','No ingredients yet. Tap Add from pantry.')))
+  ${card((has?D.ls.map(l=>cLine({n:l.n,ic:kic(l.k),b:l.k.b,kind:l.k.k==='food'?'':L(...({supp:['Kiegészítő','Supplement'],stim:['Stimuláns','Stimulant'],med:['Gyógyszer','Medication']})[l.k.k]),a:l.a,u:l.u,kcal:l.kcal,m:l.m})).join(''):empty('t-stack',L('Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.','No ingredients yet. Tap Add from pantry.')))
     +acts(btn(L('+ Kamrából hozzáad','+ Add from pantry'),{sheet:'ingpick',arg:has?'van':''},'sm ghost')),{cls:'fu-lns0',i:3})}
   ${sec(3,L('Címkék','Tags'),4)}
   ${card(`<div class="fh-pills">${D.tags.map(t=>`<button class="fh-pill" data-toast="${L('Címke törölve','Tag removed')}" aria-label="${L(`${esc(t)} címke törlése`,`Remove the tag ${esc(t)}`)}">${t} ×</button>`).join('')}<input class="fh-in fc-tag" placeholder="${L('+ címke','+ tag')}" aria-label="${L('Új címke','New tag')}"></div>`,{i:4})}`,
@@ -804,11 +810,11 @@ function muhely(arg){
   const busy=a==='dolgozik', err=a==='hiba', ctx=a==='kamrabol', draft=!!(R0||M0)||['vazlat','vazlat-egesz','kesz','feloldatlan','ures-vazlat'].includes(a), all=a==='vazlat-egesz';
   const est=(n,ic,am,u,kcal,m)=>({n,ic,a:am,u,kcal,m,src:'becslés',nv:null});
   /* a logolt étkezés sorai (mealToDraft): kamra-sor → kamra-sor · becsült sor → becslés · recept-sor → a recept hozzávalói */
-  const fromMeal=m=>m.ings.flatMap(([n,ic,kid,src,kcal,amt])=>{const am=parseFloat(amt),u=amt.replace(/^[\d.,]+\s*/,''),rc=src==='recept'&&REC.find(r=>r.n===n),k=kid?kById(kid):KAM.find(x=>x.n===n);
-    return rc?recLines(rc):k?[lineOf(k,am,kcal)]:[est(n,ic,am,u,kcal,[Math.round(m.macro[0]*kcal/m.kcal),Math.round(m.macro[1]*kcal/m.kcal),Math.round(m.macro[2]*kcal/m.kcal)])]});
+  const fromMeal=m=>m.ings.flatMap(([n,ic,kid,src,kcal,amt,,mac])=>{const am=parseFloat(amt),u=amt.replace(/^[\d.,]+\s*/,''),rc=src==='recept'&&REC.find(r=>r.n===n),k=kid?kById(kid):KAM.find(x=>x.n===n);
+    return rc?recLines(rc):k?[lineOf(k,am,kcal)]:[est(n,ic,am,u,kcal,mac||[Math.round(m.macro[0]*kcal/m.kcal),Math.round(m.macro[1]*kcal/m.kcal),Math.round(m.macro[2]*kcal/m.kcal)])]});
   const D=R0?{n:R0.n,serv:R0.serv,goal:null,ls:recLines(R0),steps:[],upd:1}
     :M0?{n:M0.name,serv:1,goal:null,ls:fromMeal(M0),steps:[]}
-    :{n:'Csirkés bulgur',serv:2,goal:'high_protein',steps:WSTEPS(),ls:a==='ures-vazlat'?[]:[lineOf(kById('csirke'),300),lineOf(kById('bulgur'),100),
+    :{n:'Csirkés bulgur',serv:2,goal:'high_protein',steps:a==='ures-vazlat'?[]:WSTEPS(),ls:a==='ures-vazlat'?[]:[lineOf(kById('csirke'),300),lineOf(kById('bulgur'),100),
       a==='kesz'?lineOf(kById('spenot'),150):a==='feloldatlan'?{n:'Kaliforniai paprika',k:{k:'food',cat:'Zöldség'},a:150,u:'g',kcal:null,m:null,nv:null,src:'kamra',gone:1}:est('Paprika · kaliforniai','t-fiber',150,'g',47,[2,9,0])]};
   const goals=on=>goalRow(on,'muhely.dolgozik');
   /* a dokk (WorkshopChatDock): cél-gombok (egy koppintás = egy kérés), a következő körbe szánt kamra-tételek, állapot, az utolsó válasz, üzenetmező */
@@ -817,7 +823,7 @@ function muhely(arg){
     +(o.busy?`<p class="fc-busy">${bub('t-chef',{s:28})}${L('A Műhely dolgozik…','The workshop is on it…')}</p>`:'')
     +(o.err?`<div class="fc-err"><b>${L('A Műhely most nem elérhető. Az üzeneted megvan.','The workshop can’t be reached right now. Your message is safe.')}</b><div class="fh-acts">${btn(L('Újra','Retry'),'muhely.dolgozik','sm')}${lk(L('Szerkesztés','Edit'),{toast:L('Az üzeneted visszakerült a mezőbe','Your message is back in the field')})}</div></div>`:'')
     +(o.last?`<button class="fc-last" data-sheet="thread">${bub('t-chef',{s:30})}<span>${o.last}</span>${chev()}</button>`:'')
-    +`<div class="fx-cmp"><button data-sheet="ingpick" data-arg="kor" aria-label="${L('Kamra','Pantry')}">${I('t-stack')}</button><textarea aria-label="${L('Üzenet a Műhelynek','Message to the workshop')}" placeholder="${L('Mit főzzünk? Mondd el szabadon…','What shall we cook? Say it freely…')}">${o.err?L('Legyen benne több zöldség is','Add more vegetables to it'):''}</textarea><button data-toast="${L('Diktálás','Dictate')}" aria-label="${L('Diktálás','Dictate')}">${I('t-mic')}</button><button class="go" ${o.busy?'disabled':'data-go="muhely.dolgozik"'} aria-label="${L('Küldés','Send')}">${I('t-send')}</button></div>`;
+    +`<div class="fx-cmp"><button data-sheet="ingpick" data-arg="kor" aria-label="${L('Kamra','Pantry')}">${I('t-stack')}</button><textarea aria-label="${L('Üzenet a Műhelynek','Message to the workshop')}" placeholder="${L('Mit főzzünk? Mondd el szabadon…','What shall we cook?')}">${o.err?L('Legyen benne több zöldség is','Add more vegetables to it'):''}</textarea><button data-toast="${L('Diktálás','Dictate')}" aria-label="${L('Diktálás','Dictate')}">${I('t-mic')}</button><button class="go" ${o.busy?'disabled':'data-go="muhely.dolgozik"'} aria-label="${L('Küldés','Send')}">${I('t-send')}</button></div>`;
   const principle=note(L('A Műhely hozzávalót és mennyiséget javasol; a makrókat mindig a kamra-tények adják.','The workshop suggests ingredients and amounts. The macros always come from your pantry’s facts.'));
   const ttl={title:L('Receptműhely','Recipe workshop'),sub:L('Fuel · Receptek','Fuel · Recipes'),back:R0?'recept.'+R0.id:M0?'mai':'konyha'};
   if(!draft) return page('fuel',ttl,`
@@ -836,7 +842,7 @@ function muhely(arg){
     verdict:!D.ls.length?L('A vázlat üres.','The draft is empty.'):nEst?L(nEst===1?'Egy sor még becslés, addig nem menthető.':`${nEst} sor még becslés, addig nem menthető.`,nEst===1?'One line is still an estimate, so it can’t be saved yet.':`${nEst} lines are still estimates, so it can’t be saved yet.`):D.upd?L('Menthető: a recepted frissül, nem másolódik.','Ready to save: it updates your recipe, it doesn’t copy it.'):L('Menthető: minden sor a kamrádból jön.','Ready to save: every line comes from your pantry.'),
     sub:nEst?L('Cseréld kamra-tételre vagy töröld a sort.','Swap it for a pantry item or remove the line.'):M0?L('Új receptként mentjük; a logolt étkezésed nem változik.','It is saved as a new recipe. Your logged meal doesn’t change.'):'',
     body:`<div class="fx-two fc-ws" style="margin-top:12px"><div>${stp(D.serv,L('adag',D.serv===1?'serving':'servings'),L('Adag','Servings'))}</div><div>${seg([[L('1 adag','1 serving'),self,!all],[L('Egész','Whole'),a==='vazlat'||all?'muhely.vazlat-egesz':{toast:L('Egész recept · a számok az egész fazékra váltanak','Whole recipe · the numbers switch to the whole pot')},all]])}</div></div>`,
-    acts:can?btn(D.upd?L('Recept frissítése','Update the recipe'):L('Mentés a Receptkönyvbe','Save to the recipe book'),{go:D.upd?'recept.'+R0.id:'receptek'}):`<button class="btn" disabled>${D.upd?L('Recept frissítése','Update the recipe'):L('Mentés a Receptkönyvbe','Save to the recipe book')}</button>`},1)}
+    acts:can?btn(D.upd?L('Recept frissítése','Update the recipe'):L('Mentés a Receptek közé','Save to Recipes'),{go:D.upd?'recept.'+R0.id:'receptek'}):`<button class="btn" disabled>${D.upd?L('Recept frissítése','Update the recipe'):L('Mentés a Receptek közé','Save to Recipes')}</button>`},1)}
   ${sec(1,`${L('Hozzávalók','Ingredients')} · ${D.ls.length}`,2)}
   ${card((D.ls.length?D.ls.map(l=>cLine({n:l.n,ic:l.ic||kic(l.k),tag:l.src==='becslés'?L('becslés','estimate'):L('kamra','pantry'),est:l.src==='becslés',a:l.a,u:l.u,kcal:l.kcal,m:l.m,
       x:l.src==='becslés'?`<div class="fh-acts"><button class="fh-lk" data-sheet="ingpick" data-arg="csere">${L('Csere kamra-tételre','Swap for a pantry item')}</button></div>`:''})).join(''):empty('t-stack',L('Nincs hozzávaló. Kérj egyet alul, vagy válassz a kamrából.','No ingredients. Ask for one below or pick from the pantry.')))
@@ -845,10 +851,10 @@ function muhely(arg){
   ${card(macroVials(per('p'),per('c'),per('f')),{cls:'fu-mac',i:3})}
   ${card(qTiles(qOf(D.ls.filter(l=>!l.gone).map(l=>l.src==='becslés'?{...l,nv:null,u:'?'}:l)))+(nEst?note(L('A becsült sor nem ad minőség-tényt: amíg van ilyen, ezek a számok hiányoznak.','An estimated line gives no quality facts: while there is one, these numbers are missing.')):''),{cls:'fu-q',i:3})}
   ${card(microRows([null,nutW[1],nutW[2],nutW[3]],all?FRW:FR1),{i:3})}`:''}
-  ${D.steps.length?`${sec(3,`${L('Elkészítés','Method')} · ${pl(D.steps.length,'lépés','step','steps')}`,4)}
+  ${D.steps.length?`${sec(D.ls.length?3:2,`${L('Elkészítés','Method')} · ${pl(D.steps.length,'lépés','step','steps')}`,4)}
   ${card(`<ol class="fc-steps">${D.steps.map((s,i)=>`<li><b>${i+1}.</b><span>${s}</span></li>`).join('')}</ol>`,{i:4})}`:''}
-  ${sec(D.steps.length?4:D.ls.length?3:2,L('Kérj módosítást','Ask for a change'),5)}
-  ${card(dock({goal:D.goal,last:D.upd||M0?null:WLAST()})+principle,{i:5})}`);
+  ${sec(1+(D.ls.length?1:0)+(D.steps.length?1:0)+1,L('Kérj módosítást','Ask for a change'),5)}
+  ${card(dock({goal:D.goal,last:D.upd||M0||!D.ls.length?null:WLAST()})+principle,{i:5})}`);
 }
 
 const bandG=({lo,hi,a,b,v,vl,tick,tl,al='',bl='',label=''})=>{const id=F.uid('fb'),X=x=>12+(x-lo)/(hi-lo)*296;
@@ -1270,18 +1276,18 @@ function beallitas(arg){
   ${sec(4,L('Finomhangolás','Fine-tuning'),5)}
   ${card(lab(L('Fehérje-szint','Protein level'))+pick([L('Alacsony','Low'),L('Mérsékelt','Moderate'),L('Magas','High')],L('Magas','High'),L('Fehérje-szint','Protein level'))
     +note(L('A testsúlyod és a zsírmentes tömeged szerinti számítást is állítja; a cél a kettő közül a nagyobb, egy felső korláttal. Mentés után a Makrók előnézete rögtön a választott szint szerinti grammot mutatja.','It adjusts both the body-weight and the lean-mass calculation. The target is the higher of the two, with a cap. After saving, the Macros preview shows the grams for the level you chose.'))
-    +row({icon:'t-lens',title:L('Tanulás a súlyomból és az evésemből','Learn from my weight and my eating'),sub:L('hetente megtanulom, mennyi energiát használsz valójában','each week I learn how much energy you really use'),right:sw(true,L('Tanulás a súlyomból és az evésemből','Learn from my weight and my eating'))}),{i:5})}`,
+    +row({icon:'t-lens',title:L('Tanulás a súlyomból és az evésemből','Learn from your weight and food'),sub:L('hetente megtanulom, mennyi energiát használsz valójában','each week Mezo learns how much energy you really use'),right:sw(true,L('Tanulás a súlyomból és az evésemből','Learn from your weight and food'))}),{i:5})}`,
   {foot:(dirty&&!bad?btn(L('Kilépés','Leave'),{sheet:'guard'},'ghost'):'')+(bad?`<button class="btn" disabled>${L('Mentés','Save')}</button>`:btn(L('Mentés','Save'),{toast:dirty?L('Mentve · A keret +60 kcal-lal változott','Saved · Your budget changed by +60 kcal'):L('Mentve','Saved')}))});
 }
 /* a szerkesztő sorai (SlotTemplateRow): [név HU, EN, fajta, szerep, horgony, idő | eltolás perc, rész %] */
 const ANCH=[['fixed','Fix időpont','Fixed time'],['wake','Ébredés után','After waking'],['training_start','Edzés kezdete körül','Around training start'],['training_end','Edzés vége után','After training ends'],['bed','Lefekvés előtt','Before bed']];
-const WKIND=[['breakfast','Reggeli','Breakfast','t-sun'],['lunch','Ebéd','Lunch','t-bowl'],['dinner','Vacsora','Dinner','t-moon'],['snack','Snack','Snack','t-snack']];
+const WKIND=[['breakfast','Reggeli','Breakfast','t-sun'],['lunch','Ebéd','Lunch','t-bowl'],['dinner','Vacsora','Dinner','t-moon'],['snack','Uzsonna','Snack','t-snack']];
 function ablakok(arg){
   const a=String(arg||''), ttl=setTop(L('Étkezési ablakok','Meal windows'),'beallitas');
   if(a==='tolt') return page('fuel',ttl,`${gHero({lbl:L('Étkezési ablakok','Meal windows'),g:winTide(evenW(4),{},1),verdict:L('Beállítások betöltése…','Loading settings…'),sub:L('Amíg töltünk, a Testreszabás nem indítható.','Customise can’t be started while this loads.')},1)}`);
   if(a==='betolt-hiba') return page('fuel',ttl,errCard(L('Nem sikerült betölteni az étkezési ablakok beállításait. A mentett rendet addig nem lehet felülírni.','Meal windows couldn’t be loaded. The saved plan can’t be overwritten until they load.'),'ablakok'));
   const dt=a==='reggeli'?'training_am':a==='esti'?'training_pm':'rest', edit=!['','reggeli','esti'].includes(a), saved=['mentett','ertekel','olvasat','olvasat-igazit','olvasat-nincs'].includes(a), bad=a==='hiba', warn=a==='figyel';
-  const days=`<div class="fh-seg fc-days" role="tablist" aria-label="${L('Naptípusok','Day types')}">${DTYPES.map(([k,hu,en],i)=>`<button role="tab" aria-selected="${k===dt}" class="${k===dt?'on':''}" data-go="ablakok${['','.reggeli','.esti'][i]}">${L(hu,en)}</button>`).join('')}</div>`;
+  const days=`<div class="fh-seg fc-days" role="tablist" aria-label="${L('Naptípusok','Day types')}">${DTYPES.map(([k,hu,en],i)=>`<button role="tab" aria-selected="${k===dt}" class="${k===dt?'on':''}" data-go="ablakok${['','.reggeli','.esti'][i]}">${L(hu,['Rest','Morning','Evening'][i])}</button>`).join('')}</div>`;
   const R=WREC[dt], dtn=DTYPES.find(d=>d[0]===dt);
   if(!edit){
     /* ajánlott felosztás (placeWindows + splitBudget): a mai nap típusánál a valódi edzésblokkból, a többinél egy mintanapból (edzés 07:00-kor / 18:00-kor); horgonya nincs, az csak a saját felosztásnak van */
@@ -1295,7 +1301,7 @@ function ablakok(arg){
     +note(L('Ez az ajánlás. A Testreszabás ebből indul; utána a nevet, a típust, az időt és a részeket is átírhatod.','This is the recommendation. Customise starts from it. After that you can change the names, types, times and shares.')),{i:2})}`);
   }
   /* szerkesztés: a fork a pihenőnap ajánlásából indul (fix időpontok); a mentett felosztásban van ébredéshez / lefekvéshez kötött sor is. Σ ≠ 100 → hiba, a Mentés és a „Mezo értékelése” tiltva. */
-  const rows=saved?[['Reggeli','Breakfast','breakfast','','wake',45,25],['Ebéd','Lunch','lunch','','fixed','12:30',30],['Uzsonna','Snack','snack','pre','fixed','16:00',15],['Vacsora','Dinner','dinner','','bed',-180,30]]
+  const rows=saved?[['Reggeli','Breakfast','breakfast','','wake',45,25],['Ebéd','Lunch','lunch','','fixed','12:30',30],['Uzsonna','Snack','snack','','fixed','16:00',15],['Vacsora','Dinner','dinner','','bed',-180,30]]
     :R.map((w,i)=>[bad&&i===2?'':w[1],bad&&i===2?'':w[2],WKIND[[0,1,3,2][i]][0],'','fixed',w[0],bad&&i===3?20:warn?[15,20,10,55][i]:w[4]]);
   const sum=rows.reduce((s,r)=>s+r[6],0), tOf=r=>r[4]==='fixed'?r[5]:r[4]==='wake'?'07:15':r[4]==='bed'?'20:00':'16:00';
   const comp=rows.map(r=>[tOf(r),r[0],r[1],WKIND.find(k=>k[0]===r[2])[3],r[6],Math.round(DAY.target*r[6]/100)]);
@@ -1306,20 +1312,20 @@ function ablakok(arg){
     <div class="fc-anch"><div>${sel(L('Horgony','Anchor'),L(...ANCH.find(x=>x[0]===r[4]).slice(1)))}</div><div>${r[4]==='fixed'?fld(L('Időpont','Time'),r[5],'','time'):lab(L('Eltolás (perc)','Offset (min)'))+stp(r[5]>0?'+'+r[5]:String(r[5]).replace('-','−'),L('perc','min'),L('Eltolás','Offset'))}</div><div>${fld(L('Rész %','Share %'),String(r[6]),'','number')}</div></div></div>`};
   return page('fuel',ttl,`
   ${a==='mentes-hiba'?`<p class="fc-alert" role="alert">${L('Nem sikerült menteni. A módosításaid megmaradtak.','Couldn’t save. Your changes are still here.')}</p>`:''}
-  ${gHero({lbl:`${saved?L('Saját felosztás','Your own split'):L('Testreszabás','Customising')} · Σ ${sum}%`,g:winTide(comp,{}),warn:bad,verdict:bad?L('A részek összege 90%: így nem menthető.','The shares add up to 90%, so it can’t be saved.'):saved?L('Pihenőnapra a saját felosztásod érvényes.','On rest days your own split applies.'):L('Állítsd át a nevet, a típust, az időt vagy a részt.','Change the name, the type, the time or the share.'),
-    sub:L('Az edények szintje a kalória-rész; a részeknek együtt 100%-ot kell adniuk.','Each level is a share of calories. Together the shares must make 100%.'),body:`<div style="margin-top:12px">${days}</div>`},1)}
+  ${gHero({lbl:`${saved?L('Saját felosztás','Your own split'):L('Testreszabás','Customising')} · Σ ${sum}%`,g:winTide(comp,{}),warn:bad,verdict:bad?L('A részek összege 90%: így nem menthető.','The shares add up to 90%, so it can’t be saved.'):saved?L('Pihenőnapra a saját felosztásod érvényes.','On rest days your own split applies.'):L(`A részek összege ${sum}%: menthető.`,`The shares add up to ${sum}%: ready to save.`),
+    sub:(saved||bad?'':L('Állítsd át a nevet, a típust, az időt vagy a részt. ','Change the name, the type, the time or the share. '))+L('Az edények szintje a kalória-rész; a részeknek együtt 100%-ot kell adniuk.','Each level is a share of calories. Together the shares must make 100%.'),body:`<div style="margin-top:12px">${days}</div>`},1)}
   ${sec(1,`${L('Ablakok','Windows')} · ${rows.length}`,2)}
-  ${card(rows.map(rowEd).join('')+acts(btn(L('+ Új ablak','+ New window'),{toast:L('Új ablak · Snack · 16:00 · 10%','New window · Snack · 16:00 · 10%')},'sm ghost')),{i:2})}
+  ${card(rows.map(rowEd).join('')+acts(btn(L('+ Új ablak','+ New window'),{toast:L('Új ablak · Uzsonna · 16:00 · 10%','New window · Snack · 16:00 · 10%')},'sm ghost')),{i:2})}
   ${sec(2,L('Így áll össze','How it adds up'),3)}
   ${card(`<p class="fc-sum"><span>${L('A részek összege','Sum of the shares')}</span><b class="${sum===100?'':'off'}">${sum}%</b></p>`
-    +comp.map(w=>`<p class="fx-wv"><span class="fc-wt">${w[0]} · ${L(w[1],w[2])||'—'}</span>${level(w[4]*2.4,{h:10})}<span><b>${kc(w[5])}</b> kcal · P${Math.round(DAY.p[1]*w[4]/100)}</span></p>`).join('')
+    +comp.map(w=>`<p class="fx-wv"><span class="fc-wt">${w[0]} · ${L(w[1],w[2])||'—'}</span>${level(w[4]*2.4,{h:10})}<span><b>${kc(w[5])}</b> kcal · ${L(`${Math.round(DAY.p[1]*w[4]/100)} g fehérje`,`${Math.round(DAY.p[1]*w[4]/100)} g protein`)}</span></p>`).join('')
     +(bad?`<p class="fh-note fx-bad" role="alert">${L('A részek összege 90%: 100% kell.','The shares add up to 90%. They need to make 100%.')}</p><p class="fh-note fx-bad" role="alert">${L('Van egy névtelen étkezési ablak: adj neki nevet.','One meal window has no name. Give it one.')}</p>`:'')
     +(warn?`<p class="fh-note fx-warn">${L('A nap utolsó harmadára esik a napi keret nagy része.','Most of the day’s budget falls in the last third of the day.')}</p>`:''),{i:3})}
-  ${sec(3,L('Mezo értékelése','Mezo’s view'),4)}
+  ${sec(3,L('Mezo véleménye','Mezo’s view'),4)}
   ${card((ev?`<p class="fc-busy">${bub('t-score',{s:28})}${L('Mezo értékeli a felosztást…','Mezo is reading the split…')}</p>`
       :vd?`<div class="fc-vd"><div>${bub('t-score',{s:34})}<span>${L('Mezo · olvasat','Mezo · reading')}</span>${st(adj?L('érdemes igazítani','worth adjusting'):L('rendben','fine'),adj?'warn':'ok')}</div><p>${adj?L('A vacsora a nap harmada, közel a lefekvéshez; az uzsonna kicsi egy edzés előtti ablaknak.','Dinner is a third of the day and close to bedtime. The snack is small for a pre-training window.'):L('Egyenletes felosztás: a fehérje négy részre oszlik, és a vacsora után marad idő lefekvésig.','An even split: protein is spread over four parts, and there is time between dinner and bed.')}</p>${adj?`<p><b>${L('Vacsora','Dinner')}:</b> ${L('vigyél át 5%-ot az ebédre.','move 5% over to lunch.')}</p><p><b>${L('Uzsonna','Snack')}:</b> ${L('edzés előtt 15–20% jobban tart.','15–20% holds better before training.')}</p>`:''}</div>`
-      :deg?`<p class="fh-note fx-warn">${L('Mezo értékelése most nem elérhető. A szabály-ellenőrzés él.','Mezo’s view isn’t available right now. The rule checks still run.')}</p>`:'')
-    +acts(bad||ev?`<button class="btn sm ghost" disabled>${L('Mezo értékelése','Mezo’s view')}</button>`:btn(L('Mezo értékelése','Mezo’s view'),'ablakok.ertekel','sm ghost'))
+      :deg?`<p class="fh-note fx-warn">${L('Mezo véleménye most nem elérhető. A számok ellenőrzése így is működik.','Mezo’s view isn’t available right now. The numbers are still checked.')}</p>`:'')
+    +acts(bad||ev?`<button class="btn sm ghost" disabled>${L('Kérd Mezo véleményét','Ask Mezo')}</button>`:btn(L('Kérd Mezo véleményét','Ask Mezo'),'ablakok.ertekel','sm ghost'))
     +note(L('Vélemény a mostani felosztásról; a mentést nem állítja meg. Ha átírsz egy sort, újra kell kérned.','An opinion on the current split. It never blocks saving. If you change a row, ask again.'))
     +(saved?acts(lk(L('Ajánlott visszaállítása','Back to the recommended split'),'ablakok')):''),{i:4})}`,
   {foot:btn(L('Mégse','Cancel'),{sheet:'guard'},'ghost')+(bad?`<button class="btn" disabled>${L('Mentés','Save')}</button>`:btn(L('Mentés','Save'),'beallitas'))});
@@ -1340,23 +1346,23 @@ const sheetsC={
       :`${lab(L('Makrók · 100 g-ban','Macros · per 100 g'))}<div class="fc-4">${f('kcal',k&&k.kcal,'119')}${f(L('Fehérje','Protein'),k&&k.p!=null?fmt(k.p):null,'6')}${f(L('Szénhidrát','Carbs'),k&&k.c!=null?fmt(k.c):null,'4')}${f(L('Zsír','Fat'),k&&k.f!=null?fmt(k.f):null,'9')}</div>
       ${lab(L('Tápanyag · 100 g-ban','Nutrients · per 100 g'))}<div class="fc-4">${f(L('Rost','Fibre'),null,'0')}${f(L('Cukor','Sugar'),k&&k.sug!=null?fmt(num(k.sug)):null,'0')}${f(L('Tel. zsír','Sat. fat'),k&&k.sat!=null?fmt(num(k.sat)):null,'0')}${f(L('Só','Salt'),k&&k.salt!=null?fmt(num(k.salt)):null,'0')}</div>`}
     ${lab(L('Ár (Ft)','Price (Ft)'))}<input class="fh-in" value="${k&&k.price?k.price[0]:''}" placeholder="750" aria-label="${L('Ár (Ft)','Price (Ft)')}" inputmode="decimal">
-    ${acts((ed?`<button class="btn sm" data-close data-toast="${L('Mentve','Saved')}">${L('Mentés','Save')}</button>`:`<button class="btn sm" disabled>${L('Polcra','To the shelf')}</button>`)+closeLk(L('Mégse','Cancel')))}
-    ${ed?'':note(L('A Polcra gomb akkor él, ha a tételnek van neve.','To the shelf works once the item has a name.'))}`},
+    ${acts((ed?`<button class="btn sm" data-close data-toast="${L('Mentve','Saved')}">${L('Mentés','Save')}</button>`:`<button class="btn sm" disabled>${L('Polcra','Add to shelf')}</button>`)+closeLk(L('Mégse','Cancel')))}
+    ${ed?'':note(L('A Polcra gomb akkor él, ha a tételnek van neve.','You can add it once it has a name.'))}`},
   import:a=>{const link=a==='link', photo=!link, head=`${sh('t-camera',L('Új tétel a kamrába','New pantry item'),L('Import · fotó és link','Import · photo and link'))}
     ${txt(L('Fotózd le a termék címkéjét, vagy illeszd be egy termékoldal linkjét. A nevet, a makrókat és a tápértékeket Mezo olvassa ki.','Photograph the product label or paste a product page link. Mezo reads out the name, macros and nutrients.'))}
     <div class="fh-seg" style="margin:10px 0"><button class="${photo?'on':''}" data-sheet="import" data-arg="">${L('Fotó','Photo')}</button><button class="${link?'on':''}" data-sheet="import" data-arg="link">Link</button></div>`;
     const drop=(t,s,has)=>`<button class="fx-ph fc-drop ${has?'has':''}" data-toast="${L('Kamera','Camera')} · ${esc(t)}" aria-label="${esc(t)}">${bub('t-camera',{s:40})}<span><strong>${t}</strong><small>${has?'✓ cimke.jpg':s}</small></span></button>`;
-    if(a==='keres') return `${head}<div class="fc-busy big">${bub('t-camera',{s:48})}<strong>${L('Keresés…','Looking…')}</strong><small>${L('fotó','photo')}</small></div>`;
+    if(a==='keres') return `${head}<div class="fc-busy big">${bub('t-camera',{s:48})}<strong>${L('Beolvasás…','Reading the photo…')}</strong><small>${L('fotó','photo')}</small></div>`;
     if(a==='nincs') return `${head}${empty('t-camera',L('Nem találtam használható adatot a fotón. Próbáld élesebb képpel, adj hozzá előlap fotót (név, márka), vagy vidd fel kézzel.','I found nothing usable in the photo. Try a sharper one, add a front photo (name, brand), or enter it by hand.'))}
-      ${acts(btn(L('Vissza','Back'),{sheet:'import'},'sm ghost')+`<button class="btn sm" disabled>${L('Polcra','To the shelf')}</button>`)}`;
+      ${acts(btn(L('Vissza','Back'),{sheet:'import'},'sm ghost')+`<button class="btn sm" disabled>${L('Polcra','Add to shelf')}</button>`)}`;
     if(a==='vazlat'||a==='bizonytalan'){const un=a==='bizonytalan';return `${head}
       ${lab(`${L('Polcra kerül · 100 g-ra','Going on the shelf · per 100 g')} · ${L('fotó','photo')}`)}
       ${fld(L('Név','Name'),un?'':'Skyr · epres','')}${sel(L('Kategória','Category'),L('Tejtermék','Dairy'))}
-      <div class="fu-lnm" style="margin-top:10px">${[['kcal','var(--dom)','62'],['P','var(--protein)','9 g'],['C','var(--carb)',fmt(5.2)+' g'],['F','var(--fat)',un?'—':fmt(.2)+' g']].map(([l,c,v])=>`<span style="--c:${c}"><i></i><b>${v}</b><small>${l}</small></span>`).join('')}</div>
+      <div class="fu-lnm" style="margin-top:10px">${[['kcal','var(--dom)','62'],[L('feh.','prot.'),'var(--protein)','9 g'],[L('szénh.','carbs'),'var(--carb)',fmt(5.2)+' g'],[L('zsír','fat'),'var(--fat)',un?'—':fmt(.2)+' g']].map(([l,c,v])=>`<span style="--c:${c}"><i></i><b>${v}</b><small>${l}</small></span>`).join('')}</div>
       ${nutri([null,5,.1,un?null:.1])}
       ${un?`<p class="fh-note fx-warn">${L('Mezo nem teljesen biztos a számokban: ellenőrizd őket mentés előtt.','Mezo isn’t fully sure about the numbers. Check them before you save.')}</p>${acts(lk(L('+ előlap fotó (név, márka)','+ front photo (name, brand)'),{toast:L('Kamera · az előlap','Camera · the front')}))}`:''}
-      ${acts(btn(L('Vissza','Back'),{sheet:'import'},'sm ghost')+(un?`<button class="btn sm" disabled>${L('Polcra','To the shelf')}</button>`:`<button class="btn sm" data-close data-toast="${L('A polcra került','It’s on your shelf')}: Skyr · epres">${L('Polcra','To the shelf')}</button>`))}
-      ${un?note(L('A Polcra gomb akkor él, ha a tételnek van neve.','To the shelf works once the item has a name.')):''}`}
+      ${acts(btn(L('Vissza','Back'),{sheet:'import'},'sm ghost')+(un?`<button class="btn sm" disabled>${L('Polcra','Add to shelf')}</button>`:`<button class="btn sm" data-close data-toast="${L('A polcra került','It’s on your shelf')}: Skyr · epres">${L('Polcra','Add to shelf')}</button>`))}
+      ${un?note(L('A Polcra gomb akkor él, ha a tételnek van neve.','You can add it once it has a name.')):''}`}
     if(link) return `${head}${fld(L('Termékoldal linkje','Product page link'),'','https://…')}
       ${note(L('Illeszd be egy termékoldal linkjét (pl. myprotein.hu, gymbeam.hu). Ha az oldalon nincs tápérték, kézzel viheted fel.','Paste a product page link (e.g. myprotein.hu, gymbeam.hu). If the page has no nutrition values, you can enter them by hand.'))}
       ${acts(`<button class="btn sm" disabled>${L('Beolvasás','Read it')}</button>`+closeLk(L('Mégse','Cancel')))}`;
@@ -1365,8 +1371,8 @@ const sheetsC={
       ${a==='hiba'?`<p class="fh-note fx-bad" role="alert">${L('A fotó beolvasása nem sikerült. Próbáld élesebb képpel, vagy vidd fel kézzel.','The photo couldn’t be read. Try a sharper one or enter it by hand.')}</p>`:''}
       ${note(L('Mezo a makrókat 100 g-ra olvassa ki. A fotó nem kerül tárolásra. Egy kép legfeljebb 5 MB lehet.','Mezo reads the macros per 100 g. The photo is not stored. An image can be 5 MB at most.'))}
       ${acts((a==='hiba'?btn(L('Beolvasás','Read it'),{sheet:'import',arg:'keres'},'sm'):`<button class="btn sm" disabled>${L('Beolvasás','Read it')}</button>`)+closeLk(L('Mégse','Cancel')))}`},
-  catalog:a=>`${sh('t-stack',L('Hozzáadás a közösből','Add from the shared catalogue'),L('közös katalógus','shared catalogue'))}${a==='ures'?srch('','quinoa'):`<div class="fx-srch" data-toast="${L('Keresés','Search')}">${bub('t-basket',{s:28})}${L('Keresés név vagy márka szerint','Search by name or brand')}</div>`}<div style="margin:10px 0 4px">${pick([L('Mind','All'),...['food','supp','stim','med'].map(k=>L(KINDL[k][2],KINDL[k][3]))],L('Mind','All'),L('Szűrő','Filter'))}</div>
-    ${a==='ures'?empty('t-stack',L('Nincs találat a közös katalógusban.','Nothing found in the shared catalogue.')):[['Skyr natúr','Ehrmann · 63 kcal/100 g','Anna',0,'t-protein'],['Bulgur','Kifli · 342 kcal/100 g','mezo',1,'t-carb'],['Kreatin-monohidrát','MyProtein','Béla',1,'t-supps'],['Zabital · barista','Oatly · 59 kcal/100 ml','mezo',0,'t-carb']].map(([n,s,au,on,ic])=>row({icon:ic,title:n,sub:`${s}<br>${L('felvette','added by')}: ${au}`,right:on?st(L('a polcon','on the shelf'),'q'):btn(L('+ Polcra','+ Shelf'),{toast:L('A polcra került','It’s on your shelf')+': '+n},'sm ghost')})).join('')}${acts(closeLk())}`,
+  catalog:a=>`${sh('t-stack',L('Hozzáadás a közösből','Add from the shared catalogue'),L('közös katalógus','shared catalogue'))}${a==='ures'?srch('','quinoa'):`<div class="fx-srch" data-toast="${L('Keresés','Search')}">${bub('t-lens',{s:28})}${L('Keresés név vagy márka szerint','Search by name or brand')}</div>`}<div style="margin:10px 0 4px">${pick([L('Mind','All'),...['food','supp','stim','med'].map(k=>L(KINDL[k][2],KINDL[k][3]))],L('Mind','All'),L('Szűrő','Filter'))}</div>
+    ${a==='ures'?empty('t-stack',L('Nincs találat a közös katalógusban.','Nothing found in the shared catalogue.')):[['Skyr natúr','Ehrmann · 63 kcal/100 g','Anna',0,'t-protein'],['Bulgur','Kifli · 342 kcal/100 g','Mezo',1,'t-carb'],['Kreatin-monohidrát','MyProtein','Béla',1,'t-supps'],['Zabital · barista','Oatly · 59 kcal/100 ml','Mezo',0,'t-carb']].map(([n,s,au,on,ic])=>row({icon:ic,title:n,sub:`${s}<br>${L('felvette','added by')}: ${au}`,right:on?st(L('a polcon','on the shelf'),'q'):btn(L('+ Polcra','+ Add'),{toast:L('A polcra került','It’s on your shelf')+': '+n},'sm ghost')})).join('')}${acts(closeLk())}`,
   catfilter:a=>{const two=a==='2', cats=[...new Set(KALL.map(k=>k.cat).filter(Boolean))].map(c=>[c,KALL.filter(k=>k.cat===c).length]).sort((x,y)=>y[1]-x[1]), on=two?['Fehérje','Tejtermék']:[], n=two?KALL.filter(k=>on.includes(k.cat)).length:KALL.length;
     return `${sh('t-lens',L('Mit mutassak?','What should I show?'),L('kategória-szűrő','category filter'))}<div class="fh-pills" data-fmulti>${cats.map(([c,m])=>`<button class="fh-pill ${on.includes(c)?'on':''}">${catL(c)}<b>${m}</b></button>`).join('')}</div>
     ${acts(`<button class="btn sm" data-close>${L(`Szűrés · ${n} tétel`,`Filter · ${nItem(n)}`)}</button>`+(two?lk(L('2 kiválasztva · törlés','2 selected · clear'),{sheet:'catfilter'}):`<button class="fh-lk" disabled>${L('0 kiválasztva','0 selected')}</button>`))}`},
@@ -1374,14 +1380,14 @@ const sheetsC={
     return `${sh('t-journal',r?r.n:L('Recept','Recipe'),L('Recept · mai logok','Recipe · today’s logs'))}
     ${logs.length?logs.map(m=>{const d=m.score==null||r.score==null?null:Math.round((m.score-r.score)*10)/10;return `<div class="fc-log"><div>${bub('t-plate',{s:38})}<span class="g"><strong>${mealTitle(m)}</strong><small>${L('ma','today')} ${m.time}</small></span>${m.score==null?st(L('folyamatban','in progress'),'q'):`<span class="v">${fmt(m.score)}</span>`}</div>
       ${d==null?'':`<p>${d===0?L('Ugyanannyi pont, mint a recepté.','The same score as the recipe.'):L(`${d>0?'+':'−'}${fmt(Math.abs(d))} pont a recept értékeléséhez képest.`,`${d>0?'+':'−'}${fmt(Math.abs(d))} points against the recipe’s rating.`)}</p>`}
-      <div class="fu-lnm">${[['kcal','var(--dom)',kc(m.kcal)],['P','var(--protein)',m.macro[0]+' g'],['C','var(--carb)',m.macro[1]+' g'],['F','var(--fat)',m.macro[2]+' g']].map(([l,c,v])=>`<span style="--c:${c}"><i></i><b>${v}</b><small>${l}</small></span>`).join('')}</div></div>`}).join('')
+      <div class="fu-lnm">${[['kcal','var(--dom)',kc(m.kcal)],[L('feh.','prot.'),'var(--protein)',m.macro[0]+' g'],[L('szénh.','carbs'),'var(--carb)',m.macro[1]+' g'],[L('zsír','fat'),'var(--fat)',m.macro[2]+' g']].map(([l,c,v])=>`<span style="--c:${c}"><i></i><b>${v}</b><small>${l}</small></span>`).join('')}</div></div>`}).join('')
       +note(L('Csak a mai logok látszanak itt. A korábbiak a Trendek oldalon.','Only today’s logs show here. Earlier ones are on Trends.'))
       :empty('t-journal',L('Még nem logoltad ma ezt a receptet. Amint felírod egy étkezésbe, itt látod a pontszámát.','You haven’t logged this recipe today. Once it’s in a meal, its score shows here.'))}
     ${acts(closeLk())}`},
   thread:()=>`${sh('t-chef',L('Amiről eddig beszéltünk','What we’ve said so far'),L('Műhely · beszélgetés','Workshop · conversation'))}
     ${[[1,L('Alakítsd át magas fehérjetartalmúra.','Make it high in protein.')],[0,L('Csirkemellet és rizst javaslok, két adagra. A számokat a kamrádból vettem.','I suggest chicken breast and rice, for two servings. The numbers are from your pantry.')],[1,L('Rizs helyett legyen bulgur, és kerüljön bele paprika is.','Use bulgur instead of rice, and add some pepper too.')],[0,WLAST()]].map(([me,t])=>`<div class="fc-bub ${me?'me':''}"><small>${me?L('TE','YOU'):L('MŰHELY','WORKSHOP')}</small><p>${t}</p></div>`).join('')}${acts(closeLk())}`,
   ingpick:a=>{const csere=a==='csere', kor=a==='kor', added=a==='van'?['csirke','bulgur']:[];
-    return `${sh('t-stack',L('Válassz hozzávalót','Pick an ingredient'),csere?L('Kamra · csere a becsült sor helyett','Pantry · swap for the estimated line'):kor?L('Kamra · a következő körbe','Pantry · for the next round'):L('Kamra · hozzávaló','Pantry · ingredient'))}<div class="fx-srch" data-toast="${L('Keresés a kamrában','Search the pantry')}">${bub('t-basket',{s:28})}${L('Keress a kamrában…','Search the pantry…')}</div>
+    return `${sh('t-stack',L('Válassz hozzávalót','Pick an ingredient'),csere?L('Kamra · csere a becsült sor helyett','Pantry · swap for the estimated line'):kor?L('Kamra · a következő körbe','Pantry · for the next round'):L('Kamra · hozzávaló','Pantry · ingredient'))}<div class="fx-srch" data-toast="${L('Keresés a kamrában','Search the pantry')}">${bub('t-lens',{s:28})}${L('Keress a kamrában…','Search the pantry…')}</div>
     ${KAM.filter(k=>hasM(k)).filter((k,i)=>csere?/Zöldség/.test(k.cat):i<4||k.id==='bulgur'||k.id==='whey').map(k=>{const on=added.includes(k.id);return irow({icon:kic(k),title:k.n,sub:`<span class="fu-tags">${k.k==='food'?'':`<em>${cap(kindL(k.k))}</em>`}<em>${srcM(k)}</em><em>${[k.b,'NOVA '+k.nv].join(' · ')}</em></span>`,
       v:`<span class="fu-pk2"><span>${k.kcal}<small>kcal /100 ${k.u||'g'}</small></span><button class="fx-add ${on?'on':''}" ${on?'disabled':csere?'data-close':''} data-toast="${csere?L('Kicserélve','Swapped'):L('Hozzáadva','Added')}: ${esc(k.n)}" aria-label="${on?L(`${esc(k.n)} hozzáadva`,`${esc(k.n)} added`):L(`${esc(k.n)} hozzáadása`,`Add ${esc(k.n)}`)}">${on?I('i-check'):'+'}</button></span>`,l2:m3(k.p,k.c,k.f)})}).join('')}
     ${note(csere?L('Egy koppintás kicseréli a sort, és bezárja a lapot.','One tap swaps the line and closes this.'):L('Többet is felvehetsz egymás után; a lap nyitva marad.','You can add several in a row. This stays open.'))}${acts(closeLk(L('Kész','Done')))}`},
@@ -2292,7 +2298,7 @@ ${QA} .fc-anch .fh-lab{white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 ${QA} .fc-sum{display:flex;align-items:center;justify-content:space-between;margin:0 0 4px;font-size:13px;color:var(--sub)}
 ${QA} .fc-sum b{font-family:var(--disp);font-size:17px;font-weight:800;color:var(--ok);padding:2px 12px;border-radius:999px;background:color-mix(in srgb,var(--ok) 12%,#fff)}
 ${QA} .fc-sum b.off{color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,#fff)}
-${QA} .fx-wv .fc-wt{flex:0 0 104px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:600}
+${QA} .fx-wv .fc-wt{flex:1 1 100%;color:var(--ink);font-weight:600}
 ${QA} .fx-wv>span:last-child{white-space:nowrap}
 ${QA} .fc-vd{padding:12px;border-radius:18px;background:color-mix(in srgb,var(--dom) 6%,#fff)}
 ${QA} .fc-vd>div{display:flex;align-items:center;gap:10px;margin-bottom:6px}${QA} .fc-vd>div>span:not(.fb):not(.st){flex:1;font-size:12px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;color:var(--sub)}
@@ -2308,12 +2314,22 @@ ${QA} .fc-bub{max-width:88%;margin:8px 0;padding:10px 12px;border-radius:16px;ba
 ${QA} .fc-bub.me{margin-left:auto;background:color-mix(in srgb,var(--dom) 10%,#fff)}
 ${QA} .fc-bub small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--sub);margin-bottom:2px}${QA} .fc-bub p{margin:0;font-size:14px;line-height:1.45}
 ${QA} .fu-bubs{pointer-events:none}
+${QA} .fh-pill.on .fb{background:rgba(255,255,255,.2);box-shadow:none;--ic:#fff;--ic2:rgba(255,255,255,.75);color:#fff}
+${QA} .fu-shelf .fh-stat .k{padding-right:40px;white-space:normal;overflow:visible;overflow-wrap:anywhere;hyphens:auto}
+${QA} .fu-shelf .fh-stat .n .fc-dose{display:block;font-size:16px;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+${QA} .fx-n .fc-dn{display:block;font-size:24px;line-height:1.15;white-space:normal;letter-spacing:0}
+${QA} .fx-two.fc-ws{align-items:start}
+${QA} .fu-q .fh-grid>:nth-child(3):last-child{grid-column:1 / -1}
+${QA} .fx-wv{flex-wrap:wrap;row-gap:4px}
 @media (max-width:360px){
   ${QA} .fc-anch{grid-template-columns:1fr 1fr}${QA} .fc-anch>div:first-child{grid-column:1 / -1}
   ${QA} .fc-4{grid-template-columns:1fr 1fr}
   ${QA} .fx-two.fc-ws{grid-template-columns:1fr;gap:10px}
   ${QA} .fc-days button{font-size:11.5px}
-  ${QA} .fx-wv .fc-wt{flex-basis:84px;font-size:12px}
+  ${QA} .fu-ng .nn .fu-m3{flex-direction:column;gap:5px}
+  ${QA} .fx-n .fc-dn{font-size:17px;letter-spacing:0}
+  ${QA} .fu-tide text{font-size:11.5px}
+  ${QA} .fc-swap>div{flex-wrap:wrap}${QA} .fc-swap>div>b{flex:1 1 100%;padding-left:50px}
 }
 `;
 
