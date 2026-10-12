@@ -23,3 +23,7 @@ test('an unknown Szerep value falls back to standard', () => {
 test('labels', () => {
   expect(MEAL_CONTEXT_LABEL).toEqual({ standard: 'Standard', pre: 'Pre-workout', post: 'Post-workout' })
 })
+test('an English envelope names the row Role — same prefixes (F5: stored in the account language)', () => {
+  expect(mealContextOf({ breakdown: ctx([{ label: 'Role', value: 'Pre-workout fuel window' }]) })).toBe('pre')
+  expect(mealContextOf({ breakdown: ctx([{ label: 'Role', value: 'Post-workout recovery' }]) })).toBe('post')
+})

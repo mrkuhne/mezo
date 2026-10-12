@@ -8,12 +8,16 @@ import type { FuelMeal } from '@/data/types'
 export type MealContext = 'standard' | 'pre' | 'post'
 export const MEAL_CONTEXT_LABEL: Record<MealContext, string> = { standard: 'Standard', pre: 'Pre-workout', post: 'Post-workout' }
 
+// The stored envelope is written in the account's language of that moment (F5, mezo-n4wf5.5):
+// the row is `Szerep` in a Hungarian envelope and `Role` in an English one; the value prefix is the same.
+const ROLE_ROW_LABELS = new Set(['Szerep', 'Role'])
+
 export function mealContextOf(meal: Pick<FuelMeal, 'breakdown'>): MealContext | null {
   const b = meal.breakdown
   if (!b) return null
   // A sparse breakdown (older seeds / tests) may carry no dimensions at all — still "scored".
   const dim = b.dimensions?.find(d => d.id === 'context')
-  const row = dim && 'context' in dim ? dim.context.find(r => r.label === 'Szerep') : undefined
+  const row = dim && 'context' in dim ? dim.context.find(r => ROLE_ROW_LABELS.has(r.label)) : undefined
   const v = row?.value ?? ''
   if (v.startsWith('Pre-workout')) return 'pre'
   if (v.startsWith('Post-workout')) return 'post'
