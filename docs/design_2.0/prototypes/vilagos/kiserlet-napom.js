@@ -16,7 +16,7 @@
 const F=window.F,nap=window.FREG&&FREG.nap;if(!nap)return;
 const {I,page,badge}=F;
 const P='.phone.foly[data-s="elo"][data-d="nap"]';
-const O={kuldetesek:nap.routes.kuldetesek,mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
+const O={checkin:nap.routes.checkin,kuldetesek:nap.routes.kuldetesek,mai:nap.routes.mai,napom:nap.routes.napom,nap:nap.routes.nap,uzenetek:nap.routes.uzenetek,rutin:nap.routes.rutin};
 const DROP='M32 6C41 19 50 28 50 39A18 18 0 0 1 14 39C14 28 23 19 32 6Z';
 const MOON='M46 41A21 21 0 1 1 25 11A17 17 0 0 0 46 41Z';
 const DUMB='M8 24A4 4 0 0 1 12 20H16A4 4 0 0 1 20 24V28H44V24A4 4 0 0 1 48 20H52A4 4 0 0 1 56 24V40A4 4 0 0 1 52 44H48A4 4 0 0 1 44 40V36H20V40A4 4 0 0 1 16 44H12A4 4 0 0 1 8 40Z';
@@ -267,6 +267,7 @@ function uzenetek(tab){tab=tab||'uzenetek';
   return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
     ${tab==='eletjelek'?vitalsBody():`<div data-rr="${tab==='uzenetek'?'nb':'ob'}">${RR[tab==='uzenetek'?'nb':'ob']()}</div>`}`)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
+  if(k==='cis'){F.openSheet(ciSheet(+x));return}
   if(k==='msg'){F.openSheet(msgSheet(+x));return}
   if(k==='qs'){const q=QS[+x];F.openSheet(`<h2 class="ng-sh">${q.s}<small>+${q.xp} XP</small></h2><p class="ng-pr"><b>${q.t}</b></p>${q.why?`<p class="ng-pr">${q.why}</p>`:''}<p class="ng-pr">${q.foot||''}</p><p class="ng-pr">A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs.</p><div class="nb-a">${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="btn sm ghost" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Csere · 1 maradt</button></div>`);return}
   if(k==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok');F.openSheet(msgSheet(+x))}else if(k==='fb'){BS.fb=!BS.fb;F.openSheet(msgSheet(+x))}else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
@@ -307,6 +308,28 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   </section><section class="bd w last">${KH('Továbbiak')}
   <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
   <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
+
+/* ═══ CHECK-IN · the day's four snapshots side by side: one column per moment, one row per feeling, so you can see
+       how each of the five core answers moved through the day. A finished column opens its full snapshot in a sheet
+       (the extra questions of that moment and the note live there); the one that is due carries the action. ═══ */
+const CI_ROWS=[['energy','Energia','t-bolt'],['mood','Hangulat','t-mood'],['stress','Stressz','t-checkin'],['body','Test','t-person'],['mental','Fej','t-gem']];
+const CI_X={rested:'Kipihentség',soreness:'Izomláz',pain:'Fájdalom',motivation:'Motiváció',hunger:'Éhség'};
+const CI=[{n:'Reggel',t:'06:30',st:'done',q:10,a:{energy:7,mood:8,stress:3,body:6,mental:7,rested:6,soreness:5,pain:'Térd · 4/10',motivation:8,hunger:5},note:'Nyugodt ébredés · pihenve'},
+  {n:'Délelőtt',t:'10:00',st:'done',q:8,a:{energy:8,mood:7,stress:4,body:7,mental:8},note:'Most csak ennyi · az alap megvan'},
+  {n:'Délután',t:'14:00',st:'now',q:9},{n:'Este',t:'20:00',st:'later',q:12}];
+const ciSheet=i=>{const c=CI[i];return `<h2 class="ng-sh">${c.n}<small>${c.t} · ${Object.keys(c.a).length} válasz</small></h2>
+  <div class="ci-all">${[...CI_ROWS.map(r=>[r[0],r[1]]),...Object.entries(CI_X)].filter(([k])=>k in c.a).map(([k,l])=>{const v=c.a[k],num=typeof v==='number';return `<span><i class="ci-v" style="--p:${num?v*10:40}%"><b>${num?v:'!'}</b></i><em>${l}${num?'':`<small>${v}</small>`}</em></span>`}).join('')}</div>
+  ${c.note?`<p class="ng-pr">${c.note}</p>`:''}<div class="nb-a"><button class="btn sm ghost" data-n="ckslot:${c.t}">Újra kitöltöm</button></div>`};
+function checkin2(){const cur=CI.find(c=>c.st==='now'),done=CI.filter(c=>c.st==='done').length;
+  return page('nap',{title:'Check-in',sub:`Nap · ${done} / 4 pillanatkép`,back:'mai'},`${DEFS}
+  <section class="bd"><div class="pg-lead"><small>A nap négy pillanata · ${done} / 4</small><h2>A délutáni most esedékes.</h2></div></section>
+  <section class="bd w"><div class="ci">
+    <div class="ci-l"><span class="ci-h"></span>${CI_ROWS.map(([,l,ic])=>`<span class="ci-r">${I(ic)}<b>${l}</b></span>`).join('')}<span class="ci-f"></span></div>
+    ${CI.map((c,i)=>`<button class="ci-c ${c.st}" ${c.st==='done'?`data-nb="cis:${i}"`:c.st==='now'?'data-n="ck:open"':`data-n="ckslot:${c.t}"`} aria-label="${c.n} ${c.t}">
+      <span class="ci-h"><b>${c.t}</b><small>${c.n}</small></span>
+      ${CI_ROWS.map(([k])=>{const v=c.a&&c.a[k];return `<span class="ci-r"><i class="ci-v ${v==null?'e':''}" style="--p:${v?v*10:0}%"><b>${v??''}</b></i></span>`}).join('')}
+      <span class="ci-f fh-lk">${c.st==='done'?'kész ›':c.st==='now'?'most ›':'előre ›'}</span></button>`).join('')}
+  </div></section>`,{foot:`<div class="rt-foot"><span class="rt-fn"><small>Most jön · ${cur.t}</small><b>${cur.n}i check-in</b></span><button class="btn" data-n="ck:open">Kitöltöm</button></div>`})}
 
 /* ═══ NAPI KÜLDETÉSEK · three flasks on offer; what a finished one holds is poured into the day's XP collector ═══ */
 const QS=[
@@ -365,7 +388,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!
   const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody();const f=document.getElementById('rt-foot');if(f)f.innerHTML=rutinFoot()});
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
-nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
+nap.routes['checkin-lista']=O.checkin;nap.routes.checkin=checkin2;nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
 nap.routes.napom=a=>a?O.napom(a):today();nap.routes.nap=day;nap.routes.napomg=today;nap.routes.napomt=today;
 nap.routes.uzenetek=uzenetek;nap.routes.rutin=rutin;
 
@@ -613,6 +636,28 @@ ${P} .lk-n{font-size:13.5px;font-weight:700;fill:var(--ink)}${P} .lk-n2{font-siz
 ${P} .lk .nb-leg{justify-content:center}${P} .lk .ng-who{margin-top:14px}${P} .lk .nb-t{margin-top:6px}
 ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 28%,#fff)}
 
+/* Check-in: the four snapshots */
+${P} .ci{display:grid;grid-template-columns:86px repeat(4,1fr);margin:22px 10px 0}
+${P} .ci-l,${P} .ci-c{display:flex;flex-direction:column;align-items:center;min-width:0;padding:0}
+${P} .ci-l{align-items:flex-start;padding-left:4px}
+${P} .ci-h{display:flex;flex-direction:column;align-items:center;justify-content:center;height:58px}
+${P} .ci-h b{font:800 15px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}${P} .ci-h small{font-size:12px;color:var(--sub)}
+${P} .ci-r{display:flex;align-items:center;gap:5px;height:60px}
+${P} .ci-l .ci-r svg.ic{width:20px;height:20px;flex:none}${P} .ci-l .ci-r b{font-size:12.5px;font-weight:700;color:var(--ink)}
+${P} .ci-f{display:flex;align-items:center;justify-content:center;min-height:48px;font-size:13px;font-weight:700;white-space:nowrap}
+${P} .ci-c{border-radius:26px}
+${P} .ci-c.now{background:color-mix(in srgb,var(--dom) 9%,#fff);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--dom) 45%,#fff)}
+${P} .ci-c.now .ci-h b{color:var(--dom)}
+${P} .ci-c.later .ci-h b,${P} .ci-c.later .ci-h small{color:var(--faint)}${P} .ci-c.later .ci-f{color:var(--sub)}
+${P} .ci-v{position:relative;display:grid;place-items:center;width:40px;height:48px;border-radius:20px;font-style:normal;
+  background:linear-gradient(to top,color-mix(in srgb,var(--liq1) 42%,#fff) 0 var(--p),color-mix(in srgb,var(--liq1) 80%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px));box-shadow:inset 0 0 0 2px rgba(10,42,60,.16)}
+${P} .ci-v b{font:800 16px var(--disp,inherit);color:var(--ink)}
+${P} .ci-v.e{background:none;box-shadow:none;border:2px dashed rgba(10,42,60,.2)}
+${P} .ci-c.now .ci-v.e{border-color:color-mix(in srgb,var(--dom) 55%,#fff)}
+${P} .ci-all{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 10px;margin-top:14px}
+${P} .ci-all span{display:flex;align-items:center;gap:10px;min-width:0}${P} .ci-all em{font-style:normal;font-size:13.5px;font-weight:700;color:var(--ink)}${P} .ci-all em small{display:block;font-size:12px;font-weight:500;color:var(--sub)}
+${P} .ci-all .ci-v{flex:none}
+
 /* Napi küldetések: flasks */
 ${P} .qs-r{display:flex;align-items:flex-start;gap:14px;padding:22px 22px 0 14px}
 ${P} .qs svg.qf{flex:none;width:96px;height:96px;margin:0}
@@ -690,6 +735,7 @@ ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}
 `);
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
 <ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap vonala: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
+<li><a href="#w-nap-checkin"><b>Check-in</b></a> (a Mai aloldala) — a nap négy pillanatképe egymás mellett: oszloponként egy időpont, soronként egy érzés.</li>
 <li><a href="#w-nap-kuldetesek"><b>Napi küldetések</b></a> (a Mai aloldala) — három lombik: ami elkészül, annak a tartalma a nap XP-gyűjtőjébe kerül.</li>
 <li><a href="#w-nap-napom"><b>A napom</b></a> — a cső: a nap folyadéka hat edényen fut át. Lezárt napok: <a href="#w-nap-nap.2026-09-23">szerda</a>, <a href="#w-nap-nap.2026-09-22">kedd</a>; kevés adat: <a href="#w-nap-nap.2026-09-21">hétfő</a>.</li>
 <li><a href="#w-nap-uzenetek"><b>Beszélgetés</b></a> — vízmélység: a legfrissebb üzenet a felszínen, a régiek lejjebb. <a href="#w-nap-uzenetek.eletjelek">Életjelek</a>: kémcsőállvány, a megjegyzés címkeként lóg a kémcsövén. <a href="#w-nap-uzenetek.eszrevetelek">Észrevételek</a>: közlekedőedény, a cső a bizonyíték napjaival telik.</li>

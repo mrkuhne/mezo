@@ -55,7 +55,8 @@ plans or "which direction wins" decisions until he asks.
 |---|---|---|
 | Nap · Mai | the day as a flat line (06–22) filled to now, the number beside the sentence (the arc, a liquid layer and a plain level were shown and not picked) · next three vessels · tubes · observation (sheet) · the day's jar · seven icon links | shown; special faces (üres, hiba, kímélő, este) not drawn |
 | Nap · Mai · Napi küldetések | three flasks; a finished one pours into the day's XP collector | shown 2026-10-12, waiting for feedback |
-| Nap · Mai · Check-in, Gyors logolás, Életjelek (detail) | — | to do |
+| Nap · Mai · Check-in | the four snapshots side by side: a column per moment, a row per core feeling; a finished column opens its snapshot in a sheet; the due one sits in the bottom action bar | shown 2026-10-13, waiting for feedback |
+| Nap · Mai · Gyors logolás, Életjelek (detail) | — | to do |
 | Nap · A napom (today, closed day, sparse day) | the pipe through six vessels | liked |
 | Nap · Beszélgetés · Üzenetek | depth: newest at the surface | shown |
 | Nap · Beszélgetés · Életjelek | rack of six tubes, the remark as a tag on its tube | shown |
