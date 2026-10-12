@@ -443,7 +443,7 @@ ${P} .ng-foot{margin:8px 30px 0;font-size:12px;line-height:1.45;text-align:cente
 ${P} .ng-on{display:flex;flex-direction:column;align-items:center;width:100%;gap:2px;padding-bottom:10px}${P} .ng-on b{font:800 17px var(--disp,inherit);color:var(--ink)}${P} .ng-on small{font-size:12px;color:var(--sub)}
 ${P} .ng-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 ${P} .ng-chips>*{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:600;color:var(--ink);background:color-mix(in srgb,var(--dom) 7%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dom) 20%,#fff)}
-${P} .ng-chips.tap>*{min-height:36px}
+${P} .ng-chips.tap>*{min-height:44px;padding-inline:14px}
 ${P} .ng-sh{font:800 22px var(--disp,inherit);letter-spacing:-.02em}${P} .ng-sh small{margin-left:8px;font:600 12px var(--ff,inherit);color:var(--sub)}
 ${P} .sheet .ng-who{margin-top:16px}
 
