@@ -274,7 +274,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
   else if(k==='osh'){F.openSheet(obsSheet(OBS.find(o=>o.k===x)));return}
   document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
 
-/* ═══ MAI · the day's arc (06–22), filled up to now; behind it what you logged, ahead what is left.
+/* ═══ MAI · the day as a flat line (06–22), filled up to now; behind it what you logged, ahead what is left.
        Then the four tubes the owner likes (as they are), the next three as three vessels in time order,
        and the day's jar: one layer per log entry, newest on top. ═══ */
 /* The top of Mai: the day as a flat line (06–22), filled up to now, with what is behind and ahead on it, and the
@@ -326,7 +326,7 @@ function kuldetesek(arg){if(arg)return O.kuldetesek(arg);const tot=QS.reduce((a,
   <svg class="ng" viewBox="0 0 360 132" role="img" aria-label="A mai XP gyűjtője: ${got} a ${tot}-ból" style="margin-top:10px"><defs><clipPath id="${cid}"><path d="${C}"/></clipPath></defs>
     <g class="ng-ves"><path class="ng-glass" d="${C}"/><g clip-path="url(#${cid})"><path class="ng-wv" fill="url(#ng-g-ok)" d="M-48 ${84-76*got/tot}${' q12 -5 24 0 t24 0'.repeat(9)} V120 H-48Z"/></g><path class="ng-line" d="${C}"/></g>
     <path class="ng-rim" d="M24 8H336"/>${QS.map((q,i)=>`<path class="ng-mark" d="M${30+300*(i+1)/QS.length} 12V20" />`).slice(0,-1).join('')}
-    <text class="ar-big" style="font-size:34px" x="180" y="50" text-anchor="middle">+${got}<tspan class="ng-u" dx="5">XP</tspan></text>
+    <text class="qs-xp" x="180" y="50" text-anchor="middle">+${got}<tspan class="ng-u" dx="5">XP</tspan></text>
     <text class="ng-s" x="180" y="108" text-anchor="middle">jóváírva ma · a ${tot}-ból</text>${drip(180,0)}</svg></section>
   ${QS.map((q,i)=>`<section class="bd ${i%2?'':'w'} qs"><div class="qs-r">${flask(q,i)}<div class="qs-b">
       <p class="nb-h"><b>${q.s}</b><i class="nb-st ${q.done?'ok':''}">${q.done?'kész':`+${q.xp} XP`}</i></p>
@@ -616,6 +616,7 @@ ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dash
 /* Napi küldetések: flasks */
 ${P} .qs-r{display:flex;align-items:flex-start;gap:14px;padding:22px 22px 0 14px}
 ${P} .qs svg.qf{flex:none;width:96px;height:96px;margin:0}
+${P} .qs-xp{font:800 34px var(--disp,inherit);letter-spacing:-.04em;fill:var(--ink)}
 ${P} .qf-cork{fill:#C9A26B;stroke:rgba(10,42,60,.25);stroke-width:1.5}
 ${P} .qs-b{flex:1;min-width:0}
 ${P} .nb-st.ok{color:#0E7A55;background:color-mix(in srgb,var(--ok) 16%,#fff)}
