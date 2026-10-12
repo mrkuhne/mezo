@@ -6,7 +6,8 @@
 .fo-card.fc-lns > .fo-acts, .fo-card.fc-lns > .fo-note { margin-bottom: 8px; }
 
 /* ── Receptek ── the hero's „most eaten" levels (fuel.js `.fu-top`) and the pot standing alone (`.fu-potc`) */
-.fc-top { display: grid; gap: 10px; margin: 12px 0 16px; }
+/* one column that may shrink: a long recipe name is cut with an ellipsis instead of widening the button past the hero */
+.fc-top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 12px 0 16px; }
 .fc-top > button { display: block; width: 100%; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; font: inherit; color: inherit; }
 .fc-top > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 3px; border-radius: 8px; }
 .fc-top > button > span { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 13px; }

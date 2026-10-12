@@ -29,4 +29,3 @@
 
 /* Composer bars keep their own layout; the tile just matches their control height. */
 .mzc-composer .vmic { width: 44px; min-height: 44px; align-self: center; } /* 44pt touch target */
-.wsh-composer .vmic { width: 40px; min-height: 40px; }

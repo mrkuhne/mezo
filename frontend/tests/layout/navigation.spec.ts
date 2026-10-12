@@ -227,7 +227,8 @@ test('320px · a sub-page: back, title and bell share one row without overlappin
   expect(back.x + back.width).toBeLessThanOrEqual(title.x)
   expect(title.x + title.width).toBeLessThanOrEqual(bell.x)
   await expect(bar.locator('.fo-tabs')).toHaveCount(0)
-  await expect(page.locator('.fo-top .fo-title small')).toHaveText('Fuel · Konyha')
+  // the context line says where the sub-page belongs — since Folyadék F5 with the page's own count (mock: 6 recipes)
+  await expect(page.locator('.fo-top .fo-title small')).toHaveText('Konyha · 6 recept')
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   // ONE back control on the page: the title bar's
   await expect(page.getByRole('button', { name: /^Vissza/ })).toHaveCount(1)

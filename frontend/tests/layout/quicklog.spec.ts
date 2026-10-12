@@ -26,7 +26,8 @@ for (const width of [320, 390, 430]) {
         expect(bounds.scroll).toBeLessThanOrEqual(bounds.width + 1)
         if (label === 'Víz') {
           await dialog.getByRole('button', { name: '400 ml' }).click()
-          await expect(dialog.getByRole('status', { name: 'Rögzítendő vízmennyiség' })).toContainText('400 ml')
+          // Folyadék F5 (mezo-n4wf5.5): the amount is the big numeral with its unit beside it (`400` + a small `ml`)
+          await expect(dialog.getByRole('status', { name: 'Rögzítendő vízmennyiség' })).toHaveText(/^400\s*ml$/)
         }
         const lastButton = dialog.getByRole('button').last()
         await lastButton.scrollIntoViewIfNeeded()
