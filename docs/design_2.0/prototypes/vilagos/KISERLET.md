@@ -34,6 +34,13 @@ plans or "which direction wins" decisions until he asks.
 - **Words are left-aligned, always.** The vessel may change sides; the text block never flips its alignment.
 - **Length:** a hub page aims at three phone screens at most; long repeating content shows the newest three and
   opens the rest on a tap (the jar on Mai). On a hub, a unit that has its own page appears in its short form.
+- **No repeats:** two pages never open with the same sentence; one action has one entry point per page.
+- **One thing moves per screen** (the pipe's flow on A napom, the next vessel on Rutin). Levels and drops stand still.
+- **A drawing explains itself in words, not with a legend** ("4 nap egybevág · 3 még hiányzik", "erő 82%").
+- **Rows read left to right, every row.** A chain that wraps runs back under the labels to the next row's start.
+- **The page's one action sits by the thumb** when the page is about doing (Rutin: the bottom action bar).
+- Open: the floating "+" still covers content at the bottom right (made smaller only). Moving it into the bottom
+  bar would change the approved navigation — the owner's call, not raised yet.
 - Measure with the audit script idea (first screen, text sizes, targets, page length) before showing a page.
 
 ## Pages

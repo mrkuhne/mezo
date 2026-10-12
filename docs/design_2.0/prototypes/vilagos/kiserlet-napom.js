@@ -231,12 +231,11 @@ const OBS=[
 const OS={done:{},ev:{}};
 function obsLinked(o,all){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
   const ves=(cx,[ic,l])=>`<circle class="lk-v" cx="${cx}" cy="40" r="31"/><path class="ng-hi" d="M${cx-20} 34C${cx-17} 25 ${cx-11} 19 ${cx-3} 16"/><svg class="ic" x="${cx-16}" y="24" width="32" height="32" viewBox="0 0 64 64"><use href="#${ic}"/></svg>
-    ${l.map((t,i)=>`<text class="${i?'ng-s':'ng-t'}" x="${cx}" y="${92+i*16}" text-anchor="middle">${t}</text>`).join('')}`;
+    ${l.map((t,i)=>`<text class="${i?'ng-s':'ng-t'}" x="${cx}" y="${104+i*17}" text-anchor="middle">${t}</text>`).join('')}`;
   return `<article class="lk"><p class="lk-h"><b>${o.h}</b><i class="nb-st ${o.st==='Gyűlik'?'':'w'}">${o.st}</i></p>
-    <svg class="lk-g" viewBox="0 0 320 116" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
+    <svg class="lk-g" viewBox="0 0 320 132" role="img" aria-label="${o.a[1].join(' ')} és ${o.b[1].join(' ')}: ${o.hits} nap egybevág, ${o.miss} ellene szól, ${n-o.hits-o.miss} még hiányzik">
       <path class="lk-p" d="M70 40H250"/>${Array.from({length:n},(_,i)=>`<rect class="lk-s ${i<o.hits?'p':i<o.hits+o.miss?'m':''}" x="${(x0+i*(w+g)).toFixed(1)}" y="33" width="${w.toFixed(1)}" height="14" rx="7"/>`).join('')}
-      ${ves(40,o.a)}${ves(280,o.b)}<text class="lk-n" x="160" y="70" text-anchor="middle">${o.hits+o.miss} / ${n} nap</text></svg>
-    ${all?'':'<p class="nb-leg"><span><i class="p"></i>egybevág</span><span><i class="m"></i>ellene szól</span><span><i></i>még hiányzik</span></p>'}
+      ${ves(40,o.a)}${ves(280,o.b)}<text class="lk-n" x="160" y="70" text-anchor="middle">${o.hits} nap egybevág</text><text class="lk-n2" x="160" y="87" text-anchor="middle">${[o.miss?`${o.miss} ellene szól`:'',n-o.hits-o.miss?`${n-o.hits-o.miss} még hiányzik`:''].filter(Boolean).join(' · ')}</text></svg>
     <div class="ng-who">${badge('mezo',{s:28})}<b>Mezo</b><small>${o.lbl}</small></div><p class="nb-t">${o.x}</p>
     ${OS.ev[o.k]?`<p class="nb-l">Miből látom</p><div class="ng-chips">${o.ev.map(e=>`<span>${e}</span>`).join('')}</div>`:''}
     <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span><button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla</button>`
@@ -293,20 +292,19 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
     {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
-  <section class="bd"><div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2></div>
-  ${dayArc()}
-  <div class="mt-acts" style="margin-top:6px"><button class="btn" data-n="ck:open">Délutáni check-in</button></div></section>
-  <section class="bd w">${KH('Mai szintek','hol tartasz a célhoz')}${lv}</section>
-  <section class="bd">${KH('Most következik','3 teendő · időrendben')}
+  <section class="bd"><div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Most a délutáni check‑in jön, utána a Pull&nbsp;Day.</h2></div>
+  ${dayArc()}</section>
+  <section class="bd w">${KH('Most következik','3 teendő · időrendben')}
   <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><small>${x.sub}</small><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div>
-  </section><section class="bd w">${KH('Észrevétel','Mezo · megerősített minta')}
+  </section><section class="bd">${KH('Mai szintek','hol tartasz a célhoz')}${lv}</section>
+  <section class="bd w">${KH('Észrevétel','Mezo · megerősített minta')}
   <div data-rr="mo">${RR.mo()}</div></section>
-  <section class="bd">${KH('Mai napló','',`<button class="fh-lk" data-go="gyors">+ Új bejegyzés</button>`)}
+  <section class="bd">${KH('Mai napló','',`<button class="btn sm" data-go="gyors">+ Új bejegyzés</button>`)}
   <div class="jr"><div class="jr-in"><p class="jr-air">a nap még tart · ide kerül a következő</p>
     <div data-rr="jar">${RR.jar()}</div></div></div>
   </section><section class="bd w last">${KH('Továbbiak','ami még a naphoz tartozik')}
   <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b><small>${sub}</small></button>`).join('')}</div>
-  <div class="mt-acts"><button class="btn sm" data-go="gyors">+ Új bejegyzés</button><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
+  <div class="mt-acts"><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
   <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b><small>Kímélő mód: betegség, sérülés vagy utazás idejére</small></span></button></section>`)}
 
 /* ═══ NAPI KÜLDETÉSEK · three flasks on offer; what a finished one holds is poured into the day's XP collector ═══ */
@@ -350,24 +348,25 @@ let face='reggel';
 const rAttr=(r,i,g)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='intention'?'data-sheet="intention"':r[6]==='ritual'?'data-go="napzaras.1"':`data-rt="${g}:${i}"`;
 const rVerb=r=>r[6]==='reflect'?'Válaszolok':r[6]==='intention'?'Leírom':r[6]==='ritual'?'Napzárás indítása':'Megvan, pipálom';
 function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).length;
-  return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=row%2?3-c:c+1,dir=i===N-1?'':c===2?(row%2?'dnl':'dnr'):row%2?'lf':'rt';
+  return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=c+1,dir=i===N-1?'':c===2?'wrap':'rt';
     return `<button class="rt-b ${d?'done':''} ${i===nx?'now':''} ${dir} ${str==null?'ns':''}" style="grid-column:${col};grid-row:${row+1};--p:${str??0}%" ${rAttr(r,i,k)} aria-label="${nm}${d?' · kész':''}">
-      <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b><small>${i===nx?'<em>Most jön</em>':str!=null?str+'%':s}</small></button>`}).join('')}</div></section>`}
+      <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b><small>${i===nx?'<em>Most jön</em>':str!=null?'erő '+str+'%':s}</small></button>`}).join('')}</div></section>`}
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0,strs=R.rows.filter(r=>r[3]!=null),avg=Math.round(strs.reduce((a,r)=>a+r[3],0)/strs.length);
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="rt-lead"><small>${R.title} · ${done}/${R.rows.length} kész</small><h2>${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
     <p>${all?'Holnap ugyanitt folytatódik.':`${R.rows.length} elem · lánc · ${R.rows[nx][1]}`}</p>
-    <div class="rt-acts">${all?'':`<button class="btn" ${rAttr(R.rows[nx],nx,face)}>${rVerb(R.rows[nx])}</button>`}<button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></div>
+    <div class="rt-acts"><button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></div>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
   <section class="bd ${order.length%2?'':'w'} last"><p class="fh-n"><b>${order.length+1}</b>A lánc ereje</p>
-  <p class="rt-note">Az edény szintje a szokás 28 napos ereje. A lánc addig színes, ameddig ma eljutottál.</p>
   <div class="rt-flasks">${[...(R.stat?[[R.stat[0],R.stat[1],Math.round(parseInt(R.stat[0])/30*100)]]:[]),[`${avg}%`,'lánc-erő · 28 nap',avg],[`+${R.xp}`,'XP ma',null]].map(([b,l,p])=>`<div class="rt-fl ${p==null?'np':''}" style="--p:${p??0}%"><span><b>${b}</b></span><small>${l}</small></div>`).join('')}</div>
   <p class="rt-note">A lánc-erő az elmúlt 28 nap következetessége: egy kihagyás nem nulláz, csak halványít.</p>
   <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b><small>láncok, szokások, új szokás</small></span><i>›</i></button></section>`}
-function rutin(arg){if(arg&&RUT[arg])face=arg;return page('nap',{title:'Rutin',sub:'Nap · ma, szerda',tab:'rutin'},`<div id="rt-root">${rutinBody()}</div>`)}
+const rutinFoot=()=>{const R=RUT[face],nx=R.rows.findIndex(r=>!r[4]);return nx<0?`<span class="rt-fdone">Mind megvan mára. Szép munka.</span>`
+  :`<span class="rt-fn"><small>Most jön</small><b>${R.rows[nx][0]}</b></span><button class="btn" ${rAttr(R.rows[nx],nx,face)}>${rVerb(R.rows[nx])}</button>`};
+function rutin(arg){if(arg&&RUT[arg])face=arg;return page('nap',{title:'Rutin',sub:'Nap · ma, szerda',tab:'rutin'},`<div id="rt-root">${rutinBody()}</div>`,{foot:`<div id="rt-foot" class="rt-foot">${rutinFoot()}</div>`})}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!b)return;const [g,ix]=b.dataset.rt.split(':'),R=RUT[g].rows,i=+ix;R[i][4]=R[i][4]?0:1;
   if(R[i][4]){const d=R.filter(r=>r[4]).length;F.toast(d===R.length?`${g==='este'?'Tökéletes este':g==='reggel'?'Tökéletes reggel':'Minden megvan'} · ${d} / ${R.length}`:`Szokás · ${d} / ${R.length} · megvan, a lánc erősödik`)}
-  const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody()});
+  const r=document.getElementById('rt-root');if(r)r.innerHTML=rutinBody();const f=document.getElementById('rt-foot');if(f)f.innerHTML=rutinFoot()});
 
 /* ── routes: on this page the top tabs open the drawn versions; the approved ones stay reachable ── */
 nap.routes['kuldetesek-lista']=O.kuldetesek;nap.routes.kuldetesek=kuldetesek;nap.routes['mai-lista']=O.mai;nap.routes.mai=a=>a?O.mai(a):mai2();nap.routes['napom-lista']=O.napom;nap.routes['uzenetek-lista']=O.uzenetek;nap.routes['rutin-lista']=O.rutin;
@@ -524,7 +523,7 @@ ${P} .bd.w::before,${P} .bd.w::after{content:"";position:absolute;left:0;right:0
 ${P} .bd.w::before{top:-11.5px}${P} .bd.w::after{bottom:-11.5px;transform:scaleY(-1);-webkit-mask-position:-45px 0;mask-position:-45px 0}
 ${P} .bd.w.last{padding-bottom:150px;margin-bottom:-118px}${P} .bd.w.last::after{display:none}
 ${P} .bd .mx-h{margin-top:16px}
-${P} .bd>.fh-n{margin-top:18px}${P} .bd>.rt-chain{margin-top:18px}${P} .bd .rt-b:nth-last-child(-n+3){height:118px}
+${P} .bd>.fh-n{margin-top:18px}${P} .bd>.rt-chain{margin-top:18px}${P} .bd .rt-b:not(.wrap):nth-last-child(-n+3){height:118px}
 ${P} .bd.last:not(.w){padding-bottom:10px}
 ${P} .bd.w .rt-ok{box-shadow:0 0 0 2px #fff}
 ${P} .ng-band{fill:rgba(255,255,255,.72)}
@@ -555,7 +554,7 @@ ${P} .mx-next .fh-lk{margin-top:0;font-size:13.5px}
 ${P} .jr{position:relative;margin:6px 26px 10px}
 ${P} .jr::before{content:"";position:absolute;left:-10px;right:-10px;top:-4px;height:9px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 2px rgba(10,42,60,.2);z-index:2}
 ${P} .jr-in{border:2px solid rgba(10,42,60,.2);border-top:0;border-radius:0 0 44px 44px;overflow:hidden;background:#fff;box-shadow:0 18px 22px -18px rgba(24,119,242,.5)}
-${P} .jr-air{padding:16px 10px 20px;font-size:12px;text-align:center;color:var(--faint)}
+${P} .jr-air{padding:16px 10px 20px;font-size:12px;text-align:center;color:var(--sub)}
 ${P} .jr-l{position:relative;display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px 16px 12px;text-align:left;background:color-mix(in srgb,var(--k) var(--a,15%),#fff)}
 ${P} .jr-l::before{content:"";position:absolute;left:0;right:0;top:-8px;height:9px;background:inherit;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/72px 9px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/72px 9px}
 ${P} .jr-l:nth-of-type(even)::before{-webkit-mask-position:-30px 0;mask-position:-30px 0}
@@ -608,7 +607,7 @@ ${P} .lk-g text{font-family:var(--ff,inherit)}
 ${P} .lk-p{fill:none;stroke:rgba(10,42,60,.14);stroke-width:22;stroke-linecap:round}
 ${P} .lk-s{fill:#fff;stroke:rgba(10,42,60,.16);stroke-width:1.5}${P} .lk-s.p{fill:url(#ng-g-seg);stroke:none}${P} .lk-s.m{fill:#fff;stroke:var(--warn);stroke-width:1.8;stroke-dasharray:3 3}
 ${P} .lk-v{fill:#fff;stroke:rgba(10,42,60,.2);stroke-width:2;filter:drop-shadow(0 8px 8px rgba(24,119,242,.18))}
-${P} .lk-n{font-size:13px;font-weight:700;fill:var(--sub)}
+${P} .lk-n{font-size:13.5px;font-weight:700;fill:var(--ink)}${P} .lk-n2{font-size:13px;fill:var(--sub)}
 ${P} .lk .nb-leg{justify-content:center}${P} .lk .ng-who{margin-top:14px}${P} .lk .nb-t{margin-top:6px}
 ${P} .lk-sep{display:block;height:1px;margin:26px 22px 4px;border-top:1.5px dashed color-mix(in srgb,var(--liq2) 28%,#fff)}
 
@@ -623,6 +622,10 @@ ${P} .qs-w{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--sub)}
 ${P} .qs-f{margin-top:8px;font-size:12px;font-weight:600;color:var(--sub)}
 
 /* Rutin */
+${P} .rt-foot{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+${P} .rt-fn{flex:1;min-width:0;padding-left:8px}${P} .rt-fn small{display:block;font-size:12px;font-weight:700;color:var(--dom)}${P} .rt-fn b{display:block;font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+${P} .rt-fdone{flex:1;padding:10px 8px;font-size:14px;font-weight:700;color:var(--ink);text-align:center}
+${P} .fh-fab{width:46px;height:46px;right:12px;bottom:92px}${P} .fh-fab svg{width:20px;height:20px}
 ${P} .rt-lead{padding:14px 22px 0}
 ${P} .rt-lead small{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
 ${P} .rt-lead h2{margin:6px 0 0;font:800 25px/1.1 var(--disp,inherit);letter-spacing:-.03em;color:var(--ink);text-wrap:balance}
@@ -632,14 +635,14 @@ ${P} .rt-chain{display:grid;grid-template-columns:repeat(3,1fr);margin:14px 14px
 ${P} .rt-b{position:relative;display:flex;flex-direction:column;align-items:center;height:132px;padding:0 10px;text-align:center}
 ${P} .rt-b::after{content:"";position:absolute;z-index:0;pointer-events:none}
 /* between two vessels: chain links (one seen face-on, one edge-on), grey while ahead, liquid once you are past */
-${P} .rt-b.rt::after,${P} .rt-b.lf::after{top:21px;height:18px;width:calc(100% - 58px);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cellipse cx='10' cy='9' rx='8.5' ry='5.6' fill='none' stroke='%23B5C7D3' stroke-width='3.2'/%3E%3Crect x='17' y='7.2' width='16' height='3.6' rx='1.8' fill='%23B5C7D3'/%3E%3Crect x='-13' y='7.2' width='16' height='3.6' rx='1.8' fill='%23B5C7D3'/%3E%3C/svg%3E") center/30px 18px repeat-x}
-${P} .rt-b.rt::after{left:calc(50% + 29px)}${P} .rt-b.lf::after{right:calc(50% + 29px)}
-${P} .rt-b.done.rt::after,${P} .rt-b.done.lf::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cellipse cx='10' cy='9' rx='8.5' ry='5.6' fill='none' stroke='%231A8FE0' stroke-width='3.2'/%3E%3Crect x='17' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3Crect x='-13' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3C/svg%3E")}
-/* at a row's end: one long link that loops around the outside of the labels to the row below */
-${P} .rt-b.dnr::after,${P} .rt-b.dnl::after{top:22px;height:148px;border:4px solid #B5C7D3}
-${P} .rt-b.dnr::after{left:calc(50% + 22px);right:-8px;border-radius:0 30px 30px 0;border-left:0}
-${P} .rt-b.dnl::after{right:calc(50% + 22px);left:-8px;border-radius:30px 0 0 30px;border-right:0}
-${P} .rt-b.done.dnr::after,${P} .rt-b.done.dnl::after{border-color:#1A8FE0}
+${P} .rt-b.rt::after{top:21px;height:18px;width:calc(100% - 58px);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cellipse cx='10' cy='9' rx='8.5' ry='5.6' fill='none' stroke='%23B5C7D3' stroke-width='3.2'/%3E%3Crect x='17' y='7.2' width='16' height='3.6' rx='1.8' fill='%23B5C7D3'/%3E%3Crect x='-13' y='7.2' width='16' height='3.6' rx='1.8' fill='%23B5C7D3'/%3E%3C/svg%3E") center/30px 18px repeat-x}
+${P} .rt-b.rt::after{left:calc(50% + 29px)}
+${P} .rt-b.done.rt::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cellipse cx='10' cy='9' rx='8.5' ry='5.6' fill='none' stroke='%231A8FE0' stroke-width='3.2'/%3E%3Crect x='17' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3Crect x='-13' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3C/svg%3E")}
+/* at a row's end: one long link — out to the right, down, back under the labels, and into the next row's first vessel */
+${P} .rt-b.wrap{height:152px}
+${P} .rt-b.wrap::after{left:calc(50% + 24px);right:-8px;top:26px;height:118px;border:4px solid #B5C7D3;border-left:0;border-radius:0 26px 26px 0}
+${P} .rt-b.wrap::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc(-150% - 2px);right:14px;top:140px;height:16px;border:4px solid #B5C7D3;border-right:0;border-bottom:0;border-radius:14px 0 0 0}
+${P} .rt-b.done.wrap::after,${P} .rt-b.done.wrap::before{border-color:#1A8FE0}
 ${P} .rt-v{position:relative;z-index:1;display:grid;place-items:center;width:60px;height:60px;flex:none;border-radius:50%;
   background:linear-gradient(to top,color-mix(in srgb,var(--liq1) 38%,#fff) 0 var(--p),color-mix(in srgb,var(--liq1) 75%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px));
   box-shadow:inset 0 0 0 2px rgba(10,42,60,.14),0 8px 12px -8px rgba(24,119,242,.5)}
@@ -666,14 +669,11 @@ ${P} .rt-fl small{font-size:12px;line-height:1.3;color:var(--sub)}
 ${P} .rt-edit{display:flex;align-items:center;gap:12px;width:calc(100% - 44px);margin:22px 22px 0;padding:6px 0;text-align:left}
 ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}${P} .rt-edit b{display:block;font-size:15px;font-weight:700;color:var(--ink)}${P} .rt-edit small{font-size:12px;color:var(--sub)}${P} .rt-edit i{font-style:normal;font-size:22px;color:var(--faint)}
 @media (prefers-reduced-motion:no-preference){
-  body:not(.still) ${P} .ng-wv{animation:ng-wv 5s linear infinite}
-  body:not(.still) ${P} .ng-flow{animation:ng-fl 1.6s linear infinite}
-  body:not(.still) ${P} .ng-drip{animation:ng-dr 2.2s ease-in infinite;animation-delay:var(--dl,0s)}
+  /* one thing moves per screen: the flow in the pipe (A napom), the vessel that is next (Rutin). Levels and drops stand still. */
+  body:not(.still) ${P} .ng-flow{animation:ng-fl 1.8s linear infinite}
   body:not(.still) ${P} .rt-b.now .rt-v{animation:rt-now 2.4s ease-in-out infinite}
 }
-@keyframes ng-wv{to{transform:translateX(-48px)}}
 @keyframes ng-fl{to{stroke-dashoffset:-22}}
-@keyframes ng-dr{0%{opacity:0;translate:0 -6px}25%{opacity:1}100%{opacity:0;translate:0 12px}}
 @keyframes rt-now{50%{transform:scale(1.06)}}
 `);
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
