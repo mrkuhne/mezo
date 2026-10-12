@@ -290,22 +290,22 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"','en'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760','data-dom="fuel"','fuel'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"','en'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','✓','data-go="checkin"','nap'],['09:15','Reggeli','Túrós zabkása áfonyával','420','data-dom="fuel"','fuel'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','✓','data-go="checkin"','nap']];
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
-  <div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2></div>
+  <section class="bd"><div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2></div>
   ${dayArc()}
-  <div class="mt-acts" style="margin-top:6px"><button class="btn" data-n="ck:open">Délutáni check-in</button></div>
-  ${KH('Mai szintek','hol tartasz a célhoz')}${lv}
-  ${KH('Most következik','3 teendő · időrendben')}
+  <div class="mt-acts" style="margin-top:6px"><button class="btn" data-n="ck:open">Délutáni check-in</button></div></section>
+  <section class="bd w">${KH('Mai szintek','hol tartasz a célhoz')}${lv}</section>
+  <section class="bd">${KH('Most következik','3 teendő · időrendben')}
   <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><small>${x.sub}</small><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div>
-  ${KH('Észrevétel','Mezo · megerősített minta')}
-  <div data-rr="mo">${RR.mo()}</div>
-  ${KH('Mai napló','',`<button class="fh-lk" data-go="gyors">+ Új bejegyzés</button>`)}
+  </section><section class="bd w">${KH('Észrevétel','Mezo · megerősített minta')}
+  <div data-rr="mo">${RR.mo()}</div></section>
+  <section class="bd">${KH('Mai napló','',`<button class="fh-lk" data-go="gyors">+ Új bejegyzés</button>`)}
   <div class="jr"><div class="jr-in"><p class="jr-air">a nap még tart · ide kerül a következő</p>
     ${LOG.map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r}</em></button>`).join('')}</div></div>
   <p class="rt-note" style="text-align:center">Egy réteg egy bejegyzés, a legfrissebb van felül. Zöld: étkezés · kék: check-in · türkiz: napló és aktivitás.</p>
-  ${KH('Továbbiak','ami még a naphoz tartozik')}
+  </section><section class="bd w last">${KH('Továbbiak','ami még a naphoz tartozik')}
   <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b><small>${sub}</small></button>`).join('')}</div>
   <div class="mt-acts"><button class="btn sm" data-go="gyors">+ Új bejegyzés</button><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
-  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b><small>Kímélő mód: betegség, sérülés vagy utazás idejére</small></span></button>`)}
+  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b><small>Kímélő mód: betegség, sérülés vagy utazás idejére</small></span></button></section>`)}
 
 /* ═══ RUTIN · the chain as a string of vessels that winds down the page — three per row, any number of rows.
        The vessel's level is the habit's 28-day strength; the pipe behind it is full up to where you have got today. ═══ */
@@ -472,6 +472,16 @@ ${P} .pg-lead p{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--sub
 ${P} .mx-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:30px 22px 12px}
 ${P} .mx-h b{font:800 20px var(--disp,inherit);letter-spacing:-.03em;color:var(--ink)}${P} .mx-h span{font-size:12px;color:var(--sub);text-align:right}
 
+/* Mai · grouping without cards: every logical unit is one full-width layer of the page. Layers alternate
+   between the ground and a lighter one, and the lighter one has a wave edge above and below. */
+${P} .bd{position:relative;padding:2px 0 38px}
+${P} .bd.w{background:rgba(255,255,255,.72);margin:12px 0}
+${P} .bd.w::before,${P} .bd.w::after{content:"";position:absolute;left:0;right:0;height:12px;background:rgba(255,255,255,.72);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px}
+${P} .bd.w::before{top:-11.5px}${P} .bd.w::after{bottom:-11.5px;transform:scaleY(-1);-webkit-mask-position:-45px 0;mask-position:-45px 0}
+${P} .bd.w.last{margin-bottom:0;padding-bottom:150px;margin-bottom:-118px}${P} .bd.w.last::after{display:none}
+${P} .bd .mx-h{margin-top:22px}
+${P} .bd .mx-h b{display:flex;align-items:center;gap:10px}
+${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
 /* Mai · the arc */
 ${P} svg.ar{margin-top:14px}
 ${P} .ar-base{fill:none;stroke:rgba(10,42,60,.2);stroke-width:1.4;stroke-dasharray:2 5}
