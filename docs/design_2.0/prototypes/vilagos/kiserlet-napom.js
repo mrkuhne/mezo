@@ -110,15 +110,14 @@ function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)r
   const ST=[
     {key:'nutrition',title:'Tápanyag',tag:'úton',sk:'q',val:'2 060',unit:'kcal',sub:['a 2 782-ből','fehérje 148 / 166 g'],v:{p:74,prot:89,g:'dom'}},
     {key:'quality',title:'Minőség',tag:'úton',sk:'q',val:'74',unit:'%',sub:['feldolgozatlan 68%','mikro 80%'],v:{p:74,a:68,b:80,g:'dom'}},
-    {key:'training',title:'Edzés',tag:'nyitva',sk:'warn',val:'0/1',sub:['a mai edzés még hátravan'],v:{p:0,g:'warn'}},
-    {key:'sleep',title:'Alvás',tag:'kész',sk:'ok',val:'7ó 16p',sub:['minőség 7/10','az éjszaka lezárult'],v:{p:86,g:'ok'}},
-    {key:'logging',title:'Logolás',tag:'úton',sk:'q',val:'2/4',sub:['check-in','a nap négy pillanata'],v:{n:2,g:'dom'}},
-    {key:'rhythm',title:'Ritmus',tag:'kész',sk:'ok',val:'74',sub:['a heted eddigi üteme'],v:{p:74,g:'ok'}}];
+    {key:'training',title:'Edzés',tag:'nyitva',sk:'warn',val:'0/1',sub:[],v:{p:0,g:'warn'}},
+    {key:'sleep',title:'Alvás',tag:'kész',sk:'ok',val:'7ó 16p',sub:['minőség 7/10'],v:{p:86,g:'ok'}},
+    {key:'logging',title:'Logolás',tag:'úton',sk:'q',val:'2/4',sub:['check-in'],v:{n:2,g:'dom'}},
+    {key:'rhythm',title:'Ritmus',tag:'kész',sk:'ok',val:'74',sub:[],v:{p:74,g:'ok'}}];
   const [stSvg,yEnd]=stations(ST,262),U=yEnd+96,UU=`M96 ${U}V${U+104}C96 ${U+170} 264 ${U+170} 264 ${U+104}V${U}H212V${U+100}C212 ${U+124} 148 ${U+124} 148 ${U+100}V${U}Z`;
   return fr[0]+topPipe('2026-09-24')+lead(`<small>Csütörtök · szept 24 · élő · 14:20</small>
       <h2>Fehérjéből már csak 18 g hiányzik, az edzés még hátravan.</h2>
-      <p class="ng-cnt"><b>2/6</b> terület kész</p>
-      <p>Napközben nincs pontszám. Hajnali 3-kor zárom a napot, és reggelre megírom, milyen volt.</p>`)
+      <p class="ng-cnt"><b>2/6</b> terület kész</p>`)
   +`<svg class="ng" viewBox="0 0 360 ${U+200}" role="img" aria-label="A mai napod rajza: most érdemes, a hat terület, te és az app">
   <defs><clipPath id="ng-c-u"><path d="${UU}"/></clipPath><clipPath id="ng-c-ul"><rect x="0" y="0" width="180" height="${U+200}"/></clipPath><clipPath id="ng-c-ur"><rect x="180" y="0" width="180" height="${U+200}"/></clipPath></defs>
   ${band(212,yEnd+20)}${pipe(`M72 0V26M72 50V62M72 196V218M72 242V262M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}M180 ${yEnd+62}C180 ${yEnd+80} 122 ${yEnd+66} 122 ${yEnd+82}M180 ${yEnd+62}C180 ${yEnd+80} 238 ${yEnd+66} 238 ${yEnd+82}`)}
@@ -128,8 +127,7 @@ function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)r
     <path class="ng-hi" d="M43 142C45 128 52 116 60 106"/>
     <g transform="translate(41.6 117.4) scale(.95)"><path class="ng-ng" d="${DUMB}"/><path class="ng-ng" d="M3 28V36M61 28V36"/></g>
     <text class="ng-nt" x="140" y="112">Még hátravan</text><text class="ng-nt" x="140" y="136">a mai edzés</text>
-    <text class="ng-s" x="140" y="160">Utána egy fehérjés vacsora,</text><text class="ng-s" x="140" y="176">és a tápanyag is kész.</text>
-    <text class="ng-go" x="140" y="200">Edzés megnyitása ›</text></g>
+    <text class="ng-go" x="140" y="166">Edzés megnyitása ›</text></g>
   ${badgeN(72,230,2,'Ma eddig · 6 terület')}${stSvg}
   ${badgeN(180,yEnd+50,3,'A napod · te és az app')}${drip(122,yEnd+92)}${drip(238,yEnd+92,.8)}
   <g class="ng-ves"><path class="ng-glass" d="${UU}"/>
@@ -144,8 +142,7 @@ function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)r
     <text class="ng-un" x="238" y="${U+96}" text-anchor="middle">7</text><text class="ng-uu" x="238" y="${U+112}" text-anchor="middle">/ 10</text>
     <text class="ng-t" x="252" y="${U+176}" text-anchor="middle">szerinted</text><text class="ng-s" x="252" y="${U+193}" text-anchor="middle">jó nap</text></g>
   </svg>
-  <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p>
-  <p class="ng-foot">Az app 64 pontja a hat terület súlyozott átlaga. A te 7/10-ed az esti check-in utolsó kérdéséből jön („Milyen volt a napod összességében?”).</p>`+fr[1]}
+  <p class="ng-say">Az app szerint közepes nap, szerinted jó volt.</p>`+fr[1]}
 
 /* ═══ A NAPOM · a closed day (the overnight evaluation) ═══ */
 const NDY={score:87,base:89,corr:-2,label:'A hét legjobb napja',
@@ -162,25 +159,21 @@ const DAYN={'2026-09-21':['Hétfő','szept 21'],'2026-09-22':['Kedd','szept 22']
 const dimV=(k,sc)=>{const g=sc>=80?'ok':'dom';return k==='nutrition'?{p:sc,prot:98,g}:k==='quality'?{p:sc,a:71,b:100,g}:k==='logging'?{n:2,g}:{p:sc,g}};
 function closed(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return O.nap(iso);const v=NDY,[dn,dd]=DAYN[iso];
   const ST=DIM.map(([k,l])=>({key:k,title:l,tag:`súly ${v.weight[k]}%`,sk:'w',val:v.dims[k][0],sub:v.dims[k][1].split(' · ').slice(0,1),go:'Részletek',v:dimV(k,v.dims[k][0]),tap:true}));
-  const [stSvg,yEnd]=stations(ST,166),C=yEnd+92,last=iso==='2026-09-23';
+  const [stSvg,yEnd]=stations(ST,198),C=yEnd+92,last=iso==='2026-09-23';
   /* the three highlights: small drops on the pipe */
   const hl=v.hl.map(([e,t],i)=>{const y=20+i*38;return `<g class="ng-hl"><path transform="translate(${72-32*.5} ${y-34*.5}) scale(.5)" d="${DROP}"/><text class="ng-t" x="96" y="${y+1}">${t}</text><text class="ng-s f" x="96" y="${y+16}">${e}</text></g>`}).join('');
   return fr[0]+topPipe(iso)+lead(`<small>${dn} · ${dd} · lezárva, hajnali 3:04</small>
       <h2>${v.label}.</h2>
       <p class="ng-cnt"><b>${v.score}</b> a 100-ból · hat területből</p>
-      <p><b class="ng-adj">alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}.</b> ${v.adj}</p>
-      <p><button class="fh-lk" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról ›</button></p>`)
+      <p class="ng-adj">alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}</p>`)
   +svg(70,band(8,71,true,false)+pipe('M72 0V24M72 48V70')+badgeN(72,36,1,'Mezo a napodról'))
-  +lead(`<div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>a napodról</small></div>${v.prose.map(p=>`<p class="ng-pr">${p}</p>`).join('')}
-      <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>`,'w')
   +`<svg class="ng" viewBox="0 0 360 ${C+118}" role="img" aria-label="A nap rajza: a nap kiemelései, miből jött össze a pontszám, a nap körülményei">
-  ${band(-1,122,false,true)}${band(yEnd+24,C+118)}${pipe(`M72 0V132M72 156V166M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
-  ${hl}${badgeN(72,144,2,'Miből jött össze')}${stSvg}
+  ${band(-1,154,false,true)}${band(yEnd+24,C+118)}${pipe(`M72 0V164M72 188V198M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
+  ${hl}<text class="ng-go" x="96" y="132" data-ngm="1" role="button" tabindex="0">Mezo értékelése ›</text><rect class="ng-hit" data-ngm="1" x="60" y="110" width="280" height="44"/>${badgeN(72,176,2,'Miből jött össze')}${stSvg}
   ${badgeN(180,yEnd+50,3,'A nap körülményei')}
   ${v.ctx.map(([a,b],i)=>{const x=i%2?272:88,y=C+6+(i>1?56:0);return `<g class="ng-ctx"><circle cx="${x}" cy="${y}" r="5"/><text class="ng-s" x="${x}" y="${y+21}" text-anchor="middle">${a}</text><text class="ng-t" x="${x}" y="${y+38}" text-anchor="middle">${b}</text></g>`}).join('')}
   </svg>
-  ${last?`<button class="ng-on" data-go="nap.2026-09-24">${svg(64,pipe('M180 0V8')+`<path class="ng-nd" transform="translate(${180-32*1.1} -2) scale(1.1)" d="${DROP}"/><path class="ng-ng" style="stroke-width:3" d="M172 42H188M182 36L188 42L182 48"/>`)}<b>Tovább a mai napra</b><small>csütörtök · élő nap</small></button>`:''}
-  <p class="ng-foot">A körülmények nem számítanak a pontba, ezért a csövön kívül lebegnek. Ha utólag beírsz még valamit erre a napra, a jegyzetet egyszer újraírom.</p>`+fr[1]}
+  ${last?`<button class="ng-on" data-go="nap.2026-09-24">${svg(64,pipe('M180 0V8')+`<path class="ng-nd" transform="translate(${180-32*1.1} -2) scale(1.1)" d="${DROP}"/><path class="ng-ng" style="stroke-width:3" d="M172 42H188M182 36L188 42L182 48"/>`)}<b>Tovább a mai napra</b><small>csütörtök · élő nap</small></button>`:''}`+fr[1]}
 /* a day with too little data: the same six vessels, five of them empty */
 function sparse(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!fr)return O.nap(iso);const [dn,dd]=DAYN[iso];
   const ST=DIM.map(([k,l])=>k==='sleep'?{key:k,title:l,sk:'q',val:'70',sub:['7ó 02p · minőség 6/10'],v:{p:70,g:'dom'}}
@@ -188,10 +181,15 @@ function sparse(iso){const fr=frame(iso,/<section class="fh-card fh-hero/);if(!f
   const [stSvg,yEnd]=stations(ST,64);
   return fr[0]+topPipe(iso)+lead(`<small>${dn} · ${dd} · lezárva, hajnali 3:02</small>
       <h2>Erre a napra kevés az adat.</h2>
-      <p>Csak egy területről van adat (egy alvás), ezért nem adok pontszámot: kitalálni nem fogok. A hét pontszámába ez a nap nem számít bele.</p>
+      <p>Csak egy alvás van róla, ezért nincs pontszám.</p>
       <p><button class="fh-lk" data-go="nap.2026-09-24">Vissza a mai napra ›</button></p>`)
   +`<svg class="ng" viewBox="0 0 360 ${yEnd+16}" role="img" aria-label="Amit erről a napról tudunk: a hat területből egy alvás">${pipe('M72 0V24M72 48V64')}${badgeN(72,36,1,'Amit erről a napról tudunk')}${stSvg}</svg>`+fr[1]}
 const day=a=>{const [iso,ph]=(a||'').split('.');return ph||iso==='hiba'||iso==='tolt'?O.nap(a):!iso||iso==='2026-09-24'?today():iso==='2026-09-21'?sparse(iso):DAYN[iso]?closed(iso):O.nap(a)};
+/* a closed day: Mezo's evaluation in a sheet */
+document.addEventListener('click',e=>{if(!e.target.closest('[data-ngm]'))return;const v=NDY;
+  F.openSheet(`<h2 class="ng-sh">Mezo a napodról</h2><p class="ng-adj2"><b>alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}.</b> ${v.adj}</p>${v.prose.map(p=>`<p class="ng-pr">${p}</p>`).join('')}
+    <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>
+    <div class="nb-a"><button class="fh-lk" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról ›</button></div>`)});
 /* a closed day's vessel opens its details */
 document.addEventListener('click',e=>{const g=e.target.closest('[data-ngs]');if(!g)return;const k=g.dataset.ngs,v=NDY,l=DIM.find(d=>d[0]===k)[1];
   F.openSheet(`<h2 class="ng-sh">${l} · ${v.dims[k][0]}<small>súly ${v.weight[k]}%</small></h2><div class="ng-chips">${v.chips[k].map(c=>`<span>${c}</span>`).join('')}</div>
@@ -201,27 +199,31 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-ngs]');if(
 const TC={szunya:'#8F7FD0',mocor:'#3F8FDB',falat:'#3FA277',mezo:'#6F7F95'},TG={szunya:'t-sleep',mocor:'t-dumbbell',falat:'t-bowl',mezo:'t-orb'},TN={szunya:'Alvás',mocor:'Mozgás',falat:'Étkezés',mezo:'Mezo'};
 const node=(k,cls='')=>`<span class="nb-node ${cls}" style="--c:${TC[k]}"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg>${I(TG[k])}</span>`;
 const BS={adv:false,fb:false,exp:{},jar:false};const TICK_='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg>';
+const MSG=[
+  {k:'falat',t:'10:12',kind:'étkezési javaslat',sz:58,x:0,text:'A reggelid 420 kcal volt, 22 g fehérjével. Ha az ebédhez legalább 40 g-ot teszel, estére nem marad nagy hiány.',adv:true},
+  {k:'mezo',t:'06:30',kind:'reggeli briefing',sz:50,x:12,text:'Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, ma a hátad pihen.<br><br>Az alvásod 7,4 óra volt, a reggeli check-in nyugodt. Ma délben érdemes a fehérjét előrehozni.',
+    built:['Push Day · tegnap','Chest Row 105,8 · márc 4','késő szénhidrát ↔ alvás'],from:[['t-sleep','7,4 óra alvás, 2 ébredés'],['t-checkin','Reggeli check-in: energia 7/10']],why:true},
+  {k:'szunya',t:'21:48',kind:'esti visszanézés',sz:40,x:22,old:true,text:'Szép nap volt: 3 szokás, 2 check-in és egy erős edzés.'},
+  {k:'mocor',t:'14:10',kind:'délutáni jelzés',sz:34,x:38,old:true,text:'Alacsony az energiád — egy rövid séta többet ad, mint a harmadik kávé.'}];
+const msgSheet=i=>{const m=MSG[i];return `<h2 class="ng-sh">${TN[m.k]}<small>${m.old?'tegnap ':''}${m.t} · ${m.kind}</small></h2><p class="ng-pr">${m.text}</p>
+  ${m.built?`<p class="nb-l">Amire épült</p><div class="ng-chips">${m.built.map(b=>`<span>${b}</span>`).join('')}</div>`:''}
+  ${m.from?`<p class="nb-l">Miből gondolom</p><div class="nb-f">${m.from.map(([ic,t])=>`<span>${I(ic)}${t}</span>`).join('')}</div>`:''}
+  ${m.adv?`<div class="nb-a">${BS.adv?`<span class="nb-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv:${i}">Szólj az ebédnél</button>`}</div>`:''}
+  <div class="nb-a"><span>Segített?</span><button class="btn sm ghost" data-toast="Köszönöm — ezt megjegyzem">Segített</button><button class="btn sm ghost" ${m.why?`data-nb="fb:${i}"`:'data-toast="Köszönöm, finomítok"'}>Nem talált</button></div>
+  ${m.why&&BS.fb?`<div class="ng-chips tap">${['pontatlan','túl sok','rossz időzítés','nem rólam szól'].map(r=>`<button data-toast="Köszönöm, finomítok">${r}</button>`).join('')}</div>`:''}`};
 function streamBody(){
   const bub=(k,sz,cls='')=>`<span class="pl-bub ${cls}" style="--c:${TC[k]};--s:${sz}px">${I(TG[k])}</span>`;
-  const fb=no=>`<div class="nb-a"><span>Segített?</span><button class="btn sm ghost" data-toast="Köszönöm — ezt megjegyzem">Segített</button><button class="btn sm ghost" ${no?'data-nb="fb"':'data-toast="Köszönöm, finomítok"'}>Nem talált</button></div>`;
-  const m=(k,sz,x,time,kind,text,extra='',cls='')=>`<article class="pl-m ${cls}" style="--x:${x}px">${bub(k,sz,cls)}<div class="pl-b"><p class="nb-h"><b>${TN[k]}</b>${time} · ${kind}</p><p class="nb-t">${text}</p>${extra}</div></article>`;
-  const old=[['szunya','21:48','esti visszanézés','Szép nap volt: 3 szokás, 2 check-in és egy erős edzés.',40,22],['mocor','14:10','délutáni jelzés','Alacsony az energiád — egy rövid séta többet ad, mint a harmadik kávé.',34,38]];
+  const row=(m,i)=>`<button class="pl-m ${m.old?'old':''}" style="--x:${m.x}px" data-nb="msg:${i}">${bub(m.k,m.sz,m.old?'old':'')}<span class="pl-b"><span class="nb-h"><b>${TN[m.k]}</b>${m.t} · ${m.kind}</span><span class="nb-t pl-2">${m.text.replace(/<br>/g,' ')}</span><span class="fh-lk">Elolvasom ›</span></span></button>`;
   const o=(l,t,sz)=>`<i class="pl-o" style="left:${l}%;top:${t}px;--s:${sz}px"></i>`;
   return `<div class="pl">
-  <div class="pl-air"><small>Mezo · ma · 4 üzenet</small><h2>Négy üzenet, kettő új.</h2><p>A legfrissebb a felszínen úszik, a régebbiek lejjebb süllyednek.</p>
-    <button class="pl-buoy" data-toast="Mezo · Chat"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><span><b>Beszélgess Mezóval</b><small>ejtsd be, amit mondanál: kérdezz, mesélj</small></span></button></div>
-  <div class="pl-water"><i class="pl-wave"></i>${o(86,40,10)}${o(92,150,6)}${o(80,300,8)}${o(90,470,12)}${o(84,640,7)}
-    <button class="pl-m duo" style="--x:6px" data-toast="Mezo · Élő beszélgetés"><span class="pl-two">${bub('szunya',36)}${bub('mocor',36)}</span><span class="pl-b"><span class="nb-h"><b>A csapat most erről beszél</b></span><span class="nb-t">belefér-e ma az esti röpi a rövid éjszaka után</span><span class="fh-lk">Belehallgatok ›</span></span></button>
-    ${m('falat',58,0,'10:12','étkezési javaslat','A reggelid 420 kcal volt, 22 g fehérjével. Ha az ebédhez legalább 40 g-ot teszel, estére nem marad nagy hiány.',
-      `<div class="nb-a">${BS.adv?`<span class="nb-ok">${TICK_}Beállítva: az ebédnél szólok a fehérjéről.</span>`:`<button class="btn sm" data-nb="adv">Szólj az ebédnél</button>`}</div>${fb(false)}`)}
-    ${m('mezo',50,12,'06:30','reggeli briefing','Jó reggelt — Week 3, Day 4, és érzed a tempót. Tegnap Push Day-en a Lat Pulldown 105 kg × 9 ment RIR 1-re, ma a hátad pihen.<br><br>Az alvásod 7,4 óra volt, a reggeli check-in nyugodt. Ma délben érdemes a fehérjét előrehozni.',
-      `<p class="nb-l">Amire épült</p><div class="ng-chips"><span>Push Day · tegnap</span><span>Chest Row 105,8 · márc 4</span><span>késő szénhidrát ↔ alvás</span></div>
-       <p class="nb-l">Miből gondolom</p><div class="nb-f"><span>${I('t-sleep')}7,4 óra alvás, 2 ébredés</span><span>${I('t-checkin')}Reggeli check-in: energia 7/10</span></div>${fb(true)}
-       ${BS.fb?`<div class="ng-chips tap">${['pontatlan','túl sok','rossz időzítés','nem rólam szól'].map(r=>`<button data-toast="Köszönöm, finomítok">${r}</button>`).join('')}</div>`:''}`)}
+  <div class="pl-air"><small>Mezo · ma · 4 üzenet</small><h2>Négy üzenet, kettő új.</h2>
+    <button class="pl-buoy" data-toast="Mezo · Chat"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="${DROP}"/></svg><span><b>Beszélgess Mezóval ›</b></span></button></div>
+  <div class="pl-water"><i class="pl-wave"></i>${o(86,40,10)}${o(92,150,6)}${o(80,300,8)}
+    <button class="pl-m duo" style="--x:6px" data-toast="Mezo · Élő beszélgetés"><span class="pl-two">${bub('szunya',36)}${bub('mocor',36)}</span><span class="pl-b"><span class="nb-h"><b>A csapat most erről beszél</b></span><span class="nb-t pl-2">belefér-e ma az esti röpi a rövid éjszaka után</span><span class="fh-lk">Belehallgatok ›</span></span></button>
+    ${MSG.map((m,i)=>m.old?'':row(m,i)).join('')}
   </div>
-  <div class="pl-water deep"><i class="pl-wave"></i><p class="pl-day">tegnap · mélyebben</p>${o(88,60,9)}${o(78,150,6)}
-    ${old.map(([k,t,kind,p,sz,x],i)=>BS.exp[i]?m(k,sz,x,t,kind,p,`<div class="nb-a"><button class="fh-lk" data-nb="exp:${i}">Összecsukom</button></div>`,'old')
-      :`<button class="pl-m old" style="--x:${x}px" data-nb="exp:${i}">${bub(k,sz,'old')}<span class="pl-b"><span class="nb-h"><b>${TN[k]}</b>${t} · ${kind}</span><span class="nb-t">${p.slice(0,38)}…</span><span class="fh-lk">Elolvasom ›</span></span></button>`).join('')}
+  <div class="pl-water deep"><i class="pl-wave"></i><p class="pl-day">tegnap</p>${o(88,60,9)}${o(78,150,6)}
+    ${MSG.map((m,i)=>m.old?row(m,i):'').join('')}
   </div></div>`}
 /* observations (Beszélgetés · Észrevételek and Mai): communicating vessels — cause and effect joined by a pipe
    that has one segment per evidence day: full = agrees, dashed = against, empty = still missing */
@@ -246,15 +248,13 @@ const obsSheet=o=>`<h2 class="ng-sh">${o.h}<small>${o.st}</small></h2>${obsGraph
     <div class="nb-a">${OS.done[o.k]?`<span class="nb-ok">${TICK_}Megjegyeztem a válaszod.</span>`:o.acts.map((a,i)=>`<button class="btn sm ${i?'ghost':''}" data-nb="obs:${o.k}">${a}</button>`).join('')}</div>
     <div class="nb-a" style="margin-top:4px"><button class="fh-lk" data-nb="ev:${o.k}">${OS.ev[o.k]?'Elrejtem, miből látod':'Miből látod?'}</button>${o.st==='Gyűlik'?'<button class="fh-lk" data-toast="Mezo · Laborfüzet — ez a minta">Laborfüzet ›</button>':''}<button class="fh-lk" data-toast="Mezo · Chat — előtöltve">Beszéljünk róla ›</button></div>`;
 function obsBody(){const left=OBS.filter(o=>!OS.done[o.k]).length;
-  return `<div class="pg-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2>
-    <p>Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok.</p></div>
+  return `<div class="pg-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2></div>
   ${OBS.map((o,i)=>`<section class="bd ${i%2?'':'w'}">${obsLinked(o)}</section>`).join('')}
   <div class="mt-acts"><button class="btn" data-toast="Mezo · Chat">Beszéljük meg</button></div>`}
 /* Életjelek: the rack. The six tubes are the approved ones, taken as they are; the remark hangs on its tube. */
 const cutOut=(html,a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);return i<0||j<0?'':html.slice(i,j)};
 function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh np-six">','<div class="fh-acts">');
-  return `<div class="pg-lead"><small>Életjelek · ma · átlag 60</small><h2>A mozgás az egyetlen, ami figyelmet kér.</h2>
-    <p>A többi öt jel rendben van. Koppints bármelyikre a részletekért.</p><p><button class="fh-lk" data-go="eletjel">Részletek ›</button></p></div>
+  return `<div class="pg-lead"><small>Életjelek · ma · átlag 60</small><h2>A mozgás az egyetlen, ami figyelmet kér.</h2><p><button class="fh-lk" data-go="eletjel">Részletek ›</button></p></div>
   <section class="bd w" style="padding-bottom:22px;margin-top:20px"><div class="np-pad rk">${v}<i class="rk-shelf"></i></div></section>
   <svg class="rk-str" viewBox="0 0 360 46" preserveAspectRatio="none" aria-hidden="true"><path d="M207 0C207 26 62 14 58 46"/></svg>
   <div class="rk-tag"><i class="rk-hole"></i><p class="nb-h"><b>Mozgás</b>34% · amit a csapat mond</p>
@@ -267,7 +267,9 @@ function uzenetek(tab){tab=tab||'uzenetek';
   return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
     ${tab==='eletjelek'?vitalsBody():`<div data-rr="${tab==='uzenetek'?'nb':'ob'}">${RR[tab==='uzenetek'?'nb':'ob']()}</div>`}`)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
-  if(a==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok')}else if(a==='fb')BS.fb=!BS.fb;else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
+  if(k==='msg'){F.openSheet(msgSheet(+x));return}
+  if(k==='qs'){const q=QS[+x];F.openSheet(`<h2 class="ng-sh">${q.s}<small>+${q.xp} XP</small></h2><p class="ng-pr"><b>${q.t}</b></p>${q.why?`<p class="ng-pr">${q.why}</p>`:''}<p class="ng-pr">${q.foot||''}</p><p class="ng-pr">A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs.</p><div class="nb-a">${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="btn sm ghost" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Csere · 1 maradt</button></div>`);return}
+  if(k==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok');F.openSheet(msgSheet(+x))}else if(k==='fb'){BS.fb=!BS.fb;F.openSheet(msgSheet(+x))}else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
   else if(k==='obs'){OS.done[x]=true;F.closeSheet();F.toast('Megjegyeztem a válaszod')}else if(k==='ev'){OS.ev[x]=!OS.ev[x];F.openSheet(obsSheet(OBS.find(o=>o.k===x)))}
   else if(k==='osh'){F.openSheet(obsSheet(OBS.find(o=>o.k===x)));return}
   document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
@@ -287,7 +289,7 @@ function dayArc(){const T0=6,T1=22,now=14+20/60,pt=h=>{const t=(h-T0)/(T1-T0);re
     <text class="ar-nl" x="${nx.toFixed(1)}" y="${(ny-20).toFixed(1)}" text-anchor="middle">most · 14:20</text>
     <text class="ar-big" x="180" y="118" text-anchor="middle">60</text><text class="ng-s" x="180" y="138" text-anchor="middle">a 100-ból · hat életjel átlaga</text>
     <text class="ar-t" x="20" y="170" text-anchor="middle">06:00</text><text class="ar-t" x="340" y="170" text-anchor="middle">22:00</text>
-    <text class="ng-s f" x="180" y="170" text-anchor="middle">6 bejegyzés mögötted · 3 teendő előtted</text></svg>`}
+</svg>`}
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
   const NX=[
@@ -304,7 +306,7 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   <section class="bd w">${KH('Észrevétel')}
   <div data-rr="mo">${RR.mo()}</div></section>
   <section class="bd">${KH('Mai napló','',`<button class="btn sm" data-go="gyors">+ Új bejegyzés</button>`)}
-  <div class="jr"><div class="jr-in"><p class="jr-air">a nap még tart · ide kerül a következő</p>
+  <div class="jr"><div class="jr-in"><p class="jr-air" aria-hidden="true"></p>
     <div data-rr="jar">${RR.jar()}</div></div></div>
   </section><section class="bd w last">${KH('Továbbiak')}
   <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
@@ -325,7 +327,7 @@ function flask(q,i){const id=uid(),d=FLASK[i%3],y=q.done?30:94-56*q.p/100,g=q.do
 function kuldetesek(arg){if(arg)return O.kuldetesek(arg);const tot=QS.reduce((a,q)=>a+q.xp,0),got=QS.filter(q=>q.done).reduce((a,q)=>a+q.xp,0),dn=QS.filter(q=>q.done).length,cid=uid();
   const C='M30 8H330V46C330 74 300 84 180 84C60 84 30 74 30 46Z';
   return page('nap',{title:'Napi küldetések',sub:'Nap · ajánlatok mára',back:'mai'},`${DEFS}
-  <section class="bd"><div class="pg-lead"><small>Mai ajánlatok · +${tot} XP</small><h2>${dn} kész a ${QS.length} ajánlatból.</h2><p>A többi magától telik, ahogy a napod halad. Ami elkészült, annak a tartalma a gyűjtőbe kerül.</p></div>
+  <section class="bd"><div class="pg-lead"><small>Mai ajánlatok · +${tot} XP</small><h2>${dn} kész a ${QS.length} ajánlatból.</h2></div>
   <svg class="ng" viewBox="0 0 360 132" role="img" aria-label="A mai XP gyűjtője: ${got} a ${tot}-ból" style="margin-top:10px"><defs><clipPath id="${cid}"><path d="${C}"/></clipPath></defs>
     <g class="ng-ves"><path class="ng-glass" d="${C}"/><g clip-path="url(#${cid})"><path class="ng-wv" fill="url(#ng-g-ok)" d="M-48 ${84-76*got/tot}${' q12 -5 24 0 t24 0'.repeat(9)} V120 H-48Z"/></g><path class="ng-line" d="${C}"/></g>
     <path class="ng-rim" d="M24 8H336"/>${QS.map((q,i)=>`<path class="ng-mark" d="M${30+300*(i+1)/QS.length} 12V20" />`).slice(0,-1).join('')}
@@ -333,11 +335,9 @@ function kuldetesek(arg){if(arg)return O.kuldetesek(arg);const tot=QS.reduce((a,
     <text class="ng-s" x="180" y="108" text-anchor="middle">jóváírva ma · a ${tot}-ból</text>${drip(180,0)}</svg></section>
   ${QS.map((q,i)=>`<section class="bd ${i%2?'':'w'} qs"><div class="qs-r">${flask(q,i)}<div class="qs-b">
       <p class="nb-h"><b>${q.s}</b><i class="nb-st ${q.done?'ok':''}">${q.done?'kész':`+${q.xp} XP`}</i></p>
-      <p class="qs-t">${q.t}</p>${q.why?`<p class="qs-w">${q.why}</p>`:''}
-      <p class="qs-f">${q.done?`kész · +${q.xp} XP jóváírva`:q.foot}</p>
-      ${q.done?'':`<div class="nb-a">${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="fh-lk" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Csere · 1 maradt</button></div>`}
-    </div></div></section>`).join('')}
-  <p class="ng-foot" style="margin-top:22px">A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs. A Csere naponta egyszer ingyenes.</p>`)}
+      <p class="qs-t">${q.t}</p>
+      <div class="nb-a" style="margin-top:4px">${q.done?`<span class="nb-ok">${TICK_}+${q.xp} XP jóváírva</span>`:`${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="fh-lk" data-nb="qs:${i}">Részletek ›</button>`}</div>
+    </div></div></section>`).join('')}`)}
 
 /* ═══ RUTIN · the chain as a string of vessels that winds down the page — three per row, any number of rows.
        The vessel's level is the habit's 28-day strength; the pipe behind it is full up to where you have got today. ═══ */
@@ -358,13 +358,11 @@ function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0,strs=R.rows.filter(r=>r[3]!=null),avg=Math.round(strs.reduce((a,r)=>a+r[3],0)/strs.length);
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="rt-lead"><small>${R.title} · ${done}/${R.rows.length} kész</small><h2>${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
-    <p>${all?'Holnap ugyanitt folytatódik.':`${R.rows.length} elem · lánc · ${R.rows[nx][1]}`}</p>
     <div class="rt-acts"><button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></div>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
   <section class="bd ${order.length%2?'':'w'} last"><p class="fh-n"><b>${order.length+1}</b>A lánc ereje</p>
   <div class="rt-flasks">${[...(R.stat?[[R.stat[0],R.stat[1],Math.round(parseInt(R.stat[0])/30*100)]]:[]),[`${avg}%`,'lánc-erő · 28 nap',avg],[`+${R.xp}`,'XP ma',null]].map(([b,l,p])=>`<div class="rt-fl ${p==null?'np':''}" style="--p:${p??0}%"><span><b>${b}</b></span><small>${l}</small></div>`).join('')}</div>
-  <p class="rt-note">A lánc-erő az elmúlt 28 nap következetessége: egy kihagyás nem nulláz, csak halványít.</p>
-  <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b><small>láncok, szokások, új szokás</small></span><i>›</i></button></section>`}
+  <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b></span><i>›</i></button></section>`}
 const rutinFoot=()=>{const R=RUT[face],nx=R.rows.findIndex(r=>!r[4]);return nx<0?`<span class="rt-fdone">Mind megvan mára. Szép munka.</span>`
   :`<span class="rt-fn"><small>Most jön</small><b>${R.rows[nx][0]}</b></span><button class="btn" ${rAttr(R.rows[nx],nx,face)}>${rVerb(R.rows[nx])}</button>`};
 function rutin(arg){if(arg&&RUT[arg])face=arg;return page('nap',{title:'Rutin',sub:'Nap · ma, szerda',tab:'rutin'},`<div id="rt-root">${rutinBody()}</div>`,{foot:`<div id="rt-foot" class="rt-foot">${rutinFoot()}</div>`})}
@@ -578,7 +576,7 @@ ${P} .pl-air h2{margin:6px 0 0;font:800 24px/1.12 var(--disp,inherit);letter-spa
 ${P} .pl-air p{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--sub)}
 ${P} .pl-buoy{position:relative;z-index:2;display:flex;align-items:center;gap:12px;margin:14px 0 -30px;text-align:left}
 ${P} .pl-buoy svg{width:64px;height:64px;flex:none;overflow:visible;filter:drop-shadow(0 8px 9px rgba(24,119,242,.35))}${P} .pl-buoy path{fill:url(#ng-g-dom)}
-${P} .pl-buoy b{display:block;font:800 17px var(--disp,inherit);letter-spacing:-.02em;color:var(--ink)}${P} .pl-buoy small{display:block;font-size:12px;color:var(--sub);padding-bottom:26px}
+${P} .pl-buoy b{display:block;font:800 17px var(--disp,inherit);letter-spacing:-.02em;color:color-mix(in srgb,var(--dom) 85%,var(--ink));padding-bottom:26px}${P} .pl-buoy small{display:block;font-size:12px;color:var(--sub);padding-bottom:26px}
 ${P} .pl-water{position:relative;margin-top:12px;padding:34px 0 18px;background:linear-gradient(180deg,color-mix(in srgb,var(--liq1) 20%,#fff),color-mix(in srgb,var(--dom) 15%,#fff))}
 ${P} .pl-water.deep{margin-top:0;padding-top:14px;padding-bottom:40px;background:linear-gradient(180deg,color-mix(in srgb,var(--dom) 24%,#fff),color-mix(in srgb,var(--dom) 34%,#fff))}
 ${P} .pl-wave{position:absolute;left:0;right:0;top:-11px;height:12px;background:color-mix(in srgb,var(--liq1) 20%,#fff);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px}
@@ -629,6 +627,11 @@ ${P} .qs-t{margin-top:6px;font:700 16px/1.25 var(--disp,inherit);letter-spacing:
 ${P} .qs-w{margin-top:6px;font-size:12.5px;line-height:1.45;color:var(--sub)}
 ${P} .qs-f{margin-top:8px;font-size:12px;font-weight:600;color:var(--sub)}
 
+${P} .pl-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+${P} .ng-lead .ng-adj{font-size:13px;font-weight:700;color:var(--sub)}
+${P} .sheet .ng-adj2{margin-top:10px;font-size:13.5px;line-height:1.45;color:var(--sub)}${P} .sheet .ng-adj2 b{color:var(--ink)}
+${P} text.ng-go[data-ngm]{cursor:pointer}
+${P} .jr-air{padding:0;height:34px}
 /* Rutin */
 ${P} .rt-foot{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
 ${P} .rt-fn{flex:1;min-width:0;padding-left:8px}${P} .rt-fn small{display:block;font-size:12px;font-weight:700;color:var(--dom)}${P} .rt-fn b{display:block;font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
