@@ -287,7 +287,7 @@ function dayArc(){const T0=6,T1=22,now=14+20/60,pt=h=>{const t=(h-T0)/(T1-T0);re
     <circle class="ar-f" cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="4.6"/><text class="ar-t" x="${(fx+12).toFixed(1)}" y="${(fy+4).toFixed(1)}">19:30</text>
     <circle class="ar-now" cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="12"/><circle class="ar-now2" cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="5"/>
     <text class="ar-nl" x="${nx.toFixed(1)}" y="${(ny-20).toFixed(1)}" text-anchor="middle">most · 14:20</text>
-    <text class="ar-big" x="180" y="118" text-anchor="middle">60</text><text class="ng-s" x="180" y="138" text-anchor="middle">a 100-ból · hat életjel átlaga</text>
+    <text class="ar-big" x="180" y="128" text-anchor="middle">60</text>
     <text class="ar-t" x="20" y="170" text-anchor="middle">06:00</text><text class="ar-t" x="340" y="170" text-anchor="middle">22:00</text>
 </svg>`}
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
