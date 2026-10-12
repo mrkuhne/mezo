@@ -12,8 +12,7 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth/service/UserLanguage.java
   - backend/src/main/java/io/mrkuhne/mezo/techcore/message
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/OutputLanguageDirective.java
-  - backend/src/main/resources/messages_hu.properties
-  - backend/src/main/resources/messages_en.properties
+  - backend/src/main/resources
 related: [_platform-auth-security, _platform-design-system, companion, settings, _platform-api-backend]
 ---
 
@@ -253,6 +252,7 @@ The five rules:
 - **Settings** ([`settings.md`](settings.md)). *Contract:* the Nyelv block is the one writer of the preference (`useLanguageSetting`); the Settings pages read the `settings` catalog.
 - **Companion / every LLM call** ([`companion.md`](companion.md) §5.3). *Contract:* the `CompanionLlm` port adapter (`SpringAiCompanionLlm`) applies the directive from `UserLanguage.current()`; call sites change nothing.
 - **Error contract** ([`_platform-api-backend.md`](_platform-api-backend.md)). *Contract:* `SystemMessage.code` is stable; `message` text follows the user's language through `UserMessages`.
+- **Words are read on the screen before a slice ships.** F5's runtime pass rewrote 55 client sentences and aligned the server bundle with the client's words (a meal window is a „window", never a „slot"; salt has an „allowance"; stack zones are „Before / After training"). The server keeps the value prefixes `Pre-workout` / `Post-workout` in both languages because the client keys on them (`logic/mealContext.ts`). The frame's `TopTabs` brings the active tab into view — English tab names are longer than the row at 320 px.
 - **Notifications** ([`_platform-notifications.md`](_platform-notifications.md)). Push and feed copy written server-side or by the client schedule writer is still Hungarian — N3. Persisted text is rendered once (see §3).
 - **Docs / skills:** the `/folyadek` skill's *Language* section and the bible §2.5 (English copy) point here for the recipe.
 
