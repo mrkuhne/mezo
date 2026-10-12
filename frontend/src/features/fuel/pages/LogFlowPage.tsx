@@ -2,7 +2,9 @@
 // Mezo · LogFlowPage (the unified logging flow — bd mezo-d20.4.2, thinned in mezo-byo1)
 // The full-page overlay wrapper around MealComposer: portal into `.phone-screen`
 // (the LevelUpScreen technique, z-index between the tab bar and the sheets it
-// hosts), `‹ Vissza` header + timestamp, `Mit ettél?` title, Escape-to-close.
+// hosts), Escape-to-close. Folyadék (mezo-n4wf5.5, prototype fuel.js `log.kamra-<id>` /
+// `log.recept-<id>`): the overlay draws the title bar's sub-page row itself (`TitleRow`: round
+// back, „Logolás · ma · HH:mm", `Mit ettél?`), the composer is the page under it.
 //
 // Since mezo-byo1 the editor body lives in
 // `features/fuel/components/MealComposer.tsx` so the /fuel/log window blocks can
@@ -14,12 +16,16 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MealSlot } from '@/data/types'
+import { useM } from '@/shared/i18n'
+import { TitleRow } from '@/shared/ui/folyadek'
 import { MealComposer, type MealComposerPrefill } from '@/features/fuel/components/MealComposer'
 
 export type LogFlowPrefill = MealComposerPrefill
 
-function nowLabel(): string {
-  return 'ma · ' + new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
+/** The clock of the moment the overlay opened — 24-hour in both languages. */
+const nowHHmm = () => {
+  const d = new Date()
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 export interface LogFlowPageProps {
@@ -33,7 +39,10 @@ export interface LogFlowPageProps {
 }
 
 export function LogFlowPage({ initialSlot, prefill, aiPanelOpenOnMount, onClose }: LogFlowPageProps) {
+  const M = useM()
+  const P = M.fuelLog.page
   const [target] = useState<Element>(() => document.querySelector('.phone-screen') ?? document.body)
+  const [openedAt] = useState(nowHHmm)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -42,21 +51,16 @@ export function LogFlowPage({ initialSlot, prefill, aiPanelOpenOnMount, onClose 
   }, [onClose])
 
   const body = (
-    <div className="logflow-page" role="dialog" aria-modal="true" aria-label="Mit ettél?">
-      <div className="logflow-head">
-        <button type="button" className="chip logflow-back" onClick={onClose} aria-label="Vissza">‹ Vissza</button>
-        <span className="logflow-time">{nowLabel()}</span>
-      </div>
-      <div className="logflow-body">
-        <div className="h-display size-md" style={{ marginBottom: 2 }}>Mit ettél?</div>
-        <MealComposer
-          initialSlot={initialSlot}
-          prefill={prefill}
-          aiPanelOpenOnMount={aiPanelOpenOnMount}
-          onSaved={onClose}
-          onCancel={onClose}
-        />
-      </div>
+    <div className="fg-flow" role="dialog" aria-modal="true" aria-label={P.whatAte}>
+      <MealComposer
+        nonav
+        head={<TitleRow context={P.eyebrowNow(P.log, P.today, openedAt)} title={P.whatAte} backLabel={P.back} onBack={onClose} />}
+        initialSlot={initialSlot}
+        prefill={prefill}
+        aiPanelOpenOnMount={aiPanelOpenOnMount}
+        onSaved={onClose}
+        onCancel={onClose}
+      />
     </div>
   )
 

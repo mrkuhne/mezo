@@ -32,7 +32,7 @@ const DEAD_SHEET_FILES = [
 const DRESSED_CLASS = [
   /\bglass\b/, // any `glass …` class list
   /\bcapture-sheet\b/, // U3 capture sheets (they also pass `glass`)
-  /\bKAMRA_SHEET_CLASS\b/, // 'fkk-sheet glass is-still' — asserted below
+  /\bKAMRA_SHEET_CLASS\b/, // the Kamra sheets' shared class: since Folyadék F5 it is 'fo-sheet' — asserted below
   /\bfo-sheet\b/, // the Folyadék light sheet (kit: `.sheet.fo-sheet`) — asserted below
 ]
 
@@ -92,9 +92,24 @@ describe('sheet glass guard (mezo-me75u.10)', () => {
     expect(bare).toEqual([])
   })
 
-  it('the Kamra sheet constant still carries the glass recipe', () => {
+  // Rewritten to the new truth (Folyadék F5, mezo-n4wf5.5): the constant used to hold the glass recipe ('fkk-sheet glass
+  // is-still'); the four Kamra sheets are light Folyadék sheets now, so it must hold the light dress — and no old one.
+  it('the Kamra sheet constant carries the Folyadék light sheet, not the old glass recipe', () => {
     const kamra = readFileSync(join(SRC_DIR, 'features/fuel/sheets/KamraSheetHead.tsx'), 'utf8')
-    expect(kamra).toMatch(/KAMRA_SHEET_CLASS = '[^']*\bglass\b[^']*'/)
+    const value = kamra.match(/KAMRA_SHEET_CLASS = '([^']*)'/)?.[1] ?? ''
+    expect(value.split(/\s+/)).toContain('fo-sheet')
+    expect(value).not.toMatch(/\bglass\b|\bfkk-|\buvl-/)
+  })
+
+  // Every Fuel sheet was converted in F5: none of them may wear the glass dress (prop or class) or an old Fuel class.
+  it('no Fuel sheet wears the old glass skin', () => {
+    const fuel = sites.filter((s) => s.file.startsWith('features/fuel/'))
+    expect(fuel.length).toBeGreaterThan(15)
+    const old = fuel
+      .filter((s) => /\sglass(?=[\s/>]|=\{true\})/.test(s.tag) || /className=[^>]*\b(glass|uvl-fuel|uvl-kamra|fkx-rsheet-host|fkk-sheet|flp-|fmx-|stk-item-sheet)\b/.test(s.tag))
+      .map((s) => `${s.file}: ${s.tag.replace(/\s+/g, ' ')}`)
+    expect(old).toEqual([])
+    expect(fuel.filter((s) => !/\bfo-sheet\b|\bKAMRA_SHEET_CLASS\b/.test(s.tag)).map((s) => s.file)).toEqual([])
   })
 
   it('the Folyadék light sheet recipe exists in the kit stylesheet', () => {
@@ -114,7 +129,7 @@ describe('sheet glass guard (mezo-me75u.10)', () => {
 
   it('the guard itself catches a bare sheet and passes a dressed one', () => {
     expect(wearsGlass('<Sheet onClose={() => close()} labelledBy="x">')).toBe(false)
-    expect(wearsGlass('<Sheet onClose={onClose} className="fkx-rsheet-host">')).toBe(false)
+    expect(wearsGlass('<Sheet onClose={onClose} className="fkx-rsheet-host">')).toBe(false) // a retired Fuel class is no dress
     expect(wearsGlass('<Sheet glass onClose={() => setOpen(false)} className="uvl-fuel">')).toBe(true)
     expect(wearsGlass('<Sheet onClose={onClose} className="glass rt-sheet">')).toBe(true)
     expect(wearsGlass('<Sheet onClose={onClose} className={KAMRA_SHEET_CLASS}>')).toBe(true)

@@ -9,6 +9,7 @@
 import { mealSlotKey, perServing } from '@/features/fuel/logic/buildDayPlan'
 import type { StackDayEntry, StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import type { FuelMeal, Recipe, StackZoneKey } from '@/data/types'
+import { m } from '@/shared/i18n'
 
 export const FAT_BOUND_NEEDLES = ['d3', 'k2', 'omega', 'halolaj', 'krill', 'kurkum', 'q10', 'koenzim']
 const PROTEIN_BOUND_NEEDLES = ['whey', 'protein', 'fehérje']
@@ -23,15 +24,17 @@ export interface MealMatchSuggestion {
   time: string
   recipeId: string
   recipeName: string
-  metric: string // '32g zsír / adag'
+  metric: string // '32 g zsír / adag'
   reason: string
 }
 export interface MealMatchVerdict {
   zone: StackZoneKey
-  dayLabel: 'ma' | 'tegnap'
+  /** which day the meal is from — the key; `dayLabel` is its word in the current language */
+  day: 'today' | 'yesterday'
+  dayLabel: string
   mealTitle: string
   ok: boolean
-  metric: string // '28g zsír' / '6g zsír'
+  metric: string // '28 g zsír' / '6 g zsír'
   advice: string | null // set when !ok
 }
 export interface MealMatchResult {
@@ -60,37 +63,38 @@ function suggestionFor(
   slot: StackDaySlot,
   candidates: Recipe[],
   macro: 'f' | 'p',
-  metricLabel: string,
   entryName: string,
 ): MealMatchSuggestion | null {
   const rec = bestRecipe(candidates, macro)
   if (!rec) return null
   const val = Math.round(perServing(rec)[macro])
-  const boundLabel = macro === 'f' ? 'zsíros' : 'fehérjés'
+  const M = m().fuelKieg.match
   return {
     zone: slot.zone,
     zoneLabel: slot.label,
     time: slot.time,
     recipeId: rec.id,
     recipeName: rec.name,
-    metric: `${val}g ${metricLabel} / adag`,
-    reason: `A ${entryName} ${boundLabel} étkezést kér.`,
+    metric: macro === 'f' ? M.fatPerServing(val) : M.proteinPerServing(val),
+    reason: macro === 'f' ? M.wantsFat(entryName) : M.wantsProtein(entryName),
   }
 }
 
 /** Verdicts for the meals of one day (today/yesterday) that fall into this fat-bound zone. */
-function verdictsFor(slot: StackDaySlot, meals: FuelMeal[], dayLabel: 'ma' | 'tegnap', entryName: string): MealMatchVerdict[] {
+function verdictsFor(slot: StackDaySlot, meals: FuelMeal[], day: 'today' | 'yesterday', entryName: string): MealMatchVerdict[] {
   const out: MealMatchVerdict[] = []
-  for (const m of meals) {
-    if (mealSlotKey(m) !== slot.zone) continue
-    const ok = m.f >= FAT_OK_G
+  const M = m().fuelKieg.match
+  for (const meal of meals) {
+    if (mealSlotKey(meal) !== slot.zone) continue
+    const ok = meal.f >= FAT_OK_G
     out.push({
       zone: slot.zone,
-      dayLabel,
-      mealTitle: m.title,
+      day,
+      dayLabel: M[day],
+      mealTitle: meal.title,
       ok,
-      metric: `${Math.round(m.f)}g zsír`,
-      advice: ok ? null : `A ${entryName} zsíros étkezést kér — legközelebb tedd zsírosabb fogás mellé, vagy mozgasd vacsorára.`,
+      metric: M.fat(Math.round(meal.f)),
+      advice: ok ? null : M.advice(entryName),
     })
   }
   return out
@@ -113,7 +117,7 @@ export function matchMealsToStack(
       if (!bound) continue
       // Suggestions stay within the zone's meal role — deliberate narrowing vs "highest protein overall".
       const candidates = recipes.filter(r => r.role === 'post_workout')
-      const suggestion = suggestionFor(slot, candidates, 'p', 'fehérje', bound.name)
+      const suggestion = suggestionFor(slot, candidates, 'p', bound.name)
       if (suggestion) suggestions.push(suggestion)
       continue
     }
@@ -123,11 +127,11 @@ export function matchMealsToStack(
 
     // Suggestions stay within the zone's meal category — deliberate narrowing vs "fattiest overall".
     const candidates = recipes.filter(r => r.category === slot.zone)
-    const suggestion = suggestionFor(slot, candidates, 'f', 'zsír', bound.name)
+    const suggestion = suggestionFor(slot, candidates, 'f', bound.name)
     if (suggestion) suggestions.push(suggestion)
 
-    verdicts.push(...verdictsFor(slot, todayMeals, 'ma', bound.name))
-    verdicts.push(...verdictsFor(slot, yesterdayMeals, 'tegnap', bound.name))
+    verdicts.push(...verdictsFor(slot, todayMeals, 'today', bound.name))
+    verdicts.push(...verdictsFor(slot, yesterdayMeals, 'yesterday', bound.name))
   }
 
   return { suggestions, verdicts }

@@ -1,17 +1,17 @@
 // ============================================================
 // Mezo · CategoryFilterSheet
-// The pantry category filter as a bottom-sheet (docs/archive/design-v1/kamra-detail-edit-v1.html
-// · phone 4) — NOT 18 inline chips. Lists only the categories PRESENT in the current
-// items, each with its count, as multi-select chamfer chips. Clear + Apply close the
-// loop. The parent owns the committed selection; this sheet edits a local draft and
-// commits it on Apply (or Clear-then-Apply). Wraps the shared <Sheet> shell.
-// Üveg (mezo-me75u.2, uveg-fuel-tobbi.html `SH.catfilter`): one gold glass sheet; the category
-// chips are flat cells with their category dot, a selected one filled in its own hue; the
-// apply button the gold-lit flat CTA (never glass in glass).
+// The pantry category filter as a bottom-sheet — NOT 18 inline chips. Lists only the categories PRESENT in the
+// current items, each with its count, as multi-select pills. The parent owns the committed selection; this sheet
+// edits a local draft and commits it on Apply (or Clear-then-Apply). Wraps the shared <Sheet> shell.
+// Folyadék (F5, mezo-n4wf5.5; prototype `fuel.js` `sheetsC.catfilter`): the light sheet + `FoSheetHead`, kit pills
+// (a chosen one filled with the liquid), and the foot: „Szűrés · N tétel" with the „N kiválasztva · törlés" link.
 // ============================================================
 import { useState } from 'react'
 import { pantryCategoryMeta } from '@/data/fuel/pantry'
+import { useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
+import { Acts, Btn, Lk, Note, Pill, Pills } from '@/shared/ui/folyadek'
+import { pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
 
 export interface CategoryOption { key: string; label: string; color: string; count: number }
@@ -29,6 +29,8 @@ export function CategoryFilterSheet({
   onApply: (next: string[]) => void
   onClose: () => void
 }) {
+  const M = useM()
+  const F = M.fuelKamra.filter
   const [draft, setDraft] = useState<string[]>(selected)
 
   const toggle = (key: string) =>
@@ -40,51 +42,33 @@ export function CategoryFilterSheet({
     <Sheet onClose={onClose} labelledBy="category-filter-title" className={KAMRA_SHEET_CLASS}>
       {(close) => (
         <>
-          <KamraSheetHead eyebrow="Kategória szűrő" title="Mit mutassak?" titleId="category-filter-title"
-            action={(
-              <button type="button" className="fkk-sh-clear" onClick={() => setDraft([])} disabled={!draft.length}>
-                {draft.length} kiválasztva · törlés
-              </button>
-            )} />
+          <KamraSheetHead icon="t-lens" eyebrow={F.sub} title={F.title} titleId="category-filter-title" />
 
-          <div className="fkk-sh-chips is-wrap">
-            {options.map(opt => {
-              const on = draft.includes(opt.key)
-              return (
-                <button
-                  key={opt.key}
-                  type="button"
-                  onClick={() => toggle(opt.key)}
-                  aria-pressed={on}
-                  className={on ? 'is-on' : undefined}
-                  style={{ '--c': opt.color } as React.CSSProperties}
-                >
-                  <i className="fkk-sh-dot" aria-hidden="true" />
-                  {opt.label}
-                  <b>{opt.count}</b>
-                </button>
-              )
-            })}
-            {options.length === 0 && (
-              <span className="fkk-sh-none">Nincs szűrhető kategória.</span>
-            )}
-          </div>
+          <Pills>
+            {options.map(opt => (
+              <Pill key={opt.key} on={draft.includes(opt.key)} onClick={() => toggle(opt.key)}>
+                {/* the label is read at render, so an open sheet follows a language switch */}
+                {pantryCategoryLabel(opt.key) ?? opt.label}<b>{opt.count}</b>
+              </Pill>
+            ))}
+          </Pills>
+          {options.length === 0 && <Note>{F.none}</Note>}
 
-          <button
-            type="button"
-            className="fkk-btn is-go fkk-sh-apply"
-            onClick={() => { onApply(draft); close() }}
-          >
-            Szűrés ({count} tétel)
-          </button>
+          <Acts>
+            <Btn sm onClick={() => { onApply(draft); close() }}>{F.apply(count)}</Btn>
+            <Lk onClick={() => setDraft([])} disabled={!draft.length}>
+              {draft.length ? F.clear(draft.length) : F.selected(0)}
+            </Lk>
+          </Acts>
         </>
       )}
     </Sheet>
   )
 }
 
-// Helper kept here so callers don't re-derive the meta lookup.
+// Helper kept here so callers don't re-derive the lookup. `label` is the category's name in the language of the CALL
+// (build the options at render, never in a module constant or a memo without the language in its key).
 export function categoryOption(key: string, count: number): CategoryOption {
   const meta = pantryCategoryMeta[key]
-  return { key, count, label: meta?.label ?? key, color: meta?.color ?? 'var(--text-secondary)' }
+  return { key, count, label: pantryCategoryLabel(key) ?? meta?.label ?? key, color: meta?.color ?? 'var(--fo-sub)' }
 }

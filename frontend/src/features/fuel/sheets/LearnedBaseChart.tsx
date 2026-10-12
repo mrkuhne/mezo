@@ -1,11 +1,13 @@
-import { useEffect, useId, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ExpenditureSeriesPoint } from '@/data/fuel/expenditureApi'
+import { useM } from '@/shared/i18n'
 import { huShortDate } from '@/features/fuel/sheets/learnedBaseFormat'
 
-// „Hogy tanultam?” section 2 (mezo-y72o3) — ported from the prototype's `drawChart`
-// (docs/design_2.0/prototypes/hogy-tanultam.html): intake bars (usable = sage, suspicious/marked =
-// rose hatch, unlogged = none), weigh-in dots, the trend line (sky, glowing) and the water band
-// between trend and tissue (lav). One-shot rAF draw-in on mount; reduced motion = the final frame.
+// „Hogy tanultam?” step 2 (mezo-y72o3). Folyadék (mezo-n4wf5.5): build target fuel.js `howSvg()` —
+// intake bars (counts = the domain liquid, suspicious / marked = amber, unlogged = none), weigh-in
+// points, the trend line (domain) and the water band between trend and tissue (water blue). Colours
+// are in styles/folyadek-fuel-tanulas.css (`.ft-how`). One-shot rAF draw-in on mount; reduced
+// motion = the final frame.
 
 const W = 320
 const H = 150
@@ -29,7 +31,7 @@ export function LearnedBaseChart({ series, historyWeeks, reducedMotion }: {
   /** Test seam; defaults to `prefers-reduced-motion: reduce`. */
   reducedMotion?: boolean
 }) {
-  const hatchId = `flp-how-hatch-${useId().replace(/:/g, '')}`
+  const C = useM().fuelTanulas
   const [reduce] = useState(() => reducedMotion ?? prefersReducedMotion())
   const [t, setT] = useState(reduce ? 1 : 0)
 
@@ -88,21 +90,12 @@ export function LearnedBaseChart({ series, historyWeeks, reducedMotion }: {
 
   const barCount = series.filter(p => p.intakeKcal != null && p.status !== 'unlogged').length
   let barIdx = 0
-  const label = `Napi evés oszlopokban, súly pontokban és trendvonalban, ${historyWeeks} hét (${huShortDate(series[0].date)} – ${huShortDate(series[n - 1].date)})`
+  const first = huShortDate(series[0].date)
+  const last = huShortDate(series[n - 1].date)
 
   return (
-    <svg className="flp-how-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={label} data-progress={t}>
-      <defs>
-        <pattern id={hatchId} width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <rect width="4" height="4" fill="color-mix(in srgb, var(--dv-rose) 14%, transparent)" />
-          <rect width="2" height="4" fill="color-mix(in srgb, var(--dv-rose) 85%, transparent)" />
-        </pattern>
-      </defs>
-      <line x1={0} x2={W} y1={BAR_BASE} y2={BAR_BASE} stroke="var(--divider)" />
-      <text className="flp-how-ax" x={0} y={H - 3}>{huShortDate(series[0].date)}</text>
-      <text className="flp-how-ax" x={W} y={H - 3} textAnchor="end">{huShortDate(series[n - 1].date)}</text>
-      <text className="flp-how-ax" x={W} y={TOP + 6} textAnchor="end">súly</text>
-      <text className="flp-how-ax" x={W} y={ky(kMax * 0.94) - 3} textAnchor="end">evés</text>
+    <svg className="ft-chart ft-how" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={C.how.chart.aria(historyWeeks, first, last)} data-progress={t}>
+      <line className="grid" x1={0} x2={W} y1={BAR_BASE} y2={BAR_BASE} />
       {series.map((p, i) => {
         if (p.intakeKcal == null || p.status === 'unlogged') return null
         const h = BAR_BASE - ky(p.intakeKcal)
@@ -111,23 +104,22 @@ export function LearnedBaseChart({ series, historyWeeks, reducedMotion }: {
         return (
           <rect
             key={p.date}
-            className={bad ? 'is-bad' : 'is-ok'}
-            x={i * bw + 0.8} width={Math.max(0.4, bw - 1.6)} y={BAR_BASE - h * k} height={h * k} rx={1.2}
-            fill={bad ? `url(#${hatchId})` : 'color-mix(in srgb, var(--dv-sage) 70%, transparent)'}
+            className={bad ? 'bad' : 'okc'}
+            x={i * bw + 0.8} width={Math.max(0.4, bw - 1.6)} y={BAR_BASE - h * k} height={h * k} rx={1.6}
           />
         )
       })}
-      {bands.map((d, i) => (
-        <path key={i} d={d} fill="color-mix(in srgb, var(--dv-lav) 48%, transparent)"
-          stroke="color-mix(in srgb, var(--dv-lav) 70%, transparent)" strokeWidth={0.6} />
-      ))}
+      {bands.map((d, i) => <path key={i} className="wband" d={d} />)}
       {series.map((p, i) => p.weightKg != null && (
-        <circle key={p.date} cx={cx(i)} cy={wy(p.weightKg)} r={1.6} fill="color-mix(in srgb, var(--dv-sky) 55%, transparent)" />
+        <circle key={p.date} className="raw" cx={cx(i)} cy={wy(p.weightKg)} r={1.7} />
       ))}
       {trendD && (
-        <path className="flp-how-trend" d={trendD} fill="none" stroke="var(--dv-sky)" strokeWidth={2} strokeLinecap="round"
-          pathLength={1} strokeDasharray={1} strokeDashoffset={1 - ease(t)} />
+        <path className="tr" d={trendD} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - ease(t)} />
       )}
+      <text x={0} y={H - 2}>{first}</text>
+      <text x={W} y={H - 2} textAnchor="end">{last}</text>
+      <text x={W} y={12} textAnchor="end">{C.how.chart.weight}</text>
+      <text x={W} y={ky(kMax * 0.94) - 4} textAnchor="end">{C.how.chart.eating}</text>
     </svg>
   )
 }

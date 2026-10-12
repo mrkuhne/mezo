@@ -84,7 +84,7 @@ describe('glycemicBand · a jóváhagyott szövegek', () => {
   test('alacsony sáv: „Szép egyensúly" és a nyugodt kilátás', () => {
     const band = withFiber(24.05)!
     expect(band.tip.title).toBe('Szép egyensúly')
-    expect(band.expect.energy).toBe('Egyenletes energia 3-4 órára')
+    expect(band.expect.energy).toBe('Egyenletes energia 3–4 órára')
     expect(band.expect.back).toBe('Kb. 2 óra múlva ér vissza az alapszintre, finoman')
     expect(band.expect.hunger).toBe('Az éhség későn, fokozatosan tér vissza')
   })
@@ -97,7 +97,7 @@ describe('glycemicBand · a jóváhagyott szövegek', () => {
     expect(band.level).toBe('high')
     expect(midBare.level).toBe('mid')
     expect(midBare.tip.title).toBe('Rost előre')
-    expect(midBare.expect.energy).toBe('Stabil energia 2-3 órára')
+    expect(midBare.expect.energy).toBe('Stabil energia 2–3 órára')
   })
 
   test('közepes sáv rosttal: „Jó irány, egy aprósággal"', () => {

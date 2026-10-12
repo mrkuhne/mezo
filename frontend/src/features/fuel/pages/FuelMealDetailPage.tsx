@@ -1,51 +1,39 @@
 // ============================================================
-// Mezo · FuelMealDetailPage — EGY logolt étkezés Titán részletező oldala
-// (Fuel Titanium S1b, mezo-33k6; fagyasztott manifeszt A10 · A11).
+// Mezo · FuelMealDetailPage — EGY logolt étkezés részletező oldala
+// (Fuel Titanium S1b, mezo-33k6; Folyadék F5, mezo-n4wf5.5).
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/
-// fuel-dashboard.js `mealDetailPage` (:118) a `qualityTilesHtml` (:104),
-// `microCardsHtml` (:114), `ingredientStyle` (:93) és `NOVA_COLOR`/`NOVA_SHORT`
-// (:91/:179) darabjaival; CSS: fuel-pages.css `Shared sub-page head` (:107),
-// `Meal detail page` (:113), `Meal detail — icon-rich, hue-coded` (:406) és
-// `Meal detail v3 — split hero, share rings, micronutrient cards` (:453).
+// FOLYADÉK (prototípus `vilagos/fuel.js` `meal(id)`): címsor = az étkezés helye a napban (Reggeli…), fölötte
+// „Fuel · [nap ·] idő [· szerep]"; a hős a nap tálja, amibe ez az étkezés beleömlött (előtte ennyi volt benne · ez az
+// étkezés), mellette a kcal és a nap-részesedés; az ítélet az értékelés tárolt címsora, a gomb Mezo értékelésére, a link a
+// vércukor-lapra visz. Alatta öt számozott kártya: Makrók · Hozzávalók · Minőség · Mikrotápanyagok · Javítás és recept.
 //
-// Owner-döntések, amiket az anatómia hordoz:
-//   • hero: BAL oldal a tál-ikon és ALATTA a kcal; JOBB oldal az idő-és-blokk sor a saját
-//     ikonjával, alatta a nap x%-a; az AI értékelés jobbra FENT,
-//   • a makró gyűrűk az ÉTKEZÉS saját összetételét mutatják (mealShare.ts) — nincs
-//     „a nap céljához mérve" felirat,
-//   • a Minőség alatt van Mikrotápanyagok szekció is, ikonokkal,
-//   • sem a Hozzávalók, sem a Minőség fejléc nem visel darabszámot/feliratot,
-//   • szerkesztés NINCS a sorokon — az a logolóban él (S1c): a lap alján egy halk ajtó visz a
-//     `/fuel/log/uj?edit=<id>` javításra (és `&d=`, ha az étkezés korábbi napra esik). A törlés
-//     szándékosan ott, két lépésben lakik — egy részletező lapon egy koppintás nem törölhet.
-//     Alatta a recept ajtaja (mezo-n9wgg): „Mentsük receptként" → Műhely `?fromMeal=<id>`,
-//     vagy „Megnyitom a receptet", ha az étkezés egyetlen recept.
+// A viselkedés változatlan:
+//   • az értékelés a SAJÁT oldalán nyílik (`/fuel/etkezes/:id/ertekeles`, a `?d=` megy vele);
+//   • szerkesztés NINCS a sorokon — a javítás ajtaja a logolóba visz (`/fuel/log/uj?edit=<id>` + `&d=`); a törlés ott,
+//     két lépésben lakik — egy részletező lapon egy koppintás nem törölhet;
+//   • a recept ajtaja (mezo-n9wgg): „Mentsük receptként" → Műhely `?fromMeal=<id>`, vagy „Megnyitom a receptet", ha az
+//     étkezés egyetlen recept-sor; sorok nélkül nincs ajtó;
+//   • a korábbi napok étkezései ugyanezen az oldalon nyílnak — a nap az URL-ben él (`?d=`).
 //
-// ŐSZINTE-NULL, ABSZOLÚT: a mikrotápanyag-rész KIZÁRÓLAG a négy tárolt tényt mutatja
-// (rost, cukor, só, telített zsír — `Nutrients`, mezo-m6uv). Vitamin és ásványi anyag
-// még nincs a rendszerben: az külön, még meg nem épített képesség (mezo-vj61, manifeszt
-// F1 sor) — ezért itt nem találunk ki egyet sem, és a hiányzó érték „—", nem nulla.
-// Ugyanez áll a minőség-lapkákra: amit a sorok nem árulnak el (NOVA-csoport, grammos
-// tömeg), az „—" marad.
+// ŐSZINTE-NULL: a mikrotápanyag-rész KIZÁRÓLAG a négy tárolt tényt mutatja; a Minőség lapkák a BONTÁSBÓL olvasnak
+// (`mealQualityTruth`, mezo-tm3sb), és amit a bontás nem tud, az „—" — nem esünk vissza a tételsorokra.
 //
-// S4 (mezo-hygp): a Hozzávalók / Minőség / Mikrotápanyagok szekciók átkerültek a megosztott
-// `FuelQualityBlocks`-ba — az owner szerint egy recept megnyitása UGYANEZT a mélységet adja,
-// és a Receptműhely előre ugyanezt mutatja. Egy példány, három hívó; a markup és a `fmx-`
-// osztályok változatlanok, csak már nem itt laknak.
+// AZ ÉTKEZÉS HELYÉNEK NEVE (`useMealPlaceLabel`): az étkezés saját slot-kulcsából jön (Reggeli…), KIVÉVE az ablak nélküli
+// étkezést (owner-döntés 2026-10-12): amit a nap terve egyik ablakra sem tett (`FuelSlot.extra`, `logic/buildDayPlan` 3b),
+// annak a neve „Ablakon kívül" — az idő EGYSZER áll: ezen a lapon a címsor fölötti sorban, az értékelés hősében a név után.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useFuelDay } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
-import { hu1, huInt } from '@/shared/lib/huNum'
-import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
-import type { MealItemLine, MealSlot } from '@/data/types'
+import { fmtDate, fmtFixed, fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { m, useM } from '@/shared/i18n'
+import type { FuelMeal, FuelSlot, MealItemLine } from '@/data/types'
 import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
-import { mealContextOf, MEAL_CONTEXT_LABEL } from '@/features/fuel/logic/mealContext'
+import { mealContextOf } from '@/features/fuel/logic/mealContext'
 import { mealMacroShare } from '@/features/fuel/logic/mealShare'
-import { FuelScoreChip } from '@/features/fuel/components/FuelMealBlocks'
 import {
   FuelIngredientSection, FuelMacroShareSection, FuelMicroNote, FuelMicroSection, FuelQualitySection,
   type FuelIngredientRowVM, type FuelQualityLine,
@@ -54,24 +42,26 @@ import { mealQualityTruth } from '@/features/fuel/logic/mealQualityTruth'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { mealNutrients } from '@/features/fuel/logic/mealNutrients'
 import { GlycemicGlassFor } from '@/features/fuel/components/GlycemicGlass'
-import { FrameBack } from '@/shared/ui/folyadek'
+import {
+  Btn, Card, Empty, FrameBack, Hero, Lk, Page, Row, Section, useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { NumG, PourBowl, PourKey } from '@/features/fuel/components/folyadek'
 
-/** Blokk-arc: hue + clay ikon + magyar név. A hue a ház tokenjeiből (lásd a prototype.css
- *  `fuel-mai` blokk fejlécét: a beégetett prototípus-hexeket nem vesszük át). */
-const BLOCK: Record<MealSlot, { color: string; icon: ClayIconName; label: string }> = {
-  breakfast: { color: 'var(--amber)', icon: 'i-reggeli', label: 'Reggeli' },
-  lunch: { color: 'var(--sage)', icon: 'i-ebed', label: 'Ebéd' },
-  snack: { color: 'var(--lav)', icon: 'i-snack', label: 'Uzsonna' },
-  dinner: { color: 'var(--sky)', icon: 'i-vacsora', label: 'Vacsora' },
+/** Az étkezés helyének neve a napban: „Ablakon kívül", ha a nap terve egyik ablakra sem tette (`slots` = a nap terve);
+ *  különben a stabil slot-kulcsból (Reggeli / Ebéd / Uzsonna / Vacsora); ismeretlen slotnál „Étkezés". Az időt a hívó írja
+ *  mellé. HÍVÁSKOR olvas (`m()`), renderben kell hívni. */
+export function mealSlotLabel(meal: FuelMeal, slots: FuelSlot[] = []): string {
+  if (slots.some(s => s.extra && s.mealId === meal.id)) return m().fuelLogika.dayPlan.betweenMeals
+  const key = mealSlotKey(meal)
+  return key ? m().fuelLogika.slot[key] : m().fuelEtkezes.meal.fallbackTitle
 }
 
-/** A sor eredete — a logolt `MealItemLine.source` háza szerinti arca. */
-const SOURCE: Record<MealItemLine['source'], { label: string; icon: Icon3DName }> = {
-  // Üveg (mezo-me75u.1): the 3D set — kamra = the stack, becslés = the chat (fuel-uveg.html),
-  // recept = the book (uveg-alap-ikonok.html).
-  recipe: { label: 'recept', icon: 't-book' },
-  pantry: { label: 'kamra', icon: 't-stack' },
-  estimate: { label: 'becslés', icon: 't-chat' },
+/** `mealSlotLabel` a nap tervével együtt: az étkezés és az értékelés lapja is ezt használja (egy hely). A terv ugyanaz a
+ *  kompozíció, amiből a Mai lap blokkjai állnak (`useFuelTimeline`), így a két lap ugyanazt a nevet mondja. */
+export function useMealPlaceLabel(meal: FuelMeal, day: string | null): string {
+  const { plan } = useFuelTimeline(day ?? undefined)
+  useM() // re-render on a language switch: the label is read at call time
+  return mealSlotLabel(meal, plan.slots)
 }
 
 /** A sor grammos tömege, ha grammban van megadva — különben null (nem találgatunk). */
@@ -84,41 +74,52 @@ function qualityLineOf(line: MealItemLine): FuelQualityLine {
   return { grams: gramsOf(line), kcal: line.contribution.kcal, nova: line.nova ?? null }
 }
 
+/** The honest empty face of a meal that is not there (prototype `notFound`), shared with the rating page. */
+export function MealNotFound() {
+  const M = useM()
+  const T = M.fuelEtkezes.meal
+  const navigate = useNavigate()
+  useFrameTitle({ title: T.notFoundTitle, eyebrow: 'Fuel' })
+  return (
+    <Page className="fe-page">
+      <FrameBack className="fo-backpill" history fallback="/fuel">‹ {M.kit.back}</FrameBack>
+      <Card><Empty icon="t-plate" actions={<Btn sm onClick={() => navigate('/fuel')}>{T.backToToday}</Btn>}>{T.notFound}</Empty></Card>
+    </Page>
+  )
+}
+
 export function FuelMealDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [search] = useSearchParams()
-  const navigate = useNavigate()
-  // A korábbi napok étkezései ugyanezen az oldalon nyílnak — a nap az URL-ben él (`?d=`),
-  // a /fuel/log `?d=` szerződésének mintájára.
+  // A korábbi napok étkezései ugyanezen az oldalon nyílnak — a nap az URL-ben él (`?d=`).
   const day = search.get('d')
   const { fuel } = useFuelDay(day ?? undefined)
-  // A hook a hiányzó-étkezés korai visszatérés ELŐTT áll, hogy a hook-sorrend sose függjön attól,
-  // megtalálható-e az étkezés.
+  const meal = fuel.meals.find(x => x.id === id)
+  if (!meal) return <MealNotFound />
+  return <MealDetail meal={meal} day={day} meals={fuel.meals} dayTarget={fuel.targets.kcal} />
+}
+
+function MealDetail({ meal, day, meals, dayTarget }: { meal: FuelMeal; day: string | null; meals: FuelMeal[]; dayTarget: number }) {
+  const M = useM()
+  const T = M.fuelEtkezes.meal
+  const navigate = useNavigate()
   const [glucoseOpen, setGlucoseOpen] = useState(false)
-  const meal = fuel.meals.find(m => m.id === id)
 
-  if (!meal) {
-    return (
-      <div className="fmx-page">
-        <div className="fmx-subhead">
-          <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
-          <span><strong>Ez az étkezés nincs meg</strong></span>
-        </div>
-        <p className="fmx-block-empty">
-          Lehet, hogy egy másik napon logoltad, vagy közben törölted. A Mai oldalon minden
-          mai étkezésed ott van.
-        </p>
-      </div>
-    )
-  }
-
-  const slotKey = mealSlotKey(meal)
-  const block = slotKey ? BLOCK[slotKey] : { color: 'var(--sky)', icon: 'i-tanyer' as ClayIconName, label: 'Étkezés' }
-  const time = hhmmFromLoggedAt(meal.loggedAt, '—')
+  const time = hhmmFromLoggedAt(meal.loggedAt, '')
   const ctx = mealContextOf(meal)
-  const dayTarget = fuel.targets.kcal
-  const dayShare = dayTarget > 0 ? Math.round(pct(meal.kcal, dayTarget)) : null
-  const shares = mealMacroShare(meal)
+  const eyebrow = ['Fuel', day ? fmtDate(day, 'short') : null, time || null, ctx && ctx !== 'standard' ? T.ctx[ctx] : null]
+    .filter(Boolean).join(' · ')
+  const place = useMealPlaceLabel(meal, day)
+  useFrameTitle({ title: place, eyebrow })
+
+  const share = dayTarget > 0 ? Math.round(pct(meal.kcal, dayTarget)) : null
+  // Ami a nap táljában ELŐTTE volt: a nap korábban logolt étkezései (a lap már betölti a napot).
+  const before = meals.filter(x => x.id !== meal.id && x.loggedAt < meal.loggedAt).reduce((s, x) => s + x.kcal, 0)
+  const bowl = (kcal: number) => (dayTarget > 0 ? (kcal / dayTarget) * 94 : 0)
+  const facts = share != null
+    ? (time ? T.facts(share, fmtGrouped(dayTarget), time) : T.factsNoTime(share, fmtGrouped(dayTarget)))
+    : (time ? T.factsNoTarget(time) : T.factsNone)
+
   const lines = meal.mealItems
   const lineKcal = lines.reduce((s, l) => s + l.contribution.kcal, 0)
   const ingredientRows: FuelIngredientRowVM[] = lines.map((line, i) => ({
@@ -126,106 +127,70 @@ export function FuelMealDetailPage() {
     name: line.name,
     kcal: line.contribution.kcal,
     share: lineKcal > 0 ? Math.round((line.contribution.kcal / lineKcal) * 100) : null,
-    amount: `${hu1(line.amount)} ${line.unit}`,
-    origin: SOURCE[line.source],
+    amount: `${fmtNum(line.amount)} ${line.unit === 'adag' ? M.fuelKozos.unit.serving : line.unit}`,
+    source: line.source,
     nova: line.nova ?? null,
   }))
-  // A vércukor-sáv az étkezés SAJÁT összetételéből (mezo-6mi43). A rost és a cukor a négy tárolt
-  // tényből jön; ha a cukrot a forrás nem adta meg, a sáv becsül, és a kártya/doboz ezt kimondja.
+  // A vércukor-sáv az étkezés SAJÁT összetételéből (mezo-6mi43). A rost és a cukor a négy tárolt tényből jön; ha a cukrot
+  // a forrás nem adta meg, a sáv becsül, és a kártya / lap ezt kimondja.
   const mealFacts = mealNutrients(meal)
-  const band = glycemicBand({
-    c: meal.c, sugarG: mealFacts.sugarG, fiberG: mealFacts.fiberG, p: meal.p, f: meal.f,
-  })
+  const band = glycemicBand({ c: meal.c, sugarG: mealFacts.sugarG, fiberG: mealFacts.fiberG, p: meal.p, f: meal.f })
+  const scoreTen = meal.score == null ? null : fmtFixed(Math.round(meal.score * 100) / 10, 1)
+  const b = meal.breakdown
+  const verdict = b?.tagline ? (/[.!?…]$/.test(b.tagline.trim()) ? b.tagline.trim() : `${b.tagline.trim()}.`) 
+    : scoreTen != null ? M.fuelEtkezes.score.verdictFallback(scoreTen) : T.verdictPending
+
   const toScore = () => navigate(`/fuel/etkezes/${meal.id}/ertekeles${day ? `?d=${day}` : ''}`)
-  // A8 (S1c, mezo-33k6): a javítás ajtaja. A `&d=` akkor is megy, ha az étkezés korábbi napra
-  // esik — így a logoló ugyanannak a napnak az idő-szerződését tartja meg.
+  // A8 (S1c, mezo-33k6): a javítás ajtaja. A `&d=` akkor is megy, ha az étkezés korábbi napra esik.
   const toEdit = () => navigate(`/fuel/log/uj?edit=${meal.id}${day ? `&d=${day}` : ''}`)
-  // Logolt étkezésből recept (mezo-n9wgg): egyetlen recept-sor = ez már recept, azt nyitjuk;
-  // különben a Műhely az étkezés soraival előtöltve nyílik (a mentés új receptet hoz létre, az
-  // étkezés érintetlen marad). Sorok nélkül nincs miből receptet csinálni — nincs ajtó.
-  const onlyRecipe = lines.length === 1 && lines[0].source === 'recipe' ? lines[0].refId : null
+  // Logolt étkezésből recept (mezo-n9wgg): egyetlen recept-sor = ez már recept, azt nyitjuk; különben a Műhely az étkezés
+  // soraival előtöltve nyílik. Sorok nélkül nincs miből receptet csinálni — nincs ajtó.
+  const onlyRecipe = lines.length === 1 && lines[0].source === 'recipe' ? lines[0] : null
   const toRecipe = onlyRecipe
-    ? () => navigate(`/fuel/recipes/${onlyRecipe}`)
+    ? () => navigate(`/fuel/recipes/${onlyRecipe.refId}`)
     : () => navigate(`/fuel/recipes/muhely?fromMeal=${meal.id}${day ? `&d=${day}` : ''}`)
 
   return (
-    <div className="fmx-page" style={{ '--block-color': block.color } as React.CSSProperties}>
-      <div className="fmx-subhead">
-        <FrameBack className="glass is-round" history fallback="/fuel" label="Vissza a Mai oldalra">‹</FrameBack>
-        <span>
-          <small>{block.label.toLocaleUpperCase('hu-HU')}{ctx && ctx !== 'standard' ? ` · ${MEAL_CONTEXT_LABEL[ctx].toLocaleUpperCase('hu-HU')}` : ''}</small>
-          <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>
-        </span>
-      </div>
+    <Page className="fe-page">
+      <FrameBack className="fo-backpill" history fallback="/fuel">‹ {M.kit.back}</FrameBack>
+      <Hero className="fe-mealhero" label={mealDisplayName(meal) ?? T.fallbackTitle} verdict={verdict}
+        sub={b?.summary ? <SafeMarkdown text={b.summary} /> : undefined}
+        actions={<>
+          {scoreTen == null
+            ? <span className="fe-pendl">{T.ratingPending}</span>
+            : <Btn onClick={toScore}>{T.rating(scoreTen)}</Btn>}
+          {band && <Lk onClick={() => setGlucoseOpen(true)}>{T.glucose(band.label)}</Lk>}
+        </>}
+        graphic={<NumG value={fmtGrouped(meal.kcal)} unit="kcal"
+          graphic={<span role="img" aria-label={T.bowlAria(fmtGrouped(meal.kcal), fmtGrouped(before))}><PourBowl before={bowl(before)} add={bowl(meal.kcal)} /></span>}>
+          <p className="fe-facts"><SafeMarkdown text={facts} /></p>
+          <PourKey before={before > 0 ? T.before(fmtGrouped(before)) : T.beforeEmpty} add={T.thisMeal} />
+        </NumG>}
+      >
+      </Hero>
 
-      {/* Split hero (v3): bal = ikon + kcal, jobb = idő-és-blokk + nap-részesedés, az AI jobbra fent. */}
-      <div className="fmx-detail-hero">
-        <span className="fmx-detail-glow" aria-hidden="true" />
-        <div className="fmx-detail-left">
-          <span className="fmx-detail-art" aria-hidden="true"><ContentIcon name={block.icon} size={96} /></span>
-          <div className="fmx-detail-kcal">
-            <strong>{huInt(meal.kcal)}</strong><small>kcal</small>
-          </div>
-        </div>
-        <div className="fmx-detail-right">
-          {/* Az AI értékelés a jobb oszlop TETEJÉN áll (owner: „jobb fent"), de a sorban —
-              korábban abszolút pozícióval lebegett a mikor-kártya fölött, és rálógott. */}
-          <div className="fmx-detail-score">
-            <FuelScoreChip scorePct={meal.score == null ? null : Math.round(meal.score * 100)}
-              onOpen={toScore} size="big" />
-          </div>
-          <div className="fmx-detail-when glass">
-            <span className="fmx-di-art" aria-hidden="true"><ContentIcon name={block.icon} size={30} /></span>
-            <span>
-              <strong>{block.label}</strong>
-              <small>{time === '—' ? 'az időpont nem ismert' : `${time}-kor logoltad`}</small>
-            </span>
-          </div>
-          <div className="fmx-detail-share glass">
-            <span className="fmx-di-art" aria-hidden="true"><ContentIcon name="i-cel" size={30} /></span>
-            <span>
-              <strong>{dayShare == null ? 'a napod — %-a' : `a napod ${dayShare}%-a`}</strong>
-              <small>{dayTarget > 0 ? `a ${huInt(dayTarget)} kcal-os keretből` : 'a napi keret még nem ismert'}</small>
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Az étkezés SAJÁT összetétele (owner) — nincs „a nap céljához mérve". */}
+      <FuelMacroShareSection n={1} shares={mealMacroShare(meal)} groupLabel={T.macrosGroup} frame={T.macrosFrame}
+        note={T.macrosNote(fmtGrouped((meal.p ?? 0) * 4), fmtGrouped((meal.c ?? 0) * 4), fmtGrouped((meal.f ?? 0) * 9))} />
 
-      {/* Az étkezés SAJÁT összetétele (owner) — nincs „a nap céljához mérve" felirat. */}
-      <FuelMacroShareSection shares={shares}
-        groupLabel="Az étkezés energiájának megoszlása" frame="az étkezés energiájának" />
+      <FuelIngredientSection n={2} rows={ingredientRows} empty={T.ingredientsEmpty} note={T.ingredientsNote} />
 
-      <FuelIngredientSection rows={ingredientRows}
-        empty="Ehhez az étkezéshez nincsenek részletezett sorok." />
-
-      {/* A Minőség lapkák a BONTÁSBÓL olvassák a három tényt (mezo-tm3sb): a tételsorok egy
-          receptet EGY összecsukott sorként hordoznak, amiből az alapanyag-arány csak 0% vagy 100%
-          tud kijönni, és gramm sincs. A bontást a háttérrendszer immár hozzávalónként számolja,
-          és ugyanaz a bontás adta az AI-pontszámot — így a lapka és a pontszám nem tud elcsúszni.
-          A negyedik kártya a vércukor-válasz SÁVJA (mezo-6mi43); koppintásra a saját doboza nyílik. */}
-      <FuelQualitySection lines={lines.map(qualityLineOf)}
-        truth={mealQualityTruth(meal.breakdown)}
+      {/* A Minőség lapkák a BONTÁSBÓL olvassák a három tényt (mezo-tm3sb); a negyedik a vércukor-válasz SÁVJA
+          (mezo-6mi43) — koppintásra a saját lapja nyílik. */}
+      <FuelQualitySection n={3} lines={lines.map(qualityLineOf)} truth={mealQualityTruth(meal.breakdown)}
         glycemic={band} onOpenGlycemic={band ? () => setGlucoseOpen(true) : undefined} />
       {glucoseOpen && band && <GlycemicGlassFor mealId={meal.id} band={band} onClose={() => setGlucoseOpen(false)} />}
 
-      <FuelMicroSection nutrients={mealNutrients(meal)} frame="az étkezés" />
-      {/* Ismert hiány, nem figyelmetlenség: vitamin/ásványi anyag = mezo-vj61, manifeszt F1.
-          A lábjegyzet SZÁNDÉKOSAN a szekción KÍVÜL áll: a szekció maga kizárólag a négy tárolt
-          tényt tartalmazza, és a tesztje épp azt őrzi, hogy vitamin-szó ne kerüljön a tények
-          közé. Ez a mondat a képesség hiányáról beszél, nem egy mikrotápanyagról. */}
-      {/* A8: a javítás ajtaja — halk, lap-szintű művelet (a sorokon továbbra sincs szerkesztés).
-          A törlés a logolóban, két lépésben él, nem itt: egy részletező lapon egy koppintás
-          nem törölhet napot. */}
-      <button type="button" className="fmx-edit-door" onClick={toEdit}>
-        Javítom ezt az étkezést
-      </button>
-      {lines.length > 0 && (
-        <button type="button" className="fmx-edit-door" onClick={toRecipe}>
-          {onlyRecipe ? 'Megnyitom a receptet' : 'Mentsük receptként'}
-        </button>
-      )}
+      <FuelMicroSection n={4} nutrients={mealFacts} frame={T.microFrame} note={<FuelMicroNote />} />
 
-      <FuelMicroNote />
-    </div>
+      <Section n={5} title={T.editSection} />
+      <Card className="fe-doors">
+        <Row icon="t-pencil" title={T.edit} sub={T.editSub} onClick={toEdit} />
+        {lines.length > 0 && (
+          <Row icon="t-book" title={onlyRecipe ? T.openRecipe : T.saveRecipe}
+            sub={onlyRecipe ? onlyRecipe.name : T.saveRecipeSub} onClick={toRecipe} />
+        )}
+      </Card>
+    </Page>
   )
 }

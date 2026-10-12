@@ -38,29 +38,40 @@ for (const vp of PHONE_VIEWPORTS) {
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
 
-    const overflow = await page.locator('.fset-page').evaluate((element) => ({
+    // Folyadék F5 (mezo-n4wf5.5): the page is the kit `Page` (`.fo-page.fb-page`), the „Étkezési ablakok" door is a
+    // kit row of the rhythm card and the save bar is the kit's sticky foot (`.fo-foot`, no portal any more).
+    const overflow = await page.locator('.fo-page.fb-page').evaluate((element) => ({
       scrollWidth: element.scrollWidth,
       clientWidth: element.clientWidth,
     }))
     expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1)
 
-    const slots = page.getByRole('button', { name: 'Étkezési ablakok szerkesztése' })
-    const save = page.getByRole('button', { name: 'Mentés' })
-    await slots.scrollIntoViewIfNeeded()
-    await expect(slots).toBeVisible()
+    const slots = page.locator('.fb-rhythm').getByRole('button', { name: 'Étkezési ablakok szerkesztése' })
+    const save = page.locator('.fo-foot').getByRole('button', { name: 'Mentés' })
+    await expect(slots).toHaveCount(1)
     await expect(save).toBeVisible()
 
-    const spacing = await page.evaluate(() => {
-      const slotsRect = document.querySelector('.fset-slots')!.getBoundingClientRect()
-      const saveRect = document.querySelector('.fset-savebar')!.getBoundingClientRect()
-      return { slotsBottom: Math.round(slotsRect.bottom), saveTop: Math.round(saveRect.top) }
+    const spacing = await slots.evaluate((row) => {
+      // instant scroll (a smooth one would still be under way when the boxes are read), to the middle of the
+      // scroller: the question is whether the page CAN show the row clear of its floating save bar
+      ;(document.querySelector('.screen-content') as HTMLElement).style.scrollBehavior = 'auto'
+      row.scrollIntoView({ block: 'center' })
+      const slotsRect = row.getBoundingClientRect()
+      const saveRect = document.querySelector('.fo-page.fb-page > .fo-foot')!.getBoundingClientRect()
+      const hit = document.elementFromPoint(slotsRect.left + slotsRect.width / 2, slotsRect.top + slotsRect.height / 2)
+      return { slotsBottom: Math.round(slotsRect.bottom), saveTop: Math.round(saveRect.top), saveBottom: Math.round(saveRect.bottom),
+        tappable: !!hit && (hit === row || row.contains(hit)), vh: innerHeight }
     })
+    // the row is reachable clear of the floating save bar, and the bar itself is on screen
     expect(spacing.slotsBottom).toBeLessThanOrEqual(spacing.saveTop)
+    expect(spacing.tappable, 'something covers the „Étkezési ablakok" row').toBe(true)
+    expect(spacing.saveBottom).toBeLessThanOrEqual(spacing.vh)
   })
 
   test(`fuel · the Mai blocks and the logger are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
     // Fuel Titanium (mezo-33k6 / mezo-qt5q): the Logolás hero tile and `/fuel/log` are gone —
-    // the day's blocks moved ONTO the Mai and the logger is `/fuel/log/uj`. The invariant this
+    // the day's blocks moved ONTO the Mai and the logger is `/fuel/log/uj`. Folyadék F5 (mezo-n4wf5.5):
+    // a block is a kit card (`.fa-blk`), the ways in are the `.fg-modes` tiles. The invariant this
     // file exists for is unchanged: content must be REACHABLE — either it fits, or the page
     // scrolls to it, never eaten by a clipping ancestor.
     await page.setViewportSize({ width: vp.width, height: vp.height })
@@ -70,12 +81,12 @@ for (const vp of PHONE_VIEWPORTS) {
     await page.evaluate(() => document.fonts.ready)
 
     const hub = await page.evaluate(() => {
-      const blocks = Array.from(document.querySelectorAll('.fmx-block')) as HTMLElement[]
+      const blocks = Array.from(document.querySelectorAll('.fa-blk')) as HTMLElement[]
       const sc = document.querySelector('.screen-content') as HTMLElement
       const scRect = sc.getBoundingClientRect()
       const bottomOf = (el: HTMLElement) =>
         Math.round(el.getBoundingClientRect().bottom - scRect.top + sc.scrollTop)
-      const generic = document.querySelector('.fmx-loggeneric') as HTMLElement | null
+      const generic = document.querySelector('.fa-loggeneric') as HTMLElement | null
       return {
         blockCount: blocks.length,
         lastBlockBottom: blocks.length ? bottomOf(blocks[blocks.length - 1]) : 0,
@@ -106,7 +117,7 @@ for (const vp of PHONE_VIEWPORTS) {
     const logger = await page.evaluate(() => {
       const sc = document.querySelector('.screen-content') as HTMLElement
       const scRect = sc.getBoundingClientRect()
-      const modes = Array.from(document.querySelectorAll('.fmx-mode')) as HTMLElement[]
+      const modes = Array.from(document.querySelectorAll('.fg-modes > button')) as HTMLElement[]
       const last = modes.length ? modes[modes.length - 1] : null
       return {
         modeCount: modes.length,
@@ -280,24 +291,29 @@ test('címsor · kitapad, a magassága nem függ a görgetéstől, és a lap-chr
 })
 
 test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async ({ page }) => {
-  // mezo-bq2t: `.fkp-item` carried `overflow: hidden`, which zeroes the flex-item auto
-  // min-height — so the picker list's `max-height: 400px` flex column squashed every row
-  // down to ~20px once there were more hits than fit. `flex: none` is the fix; this test
-  // pins the row height so it cannot regress silently.
+  // mezo-bq2t: the old picker row carried `overflow: hidden`, which zeroes the flex-item auto
+  // min-height — so the picker list's flex column squashed every row down to ~20px once there
+  // were more hits than fit. Folyadék F5 (mezo-n4wf5.5): the rows are the Fuel-shared item rows
+  // (`.fg-pick .fx-it`, a kit row with a second line) in the sheet's own scroller; the test still
+  // pins the row height, so a squash cannot come back silently.
   await page.setViewportSize({ width: 393, height: 852 })
   // Fuel Titanium (mezo-qt5q): `/fuel/log` is retired — the day's blocks live on the Mai, and
   // an unlogged block opens the logger. Its direct Kamra action opens the picker (mezo-qe90y).
   await page.goto('/fuel')
   await page.waitForLoadState('networkidle')
-  await page.locator('.fmx-block:not(.is-done) .fmx-block-log').first().click()
+  await page.locator('.fa-blk:not(.is-done) .fa-log').first().click()
   await page.waitForURL(/\/fuel\/log\/uj/)
   await page.getByRole('group', { name: 'Hozzáadás' }).getByRole('button', { name: 'Kamra' }).click()
-  const rows = page.locator('.fkp-item')
+  const rows = page.locator('.fg-pick .fx-it')
   await expect(rows.first()).toBeVisible()
   const heights = await rows.evaluateAll(els => els.map(e => e.getBoundingClientRect().height))
   expect(heights.length).toBeGreaterThan(4)
-  // A healthy row is ~114px; the squash bug collapsed every row to ~20px.
+  // A healthy row is ~90–120px (name + macro line); the squash bug collapsed every row to ~20px.
   expect(Math.min(...heights)).toBeGreaterThan(60)
+  // every row's own add button is whole inside the sheet
+  const adds = await page.locator('.fg-pick .fx-it .fx-add').evaluateAll(els => els.map(e => e.getBoundingClientRect().right - innerWidth))
+  expect(adds.length).toBe(heights.length)
+  expect(Math.max(...adds)).toBeLessThanOrEqual(0)
 })
 
 for (const width of [320, 390, 430]) {
@@ -314,19 +330,41 @@ for (const width of [320, 390, 430]) {
     }))
     expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
 
-    // Fuel Titanium S2 (mezo-g2vl): a négy csempés mozaik helyén a mai lista idősávokban áll,
-    // alatta a KÉT ajtó (Protokoll, Új elem). A kikötés változatlan: minden elérhető marad.
-    for (const name of [/Protokoll/, /Új elem/]) {
-      await expect(page.getByRole('button', { name }).first()).toBeVisible()
+    // Folyadék F5 (mezo-n4wf5.5): a mai lista napszakonként számozott kártyákban áll, alatta a „Protokoll és
+    // beállítás" kártya HÁROM ajtóval (Protokoll, Új elem, Gyógyszer) — kit-sorok. A kikötés változatlan:
+    // minden elérhető marad.
+    const doors = page.locator('.fk-page > .fo-card').last().locator('button.fo-row, a.fo-row')
+    await expect(doors).toHaveCount(3)
+    for (const name of [/Protokoll/, /Új elem/, /Gyógyszer/]) {
+      await expect(doors.filter({ hasText: name })).toHaveCount(1)
     }
-    const lastTile = page.locator('.fsx-poster').last()
+    const lastTile = doors.last()
     await lastTile.scrollIntoViewIfNeeded()
     await expect(lastTile).toBeVisible()
 
-    const check = page.locator('.fsx-check').first()
-    const box = await check.boundingBox()
-    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
-    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
+    // A pipa a kit `.fo-tk`-ja: 30 px-esre RAJZOLT kör, a 44 px-es érintési terület a kit `::after`-je
+    // (F3.8: a régi `.fsx-check` doboz-mérése helyett a találati területet mérjük). Minden pipára: a
+    // középpontjától ±21 px-re eső pontok is ŐT találják el, és két szomszéd területe nem fed át.
+    const ticks = page.locator('.fk-page .fo-tk')
+    expect(await ticks.count()).toBeGreaterThan(3)
+    const probe = await ticks.evaluateAll((els) => els.map((el) => {
+      // instant scroll: a smooth one would still be under way when the point is probed
+      ;(document.querySelector('.screen-content') as HTMLElement).style.scrollBehavior = 'auto'
+      el.scrollIntoView({ block: 'center' })
+      const r = el.getBoundingClientRect()
+      const after = getComputedStyle(el, '::after')
+      const cx = r.left + r.width / 2, cy = r.top + r.height / 2
+      const hits = [[0, 0], [-21, 0], [21, 0], [0, -21], [0, 21]].map(([dx, dy]) => document.elementFromPoint(cx + dx, cy + dy) === el)
+      return { drawn: Math.round(r.width), w: parseFloat(after.width), h: parseFloat(after.height), hits, cy: cy + (document.querySelector('.screen-content') as HTMLElement).scrollTop }
+    }))
+    for (const t of probe) {
+      expect(t.drawn).toBeLessThan(44) // drawn small on purpose — the area is the pseudo-element's
+      expect(t.w).toBeGreaterThanOrEqual(44)
+      expect(t.h).toBeGreaterThanOrEqual(44)
+      expect(t.hits, 'a point inside the 44px area misses the tick').toEqual([true, true, true, true, true])
+    }
+    const ys = probe.map((t) => t.cy).sort((a, b) => a - b)
+    for (let i = 1; i < ys.length; i++) expect(ys[i] - ys[i - 1], 'two ticks\' touch areas overlap').toBeGreaterThanOrEqual(44)
   })
 }
 
@@ -335,11 +373,12 @@ for (const width of [320, 390, 430]) {
 // anything. The invariant they protected (the last row is reachable above the shell chrome)
 // moves to the pages that actually carry the depth today, the new destinations included.
 const FUEL_DEPTH: Array<[string, string]> = [
-  ['/fuel', '.fmx-block'],
-  ['/fuel/stack', '.fsx-poster'],
-  ['/fuel/stack/protocol', '.fsx-proto-line'],
-  ['/fuel/trendek', '.ftx-pattern, .ftx-horizon'],
-  ['/fuel/konyha', '.fkx-poster'],
+  // Folyadék F5 (mezo-n4wf5.5): the same pages, their last block in the new markup
+  ['/fuel', '.fa-blk'],
+  ['/fuel/stack', '.fk-page > .fo-card button.fo-row'],
+  ['/fuel/stack/protocol', '.fk-list .fo-row'],
+  ['/fuel/trendek', '.fr-pattern, .fr-horizon'],
+  ['/fuel/konyha', '.fp-konyha > .fo-card'],
 ]
 
 for (const [path, lastSelector] of FUEL_DEPTH) {
@@ -350,6 +389,7 @@ for (const [path, lastSelector] of FUEL_DEPTH) {
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
 
+    expect(await page.locator(lastSelector).count(), `${lastSelector} names nothing on ${path}`).toBeGreaterThan(0)
     const last = page.locator(lastSelector).last()
     await last.scrollIntoViewIfNeeded()
     // Folyadék frame (mezo-n4wf5.1): the bottom bar FLOATS (a capsule 10px off the edge), so a card
@@ -499,12 +539,17 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
         if (el.children.length) continue
         const text = el.textContent?.trim()
         if (!text) continue
-        if (el.closest('.eyebrow, .label-mono, .overline, .fmx-score')) continue
+        // Folyadék F5 (mezo-n4wf5.5): the new skin's fixed-word primitives. A kit button, a text link and a pill
+        // carry catalogue words (one line by design — their length is what the „no wrapped button" checks of
+        // fuel-folyadek.spec.ts measure, in both languages); chart labels (SVG text), the bowl's numeral captions
+        // and the week stepper's date range are generated by format.ts. None of them can hold a user's name.
+        if (el.closest('.eyebrow, .label-mono, .overline, .fo-hero-lbl, .fx-chip, .fo-btn, .fo-lk, .fo-pill, svg, .fx-bg, .fr-wn')) continue
         if (inScrollX(el)) continue
         // Csak a NÉV-szerű szövegeket nyújtjuk: egy számjegy, egy mértékegység vagy egy rövid
         // chip sosem lesz hosszú, és ellenük védekezni semmi ellen védekezés volna.
         if (text.length < 10) continue
         el.textContent = long
+        el.setAttribute('data-long', '')
         touched += 1
       }
       return touched
@@ -514,9 +559,17 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
     const size = await page.locator('.screen-content').evaluate(el => ({
       scrollWidth: el.scrollWidth, clientWidth: el.clientWidth,
     }))
-    // A csere darabszáma nem KÖVETELMÉNY: van lap, ahol minden szöveg rövid (számok, chipek).
-    // Ott a kör a természetes elrendezést méri, ami ugyanilyen érvényes állítás — a lényeg, hogy
-    // a lap SEMMILYEN tartalommal ne kezdjen oldalra görögni.
+    // …és egyik hosszú szöveg DOBOZA sem lóghat ki jobbra: egy `overflow: hidden` kártya a kilógó sort szó
+    // nélkül levágja, a lap pedig közben nem görög — pont így tűnt el annak idején a kártya jobb széle.
+    const cut = await page.evaluate(() => {
+      const right = (document.querySelector('.screen-content') as HTMLElement).getBoundingClientRect().right
+      return Array.from(document.querySelectorAll('[data-long]')).filter((el) => el.getBoundingClientRect().right > right + 1)
+        .map((el) => `${el.parentElement?.className ?? ''} > ${el.tagName.toLowerCase()}`)
+    })
+    expect(cut, `${path}: hosszú név lóg ki a lap jobb szélén (levágva)`).toEqual([])
+    // Minden itt felsorolt lapon VAN név-szerű szöveg (étel, recept, tétel, minta): ha a csere semmit
+    // sem ért el, a kizáró lista nyelte el a lapot, és a kör vakon lenne zöld (N1.7).
+    expect(stretched, `${path}: egyetlen név-szerű szöveget sem cserélt hosszúra`).toBeGreaterThan(2)
     expect(
       size.scrollWidth,
       `${path} vízszintesen görög (${size.scrollWidth}px a ${size.clientWidth}px-es sávban); `
@@ -528,39 +581,51 @@ for (const path of ['/fuel', '/fuel/stack', '/fuel/stack/protocol', '/fuel/trend
 // ── Az étkezés-részletek fejléce: semmi nem lóg egymásra (mezo-jb84) ──────────────────────────
 // Az AI pont-chip abszolút pozícióval lebegett a jobb oszlop fölött, és ráült a „mikor logoltad"
 // kártyára. Két egymásra rajzolt elem jsdom-ban láthatatlan — geometria kell hozzá, ezért él itt.
-test('a részletek fejlécében a pont-chip és a mikor-kártya nem fedi egymást', async ({ page }) => {
+// Folyadék F5 (mezo-n4wf5.5): a fejléc a kit hero-ja (`.fe-mealhero`): a tál és mellette a szám a
+// tényekkel (`.fx-ng`), alatta az ítélet, a folyadék-soron pedig az értékelés gombja és a vércukor
+// linkje. Lebegő chip nincs — a kikötés ugyanaz maradt: a hero darabjai nem fedik egymást, és mind
+// a kártyán belül áll.
+test('a részletek fejlécében az értékelés, a vércukor és a tények nem fedik egymást', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
   // KÖZVETLENÜL nyitjuk a részleteket, nem a Mai sorára kattintva: a kattintás-alapú út a CI
-  // lassabb gépén megbízhatatlanul vitt tovább, és ennek a körnek a GEOMETRIA a dolga. Hogy a
-  // chip melyik oldalra visz, azt a saját egységtesztje köti ki (FuelMaiPage.test.tsx).
+  // lassabb gépén megbízhatatlanul vitt tovább, és ennek a körnek a GEOMETRIA a dolga.
   // Az `m1` a mock-nap első logolt étkezése; ha ez elmozdul, a lenti állítás hangosan bukik.
   await page.goto('/fuel/etkezes/m1')
   await page.waitForLoadState('networkidle')
-  await page.waitForSelector('.fmx-detail-hero', { timeout: 10_000 })
+  await page.waitForSelector('.fe-mealhero', { timeout: 10_000 })
   await page.evaluate(() => document.fonts.ready)
 
   const boxes = await page.evaluate(() => {
+    const hero = document.querySelector('.fe-mealhero') as HTMLElement
     const rect = (sel: string) => {
-      const el = document.querySelector(sel)
+      const el = hero.querySelector(sel)
       if (!el) return null
       const b = el.getBoundingClientRect()
       return { top: b.top, bottom: b.bottom, left: b.left, right: b.right }
     }
-    return { score: rect('.fmx-detail-score'), when: rect('.fmx-detail-when'), share: rect('.fmx-detail-share') }
+    const h = hero.getBoundingClientRect()
+    return { hero: { top: h.top, bottom: h.bottom, left: h.left, right: h.right },
+      bowl: rect('.fx-ng .gg'), number: rect('.fx-ng-n'), facts: rect('.fe-facts'), verdict: rect('.fo-hero-verdict'),
+      score: rect('.fo-hero-acts .fo-btn'), glucose: rect('.fo-hero-acts .fo-lk') }
   })
 
-  expect(boxes.score, 'a részletek fejléce nem hozott pont-chipet').not.toBeNull()
-  expect(boxes.when, 'a részletek fejléce nem hozott mikor-kártyát').not.toBeNull()
-  const overlaps = (a: { top: number; bottom: number; left: number; right: number },
-                    b: { top: number; bottom: number; left: number; right: number }) =>
+  type Box = { top: number; bottom: number; left: number; right: number }
+  const overlaps = (a: Box, b: Box) =>
     !(a.bottom <= b.top + 1 || b.bottom <= a.top + 1 || a.right <= b.left + 1 || b.right <= a.left + 1)
-  expect(overlaps(boxes.score!, boxes.when!), 'a pont-chip rálóg a mikor-kártyára').toBe(false)
-  if (boxes.share) {
-    expect(overlaps(boxes.score!, boxes.share), 'a pont-chip rálóg a nap-arány kártyára').toBe(false)
+  const parts: Array<[string, Box | null]> = [['a tál', boxes.bowl], ['a kcal-szám', boxes.number], ['a tények sora', boxes.facts],
+    ['az ítélet', boxes.verdict], ['az értékelés gombja', boxes.score], ['a vércukor link', boxes.glucose]]
+  for (const [name, box] of parts) {
+    expect(box, `a részletek fejléce nem hozta: ${name}`).not.toBeNull()
+    expect(box!.left, `${name} kilóg a hero bal szélén`).toBeGreaterThanOrEqual(boxes.hero.left - 0.5)
+    expect(box!.right, `${name} kilóg a hero jobb szélén`).toBeLessThanOrEqual(boxes.hero.right + 0.5)
   }
-  // Az owner elrendezése: az értékelés JOBB FENT áll — a mikor-kártya fölött.
-  expect(boxes.score!.bottom).toBeLessThanOrEqual(boxes.when!.top + 1)
+  for (let i = 0; i < parts.length; i++) for (let j = i + 1; j < parts.length; j++) {
+    expect(overlaps(parts[i][1]!, parts[j][1]!), `${parts[i][0]} rálóg erre: ${parts[j][0]}`).toBe(false)
+  }
+  // A sorrend: a szám és a tények FENT, az ítélet alattuk, az értékelés gombja a folyadék-soron legalul.
+  expect(boxes.facts!.bottom).toBeLessThanOrEqual(boxes.verdict!.top + 1)
+  expect(boxes.verdict!.bottom).toBeLessThanOrEqual(boxes.score!.top + 1)
 })
 
 // ── The explain link's hit area (mezo-b516k fix round 1; rewritten in Folyadék F3, mezo-n4wf5.3) ──

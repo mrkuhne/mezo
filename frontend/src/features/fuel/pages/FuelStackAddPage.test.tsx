@@ -6,6 +6,9 @@
 //
 // Őszinte-null: ismeretlen hatóanyagnál nem adunk adagot, ismeretlen termékerősségnél nincs
 // darabszám — és minden adag-felületen ott áll, hogy ez nem orvosi tanács.
+//
+// Folyadék F5 (mezo-n4wf5.5): háromlépéses sáv a lap tetején, a javaslat a hős (az ajánlott sáv
+// grafikonja + egy mondat), a „Tovább" és a mentés a lebegő alsó sávon ül.
 // ============================================================
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -47,7 +50,7 @@ describe('FuelStackAddPage — a beállító egyetlen oldalon', () => {
     await userEvent.type(screen.getByLabelText(/Egy egységben/), '2000')
     await userEvent.click(screen.getByRole('button', { name: /Tovább/ }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getAllByText('Javaslat').length).toBeGreaterThan(0)
+    expect(screen.getByText('3. Javaslat').closest('li')).toHaveAttribute('aria-current', 'step')
   })
 
   // A termék linkről is megadható, mint a kamra beolvasásnál.
@@ -76,10 +79,11 @@ describe('FuelStackAddPage — a beállító egyetlen oldalon', () => {
     await userEvent.type(screen.getByLabelText(/Mértékegység/), 'NE')
     await userEvent.type(screen.getByLabelText(/Dobozban/), '120')
     await userEvent.click(screen.getByRole('button', { name: /Tovább/ }))
-    expect(screen.getByText(/4 kapszula/)).toBeInTheDocument()
-    expect(screen.getAllByText(/4000 NE/).length).toBeGreaterThan(0)
+    expect(screen.getByText('Napi 4 kapszula, azaz 4 000 NE.')).toBeInTheDocument()
+    expect(screen.getByText(/Ez az ajánlott 2 000–4 000 NE sávban van\. A doboz kb\. 30 napra elég\./)).toBeInTheDocument()
+    // the band chart says the same for screen readers
+    expect(screen.getByRole('img', { name: 'A napi 4 000 NE az ajánlott 2 000–4 000 NE sávban' })).toBeInTheDocument()
     expect(screen.getByText(/zsíros étkezéssel/i)).toBeInTheDocument()
-    expect(screen.getByText(/~30 napra elég/)).toBeInTheDocument()
   })
 
   // Határvonal: ez tájékoztatás, nem orvosi tanács — minden adag-felületen ott áll.
@@ -112,8 +116,8 @@ describe('FuelStackAddPage — a beállító egyetlen oldalon', () => {
     await userEvent.click(screen.getByRole('button', { name: /Beírom kézzel/ }))
     await userEvent.type(screen.getByLabelText(/Termék neve/), 'D3-vitamin')
     await userEvent.click(screen.getByRole('button', { name: /Tovább/ }))
-    expect(screen.getByText(/2000–4000/)).toBeInTheDocument()
-    expect(screen.getByText(/darabszámot\s+nem mondok/i)).toBeInTheDocument()
+    expect(screen.getByText('Hiányzik egy adat: mennyi van egy egységben.')).toBeInTheDocument()
+    expect(screen.getByText(/2 000–4 000 NE sávot, de darabszámot így nem mondok/i)).toBeInTheDocument()
     expect(screen.queryByText(/napra elég/)).toBeNull()
   })
 

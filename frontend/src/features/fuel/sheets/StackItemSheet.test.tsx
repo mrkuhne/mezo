@@ -45,7 +45,9 @@ test('shows the auto-placement reason, no unpin button, when the occurrence is n
   const { Wrapper } = sharedWrapper()
   render(<Wrapper><StackItemSheet entry={magnezEntry} onClose={() => {}} /></Wrapper>)
   expect(screen.getByText(magnezEntry.reason!)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Vissza autóra' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Vissza automatikusra' })).not.toBeInTheDocument()
+  // the head names the sheet without the word „stack"
+  expect(screen.getByText('Kiegészítők · időzítés · 300mg')).toBeInTheDocument()
 })
 
 test('shows the pinned placement line + unpin button when the occurrence is pinned', () => {
@@ -53,7 +55,8 @@ test('shows the pinned placement line + unpin button when the occurrence is pinn
   const pinned: StackDayEntry = { ...magnezEntry, pinned: true, persistedZone: 'bedtime' }
   render(<Wrapper><StackItemSheet entry={pinned} onClose={() => {}} /></Wrapper>)
   expect(screen.getByText(/Ide raktad kézzel/)).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Vissza autóra' })).toBeInTheDocument()
+  expect(screen.getByText('Ide raktad kézzel (Lefekvés)')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza automatikusra' })).toBeInTheDocument()
 })
 
 test('unpin calls unpinItem and closes the sheet', async () => {
@@ -61,7 +64,7 @@ test('unpin calls unpinItem and closes the sheet', async () => {
   const onClose = vi.fn()
   const pinned: StackDayEntry = { ...magnezEntry, pinned: true }
   render(<Wrapper><StackItemSheet entry={pinned} onClose={onClose} /></Wrapper>)
-  await userEvent.click(screen.getByRole('button', { name: 'Vissza autóra' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza automatikusra' }))
   await waitFor(() => expect(onClose).toHaveBeenCalled())
 })
 
@@ -98,7 +101,7 @@ test('the CURRENT zone chip is disabled — tapping it is a no-op, no mutation f
   // magnezEntry.persistedZone is 'evening' ('Este') — the FIRST 'Este' match (DOM order) is the
   // move-zone picker's current-zone chip; the second is the unrelated "+ Még egy bevétel" add-zone
   // chip, which stays interactive.
-  const currentZoneChip = screen.getAllByRole('button', { name: 'Este ✓' })[0]
+  const currentZoneChip = screen.getByRole('button', { name: 'Este (most itt van)' })
   expect(currentZoneChip).toBeDisabled()
   await userEvent.click(currentZoneChip)
   expect(onClose).not.toHaveBeenCalled()
@@ -141,7 +144,7 @@ test('+ Még egy bevétel adds a second occurrence for the same pantry item', as
   )
 })
 
-test('Eltávolítás a stackből calls removeAllFor and closes the sheet', async () => {
+test('Eltávolítás a kiegészítőim közül calls removeAllFor and closes the sheet', async () => {
   const { Wrapper } = sharedWrapper()
   let occ: ReturnType<typeof useProtocol>['occurrences'] = []
   const onClose = vi.fn()
@@ -151,7 +154,7 @@ test('Eltávolítás a stackből calls removeAllFor and closes the sheet', async
       <StackItemSheet entry={magnezEntry} onClose={onClose} />
     </Wrapper>,
   )
-  await userEvent.click(screen.getByRole('button', { name: /Eltávolítás a stackből/ }))
+  await userEvent.click(screen.getByRole('button', { name: 'Eltávolítás a kiegészítőim közül' }))
   await waitFor(() => expect(onClose).toHaveBeenCalled())
   await waitFor(() => expect(occ.some(o => o.pantryItemId === 'magnez')).toBe(false))
 })

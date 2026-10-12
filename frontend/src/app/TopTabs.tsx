@@ -9,7 +9,7 @@
 // Look: docs/design_2.0/prototypes/vilagos/kit.js `top(d,o)` (`.fh-tabs`); CSS `.fo-tabs`
 // in styles/folyadek-frame.css.
 // ============================================================
-import { useId } from 'react'
+import { useId, useLayoutEffect, useRef } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
@@ -18,6 +18,9 @@ import { useM } from '@/shared/i18n'
 
 /** The tab whose pill carries the Mezo thread's unread count. */
 const THREAD_TAB = '/nap/uzenetek'
+
+/** Air kept between the lit pill and the row's edge when the row is scrolled to show it. */
+const TAB_EDGE = 8
 
 export interface TopTabsProps {
   /**
@@ -34,13 +37,31 @@ export function TopTabs({ dots }: TopTabsProps = {}) {
   const t = useM().frame.topTabs
   const idBase = useId()
   const domain = domainById(activeDomainId(pathname))
-  if (!domain || !isHubPath(domain, pathname)) return null
-  const activeRoute = activeTabRoute(domain, pathname)
+  const hub = !!domain && isHubPath(domain, pathname)
+  const activeRoute = domain && hub ? activeTabRoute(domain, pathname) : null
+  const activeTab = domain?.tabs.find((tab) => tab.route === activeRoute)
+  const activeLabel = domain && activeTab ? tabLabel(domain.id, activeTab) : null
+  // The row scrolls sideways when the four names do not fit (English at 320 px: „Kitchen" starts
+  // off-screen, bible F5.5) — the lit tab must be on screen on arrival and after every switch.
+  // Only the ROW moves (its own scrollLeft, never `scrollIntoView`, which may scroll the page),
+  // and it moves at once: no animation, so nothing to switch off under reduced motion. Keyed on
+  // the label too: a language switch changes every pill's width.
+  const navRef = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const nav = navRef.current
+    const lit = nav?.querySelector<HTMLElement>('a[aria-current="page"]')
+    if (!nav || !lit) return
+    const row = nav.getBoundingClientRect()
+    const pill = lit.getBoundingClientRect()
+    if (pill.right > row.right - TAB_EDGE) nav.scrollLeft += pill.right - row.right + TAB_EDGE
+    else if (pill.left < row.left + TAB_EDGE) nav.scrollLeft = Math.max(0, nav.scrollLeft - (row.left - pill.left + TAB_EDGE))
+  }, [activeRoute, activeLabel])
+  if (!domain || !hub) return null
   return (
     // `train-tabs` anchors the Edzés kalauz's tab-row orientation card (mezo-88iwa.5): this
     // strip IS the négy fül. Scoped to the train domain so the other domains' strips do not
     // spuriously satisfy the anchor lookup.
-    <nav className="fo-tabs" aria-label={t.pagesOf(domainName(domain))}
+    <nav ref={navRef} className="fo-tabs" aria-label={t.pagesOf(domainName(domain))}
       data-kalauz-anchor={domain.id === 'train' ? 'train-tabs' : undefined}>
       {domain.tabs.map((tab, i) => {
         const active = tab.route === activeRoute

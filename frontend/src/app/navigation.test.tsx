@@ -111,8 +111,9 @@ test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () =>
   // (S2/mezo-g2vl: the four-tile mosaic became the band list + two poster doors; the protocol
   // door is the surviving stable landmark.)
   expect(await screen.findByRole('button', { name: /Protokoll/ })).toBeInTheDocument()
-  expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
-  expect(container.querySelector('.mz-page-head')).not.toBeInTheDocument()
+  // Folyadék F5 (mezo-n4wf5.5): the page is the kit page of the Kiegészítők area — no old page shell, no own head.
+  expect(container.querySelector('.fo-page.fk-page')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page, .mz-page-head')).not.toBeInTheDocument()
 })
 
 test('/mezo/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {
@@ -433,7 +434,7 @@ test('/fuel/log/uj is a stable full-page sibling — the logging page (mezo-bq2t
   const { container } = renderApp('/fuel/log/uj')
   // No `w` → the honest out-of-window face is the route-independent landmark.
   expect(await screen.findByText('Ablakon kívül')).toBeInTheDocument()
-  expect(container.querySelector('.mz-page.flognew-page')).toBeInTheDocument()
+  expect(container.querySelector('.fo-page.fg-composer')).toBeInTheDocument()
 })
 
 test('hides the quick-log FAB on the logging page but keeps the bottom bar (mezo-bq2t)', async () => {
@@ -443,6 +444,23 @@ test('hides the quick-log FAB on the logging page but keeps the bottom bar (mezo
   await screen.findByText('Ablakon kívül')
   expect(container.querySelector('.fo-fab')).toBeNull()
   expect(container.querySelector('.fo-nav')).not.toBeNull()
+})
+
+// Folyadék F5 (mezo-n4wf5.5): a Fuel page that draws the kit's floating foot (`Page foot`) owns the thumb zone — the FAB
+// sat on the right end of the add wizard's „Tovább" bar. The prototype shows no FAB on these pages.
+test.each([
+  '/fuel/stack/manage/add',
+  '/fuel/recipes/new',
+  '/fuel/recipes/rec-1/edit',
+])('hides the quick-log FAB on %s (the page has its own floating foot) but keeps the bottom bar', (path) => {
+  const { container } = renderApp(path)
+  expect(container.querySelector('.fo-page')).not.toBeNull()
+  expect(container.querySelector('.fo-fab')).toBeNull()
+  expect(container.querySelector('.fo-nav')).not.toBeNull()
+})
+test('the recipe page itself (no foot) keeps the quick-log FAB', () => {
+  const { container } = renderApp('/fuel/recipes/rec-1')
+  expect(container.querySelector('.fo-fab')).not.toBeNull()
 })
 
 test('hides the quick-log FAB on the quick-log picker page itself (mezo-mhum)', async () => {

@@ -80,13 +80,13 @@ describe('RecipeOverrideRow', () => {
 
   it('marks a changed line and offers a reset', () => {
     const { onReset } = row({ amount: 0.5 })
-    expect(screen.getByText(/mód/i)).toBeInTheDocument()
+    expect(screen.getByText(/eredetileg 1 db/)).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /banán visszaállítás/i }))
     expect(onReset).toHaveBeenCalled()
   })
 
-  it('shows no MÓD chip when the amount is unchanged', () => {
+  it('shows no original-amount mark when the amount is unchanged', () => {
     row()
-    expect(screen.queryByText(/mód/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/eredetileg/)).not.toBeInTheDocument()
   })
 })

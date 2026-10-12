@@ -648,11 +648,11 @@ function ertesitesek(arg){
 /* N1 (2026-10-11): the Settings pages are the first screens written in both languages — L(hu,en), English written
    as English (bible §2.5). The „Nyelv" block lives on „Megjelenés és alkalmazás" (b-alt). */
 const DOMI={fuel:'c-i-tanyer',train:'c-i-edzes',mezo:'c-i-mezo',en:'c-i-emberek',nap:'c-i-nap'};
-const srow=(icn,t,s,go,v)=>row({icon:icn,title:t,sub:s,v,on:go?(go[0]==='#'?go.slice(1):{toast:go}):null});
+const srow=(icn,t,s,go,v)=>row({icon:icn,title:t,sub:s,v,on:go?(typeof go==='object'?go:go[0]==='#'?go.slice(1):{toast:go}):null});
 const sth=(lbl,h,p,icon,acts)=>hero({lbl,verdict:h,sub:p,left:hart(icon),acts});
 const dec=v=>window.LANG==='en'?String(v).replace(/,/g,'.'):v;
 function beall(){
-  const D=[['fuel','Fuel',L('Táplálkozás, ahogy neked jó.','Eating that suits you.'),L('Kalória és makrók · étkezési ritmus','Calories and macros · meal rhythm'),L('Fuel beállítások (a Fuel-körben kész)','Fuel settings (done in the Fuel round)')],
+  const D=[['fuel','Fuel',L('Táplálkozás, ahogy neked jó.','Eating that suits you.'),L('Kalória és makrók · étkezési ritmus','Calories and macros · meal rhythm'),{dom:'fuel',go:'beallitas'}],
     ['train',L('Edzés','Training'),L('Helyet a mozgásnak.','Make room to move.'),L('Gym-időpontok · rendszeres sport','Gym times · regular sport'),'#b-train'],
     ['mezo','Mezo',L('A közös nyelvünk.','How we talk.'),L('Rólam · instrukciók · személyes kontextus','About me · instructions · personal context'),'#b-mezo'],
     ['en',L('Én','Me'),L('A tested. A céljaid.','Your body. Your goals.'),L('Testprofil · súlycél · alvás','Body profile · weight goal · sleep'),'#b-me'],

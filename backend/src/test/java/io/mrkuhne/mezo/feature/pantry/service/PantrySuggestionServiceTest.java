@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.PantrySuggestionResponse;
 import io.mrkuhne.mezo.feature.pantry.config.PantrySuggestionProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,8 @@ import org.junit.jupiter.api.Test;
 class PantrySuggestionServiceTest {
 
     private final PantrySuggestionService service =
-        new PantrySuggestionService(new PantrySuggestionProperties(3, new BigDecimal("0.8")));
+        new PantrySuggestionService(new PantrySuggestionProperties(3, new BigDecimal("0.8")),
+            UserMessages.fixed("hu"));
 
     private PantryItemEntity food(String name, String category, Integer priceHuf, String priceUnit, Integer nova) {
         PantryCatalogEntity c = new PantryCatalogEntity();
@@ -107,5 +109,23 @@ class PantrySuggestionServiceTest {
             food("Kategóriátlan", null, 100, "/kg", null)));
 
         assertThat(out).isEmpty();
+    }
+
+    @Test
+    void testSuggest_shouldWriteTheReasonInEnglish_whenAccountIsEnglish() {
+        PantrySuggestionService english = new PantrySuggestionService(
+            new PantrySuggestionProperties(3, new BigDecimal("0.8")), UserMessages.fixed("en"));
+
+        List<PantrySuggestionResponse> cheaper = english.suggest(List.of(
+            food("Prémium csirkemell", "meat", 4000, "/kg", null),
+            food("Csirkemell", "meat", 2500, "/kg", null)));
+        List<PantrySuggestionResponse> lowNova = english.suggest(List.of(
+            food("Gabonapehely", "grains", null, null, 4),
+            food("Zabpehely", "grains", null, null, 1)));
+
+        // the item names are the user's own words and stay as written
+        assertThat(cheaper.getFirst().getReason()).isEqualTo("Cheaper than Prémium csirkemell (−37%)");
+        assertThat(lowNova.getFirst().getName()).isEqualTo("Zabpehely");
+        assertThat(lowNova.getFirst().getReason()).isEqualTo("Replaces Gabonapehely: NOVA 4 → NOVA 1");
     }
 }

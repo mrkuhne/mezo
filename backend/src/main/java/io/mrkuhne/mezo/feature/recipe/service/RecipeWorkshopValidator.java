@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.WorkshopDraft;
 import io.mrkuhne.mezo.api.dto.WorkshopDraftLine;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.recipe.config.RecipeWorkshopProperties;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ public class RecipeWorkshopValidator {
     private static final Set<String> CATEGORIES = Set.of("breakfast", "lunch", "dinner", "snack");
 
     private final RecipeWorkshopProperties props;
+    private final UserMessages messages;
 
     /** LLM answer contract — ids as String so a malformed uuid demotes the line, not the call. */
     public record RawLine(String pantryItemId, String name, BigDecimal amount, String unit,
@@ -49,7 +51,7 @@ public class RecipeWorkshopValidator {
     public WorkshopDraft sanitize(RawDraft raw, Function<UUID, Optional<PantryItemEntity>> pantryLookup,
             BiFunction<String, String, Optional<PantryItemEntity>> nameMatch) {
         WorkshopDraft out = new WorkshopDraft();
-        out.setName(raw.name() == null || raw.name().isBlank() ? "Új recept" : raw.name().strip());
+        out.setName(raw.name() == null || raw.name().isBlank() ? messages.text("RECIPE_WORKSHOP_DEFAULT_NAME") : raw.name().strip());
         out.setCategory(raw.category() != null && CATEGORIES.contains(raw.category()) ? raw.category() : "dinner");
         int servings = raw.servings() == null ? 1 : raw.servings();
         out.setServings(Math.max(1, Math.min(12, servings)));

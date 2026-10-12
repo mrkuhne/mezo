@@ -1,4 +1,5 @@
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
+import { m } from '@/shared/i18n'
 import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
 import type { EnergyBreakdown } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 
@@ -15,7 +16,7 @@ export function buildTdeeBreakdown(profile: BiometricProfileResponse): EnergyBre
   const label = profile.activityLevel ? ACTIVITY_SHORT[profile.activityLevel as ActivityLevel] : ''
   return {
     base: { kcal: tb.neatBaselineKcal, bmr: tb.bmr, neat: tb.neat, neatLabel: label, formula: tb.formula },
-    movement: { kcal: tb.weeklyEatKcalPerDay, isWeeklyAvg: true, label: 'Tervezett mozgás · heti átlag' },
+    movement: { kcal: tb.weeklyEatKcalPerDay, isWeeklyAvg: true, label: m().fuelLogika.energyBreakdown.plannedWeeklyAvg },
     target: tb.tdee,
   }
 }

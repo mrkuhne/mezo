@@ -46,8 +46,8 @@ test('az állapot-szó a ház meglévő szótárából jön', () => {
   expect(label('confirmed')).toBe('Megerősítve')
   expect(label('monitoring')).toBe('Figyeljük')
   expect(label('rejected')).toBe('Elvetve')
-  expect(label('refuted')).toBe('Megnéztük — nem igazolódott')
-  expect(label('dormant')).toBe('Pihen — várom az adatot')
+  expect(label('refuted')).toBe('Megnéztük, nem igazolódott')
+  expect(label('dormant')).toBe('Pihen, várom az adatot')
   expect(label(undefined)).toBe('Döntésre vár')
 })
 

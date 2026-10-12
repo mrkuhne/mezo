@@ -10,17 +10,22 @@ import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
 import { fuelDay } from '@/data/fuel/fuel'
 import { buildFuelSettingsMacroPreview, projectDraftTargets } from '@/features/fuel/logic/fuelSettingsPreview'
 import { onToast } from '@/shared/lib/toastBus'
+import { fmtGrouped } from '@/shared/lib/format'
 
 // The mock seed's served targets (mezo-32m82 — derived from the mock goal), and the page's own
 // number formatting; expectations are expressions off them, never pasted literals.
 const SEED = fuelDay.targets
-const hu = (n: number) => new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0, useGrouping: true }).format(n)
-const row = (m: { pct: number; grams: number }) => `${m.pct}% · ${hu(m.grams)} g`
+const hu = (n: number) => fmtGrouped(n)
+// Folyadék (mezo-n4wf5.5): a macro is a vial — its share as the value, the name and the grams under it.
+const row = (m: { pct: number; grams: number }, name: string) => `${m.pct}%${name}${hu(m.grams)} g`
+const [P, C, F] = ['Fehérje', 'Szénhidrát', 'Zsír']
+/** The meals-per-day stepper (a group named by what it counts). */
+const meals = () => screen.getByRole('group', { name: 'Étkezés' })
 const SAVED = buildFuelSettingsMacroPreview(SEED)!
 // The macros card's text with every space kind squeezed out (the page groups thousands with a
 // no-break space), so a formatted figure can be asserted without caring which space ICU picked.
 const flat = (t: string) => t.replace(/\s/g, '')
-const macrosText = () => flat(document.querySelector('[aria-labelledby="fset-macros-title"]')?.textContent ?? '')
+const macrosText = () => flat(document.querySelector('.fb-mac')?.textContent ?? '')
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -54,9 +59,12 @@ describe('FuelSettingsPage', () => {
     renderPage()
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Fuel beállítások' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('4')
-    expect(screen.getByLabelText('Koffein-cutoff')).toHaveValue('14:00')
+    // the title lives in the frame's title bar; alone, the page keeps its own back pill and draws no h1
+    expect(screen.queryByRole('heading', { level: 1 })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Beállítások')
+    expect(screen.getByText('Étkezés / nap')).toBeInTheDocument()
+    expect(meals()).toHaveTextContent('4')
+    expect(screen.getByLabelText('Koffein-stop')).toHaveValue('14:00')
   })
 
   test('meal stepper clamps between 3 and 6', async () => {
@@ -65,7 +73,7 @@ describe('FuelSettingsPage', () => {
 
     await userEvent.click(minus)
 
-    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('3')
+    expect(meals()).toHaveTextContent('3')
     expect(minus).toBeDisabled()
   })
 
@@ -101,11 +109,11 @@ describe('FuelSettingsPage', () => {
     const user = userEvent.setup()
     const { client } = renderPage()
     await user.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
-    fireEvent.change(screen.getByLabelText('Koffein-cutoff'), { target: { value: '13:00' } })
+    fireEvent.change(screen.getByLabelText('Koffein-stop'), { target: { value: '13:00' } })
     await user.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_carb')
     await user.click(screen.getByRole('button', { name: 'Magas' }))
-    fireEvent.change(screen.getByLabelText('Víz-cél'), { target: { value: '3200' } })
-    fireEvent.change(screen.getByLabelText('Rost-cél'), { target: { value: '35' } })
+    fireEvent.change(screen.getByLabelText('Víz-cél (ml)'), { target: { value: '3200' } })
+    fireEvent.change(screen.getByLabelText('Rost-cél (g)'), { target: { value: '35' } })
 
     await user.click(screen.getByRole('button', { name: /Mentés/ }))
 
@@ -175,10 +183,13 @@ describe('FuelSettingsPage', () => {
 
   test('composes the rhythm hero before the floating settings cards', () => {
     const { container } = renderPage()
-    const page = container.querySelector('.fset-page')
-    const hero = container.querySelector('.fset-hero')
-    const rhythm = container.querySelector('[aria-labelledby="fset-rhythm-title"]')
-    const macros = container.querySelector('[aria-labelledby="fset-macros-title"]')
+    const page = container.querySelector('.fo-page.fb-page')
+    const hero = container.querySelector('.fo-hero.fb-hero')
+    const rhythm = container.querySelector('.fb-rhythm')
+    const macros = container.querySelector('.fb-mac')
+    expect([...container.querySelectorAll('h2.fo-sec')].map((h) => h.textContent)).toEqual(['1Ritmus', '2Makrók', '3Célok', '4Finomhangolás'])
+    // no glass, no ring: the old skin left the markup
+    expect(container.querySelector('.glass, .fset-donut, [class^="fset-"]')).toBeNull()
 
     expect(page).toBeInTheDocument()
     expect(hero).toBeInTheDocument()
@@ -191,9 +202,12 @@ describe('FuelSettingsPage', () => {
   test('shows the active target as kcal plus normalized percent and grams', () => {
     renderPage()
     expect(macrosText()).toContain(flat(`${hu(SEED.kcal)} kcal`))
-    expect(macrosText()).toContain(flat(row(SAVED.protein)))
-    expect(macrosText()).toContain(flat(row(SAVED.carbs)))
-    expect(macrosText()).toContain(flat(row(SAVED.fat)))
+    expect(macrosText()).toContain(flat(`Mai cél alapján · ${hu(SEED.kcal)} kcal · aktív cél`))
+    expect(macrosText()).toContain(flat(row(SAVED.protein, P)))
+    expect(macrosText()).toContain(flat(row(SAVED.carbs, C)))
+    expect(macrosText()).toContain(flat(row(SAVED.fat, F)))
+    // three vials, not a ring
+    expect(document.querySelectorAll('.fb-mac .fo-vial')).toHaveLength(3)
   })
 
   // mezo-u2pd: the preview used to be pinned to the SAVED targets, so flipping the profile moved
@@ -208,9 +222,10 @@ describe('FuelSettingsPage', () => {
       projectDraftTargets(SEED, { splitPreset: 'low_carb', fatPctX10: null, proteinTier: 'moderate' }, 'moderate'))!
     expect(macrosText()).toContain(flat(`${hu(SEED.kcal)} kcal`))
     expect(lowCarb.fat.grams).toBe(Math.round(SEED.kcal * 0.4 / 9))
-    expect(macrosText()).toContain(flat(row(lowCarb.fat)))
-    expect(macrosText()).not.toContain(flat(row(SAVED.fat)))
-    expect(screen.getByText('Előnézet — mentésre válik élessé')).toBeInTheDocument()
+    expect(macrosText()).toContain(flat(row(lowCarb.fat, F)))
+    expect(macrosText()).not.toContain(flat(row(SAVED.fat, F)))
+    expect(macrosText()).toContain(flat('Mai cél a beállítás szerint'))
+    expect(screen.getByText('Előnézet: mentésre válik élessé.')).toBeInTheDocument()
   })
 
   test('re-projects the preview when the protein tier changes', async () => {
@@ -219,7 +234,7 @@ describe('FuelSettingsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Magas' }))
 
     // moderate 2.0 → high 2.2 g/kg BW: the seed protein target scales by 1.1.
-    expect(macrosText()).toContain(flat(`· ${hu(Math.round(SEED.p * 1.1))} g`))
+    expect(macrosText()).toContain(flat(`${P}${hu(Math.round(SEED.p * 1.1))} g`))
   })
 
   test('holds the last valid projection while a custom split does not sum to 100%', async () => {
@@ -229,19 +244,64 @@ describe('FuelSettingsPage', () => {
     fireEvent.change(screen.getByLabelText('Zsír %'), { target: { value: '10' } })
 
     // 30/40/10 is not 100 — the draft is unprojectable, so the saved split stays on screen.
-    expect(macrosText()).toContain(flat(row(SAVED.fat)))
+    expect(macrosText()).toContain(flat(row(SAVED.fat, F)))
+    expect(screen.getByRole('alert')).toHaveTextContent('Az arányoknak 100%-ra kell összegződniük.')
   })
 
-  test('updates the accessible hero summary and decorative meal dots from the draft', async () => {
+  // New, approved (mezo-n4wf5.5): the hero draws the day's real windows by name with their kcal, and follows the draft.
+  test('the hero draws the named windows with kcal and follows the draft', async () => {
     const { container } = renderPage()
+    const hero = container.querySelector('.fb-hero')!
 
     expect(screen.getByText('4 étkezés · koffein-stop 14:00')).toBeInTheDocument()
-    expect(container.querySelectorAll('.fset-meal-dot')).toHaveLength(4)
-    expect(container.querySelector('.fset-dayarc')).toHaveAttribute('aria-hidden', 'true')
+    expect(hero).toHaveTextContent('Napi ritmus · 4 étkezés')
+    expect(hero).toHaveTextContent(`A kereted ma ${hu(SEED.kcal)} kcal, négy étkezésre osztva.`)
+    expect(hero.querySelectorAll('.fb-tide-win')).toHaveLength(4)
+    expect([...hero.querySelectorAll('.fb-tide text.nm')].map((t) => t.textContent)).toEqual(['Reggeli', 'Ebéd', 'Uzsonna', 'Vacsora'])
+    // the vessels' kcal add up to the day's budget
+    const kcals = [...hero.querySelectorAll('.fb-tide text.val')].map((t) => Number(t.textContent!.replace(/\s/g, '')))
+    expect(kcals.reduce((a, b) => a + b, 0)).toBe(SEED.kcal)
+    expect(hero.querySelector('.fb-tide text.w')).toHaveTextContent('14:00 koffein-stop')
+    expect(screen.getByRole('img', { name: 'A nap étkezései idővonalon' })).toBeInTheDocument()
+
     await userEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
-    fireEvent.change(screen.getByLabelText('Koffein-cutoff'), { target: { value: '13:00' } })
+    fireEvent.change(screen.getByLabelText('Koffein-stop'), { target: { value: '13:00' } })
     expect(screen.getByText('5 étkezés · koffein-stop 13:00')).toBeInTheDocument()
-    expect(container.querySelectorAll('.fset-meal-dot')).toHaveLength(5)
+    expect(hero.querySelectorAll('.fb-tide-win')).toHaveLength(5)
+    expect(hero).toHaveTextContent('öt étkezésre osztva')
+    expect(hero.querySelector('.fb-tide text.w')).toHaveTextContent('13:00 koffein-stop')
+  })
+
+  // A saved split of today's day type is what the day really uses: the hero shows THOSE windows.
+  test('with a saved split for today the hero shows the own windows', () => {
+    const { wrapper: Wrapper, client } = makeHookWrapperWithClient()
+    client.setQueryData(['fuelSlotTemplates'], (['rest', 'training_am', 'training_pm'] as const).map((dayType) => ({
+      dayType,
+      slots: [
+        { label: 'Korai', slotKind: 'breakfast', role: 'standard', anchor: { type: 'fixed', time: '08:00' }, budgetPct: 40 },
+        { label: 'Késői', slotKind: 'dinner', role: 'standard', anchor: { type: 'fixed', time: '18:00' }, budgetPct: 60 },
+      ],
+    })))
+    const { container } = render(
+      <Wrapper><MemoryRouter initialEntries={['/settings/fuel']}><Routes><Route path="/settings/fuel" element={<FuelSettingsPage />} /></Routes></MemoryRouter></Wrapper>,
+    )
+    expect([...container.querySelectorAll('.fb-tide text.nm')].map((t) => t.textContent)).toEqual(['Korai', 'Késői'])
+    expect(container.querySelector('.fb-hero')).toHaveTextContent('Napi ritmus · 2 étkezés')
+  })
+
+  // The fallback face (`beallitas.ablak-nelkul`): while the day has not resolved, equal nameless vessels.
+  test('while the day is loading the hero shows equal nameless vessels and says so', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(http.get(`${API_BASE}/api/fuel/day/:date`, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 150))
+      return HttpResponse.json(null, { status: 500 })
+    }))
+    const { container } = renderPage()
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Makróprofil' })).toBeInTheDocument())
+    const hero = container.querySelector('.fb-hero')!
+    expect(hero).toHaveTextContent('Az ablakaid most töltenek; addig egyenlő részeket mutatok.')
+    expect(hero.querySelectorAll('.fb-tide text.nm, .fb-tide text.val')).toHaveLength(0)
+    expect(hero.querySelectorAll('.fb-tide-win').length).toBeGreaterThanOrEqual(3)
   })
 })
 
@@ -265,38 +325,45 @@ describe('FuelSettingsPage — real-mode cold-open prefill', () => {
     }),
   )
 
-  test('disables save while loading, then re-syncs the untouched fuel prefill', async () => {
+  // Folyadék (mezo-n4wf5.5, prototype `beallitas.tolt`): while the saved values load only the hero stands —
+  // nothing can be changed (the old page drew the form inside a disabled fieldset; a user could not edit it either).
+  test('while loading only the hero stands, then the fuel prefill arrives', async () => {
     delayServerSettings()
-    renderPage()
+    const { container } = renderPage()
 
-    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('4')
-    expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
-    await waitFor(() => expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('6'))
-    expect(screen.getByLabelText('Koffein-cutoff')).toHaveValue('12:00')
+    expect(screen.getByRole('status')).toHaveTextContent('Beállítások betöltése…')
+    expect(container.querySelector('.fb-hero')).toHaveTextContent('Amíg töltünk, semmit nem lehet átállítani.')
+    expect(screen.queryByRole('button', { name: /Mentés/ })).toBeNull()
+    expect(screen.queryByRole('combobox', { name: 'Makróprofil' })).toBeNull()
+    expect(container.querySelectorAll('.fb-tide text.nm')).toHaveLength(0)
+    await waitFor(() => expect(meals()).toHaveTextContent('6'))
+    expect(screen.getByLabelText('Koffein-stop')).toHaveValue('12:00')
     await waitFor(() => expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled())
   })
 
-  test('preserves a fuel edit made before the server value lands', async () => {
+  test('a fuel edit after the load is not overwritten by a later refetch of the same values', async () => {
     delayServerSettings()
     renderPage()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
-    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('5')
+    await waitFor(() => expect(meals()).toHaveTextContent('6'))
+    fireEvent.click(screen.getByRole('button', { name: 'Étkezés csökkentése' }))
+    expect(meals()).toHaveTextContent('5')
     await waitFor(() => expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled())
-    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('5')
+    expect(meals()).toHaveTextContent('5')
   })
 
-  test('a fuel edit does not freeze the late-arriving diet prefill', async () => {
+  test('the late-arriving diet values are prefilled once the page opens', async () => {
     delayDietSettings()
     renderPage()
 
-    expect(screen.getByRole('combobox', { name: 'Makróprofil' })).toHaveValue('balanced')
-    fireEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
-    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('5')
+    expect(screen.getByRole('status')).toHaveTextContent('Beállítások betöltése…')
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Makróprofil' })).toHaveValue('low_carb'))
     expect(screen.getByRole('button', { name: 'Magas' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByLabelText('Víz-cél')).toHaveValue(3200)
-    expect(screen.getByLabelText('Rost-cél')).toHaveValue(35)
+    expect(screen.getByLabelText('Víz-cél (ml)')).toHaveValue(3200)
+    expect(screen.getByLabelText('Rost-cél (g)')).toHaveValue(35)
+    // a fuel edit now leaves the diet draft alone
+    fireEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
+    expect(screen.getByRole('combobox', { name: 'Makróprofil' })).toHaveValue('low_carb')
   })
 
   // mezo-tb3s2: no control edits dayTypeShiftKcal any more — a save must still round-trip the
@@ -337,7 +404,7 @@ describe('FuelSettingsPage — real-mode draft preview', () => {
     await waitFor(() => expect(screen.getByRole('combobox', { name: 'Makróprofil' })).toBeEnabled())
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_fat')
 
-    await waitFor(() => expect(screen.getByText('2 600 kcal')).toBeInTheDocument())
+    await waitFor(() => expect(macrosText()).toContain(flat('Mai cél a beállítás szerint · 2 600 kcal · aktív cél')))
     expect(seen.at(-1)).toMatchObject({ splitPreset: 'low_fat', proteinTier: 'moderate' })
   })
 })
@@ -357,5 +424,6 @@ test('failed draft preview is not presented as the new prescribed target', async
   await waitFor(() => expect(screen.getByLabelText('Makróprofil')).toBeEnabled())
   await userEvent.selectOptions(screen.getByLabelText('Makróprofil'), 'low_carb')
   expect(await screen.findByRole('alert')).toHaveTextContent('Az előnézet nem tölthető be')
-  expect(screen.queryByText('Mai cél a beállítás szerint')).not.toBeInTheDocument()
+  expect(screen.queryByText(/Mai cél a beállítás szerint/)).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Előnézet újrapróbálása' })).toBeInTheDocument()
 })

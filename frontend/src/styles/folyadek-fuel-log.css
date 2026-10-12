@@ -1,0 +1,171 @@
+/* ── Folyadék · Fuel · log (mezo-n4wf5.5, slice F5) ── area B · Logolás (log page, composer, modes, pickers) + the meal ceremony. Rules of this area only, class prefix `.fg-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
+   Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* ── the two overlays (LogFlowPage „Mit ettél?", the meal ceremony) ── portalled into `.phone-screen`, so they can open
+   over ANOTHER domain (Nap): they carry Fuel's own liquid and the light page ground themselves. z 60: above the bottom
+   bar (40), below the sheets (200+) the log flow hosts; the ceremony owns the screen (240, the old `.fcx-screen` tier). */
+.fg-flow, .fg-cers, .sheet.fg-pick { --dom: #149E6E; --dom2: #8FD14F; --liq1: var(--dom2); --liq2: var(--dom); }
+.fg-flow, .fg-cers { position: absolute; inset: 0; z-index: 60; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; color: var(--fo-ink);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--dom) 5%, #FBFDFE), color-mix(in srgb, var(--dom) 12%, #EAF2F6)); }
+.fg-cers { z-index: 240; }
+/* the kit page bleeds 12 px into the app scroller's side padding (`.fo-page { margin: 0 -12px }`): the overlay is its own
+   scroller, so it gives the same padding */
+.fg-flow, .fg-cers { padding: 0 12px; }
+/* inside an overlay the scroller is the overlay itself: no bottom bar to clear */
+.fg-flow > .fo-page, .fg-cers > .fo-page { --fo-pad: 0px; min-height: 100%; }
+
+/* ── a hero with its own graphic (prototype `gHero`): label → graphic → verdict → sub → the rest ── */
+.fg-hero > .fo-hero-verdict { hyphens: manual; }
+.fg-hero > .fg-nut { margin-top: 10px; }
+.fg-hero > .fg-nut > span { background: #fff; box-shadow: inset 0 0 0 1px var(--fo-hair); }
+
+/* ── the composer field (`.fx-cmp`): the caller's textarea + the mic tile (VoiceField keeps its own look) ── */
+.fg-cmp { margin-top: 12px; }
+.fg-cmp > textarea.fo-in { min-height: 58px; font-size: 15px; line-height: 1.4; }
+.fo-card:not(.fo-hero) .fg-cmp > textarea.fo-in { background: var(--fo-page); border-color: transparent; }
+.fg-busy { color: var(--fo-sub); font-weight: 600; }
+
+/* ── the ways in (`.fu-modes`): four tiles on the log page, three on „Mit ettél?" ── */
+.fg-modes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.fg-modes.three { grid-template-columns: repeat(3, 1fr); }
+.fg-modes > button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; min-height: 44px; padding: 12px 2px 10px; border: 0; border-radius: 22px; overflow: hidden; cursor: pointer;
+  background: color-mix(in srgb, var(--dom) 5%, #fff); font-family: var(--ff-body); font-size: 11px; font-weight: 650; letter-spacing: -.3px; line-height: 1.15; text-align: center; color: var(--fo-ink); }
+.fg-modes > button > span:not(.fo-bub) { max-width: 100%; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; }
+.fg-modes > button.on { box-shadow: inset 0 0 0 2.5px var(--liq2); }
+.fg-modes > button > small { font-size: 10.5px; font-weight: 500; letter-spacing: 0; line-height: 1.2; color: var(--fo-sub); }
+.fg-modes > button:focus-visible, .fg-ph:focus-visible, .fg-tuh:focus-visible, .fg-stp > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fg-modes + .fg-cmp, .fg-shell + .fg-cmp { margin-top: 12px; }
+.fg-file, .fg-photo > input { display: none; }
+/* the chosen way's body under the tiles (`.fx-mode`) */
+.fg-mode { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--fo-hair); }
+.fg-mode > .fg-usual-hint { margin: 0 0 8px; }
+.fg-usual > .v > small { margin-left: 3px; font-family: var(--ff-body); font-size: 11.5px; font-weight: 500; color: var(--fo-sub); }
+
+/* the photo field (`.fx-ph`) and the attached photo (`.fx-ph.has`) */
+.fg-ph { width: 100%; height: 150px; padding: 0 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer;
+  border: 1.5px dashed color-mix(in srgb, var(--dom) 45%, transparent); border-radius: 18px; background: color-mix(in srgb, var(--dom) 5%, #fff);
+  font-family: var(--ff-body); font-size: 12.5px; text-align: center; color: var(--fo-sub); }
+.fg-ph > strong { font-family: var(--ff-display); font-size: 16px; font-weight: 700; color: var(--fo-ink); }
+div.fg-ph { cursor: default; }
+.fg-ph.has { height: auto; padding: 12px; flex-direction: row; justify-content: flex-start; gap: 12px; border-style: solid; }
+.fg-pimg { flex: 0 0 auto; width: 72px; height: 72px; border-radius: 16px; overflow: hidden; display: grid; place-items: center; background: color-mix(in srgb, var(--dom) 12%, #fff); }
+.fg-pimg > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.fg-pcap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; text-align: left; }
+.fg-pcap > span { flex: 1; min-width: 90px; }
+.fg-pcap strong { display: block; font-size: 14px; color: var(--fo-ink); }
+.fg-pcap small { display: block; font-size: 12px; color: var(--fo-sub); overflow-wrap: anywhere; }
+/* the round × (`.fu-x`) with its 44 px hit area */
+/* „nem ismertem fel" (`.fu-fail`) */
+.fg-fail { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; text-align: center; }
+.fg-fail > small { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #9A6708; }
+.fg-fail > strong { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--fo-ink); }
+.fg-fail > p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.45; color: var(--fo-sub); }
+
+/* the open AI panel of „Mit ettél?" (text + voice + photo → Elemzés) */
+.fg-ai { margin-top: 2px; }
+.fg-ai > .fo-acts { margin-top: 10px; gap: 8px; }
+.fg-photo { cursor: pointer; }
+.fg-aiphoto { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--fo-sub); }
+.fg-aiphoto > img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex: 0 0 auto; }
+.fg-aiphoto > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── the lines card (`.fu-lns0`) and a recipe line's tuning box (`.fu-tune`) ── */
+.fo-card.fg-lines { padding: 6px 16px; }
+.fg-lines > .fo-empty { margin: 10px 0; }
+.fg-tune { margin-top: 10px; padding: 4px 12px; border-radius: 16px; background: var(--fo-page); }
+.fg-tuh { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 8px 0; border: 0; background: none; cursor: pointer; font-family: var(--ff-body); font-size: 12.5px; text-align: left; color: var(--fo-ink); }
+.fg-tuh::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fg-tuh > b { font-weight: 700; }
+.fg-tuh > span { color: var(--dom); font-weight: 650; white-space: nowrap; }
+.fg-tune > .fg-tune-note { margin: 0 0 6px; }
+.fg-tune > .fo-acts { margin: 4px 0 8px; }
+.fg-tur { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--fo-hair); }
+.fg-tur > .g { flex: 1; min-width: 110px; }
+.fg-tur > .g > strong { display: block; font-size: 13.5px; font-weight: 600; color: var(--fo-ink); }
+.fg-tur > .g > small { display: block; font-size: 11.5px; color: var(--fo-sub); }
+.fg-tur.ch > .g > strong { color: var(--dom); }
+/* − value + unit, the value a tap-to-type button (`.fx-stp`) */
+.fg-stp { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.fg-stp > button:not(.fg-stp-v) { position: relative; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 11px; display: grid; place-items: center; cursor: pointer; background: #fff; font-family: var(--ff-body); font-size: 18px; font-weight: 600; line-height: 1; color: var(--fo-ink); }
+.fg-stp > button:not(.fg-stp-v)::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fg-stp > .fg-stp-v, .fg-stp > input { min-width: 34px; width: 48px; height: 32px; padding: 0; border: 0; border-radius: 8px; background: none; text-align: center; cursor: text; font-family: var(--ff-display); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.fg-stp > input { background: #fff; outline: 2px solid var(--fo-ink); outline-offset: 0; }
+.fg-stp > small { font-size: 12px; color: var(--fo-sub); }
+
+/* ── „Mikor ettél?" (`.fu-twt`, `.fx-time`) and MIKOR (`.fu-segc`) ── */
+.fo-row.fg-twt { padding: 0; }
+.fg-car { color: var(--fo-faint); font-size: 13px; }
+.fg-time { display: flex; gap: 10px; align-items: center; }
+.fg-time > .fo-in { flex: 1; min-width: 0; color-scheme: light; }
+.fg-twt + .fg-time { margin-top: 12px; }
+.fg-segc > .fo-seg, .fg-timec > .fo-seg { margin: 0; }
+.fg-timec > .fo-seg + .fg-time { margin-top: 12px; }
+.fg-del > .fo-acts:first-child { margin-top: 0; }
+
+/* ── the four stored facts (NutrientCells; prototype `.fu-nut`) and kcal + macros (MacroCells; `.fu-lnm`) ── */
+.fg-nut, .fg-mc { display: flex; gap: 6px; align-items: stretch; }
+.fg-nut { margin-top: 6px; }
+.fg-nut > span, .fg-mc > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 12px; background: var(--fo-page); }
+.fg-mc > span { background: color-mix(in srgb, var(--c, var(--dom)) 8%, #fff); }
+.fg-nut > span > b, .fg-mc > span > b { font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--fo-ink); }
+.fg-nut.md > span > b, .fg-mc.md > span > b { font-size: 14px; }
+.fg-nut > span > small, .fg-mc > span > small { font-size: 10.5px; color: var(--fo-sub); white-space: nowrap; }
+.fg-per { flex: 0 0 auto; align-self: center; max-width: 64px; font-size: 10.5px; line-height: 1.2; color: var(--fo-faint); }
+.fg-nova { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 650; color: var(--fo-sub); }
+.fg-nova > i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+
+/* ── the pickers (KamraPickSheet, ReceptPickSheet; prototype `SH.kamrapick`, `SH.receptpick`) ── */
+.fg-cats { margin: 10px 0 4px; }
+.fg-srow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.fg-srow > .fo-srch { flex: 1; min-width: 0; }
+.fg-srow > .fo-pill { flex: 0 0 auto; }
+.fg-pk2 { display: inline-flex; align-items: center; gap: 10px; }
+.fg-pk2 > span { text-align: right; line-height: 1.1; }
+.fx-it .fg-pk2 > span > small { display: block; margin: 0; font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; color: var(--fo-sub); }
+.fg-star { display: inline-block; width: 15px; height: 15px; vertical-align: -2px; }
+.fg-star > .t-ico { width: 15px; height: 15px; }
+.fg-pick > .fo-empty { margin-top: 12px; }
+
+/* ── the meal ceremony (prototype `cer()`: `.fu-cer`, `.fu-cst`, `.fu-ccup`, `.fu-cfc`) ── */
+.fg-stage { text-align: center; padding-bottom: 22px; }
+.fg-stage .fo-hero-verdict { font-size: 30px; margin: 6px 0 0; }
+.fg-cst { display: flex; justify-content: center; gap: 6px; margin: 12px 0 4px; }
+.fg-cst > i { position: relative; display: block; width: 34px; height: 34px; }
+.fg-cst > i > .t-ico { position: absolute; inset: 0; width: 100%; height: 100%; }
+.fg-cst > i > .off { --ic: var(--fo-faint); --ic2: transparent; }
+.fg-cst > i > .on { --ic: #D99A2B; --ic2: #F6CB5A; opacity: 0; transform: scale(.6); }
+.fg-cst > i.is-lit > .on { opacity: 1; transform: none; }
+.fg-cst > i.is-lit > .off { opacity: 0; }
+.fg-cup { margin: 0 auto; width: min(100%, 220px); }
+.fg-cup > svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 16px 18px color-mix(in srgb, var(--liq2) 35%, transparent)); }
+/* the level is the score: the pass runs `--p` to the lit stars' share, `--k` turns that into the score's share */
+.fg-cup .lq { transform: translateY(calc((1 - var(--p, 0) * var(--k, 1)) * 108px)); }
+.fg-cup text.n { font: 800 44px var(--ff-display); letter-spacing: -2px; fill: #fff; opacity: 0; }
+.fo-cer.b1 .fg-cup text.n { opacity: 1; }
+.fg-cup > small { display: block; margin-top: 2px; font-size: 12px; font-weight: 650; color: var(--fo-sub); }
+.fg-cfc > .fo-facts { margin: 0; }
+
+@media (max-width: 360px) {
+  .fg-total > .fo-hero-verdict { font-size: 20px; }
+  .fg-total > .fx-ng > .gg > .fx-pour { width: 98px !important; }
+  .fg-modes > button { font-size: 10.5px; padding: 10px 0 8px; }
+  .fg-modes > button > .fo-bub { --s: 30px !important; }
+  .fg-modes { gap: 4px; }
+  .fg-modes > button > span:not(.fo-bub) { padding: 0; font-size: 10px; letter-spacing: -.015em; }
+  /* four slot names share the row by their own length ("Breakfast" does not fit a quarter) */
+  .fg-seg > button { flex: 1 1 auto; padding-left: 4px; padding-right: 4px; }
+  .fg-cst > i { width: 28px; height: 28px; }
+  .fg-nut > span, .fg-mc > span { padding: 5px; }
+  .fg-nut > span > small, .fg-mc > span > small { font-size: 9.5px; }
+  .fg-stp { gap: 6px; }
+  .fg-stp > .fg-stp-v, .fg-stp > input { width: 40px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fo-cer:not(.inst) .fg-cst > i > .t-ico { transition: opacity .35s cubic-bezier(.2, .8, .2, 1), transform .35s cubic-bezier(.2, .8, .2, 1); }
+  .fo-cer:not(.inst) .fg-cup text.n { transition: opacity .5s cubic-bezier(.2, .8, .2, 1); }
+  .fg-cup .wvp { animation: fg-cupwv 5s linear infinite; }
+  .fg-modes > button { transition: transform .12s ease; }
+  .fg-modes > button:active { transform: scale(.96); }
+}
+@keyframes fg-cupwv { to { transform: translateX(40px); } }

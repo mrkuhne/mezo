@@ -27,14 +27,15 @@
 // Vizuális referencia: a prototípus `muhelyPage` (:115) vászon-dokk tagolása, `runTurn` (:158)
 // és `saveWorkshop` (:171).
 //
-// Üveg U2 (mezo-me75u.2, prototypes/src/uveg-fuel-tobbi-body.html `muhely()`): the Fuel sub-head,
-// the empty canvas as a frameless lavender halo with the big 3D chef, the draft hero as the U1
-// split halo (flat stepper + basis switch), every ingredient line a glass card in its dominant
-// macro's hue, the steps strip a glass row, and the docked chat a lavender glass card with flat
-// preset chips, context chips and composer. The ✨ tag/note became the 3D score icon + text.
+// Folyadék (mezo-n4wf5.5, fuel.js `muhely()`): the empty canvas is the EMPTY POT with the request
+// dock inside the hero; with a draft the hero is the name, the pot (its level = the share of lines
+// that come from the pantry), the kcal, the servings stepper + basis switch, the verdict that says
+// whether it can be saved, and the save button on the liquid. Then 1 Hozzávalók, the shared blocks
+// (Makrók / Minőség / Mikrotápanyagok), Elkészítés, and „Kérj módosítást" — the dock as a card of
+// the page (no floating bar). Words in `fuelRecept.workshop`.
 // ============================================================
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import { useQuery } from '@tanstack/react-query'
@@ -48,12 +49,13 @@ import {
   draftNutrients, draftQualityLines, draftTotals, draftToInput, diffLineKeys, goalRole, lineKey,
   lineMacros, mealToDraft, recipeToDraft, scaleServings,
 } from '@/data/fuel/workshopState'
-import { Icon } from '@/shared/ui/Icon'
-import { ContentIcon } from '@/shared/ui/clay'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped } from '@/shared/lib/format'
 import { useToast } from '@/shared/ui/ToastProvider'
-import { CollapsibleStrip } from '@/shared/ui/mozaik'
-import { huInt } from '@/shared/lib/huNum'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import {
+  Btn, Card, Empty, FrameBack, Hero, Input, Note, Page, Section, Stepper, TwoBtn, Txt, useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { NumG, Pot } from '@/features/fuel/components/folyadek'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import {
@@ -62,7 +64,6 @@ import {
 import { mealMacroShare } from '@/features/fuel/logic/mealShare'
 import { WorkshopIngredientRow } from '@/features/fuel/components/workshop/WorkshopIngredientRow'
 import { WorkshopChatDock, type WorkshopChatMessage } from '@/features/fuel/components/workshop/WorkshopChatDock'
-import { FrameBack } from '@/shared/ui/folyadek'
 
 /** The base fields a workshop draft does NOT model — carried through verbatim from the seed
  *  recipe (or defaults) so a save is never a silent full-replace that drops them. `role` is one
@@ -79,29 +80,13 @@ interface BaseMeta {
 
 const DEFAULT_META: BaseMeta = { slot: null, tags: [], starred: false, prepMins: 0, cookMins: 0, role: 'standard' }
 
-const GOAL_LABEL: Record<WorkshopGoal, string> = {
-  high_protein: 'Magas fehérje',
-  pre_workout: 'Edzés előtt',
-  post_workout: 'Edzés után',
-  before_bed: 'Lefekvés előtt',
-  breakfast: 'Reggeli',
-}
-
-/** What a preset chip actually SAYS to the Műhely — the chip is an instruction, not a filter. */
-const GOAL_MESSAGE: Record<WorkshopGoal, string> = {
-  high_protein: 'Alakítsd át magas fehérjetartalmúra.',
-  pre_workout: 'Alakítsd át edzés előtti étkezésnek.',
-  post_workout: 'Alakítsd át edzés utáni étkezésnek.',
-  before_bed: 'Alakítsd át lefekvés előtti étkezésnek.',
-  breakfast: 'Alakítsd át reggelinek.',
-}
-
 const FLASH_MS = 2600
 
-const ERROR_COPY = 'A Műhely most nem elérhető — az üzeneted megvan.'
-const GATE_NOTE = 'becslés-sorok: cseréld kamra-itemre vagy töröld a mentéshez'
-
+/** `**…**` in a catalog sentence marks its bold part. */
 export function RecipeWorkshopPage() {
+  const M = useM()
+  const C = M.fuelRecept.common
+  const W = M.fuelRecept.workshop
   const navigate = useNavigate()
   const leave = useLeaveAfterMutation()
   const [params] = useSearchParams()
@@ -120,7 +105,7 @@ export function RecipeWorkshopPage() {
   const [goal, setGoal] = useState<WorkshopGoal | null>(null)
   const [diffKeys, setDiffKeys] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<{ message: string; retryText: string } | null>(null)
+  const [error, setError] = useState<{ retryText: string } | null>(null)
   const [baseMeta, setBaseMeta] = useState<BaseMeta>(DEFAULT_META)
   const [sourceRecipeId, setSourceRecipeId] = useState<string | null>(null)
   // --- composer / sheet state ---
@@ -208,7 +193,7 @@ export function RecipeWorkshopPage() {
       setHistory(h => [...h, { role: 'assistant', text: res.reply }])
       setContextNames([])
     } catch {
-      setError({ message: ERROR_COPY, retryText: message })
+      setError({ retryText: message })
     } finally {
       setBusy(false)
     }
@@ -216,7 +201,7 @@ export function RecipeWorkshopPage() {
 
   // Kamra-picked items ride along as context for THIS turn (the prototype's ctx chips).
   const compose = (message: string) =>
-    contextNames.length > 0 ? `${message}\n(Kamrából: ${contextNames.join(', ')})` : message
+    contextNames.length > 0 ? `${message}\n${W.fromPantry(contextNames.join(', '))}` : message
 
   const send = () => {
     const t = text.trim()
@@ -228,7 +213,7 @@ export function RecipeWorkshopPage() {
   const tapPreset = (g: WorkshopGoal) => {
     if (busy) return
     setGoal(g)
-    void runTurn(compose(GOAL_MESSAGE[g]), g)
+    void runTurn(compose(W.goalMessage[g]), g)
   }
 
   const retry = () => {
@@ -314,12 +299,12 @@ export function RecipeWorkshopPage() {
     if (!input || !canSave) return
     if (sourceRecipeId) {
       update(sourceRecipeId, input)
-      show({ kind: 'success', text: 'Recept frissítve.' })
+      show({ kind: 'success', text: W.toastUpdated })
       // `?recipeId=` is only ever opened from that recipe's page: pop back onto it
       leave.back(`/fuel/recipes/${sourceRecipeId}`)
     } else {
       create(input)
-      show({ kind: 'success', text: 'Recept mentve a Receptkönyvbe.' })
+      show({ kind: 'success', text: W.toastSaved })
       navigate('/fuel/recipes', { replace: true })
     }
   }
@@ -343,181 +328,143 @@ export function RecipeWorkshopPage() {
   const rawNutrients = draft ? draftNutrients(draft, pool) : NO_NUTRIENTS
   const previewNutrients = basis === 'whole' ? rawNutrients : scaleNutrients(rawNutrients, 1 / per)
 
+  useFrameTitle({ title: W.title, eyebrow: C.fuelRecipes })
+  const back = <FrameBack className="fo-backpill" history fallback="/fuel/recipes">‹</FrameBack>
+
+  const dock = (
+    <WorkshopChatDock
+      goal={goal}
+      onGoal={tapPreset}
+      text={text}
+      onText={setText}
+      busy={busy}
+      history={history}
+      error={error ? { message: W.error, retryText: error.retryText } : null}
+      onSend={send}
+      onRetry={retry}
+      onEditFailed={editFailed}
+      onOpenPantry={() => setPicker('context')}
+      contextNames={contextNames}
+      onDropContext={n => setContextNames(prev => prev.filter(x => x !== n))}
+    />
+  )
+  const pickerSheet = picker !== null && (
+    <IngredientPickerSheet
+      onPick={onPick}
+      onClose={() => setPicker(null)}
+      mode={picker === 'context' ? 'round' : 'swap'}
+      addedRefIds={picker === 'context' ? [] : (draft?.lines.map(l => l.refId ?? '') ?? [])}
+    />
+  )
+
+  if (!draft) {
+    /* A kiinduló vászon: az üres fazék, egy kérdés, és a cél-gombok — nem üres képernyő.
+       NB: a „Mit főzzünk ki?" a CHAT nyitó kérdése, NEM a B17 „mit főzzünk az itthon lévőből"
+       felület — az owner azt kivette: itt te mondod meg a célt, nem a kamra-készlet generál listát. */
+    return (
+      <Page className="fc-page">
+        {back}
+        <Hero className="fc-ghero" label={W.emptyLabel} verdict={busy ? W.emptyVerdictBusy : W.emptyVerdict} sub={W.emptySub}
+          graphic={<div className="fc-potc" aria-hidden="true"><Pot pct={0} size={150} /></div>}
+        >
+          {dock}
+        </Hero>
+        <Section n={1} title={W.howSection} />
+        <Card>
+          <Txt>{W.how}</Txt>
+          <Note>{W.principle}</Note>
+        </Card>
+        {pickerSheet}
+      </Page>
+    )
+  }
+
+  const whole = basis === 'whole'
+  const lineCount = draft.lines.length
+  const nEst = draft.lines.filter(l => l.source === 'estimate').length
+  const nOk = lineCount - nEst
+  const hasSteps = draft.steps.length > 0
+  const saveLabel = sourceRecipeId ? W.update : W.save
+
   return (
-    <div className="fmx-page fkx-workshop">
-      <EntranceGroup>
-          <div className="fmx-subhead rise">
-            <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
-            <span>
-              <small>Fuel · Receptek</small>
-              <h1 className="fkx-title">Receptműhely</h1>
-            </span>
+    <Page className="fc-page">
+      {back}
+      {/* A számok már KÉSZEN jönnek (`draftTotals` a kamra-tényekből) — itt nem születik makró. */}
+      <Hero className="fc-ghero"
+        label={sourceRecipeId ? W.labelFromRecipe : fromMealId ? W.labelFromMeal : goal ? W.labelDraftGoal(W.goal[goal]) : W.labelDraft}
+        verdict={lineCount === 0 ? W.verdictEmpty
+          : nEst > 0 ? W.verdictEstimate(nEst)
+            : !canSave ? W.verdictNoName
+              : sourceRecipeId ? W.verdictUpdate : W.verdictReady}
+        sub={nEst > 0 ? W.subEstimate : fromMealId ? W.subFromMeal : undefined}
+        actions={<Btn disabled={!canSave} onClick={save}>{saveLabel}</Btn>}
+        graphic={<><Input className="fc-name" value={draft.name} aria-label={W.nameAria} placeholder={W.nameAria}
+          onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))} />
+        <NumG graphic={<Pot pct={lineCount ? Math.max(8, (nOk / lineCount) * 100) : 0} size={104} />}
+          value={fmtGrouped(shown.kcal)} unit={whole ? C.kcalWhole : C.kcalPerServing}>
+          <p>{lineCount === 0 ? W.potEmpty : nEst > 0 ? <SafeMarkdown text={W.potMixed(lineCount, nOk, nEst)} /> : W.potAll(lineCount)}</p>
+        </NumG></>}
+      >
+        <TwoBtn className="fc-ws">
+          <div>
+            <Stepper className="fc-stp" name={C.servingsName} n={draft.servings} min={1} max={12}
+              value={<>{draft.servings}<small>{C.servingUnit(draft.servings)}</small></>}
+              onDec={() => setDraft(d => (d ? scaleServings(d, d.servings - 1) : d))}
+              onInc={() => setDraft(d => (d ? scaleServings(d, d.servings + 1) : d))} />
           </div>
+          <div><ServingToggle short value={basis} servings={draft.servings} onChange={setBasis} /></div>
+        </TwoBtn>
+      </Hero>
 
-          {!draft && (
-            /* A kiinduló vászon (prototípus `wsx-empty`): egy kérdés, és a cél-csempék a
-               dokkban várnak — nem üres képernyő.
-               NB: a „Mit főzzünk ki?" a CHAT nyitó kérdése (prototípus-szöveg), NEM a B17
-               „mit főzzünk az itthon lévőből" felület — az owner azt kivette, és nem is épült
-               meg: itt te mondod meg a célt, nem a kamra-készlet generál listát. */
-            <div className="fkx-ws-empty uv-halo rise" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
-              <span className="fkx-ws-glow" aria-hidden="true" />
-              <span className="fkx-ws-art" aria-hidden="true"><ContentIcon name="t-chef" size={104} /></span>
-              <strong>Mit főzzünk ki?</strong>
-              <p>
-                Válassz egy célt alul, vagy írd le a saját szavaiddal. Én hozzávalót és
-                mennyiséget javaslok — a számokat mindig a kamrád adja.
-              </p>
-              <small>Minden kör patch-ként érkezik, a kézi szerkesztéseid megmaradnak.</small>
-            </div>
-          )}
-
-          {draft && (
-            <>
-              {/* Név + cél-chip */}
-              <div className="fkx-ws-name rise">
-                <input
-                  className="fkx-inp"
-                  value={draft.name}
-                  onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))}
-                  aria-label="Recept neve"
-                  placeholder="Recept neve"
-                />
-                {goal && (
-                  <span className="fkx-chip is-goal">{GOAL_LABEL[goal]}</span>
-                )}
-              </div>
-
-              {/* Titán hős: bal = tál-ikon és ALATTA a kcal; jobb = adag-stepper és a bázis-váltó.
-                  A számok már KÉSZEN jönnek (`draftTotals` a kamra-tényekből) — itt nem
-                  születik makró. */}
-              <div className="fmx-detail-hero fkx-ws-hero">
-                <span className="fmx-detail-glow" aria-hidden="true" />
-                <div className="fmx-detail-left">
-                  <span className="fmx-detail-art" aria-hidden="true"><ContentIcon name="t-plate" size={96} /></span>
-                  <div className="fmx-detail-kcal">
-                    <strong>{huInt(shown.kcal)}</strong>
-                    <small>kcal {basis === 'whole' ? '· egész' : '/ adag'}</small>
-                  </div>
-                </div>
-                <div className="fmx-detail-right">
-                  <div className="fkx-stepper">
-                    <button type="button" aria-label="Kevesebb adag" disabled={draft.servings <= 1}
-                      onClick={() => setDraft(d => (d ? scaleServings(d, d.servings - 1) : d))}>−</button>
-                    <span><strong>{draft.servings}</strong><small>adag</small></span>
-                    <button type="button" aria-label="Több adag" disabled={draft.servings >= 12}
-                      onClick={() => setDraft(d => (d ? scaleServings(d, d.servings + 1) : d))}>＋</button>
-                  </div>
-                  <div className="fkx-basis">
-                    <ServingToggle value={basis} servings={draft.servings} onChange={setBasis} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Őszinte-null: ha egy sor makrója nem oldható fel, azt MEGMONDJUK, nem pótoljuk. */}
-              {unresolved > 0 && (
-                <p className="fmx-nutri-note fkx-callout">
-                  {unresolved} sorhoz nincs tápérték a kamrában — a számokból kimarad, nem találgatjuk.
-                </p>
-              )}
-
-              <FuelMacroShareSection shares={shares}
-                groupLabel="A vázlat energiájának megoszlása" frame="a vázlat energiájának" />
-
-              <section className="fmx-detail-sec">
-                <div className="fmx-section"><h2>Hozzávalók</h2></div>
-                <div className="fkx-lines">
-                  {draft.lines.map((line, i) => (
-                    <WorkshopIngredientRow
-                      key={`${lineKey(line)}-${i}`}
-                      line={line}
-                      macros={lineMacros(line, pool)}
-                      flash={flashSet.has(lineKey(line))}
-                      onAmount={n => patchLine(i, l => setAmount(l, n))}
-                      onRemove={() => dropLine(i)}
-                      onReplace={() => setPicker(i)}
-                    />
-                  ))}
-                  {draft.lines.length === 0 && (
-                    <p className="fmx-block-empty fkx-lines-empty uv-empty">
-                      Nincs hozzávaló — kérj egyet alul, vagy válassz a kamrából.
-                    </p>
-                  )}
-                </div>
-              </section>
-
-              {/* UGYANAZ a két szekció, amit a recept- és az étkezés-részletlap rajzol. A
-                  számaik kizárólag valódi kamra-tényből jönnek: egy becsült sor „—"-t hagy. */}
-              <FuelQualitySection lines={qualityLines} />
-              <FuelMicroSection nutrients={previewNutrients}
-                frame={basis === 'whole' ? 'a recept' : 'az adag'} />
-              <FuelMicroNote />
-
-              {draft.steps.length > 0 && (
-                <div className="fkx-ws-steps">
-                  <CollapsibleStrip className="glass" eyebrow="Elkészítés" summary={`${draft.steps.length} lépés`}>
-                    <ol className="fkx-steps">
-                      {draft.steps.map((s, i) => (
-                        <li key={i}><b>{i + 1}.</b><span>{s}</span></li>
-                      ))}
-                    </ol>
-                  </CollapsibleStrip>
-                </div>
-              )}
-
-            </>
-          )}
-
-          {/* Clearance for the portaled save bar + chat dock (the RecipeEditorPage idiom) —
-              only under a draft; the empty canvas is short enough to clear the dock already. */}
-          <p className="fkx-principle">A Műhely hozzávalót és mennyiséget javasol — a makrókat mindig a kamra-tények adják.</p>
-          {draft && <div style={{ height: 190 }} />}
-      </EntranceGroup>
-
-      {/* Mentés-sáv + dokkolt chat — portaled into the phone screen (the .recipe-save-bar
-          idiom) so both pin to the device viewport above the tab bar instead of scrolling
-          away under a canvas that grows with every turn. */}
-      {createPortal(
-        <div className="wsh-bottom fkx-wsbottom">
-          {draft && (
-            <div>
-              {!input && (
-                <p className="fkx-gate">
-                  <ContentIcon name="t-score" size={16} />{GATE_NOTE}
-                </p>
-              )}
-              <button type="button" className="fkx-btn glass" style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}
-                disabled={!canSave} onClick={save}>
-                <Icon name="check" size={15} /> {sourceRecipeId ? 'Recept frissítése' : 'Mentés a Receptkönyvbe'}
-              </button>
-            </div>
-          )}
-          <WorkshopChatDock
-            goal={goal}
-            onGoal={tapPreset}
-            text={text}
-            onText={setText}
-            busy={busy}
-            history={history}
-            error={error}
-            onSend={send}
-            onRetry={retry}
-            onEditFailed={editFailed}
-            onOpenPantry={() => setPicker('context')}
-            contextNames={contextNames}
-            onDropContext={n => setContextNames(prev => prev.filter(x => x !== n))}
+      <Section n={1} title={C.ingredientsTitle(lineCount)} />
+      <Card className="fc-lns">
+        {draft.lines.map((line, i) => (
+          <WorkshopIngredientRow
+            key={`${lineKey(line)}-${i}`}
+            line={line}
+            macros={lineMacros(line, pool)}
+            flash={flashSet.has(lineKey(line))}
+            onAmount={n => patchLine(i, l => setAmount(l, n))}
+            onRemove={() => dropLine(i)}
+            onReplace={() => setPicker(i)}
           />
-        </div>,
-        document.querySelector('.phone-screen') ?? document.body,
+        ))}
+        {lineCount === 0 && <Empty icon="t-stack">{W.linesEmpty}</Empty>}
+        {/* Őszinte-null: ha egy sor makrója nem oldható fel, azt MEGMONDJUK, nem pótoljuk. */}
+        {unresolved > 0 && <Note tone="warn">{W.unresolved(unresolved)}</Note>}
+      </Card>
+
+      {/* UGYANAZOK a blokkok, amiket a recept- és az étkezés-részletlap rajzol. A számaik
+          kizárólag valódi kamra-tényből jönnek: egy becsült sor „—"-t hagy. */}
+      {lineCount > 0 && (
+        <>
+          <FuelMacroShareSection n={2} heading={W.macroQualitySection} shares={shares} groupLabel={W.draftMacroGroup} frame={W.draftMacroFrame} />
+          <FuelQualitySection heading={false} lines={qualityLines} note={nEst > 0 ? W.estimateNote : undefined} />
+          <FuelMicroSection heading={false} nutrients={previewNutrients} note={<FuelMicroNote />}
+            frame={whole ? M.fuelRecept.detail.microFrameWhole : M.fuelRecept.detail.microFrameServing} />
+        </>
       )}
 
-      {picker !== null && (
-        <IngredientPickerSheet
-          onPick={onPick}
-          onClose={() => setPicker(null)}
-          addedRefIds={picker === 'context' ? [] : (draft?.lines.map(l => l.refId ?? '') ?? [])}
-        />
+      {hasSteps && (
+        <>
+          <Section n={lineCount > 0 ? 3 : 2} title={W.steps(draft.steps.length)} />
+          <Card>
+            <ol className="fc-steps">
+              {draft.steps.map((s, i) => (
+                <li key={i}><b>{i + 1}.</b><span>{s}</span></li>
+              ))}
+            </ol>
+          </Card>
+        </>
       )}
-    </div>
+
+      <Section n={1 + (lineCount > 0 ? 1 : 0) + (hasSteps ? 1 : 0) + 1} title={W.askSection} />
+      <Card>
+        {dock}
+        <Note>{W.principle}</Note>
+      </Card>
+
+      {pickerSheet}
+    </Page>
   )
 }

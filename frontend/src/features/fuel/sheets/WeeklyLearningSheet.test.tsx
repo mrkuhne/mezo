@@ -71,7 +71,7 @@ function renderSheet(card: ExpenditureWeeklyCard = CARD, onClose = vi.fn()) {
   return { onClose }
 }
 
-const row = (label: RegExp) => screen.getByText(label).closest('.fwl-day') as HTMLElement
+const row = (label: RegExp) => screen.getByText(label).closest('.fo-row') as HTMLElement
 
 beforeEach(() => {
   hooks.setMark.mockReset()
@@ -84,16 +84,22 @@ describe('WeeklyLearningSheet', () => {
   it('a fej a hetet, a tanult alapot, a biztonságot és a ±σ-t mondja, a lépést és az okát', () => {
     renderSheet()
     const sheet = screen.getByRole('dialog')
-    expect(within(sheet).getByText('Heti tanulás · szept. 21–27.')).toBeInTheDocument()
+    expect(sheet).toHaveClass('fo-sheet')
     expect(within(sheet).getByRole('heading', { name: 'Alap 2 480 kcal' })).toBeInTheDocument()
-    expect(within(sheet).getByText('Biztos · ±150 kcal')).toBeInTheDocument()
-    expect(sheet.querySelector('.fwl-step')!.textContent).toBe('+60 kcal a napi keretedben')
+    expect(within(sheet).getByText('Heti tanulás · szept. 21–27. · Biztos · ±150 kcal')).toBeInTheDocument()
+    expect(sheet.querySelector('.fx-tot')!.textContent).toBe('a napi keretedben+60kcal')
     expect(within(sheet).getByText('A súlyod lassabban nőtt, mint amit a felírt evés alapján vártam.')).toBeInTheDocument()
+    // the base in its ± band, last week's base as the tick (applied − step)
+    const band = within(sheet).getByRole('img', { name: 'Az alap 2 420-ról 2 480-ra lépett' })
+    expect(band).toHaveTextContent('múlt hét 2 420')
+    expect(band).toHaveTextContent('+150')
+    // the old skin is gone
+    expect(sheet.querySelector('.fwl-head, .flp-eh, .uv-eyebrow')).toBeNull()
   })
 
   it('lefelé lépésnél a „gyorsabban” okot mondja', () => {
     renderSheet({ ...CARD, stepKcal: -40 })
-    expect(document.querySelector('.fwl-step')!.textContent).toBe('−40 kcal a napi keretedben')
+    expect(document.querySelector('.fx-tot')!.textContent).toBe('a napi keretedben−40kcal')
     expect(screen.getByText('A súlyod gyorsabban nőtt, mint amit a felírt evés alapján vártam.')).toBeInTheDocument()
   })
 
@@ -101,21 +107,22 @@ describe('WeeklyLearningSheet', () => {
     renderSheet(HOLDING)
     const sheet = screen.getByRole('dialog')
     expect(within(sheet).getByRole('heading', { name: 'Ezen a héten vártam' })).toBeInTheDocument()
-    expect(within(sheet).getByText('Alap 2 420 kcal · Közepesen biztos · ±150 kcal')).toBeInTheDocument()
-    expect(sheet.querySelector('.fwl-why')!.textContent)
-      .toBe('Kevés adat volt: 3 teljes nap, 1 mérlegelés — legalább 4 és 2 kell. A keret nem változott.')
-    expect(sheet.querySelector('.fwl-step')).toBeNull()
-    expect(sheet.className).toContain('is-hold')
+    expect(within(sheet).getByText('Heti tanulás · szept. 21–27. · Alap 2 420 kcal · Közepesen biztos · ±150 kcal')).toBeInTheDocument()
+    expect(sheet.querySelector('.ft-held')!.textContent)
+      .toBe('Kevés adat volt: 3 teljes nap, 1 mérlegelés; legalább 4 és 2 kell. A keret nem változott.')
+    expect(within(sheet).getByText('3 teljes nap, 1 mérlegelés').tagName).toBe('STRONG')
+    expect(sheet.querySelector('.fx-tot')).toBeNull()
+    expect(within(sheet).queryByRole('img')).toBeNull()
+    expect(sheet).toHaveClass('hold')
   })
 
   it('a kihagyott napok: nap + dátum, kcal, ok-chip, és a megfelelő gomb', () => {
     renderSheet()
     const sus = row(/Sze, szept\. 23\./)
-    expect(within(sus).getByText(/1 180 kcal/)).toBeInTheDocument()
-    expect(within(sus).getByText('hiányosnak tűnt')).toBeInTheDocument()
+    expect(within(sus).getByText('1 180 kcal · hiányosnak tűnt')).toBeInTheDocument()
     expect(within(sus).getByRole('button', { name: 'Teljes volt' })).toBeInTheDocument()
     const marked = row(/V, szept\. 27\./)
-    expect(within(marked).getByText('te jelölted hiányosnak')).toBeInTheDocument()
+    expect(within(marked).getByText('1 020 kcal · te jelölted hiányosnak')).toBeInTheDocument()
     expect(within(marked).getByRole('button', { name: 'Visszavonom' })).toBeInTheDocument()
   })
 
@@ -125,7 +132,7 @@ describe('WeeklyLearningSheet', () => {
     await userEvent.click(within(row(/Sze, szept\. 23\./)).getByRole('button', { name: 'Teljes volt' }))
     expect(hooks.setMark).toHaveBeenCalledWith('2026-09-23', 'complete')
     const sus = row(/Sze, szept\. 23\./)
-    expect(within(sus).getByText('te jelölted teljesnek')).toBeInTheDocument()
+    expect(within(sus).getByText(/te jelölted teljesnek/)).toBeInTheDocument()
     expect(within(sus).getByRole('button', { name: 'Visszavonom' })).toBeInTheDocument()
     expect(screen.getByText('A keret −40 kcal-lal változott')).toBeInTheDocument()
   })
@@ -136,7 +143,7 @@ describe('WeeklyLearningSheet', () => {
     await userEvent.click(within(row(/V, szept\. 27\./)).getByRole('button', { name: 'Visszavonom' }))
     expect(hooks.clearMark).toHaveBeenCalledWith('2026-09-27')
     expect(screen.getByText('A keret nem változott')).toBeInTheDocument()
-    expect(within(row(/V, szept\. 27\./)).getByText('számít')).toBeInTheDocument()
+    expect(within(row(/V, szept\. 27\./)).getByText(/· számít$/)).toBeInTheDocument()
   })
 
   it('sikertelen mentésnél hibaüzenet, és a sor marad, ami volt', async () => {
@@ -148,21 +155,25 @@ describe('WeeklyLearningSheet', () => {
     off()
     expect(toasts).toContainEqual({ kind: 'error', text: 'Nem sikerült menteni, próbáld újra' })
     const sus = row(/Sze, szept\. 23\./)
-    expect(within(sus).getByText('hiányosnak tűnt')).toBeInTheDocument()
+    expect(within(sus).getByText(/hiányosnak tűnt/)).toBeInTheDocument()
     expect(within(sus).getByRole('button', { name: 'Teljes volt' })).toBeInTheDocument()
-    expect(screen.queryByText(/A keret/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
   it('„Bezárom” elrejti ezt a hetet és bezárja a lapot', async () => {
+    const toasts: unknown[] = []
+    const off = onToast((t) => toasts.push(t))
     const { onClose } = renderSheet()
     await userEvent.click(screen.getByRole('button', { name: 'Bezárom' }))
     expect(hooks.dismiss).toHaveBeenCalledWith('2026-09-21')
     await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
+    off()
+    expect(toasts).toContainEqual({ kind: 'success', text: 'Elrejtettem; ezt a hetet nem mutatom újra' })
   })
 
-  it('„Részletek ›” a tanulás oldalára visz', async () => {
+  it('„Részletek” a tanulás oldalára visz', async () => {
     renderSheet()
-    await userEvent.click(screen.getByRole('button', { name: /Részletek/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Részletek' }))
     expect(await screen.findByText('tanulás oldal')).toBeInTheDocument()
   })
 })

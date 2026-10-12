@@ -1,11 +1,13 @@
 // ============================================================
-// Mezo · NutrientCells (tápérték-strip: telített / cukor / rost / só)
-// A MacroCells halványabb testvére, ugyanazzal a chamfer-cella nyelvvel — a recept-hero,
-// a hozzávaló-sorok, a LogMealSheet és az ImportItemSheet preview-ja használja (mezo-m6uv).
-// A `null` itt információ: `—`-ként jelenik meg, mert a forrás nem hordozott értéket (nem 0 g).
+// Mezo · NutrientCells (a négy tárolt tény: rost · cukor · só · telített zsír)
+// Folyadék (mezo-n4wf5.5, prototípus fuel.js `nutri`): négy csendes cella egy sorban. A `null` itt
+// információ: `—`-ként jelenik meg, mert a forrás nem hordozott értéket (nem 0 g); a kijelzési lépésnél
+// kisebb pozitív érték `<0,1`, mert a „0" azt mondaná: nincs benne.
+// A recept-hero, a hozzávaló-sorok, a naplózó és az ImportItemSheet előnézete használja (mezo-m6uv).
 // ============================================================
 import type { Nutrients } from '@/data/types'
-import { formatGram } from '@/shared/lib/grams'
+import { useM } from '@/shared/i18n'
+import { fmtNum } from '@/shared/lib/format'
 
 export interface NutrientCellsProps {
   nutrients: Nutrients
@@ -15,45 +17,31 @@ export interface NutrientCellsProps {
   empty?: 'hide' | 'dashes'
 }
 
+/** One decimal at most, in the app language; a positive value under the display step prints `<0,1` (never `0`: that would
+ *  read as "none" — the rule of `shared/lib/grams.formatGram`, here through `format.ts` so English gets its point). */
+function gram(v: number): string {
+  const rounded = Math.round(v * 10 + Number.EPSILON) / 10
+  return rounded === 0 && v > 0 ? `<${fmtNum(0.1, 1)}` : fmtNum(rounded, 1)
+}
+
 const CELLS = [
-  { key: 'saturatedFatG' as const, label: 'Telített' },
-  { key: 'sugarG' as const, label: 'Cukor' },
-  { key: 'fiberG' as const, label: 'Rost' },
-  { key: 'saltG' as const, label: 'Só' },
+  { key: 'fiberG' as const, word: 'fiber' as const },
+  { key: 'sugarG' as const, word: 'sugar' as const },
+  { key: 'saltG' as const, word: 'salt' as const },
+  { key: 'saturatedFatG' as const, word: 'satFat' as const },
 ]
 
 export function NutrientCells({ nutrients, perLabel, size = 'sm', empty = 'hide' }: NutrientCellsProps) {
+  const M = useM()
   const allMissing = CELLS.every(c => nutrients[c.key] == null)
   if (allMissing && empty === 'hide') return null
-  const valFs = size === 'md' ? 13 : 11.5
   return (
-    <div className="row" style={{ gap: 6, alignItems: 'stretch' }}>
-      {perLabel && (
-        <span
-          className="label-mono"
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 7.5, letterSpacing: '0.06em', color: 'var(--text-quaternary)',
-            writingMode: 'vertical-rl', transform: 'rotate(180deg)', padding: '0 1px', flexShrink: 0,
-          }}
-        >
-          {perLabel}
-        </span>
-      )}
-      {CELLS.map(c => (
-        <div
-          key={c.key}
-          className="rad-12"
-          style={{ flex: 1, textAlign: 'center', padding: '5px 2px', background: 'var(--surface-glass)' }}
-        >
-          <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: valFs, fontWeight: 600, color: 'var(--text-secondary)' }}>
-            {formatGram(nutrients[c.key])}
-          </div>
-          <div className="label-mono" style={{ fontSize: 7, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 2 }}>
-            {c.label}
-          </div>
-        </div>
-      ))}
-    </div>
+    <span className={size === 'md' ? 'fg-nut md' : 'fg-nut'}>
+      {perLabel && <small className="fg-per">{perLabel}</small>}
+      {CELLS.map(c => {
+        const v = nutrients[c.key]
+        return <span key={c.key}><b>{v == null ? '—' : `${gram(v)} g`}</b><small>{M.fuelKozos.facts[c.word]}</small></span>
+      })}
+    </span>
   )
 }

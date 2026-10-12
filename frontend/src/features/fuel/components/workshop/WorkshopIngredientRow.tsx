@@ -1,24 +1,25 @@
 // ============================================================
 // Mezo · WorkshopIngredientRow (Receptműhely vászon — hozzávaló-sor, mezo-92pb)
-// The prototype's `.ing` row: name + source tag, a typeable amount with ±10 steppers,
-// and the line's own kcal on the right.
+// One editable line of the draft: name + source tag, a typeable amount with ±10 steppers, the
+// line's own kcal and its three macros.
 //
 // Three honesty rules ride in this file:
-//  1. the tag names the source — a pantry line is `kamra` (the 3D stack), an AI line with no
-//     pantry cover is `becslés` (the 3D score icon; Üveg U2 retired the ✨ emoji);
+//  1. the tag names the source — a pantry line is `kamra`, a Mezo line with no pantry cover is
+//     `becslés` (amber);
 //  2. the kcal cell prints an em dash when `macros` is null (an unresolvable pantry ref):
 //     never a fabricated 0 — the caller passes `lineMacros(line, pool)` straight through;
-//  3. an estimate line carries its OWN exits (Csere → kamra-picker, Törlés), because it
+//  3. an estimate line carries its OWN exits (Csere → kamra-picker, × → remove), because it
 //     is exactly what blocks the save gate (`draftToInput` returns null while one remains).
-// `flash` paints the gold diff highlight for one turn (CSS `.wsh-ing.diff`, reduced-motion
-// guarded in prototype.css).
-// Üveg U2 (mezo-me75u.2, prototype `muhely()` `.lcard`): the row is a glass card in its dominant
-// macro's hue (grey-sky when the macros are unknown); tag, stepper and Csere chip are flat.
+// `flash` marks the lines a turn has just changed (`.fc-wl.diff`; the wash runs only without
+// reduced motion — folyadek-fuel-recept.css).
+// Folyadék (mezo-n4wf5.5, fuel.js `cLine`): the Fuel-shared `EditLine`.
 // ============================================================
-import { useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
-import { ContentIcon } from '@/shared/ui/clay'
+import { useState, type InputHTMLAttributes } from 'react'
 import type { WorkshopLine } from '@/data/types'
+import { useM } from '@/shared/i18n'
+import { Acts, Lk } from '@/shared/ui/folyadek'
+import { EditLine, LineTags } from '@/features/fuel/components/folyadek'
+import { ingredientStyle } from '@/features/fuel/components/FuelQualityBlocks'
 
 export interface WorkshopIngredientRowProps {
   line: WorkshopLine
@@ -33,79 +34,49 @@ export interface WorkshopIngredientRowProps {
 
 const STEP = 10
 
-/** The card's hue: the macro that carries most of the line's energy — a visual cue only. */
-function lineHue(m: WorkshopIngredientRowProps['macros']): string {
-  if (!m) return 'var(--dv-sky)'
-  const p = m.p * 4, c = m.c * 4, f = m.f * 9
-  if (p + c + f <= 0) return 'var(--dv-sky)'
-  if (p >= c && p >= f) return 'var(--macro-protein)'
-  return c >= f ? 'var(--macro-carbs)' : 'var(--macro-fat)'
-}
-
-// Typeable amount, ported from RecipeEditorPage's AmountField: a local string keeps
-// decimals and mid-typing states, and an OUTSIDE change (± buttons, a turn's patch,
-// serving-scaling) re-syncs through the render-time prev-prop pattern — no useEffect,
-// so no keystroke-reset race.
-function AmountField({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
+/** The text state of a typeable amount (mezo-2567): a local string keeps decimals ("12.5") and
+ *  mid-typing states, coercing to a number on every change. An OUTSIDE change (± buttons, a
+ *  turn's patch, serving-scaling) re-syncs through the render-time prev-prop pattern — no
+ *  useEffect, so no keystroke-reset race. Returns the props of the amount `<input>`. */
+export function useAmountText(value: number, onChange: (n: number) => void): Pick<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'inputMode'> {
   const [text, setText] = useState(() => String(value))
   const [prev, setPrev] = useState(value)
+  // What the current text represents numerically ("" and "." both mean 0, matching commit()).
   const parsed = text === '' || text === '.' ? 0 : parseFloat(text)
   if (value !== prev) {
     setPrev(value)
-    if (parsed !== value) setText(String(value))
+    if (parsed !== value) setText(String(value)) // external change → resync
   }
   const commit = (raw: string) => {
     const cleaned = raw.replace(',', '.')
-    if (cleaned !== '' && !/^\d*\.?\d*$/.test(cleaned)) return
+    if (cleaned !== '' && !/^\d*\.?\d*$/.test(cleaned)) return // ignore non-numeric input
     setText(cleaned)
     const n = cleaned === '' || cleaned === '.' ? 0 : parseFloat(cleaned)
     onChange(Number.isFinite(n) ? n : 0)
   }
-  return (
-    <input
-      inputMode="decimal"
-      value={text}
-      onChange={e => commit(e.target.value)}
-      aria-label={label}
-      className="fkx-amt"
-    />
-  )
+  return { inputMode: 'decimal', value: text, onChange: e => commit(e.target.value) }
 }
 
 export function WorkshopIngredientRow({ line, macros, flash, onAmount, onRemove, onReplace }: WorkshopIngredientRowProps) {
+  const M = useM()
   const estimate = line.source === 'estimate'
-  const tag = estimate ? 'becslés' : 'kamra'
+  const amount = useAmountText(line.amount, onAmount)
   return (
-    <div className={'fkx-lcard wsh-ing glass' + (flash ? ' diff' : '')}
-      style={{ '--c': lineHue(macros) } as React.CSSProperties}>
-      <div className="fkx-lcard-top">
-        <span className="fkx-lcard-name">
-          <strong>{line.name}</strong>
-          <span className="fkx-tagf" data-tag={tag}>
-            <ContentIcon name={estimate ? 't-score' : 't-stack'} size={15} />{tag}
-          </span>
-        </span>
-        <span className={'fkx-lcard-kcal' + (macros ? '' : ' is-null')}>
-          <b>{macros ? macros.kcal : '—'}</b><small>kcal</small>
-        </span>
-        <button type="button" className="fkx-x" onClick={onRemove} aria-label={`${line.name} eltávolítása`}>
-          <Icon name="x" size={12} />
-        </button>
-      </div>
-
-      <div className="fkx-lcard-line">
-        <div className="fkx-step is-amount">
-          <button type="button" aria-label={`${line.name} csökkentés`} onClick={() => onAmount(Math.max(0, line.amount - STEP))}>−</button>
-          <AmountField value={line.amount} onChange={onAmount} label={`${line.name} mennyisége`} />
-          <small>{line.unit}</small>
-          <button type="button" aria-label={`${line.name} növelés`} onClick={() => onAmount(line.amount + STEP)}>+</button>
-        </div>
-        {estimate && (
-          <button type="button" className="fkx-chip is-swap" onClick={onReplace}>
-            Csere kamra-itemre
-          </button>
-        )}
-      </div>
+    <div className={'fc-wl' + (flash ? ' diff' : '')} data-source={estimate ? 'estimate' : 'pantry'}>
+      <EditLine
+        icon={ingredientStyle(line.name).icon}
+        name={line.name}
+        tags={<LineTags source={estimate ? 'estimate' : 'pantry'} warnSource={estimate} />}
+        onRemove={onRemove}
+        amount={amount}
+        unit={line.unit}
+        onDec={() => onAmount(Math.max(0, line.amount - STEP))}
+        onInc={() => onAmount(line.amount + STEP)}
+        kcal={macros ? macros.kcal : null}
+        macros={macros}
+      >
+        {estimate && <Acts><Lk onClick={onReplace}>{M.fuelRecept.workshop.swap}</Lk></Acts>}
+      </EditLine>
     </div>
   )
 }

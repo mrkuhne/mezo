@@ -12,12 +12,13 @@ import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay, type StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import type { components } from '@/data/_client/api.gen'
 import type { CheckinSlot } from '@/data/types'
+import { STACK_ZONE_LABEL } from '@/data/fuel/stackZones'
+import { m } from '@/shared/i18n'
 
 type NotificationScheduleEntry = components['schemas']['NotificationScheduleEntry']
 
 const MAX_TITLE_CHARS = 120
 const MAX_BODY_CHARS = 300
-const CHECKIN_BODY = 'Hogy vagy most? Pár koppintás, fél perc.'
 const FUEL_DEEPLINK = '/fuel/stack'
 
 /**
@@ -37,13 +38,11 @@ function checkinDeeplink(time: string): string {
   return `/today?checkin=${time}`
 }
 
-/** Human label per `projectStackDay` zone — mirrors the mockup's "Stack · reggeli slot" style
- *  titles without re-deriving the slot's meaning; falls back to the raw zone key for any future
- *  zone `StackZoneKey` might add, so a new slot never renders as `undefined`. */
-const FUEL_WINDOW_LABEL: Record<string, string> = {
-  wake: 'ébredési', breakfast: 'reggeli', pre_workout: 'edzés előtti', post_workout: 'edzés utáni',
-  lunch: 'ebédi', dinner: 'vacsora melletti', evening: 'esti', bedtime: 'lefekvés előtti',
-}
+/** The reminder's title: „Kiegészítők · Edzés előtt" / "Supplements · Pre-workout" (Folyadék F5 wording: no „Stack", no
+ *  „slot"). The zone's name is the catalog's (`STACK_ZONE_LABEL`, getter-backed), read when the snapshot is BUILT, so the
+ *  title is in the language the app speaks at that moment; an unknown future zone falls back to its raw key. */
+const zoneTitle = (zone: string): string =>
+  m().fuelLogika.dayPlan.stack((STACK_ZONE_LABEL as Record<string, string>)[zone] ?? zone)
 
 function truncate(text: string, maxChars: number): string {
   return text.length <= maxChars ? text : text.slice(0, maxChars)
@@ -55,14 +54,13 @@ function checkinEntry(slot: Pick<CheckinSlot, 'time'>): NotificationScheduleEntr
     time: slot.time,
     category: 'checkin',
     title: truncate(`Check-in · ${slot.time}`, MAX_TITLE_CHARS),
-    body: truncate(CHECKIN_BODY, MAX_BODY_CHARS),
+    body: truncate(m().frame.reminders.checkinBody, MAX_BODY_CHARS),
     deeplink: checkinDeeplink(slot.time),
     source: 'checkinSlots',
   }
 }
 
 function fuelSlotEntry(slot: StackDaySlot): NotificationScheduleEntry {
-  const label = FUEL_WINDOW_LABEL[slot.zone] ?? slot.zone
   const body = slot.entries
     .filter((e) => !e.skippedToday)
     .map((e) => (e.dose ? `${e.name} ${e.dose}` : e.name))
@@ -71,7 +69,7 @@ function fuelSlotEntry(slot: StackDaySlot): NotificationScheduleEntry {
     weekday: null, // fuel/stack slots recur every day
     time: slot.time,
     category: 'fuel_slot',
-    title: truncate(`Stack · ${label} slot`, MAX_TITLE_CHARS),
+    title: truncate(zoneTitle(slot.zone), MAX_TITLE_CHARS),
     body: truncate(body, MAX_BODY_CHARS),
     deeplink: FUEL_DEEPLINK,
     source: 'projectStackDay',
@@ -107,7 +105,7 @@ export function buildScheduleEntries(
  * `isPending` to clear (ghost wake/bed anchors) AND for `useStack`/`useProtocol` to settle
  * successfully (mezo-b6q0): while those reads are pending — or terminally failed — their
  * realEmpty values ([] stash / ghost occurrences) are not real data, and snapshotting them
- * poisoned every fuel_slot body with projectStackDay's '(törölt Kamra-item)' fallback, which
+ * poisoned every fuel_slot body with projectStackDay's '(törölt kamra-tétel)' fallback, which
  * the backend pushes verbatim. `useIntakes`/`useFuelSettings`/`useTrain`/`useRunning` still
  * don't expose a pending flag, so there is a narrow window where slot TIMES (meal windows, the
  * gym-derived pre-workout time) could reflect a ghost if one of those fetches is slower than

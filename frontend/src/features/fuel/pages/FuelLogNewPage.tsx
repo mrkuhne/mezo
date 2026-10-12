@@ -1,12 +1,11 @@
 // ============================================================
 // Mezo · FuelLogNewPage — /fuel/log/uj, a logolás saját oldala (mezo-bq2t)
-// Forrás: docs/design_2.0/prototypes/fuel-log-oldal.html (`renderCmpHead`,
-// `.cmp-head` / `.cmp-daychip` / `.pastnote` / `.cmp-savebar`) +
-// docs/superpowers/specs/2026-09-01-fuel-logolas-sajat-oldal-design.md
+// Folyadék (mezo-n4wf5.5): prototípus docs/design_2.0/prototypes/vilagos/fuel.js `log()` — a címsor
+// a kereté (cím = az ablak neve / „Ablakon kívül" / „Javítás", fölötte „Logolás · nap · ma"), az oldal
+// teste a MealComposer (az a `Page`, a lebegő gombsorral), a négy bejárat a FuelLogModes.
 //
-// A /fuel/log blokk-CTA-i ide navigálnak a helyben nyíló composer helyett: a
-// MealComposer teljes képernyőt kap, a fejléc végig mutatja, MELYIK ablakba és
-// MELYIK napra könyvelsz, a mentés-sáv pedig az oldal aljára tapad.
+// A Mai lap blokk-gombjai ide navigálnak: a MealComposer teljes képernyőt kap, a címsor végig mutatja,
+// MELYIK ablakba és MELYIK napra könyvelsz, a gombsor pedig az oldal aljára tapad.
 //
 // A kontextus az URL-ben él (d = nap, w = ablak-kulcs, ai = AI-panel), így a
 // logolás deep-linkelhető és a böngésző-vissza természetes. Ismeretlen `w` nem
@@ -23,13 +22,20 @@ import { buildWindowLane, asPastDayLane, tileKey, type WindowTileVM } from '@/fe
 import { backfillOffset } from '@/features/fuel/logic/backfillWindow'
 import { rankUsualMeals } from '@/features/fuel/logic/usualMeals'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
-import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
-import { ContentIcon } from '@/shared/ui/clay'
-import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { addDays, localDateString } from '@/shared/lib/dates'
+import { fmtDate } from '@/shared/lib/format'
+import { useM } from '@/shared/i18n'
+import { FrameBack, useFrameTitle } from '@/shared/ui/folyadek'
+import { Strip } from '@/features/fuel/components/folyadek'
 import { MealComposer } from '@/features/fuel/components/MealComposer'
 import { FuelLogModes, type LogMode, type LogSource } from '@/features/fuel/components/FuelLogModes'
 
+/** A catalog text with one `**bold**` run. */
+const marked = (text: string) => text.split('**').map((part, i) => (i % 2 === 1 ? <b key={i}>{part}</b> : part))
+
 export function FuelLogNewPage() {
+  const M = useM()
+  const P = M.fuelLog.page
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   // Egyszer rögzítve (mezo-1j3z, 4. finding): újraszámolva egy éjfél utáni re-render
@@ -66,7 +72,8 @@ export function FuelLogNewPage() {
   // belső navigáció nem futhat bele a redirectjébe.
   const back = () => navigate(`/fuel${past ? `?d=${date}` : ''}`, { replace: true })
 
-  const dayLabel = `${huMonthDay(date).toLowerCase()}.`
+  // the long day (prototype `dL`); the late-entry button carries the short form (`dS`)
+  const dayLabel = fmtDate(date, 'long')
 
   // A kamera az alapnézet; a szöveg és mikrofon a héj alatt végig elérhető. A héj állapotai itt
   // élnek, a felismerés pedig a composer egyetlen AI-hívóhelyén fut.
@@ -90,70 +97,61 @@ export function FuelLogNewPage() {
   const editMeal = editMealId != null ? fuel.meals.find(m => m.id === editMealId) : undefined
   const editing = editMealId != null
 
+  const windowSpan = slot?.windowFrom && slot.windowTo ? `${slot.windowFrom}–${slot.windowTo}` : tile?.time
+  useFrameTitle({
+    title: editing ? P.edit : tile ? tile.label : P.outside,
+    eyebrow: editing
+      ? (editMeal != null ? mealDisplayName(editMeal) ?? P.meal : P.meal)
+      : P.eyebrow(past ? P.late : P.log, dayLabel, past ? fmtDate(date, 'weekdayLower') : P.today),
+  })
+
+  const modes = (compact: boolean) => (
+    <FuelLogModes
+      mode={mode}
+      compact={compact}
+      onMode={(m) => { setFailed(false); setMode(m) }}
+      onSource={openSource}
+      photo={photo}
+      onPhoto={(file) => { setFailed(false); setPhoto(file) }}
+      onRemovePhoto={() => setPhoto(null)}
+      // A szokásos sor neve a szövegmezőbe kerül; a user külön indítja az elemzést.
+      onUsual={(u) => { pushAiText(u.title); setMode('photo') }}
+      failed={failed}
+      usuals={usuals}
+    />
+  )
+
   return (
-    <MozaikPage tone={past ? 'gold' : 'coral'} className="flognew-page">
-      <PageHead onBack={back} label="‹ Vissza" />
-      <div className={`flognew-head${past ? ' is-past' : ''}`}>
-        {/* Üveg (mezo-me75u.2): az ablak saját ikonja a Titanium 3D készletből (CLAY_TO_3D),
-            ablakon kívül a tál. Keret nélküli, nagy fejléc-művészet — nem kártya. */}
-        <div className="flognew-ic" aria-hidden="true"><ContentIcon name={tile?.icon ?? 't-bowl'} size={48} /></div>
-        <div className="flognew-txt">
-          <div className="flognew-eyebrow">{editing ? 'Javítás' : past ? 'Pótlás' : 'Logolás'}</div>
-          <div className="flognew-title">
-            {editing
-              ? (editMeal != null ? mealDisplayName(editMeal) ?? 'Étkezés' : 'Étkezés')
-              : tile ? tile.label : 'Ablakon kívül'}
-          </div>
-          <div className="flognew-sub">
-            {editing
-              ? 'a tételeket és az időt is átírhatod'
-              : tile ? `${tile.time} · ablak` : 'szabad tétel · te választod a mikort'}
-          </div>
-        </div>
-        <span className="flognew-daychip">
-          <b>{dayLabel}</b>
-          <small>{past ? huWeekdayFullIso(date).toLowerCase() : 'ma'}</small>
-        </span>
-      </div>
-      {past && (
-        <div className="flognew-pastnote">
-          <i aria-hidden="true" />
-          Amit itt logolsz, <b>{dayLabel}</b> napra könyvelődik — pontszámot is kap.
-        </div>
+    <MealComposer
+      head={(
+        <>
+          <FrameBack className="fo-backpill" onBack={back} label={P.back}>‹ {P.back}</FrameBack>
+          {past && !editing && <Strip icon="t-history">{marked(P.pastNote(dayLabel))}</Strip>}
+        </>
       )}
-      <PageBody>
-        {/* Javításnál a négy rögzítő út nem jelenik meg: itt nem új étkezést veszünk fel. */}
-        {!editing && <FuelLogModes
-          mode={mode}
-          onMode={(m) => { setFailed(false); setMode(m) }}
-          onSource={openSource}
-          photo={photo}
-          onPhoto={(file) => { setFailed(false); setPhoto(file) }}
-          onRemovePhoto={() => setPhoto(null)}
-          // A szokásos sor neve a szövegmezőbe kerül; a user külön indítja az elemzést.
-          onUsual={(u) => { pushAiText(u.title); setMode('photo') }}
-          failed={failed}
-          usuals={usuals}
-        />}
-        <MealComposer
-          fixedSlot={tile?.slotKey}
-          prefill={prefill}
-          aiPanelOpenOnMount={!editing || ai}
-          incomingPhoto={photo}
-          incomingAiText={aiTextIn}
-          sourceAction={sourceAction}
-          onAiFailed={() => { setFailed(true); setPhoto(null) }}
-          onAiSucceeded={() => setFailed(false)}
-          // A héj adja a négy bejáratot; a composer szövegmezőt és a későbbi megerősítést adja.
-          shellOwnsEntry={!editing}
-          editMealId={editMealId}
-          eatingTimeWindows={!editing ? plan.slots : undefined}
-          logDate={past ? date : undefined}
-          saveLabel={past ? `✓ Pótlás · ${dayLabel}` : undefined}
-          onSaved={back}
-          onCancel={back}
-        />
-      </PageBody>
-    </MozaikPage>
+      // Javításnál a négy rögzítő út nem jelenik meg: itt nem új étkezést veszünk fel.
+      shell={editing ? undefined : modes}
+      room={{
+        label: tile ? P.windowLabel(tile.label, windowSpan ?? tile.time) : P.free,
+        windowName: tile?.label,
+        budgetKcal: tile?.budgetKcal ?? null,
+      }}
+      fixedSlot={tile?.slotKey}
+      prefill={prefill}
+      aiPanelOpenOnMount={!editing || ai}
+      incomingPhoto={photo}
+      incomingAiText={aiTextIn}
+      sourceAction={sourceAction}
+      onAiFailed={() => { setFailed(true); setPhoto(null) }}
+      onAiSucceeded={() => setFailed(false)}
+      // A héj adja a négy bejáratot; a composer szövegmezőt és a későbbi megerősítést adja.
+      shellOwnsEntry={!editing}
+      editMealId={editMealId}
+      eatingTimeWindows={!editing ? plan.slots : undefined}
+      logDate={past ? date : undefined}
+      saveLabel={past ? P.saveLate(fmtDate(date, 'short')) : undefined}
+      onSaved={back}
+      onCancel={back}
+    />
   )
 }

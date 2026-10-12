@@ -8,6 +8,42 @@
 // duplicate cards (whey/kreatin are both in `ingredients` and the stash).
 // ============================================================
 import type { Ingredient, PantryItem, PantryItemKind, SupplementStashItem } from '@/data/types'
+import type { Icon3DName } from '@/shared/ui/clay'
+import { m } from '@/shared/i18n'
+import type { fuelKamraHu } from '@/shared/i18n/messages/fuel-kamra.hu'
+
+/** A kategória felirata a pillanatnyi nyelven (a szerver a KULCSOT küldi). Ismeretlen kulcs változatlanul megy ki;
+ *  `null` = a tételnek nincs kategóriája. HÍVÁSKOR olvas — sosem modul-konstansba. */
+export function pantryCategoryLabel(key: string | null | undefined): string | null {
+  if (key == null || key === '') return null
+  const cat = m().fuelKamra.cat as Record<string, string>
+  return cat[key] ?? key
+}
+
+type CatKey = keyof typeof fuelKamraHu.cat
+/** Étel ikonja a kategóriájából (prototípus `KIC`); ami nincs benne, az a gabona-jel. */
+const FOOD_ICON: Partial<Record<CatKey, Icon3DName>> = {
+  protein: 't-meat', meat: 't-meat', fish: 't-meat', eggs: 't-meat',
+  dairy: 't-protein', cheese: 't-protein', 'supplement-protein': 't-protein',
+  carb: 't-carb', grains: 't-carb', pasta: 't-carb', bakery: 't-carb',
+  fat: 't-avocado', nuts_seeds: 't-avocado', oils_fats: 't-avocado',
+  veggie: 't-fiber', vegetables: 't-fiber', fruit: 't-fiber', fruits: 't-fiber', legumes: 't-fiber',
+  condiments: 't-sugar', snacks: 't-sugar', other: 't-sugar',
+}
+/** The four kinds in shelf order, and the glyph of each (the hero's four jars, the filter). */
+export const KAMRA_KINDS: PantryItemKind[] = ['food', 'supplement', 'stim', 'med']
+export const KAMRA_KIND_ICON: Record<PantryItemKind, Icon3DName> = { food: 't-carb', supplement: 't-supps', stim: 't-bolt', med: 't-syringe' }
+
+/** Egy ÉTEL jele a kategóriájából (prototípus `KIC`): a kamra-választó sorai és a logoló piszkozat-sorai is ezt kérik. */
+export function pantryCategoryIcon(category: string | null | undefined): Icon3DName {
+  return FOOD_ICON[(category ?? '') as CatKey] ?? 't-carb'
+}
+
+/** Egy tétel jele (prototípus `kic`): ételnél a kategória, minden másnál a fajta. */
+export function kamraItemIcon(item: { kind: PantryItemKind | string; category?: string | null }): Icon3DName {
+  if (item.kind === 'food') return pantryCategoryIcon(item.category)
+  return KAMRA_KIND_ICON[item.kind as PantryItemKind] ?? 't-stack'
+}
 
 export function buildKamraItems(
   ingredients: Ingredient[],

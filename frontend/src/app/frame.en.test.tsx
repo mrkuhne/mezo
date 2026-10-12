@@ -103,7 +103,7 @@ describe('navModel lookups', () => {
     const today = new Date(2026, 9, 7)
     expect(frameFor('/settings', today)).toMatchObject({ title: 'Settings', eyebrow: 'Settings' })
     expect(frameFor('/minden', today)).toMatchObject({ title: 'All pages', eyebrow: 'Map of the app' })
-    expect(frameFor('/settings/fuel', today).title).toBe('Fuel beállítások')
+    expect(frameFor('/settings/fuel', today).title).toBe('Fuel settings')
   })
 
   test('a label with an English entry is translated; one without falls back to Hungarian', () => {
@@ -111,7 +111,11 @@ describe('navModel lookups', () => {
     expect(pageLabel(byRoute('/settings/mezo/about'))).toBe('About me')
     expect(pageLabel(byRoute('/nap'))).toBe('Now')
     expect(pageLabel(byRoute('/fuel/trendek'))).toBe('Trends')
-    expect(pageLabel(byRoute('/fuel/kamra'))).toBe('Kamra')
+    // Fuel's own slice (Folyadék F5) translated its pages
+    expect(pageLabel(byRoute('/fuel/kamra'))).toBe('Pantry')
+    expect(pageLabel(byRoute('/fuel/stack/manage/add'))).toBe('Set up a new item')
+    // a page whose slice has not come yet keeps its Hungarian label
+    expect(pageLabel(byRoute('/settings/me/goal'))).toBe(byRoute('/settings/me/goal').label)
   })
 
   const SETTINGS_TITLES: Array<[string, string, string]> = [
@@ -139,7 +143,7 @@ describe('navModel lookups', () => {
   })
 
   test('the Settings pages owned by other slices still fall back to Hungarian in English', () => {
-    for (const route of ['/settings/fuel', '/settings/fuel/slots', '/settings/me/goal']) {
+    for (const route of ['/settings/me/goal']) {
       const page = PAGE_INDEX.find((p) => p.route === route)!
       expect(pageLabel(page)).toBe(page.label)
     }
@@ -159,14 +163,18 @@ describe('navModel lookups', () => {
 })
 
 describe('Minden oldal', () => {
-  test('headings, counts and translated labels read English; the rest stays Hungarian', () => {
+  test('headings, counts and translated labels read English; a page whose slice has not come stays Hungarian', () => {
     render(<MemoryRouter><MindenOldalPage /></MemoryRouter>)
     expect(screen.getByText('All pages')).toBeInTheDocument()
     expect(screen.getByText('INDEX')).toBeInTheDocument()
     expect(screen.getByText('Shared settings')).toBeInTheDocument()
     expect(screen.getByText('About me')).toBeInTheDocument()
     expect(screen.getAllByText(/^\d+ pages$/).length).toBeGreaterThan(0)
-    expect(screen.getByText('Kamra')).toBeInTheDocument()
+    // Fuel's pages are translated by their own slice (Folyadék F5)…
+    expect(screen.getByText('Pantry')).toBeInTheDocument()
+    expect(screen.queryByText('Kamra')).toBeNull()
+    // …a page of a later slice is still its Hungarian label
+    expect(screen.getByText(PAGE_INDEX.find((p) => p.route === '/settings/me/goal')!.label)).toBeInTheDocument()
   })
 
   test('the group headings are the tab labels in English', () => {

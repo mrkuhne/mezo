@@ -9,6 +9,7 @@
 // Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2-1.4.
 
 import { pct } from '@/shared/lib/pct'
+import { m } from '@/shared/i18n'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { isMealSlot } from '@/features/fuel/logic/dayZones'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
@@ -38,7 +39,10 @@ export function deficitDropped(
   return mode === 'MAINTENANCE' && trajectory === 'cut' && vm.chips != null && vm.chips.balance === 0
 }
 
-export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: string; pct: number; value: string; target: string; color: string }
+/** One macro of the day: the AMOUNT so far against its GOAL, as numbers (grams; water in litres) — the component formats
+ *  them through `format.ts` at render (F5: the VM no longer hands over formatted strings that had to be parsed back).
+ *  `null` = unknown (honest-null: a dry vial with „—", never a fabricated 0). */
+export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: string; pct: number; amount: number | null; goal: number | null; unit: 'g' | 'l'; color: string }
 export interface DaySegVM { widthPct: number; toneAlt: boolean }
 export interface KeretHeroVM {
   remainingKcal: number
@@ -65,22 +69,8 @@ export interface KeretHeroVM {
   rings: RingVM[]
 }
 
-
-/** Magyar tizedesvessző, a gyűrűk számaihoz. */
-function huNum(n: number, decimals: number): string {
-  return n.toLocaleString('hu-HU', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-}
-
-function ring(key: RingVM['key'], label: string, value: number, target: number, color: string, unit: string): RingVM {
-  return {
-    key,
-    label,
-    pct: Math.round(pct(value, target)),
-    // A liter tizedessel olvasható (1,9 l), a gramm egészben (148 g).
-    value: `${huNum(value, unit === ' l' ? 1 : 0)}${unit}`,
-    target: `${huNum(target, unit === ' l' ? 1 : 0)}${unit}`,
-    color,
-  }
+function ring(key: RingVM['key'], label: string, value: number, target: number, color: string, unit: RingVM['unit']): RingVM {
+  return { key, label, pct: Math.round(pct(value, target)), amount: value, goal: target, unit, color }
 }
 
 export function buildKeretHero(input: {
@@ -131,17 +121,19 @@ export function buildKeretHero(input: {
   // fiberG (undefined or explicit null — the wire doesn't carry it for every meal yet) contributes 0,
   // never fabricated. Cél = the caller's `fiberTargetG` (mezo-xwgb — Diet Plan slice 1's
   // `useDietSettings().fiberG`, no more static default here).
-  const fiberG = meals.reduce((sum, m) => sum + (m.fiberG ?? 0), 0)
+  const fiberG = meals.reduce((sum, meal) => sum + (meal.fiberG ?? 0), 0)
 
+  // the ring names, read at call time (a module constant would go stale on a language switch)
+  const macro = m().fuelKozos.macro
   const rings: RingVM[] = [
-    ring('p', 'Fehérje', consumed.p, budget.p, 'var(--macro-protein)', ' g'),
-    ring('c', 'Szénhidrát', consumed.c, budget.c, 'var(--macro-carbs)', ' g'),
-    ring('f', 'Zsír', consumed.f, budget.f, 'var(--macro-fat)', ' g'),
+    ring('p', macro.protein, consumed.p, budget.p, 'var(--macro-protein)', 'g'),
+    ring('c', macro.carbs, consumed.c, budget.c, 'var(--macro-carbs)', 'g'),
+    ring('f', macro.fat, consumed.f, budget.f, 'var(--macro-fat)', 'g'),
     // A jóváhagyott prototípus sorrendje: a VÍZ a negyedik, a rost zárja a sort
     // (fuel-dashboard.js `fuel-rings`). A víz literben áll — a `1,9 / 4 l` olvasható,
     // az `1 850 / 4 000 ml` csak pontosabbnak látszik.
-    ring('water', 'Víz', water.currentMl / 1000, water.targetMl / 1000, 'var(--sky)', ' l'),
-    ring('fiber', 'Rost', fiberG, fiberTargetG, 'var(--macro-fiber)', ' g'),
+    ring('water', macro.water, water.currentMl / 1000, water.targetMl / 1000, 'var(--sky)', 'l'),
+    ring('fiber', macro.fiber, fiberG, fiberTargetG, 'var(--macro-fiber)', 'g'),
   ]
 
   return {
@@ -173,10 +165,11 @@ export function buildKeretHero(input: {
 }
 
 export type MealRole = 'pre' | 'post' | 'standard'
+/** Getter-backed: `MEAL_ROLE_LABEL[role]` reads the catalog when it is READ, so it follows a language switch. */
 export const MEAL_ROLE_LABEL: Record<MealRole, string> = {
-  pre: 'EDZÉS ELŐTTI',
-  post: 'EDZÉS UTÁNI',
-  standard: 'STANDARD',
+  get pre() { return m().fuelLogika.keretHero.role.pre },
+  get post() { return m().fuelLogika.keretHero.role.post },
+  get standard() { return m().fuelLogika.keretHero.role.standard },
 }
 
 /** MealRole derivation (mezo-c9t5, controller decision — Task 1 found no FE field for this):
@@ -217,7 +210,7 @@ export interface DoneMealRow {
 /** The day's done meal windows, chronologically, each row's meal joined off `slot.mealId` (the join
  *  windowIslands.ts's `buildWindowRiver` couldn't do — it never received a `meals` array). */
 export function doneMealRows(meals: FuelMeal[], slots: FuelSlot[]): DoneMealRow[] {
-  const byId = new Map(meals.map(m => [m.id, m]))
+  const byId = new Map(meals.map(meal => [meal.id, meal]))
   return slots
     .filter((s): s is FuelSlot & { mealId: string } => isMealSlot(s) && s.state === 'done' && s.mealId != null)
     .slice()
@@ -291,11 +284,12 @@ export function heroEquationLines(
   // nothing to add — the row would only be noise. A goal user's past day (chips null) keeps the
   // row so it honestly reads „—" like its neighbours.
   const showGoal = goalPaused || (trajectory != null && !(balance === 0 && trajectory === 'maintain'))
+  const E = m().fuelLogika.keretHero.equation
   return [
-    { key: 'base', label: 'Alap', value: vm.chips?.base ?? null, sign: null },
-    { key: 'activity', label: 'Mozgás', value: vm.chips?.activity ?? null, sign: '+' },
-    ...(showGoal ? [{ key: 'goal' as const, label: 'Célod', value: balance, sign: '±' as const }] : []),
-    { key: 'eaten', label: 'Étel', value: vm.consumedKcal, sign: '−' },
-    { key: 'remaining', label: 'Marad', value: vm.remainingKcal, sign: '=' },
+    { key: 'base', label: E.base, value: vm.chips?.base ?? null, sign: null },
+    { key: 'activity', label: E.activity, value: vm.chips?.activity ?? null, sign: '+' },
+    ...(showGoal ? [{ key: 'goal' as const, label: E.goal, value: balance, sign: '±' as const }] : []),
+    { key: 'eaten', label: E.eaten, value: vm.consumedKcal, sign: '−' },
+    { key: 'remaining', label: E.remaining, value: vm.remainingKcal, sign: '=' },
   ]
 }

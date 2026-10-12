@@ -1,94 +1,53 @@
 // ============================================================
-// Mezo · MedicationFormSheet (create/edit — mezo-d20.8.3.1)
-// The F7.3 gyógyszer-flow's shared form sheet, per fuel-mely.html. Create mode
-// opens from the honest empty state's "＋ Gyógyszer felvétele" CTA (the path that
-// did not exist before this round); edit mode opens from the filled page's
-// "Szerkesztés" ghost, prefilled from the active medication. Fields: név +
-// hatóanyag · beviteli út chips (subQ/IM/orális) · dózis + egység · kadencia
-// (heti + nap-chips / napi) · cycle preview. The cycle CONFIG is not editable in
-// this round (approved default): create sends the 2P·3S·2T 7-day template, edit
-// carries the existing config verbatim. Save → createMedication / updateMedication.
-//
-// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `SH.medform`): ONE sky glass sheet
-// (`fsx-sheet`); fields are eyebrow-labelled flat wells, the pickers flat chips (the chosen one
-// filled sky), the cycle preview the same flat phase cells as the page's cycle strip, Mégse flat
-// and the save a lit sky button. Behavior unchanged.
+// Mezo · MedicationFormSheet (create / edit — mezo-d20.8.3.1; Folyadék F5, mezo-n4wf5.5) — prototype sheet `medform`.
+// Create mode opens from the empty state's „Gyógyszer felvétele"; edit mode from the filled page's „Szerkesztés",
+// prefilled from the active medication. Fields: név + hatóanyag · beviteli út · dózis + egység · gyakoriság (heti + the
+// day of the week / napi) · the cycle's phases as a preview. The cycle CONFIG is not editable: create sends the
+// 2 · 3 · 2 seven-day template, edit carries the existing config verbatim. Save → createMedication / updateMedication.
+// Saving stays disabled until name, active ingredient, dose and unit are there.
 // ============================================================
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useMedicationActions } from '@/data/hooks'
 import type { Medication, MedicationCycleConfig, MedicationInput } from '@/data/types'
+import { m, useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Icon3D } from '@/shared/ui/clay'
+import { FoSheetHead, Input, Lab, Note, Pill, Pills, SheetActs } from '@/shared/ui/folyadek'
+import { MedicationCycleBar, cycleCells, usePhaseWord } from '@/features/fuel/components/MedicationCycleBar'
 
-/** The default 7-day 2P·3S·2T cycle template (the backend populator's shape, HU labels). */
+/** The default 7-day 2 peak · 3 stable · 2 trough template (the backend populator's shape). The phase labels are stored
+ *  with the new medication, so they are read from the catalog when the template is READ (the language of the moment). */
 export const DEFAULT_CYCLE: MedicationCycleConfig = {
   cycleLengthDays: 7,
   phases: [
-    { key: 'peak', fromDay: 1, toDay: 2, label: 'Csúcs' },
-    { key: 'stable', fromDay: 3, toDay: 5, label: 'Stabil' },
-    { key: 'trough', fromDay: 6, toDay: 7, label: 'Mélypont' },
+    { key: 'peak', fromDay: 1, toDay: 2, get label() { return m().fuelKieg.form.template.peak } },
+    { key: 'stable', fromDay: 3, toDay: 5, get label() { return m().fuelKieg.form.template.stable } },
+    { key: 'trough', fromDay: 6, toDay: 7, get label() { return m().fuelKieg.form.template.trough } },
   ],
 }
 
-const ROUTES = [
-  { value: 'subQ', label: 'subQ injekció' },
-  { value: 'IM', label: 'IM injekció' },
-  { value: 'oral', label: 'orális' },
-] as const
-
-const WEEKDAYS = [
-  { value: 'monday', label: 'H' },
-  { value: 'tuesday', label: 'K' },
-  { value: 'wednesday', label: 'Sze' },
-  { value: 'thursday', label: 'Cs' },
-  { value: 'friday', label: 'P' },
-  { value: 'saturday', label: 'Szo' },
-  { value: 'sunday', label: 'V' },
-] as const
+const ROUTES = ['subQ', 'IM', 'oral'] as const
+const WEEKDAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const
 
 /** cadence string ('weekly-monday' | 'daily' | legacy) → form state. */
 function parseCadence(cadence: string): { mode: 'weekly' | 'daily'; day: string } {
   if (cadence === 'daily') return { mode: 'daily', day: 'monday' }
-  const m = /^weekly-(\w+)$/.exec(cadence)
-  return { mode: 'weekly', day: m?.[1] ?? 'monday' }
+  const hit = /^weekly-(\w+)$/.exec(cadence)
+  return { mode: 'weekly', day: hit?.[1] ?? 'monday' }
 }
 
-/** An eyebrow-captioned flat well; the <label> wraps the control so getByLabelText resolves it. */
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="fsx-sh-field">
-      <span className="uv-eyebrow">{label}</span>
-      {children}
-    </label>
-  )
-}
-
-function SectionHead({ children }: { children: React.ReactNode }) {
-  return <span className="fsx-sh-sec uv-eyebrow">{children}</span>
-}
-
-/** Chip-row single select (route / weekday / cadence mode). */
-function ChipRow<T extends string>({ options, value, onChange, ariaLabel }: {
+/** Single-select pills (route / weekday / how often). */
+function PickRow<T extends string>({ options, value, onChange, ariaLabel }: {
   options: readonly { value: T; label: string }[]
   value: T
   onChange: (v: T) => void
   ariaLabel: string
 }) {
   return (
-    <div role="group" aria-label={ariaLabel} className="fsx-chips">
+    <Pills role="group" aria-label={ariaLabel}>
       {options.map(o => (
-        <button
-          key={o.value}
-          type="button"
-          className={o.value === value ? 'fsx-chip is-on' : 'fsx-chip'}
-          aria-pressed={o.value === value}
-          onClick={() => onChange(o.value)}
-        >
-          {o.label}
-        </button>
+        <Pill key={o.value} on={o.value === value} onClick={() => onChange(o.value)}>{o.label}</Pill>
       ))}
-    </div>
+    </Pills>
   )
 }
 
@@ -97,6 +56,9 @@ export function MedicationFormSheet({ medication, onClose }: {
   medication?: Medication
   onClose: () => void
 }) {
+  const M = useM().fuelKieg
+  const id = useId()
+  const phaseWord = usePhaseWord()
   const { createMedication, updateMedication } = useMedicationActions()
   const editing = Boolean(medication)
 
@@ -134,82 +96,61 @@ export function MedicationFormSheet({ medication, onClose }: {
     onClose()
   }
 
+  const phaseDays = cycle.phases
+    .map(p => M.med.phaseDays(p.toDay - p.fromDay + 1, phaseWord(p.key, p.label))).join(' · ')
+
   return (
-    <Sheet onClose={onClose} labelledBy="medication-form-title" className="glass is-still fsx-sheet is-sky">
+    <Sheet onClose={onClose} labelledBy="medication-form-title" className="fo-sheet fk-sheet">
       {(close) => (
         <>
-          <div className="fsx-shh">
-            <span className="fsx-shh-art" aria-hidden="true"><Icon3D name="t-syringe" size={48} /></span>
-            <div className="fsx-shh-copy">
-              <span className="uv-eyebrow">Gyógyszer</span>
-              <div id="medication-form-title" className="fsx-shh-title">
-                <strong>{editing ? 'Gyógyszer szerkesztése' : 'Gyógyszer felvétele'}</strong>
-              </div>
+          <FoSheetHead icon="t-syringe" title={editing ? M.form.titleEdit : M.form.titleAdd} titleId="medication-form-title"
+            sub={M.form.eyebrow} />
+
+          <div className="fk-two">
+            <div>
+              <Lab htmlFor={`${id}-name`}>{M.form.name}</Lab>
+              <Input id={`${id}-name`} value={name} onChange={e => setName(e.target.value)} placeholder={M.form.namePlaceholder} />
             </div>
-            <button type="button" className="fsx-shh-x" aria-label="Bezárás" onClick={close}>
-              <Icon name="x" size={12} />
-            </button>
+            <div>
+              <Lab htmlFor={`${id}-ing`}>{M.form.ingredient}</Lab>
+              <Input id={`${id}-ing`} value={ingredient} onChange={e => setIngredient(e.target.value)} placeholder={M.form.ingredientPlaceholder} />
+            </div>
           </div>
 
-          <div className="fsx-sh-two">
-            <Field label="Név">
-              <input className="fsx-sh-input" value={name} onChange={e => setName(e.target.value)} placeholder="pl. Retatrutid" />
-            </Field>
-            <Field label="Hatóanyag">
-              <input className="fsx-sh-input" value={ingredient} onChange={e => setIngredient(e.target.value)} placeholder="retatrutid" />
-            </Field>
+          <Lab>{M.form.route}</Lab>
+          <PickRow options={ROUTES.map(value => ({ value: value as string, label: M.med.route[value] }))}
+            value={route} onChange={setRoute} ariaLabel={M.form.route} />
+
+          <div className="fk-two">
+            <div>
+              <Lab htmlFor={`${id}-dose`}>{M.form.dose}</Lab>
+              <Input id={`${id}-dose`} inputMode="decimal" value={dose} onChange={e => setDose(e.target.value)} placeholder="4" />
+            </div>
+            <div>
+              <Lab htmlFor={`${id}-unit`}>{M.form.unit}</Lab>
+              <Input id={`${id}-unit`} value={unit} onChange={e => setUnit(e.target.value)} placeholder="mg" />
+            </div>
           </div>
 
-          <SectionHead>Beviteli út</SectionHead>
-          <ChipRow options={ROUTES} value={route} onChange={setRoute} ariaLabel="Beviteli út" />
-
-          <div className="fsx-sh-two is-dose">
-            <Field label="Dózis">
-              <input className="fsx-sh-input" inputMode="decimal" value={dose} onChange={e => setDose(e.target.value)} placeholder="4" />
-            </Field>
-            <Field label="Egység">
-              <input className="fsx-sh-input" value={unit} onChange={e => setUnit(e.target.value)} placeholder="mg" />
-            </Field>
-          </div>
-
-          <SectionHead>Kadencia</SectionHead>
-          <ChipRow
-            options={[{ value: 'weekly', label: 'heti' }, { value: 'daily', label: 'napi' }] as const}
-            value={cadenceMode}
-            onChange={setCadenceMode}
-            ariaLabel="Kadencia"
+          <Lab>{M.form.howOften}</Lab>
+          <PickRow
+            options={[{ value: 'weekly', label: M.form.weekly }, { value: 'daily', label: M.form.daily }] as const}
+            value={cadenceMode} onChange={setCadenceMode} ariaLabel={M.form.howOften}
           />
           {cadenceMode === 'weekly' && (
-            <ChipRow options={WEEKDAYS} value={cadenceDay} onChange={setCadenceDay} ariaLabel="Beadás napja" />
+            <>
+              <Lab>{M.form.doseDay}</Lab>
+              <PickRow options={WEEKDAYS.map(value => ({ value: value as string, label: M.form.weekday[value] }))}
+                value={cadenceDay} onChange={setCadenceDay} ariaLabel={M.form.doseDay} />
+            </>
           )}
 
-          <SectionHead>Ciklus · fázisok</SectionHead>
-          <div className="fmd-cyc is-preview" aria-hidden>
-            {Array.from({ length: cycle.cycleLengthDays }, (_, i) => {
-              const day = i + 1
-              const phase = cycle.phases.find(p => day >= p.fromDay && day <= p.toDay)
-              return (
-                <span key={day} className={phase?.key}>
-                  <span className="fmd-cyc-glyph">{phase?.label?.[0] ?? ''}</span>
-                  <span className="fmd-cyc-day">{day}</span>
-                </span>
-              )
-            })}
-          </div>
-          <span className="fsx-sh-hint">
-            {editing
-              ? `${cycle.cycleLengthDays} napos ciklus — a fázis-beosztás változatlan marad.`
-              : 'Alap-sablon: 2 nap csúcs · 3 nap stabil · 2 nap völgy — a beadás napjától számolva.'}
-          </span>
+          <Lab>{M.form.phases}</Lab>
+          <div aria-hidden="true"><MedicationCycleBar week={cycleCells(cycle)} dim /></div>
+          <Note>{editing ? M.form.noteEdit(cycle.cycleLengthDays) : M.form.noteNew(phaseDays)}</Note>
 
-          <div className="fsx-sh-pair">
-            <button type="button" className="fsx-sh-btn uv-flat" onClick={close}>Mégse</button>
-            <button type="button" className="fsx-sh-btn is-lit" disabled={!canSave} onClick={() => submit(close)}>
-              <Icon name="check" size={14} /> {editing ? 'Mentés' : 'Felveszem'}
-            </button>
-          </div>
-
-          <div style={{ height: 24 }} />
+          <SheetActs label={editing ? M.form.save : M.form.add} onSave={() => submit(close)} onCancel={close}
+            cancelLabel={M.common.cancel} disabled={!canSave} />
         </>
       )}
     </Sheet>

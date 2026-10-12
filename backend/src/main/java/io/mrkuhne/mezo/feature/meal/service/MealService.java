@@ -32,6 +32,7 @@ import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -154,7 +155,9 @@ public class MealService {
         }
         BigDecimal before = meal.getScore();
         OffsetDateTime loggedAt = meal.getLoggedAt().atZone(ZoneId.systemDefault()).toOffsetDateTime();
-        applyScore(meal.getCreatedBy(), meal, loggedAt);
+        // The backfill runs with no request behind it: bind the meal's owner so the envelope's
+        // sentences are written in the owner's language, not in the default one.
+        LlmActorContext.runAs(meal.getCreatedBy(), () -> applyScore(meal.getCreatedBy(), meal, loggedAt));
         repository.saveAndFlush(meal);
         log.debug("Re-scored meal {} ({}): {} -> {}", mealId, meal.getMealDate(), before, meal.getScore());
         return true;

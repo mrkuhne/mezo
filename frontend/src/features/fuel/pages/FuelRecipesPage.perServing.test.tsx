@@ -52,7 +52,9 @@ test('a csempe kcal-száma egy ADAGRA vetít, nem a teljes receptre', async () =
   // 2480 / 4 = 620 — és SOHA a teljes 2 480.
   expect(card).toHaveTextContent('620')
   expect(card.textContent).not.toContain('2 480')
-  expect(card).toHaveTextContent('kcal / adag')
+  // the basis is said once, under the list (the row carries the number and „kcal")
+  expect(card).toHaveTextContent('620kcal')
+  expect(screen.getByText(/A szám egy adag kalóriája/)).toBeInTheDocument()
 })
 
 // Üveg U2 (mezo-me75u.2, owner 2026-09-23): a lista soronként EGY recept, és a sor a három

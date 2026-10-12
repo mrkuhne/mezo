@@ -1,7 +1,8 @@
 // A heti kép view-modelljének tesztjei (Fuel Titanium S3, mezo-83g0 — C1 · C5 · C6).
 // Tiszta logika: se router, se QueryClient.
-import { describe, expect, test } from 'vitest'
-import { buildWeekView, loggedKcalAvg, weekDeltas, type WeekViewVM } from '@/features/fuel/logic/fuelWeekView'
+import { afterEach, describe, expect, test } from 'vitest'
+import { setLang } from '@/shared/i18n'
+import { buildWeekView, fixed1, loggedKcalAvg, weekDeltas, weekRangeTitle, type WeekViewVM } from '@/features/fuel/logic/fuelWeekView'
 import type { FuelWeekData, FuelWeekDay } from '@/data/fuel/mealApi'
 
 const TARGET = { kcal: 2400, p: 160, c: 250, f: 75, water: 3000 }
@@ -220,5 +221,45 @@ describe('kímélő nap a heti képben', () => {
 
   test('mód nélküli rollup: recovery false mindenhol', () => {
     expect(buildWeekView(WEEK, SCORES, []).days.every(d => !d.recovery)).toBe(true)
+  })
+})
+
+// --- Folyadék (mezo-n4wf5.5) -------------------------------------------------------------------
+
+describe('a hét hátralévő napjai (owner-döntés 2026-10-12)', () => {
+  test('a mai nap utáni nap jövőbeli, a mai és a korábbi nem', () => {
+    const vm = buildWeekView(WEEK, SCORES, [], '2026-09-09')
+    expect(vm.days.map((d) => d.future)).toEqual([false, false, false, true, true, true, true])
+    expect(vm.days.map((d) => d.today)).toEqual([false, false, true, false, false, false, false])
+  })
+
+  test('egy múlt hét egyetlen napja sem jövőbeli', () => {
+    expect(buildWeekView(WEEK, SCORES, [], '2026-09-20').days.some((d) => d.future || d.today)).toBe(false)
+  })
+})
+
+describe('kiírási formák', () => {
+  afterEach(() => setLang('hu', { persist: false }))
+
+  test('egy tizedes mindig kiírva, a nyelv tizedesjelével', () => {
+    expect(fixed1(5)).toBe('5,0')
+    expect(fixed1(78.94)).toBe('78,9')
+    expect(fixed1(7.96)).toBe('8,0')
+    setLang('en', { persist: false })
+    expect(fixed1(5)).toBe('5.0')
+  })
+
+  test('a hét címe: egy hónapon belül összevonva, hónaphatáron mindkét hónappal', () => {
+    expect(weekRangeTitle('2026-10-05')).toBe('okt. 5–11.')
+    expect(weekRangeTitle('2026-09-28')).toBe('szept. 28. – okt. 4.')
+    setLang('en', { persist: false })
+    expect(weekRangeTitle('2026-10-05')).toBe('5–11 Oct')
+    expect(weekRangeTitle('2026-09-28')).toBe('28 Sep – 4 Oct')
+  })
+
+  test('az edények napcímkéi a nyelvet követik', () => {
+    expect(buildWeekView(WEEK, SCORES, []).days.map((d) => d.label)).toEqual(['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'])
+    setLang('en', { persist: false })
+    expect(buildWeekView(WEEK, SCORES, []).days.map((d) => d.label)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
   })
 })

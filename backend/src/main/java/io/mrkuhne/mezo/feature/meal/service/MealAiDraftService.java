@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -59,6 +60,45 @@ public class MealAiDraftService {
 
     private static final Set<String> SLOTS = Set.of("breakfast", "lunch", "dinner", "snack");
 
+    static final String SYSTEM_PROMPT_HEAD = """
+        You extract ONE meal log from Hungarian free text and/or a food photo.
+        Answer with ONE JSON object and nothing else, exactly these keys:
+        {"slot":"breakfast"|"lunch"|"dinner"|"snack","title":string|null,"note":string|null,
+         "items":[{"pantryItemId":string|null,"recipeId":string|null,"name":string,
+                   "amount":number,"unit":string,
+                   "kcal":number,"proteinG":number,"carbsG":number,"fatG":number,
+                   "fiberG":number|null,"sugarG":number|null,"saltG":number|null,
+                   "saturatedFatG":number|null}]}
+        Rules:
+        - Match a food against the CATALOG below only when it is clearly the same item; then copy
+          the EXACT id into pantryItemId or recipeId. NEVER invent or alter an id.
+        - For a pantry match, amount is the QUANTITY measured in the row's serving UNIT — the unit
+          symbol after the number in the serving column (row "100 g" -> unit "g", row "1 db" ->
+          unit "db"). NEVER answer with the number of servings: one medium apple on a "100 g" row
+          is amount 150 and unit "g", not amount 1.5 or 1. Convert spoken measures (dl, bögre,
+          marék, szelet) into that unit yourself.
+        - For a recipe match amount = servings.
+        - ALWAYS fill name + kcal/proteinG/carbsG/fatG as your estimate for the stated amount,
+          matched lines included (they are a fallback only).
+        - ALSO estimate fiberG/sugarG/saltG/saturatedFatG in GRAMS for the stated amount — these
+          drive the fiber, WHO and fat-quality scores. saturatedFatG especially: for eggs, bacon,
+          cheese, butter, coconut and fatty meat it is a large share of fatG, and omitting it
+          made those meals score as if they had none. Use null ONLY when you genuinely cannot
+          estimate the value; never write 0 to mean "unknown".
+        - Unknown / restaurant / street food: both ids null.
+        - Nothing edible recognized: "items":[].
+        - title: short Hungarian meal title; note: only genuinely useful remarks, else null.
+
+        PANTRY CATALOG (id | name | brand | serving):
+        """;
+
+    /** For an English account: nothing in the prompt asks for Hungarian, so it cannot fight the
+     *  appended output-language directive (mezo-n4wf5.5). Hungarian accounts keep the head byte
+     *  for byte. */
+    static final String SYSTEM_PROMPT_HEAD_NEUTRAL = SYSTEM_PROMPT_HEAD
+        .replace("from Hungarian free text", "from free text")
+        .replace("short Hungarian meal title", "short meal title");
+
     private final ObjectProvider<MealDraftLlm> llm;
     private final PantryItemRepository pantryItemRepository;
     private final PantryCatalogRepository pantryCatalogRepository;
@@ -69,6 +109,7 @@ public class MealAiDraftService {
     private final MealAiDraftValidator validator;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final UserMessages messages;
 
     /** LLM answer contract — ids as String so a malformed uuid demotes the line, not the call. */
     record ExtractedLine(String pantryItemId, String recipeId, String name, BigDecimal amount,
@@ -154,37 +195,8 @@ public class MealAiDraftService {
     }
 
     private String buildSystemPrompt(UUID userId, List<PantryItemEntity> pantry) {
-        StringBuilder sb = new StringBuilder("""
-            You extract ONE meal log from Hungarian free text and/or a food photo.
-            Answer with ONE JSON object and nothing else, exactly these keys:
-            {"slot":"breakfast"|"lunch"|"dinner"|"snack","title":string|null,"note":string|null,
-             "items":[{"pantryItemId":string|null,"recipeId":string|null,"name":string,
-                       "amount":number,"unit":string,
-                       "kcal":number,"proteinG":number,"carbsG":number,"fatG":number,
-                       "fiberG":number|null,"sugarG":number|null,"saltG":number|null,
-                       "saturatedFatG":number|null}]}
-            Rules:
-            - Match a food against the CATALOG below only when it is clearly the same item; then copy
-              the EXACT id into pantryItemId or recipeId. NEVER invent or alter an id.
-            - For a pantry match, amount is the QUANTITY measured in the row's serving UNIT — the unit
-              symbol after the number in the serving column (row "100 g" -> unit "g", row "1 db" ->
-              unit "db"). NEVER answer with the number of servings: one medium apple on a "100 g" row
-              is amount 150 and unit "g", not amount 1.5 or 1. Convert spoken measures (dl, bögre,
-              marék, szelet) into that unit yourself.
-            - For a recipe match amount = servings.
-            - ALWAYS fill name + kcal/proteinG/carbsG/fatG as your estimate for the stated amount,
-              matched lines included (they are a fallback only).
-            - ALSO estimate fiberG/sugarG/saltG/saturatedFatG in GRAMS for the stated amount — these
-              drive the fiber, WHO and fat-quality scores. saturatedFatG especially: for eggs, bacon,
-              cheese, butter, coconut and fatty meat it is a large share of fatG, and omitting it
-              made those meals score as if they had none. Use null ONLY when you genuinely cannot
-              estimate the value; never write 0 to mean "unknown".
-            - Unknown / restaurant / street food: both ids null.
-            - Nothing edible recognized: "items":[].
-            - title: short Hungarian meal title; note: only genuinely useful remarks, else null.
-
-            PANTRY CATALOG (id | name | brand | serving):
-            """);
+        StringBuilder sb = new StringBuilder(
+            "hu".equals(messages.language()) ? SYSTEM_PROMPT_HEAD : SYSTEM_PROMPT_HEAD_NEUTRAL);
         for (PantryItemEntity p : pantry) {
             var c = p.getCatalog();
             sb.append(p.getId()).append(" | ").append(c.getName()).append(" | ")

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { cn } from '@/shared/lib/cn'
-import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { addDays, huMonthDayDow, localDateString } from '@/shared/lib/dates'
+import { fmtDate } from '@/shared/lib/format'
+import { useM } from '@/shared/i18n'
 
 export interface DatePickerProps {
   value: string // YYYY-MM-DD (selected day)
@@ -10,11 +12,9 @@ export interface DatePickerProps {
   formatLabel?: (iso: string) => string // trigger label; default huMonthDayDow
 }
 
-// Hungarian month labels for the calendar header. HU_MONTHS in dates.ts is module-private
-// (its display strings feed the ISO->label formatters), so the header keeps its own copy.
-const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
-// Monday-first weekday column headers (Hétfő … Vasárnap).
-const HU_DOW_SHORT = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V']
+// The month header („2026. október" / "October 2026") and the Monday-first weekday column heads (H K Sze Cs P Szo V /
+// Mon … Sun) come from `format.ts`, built at render: the calendar follows the app language (Folyadék F5).
+const A_MONDAY = '2026-10-05'
 
 // Monday-first ISO day cells for the visible month, with leading/trailing nulls to fill weeks.
 function monthCells(year: number, month0: number): (string | null)[] {
@@ -38,9 +38,12 @@ function monthCells(year: number, month0: number): (string | null)[] {
  * Skin (üveg U10, mezo-me75u.10): a lavender glass popover, sheen off (`.dp-cal.glass.is-still`),
  * flat round month arrows, the selected day a lit lavender fill with dark ink, today a hairline
  * ring, out-of-range days dimmed — all in the `uveg reteg ablak` block of prototype.css; no
- * inline colours. Pages that re-dress the trigger (Rutin) keep their own scoped rules.
+ * inline colours. A page that re-dresses it keeps its own scoped rules: the Fuel Mai day pager (its only
+ * consumer today) wears the domain's liquid on the selected day (`.fa-dn-mid .dp-*`, folyadek-fuel-mai.css).
+ * Words: `frame.datePicker`; the month and the weekdays: `format.ts`.
  */
 export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: DatePickerProps) {
+  const D = useM().frame.datePicker
   const [open, setOpen] = useState(false)
   // Visible month, initialised from value's year/month; re-synced to value on each open.
   const [vy, setVy] = useState(() => Number(value.slice(0, 4)))
@@ -79,7 +82,7 @@ export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: D
     <div className="dp-wrap">
       <button
         type="button"
-        aria-label="Dátum kiválasztása"
+        aria-label={D.pick}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => (open ? setOpen(false) : openPicker())}
@@ -90,24 +93,22 @@ export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: D
 
       {open && (
         <>
-          <button type="button" aria-label="Bezárás" onClick={() => setOpen(false)} className="dp-veil" />
-          <div role="dialog" aria-label="Naptár" className="dp-cal glass is-still">
+          <button type="button" aria-label={D.close} onClick={() => setOpen(false)} className="dp-veil" />
+          <div role="dialog" aria-label={D.calendar} className="dp-cal glass is-still">
             <div className="dp-head">
               <button
                 type="button"
-                aria-label="Előző hónap"
+                aria-label={D.prevMonth}
                 onClick={() => stepMonth(-1)}
                 disabled={prevDisabled}
                 className="dp-nav"
               >
                 ‹
               </button>
-              <strong>
-                {HU_MONTHS[vm]} {vy}
-              </strong>
+              <strong>{fmtDate(new Date(vy, vm, 1, 12), 'monthYear')}</strong>
               <button
                 type="button"
-                aria-label="Következő hónap"
+                aria-label={D.nextMonth}
                 onClick={() => stepMonth(1)}
                 disabled={nextDisabled}
                 className="dp-nav"
@@ -117,10 +118,8 @@ export function DatePicker({ value, onChange, maxDate, minDate, formatLabel }: D
             </div>
 
             <div className="dp-grid">
-              {HU_DOW_SHORT.map((d) => (
-                <div key={d} className="dp-dow">
-                  {d}
-                </div>
+              {Array.from({ length: 7 }, (_, i) => (
+                <div key={i} className="dp-dow">{fmtDate(addDays(A_MONDAY, i), 'weekdayCompact')}</div>
               ))}
             </div>
 

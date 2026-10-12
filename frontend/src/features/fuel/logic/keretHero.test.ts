@@ -37,8 +37,8 @@ test('the fiber ring sums only the meals that carry a fiberG — a missing field
   const m2 = meal({ id: 'm2', fiberG: undefined })
   const vm = build({ meals: [m1, m2] })
   const fiber = vm.rings.find(r => r.key === 'fiber')!
-  expect(fiber.value).toBe('12 g')
-  expect(fiber.target).toBe(`${FIBER_TARGET_G} g`)
+  // the VM hands over NUMBERS (F5): the vial formats them at render
+  expect([fiber.amount, fiber.goal, fiber.unit]).toEqual([12, FIBER_TARGET_G, 'g'])
   expect(fiber.pct).toBe(Math.round((12 / FIBER_TARGET_G) * 100))
 })
 
@@ -47,14 +47,14 @@ test('a null fiberG (explicit no-data) also counts as 0, same as an absent field
   const m2 = meal({ id: 'm2', fiberG: null })
   const vm = build({ meals: [m1, m2] })
   const fiber = vm.rings.find(r => r.key === 'fiber')!
-  expect(fiber.value).toBe('18 g')
+  expect(fiber.amount).toBe(18)
 })
 
 test('with no logged meals at all the fiber ring sits at 0%, not a ghost/unknown state', () => {
   const vm = build({ meals: [] })
   const fiber = vm.rings.find(r => r.key === 'fiber')!
   expect(fiber.pct).toBe(0)
-  expect(fiber.value).toBe('0 g')
+  expect(fiber.amount).toBe(0)
 })
 
 // ── víz-ring ─────────────────────────────────────────────────────────────────
@@ -64,8 +64,7 @@ test('the water ring pct is currentMl over targetMl', () => {
   const water = vm.rings.find(r => r.key === 'water')!
   expect(water.pct).toBe(75)
   // A jóváhagyott prototípus literben mutatja a vizet — olvashatóbb, mint a 4 jegyű ml.
-  expect(water.value).toBe('1,8 l')
-  expect(water.target).toBe('2,4 l')
+  expect([water.amount, water.goal, water.unit]).toEqual([1.8, 2.4, 'l'])
 })
 
 test('an overshoot water log clamps the ring pct at 100, never over', () => {

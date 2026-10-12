@@ -21,6 +21,6 @@ describe('a kaja-ünneplés pontszám-matekja', () => {
     expect(mealVerdict(4)).toBe('Erős tányér.')
     expect(mealVerdict(3)).toBe('Rendben van.')
     expect(mealVerdict(2)).toBe('Ez is számít.')
-    expect(mealVerdict(1)).toBe('Rögzítve — minden adat segít.')
+    expect(mealVerdict(1)).toBe('Rögzítve: minden adat segít.')
   })
 })

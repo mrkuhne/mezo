@@ -2,7 +2,7 @@
 title: Mezo-kalauz (in-app page guides)
 type: feature
 status: mixed
-updated: 2026-10-11
+updated: 2026-10-12
 tags: [tutorial, onboarding, frontend, backend]
 key_files:
   - frontend/src/features/tutorial
@@ -16,6 +16,8 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 
 # Mezo-kalauz — In-App Page Guides
 
+> **2026-10-12 — Folyadék F5 · Fuel (`mezo-n4wf5.5`).** The eight Fuel guides (`registry/fuel.ts`) are rewritten to the pages as built and to the new words, and **every one has its `version` raised** — an owner who saw the old card sees the new one once more (a card that describes the live page wrongly is re-shown, bible F1.10). Today's set: `fuel` (`/fuel`, v3 — the day's bowl and the five vials), `fuel-log-uj` (`/fuel/log/uj`, v3), `fuel-terv` (`/fuel/trendek`, v3 — seven vessels, the score on the ten scale), `fuel-konyha` (`/fuel/konyha`, v2 — the empty pot invites to the Műhely), `fuel-stack` (`/fuel/stack`, v3 — capsules by time of day, „idősáv" instead of „zóna"), `fuel-receptek` (`/fuel/recipes`, v3 — six filter pills), `fuel-kamra` (`/fuel/kamra`, v2 — five filter pills, the hero's three buttons), `fuel-gyogyszer` (`/fuel/gyogyszer`, v3 — „gyakoriság", the cycle as a capsule row). Words: „stack" → kiegészítők, „Vacsi" → Vacsora, „AI" → Mezo, „kadencia" → gyakoriság, „adherencia" is gone. Glossary (`fogalmak.ts`): the `stack` KEY stays (cards reference it) but its shown term is „protokoll" with „idősáv" in the definition; `pontszam` now says a score between 0 and 10. Anchors in use: `fuel-log`, `log-forrasok` (`FuelLogModes` + `MealComposer`), `trendek-heti`, `konyha-felvetel`, `stack-hero`, `receptek-tabs`, `kamra-tabs`; `fuel-gyogyszer` stays anchor-less. **The kalauz is still Hungarian only** — the registry holds literal Hungarian text and does not read the message catalog; making it bilingual is a later slice.
+
 > **2026-10-11 — Folyadék F4 · Edzés közben (`mezo-n4wf5.4`).** The `train-session` guide is **version 2**: its cards described the old card list („minden kártya egy gyakorlat", „a ⋯ alatt") and now describe the built screen — one exercise on top with its sets, the others as rows (tap = on top), the tick saves the set, the rest runs in the bar below, the three dots in the hero's corner hold the note and the set changes; the „mikor" card names Indulás and the Lezárás → értékelés path. The `train-review` guide's „mikor" card says the previous / next instance is at the bottom of the page (was: „a lánc mentén"). The `session-start` anchor sits on the kit's `TitleRow` on both the Eligazítás and the session page, and the route's mini `?` (the `fo-help` mark) lives inside it (`registry/anchors.test.tsx` pins both). A version bump re-arms the guide for users who saw v1.
 
 > **2026-09-28 — Eligazítás (`mezo-mgu2r`).** The `train-session` guide (`registry/train.ts`) speaks of the new briefing: the intro card is „Előbb egy eligazítás.” (time + challenges before Indulás, then the card list), and the „Szettről szettre” card says the taken-on challenge sits on its own exercise (tap to release) instead of under the header ⋯. The `session-start` anchor lives on the briefing's top bar. Version unchanged.
@@ -27,7 +29,7 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 > `/nap`. **Status: mixed — backend ✅ done (`tutorial_progress` singleton, 3 endpoints), FE ✅ done
 > for the motor (`TutorialProvider`, `KalauzSheet`, registry, header "?") and the `T0` welcome flow
 > (`KalauzWelcome`, `registry/welcome.ts`), content 🔶 five T1 hub guides (`nap`, `train`,
-> `fuel`, `mezo`, `me` — all version 1) plus the S3a batch of **fourteen T2 guides** for the Nap
+> `fuel`, `mezo`, `me` — version 1, except `fuel` at 3 since Folyadék F5) plus the S3a batch of **fourteen T2 guides** for the Nap
 > and Edzés sub-pages (mezo-gb1s.5) and the S3b batch of **eight T2 guides** for the Fuel
 > sub-pages (mezo-gb1s.6), the shared `fogalmak.ts` glossary and the four-step welcome;
 > the Mezo/Én T2 batches (S3c–d) and every T3 guide are still unbuilt.**
@@ -61,7 +63,7 @@ and all nine Edzés sub-pages (`/train/mai|week|sport|futas|exercises|medals|mes
 (`mezo-gb1s.6`) shipped the Fuel batch**: `/fuel/log`, `/fuel/log/uj`, `/fuel/plan`, `/fuel/stack`,
 `/fuel/recipes`, `/fuel/kamra`, `/fuel/gyogyszer`, `/fuel/naplo` — eight guides, three new glossary
 keys (`ablak`, `stack`, `pontszam`) and six anchors, three of them through `PageHero`'s new
-optional `kalauzAnchor` prop. The Mezo/Én T2 batches (S3c–d) and the T3 single-card layer are
+optional `kalauzAnchor` prop. *(That is the S3b state; the Fuel routes were regrouped since — today's eight Fuel guides, their routes, versions and anchors are in the 2026-10-12 note at the top.)* The Mezo/Én T2 batches (S3c–d) and the T3 single-card layer are
 still **out of scope**.
 
 **S2b (`mezo-gb1s.4`) added `T0`**: a one-time, four-step first-launch **welcome pager**
@@ -421,7 +423,7 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   `naplo-hero`). Two more guides are deliberately anchor-less: `/fuel/plan` (every speaking card —
   weekly note, medication strip, supplement map — is data-conditional) and `/fuel/gyogyszer`
   (the page has two disjoint faces, empty vs. tracked cycle, and is permanently empty in
-  practice — see [`fuel.md`](fuel.md) §2 and ADR 0027).
+  practice — see [`fuel.md`](fuel.md) §2 and ADR 0027). **Today (Folyadék F5)** the Fuel anchors are `fuel-log`, `log-forrasok`, `trendek-heti`, `konyha-felvetel`, `stack-hero`, `receptek-tabs` and `kamra-tabs`, set as plain `data-kalauz-anchor` attributes on kit pieces; `log-napvalto`, `kamra-hero`, `naplo-hero` and the `PageHero kalauzAnchor` route no longer exist on Fuel.
 - **The spec's `quickinput` T2 item is deferred to S4, not dropped** (S3b): spec §10 lists a
   "Gyors logolás sheet" guide triggered by the `QuickInputSheet`'s first open, but that is **not a
   route** — the engine's only auto-open trigger is the route effect, so it cannot fire.
@@ -443,8 +445,8 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/features/tutorial/registry/fogalmak.ts` — canonical Hungarian glossary
   (`FOGALMAK`, `fogalom(key)`), consumed via `...fogalom('<key>')` spread by any `fogalom` card.
 - `frontend/src/features/tutorial/registry/fuel.ts` — the Fuel hub guide (`fuel`, anchor
-  `fuel-log`) plus the eight S3b T2 guides (`fuel-log`, `fuel-log-uj`, `fuel-terv`, `fuel-stack`,
-  `fuel-receptek`, `fuel-kamra`, `fuel-gyogyszer`, `fuel-naplo`).
+  `fuel-log`) plus seven T2 guides (`fuel-log-uj`, `fuel-terv` on `/fuel/trendek`, `fuel-konyha`,
+  `fuel-stack`, `fuel-receptek`, `fuel-kamra`, `fuel-gyogyszer`); all rewritten and re-versioned in Folyadék F5.
 - `frontend/src/features/tutorial/registry/nap.ts` — the Nap hub guide (`nap`), anchor `nap-hero`.
 - `frontend/src/features/tutorial/registry/train.ts` — the Edzés hub guide (`train`), anchor
   `train-hero`.
@@ -464,8 +466,8 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/features/me/pages/BeallitasokPage.tsx` — the "Kalauzok újranézése" reset row (§5).
 - `frontend/src/features/fuel/pages/FuelMaiPage.tsx` — `data-kalauz-anchor="fuel-log"`.
 - `frontend/src/shared/ui/mozaik/index.tsx` — `PageHero`'s optional `kalauzAnchor` prop (§7).
-- `frontend/src/features/fuel/pages/{FuelLogPage,FuelRecipesPage,FuelStackPage,FuelKamraPage,FuelNaploPage}.tsx`
-  and `components/MealComposer.tsx` — the six S3b anchors (§9).
+- `frontend/src/features/fuel/pages/{FuelTrendekPage,FuelKonyhaPage,FuelStackPage,FuelRecipesPage,FuelKamraPage}.tsx`
+  and `components/{FuelLogModes,MealComposer}.tsx` — the Fuel sub-page anchors (§9).
 - `frontend/src/features/today/pages/NapHubPage.tsx` — `data-kalauz-anchor="nap-hero"` × 4
   (one per daypart face).
 - `frontend/src/features/train/pages/EdzesHubPage.tsx` — `data-kalauz-anchor="train-hero"` × 6

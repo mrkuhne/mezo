@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-10-09
+updated: 2026-10-12
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -17,6 +17,8 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 ---
 
 # Push Notifications Platform — Feature Documentation
+
+> **2026-10-12 — Folyadék F5 · Fuel wording (`mezo-n4wf5.5`).** The two FE-written categories read their text from the message catalog when the snapshot is BUILT, so the stored (and pushed) text is in the language the app speaks at that app open. `fuel_slot` title: „Kiegészítők · {idősáv}" / "Supplements · {zone}" (`m().fuelLogika.dayPlan.stack(STACK_ZONE_LABEL[zone])`, e.g. „Kiegészítők · Edzés előtt"; an unknown future zone falls back to its raw key) — the old „Stack · reggeli slot" form and the writer's own `FUEL_WINDOW_LABEL` map are gone. `checkin` body: `m().frame.reminders.checkinBody` (HU text unchanged; the `CHECKIN_BODY` constant is gone). The settings row for `fuel_slot` reads „Fuel és kiegészítők / A kiegészítőid minden idősávjánál" (EN "Fuel & supplements / At each of your supplement times"). The deleted-item fallback of `projectStackDay` is „(törölt kamra-tétel)" / "(deleted pantry item)". Schedule, times, deeplinks and categories are unchanged.
 
 > **2026-09-29 — Kihagyás S1 (`mezo-q4xt2.1`).** `AnchorResolver` resolves no gym anchor on a day the owner skipped (reads `WorkoutService.findPlannedTemplateForDateUnlessSkipped`, never the skip-blind sibling); the app-open schedule writer's `deriveBlocks` (Fuel) drops a skipped GYM/RUN block the same way it already dropped a skipped sport slot, so no fuel-slot notification fires for it either. See [`train.md`](train.md) "Kihagyás (S1)".
 
@@ -40,7 +42,7 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 > slice that completes the `mezo-h4wp` proactive epic's long-deferred **H2** item — see
 > [`proactive.md`](proactive.md) and [`roadmap.md`](../milestones/roadmap.md).
 >
-> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The FE-written `checkin` push body (`notificationScheduleWriter.ts`, `CHECKIN_BODY`) is now „Hogy vagy most? Pár koppintás, fél perc." (was the four-item „Energia, stressz, test, fej — 20 másodperc."), since the slot's questions now vary by time of day. Schedule, deeplinks (`/today?checkin=HH:mm`) and category unchanged. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.12.
+> **2026-09-28 — Check-in 2.0 (`mezo-ck2`).** The FE-written `checkin` push body (`notificationScheduleWriter.ts`; then the `CHECKIN_BODY` constant, since F5 the catalog's `frame.reminders.checkinBody`) is now „Hogy vagy most? Pár koppintás, fél perc." (was the four-item „Energia, stressz, test, fej — 20 másodperc."), since the slot's questions now vary by time of day. Schedule, deeplinks (`/today?checkin=HH:mm`) and category unchanged. Spec [`2026-09-27-checkin-2-design.md`](../superpowers/specs/2026-09-27-checkin-2-design.md) §3.12.
 
 > **2026-09-25 — Üveg U7 (`mezo-me75u.7`).** The kind → 3D icon map (`NTF_3D`/`ntfIcon`) lives in `features/notification/logic/kindIcon.ts`, shared by the header panel and the `/me/ertesitesek` feed; the feed and `/settings/notifications` wear the dark glass material (`Toggle glass`). Behavior unchanged. Parity reference [`uveg-en2.html`](../design_2.0/prototypes/uveg-en2.html).
 
@@ -971,7 +973,7 @@ the OpenAPI schema itself (1..100).
   `AnchorResolver` ever sees it — this platform never touches `FlagRaisedEvent` or
   `feature.companion.flags` at all, only the resulting card. `mezo.notification.quiet-hours` (§3d) is
   this platform's own config, read by nobody outside `feature/notification`.
-- **Fuel** ([`fuel.md`](fuel.md)) — **new seam, both directions; re-platformed onto the living-occurrence Stack (mezo-vx9v Task 9).** Fuel's own `frontend/src/features/fuel/logic/buildProtocol.ts` exports `deriveBlocks` (today's gym/sport/run blocks; moved out of `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) and `PRE_WORKOUT_STACK_LEAD_MIN` — the **one canonical** "40 minutes before today's first training block" offset. Three callers now share the SAME `projectStackDay({occurrences, stash, intakes, wake, bed, mealsPerDay, blocks})` projection (each composing its own hooks inline, not via `useStackDay()` — the writer needs `useSleepGoal().isPending` plus `useStack()`/`useProtocol()`'s `pending`/`error` flags for its fire-once gate (§9 trap #8, `mezo-b6q0`), `NotificationsPage` needs the raw `blocks[]` for its gym sub-line): Fuel's own `useFuelTimeline`, this platform's `useScheduleSnapshotWriter` (the `fuel_slot` schedule rows), and `NotificationsPage`'s preview header — so the pre-workout stack time the Fuel/Stack page shows, the time persisted to `notification_schedule`, and the time the settings preview forecasts can never quietly disagree (a fix-round decision, `mezo-h4wp.6.3`, superseded onto occurrences by Task 9). The retired selection-based `buildProtocol()` builder and its `deriveProtocolAnchors`-mediated anchor derivation are gone from this path; `FUEL_WINDOW_LABEL` (`notificationScheduleWriter.ts`) is now keyed by the 8 `StackZoneKey` zone keys, not the old label set. Since the stim-aware split (mezo-j6c9) a day with ≥2 distinct-time training blocks can project TWO `pre_workout` slots (stim-free-named items anchor to the LAST block), so the writer emits up to two `fuel_slot` "edzés előtti" entries at their own times — per-slot emission handles this with no writer change.
+- **Fuel** ([`fuel.md`](fuel.md)) — **new seam, both directions; re-platformed onto the living-occurrence Stack (mezo-vx9v Task 9).** Fuel's own `frontend/src/features/fuel/logic/buildProtocol.ts` exports `deriveBlocks` (today's gym/sport/run blocks; moved out of `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) and `PRE_WORKOUT_STACK_LEAD_MIN` — the **one canonical** "40 minutes before today's first training block" offset. Three callers now share the SAME `projectStackDay({occurrences, stash, intakes, wake, bed, mealsPerDay, blocks})` projection (each composing its own hooks inline, not via `useStackDay()` — the writer needs `useSleepGoal().isPending` plus `useStack()`/`useProtocol()`'s `pending`/`error` flags for its fire-once gate (§9 trap #8, `mezo-b6q0`), `NotificationsPage` needs the raw `blocks[]` for its gym sub-line): Fuel's own `useFuelTimeline`, this platform's `useScheduleSnapshotWriter` (the `fuel_slot` schedule rows), and `NotificationsPage`'s preview header — so the pre-workout stack time the Fuel/Stack page shows, the time persisted to `notification_schedule`, and the time the settings preview forecasts can never quietly disagree (a fix-round decision, `mezo-h4wp.6.3`, superseded onto occurrences by Task 9). The retired selection-based `buildProtocol()` builder and its `deriveProtocolAnchors`-mediated anchor derivation are gone from this path; The slot title's zone name comes from the catalog-backed `STACK_ZONE_LABEL` (`data/fuel/stackZones`, keyed by `StackZoneKey`) since Folyadék F5 — the writer's own `FUEL_WINDOW_LABEL` map is gone. Since the stim-aware split (mezo-j6c9) a day with ≥2 distinct-time training blocks can project TWO `pre_workout` slots (stim-free-named items anchor to the LAST block), so the writer emits up to two `fuel_slot` „Kiegészítők · Edzés előtt" entries at their own times — per-slot emission handles this with no writer change.
 - **Me** ([`me.md`](me.md) §2 "`Értesítés`") — the FE consumer: the settings page owns no
   notification data itself beyond composing `usePushSubscription()` + `useNotificationPrefs()` +
   the pure `notificationForecast.ts` + `projectStackDay`'s zoned slots.
@@ -1359,8 +1361,8 @@ one of the 12 current producer IT classes had to have this annotation dropped).
      real data.** `useScheduleSnapshotWriter` used to gate on `useSleepGoal().isPending` alone, so
      an app open where the (heaviest) pantry query was still unresolved — while the protocol query
      already had its occurrences — projected every occurrence against an empty stash and persisted
-     `projectStackDay`'s `'(törölt Kamra-item)'` fallback as every `fuel_slot` body, which the
-     dispatcher then pushed **verbatim** ("Stack · reggeli slot" → "(törölt Kamra-item) + …") until
+     `projectStackDay`'s deleted-item fallback (then `'(törölt Kamra-item)'`, today „(törölt kamra-tétel)") as every `fuel_slot` body, which the
+     dispatcher then pushed **verbatim** (then titled "Stack · reggeli slot" → "(törölt Kamra-item) + …") until
      a later open happened to win the race; opens where the protocol was *also* unresolved replaced
      only the `checkin` category, so the poisoned `fuel_slot` rows survived them (`mezo-b6q0`). The
      gate now also waits for `useStack()`/`useProtocol()` to settle **successfully** (their new

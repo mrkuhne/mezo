@@ -1,63 +1,33 @@
 // ============================================================
-// Mezo · StackPageScaffold — a Protokoll és az Új elem közös lapváza.
+// Mezo · StackPageScaffold — the shared page frame of Protokoll, Új elem and Gyógyszer (Folyadék F5, mezo-n4wf5.5).
 //
-// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `head()` + `protokoll()` / `stackUj()`):
-// a fejléc egy kerek üveg vissza-gomb + szemöldök (a szülőlap neve) + laptitulus; a hős KERET
-// NÉLKÜLI halo a nagy 3D ikonnal és a nagy számmal. A `compact` változat (Új elem) hős nélkül
-// fut: a nagy szám (lépés/3) a fejléc jobb szélére kerül, a lépés nevét a lépés-sáv mondja.
-// A navigáció változatlan: a vissza-gomb ugyanoda visz, mint eddig.
+// A Kiegészítők sub-page: the title and its context line go to the app's title bar (`useFrameTitle`), back returns where
+// the user came from (`backTo` is only where a direct link goes); where no title bar is mounted the page draws its own
+// back pill. `foot` = the floating action bar. Navigation is unchanged from the Üveg version.
 // ============================================================
 import type { ReactNode } from 'react'
-import { ContentIcon, type ClayIconName, type Icon3DName } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { MozaikPage, PageBody, type PageTone } from '@/shared/ui/mozaik'
-import { FrameBack } from '@/shared/ui/folyadek'
+import { FrameBack, Page, useFrameTitle } from '@/shared/ui/folyadek'
+import { useM } from '@/shared/i18n'
 
 interface StackPageScaffoldProps {
-  tone: PageTone
-  // S5 (mezo-qt5q): a `/fuel/stack/manage` négyes megszűnt — a Kezelés a Protokoll-lap
-  // szekciója lett (D3), tehát a visszaút oda vezet, nem egy leváltott útvonalra.
+  // S5 (mezo-qt5q): the `/fuel/stack/manage` hub is gone — Protokoll is where managing lives.
   backTo: '/fuel/stack' | '/fuel/stack/protocol'
-  backLabel: '‹ Stack' | '‹ Protokoll'
-  icon: ClayIconName | Icon3DName
+  /** the page's name in the title bar */
   name: string
-  big?: ReactNode
-  sub?: string
-  /** a hős halójának színe (`--c`) */
-  accent?: string
-  /** `compact`: nincs hős, a nagy szám a fejléc jobb szélén áll */
-  variant?: 'hero' | 'compact'
+  /** the context line over it */
+  eyebrow: string
+  foot?: ReactNode
+  className?: string
   children: ReactNode
 }
 
-export function StackPageScaffold({
-  tone, backTo, backLabel, icon, name, big, sub, accent = 'var(--dv-sage)', variant = 'hero',
-  children,
-}: StackPageScaffoldProps) {
-  const eyebrow = backLabel.replace('‹', '').trim()
+export function StackPageScaffold({ backTo, name, eyebrow, foot, className, children }: StackPageScaffoldProps) {
+  const M = useM()
+  useFrameTitle({ title: name, eyebrow })
   return (
-    <MozaikPage tone={tone} className="stk-detail-page">
-      <div className="fsx-subhead">
-        <FrameBack className="glass is-round" history fallback={backTo}>‹</FrameBack>
-        <span>
-          <small>{eyebrow}</small>
-          <strong>{name}</strong>
-        </span>
-        {variant === 'compact' && big !== undefined && (
-          <span className="fsx-subhead-num">{big}</span>
-        )}
-      </div>
-      <EntranceGroup>
-        {variant === 'hero' && (
-          <div className="stk-page-hero fsx-halo-hero uv-halo"
-            style={{ '--c': accent } as React.CSSProperties}>
-            <span className="fsx-halo-art" aria-hidden="true"><ContentIcon name={icon} size={84} /></span>
-            {big !== undefined && <strong className="fsx-halo-num">{big}</strong>}
-            {sub && <small className="fsx-halo-sub">{sub}</small>}
-          </div>
-        )}
-        <PageBody className="stk-detail-body">{children}</PageBody>
-      </EntranceGroup>
-    </MozaikPage>
+    <Page className={className ? `fk-page ${className}` : 'fk-page'} foot={foot}>
+      <FrameBack className="fo-backpill" history fallback={backTo}>‹ {backTo === '/fuel/stack' ? M.fuelKieg.common.supplements : M.fuelKieg.protocol.title}</FrameBack>
+      {children}
+    </Page>
   )
 }

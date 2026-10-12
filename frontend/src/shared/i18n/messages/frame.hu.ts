@@ -55,9 +55,25 @@ export const frameHu = {
     '/settings/mezo/context': 'Személyes prompt',
     '/settings/nap': 'Napi ritmus',
     '/me/ertesitesek': 'Értesítések',
+    // Fuel (Folyadék F5): the leltár labels of the pages that are not top tabs
+    '/settings/fuel': 'Fuel beállítások',
+    '/settings/fuel/slots': 'Étkezési ablakok',
+    '/fuel/log/uj': 'Étel rögzítése',
+    '/fuel/tanulas': 'Hogy tanultam?',
+    '/fuel/recipes': 'Receptek',
+    '/fuel/recipes/new': 'Új recept',
+    '/fuel/recipes/muhely': 'Receptműhely',
+    '/fuel/kamra': 'Kamra',
+    '/fuel/stack/protocol': 'Protokoll',
+    '/fuel/stack/manage/add': 'Új elem beállítása',
+    '/fuel/gyogyszer': 'Gyógyszer',
   },
   // What the title bar says outside the five domains.
   outside: { all: 'Minden oldal', settings: 'Beállítások', appMap: 'Az app térképe' },
+  // shared/ui/DatePicker — the calendar popover (the Mai day pager opens it)
+  datePicker: { pick: 'Dátum kiválasztása', close: 'Bezárás', calendar: 'Naptár', prevMonth: 'Előző hónap', nextMonth: 'Következő hónap' },
+  // the body of the check-in reminder the app schedules (data/notification/notificationScheduleWriter)
+  reminders: { checkinBody: 'Hogy vagy most? Pár koppintás, fél perc.' },
   titleBar: {
     guide: 'Kalauz ehhez az oldalhoz',
     back: 'Vissza',

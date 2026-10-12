@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.ToolRow;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ import tools.jackson.databind.ObjectMapper;
 @ConditionalOnProperty(name = FeaturesConfiguration.RECIPE_AI_SCORE_SWITCH, havingValue = "true")
 public class RecipeBreakdownProseService {
 
-    private static final String SYSTEM_PROMPT = """
+    static final String SYSTEM_PROMPT = """
         You evaluate ONE saved recipe TEMPLATE against the owner's daily nutrition targets.
         You get the recipe and the DETERMINISTIC dimension scores already computed by the engine.
         Answer with ONE JSON object and nothing else, exactly these keys:
@@ -65,6 +66,12 @@ public class RecipeBreakdownProseService {
           ALACSONYABB pontot kap — ilyenkor a számokat kövesd, ne a szerepet dicsérd.
         """;
 
+    /** For an English account: the one line that demands Hungarian is reduced to the tone, so it
+     *  cannot fight the appended output-language directive (mezo-n4wf5.5). Hungarian accounts
+     *  keep {@link #SYSTEM_PROMPT} byte for byte. */
+    static final String SYSTEM_PROMPT_NEUTRAL =
+        SYSTEM_PROMPT.replace("- Write Hungarian, tegeződve, tömören.", "- Tegeződve, tömören.");
+
     /** LLM answer contract — permissive shapes; a malformed answer degrades, never errors. */
     record ExtractedImprove(String text, String impact) {
     }
@@ -85,6 +92,7 @@ public class RecipeBreakdownProseService {
     private final ObjectProvider<RecipeBreakdownLlm> llm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final UserMessages messages;
 
     /** Prose-merged envelope + fitsFor, or null when enrichment is unavailable/failed (caller degrades). */
     public Enriched enrich(RecipeEntity recipe, MealBreakdownJson det) {
@@ -93,9 +101,10 @@ public class RecipeBreakdownProseService {
             return null; // companion off — deterministic envelope is served un-enriched
         }
         try {
+            String systemPrompt = "hu".equals(messages.language()) ? SYSTEM_PROMPT : SYSTEM_PROMPT_NEUTRAL;
             String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("recipe_breakdown", "prose", "recipe", recipe.getId()),
-                () -> port.complete(SYSTEM_PROMPT, userMessage(recipe, det)));
+                () -> port.complete(systemPrompt, userMessage(recipe, det)));
             String json = answer.substring(answer.indexOf('{'), answer.lastIndexOf('}') + 1);
             ExtractedProse prose = objectMapper.readValue(json, ExtractedProse.class);
             if (prose.summary() == null || prose.summary().isBlank()) {

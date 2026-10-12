@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
+import { setLang } from '@/shared/i18n'
 import { mealForecast, type ForecastInput } from './mealForecast'
 
-const E = { low: 'Egyenletes energia 3-4 órára', mid: 'Stabil energia 2-3 órára', high: 'Gyors löket, majd visszaesés' }
+const E = { low: 'Egyenletes energia 3–4 órára', mid: 'Stabil energia 2–3 órára', high: 'Gyors löket, majd visszaesés' }
 const base: ForecastInput = {
   level: 'mid', energyText: E.mid, kcal: 784, eatenAt: '08:46', window: { from: '07:20', to: '09:20' },
   training: { start: '17:30', end: '18:45' }, bed: '23:00',
@@ -9,10 +10,12 @@ const base: ForecastInput = {
 }
 
 describe('mealForecast', () => {
+  afterEach(() => setLang('hu', { persist: false }))
+
   it('builds energy / hunger / rhythm for an in-window breakfast', () => {
     const f = mealForecast(base)
     expect(f.rows.map(r => r.title)).toEqual(['Energia', 'Mikor leszel éhes', 'A nap ritmusa'])
-    expect(f.rows[0].body).toBe('Stabil energia 2-3 órára.')
+    expect(f.rows[0].body).toBe('Stabil energia 2–3 órára.')
     expect(f.rows[1].body).toContain('Nagyjából 12:16') // 08:46 + 210
     expect(f.rows[2].body).toContain('3–4 órás')
     expect(f.late).toBe(false)
@@ -37,7 +40,7 @@ describe('mealForecast', () => {
   it('outside the window: rhythm row names the shift, with the Hungarian article', () => {
     const f = mealForecast({ ...base, level: 'low', energyText: E.low, kcal: 290, eatenAt: '11:55', window: { from: '10:30', to: '11:30' }, next: { label: 'Ebéd', from: '13:00', to: '14:00' } })
     expect(f.rows[2].body).toContain('25 p-cel később')
-    expect(f.rows[2].body).toContain('az Ebéd ablaka')
+    expect(f.rows[2].body).toContain('az ebéd ablaka')
   })
 
   it('no band → no energy row, still hunger + rhythm', () => {
@@ -48,6 +51,19 @@ describe('mealForecast', () => {
   it('no window → rhythm row says it had no window', () => {
     const f = mealForecast({ ...base, window: null })
     expect(f.rows.at(-1)!.body).toContain('Nem tartozott ablakhoz')
+  })
+
+  it('names the next window in lower case, inside the hunger sentence (prototype wording)', () => {
+    expect(mealForecast(base).rows[1].body).toBe('Nagyjából 12:16 körül jelez újra az éhség. A tízórai ablaka ezért kicsit később lehet, vagy kisebb adag is elég.')
+  })
+
+  it('speaks English when the language is English', () => {
+    setLang('en', { persist: false })
+    const f = mealForecast({ ...base, energyText: 'Stable energy for 2–3 hours' })
+    expect(f.rows.map(r => r.title)).toEqual(['Energy', 'When you will be hungry', 'The rhythm of the day'])
+    expect(f.rows[0].body).toBe('Stable energy for 2–3 hours.')
+    expect(f.rows[1].body).toBe('Hunger returns around 12:16. So the tízórai window can be a little later, or a smaller portion is enough.')
+    expect(f.rows[2].body).toBe('It keeps the 3–4 hour protein rhythm, and the day’s other windows stay in place.')
   })
 
   it('never shows a number or the word "glikémiás"', () => {

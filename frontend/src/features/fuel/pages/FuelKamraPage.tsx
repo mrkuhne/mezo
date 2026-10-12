@@ -2,30 +2,32 @@
 // Mezo · FuelKamraPage (Kamra) — a Konyha másik ajtaja mögötti polc
 // (Fuel Titanium S4, mezo-hygp; fagyasztott manifeszt B6 · B7 · B13).
 //
-// Jóváhagyott vizuális referencia (Üvegesítés U2, mezo-me75u.2): docs/design_2.0/prototypes/
-// uveg-fuel-tobbi.html `kamra()`. Anatómia: al-fejléc (kerek üveg ‹ + KONYHA/Kamra, jobbra a
-// három felvevő-ajtó lapos chipként) → kereső → típus-szűrők a saját darabszámukkal (lapos
-// chipek, a kiválasztott a hue-jával kitöltve) → két-hasábos ÜVEG csempe-rács a tétel hue-jában
-// → „Okosabb csere" (B13, szaggatott: javaslat, nem tárgy). Üres kamra = szaggatott hívás.
+// Folyadék (F5, mezo-n4wf5.5) — build target: docs/design_2.0/prototypes/vilagos/fuel.js `kamra()`.
+// Anatómia: hős (a polc fajtánként: négy üveg a darabszámmal, az ítélet-mondat, a három felvevő művelet)
+// → 1 · Keresés és szűrés (kereső, fajta-szűrők a darabszámukkal, a kiválasztott kategóriák, a kategória-lap
+// linkje) → 2 · A polcon (két-hasábos csempe-rács) → 3 · Okosabb csere (B13; szaggatott: javaslat, nem tárgy).
 //
-// B14 owner-DROP: a „Legutóbbi importok" feed LEVÁLT erről a lapról. Az import-rekord
-// továbbra is íródik, de a per-tétel EREDET (forrás + mikor) a tétel részletlapjának
-// forrás-kártyáján él — ott van értelme, nem egy külön listában. Ide NE kerüljön vissza.
-// B16 owner-DROP: a készlet/lejárat felület a `SHOW_PANTRY_STOCK` zászló mögött alszik; ez a
-// lap egy szót sem szól róla, és új hivatkozás sem készül rá.
+// A CSEMPE: ételnél a szint a FEHÉRJE-SŰRŰSÉG, 25 g / 100 g-nál tele — és CSAK akkor rajzolódik, ha a fehérje
+// ismert (őszinte null: „—" / „nincs adat", sosem 0 — pantry.md §4). Kiegészítőnél a szám az adag, szint nincs.
+//
+// B14 owner-DROP: a „Legutóbbi importok" feed LEVÁLT erről a lapról; a per-tétel EREDET a tétel részletlapján él.
+// B16 owner-DROP: a készlet/lejárat felület a `SHOW_PANTRY_STOCK` zászló mögött alszik; ez a lap nem szól róla.
 //
 // Változatlan viselkedés (csak az ARC változott): a `usePantry` adatút, a három tengelyen
 // ANDolt szűrés (típus ÉS kategória ÉS keresés), a kategória-sheet darabszám szerint sorolt
-// opciói, a valódi módú betöltő csontváz (mezo-f2z) és mind a négy felvevő-sheet.
+// opciói, a valódi módú betöltő arc (mezo-f2z) és mind a négy felvevő-sheet.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { PantryItem } from '@/data/types'
 import { usePantry } from '@/data/hooks'
-import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { hu1, huInt } from '@/shared/lib/huNum'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+import {
+  Acts, Btn, Card, Empty, FrameBack, Hero, HeroGraphic, Lk, Note, Page, Pill, Pills, RemoveChips, SearchField, Section, Stat, StatGrid, Vials,
+  useFrameTitle, type VialItem,
+} from '@/shared/ui/folyadek'
+import { KAMRA_KINDS, KAMRA_KIND_ICON, buildKamraItems, kamraItemIcon, pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
 import { ImportItemSheet } from '@/features/fuel/sheets/ImportItemSheet'
@@ -33,60 +35,53 @@ import { CatalogSearchSheet } from '@/features/fuel/sheets/CatalogSearchSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/sheets/CategoryFilterSheet'
 import { pantryProvenance } from '@/features/fuel/logic/pantryProvenance'
 import KamraSkeleton from '@/features/fuel/pages/KamraSkeleton'
-import { FrameBack } from '@/shared/ui/folyadek'
 
-const TYPE_FILTERS = [
-  { id: 'all', label: 'Mind', color: 'var(--dv-amber)', icon: null },
-  { id: 'food', label: 'Étel', color: 'var(--dv-sage)', icon: 't-carb' },
-  { id: 'supplement', label: 'Supp', color: 'var(--dv-lav)', icon: 't-supps' },
-  { id: 'stim', label: 'Stim', color: 'var(--dv-coral)', icon: 't-bolt' },
-  { id: 'med', label: 'Gyógyszer', color: 'var(--dv-sky)', icon: 't-syringe' },
-] as const satisfies readonly { id: string; label: string; color: string; icon: Icon3DName | null }[]
+/** A csempe tele van ennyi g fehérjénél (100 grammban). */
+const FULL_PROTEIN_G = 25
 
-/** Egy tétel arca: ház-hue + 3D szimbólum (Üveg, mezo-me75u.2: étel = gabona, supp = kapszulák,
- *  stim = villám, gyógyszer = fecskendő, ismeretlen = a polc). */
-const KAMRA_KIND_FACE: Record<string, { color: string; icon: Icon3DName }> = {
-  food: { color: 'var(--dv-sage)', icon: 't-carb' },
-  supplement: { color: 'var(--dv-lav)', icon: 't-supps' },
-  stim: { color: 'var(--dv-coral)', icon: 't-bolt' },
-  med: { color: 'var(--dv-sky)', icon: 't-syringe' },
+/** Az adag szövege úgy törik, ahogy a prototípusban: csak a „ + " után (a részeken belül nem törő szóköz). */
+function DoseText({ dose }: { dose: string }) {
+  const parts = dose.split(' + ')
+  return (
+    <em>
+      {parts.map((p, i) => (
+        <span key={i}>{p.replace(/ /g, ' ')}{i < parts.length - 1 && <>{' +'}<wbr /></>}</span>
+      ))}
+    </em>
+  )
 }
-const KAMRA_UNKNOWN_FACE: { color: string; icon: Icon3DName } = { color: 'var(--dv-amber)', icon: 't-stack' }
 
-type Hue = React.CSSProperties & Record<'--c' | '--i', string | number>
-
-function PantryTile({ item, index, onOpen }: { item: PantryItem; index: number; onOpen: () => void }) {
-  const face = KAMRA_KIND_FACE[item.kind] ?? KAMRA_UNKNOWN_FACE
+function PantryTile({ item, onOpen }: { item: PantryItem; onOpen: () => void }) {
+  const M = useM()
+  const K = M.fuelKamra
   const prov = pantryProvenance(item)
+  const icon = kamraItemIcon(item)
+  if (item.kind !== 'food') {
+    return (
+      <Stat label={item.name} icon={icon} color="var(--fx-water)" onClick={onOpen}
+        value={item.dose ? <DoseText dose={item.dose} /> : <em>—</em>} unit={K.kamra.dose}
+        note={[K.kind[item.kind] ?? null, item.brand, prov.kindLabel].filter(Boolean).join(' · ')} />
+    )
+  }
   const kcal = item.macros?.kcal ?? null
   const protein = item.macros?.p ?? null
   return (
-    <button type="button" className="fkx-item glass rise"
-      style={{ '--c': face.color, '--i': Math.min(index, 8) } as Hue} onClick={onOpen}>
-      <span className="fkx-item-top">
-        <span className="fkx-item-art" aria-hidden="true"><Icon3D name={face.icon} size={42} /></span>
-        <em title={prov.sourceLabel}><Icon3D name={prov.icon} size={17} /></em>
-      </span>
-      <strong>{item.name}</strong>
-      <span className="fkx-item-fact">
-        {item.kind === 'food'
-          ? (kcal == null ? <><b>—</b> nincs adat</> : <><b>{huInt(kcal)}</b> kcal / {item.per ?? 100}{item.unit ?? 'g'}</>)
-          : (<><b>{item.dose ?? '—'}</b> adag</>)}
-      </span>
-      {item.kind === 'food' && protein != null && (
-        <span className="fkx-protein">
-          <i className="uv-bar" aria-hidden="true"><b style={{ '--w': `${Math.min(100, (protein / 25) * 100)}%` } as React.CSSProperties} /></i>
-          <small>{hu1(protein)} g fehérje</small>
-        </span>
-      )}
-      {item.brand && <span className="fkx-item-amount">{item.brand}</span>}
-    </button>
+    <Stat label={item.name} icon={icon} color="var(--fx-protein)" onClick={onOpen}
+      value={kcal == null ? '—' : fmtGrouped(kcal)}
+      unit={kcal == null ? undefined : K.kamra.kcalPer(item.per ?? 100, item.unit ?? 'g')}
+      pct={protein == null ? null : Math.max(6, Math.min(100, (protein / FULL_PROTEIN_G) * 100))}
+      note={[
+        kcal == null ? M.fuelKozos.noData : protein == null ? null : K.kamra.proteinNote(fmtNum(protein)),
+        item.brand, prov.kindLabel,
+      ].filter(Boolean).join(' · ')} />
   )
 }
 
 export function FuelKamraPage() {
+  const M = useM()
+  const K = M.fuelKamra
   const navigate = useNavigate()
-  const { ingredients, stash, categoryMeta, suggestions, pending } = usePantry()
+  const { ingredients, stash, suggestions, pending } = usePantry()
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [query, setQuery] = useState('')
@@ -96,9 +91,11 @@ export function FuelKamraPage() {
   const [catalogOpen, setCatalogOpen] = useState(false)
 
   const allItems = buildKamraItems(ingredients, stash)
+  const total = allItems.length
 
-  const counts: Record<string, number> = { all: allItems.length }
+  const counts: Record<string, number> = { all: total }
   allItems.forEach(it => { counts[it.kind] = (counts[it.kind] ?? 0) + 1 })
+  const foods = counts.food ?? 0
 
   // The list filter ANDs three axes: type switcher AND selected categories AND search.
   // Passing an explicit `cats` lets callers probe a draft selection (the filter sheet's
@@ -124,92 +121,104 @@ export function FuelKamraPage() {
     .map(([key, count]) => categoryOption(key, count))
     .sort((a, b) => b.count - a.count)
 
-  // Real-mode loading window — skeleton before the empty-state branch (hooks are
+  useFrameTitle({
+    title: K.kamra.title,
+    eyebrow: pending ? K.kamra.eyebrowLoading : total === 0 ? K.kamra.eyebrowEmpty : K.kamra.eyebrow(K.items(total)),
+  })
+
+  // Real-mode loading window — the loading face before the empty-state branch (hooks are
   // all above, so hook order stays stable). Mock mode never sets pending (mezo-f2z).
   if (pending) return <KamraSkeleton />
 
+  const jars: VialItem[] = KAMRA_KINDS.map(k => ({
+    label: K.kindCap[k], icon: KAMRA_KIND_ICON[k], pct: total ? ((counts[k] ?? 0) / total) * 100 : 0,
+    value: String(counts[k] ?? 0), note: K.kamra.jarNote(counts[k] ?? 0),
+  }))
+  const back = <FrameBack history fallback="/fuel/konyha" className="fo-backpill" label={K.back.kitchen}>‹ {K.kitchen}</FrameBack>
+  const tools = (first: boolean) => (
+    <>
+      <Btn onClick={() => setAddOpen(true)}>{first ? K.kamra.addFirst : K.kamra.add}</Btn>
+      <Btn sm ghost onClick={() => setImportOpen(true)}>{K.kamra.import}</Btn>
+      <Lk onClick={() => setCatalogOpen(true)}>{K.kamra.catalogue}</Lk>
+    </>
+  )
+  const sheets = (
+    <>
+      <AddPantryItemSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      {importOpen && <ImportItemSheet onClose={() => setImportOpen(false)} />}
+      {catalogOpen && <CatalogSearchSheet onClose={() => setCatalogOpen(false)} />}
+    </>
+  )
+
+  if (total === 0) {
+    return (
+      <Page className="fp-kamra">
+        {back}
+        <Hero className="fp-ghero" label={K.kamra.emptyLabel} verdict={K.kamra.emptyVerdict} sub={K.kamra.emptySub} actions={tools(true)}
+          graphic={<HeroGraphic aria-hidden="true"><Vials items={jars} height={84} /></HeroGraphic>}
+        >
+        </Hero>
+        {sheets}
+      </Page>
+    )
+  }
+
   return (
-    <div className="fmx-page fkx-library fkx-kamra">
-      <EntranceGroup>
-        <div className="fmx-subhead">
-          <FrameBack className="glass is-round" history fallback="/fuel/konyha" label="Vissza a Konyhába">‹</FrameBack>
-          <span>
-            <small>KONYHA</small>
-            <strong>Kamra</strong>
-          </span>
-          <div className="fkx-head-acts">
-            <button type="button" className="fkx-head-act" onClick={() => setCatalogOpen(true)}>Közös</button>
-            <button type="button" className="fkx-head-act" onClick={() => setImportOpen(true)}>Import</button>
-            <button type="button" className="fkx-head-act is-on" onClick={() => setAddOpen(true)}>＋ Új tétel</button>
-          </div>
-        </div>
+    <Page className="fp-kamra">
+      {back}
+      <Hero className="fp-ghero" label={K.kamra.heroLabel} verdict={K.kamra.verdict(total, foods, total - foods)} actions={tools(false)}
+        graphic={<HeroGraphic><Vials items={jars} height={84} /></HeroGraphic>}
+      >
+      </Hero>
 
-        {allItems.length === 0 ? (
-          <div className="fkk-kamra-empty uv-empty rise">
-            <span aria-hidden="true"><Icon3D name="t-stack" size={52} /></span>
-            <strong>A kamra üres</strong>
-            <p>Vedd fel az első tételt — vagy válassz a közös katalógusból —, és itt jelenik meg a polcodon.</p>
-            <button type="button" className="glass" onClick={() => setAddOpen(true)}>Első tétel felvétele ＋</button>
-          </div>
-        ) : (
-          <>
-            <label className="fkx-search uv-flat rise">
-              <span aria-hidden="true"><Icon3D name="t-stack" size={22} /></span>
-              <input type="search" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Keress tétel, márka…" aria-label="Keresés a kamrában" />
-              {query && (
-                <button type="button" aria-label="Keresés törlése" onClick={() => setQuery('')}>×</button>
-              )}
-            </label>
-
-            <div className="fkx-filters" role="group" aria-label="Kamra-szűrő" data-kalauz-anchor="kamra-tabs">
-              {TYPE_FILTERS.map(t => (
-                <button key={t.id} type="button" aria-pressed={typeFilter === t.id}
-                  style={{ '--c': t.color } as React.CSSProperties}
-                  onClick={() => setTypeFilter(t.id)}>
-                  {t.icon && <span aria-hidden="true"><Icon3D name={t.icon} size={18} /></span>}
-                  {t.label}<b>{counts[t.id] ?? 0}</b>
-                </button>
-              ))}
-              <button type="button" className="fkx-filter-more" onClick={() => setFilterOpen(true)}>
-                Szűrők{categoryFilter.length > 0 && <b>{categoryFilter.length}</b>}
-              </button>
-            </div>
-
-            {categoryFilter.length > 0 && (
-              <div className="fkx-catpills">
-                {categoryFilter.map(key => (
-                  <button key={key} type="button"
-                    onClick={() => setCategoryFilter(cs => cs.filter(c => c !== key))}>
-                    <i aria-hidden="true" style={{ background: categoryMeta[key]?.color ?? 'var(--dv-sage)' }} />
-                    {categoryMeta[key]?.label ?? key}<b aria-hidden="true">×</b>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {filtered.length > 0 ? (
-              <div className="fkx-tile-grid">
-                {filtered.map((it, i) => (
-                  <PantryTile key={it.id} item={it} index={i} onOpen={() => navigate(`/fuel/kamra/${it.id}`)} />
-                ))}
-              </div>
-            ) : (
-              <p className="fkx-nohit">Nincs egyező tétel.</p>
-            )}
-
-            {/* B13: az okosabb csere ott marad, ahol volt — determinisztikus heurisztika, nem AI. */}
-            {suggestions.length > 0 && (
-              <>
-                <div className="fmx-section"><h2>Okosabb csere</h2></div>
-                <div className="fkx-swaps">
-                  {suggestions.map((sug, i) => <SuggestionCard key={`${sug.name}-${i}`} sug={sug} />)}
-                </div>
-              </>
-            )}
-          </>
+      <Section n={1} title={K.kamra.searchSection} />
+      <Card>
+        <SearchField value={query} onChange={setQuery} placeholder={K.kamra.searchPlaceholder} aria-label={K.kamra.searchAria} />
+        <Pills className="fp-kinds" role="group" aria-label={K.filterGroup} data-kalauz-anchor="kamra-tabs">
+          <Pill on={typeFilter === 'all'} onClick={() => setTypeFilter('all')}>{K.all}<b>{total}</b></Pill>
+          {KAMRA_KINDS.map(k => (
+            <Pill key={k} on={typeFilter === k} onClick={() => setTypeFilter(k)}>{K.kindCap[k]}<b>{counts[k] ?? 0}</b></Pill>
+          ))}
+        </Pills>
+        {categoryFilter.length > 0 && (
+          <RemoveChips items={categoryFilter.map(key => {
+            const label = pantryCategoryLabel(key) ?? key
+            return { key, label, ariaLabel: K.kamra.removeCat(label), onRemove: () => setCategoryFilter(cs => cs.filter(c => c !== key)) }
+          })} />
         )}
-      </EntranceGroup>
+        <Acts>
+          <Lk onClick={() => setFilterOpen(true)}>
+            {categoryFilter.length > 0 ? K.kamra.filtersOn(categoryFilter.length) : K.kamra.filters}
+          </Lk>
+        </Acts>
+      </Card>
+
+      <Section n={2} title={K.kamra.shelfSection} />
+      <Card className="fp-shelf">
+        {filtered.length > 0 ? (
+          <>
+            <StatGrid>
+              {filtered.map(it => <PantryTile key={it.id} item={it} onOpen={() => navigate(`/fuel/kamra/${it.id}`)} />)}
+            </StatGrid>
+            <Note>{K.kamra.shelfNote}</Note>
+          </>
+        ) : (
+          <Empty icon="t-lens">{K.kamra.noMatch}</Empty>
+        )}
+      </Card>
+
+      {/* B13: az okosabb csere ott marad, ahol volt — determinisztikus heurisztika, nem AI. */}
+      {suggestions.length > 0 && (
+        <>
+          <Section n={3} title={K.kamra.swapSection} />
+          <Card>
+            <div className="fp-swaps">
+              {suggestions.map((sug, i) => <SuggestionCard key={`${sug.name}-${i}`} sug={sug} />)}
+            </div>
+            <Note>{K.kamra.swapNote}</Note>
+          </Card>
+        </>
+      )}
 
       {filterOpen && (
         <CategoryFilterSheet
@@ -220,9 +229,7 @@ export function FuelKamraPage() {
           onClose={() => setFilterOpen(false)}
         />
       )}
-      <AddPantryItemSheet open={addOpen} onClose={() => setAddOpen(false)} />
-      {importOpen && <ImportItemSheet onClose={() => setImportOpen(false)} />}
-      {catalogOpen && <CatalogSearchSheet onClose={() => setCatalogOpen(false)} />}
-    </div>
+      {sheets}
+    </Page>
   )
 }

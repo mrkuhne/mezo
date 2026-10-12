@@ -68,7 +68,7 @@ describe('LogDoseSheet (mock mode)', () => {
     )
 
     fireEvent.change(screen.getByLabelText(/dózis/i), { target: { value: '8' } })
-    fireEvent.click(screen.getByRole('button', { name: /beadás|mentés/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rögzítem' }))
 
     // The new dose actually landed in the cache that useMedication reads, newest-first.
     await waitFor(() => {
@@ -114,7 +114,7 @@ describe('LogDoseSheet (real mode)', () => {
     )
 
     fireEvent.change(screen.getByLabelText(/dózis/i), { target: { value: '8' } })
-    fireEvent.click(screen.getByRole('button', { name: /beadás|mentés/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rögzítem' }))
 
     await waitFor(() => expect(spy).toHaveBeenCalled())
     const [, input] = spy.mock.calls[0]
@@ -140,7 +140,7 @@ describe('LogDoseSheet (real mode)', () => {
     // pick an explicit date so the assertion doesn't depend on "today"
     fireEvent.change(screen.getByLabelText(/dátum/i), { target: { value: '2026-06-26' } })
     fireEvent.change(screen.getByLabelText(/dózis/i), { target: { value: '8' } })
-    fireEvent.click(screen.getByRole('button', { name: /beadás|mentés/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Rögzítem' }))
 
     await waitFor(() => expect(spy).toHaveBeenCalled())
     const administeredAt = spy.mock.calls[0][1].administeredAt ?? ''

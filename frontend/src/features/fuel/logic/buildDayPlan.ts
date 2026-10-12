@@ -47,6 +47,8 @@ import type {
 } from '@/data/types'
 import type { StackDaySlot } from '@/features/fuel/logic/projectStackDay'
 import { mealSkipKeys } from '@/features/fuel/logic/mealSkips'
+// aliased: this file names its meal variables `m`
+import { m as msg } from '@/shared/i18n'
 import type { PlannedSkip } from '@/features/train/logic/plannedSkips'
 
 // ── Public interfaces ────────────────────────────────────────────────────────
@@ -198,16 +200,19 @@ export function placeWindows(
   const at = (frac: number) => eatingStart + frac * span
   const clamp = (t: number) => Math.min(kitchenClose, Math.max(eatingStart, t))
 
-  const reggeli: PlannedWindow = { slotKey: 'breakfast', kind: 'meal', label: 'Reggeli', time: at(0), weight: SLOT_WEIGHT.main, rule: 'breakfast' }
-  const ebed: PlannedWindow = { slotKey: 'lunch', kind: 'meal', label: 'Ebéd', time: at(0.5), weight: SLOT_WEIGHT.main, rule: 'main' }
-  const vacsora: PlannedWindow = { slotKey: 'dinner', kind: 'meal', label: 'Vacsora', time: at(1), weight: SLOT_WEIGHT.main, rule: 'main' }
+  // The window names are read from the catalog HERE, at call time (never from a module constant), so a plan
+  // built after a language switch carries the new language's names.
+  const L = msg().fuelLogika
+  const reggeli: PlannedWindow = { slotKey: 'breakfast', kind: 'meal', label: L.slot.breakfast, time: at(0), weight: SLOT_WEIGHT.main, rule: 'breakfast' }
+  const ebed: PlannedWindow = { slotKey: 'lunch', kind: 'meal', label: L.slot.lunch, time: at(0.5), weight: SLOT_WEIGHT.main, rule: 'main' }
+  const vacsora: PlannedWindow = { slotKey: 'dinner', kind: 'meal', label: L.slot.dinner, time: at(1), weight: SLOT_WEIGHT.main, rule: 'main' }
   const windows: PlannedWindow[] = [reggeli, ebed, vacsora]
 
   const snack = (time: number, label: string, rule: WindowRule = 'snack'): PlannedWindow => ({ slotKey: 'snack', kind: 'snack', label, time, weight: SLOT_WEIGHT.snack, rule })
   const meals = Math.max(3, Math.min(6, mealsPerDay))
-  if (meals >= 4) windows.push(snack((ebed.time + vacsora.time) / 2, 'Uzsonna')) // after Ebéd
-  if (meals >= 5) windows.push(snack((reggeli.time + ebed.time) / 2, 'Tízórai')) // between Reggeli–Ebéd
-  if (meals >= 6) windows.push(snack(vacsora.time - MIN_SLOT_GAP_MIN, 'Esti snack')) // evening: Vacsora−90
+  if (meals >= 4) windows.push(snack((ebed.time + vacsora.time) / 2, L.slot.snack)) // after Ebéd
+  if (meals >= 5) windows.push(snack((reggeli.time + ebed.time) / 2, L.dayPlan.window.morningSnack)) // between Reggeli–Ebéd
+  if (meals >= 6) windows.push(snack(vacsora.time - MIN_SLOT_GAP_MIN, L.dayPlan.window.eveningSnack)) // evening: Vacsora−90
 
   // Peri-workout snack (mezo-1oy5): each significant block earns a light pre-session fuel window
   // (the post side is covered by the post-workout main snap). Deduped against existing windows by min-gap.
@@ -218,7 +223,7 @@ export function placeWindows(
     if (!significant) continue
     const t = clamp(toMin(b.time) - 60)
     if (windows.some(w => Math.abs(w.time - t) < MIN_SLOT_GAP_MIN)) continue
-    windows.push(snack(t, 'Pre-workout snack', 'pre-training-snack'))
+    windows.push(snack(t, L.dayPlan.window.preWorkoutSnack, 'pre-training-snack'))
   }
 
   // Training snaps — a SINGLE snap around the whole training envelope (mezo-1oy5). Two concurrent
@@ -421,7 +426,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //       2. label match — the meal's `slot` string contains the window's label, lowercased (mock
   //          mode stores Hungarian display slots like 'Uzsonna · 16:20'). Prefer the LONGEST
   //          matching label among the free candidates so a short label that is a substring of a
-  //          more specific one ('Snack' inside 'Esti snack') can never steal the more specific
+  //          more specific one ('Snack' inside 'Esti uzsonna') can never steal the more specific
   //          window out from under it.
   //       3. nearest time on the UNWRAPPED wake→bed axis (mezo-9rtw) — comparing raw HH:mm minutes
   //          across a midnight-crossing day misjudges which window is chronologically nearest (a
@@ -591,18 +596,20 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
 
   // 3b. Surplus logged meals — anything of a slotKey beyond that slot's window count (a 2nd snack on
   //     a 4-meal day, ANY snack on a 3-meal day, a duplicate main) is NEVER dropped: it lands as an
-  //     extra done slot at its own loggedAt time, labelled from a same-slot window or the meal title.
-  const labelByKey: Partial<Record<SlotKey, string>> = {}
-  for (const w of windows) if (!(w.slotKey in labelByKey)) labelByKey[w.slotKey] = w.label
+  //     extra done slot at its own loggedAt time. Its title is „Ablakon kívül · HH:mm" (owner decision
+  //     2026-10-12, mezo-n4wf5.5): it sits on no window, so it is named after none — not after a same-kind
+  //     window, not after the day part. The meal's own name travels in `mealName`.
   const extraSlots: FuelSlot[] = []
   for (const k of Object.keys(loggedByKey) as SlotKey[]) {
     for (const m of surplusByKey[k]) {
+      const at = hhmmFromLoggedAt(m.loggedAt, nowHHmm)
       extraSlots.push({
-        time: hhmmFromLoggedAt(m.loggedAt, nowHHmm),
+        time: at,
         kind: k === 'snack' ? 'snack' : 'meal',
-        label: labelByKey[k] ?? mealDisplayName(m) ?? m.title,
+        label: msg().fuelLogika.dayPlan.betweenMealsAt(at),
         slotKey: k,
         state: 'done',
+        extra: true,
         mealId: m.id,
         mealName: mealDisplayName(m),
         kcal: m.kcal,
@@ -628,7 +635,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       return {
         time: s.time,
         kind: ZONE_FUEL_KIND[s.zone],
-        label: `${s.label} stack`,
+        label: msg().fuelLogika.dayPlan.stack(s.label),
         state: done ? 'done' : 'pending',
         items,
         mezoNote: s.entries.find(e => e.reason)?.reason ?? undefined,

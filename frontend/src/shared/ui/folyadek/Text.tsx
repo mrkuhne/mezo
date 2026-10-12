@@ -10,10 +10,11 @@ export function St(p: { tone?: 'q' | 'ok' | 'warn' | 'bad' | 'plan'; className?:
   return <span className={cx('fo-st', p.tone ?? 'q', p.className)}>{p.children}</span>
 }
 
-/** Quiet info chips (each with a small drop), with an optional lead label. */
-export function Chips(p: { items: ReactNode[]; lead?: ReactNode; className?: string }) {
+/** Quiet info chips (each with a small drop), with an optional lead label. `plain` = quiet word chips without the drop
+ *  (prototype `.fu-chips`: easy foods, a stored fit label, an aspect's facts). */
+export function Chips(p: { items: ReactNode[]; lead?: ReactNode; plain?: boolean; className?: string }) {
   return (
-    <div className={cx('fo-chips', p.className)}>
+    <div className={cx('fo-chips', p.plain && 'plain', p.className)}>
       {p.lead != null && <b>{p.lead}</b>}
       {p.items.map((x, i) => <span key={i}>{x}</span>)}
     </div>
@@ -29,9 +30,10 @@ export function Facts(p: { items: [ReactNode, ReactNode][]; className?: string }
   )
 }
 
-/** A faint footnote under a card's content. */
-export function Note({ className, ...rest }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cx('fo-note', className)} {...rest} />
+/** A faint footnote under a card's content. `tone` = the note says a state: `warn` (worth a look: an estimate, an unsure
+ *  reading) or `bad` (it could not be done: a failed read, an invalid value) — the state colour, never a new box. */
+export function Note({ className, tone, ...rest }: HTMLAttributes<HTMLParagraphElement> & { tone?: 'warn' | 'bad' }) {
+  return <p className={cx('fo-note', tone, className)} {...rest} />
 }
 
 /** Body text. */

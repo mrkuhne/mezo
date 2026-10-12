@@ -6,6 +6,10 @@
 // `compileTemplate` — both are inputs so the editor can validate a live, still-uncompiled edit.
 // Never throws; only appends issues.
 //
+// The issue texts come from the area's catalog (`fuelBeallitas.validate`, Folyadék F5 · mezo-n4wf5.5), read at CALL
+// time so they follow the app language; `code` is the stable contract. A window's name inside a text is the user's own
+// (stored) word and is never translated.
+//
 // ── Axis convention (mezo-7102 fix wave, finding F1) ────────────────────────────────────────────
 // `compiled` windows carry wall-clock minutes mod 1440 (0..1439) — `compileTemplate`'s contract
 // (see its header) — even though they were resolved/clamped internally on the UNWRAPPED continuous
@@ -35,6 +39,8 @@ import {
   unwrapDayMinute,
 } from '@/data/fuel/fuelConfig'
 import type { PlannedWindow } from '@/features/fuel/logic/buildDayPlan'
+import { m } from '@/shared/i18n'
+import { fmtNum } from '@/shared/lib/format'
 import type { SlotTemplateDayType, SlotTemplateRow } from '@/data/types'
 
 export interface SlotPlanIssue {
@@ -56,6 +62,7 @@ export function validateSlotPlan(
 ): { errors: SlotPlanIssue[]; warnings: SlotPlanIssue[] } {
   const errors: SlotPlanIssue[] = []
   const warnings: SlotPlanIssue[] = []
+  const V = m().fuelBeallitas.validate
   const { wakeMin, bedMin, span, crossesMidnight } = daySpan(ctx.wake, ctx.bed)
 
   // Re-unwrap the compiled (wall-clock mod-1440) windows onto the same continuous axis as
@@ -65,13 +72,13 @@ export function validateSlotPlan(
   // ── errors (block save) ──────────────────────────────────────────────────
   const sumPct = Math.round(rows.reduce((sum, r) => sum + r.budgetPct, 0) * 100) / 100
   if (Math.abs(sumPct - 100) > 1) {
-    errors.push({ code: 'sum_pct', text: `„A budgetek összege ${sumPct}% — 100% kell legyen"` })
+    errors.push({ code: 'sum_pct', text: V.sumPct(fmtNum(sumPct, 2)) })
   }
   if (rows.length < 2) {
-    errors.push({ code: 'too_few', text: 'Legalább 2 étkezési ablak kell a tervhez.' })
+    errors.push({ code: 'too_few', text: V.tooFew })
   }
   if (rows.length > MAX_TEMPLATE_SLOTS) {
-    errors.push({ code: 'too_many', text: `Legfeljebb ${MAX_TEMPLATE_SLOTS} étkezési ablak lehet egy tervben.` })
+    errors.push({ code: 'too_many', text: V.tooMany(MAX_TEMPLATE_SLOTS) })
   }
   // mezo-4ghd fix 1: mirrors the wire's `SlotTemplateSlot.label` `maxLength: 40` (api/openapi.yml)
   // — today an over-40-char label passes this tier-1 pass, then 400s on PUT/evaluate with a
@@ -81,19 +88,19 @@ export function validateSlotPlan(
   for (const r of rows) {
     const trimmed = r.label.trim()
     if (trimmed.length === 0) {
-      errors.push({ code: 'label_length', text: 'Van egy névtelen (üres nevű) étkezési ablak — adj neki nevet.' })
+      errors.push({ code: 'label_length', text: V.unnamed })
     } else if (r.label.length > 40) {
-      errors.push({ code: 'label_length', text: `„${r.label}" neve túl hosszú — legfeljebb 40 karakter lehet.` })
+      errors.push({ code: 'label_length', text: V.nameTooLong(r.label) })
     }
   }
   const outOfSpan = ctx.rawTimes
     ? ctx.rawTimes.some(t => t != null && (t < wakeMin || t > bedMin))
     : unwrapped.some(w => w.time < wakeMin || w.time > bedMin)
   if (outOfSpan) {
-    errors.push({ code: 'out_of_span', text: 'Van olyan ablak, ami az ébredés–lefekvés időszakon kívülre esik.' })
+    errors.push({ code: 'out_of_span', text: V.outOfSpan })
   }
   if (ctx.dayType === 'rest' && rows.some(r => r.anchor.type === 'training_start' || r.anchor.type === 'training_end')) {
-    errors.push({ code: 'rest_training_anchor', text: 'Pihenőnapon nem lehet edzéshez kötött időzítést használni.' })
+    errors.push({ code: 'rest_training_anchor', text: V.restTrainingAnchor })
   }
 
   // ── warnings (advisory, never block save) ────────────────────────────────
@@ -102,7 +109,7 @@ export function validateSlotPlan(
     if (sorted[i].time - sorted[i - 1].time < MIN_SLOT_GAP_MIN) {
       warnings.push({
         code: 'gap',
-        text: `„${sorted[i - 1].label}" és „${sorted[i].label}" között ${MIN_SLOT_GAP_MIN} percnél kisebb a rés.`,
+        text: V.gap(sorted[i - 1].label, sorted[i].label, MIN_SLOT_GAP_MIN),
       })
     }
   }
@@ -110,7 +117,7 @@ export function validateSlotPlan(
     if (row.role !== 'pre_workout') continue
     const kcal = (row.budgetPct / 100) * ctx.budgetKcal
     if (row.budgetPct > PRE_WORKOUT_SLOT_WARN_PCT || kcal > PRE_WORKOUT_SLOT_WARN_KCAL) {
-      warnings.push({ code: 'pre_workout_big', text: `„${row.label}" edzés előtti ablaka túl nagy.` })
+      warnings.push({ code: 'pre_workout_big', text: V.preWorkoutBig(row.label) })
     }
   }
   const lastThirdStart = wakeMin + (span * 2) / 3
@@ -118,15 +125,15 @@ export function validateSlotPlan(
     .filter(w => w.time >= lastThirdStart)
     .reduce((sum, w) => sum + (w.budgetPct ?? 0), 0)
   if (eveningPct > EVENING_SHARE_WARN * 100) {
-    warnings.push({ code: 'evening_heavy', text: 'A nap utolsó harmadára esik a napi budget nagy része.' })
+    warnings.push({ code: 'evening_heavy', text: V.eveningHeavy })
   }
   const kitchenClose = bedMin - KITCHEN_CLOSE_OFFSET_MIN
   if (ctx.rawTimes) {
     const idx = ctx.rawTimes.findIndex(t => t != null && t >= kitchenClose)
-    if (idx >= 0) warnings.push({ code: 'past_kitchen_close', text: `„${rows[idx].label}" a konyhazárás után van.` })
+    if (idx >= 0) warnings.push({ code: 'past_kitchen_close', text: V.pastKitchenClose(rows[idx].label) })
   } else {
     const closedWindow = unwrapped.find(w => w.time >= kitchenClose)
-    if (closedWindow) warnings.push({ code: 'past_kitchen_close', text: `„${closedWindow.label}" a konyhazárás után van.` })
+    if (closedWindow) warnings.push({ code: 'past_kitchen_close', text: V.pastKitchenClose(closedWindow.label) })
   }
 
   return { errors, warnings }

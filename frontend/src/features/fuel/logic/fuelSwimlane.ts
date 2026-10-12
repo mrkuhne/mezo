@@ -16,6 +16,7 @@
 // FuelLogHeroTile.tsx, FuelLogPage.tsx and FuelMaiPage.tsx (WindowLane retired, mezo-byo1).
 // ============================================================
 import { pct } from '@/shared/lib/pct'
+import { m } from '@/shared/i18n'
 import { FIBER_TARGET_G, toMin } from '@/data/fuel/fuelConfig'
 import { isMealSlot } from '@/features/fuel/logic/dayZones'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
@@ -50,7 +51,7 @@ export interface TileRingVM {
   key: 'p' | 'c' | 'f' | 'r'
   /** The ring's centre glyph — P / C / F / R (prototype `data-l`). */
   letter: string
-  /** Full HU label for the aria description (Fehérje / Szénhidrát / Zsír). */
+  /** Full label for the aria description (Fehérje / Szénhidrát / Zsír), in the language of the build. */
   label: string
   grams: number
   pct: number
@@ -112,7 +113,7 @@ export interface WindowLaneVM {
 }
 
 /**
- * A window's identity, `${time}-${label}`.
+ * A window's identity, `${time}-${label}` (a window-less extra log: `${time}-${label}#${mealId}`).
  *
  * EXPORTED on purpose (mezo-bq2t): this key is the contract two pages agree on ACROSS a URL —
  * /fuel/log puts it in `?w=`, /fuel/log/uj resolves the window (and its plan-recipe prefill)
@@ -120,6 +121,10 @@ export interface WindowLaneVM {
  * that round trip, so both sides — and their tests — must derive the key from this one symbol.
  */
 export function tileKey(slot: FuelSlot): string {
+  // A window-less extra log (`slot.extra`) is titled by its minute alone („Ablakon kívül · 10:05"), so two of them logged
+  // in the same minute would share a key — the meal id tells them apart. An extra is a DONE slot that nothing logs into:
+  // it never travels in `?w=`, so the URL contract (`${time}-${label}` of a WINDOW) is untouched.
+  if (slot.extra && slot.mealId != null) return `${slot.time}-${slot.label}#${slot.mealId}`
   return `${slot.time}-${slot.label}`
 }
 
@@ -153,7 +158,9 @@ export function buildWindowLane(input: {
   meals: FuelMeal[]
 }): WindowLaneVM {
   const { slots, budget, meals } = input
-  const byId = new Map(meals.map(m => [m.id, m]))
+  const byId = new Map(meals.map(meal => [meal.id, meal]))
+  // the macro names, read at call time (a module constant would go stale on a language switch)
+  const macro = m().fuelKozos.macro
 
   const windows = slots
     .filter((s): s is FuelSlot & { slotKey: MealSlot } => isMealSlot(s) && s.slotKey != null)
@@ -174,9 +181,9 @@ export function buildWindowLane(input: {
     const f = (done ? meal?.f : undefined) ?? slot.f ?? null
 
     let rings: TileRingVM[] = [
-      ringOf('p', 'P', 'Fehérje', p, budget.p, 'var(--macro-protein)'),
-      ringOf('c', 'C', 'Szénhidrát', c, budget.c, 'var(--macro-carbs)'),
-      ringOf('f', 'F', 'Zsír', f, budget.f, 'var(--macro-fat)'),
+      ringOf('p', 'P', macro.protein, p, budget.p, 'var(--macro-protein)'),
+      ringOf('c', 'C', macro.carbs, c, budget.c, 'var(--macro-carbs)'),
+      ringOf('f', 'F', macro.fat, f, budget.f, 'var(--macro-fat)'),
     ]
     // A LOGGED window answers "what was this meal made of" instead of "how much of today did it
     // take" (mezo-tjua) — the day-relative reading stays on the KeretHero rings and on every
@@ -186,7 +193,7 @@ export function buildWindowLane(input: {
     // FuelSlot has no fiber, so a planned window never grows a fabricated 4th ring. It is not part
     // of the energy split (fiber is not a macro the plate is built from), so it stays day-basis.
     if (done && meal?.fiberG != null) {
-      rings.push(ringOf('r', 'R', 'Rost', meal.fiberG, FIBER_TARGET_G, 'var(--macro-fiber)'))
+      rings.push(ringOf('r', 'R', macro.fiber, meal.fiberG, FIBER_TARGET_G, 'var(--macro-fiber)'))
     }
 
     return {

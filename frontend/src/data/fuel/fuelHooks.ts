@@ -263,10 +263,6 @@ export function useRecipeLogs(recipeId: string): { logs: RecipeLog[] } {
 
 // --- mock-mode cache mutators. Contribution uses the SAME whole-number amount/per formula as the
 // backend mapper: factor = amount / per (per>=1); contribution.X = Math.round(snapshot.X × factor). ---
-const SLOT_LABEL: Record<MealInput['slot'], string> = {
-  breakfast: 'Reggeli', lunch: 'Ebéd', dinner: 'Vacsora', snack: 'Snack',
-}
-
 /** Resolve a request item to a snapshot (name/per/macros/nova) from the mock seeds, then scale.
  *  An estimate line carries its own snapshot (no seed lookup) — same round(macro/per × amount) rule. */
 function buildLine(item: MealInput['items'][number]): MealItemLine {
@@ -351,7 +347,8 @@ function buildMeal(id: string, date: string, input: MealInput): FuelMeal {
   const lines = input.items.map(buildLine)
   const macros = sumMacros(lines)
   return {
-    id, slot: SLOT_LABEL[input.slot], title: input.title ?? lines[0]?.name ?? 'Étkezés',
+    // the slot KEY, the shape real mode returns: every screen names it from the catalog (Uzsonna / Snack), in the app language
+    id, slot: input.slot, title: input.title ?? lines[0]?.name ?? '',
     score: mockMealScore(macros), kcal: macros.kcal, p: macros.p, c: macros.c, f: macros.f,
     mealItems: lines, items: lines.map(l => `${l.name} ${l.amount}${l.unit}`), tags: [],
     loggedAt: input.loggedAt ?? `${date}T${new Date().toTimeString().slice(0, 8)}`, mealDate: date,

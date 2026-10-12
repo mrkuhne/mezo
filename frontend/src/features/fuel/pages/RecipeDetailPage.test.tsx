@@ -12,6 +12,8 @@ import { RECIPES_KEY } from '@/data/fuel/queryKeys'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { Recipe } from '@/data/types'
+import { fmtDate } from '@/shared/lib/format'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 
 // The id of the single recipe the MSW GET /api/recipe fixture returns — the real-mode
 // tests deep-link to it so the page resolves a recipe instead of the not-found fallback.
@@ -24,12 +26,19 @@ function LocationProbe() {
   const loc = useLocation()
   return <div data-testid="location">{loc.pathname}{loc.search}</div>
 }
+/** The page's name lives in the title bar (the frame): the probe prints what the page handed to it. */
+function TitleProbe() {
+  const f = useFrame()
+  return <div data-testid="frame-title"><span>{f.title}</span><small>{f.eyebrow}</small></div>
+}
 const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
 function renderDetail(id: string, qc: QueryClient) {
   return render(
     <QueryClientProvider client={qc}>
       <MemoryRouter initialEntries={[`/fuel/recipes/${id}`]}>
+        <FrameProvider>
+        <TitleProbe />
         <Routes>
           <Route path="/fuel/recipes/:id" element={<RecipeDetailPage />} />
           <Route path="/fuel/recipes/:id/edit" element={<LocationProbe />} />
@@ -40,6 +49,7 @@ function renderDetail(id: string, qc: QueryClient) {
           <Route path="/fuel/recipes/muhely" element={<LocationProbe />} />
           <Route path="/fuel/recipes" element={<LocationProbe />} />
         </Routes>
+        </FrameProvider>
       </MemoryRouter>
     </QueryClientProvider>,
   )
@@ -84,12 +94,15 @@ test('a recept részletei ugyanazokat a blokkokat viszik, mint az étkezésé (m
   const r = firstId(qc)
   renderDetail(r.id, qc)
   expect(await screen.findByText(r.name)).toBeInTheDocument()
-  for (const name of ['Makrók', 'Hozzávalók', 'Minőség', 'Mikrotápanyagok']) {
+  // Folyadék: öt számozott szekció a hős alatt — a közös blokkok (C terület) a lap saját számaival.
+  for (const name of [/^1\s*Makrók$/, /^2\s*Hozzávalók · \d+$/, /^3\s*Minőség és mikrotápanyagok$/, /^4\s*Mezo jegyzete$/, /^5\s*Mit tehetsz vele$/]) {
     expect(screen.getByRole('heading', { name })).toBeInTheDocument()
   }
-  // Az AI értékelés a fejlécben áll (a `FuelScoreChip` akadálymentes neve), a régi
-  // csempe-mozaik pedig eltűnt.
-  await waitFor(() => expect(screen.getByRole('button', { name: /AI értékelés/ })).toBeInTheDocument())
+  expect(screen.getByTestId('frame-title')).toHaveTextContent('-recept')
+  // Mezo értékelése a hős folyadékán áll (a tízes skálán), a régi csempe-mozaik pedig eltűnt.
+  await waitFor(() => expect(screen.getByRole('button', { name: /^Mezo értékelése \d+(,\d)? ›$/ })).toBeInTheDocument())
+  expect(document.querySelector('.fo-page.fc-page > .fo-hero .fx-pot')).not.toBeNull()
+  expect(document.querySelector('.glass, .fmx-subhead, .fkx-door')).toBeNull()
   expect(screen.queryByTestId('recipe-score-tile')).toBeNull()
   expect(screen.queryByTestId('recipe-ingredients-tile')).toBeNull()
   expect(screen.queryByRole('tab')).toBeNull()
@@ -114,11 +127,14 @@ test('a mikrotápanyagok csak a tárolt tényeket mutatják', async () => {
   const r = firstId(qc)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  const micro = screen.getByRole('heading', { name: 'Mikrotápanyagok' }).closest('section')!
+  const micro = screen.getByText('Rost').closest('section')!
   for (const label of ['Rost', 'Cukor', 'Só', 'Telített zsír']) {
     expect(within(micro).getByText(label)).toBeInTheDocument()
   }
-  expect(within(micro).queryByText(/vitamin/i)).toBeNull()
+  // no row is a vitamin: the only mention is the closing note that says they are still on the way
+  const rows = [...micro.querySelectorAll('.fo-row')]
+  expect(rows).toHaveLength(4)
+  expect(rows.some(row => /vitamin/i.test(row.textContent ?? ''))).toBe(false)
 })
 
 // B12: a receptből naplózás előtöltve indul, a kamera-felület kihagyásával.
@@ -137,7 +153,7 @@ test('a részletlapról a Műhely a recepttel indul', async () => {
   const r = firstId(qc)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  await userEvent.click(screen.getByRole('button', { name: /Iterálás a Műhelyben/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Tovább alakítom a Műhelyben/ }))
   expect(screen.getByTestId('location').textContent).toContain(`recipeId=${r.id}`)
 })
 
@@ -146,7 +162,10 @@ test('a meta-sor viszi a NOVA-értéket és a létrehozás dátumát (mezo-n3xa)
   const r = firstId(qc)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  expect(screen.getByText(/létrehozva/).textContent).toContain(`NOVA ${r.novaDominant}`)
+  expect(document.querySelector('.fo-hero .fc-meta')!.textContent).toContain(`NOVA ${r.novaDominant}`)
+  // the seed carries an ISO instant (the server's shape); the page prints the short day of the app language
+  expect(r.createdDate).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  expect(screen.getByText(`létrehozva ${fmtDate(new Date(r.createdDate), 'short')}`)).toBeInTheDocument()
   // a régi négy-cellás meta-csík nem tért vissza
   expect(screen.queryByText('Idő')).toBeNull()
   expect(screen.queryByText('Hozzáv.')).toBeNull()
@@ -154,7 +173,10 @@ test('a meta-sor viszi a NOVA-értéket és a létrehozás dátumát (mezo-n3xa)
 
 test('a missing id shows the not-found fallback', async () => {
   renderDetail('does-not-exist', newQc())
-  expect(await screen.findByText('Nincs ilyen recept.')).toBeInTheDocument()
+  expect(await screen.findByText('Nincs ilyen recept')).toBeInTheDocument()
+  expect(screen.getByText(/Lehet, hogy közben törölted/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Vissza a Receptekhez' }))
+  expect(screen.getByTestId('location').textContent).toBe('/fuel/recipes')
 })
 
 test('the serving toggle switches the macro basis', async () => {
@@ -164,11 +186,12 @@ test('the serving toggle switches the macro basis', async () => {
   const r = seedRecipe(qc, { servings: 2, macros: { kcal: 600, p: 40, c: 60, f: 20 } })
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  expect(screen.getByText('300')).toBeInTheDocument()          // 600 / 2 adag
-  expect(screen.getByText(/kcal \/ adag/)).toBeInTheDocument()
+  const big = () => document.querySelector('.fo-hero .fx-ng-n') as HTMLElement
+  expect(big()).toHaveTextContent('300kcal / adag')            // 600 / 2 adag
+  expect(screen.getByText('Egy adag a fazékból · 2 adagos')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Egész/ }))
-  expect(screen.getByText('600')).toBeInTheDocument()
-  expect(screen.getByText(/kcal · egész/)).toBeInTheDocument()
+  expect(big()).toHaveTextContent('600kcal · egész')
+  expect(screen.getByText('Egész recept · 2 adag')).toBeInTheDocument()
 })
 
 test('a mikrotápanyag-blokk is követi a /adag ↔ egész váltót', async () => {
@@ -176,10 +199,10 @@ test('a mikrotápanyag-blokk is követi a /adag ↔ egész váltót', async () =
   const r = seedRecipe(qc, { servings: 2, nutrients: { fiberG: 8, sugarG: 12, saltG: 1, saturatedFatG: 4 } })
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  const rostCard = () => screen.getByText('Rost').closest('.fmx-micro-card') as HTMLElement
-  expect(within(rostCard()).getByText('4 g')).toBeInTheDocument()   // 8 g / 2 adag
+  const rostRow = () => screen.getByText('Rost').closest('.fo-row') as HTMLElement
+  expect(rostRow()).toHaveTextContent(/(^|\D)4\s?g/)   // 8 g / 2 adag
   await userEvent.click(screen.getByRole('button', { name: /Egész/ }))
-  expect(within(rostCard()).getByText('8 g')).toBeInTheDocument()
+  expect(rostRow()).toHaveTextContent(/(^|\D)8\s?g/)
 })
 
 // Őszinte-null az ÚJ felületen: amire nincs tárolt tény, az „—" és „nincs adat", nem nulla.
@@ -190,7 +213,7 @@ test('tárolt tény nélkül a mikrotápanyag-kártya gondolatjelet ad, nem kita
   const r = seedRecipe(qc, { nutrients: undefined })
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  const micro = screen.getByRole('heading', { name: 'Mikrotápanyagok' }).closest('section')!
+  const micro = screen.getByText('Rost').closest('section')!
   expect(within(micro).getAllByText('—')).toHaveLength(4)
   expect(within(micro).getAllByText('nincs adat')).toHaveLength(4)
   expect(within(micro).queryByText('0 g')).toBeNull()
@@ -260,8 +283,11 @@ test('a Logok ajtó a log-sheetet nyitja a pontozott loggal', async () => {
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
   await userEvent.click(screen.getByTestId('recipe-logs-open'))
-  // the scored log renders its delta-vs-baseline line (RecipeLogsList scored branch)
-  expect(await screen.findByText(/vs baseline/)).toBeInTheDocument()
+  // the scored log says how it stands against the recipe's rating (RecipeLogsList scored branch)
+  const sheet = await screen.findByRole('dialog', { name: r.name })
+  expect(within(sheet).getByText('Recept · mai logok')).toBeInTheDocument()
+  expect(within(sheet).getByText(/pont a recept értékeléséhez képest\.|Ugyanannyi pont, mint a recepté\./)).toBeInTheDocument()
+  expect(within(sheet).getByText(/Csak a mai logok látszanak itt/)).toBeInTheDocument()
 })
 
 test('shows the Logok empty-state when the recipe was never logged', async () => {
@@ -277,7 +303,7 @@ test('shows the Logok empty-state when the recipe was never logged', async () =>
   await screen.findByText(unlogged.name)
   expect(screen.getByText('ma még nincs logolva')).toBeInTheDocument()
   await userEvent.click(screen.getByTestId('recipe-logs-open'))
-  expect(await screen.findByText(/Még nem logoltad ezt a receptet/)).toBeInTheDocument()
+  expect(await screen.findByText(/Még nem logoltad ma ezt a receptet/)).toBeInTheDocument()
 })
 
 test('a Pontszám ajtó a Titán értékelő oldalra visz, a teljes bontással (mezo-bw3y)', async () => {
@@ -311,8 +337,7 @@ test('the meta line carries the role chip for a non-standard recipe (mezo-uavr)'
   const r = pickRecipe(qc, x => x.role === 'pre_workout')
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  expect(screen.getByText('Edzés előtt')).toBeInTheDocument()
-  expect(screen.getByText(/létrehozva/).textContent).toContain('Edzés előtt')
+  expect(document.querySelector('.fo-hero .fo-hero-sub')!.textContent).toMatch(/^Edzés előtt · /)
 })
 
 test('a standard recipe gets no role chip (mezo-uavr)', async () => {
@@ -320,9 +345,9 @@ test('a standard recipe gets no role chip (mezo-uavr)', async () => {
   const r = pickRecipe(qc, x => x.role === 'standard')
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
-  expect(screen.queryByText('Edzés előtt')).toBeNull()
-  expect(screen.queryByText('Általános')).toBeNull()
-  expect(screen.getByText(/létrehozva/).textContent).not.toContain('Általános')
+  expect(screen.queryByText(/Edzés előtt/)).toBeNull()
+  expect(screen.queryByText(/Általános/)).toBeNull()
+  expect(document.querySelector('.fo-hero')!.textContent).not.toContain('Általános')
 })
 
 test('az értékelő oldal megnevezi a mércét, amihez egy nem-standard szerep igazodik (mezo-uavr)', async () => {
@@ -357,9 +382,9 @@ test('renders the Mezo jegyzete card with the first fit chip when the seed carri
   await screen.findByText(rec.name)
   const note = screen.getByRole('region', { name: 'Mezo jegyzete' })
   await waitFor(() => expect(within(note).queryByText(/Még nincs olvasat/)).toBeNull())
-  // Üveg U2: the ● literal became a colored dot span — the chip text is the fit itself.
+  // the fit label is stored text in a kit chip — the chip text is the fit itself.
   const fit = within(note).getByText(rec.mezoFit.fitsFor[0])
-  expect(fit).toHaveClass('fkx-fit-chip')
+  expect(fit.closest('.fo-chips')).toHaveClass('fc-fit')
   expect(fit.textContent).not.toContain('●')
 })
 

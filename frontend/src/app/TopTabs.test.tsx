@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useNavigate } from 'react-router-dom'
 import { TopTabs, type TopTabsProps } from '@/app/TopTabs'
 import { DOMAINS, activeTabRoute, frameFor, resetNavMemory } from '@/app/navModel'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
@@ -87,6 +88,68 @@ test('marks the active tab — /nap/rutin lights Rutin, not Mai', () => {
   expect(screen.getByRole('link', { name: 'Rutin' })).toHaveAttribute('aria-current', 'page')
   expect(screen.getByRole('link', { name: 'Mai' })).not.toHaveClass('on')
   expect(screen.getByRole('link', { name: 'Mai' })).not.toHaveAttribute('aria-current')
+})
+
+// The row scrolls sideways when the four names do not fit (English at 320 px, bible F5.5): the lit tab is
+// brought into view by moving the ROW (its scrollLeft) — never the page, and without an animation.
+// jsdom lays nothing out, so the boxes are stubbed: a 300 px row, every pill 110 px wide, 6 px apart.
+describe('the lit tab is brought into view', () => {
+  const PILL = 110
+  const GAP = 6
+  function stubBoxes() {
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const box = (left: number, width: number) => ({ left, right: left + width, width, top: 0, bottom: 40, height: 40, x: left, y: 0, toJSON: () => ({}) }) as DOMRect
+      if (this.matches('nav.fo-tabs')) return box(10, 300)
+      const nav = this.closest('nav.fo-tabs') as HTMLElement | null
+      if (!nav || this.tagName !== 'A') return box(0, 0)
+      const i = Array.from(nav.querySelectorAll('a')).indexOf(this as HTMLAnchorElement)
+      return box(10 + i * (PILL + GAP) - nav.scrollLeft, PILL)
+    })
+    return scrollIntoView
+  }
+  afterEach(() => vi.restoreAllMocks())
+
+  test('a tab that starts beyond the right edge is scrolled in on arrival — the row moves, not the page', () => {
+    const scrollIntoView = stubBoxes()
+    renderAt('/fuel/konyha')
+    const nav = strip('Fuel')
+    // the fourth pill spans 358…468 of a row that ends at 310: 158 px out, plus 8 px of air
+    expect(nav.scrollLeft).toBe(166)
+    const lit = within(nav).getByRole('link', { name: 'Konyha' }).getBoundingClientRect()
+    const row = nav.getBoundingClientRect()
+    expect(lit.left).toBeGreaterThanOrEqual(row.left)
+    expect(lit.right).toBeLessThanOrEqual(row.right)
+    expect(scrollIntoView).not.toHaveBeenCalled()
+  })
+
+  test('a tab that is already whole inside the row leaves the row where it is', () => {
+    stubBoxes()
+    renderAt('/fuel')
+    expect(strip('Fuel').scrollLeft).toBe(0)
+  })
+
+  test('after a switch to a tab hidden beyond the left edge the row scrolls back', async () => {
+    stubBoxes()
+    // AppLayout keeps the strip mounted across tab switches: the row is still scrolled when the route changes
+    function Go({ to }: { to: string }) {
+      const navigate = useNavigate()
+      return <button onClick={() => navigate(to)}>go</button>
+    }
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={['/fuel/konyha']}>
+          <MezoThreadProvider><TopTabs /><Go to="/fuel" /></MezoThreadProvider>
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    const nav = strip('Fuel')
+    expect(nav.scrollLeft).toBe(166)
+    await userEvent.click(screen.getByRole('button', { name: 'go' }))
+    expect(screen.getByRole('link', { name: 'Mai' })).toHaveAttribute('aria-current', 'page')
+    expect(nav.scrollLeft).toBe(0)
+  })
 })
 
 test('the domain is derived from the first path segment — /train/week shows Edzés', () => {

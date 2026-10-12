@@ -19,7 +19,7 @@ test('searches the shared catalog and puts a hit on the shelf', async () => {
 
   await userEvent.type(screen.getByPlaceholderText('Keresés név vagy márka szerint'), 'skyr')
   await waitFor(() => expect(screen.getByText('Skyr natúr')).toBeInTheDocument())
-  expect(screen.getByText(/Anna/)).toBeInTheDocument() // author chip on a user-authored row
+  expect(screen.getByText(/felvette: Anna/)).toBeInTheDocument() // the author on its own line of a user-authored row
 
   await userEvent.click(screen.getByRole('button', { name: /Polcra/ }))
   const { result } = renderHook(() => usePantry(), {
@@ -30,13 +30,15 @@ test('searches the shared catalog and puts a hit on the shelf', async () => {
   await waitFor(() => expect(screen.getByText('a polcon')).toBeInTheDocument())
 })
 
-test('kind chips narrow the search; the master row shows "mezo" instead of an author', async () => {
+test('kind pills narrow the search; the master row is signed „Mezo" instead of an author', async () => {
   render(<QueryClientProvider client={newQc()}><CatalogSearchSheet onClose={() => {}} /></QueryClientProvider>)
-  await userEvent.click(screen.getByRole('button', { name: 'Supp' }))
+  // „Supp / Stim" → „Kiegészítő / Stimuláns" (wording table, mezo-n4wf5.5)
+  expect(screen.queryByRole('button', { name: 'Supp' })).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: 'Kiegészítő' }))
   await waitFor(() => expect(screen.getByText('Creatine Monohydrate')).toBeInTheDocument())
   expect(screen.queryByText('Skyr natúr')).not.toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Étel' }))
   await userEvent.type(screen.getByPlaceholderText('Keresés név vagy márka szerint'), 'bulgur')
   await waitFor(() => expect(screen.getByText('Bulgur Raw Kifli')).toBeInTheDocument())
-  expect(screen.getByText('mezo')).toBeInTheDocument()
+  expect(screen.getByText(/felvette: Mezo/)).toBeInTheDocument()
 })

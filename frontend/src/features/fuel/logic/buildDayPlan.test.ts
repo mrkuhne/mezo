@@ -437,6 +437,23 @@ test('any logged snack on a 3-meal day (no snack window) is never dropped', () =
   expect(doneSnacks).toHaveLength(1)
   expect(doneSnacks[0]).toMatchObject({ mealId: 's1', mealName: 'Tízórai', time: '15:00', kcal: 180 })
 })
+// Behaviour change 1 (owner 2026-10-12, mezo-n4wf5.5): a meal logged outside every window is titled
+// „Ablakon kívül · HH:mm" — never after the day part or a same-kind window it does not sit on.
+test('a window-less extra log is titled „Ablakon kívül · HH:mm", whatever its slot kind', () => {
+  const s = meal({ id: 's1', slot: 'snack', title: 'Tízórai', loggedAt: '2026-07-02T15:00:00', kcal: 180, p: 9, c: 22, f: 6 })
+  const b1 = meal({ id: 'b1', slot: 'breakfast', loggedAt: '2026-07-02T07:10:00' })
+  const b2 = meal({ id: 'b2', slot: 'breakfast', loggedAt: '2026-07-02T09:40:00' })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 3, meals: [s, b1, b2] }))
+  expect(plan.slots.find(x => x.mealId === 's1')!.label).toBe('Ablakon kívül · 15:00')
+  const surplus = plan.slots.find(x => x.slotKey === 'breakfast' && x.windowFrom == null)!
+  expect(surplus.label).toBe(`Ablakon kívül · ${surplus.time}`)
+  // the window that DID get its meal keeps its own name, and the meal's name is untouched
+  expect(plan.slots.find(x => x.slotKey === 'breakfast' && x.windowFrom != null)!.label).toBe('Reggeli')
+  expect(plan.slots.find(x => x.mealId === 's1')!.mealName).toBe('Tízórai')
+  // the window-less slot says so itself (`extra`): the meal page and the lane key read it, a window never carries it
+  expect(plan.slots.find(x => x.mealId === 's1')!.extra).toBe(true)
+  expect(plan.slots.filter(x => x.windowFrom != null).every(x => x.extra == null)).toBe(true)
+})
 test('done meal/snack slots carry the FULL logged-meal totals — nothing logged is dropped', () => {
   const meals = [
     meal({ id: 'b', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00', kcal: 500, p: 40, c: 50, f: 15 }),
@@ -534,12 +551,12 @@ test('on a ONE-window key, a LATER meal carrying a stored plan-window match can 
 
 test('nearest-time assignment compares on the UNWRAPPED axis, not raw HH:mm minutes, across a midnight-crossing day', () => {
   // wake 07:00 / bed 03:00 (crosses midnight). Two same-key snack windows straddling midnight:
-  // 'Esti snack' at 23:50 (raw minute 1430, unwrapped stays 1430 — before wake, already past it on
+  // 'Esti uzsonna' at 23:50 (raw minute 1430, unwrapped stays 1430 — before wake, already past it on
   // the raw axis so no +1440) and 'Hajnali snack' at bed−100 = 01:20 (raw minute 80, unwrapped 1520
   // since it is genuinely the LAST window of the day, past midnight). A snack logged at 00:05 is
-  // REALLY only 15 minutes after 'Esti snack' (unwrapped 1445 vs 1430) and 75 minutes before
-  // 'Hajnali snack' (1445 vs 1520) — 'Esti snack' is the true nearest window. Comparing on the RAW
-  // axis instead (the pre-fix bug) computes the 'Esti snack' distance as |5 − 1430| = 1425 minutes
+  // REALLY only 15 minutes after 'Esti uzsonna' (unwrapped 1445 vs 1430) and 75 minutes before
+  // 'Hajnali snack' (1445 vs 1520) — 'Esti uzsonna' is the true nearest window. Comparing on the RAW
+  // axis instead (the pre-fix bug) computes the 'Esti uzsonna' distance as |5 − 1430| = 1425 minutes
   // (nonsensical — it does not know the day wrapped) against 'Hajnali snack's |5 − 80| = 75, and
   // wrongly picks the far window. This is the same class of defect flagged in review: nearest-time
   // must use the same continuous wake→bed axis `unwrap`/`unwrappedNow` already use elsewhere in
@@ -547,19 +564,19 @@ test('nearest-time assignment compares on the UNWRAPPED axis, not raw HH:mm minu
   const midnightSnackTemplate: SlotTemplate = {
     dayType: 'rest',
     slots: [
-      templateRow({ label: 'Esti snack', slotKind: 'snack', anchor: { type: 'fixed', time: '23:50' }, budgetPct: 20 }),
+      templateRow({ label: 'Esti uzsonna', slotKind: 'snack', anchor: { type: 'fixed', time: '23:50' }, budgetPct: 20 }),
       templateRow({ label: 'Hajnali snack', slotKind: 'snack', anchor: { type: 'bed', offsetMin: -100 }, budgetPct: 15 }),
     ],
   }
   const bare = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00', template: midnightSnackTemplate, meals: [] }))
-  const bareEsti = bare.slots.find(s => s.label === 'Esti snack')!
+  const bareEsti = bare.slots.find(s => s.label === 'Esti uzsonna')!
   const bareHajnali = bare.slots.find(s => s.label === 'Hajnali snack')!
   expect(bareEsti.time).toBe('23:50') // sanity-check the fixture's anchor resolution
   expect(bareHajnali.time).toBe('01:20')
 
   const logged = meal({ id: 'late-night-snack', slot: 'snack', loggedAt: '2026-07-03T00:05:00' })
   const plan = buildDayPlan(baseInput({ wake: '07:00', bed: '03:00', template: midnightSnackTemplate, meals: [logged] }))
-  const esti = plan.slots.find(s => s.label === 'Esti snack')!
+  const esti = plan.slots.find(s => s.label === 'Esti uzsonna')!
   const hajnali = plan.slots.find(s => s.label === 'Hajnali snack')!
   // A done slot's `time` becomes the logged wall-clock time, not the planned window's — identify the
   // window by `plannedTime` (which stays the anchor time) instead.
@@ -568,21 +585,21 @@ test('nearest-time assignment compares on the UNWRAPPED axis, not raw HH:mm minu
 })
 
 test('the label pass prefers the LONGEST matching label so a short label cannot steal a more specific window', () => {
-  // 'Snack' is a substring of 'Esti snack' (lowercased), so a meal logged as 'Esti snack · 21:05'
+  // 'Snack' is a substring of 'Esti uzsonna' (lowercased), so a meal logged as 'Esti uzsonna · 21:05'
   // matches BOTH window labels via plain substring — without a specificity tiebreak, `idxs.find`
   // would hand it to whichever window comes first in time order (here: 'Snack' at 15:00), even
-  // though the meal is unambiguously an "Esti snack".
+  // though the meal is unambiguously an "Esti uzsonna".
   const snackLabelTemplate: SlotTemplate = {
     dayType: 'rest',
     slots: [
       templateRow({ label: 'Snack', slotKind: 'snack', anchor: { type: 'fixed', time: '15:00' }, budgetPct: 15 }),
-      templateRow({ label: 'Esti snack', slotKind: 'snack', anchor: { type: 'fixed', time: '21:00' }, budgetPct: 15 }),
+      templateRow({ label: 'Esti uzsonna', slotKind: 'snack', anchor: { type: 'fixed', time: '21:00' }, budgetPct: 15 }),
     ],
   }
-  const logged = meal({ id: 'esti-snack', slot: 'Esti snack · 21:05', loggedAt: '2026-07-02T21:05:00' })
+  const logged = meal({ id: 'esti-snack', slot: 'Esti uzsonna · 21:05', loggedAt: '2026-07-02T21:05:00' })
   const plan = buildDayPlan(baseInput({ template: snackLabelTemplate, meals: [logged] }))
   const snack = plan.slots.find(s => s.label === 'Snack')!
-  const estiSnack = plan.slots.find(s => s.label === 'Esti snack')!
+  const estiSnack = plan.slots.find(s => s.label === 'Esti uzsonna')!
   expect(estiSnack).toMatchObject({ state: 'done', mealId: 'esti-snack' })
   expect(snack.state).not.toBe('done')
 })
@@ -707,7 +724,7 @@ test('protocol slots map zones onto FuelKind and carry done-state straight from 
   })
   const plan = buildDayPlan(baseInput({ protocolSlots: [slot] }))
   const found = plan.slots.find(s => s.kind === 'evening')!
-  expect(found.label).toBe('Este stack')
+  expect(found.label).toBe('Kiegészítők · Este')
   expect(found.items!.map(it => it.done)).toEqual([true, false]) // mg taken, omega not
 })
 test('a protocol slot with a skipped entry drops that item from the rendered stack card', () => {
@@ -734,7 +751,7 @@ test('a protocol slot whose entries are ALL skipped is dropped entirely — neve
   })
   const plan = baseInput({ protocolSlots: [slot] })
   const built = buildDayPlan(plan)
-  expect(built.slots.some(s => s.label === 'Reggeli stack')).toBe(false)
+  expect(built.slots.some(s => s.label === 'Kiegészítők · Reggeli')).toBe(false)
 })
 
 // ── blocks render as workout/sport slots ─────────────────────────────────────
@@ -867,14 +884,14 @@ test('the peri-snack is deduped when a meal/snack window already covers the pre-
 // ── Net activity energy (mezo-1oy5 → mezo-32m82) ─────────────────────────────
 test('peri-snack kcal rule is net: ≥200 net kcal under 90′ earns the window, less does not', () => {
   const rest = 1920 / 24
-  const at = (b: PlannerBlock) => placeWindows('06:00', '23:00', 3, [b], rest).filter(w => w.label === 'Pre-workout snack').length
+  const at = (b: PlannerBlock) => placeWindows('06:00', '23:00', 3, [b], rest).filter(w => w.label === 'Edzés előtti uzsonna').length
   // football 60′: (7−1)×80 = 480 ≥ 200 → significant
   expect(at({ kind: 'sport', sport: 'football', time: '18:00', durationMin: 60, label: 'Foci' })).toBe(1)
   // gym 30′: (3.5−1)×80×0.5 = 100 < 200 and < 90′ → not significant
   expect(at({ kind: 'gym', time: '18:00', durationMin: 30, label: 'Gym' })).toBe(0)
   // unknown rest energy → the duration rule alone decides
   expect(placeWindows('06:00', '23:00', 3, [{ kind: 'sport', sport: 'football', time: '18:00', durationMin: 60, label: 'Foci' }], null)
-    .filter(w => w.label === 'Pre-workout snack')).toHaveLength(0)
+    .filter(w => w.label === 'Edzés előtti uzsonna')).toHaveLength(0)
 })
 
 // ── plannedTime on done slots (mezo-l2gp0) ──────────────────────────────────
@@ -986,7 +1003,7 @@ describe('late-log reflow (mezo-9sltu)', () => {
     }
   })
 
-  // 6 meals, gym 18:30: Ebéd 14:08 · Uzsonna 17:15 (pre-training-snack) · Esti snack 20:00 · Vacsora 21:30 (post-training).
+  // 6 meals, gym 18:30: Ebéd 14:08 · Uzsonna 17:15 (pre-training-snack) · Esti uzsonna 20:00 · Vacsora 21:30 (post-training).
   const gym: PlannerBlock = { kind: 'gym', time: '18:30', durationMin: 75, label: 'Edzés' }
   it('a training-anchored window never moves; the windows after it cascade from it', () => {
     const base = buildDayPlan(baseInput({ mealsPerDay: 6, blocks: [gym] }))
@@ -995,9 +1012,9 @@ describe('late-log reflow (mezo-9sltu)', () => {
     expect(pre.time).toBe('17:15')
     expect(pre.windowReasons).toEqual(byLabel(base, 'Uzsonna').windowReasons)
     expect(pre.windowReasons).not.toContain('shifted')
-    // cascade from the anchor: 17:15 + 90 = 18:45 ≤ 20:00 → the Esti snack keeps its time
-    expect(byLabel(plan, 'Esti snack').time).toBe('20:00')
-    expect(byLabel(plan, 'Esti snack').windowReasons).not.toContain('shifted')
+    // cascade from the anchor: 17:15 + 90 = 18:45 ≤ 20:00 → the Esti uzsonna keeps its time
+    expect(byLabel(plan, 'Esti uzsonna').time).toBe('20:00')
+    expect(byLabel(plan, 'Esti uzsonna').windowReasons).not.toContain('shifted')
     expect(byLabel(plan, 'Vacsora').time).toBe('21:30')
     expect(byLabel(plan, 'Vacsora').windowReasons).not.toContain('shifted')
   })
@@ -1005,8 +1022,8 @@ describe('late-log reflow (mezo-9sltu)', () => {
   it('a meal logged AFTER an anchored window still keeps 90 min to the next movable window', () => {
     const plan = buildDayPlan(baseInput({ mealsPerDay: 6, blocks: [gym], meals: [meal({ id: 'l', slot: 'Ebéd', loggedAt: at('18:40') })] }))
     expect(byLabel(plan, 'Uzsonna').time).toBe('17:15')
-    expect(byLabel(plan, 'Esti snack').time).toBe('20:10')
-    expect(byLabel(plan, 'Esti snack').shiftedAfter).toEqual({ label: 'Ebéd', at: '18:40' })
+    expect(byLabel(plan, 'Esti uzsonna').time).toBe('20:10')
+    expect(byLabel(plan, 'Esti uzsonna').shiftedAfter).toEqual({ label: 'Ebéd', at: '18:40' })
     expect(byLabel(plan, 'Vacsora').time).toBe('21:30')
   })
 

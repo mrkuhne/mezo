@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.fuel.repository.ProtocolRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -51,13 +52,15 @@ public class ProtocolService {
     private static final String STATUS_ACTIVE = "active";
     private static final String KIND_FOOD = "food";
     private static final String SOURCE_USER = "user";
-    private static final String REASON_MANUAL = "Kézzel ide helyezve.";
+    /** Stored on the item in the account's language at write time, never re-translated. */
+    private static final String REASON_MANUAL_KEY = "FUEL_PLACEMENT_REASON_MANUAL";
 
     private final ProtocolRepository protocolRepository;
     private final ProtocolItemRepository itemRepository;
     private final PantryItemRepository pantryItemRepository;
     private final FuelProtocolProperties properties;
     private final PlacementEngine placementEngine;
+    private final UserMessages messages;
 
     @Transactional
     public ProtocolViewResponse getView(UUID userId) {
@@ -90,14 +93,14 @@ public class ProtocolService {
             slotKey = request.getSlotKey();
             source = SOURCE_USER;
             pinned = true;
-            reason = REASON_MANUAL;
+            reason = messages.text(REASON_MANUAL_KEY);
             restDay = null;
         } else {
             PlacementEngine.Placement placement = placementEngine.place(pantryItem);
             slotKey = placement.slotKey();
             source = placement.source();
             pinned = false;
-            reason = placement.reasonHu();
+            reason = placement.reason();
             restDay = placement.restDayFallback();
         }
         rejectDuplicate(protocol.getId(), pantryItem.getId(), slotKey);
@@ -132,7 +135,7 @@ public class ProtocolService {
             item.setSlotKey(request.getSlotKey());
             item.setPinned(true);
             item.setPlacementSource(SOURCE_USER);
-            item.setPlacementReason(REASON_MANUAL);
+            item.setPlacementReason(messages.text(REASON_MANUAL_KEY));
             item.setRestDayFallback(null);
         }
         if (Boolean.FALSE.equals(request.getPinned())) {               // unpin → engine re-places
@@ -142,7 +145,7 @@ public class ProtocolService {
             item.setSlotKey(placement.slotKey());
             item.setPinned(false);
             item.setPlacementSource(placement.source());
-            item.setPlacementReason(placement.reasonHu());
+            item.setPlacementReason(placement.reason());
             item.setRestDayFallback(placement.restDayFallback());
         }
         if (request.getDose() != null) {
@@ -211,7 +214,8 @@ public class ProtocolService {
             // the engine's own deterministic fallback covers the normal case; here we mirror it by
             // hand since PlacementEngine#place requires a non-null item.
             PlacementEngine.Placement placement = pantryItem == null
-                ? new PlacementEngine.Placement(PlacementEngine.FALLBACK_ZONE, "fallback", PlacementEngine.FALLBACK_REASON, null)
+                ? new PlacementEngine.Placement(PlacementEngine.FALLBACK_ZONE, "fallback",
+                    messages.text(PlacementEngine.FALLBACK_REASON_KEY), null)
                 : placementEngine.place(pantryItem);
             Set<String> taken = takenZonesByItem.computeIfAbsent(item.getPantryItemId(), k -> new HashSet<>());
             String slotKey = resolveFreeZone(placement.slotKey(), taken);
@@ -222,7 +226,7 @@ public class ProtocolService {
             item.setSlotKey(slotKey);
             item.setPinned(false);
             item.setPlacementSource(placement.source());
-            item.setPlacementReason(placement.reasonHu());
+            item.setPlacementReason(placement.reason());
             item.setRestDayFallback(placement.restDayFallback());
             taken.add(slotKey);
             resolved.add(item);

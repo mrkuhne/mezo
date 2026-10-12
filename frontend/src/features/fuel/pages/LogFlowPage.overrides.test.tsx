@@ -146,12 +146,13 @@ describe('LogFlowPage ingredient overrides', () => {
     const recipe = openFlowWithRecipe('rec-1')
     expect(recipe.ingredients[0].refId).toBe('ing-zab')
 
-    expect(screen.getAllByText('11,2')).toHaveLength(2) // soronkénti + "EZ AZ ÉTKEZÉS" cella
+    // a sor rost-cellája + az összesítő hős rost-cellája (a hős rost-kapszulája egész grammot ír)
+    expect(screen.getAllByText('11,2 g')).toHaveLength(2)
 
     fireEvent.click(screen.getByRole('button', { name: /hozzávalók finomhangolása/i }))
     fireEvent.click(screen.getByRole('button', { name: new RegExp(`${recipe.ingredients[0].name} csökkentés`, 'i') }))
 
-    expect(screen.queryAllByText('11,2')).toHaveLength(0)
-    expect(screen.getAllByText('10,2')).toHaveLength(2)
+    expect(screen.queryAllByText('11,2 g')).toHaveLength(0)
+    expect(screen.getAllByText('10,2 g')).toHaveLength(2)
   })
 })

@@ -32,7 +32,7 @@ afterEach(() => vi.restoreAllMocks())
 
 test('a négy közvetlen út Fotó, Kamra, Recept, Szokásosak; nincs külön hang vagy gépelés', () => {
   const { container } = render(<FuelLogModes {...props()} />)
-  expect(Array.from(container.querySelectorAll('.fmx-mode')).map(b => b.textContent!.trim()))
+  expect(Array.from(container.querySelectorAll('.fg-modes > button')).map(b => b.textContent!.trim()))
     .toEqual(['Fotó', 'Kamra', 'Recept', 'Szokásosak'])
   expect(screen.getByText('Fotózd le a tányért')).toBeInTheDocument()
 })

@@ -217,7 +217,9 @@ test('the startup intro plays once: switching the language does not bring it bac
   expect(await page.evaluate(() => (window as unknown as { __introAgain?: boolean }).__introAgain)).toBe(false)
 })
 
-test('after the switch the Fuel settings page still carries its save bar (portal target survives the remount)', async ({ page }) => {
+// Folyadék F5 (mezo-n4wf5.5): the save bar is the kit's sticky foot inside the page (`.fo-foot .fb-save`), no portal any
+// more — what is pinned is unchanged: after the language switch remounts the tree the bar is there, in the document.
+test('after the switch the Fuel settings page still carries its save bar (it survives the remount)', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 820 })
   await seed(page, null)
   await page.goto('/me')
@@ -229,8 +231,10 @@ test('after the switch the Fuel settings page still carries its save bar (portal
   await expect(page).toHaveURL(/\/settings$/)
   await page.getByRole('link', { name: /^Fuel/ }).first().click()
   await expect(page).toHaveURL(/\/settings\/fuel$/)
-  const save = page.locator('.fset-savebar button')
+  const save = page.locator('.fo-page.fb-page > .fo-foot .fb-save')
+  await expect(save).toHaveCount(1)
   await expect(save).toBeVisible()
+  await expect(save).toHaveText('Save')
   expect(await save.evaluate((el) => document.body.contains(el))).toBe(true)
 })
 
@@ -239,8 +243,10 @@ test('loaded directly in English, the Fuel settings page carries its save bar', 
   await seed(page, 'en')
   await page.goto('/fuel/settings')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-  const save = page.locator('.fset-savebar button')
+  const save = page.locator('.fo-page.fb-page > .fo-foot .fb-save')
+  await expect(save).toHaveCount(1)
   await expect(save).toBeVisible()
+  await expect(save).toHaveText('Save')
   expect(await save.evaluate((el) => document.body.contains(el))).toBe(true)
 })
 

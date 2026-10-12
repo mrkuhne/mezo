@@ -108,7 +108,7 @@ export const PAGE_INDEX: IndexedPage[] = [
   { route: '/fuel/kamra', label: 'Kamra', hint: 'Ami itthon van — a polcod.' },
   { route: '/fuel/stack', label: 'Kiegészítők', hint: 'A kiegészítőid és a mai adagjaid.' },
   { route: '/fuel/stack/protocol', label: 'Protokoll', hint: 'Mit mikor és mihez veszel be.' },
-  { route: '/fuel/stack/manage/add', label: 'Új kiegészítő', hint: 'Termék felvitele és az adagja beállítása.' },
+  { route: '/fuel/stack/manage/add', label: 'Új elem beállítása', hint: 'Termék felvitele és az adagja beállítása.' },
   { route: '/fuel/gyogyszer', label: 'Gyógyszer', hint: 'A gyógyszereid külön nyilvántartva.' },
 
   // ── Mezo ─────────────────────────────────────────────────────────────────

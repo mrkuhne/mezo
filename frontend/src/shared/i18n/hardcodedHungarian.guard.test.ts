@@ -34,6 +34,17 @@ const TRANSLATED = [
   'features/settings/',
   'features/me/pages/BeallitasokPage.tsx',
   'features/me/pages/NotificationsPage.tsx',
+  // Folyadék F5 · Fuel (mezo-n4wf5.5): the whole domain, the two shared pieces only Fuel uses, and the label / logic
+  // files outside the feature folder that the slice converted to the catalog
+  'features/fuel/',
+  'shared/ui/DayNavigator.tsx',
+  'shared/ui/DatePicker.tsx',
+  'data/fuel/stackZones.ts',
+  'data/fuel/fuelConfig.ts',
+  'data/fuel/pantryPickables.ts',
+  'data/fuel/fuelHooks.ts',
+  'data/notification/notificationScheduleWriter.ts',
+  'features/me/logic/buildTdeeBreakdown.ts',
 ]
 
 interface AllowEntry {
@@ -59,6 +70,32 @@ const ALLOWLIST: AllowEntry[] = [
       'PAGE_INDEX (labels, hints) and NOT_INDEXED (reasons) are the Hungarian page inventory, keyed by route. pageLabel() already ' +
       'swaps in the catalog for the pages that have an English name; the rest wait for their own slice. Delete this entry when the ' +
       'inventory moves into the catalog.',
+  },
+  // ── Fuel (Folyadék F5): only DATA that is compared against stored text — never a word the screen prints ──
+  {
+    file: 'features/fuel/logic/buildDayPlan.ts',
+    match: /^(ebéd|tízórai)$/,
+    reason: 'mealSlotKey recognises the Hungarian display slot a STORED meal may carry („Ebéd · 13:00", „Tízórai"): matching needles, not display.',
+  },
+  {
+    file: 'features/fuel/logic/fuelPatternRefs.ts',
+    match: /^(étkez|evés|kalór|fehérje|szénhidrát|zsír|víz|ebéd|súly|táplál)$/,
+    reason: 'FUEL_TOKENS are substrings looked for in STORED pattern titles (server-written Hungarian) to decide what belongs on the Fuel page.',
+  },
+  {
+    file: 'features/fuel/logic/matchMealsToStack.ts',
+    match: 'fehérje',
+    reason: 'PROTEIN_BOUND_NEEDLES is matched against user-typed supplement names.',
+  },
+  {
+    file: 'features/fuel/logic/mealQualityTruth.ts',
+    match: 'Sűrűség',
+    reason: 'DENSITY_ROW_LABELS holds the row label the BACKEND stored in the score envelope, in both languages; it is looked up, never printed.',
+  },
+  {
+    file: 'features/fuel/logic/projectStackDay.ts',
+    match: 'stimulánsmentes',
+    reason: 'STIM_FREE_NEEDLES is matched against user-typed / catalogue product names (HU + EN needles).',
   },
   {
     file: 'shared/ui/folyadek/Msg.tsx',

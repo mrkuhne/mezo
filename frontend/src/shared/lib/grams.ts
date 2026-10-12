@@ -1,5 +1,7 @@
+import { fmtNum } from '@/shared/lib/format'
+
 /**
- * Gram display for the nutrition facts (mezo-m6uv): Hungarian decimal comma, at most one decimal,
+ * Gram display for the nutrition facts (mezo-m6uv): the app language's decimal mark (`format.ts`), at most one decimal,
  * no trailing `,0`, and an em-dash for "no data" — a missing fact is never printed as 0.
  * Storage keeps three decimals, so a real value can be smaller than the display step: a positive
  * value that would round to 0 prints as `<0,1` rather than `0`, because "0" reads as "none" and
@@ -9,6 +11,6 @@
 export function formatGram(v: number | null | undefined): string {
   if (v == null) return '—'
   const rounded = Math.round(v * 10 + Number.EPSILON) / 10
-  if (rounded === 0 && v > 0) return '<0,1'
-  return (Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)).replace('.', ',')
+  if (rounded === 0 && v > 0) return `<${fmtNum(0.1)}`
+  return fmtNum(rounded)
 }

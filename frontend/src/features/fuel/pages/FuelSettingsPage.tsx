@@ -1,7 +1,18 @@
+// ============================================================
+// Mezo · FuelSettingsPage — "/settings/fuel": a Fuel beállításai (étkezés / nap, koffein-stop, makróprofil, víz- és
+// rost-cél, fehérje-szint, a tanulás kapcsolója) a Beállítások keretében.
+//
+// Folyadék (mezo-n4wf5.5, prototype vilagos/fuel.js `beallitas()`): a címsor a keretben él (`useFrameTitle`), a vissza
+// a Beállítások hubjára visz (változatlan cél). A hős a NAP mint dagály: a mai étkezési ablakok edényekként a 06–24
+// vonalon, névvel és kcal-lal, a koffein-stop vonalával (`FuelWindowTide`); alatta négy számozott szakasz — 1 · Ritmus,
+// 2 · Makrók (a piszkozatot követő előnézet három fiolával), 3 · Célok, 4 · Finomhangolás — és a lebegő Mentés.
+// Betöltés közben csak a hős áll (semmit nem lehet átállítani); betöltési hibánál egy kártya az újrapróbálással.
+// A viselkedés változatlan: ugyanazok a hookok, mentés, vissza-cél, piszkozat-előnézet és a mentetlen-módosítás őre.
+// ============================================================
 import { UnsavedChangesGuard } from '@/features/settings/components/UnsavedChangesGuard'
 import { useSettingsOrigin } from '@/features/settings/components/SettingsFrame'
-import { useEffect, useMemo, useState } from 'react'
-import { createPortal, flushSync } from 'react-dom'
+import { useEffect, useId, useMemo, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import type { DietSettings } from '@/data/types'
@@ -12,65 +23,35 @@ import {
   useFuelDay,
   useFuelSettings,
   useFuelSettingsActions,
+  useFuelTimeline,
+  useSlotTemplates,
 } from '@/data/hooks'
 import { buildFuelSettingsMacroPreview } from '@/features/fuel/logic/fuelSettingsPreview'
-import { Icon } from '@/shared/ui/Icon'
-import { Icon3D } from '@/shared/ui/clay'
-import { Toggle } from '@/shared/ui/Toggle'
-import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { compileTemplate } from '@/features/fuel/logic/compileTemplate'
+import { placeWindows, splitBudget, splitBudgetPct } from '@/features/fuel/logic/buildDayPlan'
+import { FuelWindowTide, evenWindows, type TideWindow } from '@/features/fuel/components/FuelWindowTide'
+import { MACRO_COLOR } from '@/features/fuel/components/folyadek'
+import {
+  Acts, Btn, Card, Empty, FrameBack, Hero, Input, Lab, Note, Page, Pill, Pills, Row, Section, Select, Stepper, Switch, Txt, Vials,
+  useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped } from '@/shared/lib/format'
 import { useToast } from '@/shared/ui/ToastProvider'
 import { localDateString } from '@/shared/lib/dates'
 
-const PRESET_LABELS: Record<DietSettings['splitPreset'], string> = {
-  balanced: 'Kiegyensúlyozott',
-  low_fat: 'Alacsony zsír',
-  low_carb: 'Alacsony szénhidrát',
-  high_carb: 'Magas szénhidrát',
-  custom: 'Egyéni',
-}
-
-const PRESET_KEYS = Object.keys(PRESET_LABELS) as DietSettings['splitPreset'][]
-const huInt = new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0, useGrouping: true })
-
-function arcPoint(progress: number) {
-  return {
-    x: 24 + progress * 272,
-    y: 100 - Math.sin(progress * Math.PI) * 72,
-  }
-}
-
-function NumberStepper({ label, actionLabel = label, value, min, max, step = 1, suffix, offAtZero, onChange }: {
-  label: string
-  actionLabel?: string
-  value: number
-  min: number
-  max: number
-  step?: number
-  suffix?: string
-  offAtZero?: boolean
-  onChange: (value: number) => void
-}) {
-  const display = offAtZero && value === 0 ? 'ki' : `${value}${suffix ? ` ${suffix}` : ''}`
-  return (
-    <div className="fset-stepper">
-      <button type="button" className="chip np-press" aria-label={`${actionLabel} csökkentése`}
-        disabled={value <= min} onClick={() => onChange(Math.max(min, value - step))}>
-        <Icon name="minus" size={12} />
-      </button>
-      <span aria-label={label}>{display}</span>
-      <button type="button" className="chip np-press" aria-label={`${actionLabel} növelése`}
-        disabled={value >= max} onClick={() => onChange(Math.min(max, value + step))}>
-        <Icon name="plus" size={12} />
-      </button>
-    </div>
-  )
-}
+const PRESET_KEYS: DietSettings['splitPreset'][] = ['balanced', 'low_fat', 'low_carb', 'high_carb', 'custom']
+const TIER_KEYS: DietSettings['proteinTier'][] = ['low', 'moderate', 'high']
 
 export function FuelSettingsPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const toast = useToast()
+  const M = useM()
+  const T = M.fuelBeallitas
+  const S = T.settings
+  const ids = useId()
+  useFrameTitle({ title: T.frame.settingsTitle, eyebrow: T.frame.eyebrow })
   const { state: originState } = useSettingsOrigin()
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState(false)
@@ -145,11 +126,23 @@ export function FuelSettingsPage() {
       || Math.round(cPct * 10) !== diet.carbsPctX10
       || Math.round(fPct * 10) !== diet.fatPctX10
     ))
-  const mealPoints = Array.from({ length: mealsPerDay }, (_, index) =>
-    arcPoint(0.08 + index * (0.84 / Math.max(1, mealsPerDay - 1))))
-  const [cutoffHours, cutoffMinutes] = caffeineCutoff.split(':').map(Number)
-  const cutoffProgress = Math.min(1, Math.max(0, ((cutoffHours + cutoffMinutes / 60) - 6) / 18))
-  const cutoffPoint = arcPoint(cutoffProgress)
+
+  // The hero draws today's REAL windows with their kcal (new, approved 2026-10-12) from the hooks the windows editor
+  // already uses: a saved split of today's day type → `compileTemplate` + `splitBudgetPct`; otherwise the recommended
+  // rhythm → `placeWindows` (with the DRAFT meals-per-day, so the picture moves with the stepper) + `splitBudget`.
+  // Fallback face (`beallitas.ablak-nelkul`): while the day or the budget has not resolved, N equal nameless vessels.
+  const timeline = useFuelTimeline()
+  const { templates } = useSlotTemplates()
+  const ownSplit = templates.find((t) => t.dayType === timeline.dayType) ?? null
+  const planned = ownSplit
+    ? compileTemplate(ownSplit, { wake: timeline.wake, bed: timeline.bed, blocks: timeline.blocks })
+    : placeWindows(timeline.wake, timeline.bed, mealsPerDay, timeline.blocks, timeline.restPerHour)
+  const plannedBudgets = ownSplit ? splitBudgetPct(timeline.budget, planned) : splitBudget(timeline.budget, planned)
+  const windowsKnown = !dayPending && !dayError && planned.length > 0 && timeline.budget.kcal > 0
+  const heroWindows: TideWindow[] = windowsKnown
+    ? planned.map((w, i) => ({ time: w.time, label: w.label, kcal: plannedBudgets[i]?.kcal ?? 0 }))
+    : evenWindows(mealsPerDay)
+  const mealCount = heroWindows.length
 
   const save = async () => {
     if (busy) return
@@ -170,215 +163,175 @@ export function FuelSettingsPage() {
       const diff = Math.round(afterKcal - beforeKcal)
       toast.show({
         kind: 'success',
-        text: diff !== 0 ? `Mentve · A keret ${diff > 0 ? '+' : ''}${diff} kcal-lal változott` : 'Mentve',
+        text: diff !== 0 ? S.savedDiff(`${diff > 0 ? '+' : '−'}${fmtGrouped(Math.abs(diff))}`) : S.saved,
       })
       flushSync(() => setSaved(true))
       navigate('/settings', { state: originState })
     } catch { setSaveError(true) }
   }
 
-  const saveBar = typeof document === 'undefined' ? null : createPortal(
-    <div className="recipe-save-bar fset-savebar">
-      <button type="button" className="cta-primary fset-save glass np-press" disabled={busy}
-        style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}
-        onClick={() => void save()}>
-        <Icon name="check" size={14} /> Mentés
-      </button>
-    </div>,
-    document.querySelector('.phone-screen') ?? document.body,
-  )
+  const dirty = !saved && ((touchedDiet && dietDirty) || (touchedFuel && (mealsPerDay !== settings.mealsPerDay || caffeineCutoff !== settings.caffeineCutoff)))
+  const goSettings = () => navigate('/settings', { state: originState })
+  const back = <FrameBack className="fo-backpill" onBack={goSettings}>{T.frame.backToSettings}</FrameBack>
 
-  if (fuelError || dietError) return <MozaikPage tone="sage"><UnsavedChangesGuard dirty={!saved && ((touchedDiet && dietDirty) || (touchedFuel && (mealsPerDay !== settings.mealsPerDay || caffeineCutoff !== settings.caffeineCutoff)))} /><PageHead onBack={() => navigate('/settings', { state: originState })} label="‹ Beállítások" /><PageBody><p role="alert">Nem sikerült betölteni a Fuel beállításait. A mentett értékek nem módosíthatók, amíg a betöltés nem sikerül.</p><button className="cta-primary" onClick={() => { retryFuel(); retryDiet() }}>Újrapróbálás</button></PageBody></MozaikPage>
+  if (fuelError || dietError) {
+    return (
+      <Page nonav className="fb-page">
+        <UnsavedChangesGuard dirty={dirty} />
+        {back}
+        <Card>
+          <Empty icon="t-info" actions={<Btn sm onClick={() => { retryFuel(); retryDiet() }}>{T.retry}</Btn>}>
+            <span role="alert">{S.loadError}</span>
+          </Empty>
+        </Card>
+      </Page>
+    )
+  }
+
+  // Betöltés közben csak a hős áll: semmit nem lehet átállítani, amíg a mentett értékek meg nem jöttek.
+  if (isPending || dietPending) {
+    return (
+      <Page nonav className="fb-page">
+        <UnsavedChangesGuard dirty={dirty} />
+        {back}
+        <Hero className="fb-hero" label={S.hero.label} verdict={<span role="status">{T.loading}</span>} sub={S.loadingSub}
+          graphic={<div className="fb-hg"><FuelWindowTide windows={evenWindows(4)} bare /></div>}
+        >
+        </Hero>
+      </Page>
+    )
+  }
+
+  const setPreset = (value: DietSettings['splitPreset']) => { setTouchedDiet(true); setSplitPreset(value) }
+  const customFields = [
+    [S.macros.proteinPct, pPct, setPPct],
+    [S.macros.carbsPct, cPct, setCPct],
+    [S.macros.fatPct, fPct, setFPct],
+  ] as const
 
   return (
-    <MozaikPage tone="sage" className="fset-page">
-      <UnsavedChangesGuard dirty={!saved && ((touchedDiet && dietDirty) || (touchedFuel && (mealsPerDay !== settings.mealsPerDay || caffeineCutoff !== settings.caffeineCutoff)))} />
-      {saveError && <p role="alert">Nem sikerült minden módosítást menteni. Próbáld újra.</p>}
-      <PageHead onBack={() => navigate('/settings', { state: originState })} label="‹ Beállítások">
-        <h1 className="fset-title">Fuel beállítások</h1>
-      </PageHead>
-      {(isPending || dietPending) && <p role="status">Beállítások betöltése…</p>}
-      <fieldset disabled={isPending || dietPending} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-      <EntranceGroup>
-      <PageBody className="fset-body">
-        <section className="fset-hero uv-halo rise"
-          style={{ '--d': '0ms', '--c': 'var(--dv-amber)', '--c2': 'var(--dv-sage)' } as React.CSSProperties}>
-          <span className="fset-eyebrow">Napi ritmus</span>
-          <div className="fset-hero-head">
-            <strong>{mealsPerDay} étkezés</strong>
-            <span className="fset-cutoff-pill uv-flat">
-              <Icon3D name="t-clock" size={20} />koffein-stop · {caffeineCutoff}
-            </span>
-          </div>
-          <p className="fset-summary">{mealsPerDay} étkezés · koffein-stop {caffeineCutoff}</p>
-          <div className="fset-arc-wrap">
-            <svg className="fset-dayarc" viewBox="0 0 320 118" aria-hidden="true" focusable="false">
-              {/* Üveg (mezo-me75u.2): the day arc glows amber → sage → lavender (uveg-fuel-tobbi.html `beallitas()`). */}
-              <defs>
-                <linearGradient id="fset-arc-grad">
-                  <stop offset="0" stopColor="#FFBE60" />
-                  <stop offset="0.6" stopColor="#8FB49A" />
-                  <stop offset="1" stopColor="#AB9FD2" />
-                </linearGradient>
-              </defs>
-              <path className="fset-arc-track" d="M24 100 C88 4 232 4 296 100" />
-              <path className="fset-arc-glow" d="M24 100 C88 4 232 4 296 100" />
-              {mealPoints.map((point, index) => (
-                <circle key={index} className="fset-meal-dot" cx={point.x} cy={point.y} r="6" />
-              ))}
-              <line className="fset-cutoff-line" x1={cutoffPoint.x} y1={cutoffPoint.y - 13}
-                x2={cutoffPoint.x} y2={cutoffPoint.y + 13} />
-              <circle className="fset-cutoff-dot" cx={cutoffPoint.x} cy={cutoffPoint.y} r="4" />
-            </svg>
-            <div className="fset-axis"><span>06</span><span>12</span><span>18</span><span>24</span></div>
-          </div>
-          <p className="fset-principle">A napi ív együtt mozdul a beállításaiddal.</p>
-        </section>
+    <Page nonav className="fb-page" foot={<Btn grow className="fb-save" disabled={busy} onClick={() => void save()}>{T.save}</Btn>}>
+      <UnsavedChangesGuard dirty={dirty} />
+      {back}
+      {saveError && <p className="fb-alert" role="alert">{S.saveError}</p>}
 
-        <section className="fset-card glass rise"
-          style={{ '--d': '60ms', '--c': 'var(--dv-amber)', '--i': 1 } as React.CSSProperties}
-          aria-labelledby="fset-rhythm-title">
-          <h2 id="fset-rhythm-title">Ritmus</h2>
-          <div className="fset-row">
-            <span>Étkezés/nap</span>
-            <NumberStepper label="Étkezés/nap" actionLabel="Étkezés" value={mealsPerDay} min={3} max={6}
-              onChange={(value) => { setTouchedFuel(true); setMealsPerDay(value) }} />
+      <Hero
+        className="fb-hero"
+        label={S.hero.labelMeals(mealCount)}
+        verdict={timeline.budget.kcal > 0 ? S.hero.verdict(fmtGrouped(timeline.budget.kcal), mealCount) : S.hero.verdictNoBudget(mealCount)}
+        sub={windowsKnown ? S.hero.sub : `${S.hero.windowsLoading} ${S.hero.sub}`}
+        graphic={<div className={windowsKnown ? 'fb-hg' : 'fb-hg is-bare'}>
+          <FuelWindowTide windows={heroWindows} cutoff={caffeineCutoff} bare={!windowsKnown} />
+          {/* a rajz olvasata a képernyőolvasónak: a piszkozat két értéke egy mondatban */}
+          <p className="sr-only">{S.hero.summary(mealsPerDay, caffeineCutoff)}</p>
+        </div>}
+      >
+      </Hero>
+
+      <Section n={1} title={S.rhythm.title} />
+      <Card className="fb-rhythm">
+        <div className="fb-two fb-ws">
+          <div>
+            <Lab>{S.rhythm.meals}</Lab>
+            <Stepper
+              name={S.rhythm.mealsName}
+              value={<>{mealsPerDay}<small>{S.rhythm.mealsUnit}</small></>}
+              n={mealsPerDay} min={3} max={6}
+              onDec={() => { setTouchedFuel(true); setMealsPerDay(Math.max(3, mealsPerDay - 1)) }}
+              onInc={() => { setTouchedFuel(true); setMealsPerDay(Math.min(6, mealsPerDay + 1)) }}
+            />
           </div>
-          <label className="fset-row">
-            <span>Koffein-cutoff</span>
-            <input type="time" aria-label="Koffein-cutoff" value={caffeineCutoff}
+          <div>
+            <Lab htmlFor={`${ids}cut`}>{S.rhythm.cutoff}</Lab>
+            <Input id={`${ids}cut`} type="time" value={caffeineCutoff}
               onChange={(event) => {
                 if (!event.target.value) return
                 setTouchedFuel(true)
                 setCaffeineCutoff(event.target.value)
               }} />
-          </label>
-          <p>A cutoff a Mai chipet, a nap-tervet és a koffein-habitot is állítja.</p>
-        </section>
-
-        <section className="fset-card fset-preview glass rise"
-          style={{ '--d': '110ms', '--c': 'var(--macro-protein)', '--i': 2 } as React.CSSProperties}
-          aria-labelledby="fset-macros-title">
-          <h2 id="fset-macros-title">Makrók</h2>
-          <label className="fset-selectrow">
-            <span>Makróprofil</span>
-            <select aria-label="Makróprofil" value={splitPreset}
-              onChange={(event) => {
-                setTouchedDiet(true)
-                setSplitPreset(event.target.value as DietSettings['splitPreset'])
-              }}>
-              {PRESET_KEYS.map((key) => <option key={key} value={key}>{PRESET_LABELS[key]}</option>)}
-            </select>
-          </label>
-
-          {previewError || dayError ? <p role="alert">Az előnézet nem tölthető be. <button type="button" onClick={() => { retryPreview(); retryDay() }}>Előnézet újrapróbálása</button></p> : previewPending || dayPending ? <p role="status">Előnézet számítása…</p> : preview ? (
-            <div className="fset-target-preview">
-              <span className="fset-target-label">{dietDirty ? 'Mai cél a beállítás szerint' : 'Mai cél alapján'}</span>
-              <div className="fset-macro-preview-body">
-                <div className="fset-donut" style={{
-                  '--protein-pct': `${preview.protein.pct}%`,
-                  '--carbs-end': `${preview.protein.pct + preview.carbs.pct}%`,
-                } as React.CSSProperties}>
-                  <span><strong>{huInt.format(preview.kcal)} kcal</strong><small>aktív cél</small></span>
-                </div>
-                <div className="fset-macro-rows">
-                  <div><span>Fehérje</span><b>{preview.protein.pct}% · {huInt.format(preview.protein.grams)} g</b></div>
-                  <div><span>Szénhidrát</span><b>{preview.carbs.pct}% · {huInt.format(preview.carbs.grams)} g</b></div>
-                  <div><span>Zsír</span><b>{preview.fat.pct}% · {huInt.format(preview.fat.grams)} g</b></div>
-                </div>
-              </div>
-            </div>
-          ) : <p>A napi cél betöltése…</p>}
-          {dietDirty && <p className="fset-refresh-note">Előnézet — mentésre válik élessé</p>}
-
-          {splitPreset === 'custom' && (
-            <div className="fset-custom">
-              {([
-                ['Fehérje %', pPct, setPPct],
-                ['Szénhidrát %', cPct, setCPct],
-                ['Zsír %', fPct, setFPct],
-              ] as const).map(([label, value, setter]) => (
-                <label key={label}>{label}
-                  <input type="number" min={0} max={100} step={0.5} aria-label={label} value={value}
-                    onChange={(event) => { setTouchedDiet(true); setter(Number(event.target.value)) }} />
-                </label>
-              ))}
-            </div>
-          )}
-          {splitPreset === 'custom' && !customSumOk
-            && <p className="fset-error">Az arányoknak 100%-ra kell összegződniük.</p>}
-          {splitPreset === 'custom'
-            && <p>A fehérje-cél g/kg alapon védett; az eltérést a szénhidrát nyeli el.</p>}
-        </section>
-
-        <div className="fset-goalgrid rise" style={{ '--d': '160ms' } as React.CSSProperties}>
-          <label className="fset-card fset-goal glass" style={{ '--c': 'var(--dv-sky)', '--i': 3 } as React.CSSProperties}>
-            <Icon3D name="t-water" size={30} />
-            <span>Víz-cél (ml)</span>
-            <input type="number" min={500} max={8000} step={100} aria-label="Víz-cél" value={waterMl}
-              onChange={(event) => { setTouchedDiet(true); setWaterMl(Number(event.target.value)) }} />
-          </label>
-          <label className="fset-card fset-goal glass" style={{ '--c': 'var(--macro-fiber)', '--i': 4 } as React.CSSProperties}>
-            <Icon3D name="t-fiber" size={30} />
-            <span>Rost-cél (g)</span>
-            <input type="number" min={10} max={80} aria-label="Rost-cél" value={fiberG}
-              onChange={(event) => { setTouchedDiet(true); setFiberG(Number(event.target.value)) }} />
-          </label>
+          </div>
         </div>
+        <Note>{S.rhythm.cutoffNote}</Note>
+        <Row icon="t-clock" title={S.rhythm.windows} sub={S.rhythm.windowsSub} aria-label={S.rhythm.windowsAria}
+          onClick={() => navigate('/settings/fuel/slots', { state: originState })} />
+        <Note>{S.rhythm.ownSplitNote}</Note>
+      </Card>
 
-        <section className="fset-card glass rise"
-          style={{ '--d': '210ms', '--c': 'var(--dv-lav)', '--i': 5 } as React.CSSProperties}
-          aria-labelledby="fset-protein-title">
-          <h2 id="fset-protein-title">Finomhangolás</h2>
-          <div className="fset-row">
-            <span>Fehérje-szint</span>
-            <div className="fset-segments">
-              {/* mezo-jb84: HÁROM fokozat, és mindegyik tényleg mozgatja a célt. Korábban a
-                  kapcsoló csak a testsúly-ágat állította, a zsírmentes tömeg ágát nem — így
-                  aki karcsúbb, annál a váltás semmit nem változtatott. */}
-              {([
-                ['low', 'Alacsony'],
-                ['moderate', 'Mérsékelt'],
-                ['high', 'Magas'],
-              ] as const).map(([key, label]) => (
-                <button key={key} type="button" className="chip np-press" aria-pressed={proteinTier === key}
-                  onClick={() => { setTouchedDiet(true); setProteinTier(key) }}>{label}</button>
+      <Section n={2} title={S.macros.title} />
+      <Card className="fb-mac" data-section="macros">
+        <Lab htmlFor={`${ids}prof`}>{S.macros.profile}</Lab>
+        <Select id={`${ids}prof`} value={splitPreset} onChange={(event) => setPreset(event.target.value as DietSettings['splitPreset'])}>
+          {PRESET_KEYS.map((key) => <option key={key} value={key}>{S.macros.preset[key]}</option>)}
+        </Select>
+
+        {previewError || dayError ? (
+          <>
+            <Note tone="warn" role="alert">{S.macros.previewError}</Note>
+            <Acts><Btn sm ghost onClick={() => { retryPreview(); retryDay() }}>{S.macros.previewRetry}</Btn></Acts>
+          </>
+        ) : previewPending || dayPending ? (
+          <Txt role="status">{S.macros.previewPending}</Txt>
+        ) : preview ? (
+          <>
+            <Lab>{(dietDirty ? S.macros.fromDraft : S.macros.fromTarget)(fmtGrouped(preview.kcal))}</Lab>
+            <Vials height={96} items={([
+              [M.fuelKozos.macro.protein, 't-meat', MACRO_COLOR.protein, preview.protein],
+              [M.fuelKozos.macro.carbs, 't-carb', MACRO_COLOR.carbs, preview.carbs],
+              [M.fuelKozos.macro.fat, 't-avocado', MACRO_COLOR.fat, preview.fat],
+            ] as const).map(([label, icon, color, macro]) => ({
+              label, icon, color, pct: macro.pct * 1.7, value: `${macro.pct}%`, note: S.macros.grams(fmtGrouped(macro.grams)),
+            }))} />
+            {dietDirty && <Note className="fb-refresh">{S.macros.previewNote}</Note>}
+          </>
+        ) : <Txt>{S.macros.targetPending}</Txt>}
+
+        {splitPreset === 'custom' && (
+          <>
+            <div className="fb-3">
+              {customFields.map(([label, value, setter], i) => (
+                <div key={i}>
+                  <Lab htmlFor={`${ids}c${i}`}>{label}</Lab>
+                  <Input id={`${ids}c${i}`} type="number" min={0} max={100} step={0.5} value={value}
+                    onChange={(event) => { setTouchedDiet(true); setter(Number(event.target.value)) }} />
+                </div>
               ))}
             </div>
-          </div>
-          <p>
-            A fehérje-szint a testsúlyod ÉS a zsírmentes tömeged szerinti számítást is állítja —
-            a cél a kettő közül a nagyobb, egy felső korláttal. A mentés után a Makrók előnézete
-            rögtön a választott szint szerinti grammot mutatja.
-          </p>
-          <div className="fset-learnrow">
-            <span className="uv-well" aria-hidden="true"><Icon3D name="t-lens" size={20} /></span>
-            <span className="fset-learnrow-tx">
-              <strong>Tanulás a súlyomból és az evésemből</strong>
-              <small>Hetente megtanulom, mennyi energiát használsz valójában</small>
-            </span>
-            <Toggle glass on={learningEnabled} ariaLabel="Tanulás a súlyomból és az evésemből"
-              onToggle={() => { setTouchedDiet(true); setLearningEnabled((value) => !value) }} />
-          </div>
-        </section>
+            {!customSumOk && <Note tone="bad" role="alert">{S.macros.sumError}</Note>}
+            <Note>{S.macros.customNote}</Note>
+          </>
+        )}
+      </Card>
 
-        <button type="button" className="fset-card fset-slots glass np-press rise"
-          style={{ '--d': '260ms', '--c': 'var(--dv-amber)', '--i': 6 } as React.CSSProperties}
-          aria-label="Étkezési ablakok szerkesztése" onClick={() => navigate('/settings/fuel/slots', { state: originState })}>
-          <Icon3D name="t-clock" size={40} />
-          <span className="fset-slots-copy">
-            <span>Étkezési ablakok</span>
-            <small>szerkesztése</small>
-          </span>
-          <b aria-hidden="true">›</b>
-        </button>
-        <p className="fset-closing uv-voice rise" style={{ '--d': '300ms' } as React.CSSProperties}>
-          A ritmus vezet, nem korlátoz — bármelyik ablak utólag is logolható.
-        </p>
-      </PageBody>
-      </EntranceGroup>
-      </fieldset>
-      {saveBar}
-    </MozaikPage>
+      <Section n={3} title={S.targets.title} />
+      <Card className="fb-targets">
+        <div className="fb-two">
+          <div>
+            <Lab htmlFor={`${ids}water`}>{S.targets.water}</Lab>
+            <Input id={`${ids}water`} type="number" min={500} max={8000} step={100} value={waterMl}
+              onChange={(event) => { setTouchedDiet(true); setWaterMl(Number(event.target.value)) }} />
+          </div>
+          <div>
+            <Lab htmlFor={`${ids}fiber`}>{S.targets.fiber}</Lab>
+            <Input id={`${ids}fiber`} type="number" min={10} max={80} value={fiberG}
+              onChange={(event) => { setTouchedDiet(true); setFiberG(Number(event.target.value)) }} />
+          </div>
+        </div>
+      </Card>
+
+      <Section n={4} title={S.tuning.title} />
+      <Card className="fb-tuning">
+        <Lab id={`${ids}tier`}>{S.tuning.proteinLevel}</Lab>
+        {/* mezo-jb84: HÁROM fokozat, és mindegyik tényleg mozgatja a célt (a testsúly- és a zsírmentes-tömeg ágat is). */}
+        <Pills role="group" aria-labelledby={`${ids}tier`}>
+          {TIER_KEYS.map((key) => (
+            <Pill key={key} on={proteinTier === key} onClick={() => { setTouchedDiet(true); setProteinTier(key) }}>{S.tuning.tier[key]}</Pill>
+          ))}
+        </Pills>
+        <Note>{S.tuning.proteinNote}</Note>
+        <Row icon="t-lens" title={S.tuning.learning} sub={S.tuning.learningSub}
+          right={<Switch on={learningEnabled} label={S.tuning.learning}
+            onChange={() => { setTouchedDiet(true); setLearningEnabled((value) => !value) }} />} />
+      </Card>
+    </Page>
   )
 }

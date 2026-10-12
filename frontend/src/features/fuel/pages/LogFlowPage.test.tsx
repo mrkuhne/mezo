@@ -84,7 +84,7 @@ test('the three source tiles are always visible', () => {
 
 test('empty flow shows the dashed combine-sources empty state and disables the CTA', () => {
   renderPage()
-  expect(screen.getByText('Még nincs tétel — válassz forrást fent, vagy kombináld őket.')).toBeInTheDocument()
+  expect(screen.getByText('Még nincs tétel: válassz forrást fent, vagy kombináld őket.')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Logolás · \+10 XP/ })).toBeDisabled()
 })
 
@@ -131,9 +131,9 @@ test('the ± steppers move a pantry line by 10 g and a recipe line by 1 adag', a
   await userEvent.click(screen.getByRole('button', { name: `${recipe.name} hozzáadása` }))
 
   const startPantry = ing.per || 100
-  await userEvent.click(screen.getByRole('button', { name: `${ing.name} növelés` }))
+  await userEvent.click(screen.getByRole('button', { name: `${ing.name} növelése` }))
   expect(screen.getByRole('textbox', { name: `${ing.name} mennyisége` })).toHaveValue(String(startPantry + 10))
-  await userEvent.click(screen.getByRole('button', { name: `${recipe.name} növelés` }))
+  await userEvent.click(screen.getByRole('button', { name: `${recipe.name} növelése` }))
   expect(screen.getByRole('textbox', { name: `${recipe.name} mennyisége` })).toHaveValue('2')
 })
 
@@ -173,24 +173,18 @@ test('AI lines carry their REAL source tag next to a manual pantry line — mixe
   expect(await screen.findByText('Elemzem az étkezést…')).toBeInTheDocument()
   expect(await screen.findByText('Csirkés wrap')).toBeInTheDocument()
   // The draft's pantry-matched line says so (mezo-qrks) — only the genuinely estimated line
-  // is tagged 'becslés'. The AI mark (Üveg, mezo-me75u.2: the t-score icon + a screen-reader
-  // "· AI", formerly a ✨ suffix) says who put the line there; the word stays honest about
-  // where the macros came from.
-  const kamraTags = screen.getAllByText('kamra', { selector: '.logflow-lntag' })
-  expect(kamraTags).toHaveLength(2)
-  const aiTagged = kamraTags.filter(t => t.hasAttribute('data-ai'))
-  expect(aiTagged).toHaveLength(1)
-  expect(aiTagged[0]).toHaveTextContent('kamra · AI')
-  expect(screen.getByText('becslés', { selector: '.logflow-lntag' })).toBeInTheDocument()
-  // …and the estimate tag carries no AI mark of its own ('becslés' already means AI).
-  expect(screen.getByText('becslés', { selector: '.logflow-lntag' })).not.toHaveAttribute('data-ai')
-  // The manual line keeps its own unadorned tag.
-  const manual = kamraTags.find(t => !t.hasAttribute('data-ai'))!
-  expect(manual).toHaveTextContent(/^kamra$/)
+  // is tagged 'becslés'. The AI mark (Folyadék: the shared `LineTags` prints „kamra · AI") says who
+  // put the line there; the word stays honest about where the macros came from.
+  const tags = [...document.querySelectorAll('.fx-ln .fx-tags > em:first-child')].map(t => t.textContent)
+  expect(tags.filter(t => t === 'kamra · AI')).toHaveLength(1)
+  // …the estimate tag carries no AI mark of its own ('becslés' already means AI)…
+  expect(tags.filter(t => t === 'becslés')).toHaveLength(1)
+  // …and the manual line keeps its own unadorned tag.
+  expect(tags.filter(t => t === 'kamra')).toHaveLength(1)
   // Both review notes are on screen at once now (the mock pantry line is needsReview:true,
   // mezo-qrks) — assert each note's own distinct copy so neither assertion is ambiguous.
-  expect(screen.getByText(/Az AI nem teljesen biztos ebben a sorban/)).toBeInTheDocument()
-  expect(screen.getByText(/Ezt a kamrádból párosítottuk név alapján/)).toBeInTheDocument()
+  expect(screen.getByText(/Ebben a sorban nem vagyok teljesen biztos/)).toBeInTheDocument()
+  expect(screen.getByText(/Ezt a kamrádból párosítottam név alapján/)).toBeInTheDocument()
 })
 
 test('save logs a manual-only meal with no provenance envelope (parity with the legacy manual path)', async () => {
@@ -235,7 +229,7 @@ test('a failed AI draft shows the error copy and returns to the panel — the ma
   await userEvent.click(screen.getByRole('button', { name: 'AI · fotó vagy szöveg' }))
   await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'valami')
   await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
-  expect(await screen.findByText(/Nem sikerült az AI-feldolgozás/)).toBeInTheDocument()
+  expect(await screen.findByText(/Nem sikerült az elemzés/)).toBeInTheDocument()
   expect(screen.getAllByText(ing.name).length).toBeGreaterThanOrEqual(1)
 })
 

@@ -19,6 +19,8 @@
 // is csak egy MÁS színt választ, nem hibát).
 // ============================================================
 import type { FuelWeekData } from '@/data/fuel/mealApi'
+import { addDays, localDateString } from '@/shared/lib/dates'
+import { fmtDate, fmtFixed, fmtRange } from '@/shared/lib/format'
 
 /** Mennyivel fölötte kell járni a keretnek, hogy „keret felett"-nek olvassuk — a prototípus
  *  `overBudget`-je (`d.kcal > d.target + 60`). Egy hajszálnyi túllépés nem külön állapot. */
@@ -26,7 +28,7 @@ const OVER_TOLERANCE_KCAL = 60
 
 export interface WeekDayVM {
   date: string
-  /** Rövid magyar napnév a VALÓDI dátumból (Sze ≠ Szo — a ház `huDow`-ja). */
+  /** Rövid napnév a VALÓDI dátumból, az alkalmazás nyelvén (Sze ≠ Szo · Mon … Sun) — a katalógusból, hívási időben. */
   label: string
   weekend: boolean
   /** Naplózott kalória — NULL, ha a napon nincs naplózva semmi. */
@@ -43,6 +45,10 @@ export interface WeekDayVM {
   /** Kímélő nap (Kihagyás S3): a nap bármilyen kímélő módban volt. Nincs keret-mérés — se
    *  százalék, se „keret felett" —, és a heti átlagokba sem számít bele; a beírt étel megmarad. */
   recovery: boolean
+  /** A nap a MAI nap. */
+  today: boolean
+  /** A nap még ELŐTTED áll (dátum > ma). Nem „nem naplózott" nap: nincs mit pótolni rajta (owner-döntés 2026-10-12). */
+  future: boolean
 }
 
 export interface WeekViewVM {
@@ -139,10 +145,8 @@ function isWeekend(iso: string): boolean {
  * skálafüggetlen: amit kap, azt adja tovább.
  * `trainingDays` az edzést hordozó napok ISO dátumai (C6).
  */
-/** A heti oszlopok napcímkéi a jóváhagyott prototípus szerint: H · K · Sze · Cs · P · Szo · V.
- *  Hét oszlop fér ki egy telefonon, ezért rövid — a Sze/Szo párt a harmadik betű különíti el.
- *  (A ház `huDow`-ja hosszabb — Hét/Kedd/Csü —, az a listáknak jó, a sávnak nem.) */
-const WEEK_BAR_DOW = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'] as const
+// A heti edények napcímkéi a jóváhagyott prototípus szerint (H · K · Sze · Cs · P · Szo · V / Mon … Sun): a `format.ts`
+// `weekdayCompact` stílusa, HÍVÁSI időben — modul-konstansban nem áll lefordított szöveg.
 
 /**
  * A nap ÉTKEZÉS-PONTJA (0–10) — a jóváhagyott prototípus `fuelDayScore`-ja.
@@ -167,6 +171,8 @@ export function buildWeekView(
   week: FuelWeekData,
   dayScores: Record<string, number | null>,
   trainingDays: string[],
+  /** A „ma" ISO dátuma — a hátralévő napok ehhez mérve jövőbeliek. Alapból a böngésző mai napja. */
+  todayIso: string = localDateString(),
 ): WeekViewVM {
   const training = new Set(trainingDays)
   const days: WeekDayVM[] = week.days.map((d) => {
@@ -179,7 +185,7 @@ export function buildWeekView(
     const pct = logged && targetKcal != null && !recovery ? (d.consumed.kcal / targetKcal) * 100 : null
     return {
       date: d.date,
-      label: WEEK_BAR_DOW[new Date(`${d.date}T12:00:00`).getDay()],
+      label: fmtDate(d.date, 'weekdayCompact'),
       weekend: isWeekend(d.date),
       kcal: logged ? d.consumed.kcal : null,
       targetKcal,
@@ -189,6 +195,8 @@ export function buildWeekView(
       training: training.has(d.date),
       over: !recovery && logged && targetKcal != null && d.consumed.kcal > targetKcal + OVER_TOLERANCE_KCAL,
       recovery,
+      today: d.date === todayIso,
+      future: d.date > todayIso,
     }
   })
 
@@ -201,3 +209,14 @@ export function buildWeekView(
     weightAvgKg: week.weightAvgKg,
   }
 }
+
+// --- Folyadék (mezo-n4wf5.5): a Trendek három kiírási formája. Mind HÍVÁSI időben olvassa a nyelvet. ----------
+
+/** Egy tizedes, MINDIG kiírva („5,0" / "5.0") — pont, heti súly (`format.ts` `fmtFixed`). */
+export const fixed1 = (v: number): string => fmtFixed(v, 1)
+
+/** A hét-váltó címe a hét hétfőjéből: „okt. 5–11." / "5–11 Oct"; hónaphatáron „szept. 28. – okt. 4." / "28 Sep – 4 Oct". */
+export const weekRangeTitle = (startIso: string): string => fmtRange(startIso, addDays(startIso, 6))
+
+/** A nap teljes neve (az edény neve a képernyőolvasónak, a nap lapjának feje): „Kedd, október 6." / "Tuesday, 6 October". */
+export const dayTitle = (iso: string): string => fmtDate(iso, 'frame')

@@ -234,7 +234,7 @@ export const settingsHu = {
       lights_out: { label: 'Villanyoltás', description: 'Az esti alvás-horgonynál' },
       wind_down: { label: 'Lecsendesítés', description: 'A napzárás-ablak előtti csendes szakasz kezdetén' },
       checkin: { label: 'Check-in', description: '06:30 · 10:00 · 14:00 · 20:00' },
-      fuel_slot: { label: 'Fuel & stack', description: 'Minden fuel/stack slotnál' },
+      fuel_slot: { label: 'Fuel és kiegészítők', description: 'A kiegészítőid minden idősávjánál' },
       evening: { label: 'Napzárás', description: 'Esti záró üzenet a naptól.' },
       sleep_reaction: { label: 'Alvás-reakció', description: 'Üzenet az alvás rögzítése után.' },
       weight_reaction: { label: 'Súly-reakció', description: 'Üzenet a reggeli mérés után.' },

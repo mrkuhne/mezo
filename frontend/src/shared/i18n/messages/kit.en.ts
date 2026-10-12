@@ -7,6 +7,7 @@ export const kitEn: Shape<typeof kitHu> = {
   cancel: 'Cancel',
   loading: 'Loading…',
   retry: 'Retry',
+  clearSearch: 'Clear search',
   decrease: (who) => `Decrease ${who}`,
   increase: (who) => `Increase ${who}`,
   members: { szunya: 'Sleep', mocor: 'Movement', falat: 'Food', deru: 'Mood', mezo: 'Mezo', szk: 'Skeptic' },

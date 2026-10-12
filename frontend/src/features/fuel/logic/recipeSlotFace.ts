@@ -10,18 +10,27 @@
 // ============================================================
 import type { RecipeCategory } from '@/data/types'
 import type { ClayIconName } from '@/shared/ui/clay'
+import { m } from '@/shared/i18n'
 
 export interface RecipeSlotFace { color: string; icon: ClayIconName; label: string }
 
+/** Egy arc; a `label` getter, vagyis a feliratot OLVASÁSKOR veszi a katalógusból (`fuelLogika.slot`),
+ *  így nyelvváltás után is a pillanatnyi nyelven szól. */
+const face = (category: RecipeCategory, color: string, icon: ClayIconName): RecipeSlotFace => ({
+  color,
+  icon,
+  get label() { return m().fuelLogika.slot[category] },
+})
+
 export const RECIPE_SLOT_FACE: Record<RecipeCategory, RecipeSlotFace> = {
-  breakfast: { color: 'var(--amber)', icon: 'i-reggeli', label: 'Reggeli' },
-  lunch: { color: 'var(--sage)', icon: 'i-ebed', label: 'Ebéd' },
-  snack: { color: 'var(--lav)', icon: 'i-snack', label: 'Uzsonna' },
-  dinner: { color: 'var(--sky)', icon: 'i-vacsora', label: 'Vacsora' },
+  breakfast: face('breakfast', 'var(--amber)', 'i-reggeli'),
+  lunch: face('lunch', 'var(--sage)', 'i-ebed'),
+  snack: face('snack', 'var(--lav)', 'i-snack'),
+  dinner: face('dinner', 'var(--sky)', 'i-vacsora'),
 }
 
 /** A recept arca — ismeretlen kategóriára a semleges tányér-arc (nem találgatunk blokkot). */
 export function recipeSlotFace(category: RecipeCategory | string | null | undefined): RecipeSlotFace {
   return RECIPE_SLOT_FACE[category as RecipeCategory]
-    ?? { color: 'var(--sky)', icon: 'i-tanyer', label: 'Étkezés' }
+    ?? { color: 'var(--sky)', icon: 'i-tanyer', label: m().fuelLogika.recipeSlotFace.fallback }
 }

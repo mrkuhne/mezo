@@ -1,30 +1,24 @@
 // ============================================================
-// Mezo · RecipeDetailPage — EGY recept Titán részletező oldala (Fuel Titanium S4, mezo-hygp;
+// Mezo · RecipeDetailPage — EGY recept részletező oldala (Fuel Titanium S4, mezo-hygp;
 // fagyasztott manifeszt B8 · B9 · B11 · B12).
 //
 // OWNER-DÖNTÉS, ami ezt a lapot vezeti: egy recept megnyitása UGYANAZT a mélységet adja, mint
-// egy logolt étkezésé — hozzávalók, AI értékelés, teljes makró és kcal, és mikrotápanyagok.
+// egy logolt étkezésé — hozzávalók, Mezo értékelése, teljes makró és kcal, és mikrotápanyagok.
 // Ezért a Makrók / Hozzávalók / Minőség / Mikrotápanyagok szekciók NEM másolatok, hanem
 // pontosan azok a komponensek, amiket a Mai étkezés-részletlap rajzol
-// (`FuelQualityBlocks` — az S1b-ből kiemelve). Két példány garantáltan elcsúszna.
+// (`FuelQualityBlocks`, a C terület fájlja). Két példány garantáltan elcsúszna.
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `recipeDetailPage` (:50) + `recipeScoreGlass` (:71), a fuel-pages.css „Konyha v2" (:497)
-// blokkjával; a szekciók stílusa az S1 `fmx-` blokkjából jön.
+// Folyadék (mezo-n4wf5.5, fuel.js `recept()` + `SH.reclogs`): a hős a FAZÉK — a szintje egy adag
+// része a fazékból (1 / adag; egész receptnél tele) —, mellette az adag kcal-ja és a tények; az
+// ítélet-mondat az evés-történet, alatta az adag ↔ egész váltó, a folyadékon a „Ma ettem ilyet"
+// és (ha van) Mezo értékelése. Utána a közös blokkok, 4 Mezo jegyzete (az olvasat és az
+// értékelés ajtaja), 5 Mit tehetsz vele (logolás, Műhely, mai logok, szerkesztés / csillag /
+// törlés).
 //
-// Ami VÁLTOZATLAN viselkedés (a lap csak más arcot kapott): a `/adag ↔ egész` váltó, a lusta
-// AI-bontás (`useRecipeBreakdown`) és a háttér-újraértékelés őszinte jelzése, a pontszám-bontás
-// (ma a `/ertekeles` oldal `FuelScoreSurface`-e, amit az étkezés-értékelés is rajzol), a logok listája, a
-// LogFlow előtöltése, a csillag, a szerkesztő-ajtó és a Műhely-iterálás `?recipeId`-vel.
-//
-// Ami SZIGORODOTT: a törlés két lépés lett (a prototípus `deleteControl`-ja, és a kamra-tétel
-// lap precedense) — egy részletező lapon egy koppintás nem törölhet receptet.
-//
-// ÜVEG (mezo-me75u.2, prototypes/src/uveg-fuel-tobbi-body.html `recept()` + `SH.reclogs`): a hős
-// keret nélküli fényudvar (U1 `.fmx-detail-hero`), a két info-sor, a Mezo jegyzete, a Pontszám- és
-// Logok-ajtó és a két fő művelet `.glass` a saját hue-jában; a szerkesztés/csillag/törlés lapos
-// cella; a pont-pirula és a „jó ehhez" chip a jegyzeten belül lapos (üveg az üvegben nincs). A
-// tartalmi 3D ikonok a Titanium készletből jönnek (ContentIcon), emoji nincs.
+// Ami VÁLTOZATLAN viselkedés: az adag ↔ egész váltó, a lusta bontás (`useRecipeBreakdown`) és a
+// háttér-újraértékelés őszinte jelzése (a régi szöveget nem mutatjuk késznek), az értékelés
+// oldala (`/ertekeles`), a mai logok listája, a LogFlow előtöltése, a csillag, a szerkesztő-ajtó,
+// a Műhely `?recipeId`-vel, és a kétlépéses törlés.
 //
 // ŐSZINTE-NULL: a mikrotápanyag-blokk kizárólag a négy tárolt tényt mutatja (rost, cukor, só,
 // telített zsír); vitamin/ásványi anyag a produkcióban nem létezik (mezo-vj61, manifeszt F1).
@@ -33,18 +27,17 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeInput, Nutrients } from '@/data/types'
 import { useRecipes, useRecipeActions, useRecipeBreakdown, usePantry, useRecipeLogs } from '@/data/hooks'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Display } from '@/shared/ui/Display'
+import { useM } from '@/shared/i18n'
+import { fmtDate, fmtFixed, fmtGrouped, fmtNum } from '@/shared/lib/format'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { ContentIcon } from '@/shared/ui/clay'
-import { hu1, huInt } from '@/shared/lib/huNum'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import {
+  Acts, Btn, Card, Chips, Empty, FoSheetHead, FrameBack, Hero, Lk, Page, Row, Section, Txt, useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { NumG, Pot } from '@/features/fuel/components/folyadek'
 import { NO_NUTRIENTS, scaleNutrients } from '@/data/fuel/recipeMacros'
 import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
-import { FuelScoreChip } from '@/features/fuel/components/FuelMealBlocks'
 import {
   FuelIngredientSection, FuelMacroShareSection, FuelMicroNote, FuelMicroSection,
   FuelQualitySection, type FuelIngredientRowVM, type FuelQualityLine,
@@ -53,7 +46,7 @@ import { mealMacroShare } from '@/features/fuel/logic/mealShare'
 import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
 import { roleLabel } from '@/features/fuel/logic/recipeRole'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
-import { FrameBack } from '@/shared/ui/folyadek'
+import { hasLastLogged } from '@/features/fuel/pages/FuelRecipesPage'
 
 // Build a complete RecipeInput from a Recipe — prefills every field so a star
 // toggle (or the editor) preserves untouched values. The editor reuses this.
@@ -81,8 +74,15 @@ function byBasis(v: number, basis: ServingBasis, servings: number) {
 function nutrientsByBasis(n: Nutrients, basis: ServingBasis, servings: number): Nutrients {
   return basis === 'whole' ? n : scaleNutrients(n, 1 / Math.max(1, servings))
 }
+/** The server sends an ISO instant; the mock seed a ready short date — that one prints as it is. */
+function createdLabel(createdDate: string): string {
+  return /^\d{4}-\d{2}-\d{2}/.test(createdDate) ? fmtDate(createdDate.length > 10 ? new Date(createdDate) : createdDate, 'short') : createdDate
+}
 
 export function RecipeDetailPage() {
+  const M = useM()
+  const C = M.fuelRecept.common
+  const D = M.fuelRecept.detail
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { recipes } = useRecipes()
@@ -106,30 +106,34 @@ export function RecipeDetailPage() {
 
   const recipe = recipes.find(r => r.id === id)
 
+  useFrameTitle(recipe
+    ? { title: recipe.name, eyebrow: D.eyebrow(recipeSlotFace(recipe.category).label) }
+    : { title: C.noSuchRecipeTitle, eyebrow: C.recipes })
+  const back = <FrameBack className="fo-backpill" history fallback="/fuel/recipes">‹ {C.recipes}</FrameBack>
+
   // Not-found fallback. The DATA section exposes no raw query status, so the guard
   // relies on useRecipes().recipes: mock mode resolves synchronously via initialData;
   // real mode shows this fallback briefly on a cold deep-link until the list resolves.
   if (!recipe) {
     return (
-      <div className="fmx-page fkx-rdetail">
-        <div className="fmx-subhead">
-          <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
-          <span><strong>Nincs ilyen recept.</strong></span>
-        </div>
-        <p className="fmx-block-empty fkx-notfound uv-empty">
-          Lehet, hogy közben törölted. A Receptek listán minden megmaradt recepted ott van.
-        </p>
-      </div>
+      <Page className="fc-page">
+        {back}
+        <Card>
+          <Empty icon="t-book" actions={<Btn sm onClick={() => navigate('/fuel/recipes')}>{C.backToRecipes}</Btn>}>
+            {D.notFound}
+          </Empty>
+        </Card>
+      </Page>
     )
   }
 
-  const face = recipeSlotFace(recipe.category)
   const totalMins = recipe.prepMins + recipe.cookMins
   const servings = recipe.servings
+  const whole = basis === 'whole'
   const perBasis = (v: number) => byBasis(v, basis, servings)
   const sourceOf = (refId: string): Ingredient | undefined => ingredients.find(i => i.id === refId)
 
-  // A gyűrűk a recept SAJÁT összetételét mutatják — a grammok követik a váltót.
+  // A makrók a recept SAJÁT összetételét mutatják — a grammok követik a váltót.
   const shares = mealMacroShare({
     p: perBasis(recipe.macros.p), c: perBasis(recipe.macros.c), f: perBasis(recipe.macros.f),
   })
@@ -143,9 +147,9 @@ export function RecipeDetailPage() {
       name: line.name ?? line.refId,
       kcal: kcal == null ? null : perBasis(kcal),
       share: lineKcal > 0 && kcal != null ? Math.round((kcal / lineKcal) * 100) : null,
-      amount: `${hu1(basis === 'whole' ? line.amount : line.amount / Math.max(1, servings))} ${line.unit}`,
+      amount: `${fmtNum(whole ? line.amount : line.amount / Math.max(1, servings), 1)} ${line.unit}`,
       // A sor a kamrából jön (egy mentett recept minden sora feloldott kamra-hivatkozás).
-      origin: { label: 'kamra', icon: 't-stack' },
+      source: 'pantry',
       nova: src?.nova ?? null,
     }
   })
@@ -162,179 +166,106 @@ export function RecipeDetailPage() {
     // the deleted recipe must not stay behind the user (history back)
     navigate('/fuel/recipes', { replace: true })
   }
+  const openScore = () => navigate(`/fuel/recipes/${recipe.id}/ertekeles`)
 
-  // The chip's ring value (0..1): the AI fit score when it exists, else the deterministic
-  // weighted total — the SAME Σ(score×weight) the sheet already shows per-dimension as pts.
-  // Never a lying 0 next to "8 szempont" (caught by reading the first golden).
+  // The rating (0..1): Mezo's fit score when it exists, else the deterministic weighted total —
+  // the SAME Σ(score×weight) the rating page shows per dimension. Never a lying 0.
   const fitScore = recipe.mezoFit.score
     ?? (breakdown ? breakdown.dimensions.reduce((a, d) => a + d.score * d.weight, 0) : null)
+  // Printed on the ten scale; hidden while a reading is being (re)written.
+  const score = breakdownBusy || fitScore == null ? null : fmtFixed(Math.round(fitScore * 100) / 10, 1)
+  const scoreOpen = Boolean(breakdown) && !breakdownBusy
+  const eaten = recipe.timesLogged > 0
 
   return (
-    <div className="fmx-page fkx-detail fkx-rdetail" style={{ '--block-color': face.color } as React.CSSProperties}>
-      <EntranceGroup>
-        <div className="fmx-subhead">
-          <FrameBack className="glass is-round" history fallback="/fuel/recipes" label="Vissza">‹</FrameBack>
-          <span>
-            <small>{face.label.toLocaleUpperCase('hu-HU')}-RECEPT</small>
-            <strong>{recipe.name}</strong>
-          </span>
-          <span className="fkx-head-score">
-            <FuelScoreChip
-              scorePct={breakdownBusy || fitScore == null ? null : Math.round(fitScore * 100)}
-              onOpen={breakdown ? () => navigate(`/fuel/recipes/${recipe.id}/ertekeles`) : undefined}
-              size="big"
-            />
-          </span>
-        </div>
+    <Page className="fc-page">
+      {back}
+      <Hero className="fc-ghero"
+        label={whole ? D.heroWhole(servings) : servings > 1 ? D.heroServing(servings) : D.heroSingle}
+        verdict={eaten ? (hasLastLogged(recipe) ? D.eatenLast(recipe.timesLogged, recipe.lastLogged) : D.eaten(recipe.timesLogged)) : D.notEaten}
+        sub={[
+          recipe.role !== 'standard' ? roleLabel(recipe.role) : null,
+          !eaten ? D.subLogIt : score != null ? D.subRating(score) : breakdownBusy ? D.subRatingBusy : D.subNoRating,
+        ].filter(Boolean).join(' · ')}
+        actions={(
+          <>
+            <Btn onClick={() => setLogOpen(true)}>{D.ateToday}</Btn>
+            {score != null && scoreOpen && <Lk onClick={openScore}>{D.ratingLink(score)}</Lk>}
+          </>
+        )}
+        graphic={<NumG graphic={<Pot pct={whole ? 100 : 100 / Math.max(1, servings)} size={104} />}
+          value={fmtGrouped(perBasis(recipe.macros.kcal))} unit={whole ? C.kcalWhole : C.kcalPerServing}>
+          <p className="fc-meta">
+            {C.servings(servings)} · {totalMins > 0 ? D.readyIn(totalMins) : D.noTime} · NOVA {recipe.novaDominant}
+          </p>
+          <p>{D.created(createdLabel(recipe.createdDate))}</p>
+        </NumG>}
+      >
+        {servings > 1 && (
+          <div className="fc-basis"><ServingToggle value={basis} servings={servings} onChange={setBasis} /></div>
+        )}
+      </Hero>
 
-        {/* Split hero: bal = tál-ikon és ALATTA a kcal; jobb = a blokk-sor és az evés-történet. */}
-        <div className="fmx-detail-hero">
-          <span className="fmx-detail-glow" aria-hidden="true" />
-          <div className="fmx-detail-left">
-            <span className="fmx-detail-art" aria-hidden="true"><ContentIcon name="t-plate" size={96} /></span>
-            <div className="fmx-detail-kcal">
-              <strong>{huInt(perBasis(recipe.macros.kcal))}</strong>
-              <small>kcal {basis === 'whole' ? '· egész' : '/ adag'}</small>
-            </div>
-          </div>
-          <div className="fmx-detail-right">
-            <div className="fmx-detail-when glass">
-              <span className="fmx-di-art" aria-hidden="true"><ContentIcon name={face.icon} size={30} /></span>
-              <span>
-                <strong>{face.label}</strong>
-                <small>{totalMins > 0 ? `${totalMins} perc alatt kész` : 'elkészítési idő nincs megadva'}</small>
-              </span>
-            </div>
-            <div className="fmx-detail-share glass">
-              <span className="fmx-di-art" aria-hidden="true"><ContentIcon name="t-journal" size={30} /></span>
-              <span>
-                <strong>{recipe.timesLogged > 0 ? `${recipe.timesLogged}× etted` : 'Még nem etted'}</strong>
-                <small>{recipe.timesLogged > 0 ? `legutóbb ${recipe.lastLogged}` : 'naplózd, ha elkészült'}</small>
-              </span>
-            </div>
-          </div>
-        </div>
+      <FuelMacroShareSection n={1} shares={shares} groupLabel={D.macroGroup} frame={D.macroFrame} />
 
-        {/* A meta-sor: adag · idő · NOVA · a mérce, amit egy nem-általános szerep kijelöl. */}
-        <p className="fkx-meta">
-          {servings} adag · {totalMins} perc · <span className="fkx-nova">NOVA {recipe.novaDominant}</span>
-          {recipe.role !== 'standard' && (<> · <span className="fkx-role">{roleLabel(recipe.role)}</span></>)}
-          {' '}· létrehozva {recipe.createdDate}
-        </p>
+      <FuelIngredientSection n={2} heading={C.ingredientsTitle(ingredientRows.length)} rows={ingredientRows}
+        empty={D.ingredientsEmpty} note={D.ingredientsNote} />
 
-        <div className="fkx-basis">
-          <ServingToggle value={basis} servings={servings} onChange={setBasis} />
-        </div>
+      <FuelQualitySection n={3} heading={D.qualitySection} lines={qualityLines} />
+      <FuelMicroSection heading={false}
+        nutrients={nutrientsByBasis(recipe.nutrients ?? NO_NUTRIENTS, basis, servings)}
+        frame={whole ? D.microFrameWhole : D.microFrameServing} note={<FuelMicroNote />} />
 
-        <FuelMacroShareSection shares={shares}
-          groupLabel="A recept energiájának megoszlása" frame="a recept energiájának" />
+      {/* Mezo jegyzete — a lusta olvasat. Háttér-újraértékelés közben a (már elavult) prózát
+          NEM mutatjuk késznek: az egész blokk a becsületes „épp újraértékeli" állapotra vált. */}
+      <Section n={4} title={D.noteSection} />
+      <Card aria-label={D.noteSection}>
+        {breakdownBusy ? (
+          <Txt>{breakdownRefreshing ? D.noteRefreshing : D.noteBusy}</Txt>
+        ) : breakdown?.summary ? (
+          <Txt><SafeMarkdown text={breakdown.summary} /></Txt>
+        ) : (
+          <Txt>{D.noteNone}</Txt>
+        )}
+        {!breakdownBusy && fitsFor.length > 0 && <Chips plain className="fc-fit" items={[fitsFor[0]]} />}
+        <Row icon="t-score" className={scoreOpen ? undefined : 'fc-off'} data-testid="recipe-score-open"
+          title={D.rating}
+          sub={scoreOpen && breakdown
+            ? D.ratingSub(breakdown.dimensions.length, Math.round(breakdown.confidence * 100))
+            : breakdownBusy ? D.ratingSoon : D.ratingNoData}
+          value={scoreOpen && score != null ? score : '—'}
+          disabled={!scoreOpen} onClick={openScore} chev={scoreOpen} />
+      </Card>
 
-        <FuelIngredientSection rows={ingredientRows}
-          empty="A hozzávalók még nincsenek részletezve." />
-
-        <FuelQualitySection lines={qualityLines} />
-
-        <FuelMicroSection
-          nutrients={nutrientsByBasis(recipe.nutrients ?? NO_NUTRIENTS, basis, servings)}
-          frame={basis === 'whole' ? 'a recept' : 'az adag'} />
-        <FuelMicroNote />
-
-        {/* Mezo jegyzete — a lusta AI-olvasat. Háttér-újraértékelés közben a (már elavult) prózát
-            NEM mutatjuk késznek: az egész blokk a becsületes „épp újraértékeli" állapotra vált. */}
-        <section className="fkx-note glass" aria-label="Mezo jegyzete">
-          <div className="fkx-note-head">
-            <ContentIcon name="t-score" size={30} />
-            <strong>Mezo jegyzete</strong>
-          </div>
-          {breakdownBusy ? (
-            <p className="fkx-note-body">{breakdownRefreshing ? 'Mezo újraértékeli…' : 'Mezo értékeli…'}</p>
-          ) : breakdown?.summary ? (
-            <p className="fkx-note-body"><SafeMarkdown text={breakdown.summary} /></p>
-          ) : (
-            <p className="fkx-note-body">Még nincs olvasat.</p>
-          )}
-          {!breakdownBusy && fitsFor.length > 0 && (
-            <span className="fkx-fit-chip"><i className="fkx-dot" aria-hidden="true" />{fitsFor[0]}</span>
-          )}
-        </section>
-        {/* A Pontszám-ajtó a jegyzet ALATT, saját üveg sorként (a prototípus `recept()`-je): a
-            jegyzeten belül üveg az üvegben volna. */}
-        <button type="button" className="fkx-door is-score glass" data-testid="recipe-score-open"
-          disabled={!breakdown || breakdownBusy} onClick={() => navigate(`/fuel/recipes/${recipe.id}/ertekeles`)}>
-          <ContentIcon name="t-score" size={34} />
-          <span>
-            <strong>Pontszám</strong>
-            <small>
-              {breakdown && !breakdownBusy
-                ? `${breakdown.dimensions.length} szempont · megbízh. ${Math.round(breakdown.confidence * 100)}%`
-                : 'Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).'}
-            </small>
-          </span>
-          <b aria-hidden="true">›</b>
-        </button>
-
+      <Section n={5} title={D.actionsSection} />
+      <Card>
         {/* B12: a logolás előtöltve indul — a kamera-felületet kihagyva. */}
-        <button type="button" className="fkx-cta is-primary glass" onClick={() => setLogOpen(true)}>
-          <ContentIcon name="t-plate" size={30} />
-          <span>Logolás · ma ettem ilyet</span>
-          <b aria-hidden="true">›</b>
-        </button>
+        <Row icon="t-plate" title={D.log} sub={D.logSub} onClick={() => setLogOpen(true)} />
         {/* B10: a Műhely ezzel a recepttel indul (`?recipeId`), és mentéskor FRISSÍT, nem másol. */}
-        <button type="button" className="fkx-cta is-secondary glass"
-          onClick={() => navigate(`/fuel/recipes/muhely?recipeId=${recipe.id}`)}>
-          <ContentIcon name="t-chef" size={30} />
-          <span>Iterálás a Műhelyben</span>
-          <b aria-hidden="true">›</b>
-        </button>
-
-        <button type="button" className="fkx-door is-logs glass" data-testid="recipe-logs-open" onClick={() => setLogsOpen(true)}>
-          <ContentIcon name="t-journal" size={34} />
-          <span>
-            <strong>Logok · {logs.length}</strong>
-            <small>{logs.length > 0 ? 'ma is a naplódban' : 'ma még nincs logolva'}</small>
-          </span>
-          <b aria-hidden="true">›</b>
-        </button>
-
-        <div className="fkx-actions">
-          <button type="button" onClick={() => navigate(`/fuel/recipes/${recipe.id}/edit`)}>
-            <ContentIcon name="t-book" size={22} />Szerkesztés
-          </button>
-          <button type="button" onClick={toggleStar}>
-            <ContentIcon name="t-star" size={22} />{recipe.starred ? 'Csillag le' : 'Csillag'}
-          </button>
+        <Row icon="t-chef" title={D.rework} sub={D.reworkSub}
+          onClick={() => navigate(`/fuel/recipes/muhely?recipeId=${recipe.id}`)} />
+        <Row icon="t-journal" data-testid="recipe-logs-open" title={D.logs(logs.length)}
+          sub={logs.length > 0 ? D.logsToday : D.logsNone} onClick={() => setLogsOpen(true)} />
+        <Acts>
+          <Btn sm ghost onClick={() => navigate(`/fuel/recipes/${recipe.id}/edit`)}>{D.edit}</Btn>
+          <Lk onClick={toggleStar}>{recipe.starred ? D.unstar : D.star}</Lk>
           {/* Két lépés: egy részletező lapon egy koppintás nem törölhet receptet. */}
-          <button type="button" className="fkx-del" onClick={del}>
-            {delArmed ? 'Biztos? Még egy érintés a törléshez' : 'Törlés'}
-          </button>
-        </div>
-      </EntranceGroup>
+          <Lk bad={delArmed} onClick={del}>{delArmed ? D.delConfirm : D.del}</Lk>
+        </Acts>
+      </Card>
 
       {logOpen && <LogFlowPage prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
       {logsOpen && (
-        <Sheet glass onClose={() => setLogsOpen(false)} className="fkx-rsheet-host uvl-fuel" labelledBy="recipe-logs-title">
+        <Sheet onClose={() => setLogsOpen(false)} className="fo-sheet fc-logsheet" labelledBy="recipe-logs-title">
           {(close) => (
             <>
-              <div className="fkx-rsheet-head">
-                <ContentIcon name="t-journal" size={40} />
-                <div className="col">
-                  <Eyebrow brand>Recept · logok</Eyebrow>
-                  <div id="recipe-logs-title" style={{ marginTop: 4 }}>
-                    <Display size="md">{recipe.name}</Display>
-                  </div>
-                </div>
-                <button className="fkx-rsheet-x" aria-label="Bezárás" onClick={close}>
-                  <Icon name="x" size={12} />
-                </button>
-              </div>
-              <div className="fkx-rsheet">
-                <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
-              </div>
-              <div style={{ height: 24 }} />
+              <FoSheetHead icon="t-journal" title={recipe.name} titleId="recipe-logs-title" sub={D.logsSheetSub} onClose={close} />
+              <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
+              <Acts><Lk onClick={close}>{C.close}</Lk></Acts>
             </>
           )}
         </Sheet>
       )}
-    </div>
+    </Page>
   )
 }

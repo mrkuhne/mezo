@@ -1866,7 +1866,8 @@ function register(d,def){REG[d]=def; if(def.css) css(def.css);}
 let V='foly',D='nap',R='mai',ARG='';
 let LIGHT=false,WARM=false,HIST=[];
 function go(route){if(!route)return;HIST.push(R+(ARG?'.'+ARG:''));const [r,...a]=route.split('.');R=r;ARG=a.join('.');render()}
-function goBack(){const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=a.join('.');render()}
+let XBACK=null;/* F5: a cross-domain link (Settings → Fuel settings) remembers where it came from; back from the first page returns there */
+function goBack(){if(!HIST.length&&XBACK){[D,R,ARG]=XBACK;XBACK=null;render();return}const p=HIST.pop()||'mai';const [r,...a]=p.split('.');R=r;ARG=a.join('.');render()}
 function render(){
   const ph=$('#phone');
   if(D==='jelek'&&V!=='ajanlott')V='ajanlott';
@@ -1884,6 +1885,8 @@ function render(){
   document.querySelectorAll('#vseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===V));
   document.querySelectorAll('#dseg button').forEach(b=>b.classList.toggle('on',b.dataset.d===D));
   $('#dseg').hidden=/^k[123]$/.test(V);
+  /* F5: the top tabs scroll sideways; the active one is always brought into view (English tab names are longer at 320 px) */
+  {const tb=$('#phone .fh-tabs'),on=tb&&tb.querySelector('.on');if(on){const o=on.offsetLeft+on.offsetWidth-tb.clientWidth+12;tb.scrollLeft=on.offsetLeft<tb.scrollLeft?Math.max(0,on.offsetLeft-12):o>0?o:0}}
   
   history.replaceState(null,'',`#${V==='jelenlegi'?'j':V==='tiszta'?'t':V==='feher'?'f':V==='elo'?'e':/^k/.test(V)?V.slice(1):V==='foly'?'w':'a'}-${D}-${R}${ARG?'.'+ARG:''}`);
   $('#phone .scroll')?.scrollTo(0,0);
@@ -1894,13 +1897,13 @@ function closeSheet(){$('#sheet')?.classList.remove('on');$('#scrim')?.classList
 document.addEventListener('click',e=>{
   const v=e.target.closest('#vseg button');if(v){V=v.dataset.v;render();return}
   const d=e.target.closest('#dseg button');if(d){D=d.dataset.d;R='mai';ARG='';HIST=[];render();return}
-  const dm=e.target.closest('[data-dom]');if(dm){D=dm.dataset.dom;R='mai';ARG='';HIST=[];render();return}
+  const dm=e.target.closest('[data-dom]');if(dm){const g=dm.dataset.go;XBACK=g?[D,R,ARG]:null;D=dm.dataset.dom;[R,ARG]=g?[g.split('.')[0],g.split('.').slice(1).join('.')]:['mai',''];HIST=[];render();return}
   if(e.target.closest('[data-switcher]')){e.preventDefault();$('#phone').insertAdjacentHTML('beforeend',switcher());$('#scrim').classList.add('on');return}
   if(e.target.id==='scrim'||e.target.closest('[data-close]')){closeSheet();return}
   const sh=e.target.closest('[data-sheet]');if(sh){e.preventDefault();const reg=(V==='elo'||V==='feher'||V==='foly')?(window.FREG||{})[D]:REG[D];const f=reg&&reg.sheets&&reg.sheets[sh.dataset.sheet];if(f)openSheet(f(sh.dataset.arg||''));else toast(sh.dataset.sheet);return}
   const bk=e.target.closest('[data-back]');if(bk){e.preventDefault();goBack();return}
   /* the header back button returns to where the user came from; its data-go is only the fallback for a direct link */
-  const fb=e.target.closest('.fh-back');if(fb&&HIST.length){e.preventDefault();closeSheet();goBack();return}
+  const fb=e.target.closest('.fh-back');if(fb&&(HIST.length||XBACK)){e.preventDefault();closeSheet();goBack();return}
   const g=e.target.closest('[data-go]');if(g){e.preventDefault();closeSheet();go(g.dataset.go);return}
   const t=e.target.closest('[data-toast]');if(t){e.preventDefault();toast(t.dataset.toast)}
 });

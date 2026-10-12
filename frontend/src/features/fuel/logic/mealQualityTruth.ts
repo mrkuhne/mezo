@@ -50,12 +50,21 @@ function densityRows(dimensions: MealDimension[]): RowsDimension['context'] | nu
 }
 
 /**
+ * A sűrűség-sor címkéje, ahogy a HÁTTÉRRENDSZER írja (`FUEL_SCORE_ROW_DENSITY` a `messages_hu` /
+ * `messages_en` kötegben). Ez TÁROLT szöveg, nem a felület szava: a bontás abban a nyelvben marad,
+ * amelyiken pontozták, ezért MINDKÉT nyelv címkéjét keressük, az app pillanatnyi nyelvétől
+ * függetlenül (katalógus-kiolvasás itt hibás lenne — egy magyarul pontozott étkezés angol módban
+ * elveszítené a számát).
+ */
+const DENSITY_ROW_LABELS: readonly string[] = ['Sűrűség', 'Density']
+
+/**
  * A „Sűrűség" sor számjegye. A sor egy MEGJELENÍTÉSRE formázott érték („183 kcal/100g"), ezért a
  * számot ki kell belőle olvasni; ha nincs benne értelmezhető szám (például „nincs adat"), akkor
  * `null` — sosem 0, mert a 0 kcal/100 g egy állítás lenne, nem egy hiány.
  */
 function parseDensity(rows: RowsDimension['context']): number | null {
-  const row = rows.find(r => r.label === 'Sűrűség')
+  const row = rows.find(r => DENSITY_ROW_LABELS.includes(r.label))
   if (!row) {
     return null
   }

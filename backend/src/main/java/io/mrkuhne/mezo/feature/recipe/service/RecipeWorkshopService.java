@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.recipe.service.RecipeWorkshopValidator.RawDraft;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -50,6 +51,30 @@ public class RecipeWorkshopService {
             "before_bed", "Cél: LEFEKVÉS ELŐTT — lassú fehérje (kazein), alacsony szénhidrát, könnyű étel.",
             "breakfast", "Cél: REGGELI — könnyű indítás, magas fehérje, reggelihez illő alapanyagok.");
 
+    static final String SYSTEM_PROMPT_HEAD = """
+        Te a Receptműhely vagy: magyar nyelvű, iteratív recept-tervező társ.
+        Válaszolj EGYETLEN JSON objektummal, pontosan ezekkel a kulcsokkal:
+        {"reply":string,"draft":{"name":string,"category":"breakfast"|"lunch"|"dinner"|"snack",
+         "servings":number,"steps":[string],
+         "lines":[{"pantryItemId":string|null,"name":string,"amount":number,"unit":string,
+                   "kcal":number|null,"proteinG":number|null,"carbsG":number|null,"fatG":number|null}]}}
+        Szabályok:
+        - MINDIG a TELJES frissített vázlatot add vissza. A felhasználó által kézzel állított
+          sorokhoz és értékekhez NE nyúlj, csak ha kifejezetten kéri.
+        - Ha egy hozzávaló egyértelműen megvan a lenti KAMRA katalógusban, másold be az id-ját
+          a pantryItemId-be és hagyd null-on a makrókat (a rendszer számolja). SOHA ne találj ki id-t.
+        - Kamrán kívüli hozzávalónál pantryItemId=null és add meg a becsült kcal/proteinG/carbsG/fatG
+          értékeket a MEGADOTT mennyiségre.
+        - amount grammban (g), ahol értelmes; a mennyiségek az EGÉSZ receptre vonatkoznak.
+        - reply: rövid magyar indoklás, mit és miért változtattál (makró-hatással).
+        """;
+
+    /** For an English account: no demand for Hungarian that would fight the appended
+     *  output-language directive (mezo-n4wf5.5). Hungarian accounts keep the head byte for byte. */
+    static final String SYSTEM_PROMPT_HEAD_NEUTRAL = SYSTEM_PROMPT_HEAD
+        .replace("magyar nyelvű, iteratív", "iteratív")
+        .replace("rövid magyar indoklás", "rövid indoklás");
+
     private final ObjectProvider<RecipeWorkshopLlm> llm;
     private final PantryItemRepository pantryItemRepository;
     private final PantryCatalogRepository pantryCatalogRepository;
@@ -58,6 +83,7 @@ public class RecipeWorkshopService {
     private final RecipeWorkshopValidator validator;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final UserMessages messages;
 
     record LlmAnswer(String reply, RawDraft draft) {
     }
@@ -93,29 +119,14 @@ public class RecipeWorkshopService {
 
         WorkshopTurnResponse res = new WorkshopTurnResponse();
         res.setReply(parsed.reply() == null || parsed.reply().isBlank()
-                ? "Frissítettem a vázlatot." : parsed.reply());
+                ? messages.text("RECIPE_WORKSHOP_REPLY_FALLBACK") : parsed.reply());
         res.setDraft(draft);
         return res;
     }
 
     private String buildSystemPrompt(UUID userId, String goal) {
-        StringBuilder sb = new StringBuilder("""
-            Te a Receptműhely vagy: magyar nyelvű, iteratív recept-tervező társ.
-            Válaszolj EGYETLEN JSON objektummal, pontosan ezekkel a kulcsokkal:
-            {"reply":string,"draft":{"name":string,"category":"breakfast"|"lunch"|"dinner"|"snack",
-             "servings":number,"steps":[string],
-             "lines":[{"pantryItemId":string|null,"name":string,"amount":number,"unit":string,
-                       "kcal":number|null,"proteinG":number|null,"carbsG":number|null,"fatG":number|null}]}}
-            Szabályok:
-            - MINDIG a TELJES frissített vázlatot add vissza. A felhasználó által kézzel állított
-              sorokhoz és értékekhez NE nyúlj, csak ha kifejezetten kéri.
-            - Ha egy hozzávaló egyértelműen megvan a lenti KAMRA katalógusban, másold be az id-ját
-              a pantryItemId-be és hagyd null-on a makrókat (a rendszer számolja). SOHA ne találj ki id-t.
-            - Kamrán kívüli hozzávalónál pantryItemId=null és add meg a becsült kcal/proteinG/carbsG/fatG
-              értékeket a MEGADOTT mennyiségre.
-            - amount grammban (g), ahol értelmes; a mennyiségek az EGÉSZ receptre vonatkoznak.
-            - reply: rövid magyar indoklás, mit és miért változtattál (makró-hatással).
-            """);
+        StringBuilder sb = new StringBuilder(
+            "hu".equals(messages.language()) ? SYSTEM_PROMPT_HEAD : SYSTEM_PROMPT_HEAD_NEUTRAL);
         if (goal != null && GOAL_DIRECTIVES.containsKey(goal)) {
             sb.append('\n').append(GOAL_DIRECTIVES.get(goal)).append('\n');
         }

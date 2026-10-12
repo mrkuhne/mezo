@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-10-11
+updated: 2026-10-12
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-auth-security, _platform-notifications
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
+
+> **2026-10-12 — Folyadék F5 · Fuel (`mezo-n4wf5.5`) — server-written sentences follow the account language.** `techcore/message/UserMessages` is now the renderer for every sentence a domain service writes for a screen (first user: Fuel — meal / recipe score rows and dimension sentences, stack placement reasons, pantry swap reasons, the recipe workshop; ~100 new keys in `messages_hu.properties` + `messages_en.properties`, the Hungarian output byte-identical to what the code used to build). Three additions: **`language()`** (`"hu"` / `"en"` as `text` would render right now), **`pinned()`** (a view fixed to the language resolved NOW — a composer that renders many texts takes it once, so the account is looked up a single time) and the static **`fixed(language)`** (no account or request behind it: unit tests of pure services and jobs that already hold the language; anything unknown is Hungarian). Numbers are passed as already formatted strings — `MessageFormat` would otherwise group and localise them. LLM prompts whose Hungarian text demands a Hungarian answer have a `*_NEUTRAL` variant used for English accounts (`MealCoachService`, `MealAiDraftService`, `RecipeWorkshopService`, `RecipeBreakdownProseService`, `SlotPlanEvaluationService`, `PlacementEngine`). A thread with no request behind it must bind the owner before it renders or calls the model: `MealCoachEagerListener` and `MealService.rescore` wrap their work in `LlmActorContext.runAs(owner, …)`. Rules and tests: [`_platform-language.md`](_platform-language.md) (§ backend).
 
 > **2026-10-07 — Kihagyás S3 (`mezo-q4xt2.3`).** `train-skip.yml` gains `PlannedSkipKind.MEAL`, `PlannedSkipReason.NOT_HUNGRY` and `plannedKcal`; `meal.yml` gains `fuelMode`, `recoveryCategory`, `recoveryDay`, `skippedKcal` on `FuelDayResponse` and `fuelMode` on `FuelDayRollup` (inline enums generate separate `FuelDayResponse.*`/`FuelDayRollup.*` types). New error message `TRAIN_SKIP_REASON_INVALID` in `messages.properties`. See [`fuel.md`](fuel.md) §2 "Kihagyás S3".
 
@@ -446,7 +448,7 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 - `techcore/persistence/OwnedEntity.java`, `OwnedRepository.java` — owned-entity superclass + `findAllOwned`
 - `techcore/security/SecurityConfig.java`, `CurrentUserId.java`, `CorsProperties.java` — stateless JWT + ownership resolution + CORS
 - `techcore/exception/GlobalExceptionHandler.java`, `SystemMessage.java`, `SystemRuntimeErrorException.java`, `Level.java`, `Type.java` — error contract (an unreadable request body — unknown enum constant, wrong JSON type, broken JSON — is a 400 `VALIDATION_INVALID_VALUE` naming the JSON path since Check-in 2.0 follow-up C; [`_platform-auth-security.md`](_platform-auth-security.md), [`error_handling.md`](../references/error_handling.md))
-- `backend/src/main/resources/messages_hu.properties` + `messages_en.properties` — message codes, one bundle per language, every key in both (since N1, `mezo-n4wf5.11`; resolved per user by `techcore/message/UserMessages`, see [`_platform-language.md`](_platform-language.md); newest Hungarian-side: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
+- `backend/src/main/resources/messages_hu.properties` + `messages_en.properties` — message codes, one bundle per language, every key in both (since N1, `mezo-n4wf5.11`; resolved per user by `techcore/message/UserMessages` — `text`, `language()`, `pinned()`, `fixed(language)`; error messages AND, since F5, the sentences domain services write for a screen — see [`_platform-language.md`](_platform-language.md); newest Hungarian-side: **`FEEDBACK_REASON_REQUIRES_DOWN`**, `mezo-b3pp.15` — the service-level 400 standing in front of `ck_message_feedback_reason`, §9); `application.yml` — `mezo:` config + `ddl-auto: validate`
 
 **Reference feature (weight — smallest full slice)**
 - `feature/biometrics/weight/controller/WeightLogController.java`, `service/WeightLogService.java`, `mapper/WeightLogMapper.java`, `repository/WeightLogRepository.java`, `entity/WeightLogEntity.java`

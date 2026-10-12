@@ -1,47 +1,41 @@
 // ============================================================
 // Mezo · RecipeEditorPage (Receptek — create = edit PAGE)
-// Approved full-page editor (docs/archive/design-v1/recipes-editor.html · left phone),
-// replacing the retired NewRecipeSheet. Captures every real field: név, slot
-// (segmented), csillag, adag + elő/főzési idő (steppers), címkék (chips),
-// hozzávalók (picked rows = MacroCells contribution at the line amount, live via
-// a per-row stepper + delete). A live total card carries the /adag↔egész toggle
-// (default /adag) with a footer echoing the other basis. Sticky Mentés →
-// useRecipeActions.create/update, then navigate back. Picker opens as a modal.
+// The manual editor: név, étkezés (the four meals) + the star as its own toggle, szerep, adag +
+// elő/főzési idő (steppers), hozzávalók (picked lines with a typeable amount, ±10 and remove; the
+// contribution follows live), címkék. The hero is the live total with the adag ↔ egész switch.
+// Mentés → useRecipeActions.create/update, then leave (`useLeaveAfterMutation`); no message after
+// saving (the live page never had one). The picker opens as a sheet and stays open (multi-add).
 //
 // Contribution = round(macro * amount/per) — the SAME amount/per rule as the
-// backend mapper and the mock hook (replaces NewRecipeSheet's unit==='g' hack).
+// backend mapper and the mock hook.
 //
-// Üveg U2 (mezo-me75u.2, prototypes/src/uveg-fuel-tobbi-body.html `editor()`): the Fuel sub-head
-// (round glass ‹ + FUEL · RECEPTEK eyebrow + the typed name / "Új recept" as the h1), ONE sage
-// glass form card (név, slot + csillag, szerep, adag/idő steppers — all flat inside), the live
-// total as a lavender glass card (flat basis switch + four tinted stats), each picked line a
-// glass card in its category hue, the kamra-add and the empty list dashed, flat tag chips, and
-// the portaled save bar with a flat Mégse + a sage glass Mentés. Body/editor flows unchanged.
+// Folyadék (mezo-n4wf5.5, fuel.js `editor()`): the hero is the pot (its level = one serving's
+// share, full on „egész", empty with the dashed line while there is no ingredient) beside the
+// kcal and the three macro levels; 1 Alapok, 2 Hozzávalók · n (the Fuel-shared `EditLine`),
+// 3 Címkék; the floating foot carries Mégse + Mentés. Words in `fuelRecept.editor`.
 // ============================================================
 import { useState } from 'react'
-import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput, RecipeRole } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
-import { Icon } from '@/shared/ui/Icon'
-import { ContentIcon } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped } from '@/shared/lib/format'
+import {
+  Acts, Btn, Bub, Card, Empty, FrameBack, Hero, Input, Lab, Note, Page, Pill, Pills, Section, Stepper, TwoBtn, useFrameTitle,
+} from '@/shared/ui/folyadek'
+import { EditLine, LineTags, M3, NumG, Pot } from '@/features/fuel/components/folyadek'
 import { ROLE_OPTIONS } from '@/features/fuel/logic/recipeRole'
-import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
+import { useAmountText } from '@/features/fuel/components/workshop/WorkshopIngredientRow'
+import { ingredientStyle } from '@/features/fuel/components/FuelQualityBlocks'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
-import { usePickableIngredients, kindLabel } from '@/data/fuel/pantryPickables'
-import { FrameBack } from '@/shared/ui/folyadek'
+import { usePickableIngredients } from '@/data/fuel/pantryPickables'
 
 interface DraftLine { refId: string; amount: number; unit: string; note?: string }
 
-const SLOTS: { id: RecipeCategory; label: string }[] = [
-  { id: 'breakfast', label: 'Reggeli' },
-  { id: 'lunch', label: 'Ebéd' },
-  { id: 'dinner', label: 'Vacsora' },
-  { id: 'snack', label: 'Snack' },
-]
+const SLOTS: RecipeCategory[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
 const round = (n: number) => Math.round(n)
 
@@ -57,53 +51,40 @@ function contributionOf(line: DraftLine, ing: Ingredient | undefined) {
   }
 }
 
-function Stepper({ value, unit, onChange, min = 0 }: { value: number; unit: string; onChange: (v: number) => void; min?: number }) {
-  return (
-    <div className="fkx-step">
-      <button type="button" onClick={() => onChange(Math.max(min, value - 1))} aria-label="Csökkentés">−</button>
-      <b>{value}</b>
-      <small>{unit}</small>
-      <button type="button" onClick={() => onChange(value + 1)} aria-label="Növelés">+</button>
-    </div>
-  )
-}
+const STEP = 10
 
-// Typeable per-ingredient gram amount (mezo-2567). Keeps a local string so decimals
-// ("12.5") and mid-typing states hold, coercing to a number on every change. Re-syncs
-// when the amount changes from OUTSIDE (the ± buttons) via the render-time prev-prop
-// pattern — no useEffect, so no keystroke-reset race.
-function AmountField({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
-  const [text, setText] = useState(() => String(value))
-  const [prev, setPrev] = useState(value)
-  // What the current text represents numerically ("" and "." both mean 0, matching commit()).
-  const parsed = text === '' || text === '.' ? 0 : parseFloat(text)
-  if (value !== prev) {
-    setPrev(value)
-    if (parsed !== value) setText(String(value)) // external change (± buttons) → resync
-  }
-  const commit = (raw: string) => {
-    const cleaned = raw.replace(',', '.')
-    if (cleaned !== '' && !/^\d*\.?\d*$/.test(cleaned)) return // ignore non-numeric input
-    setText(cleaned)
-    const n = cleaned === '' || cleaned === '.' ? 0 : parseFloat(cleaned)
-    onChange(Number.isFinite(n) ? n : 0)
-  }
+/** One picked line: the Fuel-shared `EditLine`, with the amount's text state held here. */
+function LineCard({ line, ing, onAmount, onRemove }: {
+  line: DraftLine; ing: Ingredient | undefined; onAmount: (n: number) => void; onRemove: () => void
+}) {
+  const M = useM()
+  const amount = useAmountText(line.amount, onAmount)
+  const name = ing?.name ?? line.refId
+  const c = contributionOf(line, ing)
   return (
-    <input
-      inputMode="decimal"
-      value={text}
-      onChange={e => commit(e.target.value)}
-      aria-label={label}
-      className="fkx-amt"
+    <EditLine
+      icon={ingredientStyle(name).icon}
+      name={name}
+      tags={<LineTags extra={[ing && ing.kind !== 'food' ? M.fuelRecept.common.kind[ing.kind] : null, ing?.brand]} />}
+      onRemove={onRemove}
+      amount={amount}
+      unit={line.unit}
+      onDec={() => onAmount(Math.max(0, line.amount - STEP))}
+      onInc={() => onAmount(line.amount + STEP)}
+      kcal={c.kcal}
+      macros={c}
     />
   )
 }
 
 export function RecipeEditorPage() {
+  const M = useM()
+  const C = M.fuelRecept.common
+  const E = M.fuelRecept.editor
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const leave = useLeaveAfterMutation()
-  const { recipes, categoryMeta } = useRecipes()
+  const { recipes } = useRecipes()
   // Resolve picked-line display name + live macro contribution from the SAME
   // unified pickable source the picker draws from (foods + supplement stash) — NOT
   // useRecipes().ingredients, which is the static mock seed and would miss real-mode
@@ -129,18 +110,22 @@ export function RecipeEditorPage() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [tagDraft, setTagDraft] = useState('')
 
+  useFrameTitle({ title: isEditMode && !editing ? C.noSuchRecipeTitle : name || (isEditMode ? '—' : E.newRecipe), eyebrow: C.fuelRecipes })
+  const back = <FrameBack history className="fo-backpill" onBack={() => navigate(-1)}>‹</FrameBack>
+
   // Edit-mode deep link with no matching recipe → not-found. The DATA section exposes
   // no raw query status, so we rely on useRecipes().recipes: synchronous in mock (via
   // initialData); in real mode a cold hard-reload may show this briefly until the list resolves.
   if (isEditMode && !editing) {
     return (
-      <div className="fmx-page fkx-reditor">
-        <div className="fmx-subhead">
-          <FrameBack history className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
-          <span><small>Fuel · Receptek</small></span>
-        </div>
-        <div className="fkx-notfound uv-empty">Nincs ilyen recept.</div>
-      </div>
+      <Page className="fc-page">
+        {back}
+        <Card>
+          <Empty icon="t-book" actions={<Btn sm onClick={() => navigate('/fuel/recipes')}>{C.backToRecipes}</Btn>}>
+            {E.notFound}
+          </Empty>
+        </Card>
+      </Page>
     )
   }
 
@@ -160,7 +145,6 @@ export function RecipeEditorPage() {
   }
   const shownTotal = basis === 'whole' ? wholeTotal : perServing
   const otherTotal = basis === 'whole' ? perServing : wholeTotal
-  const otherLabel = basis === 'whole' ? 'egy adag' : 'egész recept'
 
   // Append the picked pantry item as a new line. The sheet stays open (multi-add) —
   // it's the parent that used to close it; a duplicate refId is ignored (the picker
@@ -199,161 +183,104 @@ export function RecipeEditorPage() {
     }
   }
 
-  const catColor = (cat: string | null | undefined): string => (cat && categoryMeta[cat]?.color) || 'var(--success)'
+  const has = lines.length > 0
+  const whole = basis === 'whole'
+  const setLineAmount = (i: number, n: number) => setLines(prev => prev.map((p, idx) => (idx === i ? { ...p, amount: n } : p)))
 
   return (
-    <div className="fmx-page fkx-reditor">
-      <EntranceGroup>
-        <div className="fmx-subhead rise">
-          <FrameBack history className="glass is-round" onBack={() => navigate(-1)} label="Vissza">‹</FrameBack>
-          <span>
-            <small>Fuel · Receptek</small>
-            <h1 className="fkx-title">{name || (isEditMode ? '—' : 'Új recept')}</h1>
-          </span>
+    <Page className="fc-page"
+      foot={(
+        <>
+          <Btn ghost onClick={() => navigate(-1)}>{E.cancel}</Btn>
+          <Btn grow disabled={!canSave} onClick={save}>{E.save}</Btn>
+        </>
+      )}>
+      {back}
+      <Hero className="fc-ghero"
+        label={whole ? E.heroWhole : E.heroServing}
+        verdict={!has ? E.verdictEmpty : servings === 1 ? E.verdictSingle : whole ? E.verdictWhole(servings) : E.verdictShare(servings)}
+        sub={!has ? E.subEmpty : E.subOther(!whole, fmtGrouped(otherTotal.kcal), otherTotal.p, otherTotal.c, otherTotal.f)}
+        graphic={<NumG graphic={<Pot pct={has ? (whole ? 100 : 100 / Math.max(1, servings)) : 0} size={96} />}
+          value={has ? fmtGrouped(shownTotal.kcal) : '0'} unit={whole ? C.kcalWhole : C.kcalPerServing}>
+          <M3 p={shownTotal.p} c={shownTotal.c} f={shownTotal.f} />
+        </NumG>}
+      >
+        {has && <div className="fc-basis"><ServingToggle value={basis} servings={servings} onChange={setBasis} /></div>}
+      </Hero>
+
+      <Section n={1} title={E.basics} />
+      <Card>
+        <Lab htmlFor="recipe-name">{E.name}</Lab>
+        <Input id="recipe-name" value={name} onChange={e => setName(e.target.value)}
+          placeholder={E.namePlaceholder} aria-label={E.nameAria} />
+
+        <Lab id="recipe-meal">{E.meal}</Lab>
+        <div className="fc-pk2">
+          <Pills role="group" aria-labelledby="recipe-meal">
+            {SLOTS.map(id => (
+              <Pill key={id} on={slot === id} onClick={() => setSlot(id)}>{recipeSlotFace(id).label}</Pill>
+            ))}
+          </Pills>
+          <Pill className="fc-star" on={starred} onClick={() => setStarred(v => !v)} aria-label={E.star}>
+            <Bub icon="t-star" size={24} />{starred ? E.starred : E.star}
+          </Pill>
         </div>
 
-        {/* EGY üveg űrlap-kártya (prototípus `.fcard`): minden mező lapos cella benne. */}
-        <div className="fkx-fcard glass rise" style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties}>
-          <label className="fkx-field">
-            <span>NÉV</span>
-            <input
-              className="fkx-inp"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="pl. Tonhalsaláta · postworkout"
-              aria-label="Recept neve"
-            />
-          </label>
-
-          <div className="fkx-field">
-            <span>SLOT</span>
-            <div className="fkx-chips">
-              {SLOTS.map(sl => (
-                <button key={sl.id} type="button" onClick={() => setSlot(sl.id)}
-                  className={'fkx-chip' + (slot === sl.id ? ' is-on' : '')} aria-pressed={slot === sl.id}>
-                  {sl.label}
-                </button>
-              ))}
-              <button type="button" onClick={() => setStarred(v => !v)} aria-label="Csillag" aria-pressed={starred}
-                className={'fkx-chip is-star' + (starred ? ' is-on' : '')}>
-                <ContentIcon name="t-star" size={18} /> {starred ? 'Csillagos' : 'Csillag'}
-              </button>
-            </div>
-          </div>
-
-          {/* Szerep — the scoring rubric the template is judged under (mezo-uavr) */}
-          <div className="fkx-field">
-            <span>SZEREP</span>
-            <div className="fkx-chips">
-              {ROLE_OPTIONS.map(o => (
-                <button key={o.id} type="button" onClick={() => setRole(o.id)}
-                  className={'fkx-chip is-role' + (role === o.id ? ' is-on' : '')} aria-pressed={role === o.id}>
-                  {o.label}
-                </button>
-              ))}
-            </div>
-            <p className="fkx-hint">
-              A szerep dönti el, milyen mérce szerint pontozzuk: edzés körül a gyors szénhidrát üzemanyag, nem hiba.
-            </p>
-          </div>
-
-          <div className="fkx-two">
-            <div className="fkx-field">
-              <span>ADAG</span>
-              <Stepper value={servings} unit="adag" min={1} onChange={setServings} />
-            </div>
-            <div className="fkx-field">
-              <span>ELŐ + FŐZÉS</span>
-              <Stepper value={mins} unit="perc" min={0} onChange={setMins} />
-            </div>
-          </div>
-        </div>
-
-        {/* Élő összeg — levendula üveg, lapos bázis-váltóval és négy tintás számmal. */}
-        <div className="fmx-section fmx-section-row fkx-sec"><h2>Makró-összeg</h2></div>
-        <div className="fkx-fcard glass rise" style={{ '--c': 'var(--dv-lav)' } as React.CSSProperties}>
-          <ServingToggle value={basis} servings={servings} onChange={setBasis} />
-          <div className="fkx-stats">
-            <div className="fkx-stat" style={{ '--c': 'var(--dv-amber)' } as React.CSSProperties}><b>{shownTotal.kcal}</b><small>kcal</small></div>
-            <div className="fkx-stat" style={{ '--c': 'var(--macro-protein)' } as React.CSSProperties}><b>{shownTotal.p}</b><small>fehérje</small></div>
-            <div className="fkx-stat" style={{ '--c': 'var(--macro-carbs)' } as React.CSSProperties}><b>{shownTotal.c}</b><small>szénhidrát</small></div>
-            <div className="fkx-stat" style={{ '--c': 'var(--macro-fat)' } as React.CSSProperties}><b>{shownTotal.f}</b><small>zsír</small></div>
-          </div>
-          <p className="fkx-other">
-            {otherLabel} = <b>{otherTotal.kcal} kcal</b> · P {otherTotal.p} · C {otherTotal.c} · F {otherTotal.f}
-          </p>
-        </div>
-
-        {/* Hozzávalók */}
-        <div className="fmx-section fmx-section-row fkx-sec"><h2>Hozzávalók</h2><small>{lines.length}</small></div>
-
-        <div className="fkx-lines">
-          {lines.length === 0 && (
-            <div className="fkx-lines-empty uv-empty">
-              Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.
-            </div>
-          )}
-          {resolved.map(({ line, ing }, i) => (
-            <div key={i} className="fkx-lcard glass" style={{ '--c': catColor(ing?.category) } as React.CSSProperties}>
-              <div className="fkx-lcard-top">
-                <span className="fkx-lcard-name">
-                  <strong>{ing?.name ?? line.refId}</strong>
-                  {ing && ing.kind !== 'food' && <span className="fkx-tagf">{kindLabel(ing.kind)}</span>}
-                  {ing?.brand && <small>{ing.brand}</small>}
-                </span>
-                <button type="button" className="fkx-x" onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))} aria-label="Eltávolítás">
-                  <Icon name="x" size={12} />
-                </button>
-              </div>
-              <div className="fkx-step is-amount">
-                <button type="button" onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(0, p.amount - 10) } : p))} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
-                <AmountField value={line.amount} onChange={n => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: n } : p))} label={`${ing?.name ?? 'tétel'} mennyiség`} />
-                <small>{line.unit}</small>
-                <button type="button" onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: p.amount + 10 } : p))} aria-label={`${ing?.name ?? 'tétel'} növelés`}>+</button>
-              </div>
-              <div className="fkx-lcard-macros">
-                <MacroCells macros={contributionOf(line, ing)} perLabel={`${line.amount} ${line.unit}`} />
-              </div>
-            </div>
+        {/* Szerep — the scoring rubric the template is judged under (mezo-uavr) */}
+        <Lab id="recipe-role">{E.role}</Lab>
+        <Pills role="group" aria-labelledby="recipe-role">
+          {ROLE_OPTIONS.map(o => (
+            <Pill key={o.id} on={role === o.id} onClick={() => setRole(o.id)}>{o.label}</Pill>
           ))}
+        </Pills>
+        <Note>{E.roleNote}</Note>
 
-          <button type="button" onClick={() => setPickerOpen(true)} className="fkx-addline uv-empty">
-            <ContentIcon name="t-stack" size={24} /> ＋ Kamrából hozzáad
-          </button>
-        </div>
+        <TwoBtn className="fc-ws">
+          <div>
+            <Lab>{C.servingsName}</Lab>
+            <Stepper className="fc-stp" name={C.servingsName} n={servings} min={1}
+              value={<>{servings}<small>{C.servingUnit(servings)}</small></>}
+              onDec={() => setServings(Math.max(1, servings - 1))} onInc={() => setServings(servings + 1)} />
+          </div>
+          <div>
+            <Lab>{E.prepCook}</Lab>
+            <Stepper className="fc-stp" name={E.time} n={mins} min={0}
+              value={<>{mins}<small>{C.minuteUnit}</small></>}
+              onDec={() => setMins(Math.max(0, mins - 1))} onInc={() => setMins(mins + 1)} />
+          </div>
+        </TwoBtn>
+      </Card>
 
-        {/* Címkék */}
-        <div className="fmx-section fmx-section-row fkx-sec"><h2>Címkék</h2></div>
-        <div className="fkx-chips fkx-tags">
+      <Section n={2} title={C.ingredientsTitle(lines.length)} />
+      <Card className="fc-lns">
+        {has ? resolved.map(({ line, ing }, i) => (
+          <LineCard key={i} line={line} ing={ing}
+            onAmount={n => setLineAmount(i, n)}
+            onRemove={() => setLines(prev => prev.filter((_, idx) => idx !== i))} />
+        )) : (
+          <Empty icon="t-stack">{E.linesEmpty}</Empty>
+        )}
+        <Acts><Btn sm ghost onClick={() => setPickerOpen(true)}>{E.addFromPantry}</Btn></Acts>
+      </Card>
+
+      <Section n={3} title={E.tags} />
+      <Card>
+        <Pills>
           {tags.map(t => (
-            <button key={t} type="button" onClick={() => setTags(prev => prev.filter(x => x !== t))} className="fkx-chip">
-              {t} <Icon name="x" size={9} />
-            </button>
+            <Pill key={t} className="fc-tagp" onClick={() => setTags(prev => prev.filter(x => x !== t))} aria-label={E.tagRemove(t)}>
+              {t} <span aria-hidden="true">×</span>
+            </Pill>
           ))}
-          <input
-            className="fkx-chip is-input"
+          <Input
+            className="fc-tag"
             value={tagDraft}
             onChange={e => setTagDraft(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
-            placeholder="＋ címke"
-            aria-label="Új címke"
+            placeholder={E.tagPlaceholder}
+            aria-label={E.tagAria}
           />
-        </div>
-        <div style={{ height: 96 }} />
-      </EntranceGroup>
-
-      {/* Save bar — portaled into the phone screen (like Sheet) so it pins to the
-          device viewport just above the tab bar instead of scrolling with / floating
-          over the recipe content, which used to clip the last rows (mezo-3vu4). */}
-      {createPortal(
-        <div className="recipe-save-bar fkx-savebar">
-          <button type="button" className="fkx-btn is-flat" onClick={() => navigate(-1)}>Mégse</button>
-          <button type="button" className="fkx-btn glass" style={{ '--c': 'var(--dv-sage)' } as React.CSSProperties} disabled={!canSave} onClick={save}>
-            <Icon name="check" size={15} /> Mentés
-          </button>
-        </div>,
-        document.querySelector('.phone-screen') ?? document.body,
-      )}
+        </Pills>
+      </Card>
 
       {pickerOpen && (
         <IngredientPickerSheet
@@ -362,7 +289,7 @@ export function RecipeEditorPage() {
           addedRefIds={lines.map(l => l.refId)}
         />
       )}
-    </div>
+    </Page>
   )
 }
 

@@ -1,4 +1,4 @@
-// Kihagyás S3 (mezo-q4xt2.3) — a kímélő nap sávja és jegyzete (prototype elo/fuel.html `kmStrip`/`kmNote`).
+// Kihagyás S3 (mezo-q4xt2.3) — a kímélő nap sávja és jegyzete (Folyadék F5: prototype vilagos/fuel.js `strip` / `kmNote`).
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
@@ -26,14 +26,14 @@ test('MAINTENANCE note without a dropped deficit: neutral copy, no claim about a
   expect(screen.getByText('Sérülés alatt a fehérje a legfontosabb')).toBeInTheDocument()
   expect(container.textContent).toContain('Egyél eleget, és figyelj a fehérjére: abból épül vissza a szövet.')
   expect(container.textContent).not.toMatch(/hiányt|fogyókúr/)
-  expect(container.querySelector('em')).toHaveTextContent('Ez nem orvosi tanács.')
+  expect(container.querySelector('.fx-tip small')!.textContent).toMatch(/ Ez nem orvosi tanács\.$/)
 })
 
 test('MAINTENANCE note with a really dropped deficit: the injury copy ends with the disclaimer', () => {
   const { container } = render(<FuelRecoveryNote mode="MAINTENANCE" deficitDropped />)
   expect(screen.getByText('Sérülés alatt nem fogyókúrázunk')).toBeInTheDocument()
   expect(container.textContent).toContain('A hiányt kikapcsoltam: szinten tartó keretet látsz. A fehérje most a legfontosabb, abból épül vissza a szövet.')
-  expect(container.querySelector('em')).toHaveTextContent('Ez nem orvosi tanács.')
+  expect(container.querySelector('.fx-tip small')!.textContent).toMatch(/ Ez nem orvosi tanács\.$/)
   expect(container.querySelector('use')!.getAttribute('href')).toBe('#t-pain')
 })
 
@@ -42,6 +42,7 @@ test('ESTIMATE note: travel copy, no disclaimer needed', () => {
   expect(screen.getByText('Úton vagy, becsülj nyugodtan')).toBeInTheDocument()
   expect(container.textContent).toContain('Elég nagyjából beírni, a keret most csak tájékoztat. Ha egy dologra figyelsz, a fehérje legyen.')
   expect(container.querySelector('use')!.getAttribute('href')).toBe('#t-travel')
+  expect(container.textContent).not.toMatch(/orvosi tanács/)
 })
 
 test('no shame vocabulary, nothing glass', () => {

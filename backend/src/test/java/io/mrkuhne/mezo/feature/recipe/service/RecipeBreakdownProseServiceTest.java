@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 class RecipeBreakdownProseServiceTest {
 
     private final RecipeBreakdownProseService service =
-        new RecipeBreakdownProseService(null, null, null);
+        new RecipeBreakdownProseService(null, null, null, null);
 
     private RecipeEntity recipe(MealRole role) {
         RecipeEntity e = new RecipeEntity();

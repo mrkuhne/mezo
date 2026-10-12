@@ -1,17 +1,16 @@
 // ============================================================
 // Mezo · MealTimingStrip — a `context` dimenzió időzítés-sávja (mezo-jcpt.3)
-// Source: a jóváhagyott napi-értékelés prototípus 3. képernyője, `.predtile.sky` `.tline`.
 //
-// Nyelvtan: Stephen Few bullet-graph — lineáris tengely, a minőségi zóna (az étkezési
-// ablak) KITÖLTÖTT háttérsávként (nem körvonalként, ami a 3:1 nem-szöveges kontrasztot
-// megbukná), és a tényleges érték EGY jelölőként. Legend nélkül olvasható.
+// Nyelvtan: Stephen Few bullet-graph — lineáris tengely, a minőségi zóna (az étkezési ablak) KITÖLTÖTT sávként, és a
+// tényleges érték EGY jelölőként. Legend nélkül olvasható.
 //
-// A tengely SZÁNDÉKOSAN a teljes nap (0–24 h), minden étkezésnél azonos skálán (Tufte
-// small-multiples): egy nap étkezései így egymás mellett is összehasonlíthatók. Az
-// „ablak ± 3 h" zoomolt tengelyt elvetettük — étkezésenként más skálát adna.
+// A tengely SZÁNDÉKOSAN a teljes nap (0–24 h), minden étkezésnél azonos skálán: egy nap étkezései így egymás mellett is
+// összehasonlíthatók.
 //
-// A sáv aria-hidden: a szöveges igazságot a meglévő „Időzítés" tény-chip hordozza
-// (WCAG / Carbon: a szín soha nem az egyetlen jel).
+// A sáv aria-hidden: a szöveges igazságot az „Időzítés" tény-csempék hordozzák (a szín soha nem az egyetlen jel).
+//
+// Folyadék F5 (mezo-n4wf5.5): the same strip in the light look (`.fe-tl`): the window is the domain liquid, the log is a
+// white-rimmed drop — amber outside the window, never the error colour.
 // ============================================================
 import { cn } from '@/shared/lib/cn'
 import type { MealTiming } from '@/data/types'
@@ -39,7 +38,7 @@ export function MealTimingStrip({ timing }: { timing: MealTiming }) {
   const linkTo = eaten > to ? eaten : from
 
   return (
-    <div className="sb-tline" aria-hidden="true">
+    <div className="fe-tl" aria-hidden="true">
       <span className="trk" />
       <span className={cn('band', anyHour && 'is-any')}
         style={{ left: `${Math.round(from * 10) / 10}%`, width: `${Math.round((to - from) * 10) / 10}%` }} />

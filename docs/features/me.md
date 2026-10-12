@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-10-11
+updated: 2026-10-12
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
   - frontend/src/features/me
@@ -17,6 +17,8 @@ related: [_platform-data-layer, _platform-design-system, _platform-notifications
 ---
 
 # Me Area — Feature Documentation
+
+> **2026-10-12 — reviewed after Folyadék F5 · Fuel (`mezo-n4wf5.5`).** The energy-breakdown sheet Én's biometrics lead into (`features/fuel/sheets/EnergyBreakdownSheet`, fed by `features/me/logic/buildTdeeBreakdown.ts`) is a Folyadék sheet now and bilingual; numbers are grouped („Honnan jön a 2 200 kcal?"). `buildTdeeBreakdown`'s movement label comes from the catalog (`m().fuelLogika.energyBreakdown.plannedWeeklyAvg` — „Tervezett mozgás · heti átlag" / "Planned movement · weekly …"), no longer a literal. **The door is `BiometricSheet`'s „Energia-bontás magyarázata" button**, wired by the Settings biometrics editor (`features/settings/pages/MeSettingsPage.tsx`: closes the editor, opens the sheet on `initial="base"`, reopens the editor on close) — so the „no Én-side door" gap noted in §2 / §9 is closed through Settings; the Én hub itself still has no direct entry. Nothing else under `features/me` changed.
 
 > **2026-10-11 — reviewed after Folyadék F2/F3 (`mezo-n4wf5.3`).** The routine pages under `frontend/src/features/me` wear the Folyadék look since F2 (described in `today.md`); F3 only moved their standalone back pill to the kit rule `.fo-backpill`. Behaviour, routes and data as described below.
 
@@ -716,7 +718,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock
 
 **Deferred / known gaps after Design 2.0** (recorded honestly, not fixed):
 
-- **The split-TDEE breakdown has no Én-side door any more.** `BiometricCard`'s `Alaphő · NEAT` / `Tervezett mozgás · heti átlag` (was `Betábl. mozgás`, mezo-tb3s2) / `Fenntartó` block was the only Me entry into the shared `EnergyBreakdownSheet` (`mezo-hobb`), and the hub's one-line bio does not carry it. `BiometricCard` itself is deleted (`mezo-d20.11`); `logic/buildTdeeBreakdown.ts` and the sheet still exist, and Fuel's Mai page has its own entry — but from the Én tab the breakdown is currently unreachable. Re-hanging it (a hub cell, or a row inside `BiometricSheet`) is unscheduled.
+- **The split-TDEE breakdown has no Én-side door any more.** `BiometricCard`'s `Alaphő · NEAT` / `Tervezett mozgás · heti átlag` (was `Betábl. mozgás`, mezo-tb3s2) / `Fenntartó` block was the only Me entry into the shared `EnergyBreakdownSheet` (`mezo-hobb`), and the hub's one-line bio does not carry it. `BiometricCard` itself is deleted (`mezo-d20.11`); `logic/buildTdeeBreakdown.ts` and the sheet still exist, and Fuel's Mai page has its own entry — but from the Én tab the breakdown is currently unreachable. *Since closed through Settings:* `BiometricSheet` carries an „Energia-bontás magyarázata" button that `MeSettingsPage` wires to the sheet; a hub cell is still unscheduled.
 - **Éjszakai mód lost its Today-side entry.** `IslandEvening`'s timed night-phase row died with the `TodayPage` view layer (`mezo-d20.9.1`) and the Nap hub did not pick it up, so `/me/sleep/night` is reachable only from the Alvás page's untimed row — which was designed as the *twin* of a timed entry, not its replacement.
 - **RESOLVED (for `Emberek`/`Tudás`/`Értesítés`) — the "three surfaces not on the full Mozaik page scaffold" gap this bullet used to track is closed for those three.** `Tudás` shed its body-only `.pghead-np lav` header in the `mezo-d20.11` fidelity-repair pass; `Értesítés` got its head back in `mezo-nol0` (`PageHead` + `PageHero`, `‹ Értesítések` → the feed, hero `Értesítés-beállítások`, §2); `Emberek` was the last holdout and moved onto the full scaffold with this hub-IA slice (`mezo-06o0.2`, §2) — its hub (`PeoplePage`) now carries its own `PageHead`/`PageHero`/`StatStrip` like every other tile-row page. (The `Heti`/`WeekPage` question below is tracked separately — that surface's own bullet is the current source of truth for it, not this one.)
 - **RESOLVED — the designed `Heti` surface has landed.** The Design 2.0 prototype's **Heti hub + four view-pages + a day page**, plus its two backend legs (weekly knowledge candidates, a persisted weekly score + trend endpoint), are all built (`mezo-d20.6.10` split the destination into `WeekHubPage`/`WeekAnalysisPage`/`WeekDaysPage`/`WeekLessonsPage`/`WeekDiscoveriesPage` + the pre-existing `WeekDayPage`; the trend endpoint and `weekly_score` cache landed as `mezo-d20.7.5`–`.7.8`; §2 above has the per-page breakdown). **The day page itself later moved on** (`mezo-yjzhw.4`, 2026-09-24) into its own Nap-domain tab, "A napom" ([today.md](today.md)), leaving the hub + four view-pages here. **One loose end:** `WeekHubPage`'s 8-week score-trend spark is still wired to a hardcoded empty array in the FE (`WeekHubPage.tsx`) even though the backend `GET /api/me/week/{start}/trend` it would read (§4) is live — the spark never renders in this build. Full history note: [insights.md §9](insights.md).

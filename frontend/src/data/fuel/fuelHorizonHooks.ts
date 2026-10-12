@@ -23,7 +23,7 @@ import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { meWeekApi } from '@/data/me/meWeekApi'
 import { mockMeWeek } from '@/data/me/meWeek'
 import { useWeight } from '@/data/me/weightHooks'
-import { addDays, huMonthDay, mondayOf } from '@/shared/lib/dates'
+import { addDays, mondayOf } from '@/shared/lib/dates'
 import type { HorizonWeek } from '@/features/fuel/components/FuelHorizon'
 
 /** Hány hetet nézünk visszafelé, a megnyitott hetet is beleértve (a prototípus 7 hetet rajzol). */
@@ -74,7 +74,6 @@ export function useFuelHorizon(endMonday: string): { weeks: HorizonWeek[]; pendi
   const byWeek = weeklyWeightAverages(weightLog)
   const weeks: HorizonWeek[] = mondays.map((monday, i) => ({
     startIso: monday,
-    label: huMonthDay(monday),
     // `?? null`: a még be nem érkezett és a genuinely-null hét EGYFORMÁN hiány — sosem nulla.
     kcal: queries[i].data?.week?.weekly.avgKcal ?? null,
     weightKg: byWeek[monday] ?? null,

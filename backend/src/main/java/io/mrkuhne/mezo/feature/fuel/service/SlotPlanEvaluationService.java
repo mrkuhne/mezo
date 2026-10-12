@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,9 +57,23 @@ public class SlotPlanEvaluationService {
         - Ne találj ki új slotokat, időpontokat vagy számokat a bemeneten kívül.
         """;
 
+    /**
+     * What an English account's call sends (mezo-n4wf5.5): the same prompt with the four demands
+     * for Hungarian output taken out, so nothing in it fights the output-language directive that
+     * the LLM adapter appends. The instructions themselves stay Hungarian until the prompts are
+     * translated (slice N3); the prefix is unchanged, so the marker dispatch and the cache key hold.
+     * A Hungarian account keeps {@link #SYSTEM_PROMPT} byte for byte.
+     */
+    static final String SYSTEM_PROMPT_NEUTRAL = SYSTEM_PROMPT
+        .replace("szigorú JSON objektummal, magyarul, pontosan", "szigorú JSON objektummal, pontosan")
+        .replace("<egy-két mondat magyarul>", "<egy-két mondat>")
+        .replace("<javaslat magyarul>", "<javaslat>")
+        .replace("tömör magyar értékelés", "tömör értékelés");
+
     private final ObjectProvider<SlotPlanLlm> llm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final UserMessages messages;
 
     /** Returns the LLM port, or fails with a clean 503 when either gating switch is off (no adapter bean). */
     public SlotPlanLlm requireAvailable() {
@@ -73,10 +88,11 @@ public class SlotPlanEvaluationService {
     public SlotPlanEvaluateResponse evaluate(SlotPlanEvaluateRequest request) {
         SlotPlanLlm port = requireAvailable();
         String userMessage = buildUserMessage(request);
+        String systemPrompt = "hu".equals(messages.language()) ? SYSTEM_PROMPT : SYSTEM_PROMPT_NEUTRAL;
         try {
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("slot_template", "evaluate", null, null),
-                () -> port.complete(SYSTEM_PROMPT, userMessage));
+                () -> port.complete(systemPrompt, userMessage));
             String json = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
             SlotPlanEvaluateResponse response = objectMapper.readValue(json, SlotPlanEvaluateResponse.class);
             // Strict-JSON contract: a null/blank verdict or summary is a parse failure, not a valid

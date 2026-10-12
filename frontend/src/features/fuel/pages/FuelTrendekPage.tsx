@@ -2,173 +2,150 @@
 // Mezo · Fuel Trendek (S0 váz: mezo-o6uv · tartalom: Fuel Titanium S3, mezo-83g0).
 // A jóváhagyott negyedik Fuel-cél: „Jól ment a hetem?"
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `trendek` (:199), `weekBars` (:192), `trendDayGlass` (:244) + a fuel-pages.css „Trendek"
-// blokkja (:722-821). Anatómia fentről le:
-//   a HETI KÉP (a főszereplő) — a hét napjai a kerethez mérve, mindegyiken a nap AI pontja,
-//     alatta a semleges heti olvasat,
-//   három mutató-csempe — napi átlag · étkezés-minőség · heti súlyátlag (a két utóbbi a C2-ben
-//     felszabadított heti átlag),
-//   a hétköznap/hétvége kontraszt — két kitöltődő sáv, ez a hét fő üzenete (C1),
-//   a hosszabb táv — evés és súly EGY időtengelyen (C3, FuelHorizon),
-//   a mintázatok — HIVATKOZÁSOK a kanonikus Mezo-elemre (C4).
-//
-// Owner-döntések, amiket a markup hordoz:
-//   • a heti kép a protagonista; a hosszú táv és a mintázatok ALATTA állnak,
-//   • egy nap az AI NAPI PONTJÁT mutatja („2.1, 2.3" nyers makró-pár = „nem túl beszédes"), és
-//     koppintásra üvegdobozban nyílik,
-//   • a hétköznap/hétvége sávok kitöltődnek, a napi átlag / étkezés-minőség / heti súlyátlag
-//     számok felszámolódnak.
+// Folyadék (mezo-n4wf5.5, prototype vilagos/fuel.js `trendek()` + `weekVM` / `weekVes` / `seriesG`, lap `day`):
+//   a hét-váltó (a hős vezérlője: a hősnek NINCS gombja) →
+//   a HŐS: „N / 7 naplózott nap", a hét hét edénye (a szint az evés, a szaggatott vonal a nap kerete, a szám a nap
+//     étkezés-pontja; a hétvége két edénye más alapot kap), a jelmagyarázat, alatta a SEMLEGES heti olvasat →
+//   1 · A hét számai — három sima csempe (napi átlag · minőség · heti súlyátlag), szint nélkül; a változás csak a
+//     nyitott héten áll alattuk: irány és mennyiség, se jó, se rossz szín →
+//   2 · Hétköznap és hétvége — két közlekedőedény a kerethez mért átlaggal, a vonal a keret →
+//   3 · Hosszabb táv — a heti súlyátlag (napi mérésekkel, a súlycél vízvonalával) és a heti átlag kalória (FuelHorizon) →
+//   4 · Mintázatok — HIVATKOZÁSOK a kanonikus Mezo-elemre; felismerés nélkül a szakasz nincs.
 //
 // SZÉGYENMENTES — ez a ház legkockázatosabb felülete: a keret FELETT járó nap más SZÍNT kap, de
 // soha nem hibaállapotot, és egyetlen szó sem osztályozza a felhasználót. A gyéren naplózott hét
 // őszintén van leírva, nem „bukásként" pontozva. A hang: „így alakult".
-// ŐSZINTE-NULL: a nem naplózott nap nem nulla — kimarad minden átlagból, és „nincs adat"-ként
-// rajzolódik; ha a heti átlagok nullok, a csempék „—"-t írnak.
+// ŐSZINTE-NULL: a nem naplózott nap nem nulla — kimarad minden átlagból, és üres edényként
+// rajzolódik; ha a heti átlagok nullok, a csempék „—"-t írnak. A kímélő nap nincs a kerethez mérve.
 //
 // ADATFORRÁS, új backend nélkül:
 //   • a hét keretei/fogyása: `useFuelWeek()` 7 napos rollupja (+ a C2 két átlaga),
-//   • a NAP AI PONTJA: a MEGLÉVŐ hat dimenziós napi értékelés (`getDayEvaluation` →
-//     `MeWeekDay.score`/`.subscores`), a `useMeWeek` heti rollupon keresztül — ez a lap NEM
-//     számol új pontszámot,
-//   • az edzésnap (C6): ugyanonnan, `MeWeekDay.workoutCount > 0` — tehát tényleg naplózott edzés.
+//   • a NAP AI PONTJA: a MEGLÉVŐ hat dimenziós napi értékelés (`MeWeekDay.subscores`), a `useMeWeek` heti
+//     rollupon keresztül — ez a lap NEM számol új pontszámot,
+//   • az edzésnap (C6): ugyanonnan, `MeWeekDay.workoutCount > 0`,
+//   • a napi súlymérések: `useWeight().weightLog`; a súlycél: `useGoal()` (cél nélkül nincs vízvonal).
 // C5: a coach-történet cache-only — ez a lap csak OLVAS, étkezés-coach generálást nem indít.
 // ============================================================
-import { useState } from 'react'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { useId, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useFuelWeek, useFuelWeekRollup, mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
+import { useFuelWeek, useFuelWeekRollup, mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek } from '@/data/me/meWeekHooks'
 import { useFuelHorizon } from '@/data/fuel/fuelHorizonHooks'
 import { useFuelDay } from '@/data/fuel/fuelHooks'
+import { useWeight } from '@/data/me/weightHooks'
+import { useGoal } from '@/data/me/goalHooks'
 import { usePatterns } from '@/data/insights/patternsHooks'
-import { hu1, huInt } from '@/shared/lib/huNum'
-import { addDays, huMonthDayDow } from '@/shared/lib/dates'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useFuelCountUp } from '@/features/fuel/components/FuelMacroRings'
-import { FuelHorizon } from '@/features/fuel/components/FuelHorizon'
+import type { FuelWeekDay } from '@/data/fuel/mealApi'
+import { addDays } from '@/shared/lib/dates'
+import { fmtGrouped } from '@/shared/lib/format'
+import { useM } from '@/shared/i18n'
+import { Icon3D } from '@/shared/ui/clay'
+import { Card, Hero, Lab, Note, Page, Row, Section, Stat, StatGrid, Txt, useFrameTitle } from '@/shared/ui/folyadek'
+import { Lgd, MACRO_COLOR, type LgdKind } from '@/features/fuel/components/folyadek'
+import { FuelHorizon, horizonNeedsMoreWeeks } from '@/features/fuel/components/FuelHorizon'
 import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
 import { fuelPatternRefs } from '@/features/fuel/logic/fuelPatternRefs'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
-import { buildWeekView, mealDayScore, loggedKcalAvg, weekDeltas, type WeekDayVM, type WeekDelta } from '@/features/fuel/logic/fuelWeekView'
+import {
+  buildWeekView, dayTitle, fixed1, loggedKcalAvg, mealDayScore, weekDeltas, weekRangeTitle, type WeekDayVM, type WeekDelta,
+} from '@/features/fuel/logic/fuelWeekView'
 
-/** A három mutató-csempe — üveg (mezo-me75u.2, prototypes/uveg-fuel-tobbi.html `trendek()` `.st`):
- *  napi átlag arany tányér, étkezés-minőség lila pont, heti súlyátlag égkék mérleg. */
-const STAT_FACE: Record<'avg' | 'score' | 'weight', {
-  label: string; icon: Icon3DName; color: string; unit: string; dec: 0 | 1
-}> = {
-  avg: { label: 'Napi átlag', icon: 't-plate', color: 'var(--dv-amber)', unit: 'kcal', dec: 0 },
-  score: { label: 'Étkezés-minőség', icon: 't-score', color: 'var(--dv-lav)', unit: '', dec: 1 },
-  weight: { label: 'Heti súlyátlag', icon: 't-weight', color: 'var(--dv-sky)', unit: 'kg', dec: 1 },
-}
-
-/** Egy felszámoló numerál. Üres érték „—" — a count-up hookot akkor sem hívjuk feltételesen
- *  (React hook-szabály), csak a kimenetét dobjuk el. `useFuelCountUp` csökkentett mozgás és
- *  jsdom alatt azonnal a végértéket adja, ezért a tesztek szinkron olvashatók. */
-function CountNumeral({ value, dec }: { value: number | null; dec: 0 | 1 }) {
-  const scale = dec === 1 ? 10 : 1
-  const counted = useFuelCountUp(value == null ? 0 : Math.round(value * scale)) / scale
-  if (value == null) return <>—</>
-  return <>{dec === 1 ? hu1(counted) : huInt(counted)}</>
-}
-
-/** C2: a múlt héthez mért változás a csempén — a prototípus `<em>▲ …</em>`-je (fuel-pages.js
- *  :211-212). SZÉGYENMENTES: IRÁNY és mennyiség, semmi más. Nincs „jó"/„rossz" szín és nincs
- *  minősítő szó — egy heti elmozdulás nem ítélet; a hue a lap meglévő semleges `--sub`-ja.
- *  A nyíl önmagában a képernyőolvasónak néma, ezért mellé egy rejtett, ugyancsak semleges
- *  mondat kerül („több"/„kevesebb"), nem pedig „javult"/„romlott". */
-function TileDelta({ delta, unit, dec }: { delta: WeekDelta; unit: string; dec: 0 | 1 }) {
-  const amount = `${dec === 1 ? hu1(delta.amount) : huInt(delta.amount)}${unit ? ` ${unit}` : ''}`
+/** A hét hét edénye (prototípus `weekVes`): a szint az evés, a szaggatott vonal a nap kerete, a szám a nap étkezés-pontja.
+ *  A magasság a hét legnagyobb értékéhez van skálázva. A keret FELETTI rész más színű sáv a vonal fölött — állapot, nem hiba.
+ *  Kímélő napon nincs keret-vonal és nincs pont (a jele áll ott); a még hátralévő és a nem naplózott nap üres edény. */
+function WeekVessels({ days, max, disabled, onOpen }: { days: WeekDayVM[]; max: number; disabled?: boolean; onOpen: (date: string) => void }) {
+  const M = useM()
+  const W = M.fuelTrendek.week
+  const h = (v: number) => `${((v / max) * 100).toFixed(1)}%`
   return (
-    <em className="ftx-delta">
-      <span aria-hidden="true">{delta.direction === 'up' ? '▲' : '▼'} {amount}</span>
-      <span className="sr-only">
-        {delta.direction === 'up' ? 'a múlt héthez mérve ennyivel több' : 'a múlt héthez mérve ennyivel kevesebb'}
-        {`: ${amount}`}
-      </span>
-    </em>
-  )
-}
-
-function StatTile({ kind, value, delta, index }: {
-  kind: keyof typeof STAT_FACE; value: number | null; delta?: WeekDelta; index: number
-}) {
-  const face = STAT_FACE[kind]
-  return (
-    <div
-      className={`ftx-tile glass is-${kind}`}
-      style={{ '--ftx-tile-color': face.color, '--c': face.color, '--i': index } as React.CSSProperties}
-    >
-      <span className="ftx-tile-art" aria-hidden="true"><Icon3D name={face.icon} size={32} /></span>
-      <strong>
-        <CountNumeral value={value} dec={face.dec} />
-        {face.unit && <small>{face.unit}</small>}
-      </strong>
-      <span className="ftx-tile-label">{face.label}</span>
-      {/* Betöltés közben / korábbi hét nélkül NINCS delta — se nulla, se helykitöltő. */}
-      {delta && <TileDelta delta={delta} unit={face.unit} dec={face.dec} />}
+    // A18/E11 (mezo-qt5q): a Kalauz „Mutasd meg a képernyőn" gombja erre a sávra mutat — a heti kép feltétel
+    // nélkül renderel, tehát a horgony sosem tűnik el.
+    <div className="fr-wk" role="group" aria-label={W.aria} data-kalauz-anchor="trendek-heti">
+      {days.map((day) => {
+        const name = dayTitle(day.date)
+        const score = day.dayScore == null ? null : fixed1(day.dayScore)
+        const aria = day.recovery
+          ? W.dayRecovery(name)
+          : day.logged
+            ? (day.targetKcal == null
+              ? W.dayLoggedNoTarget(name, fmtGrouped(day.kcal!), score)
+              : W.dayLogged(name, fmtGrouped(day.kcal!), fmtGrouped(day.targetKcal), score))
+            : day.future ? W.dayFuture(name) : W.dayEmpty(name)
+        const level = day.logged ? (day.recovery || day.targetKcal == null ? day.kcal! : Math.min(day.kcal!, day.targetKcal)) : null
+        const cls = ['fr-wd', !day.logged && !day.recovery && 'gap', day.weekend && 'we', day.recovery && 'rec', day.today && 'on',
+          day.over && 'over', day.future && !day.logged && 'fut'].filter(Boolean).join(' ')
+        return (
+          <button key={day.date} type="button" className={cls} aria-label={aria} disabled={disabled} onClick={() => onOpen(day.date)}>
+            <em aria-hidden="true">{day.recovery ? <Icon3D name="t-kimelo" size={16} /> : score ?? '·'}</em>
+            <span className="fr-tb" aria-hidden="true">
+              {level != null && <i style={{ height: h(level) }} />}
+              {day.over && day.targetKcal != null && (
+                <s style={{ bottom: h(day.targetKcal), height: h(day.kcal! - day.targetKcal) }} />
+              )}
+              {!day.recovery && day.targetKcal != null && <u style={{ bottom: h(day.targetKcal) }} />}
+            </span>
+            <b aria-hidden="true">{day.label}</b>
+            <small className={day.training ? 'tr' : undefined} aria-hidden="true" />
+          </button>
+        )
+      })}
     </div>
   )
 }
 
-/** Egy nap a heti képben: a keret szaggatott vonala + a fogyás kitöltése (vagy a hézag-jel), a
- *  nap AI pontja és a napnév. A magasság a hét legnagyobb értékéhez van skálázva. */
-function WeekDayBar({ day, max, onOpen }: { day: WeekDayVM; max: number; onOpen: () => void }) {
-  const h = (v: number) => `${Math.max(4, Math.round((v / max) * 100))}%`
-  // Kihagyás S3: a kímélő nap nincs a kerethez mérve — jel a pont helyén, vonal és százalék nélkül.
-  const aria = day.recovery
-    ? `${huMonthDayDow(day.date)}: kímélő nap`
-    : day.logged
-    ? `${huMonthDayDow(day.date)}: ${huInt(day.kcal!)} kcal a ${day.targetKcal == null ? 'megadott' : `${huInt(day.targetKcal)} kcal-os`} keretből`
-      + `${day.dayScore == null ? ', étkezés-pont még nincs' : `, étkezés-pont ${huScore(day.dayScore)}`}`
-    : `${huMonthDayDow(day.date)}: nincs adat`
-  return (
-    <button
-      type="button"
-      className={`ftx-day${day.weekend ? ' is-weekend' : ''}${day.logged || day.recovery ? '' : ' is-empty'}`
-        + `${day.over ? ' is-over' : ''}${day.training ? ' is-train' : ''}${day.recovery ? ' is-recovery' : ''}`}
-      aria-label={aria}
-      onClick={onOpen}
-    >
-      <span className="ftx-col" aria-hidden="true">
-        {day.targetKcal != null && !day.recovery && (
-          <i className="ftx-target" style={{ '--ftx-h': h(day.targetKcal) } as React.CSSProperties} />
-        )}
-        {day.recovery
-          ? (day.logged ? <i className="ftx-fill is-recovery" style={{ '--ftx-h': h(day.kcal!) } as React.CSSProperties} /> : <i className="ftx-gap" />)
-          : day.logged
-          ? <i className="ftx-fill" style={{ '--ftx-h': h(day.kcal!) } as React.CSSProperties} />
-          : <i className="ftx-gap" />}
-      </span>
-      <b className="ftx-day-score" aria-hidden="true">
-        {day.recovery ? <Icon3D name="t-kimelo" size={18} /> : day.dayScore == null ? '·' : huScore(day.dayScore)}
-      </b>
-      <span className="ftx-day-name" aria-hidden="true">{day.label}</span>
-      {/* Őszinte hiány: a „nincs adat" a képernyőolvasóé és a tesztnek is egy valódi szöveg —
-          a hét oszlopos rácsban kiírva nem férne el, ezért vizuálisan rejtett. */}
-      {!day.logged && !day.recovery && <span className="sr-only">nincs adat</span>}
-      {day.training && <u className="ftx-train" aria-hidden="true" />}
-    </button>
-  )
+/** A hős jelmagyarázata (prototípus `lgd`): a közös `Lgd`, a hét saját jeleivel (`we` / `rec` / `trd`). */
+function WeekLegend({ days }: { days: WeekDayVM[] }) {
+  const L = useM().fuelTrendek.legend
+  const any = (f: (d: WeekDayVM) => boolean) => days.some(f)
+  const items: Array<[LgdKind, string]> = [
+    ['liq', L.eaten],
+    ['line', L.budget],
+    ...(any((d) => d.over) ? [['over', L.over] as [LgdKind, string]] : []),
+    ...(any((d) => !d.logged && !d.recovery) ? [['gap', L.noData] as [LgdKind, string]] : []),
+    ...(any((d) => d.recovery) ? [['rec', L.recovery] as [LgdKind, string]] : []),
+    ['we', L.weekend],
+    ...(any((d) => d.training) ? [['trd', L.training] as [LgdKind, string]] : []),
+  ]
+  return <Lgd center className="fr-lg" items={items} />
 }
 
-/** Hétköznap vs hétvége — kitöltődő sáv, a prototípus `tx-splitrow`-ja. A sáv a kerethez mért
- *  százalékot rajzolja, 130%-ra skálázva (a keret fölötti tartomány is elfér benne). */
-function SplitRow({ label, icon, color, pct }: {
-  label: string; icon: Icon3DName; color: string; pct: number | null
-}) {
+/** Két közlekedőedény (prototípus `linked` + a keret vonala): a naplózott, nem kímélő napok kerethez mért átlaga
+ *  hétköznap és hétvégén, 130%-os léptékben; a szaggatott vonal a keret (100%). Adat nélkül az edény ÜRES, nem nulla
+ *  szintű. Helyi darab: a kit `Linked`-je nem ismer vonalat és üres edényt. */
+function WeekSplit({ weekdayPct, weekendPct }: { weekdayPct: number | null; weekendPct: number | null }) {
+  const id = 'frlk' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
+  const S = useM().fuelTrendek.split
+  const text = (v: number | null) => (v == null ? '—' : `${Math.round(v)}%`)
+  const y = (v: number) => 96 - Math.max(0, Math.min(100, v / 1.3)) * 0.74
+  const yBudget = (96 - (100 / 1.3) * 0.74).toFixed(1)
+  const liq = (x: number, top: number) => <path fill={`url(#${id})`} d={`M${x} ${top} q7.75 -4.5 15.5 0 t15.5 0 t15.5 0 t15.5 0 V112 H${x}Z`} />
+  const glass = (x: number) => (
+    <>
+      <rect x={x} y="12" width="62" height="86" rx="28" fill="none" stroke="rgba(10,42,60,.12)" strokeWidth="2" />
+      <path d={`M${x + 11} 34 q2 -11 12 -13`} fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" opacity=".9" />
+    </>
+  )
   return (
-    <div className="ftx-splitrow" style={{ '--ftx-split-color': color } as React.CSSProperties}>
-      <span className="ftx-split-art" aria-hidden="true"><Icon3D name={icon} size={30} /></span>
-      <span className="ftx-split-copy">
-        <strong>{label}</strong>
-        <i aria-hidden="true">
-          <b style={{ '--ftx-w': `${pct == null ? 0 : Math.min(100, (pct / 130) * 100)}%` } as React.CSSProperties} />
-        </i>
-      </span>
-      <b>{pct == null ? '—' : <>{huInt(Math.round(pct))}<small>%</small></>}</b>
+    <div className="fr-lk">
+      <svg className="fr-linked" viewBox="0 0 220 124" role="img" aria-label={S.aria(text(weekdayPct), text(weekendPct))}>
+        <defs>
+          <linearGradient id={id} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="var(--liq1)" /><stop offset="1" stopColor="var(--liq2)" /></linearGradient>
+          <clipPath id={`${id}a`}><rect x="16" y="12" width="62" height="86" rx="28" /></clipPath>
+          <clipPath id={`${id}b`}><rect x="142" y="12" width="62" height="86" rx="28" /></clipPath>
+        </defs>
+        <rect x="64" y="80" width="92" height="9" rx="4.5" fill="var(--liq2)" opacity=".35" />
+        <rect x="16" y="12" width="62" height="86" rx="28" fill="#fff" />
+        <rect x="142" y="12" width="62" height="86" rx="28" fill="#fff" />
+        {weekdayPct != null && <g className="is-weekday" clipPath={`url(#${id}a)`}>{liq(16, y(weekdayPct))}</g>}
+        {weekendPct != null && <g className="is-weekend" clipPath={`url(#${id}b)`}>{liq(142, y(weekendPct))}</g>}
+        {glass(16)}{glass(142)}
+        <text x="47" y="116" textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--fo-ink)">{`${S.weekdays} · ${text(weekdayPct)}`}</text>
+        <text x="173" y="116" textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--fo-ink)">{`${S.weekend} · ${text(weekendPct)}`}</text>
+        <path d={`M8 ${yBudget}H212`} stroke="var(--fo-ink)" strokeWidth="1" strokeDasharray="3 4" opacity=".5" />
+        <text x="110" y={(Number(yBudget) - 4).toFixed(1)} textAnchor="middle" fontSize="9" fill="var(--fo-sub)">{S.budget}</text>
+      </svg>
     </div>
   )
 }
@@ -184,12 +161,11 @@ const WEEK_PARAM = 'w'
 const PREV_WEEK_VALUE = 'elozo'
 
 /**
- * C5 (mezo-83g0): a nap étkezései a nyitott üvegdobozban — a prototípus `trendDayGlass`
- * étkezés-szekciója (`fuel-pages.js:244+`), a MEGLÉVŐ napi olvasásból (`useFuelDay`).
+ * C5 (mezo-83g0): a nap étkezései a nyitott lapon — a MEGLÉVŐ napi olvasásból (`useFuelDay`).
  *
  * FETCH-FEGYELEM: ez a komponens KIZÁRÓLAG a nyitott doboz belsejében van beillesztve, tehát a
- * napi kérés a doboz megnyitásakor indul — nem hét nappal előre, és naplózatlan napon soha (az
- * üvegdoboz naplózatlan ága a gyerekeket el sem rendereli).
+ * napi kérés a doboz megnyitásakor indul — nem hét nappal előre, és naplózatlan napon soha (a
+ * doboz naplózatlan ágai a gyerekeket el sem renderelik).
  *
  * C5 MÁSODIK fele: a coach-TÖRTÉNET cache-only. Ez a lista a napot OLVASSA; étkezés-coach
  * verdiktet nem kér és nem generál. Az étkezés pontja csak akkor látszik, ha a napi válasz MÁR
@@ -197,60 +173,55 @@ const PREV_WEEK_VALUE = 'elozo'
  */
 function DayMealList({ date, onOpenMeal }: { date: string; onOpenMeal: (mealId: string) => void }) {
   const { fuel, isPending } = useFuelDay(date)
-
-  if (isPending) {
-    return (
-      <>
-        <h2 className="ftx-section">A nap étkezései</h2>
-        <p className="ftx-meals-note">Töltjük a nap étkezéseit…</p>
-      </>
-    )
-  }
+  const D = useM().fuelTrendek.day
   return (
     <>
-      <h2 className="ftx-section">A nap étkezései</h2>
-      {fuel.meals.length === 0 ? (
+      <Lab>{D.meals}</Lab>
+      {isPending ? (
+        <Txt className="fr-meals-note">{D.mealsLoading}</Txt>
+      ) : fuel.meals.length === 0 ? (
         // A rollup szerint volt fogyás ezen a napon, a napi olvasás mégsem ad étkezést: ezt
         // kimondjuk, nem üres listát rajzolunk.
-        <p className="ftx-meals-note">Erről a napról nincs tételes étkezés mentve.</p>
+        <Txt className="fr-meals-note">{D.mealsNone}</Txt>
       ) : (
-        <ul className="ftx-meals">
+        <div className="fr-meals">
           {fuel.meals.map((meal) => (
-            <li key={meal.id}>
-              <button type="button" className="ftx-meal" onClick={() => onOpenMeal(meal.id)}>
-                <span aria-hidden="true"><Icon3D name="t-plate" size={28} /></span>
-                <span className="ftx-meal-copy">
-                  <strong>{mealDisplayName(meal) ?? 'Étkezés'}</strong>
-                  <small>
-                    {hhmmFromLoggedAt(meal.loggedAt, '—')} · {huInt(meal.kcal)} kcal
-                  </small>
-                </span>
-                {meal.score != null && (
-                  <b className="ftx-meal-score"><Icon3D name="t-score" size={20} />{hu1(meal.score * 10)}</b>
-                )}
-                <b aria-hidden="true">›</b>
-              </button>
-            </li>
+            <Row
+              key={meal.id}
+              icon="t-plate"
+              // a név a felhasználóé (tárolt szöveg): nem fordítjuk
+              title={mealDisplayName(meal) ?? D.mealFallback}
+              sub={D.mealSub(hhmmFromLoggedAt(meal.loggedAt, '—'), fmtGrouped(meal.kcal))}
+              value={meal.score == null ? undefined : fixed1(meal.score * 10)}
+              chev
+              onClick={() => onOpenMeal(meal.id)}
+            />
           ))}
-        </ul>
+        </div>
       )}
     </>
   )
 }
 
-/** Az étkezés-pont egy tizedessel, magyar vesszővel — 8,2 (prototípus `score1`). */
-function huScore(n: number): string {
-  return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+/** Betöltés közben hét üres edény áll a hét helyén — a napok dátuma ismert, a tartalmuk még nem. */
+function placeholderDays(start: string): FuelWeekDay[] {
+  const zero = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+  return Array.from({ length: 7 }, (_, i) => ({ date: addDays(start, i), targets: zero, consumed: zero }) as FuelWeekDay)
 }
 
 export function FuelTrendekPage() {
   const navigate = useNavigate()
+  const M = useM()
+  const T = M.fuelTrendek
   const [searchParams, setSearchParams] = useSearchParams()
   const showingPrevious = searchParams.get(WEEK_PARAM) === PREV_WEEK_VALUE
   const thisMonday = mondayIso()
   const prevMonday = addDays(thisMonday, -7)
+  const shownMonday = showingPrevious ? prevMonday : thisMonday
 
-  const { start, weekDays, mealScoreAvg, weightAvgKg } = useFuelWeek(showingPrevious ? prevMonday : thisMonday)
+  const { start, weekDays, mealScoreAvg, weightAvgKg } = useFuelWeek(shownMonday)
+  // A nyitott hét betöltés-jelzője: UGYANAZ a query-kulcs, amit a `useFuelWeek` olvas — nincs második letöltés.
+  const loading = useFuelWeekRollup(shownMonday).isPending
   // C2: a MÚLT hét ugyanabból a heti végpontból, a `useFuelWeek` pontos query-kulcsával — a múlt
   // heti nézetben ez UGYANAZ a kulcs, amit a lap már olvas, tehát nincs második letöltés.
   const previous = useFuelWeekRollup(prevMonday)
@@ -258,9 +229,14 @@ export function FuelTrendekPage() {
   // Amíg a valós olvasás nem oldódott fel, NEM állítjuk, hogy nincs korábbi hét.
   const previousKnownEmpty = !previous.isPending && !previousHasData
   const { week: meWeek } = useMeWeek(start)
-  const { weeks: horizonWeeks } = useFuelHorizon(start)
+  const { weeks: horizonWeeks, pending: horizonPending } = useFuelHorizon(start)
+  // A napi mérések és a súlycél a MEGLÉVŐ hookokból (a prototípus „SZÁMOLHATÓ" jegyzetei): cél nélkül nincs vízvonal.
+  const { weightLog } = useWeight()
+  const { goalResponse } = useGoal()
   const { patterns } = usePatterns()
   const [openDate, setOpenDate] = useState<string | null>(null)
+
+  useFrameTitle({ eyebrow: showingPrevious ? T.frame.previous : T.frame.current })
 
   // A nap AI pontja és az edzésnap-jelölés a MEGLÉVŐ napi értékelésből (új formula nélkül).
   const dayScores: Record<string, number | null> = {}
@@ -277,11 +253,14 @@ export function FuelTrendekPage() {
     }
   }
 
-  const vm = buildWeekView({ start, days: weekDays, mealScoreAvg, weightAvgKg }, dayScores, trainingDays)
+  const vm = buildWeekView(
+    { start, days: loading && weekDays.length === 0 ? placeholderDays(shownMonday) : weekDays, mealScoreAvg, weightAvgKg },
+    dayScores,
+    trainingDays,
+  )
   const avgKcal = loggedKcalAvg(vm.days)
 
-  // C2: a változás mindig a NYITOTT hét és az ELŐTTE álló hét különbsége — a prototípus szerint
-  // (`fuel-pages.js:211`: `isCurrent?deltas[kind]:null`) a múlt heti nézetben nincs mihez mérni,
+  // C2: a változás mindig a NYITOTT hét és az ELŐTTE álló hét különbsége — a múlt heti nézetben nincs mihez mérni,
   // ezért ott egyetlen delta sem áll. Amíg a korábbi hét nem oldódott fel (vagy nincs egyetlen
   // naplózott napja sem), `null` — tehát nincs delta, nem nulla delta.
   // A korábbi hét VM-jéhez nem kell napi pont és edzésnap: a delták csak a három átlagot olvassák.
@@ -298,23 +277,27 @@ export function FuelTrendekPage() {
         [],
       )
   const deltas = weekDeltas(vm, previousVm)
-  // A sávok közös léptéke: a hét legnagyobb kerete/fogyása, legalább 2400 — így egy gyéren
+  // Az edények közös léptéke: a hét legnagyobb kerete/fogyása, legalább 2400 — így egy gyéren
   // naplózott hét egyetlen napja sem nyúlik a tetőig.
   const max = Math.max(2400, ...vm.days.map(d => Math.max(d.kcal ?? 0, d.targetKcal ?? 0)))
 
-  // SEMLEGES heti olvasat. Egy alig naplózott hét le van ÍRVA, nem leosztályozva.
+  // SEMLEGES heti olvasat. Egy alig naplózott hét le van ÍRVA, nem leosztályozva. A különbség a NYERS értékek
+  // különbségének kerekítése, nem két kerekített szám különbsége.
   const delta = vm.weekdayAvgPct != null && vm.weekendAvgPct != null
     ? vm.weekendAvgPct - vm.weekdayAvgPct
     : null
-  const read = vm.loggedCount === 0
-    ? 'Ezen a héten még nincs naplózott nap. Nem találgatunk helyetted — amit felveszel, az rögtön itt lesz.'
-    : delta == null
-      ? `${vm.loggedCount} naplózott nap van a héten. A hét többi része még előtted áll — üresen hagyjuk, nem találgatjuk.`
-      : Math.abs(delta) < 5
-        ? `${vm.loggedCount} naplózott nap: a hétköznapok és a hétvége nagyjából egy szinten mozognak.`
-        : delta > 0
-          ? `Hétvégén átlagosan ${huInt(Math.round(delta))}%-kal többet ettél a keretedhez mérve, mint hétköznap. Így alakult, és most már látod.`
-          : `Hétköznap átlagosan ${huInt(Math.round(Math.abs(delta)))}%-kal többet ettél a keretedhez mérve, mint hétvégén. Így alakult, és most már látod.`
+  const gap = delta == null ? null : Math.round(Math.abs(delta))
+  const [verdict, sub]: [string, string] = loading
+    ? [T.hero.loading, '']
+    : vm.loggedCount === 0
+      ? [T.hero.none, T.hero.noneSub]
+      : delta == null
+        ? [T.hero.some(vm.loggedCount), T.hero.someSub]
+        : Math.abs(delta) < 5
+          ? [T.hero.level, '']
+          : delta > 0
+            ? [T.hero.weekend(gap!), T.hero.soItWent]
+            : [T.hero.weekday(gap!), T.hero.soItWent]
 
   // C4: HIVATKOZÁSOK, nem másolatok. Felismerés nélkül a réteg csendben elmarad.
   const patternRefs = fuelPatternRefs(patterns)
@@ -322,120 +305,93 @@ export function FuelTrendekPage() {
   const openDay = openDate ? vm.days.find(d => d.date === openDate) ?? null : null
   const openRollup = openDate ? weekDays.find(d => d.date === openDate) ?? null : null
 
+  // A csempék alsó sora: IRÁNY és mennyiség, semmi más — se jó, se rossz szín, se minősítő szó.
+  const deltaText = (d: WeekDelta | undefined, text: (amount: string, up: boolean) => string, dec: 0 | 1) =>
+    d ? text(dec === 1 ? fixed1(d.amount) : fmtGrouped(d.amount), d.direction === 'up') : undefined
+  const anyDelta = deltas.avg != null || deltas.quality != null || deltas.weight != null
+  // A heti étkezés-pont 0..1-ben érkezik; a 0–10-es skála a ház olvasata.
+  const quality = vm.mealScoreAvg == null ? null : vm.mealScoreAvg * 10
+  const wait = !horizonPending && horizonNeedsMoreWeeks(horizonWeeks)
+  const goalKg = goalResponse?.targetWeightKg ?? null
+
   return (
-    <MozaikPage tone="sage" className="ftx-page">
-      <EntranceGroup>
-        <PageBody className="ftx-body">
-          <div className="ftx-hero uv-halo">
-            <span className="ftx-glow" aria-hidden="true" />
-            <h1>Trendek</h1>
-            {/* A hét-váltó (prototípus `tx-weeknav`): a nyitott hét és a múlt hét között lép. */}
-            <div className="ftx-weeknav">
-              <button
-                type="button"
-                className="uv-flat"
-                aria-pressed={showingPrevious}
-                disabled={showingPrevious || previousKnownEmpty}
-                onClick={() => setSearchParams({ [WEEK_PARAM]: PREV_WEEK_VALUE })}
-              >
-                ‹ Múlt hét
-              </button>
-              <strong className="ftx-week">{deriveWeekTitle(start === '' ? thisMonday : start)}</strong>
-              <button
-                type="button"
-                className="uv-flat"
-                aria-pressed={!showingPrevious}
-                disabled={!showingPrevious}
-                onClick={() => setSearchParams({})}
-              >
-                Ez a hét ›
-              </button>
-            </div>
-            {/* Őszintén: új felhasználónál nincs korábbi hét — ez NORMÁL állapot, nem hiba. */}
-            {!showingPrevious && previousKnownEmpty && (
-              <p className="ftx-weeknav-note">Ez az első heted — még nincs korábbi hét, amire visszalépj.</p>
-            )}
-            <div className="ftx-big">
-              <strong>{vm.loggedCount}</strong>
-              <span>
-                <b>/ 7 naplózott nap</b>
-                <small>EBBŐL ÁLL A HETI KÉP</small>
-              </span>
-            </div>
-            {/* A18/E11 (mezo-qt5q): a Kalauz „Mutasd meg a képernyőn" gombja erre a sávra
-                mutat — a heti kép feltétel nélkül renderel, tehát a horgony sosem tűnik el. */}
-            <div className="ftx-bars" data-kalauz-anchor="trendek-heti">
-              {vm.days.map(day => (
-                <WeekDayBar key={day.date} day={day} max={max} onOpen={() => setOpenDate(day.date)} />
-              ))}
-            </div>
-            <p className="ftx-read uv-voice">{read}</p>
-            <p className="ftx-hint">A szám a nap pontja · koppints a részletekért</p>
-          </div>
+    <Page className="fr-page">
+      {/* A hét-váltó: a nyitott hét és a múlt hét között lép. */}
+      <div className="fr-wn">
+        <button
+          type="button"
+          aria-pressed={showingPrevious}
+          disabled={showingPrevious || previousKnownEmpty}
+          onClick={() => setSearchParams({ [WEEK_PARAM]: PREV_WEEK_VALUE })}
+        >
+          ‹ {T.nav.prev}
+        </button>
+        <b className="fr-week">{weekRangeTitle(start === '' ? thisMonday : start)}</b>
+        <button
+          type="button"
+          aria-pressed={!showingPrevious}
+          disabled={!showingPrevious}
+          onClick={() => setSearchParams({})}
+        >
+          {T.nav.current} ›
+        </button>
+      </div>
+      {/* Őszintén: új felhasználónál nincs korábbi hét — ez NORMÁL állapot, nem hiba. */}
+      {!showingPrevious && previousKnownEmpty && <p className="fr-wnn">{T.nav.first}</p>}
 
-          <div className="ftx-tiles">
-            <StatTile kind="avg" value={avgKcal} delta={deltas.avg} index={2} />
-            {/* A heti étkezés-pont 0..1-ben érkezik; a 0–10-es skála a ház olvasata. A csempe
-                neve `score`, a delta kulcsa `quality` — a prototípus szótára, egy helyen kötve. */}
-            <StatTile
-              kind="score"
-              value={vm.mealScoreAvg == null ? null : vm.mealScoreAvg * 10}
-              delta={deltas.quality}
-              index={3}
-            />
-            <StatTile kind="weight" value={vm.weightAvgKg} delta={deltas.weight} index={4} />
-          </div>
+      <Hero
+        className="fr-hero"
+        label={loading ? T.hero.labelLoading : T.hero.label(vm.loggedCount)}
+        verdict={<span className="fr-read"><SafeMarkdown text={verdict} /></span>}
+        sub={sub ? `${sub} ${T.hero.hint}` : T.hero.hint}
+        graphic={<div className="fr-hg">
+          <WeekVessels days={vm.days} max={max} disabled={loading} onOpen={setOpenDate} />
+          <WeekLegend days={vm.days} />
+        </div>}
+      >
+      </Hero>
 
-          <h2 className="ftx-section">Hétköznap és hétvége</h2>
-          <div className="ftx-split glass" style={{ '--c': 'var(--dv-amber)', '--i': 5 } as React.CSSProperties}>
-            <SplitRow label="Hétköznap" icon="t-sun" color="var(--dv-sage)" pct={vm.weekdayAvgPct} />
-            <SplitRow label="Hétvége" icon="t-moon" color="var(--dv-amber)" pct={vm.weekendAvgPct} />
-            {delta == null ? (
-              <p className="ftx-split-note">
-                A kettő összevetéséhez mindkét oldalon kell legalább egy naplózott nap — amíg nincs,
-                üresen hagyjuk.
-              </p>
-            ) : (
-              <p className="ftx-split-note">
-                A különbség <b>{huInt(Math.round(Math.abs(delta)))} százalékpont</b>{' '}
-                {delta > 0 ? 'a hétvége javára' : 'a hétköznapok javára'}.
-              </p>
-            )}
-          </div>
+      <Section n={1} title={T.numbers.title} />
+      <Card>
+        <StatGrid three className="fr-t3">
+          <Stat className="is-avg" label={T.numbers.avg} icon="t-plate"
+            value={avgKcal == null ? '—' : fmtGrouped(avgKcal)} unit={avgKcal == null ? undefined : 'kcal'}
+            note={deltaText(deltas.avg, T.numbers.avgDelta, 0)} />
+          <Stat className="is-score" label={T.numbers.quality} icon="t-score"
+            value={quality == null ? '—' : fixed1(quality)} unit={quality == null ? undefined : T.numbers.outOfTen}
+            note={deltaText(deltas.quality, T.numbers.qualityDelta, 1)} />
+          <Stat className="is-weight" label={T.numbers.weight} icon="t-weight" color={MACRO_COLOR.water}
+            value={vm.weightAvgKg == null ? '—' : fixed1(vm.weightAvgKg)} unit={vm.weightAvgKg == null ? undefined : 'kg'}
+            note={deltaText(deltas.weight, T.numbers.weightDelta, 1)} />
+        </StatGrid>
+        {anyDelta && <Note>{T.numbers.deltaNote}</Note>}
+      </Card>
 
-          <h2 className="ftx-section">Hosszabb táv</h2>
-          <FuelHorizon weeks={horizonWeeks} />
+      <Section n={2} title={T.split.title} />
+      <Card>
+        <WeekSplit weekdayPct={vm.weekdayAvgPct} weekendPct={vm.weekendAvgPct} />
+        <Note className="fr-split-note">
+          {delta == null
+            ? T.split.needBoth
+            : <SafeMarkdown text={(delta > 0 ? T.split.gapWeekend : T.split.gapWeekdays)(gap!)} />}
+        </Note>
+      </Card>
 
-          {patternRefs.length > 0 && (
-            <>
-              <h2 className="ftx-section">Mintázatok</h2>
-              <div className="ftx-patterns">
-                {patternRefs.map((ref, i) => (
-                  <button
-                    key={ref.pairKey}
-                    type="button"
-                    className="ftx-pattern glass"
-                    style={{ '--c': 'var(--dv-lav)', '--i': 7 + i } as React.CSSProperties}
-                    onClick={() => navigate(ref.route)}
-                  >
-                    <span className="ftx-pattern-art" aria-hidden="true">
-                      <Icon3D name="t-pattern" size={40} />
-                    </span>
-                    <span className="ftx-pattern-copy">
-                      <strong>{ref.title}</strong>
-                      <small>{ref.stateLabel}</small>
-                    </span>
-                    <b aria-hidden="true">↗</b>
-                  </button>
-                ))}
-              </div>
-              <p className="ftx-note">
-                A mintázatok otthona a Mezo — innen odalépsz, nem másolatot látsz.
-              </p>
-            </>
-          )}
-        </PageBody>
-      </EntranceGroup>
+      <Section n={3} title={wait ? T.horizon.title : T.horizon.titleWeeks(horizonWeeks.length)} />
+      <FuelHorizon weeks={horizonWeeks} weightLog={weightLog} goalKg={goalKg} pending={horizonPending} />
+
+      {patternRefs.length > 0 && (
+        <>
+          <Section n={4} title={T.patterns.title(patternRefs.length)} />
+          <Card className="fr-patterns">
+            {patternRefs.map((ref) => (
+              // a cím a minta TÁROLT címe: nem fordítjuk; az állapot egy szó
+              <Row key={ref.pairKey} className="fr-pattern" icon="t-pattern" title={ref.title} sub={ref.stateLabel} to={ref.route} />
+            ))}
+            <Note>{T.patterns.note}</Note>
+          </Card>
+        </>
+      )}
 
       {openDay && openRollup && (
         <FuelWeekDayGlass
@@ -450,6 +406,6 @@ export function FuelTrendekPage() {
           />
         </FuelWeekDayGlass>
       )}
-    </MozaikPage>
+    </Page>
   )
 }

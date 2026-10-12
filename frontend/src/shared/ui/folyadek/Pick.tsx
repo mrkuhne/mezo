@@ -17,6 +17,21 @@ export function Pills({ className, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cx('fo-pills', className)} {...rest} />
 }
 
+/** Removable chips (prototype `.fx-cats`): what is switched on right now — active filters, the context of a request.
+ *  Each chip is ONE button: tapping it takes it off (the × is its drawn hint). The caller names the action per chip
+ *  (`ariaLabel`: „Hús szűrő levétele"). 32 px drawn, the kit owns the 44 px touch area. */
+export function RemoveChips({ items, className, ...rest }: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
+  items: { key: string; label: ReactNode; ariaLabel: string; onRemove: () => void }[]
+}) {
+  return (
+    <div className={cx('fo-rmc', className)} {...rest}>
+      {items.map((it) => (
+        <button key={it.key} type="button" aria-label={it.ariaLabel} onClick={it.onRemove}>{it.label}<b aria-hidden="true">×</b></button>
+      ))}
+    </div>
+  )
+}
+
 export interface SegItem<K extends string = string> { key: K; label: ReactNode; dot?: boolean }
 
 /** A segmented control. With `tabs` it is a tablist (arrow keys move the selection); otherwise a group of pressed buttons. */

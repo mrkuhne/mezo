@@ -32,6 +32,14 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
+import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
+
+// Folyadék: a cím és a fölötte álló sor a KERETÉ (`useFrameTitle`) — a szonda kiírja, amit az oldal a keretnek ad.
+function FrameProbe() {
+  const { title, eyebrow } = useFrame()
+  return <div data-testid="frame"><span>{title}</span><span>{eyebrow}</span></div>
+}
+const PAGE = <FrameProvider><FrameProbe /><FuelLogNewPage /></FrameProvider>
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
@@ -49,7 +57,7 @@ const wrapper = ({ children }: { children: ReactNode }) => <QueryWrapper>{childr
 function renderAt(entry: string) {
   const router = createMemoryRouter(
     [
-      { path: '/fuel/log/uj', element: <FuelLogNewPage /> },
+      { path: '/fuel/log/uj', element: PAGE },
       { path: '/fuel', element: <div>LOG PAGE PROBE</div> },
     ],
     { initialEntries: [entry] },
@@ -57,7 +65,7 @@ function renderAt(entry: string) {
   return render(<RouterProvider router={router} />, { wrapper })
 }
 
-const activeMode = (container: HTMLElement) => container.querySelector('.fmx-mode.is-active')!.textContent
+const activeMode = (container: HTMLElement) => container.querySelector('.fg-modes > button.on')!.textContent
 
 test('A4: a lap a kamerán nyit', async () => {
   const { container } = renderAt('/fuel/log/uj')
@@ -134,7 +142,7 @@ test('A8: ?edit= a javítás módjában nyit, a rögzítő utak nélkül', async
   // A fejlécben ÉS a „ez az étkezés" kártyán is a logolt étkezés saját címe áll — a javítás nem
   // nevezi át csendben egy derivált névre.
   expect(screen.getAllByText('Túrós zabkása · áfonyával').length).toBeGreaterThanOrEqual(2)
-  expect(container.querySelector('.fmx-mode')).toBeNull()
+  expect(container.querySelector('.fg-shell')).toBeNull()
   // A9: a két lépéses törlés ajtaja itt él.
   expect(screen.getByRole('button', { name: 'Törlöm' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Mentem a javítást/ })).toBeInTheDocument()

@@ -1,33 +1,28 @@
 import type { RecipeRole } from '@/data/types'
+import { m } from '@/shared/i18n'
 
-/** HU copy for the recipe's template meal role (mezo-uavr) — the single source of truth for the
- *  editor segments, the detail chip and the library card tag. */
-const LABELS: Record<RecipeRole, string> = {
-  standard: 'Általános',
-  pre_workout: 'Edzés előtt',
-  post_workout: 'Edzés után',
+/** Copy for the recipe's template meal role (mezo-uavr) — the single source of truth for the
+ *  editor segments, the detail chip and the library card tag. The words live in the catalog
+ *  (`fuelLogika.recipeRole.role`) and are read when CALLED, so they follow a language switch. */
+export function roleLabel(role: RecipeRole): string {
+  const labels = m().fuelLogika.recipeRole.role
+  return labels[role] ?? labels.standard
 }
+
+/** `label` is a getter: `ROLE_OPTIONS.map(o => o.label)` reads the catalog at render time. */
+const option = (id: RecipeRole): { id: RecipeRole; label: string } => ({ id, get label() { return roleLabel(id) } })
 
 export const ROLE_OPTIONS: { id: RecipeRole; label: string }[] = [
-  { id: 'standard', label: LABELS.standard },
-  { id: 'pre_workout', label: LABELS.pre_workout },
-  { id: 'post_workout', label: LABELS.post_workout },
+  option('standard'),
+  option('pre_workout'),
+  option('post_workout'),
 ]
 
-/** Attributive HU copy for the rubric the template was scored under (mezo-uavr). `LABELS` are
- *  postpositional adverbials („edzés előtt") and cannot attribute a noun — „edzés előtt mérce"
- *  reads as a dropped word — so the score-header note needs its own adjectival map. */
-const RUBRIC_LABELS: Record<RecipeRole, string> = {
-  standard: 'általános',
-  pre_workout: 'edzés előtti',
-  post_workout: 'edzés utáni',
-}
-
-export function roleLabel(role: RecipeRole): string {
-  return LABELS[role] ?? LABELS.standard
-}
-
-/** The role as an attribute of the rubric: `{roleRubricLabel(role)} mérce szerint`. */
+/** The role as an attribute of the rubric: `{roleRubricLabel(role)} mérce szerint` (mezo-uavr). The
+ *  role labels are postpositional adverbials in Hungarian („edzés előtt") and cannot attribute a
+ *  noun — „edzés előtt mérce" reads as a dropped word — so the score-header note has its own
+ *  adjectival words (`fuelLogika.recipeRole.rubric`). */
 export function roleRubricLabel(role: RecipeRole): string {
-  return RUBRIC_LABELS[role] ?? RUBRIC_LABELS.standard
+  const labels = m().fuelLogika.recipeRole.rubric
+  return labels[role] ?? labels.standard
 }

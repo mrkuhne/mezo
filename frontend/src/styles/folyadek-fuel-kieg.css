@@ -1,0 +1,84 @@
+/* ── Folyadék · Fuel · kieg (mezo-n4wf5.5, slice F5) ── area E · Kiegészítők (hub, protocol, add wizard, medication + sheets). Rules of this area only, class prefix `.fk-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
+   Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
+
+/* a hero whose graphic stands between the label and the verdict (prototype `gHero`) = the kit Hero's `graphic` slot */
+.fk-ghero > .fo-note { margin-bottom: 4px; }
+
+/* today's doses as capsules, by part of the day (`capsG`): full = taken, ringed = the next one */
+.fk-caps { display: flex; justify-content: space-between; gap: 10px; margin: 16px 0; }
+.fk-caps > .g { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.fk-caps > .g > .r { display: flex; gap: 5px; }
+.fk-caps i { display: block; width: 20px; height: 46px; border-radius: 999px; background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--dom) 5%, #fff)); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fk-caps i.on { background: linear-gradient(180deg, var(--liq1), var(--liq2)); box-shadow: 0 10px 12px -8px var(--liq2), inset 0 0 0 1.5px rgba(255, 255, 255, .5); }
+.fk-caps i.nx { box-shadow: inset 0 0 0 2.5px var(--liq2); }
+.fk-caps small { font-size: 11px; font-weight: 600; color: var(--fo-sub); }
+.fk-ghost i { opacity: .55; }
+/* a finished band goes quiet */
+.fk-dim .fo-row strong { color: var(--fo-sub); }
+.fo-sec.fk-bandsec > .fo-sec-link { margin-left: 2px; }
+
+/* rows that are list items (the protocol's slots, the dose log): the kit row inside a `role="listitem"` wrapper */
+.fk-list > div + div > .fo-row { border-top: 1px solid var(--fo-hair); padding-top: 12px; }
+.fk-list > div:not(:last-child) > .fo-row { padding-bottom: 12px; }
+.fk-list + .fo-acts, .fk-list + .fk-stop { margin-top: 14px; }
+
+/* the protocol's hero: one vial per time slot */
+.fk-zv .fo-vials { padding: 0; margin-top: 12px; }
+.fk-zv .fo-vial { min-width: 0; }
+.fk-zv .fo-vial small { font-size: 10.5px; line-height: 1.15; overflow-wrap: break-word; }
+
+/* the add wizard: the three-step bar, the search field in the hero, the band chart */
+.fk-pb { display: flex; gap: 8px; margin: 14px 18px 0; padding: 0; list-style: none; }
+.fk-pb > li { flex: 1; min-width: 0; }
+.fk-pb i { display: block; height: 10px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fk-pb .on i, .fk-pb .done i { background: linear-gradient(90deg, var(--liq1), var(--liq2)); box-shadow: none; }
+.fk-pb .done i { opacity: .55; }
+.fk-pb small { display: block; font-size: 11px; color: var(--fo-sub); margin-top: 5px; }
+.fk-pb .on small { color: var(--fo-ink); font-weight: 700; }
+.fk-srch { margin-top: 12px; }
+.fk-band { display: block; width: 100%; height: auto; margin: 12px 0 10px; }
+.fk-band text { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; fill: var(--fo-sub); }
+.fk-band text.big { font-family: var(--ff-display); font-size: 15px; font-weight: 800; fill: var(--fo-ink); }
+.fk-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* paired fields, a field with its unit, a field with its button */
+.fk-two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; align-items: end; }
+.fk-two > div { min-width: 0; }
+.fo-shh + .fk-two .fo-lab { margin-top: 0; }
+.fk-add, .fk-unit { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+.fk-add > .fo-in, .fk-unit > .fo-in { flex: 1; min-width: 0; margin: 0; }
+.fk-unit > span { font-weight: 650; color: var(--fo-sub); padding: 0 6px; }
+
+/* the item box and the timing sheet */
+.fk-sheet .fk-tags > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
+
+/* the medication: the dose beside the route, the cycle as capsules (three heights = three phases), the stop confirm */
+.fk-sc { display: flex; align-items: center; gap: 14px; margin: 10px 0 14px; }
+.fk-sc > .fo-big { font-size: 56px; white-space: nowrap; }
+.fk-rc { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.35; color: var(--fo-sub); font-weight: 600; }
+.fk-cyc { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 5px; margin: 14px 0; padding: 0; list-style: none; }
+.fk-cyc > li { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.fk-cyc .t { position: relative; display: block; width: 100%; max-width: 36px; height: 78px; border-radius: 999px; overflow: hidden; background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--dom) 5%, #fff)); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fk-cyc .t > i { position: absolute; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, var(--liq1), var(--liq2)); opacity: .4; }
+.fk-cyc .now .t { box-shadow: inset 0 0 0 2.5px var(--liq2), 0 12px 14px -10px var(--liq2); }
+.fk-cyc .now .t > i { opacity: 1; }
+.fk-cyc b { font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.fk-cyc small { font-size: 9.5px; color: var(--fo-sub); white-space: nowrap; }
+.fk-off { opacity: .6; }
+.fk-stop { margin: 10px 0 4px; padding: 14px; border-radius: 20px; outline: 1.5px dashed var(--fo-faint); outline-offset: -1.5px; }
+.fk-stop > p { font-size: 13.5px; line-height: 1.45; margin: 0 0 4px; }
+
+@media (max-width: 360px) {
+  .fk-caps { gap: 6px; }
+  .fk-caps i { width: 16px; }
+  .fk-caps > .g > .r { gap: 4px; }
+  .fk-sc > .fo-big { font-size: 44px; }
+  .fk-zv .fo-vials { gap: 4px; }
+  .fk-zv .fo-vial small { font-size: 8.5px; letter-spacing: -.2px; }
+  .fk-cyc b { font-size: 9px; }
+}
+
+/* small rhythm fixes inside this area's cards and sheets */
+.fk-sheet .fo-txt + .fo-row { margin-top: 10px; }
+.fk-sheet .fo-pill.on:disabled { opacity: 1; cursor: default; }
+.fk-page form > .fo-lab:first-child { margin-top: 0; }

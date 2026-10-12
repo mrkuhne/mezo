@@ -60,9 +60,9 @@ describe('LogFlowPage', () => {
     await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
   })
 
-  // Since mezo-byo1 the per-line macro strip is the kind-wash mini-cell row (no MacroCells rail);
-  // the NutrientCells row keeps its own perLabel rail as the single basis marker on the card.
-  it('renders the per-line NutrientCells rail with the line basis', () => {
+  // Folyadék (mezo-n4wf5.5): a sor bázisa a léptető maga (mennyiség + egység) — külön „per" sín nincs;
+  // a sor a négy tárolt tény celláit (NutrientCells) viseli a makró-cellák alatt.
+  it('renders the per-line NutrientCells row; the stepper is the single basis marker', () => {
     const { qc, wrapper } = setup()
     const pantry = renderHook(() => usePantry(), { wrapper })
     // ing-csirkemell (fixture index 0) carries non-null nutrient facts, so NutrientCells renders
@@ -74,9 +74,10 @@ describe('LogFlowPage', () => {
         <LogFlowPage prefill={{ source: 'pantry', pantryItemId: ing.id }} onClose={vi.fn()} />
       </QueryClientProvider>,
     )
-    const perLabel = `${ing.per} ${ing.unit}`
-    // The single rail comes from NutrientCells now.
-    expect(screen.getAllByText(perLabel)).toHaveLength(1)
+    expect(document.querySelectorAll('.fx-ln > .fg-nut')).toHaveLength(1)
+    expect(document.querySelector('.fx-ln .fg-per')).toBeNull()
+    expect(screen.getByRole('textbox', { name: `${ing.name} mennyisége` })).toHaveValue(String(ing.per))
+    expect(document.querySelector('.fx-ln .fx-amt > small')).toHaveTextContent(ing.unit)
   })
 
   it('changing the slot segmented control updates the logged meal slot', async () => {
@@ -92,11 +93,10 @@ describe('LogFlowPage', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Vacsora' }))
     fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
-    // The flow sends the 'dinner' enum in MealInput.slot; the (shipped, frozen) data
-    // layer stores FuelMeal.slot as its Hungarian display label ('Vacsora') — so that
-    // is what surfaces on the logged meal.
+    // The flow sends the 'dinner' enum in MealInput.slot, and the mock stores it as the server does (the KEY, not a
+    // Hungarian display label — Folyadék F5): every screen names the slot from the catalog, in the app language.
     await waitFor(() => {
-      expect(day.result.current.fuel.meals.some(m => m.slot === 'Vacsora')).toBe(true)
+      expect(day.result.current.fuel.meals.some(m => m.slot === 'dinner')).toBe(true)
     })
   })
 

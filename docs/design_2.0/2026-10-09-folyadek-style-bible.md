@@ -461,3 +461,97 @@ Numbered rules appended by each build slice (F1, F2, …). Each was paid for in 
 - **N1.17 — A formatter cached once freezes the time zone it was created in.** `isoDay` kept an `en-CA` `Intl`
   formatter, so a live app that crossed a zone computed "today" in the old one. Build a machine date from the
   date's own parts; keep cached formatters for display only, keyed by locale and options.
+
+**F5 — Fuel (`mezo-n4wf5.5`, 2026-10-12)**
+
+- **F5.1 — Three auditors in one prototype file: the later two audit READ-ONLY in parallel, then apply one after
+  the other.** F3.3 made the agents of one file strictly sequential, which cost three audits' wall-clock. Here
+  area A audited and edited while B and C only read — the live pages against the prototype — and wrote their
+  findings to a file each; B then applied its list on A's result, C on B's, each with the explicit hand-over of
+  F3.3. One writer in the file at any moment, and the two slow reading passes ran for free.
+- **F5.2 — One demo day, one demo week, one daily total for the whole domain.** The Fuel prototype had three
+  different weeks and three daily totals (3 100, 2 800, 2 400 kcal) on pages that show the same day; the builders
+  would have shipped three truths. Every figure now derives from one structure: the budget is Alap + Mozgás −
+  Deficit, the windows' budgets sum to it, the week is one table read by Mai, Trendek and Tanulás (F3.2, for a
+  domain). The same holds one level down: a meal's macros are computed from its lines' own per-100 g values — the
+  edit face had typed them per card and showed olive oil with 18 g protein.
+- **F5.3 — The builder that drew a screen is the wrong reviewer of it: an eye review by fresh agents, per area,
+  on every spec.** After the three auditors' own sweep (console, missing icons, overflow) and scan were clean,
+  three fresh read-only agents looked at every route and sheet in two renderings — 390 px Hungarian and 320 px
+  English — and returned 175 findings: mixed-language sentences („1 kapszula a day"), state faces that
+  contradicted each other (a 2 400 hero over a 2 480 cell), clipped tiles, a verdict that was only a name. None is
+  detectable by a script. Run this review before the owner sees the Artifact; give the reviewers the bible, the
+  screenshots and no file to edit.
+- **F5.4 — When a style „does not apply", read the DOM before raising specificity.** The prototype kit's `stat()`
+  wrapper turned every space of the numeral into a no-break space — the spaces inside a tag's attributes included
+  — so `<span class="…">` became an unknown element and its rule never matched. Two rounds went into selector
+  weight before anyone looked at the rendered node. A helper that post-processes a string must not be handed
+  markup; use an attribute-free element (`<em>`) or pass the parts separately.
+- **F5.5 — The top tabs scroll sideways: the active one is brought into view.** In English at 320 px the fourth
+  tab („Kitchen") started off-screen, so the page under it showed no lit tab. The prototype shell now scrolls the
+  active tab into view on every render. The app's `.fo-tabs` scrolls the same way (`overflow-x: auto`) and
+  `TopTabs` has no such step yet; `language-en.spec.ts` asserts whole tab words, not that the active one is
+  visible — check it whenever a domain's English tab names land.
+- **F5.6 — In a prototype, enums and units are translated, stored and typed text is not, and one sentence never
+  mixes the two.** „capsule", „pcs", „dose", a slot or a phase are system words: English in English mode. A
+  supplement's name, a note, an already-written reason stay as written. A sentence that needs a stored part in its
+  middle („Next: {name}." is fine; „1 kapszula a day" is not) either uses the enum's English or leaves the stored
+  part out of the English sentence. The side note's „Angolul" paragraph lists what stays Hungarian, in one place.
+- **F5.7 — Catalog layout for parallel builders: one pair per area, plus `-kozos` and `-logika` that only the
+  foundation edits.** Nine builders could not share one `fuel` catalog (N1.14). Each area got its own pair
+  (`fuel-mai` … `fuel-beallitas`), planted empty and registered in the index before dispatch. The words of the
+  shared pieces live in `fuel-kozos`; the label maps of the logic files in `fuel-logika`, converted by the
+  foundation into getter-backed objects read at call time (`get label() { return m()… }`), so importers and their
+  Hungarian tests did not change. A builder that needs a shared word reports it. A logic file never reads an
+  area's catalog — one key that did had to be moved afterwards.
+- **F5.8 — The foundation diffs the prototype's helper list against the kit's exports — not only the repeating
+  pieces it happens to notice.** Ten page families each re-invented „the graphic between the label and the
+  verdict" with CSS `order` (`.fp-ghero`, `.fk-ghero`, `.fg-hero`, `.ft-hero`, `.fe-ghero`, …): the prototype's
+  most common hero form, `gHero`, had no kit counterpart, while rarer pieces had been carefully built. It was
+  folded afterwards into ONE `Hero graphic` slot whose DOM order is label → graphic → verdict (a visual reorder
+  that screen readers do not follow is also wrong). The same list found three twins of a „sentence with a bold
+  run" helper, three note tones, two removable-chip rows and two result lines. Before dispatch: every helper the
+  prototype file calls is mapped to a kit or shared export, or built.
+- **F5.9 — Missing `format.ts` styles surface as local helpers: collect the reports, add the styles centrally,
+  delete the locals.** The builders were forbidden to format by hand, so the gaps came out as `fixed1`, `dec`,
+  `fmtAmount`, hand-padded clocks and a catalog key holding the decimal mark — nine reports naming the same five
+  needs (a fixed decimal, a clock, a day with its clock, a range, the dotted lower-case short month and the
+  weekday forms). They were added once, with time-zone tests shown red first (N1.9), and the locals deleted; the
+  ratchet ended with no file of the domain on it. Ask for „style missing" lines in every builder report.
+- **F5.10 — The mock returns the real SHAPE.** Mock seeds carried ready-made Hungarian display strings
+  („Máj 20 · 09:14", „tegnap 21:00", „4 napja", „Ma"). They pass every catalog untouched and show Hungarian in
+  English mock mode — which is what the owner's runtime pass and the layout specs look at (F3.11, N1.11). A mock
+  field holds what the server sends (an ISO instant, an enum, a number) and the screen formats it.
+- **F5.11 — A server sentence stored per record can be in either language later: never key client logic on a
+  server-written label.** The meal role was read from the score envelope's row labelled `Szerep`; an English
+  account's envelope says `Role`, so every English meal silently became a standard meal. Match ids and enums;
+  where the wire has only a label, accept it in every language the server writes and test each.
+- **F5.12 — A prompt that demands a language fights the appended directive; an async listener must bind the
+  owner.** „Válaszolj magyarul" above an English `[OUTPUT LANGUAGE]` block gives a coin toss. The Hungarian prompt
+  stays byte-identical (N1.12) and English accounts get a variant with only the language demand removed, pinned by
+  a test that the neutral text contains no „magyar". Separately, the eager meal verdict of an English account was
+  written in Hungarian: the `@Async` listener's thread had no actor, so the language fell back. Any write off the
+  request thread runs under the record's owner (`LlmActorContext.runAs`).
+- **F5.13 — A behaviour change approved on the prototype needs an owner in the build plan: the source of the fact
+  and every consumer, named before dispatch.** „Ablakon kívül · HH:mm" was decided in a foundation logic file
+  nobody owned; the area that needed it changed it there, with the key in its own catalog, and two pages (the
+  meal page and its score page) derived the slot name on a path of their own and kept the old word. One line in
+  the plan — the function that states the fact, the screens that print it, who edits which — would have cost
+  nothing.
+- **F5.14 — An optional prop for a new control is invisible until every opener passes it.** „Visszavonom az
+  utolsót" on the water sheet needs the opener's own hook instance, so the sheet took optional `onUndo` /
+  `canUndo` and drew the link only when both arrived. It was green in the sheet's tests and absent from the
+  quick-log opener. List the openers of a shared sheet with each new prop, and test the control from every one.
+- **F5.15 — Deleting dead components is part of flipping the language guard honestly.** With `features/fuel/` in
+  the guard, unreachable files full of Hungarian literals either get translated for nobody or get allowlisted —
+  and an allowlist is for needles matched against stored text, never for words a screen could print (N1.8).
+  Seven dead files were deleted with a zero-importer proof instead; the four that remain have no Hungarian
+  literal and wait for F9.
+- **F5.16 — A guide describes chrome and words: changed copy bumps its version.** The kalauz cards of Fuel named
+  rings, the „stack" and three header chips that no longer exist (F1.10). Rewriting them raised each guide's
+  `version`, so everyone — the owner included — sees those guides once more. That is intended; say it in the
+  report, so it does not read as a bug.
+- **F5.17 — A page with its own bottom action bar hides the quick-log button.** The floating foot of the add
+  wizard and of the recipe editor ends where the app's round quick-log button sits, and the two overlapped at the
+  right edge. The prototype draws no such button on those pages; the rule lives in the shell (the route list in
+  `AppLayout`), not in a page's padding. A new page with a `Page foot` adds its route there.

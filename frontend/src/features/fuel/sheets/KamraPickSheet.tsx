@@ -1,72 +1,59 @@
 // ============================================================
 // Mezo · KamraPickSheet (unified log flow — mezo-d20.4.2; re-faced in mezo-byo1)
-// The 🫙 Kamra source tile's picker: a multi-add nested modal that STAYS OPEN so several
-// pantry lines can be added in one open (design 2.0 iterations §7). Scoped to plain food
-// pantry items — the same set LogMealSheet's Kamra arm has always drawn from.
+// The Kamra source's picker: a multi-add nested sheet that STAYS OPEN so several pantry lines can be
+// added in one open (design 2.0 iterations §7). Scoped to plain food pantry items.
 //
-// mezo-byo1 face (prototype fuel-logolas.html #sh-kpick): a horizontal CATEGORY CHIP row
-// under the search (Mind + one color-dotted chip per category actually present, labels/
-// colors from usePantry().categoryMeta), and the rows wear the Kamra page's kind-wash
-// card language — category-colored spine + faint wash, NOVA dot, a right-aligned kcal
-// cell — instead of the flat white cards. Search and chip filters compose.
+// Folyadék (mezo-n4wf5.5, prototype fuel.js `SH.kamrapick`): the light sheet with its head, the search
+// field, one pill per category actually on the shelf (+ Mind), and two-storey rows — name, brand · NOVA,
+// kcal per basis and the add button on top, the three macro levels under them. Search and pills compose.
 // ============================================================
 import { useMemo, useState } from 'react'
 import { usePantry } from '@/data/hooks'
 import type { Ingredient } from '@/data/types'
-import type { NovaGroup } from '@/data/nova'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Icon } from '@/shared/ui/Icon'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { Display } from '@/shared/ui/Display'
-import { Icon3D } from '@/shared/ui/clay'
-import { NovaDot } from '@/features/fuel/components/NovaDot'
-import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { Empty, FoSheetHead, Pill, Pills, SearchField } from '@/shared/ui/folyadek'
+import { ItemRow, M3 } from '@/features/fuel/components/folyadek'
+import { pantryCategoryIcon, pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 
-const FALLBACK_COLOR = 'var(--text-secondary)'
+const Check = () => (
+  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+)
 
 function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onPick: () => void }) {
-  const { categoryMeta } = usePantry()
-  const catColor = categoryMeta[ing.category ?? '']?.color ?? FALLBACK_COLOR
-  const nova = (ing.nova != null && ing.nova >= 1 && ing.nova <= 4 ? ing.nova : null) as NovaGroup | null
+  const M = useM()
+  const L = M.fuelLog.pick
+  const nova = ing.nova === 1 || ing.nova === 2 || ing.nova === 3 || ing.nova === 4 ? ing.nova : null
+  const sub = [ing.brand, nova != null ? M.fuelKozos.nova[`n${nova}`] : null].filter(Boolean).join(' · ')
   return (
-    <div className="fkp-item" style={{ '--kc': catColor } as React.CSSProperties}>
-      <div className="row" style={{ alignItems: 'center', gap: 8 }}>
-        <div className="col flex-1" style={{ minWidth: 0 }}>
-          <span className="fkp-name">{ing.name}</span>
-          <span className="label-mono row gap-xs fkp-meta">
-            {ing.brand && <span>{ing.brand}</span>}
-            {nova != null && <NovaDot nova={nova} />}
-          </span>
-        </div>
-        <span className="fkp-kcell">
-          <b>{ing.macros.kcal ?? '—'}</b><small>kcal /{ing.per}{ing.unit}</small>
+    <ItemRow icon={pantryCategoryIcon(ing.category)} title={ing.name} sub={sub || undefined}
+      value={(
+        <span className="fg-pk2">
+          <span>{ing.macros.kcal == null ? '—' : fmtGrouped(ing.macros.kcal)}<small>{L.perBasis(fmtNum(ing.per), ing.unit)}</small></span>
+          {added
+            ? <button type="button" disabled aria-label={L.added(ing.name)} className="fx-add on"><Check /></button>
+            : <button type="button" onClick={onPick} aria-label={L.add(ing.name)} className="fx-add">+</button>}
         </span>
-        {added ? (
-          <button disabled aria-label={ing.name + ' hozzáadva'} className="fkp-add is-added">
-            <Icon name="check" size={14} />
-          </button>
-        ) : (
-          <button onClick={onPick} aria-label={ing.name + ' hozzáadása'} className="fkp-add">
-            <Icon name="plus" size={14} />
-          </button>
-        )}
-      </div>
-      <div style={{ marginTop: 8 }}><MacroCells macros={ing.macros} perLabel={`/${ing.per}${ing.unit}`} /></div>
-    </div>
+      )}>
+      <M3 p={ing.macros.p} c={ing.macros.c} f={ing.macros.f} />
+    </ItemRow>
   )
 }
 
 export function KamraPickSheet({
   onPick, onClose, addedRefIds = [],
 }: { onPick: (ing: Ingredient) => void; onClose: () => void; addedRefIds?: string[] }) {
-  const { ingredients, categoryMeta } = usePantry()
+  const M = useM()
+  const L = M.fuelLog.pick
+  const { ingredients } = usePantry()
   const added = new Set(addedRefIds)
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState<string | null>(null)
   const q = query.toLowerCase()
 
-  // Only categories actually on the shelf become chips — labeled/colored from categoryMeta,
-  // falling back to the raw key so an unmapped category still filters honestly.
+  // Only categories actually on the shelf become pills — labelled in the app language (`pantryCategoryLabel`, the same
+  // words as the Kamra's own filter); an unmapped category prints its raw key, so it still filters honestly.
   const cats = useMemo(
     () => [...new Set(ingredients.map(i => i.category))].filter((c): c is string => !!c),
     [ingredients],
@@ -76,55 +63,23 @@ export function KamraPickSheet({
     && (!q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q)))
 
   return (
-    // Üveg (mezo-me75u.2, uveg-fuel-tobbi `SH.kamrapick`): a sheet `flp-kpick` hatókörében a
-    // sorok LAPOS cellák a kategória-színű belső gerinccel, a fejléc a Kamra 3D ikonját viseli.
-    <Sheet glass onClose={onClose} className="sheet-nested flp-kpick uvl-kamra" labelledBy="kamra-pick-title">
+    <Sheet onClose={onClose} className="fo-sheet sheet-nested fg-pick" labelledBy="kamra-pick-title">
       {(close) => (
         <>
-          <div className="row flp-kpick-head">
-            <Icon3D name="t-stack" size={48} />
-            <div className="col" style={{ flex: 1, minWidth: 0 }}>
-              <Eyebrow brand>Kamra · hozzáadás</Eyebrow>
-              <div id="kamra-pick-title" style={{ marginTop: 4 }}><Display size="md">Válassz a polcról</Display></div>
-            </div>
-            <button className="flp-x" aria-label="Bezárás" onClick={close}>
-              <Icon name="x" size={12} />
-            </button>
-          </div>
-
-          <div className="row gap-sm flp-search">
-            <Icon name="search" size={14} color="var(--text-muted)" />
-            <input value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Keress a Kamrában…" aria-label="Keresés a kamrában" />
-          </div>
-
-          <div className="fkp-chiprow" role="group" aria-label="Kategória-szűrő">
-            <button type="button" className={'fkp-chip' + (cat == null ? ' is-on' : '')}
-              style={{ '--cc': 'var(--text-secondary)' } as React.CSSProperties}
-              aria-pressed={cat == null} onClick={() => setCat(null)}>
-              Mind
-            </button>
+          <FoSheetHead icon="t-stack" title={L.pantryTitle} titleId="kamra-pick-title" sub={L.pantrySub} onClose={close} />
+          <SearchField value={query} onChange={setQuery} placeholder={L.pantrySearch} aria-label={L.pantrySearchAria} />
+          <Pills className="fg-cats" role="group" aria-label={L.catGroup}>
+            <Pill on={cat == null} onClick={() => setCat(null)}>{L.all}</Pill>
             {cats.map(c => (
-              <button key={c} type="button" className={'fkp-chip' + (cat === c ? ' is-on' : '')}
-                style={{ '--cc': categoryMeta[c]?.color ?? FALLBACK_COLOR } as React.CSSProperties}
-                aria-pressed={cat === c} onClick={() => setCat(prev => (prev === c ? null : c))}>
-                <span className="fkp-cdot" aria-hidden="true" />
-                {categoryMeta[c]?.label ?? c}
-              </button>
+              <Pill key={c} on={cat === c} onClick={() => setCat(prev => (prev === c ? null : c))}>
+                {pantryCategoryLabel(c) ?? c}
+              </Pill>
             ))}
-          </div>
-
-          <div className="col gap-sm" style={{ maxHeight: 400, overflowY: 'auto' }}>
-            {filtered.map(ing => (
-              <KamraRow key={ing.id} ing={ing} added={added.has(ing.id)} onPick={() => onPick(ing)} />
-            ))}
-            {filtered.length === 0 && (
-              <p className="fkp-none uv-empty">
-                Nincs találat ebben a kategóriában.
-              </p>
-            )}
-          </div>
-          <div style={{ height: 24 }} />
+          </Pills>
+          {filtered.map(ing => (
+            <KamraRow key={ing.id} ing={ing} added={added.has(ing.id)} onPick={() => onPick(ing)} />
+          ))}
+          {filtered.length === 0 && <Empty>{L.pantryNone}</Empty>}
         </>
       )}
     </Sheet>

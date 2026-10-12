@@ -48,3 +48,28 @@ describe('DatePicker', () => {
     expect(onChange).not.toHaveBeenCalled()
   })
 })
+
+// Folyadék F5 (mezo-n4wf5.5): the calendar speaks the app language — its words come from the frame catalog, the month
+// and the weekday heads from format.ts — and follows a runtime switch.
+test('the calendar follows the app language: names, month header, weekday heads', async () => {
+  const { act } = await import('@testing-library/react')
+  const { setLang } = await import('@/shared/i18n')
+  render(<DatePicker value="2026-10-06" maxDate="2026-10-07" onChange={() => {}} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Dátum kiválasztása' }))
+  const cal = screen.getByRole('dialog', { name: 'Naptár' })
+  expect(cal.querySelector('.dp-head strong')).toHaveTextContent('2026. október')
+  expect([...cal.querySelectorAll('.dp-dow')].map((d) => d.textContent)).toEqual(['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'])
+  expect(screen.getByRole('button', { name: 'Előző hónap' })).toBeInTheDocument()
+  try {
+    act(() => setLang('en', { persist: false }))
+    expect(screen.getByRole('dialog', { name: 'Calendar' })).toBe(cal)
+    expect(cal.querySelector('.dp-head strong')).toHaveTextContent('October 2026')
+    expect([...cal.querySelectorAll('.dp-dow')].map((d) => d.textContent)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+    expect(screen.getByRole('button', { name: 'Pick a date' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Previous month' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveClass('dp-veil')
+  } finally {
+    act(() => setLang('hu', { persist: false }))
+  }
+})

@@ -1,62 +1,43 @@
 // ============================================================
-// Mezo · FuelStackProtocolPage — a Protokoll SAJÁT oldala (Fuel Titanium S2, mezo-g2vl;
-// fagyasztott manifeszt D2 protokoll-nézet · D3 protokoll-szerkesztés · D4 étkezési kötések).
+// Mezo · FuelStackProtocolPage — the Protokoll's OWN page (S2 manifest D2 view · D3 edit · D4 meal bindings;
+// Folyadék F5, mezo-n4wf5.5). Prototype: docs/design_2.0/prototypes/vilagos/fuel.js `protokoll()`
+// (states: protokoll · .kotesnelkul · .figyelj · .tolt · .hiba · .ures).
 //
-// Owner-döntés: a Protokoll önálló oldal, mert egy 5–15 tételes stack a hubbal egy görgetésben
-// „baromi sok scroll és hasznos info, de ebben a formában nem átlátható" volt. Itt tételenként
-// olvasható: mit szedsz, miért, és ki tette a helyére.
+// Top to bottom: the hero (one vial per time slot — its level is how many items sit there — three facts, a verdict on
+// who placed what, „Új elem beállítása" on the liquid) → „Idősávok": one card per slot with its items (dose · manual /
+// automatic · the engine's stored reason) → „Étkezéshez": the meal match rows (D4) → the boundary line.
 //
-// Jóváhagyott vizuális referencia: docs/design_2.0/prototypes/companion-titanium/fuel-pages.js
-// `protokollPage` (:334) + a fuel-pages.css `.sx-summary` / `.sx-proto-*` blokkjai. Anatómia:
-//   összegző sáv (elem · idősáv · kézi elhelyezés) → zónánkénti csoportok kompakt sorokkal →
-//   étkezési kötések al-szekció (D4) → az Új elem ajtaja → határvonal.
-//
-// D3 (szerkesztés) IDE olvad be: egy sor koppintása a meglévő `StackItemSheet`-et nyitja, azaz
-// az adag, a zóna-mozgatás, a „+ még egy bevétel", a kézi elhelyezés visszavonása (unpin) és az
-// eltávolítás viselkedése VÁLTOZATLAN (mezo-vx9v) — a négy `manage/*` oldal ennek a lapnak a
-// szekcióivá olvad, új szerkesztési utat nem írunk.
-// D4 (étkezési kötések) a meglévő `matchMealsToStack` + `StackMealMatch` párral jön be.
-//
-// A protokoll ELŐÁLLÍTÁSÁHOZ nem nyúlunk: `getProtocol` lusta backfill-t ír olvasáskor, és a
-// szolgálata tranzakciós marad — ez az oldal csak RENDERELI, amit a `useProtocol` hook ad.
-// D7: a `ProtocolViewResponse.history[]` továbbra is állapotba kerül, de NINCS felülete — itt
-// sem rendereljük, és a leképezést sem töröljük.
-//
-// Őszinte-null: ha egy elhelyezéshez a motor nem adott indokot, NEM írunk helyette kitaláltat.
-// A betöltési hiba őszinte hibaállapot, nem üres lista.
-//
-// ÜVEG (mezo-me75u.2; prototypes/uveg-fuel-tobbi.html `protokoll()`): a hős keret nélküli arany
-// halo a nagy 3D protokoll-ikonnal; alatta három lapos számcella; minden zóna egy üvegkártya a
-// saját színében, benne lapos, hajszál-választott sorok (az indok Mezo hangján, serif dőlttel);
-// az étkezési kötések lapos cellában; az Új elem egy lila üveg-sor. Ikonok: Titanium 3D.
+// D3: tapping a row opens the existing `StackItemSheet` — dose, moving, „+ még egy bevétel", unpin and removal are
+// unchanged; every change saves at once (no common Save).
+// D7: `ProtocolViewResponse.history[]` stays in state but has NO surface.
+// Honest null: no reason from the engine → none is written. A load error is an honest error face (without a retry), not
+// an empty list.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFuelDay, useProtocol, useRecipes, useStackDay } from '@/data/hooks'
 import { addDays, localDateString } from '@/shared/lib/dates'
-import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
+import { useM } from '@/shared/i18n'
+import type { Icon3DName } from '@/shared/ui/clay'
+import { Btn, Card, Facts, Head, Hero, Note, Row, Section, Txt, Vials } from '@/shared/ui/folyadek'
 import { StackPageScaffold } from '@/features/fuel/components/StackPageScaffold'
 import { StackMealMatch } from '@/features/fuel/components/StackMealMatch'
+import { StackCaps } from '@/features/fuel/pages/FuelStackPage'
 import { matchMealsToStack } from '@/features/fuel/logic/matchMealsToStack'
 import type { StackDayEntry } from '@/features/fuel/logic/projectStackDay'
 import { StackItemSheet } from '@/features/fuel/sheets/StackItemSheet'
 import type { StackZoneKey } from '@/data/types'
 
-/** Zóna-arcok a ház tokenjeivel: 3D ikon + az üvegkártya `--c` színe. */
-const ZONE_FACE: Partial<Record<StackZoneKey, { icon: Icon3DName; color: string }>> = {
-  wake: { icon: 't-dawn', color: 'var(--dv-amber)' },
-  breakfast: { icon: 't-sun', color: 'var(--dv-amber)' },
-  pre_workout: { icon: 't-dumbbell', color: 'var(--dv-coral)' },
-  post_workout: { icon: 't-dumbbell', color: 'var(--dv-coral)' },
-  lunch: { icon: 't-bowl', color: 'var(--dv-sage)' },
-  dinner: { icon: 't-moon', color: 'var(--dv-sky)' },
-  evening: { icon: 't-moon', color: 'var(--dv-lav)' },
-  bedtime: { icon: 't-sleep', color: 'var(--dv-lav)' },
+/** The glyph of each zone. */
+const ZONE_ICON: Partial<Record<StackZoneKey, Icon3DName>> = {
+  wake: 't-dawn', breakfast: 't-sun', pre_workout: 't-dumbbell', post_workout: 't-dumbbell',
+  lunch: 't-bowl', dinner: 't-moon', evening: 't-moon', bedtime: 't-sleep',
 }
-const FALLBACK_FACE = { icon: 't-supps' as Icon3DName, color: 'var(--dv-sage)' }
+const FALLBACK_ICON: Icon3DName = 't-supps'
 
 export function FuelStackProtocolPage() {
   const navigate = useNavigate()
+  const M = useM().fuelKieg
   const { protocol, pending, error } = useProtocol()
   const { slots } = useStackDay()
   const { recipes } = useRecipes()
@@ -70,101 +51,78 @@ export function FuelStackProtocolPage() {
   const pinnedCount = rows.filter(entry => entry.pinned).length
   const mealMatch = matchMealsToStack(slots, recipes, todayFuel.meals, yesterdayFuel.meals)
   const mealMatchCount = mealMatch.suggestions.length + mealMatch.verdicts.length
+  const addNew = () => navigate('/fuel/stack/manage/add')
+  const off = pending || error || rows.length === 0
+  const empty = !pending && !error && rows.length === 0
+  const most = Math.max(1, ...slots.map(slot => slot.entries.length))
 
   return (
-    <StackPageScaffold
-      tone="sage" backTo="/fuel/stack" backLabel="‹ Stack" icon="t-protocol"
-      name="Protokoll" accent="var(--dv-amber)"
-      big={ready ? `${protocol.itemCount} tétel` : undefined}
-      sub={ready ? `v${protocol.version} · ${Math.round(protocol.confidence * 100)}% bizalom` : undefined}
-    >
-      {pending && <div className="stk-detail-state uv-empty">Protokoll betöltése…</div>}
-      {error && <div className="stk-detail-state uv-empty">A protokoll most nem tölthető be.</div>}
-      {!pending && !error && rows.length === 0 && (
-        <div className="stk-detail-state uv-empty">Még nincs protokolltétel.</div>
-      )}
-
-      {!pending && !error && rows.length > 0 && (
+    <StackPageScaffold backTo="/fuel/stack" name={M.protocol.title} eyebrow={M.common.supplements}>
+      {off ? (
         <>
-          <div className="fsx-summary rise">
-            <div><strong>{rows.length}</strong><small>elem</small></div>
-            <div><strong>{slots.length}</strong><small>idősáv</small></div>
-            <div><strong>{pinnedCount}</strong><small>kézzel elhelyezve</small></div>
-          </div>
-
-          {slots.map((slot, index) => {
-            const face = ZONE_FACE[slot.zone] ?? FALLBACK_FACE
-            return (
-              <section
-                className="fsx-proto-group glass rise"
-                key={`${slot.zone}-${slot.time}`}
-                style={{ '--fsx-zone-color': face.color, '--c': face.color, '--i': index + 1 } as React.CSSProperties}
-                aria-label={`${slot.label} · ${slot.time}`}
-              >
-                <div className="fsx-proto-title">
-                  <span aria-hidden="true"><Icon3D name={face.icon} size={34} /></span>
-                  <strong>{slot.label}</strong>
-                  <time>{slot.time}</time>
-                  <b>{slot.entries.length}</b>
-                </div>
-                <ul className="fsx-proto-list">
-                  {slot.entries.map(entry => (
-                    <li key={entry.occurrenceId} aria-label={entry.name}>
-                      <button type="button" className="fsx-proto-line"
-                        aria-label={`${entry.name} beállítások`}
-                        onClick={() => setOpenEntry(entry)}>
-                        <span className="fsx-proto-line-art" aria-hidden="true">
-                          <Icon3D name="t-supps" size={28} />
-                        </span>
-                        <span className="fsx-proto-line-copy">
-                          <strong>{entry.name}</strong>
-                          <small>{slot.label}{entry.dose ? ` · ${entry.dose}` : ''}</small>
-                          {/* Az elhelyezés INDOKA a motorból jön — ha nincs, nem írunk helyette
-                              kitaláltat (őszinte-null). */}
-                          {entry.reason && <em>{entry.reason}</em>}
-                        </span>
-                        <span className="fsx-proto-line-end">
-                          <b>{entry.dose ?? '—'}</b>
-                          <small>{entry.pinned ? 'kézi' : 'auto'}</small>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )
-          })}
-
-          {/* D4: az étkezési kötések ennek a lapnak az AL-SZEKCIÓJA (a `manage/meals` +
-              `/fuel/stack/meals` tartalma), nem külön oldal. */}
-          <section className="fsx-proto-meals rise" aria-label="Étkezési kötések">
-            <div className="fsx-proto-title">
-              <strong>Étkezéshez</strong>
-              <b>{mealMatchCount}</b>
+          <Hero className="fk-ghero" label={M.protocol.label}
+            verdict={pending ? M.protocol.loading : error ? M.protocol.error : M.protocol.empty}
+            actions={empty ? <Btn onClick={addNew}>{M.common.setUpNew}</Btn> : undefined}
+            graphic={<div className="fk-g"><StackCaps bands={[]} /></div>}
+          >
+          </Hero>
+          <Card>
+            {!empty && <Row icon="t-gear" title={M.common.setUpNew} sub={M.common.setUpNewSub} onClick={addNew} />}
+            <Note>{M.common.noteDoctor}</Note>
+          </Card>
+        </>
+      ) : (
+        <>
+          <Hero className="fk-ghero" label={M.protocol.labelSlots(slots.length)}
+            verdict={pinnedCount === 0 ? M.protocol.verdictNone
+              : pinnedCount === rows.length ? M.protocol.verdictAll
+                : pinnedCount === 1 ? M.protocol.verdictOne : M.protocol.verdictSome(pinnedCount)}
+            sub={ready ? M.protocol.sub(protocol.version, Math.round(protocol.confidence * 100)) : M.protocol.subPlain}
+            actions={<Btn onClick={addNew}>{M.common.setUpNew}</Btn>}
+            graphic={<div className="fk-g">
+            <div className="fk-zv" role="img" aria-label={M.protocol.vialsAria}>
+              <Vials size="sm" height={96} items={slots.map(slot => ({
+                label: slot.label, icon: ZONE_ICON[slot.zone] ?? FALLBACK_ICON,
+                pct: (slot.entries.length / most) * 56, value: String(slot.entries.length), mark: slot.time,
+              }))} />
             </div>
-            {mealMatchCount > 0 ? <StackMealMatch result={mealMatch} /> : (
-              <p className="fsx-proto-quiet uv-flat">
-                Ha egy tétel zsíros vagy fehérjés étkezést kér, itt jelenik meg a hozzá illő fogás
-                és a visszajelzés.
-              </p>
-            )}
-          </section>
+            <Facts items={[
+              [rows.length, M.protocol.factItems], [slots.length, M.protocol.factSlots], [pinnedCount, M.protocol.factPinned],
+            ]} />
+            </div>}
+          >
+          </Hero>
+
+          <Section n={1} title={M.protocol.slots} />
+          {slots.map(slot => (
+            <Card key={`${slot.zone}-${slot.time}`}>
+              <Head icon={ZONE_ICON[slot.zone] ?? FALLBACK_ICON}
+                title={M.protocol.slotHead(slot.label, slot.time, slot.entries.length)} />
+              <div role="list" className="fk-list">
+                {slot.entries.map(entry => (
+                  <div role="listitem" aria-label={entry.name} key={entry.occurrenceId}>
+                    <Row icon="t-supps" title={entry.name}
+                      // The placement's REASON is the engine's stored sentence — none is invented when it is missing.
+                      sub={<>
+                        {M.protocol.rowSub(entry.dose ?? '—', entry.pinned ? M.protocol.manual : M.protocol.automatic)}
+                        {entry.reason && <><br />{entry.reason}</>}
+                      </>}
+                      aria-label={M.protocol.rowAria(entry.name)}
+                      onClick={() => setOpenEntry(entry)} />
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
+
+          {/* D4: the meal bindings are a SECTION of this page, not a page of their own. */}
+          <Section n={2} title={M.protocol.meals(mealMatchCount)} />
+          <Card role="region" aria-label={M.protocol.mealsAria}>
+            {mealMatchCount > 0 ? <StackMealMatch result={mealMatch} /> : <Txt>{M.protocol.mealsEmpty}</Txt>}
+            <Note>{M.common.noteDoctor}</Note>
+          </Card>
         </>
       )}
-
-      <button type="button" className="fsx-poster glass is-setup is-row rise"
-        onClick={() => navigate('/fuel/stack/manage/add')}>
-        <span className="fsx-poster-art" aria-hidden="true"><Icon3D name="t-gear" size={40} /></span>
-        <span className="fsx-poster-copy">
-          <strong>Új elem beállítása</strong>
-          <small>Megmondom, mennyit vegyél be belőle, mikor és miért.</small>
-        </span>
-        <b aria-hidden="true">↗</b>
-      </button>
-
-      <p className="fsx-note">
-        Tájékoztatás, nem orvosi tanács. Gyógyszer mellé mindig kérdezd meg a kezelőorvosod.
-      </p>
 
       {openEntry && <StackItemSheet entry={openEntry} onClose={() => setOpenEntry(null)} />}
     </StackPageScaffold>

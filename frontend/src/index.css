@@ -22,6 +22,16 @@
 @import "./styles/folyadek-edzes-kozben-lapok.css";
 @import "./styles/folyadek-edzes-lezaras.css";
 @import "./styles/folyadek-edzes-osszegzes.css";
+@import "./styles/folyadek-fuel-kozos.css";
+@import "./styles/folyadek-fuel-mai.css";
+@import "./styles/folyadek-fuel-log.css";
+@import "./styles/folyadek-fuel-etkezes.css";
+@import "./styles/folyadek-fuel-tanulas.css";
+@import "./styles/folyadek-fuel-kieg.css";
+@import "./styles/folyadek-fuel-trendek.css";
+@import "./styles/folyadek-fuel-kamra.css";
+@import "./styles/folyadek-fuel-recept.css";
+@import "./styles/folyadek-fuel-beallitas.css";
 @import "./styles/folyadek-frame.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.

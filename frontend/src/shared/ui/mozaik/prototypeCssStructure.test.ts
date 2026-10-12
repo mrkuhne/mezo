@@ -16,6 +16,16 @@ import edzesKozbenCss from '@/styles/folyadek-edzes-kozben.css?raw'
 import edzesKozbenLapokCss from '@/styles/folyadek-edzes-kozben-lapok.css?raw'
 import edzesLezarasCss from '@/styles/folyadek-edzes-lezaras.css?raw'
 import edzesOsszegzesCss from '@/styles/folyadek-edzes-osszegzes.css?raw'
+import fuelKozosCss from '@/styles/folyadek-fuel-kozos.css?raw'
+import fuelMaiCss from '@/styles/folyadek-fuel-mai.css?raw'
+import fuelLogCss from '@/styles/folyadek-fuel-log.css?raw'
+import fuelEtkezesCss from '@/styles/folyadek-fuel-etkezes.css?raw'
+import fuelTanulasCss from '@/styles/folyadek-fuel-tanulas.css?raw'
+import fuelKiegCss from '@/styles/folyadek-fuel-kieg.css?raw'
+import fuelTrendekCss from '@/styles/folyadek-fuel-trendek.css?raw'
+import fuelKamraCss from '@/styles/folyadek-fuel-kamra.css?raw'
+import fuelReceptCss from '@/styles/folyadek-fuel-recept.css?raw'
+import fuelBeallitasCss from '@/styles/folyadek-fuel-beallitas.css?raw'
 
 /**
  * Structural guard for `styles/prototype.css` (mezo-d20.9.1).
@@ -284,108 +294,18 @@ describe('the glassbox section is registered (mezo-88iwa.13, re-dressed mezo-ju4
 })
 
 /**
- * Section registration + re-dress guard (mezo-ju4j6.6, Boop visszaöltöztetés Phase 5a).
+ * The old Fuel skin retired in Folyadék F5 (mezo-n4wf5.5). Fuel renders the kit now (`fo-*`), the Fuel-shared
+ * pieces (`.fx-*`, styles/folyadek-fuel-kozos.css) and one stylesheet per area (`.fa- .fg- .fe- .ft- .fk- .fr- .fp-
+ * .fc- .fb-` in styles/folyadek-fuel-*.css); the rules nothing renders any more were deleted from prototype.css with a
+ * zero-usage proof (bible F1.13 / F4.11: 2 849 rules, 20 978 → 15 236 lines).
  *
- * The Fuel Mai family's block was named `fuel-mai titanium`; Phase 5a re-dressed the Mai
- * surfaces to the restored Mozaik/Clay world and renamed the block to `fuel-mai` — CSS and
- * marker in the SAME commit, the way `titanium glass primitive` → `glassbox` went in Phase 4.
- * Registered here so a merge that drops the block fails with a one-line pointer.
- *
- * The second test is the re-dress guard the style bible asks for: the Titanium materials it
- * forbids (§2.3 — decorative backdrop frosting, icon drop-shadow haloes, raw black card
- * shadows) must not come back, and the surfaces that became `--mz-cell-*` chips (§2.2 B)
- * must stay chips.
- *
- * Phase 5b (mezo-ju4j6.7) re-dressed the block's remaining sub-blocks — meal detail, AI
- * score, the camera-first logger and the glucose glass — so the guard now covers the WHOLE
- * block rather than the Mai slice only. That widening is the signal 5b is done.
- */
-describe('the fuel-mai section is registered and re-dressed (mezo-ju4j6.6, widened .7)', () => {
-  // The bare name also appears in a cross-reference comment far earlier in the file, so the
-  // markers carry the block's own box-drawing frame — indexOf must land on the block itself.
-  const START_MARKER = '── fuel-mai ('
-  const END_MARKER = '── /fuel-mai '
-
-  const section = () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    return start > -1 && end > start ? rawCss.slice(start, end) : ''
-  }
-  /** The block's RULES only: comments stripped, because the prose NAMES the materials it
-   *  banished and a guard that scanned it would fail on its own documentation. */
-  const rules = () => section().replace(/\/\*[\s\S]*?\*\//g, '')
-
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the section actually carries the fmx- class family, not just the markers', () => {
-    for (const cls of ['.fmx-hero', '.fmx-gauge', '.fmx-rings', '.fmx-block', '.fmx-meal-row']) {
-      expect(section(), `${cls} missing from the fuel-mai section`).toContain(cls)
-    }
-  })
-
-  // Üvegesítés U1 (mezo-me75u.1): the block now wears the ÜVEG ranking (bible §3.4) instead of
-  // the restored-world materials — primary objects are `.glass` (the class is set in the TSX,
-  // the accent through `--c` on the same element), chips inside a card are flat cells, empty /
-  // unknown states are dashed, and the heroes are frameless halos.
-  test('the primary objects take their glass accent from their own hue, on the same element', () => {
-    const css = rules()
-    expect(css.length).toBeGreaterThan(10_000)
-    for (const [sel, hue] of [['.fmx-block', '--block-color'], ['.fmx-ing-row', '--ing-color'],
-      ['.fmx-nutri-tile', '--nt-color'], ['.fmx-micro-card', '--mc-color'], ['.fmx-dim', '--dim-color']]) {
-      expect(css).toMatch(new RegExp(`\\${sel} \\{[^}]*--c: var\\(${hue}\\)`))
-    }
-    // the old wash-tile material is gone from these surfaces
-    expect(css).not.toMatch(/\.fmx-block \{[^}]*linear-gradient\(150deg/)
-    expect(css).not.toMatch(/\.fmx-ing-row \{[^}]*box-shadow: var\(--mz-shadow\)/)
-  })
-
-  test('chips inside a glass card are flat, never glass (bible §3 rank 3)', () => {
-    const css = rules()
-    expect(css).toMatch(/\.fmx-glu-chip \{[^}]*background: rgba\(var\(--fo-film\), 0\.04\)/)
-    expect(css).toMatch(/\.fmx-score \{[^}]*rgba\(var\(--fo-film\), 0\.05\)/)
-    expect(css).not.toMatch(/\.fmx-score \{[^}]*backdrop-filter/)
-    expect(css).toMatch(/\.fmx-glass-callout \{[^}]*background: rgba\(var\(--fo-film\), 0\.05\)/)
-  })
-
-  test('empty and unknown states are dashed, with no glass (bible §3 rank 4)', () => {
-    const css = rules()
-    expect(css).toMatch(/\.fmx-block\.is-open \{[^}]*1\.5px dashed/)
-    expect(css).toMatch(/\.fmx-nutri-tile\.is-unknown \{[^}]*dashed[^}]*backdrop-filter: none/)
-    expect(css).toMatch(/\.fmx-dim\.is-degraded \{[^}]*dashed[^}]*backdrop-filter: none/)
-  })
-
-  test('the heroes are frameless halos with big numerals (bible §5)', () => {
-    const css = rules()
-    expect(css).toMatch(/\.fmx-hero::before \{[^}]*radial-gradient/)
-    expect(css).toMatch(/\.fmx-detail-hero::before \{[^}]*radial-gradient/)
-    expect(css).toMatch(/\.fmx-score-hero::before \{[^}]*radial-gradient/)
-    expect(css).toMatch(/\.fmx-score-value \{[^}]*font-size: 92px/)
-    expect(rawCss).toContain(':root[data-theme="dark"] .fh-hero { background: none; border-radius: 0; }')
-  })
-
-  test('hero art floats and the reward numeral glows only inside the reduced-motion gate', () => {
-    const css = rules()
-    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
-    expect(css.indexOf('animation: uv-float')).toBeGreaterThan(gate)
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*\.fmx-gauge-art, \.fmx-detail-art, \.fmx-score-art, \.fmx-score-value span \{ animation: none; \}/)
-  })
-})
-
-
-/**
- * Phase 5c (mezo-ju4j6.8): the Kiegészítők and Trendek blocks are re-dressed to the restored
- * Mozaik/Clay world. Same shape of guard the fuel-mai block got in 5a — both markers present,
- * the class family actually inside them, and the banished Titanium materials unable to come
- * back on this slice. The RULES are scanned with comments stripped, because the blocks' own
- * prose NAMES the materials they banished — so the slice has to START at the header comment's
- * own `/*`, not at the marker inside it, or that prose survives the strip and the guard fails
- * on its own documentation.
+ * This block replaces the guards that used to REQUIRE those rules — the restored-world blocks `fuel-mai` (`fmx-`),
+ * `fuel-stack` (`fsx-`), `fuel-trendek` (`ftx-`), `fuel-konyha` (`fkx-`), the Üveg blocks `uveg fuel konyha / receptek
+ * / log / stack / trendek`, the meal ceremony in `uveg reteg unnep` (`fcx-`), the learning pages (`fln-`, `fwl-`) and
+ * the lines other blocks carried for Fuel. Each entry: the block's marker name (null = no block of its own, or the
+ * block survives cut down) and selectors that must have NO rule left anywhere in the stylesheet (comments stripped —
+ * surviving prose may still name them). What the retired guards PROTECTED is re-pointed at the Folyadék sheets in
+ * „the Folyadék Fuel sheets keep the truths…" further down.
  */
 function slice(start: string, end: string) {
   const marker = rawCss.indexOf(start)
@@ -395,163 +315,47 @@ function slice(start: string, end: string) {
 }
 const stripComments = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, '')
 
-describe('the fuel-stack section is registered and re-dressed (mezo-ju4j6.8)', () => {
-  // The block's own name also occurs in cross-reference prose, so the markers carry the
-  // box-drawing frame — indexOf must land on the block itself.
-  const START_MARKER = '── fuel-stack ('
-  const END_MARKER = '── /fuel-stack '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
+const RETIRED_FUEL_BLOCKS: Array<[string | null, string, string[]]> = [
+  ['fuel-mai', 'Mai, étkezés, értékelés, étkezési óra, vércukor-doboz (fmx-)', ['.fmx-', '@keyframes fmx-', '--block-color',
+    '--nt-color', '--dim-color']],
+  ['fuel-stack', 'Kiegészítők, Protokoll, Új elem (fsx-)', ['.fsx-', '@keyframes fsx-', '--fsx-']],
+  ['fuel-trendek', 'Trendek (ftx-)', ['.ftx-', '@keyframes ftx-', '--ftx-']],
+  ['fuel-konyha', 'Konyha, Kamra, Receptek, Műhely (fkx-)', ['.fkx-', '@keyframes fkx-']],
+  ['fuel overflow guard', 'a szövegsorok túlcsordulás-őre', ['.fmx-', '.fsx-', '.ftx-', '.fkx-']],
+  ['uveg fuel konyha', 'Konyha, Kamra, Kamra-tétel és lapjai (Üveg)', ['.fkk-']],
+  ['uveg fuel receptek', 'Receptek, recept, szerkesztő, Műhely (Üveg)', ['.wsh-', '.recipe-save-bar', '@keyframes wsh-']],
+  ['uveg fuel log', 'logolás, összeállító, választók, víz, energia (Üveg)', ['.logflow-', '.flognew-', '.flp-', '.fkp-',
+    '@keyframes flp-']],
+  ['uveg fuel stack', 'Kiegészítők, Protokoll, Új elem, Gyógyszer (Üveg)', ['.fmd-', '.stk-', '@keyframes stk-']],
+  ['uveg fuel trendek', 'Trendek, napkártya, Fuel beállítások, étkezési ablakok (Üveg)', ['.fset-', '.fsl-',
+    '@keyframes fset-']],
+  ['uveg reteg unnep', 'a kaja-ünneplés (fcx-)', ['.fcx-', '@keyframes fcx-']],
+  ['heti tanulás', 'heti tanulás (fwl-)', ['.fwl-']],
+  ['„Hogy tanultam?” oldal', 'Tanulás oldal (fln-)', ['.fln-', '@keyframes fln-']],
+  [null, 'a pre-Üveg családok (hub, Stack v2 / 3.0, Kamra v2, pont-bontás, Terv, ablak-sziget, kész-kapszula)', ['.fh-',
+    '.km-', '.sb-', '.fpl-', '.isl-mealchip', '.kdone', '.zcard', '.zrow', '.chip-tap', '.fuelchips', '.gauge-p', '.slot .mrow']],
+  [null, 'Fuel sorai a megmaradó közös blokkokban (lapok, rögzítés, kihagyás)', ['.uvl-fuel', '.uvl-kamra', '.capture-water-',
+    '.capture-tone-water', '.trm-whysheet', '.trm-whyg', '.trm-whyc', '.trm-whynote', '.trm-inpmic']],
+]
 
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the section actually carries the fsx- class family, not just the markers', () => {
-    for (const cls of ['.fsx-hero', '.fsx-ring', '.fsx-band', '.fsx-poster', '.fsx-proto-line',
-      '.fsx-glass', '.fsx-pick']) {
-      expect(section(), `${cls} missing from the fuel-stack section`).toContain(cls)
+describe.each(RETIRED_FUEL_BLOCKS)('the retired Fuel skin stays out: %s — %s (Folyadék F5, mezo-n4wf5.5)', (marker, _what, sels) => {
+  test('its marker pair is gone (or, for a surviving block, still paired)', () => {
+    if (marker) {
+      expect(rawCss).not.toContain(`── ${marker} (`)
+      expect(rawCss).not.toContain(`── /${marker} `)
+    } else {
+      // the blocks Fuel only had lines in survive for the other domains, each with BOTH markers (bible F4.11)
+      for (const name of ['uveg nap rogzites', 'uveg edzes mai', 'uveg reteg lap']) {
+        expect(rawCss.split(`── ${name} (mezo-`).length - 1).toBe(1)
+        expect(rawCss.split(`── /${name} ──`).length - 1).toBe(1)
+      }
     }
   })
 
-  test('the whole block carries no Titanium material the style bible forbids', () => {
-    const css = rules()
-    expect(css.length).toBeGreaterThan(8_000)
-    // §2.3: decorative frosting is gone. The ONE surviving blur is the native <dialog>'s own
-    // ::backdrop, where the blur is functional separation (§7.1b) — a prefixed pair.
-    expect(css).not.toContain('var(--surface-glass)')
-    expect(css.match(/backdrop-filter: blur\(/g) ?? []).toHaveLength(2)
-    // §6.1: clay icons carry their own volume — no drop-shadow haloes on them.
-    expect(css).not.toContain('drop-shadow')
-    // §2.2 A: card shadows are --mz-shadow* tokens, never a raw black drop.
-    expect(css).not.toContain('rgba(0, 0, 0,')
-  })
-
-  test('the hero is a halo band, not a glowing poster (§2.2 C)', () => {
-    const css = rules()
-    expect(css).toContain('background: var(--halo-sage)')
-    expect(css).toContain('.fsx-glow { display: none; }')   // its decorative glow, retired
-    expect(css).toContain('background: var(--halo-violet)') // the dose advice, likewise a halo
-  })
-
-  test('the chips and pills are --mz-cell-* pairs, not bordered tint boxes (§2.2 B)', () => {
-    const css = rules()
-    for (const token of ['--mz-cell-sage-bg', '--mz-cell-sage-ink', '--mz-cell-lav-bg',
-      '--mz-cell-lav-ink', '--mz-cell-sky-ink']) {
-      expect(css, `${token} missing — a chip in this block is not a restored cell chip`).toContain(token)
-    }
-  })
-
-  test('the due band wears the §4.4 now-state, and it is the only infinite loop (§8.6)', () => {
-    const css = rules()
-    // The rule grew in the depth & focus sweep (mezo-ju4j6.19): the other three bands
-    // dropped to the house grade, so the due one carries the wash as well as the ring.
-    expect(css).toMatch(/\.fsx-band\.is-due \{[^}]*border: 1px solid var\(--dv-coral\)/)
-    expect(css).toMatch(/\.fsx-band\.is-due \{[^}]*box-shadow: var\(--mz-shadow-coral\)/)
-    expect(css).toContain('fsx-now-pulse')
-    // the decorative hero-glow loop and its keyframes are gone with the material
-    expect(css).not.toContain('fsx-glow 5s')
-    expect(css).not.toContain('@keyframes fsx-glow')
-    // exactly one `infinite` in the block — the now-pulse
-    expect(css.match(/infinite/g) ?? []).toHaveLength(1)
-  })
-})
-
-describe('the fuel-trendek section is registered and re-dressed (mezo-ju4j6.8)', () => {
-  const START_MARKER = '── fuel-trendek ('
-  const END_MARKER = '── /fuel-trendek '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
-
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the section actually carries the ftx- class family, not just the markers', () => {
-    for (const cls of ['.ftx-hero', '.ftx-bars', '.ftx-tile', '.ftx-splitrow', '.ftx-dim',
-      '.ftx-horizon', '.ftx-pattern']) {
-      expect(section(), `${cls} missing from the fuel-trendek section`).toContain(cls)
-    }
-  })
-
-  test('the whole block carries no Titanium material the style bible forbids', () => {
-    const css = rules()
-    expect(css.length).toBeGreaterThan(6_000)
-    expect(css).not.toContain('var(--surface-glass)')
-    expect(css).not.toContain('backdrop-filter')   // nothing on this page frosts at all
-    expect(css).not.toContain('drop-shadow')
-    expect(css).not.toContain('rgba(0, 0, 0,')
-  })
-
-  test('the weekly picture is a halo band and the week bars wear the Fuel accent (A.2 rule 1)', () => {
-    const css = rules()
-    expect(css).toContain('background: var(--halo-sage)')
-    expect(css).toContain('.ftx-glow { display: none; }')
-    // the bars and the long-horizon intake curve measure what the Mai arc measures → sage
-    expect(css).toContain('stroke: var(--dv-sage)')
-    expect(css).toMatch(/\.ftx-fill \{[^}]*var\(--dv-sage\)/s)
-    // the weight series keeps rose: there the hue is MEANING (a second measure), not skin
-    expect(css).toContain('stroke: var(--dv-rose)')
-  })
-
-  test('over-target stays amber and no error state is reachable (shame-free)', () => {
-    const css = rules()
-    expect(css).toContain('.ftx-day.is-over .ftx-fill')
-    expect(css).toContain('var(--dv-amber)')
-    expect(css).not.toContain('is-error')
-  })
-
-  test('the entrance choreography is one-shot — no infinite loop on this page (§8.6)', () => {
-    expect(rules()).not.toContain('infinite')
-  })
-})
-
-describe('the uveg fuel trendek section re-dresses Trendek + Fuel settings (mezo-me75u.2)', () => {
-  const section = () => stripComments(slice('── uveg fuel trendek (', '── /uveg fuel trendek '))
-
-  test('the week picture and the day arc are frameless halos (bible §5)', () => {
-    const css = section()
-    expect(css).toMatch(/\.ftx-hero\.uv-halo \{[^}]*background: none/)
-    expect(css).toMatch(/\.fset-hero\.uv-halo \{[^}]*background: none[^}]*box-shadow: none/)
-    expect(css).toMatch(/\.fset-arc-glow \{[^}]*drop-shadow/)
-  })
-
-  test('the primary objects are glass, the cells inside the day card are flat (bible §3.4, U1 rule 5)', () => {
-    const css = section()
-    for (const sel of ['.ftx-tile.glass', '.ftx-split.glass', '.ftx-horizon.glass', '.ftx-pattern.glass',
-      '.fset-card.glass', '.fset-goal.glass', '.fset-slots.glass', '.fsl-slotrow.glass', '.fsl-edit.glass']) {
-      expect(css, `${sel} missing from the uveg fuel trendek block`).toContain(sel)
-    }
-    expect(css).toMatch(/\.ftx-dim \{[^}]*rgba\(var\(--fo-film\), 0\.04\)/)
-    expect(css).toMatch(/\.ftx-glass-link \{[^}]*color-mix/)
-    expect(css).not.toMatch(/\.ftx-glass-link[^{]*\.glass/)
-  })
-
-  test('shame-free: over-target is gold, an unlogged day is a hatched gap, never an error', () => {
-    const css = section()
-    expect(css).toMatch(/\.ftx-day\.is-over \.ftx-fill \{[^}]*var\(--dv-amber\)/)
-    expect(css).toMatch(/\.ftx-gap \{[^}]*repeating-linear-gradient/)
-    expect(css).not.toMatch(/\.ftx-[a-z-]*\.is-error/)
-  })
-
-  test('empty and free states are dashed, with no glass (bible §3 rank 4)', () => {
-    const css = section()
-    expect(css).toMatch(/\.ftx-horizon\.uv-empty\.is-waiting \{[^}]*dashed[^}]*box-shadow: none/)
-    expect(css).toContain('.fsl-add.uv-empty')
-  })
-
-  test('the Σ budget pill is lit, coral when off; no infinite loop of its own', () => {
-    const css = section()
-    expect(css).toMatch(/\.fsl-pillsum\.is-off \{[^}]*var\(--dv-coral\)/)
-    expect(css).not.toContain('infinite')
+  test('none of its selectors has a rule left anywhere in the stylesheet', () => {
+    const rules = stripComments(rawCss)
+    const left = sels.filter((sel) => rules.includes(sel))
+    expect(left, `retired Fuel selectors are back in prototype.css: ${left.join(', ')}`).toEqual([])
   })
 })
 
@@ -597,7 +401,8 @@ describe('GlassBox stacks correctly with Sheet (mezo-88iwa.13 fix round 1)', () 
  * anywhere in the stylesheet (comments stripped — surviving prose may still name them).
  *
  * What is NOT retired here (other domains still wear it): the shared `.tr-eyebrow`, and from `uveg edzes mai` the
- * reason sheet + duration row that Fuel and Nap render (`.trm-why*`, `.trm-inpmic`, `.trm-kmd*`).
+ * duration row of the shared RecoveryDurationRow (`.trm-kmd*`). The reason sheet's chips (`.trm-why*`, `.trm-inpmic`)
+ * left with Fuel's own sheet in Folyadék F5 — pinned as gone in RETIRED_FUEL_BLOCKS.
  */
 const RETIRED_EDZES_BLOCKS: Array<[string | null, string, string[]]> = [
   ['train terheles', 'Terhelés (ld-)', ['.ld-hero', '.ld-map', '.ld-group', '.ld-sport', '.ld-move', '.ld-glass', '.ld-h3',
@@ -663,7 +468,8 @@ describe.each(RETIRED_EDZES_BLOCKS)('the retired Edzés skin stays out: %s — %
  * sport ceremony in `uveg reteg unnep`, the return button in `uveg reteg ablak`, the record toast's `.toast-solo`).
  * Same shape as above: the marker name (null = no block of its own) and selectors with NO rule left anywhere.
  * Still here on purpose: `GlassBox` (`.gl-*`, incl. its unused `is-menu` / `is-confirm` variants), `VoiceField`, the
- * level-up overlay (`.levelup` / `.lvu-*`), the meal ceremony (`.fcx-*`), `ProgressionBanner`'s `.pobanner`.
+ * level-up overlay (`.levelup` / `.lvu-*`), `ProgressionBanner`'s `.pobanner`. (The meal ceremony's `.fcx-*` left in
+ * Folyadék F5 — RETIRED_FUEL_BLOCKS.)
  */
 const RETIRED_KOZBEN_BLOCKS: Array<[string | null, string, string[]]> = [
   ['train session', 'a kártyalista, a dokk és az üveg-belsők (wo-)', ['.wo-card', '.wo-row', '.wo-rows', '.wo-field', '.wo-check',
@@ -744,6 +550,235 @@ describe.each(EDZES_SHEETS)('the Folyadék Edzés sheet folyadek-edzes-%s.css (%
     const back = local.filter((sel) => css.includes(sel))
     expect(back, `folded pieces are local again: ${back.join(', ')}`).toEqual([])
   })
+})
+
+/**
+ * Folyadék F5 · Fuel (mezo-n4wf5.5): one stylesheet per build area, each speaking its own prefix (bible F2.3), planted by the
+ * foundation step before the parallel builders. An area sheet may still be empty (only its marker comment) while its builder
+ * works — the prefix rule holds from its first rule on. `kozos` is the home of the Fuel-shared pieces (`.fx-`).
+ */
+const FUEL_SHEETS: Array<[string, string, string]> = [
+  ['kozos', '.fx-', fuelKozosCss], ['mai', '.fa-', fuelMaiCss], ['log', '.fg-', fuelLogCss], ['etkezes', '.fe-', fuelEtkezesCss], ['tanulas', '.ft-', fuelTanulasCss],
+  ['kieg', '.fk-', fuelKiegCss], ['trendek', '.fr-', fuelTrendekCss], ['kamra', '.fp-', fuelKamraCss], ['recept', '.fc-', fuelReceptCss], ['beallitas', '.fb-', fuelBeallitasCss],
+]
+
+describe.each(FUEL_SHEETS)('the Folyadék Fuel sheet folyadek-fuel-%s.css (%s) (mezo-n4wf5.5)', (name, prefix, raw) => {
+  const css = stripComments(raw)
+
+  test('opens with its block marker and scans clean', () => {
+    expect(raw.startsWith(`/* ── Folyadék · Fuel · ${name} (mezo-n4wf5.5, slice F5) ──`)).toBe(true)
+    expect(raw).toContain(`\`${prefix}\``)
+    const scan = scanCss(raw)
+    expect(scan.unclosedBraces).toEqual([])
+    expect(scan.strayCloseBraces).toEqual([])
+    expect(scan.unterminatedComment).toBeNull()
+    expect(scan.strayCommentEnds).toEqual([])
+  })
+
+  test('speaks its own prefix once it carries rules', () => {
+    if (css.trim() === '') return // planted, not built yet
+    expect(css).toContain(prefix)
+    // no other Fuel area's prefix is DEFINED here (a rule may still dress `.fo-` / `.fx-` pieces inside its own classes)
+    const foreign = FUEL_SHEETS.map(([, p]) => p).filter((p) => p !== prefix && p !== '.fx-')
+      .filter((p) => new RegExp(`(^|[\\s,}])\\${p}[a-z]`, 'm').test(css.replace(/\{[^{}]*\}/g, '{}')))
+    expect(foreign, `rules of another area's prefix in folyadek-fuel-${name}.css`).toEqual([])
+  })
+
+  test('wears the light kit: no glass, no Titanium accent, no dark-skin halo', () => {
+    expect(css).not.toMatch(/\.glass\b/)
+    expect(css).not.toContain('--tag-fuel')
+    expect(css).not.toMatch(/\.uv-(halo|empty|flat|sheet)\b/)
+  })
+
+  // Was (per old block): „every animation lives in the no-preference branch, the reduce branch switches them off"
+  // (fuel-mai, fuel-stack, fuel-trendek, uveg fuel stack, the Stack 3.0 contract). The Folyadék sheets write the final
+  // frame as the base rule, so there is nothing to switch off: motion AND transitions exist only for people who accept them.
+  test('motion and transitions live only in the no-preference branch', () => {
+    const still = css.replace(/@media\s*\(prefers-reduced-motion:\s*(?:no-preference|reduce)\)\s*\{(?:[^{}]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\})*[^{}]*\}/g, '')
+    expect(still).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
+    expect(still).not.toMatch(/transition\s*:\s*(?!none)[a-z]/)
+  })
+
+  // The app is light only (bible §1): a Fuel sheet never carries a dark branch of its own.
+  test('has no dark-scheme branch', () => {
+    expect(css).not.toMatch(/prefers-color-scheme\s*:\s*dark/)
+    expect(css).not.toMatch(/\[data-theme=["']?dark/)
+  })
+
+  // Was: „the feature section stays scoped to stk selectors" (Stack 3.0 contract) — a Fuel sheet never restyles a bare
+  // kit / house class for the whole app. Every selector carries the sheet's own prefix (or the Fuel-shared one); the
+  // shared sheet may also set its `:root` tokens.
+  test('every rule is scoped to the sheet\'s own classes', () => {
+    const flat = css.replace(/@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '').replace(/@media[^{]*\{/g, '')
+    const loose: string[] = []
+    let seen = 0
+    for (const m of flat.matchAll(/([^{}]+)\{[^{}]*\}/g)) {
+      for (const sel of m[1].split(/,(?![^(]*\))/).map((x) => x.trim()).filter(Boolean)) {
+        seen++
+        if (sel.includes(prefix) || sel.includes('.fx-') || (prefix === '.fx-' && sel === ':root')) continue
+        loose.push(sel)
+      }
+    }
+    expect(seen, 'the scan saw no selector at all').toBeGreaterThan(10)
+    expect(loose, `unscoped selectors in folyadek-fuel-${name}.css`).toEqual([])
+  })
+})
+
+/**
+ * The truths the retired Fuel guards protected, re-pointed at the Folyadék material (mezo-n4wf5.5). Per old guard:
+ *  · `uveg fuel stack` „the tick keeps its 44px hit area" + Stack 3.0 „44px hit areas cover intake, management and add
+ *    actions" → the intake tick is the kit's `.fo-tk` (drawn 30 px, the kit's `::after` gives it 44 px), the managed
+ *    rows are kit rows, the small round controls of the Fuel sheets carry their own 44 px `::after`;
+ *  · `fuel-stack` „the due band is the only infinite loop", `fuel-trendek` / `fuel-konyha` „no infinite loop" → the only
+ *    endless motion in Fuel is a waving liquid surface (the Folyadék idiom), and only for people who accept motion;
+ *  · `fuel-trendek` + `uveg fuel trendek` „shame-free: over-target is amber, an unlogged day is a hatched gap, never an
+ *    error" → the over-segment and the legend wear the warn tone, the gap is a dashed outline, Trendek carries no error
+ *    colour at all;
+ *  · `uveg fuel trendek` „the Σ budget pill is coral when off" → a split that does not add up is the ONE error state of
+ *    the settings pages;
+ *  · `fuel-mai` / `uveg fuel trendek` / `uveg fuel konyha` „empty and free states are dashed, with no glass" → a free
+ *    block is a lighter card on an inset line with no drop; a suggestion and a confirm are dashed, never a shelf object;
+ *  · the meal ceremony „rises by the frame-driven --rise, never by a CSS transition" + „every transition sits in the
+ *    no-preference branch" → the cup's level follows `--p` (ONE rAF pass), no transition ever touches it; and its layer:
+ *    the ceremony owns the screen (240: above sheets 200–211 and GlassBox 220/221, below toasts 300), the „Mit ettél?"
+ *    overlay sits at the page-takeover tier (60: above the bottom bar 40, below the sheets it hosts);
+ *  · `uveg fuel konyha` / `uveg fuel stack` „glass that must stay put restates its geometry" (the sheet frame must not
+ *    scroll) → Fuel's sheets are the kit's `.sheet.fo-sheet`, whose scroller is pinned in „the kit owns the pieces the
+ *    in-workout areas shared" above; a nested picker keeps its tier through the house `.sheet.sheet-nested` rule;
+ *  · the depth & focus ranking (one hero, the rest below it) → no Fuel sheet draws a second lifted surface: the kit's
+ *    card drop is the only lift, an area class never adds a drop shadow of its own to a card-sized box (the „exactly one
+ *    `.fo-hero` per hub" half is a runtime check: tests/layout/fuel-folyadek.spec.ts);
+ *  · `fuel-konyha` „the raised type gets a 360px step-down" → every sheet with a fixed-size numeral steps down at 360 px
+ *    (and the runtime half — no horizontal overflow at 320 px — is in tests/layout/fuel-folyadek.spec.ts).
+ */
+describe('the Folyadék Fuel sheets keep the truths the retired Fuel guards protected (mezo-n4wf5.5)', () => {
+  const kit = stripComments(kitCss)
+  const sheet = (raw: string) => stripComments(raw)
+  /** Every declaration block whose selector list names `selector` exactly, joined in source order. */
+  const rule = (css: string, selector: string) => {
+    const bodies = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => m[1].split(/,(?![^(]*\))/).some((sel) => sel.trim() === selector))
+      .map((m) => m[2])
+    expect(bodies.length, `${selector} rule not found`).toBeGreaterThan(0)
+    return bodies.join(' ')
+  }
+  const ungated = (css: string) => css.replace(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{(?:[^{}]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\})*[^{}]*\}/g, '')
+
+  test('44px touch areas: the intake tick is the kit\'s, the small round controls carry their own', () => {
+    const m = /([^{}]*\.fo-tk::after[^{}]*)\{([^}]*)\}/.exec(kit)
+    expect(m, 'the kit rule carrying .fo-tk::after is gone — the intake tick lost its touch area').not.toBeNull()
+    expect(m![2]).toMatch(/width:\s*max\(100%,\s*44px\)/)
+    expect(m![2]).toMatch(/height:\s*max\(100%,\s*44px\)/)
+    expect(m![1]).toContain('button.fo-row::after') // a managed row is tappable on its whole height
+    expect(rule(kit, '.fo-btn')).toMatch(/min-height:\s*44px/)
+    // the controls drawn smaller than 44 px in the Fuel sheets
+    for (const [raw, sel] of [[fuelKozosCss, 'button.fx-chip::after'], [fuelKozosCss, '.fx-x::after'], [fuelKozosCss, '.fx-add::after'],
+      [fuelMaiCss, '.fa-dn-step::after'], [fuelMaiCss, '.fa-clock::after'], [fuelMaiCss, '.fa-mn::after'],
+      [fuelLogCss, '.fg-tuh::after'], [fuelLogCss, '.fg-stp > button:not(.fg-stp-v)::after'],
+      [fuelReceptCss, '.fc-cmp > button::after'], [fuelBeallitasCss, '.fb-rm::after']] as const) {
+      expect(rule(sheet(raw), sel), `${sel} must give a 44px touch area`).toMatch(/height:\s*44px/)
+    }
+    expect(rule(sheet(fuelLogCss), '.fg-modes > button')).toMatch(/min-height:\s*44px/)
+    expect(rule(sheet(fuelTanulasCss), '.ft-hits > button')).toMatch(/min-height:\s*44px/)
+    expect(rule(sheet(fuelEtkezesCss), '.fe-mclock')).toMatch(/width:\s*44px;\s*height:\s*44px/)
+  })
+
+  test('the only endless motion is a waving liquid surface, inside the no-preference branch', () => {
+    const waves = ['fx-wv', 'fg-cupwv']
+    for (const [name, , raw] of FUEL_SHEETS) {
+      const css = sheet(raw)
+      expect(ungated(css), `an endless loop outside the motion gate in folyadek-fuel-${name}.css`).not.toContain('infinite')
+      for (const m of css.matchAll(/animation:\s*([a-z0-9-]+)[^;]*infinite/g)) {
+        expect(waves, `${m[1]} loops for ever in folyadek-fuel-${name}.css — only a liquid surface may`).toContain(m[1])
+      }
+    }
+  })
+
+  test('shame-free: over the target is the warn tone, an unlogged day is a dashed gap, Trendek has no error colour', () => {
+    const trendek = sheet(fuelTrendekCss)
+    expect(rule(trendek, '.fr-tb > s')).toContain('var(--fo-warn)')
+    const gap = rule(trendek, '.fr-wd.gap > .fr-tb')
+    expect(gap).toMatch(/background:\s*none/)
+    expect(gap).toMatch(/outline:\s*1\.5px dashed/)
+    expect(trendek).not.toMatch(/--fo-bad|is-error|\bred\b/)
+    const kozos = sheet(fuelKozosCss)
+    expect(rule(kozos, '.fx-lg > span > i.over')).toContain('var(--fo-warn)')
+    expect(rule(kozos, '.fx-lg > span > i.gap')).toMatch(/dashed/)
+    // a skipped / out-of-window meal on the timeline is warn, never the error colour
+    expect(sheet(fuelEtkezesCss)).not.toContain('--fo-bad')
+  })
+
+  test('the ONE error state of the Fuel settings: a split that does not add up', () => {
+    const css = sheet(fuelBeallitasCss)
+    expect(rule(css, '.fb-sum > b.off')).toContain('var(--fo-bad)')
+    const bad = [...css.matchAll(/([^{}]+)\{[^{}]*--fo-bad[^{}]*\}/g)].map((m) => m[1].trim())
+    expect(bad.sort()).toEqual(['.fb-alert', '.fb-sum > b.off'])
+  })
+
+  test('free and suggested things are not shelf objects: a lighter card on a line, or a dashed outline — no lift', () => {
+    const open = rule(sheet(fuelMaiCss), '.fa-blk.open')
+    expect(open).toMatch(/box-shadow:\s*inset/)
+    expect(open).not.toMatch(/box-shadow:[^;]*\d+px \d+px -?\d+px/)
+    expect(rule(sheet(fuelKamraCss), '.fp-swap')).toMatch(/border:\s*1\.5px dashed/)
+    expect(rule(sheet(fuelKiegCss), '.fk-stop')).toMatch(/outline:\s*1\.5px dashed/)
+  })
+
+  test('the meal ceremony: the level is frame-driven, never a CSS transition; its layer owns the screen', () => {
+    const log = sheet(fuelLogCss)
+    expect(rule(log, '.fg-cup .lq')).toMatch(/transform:\s*translateY\(calc\(\(1 - var\(--p, 0\) \* var\(--k, 1\)\) \* 108px\)\)/)
+    // no transition / animation rule ever names the level
+    const moving = [...log.matchAll(/([^{}]+)\{[^{}]*(?:transition|animation)\s*:[^{}]*\}/g)].map((m) => m[1])
+    expect(moving.filter((sel) => /\.lq\b/.test(sel))).toEqual([])
+    // layers: tab bar 40 · page takeover 60 · sheets 200–211 · GlassBox 220/221 · ceremony 240 · toasts 300
+    const z = (body: string) => Number([...body.matchAll(/z-index:\s*(\d+)/g)].pop()?.[1]) // the later rule wins
+    const overlay = rule(log, '.fg-flow')
+    expect([...overlay.matchAll(/z-index/g)]).toHaveLength(1)
+    expect(z(overlay)).toBe(60)
+    expect(overlay).toMatch(/position:\s*absolute;\s*inset:\s*0/)
+    // the overlay is its own scroller: it never pushes the page sideways and never chains its scroll to the page under it
+    expect(overlay).toMatch(/overflow-x:\s*hidden/)
+    expect(overlay).toMatch(/overscroll-behavior:\s*contain/)
+    const cer = z(rule(log, '.fg-cers'))
+    expect(cer).toBe(240)
+    const house = stripComments(rawCss)
+    const nested = Number(/\.sheet\.sheet-nested \{[^}]*z-index:\s*(\d+)/.exec(house)?.[1])
+    const glassCard = Number(/\.gl-card\s*\{[^}]*z-index:\s*(\d+)/.exec(house)?.[1])
+    expect(nested).toBe(211) // Fuel's nested pickers (`fo-sheet sheet-nested`) ride one tier above the sheet that opened them
+    expect(cer).toBeGreaterThan(Math.max(nested, glassCard))
+    expect(cer).toBeLessThan(300)
+  })
+
+  test('one lift per page: no Fuel area class adds a drop shadow to a card-sized box', () => {
+    for (const [name, prefix, raw] of FUEL_SHEETS) {
+      if (prefix === '.fx-') continue // the shared sheet owns the bowl / cup drop (an SVG filter, not a card)
+      const lifted = [...sheet(raw).matchAll(/([^{}]+)\{[^{}]*box-shadow:\s*0 (?:1[0-9]|[2-9][0-9])px (?:\d+)px[^{}]*\}/g)]
+        .map((m) => m[1].trim())
+        .filter((sel) => !/\.fo-btn|> button|button\b|\.on\b|\.dot\b/.test(sel))
+      expect(lifted, `a second lifted surface in folyadek-fuel-${name}.css`).toEqual([])
+    }
+  })
+
+  test('big numerals step down at 360px instead of pushing the page sideways', () => {
+    for (const raw of [fuelKozosCss, fuelMaiCss, fuelLogCss, fuelEtkezesCss, fuelTanulasCss, fuelKiegCss, fuelTrendekCss,
+      fuelKamraCss, fuelBeallitasCss]) {
+      expect(sheet(raw)).toMatch(/@media \(max-width: 360px\)/)
+    }
+    expect(sheet(fuelReceptCss)).toMatch(/@media \(max-width: 3[56]0px\)/)
+  })
+})
+
+test('the kit and the Fuel-shared sheet own the pieces the Fuel areas share (mezo-n4wf5.5)', () => {
+  const kit = stripComments(kitCss)
+  for (const sel of ['.fo-stat {', '.fo-stats {', '.fo-sw {', '.fo-sw::before {', '.fo-srch {', '.fo-srch > input {']) {
+    expect(kit, `${sel} missing from folyadek-kit.css`).toContain(sel)
+  }
+  const kozos = stripComments(fuelKozosCss)
+  for (const sel of ['.fx-bg {', '.fx-cup {', '.fx-cells {', '.fx-m3 {', '.fx-chip {', 'button.fx-chip::after {', '.fx-gb {', '.fx-tags > em {',
+    '.fx-it > .fx-l2 {', '.fx-ln {', '.fx-x::after {', '.fx-kv {', '.fx-tip {', '.fx-lg {', '.fx-ng {', '.fx-kms {', '.fx-split {']) {
+    expect(kozos, `${sel} missing from folyadek-fuel-kozos.css`).toContain(sel)
+  }
+  // the Fuel macro colours are tokens of the shared sheet, on :root (the log flow and the water sheet open outside Fuel)
+  expect(kozos).toMatch(/:root\s*\{[^}]*--fx-protein:[^}]*--fx-carb:[^}]*--fx-fat:[^}]*--fx-fiber:[^}]*--fx-water:/)
 })
 
 test('the kit owns the pieces the Edzés areas shared (mezo-n4wf5.3)', () => {
@@ -836,149 +871,10 @@ test("the explain link keeps a 44px touch area: the kit's `.fo-lk::after` (was `
 // `train session` (structural invariants, mezo-88iwa.7) and `train ceremony` (mezo-ju4j6.13) were REQUIRED here until
 // the Folyadék in-workout flow (mezo-n4wf5.4). Both blocks are deleted; see RETIRED_KOZBEN_BLOCKS above.
 
-/**
- * Phase 5d (mezo-ju4j6.9): the Konyha family — hub, the two libraries, the two detail pages
- * and the Receptműhely canvas — is re-dressed to the restored Mozaik/Clay world, and the block
- * loses its `titanium` suffix. Same guard shape as 5a/5c: both markers present, the class
- * family actually inside them, and the banished Titanium materials unable to come back on this
- * slice. Comments are stripped before scanning, because the block's own prose NAMES the
- * materials it banished.
- */
-describe('the fuel-konyha section is registered and re-dressed (mezo-ju4j6.9)', () => {
-  const START_MARKER = '── fuel-konyha ('
-  const END_MARKER = '── /fuel-konyha '
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
-
-  test('both the opening and the closing comment markers are present, in order', () => {
-    const start = rawCss.indexOf(START_MARKER)
-    const end = rawCss.indexOf(END_MARKER)
-    expect(start, `opening marker "${START_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end, `closing marker "${END_MARKER}" not found`).toBeGreaterThan(-1)
-    expect(end).toBeGreaterThan(start)
-  })
-
-  test('the Titanium-era marker name is gone — one block, renamed, not a second copy', () => {
-    expect(rawCss).not.toContain('fuel-konyha titanium')
-  })
-
-  test('the section actually carries the fkx- class family, not just the markers', () => {
-    for (const cls of ['.fkx-capture', '.fkx-poster', '.fkx-bowls', '.fkx-split', '.fkx-legend',
-      '.fkx-tile-grid', '.fkx-recipe', '.fkx-item', '.fkx-door', '.fkx-cta', '.fkx-stepper',
-      '.fkx-ws-goals']) {
-      expect(section(), `${cls} missing from the fuel-konyha section`).toContain(cls)
-    }
-  })
-
-  test('the whole block carries no Titanium material the style bible forbids', () => {
-    const css = rules()
-    expect(css.length).toBeGreaterThan(8_000)
-    // §2.3: decorative frosting and icon haloes are gone; this block frosts nothing at all.
-    expect(css).not.toContain('var(--surface-glass)')
-    expect(css).not.toContain('backdrop-filter')
-    expect(css).not.toContain('drop-shadow')
-    // §2.2 A: card shadows are --mz-shadow* tokens, never a raw black drop.
-    expect(css).not.toContain('rgba(0, 0, 0,')
-    // A.4 rule 7: the hue vocabulary is the --dv-* accent set, not the legacy aliases.
-    expect(css).not.toMatch(/var\(--(lav|sage|amber|coral|sky|rose)\)/)
-  })
-
-  // Narrowed by the depth & focus sweep (mezo-ju4j6.19). The 5a–5d pass had made ALL five
-  // Konyha surfaces §2.2 A wash tiles, and the page read flat: §3.4 says a wash tile is loud
-  // only next to something that isn't one. The Receptműhely is now the page's single lifted
-  // tile, so this guard checks THAT — a hue-token lift on the hero and the hairline idiom
-  // still in use — rather than demanding every tile be lifted.
-  // Üvegesítés U2 (mezo-me75u.2): the Konyha hub's posters left this block — they are `.glass`
-  // now (the `uveg fuel konyha` block guards them), so the workshop's wash-tile lift is gone.
-  test('the block keeps the hairline idiom and never lifts by a raw shadow (§2.2 A)', () => {
-    const css = rules()
-    expect(css.match(/border: 0\.5px solid rgba\(43, 33, 24, 0\.06\)/g) ?? []).not.toHaveLength(0)
-    expect(css, 'a lifted tile must be lifted by a TOKEN, never a raw shadow').not.toMatch(
-      /box-shadow: 0 \d+px [^;]*rgba\(0, 0, 0/)
-  })
-
-  test('the poster wears the §3.2 anatomy: kiskapitális eyebrow + one display-200 numeral', () => {
-    const css = rules()
-    expect(css).toContain('.fkx-poster-title strong { font-size: 9.5px; font-weight: 800; letter-spacing: 0.16em;')
-    expect(css).toMatch(/\.fkx-poster-main > strong \{[^}]*font-weight: 200;/)
-    expect(css).toMatch(/\.fkx-poster-main > strong \{[^}]*font-variant-numeric: tabular-nums;/)
-    // A.2 rule 5: the raised eyebrow type gets a 360px step-down rather than a retreat.
-    expect(css).toContain('@media (max-width: 360px)')
-  })
-
-  test('the chips and shields are restored materials, not bordered tint boxes (§2.2 B, §3.1)', () => {
-    const css = rules()
-    for (const token of ['--mz-cell-sage-bg', '--mz-cell-sage-ink', '--mz-cell-gold-bg',
-      '--mz-cell-gold-ink', '--mz-cell-lav-bg', '--mz-cell-coral-bg']) {
-      expect(css, `${token} missing — a chip in this block is not a restored cell chip`).toContain(token)
-    }
-    expect(css).toContain('box-shadow: inset 0 0 0 1px var(--border-subtle)')
-  })
-
-  test('the workshop hero is a halo band and no infinite loop survives (§2.2 C, §8.6)', () => {
-    const css = rules()
-    expect(css).toContain('background: var(--halo-violet)')
-    expect(css).toContain('.fkx-ws-glow { display: none; }')
-    // the decorative float loop and its keyframes went with the material
-    expect(css).not.toContain('@keyframes fkx-float')
-    expect(css).not.toContain('infinite')
-  })
-})
-
-/**
- * A kaja-ünneplés (mezo-bqwyo) üvegben (mezo-me75u.10). A ceremónia MINTÁJA canon (ceremony-
- * pattern doc); az ANYAGA most az üveg: EGY lebegő arany üveglap, sheen nélkül. A teljes `fcx-`
- * család az `── uveg reteg unnep (` blokkban él — a régi `── fuel-ceremony (` szekció megszűnt.
- */
-describe('the meal ceremony wears glass in the uveg reteg unnep block (mezo-bqwyo → mezo-me75u.10)', () => {
-  const START_MARKER = '── uveg reteg unnep ('
-  const END_MARKER = '── /uveg reteg unnep ──'
-  const section = () => slice(START_MARKER, END_MARKER)
-  const rules = () => stripComments(section())
-
-  test('the old fuel-ceremony section is gone — one home for the fcx- family', () => {
-    expect(rawCss).not.toContain('── /fuel-ceremony ')
-    expect(rawCss.indexOf(START_MARKER)).toBeGreaterThan(-1)
-    expect(rawCss.indexOf(END_MARKER)).toBeGreaterThan(rawCss.indexOf(START_MARKER))
-  })
-
-  test('the block carries the fcx- family, not just the markers', () => {
-    for (const cls of ['.fcx-screen', '.fcx-scrim', '.fcx-sheet.glass', '.fcx-medal', '.fcx-core', '.fcx-stars',
-      '.fcx-ring-fill', '.fcx-counters', '.fcx-result', '.fcx-score', '.fcx-cta', '.fcx-close.uv-flat']) {
-      expect(section(), `${cls} missing from the uveg reteg unnep block`).toContain(cls)
-    }
-  })
-
-  test('ONE floating gold glass sheet: 10px off the edges, radius 30, no sheen', () => {
-    const css = rules()
-    expect(css).toMatch(/\.fcx-sheet\.glass \{[^}]*--c: var\(--dv-amber\)/)
-    expect(css).toMatch(/\.fcx-sheet\.glass \{[^}]*margin: 0 10px 10px;[^}]*border-radius: 30px/)
-    expect(css).toMatch(/\.fcx-sheet\.glass::after \{[^}]*display: none/)
-    expect(css).not.toContain('var(--page)')
-  })
-
-  // A lap felcsúszását a rAF-menet írja a `--rise`-on át — CSS-átmenet nélkül, mert a háttérbe
-  // tett webview azt a képernyőn KÍVÜL fagyasztaná. A gyújtás a lap landolása UTÁN jön
-  // (FuelMealCeremony.test őrzi a sorrendet).
-  test('the sheet rises by the frame-driven --rise, never by a CSS transition', () => {
-    const css = rules()
-    expect(css).toMatch(/\.fcx-sheet\.glass \{[^}]*transform: translateY\(calc\(var\(--rise, 0\) \* \(100% \+ 10px\)\)\)/)
-    expect(css).not.toMatch(/\.fcx-sheet\.glass \{[^}]*transition/)
-  })
-
-  test('the counters and the way out are flat inside the glass, never glass in glass', () => {
-    const css = rules()
-    expect(css).not.toMatch(/\.glass [^{,]*\.glass/)
-    expect(css).toMatch(/\.fcx-counters > span\.uv-flat \{/)
-  })
-
-  test('every transition sits in the no-preference branch', () => {
-    const css = rules()
-    expect(css).toContain('@media (prefers-reduced-motion: no-preference)')
-    const outside = css.replace(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/g, '')
-    expect(outside).not.toMatch(/transition:/)
-  })
-})
+// `fuel-konyha` (mezo-ju4j6.9) and the meal ceremony in `uveg reteg unnep` (`.fcx-*`, mezo-bqwyo → mezo-me75u.10) were
+// REQUIRED here until Folyadék F5 (mezo-n4wf5.5). Both are deleted (RETIRED_FUEL_BLOCKS above); what they protected —
+// the 360px step-down, no endless loop, the frame-driven ceremony level and its layer — is pinned on the Folyadék
+// sheets in „the Folyadék Fuel sheets keep the truths the retired Fuel guards protected".
 
 /**
  * Depth & focus sweep (`mezo-ju4j6.19`) — the retro-fit of style bible §3.4 across the
@@ -997,47 +893,12 @@ describe('the depth & focus ranking holds across the swept screens (mezo-ju4j6.1
     expect(m, `${selector} rule not found in prototype.css`).not.toBeNull()
     return m![1]
   }
-  /** A demoted surface: the house row/card material — flat --surface-1 under a hairline. */
-  const expectHouseGrade = (selector: string, hero: string) => {
-    const body = rule(selector)
-    expect(body, `${selector} must sit below "${hero}" — it needs the --surface-1 house grade`)
-      .toContain('background: var(--surface-1)')
-    expect(body, `${selector} must sit below "${hero}" — hairline inset, never a lift shadow`)
-      .toContain('inset 0 0 0 1px var(--border-subtle)')
-    expect(body, `${selector} must not carry a §2.2 A wash gradient`).not.toContain('linear-gradient(150deg')
-  }
-  // (the §2.2 B `expectCellGrade` helper retired with its last user, the Trendek tiles — they are
-  //  glass since Üvegesítés U2, mezo-me75u.2)
-
-  // Üvegesítés U1 (mezo-me75u.1): the score hero is a FRAMELESS halo now, so the dimensions are
-  // the page's primary objects — glass tiles (guarded in the fuel-mai block above), no longer cells.
-
-  // Üvegesítés U2 (mezo-me75u.2): the ring is a FRAMELESS halo now, so the time bands are the
-  // page's glass primary objects (the class is set in the TSX, the hue through `--c` on the same
-  // element; guarded in the uveg fuel stack block below). The due band glows harder and a finished
-  // one dims — the owner-approved prototype (uveg-fuel-tobbi.html `.band.due` / `.band.done`)
-  // overrides the restored world's "never dim" rule.
-  test('Fuel · Kiegészítők: the ring halo is the hero, the due band out-glows its glass siblings', () => {
-    expect(rule('.fsx-band.glass.is-due')).toContain('0 0 34px -4px color-mix(in srgb, var(--c) 45%')
-    expect(rule('.fsx-band.glass.is-complete')).toContain('opacity: 0.72')
-    expect(rule('.fsx-page .fsx-hero')).toContain('background: none')
-  })
-
-  // Üvegesítés U2 (mezo-me75u.2): the week picture is a FRAMELESS halo now, so the glance tiles,
-  // the weekday/weekend card and the horizon are the page's glass primary objects (guarded in the
-  // uveg fuel trendek block below); only the day card's dimensions stay flat cells.
-  test('Fuel · Trendek: the day card\'s dimensions stay flat below its own numeral', () => {
-    expectHouseGrade('.ftx-dim', 'az üvegdoboz saját 40px-es számjegye')
-  })
-
-  // Üvegesítés U2 (mezo-me75u.2): the three posters wear glass now (guarded in the `uveg fuel
-  // konyha` block); the old block keeps only the parked house-grade base under them.
-  test('Fuel · Konyha: the captures and posters keep a house-grade base under their glass', () => {
-    expectHouseGrade('.fkx-capture', 'a Receptműhely')
-    expectHouseGrade('.fkx-poster', 'a Receptműhely')
-    // §3.3: the hero's own promise wears the card-title ramp, not the neighbours' size.
-    expect(rule('.fkx-ws-copy strong')).toContain('font-size: 24px')
-  })
+  // Was: three Fuel ranking tests — „Kiegészítők: the ring halo is the hero, the due band out-glows its glass siblings",
+  // „Trendek: the day card's dimensions stay flat below its own numeral", „Konyha: the captures and posters keep a
+  // house-grade base". Fuel wears Folyadék since mezo-n4wf5.5: the ranking is the page skeleton itself (ONE hero vessel,
+  // numbered white cards below it), so no surface can be promoted by a material. Pinned as „one lift per page" in „the
+  // Folyadék Fuel sheets keep the truths…" above and, at runtime, as „exactly one `.fo-hero` on a hub" in
+  // tests/layout/fuel-folyadek.spec.ts. (`expectHouseGrade` left with its last users.)
 
   // Was: „Train · in-workout list: finished work recedes, the remaining work stays washed" on `.wo-card`. The card
   // list is gone (Folyadék F4, mezo-n4wf5.4): ONE exercise is the hero, the others are kit rows. The ranking it protected
@@ -1239,90 +1100,9 @@ describe('the folyadék frame sheet carries the app chrome (mezo-n4wf5.1)', () =
   })
 })
 
-/**
- * Üvegesítés U2 (mezo-me75u.2): Konyha, Kamra, the Kamra item and the Kamra sheets wear the
- * üveg ranking (bible §3.4) — primary objects glass in their own hue, secondary cells flat,
- * free space dashed, and nothing glass inside the glass sheet.
- */
-describe('the uveg fuel konyha section carries the glass ranking (mezo-me75u.2)', () => {
-  const section = () => stripComments(slice('── uveg fuel konyha (', '── /uveg fuel konyha '))
-
-  test('the block exists and dresses every surface of the slice', () => {
-    const css = section()
-    for (const sel of ['.fkx-capture.glass', '.fkx-page .fkx-poster.glass', '.fkx-kamra .fkx-item.glass',
-      '.fkx-kitem .fkx-door.glass', '.fkx-kitem .fkx-cta.glass', '.sheet.fkk-sheet.glass', '.fkk-kamra-empty',
-      '.fkk-swap']) {
-      expect(css, `${sel} missing from the uveg fuel konyha block`).toContain(sel)
-    }
-  })
-
-  test('glass that must stay put restates its geometry (U1 rules 1–3)', () => {
-    const css = section()
-    // the sheet keeps its absolute anchor under `.glass`; the scroll now lives on the inner
-    // `.sheet-scroll` (mezo-zz91i follow-up: the frame itself must stay a non-scrolling box, or
-    // the `.glass::before` hairline would scroll away with tall content).
-    expect(css).toMatch(/\.sheet\.fkk-sheet\.glass \{[^}]*position: absolute;[^}]*overflow-y: hidden;/)
-    // the capture's ＋ stays pinned in the corner under `.glass > *`
-    expect(css).toMatch(/\.fkx-capture\.glass > \.fkx-plus \{[^}]*position: absolute;/)
-  })
-
-  test('the sheet\'s go button is a lit flat pill, never glass in glass (U1 rule 5)', () => {
-    const css = section()
-    expect(css).toMatch(/\.fkk-btn\.is-go \{[^}]*radial-gradient/)
-    expect(css).not.toMatch(/\.fkk-sheet[^{]*\.glass \.glass/)
-  })
-})
-
-/**
- * Üvegesítés U2 (mezo-me75u.2) — Kiegészítők, Protokoll, Új elem, Gyógyszer and the stack sheets
- * (prototypes/uveg-fuel-tobbi.html `stack()` … `SH.medform`). The ring is a frameless halo; the
- * KÖVETKEZIK card, the time bands, the zone groups, the doors and the medication card are glass
- * in ONE accent each; ticks, rows, chips and fields inside them are flat; the sheets are one
- * glass surface each.
- */
-describe('the uveg fuel stack section carries the glass ranking (mezo-me75u.2)', () => {
-  const section = () => stripComments(slice('── uveg fuel stack (', '── /uveg fuel stack '))
-
-  test('the block exists and dresses every surface of the slice', () => {
-    const css = section()
-    for (const sel of ['.fsx-next.glass', '.fsx-band.glass', '.fsx-poster.glass', '.fsx-quiet.glass',
-      '.fmx-glass.fsx-glass', '.fsx-proto-group.glass', '.fsx-pick.glass', '.fsx-form.glass',
-      '.fsx-tunecard.glass', '.fmd-medcard.glass', '.sheet.glass.fsx-sheet', '.fsx-mm.uv-flat']) {
-      expect(css, `${sel} missing from the uveg fuel stack block`).toContain(sel)
-    }
-  })
-
-  test('glass that must stay put restates its geometry (U1 rules 1–3)', () => {
-    const css = section()
-    // the scroll now lives on the inner `.sheet-scroll` (mezo-zz91i follow-up); the outer frame
-    // itself stays non-scrolling so its `.glass::before` hairline never scrolls away.
-    expect(css).toMatch(/\.sheet\.glass\.fsx-sheet \{[^}]*position: absolute;[^}]*overflow-y: hidden;/)
-    expect(css).toMatch(/\.fsx-poster\.glass > \.fsx-poster-go \{[^}]*position: absolute;/)
-    // the old medcard's 5px accent strip must not shrink the glass frame to a strip
-    expect(css).toMatch(/\.fmd-medcard\.glass::before \{[^}]*width: auto;/)
-  })
-
-  test('the tick keeps its 44px hit area and is a flat lit circle, not glass', () => {
-    const css = section()
-    expect(css).toMatch(/\.fsx-band\.glass \.fsx-check,[^{]*\{[^}]*width: 44px; height: 44px;/)
-    expect(css).toMatch(/\.fsx-band\.glass \.fsx-row\.is-done \.fsx-check > span \{[^}]*background: var\(--c\)/)
-  })
-
-  test('inside a glass surface everything is flat or lit, never glass in glass (U1 rule 5)', () => {
-    const css = section()
-    expect(css).toMatch(/\.fsx-glass \.fsx-glass-tick \{[^}]*color-mix\(in srgb, var\(--c\) 20%/)
-    expect(css).toMatch(/\.fsx-sh-btn\.is-lit \{[^}]*color-mix\(in srgb, var\(--c\) 22%/)
-    expect(css).not.toMatch(/\.glass [^{,]*\.glass[\s,{]/)
-  })
-
-  test('the hero art floats only inside the reduced-motion gate', () => {
-    const css = section()
-    const gate = css.indexOf('@media (prefers-reduced-motion: no-preference)')
-    expect(gate).toBeGreaterThan(-1)
-    expect(css.indexOf('animation: uv-float')).toBeGreaterThan(gate)
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{[\s\S]*animation: none;/)
-  })
-})
+// `uveg fuel konyha` and `uveg fuel stack` (mezo-me75u.2) were REQUIRED here until Folyadék F5 (mezo-n4wf5.5); both are
+// deleted (RETIRED_FUEL_BLOCKS). Their guarantees — a sheet frame that does not scroll, the 44px tick, nothing lifted
+// inside a lifted surface, motion only for people who accept it — are pinned on the kit and the Folyadék Fuel sheets.
 
 /**
  * Üvegesítés U3 (mezo-me75u.3) — the Nap area (prototypes/uveg-nap.html). It had one block per
@@ -1417,9 +1197,9 @@ test('the U3 capture sheet floats under `.glass` (U1 rules 1–3, U2 rule 15)', 
  * inside them flat or lit; free space dashed; the dock never sweeps; never glass in glass.
  */
 const U4_BLOCKS: Array<[string, string[]]> = [
-  // 'mai' is cut down to what Fuel and Nap still wear (Folyadék F3, mezo-n4wf5.3): the reason sheet and the duration row
-  ['mai', ['.sheet.glass.uv-sheet.trm-whysheet', '.trm-whyg', '.trm-whyc', '.trm-whynote', '.trm-inpmic', '.trm-kmdur-eb',
-    '.trm-kmdc > button']],
+  // 'mai' is cut down to the duration row of the shared RecoveryDurationRow (Folyadék F3, mezo-n4wf5.3); the reason
+  // sheet's `.trm-why*` chips left with Fuel's own sheet (Folyadék F5, mezo-n4wf5.5 — RETIRED_FUEL_BLOCKS)
+  ['mai', ['.trm-kmdur-eb', '.trm-kmdc > button', '.trm-kmdc > button.on']],
   // 'session' and 'zaras' left in Folyadék F4 (mezo-n4wf5.4): the in-workout flow wears `.ei-` / `.ek-` / `.el-` /
   // `.ec-` / `.eo-` (styles/folyadek-edzes-*.css); their absence is pinned in RETIRED_KOZBEN_BLOCKS above.
   // 'terheles', 'sport' and 'gyakorlatok' left in Folyadék F3 (mezo-n4wf5.3): those pages wear `.et-` / `.es-` / `.er-`
@@ -1700,16 +1480,16 @@ test('the uveg kit carries the shared floating glass sheet (mezo-me75u.10)', () 
 })
 
 const U10_BLOCKS: Array<[string, string[]]> = [
-  ['unnep', ['.fcx-screen {', '.fcx-sheet.glass {', '.fcx-ring-fill {', '.fcx-core {', '.fcx-verdict {',
-    '.fcx-counters > span.uv-flat {', '.fcx-close.uv-flat {', '.fcx-cta {']],
-  // (the sport ceremony's `.cer-screen.uv-cer.cer-sport` rules left with the Folyadék closing screens, mezo-n4wf5.4)
+  // 'unnep' is gone: the sport ceremony left with the Folyadék closing screens (mezo-n4wf5.4), the meal ceremony
+  // (`.fcx-*`) with Fuel (mezo-n4wf5.5) — its absence is pinned in RETIRED_FUEL_BLOCKS.
   ['szint', ['.levelup.lvu {', '.lvu-chip {', '.lvu-xp {', '.levelup.lvu .lvu-row.glass {', '.lvu-badge {', '.lvu-perk {',
     '.lvu-cell {', '.lvu-robust {', '.levelup.lvu .lvu-cta.glass {']],
   ['ablak', ['.gl-card.glass.uv-gb {', '.uv-gb .gl-x {', '.abl-pill {', '.dp-cal.glass {', '.dp-day.is-sel',
     // (the workout's return button `.float-fab` / `.float-return` is the Edzés-shared `ReturnFab` now, mezo-n4wf5.4)
     '.abl-err.glass {']],
   ['lap', [// `.uvl-edzes` left with the Edzés sheets (Folyadék F3, mezo-n4wf5.3 — they are kit sheets now)
-    '.sheet.glass.uv-sheet.uvl-fuel', '.sheet.glass.uv-sheet.uvl-en',
+    // `.uvl-fuel` / `.uvl-kamra` left with the Fuel sheets (Folyadék F5, mezo-n4wf5.5 — kit sheets too)
+    '.sheet.glass.uv-sheet.uvl-en',
     '.sheet.glass.uv-sheet.uvl-fiok', '.uvl-cta', '.uvl-err', '.toast-stack .toast.glass.uvl-tst', '.toast-stack .uvl-tst .t-lvup']],
   ['kalauz', ['.sheet.glass.uv-sheet.kalauz-sheet', '.kalauz-sheet .kalauz-art .kalauz-art-ico', '.kalauz-sheet .kalauz-fogalom',
     '.kalauz-sheet .kalauz-cta', '.welcome.uv-welcome', '.uv-welcome .wel-dpart.glass', '.uv-welcome .wel-domvoice.glass',
@@ -1748,8 +1528,9 @@ describe.each(U10_BLOCKS)('the uveg reteg %s section carries the glass ranking (
 const U11_BLOCKS: Array<[string, string[]]> = [
   // 'edzes' left in Folyadék F3 (mezo-n4wf5.3): every page it patched wears the kit; pinned as gone in RETIRED_EDZES_BLOCKS.
   ['egyeb', ['.alv-page .alv-sec-head .eyebrow', '.gr-ma .gr-chip .gr-chip-mk.gr-mk3d', '.enc-celok .lg-dimchip.empty',
-    // the two `.napom-page` fixes left with the page's Üveg skin (Folyadék F2, mezo-n4wf5.2)
-    '.fsx-band.glass .fsx-check > span .t-ico']],
+    // the two `.napom-page` fixes left with the page's Üveg skin (Folyadék F2, mezo-n4wf5.2), the Kiegészítők tick
+    // fix (`.fsx-band.glass .fsx-check`) with Fuel's (Folyadék F5, mezo-n4wf5.5)
+  ]],
 ]
 
 describe.each(U11_BLOCKS)('the uveg lezaras %s section (mezo-me75u.11)', (name, sels) => {

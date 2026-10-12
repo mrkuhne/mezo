@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.fuel.entity.StackZone;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.techcore.message.UserMessages;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,16 +22,20 @@ import tools.jackson.databind.ObjectMapper;
  * reads in business code) — with either switch off the {@link ObjectProvider} below is simply
  * empty, exactly the {@code RecipeBreakdownService}/{@code ObjectProvider<RecipeBreakdownProseService>}
  * precedent.
+ *
+ * <p>The reason sentence is written in the account's language at placement time and stored on the
+ * protocol item as written (mezo-n4wf5.5): rule and fallback reasons are {@code FUEL_PLACEMENT_*}
+ * bundle keys; the LLM's own sentence follows the output-language directive.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PlacementEngine {
 
-    public record Placement(String slotKey, String source, String reasonHu, String restDayFallback) {}
+    public record Placement(String slotKey, String source, String reason, String restDayFallback) {}
 
     static final String FALLBACK_ZONE = "breakfast";
-    static final String FALLBACK_REASON = "Bizonytalan besorolás — helyezd át, ha máskor szeded.";
+    static final String FALLBACK_REASON_KEY = "FUEL_PLACEMENT_REASON_FALLBACK";
 
     /** First word of the system prompt — FakeCompanionLlm mirrors it (literal, no import back;
      *  companion already depends on fuel one-way via StackPlacementLlmAdapter — mirroring the
@@ -45,24 +50,34 @@ public class PlacementEngine {
         Allowed slotKey values: wake, breakfast, pre_workout, post_workout, lunch, dinner, evening, bedtime.
         The reason must be one short Hungarian sentence explaining why that zone is optimal.""";
 
+    /**
+     * What an English account's call sends: the same prompt without the demand for Hungarian, so it
+     * cannot fight the appended output-language directive. The JSON key stays {@code reasonHu} (a
+     * contract name, not a language). Same prefix, so the marker dispatch and the cache key hold.
+     */
+    static final String SYSTEM_PROMPT_NEUTRAL = SYSTEM_PROMPT
+        .replace("<one Hungarian sentence>", "<one sentence>")
+        .replace("one short Hungarian sentence", "one short sentence");
+
     private final ObjectProvider<StackPlacementLlm> llm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final UserMessages messages;
 
     public Placement place(PantryItemEntity item) {
         String name = item.getCatalog().getName() == null ? "" : item.getCatalog().getName().toLowerCase();
         for (PlacementRules.Rule rule : PlacementRules.RULES) {
             if (rule.needles().stream().anyMatch(name::contains)) {
-                return new Placement(rule.slotKey(), "rule", rule.reasonHu(), rule.restDayFallback());
+                return new Placement(rule.slotKey(), "rule", messages.text(rule.reasonKey()), rule.restDayFallback());
             }
         }
         String timingZone = PlacementRules.zoneForTiming(item.getTiming());
         if (timingZone != null) {
             return new Placement(timingZone, "rule",
-                "A Kamra-item ajánlott időzítése alapján.", null);
+                messages.text("FUEL_PLACEMENT_REASON_PANTRY_TIMING"), null);
         }
         return llmPlacement(item).orElseGet(
-            () -> new Placement(FALLBACK_ZONE, "fallback", FALLBACK_REASON, null));
+            () -> new Placement(FALLBACK_ZONE, "fallback", messages.text(FALLBACK_REASON_KEY), null));
     }
 
     /** Rule-table daily-total hint for the item panel (not persisted — derived per read). */
@@ -70,9 +85,9 @@ public class PlacementEngine {
         String name = itemName == null ? "" : itemName.toLowerCase();
         return PlacementRules.RULES.stream()
             .filter(r -> r.needles().stream().anyMatch(name::contains))
-            .map(PlacementRules.Rule::dailyTotalHintHu)
+            .map(PlacementRules.Rule::dailyTotalHintKey)
             .filter(h -> h != null)
-            .findFirst().orElse(null);
+            .findFirst().map(messages::text).orElse(null);
     }
 
     private Optional<Placement> llmPlacement(PantryItemEntity item) {
@@ -81,14 +96,15 @@ public class PlacementEngine {
             return Optional.empty(); // stack-placement-llm off, companion off, or no adapter bean
         }
         try {
+            String systemPrompt = "hu".equals(messages.language()) ? SYSTEM_PROMPT : SYSTEM_PROMPT_NEUTRAL;
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("stack_placement", "place", null, null),
-                () -> port.complete(SYSTEM_PROMPT, item.getCatalog().getName()));
+                () -> port.complete(systemPrompt, item.getCatalog().getName()));
             String json = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
             JsonNode node = objectMapper.readTree(json);
             String slotKey = node.path("slotKey").asString();
             StackZone.fromKey(slotKey); // validates — throws on junk
-            String reason = node.path("reasonHu").asString(FALLBACK_REASON);
+            String reason = node.path("reasonHu").asString(messages.text(FALLBACK_REASON_KEY));
             return Optional.of(new Placement(slotKey, "llm", reason, null));
         } catch (Exception e) {
             log.warn("Stack placement LLM fallback failed for '{}': {}", item.getCatalog().getName(), e.getMessage());

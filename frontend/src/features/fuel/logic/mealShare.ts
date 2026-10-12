@@ -26,6 +26,7 @@
 // szándékosan élnek egymás mellett — más felület, más szemantika, más matek.
 // ============================================================
 import { macroSplit } from '@/features/fuel/logic/macroSplit'
+import { m } from '@/shared/i18n'
 
 export interface MealShareRow {
   key: 'p' | 'c' | 'f'
@@ -35,10 +36,10 @@ export interface MealShareRow {
   pct: number | null
 }
 
-const LABEL: Record<MealShareRow['key'], string> = {
-  p: 'Fehérje',
-  c: 'Szénhidrát',
-  f: 'Zsír',
+/** A makró neve az app nyelvén — híváskor olvasva (egy modul-konstans nyelvváltáskor beragadna). */
+function labelOf(key: MealShareRow['key']): string {
+  const macro = m().fuelKozos.macro
+  return key === 'p' ? macro.protein : key === 'c' ? macro.carbs : macro.fat
 }
 
 export function mealMacroShare(meal: {
@@ -51,7 +52,7 @@ export function mealMacroShare(meal: {
   const split = complete ? macroSplit(grams) : null
   return (['p', 'c', 'f'] as const).map(key => ({
     key,
-    label: LABEL[key],
+    label: labelOf(key),
     grams: grams[key],
     pct: split ? split[key] : null,
   }))

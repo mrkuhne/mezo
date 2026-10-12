@@ -65,7 +65,11 @@ export function AppLayout() {
   // a helyzet, mint a chat/`/fuel/log/uj` composerénél, mezo-vdf4/bq2t) — a korall FAB rálógna a
   // küldés gombra, ezért itt is elmarad; a gyors-naplózó a navigációból érhető el.
   const inSettings = location.pathname.startsWith('/settings')
-  const hideFab = hideChrome || inSettings || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap', '/nap/rutin/uj', '/train/mesocycles/new'].includes(location.pathname)
+  // mezo-n4wf5.5 (Folyadék F5): the Fuel pages that draw the kit's floating foot (`Page foot`: the add wizard's
+  // „Tovább" bar, the recipe editor's save bar) own the thumb zone the same way — the FAB sat on the right end of the
+  // bar, and the approved prototype shows none there. (The Fuel settings pages are already covered by `inSettings`.)
+  const fuelFootPage = /^\/fuel\/(stack\/manage\/add|recipes\/new|recipes\/[^/]+\/edit)$/.test(location.pathname)
+  const hideFab = hideChrome || inSettings || fuelFootPage || ['/mezo/chat', '/fuel/log/uj', '/nap/gyors', '/nap', '/nap/rutin/uj', '/train/mesocycles/new'].includes(location.pathname)
   // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.

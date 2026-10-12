@@ -2,7 +2,7 @@
 title: Admin hub — owner console
 type: feature-domain
 status: done
-updated: 2026-10-09
+updated: 2026-10-12
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer, design]
 key_files:
   - api/feature/admin/admin.yml
@@ -41,7 +41,9 @@ which extends the *Ownership exception* precedent in [`_platform-auth-security.m
 `/admin` is a **second top-level route entry**, a sibling of the mobile `AppLayout` tree, not a
 child of it — its own `AdminLayout` (left rail, full-width 12-column mosaic, no `BottomBar`, no
 `PhoneFrame`) and its own `React.lazy` chunk (the codebase's first). The mobile PWA never
-downloads it. Everything is gated server-side by the existing `OWNER` role via
+downloads it. Since the language slice (`mezo-n4wf5.11`) `AdminLayout` wraps its rail and page in
+`LanguageBoundary` (`shared/i18n`): a language switch remounts them, while the toast host and arrival mode above stay
+mounted — the admin pages themselves are not translated. Everything is gated server-side by the existing `OWNER` role via
 `currentUser.requireOwner()` — no new `ADMIN` role — and the whole slice is feature-flagged off
 by default (`mezo.feature.admin-insights.enabled`, `FeaturesConfiguration.ADMIN_INSIGHTS_SWITCH`,
 explicitly `true` in `k8s/backend/deployment.yaml`). **Read-only**: the data browser and every

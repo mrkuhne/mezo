@@ -35,12 +35,14 @@ function renderSheet(skip: PlannedSkip | null = sk(), over: { canOpenRecovery?: 
 
 afterEach(() => { vi.clearAllMocks(); vi.useRealTimers() })
 
-describe('MealSkipSheet (prototype elo/fuel.html mealWhy)', () => {
-  test('head: eyebrow, title, sub', () => {
-    renderSheet()
-    expect(screen.getByText('KIHAGYVA · UZSONNA')).toBeInTheDocument()
+describe('MealSkipSheet (Folyadék F5: prototype vilagos/fuel.js mealwhy)', () => {
+  test('head: title and the one sub line naming the window; a light sheet, no glass', () => {
+    const { baseElement } = renderSheet()
     expect(screen.getByRole('heading', { name: 'Miért marad ki?' })).toBeInTheDocument()
-    expect(screen.getByText('Nem kötelező. Segít, hogy a coach értse a mintát.')).toBeInTheDocument()
+    expect(screen.getByText('Kihagyva · Uzsonna · nem kötelező; segít, hogy Mezo értse a mintát')).toBeInTheDocument()
+    expect(baseElement.querySelector('.sheet.fo-sheet')).not.toBeNull()
+    expect(baseElement.querySelector('.glass')).toBeNull()
+    expect(baseElement.textContent).not.toMatch(/coach/i)
   })
 
   test('six chips in order, each with its Titanium icon', () => {
@@ -56,7 +58,8 @@ describe('MealSkipSheet (prototype elo/fuel.html mealWhy)', () => {
   test('Kész is disabled until a chip is chosen; the invitation note shows', () => {
     renderSheet()
     expect(screen.getByRole('button', { name: 'Kész' })).toBeDisabled()
-    expect(screen.getByText('Ha megmondod, miért, a coach érteni fogja a mintát. Nem kötelező.')).toBeInTheDocument()
+    expect(screen.getByText('Nem kötelező')).toBeInTheDocument()
+    expect(screen.getByText('Ha megmondod, miért, Mezo érteni fogja a mintát.')).toBeInTheDocument()
   })
 
   test('a chip tap saves the reason immediately', () => {
@@ -93,7 +96,7 @@ describe('MealSkipSheet (prototype elo/fuel.html mealWhy)', () => {
     expect(openRecovery).toHaveBeenCalledWith({ category: 'STOMACH', estimate: 'FEW_DAYS', startDate: '2026-09-27' })
     await act(async () => { await Promise.resolve() })
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Kímélő mód bekapcsolva · amíg tart, a Fuel nem kér számon semmit, az edzés és a sport pedig magától kimarad.')
+      'Kímélő mód bekapcsolvaAmíg tart, a Fuel nem kér számon semmit, az edzés és a sport pedig magától kimarad.')
     await act(async () => { vi.advanceTimersByTime(1400) })
     expect(toasts.map((t) => ('text' in t ? t.text : ''))).toContain('Kímélő mód bekapcsolva')
     await act(async () => { vi.advanceTimersByTime(1000) })

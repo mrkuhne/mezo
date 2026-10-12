@@ -44,7 +44,7 @@ test('sum_pct: budgetPct summing to 80% (outside 100±1) is an error naming the 
   ]
   const compiled = [win(420, { label: 'Reggeli', budgetPct: 40 }), win(780, { label: 'Ebéd', budgetPct: 40 })]
   const { errors, warnings } = validateSlotPlan(rows, compiled, baseCtx)
-  expect(errors).toEqual([{ code: 'sum_pct', text: '„A budgetek összege 80% — 100% kell legyen"' }])
+  expect(errors).toEqual([{ code: 'sum_pct', text: 'A részek összege 80%: 100% kell.' }])
   expect(warnings).toEqual([])
 })
 
@@ -77,7 +77,7 @@ test('label_length: a whitespace-only label is an error naming it as unnamed', (
     row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
   ]
   const { errors, warnings } = validateSlotPlan(rows, validCompiled, baseCtx)
-  expect(errors).toEqual([{ code: 'label_length', text: 'Van egy névtelen (üres nevű) étkezési ablak — adj neki nevet.' }])
+  expect(errors).toEqual([{ code: 'label_length', text: 'Van egy névtelen étkezési ablak: adj neki nevet.' }])
   expect(warnings).toEqual([])
 })
 
@@ -89,7 +89,7 @@ test('label_length: a label over 40 characters is an error naming the offending 
     row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
   ]
   const { errors, warnings } = validateSlotPlan(rows, validCompiled, baseCtx)
-  expect(errors).toEqual([{ code: 'label_length', text: `„${longLabel}" neve túl hosszú — legfeljebb 40 karakter lehet.` }])
+  expect(errors).toEqual([{ code: 'label_length', text: `„${longLabel}" neve túl hosszú: legfeljebb 40 karakter lehet.` }])
   expect(warnings).toEqual([])
 })
 

@@ -1,56 +1,47 @@
 // ============================================================
-// Mezo · KamraItemDetailPage — EGY kamra-tétel Titán részletező oldala
+// Mezo · KamraItemDetailPage — EGY kamra-tétel részletező oldala
 // (Fuel Titanium S4, mezo-hygp; fagyasztott manifeszt B6 · B7 · B12).
 //
-// Jóváhagyott vizuális referencia (Üvegesítés U2, mezo-me75u.2): docs/design_2.0/prototypes/
-// uveg-fuel-tobbi.html `kamraItem()`. Anatómia: al-fejléc (kerek üveg ‹ + kategória/név +
-// lapos forrás-chip) → keret nélküli halo-hős (nagy 3D ikon + kcal/100 g vagy adag; jobbra két
-// ÜVEG info-sor: „A polcodon" arany, a felvétel módja ég) → Forrás (lapos cella) → étel:
-// Makró-gyűrűk + Minőség lapkák /100 g (a megosztott üveg-blokkok); kiegészítő: a napi protokoll
-// üveg-ajtaja → Receptekben (lapos chipek) → Logolás (üveg CTA) → két lapos művelet.
+// Folyadék (F5, mezo-n4wf5.5) — build target: docs/design_2.0/prototypes/vilagos/fuel.js `kamraItem()`.
+// Anatómia: hős (márka vagy fajta · a nagy szám: kcal / bázis, kiegészítőnél az adag · az ítélet-mondat ·
+// „Mi van 100 grammban?" sáv · gombok: Logolás / Kiegészítők megnyitása, Szerkesztés, két lépéses Törlés)
+// → A napodban (csak kiegészítőnél) → Makrók (három fiola) → Minőség (sorok) → Forrás (a polcon · a felvétel
+// módja, forrása, ideje, a közös katalógus szerzője KÜLÖN sorban · ár) → Receptekben.
 //
-// B14 owner-DROP, ITT A HELYE: a „Legutóbbi importok" feed megszűnt, és a per-tétel EREDET
-// (forrás + mikor) erre a lapra, a `Forrás` kártyára került. Ez a DROP ellenpárja, nem a
-// visszacsempészése: egy lista helyett ott áll az eredet, ahol a tételt olvasod.
-// B16 owner-DROP: a készlet/lejárat blokk a `SHOW_PANTRY_STOCK` zászló mögött alszik,
-// változatlanul — a kód érintetlen, új hivatkozás nem készült rá.
+// SZABÁLYOK, amik a rajzból nem látszanak:
+//   · A tápérték-blokkok a „VAN-E BÁRMELY MAKRÓ" kérdést követik, nem a fajtát: a mezo-1za9 óta egy kiegészítő
+//     (kreatin / whey) is hordozhat tápértéket, és akkor ugyanúgy jár neki a Makrók és a Minőség.
+//   · A „Mi van 100 grammban?" sáv csak akkor rajzolható, ha MINDHÁROM makró megvan, a bázis 100 g, és a tétel étel;
+//     a maradék (víz, rost…) számolt, nem mért.
+//   · ŐSZINTE-NULL: amire a megosztott definíciónak nincs értéke, az „—" / „nincs adat", nem 0 (mezo-6omv).
+//   · B14 owner-DROP ellenpárja: a per-tétel EREDET (forrás + mikor) ITT él, a Forrás kártyán — nem egy import-feedben.
+//   · B16 owner-DROP: a készlet/lejárat blokk a `SHOW_PANTRY_STOCK` zászló mögött alszik, változatlanul.
+//   · A forrás, a kategória, a NOVA és az időpont a szervertől ADAT (kulcs / ISO): a felirat és a dátum itt készül
+//     (katalógus + `shared/lib/format`). A tétel neve, márkája, adagja és a protokoll-szöveg a felhasználóé: nem fordítjuk.
 //
 // Változatlan viselkedés: `usePantryActions`, a 'stash-' előtag-levágás, az `AddPantryItemSheet`
-// előtöltése és definíció-zárolása, a LogFlow előtöltése, a két lépéses törlés, a mai stack-
-// projekcióból olvasott „a stackben" hivatkozás és a `Receptekben` élő kereszt-hivatkozás.
-//
-// ŐSZINTE-NULL: amire a megosztott definíciónak nincs értéke, az „—", nem 0 (mezo-6omv).
+// előtöltése és definíció-zárolása, a LogFlow előtöltése, a két lépéses törlés, a mai protokoll-
+// vetületből olvasott „a kiegészítőid között" hivatkozás és a `Receptekben` élő kereszt-hivatkozás.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { IngredientStock, PantryItem, PantryItemInput } from '@/data/types'
 import { usePantry, usePantryActions, useStackDay, useRecipes } from '@/data/hooks'
-import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
-import { ContentIcon, Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { hu1, huInt } from '@/shared/lib/huNum'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { mealMacroShare } from '@/features/fuel/logic/mealShare'
+import { useM } from '@/shared/i18n'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { Btn, Card, Empty, FrameBack, Hero, Lab, Lk, Page, Row, Section, St, useFrameTitle } from '@/shared/ui/folyadek'
+import { MacroVials, SplitBar } from '@/features/fuel/components/folyadek'
+import { buildKamraItems, kamraItemIcon, pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 import { pantryProvenance } from '@/features/fuel/logic/pantryProvenance'
 import { recipeSlotFace } from '@/features/fuel/logic/recipeSlotFace'
-import { NOVA, FuelMacroShareSection, FuelNutriTiles, type FuelNutriTile }
-  from '@/features/fuel/components/FuelQualityBlocks'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
 import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
-import { FrameBack } from '@/shared/ui/folyadek'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
 function isFullStock(s: NonNullable<PantryItem['stock']>): s is IngredientStock {
   return 'expires' in s
-}
-
-/** Egy tétel arca: ház-hue + 3D szimbólum — ugyanaz, amit a Kamra csempéje visel. */
-const KIND_FACE: Record<string, { color: string; icon: Icon3DName }> = {
-  food: { color: 'var(--dv-sage)', icon: 't-carb' },
-  supplement: { color: 'var(--dv-lav)', icon: 't-supps' },
-  stim: { color: 'var(--dv-coral)', icon: 't-bolt' },
-  med: { color: 'var(--dv-sky)', icon: 't-syringe' },
 }
 
 // Build a complete PantryItemInput from the displayed item — prefills every
@@ -95,9 +86,12 @@ export function inputFromItem(item: PantryItem): PantryItemInput {
 }
 
 export function KamraItemDetailPage() {
+  const M = useM()
+  const K = M.fuelKamra
+  const I = K.item
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { ingredients, stash, categoryMeta } = usePantry()
+  const { ingredients, stash } = usePantry()
   const { deleteItem } = usePantryActions()
   const { recipes } = useRecipes()
   const { slots } = useStackDay()
@@ -106,18 +100,24 @@ export function KamraItemDetailPage() {
   const [delArmed, setDelArmed] = useState(false)
 
   const item = buildKamraItems(ingredients, stash).find(it => it.id === id)
+  const catLabel = item ? pantryCategoryLabel(item.category) : null
+
+  useFrameTitle({
+    title: item ? item.name : I.notFoundTitle,
+    eyebrow: item ? [I.eyebrow, catLabel].filter(Boolean).join(' · ') : I.eyebrow,
+  })
+  const back = <FrameBack history fallback="/fuel/kamra" className="fo-backpill" label={K.back.pantry}>‹ {K.pantry}</FrameBack>
 
   if (!item) {
     return (
-      <div className="fmx-page">
-        <div className="fmx-subhead">
-          <FrameBack className="glass is-round" history fallback="/fuel/kamra" label="Vissza">‹</FrameBack>
-          <span><strong>Nincs ilyen tétel.</strong></span>
-        </div>
-        <p className="fmx-block-empty">
-          Lehet, hogy közben levetted a polcról. A Kamrában minden megmaradt tételed ott van.
-        </p>
-      </div>
+      <Page className="fp-item">
+        {back}
+        <Card>
+          <Empty icon="t-stack" actions={<Btn sm onClick={() => navigate('/fuel/kamra')}>{K.back.pantry}</Btn>}>
+            {I.notFound}
+          </Empty>
+        </Card>
+      </Page>
     )
   }
 
@@ -130,8 +130,6 @@ export function KamraItemDetailPage() {
   // Ingredient row (kreatin/whey carry BOTH — buildKamraItems represents them by their
   // ingredient id, not 'stash-<id>'): prefer stashRefId when present, else the backend id.
   const stackKey = item.stashRefId ?? backendId
-  const catLabel = categoryMeta[item.category ?? '']?.label ?? item.category
-  const face = KIND_FACE[item.kind] ?? { color: 'var(--dv-amber)', icon: 't-stack' as Icon3DName }
   const prov = pantryProvenance(item)
   const isFood = item.kind === 'food'
 
@@ -141,12 +139,12 @@ export function KamraItemDetailPage() {
   const hasStock = stock != null && typeof stockQty === 'number'
   const stockExpires = stock && isFullStock(stock) ? stock.expires : undefined
 
-  // "a stackben · {zóna} {idő}" cross-link — today's live stack projection, the
+  // "a kiegészítőid között · {idősáv} {idő}" cross-link — today's live protocol projection, the
   // same composition FuelStackPage reads. Hidden when this item has no occurrence today.
   const stackSlot = slots.find(s => s.entries.some(e => e.pantryItemId === stackKey))
 
-  // "Receptekben" chips (audit gap #5 — usedInRecipes was read from the contract but never
-  // displayed anywhere): the real recipe names that reference this pantry item, not the bare
+  // "Receptekben" (audit gap #5 — usedInRecipes was read from the contract but never
+  // displayed anywhere): the real recipes that reference this pantry item, not the bare
   // count, computed from the live Recipe.ingredients rather than trusting a stale counter.
   const usedInRecipes = recipes.filter(r => r.ingredients.some(l => l.refId === backendId))
 
@@ -157,172 +155,147 @@ export function KamraItemDetailPage() {
     navigate('/fuel/kamra', { replace: true })
   }
 
-  const hasAnyMacro = item.macros != null
-    && (item.macros.kcal != null || item.macros.p != null || item.macros.c != null || item.macros.f != null)
-  const perLabel = `${item.per ?? 100} ${item.unit ?? 'g'}`
-  const shares = mealMacroShare({ p: item.macros?.p, c: item.macros?.c, f: item.macros?.f })
-  // A prototípus per-100 g minőség-lapkái: három tárolt tény + a feldolgozottság (NOVA).
-  const nova = item.nova != null ? NOVA[item.nova] : null
-  const qualityTiles: FuelNutriTile[] = [
-    // Üveg (mezo-me75u.2): cukor = a cukorkocka, só = a sószóró, telített zsír = a zsírcsepp,
-    // NOVA = a feldolgozottság rétegei (uveg-fuel-tobbi.html `kamraItem()` Minőség).
-    { label: `Cukor · ${perLabel}`, value: item.sugarG == null ? null : hu1(item.sugarG), unit: 'g', icon: 't-sugar', color: 'var(--macro-carbs)' },
-    { label: `Só · ${perLabel}`, value: item.saltG == null ? null : hu1(item.saltG), unit: 'g', icon: 't-salt', color: 'var(--dv-sky)' },
-    { label: `Telített zsír · ${perLabel}`, value: item.saturatedFatG == null ? null : hu1(item.saturatedFatG), unit: 'g', icon: 't-fat', color: 'var(--macro-fat)' },
-    { label: nova ? nova.short : 'Feldolgozottság', value: item.nova == null ? null : String(item.nova), unit: 'NOVA', icon: 't-processing', color: nova?.color ?? 'var(--dv-sky)' },
-  ]
+  const p = item.macros?.p ?? null
+  const c = item.macros?.c ?? null
+  const f = item.macros?.f ?? null
+  const kcal = item.macros?.kcal ?? null
+  const hasAnyMacro = kcal != null || p != null || c != null || f != null
+  const per = item.per ?? 100
+  const unit = item.unit ?? 'g'
+  const perLabel = `${per} ${unit}`
 
+  // A fő mondat: ételnél a domináns makró (energia szerint), kiegészítőnél az idősáv saját mondata —
+  // egy üzenet sávonként, nem ragasztott szó.
+  const basis: 'g' | 'ml' | 'other' = unit === 'g' ? 'g' : unit === 'ml' ? 'ml' : 'other'
+  const lead = p == null || c == null || f == null ? null
+    : ([['protein', p * 4, p], ['carbs', c * 4, c], ['fat', f * 9, f]] as const).slice().sort((a, b) => b[1] - a[1])[0]
+  const sentence = (key: 'protein' | 'carbs' | 'fat', grams: number) =>
+    basis === 'other' ? I[key].other(fmtNum(grams), perLabel) : I[key][basis](fmtNum(grams), per)
+  const verdict = !isFood
+    ? (stackSlot ? I.zone[stackSlot.zone] : I.notScheduledVerdict)
+    : !hasAnyMacro ? I.noNutrition
+      : lead ? sentence(lead[0], lead[2])
+        : I.partNutrition
+
+  // A 100 g-os összetétel: mindhárom makró megvan, a bázis 100 g. A maradék számolt (víz, rost, hamu), nem mért.
+  const comp = isFood && unit === 'g' && per === 100 && p != null && c != null && f != null
+  const rest = comp ? Math.max(0, Math.round((100 - p - c - f) * 10) / 10) : 0
+  const grams = (g: number | null | undefined) => (g == null ? '—' : <>{fmtNum(g)}<small>g</small></>)
+  const price = item.price == null ? null
+    // a mock „Ft/kg" alakban hordozza az egységet, a szerver „/kg"-ként is adhatja: a pénznem egyszer áll
+    : item.priceUnit?.startsWith('Ft') ? K.price(fmtGrouped(item.price), item.priceUnit)
+      : K.price(fmtGrouped(item.price), `Ft${item.priceUnit ?? ''}`)
+
+  let n = 0
   return (
-    <div className="fmx-page fkx-detail fkx-kitem" style={{ '--block-color': face.color } as React.CSSProperties}>
-      <EntranceGroup>
-        <div className="fmx-subhead">
-          <FrameBack className="glass is-round" history fallback="/fuel/kamra" label="Vissza">‹</FrameBack>
-          <span>
-            <small>{(catLabel ?? 'KAMRA').toLocaleUpperCase('hu-HU')}</small>
-            <strong>{item.name}</strong>
-          </span>
-          <span className="fkx-source-chip uv-flat">
-            <Icon3D name={prov.icon} size={20} />{prov.kind}
-          </span>
-        </div>
-
-        <div className="fmx-detail-hero">
-          <span className="fmx-detail-glow" aria-hidden="true" />
-          <div className="fmx-detail-left">
-            <span className="fmx-detail-art uv-float" aria-hidden="true"><ContentIcon name={face.icon} size={96} /></span>
-            <div className="fmx-detail-kcal">
-              {isFood ? (
-                <>
-                  <strong>{item.macros?.kcal == null ? '—' : huInt(item.macros.kcal)}</strong>
-                  <small>kcal / {perLabel}</small>
-                </>
-              ) : (
-                <>
-                  <strong className="fkx-dose">{item.dose ?? '—'}</strong>
-                  <small>adag</small>
-                </>
-              )}
-            </div>
+    <Page className="fp-item">
+      {back}
+      <Hero
+        art={kamraItemIcon(item)}
+        label={item.brand ?? K.kind[item.kind]}
+        verdict={(
+          <>
+            <span className="fo-big fp-n">
+              {isFood
+                ? (kcal == null ? '—' : fmtGrouped(kcal))
+                : <span className="fp-dn">{item.dose ?? '—'}</span>}
+              <small>{isFood ? I.kcalPer(perLabel) : I.oneDose}</small>
+            </span>
+            {verdict}
+          </>
+        )}
+        sub={isFood && !hasAnyMacro ? I.noNutritionSub : undefined}
+        actions={(
+          <>
+            {hasAnyMacro
+              ? <Btn onClick={() => setLogOpen(true)}>{I.log}</Btn>
+              : !isFood && <Btn onClick={() => navigate('/fuel/stack')}>{I.openSupplements}</Btn>}
+            <Lk onClick={() => setEditOpen(true)}>{I.edit}</Lk>
+            <Lk bad={delArmed} onClick={remove}>{delArmed ? I.deleteArmed : I.delete}</Lk>
+          </>
+        )}
+      >
+        {comp && (
+          <div className="fp-comp">
+            <Lab>{I.whatsIn}</Lab>
+            <SplitBar height={30} parts={[
+              { label: M.fuelKozos.macro.protein, pct: p, color: 'var(--fx-protein)', value: I.grams(fmtNum(p)) },
+              { label: M.fuelKozos.macro.carbs, pct: c, color: 'var(--fx-carb)', value: I.grams(fmtNum(c)) },
+              { label: M.fuelKozos.macro.fat, pct: f, color: 'var(--fx-fat)', value: I.grams(fmtNum(f)) },
+              { label: I.rest, pct: rest, color: 'color-mix(in srgb, var(--fx-water) 30%, #fff)', value: I.grams(fmtNum(rest)) },
+            ]} />
           </div>
-          <div className="fmx-detail-right">
-            <div className="fmx-detail-when glass">
-              <span className="fmx-di-art" aria-hidden="true"><Icon3D name="t-stack" size={32} /></span>
-              <span>
-                <strong>A polcodon</strong>
-                <small>{item.brand ?? (catLabel ?? 'nincs márka megadva')}</small>
-              </span>
-            </div>
-            <div className="fmx-detail-share glass">
-              <span className="fmx-di-art" aria-hidden="true"><Icon3D name={prov.icon} size={32} /></span>
-              <span>
-                <strong>{prov.sourceLabel}</strong>
-                <small>{prov.when ?? 'a felvétel ideje nincs rögzítve'}</small>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* B14 ellenpárja: a per-tétel EREDET itt él, nem egy import-feedben. Üvegben lapos
-            cella: tény, nem tárgy (bible §3 rank 3). */}
-        <div className="fmx-section fkx-source-head"><h2>Forrás</h2></div>
-        <section className="fkx-source uv-flat" aria-label="Forrás">
-          <span aria-hidden="true"><Icon3D name={prov.icon} size={30} /></span>
-          <span className="fkx-source-copy">
-            <strong>Így került a polcra: {prov.kind}</strong>
-            <small>{prov.sourceLabel} · {prov.when ?? 'az időpont nincs rögzítve'}</small>
-            {/* Megosztott katalógus-definíció: a szerzőt NEVEZZÜK, mert az ő adatát olvasod. */}
-            {item.sharedFrom && <em className="fkx-shared">közös · {item.sharedFrom.authorName}</em>}
-          </span>
-        </section>
-
-        {/* A tápérték-blokk KIND-független: a mezo-1za9 óta egy kiegészítő (kreatin/whey) is
-            hordozhat valódi tápértéket, és akkor ugyanúgy jár neki a gyűrű és a lapka-rács. */}
-        {hasAnyMacro && (
-          <>
-            <FuelMacroShareSection shares={shares}
-              groupLabel={`A tétel energiájának megoszlása ${perLabel}-ra`}
-              frame={`a tétel energiájának`} />
-            <section className="fmx-detail-sec">
-              <div className="fmx-section"><h2>Minőség</h2></div>
-              <FuelNutriTiles tiles={qualityTiles} />
-            </section>
-          </>
         )}
-        {isFood && !hasAnyMacro && (
-          <p className="fmx-block-empty">
-            Ehhez az elemhez még nincs tápérték — a forrás nem adott értéket.
-          </p>
-        )}
+      </Hero>
 
-        {/* Dose/protocol/stack-chip is a KIND fact (any supp/stim/med row), independent of
-            whether this particular item also carries a macros object — mezo-1za9 lets
-            supplements carry real nutrition data too (kreatin/whey), so both sections can
-            legitimately coexist for the same item. */}
-        {!isFood && (
-          <>
-            <div className="fmx-section"><h2>A napodban</h2></div>
-            <button type="button" className="fkx-door glass" onClick={() => navigate('/fuel/stack')}>
-              <span aria-hidden="true"><Icon3D name="t-clock" size={34} /></span>
-              <span>
-                <strong>{item.protocol ?? 'Nincs időzítve'}</strong>
-                <small>
-                  {stackSlot
-                    ? `a stackben · ${stackSlot.label} ${stackSlot.time}`
-                    : 'A Kiegészítők oldalon pipálod — ott látod a protokollt is'}
-                </small>
-              </span>
-              <b aria-hidden="true">›</b>
-            </button>
-          </>
-        )}
+      {/* Az adag / protokoll / idősáv a FAJTA ténye (minden kiegészítő, stimuláns, gyógyszer) — független attól,
+          hogy a tétel hordoz-e tápértéket is (mezo-1za9), ezért a két rész együtt is állhat. */}
+      {!isFood && (
+        <>
+          <Section n={++n} title={I.inYourDay} />
+          <Card>
+            <Row icon="t-clock" title={item.protocol ?? I.notScheduled}
+              sub={stackSlot ? I.amongSupplements(stackSlot.label, stackSlot.time) : I.supplementsHint}
+              onClick={() => navigate('/fuel/stack')} />
+          </Card>
+        </>
+      )}
 
-        {/* B16: a készlet/lejárat felület a zászló mögött marad — változatlanul dormant. */}
-        {SHOW_PANTRY_STOCK && (
-          <>
-            <div className="fmx-section"><h2>Készlet</h2></div>
-            <p className="fkx-meta">
-              {hasStock ? `${stockQty} ${stockUnit}${stockExpires ? ` · ${stockExpires}` : ''}` : '—'}
-            </p>
-          </>
-        )}
+      {hasAnyMacro && (
+        <>
+          <Section n={++n} title={I.macros} />
+          <Card className="fp-mac"><MacroVials p={p} c={c} f={f} /></Card>
+          <Section n={++n} title={I.quality(perLabel)} />
+          <Card>
+            <Row icon="t-sugar" title={M.fuelKozos.factsLong.sugar} value={grams(item.sugarG)} />
+            <Row icon="t-salt" title={M.fuelKozos.factsLong.salt} value={grams(item.saltG)} />
+            <Row icon="t-fat" title={M.fuelKozos.factsLong.satFat} value={grams(item.saturatedFatG)} />
+            <Row icon="t-processing" title={I.processing}
+              sub={item.nova != null ? I.nova(item.nova) : M.fuelKozos.noData}
+              {...(item.nova != null
+                ? { right: <St tone={item.nova === 1 ? 'ok' : item.nova === 4 ? 'warn' : 'q'}>{M.fuelKozos.nova[`n${item.nova}`]}</St> }
+                : { value: '—' })} />
+          </Card>
+        </>
+      )}
 
-        {item.price != null && (
-          <p className="fkx-meta">Ár: {huInt(item.price)} Ft{item.priceUnit ? ` ${item.priceUnit}` : ''}</p>
-        )}
+      {/* B16: a készlet/lejárat felület a zászló mögött marad — változatlanul alszik. */}
+      {SHOW_PANTRY_STOCK && (
+        <>
+          <Section n={++n} title={I.stock} />
+          <Card>
+            <Row icon="t-stack" title={I.stock}
+              value={hasStock ? `${stockQty} ${stockUnit}${stockExpires ? ` · ${stockExpires}` : ''}` : '—'} />
+          </Card>
+        </>
+      )}
 
-        {usedInRecipes.length > 0 && (
-          <>
-            <div className="fmx-section"><h2>Receptekben</h2></div>
-            <div className="fkx-used">
-              {usedInRecipes.map(r => (
-                <button key={r.id} type="button" className="uv-flat"
-                  style={{ '--c': recipeSlotFace(r.category).color } as React.CSSProperties}
-                  onClick={() => navigate(`/fuel/recipes/${r.id}`)}>
-                  <span aria-hidden="true"><Icon3D name="t-plate" size={20} /></span>
-                  <span>{r.name}</span>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+      <Section n={++n} title={I.sourceSection} />
+      <Card aria-label={I.sourceSection}>
+        <Row icon="t-stack" title={I.onYourShelf} sub={item.brand ?? catLabel ?? I.noBrand} />
+        <Row icon={prov.icon} title={I.howItGotHere(prov.kindLabel)}
+          sub={(
+            <>
+              {prov.sourceLabel} · {prov.when ?? I.noTime}
+              {/* Megosztott katalógus-definíció: a szerzőt NEVEZZÜK, külön sorban, mert az ő adatát olvasod. */}
+              {item.sharedFrom && <span className="fp-shared">{I.shared(item.sharedFrom.authorName)}</span>}
+            </>
+          )} />
+        {price != null && <Row icon="t-coin" title={I.price} value={price} />}
+      </Card>
 
-        {hasAnyMacro && (
-          <button type="button" className="fkx-cta glass" onClick={() => setLogOpen(true)}>
-            <span aria-hidden="true"><Icon3D name="t-plate" size={28} /></span>
-            <span>Logolás · mai étkezésbe</span>
-            <b aria-hidden="true">›</b>
-          </button>
-        )}
-
-        <div className="fkx-actions">
-          <button type="button" onClick={() => setEditOpen(true)}>
-            <span aria-hidden="true"><Icon3D name="t-gear" size={24} /></span>Szerkesztés
-          </button>
-          <button type="button" className="fkx-del" onClick={remove}>
-            {delArmed ? 'Biztos? Még egy érintés a törléshez' : 'Törlés'}
-          </button>
-        </div>
-      </EntranceGroup>
+      {usedInRecipes.length > 0 && (
+        <>
+          <Section n={++n} title={I.usedIn} />
+          <Card>
+            {usedInRecipes.map(r => (
+              <Row key={r.id} icon="t-plate" title={r.name}
+                sub={I.recipeSub(recipeSlotFace(r.category).label, r.timesLogged ?? 0)}
+                onClick={() => navigate(`/fuel/recipes/${r.id}`)} />
+            ))}
+          </Card>
+        </>
+      )}
 
       <AddPantryItemSheet
         open={editOpen}
@@ -332,6 +305,6 @@ export function KamraItemDetailPage() {
         definitionLocked={item.catalogEditable === false}
       />
       {logOpen && <LogFlowPage prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
-    </div>
+    </Page>
   )
 }

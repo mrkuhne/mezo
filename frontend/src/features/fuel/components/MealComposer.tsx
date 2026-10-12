@@ -34,19 +34,21 @@
 // how many manual lines ride alongside; a purely manual meal omits provenance —
 // the LogFlowPage rule, kept verbatim (see that file's original header note).
 // ============================================================
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { FuelMeal, FuelSlot, Ingredient, MealInput, MealItemInput, MealSlot, Recipe } from '@/data/types'
-import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
+import { useDietSettings, useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { useMealCeremony } from '@/features/fuel/MealCeremonyProvider'
 import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
-import { pct } from '@/shared/lib/pct'
-import { nowOffsetIso, offsetIso, localDateString, huMonthDay } from '@/shared/lib/dates'
+import { nowOffsetIso, offsetIso, localDateString } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
-import { Icon } from '@/shared/ui/Icon'
+import { plural, useM } from '@/shared/i18n'
+import { fmtDate, fmtGrouped } from '@/shared/lib/format'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { MCells } from '@/shared/ui/mozaik'
+import { Acts, Btn, Bub, Card, Empty, Hero, Input, Lk, Note, Page, Row, Section, Seg, TextArea, Txt } from '@/shared/ui/folyadek'
+import { EditLine, LineTags, MealCells, NumG, PourBowl, PourKey } from '@/features/fuel/components/folyadek'
 import { NutrientCells } from '@/features/fuel/components/NutrientCells'
 import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
+import { pantryCategoryIcon } from '@/features/fuel/logic/kamraItems'
 import { ReceptPickSheet } from '@/features/fuel/sheets/ReceptPickSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 import { defaultMealSlot } from '@/features/fuel/logic/defaultMealSlot'
@@ -66,29 +68,20 @@ export type MealComposerPrefill =
   | { source: 'pantry'; pantryItemId: string }
   | null
 
-const SLOTS: { id: MealSlot; label: string }[] = [
-  { id: 'breakfast', label: 'Reggeli' },
-  { id: 'lunch', label: 'Ebéd' },
-  { id: 'dinner', label: 'Vacsora' },
-  { id: 'snack', label: 'Snack' },
-]
+/** The MIKOR control's order; the words are `fuelLog.composer.slot`, read at render. */
+const SLOT_ORDER: MealSlot[] = ['breakfast', 'lunch', 'dinner', 'snack']
 
 const round = (n: number) => Math.round(n)
 const zero = { kcal: 0, p: 0, c: 0, f: 0 }
 
-/** Üveg (mezo-me75u.2): a sor-címke forrás-ikonja (uveg-fuel-tobbi `log()` `.tagf`). */
-const TAG_ICON: Record<'kamra' | 'recept' | 'becslés', Icon3DName> = {
-  kamra: 't-stack', recept: 't-book', becslés: 't-score',
-}
-
-/** Üveg (mezo-me75u.2): a sor-kártya hue-ja a sor ENERGIÁJÁNAK uralkodó makrója (a prototípus
- *  soronkénti `--c`-je) — pusztán vizuális; energia nélkül a Fuel zsályája. */
-function lineHue(c: { p: number; c: number; f: number }): string {
-  const shares: [string, number][] = [
-    ['var(--macro-protein)', c.p * 4], ['var(--macro-carbs)', c.c * 4], ['var(--macro-fat)', c.f * 9],
-  ]
+/** A sor jele (prototípus `lineCard` `ic`): kamra-sornál a tétel kategóriájának jele, receptnél a könyv,
+ *  becsült sornál az energiájának uralkodó makrója — pusztán vizuális. */
+function lineGlyph(l: { source: 'recipe' | 'pantry' | 'estimate'; refId?: string }, c: { p: number; c: number; f: number }, ingredients: Ingredient[]): Icon3DName {
+  if (l.source === 'recipe') return 't-book'
+  if (l.source === 'pantry') return pantryCategoryIcon(ingredients.find(x => x.id === l.refId)?.category)
+  const shares: [Icon3DName, number][] = [['t-protein', c.p * 4], ['t-carb', c.c * 4], ['t-avocado', c.f * 9]]
   const top = shares.reduce((a, b) => (b[1] > a[1] ? b : a))
-  return top[1] > 0 ? top[0] : 'var(--dv-sage)'
+  return top[1] > 0 ? top[0] : 't-plate'
 }
 
 /** Múltbeli napi mentés idő-komponense, ha az indító nem hoz sajátot (szabad blokk). */
@@ -125,18 +118,16 @@ interface DraftLine {
 function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
   // The tag names where the MACROS came from; the AI mark says who put the line there. Keeping
   // the two apart is why an AI line matched to a real Kamra row no longer lies about being an
-  // estimate (mezo-qrks). `tag` alone feeds data-tag — prototype.css selects on its exact value.
-  const tag: keyof typeof TAG_ICON = l.source === 'estimate' ? 'becslés' : l.source === 'recipe' ? 'recept' : 'kamra'
+  // estimate (mezo-qrks). The tag itself is the shared `LineTags` (source + „· AI").
   // 'becslés' only ever comes from the AI panel (there's no manual estimate path), so the tag
   // already says "AI" on its own — an AI mark there would be redundant, not honest-making.
-  // (Üveg, mezo-me75u.2: the former ✨ suffix is the t-score icon + a screen-reader "AI".)
   const aiMark = !!l.fromAi && l.source !== 'estimate'
   if (l.source === 'estimate') {
     const est = l.estimate!
     const per = est.per || 1
     const factor = l.amount / per
     return {
-      name: l.name, tag, aiMark, step: 10, min: 1,
+      name: l.name, aiMark, step: 10, min: 1,
       contribution: {
         kcal: round(est.kcal * factor), p: round(est.proteinG * factor),
         c: round(est.carbsG * factor), f: round(est.fatG * factor),
@@ -159,7 +150,7 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
       ? computeRecipeNutrientsWithOverrides(r!.ingredients, ingredients, l.overrides!)
       : (r ? computeRecipeNutrients(r.ingredients) : NO_NUTRIENTS)
     return {
-      name: l.fromAi ? l.name : (r?.name ?? l.name), tag, aiMark, step: 1, min: 1,
+      name: l.fromAi ? l.name : (r?.name ?? l.name), aiMark, step: 1, min: 1,
       contribution: {
         kcal: round(whole.kcal / s * factor), p: round(whole.p / s * factor),
         c: round(whole.c / s * factor), f: round(whole.f / s * factor),
@@ -171,7 +162,7 @@ function lineMeta(l: DraftLine, recipes: Recipe[], ingredients: Ingredient[]) {
   const per = ing?.per || 1
   const factor = l.amount / per
   return {
-    name: l.fromAi ? l.name : (ing?.name ?? l.name), tag, aiMark, step: 10, min: 1,
+    name: l.fromAi ? l.name : (ing?.name ?? l.name), aiMark, step: 10, min: 1,
     contribution: {
       kcal: round((ing?.macros.kcal ?? 0) * factor), p: round((ing?.macros.p ?? 0) * factor),
       c: round((ing?.macros.c ?? 0) * factor), f: round((ing?.macros.f ?? 0) * factor),
@@ -229,6 +220,16 @@ export interface MealComposerProps {
   logTime?: string
   /** A mentés-CTA felirata (múltbeli nap). Absent = a meglévő felirat. */
   saveLabel?: string
+  /** Folyadék (mezo-n4wf5.5): a composer AZ oldal (`Page` + a lebegő gombsor). Ami a hívóé és a tartalom FÖLÉ kerül
+   *  (a chrome-mentes lap címsora, a „másik napra könyvelődik" csík), az itt jön be. */
+  head?: ReactNode
+  /** A mód-héj (`FuelLogModes`) — a composer teszi a helyére: üres piszkozatnál a „Honnan adod hozzá?" kártyába,
+   *  tételekkel az „Adj hozzá még" kártyába, a szövegmező fölé (`compact`). */
+  shell?: (compact: boolean) => ReactNode
+  /** Az alsó sáv nincs a képernyőn (overlay): a gombsor a képernyő aljára ül. */
+  nonav?: boolean
+  /** Az üres piszkozat hősének kerete: a címke, és ablakból indítva az ablak neve + kcal-kerete. */
+  room?: { label: string; windowName?: string; budgetKcal?: number | null }
   /** S1c.2 (mezo-33k6): egy mód-héj (`FuelLogModes`) ül FÖLÖTTE, és az már birtokolja a „hogyan
    *  kezdem" kérdést. Ilyenkor a composer elhagyja a SAJÁT ✨ AI forrás-kártyáját (az az egyetlen
    *  valódi duplikáció), és a megerősítő részt csak akkor mutatja, ha van mit megerősíteni.
@@ -248,12 +249,22 @@ export interface MealComposerProps {
   onCancel: () => void
 }
 
+/** Numbers the page's sections in the order they are actually drawn (a block that is not there takes no number). */
+function numbered(...blocks: Array<((num: number) => ReactNode) | null>): ReactNode {
+  let i = 0
+  return blocks.map((b, k) => (b ? <Fragment key={k}>{b(++i)}</Fragment> : null))
+}
+
 export function MealComposer({
   fixedSlot, initialSlot, prefill, aiPanelOpenOnMount,
   incomingPhoto, incomingAiText, sourceAction, onAiFailed, onAiSucceeded,
   shellOwnsEntry = false,
-  logDate, logTime, saveLabel, editMealId, window, eatingTimeWindows, onSaved, onCancel,
+  logDate, logTime, saveLabel, head, shell, nonav, room, editMealId, window, eatingTimeWindows, onSaved, onCancel,
 }: MealComposerProps) {
+  const M = useM()
+  const L = M.fuelLog.composer
+  const K = M.fuelKozos
+  const { settings: dietSettings } = useDietSettings()
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
   const { fuel } = useFuelDay(logDate)
@@ -267,7 +278,7 @@ export function MealComposer({
   const [timeOverride, setTimeOverride] = useState<string | null>(null)
   const [nowHHmm, setNowHHmm] = useState(localHHmm)
   const [timeSaveBusy, setTimeSaveBusy] = useState(false)
-  const [timeSaveError, setTimeSaveError] = useState<string | null>(null)
+  const [timeSaveError, setTimeSaveError] = useState<true | null>(null)
   useEffect(() => {
     if (eatingTimeWindows == null || editMealId != null) return
     const tick = () => setNowHHmm(localHHmm())
@@ -283,7 +294,7 @@ export function MealComposer({
   const [aiBusy, setAiBusy] = useState(false)
   const [aiText, setAiText] = useState('')
   const [aiPhoto, setAiPhoto] = useState<File | null>(null)
-  const [aiError, setAiError] = useState<string | null>(null)
+  const [aiError, setAiError] = useState<true | null>(null)
   // What actually landed in the meal FROM the AI this session — the honest input to
   // provenance.origin (see the file-header note).
   const [aiContribution, setAiContribution] = useState<{ photo: boolean; rawText: string | null } | null>(null)
@@ -379,16 +390,6 @@ export function MealComposer({
   // derivált név csendben átnevezné a már elnevezett étkezést (pl. „Túrós zabkása · áfonyával").
   const effectiveName = editMeal?.title || derivedName
 
-  // Honest totals-line label (mezo-1j3z, finding 5): "Mai nap eddig" lies when logDate targets a
-  // past day — show the day it actually books to instead.
-  const totalsDayLabel = logDate != null && logDate !== localDateString()
-    ? `${huMonthDay(logDate).toLowerCase()}. eddig`
-    : 'Mai nap eddig'
-
-  const nowPct = pct(fuel.consumed.kcal, fuel.targets.kcal)
-  const addPct = Math.min(100 - nowPct, pct(total.kcal, fuel.targets.kcal))
-  const after = fuel.consumed.kcal + total.kcal
-
   const selectSlot = (s: MealSlot) => { slotLocked.current = true; setSlot(s) }
 
   const addPantry = (ing: Ingredient) => {
@@ -479,7 +480,7 @@ export function MealComposer({
       }
       onAiSucceeded?.()
     } catch {
-      setAiError('Nem sikerült az AI-feldolgozás. Próbáld újra, vagy add hozzá kézzel.')
+      setAiError(true)
       // A4: only a PHOTO failure is the shell's „ezt a tányért nem ismertem fel" state — a text
       // failure must not claim a photo was misread.
       if (photo) onAiFailed?.()
@@ -586,11 +587,11 @@ export function MealComposer({
     // tehát a válasz már hordozza. Pontszám nélkül a provider nem nyit ceremóniát.
     const celebrate = (meal?: { id?: string; score?: number | null; title?: string | null; kcal?: number; p?: number; c?: number; f?: number } | null) => {
       if (!meal?.id) return
-      const time = new Date(input.loggedAt ?? Date.now()).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
+      const time = localHHmm(new Date(input.loggedAt ?? Date.now()))
       celebrateMeal({
         mealId: meal.id,
         score: meal.score ?? null,
-        label: meal.title ?? input.title ?? 'Étkezés',
+        label: meal.title ?? input.title ?? M.fuelLog.page.meal,
         timeLabel: time,
         kcal: meal.kcal ?? 0,
         proteinG: meal.p ?? 0,
@@ -611,7 +612,7 @@ export function MealComposer({
           onSaved()
         },
         () => {
-          setTimeSaveError('Nem sikerült menteni. Próbáld újra.')
+          setTimeSaveError(true)
           setTimeSaveBusy(false)
         },
       )
@@ -646,192 +647,72 @@ export function MealComposer({
   // „Van mit megerősíteni": legalább egy piszkozat-sor, vagy egy már logolt étkezés javítása.
   const showConfirm = !shellOwnsEntry || lines.length > 0 || editMealId != null
 
-  return (
-    <div className="logflow-composer">
-      {fixedSlot == null && eatingTimeWindows == null && showConfirm && (
-        <>
-          <span className="logflow-eyebrow uv-eyebrow">MIKOR</span>
-          <div className="logflow-seg uv-flat">
-            {SLOTS.map(s => (
-              <button key={s.id} onClick={() => selectSlot(s.id)} aria-label={s.label} aria-pressed={slot === s.id}
-                className={'logflow-segbtn' + (slot === s.id ? ' is-on' : '')}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+  // ── Folyadék (mezo-n4wf5.5, prototípus fuel.js `log()`) ─────────────────────────────────────
+  // A nap tálja: ami már benne van (halvány) és amit ez az étkezés tölt bele (erős) — a keret %-ában,
+  // a tál 94%-áig (a prototípus `pour` skálája). Javításnál a nap összege MÁR tartalmazza ezt az
+  // étkezést, ezért az „eddig" a logolt étkezés nélkül értendő.
+  const dayBefore = Math.max(0, fuel.consumed.kcal - (editMeal?.kcal ?? 0))
+  const dayTarget = fuel.targets.kcal
+  const bowlPct = (kcal: number) => (dayTarget > 0 ? Math.min(94, (kcal / dayTarget) * 94) : 0)
+  const afterDay = dayBefore + total.kcal
+  const itemsWord = `${lines.length} ${plural(lines.length, L.total.items)}`
+  const totalsDayLabel = logDate != null && logDate !== localDateString()
+    ? L.total.daySoFar(fmtDate(logDate, 'long'))
+    : L.total.todaySoFar
+  const placedText = timePlacement?.label != null && timePlacement.window != null
+    ? L.time.placed(timePlacement.label, timePlacement.window.from, timePlacement.window.to)
+    : L.time.outside
+  const unitWord = (unit: string) => (unit === 'adag' ? K.unit.serving : unit)
 
-      {showSourceRow && (
-        <>
-          <span className="logflow-eyebrow uv-eyebrow">HONNAN ADOD HOZZÁ?</span>
-          {/* A kalauz-horgony CSAK a héj nélküli felületen ül itt (a teljes oldalon a héj
-              mód-sora viseli ugyanezt a nevet) — így pontosan egy elem hordozza, és a
-              „Mutasd meg" gomb mindig a valóban aktuális „hogyan adod hozzá" felületre mutat. */}
-          <div className="logflow-srctiles" {...(shellOwnsEntry ? {} : { 'data-kalauz-anchor': 'log-forrasok' })}>
-            {showManualSources && (
-              <>
-                <button type="button" className="logflow-srct glass" style={{ '--c': 'var(--dv-amber)' } as CSSProperties} onClick={() => setKamraOpen(true)} aria-label="Kamra · hozzáadás">
-                  <Icon3D name="t-stack" size={40} />
-                  <b>Kamra</b><small>polcról, grammra</small>
-                </button>
-                <button type="button" className="logflow-srct glass" style={{ '--c': 'var(--dv-coral)' } as CSSProperties} onClick={() => setReceptOpen(true)} aria-label="Recept · hozzáadás">
-                  <Icon3D name="t-book" size={40} />
-                  <b>Recept</b><small>adagra</small>
-                </button>
-              </>
-            )}
-            {showAiSource && (
-              <button type="button" className={'logflow-srct glass' + (aiOpen ? ' on' : '')} style={{ '--c': 'var(--dv-lav)' } as CSSProperties} onClick={() => setAiOpen(o => !o)} aria-label="AI · fotó vagy szöveg" aria-pressed={aiOpen}>
-                <Icon3D name="t-score" size={40} />
-                <b>AI</b><small>fotó vagy szöveg</small>
-              </button>
-            )}
-          </div>
-        </>
-      )}
+  // Az EGYETLEN ✨ szövegmező (a mikrofon a mező saját csempéje). Héj alatt az elemzés közben is
+  // látszik, héj nélkül a „dolgozom" sor váltja.
+  const aiPanelVisible = aiOpen && (!aiBusy || shellOwnsEntry)
+  const aiField = (
+    // A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül — a
+    // leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan (`ai-text`).
+    <VoiceField domain="fuel" className="fg-cmp" onTranscript={(t) => setAiText((d) => appendDictation(d, t))}>
+      <TextArea value={aiText} onChange={(e) => setAiText(e.target.value)}
+        aria-label={L.field} placeholder={L.placeholder} rows={2} />
+    </VoiceField>
+  )
+  const aiErr = aiError && <Note tone="bad" role="alert">{L.aiError}</Note>
 
-      {aiBusy && (
-        <div className="logflow-aipanel logflow-aibusy glass">
-          <span className="np-twinkle" aria-hidden="true" />
-          Elemzem az étkezést…
-        </div>
-      )}
-      {aiOpen && (!aiBusy || shellOwnsEntry) && (
-        <div className="logflow-aipanel glass">
-          {/* A6 (mezo-33k6): a hang ugyanabba a szövegmezőbe ír, amiből az AI-piszkozat készül —
-              a leiratozás a meglévő `useTranscribe` végponton fut, a draft-hívás változatlan
-              (`ai-text`). A mikrofon a mező saját csempéje (mezo-xojq8), nem külön chip. */}
-          <VoiceField domain="fuel" onTranscript={(t) => setAiText((d) => appendDictation(d, t))}>
-            <textarea
-              value={aiText} onChange={(e) => setAiText(e.target.value)}
-              aria-label="Mit ettél?" placeholder="pl. csirkés wrap és egy latte…" rows={2}
-            />
-          </VoiceField>
-          <div className="logflow-airow">
-            {shellOwnsEntry ? null : aiPhoto ? (
-              <span className="logflow-aiphoto">
-                {photoUrl && <img src={photoUrl} alt="Fotó előnézet" />}
-                {aiPhoto.name}
-                <button type="button" aria-label="Fotó eltávolítása" onClick={() => setAiPhoto(null)}>
-                  <Icon name="x" size={11} />
-                </button>
-              </span>
-            ) : (
-              <label className="logflow-aichip">
-                <Icon3D name="t-camera" size={18} />
-                Fotó
-                <input type="file" accept="image/*" capture="environment" aria-label="Étel fotó"
-                  onChange={(e) => setAiPhoto(e.target.files?.[0] ?? null)} style={{ display: 'none' }} />
-              </label>
-            )}
-            <button type="button" className="logflow-aichip logflow-airun"
-              disabled={!canRunAi || aiBusy} onClick={() => void runAi()}>
-              <Icon3D name="t-score" size={18} />
-              Elemzés
-            </button>
-          </div>
-          {aiError && <p className="logflow-aierr">{aiError}</p>}
-          <p className="logflow-aihint">
-            {shellOwnsEntry
-              ? 'Szöveg, hang és fotó egy piszkozatban. Elemzés után a felismert tételeket még átírhatod.'
-              : 'Szöveg, hang vagy fotó — vagy mindhárom. A felismert sorok a tételek közé kerülnek, ott mindent átírhatsz.'}
-          </p>
-        </div>
-      )}
-
-      {showConfirm && (
-        <div className="logflow-sec">
-          <span className="uv-eyebrow">TÉTELEK</span>
-          <span className="logflow-sec-n">{lines.length}</span>
-          <span className="logflow-sec-rule" aria-hidden="true" />
-        </div>
-      )}
-
-      {showConfirm && lines.length === 0 && (
-        <div className="logflow-empty uv-empty">
-          <span>Még nincs tétel — válassz forrást fent, vagy kombináld őket.</span>
-        </div>
-      )}
-
-      <div className="logflow-lines">
-        {resolved.map(({ l, meta }, i) => (
-          // Üveg (mezo-me75u.2): a sor egy üvegkártya a sor uralkodó makrójának hue-jában; minden
-          // benne (címke, léptető, makró-cellák, finomhangolás) lapos cella — üveg az üvegben nincs.
-          <div key={l.key} className="logflow-lncard glass" data-tag={meta.tag}
-            style={{ '--c': lineHue(meta.contribution), '--i': i } as CSSProperties}>
-            <div className="logflow-lntop">
-              <div className="logflow-lnname">
-                <span className="logflow-lnlabel">{meta.name}</span>
-                <span className="logflow-lntag" data-tag={meta.tag} data-ai={meta.aiMark ? '' : undefined}>
-                  <Icon3D name={TAG_ICON[meta.tag]} size={15} />
-                  {meta.tag}
-                  {meta.aiMark && (
-                    <>
-                      <Icon3D name="t-score" size={13} className="logflow-lntag-ai" />
-                      <span className="sr-only"> · AI</span>
-                    </>
-                  )}
-                </span>
-              </div>
-              <button className="logflow-lnx" onClick={() => removeLine(l.key)} aria-label={`${meta.name} eltávolítása`}>
-                <Icon name="x" size={12} />
-              </button>
-            </div>
-            <div className="logflow-lnstep">
-              <button onClick={() => bump(l.key, -1, meta.step, meta.min)} aria-label={`${meta.name} csökkentés`} className="logflow-stepbtn">−</button>
-              <input
-                type="text" inputMode="decimal" value={l.amount}
-                onChange={(e) => setAmount(l.key, e.target.value)}
-                aria-label={`${meta.name} mennyisége`}
-                className="logflow-amtinput"
-              />
-              <button onClick={() => bump(l.key, 1, meta.step, meta.min)} aria-label={`${meta.name} növelés`} className="logflow-stepbtn">+</button>
-              <span className="logflow-lnunit">{l.unit}</span>
-              <span className="logflow-lnkcal uv-tint"><b>{meta.contribution.kcal}</b><small>kcal</small></span>
-            </div>
-            <div className="logflow-lnmac">
-              <span className="mz-c-coral"><b>{meta.contribution.p} g</b><small>feh.</small></span>
-              <span className="mz-c-gold"><b>{meta.contribution.c} g</b><small>szénh.</small></span>
-              <span className="mz-c-lav"><b>{meta.contribution.f} g</b><small>zsír</small></span>
-            </div>
-            {l.source !== 'estimate' && (
-              <div className="logflow-lnnutri">
-                <NutrientCells nutrients={meta.nutrients} perLabel={`${l.amount} ${l.unit}`} />
-              </div>
-            )}
-            {l.needsReview && (
-              <p className="logflow-lnnote">
-                <Icon3D name="t-score" size={14} />
-                {l.source === 'pantry'
-                  ? 'Ezt a kamrádból párosítottuk név alapján — ellenőrizd, hogy tényleg ez a tétel, és nézd át a mennyiséget.'
-                  : 'Az AI nem teljesen biztos ebben a sorban — nézd át a mennyiséget.'}
-              </p>
-            )}
+  const linesBlock = showConfirm ? (num: number) => (
+    <>
+      <Section n={num} title={L.items(lines.length)} />
+      <Card className="fg-lines">
+        {lines.length === 0 && <Empty>{L.empty}</Empty>}
+        {resolved.map(({ l, meta }) => (
+          <EditLine key={l.key}
+            icon={lineGlyph(l, meta.contribution, ingredients)}
+            name={meta.name}
+            tags={<LineTags source={l.source} ai={meta.aiMark} review={!!l.needsReview} />}
+            onRemove={() => removeLine(l.key)}
+            amount={{ value: l.amount, onChange: (e) => setAmount(l.key, e.target.value) }}
+            unit={unitWord(l.unit)}
+            onDec={() => bump(l.key, -1, meta.step, meta.min)}
+            onInc={() => bump(l.key, 1, meta.step, meta.min)}
+            kcal={meta.contribution.kcal}
+            macros={meta.contribution}
+          >
+            {l.source !== 'estimate' && <NutrientCells nutrients={meta.nutrients} />}
+            {l.needsReview && <Note tone="warn">{l.source === 'pantry' ? L.reviewPantry : L.reviewOther}</Note>}
             {l.source === 'recipe' && (() => {
               const r = recipes.find(x => x.id === l.refId)
               if (!r || r.ingredients.length === 0) return null
               const open = !!expanded[l.key]
               const touched = Object.keys(l.overrides ?? {}).length
               return (
-                <div className="logflow-tune">
-                  <button className="logflow-tune-head"
+                <div className="fg-tune">
+                  <button type="button" className="fg-tuh"
                     onClick={() => setExpanded(p => ({ ...p, [l.key]: !p[l.key] }))}
-                    aria-label="Hozzávalók finomhangolása" aria-expanded={open}>
-                    <span className="uv-eyebrow">
-                      HOZZÁVALÓK · {r.ingredients.length}{touched ? ` · ${touched} MÓDOSÍTVA` : ''}
-                    </span>
-                    <span className="logflow-tune-toggle">
-                      {open ? 'összecsuk ▴' : 'finomhangolás ▾'}
-                    </span>
+                    aria-label={L.tune.aria} aria-expanded={open}>
+                    <b>{touched ? L.tune.headChanged(r.ingredients.length, touched) : L.tune.head(r.ingredients.length)}</b>
+                    <span>{open ? `${L.tune.close} ▴` : `${L.tune.open} ▾`}</span>
                   </button>
                   {open && (
                     <>
-                      {r.servings > 1 && (
-                        <div className="logflow-tune-note">
-                          a teljes recepthez ({r.servings} adag)
-                        </div>
-                      )}
+                      {r.servings > 1 && <Note className="fg-tune-note">{L.tune.whole(r.servings)}</Note>}
                       {r.ingredients.map((ing, i) => {
                         const src = ingredients.find(x => x.id === ing.refId)
                         const amount = l.overrides?.[i] ?? ing.amount
@@ -858,121 +739,242 @@ export function MealComposer({
                           />
                         )
                       })}
-                      {touched > 0 && (
-                        <button className="logflow-tune-reset" onClick={() => resetOverrides(l.key)} aria-label="Alaphelyzet">
-                          Alaphelyzet
-                        </button>
-                      )}
+                      {touched > 0 && <Acts><Lk onClick={() => resetOverrides(l.key)}>{L.tune.resetAll}</Lk></Acts>}
                     </>
                   )}
                 </div>
               )
             })()}
-          </div>
+          </EditLine>
         ))}
-      </div>
+      </Card>
+    </>
+  ) : null
 
-      {showConfirm && <div className="logflow-total glass">
-        <div className="logflow-total-head">
-          <span className="uv-eyebrow">EZ AZ ÉTKEZÉS</span>
-          <span className="uv-eyebrow">{lines.length} tétel</span>
-        </div>
-        {/* The derived name IS the meal title (no name field, mezo-byo1) — shown where it
-            will land, honest to what save() sends. */}
-        {effectiveName && <div className="logflow-totname">{effectiveName}</div>}
-        <MCells cells={[
-          { label: 'kcal', value: total.kcal, tone: 'sage' },
-          { label: 'fehérje', value: `${total.p} g`, tone: 'coral' },
-          { label: 'szénh.', value: `${total.c} g`, tone: 'gold' },
-          { label: 'zsír', value: `${total.f} g`, tone: 'lav' },
-        ]} className="logflow-total-cells" />
-        <div className="logflow-total-nutri"><NutrientCells nutrients={totalNutrients} size="md" /></div>
-        <div className="logflow-total-day">
-          <div className="logflow-total-dayline">
-            <span>{totalsDayLabel} <b>{fuel.consumed.kcal}</b> <span className="logflow-total-add">+{total.kcal}</span> = <b>{after}</b></span>
-            <span>cél <b>{fuel.targets.kcal}</b> kcal</span>
-          </div>
-          {/* Üveg (mezo-me75u.2, `.daybar`): az eddigi nap zsályában, ez az étkezés lilában. */}
-          <div className="logflow-daybar" aria-hidden="true">
-            <b style={{ width: nowPct + '%' }} />
-            <i style={{ width: addPct + '%' }} />
-          </div>
-        </div>
-      </div>}
-
-      {hasEatingTime && showConfirm && (
-        <div className="logflow-eaten-time uv-flat">
-          <button type="button" className="logflow-eaten-time-toggle" aria-expanded={timeOpen}
-            aria-label="Mikor ettél?" onClick={() => { setNowHHmm(localHHmm()); setTimeOpen(open => !open) }}>
-            <span className="logflow-eaten-time-title">Mikor ettél?</span>
-            <span className="logflow-eaten-time-summary">
-              {timeOverride == null ? `Most · ${nowHHmm}` : `${previewTime} · ${timePlacement?.label != null && timePlacement.window != null
-                ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}` : 'Ablakon kívül'}`}
-              <span aria-hidden="true"> {timeOpen ? '▴' : '▾'}</span>
-            </span>
-          </button>
-          {timeOpen && (
-            <div className="logflow-eaten-time-details">
-              <div className="logflow-eaten-time-inputrow">
-                <input type="time" aria-label="Evés időpontja" value={previewTime}
-                  onChange={event => { setTimeOverride(event.target.value); setTimeSaveError(null) }} />
-                <button type="button" onClick={() => { setTimeOverride(null); setNowHHmm(localHHmm()); setTimeSaveError(null) }}>Most</button>
-              </div>
-              <p>{timePlacement?.label != null && timePlacement.window != null
-                ? `${timePlacement.label} · ${timePlacement.window.from}–${timePlacement.window.to}`
-                : 'Ablakon kívül'}</p>
-              {invalidTime && <p role="alert" className="logflow-eaten-time-error">Adj meg egy érvényes időpontot.</p>}
-              {isFutureTime && <p role="alert" className="logflow-eaten-time-error">jövőbeli időpontot nem lehet menteni.</p>}
-            </div>
-          )}
-          {timeSaveError && <p role="alert" className="logflow-eaten-time-error">{timeSaveError}</p>}
-        </div>
-      )}
-
-      {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
-      {editMealId != null && (
-        <label className="fmx-edit-time uv-flat">
-          <span className="label-mono">MIKOR ETTÉL?</span>
-          <input type="time" value={editTime} aria-label="Mikor ettél?"
-            onChange={(e) => setEditTime(e.target.value)} />
-        </label>
-      )}
-
-      {/* A „Mégse" MARAD akkor is, ha még nincs mit megerősíteni: az a kiszállás ajtaja, nem
-          mentés-művelet. A mentés-CTA viszont csak akkor jelenik meg, ha van mit menteni —
-          egy tiltott „Logolás" gomb egy üres piszkozat alatt csak zaj (S1c.2, mezo-33k6). */}
-      <div className="row gap-sm logflow-actions" style={{ margin: '14px 0 12px' }}>
-        <button className="cta-ghost" onClick={onCancel} style={{ flex: 1 }}>Mégse</button>
-        {showConfirm && (
-          <button className="cta-primary logflow-save glass" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
-            {editMealId != null
-              ? <><Icon name="check" size={15} /> Mentem a javítást</>
-              : saveLabel ?? <><Icon name="check" size={15} /> Logolás · +10 XP</>}
-          </button>
-        )}
-      </div>
-
-      {/* A9: a törlés KÉT lépés (prototípus `deleteBlock`) — élesítés, majd megerősítés. Egy
-          félrekoppintás nem töröl, és a megerősítő szöveg megmondja a következményt. */}
-      {editMealId != null && (
-        <div className="fmx-delete">
-          {deleteArmed ? (
+  // A három forrás-csempe a héj nélküli felületen (a „Mit ettél?" lap és a javítás): Kamra · Recept · AI,
+  // alattuk a nyitott ✨ panel (szöveg + hang + fotó → Elemzés).
+  const ownSources = showSourceRow ? (num: number) => (
+    <>
+      <Section n={num} title={editMealId != null ? L.more : L.from} />
+      <Card>
+        {/* A kalauz-horgony CSAK a héj nélküli felületen ül itt (a teljes oldalon a héj mód-sora
+            viseli ugyanezt a nevet) — így pontosan egy elem hordozza. */}
+        <div className="fg-modes three" data-kalauz-anchor="log-forrasok">
+          {showManualSources && (
             <>
-              <p>Biztosan törlöd? A nap összegéből is kikerül.</p>
-              <button type="button" className="fmx-delete-yes"
-                onClick={() => { deleteMeal(editMealId); onSaved() }}>
-                Biztosan törlöm
+              <button type="button" onClick={() => setKamraOpen(true)} aria-label={L.src.pantryAria}>
+                <Bub icon="t-stack" size={34} /><span>{L.src.pantry}</span><small>{L.src.pantrySub}</small>
               </button>
-              <button type="button" onClick={() => setDeleteArmed(false)}>Inkább megtartom</button>
+              <button type="button" onClick={() => setReceptOpen(true)} aria-label={L.src.recipeAria}>
+                <Bub icon="t-book" size={34} /><span>{L.src.recipe}</span><small>{L.src.recipeSub}</small>
+              </button>
             </>
-          ) : (
-            <button type="button" onClick={() => setDeleteArmed(true)}>Törlöm</button>
+          )}
+          {showAiSource && (
+            <button type="button" className={aiOpen ? 'on' : undefined} onClick={() => setAiOpen(o => !o)}
+              aria-label={L.src.aiAria} aria-pressed={aiOpen}>
+              <Bub icon="t-score" size={34} /><span>{L.src.ai}</span><small>{L.src.aiSub}</small>
+            </button>
           )}
         </div>
+        {aiBusy && <Note className="fg-busy" role="status">{L.busy}</Note>}
+        {aiPanelVisible && (
+          <div className="fg-ai">
+            {aiField}
+            <Acts>
+              {aiPhoto ? (
+                <span className="fg-aiphoto">
+                  {photoUrl && <img src={photoUrl} alt={L.photoAlt} />}
+                  <span>{aiPhoto.name}</span>
+                  <button type="button" className="fx-x" aria-label={L.removePhoto} onClick={() => setAiPhoto(null)}>×</button>
+                </span>
+              ) : (
+                <label className="fo-btn sm ghost fg-photo">
+                  <Icon3D name="t-camera" size={18} />
+                  {L.photo}
+                  <input type="file" accept="image/*" capture="environment" aria-label={L.photoInput}
+                    onChange={(e) => setAiPhoto(e.target.files?.[0] ?? null)} />
+                </label>
+              )}
+              <Btn sm disabled={!canRunAi || aiBusy} onClick={() => void runAi()}>{L.analyse}</Btn>
+            </Acts>
+            {aiErr}
+            <Note>{L.hintOwn}</Note>
+          </div>
+        )}
+      </Card>
+    </>
+  ) : null
+
+  // MIKOR (a „Mit ettél?" lap és a javítás): napszak-választó, ha nem az ablak vagy a kézi idő dönt.
+  const slotSeg = fixedSlot == null && eatingTimeWindows == null && showConfirm && (
+    <Seg className="fg-seg" aria-label={L.when} value={slot} onChange={selectSlot}
+      items={SLOT_ORDER.map(id => ({ key: id, label: L.slot[id] }))} />
+  )
+
+  const totalHero = showConfirm && (
+    <Hero className="fg-hero fg-total"
+      // A derivált név AZ étkezés címe (nincs név-mező, mezo-byo1) — ott látszik, ahová a mentés teszi.
+      label={effectiveName || L.total.label}
+      verdict={afterDay > dayTarget
+        ? L.total.over(fmtGrouped(afterDay - dayTarget))
+        : L.total.left(fmtGrouped(dayTarget - afterDay))}
+      sub={L.total.sub(totalsDayLabel, fmtGrouped(dayBefore), fmtGrouped(total.kcal), fmtGrouped(afterDay), fmtGrouped(dayTarget), itemsWord)}
+      graphic={<NumG graphic={<PourBowl before={bowlPct(dayBefore)} add={bowlPct(total.kcal)} />} value={fmtGrouped(total.kcal)} unit="kcal">
+        <MealCells protein={total.p} carbs={total.c} fat={total.f} fiber={totalNutrients.fiberG == null ? null : Math.round(totalNutrients.fiberG)} fiberTarget={dietSettings.fiberG} />
+      </NumG>}
+    >
+      <PourKey before={L.total.soFar(fmtGrouped(dayBefore))} add={L.total.thisMeal} />
+      <NutrientCells nutrients={totalNutrients} size="md" />
+    </Hero>
+  )
+
+  // Új étkezés, még nincs tétel (héj alatt): a nap tálja azzal, ami még belefér, és az EGY szövegmező.
+  const roomKcal = room?.budgetKcal ?? 400
+  const emptyHero = !showConfirm && (
+    <Hero className="fg-hero"
+      label={room?.label ?? M.fuelLog.page.free}
+      verdict={aiBusy ? L.busy : L.field}
+      sub={L.hintShell}
+      actions={aiPanelVisible && !aiBusy
+        ? <Btn disabled={!canRunAi} onClick={() => void runAi()}>{L.analyse}</Btn>
+        : undefined}
+      graphic={<NumG graphic={<PourBowl before={bowlPct(dayBefore)} add={bowlPct(roomKcal)} ghost />}
+        value={fmtGrouped(Math.max(0, dayTarget - dayBefore))} unit={L.room.fits}>
+        <PourKey before={L.total.soFar(fmtGrouped(dayBefore))}
+          add={room?.windowName != null && room.budgetKcal != null ? L.room.windowBudget(room.windowName, fmtGrouped(room.budgetKcal)) : L.room.goesHere} />
+      </NumG>}
+    >
+      {aiPanelVisible && aiField}
+      {aiErr}
+    </Hero>
+  )
+
+  const timeBlock = (hasEatingTime && showConfirm) || editMealId != null ? (num: number) => (
+    <>
+      <Section n={num} title={L.time.title} />
+      <Card className="fg-timec">
+        {editMealId != null ? (
+          <>
+            {slotSeg}
+            {/* A8: a szerkesztő idő-mezője — az étkezés SAJÁT ideje, amit a user át is írhat. */}
+            <div className="fg-time">
+              <Input type="time" value={editTime} aria-label={L.time.title} onChange={(e) => setEditTime(e.target.value)} />
+            </div>
+          </>
+        ) : (
+          <>
+            <Row className="fg-twt" left={<Bub icon="t-clock" size={40} />}
+              title={timeOverride == null ? L.time.now(nowHHmm) : previewTime}
+              sub={timeOverride == null ? L.time.tapHint : placedText}
+              right={<span className="fg-car" aria-hidden="true">{timeOpen ? '▴' : '▾'}</span>}
+              aria-expanded={timeOpen} aria-label={L.time.title}
+              onClick={() => { setNowHHmm(localHHmm()); setTimeOpen(open => !open) }} />
+            {timeOpen && (
+              <>
+                <div className="fg-time">
+                  <Input type="time" aria-label={L.time.input} value={previewTime}
+                    onChange={event => { setTimeOverride(event.target.value); setTimeSaveError(null) }} />
+                  <Btn sm ghost onClick={() => { setTimeOverride(null); setNowHHmm(localHHmm()); setTimeSaveError(null) }}>{L.time.nowBtn}</Btn>
+                </div>
+                <Note>{placedText}</Note>
+                {invalidTime && <Note tone="bad" role="alert">{L.time.invalid}</Note>}
+                {isFutureTime && <Note tone="bad" role="alert">{L.time.future}</Note>}
+              </>
+            )}
+            {timeSaveError && <Note tone="bad" role="alert">{L.time.saveError}</Note>}
+          </>
+        )}
+      </Card>
+    </>
+  ) : null
+
+  const whenBlock = editMealId == null && slotSeg ? (num: number) => (
+    <>
+      <Section n={num} title={L.when} />
+      <Card className="fg-segc">{slotSeg}</Card>
+    </>
+  ) : null
+
+  // Héj alatt, ha már vannak tételek: „Adj hozzá még" — a négy út csempéi, alattuk a szövegmező.
+  const shellMore = shellOwnsEntry && showConfirm ? (num: number) => (
+    <>
+      <Section n={num} title={L.more} />
+      <Card>
+        {shell?.(true)}
+        {aiPanelVisible && aiField}
+        {aiBusy && <Note className="fg-busy" role="status">{L.busy}</Note>}
+        {aiErr}
+        {aiPanelVisible && (
+          <Acts><Btn sm ghost disabled={!canRunAi || aiBusy} onClick={() => void runAi()}>{L.analyse}</Btn></Acts>
+        )}
+      </Card>
+    </>
+  ) : null
+
+  // A9: a törlés KÉT lépés (prototípus `log.torles`) — élesítés, majd megerősítés. Egy
+  // félrekoppintás nem töröl, és a megerősítő szöveg megmondja a következményt.
+  const deleteBlock = editMealId != null ? (num: number) => (
+    <>
+      <Section n={num} title={L.del.title} />
+      <Card className="fg-del">
+        {deleteArmed ? (
+          <>
+            <Txt>{L.del.ask}</Txt>
+            <Acts>
+              <Btn sm bad onClick={() => { deleteMeal(editMealId); onSaved() }}>{L.del.yes}</Btn>
+              <Lk onClick={() => setDeleteArmed(false)}>{L.del.keep}</Lk>
+            </Acts>
+          </>
+        ) : (
+          <Acts><Lk bad onClick={() => setDeleteArmed(true)}>{L.del.arm}</Lk></Acts>
+        )}
+      </Card>
+    </>
+  ) : null
+
+  // A „Mégse" MARAD akkor is, ha még nincs mit megerősíteni: az a kiszállás ajtaja, nem
+  // mentés-művelet. A mentés-gomb viszont csak akkor jelenik meg, ha van mit menteni —
+  // egy tiltott „Logolás" gomb egy üres piszkozat alatt csak zaj (S1c.2, mezo-33k6).
+  const foot = (
+    <>
+      <Btn ghost onClick={onCancel}>{L.cancel}</Btn>
+      {showConfirm && (
+        <Btn grow disabled={!canSave} onClick={save}>
+          {editMealId != null ? L.saveEdit : saveLabel ?? L.save}
+        </Btn>
+      )}
+    </>
+  )
+
+  return (
+    <Page className="fg-composer" nonav={nonav} foot={foot}>
+      {head}
+      {shellOwnsEntry ? (
+        // a teljes oldalas naplózó: üresen a „mi fér még bele" hős + a négy út; tételekkel a megerősítés
+        showConfirm ? (
+          <>{totalHero}{numbered(linesBlock, whenBlock, timeBlock, shellMore)}</>
+        ) : (
+          <>
+            {emptyHero}
+            {numbered((num) => (
+              <>
+                <Section n={num} title={L.from} />
+                <Card>{shell?.(false)}</Card>
+              </>
+            ))}
+          </>
+        )
+      ) : editMealId != null ? (
+        // javítás: az étkezés, a sorai, az ideje, a bővítés és a törlés
+        <>{totalHero}{numbered(linesBlock, timeBlock, ownSources, deleteBlock)}</>
+      ) : (
+        // a „Mit ettél?" lap (LogFlowPage): mikor · honnan · tételek
+        <>{totalHero}{numbered(whenBlock, ownSources, linesBlock, timeBlock)}</>
       )}
 
       {kamraOpen && <KamraPickSheet onPick={addPantry} onClose={() => setKamraOpen(false)} addedRefIds={addedPantryIds} />}
       {receptOpen && <ReceptPickSheet onPick={addRecipe} onClose={() => setReceptOpen(false)} />}
-    </div>
+    </Page>
   )
 }
