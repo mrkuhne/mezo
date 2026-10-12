@@ -96,7 +96,10 @@ const badgeN=(x,y,n,t,an='start')=>`<g class="ng-b"><path transform="translate($
 function stations(ST,y0,pitch=140){const cx=i=>i%2?288:72;
   const bends=ST.slice(0,-1).map((_,i)=>{const a=cx(i),b=cx(i+1),y=y0+pitch*i+104,g=pitch-104;return `M${a} ${y}C${a} ${y+g*.78} ${b} ${y+g*.22} ${b} ${y+g}`}).join('');
   return [pipe(bends)+ST.map((s,i)=>station(s,i%2?'R':'L',y0+pitch*i)).join(''),y0+pitch*(ST.length-1)+104]}
-const lead=inner=>`<div class="ng-lead">${inner}</div>`;
+const lead=(inner,cls='')=>`<div class="ng-lead ${cls}">${inner}</div>`;
+/* a lighter full-width layer behind part of a drawing: groups a logical unit without a card (wave edge where it starts/ends) */
+const band=(y0,y1,top=true,bot=true)=>{const w=' q12.5 -6 25 0 t25 0'.repeat(8),wb=' q-12.5 6 -25 0 t-25 0'.repeat(8);
+  return `<path class="ng-band" d="M-20 ${y0}${top?w:'H380'}V${y1}${bot?wb:'H-20'}Z"/>`};
 const WEEKX={'2026-09-21':0,'2026-09-22':1,'2026-09-23':2,'2026-09-24':3};
 const topPipe=iso=>{const x=Math.round(25.7+51.43*WEEKX[iso]);return svg(40,pipe(`M${x} 0C${x} 30 72 12 72 40`),'ng-top')};
 /* the approved page up to (not including) its hero: title bar, tabs, week strip */
@@ -118,7 +121,7 @@ function today(){const fr=frame('2026-09-24',/<section class="k2-tank/);if(!fr)r
       <p>Napközben nincs pontszám. Hajnali 3-kor zárom a napot, és reggelre megírom, milyen volt.</p>`)
   +`<svg class="ng" viewBox="0 0 360 ${U+200}" role="img" aria-label="A mai napod rajza: most érdemes, a hat terület, te és az app">
   <defs><clipPath id="ng-c-u"><path d="${UU}"/></clipPath><clipPath id="ng-c-ul"><rect x="0" y="0" width="180" height="${U+200}"/></clipPath><clipPath id="ng-c-ur"><rect x="180" y="0" width="180" height="${U+200}"/></clipPath></defs>
-  ${pipe(`M72 0V26M72 50V62M72 196V218M72 242V262M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}M180 ${yEnd+62}C180 ${yEnd+80} 122 ${yEnd+66} 122 ${yEnd+82}M180 ${yEnd+62}C180 ${yEnd+80} 238 ${yEnd+66} 238 ${yEnd+82}`)}
+  ${band(212,yEnd+20)}${pipe(`M72 0V26M72 50V62M72 196V218M72 242V262M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}M180 ${yEnd+62}C180 ${yEnd+80} 122 ${yEnd+66} 122 ${yEnd+82}M180 ${yEnd+62}C180 ${yEnd+80} 238 ${yEnd+66} 238 ${yEnd+82}`)}
   ${badgeN(72,38,1,'Most érdemes · délután')}
   <g class="ng-next" data-toast="Edzés megnyitása" role="button" tabindex="0" aria-label="Még hátravan a mai edzés. Edzés megnyitása">
     <rect class="ng-hit" x="10" y="70" width="340" height="142"/><path class="ng-nd" transform="translate(-11.2 46.4) scale(2.6)" d="${DROP}"/>
@@ -167,11 +170,11 @@ function closed(iso){const fr=frame(iso,/<section class="k2-tank/);if(!fr)return
       <p class="ng-cnt"><b>${v.score}</b> a 100-ból · hat területből</p>
       <p><b class="ng-adj">alap ${v.base} · a Mezo szerint −${Math.abs(v.corr)}.</b> ${v.adj}</p>
       <p><button class="fh-lk" data-toast="Beszélgetés a napról (Mezo chat)">Beszélgess a napról ›</button></p>`)
-  +svg(70,pipe('M72 0V24M72 48V70')+badgeN(72,36,1,'Mezo a napodról'))
+  +svg(70,band(8,71,true,false)+pipe('M72 0V24M72 48V70')+badgeN(72,36,1,'Mezo a napodról'))
   +lead(`<div class="ng-who">${badge('mezo',{s:30})}<b>Mezo</b><small>a napodról</small></div>${v.prose.map(p=>`<p class="ng-pr">${p}</p>`).join('')}
-      <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>`)
+      <div class="ng-fb"><span>Segített?</span><button data-toast="Köszönöm, jegyzem" aria-label="Segített">${I('t-thumb-up')}</button><button data-toast="Mi nem talált? (itt jönnének az okok)" aria-label="Nem talált">${I('t-thumb-down')}</button></div>`,'w')
   +`<svg class="ng" viewBox="0 0 360 ${C+118}" role="img" aria-label="A nap rajza: a nap kiemelései, miből jött össze a pontszám, a nap körülményei">
-  ${pipe(`M72 0V114M72 138V148M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
+  ${band(-1,106,false,true)}${band(yEnd+24,C+118)}${pipe(`M72 0V114M72 138V148M288 ${yEnd}C288 ${yEnd+30} 180 ${yEnd+10} 180 ${yEnd+38}${last?`M180 ${yEnd+62}V${C+118}`:''}`)}
   ${hl}${badgeN(72,126,2,'Miből jött össze')}${stSvg}
   ${badgeN(180,yEnd+50,3,'A nap körülményei')}
   ${v.ctx.map(([a,b],i)=>{const x=i%2?272:88,y=C+6+(i>1?56:0);return `<g class="ng-ctx"><circle cx="${x}" cy="${y}" r="5"/><text class="ng-s" x="${x}" y="${y+21}" text-anchor="middle">${a}</text><text class="ng-t" x="${x}" y="${y+38}" text-anchor="middle">${b}</text></g>`}).join('')}
@@ -243,14 +246,14 @@ function obsLinked(o,all){const n=o.minN,x0=78,x1=242,g=4,w=(x1-x0-g*(n-1))/n;
 function obsBody(){const left=OBS.filter(o=>!OS.done[o.k]).length;
   return `<div class="pg-lead"><small>Észrevételek · ma</small><h2>${left?`${left===2?'Két':'Egy'} észrevétel vár a válaszodra.`:'Mindkettőre válaszoltál. Köszönöm.'}</h2>
     <p>Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok. A két edény közti cső annyira telt meg, ahány nap bizonyíték összegyűlt.</p></div>
-  ${OBS.map(o=>obsLinked(o)).join('<i class="lk-sep"></i>')}
+  ${OBS.map((o,i)=>`<section class="bd ${i%2?'':'w'}">${obsLinked(o)}</section>`).join('')}
   <div class="mt-acts"><button class="btn" data-toast="Mezo · Chat">Beszéljük meg</button></div>`}
 /* Életjelek: the rack. The six tubes are the approved ones, taken as they are; the remark hangs on its tube. */
 const cutOut=(html,a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);return i<0||j<0?'':html.slice(i,j)};
 function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh np-six">','<div class="fh-acts">');
   return `<div class="pg-lead"><small>Életjelek · ma · átlag 60</small><h2>A mozgás az egyetlen, ami figyelmet kér.</h2>
     <p>A többi öt jel rendben van. Koppints bármelyikre a részletekért.</p><p><button class="fh-lk" data-go="eletjel">Részletek ›</button></p></div>
-  <div class="np-pad rk">${v}<i class="rk-shelf"></i></div>
+  <section class="bd w" style="padding-bottom:22px;margin-top:20px"><div class="np-pad rk">${v}<i class="rk-shelf"></i></div></section>
   <svg class="rk-str" viewBox="0 0 360 46" preserveAspectRatio="none" aria-hidden="true"><path d="M207 0C207 26 62 14 58 46"/></svg>
   <div class="rk-tag"><i class="rk-hole"></i><p class="nb-h"><b>Mozgás</b>34% · amit a csapat mond</p>
     <p class="nb-t"><b>Ma még alig mozdultál.</b> Egy 10 perces séta ebéd után elég, hogy a szint megmozduljon. Nem kell edzés.</p>
@@ -320,20 +323,20 @@ let face='reggel';
 const rAttr=(r,i,g)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='intention'?'data-sheet="intention"':r[6]==='ritual'?'data-go="napzaras.1"':`data-rt="${g}:${i}"`;
 const rVerb=r=>r[6]==='reflect'?'Válaszolok':r[6]==='intention'?'Leírom':r[6]==='ritual'?'Napzárás indítása':'Megvan, pipálom';
 function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).length;
-  return `<p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=row%2?3-c:c+1,dir=i===N-1?'':c===2?(row%2?'dnl':'dnr'):row%2?'lf':'rt';
+  return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=row%2?3-c:c+1,dir=i===N-1?'':c===2?(row%2?'dnl':'dnr'):row%2?'lf':'rt';
     return `<button class="rt-b ${d?'done':''} ${i===nx?'now':''} ${dir} ${str==null?'ns':''}" style="grid-column:${col};grid-row:${row+1};--p:${str??0}%" ${rAttr(r,i,k)} aria-label="${nm}${d?' · kész':''}">
-      <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b><small>${i===nx?'<em>Most jön</em>':str!=null?str+'%':s}</small></button>`}).join('')}</div>`}
+      <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b><small>${i===nx?'<em>Most jön</em>':str!=null?str+'%':s}</small></button>`}).join('')}</div></section>`}
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0,strs=R.rows.filter(r=>r[3]!=null),avg=Math.round(strs.reduce((a,r)=>a+r[3],0)/strs.length);
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="rt-lead"><small>${R.title} · ${done}/${R.rows.length} kész</small><h2>${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
     <p>${all?'Holnap ugyanitt folytatódik.':`${R.rows.length} elem · lánc · ${R.rows[nx][1]}`}</p>
     <div class="rt-acts">${all?'':`<button class="btn" ${rAttr(R.rows[nx],nx,face)}>${rVerb(R.rows[nx])}</button>`}<button class="fh-lk" data-toast="Tegnap — csak a kézi, kimaradt elemek pipálhatók">‹ Tegnap</button><span class="fh-lk" style="opacity:.35">Holnap ›</span></div></div>
   ${order.map((k,i)=>chain(k,i+1,k===face?nx:-1)).join('')}
+  <section class="bd ${order.length%2?'':'w'} last"><p class="fh-n"><b>${order.length+1}</b>A lánc ereje</p>
   <p class="rt-note">Az edény szintje a szokás 28 napos ereje. A lánc addig színes, ameddig ma eljutottál.</p>
-  <p class="fh-n"><b>${order.length+1}</b>A lánc ereje</p>
   <div class="rt-flasks">${[...(R.stat?[[R.stat[0],R.stat[1],Math.round(parseInt(R.stat[0])/30*100)]]:[]),[`${avg}%`,'lánc-erő · 28 nap',avg],[`+${R.xp}`,'XP ma',null]].map(([b,l,p])=>`<div class="rt-fl ${p==null?'np':''}" style="--p:${p??0}%"><span><b>${b}</b></span><small>${l}</small></div>`).join('')}</div>
   <p class="rt-note">A lánc-erő az elmúlt 28 nap következetessége: egy kihagyás nem nulláz, csak halványít.</p>
-  <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b><small>láncok, szokások, új szokás</small></span><i>›</i></button>`}
+  <button class="rt-edit" data-go="rutin-epites">${I('t-chain')}<span><b>Rutinok szerkesztése</b><small>láncok, szokások, új szokás</small></span><i>›</i></button></section>`}
 function rutin(arg){if(arg&&RUT[arg])face=arg;return page('nap',{title:'Rutin',sub:'Nap · ma, szerda',tab:'rutin'},`<div id="rt-root">${rutinBody()}</div>`)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-rt]');if(!b)return;const [g,ix]=b.dataset.rt.split(':'),R=RUT[g].rows,i=+ix;R[i][4]=R[i][4]?0:1;
   if(R[i][4]){const d=R.filter(r=>r[4]).length;F.toast(d===R.length?`${g==='este'?'Tökéletes este':g==='reggel'?'Tökéletes reggel':'Minden megvan'} · ${d} / ${R.length}`:`Szokás · ${d} / ${R.length} · megvan, a lánc erősödik`)}
@@ -478,8 +481,14 @@ ${P} .bd{position:relative;padding:2px 0 38px}
 ${P} .bd.w{background:rgba(255,255,255,.72);margin:12px 0}
 ${P} .bd.w::before,${P} .bd.w::after{content:"";position:absolute;left:0;right:0;height:12px;background:rgba(255,255,255,.72);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 90 13' preserveAspectRatio='none'%3E%3Cpath d='M0 7 Q11.25 0 22.5 7 T45 7 T67.5 7 T90 7 V13 H0Z'/%3E%3C/svg%3E") repeat-x 0 0/90px 12px}
 ${P} .bd.w::before{top:-11.5px}${P} .bd.w::after{bottom:-11.5px;transform:scaleY(-1);-webkit-mask-position:-45px 0;mask-position:-45px 0}
-${P} .bd.w.last{margin-bottom:0;padding-bottom:150px;margin-bottom:-118px}${P} .bd.w.last::after{display:none}
+${P} .bd.w.last{padding-bottom:150px;margin-bottom:-118px}${P} .bd.w.last::after{display:none}
 ${P} .bd .mx-h{margin-top:22px}
+${P} .bd>.fh-n{margin-top:18px}${P} .bd>.rt-chain{margin-top:18px}${P} .bd .rt-b:nth-last-child(-n+3){height:118px}
+${P} .bd.last:not(.w){padding-bottom:10px}
+${P} .bd.w .rt-ok{box-shadow:0 0 0 2px #fff}
+${P} .ng-band{fill:rgba(255,255,255,.72)}
+${P} .ng-lead.w{background:rgba(255,255,255,.72)}
+${P} .rt-lead{padding-bottom:18px}
 ${P} .bd .mx-h b{display:flex;align-items:center;gap:10px}
 ${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
 /* Mai · the arc */
