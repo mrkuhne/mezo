@@ -35,7 +35,7 @@ function ReceptRow({ r, onPick }: { r: Recipe; onPick: () => void }) {
       value={(
         <span className="fg-pk2">
           <span>{fmtGrouped(per.kcal)}<small>{L.perServing}</small></span>
-          <button type="button" onClick={onPick} aria-label={L.add(r.name)} className="fg-add">+</button>
+          <button type="button" onClick={onPick} aria-label={L.add(r.name)} className="fx-add">+</button>
         </span>
       )}>
       <M3 p={per.p} c={per.c} f={per.f} />

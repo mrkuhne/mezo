@@ -28,7 +28,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeInput, Nutrients } from '@/data/types'
 import { useRecipes, useRecipeActions, useRecipeBreakdown, usePantry, useRecipeLogs } from '@/data/hooks'
 import { useM } from '@/shared/i18n'
-import { fmtDate, fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { fmtDate, fmtFixed, fmtGrouped, fmtNum } from '@/shared/lib/format'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import {
@@ -76,7 +76,7 @@ function nutrientsByBasis(n: Nutrients, basis: ServingBasis, servings: number): 
 }
 /** The server sends an ISO instant; the mock seed a ready short date — that one prints as it is. */
 function createdLabel(createdDate: string): string {
-  return /^\d{4}-\d{2}-\d{2}/.test(createdDate) ? fmtDate(createdDate.length > 10 ? new Date(createdDate) : createdDate, 'monthDay') : createdDate
+  return /^\d{4}-\d{2}-\d{2}/.test(createdDate) ? fmtDate(createdDate.length > 10 ? new Date(createdDate) : createdDate, 'short') : createdDate
 }
 
 export function RecipeDetailPage() {
@@ -173,7 +173,7 @@ export function RecipeDetailPage() {
   const fitScore = recipe.mezoFit.score
     ?? (breakdown ? breakdown.dimensions.reduce((a, d) => a + d.score * d.weight, 0) : null)
   // Printed on the ten scale; hidden while a reading is being (re)written.
-  const score = breakdownBusy || fitScore == null ? null : fmtNum(Math.round(fitScore * 100) / 10, 1)
+  const score = breakdownBusy || fitScore == null ? null : fmtFixed(Math.round(fitScore * 100) / 10, 1)
   const scoreOpen = Boolean(breakdown) && !breakdownBusy
   const eaten = recipe.timesLogged > 0
 
@@ -193,14 +193,14 @@ export function RecipeDetailPage() {
             {score != null && scoreOpen && <Lk onClick={openScore}>{D.ratingLink(score)}</Lk>}
           </>
         )}
-      >
-        <NumG graphic={<Pot pct={whole ? 100 : 100 / Math.max(1, servings)} size={104} />}
+        graphic={<NumG graphic={<Pot pct={whole ? 100 : 100 / Math.max(1, servings)} size={104} />}
           value={fmtGrouped(perBasis(recipe.macros.kcal))} unit={whole ? C.kcalWhole : C.kcalPerServing}>
           <p className="fc-meta">
             {C.servings(servings)} · {totalMins > 0 ? D.readyIn(totalMins) : D.noTime} · NOVA {recipe.novaDominant}
           </p>
           <p>{D.created(createdLabel(recipe.createdDate))}</p>
-        </NumG>
+        </NumG>}
+      >
         {servings > 1 && (
           <div className="fc-basis"><ServingToggle value={basis} servings={servings} onChange={setBasis} /></div>
         )}
@@ -227,7 +227,7 @@ export function RecipeDetailPage() {
         ) : (
           <Txt>{D.noteNone}</Txt>
         )}
-        {!breakdownBusy && fitsFor.length > 0 && <Chips className="fc-fit" items={[fitsFor[0]]} />}
+        {!breakdownBusy && fitsFor.length > 0 && <Chips plain className="fc-fit" items={[fitsFor[0]]} />}
         <Row icon="t-score" className={scoreOpen ? undefined : 'fc-off'} data-testid="recipe-score-open"
           title={D.rating}
           sub={scoreOpen && breakdown

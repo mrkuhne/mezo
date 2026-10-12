@@ -168,7 +168,8 @@ function buildRecipe(id: string, input: RecipeInput, base?: Recipe): Recipe {
     name: input.name,
     slot: input.slot ?? '',
     category: input.category,
-    createdDate: base?.createdDate ?? 'Ma',
+    // an ISO instant, the shape the server returns (the page formats it in the app language)
+    createdDate: base?.createdDate ?? new Date().toISOString(),
     timesLogged: base?.timesLogged ?? 0,
     avgScore: base?.avgScore ?? 0,
     lastLogged: base?.lastLogged ?? '—',

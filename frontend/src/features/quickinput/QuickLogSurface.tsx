@@ -67,7 +67,7 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
   // szerződése; ismeretlen/hiányzó kulcs ott a becsületes „Ablakon kívül" ág.
   const foodTarget = nowWindow ? `/fuel/log/uj?w=${encodeURIComponent(tileKey(nowWindow))}` : '/fuel/log/uj'
   const { fuel } = useFuelDay()
-  const { logWater } = useWaterActions()
+  const { logWater, undoLastWater, canUndo } = useWaterActions()
   const { weightLog, logWeight } = useWeight()
   const latestWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1] : null
   // Narrow read (mezo-7lst, whole-branch-review finding 1): the FAB used to mount the whole
@@ -94,6 +94,9 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
         targetMl={fuel.targets.water}
         onLog={logWater}
         onClose={onDone}
+        // „Visszavonom az utolsót": this surface's OWN instance — it takes back only what was logged from here
+        onUndo={undoLastWater}
+        canUndo={canUndo}
       />
     )
   }
@@ -124,7 +127,7 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
   const doors = (close: () => void): Door[] => [
     { icon: 't-bowl', label: 'Étkezés', onClick: () => { close(); navigate(foodTarget) } },
     { icon: 't-water', label: 'Víz', onClick: () => setPhase('water') },
-    { icon: 't-supps', label: 'Stack', onClick: () => { close(); navigate('/fuel/stack') } },
+    { icon: 't-supps', label: 'Kiegészítők', onClick: () => { close(); navigate('/fuel/stack') } },
     { icon: 't-dumbbell', label: 'Edzés', onClick: () => { close(); navigate('/train') } },
     { icon: 't-volley', label: 'Sport', onClick: () => setPhase('sport') },
     { icon: 't-weight', label: 'Súly', onClick: () => setPhase('weight') },
@@ -171,7 +174,7 @@ export function QuickLogSurface({ variant, onDone }: { variant: 'sheet' | 'page'
 
   // `.quicklog` + `data-variant` are the surface's stable hooks (tests/layout/quicklog.spec.ts).
   if (onPage) {
-    // A page variánsban a `close` a rács navigáló csempéinek szól (Étkezés/Stack/Edzés/
+    // A page variánsban a `close` a rács navigáló csempéinek szól (Étkezés/Kiegészítők/Edzés/
     // Check-in-kész), NEM az oldal bezárásának — maga a navigate() hagyja el az oldalt.
     // `onDone` itt a `navigate(-1)` (NapGyorsPage.tsx), és a böngésző `history.go(-1)`-je
     // ASZINKRON: ha a csempe `close()`-ként hívná, a sorban álló vissza-lépés a push UTÁN

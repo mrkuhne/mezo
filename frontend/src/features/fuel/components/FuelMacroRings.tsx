@@ -13,10 +13,8 @@
 // The WATER vial is the page's only door to the water sheet (`onWater`); without the prop the row is
 // fully passive. In maintenance (injury) the protein vial carries the „fő cél" mark (`leadKey`).
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
-import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { useSettledArrival } from '@/shared/ui/mozaik/arrival'
 import { useM } from '@/shared/i18n'
+import { fmtFixed, fmtInt, fmtNum } from '@/shared/lib/format'
 import { Vials, type VialItem } from '@/shared/ui/folyadek'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { MACRO_COLOR } from '@/features/fuel/components/folyadek'
@@ -30,65 +28,10 @@ const VIAL: Record<RingVM['key'], { icon: Icon3DName; color: string }> = {
   fiber: { icon: 't-fiber', color: MACRO_COLOR.fiber },
 }
 
-// jsdom implements a real requestAnimationFrame/setInterval, so an unguarded count-up would
-// leave every numeral at 0 for the first frames of a test.
-function isJsdomEnv(): boolean {
-  return typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string'
-    && navigator.userAgent.includes('jsdom')
-}
-
-/** `0 → to` over `durationMs`, cubic ease-out; instant under reduced motion, on a 'pop' arrival and in jsdom.
- *  NOT used by the Folyadék Mai (a level rises by CSS, the number stands). Kept only until the other Fuel
- *  areas drop their import (plan § „The cuts"); the controller deletes it then. */
-export function useFuelCountUp(to: number, durationMs = 950): number {
-  const reduced = useReducedMotion()
-  const returning = useSettledArrival()
-  const skip = reduced || isJsdomEnv() || returning
-  const [val, setVal] = useState(skip ? to : 0)
-  const shownRef = useRef(skip ? to : 0)
-
-  useEffect(() => {
-    if (skip) {
-      setVal(to)
-      shownRef.current = to
-      return
-    }
-    const from = shownRef.current
-    let raf = 0
-    let start: number | null = null
-    const tick = (now: number) => {
-      if (start === null) start = now
-      const p = Math.min(1, (now - start) / durationMs)
-      const eased = 1 - Math.pow(1 - p, 3)
-      const next = from + (to - from) * eased
-      setVal(next)
-      shownRef.current = next
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [to, durationMs, skip])
-
-  return val
-}
-
-/** The numeral of a formatted RingVM string without its unit ("148 g" → "148", "1,9 l" → "1,9"); a string
- *  without a number („—") comes back as it is. */
-export function ringNumeral(formatted: string): string {
-  const m = /^(−?\d[\d\s  .,]*?)\s*[^\d\s.,]+$/.exec(formatted.trim())
-  return m ? m[1] : formatted.trim()
-}
-
-/** The number behind a formatted RingVM string; `null` when it carries none (honest-null). */
-export function ringNumber(formatted: string): number | null {
-  const m = /^−?\d[\d\s  .,]*/.exec(formatted.trim())
-  if (!m) return null
-  const raw = m[0].replace(/[\s  ]/g, '').replace('−', '-')
-  // a single separator followed by one or two digits is the decimal mark; anything else groups thousands
-  const dec = /[.,]\d{1,2}$/.test(raw)
-  const n = Number(dec ? raw.replace(/[.,](?=\d{1,2}$)/, '.').replace(/,/g, '') : raw.replace(/[.,]/g, ''))
-  return Number.isFinite(n) ? n : null
-}
+/** A ring's amount as the vial's numeral: litres with one fixed decimal („1,9"), grams whole; unknown = „—". */
+const numeral = (v: number | null, unit: RingVM['unit']): string => (v == null ? '—' : unit === 'l' ? fmtFixed(v, 1) : fmtInt(v))
+/** A ring's goal with its unit: „155 g", „2,5 l" (a whole litre drops its zero: „4 l"); unknown = „—". */
+const goalText = (v: number | null, unit: RingVM['unit']): string => (v == null ? '—' : `${unit === 'l' ? fmtNum(v, 1) : fmtInt(v)} ${unit}`)
 
 export function FuelMacroRings({ rings, onWater, leadKey }: {
   rings: RingVM[]; onWater?: () => void
@@ -99,7 +42,7 @@ export function FuelMacroRings({ rings, onWater, leadKey }: {
   const M = useM()
   const K = M.fuelMai.macros
   const items: VialItem[] = rings.map((r) => {
-    const empty = ringNumber(r.target) == null || ringNumber(r.value) == null
+    const empty = r.goal == null || r.amount == null
     const lead = r.key === leadKey
     return {
       label: r.key === 'c'
@@ -108,10 +51,10 @@ export function FuelMacroRings({ rings, onWater, leadKey }: {
       icon: VIAL[r.key].icon,
       color: VIAL[r.key].color,
       pct: empty ? 0 : Math.max(5, r.pct),
-      value: ringNumeral(r.value),
-      note: K.of(r.target),
+      value: numeral(r.amount, r.unit),
+      note: K.of(goalText(r.goal, r.unit)),
       mark: lead ? K.focus : undefined,
-      ...(r.key === 'water' && onWater ? { onClick: onWater, ariaLabel: K.waterAria(r.value, r.target) } : {}),
+      ...(r.key === 'water' && onWater ? { onClick: onWater, ariaLabel: K.waterAria(r.amount == null ? '—' : `${numeral(r.amount, r.unit)} ${r.unit}`, goalText(r.goal, r.unit)) } : {}),
     }
   })
   return (

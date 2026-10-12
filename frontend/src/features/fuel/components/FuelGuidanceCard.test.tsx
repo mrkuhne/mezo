@@ -54,7 +54,7 @@ test('the total line: plain kcal when something is logged, an invitation at 0', 
   expect(container.querySelector('.fo-hero-sub')).toHaveTextContent('Amit megeszel, beírhatod. Nem mérjük semmihez.')
   rerender(<FuelGuidanceCard category="ILLNESS" {...base} eatenKcal={1340} />)
   expect(container.querySelector('.fo-hero-sub')).toHaveTextContent('Ma eddig 1 340 kcal; nem mérjük semmihez.')
-  expect(container.querySelector('.fo-hero-sub b')).toHaveTextContent('1 340 kcal')
+  expect(container.querySelector('.fo-hero-sub strong')).toHaveTextContent('1 340 kcal')
 })
 
 test('the water glass shows litres and opens the water sheet, and so does „+ Víz"; the doctor link opens the doctor sheet', async () => {

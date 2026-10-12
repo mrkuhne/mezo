@@ -34,11 +34,11 @@ function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boo
         <span className="fc-pk">
           <span>{ing.macros.kcal ?? '—'}<small>{P.per(ing.per, ing.unit)}</small></span>
           {added ? (
-            <button type="button" disabled aria-label={P.added(ing.name)} className="fc-add on">
+            <button type="button" disabled aria-label={P.added(ing.name)} className="fx-add on">
               <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
             </button>
           ) : (
-            <button type="button" onClick={onPick} aria-label={P.add(ing.name)} className="fc-add">+</button>
+            <button type="button" onClick={onPick} aria-label={P.add(ing.name)} className="fx-add">+</button>
           )}
         </span>
       )}

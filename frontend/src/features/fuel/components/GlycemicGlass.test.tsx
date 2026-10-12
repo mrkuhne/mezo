@@ -11,7 +11,8 @@
 // ============================================================
 import { render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { GlycemicGlass, GlycemicMiniCurve } from '@/features/fuel/components/GlycemicGlass'
+import { GlycemicGlass } from '@/features/fuel/components/GlycemicGlass'
+import { GlyMini } from '@/features/fuel/components/folyadek'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 
 function stubReduced(matches = true) {
@@ -71,7 +72,8 @@ describe('GlycemicGlass · a sáv szava, szám helyett', () => {
       // Ami szám van a dobozban, az mind mértékkel/idővel jár (gramm, óra, perc, százalék);
       // csupasz, mértékegység nélküli szám — egy index — nincs benne.
       const bare = [...copy.matchAll(/(\d+(?:[.,]\d+)?)(?![\d.,])\s*([^\s]{0,12})/g)]
-        .filter(m => !/^(g|gramm|óra|órára|ó|perc|%|-\d|,\d|\d)/.test(m[2]))
+        // a range („3–4 órára") is written with an en dash since Folyadék F5: the number before the dash belongs to it
+        .filter(m => !/^(g|gramm|óra|órára|ó|perc|%|[-–]\d|,\d|\d)/.test(m[2]))
       expect(bare, `csupasz szám a dobozban: ${JSON.stringify(bare.map(m => m[0]))}`).toEqual([])
       unmount()
     }
@@ -210,15 +212,16 @@ describe('GlycemicGlass · a keretben él, és csökkentett mozgás mellett áll
   })
 })
 
-describe('GlycemicMiniCurve · a késő esti szellem görbe (mezo-tegkf)', () => {
-  test('alapértelmezésben (lateGhost nélkül) nincs szellem görbe', () => {
-    const { container } = render(<GlycemicMiniCurve level="high" />)
+// The icon-size curve is the shared `GlyMini` since Folyadék F5 (the `GlycemicMiniCurve` wrapper left with its last user).
+describe('GlyMini · a késő esti szellem görbe (mezo-tegkf)', () => {
+  test('alapértelmezésben (`late` nélkül) nincs szellem görbe', () => {
+    const { container } = render(<GlyMini level="high" />)
     expect(container.querySelector('.fx-gmini')).not.toBeNull()
     expect(container.querySelector('.fx-gmini .late')).toBeNull()
   })
 
-  test('lateGhost=true esetén megjelenik a szaggatott szellem görbe', () => {
-    const { container } = render(<GlycemicMiniCurve level="high" lateGhost />)
+  test('`late` esetén megjelenik a szaggatott szellem görbe', () => {
+    const { container } = render(<GlyMini level="high" late />)
     expect(container.querySelector('.fx-gmini .late')).not.toBeNull()
   })
 })

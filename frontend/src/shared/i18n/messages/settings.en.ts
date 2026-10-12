@@ -233,7 +233,7 @@ export const settingsEn: Shape<typeof settingsHu> = {
       lights_out: { label: 'Lights out', description: 'At the evening sleep anchor' },
       wind_down: { label: 'Wind-down', description: 'When the quiet stretch before the day-close window begins' },
       checkin: { label: 'Check-in', description: '06:30 · 10:00 · 14:00 · 20:00' },
-      fuel_slot: { label: 'Fuel & stack', description: 'At every fuel/stack slot' },
+      fuel_slot: { label: 'Fuel & supplements', description: 'At each of your supplement times' },
       evening: { label: 'Day close', description: 'The day’s closing message in the evening.' },
       sleep_reaction: { label: 'Sleep reaction', description: 'A message after your sleep is logged.' },
       weight_reaction: { label: 'Weight reaction', description: 'A message after the morning weigh-in.' },

@@ -45,8 +45,9 @@ export function FuelMedicationPage() {
       <StackPageScaffold backTo="/fuel/stack" name={M.med.title} eyebrow={M.med.eyebrowEmpty}>
         <Hero className="fk-ghero" data-testid="medication-empty" label={M.med.emptyLabel} verdict={M.med.emptyVerdict}
           sub={M.med.emptySub}
-          actions={<Btn onClick={() => setFormOpen(true)}>{M.med.add}</Btn>}>
-          <div className="fk-g" aria-hidden="true"><MedicationCycleBar week={cycleCells(DEFAULT_CYCLE)} off dim /></div>
+          actions={<Btn onClick={() => setFormOpen(true)}>{M.med.add}</Btn>}
+          graphic={<div className="fk-g" aria-hidden="true"><MedicationCycleBar week={cycleCells(DEFAULT_CYCLE)} off dim /></div>}
+        >
           <Note>{M.common.note}</Note>
         </Hero>
         {formOpen && <MedicationFormSheet onClose={() => setFormOpen(false)} />}
@@ -73,8 +74,8 @@ export function FuelMedicationPage() {
       <Hero className="fk-ghero" label={fresh ? M.med.notStarted : M.med.cycleLabel(cycle.cycleDay, length)}
         verdict={<span data-testid="medication-phase-note">{verdict}</span>}
         sub={M.med.heroSub(phaseDays)}
-        actions={<Btn onClick={() => setLogOpen(true)}>{M.med.addDose}</Btn>}>
-        <div className="fk-g">
+        actions={<Btn onClick={() => setLogOpen(true)}>{M.med.addDose}</Btn>}
+        graphic={<div className="fk-g">
           <div className="fk-sc">
             <span className="fo-big">{fmtNum(med.defaultDose, 2)}<small>{med.doseUnit}</small></span>
             <span className="fk-rc">{routes[med.route] ?? med.route}<br />{cadences[med.cadence] ?? med.cadence}</span>
@@ -82,7 +83,8 @@ export function FuelMedicationPage() {
           {fresh
             ? <MedicationCycleBar week={cycleCells(med.cycle)} off dim />
             : <MedicationCycleBar week={cycle.week} />}
-        </div>
+        </div>}
+      >
       </Hero>
 
       {/* Beadások — the dose log, newest first (the hook returns recentDoses newest-first), with the note as written. */}

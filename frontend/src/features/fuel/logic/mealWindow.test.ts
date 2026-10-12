@@ -112,7 +112,7 @@ describe('windowReasonCopy / articles', () => {
     const r = windowReasonCopy('shifted', { ...c, shiftedAfter: { label: 'Ebéd', at: '14:50' } })
     expect(r.icon).toBe('t-clock')
     expect(r.title).toBe('Eltolva: az ebéd később volt (14:50)')
-    expect(r.body).toBe('Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.')
+    expect(r.body).toBe('Így nagyjából másfél óra jut a két étkezés közé; a nap többi ablaka ehhez igazodik.')
     expect(windowReasonCopy('shifted', { ...c, shiftedAfter: { label: 'Vacsora', at: '19:10' } }).title).toBe('Eltolva: a vacsora később volt (19:10)')
     expect(windowReasonCopy('shifted', c).title).toBe('Eltolva az előző ablak után')
   })

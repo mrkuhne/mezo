@@ -13,22 +13,9 @@ import type { Ingredient } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { useM } from '@/shared/i18n'
 import { fmtGrouped, fmtNum } from '@/shared/lib/format'
-import type { Icon3DName } from '@/shared/ui/clay'
 import { Empty, FoSheetHead, Pill, Pills, SearchField } from '@/shared/ui/folyadek'
 import { ItemRow, M3 } from '@/features/fuel/components/folyadek'
-
-/** A pantry category → its Folyadék glyph (prototype fuel.js `KIC` / `kic`); an unknown category is a grain. */
-const CATEGORY_GLYPH: Record<string, Icon3DName> = {
-  protein: 't-meat', meat: 't-meat', fish: 't-meat', eggs: 't-meat',
-  dairy: 't-protein', cheese: 't-protein', 'supplement-protein': 't-protein',
-  carb: 't-carb', grains: 't-carb', pasta: 't-carb', bakery: 't-carb', legumes: 't-carb',
-  fat: 't-avocado', nuts_seeds: 't-avocado', oils_fats: 't-avocado',
-  veggie: 't-fiber', vegetables: 't-fiber', fruit: 't-fiber', fruits: 't-fiber',
-  snacks: 't-sugar', condiments: 't-sugar',
-}
-export function pantryGlyph(category: string | null | undefined): Icon3DName {
-  return CATEGORY_GLYPH[category ?? ''] ?? 't-carb'
-}
+import { pantryCategoryIcon, pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 
 const Check = () => (
   <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
@@ -40,13 +27,13 @@ function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onP
   const nova = ing.nova === 1 || ing.nova === 2 || ing.nova === 3 || ing.nova === 4 ? ing.nova : null
   const sub = [ing.brand, nova != null ? M.fuelKozos.nova[`n${nova}`] : null].filter(Boolean).join(' · ')
   return (
-    <ItemRow icon={pantryGlyph(ing.category)} title={ing.name} sub={sub || undefined}
+    <ItemRow icon={pantryCategoryIcon(ing.category)} title={ing.name} sub={sub || undefined}
       value={(
         <span className="fg-pk2">
           <span>{ing.macros.kcal == null ? '—' : fmtGrouped(ing.macros.kcal)}<small>{L.perBasis(fmtNum(ing.per), ing.unit)}</small></span>
           {added
-            ? <button type="button" disabled aria-label={L.added(ing.name)} className="fg-add on"><Check /></button>
-            : <button type="button" onClick={onPick} aria-label={L.add(ing.name)} className="fg-add">+</button>}
+            ? <button type="button" disabled aria-label={L.added(ing.name)} className="fx-add on"><Check /></button>
+            : <button type="button" onClick={onPick} aria-label={L.add(ing.name)} className="fx-add">+</button>}
         </span>
       )}>
       <M3 p={ing.macros.p} c={ing.macros.c} f={ing.macros.f} />
@@ -59,14 +46,14 @@ export function KamraPickSheet({
 }: { onPick: (ing: Ingredient) => void; onClose: () => void; addedRefIds?: string[] }) {
   const M = useM()
   const L = M.fuelLog.pick
-  const { ingredients, categoryMeta } = usePantry()
+  const { ingredients } = usePantry()
   const added = new Set(addedRefIds)
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState<string | null>(null)
   const q = query.toLowerCase()
 
-  // Only categories actually on the shelf become pills — labelled from categoryMeta, falling back to
-  // the raw key so an unmapped category still filters honestly.
+  // Only categories actually on the shelf become pills — labelled in the app language (`pantryCategoryLabel`, the same
+  // words as the Kamra's own filter); an unmapped category prints its raw key, so it still filters honestly.
   const cats = useMemo(
     () => [...new Set(ingredients.map(i => i.category))].filter((c): c is string => !!c),
     [ingredients],
@@ -85,7 +72,7 @@ export function KamraPickSheet({
             <Pill on={cat == null} onClick={() => setCat(null)}>{L.all}</Pill>
             {cats.map(c => (
               <Pill key={c} on={cat === c} onClick={() => setCat(prev => (prev === c ? null : c))}>
-                {categoryMeta[c]?.label ?? c}
+                {pantryCategoryLabel(c) ?? c}
               </Pill>
             ))}
           </Pills>

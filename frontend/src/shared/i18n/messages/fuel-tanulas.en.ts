@@ -7,7 +7,6 @@ const weeks = (n: number) => plural(n, { one: 'week', other: 'weeks' })
 const weighIns = (n: number) => plural(n, { one: 'weigh-in', other: 'weigh-ins' })
 
 export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
-  shortDay: (date) => date,
   saveFailed: 'Could not save, try again',
   close: 'Close',
 
@@ -112,8 +111,8 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
       moved: '− what you burned by moving',
       movedSub: 'logged movement, daily average',
       total: '= what you burn without movement',
-      whySure: (applied, simple, step) => `*Why ${applied} and not ${simple}?* Because I do not jump your budget there at once: I step towards it week by week (step ${step}).`,
-      whyUnsure: (applied, simple, step) => `*Why ${applied} and not ${simple}?* Because I am still unsure, I do not jump your budget there at once: I step towards it week by week (step ${step}).`,
+      whySure: (applied, simple, step) => `**Why ${applied} and not ${simple}?** Because I do not jump your budget there at once: I step towards it week by week (step ${step}).`,
+      whyUnsure: (applied, simple, step) => `**Why ${applied} and not ${simple}?** Because I am still unsure, I do not jump your budget there at once: I step towards it week by week (step ${step}).`,
       note: 'The real calculation moves day by day, and every weigh-in sharpens it a little. This is the rounded, simple version.',
     },
     filtered: {
@@ -135,9 +134,9 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     sure: {
       title: 'How sure I am',
       sub: (sd, word) => `±${sd} kcal · ${word}`,
-      textLow: (sd) => `My current estimate is accurate to *±${sd} kcal*. This is still the learning stage, so I move away from the formula only step by step.`,
-      textMedium: (sd) => `My current estimate is accurate to *±${sd} kcal*. I have seen quite a lot of data by now, but I still adjust the budget only step by step.`,
-      textHigh: (sd) => `My current estimate is accurate to *±${sd} kcal*. From this much data I have learned with confidence.`,
+      textLow: (sd) => `My current estimate is accurate to **±${sd} kcal**. This is still the learning stage, so I move away from the formula only step by step.`,
+      textMedium: (sd) => `My current estimate is accurate to **±${sd} kcal**. I have seen quite a lot of data by now, but I still adjust the budget only step by step.`,
+      textHigh: (sd) => `My current estimate is accurate to **±${sd} kcal**. From this much data I have learned with confidence.`,
       meterAria: (word) => `Confidence: ${word}`,
       more: 'The more complete days and weigh-ins I see, the surer I become.',
     },
@@ -163,7 +162,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     lastWeek: (kcal) => `last week ${kcal}`,
     bandAria: (from, to) => `The base stepped from ${from} to ${to}`,
     held: (d, w, minDays, minWeighIns) =>
-      `There was too little data: *${d} complete ${days(d)}, ${w} ${weighIns(w)}*; at least ${minDays} and ${minWeighIns} are needed. The budget did not change.`,
+      `There was too little data: **${d} complete ${days(d)}, ${w} ${weighIns(w)}**; at least ${minDays} and ${minWeighIns} are needed. The budget did not change.`,
     leftOut: 'Days left out',
     daySub: (kcal, status) => `${kcal} kcal · ${status}`,
     undo: 'Undo',
@@ -188,8 +187,8 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     secFormula: (kcal) => `Base · by the formula · ${kcal}`,
     byFormula: 'By the formula · resting burn × lifestyle',
     learnedBase: 'Learned base',
-    learnedText: 'This is what you burn *without training*: I learned it from *your weight trend and the eating you logged*.',
-    learnedTextFormula: (kcal) => `This is what you burn *without training*: I learned it from *your weight trend and the eating you logged*. The formula would say ${kcal} kcal.`,
+    learnedText: 'This is what you burn **without training**: I learned it from **your weight trend and the eating you logged**.',
+    learnedTextFormula: (kcal) => `This is what you burn **without training**: I learned it from **your weight trend and the eating you logged**. The formula would say ${kcal} kcal.`,
     learnedRow: 'Learned base',
     learnedRowWord: (word) => `Learned base · ${word}`,
     learnedRowSd: (sd) => `Learned base · ±${sd} kcal`,
@@ -198,7 +197,7 @@ export const fuelTanulasEn: Shape<typeof fuelTanulasHu> = {
     resting: (formula) => `Resting burn · ${formula}`,
     lifestyle: (label) => `Lifestyle factor · ${label}`,
     lifestyleDefault: 'lifestyle',
-    formulaText: (formula) => `Your *resting burn* (${formula}) times your *lifestyle factor*. This is what you burn on an average day *without training*.`,
+    formulaText: (formula) => `Your **resting burn** (${formula}) times your **lifestyle factor**. This is what you burn on an average day **without training**.`,
     secMovementToday: (kcal) => `Movement · logged today · ${kcal}`,
     secMovementWeekly: (label, kcal) => `${label} · ${kcal}`,
     scheduled: 'Scheduled movement',

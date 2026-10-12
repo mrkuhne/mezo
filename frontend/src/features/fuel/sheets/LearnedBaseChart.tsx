@@ -90,8 +90,8 @@ export function LearnedBaseChart({ series, historyWeeks, reducedMotion }: {
 
   const barCount = series.filter(p => p.intakeKcal != null && p.status !== 'unlogged').length
   let barIdx = 0
-  const first = C.shortDay(huShortDate(series[0].date))
-  const last = C.shortDay(huShortDate(series[n - 1].date))
+  const first = huShortDate(series[0].date)
+  const last = huShortDate(series[n - 1].date)
 
   return (
     <svg className="ft-chart ft-how" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={C.how.chart.aria(historyWeeks, first, last)} data-progress={t}>

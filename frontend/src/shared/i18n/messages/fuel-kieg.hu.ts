@@ -86,7 +86,7 @@ export const fuelKiegHu = {
     verdictAll: 'Minden elemet te tettél a helyére.',
     verdictOne: 'Egy elemet kézzel tettél a helyére, a többit én időzítettem.',
     verdictSome: (n: number) => `${n} elemet kézzel tettél a helyére, a többit én időzítettem.`,
-    sub: (version: number, confidence: number) => `Koppints egy elemre: ott állítod az idősávot és a dózist. ${version}. változat · ${confidence}%-os bizalom.`,
+    sub: (version: number, confidence: number) => `Koppints egy elemre: ott állítod az idősávot és a dózist. ${version}. változat · ${confidence}%-os megbízhatóság.`,
     subPlain: 'Koppints egy elemre: ott állítod az idősávot és a dózist.',
     vialsAria: 'Elemek idősávonként',
     factItems: 'elem',

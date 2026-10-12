@@ -6,13 +6,13 @@ import { expect, test } from 'vitest'
 import { FuelHorizon, horizonNeedsMoreWeeks, type HorizonWeek } from '@/features/fuel/components/FuelHorizon'
 
 const WEEKS: HorizonWeek[] = [
-  { startIso: '2026-07-27', label: 'Júl 27', kcal: 2380, weightKg: 82.4 },
-  { startIso: '2026-08-03', label: 'Aug 3', kcal: 2310, weightKg: 82.1 },
-  { startIso: '2026-08-10', label: 'Aug 10', kcal: 2405, weightKg: 82.2 },
-  { startIso: '2026-08-17', label: 'Aug 17', kcal: 2290, weightKg: 81.9 },
-  { startIso: '2026-08-24', label: 'Aug 24', kcal: 2240, weightKg: 81.7 },
-  { startIso: '2026-08-31', label: 'Aug 31', kcal: 2360, weightKg: 81.6 },
-  { startIso: '2026-09-07', label: 'Szept 7', kcal: 2185, weightKg: 81.3 },
+  { startIso: '2026-07-27', kcal: 2380, weightKg: 82.4 },
+  { startIso: '2026-08-03', kcal: 2310, weightKg: 82.1 },
+  { startIso: '2026-08-10', kcal: 2405, weightKg: 82.2 },
+  { startIso: '2026-08-17', kcal: 2290, weightKg: 81.9 },
+  { startIso: '2026-08-24', kcal: 2240, weightKg: 81.7 },
+  { startIso: '2026-08-31', kcal: 2360, weightKg: 81.6 },
+  { startIso: '2026-09-07', kcal: 2185, weightKg: 81.3 },
 ]
 
 /** Középen KIESIK egy súlymérés — ez valódi szakadás, nem nullára húzott pont. */
@@ -31,7 +31,7 @@ test('a súly és az evés egymás alatt jelenik meg, a súly felül', () => {
   expect(lines(container, 'weight')).toHaveLength(1)
   expect(points(container, 'weight')).toHaveLength(7)
   expect(points(container, 'kcal')).toHaveLength(7)
-  expect(screen.getByRole('img', { name: 'Heti súlyátlag 7 héten át, Júl 27 és Szept 7 között' })).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'Heti súlyátlag 7 héten át, júl. 27. és szept. 7. között' })).toBeInTheDocument()
   expect(screen.getByRole('img', { name: 'Heti átlag kalória 7 héten át' })).toBeInTheDocument()
 })
 
@@ -104,7 +104,7 @@ test('a hosszabb táv nem mond ítéletet', () => {
 test('a tengely felirata a legelső és legutolsó hét', () => {
   const { container } = render(<FuelHorizon weeks={WEEKS} />)
   const labels = [...container.querySelectorAll('.fr-ser-axis')].map(n => n.textContent)
-  expect(labels).toEqual(['Júl 27', 'Szept 7'])
+  expect(labels).toEqual(['júl. 27.', 'szept. 7.'])
 })
 
 // --- Új, jóváhagyott (mezo-n4wf5.5): a súlycél vízvonala és a napi mérések. ---------------------

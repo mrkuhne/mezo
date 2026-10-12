@@ -6,7 +6,6 @@
 import type { FuelMeal } from '@/data/types'
 
 export type MealContext = 'standard' | 'pre' | 'post'
-export const MEAL_CONTEXT_LABEL: Record<MealContext, string> = { standard: 'Standard', pre: 'Pre-workout', post: 'Post-workout' }
 
 // The stored envelope is written in the account's language of that moment (F5, mezo-n4wf5.5):
 // the row is `Szerep` in a Hungarian envelope and `Role` in an English one; the value prefix is the same.

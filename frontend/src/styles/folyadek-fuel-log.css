@@ -15,9 +15,6 @@
 .fg-flow > .fo-page, .fg-cers > .fo-page { --fo-pad: 0px; min-height: 100%; }
 
 /* ── a hero with its own graphic (prototype `gHero`): label → graphic → verdict → sub → the rest ── */
-.fg-hero { display: flex; flex-direction: column; }
-.fg-hero > .fo-hero-lbl { order: -2; }
-.fg-hero > .fx-ng { order: -1; }
 .fg-hero > .fo-hero-verdict { hyphens: manual; }
 .fg-hero > .fg-nut { margin-top: 10px; }
 .fg-hero > .fg-nut > span { background: #fff; box-shadow: inset 0 0 0 1px var(--fo-hair); }
@@ -26,8 +23,6 @@
 .fg-cmp { margin-top: 12px; }
 .fg-cmp > textarea.fo-in { min-height: 58px; font-size: 15px; line-height: 1.4; }
 .fo-card:not(.fo-hero) .fg-cmp > textarea.fo-in { background: var(--fo-page); border-color: transparent; }
-.fg-warn { color: var(--fo-warn); font-weight: 600; }
-.fg-bad { color: var(--fo-bad); }
 .fg-busy { color: var(--fo-sub); font-weight: 600; }
 
 /* ── the ways in (`.fu-modes`): four tiles on the log page, three on „Mit ettél?" ── */
@@ -38,7 +33,7 @@
 .fg-modes > button > span:not(.fo-bub) { max-width: 100%; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; }
 .fg-modes > button.on { box-shadow: inset 0 0 0 2.5px var(--liq2); }
 .fg-modes > button > small { font-size: 10.5px; font-weight: 500; letter-spacing: 0; line-height: 1.2; color: var(--fo-sub); }
-.fg-modes > button:focus-visible, .fg-ph:focus-visible, .fg-x:focus-visible, .fg-add:focus-visible, .fg-tuh:focus-visible, .fg-stp > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fg-modes > button:focus-visible, .fg-ph:focus-visible, .fg-tuh:focus-visible, .fg-stp > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 .fg-modes + .fg-cmp, .fg-shell + .fg-cmp { margin-top: 12px; }
 .fg-file, .fg-photo > input { display: none; }
 /* the chosen way's body under the tiles (`.fx-mode`) */
@@ -60,8 +55,6 @@ div.fg-ph { cursor: default; }
 .fg-pcap strong { display: block; font-size: 14px; color: var(--fo-ink); }
 .fg-pcap small { display: block; font-size: 12px; color: var(--fo-sub); overflow-wrap: anywhere; }
 /* the round × (`.fu-x`) with its 44 px hit area */
-.fg-x { position: relative; flex: 0 0 auto; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; background: var(--fo-page); font-size: 18px; line-height: 1; color: var(--fo-sub); }
-.fg-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
 /* „nem ismertem fel" (`.fu-fail`) */
 .fg-fail { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; text-align: center; }
 .fg-fail > small { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #9A6708; }
@@ -129,9 +122,6 @@ div.fg-ph { cursor: default; }
 .fg-pk2 { display: inline-flex; align-items: center; gap: 10px; }
 .fg-pk2 > span { text-align: right; line-height: 1.1; }
 .fx-it .fg-pk2 > span > small { display: block; margin: 0; font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; color: var(--fo-sub); }
-.fg-add { position: relative; flex: 0 0 auto; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 12px; display: grid; place-items: center; cursor: pointer; background: var(--fo-page); font-family: var(--ff-body); font-size: 19px; font-weight: 600; line-height: 1; color: var(--fo-ink); }
-.fg-add::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
-.fg-add.on { background: var(--dom); color: #fff; cursor: default; }
 .fg-star { display: inline-block; width: 15px; height: 15px; vertical-align: -2px; }
 .fg-star > .t-ico { width: 15px; height: 15px; }
 .fg-pick > .fo-empty { margin-top: 12px; }
@@ -171,7 +161,7 @@ div.fg-ph { cursor: default; }
   .fo-cer:not(.inst) .fg-cst > i > .t-ico { transition: opacity .35s cubic-bezier(.2, .8, .2, 1), transform .35s cubic-bezier(.2, .8, .2, 1); }
   .fo-cer:not(.inst) .fg-cup text.n { transition: opacity .5s cubic-bezier(.2, .8, .2, 1); }
   .fg-cup .wvp { animation: fg-cupwv 5s linear infinite; }
-  .fg-modes > button, .fg-add, .fg-x { transition: transform .12s ease; }
-  .fg-modes > button:active, .fg-add:active:not(:disabled), .fg-x:active { transform: scale(.96); }
+  .fg-modes > button { transition: transform .12s ease; }
+  .fg-modes > button:active { transform: scale(.96); }
 }
 @keyframes fg-cupwv { to { transform: translateX(40px); } }

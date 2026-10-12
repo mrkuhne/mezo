@@ -6,7 +6,7 @@
 // as 0 g of the ring rather than a fabricated number.
 // ============================================================
 import { describe, expect, test } from 'vitest'
-import { buildWindowLane, asPastDayLane, type WindowLaneVM, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
+import { buildWindowLane, asPastDayLane, tileKey, type WindowLaneVM, type WindowTileVM } from '@/features/fuel/logic/fuelSwimlane'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { ContextDimension, FuelMeal, FuelSlot } from '@/data/types'
 import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
@@ -40,6 +40,19 @@ test('one tile per user-scheduled eating window, chronological; non-meal slots n
   })
   expect(tiles.map(t => t.label)).toEqual(['Reggeli', 'Vacsora'])
   expect(tiles.map(t => t.icon)).toEqual(['i-reggeli', 'i-vacsora'])
+})
+
+// Two extras logged in the same minute carry the same title („Ablakon kívül · 10:05"): the lane key must still tell them
+// apart (React key, the clock sheet's target). A WINDOW's key stays `${time}-${label}` — the `?w=` URL contract.
+test('two window-less extras of the same minute get different keys; a window keeps the `?w=` key', () => {
+  const extra = (mealId: string) => slot({ time: '10:05', kind: 'snack', label: 'Ablakon kívül · 10:05', slotKey: 'snack', state: 'done', mealId, extra: true })
+  const { tiles } = buildWindowLane({
+    slots: [slot({ time: '07:30', label: 'Reggeli', slotKey: 'breakfast', state: 'done', mealId: 'm1' }), extra('x1'), extra('x2')],
+    budget, meals: [meal(), meal({ id: 'x1' }), meal({ id: 'x2' })],
+  })
+  expect(tiles.map(t => t.key)).toEqual(['07:30-Reggeli', '10:05-Ablakon kívül · 10:05#x1', '10:05-Ablakon kívül · 10:05#x2'])
+  expect(new Set(tiles.map(t => t.key)).size).toBe(3)
+  expect(tileKey(slot({ time: '13:00', label: 'Ebéd', slotKey: 'lunch' }))).toBe('13:00-Ebéd')
 })
 
 test('every slotKey maps to its own clay window icon', () => {

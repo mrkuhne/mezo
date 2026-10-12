@@ -18,18 +18,18 @@
 // ŐSZINTE-NULL: a mikrotápanyag-rész KIZÁRÓLAG a négy tárolt tényt mutatja; a Minőség lapkák a BONTÁSBÓL olvasnak
 // (`mealQualityTruth`, mezo-tm3sb), és amit a bontás nem tud, az „—" — nem esünk vissza a tételsorokra.
 //
-// AZ ÉTKEZÉS HELYÉNEK NEVE itt az étkezés saját slot-kulcsából jön (`mealSlotLabel`), nem a nap ablak-sávjából: ez a lap
-// nem tölti be a nap tervét. Az ablak nélküli étkezés „Ablakon kívül · HH:mm" neve (owner-döntés) a `logic/buildDayPlan`
-// ablak-kiosztásában dől el — amíg az ide nem ér el, az ilyen étkezés itt a slotja nevét viseli.
+// AZ ÉTKEZÉS HELYÉNEK NEVE (`useMealPlaceLabel`): az étkezés saját slot-kulcsából jön (Reggeli…), KIVÉVE az ablak nélküli
+// étkezést (owner-döntés 2026-10-12): amit a nap terve egyik ablakra sem tett (`FuelSlot.extra`, `logic/buildDayPlan` 3b),
+// annak a neve „Ablakon kívül" — az idő EGYSZER áll: ezen a lapon a címsor fölötti sorban, az értékelés hősében a név után.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { useFuelDay } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
-import { fmtDate, fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { fmtDate, fmtFixed, fmtGrouped, fmtNum } from '@/shared/lib/format'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { m, useM } from '@/shared/i18n'
-import type { FuelMeal, MealItemLine } from '@/data/types'
+import type { FuelMeal, FuelSlot, MealItemLine } from '@/data/types'
 import { hhmmFromLoggedAt, mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf } from '@/features/fuel/logic/mealContext'
@@ -47,12 +47,21 @@ import {
 } from '@/shared/ui/folyadek'
 import { NumG, PourBowl, PourKey } from '@/features/fuel/components/folyadek'
 
-/** Az étkezés helyének neve a napban, a stabil slot-kulcsból (Reggeli / Ebéd / Uzsonna / Vacsora), a nyelvet követve;
- *  ismeretlen slotnál „Étkezés". HÍVÁSKOR olvas (`m()`), renderben kell hívni. Az étkezés és az értékelés lapja is ezt
- *  használja — egy hely, ha a név forrása változik (lásd a fejléc utolsó bekezdését). */
-export function mealSlotLabel(meal: FuelMeal): string {
+/** Az étkezés helyének neve a napban: „Ablakon kívül", ha a nap terve egyik ablakra sem tette (`slots` = a nap terve);
+ *  különben a stabil slot-kulcsból (Reggeli / Ebéd / Uzsonna / Vacsora); ismeretlen slotnál „Étkezés". Az időt a hívó írja
+ *  mellé. HÍVÁSKOR olvas (`m()`), renderben kell hívni. */
+export function mealSlotLabel(meal: FuelMeal, slots: FuelSlot[] = []): string {
+  if (slots.some(s => s.extra && s.mealId === meal.id)) return m().fuelLogika.dayPlan.betweenMeals
   const key = mealSlotKey(meal)
   return key ? m().fuelLogika.slot[key] : m().fuelEtkezes.meal.fallbackTitle
+}
+
+/** `mealSlotLabel` a nap tervével együtt: az étkezés és az értékelés lapja is ezt használja (egy hely). A terv ugyanaz a
+ *  kompozíció, amiből a Mai lap blokkjai állnak (`useFuelTimeline`), így a két lap ugyanazt a nevet mondja. */
+export function useMealPlaceLabel(meal: FuelMeal, day: string | null): string {
+  const { plan } = useFuelTimeline(day ?? undefined)
+  useM() // re-render on a language switch: the label is read at call time
+  return mealSlotLabel(meal, plan.slots)
 }
 
 /** A sor grammos tömege, ha grammban van megadva — különben null (nem találgatunk). */
@@ -98,9 +107,10 @@ function MealDetail({ meal, day, meals, dayTarget }: { meal: FuelMeal; day: stri
 
   const time = hhmmFromLoggedAt(meal.loggedAt, '')
   const ctx = mealContextOf(meal)
-  const eyebrow = ['Fuel', day ? fmtDate(day, 'monthDay') : null, time || null, ctx && ctx !== 'standard' ? T.ctx[ctx] : null]
+  const eyebrow = ['Fuel', day ? fmtDate(day, 'short') : null, time || null, ctx && ctx !== 'standard' ? T.ctx[ctx] : null]
     .filter(Boolean).join(' · ')
-  useFrameTitle({ title: mealSlotLabel(meal), eyebrow })
+  const place = useMealPlaceLabel(meal, day)
+  useFrameTitle({ title: place, eyebrow })
 
   const share = dayTarget > 0 ? Math.round(pct(meal.kcal, dayTarget)) : null
   // Ami a nap táljában ELŐTTE volt: a nap korábban logolt étkezései (a lap már betölti a napot).
@@ -125,7 +135,7 @@ function MealDetail({ meal, day, meals, dayTarget }: { meal: FuelMeal; day: stri
   // a forrás nem adta meg, a sáv becsül, és a kártya / lap ezt kimondja.
   const mealFacts = mealNutrients(meal)
   const band = glycemicBand({ c: meal.c, sugarG: mealFacts.sugarG, fiberG: mealFacts.fiberG, p: meal.p, f: meal.f })
-  const scoreTen = meal.score == null ? null : fmtNum(Math.round(meal.score * 100) / 10, 1)
+  const scoreTen = meal.score == null ? null : fmtFixed(Math.round(meal.score * 100) / 10, 1)
   const b = meal.breakdown
   const verdict = b?.tagline ? (/[.!?…]$/.test(b.tagline.trim()) ? b.tagline.trim() : `${b.tagline.trim()}.`) : T.verdictPending
 
@@ -142,19 +152,20 @@ function MealDetail({ meal, day, meals, dayTarget }: { meal: FuelMeal; day: stri
   return (
     <Page className="fe-page">
       <FrameBack className="fo-backpill" history fallback="/fuel">‹ {M.kit.back}</FrameBack>
-      <Hero className="fe-ghero fe-mealhero" label={mealDisplayName(meal) ?? T.fallbackTitle} verdict={verdict}
+      <Hero className="fe-mealhero" label={mealDisplayName(meal) ?? T.fallbackTitle} verdict={verdict}
         sub={b?.summary ? <SafeMarkdown text={b.summary} /> : undefined}
         actions={<>
           {scoreTen == null
             ? <span className="fe-pendl">{T.ratingPending}</span>
             : <Btn onClick={toScore}>{T.rating(scoreTen)}</Btn>}
           {band && <Lk onClick={() => setGlucoseOpen(true)}>{T.glucose(band.label)}</Lk>}
-        </>}>
-        <NumG value={fmtGrouped(meal.kcal)} unit="kcal"
+        </>}
+        graphic={<NumG value={fmtGrouped(meal.kcal)} unit="kcal"
           graphic={<span role="img" aria-label={T.bowlAria(fmtGrouped(meal.kcal), fmtGrouped(before))}><PourBowl before={bowl(before)} add={bowl(meal.kcal)} /></span>}>
           <p className="fe-facts"><SafeMarkdown text={facts} /></p>
           <PourKey before={before > 0 ? T.before(fmtGrouped(before)) : T.beforeEmpty} add={T.thisMeal} />
-        </NumG>
+        </NumG>}
+      >
       </Hero>
 
       {/* Az étkezés SAJÁT összetétele (owner) — nincs „a nap céljához mérve". */}

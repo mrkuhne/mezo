@@ -238,6 +238,13 @@ a.fo-lk { text-decoration: none; }
 
 /* ── pills · segmented control ── */
 .fo-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+/* removable chips (F5 fold of `.fp-cats` / `.fc-cats`): one button per chip, tapping takes it off */
+.fo-rmc { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fo-rmc > button { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 10px 6px 12px; border: 0; border-radius: 999px; cursor: pointer;
+  background: color-mix(in srgb, var(--dom) 10%, #fff); font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; color: var(--fo-ink); }
+.fo-rmc > button::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fo-rmc > button > b { font-size: 15px; line-height: 1; color: var(--fo-sub); }
+.fo-rmc > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 .fo-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 0; border-radius: 999px; cursor: pointer; font-family: var(--ff-body); font-size: 13px; font-weight: 600; line-height: normal; color: var(--fo-ink); background: var(--fo-page); }
 .fo-pill.on { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 14px -8px var(--liq2); }
 .fo-pill .t-ico { width: 18px; height: 18px; flex: 0 0 auto; }
@@ -260,6 +267,9 @@ a.fo-lk { text-decoration: none; }
 .fo-chips span { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 1.2; color: var(--fo-ink); background: color-mix(in srgb, var(--dom) 9%, #fff); }
 .fo-chips span::before { content: ''; width: 6px; height: 8px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: linear-gradient(160deg, var(--liq1), var(--liq2)); margin-right: 6px; flex: 0 0 auto; }
 .fo-chips b { font-size: 12px; font-weight: 700; color: var(--fo-sub); }
+/* plain chips (F5 fold of `.fa-easy` / `.fc-fit` / `.fe-chips`): the word alone, no leading drop */
+.fo-chips.plain > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
+.fo-chips.plain > span::before { content: none; }
 .fo-facts { display: grid; margin: 12px 0 4px; border-radius: 20px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(15, 30, 51, .06); }
 .fo-facts div { padding: 10px 8px; text-align: center; border-left: 1px solid var(--fo-line); min-width: 0; }
 .fo-facts div:first-child { border-left: 0; }
@@ -268,6 +278,9 @@ a.fo-lk { text-decoration: none; }
 
 /* ── text roles · callout · label · empty · card head · team message ── */
 .fo-note { font-size: 12px; color: var(--fo-faint); line-height: 1.45; margin-top: 10px; }
+/* a note in a state tone (F5 fold: seven area twins `.f?-warn` / `.f?-bad`) */
+.fo-note.warn { color: var(--fo-warn); font-weight: 600; }
+.fo-note.bad { color: var(--fo-bad); }
 .fo-txt { font-size: 14.5px; line-height: 1.5; }
 .fo-why { display: flex; gap: 4px; align-items: flex-start; margin-top: 12px; font-size: 13.5px; line-height: 1.45; padding: 10px 12px; border-radius: 18px; background: color-mix(in srgb, var(--dom) 7%, #fff); }
 .fo-why > .fo-bub { margin-right: 6px; }
@@ -654,6 +667,9 @@ button.fo-vial:focus-visible { outline: 2px solid var(--fo-ink); outline-offset:
 .fo-hero.has-art .fo-hero-lbl, .fo-hero.has-art .fo-hero-verdict { padding-right: 92px; }
 .fo-hero.has-art .fo-hero-verdict { hyphens: manual; }
 .fo-hero.big .fo-hero-verdict { font-size: 28px; }
+/* Hero `graphic` (F5 fold): the graphic stands between the label and the verdict, in DOM order. The column layout keeps
+   the children's own margins from collapsing into each other (what the nine Fuel areas each did with `order`). */
+.fo-hero.has-g { display: flex; flex-direction: column; }
 .fo-hero-g { margin-top: 14px; }
 .fo-hero-g.ar { margin: 12px -4px 0; }
 .fo-ft { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 11.5px; color: var(--fo-faint); }

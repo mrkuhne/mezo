@@ -143,7 +143,7 @@ describe('Fuel Mai in English', () => {
     expect(container.querySelector('.fa-dn-mid .dp-trigger')).toHaveTextContent('Monday, 5 October')
     act(() => setLang('hu', { persist: false }))
     expect(container.querySelector('.fa-dn-mid small')).toHaveTextContent('2 nappal ezelőtt')
-    expect(container.querySelector('.fa-dn-mid .dp-trigger')).toHaveTextContent('Hétfő, október 5.')
+    expect(container.querySelector('.fa-dn-mid .dp-trigger')).toHaveTextContent('hétfő, október 5.')
     expect(screen.getByRole('button', { name: 'Előző nap' })).toBeEnabled()
   })
 

@@ -299,7 +299,7 @@ export function FuelStackAddPage() {
                     {reading ? M.add.s2.reading : M.add.s2.read}
                   </Btn>
                 </Acts>
-                {readError && <p className="fo-note fk-warn" role="alert">{M.add.s2[readError]}</p>}
+                {readError && <Note tone="warn" role="alert">{M.add.s2[readError]}</Note>}
                 {scanned && <Note>{M.add.s2.nameRead}</Note>}
               </Card>
             </>
@@ -313,7 +313,7 @@ export function FuelStackAddPage() {
                 {reading
                   ? <Txt>{M.add.s2.readingLabel}</Txt>
                   : <Acts><Btn sm ghost onClick={() => fileRef.current?.click()}>{M.add.s2.choosePhoto}</Btn></Acts>}
-                {readError && <p className="fo-note fk-warn" role="alert">{M.add.s2[readError]}</p>}
+                {readError && <Note tone="warn" role="alert">{M.add.s2[readError]}</Note>}
                 {scanned && <Note>{M.add.s2.nameRead}</Note>}
               </Card>
             </>
@@ -371,8 +371,9 @@ export function FuelStackAddPage() {
       {step === 3 && advice?.unknownProduct && (
         <>
           <Hero className="fk-ghero" label={M.add.s3.label(facts.name)} verdict={M.add.s3.missingVerdict}
-            sub={M.add.s3.missingSub(advice.substance, range)}>
-            <div className="fk-g"><DoseBand lo={advice.range[0]} hi={advice.range[1]} label={M.add.s3.bandRangeAria(range)} /></div>
+            sub={M.add.s3.missingSub(advice.substance, range)}
+            graphic={<div className="fk-g"><DoseBand lo={advice.range[0]} hi={advice.range[1]} label={M.add.s3.bandRangeAria(range)} /></div>}
+          >
           </Hero>
           {shelf}
           <Card>{backToFacts}{note}</Card>
@@ -386,11 +387,12 @@ export function FuelStackAddPage() {
             sub={<>
               {known.matchesTarget ? M.add.s3.inRange(range) : M.add.s3.inRangeRounded(range)}
               {known.days != null && <> {M.add.s3.boxLasts(known.days)}</>}
-            </>}>
-            <div className="fk-g">
+            </>}
+            graphic={<div className="fk-g">
               <DoseBand lo={known.range[0]} hi={known.range[1]} value={known.daily} valueLabel={dailyText}
                 label={M.add.s3.bandAria(dailyText, range)} />
-            </div>
+            </div>}
+          >
           </Hero>
           {shelf}
           <Section n={1} title={M.add.s3.why} />
@@ -409,7 +411,7 @@ export function FuelStackAddPage() {
                 <Pill key={key} on={(zone ?? known.zone) === key} onClick={() => setZone(key)}>{STACK_ZONE_LABEL[key]}</Pill>
               ))}
             </Pills>
-            {known.caution && <p className="fo-note fk-warn"><b>{M.add.s3.watch}</b> {known.caution}</p>}
+            {known.caution && <Note tone="warn"><b>{M.add.s3.watch}</b> {known.caution}</Note>}
             {backToFacts}
             {note}
           </Card>

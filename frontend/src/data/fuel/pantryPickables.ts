@@ -12,8 +12,7 @@
 // ============================================================
 import { useMemo } from 'react'
 import { usePantry } from '@/data/fuel/pantryHooks'
-import { m } from '@/shared/i18n'
-import type { Ingredient, PantryItemKind, PantryMacrosVM, SupplementStashItem } from '@/data/types'
+import type { Ingredient, PantryMacrosVM, SupplementStashItem } from '@/data/types'
 
 /** An Ingredient the recipe picker can offer. `kind` now comes from the server (mezo-4orh). */
 export type PickableIngredient = Ingredient
@@ -71,10 +70,4 @@ export function buildPickables(
 export function usePickableIngredients(): PickableIngredient[] {
   const { ingredients, stash } = usePantry()
   return useMemo(() => buildPickables(ingredients, stash), [ingredients, stash])
-}
-
-/** The picker / editor type badge, in the current language (`fuelKamra.kindCap`: Étel · Kiegészítő · Stimuláns · Gyógyszer).
- *  Read at CALL time — never copy the result into a module constant or a memo. */
-export function kindLabel(kind: PantryItemKind): string {
-  return m().fuelKamra.kindCap[kind]
 }

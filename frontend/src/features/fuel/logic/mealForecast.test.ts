@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { setLang } from '@/shared/i18n'
 import { mealForecast, type ForecastInput } from './mealForecast'
 
-const E = { low: 'Egyenletes energia 3-4 órára', mid: 'Stabil energia 2-3 órára', high: 'Gyors löket, majd visszaesés' }
+const E = { low: 'Egyenletes energia 3–4 órára', mid: 'Stabil energia 2–3 órára', high: 'Gyors löket, majd visszaesés' }
 const base: ForecastInput = {
   level: 'mid', energyText: E.mid, kcal: 784, eatenAt: '08:46', window: { from: '07:20', to: '09:20' },
   training: { start: '17:30', end: '18:45' }, bed: '23:00',
@@ -15,7 +15,7 @@ describe('mealForecast', () => {
   it('builds energy / hunger / rhythm for an in-window breakfast', () => {
     const f = mealForecast(base)
     expect(f.rows.map(r => r.title)).toEqual(['Energia', 'Mikor leszel éhes', 'A nap ritmusa'])
-    expect(f.rows[0].body).toBe('Stabil energia 2-3 órára.')
+    expect(f.rows[0].body).toBe('Stabil energia 2–3 órára.')
     expect(f.rows[1].body).toContain('Nagyjából 12:16') // 08:46 + 210
     expect(f.rows[2].body).toContain('3–4 órás')
     expect(f.late).toBe(false)

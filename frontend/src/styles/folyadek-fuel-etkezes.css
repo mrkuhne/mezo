@@ -1,12 +1,6 @@
 /* ── Folyadék · Fuel · etkezes (mezo-n4wf5.5, slice F5) ── area C · étkezés + Mezo értékelése (meal detail, score surface, quality blocks, glycemic + meal-clock sheets). Rules of this area only, class prefix `.fe-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* the hero whose graphic stands ABOVE the verdict (prototype `gHero`): label → graphic → verdict → support → actions */
-.fe-ghero { display: flex; flex-direction: column; }
-.fe-ghero > .fo-hero-lbl { order: -3; }
-.fe-ghero > .fx-ng, .fe-ghero > .fe-sc { order: -2; }
-.fe-ghero > .fe-8 { order: -1; }
-
 /* ── the meal page (`meal.<id>`) ── */
 .fe-pendl { color: #fff; font-weight: 700; font-size: 15px; }
 .fe-mealhero .fx-ng > .nn > .fx-pk { margin-top: 8px; }
@@ -38,7 +32,6 @@
 .fe-chips > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
 .fe-eqb { margin: 8px 0 12px; }
 .fe-panel:empty { display: none; }
-.fe-warn { color: var(--fo-warn); font-weight: 600; }
 .fe-nvi { list-style: none; margin: 4px 0 0; padding: 0; }
 .fe-nvi > li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid var(--fo-hair); font-size: 13.5px; color: var(--fo-ink); }
 .fe-nvi > li > span:first-child { flex: 1; min-width: 0; }
@@ -89,13 +82,6 @@
 .fe-dd24 text.c2.rng { font-size: 16px; letter-spacing: -.4px; }
 .fe-dd24 text.c3 { font: 600 10.5px var(--ff-body); fill: var(--fo-sub); }
 .fe-dd24 use { --ic: var(--fo-sub); --ic2: transparent; color: var(--fo-sub); }
-.fe-lg { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px 12px; margin: 8px 0 12px; font-size: 11.5px; color: var(--fo-sub); }
-.fe-lg > span { display: inline-flex; align-items: center; gap: 5px; }
-.fe-lg > span > i { width: 12px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
-.fe-lg > span > i.liq { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
-.fe-lg > span > i.oth { background: color-mix(in srgb, var(--liq2) 34%, #fff); }
-.fe-lg > span > i.trn { height: 4px; background: var(--fx-protein); }
-.fe-lg > span > i.ngt { background: rgba(10, 42, 60, .16); }
 .fe-ogl { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; color: var(--gc); }
 .fe-ogl > .fx-gmini { width: 84px; height: 38px; flex: 0 0 auto; }
 .fe-ogl > b { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--fo-ink); }

@@ -149,7 +149,7 @@ export const fuelKiegEn: Shape<typeof fuelKiegHu> = {
     },
   },
   add: {
-    title: 'New item',
+    title: 'Set up a new item',
     eyebrow: (step, name) => `Supplements · ${step} of 3 · ${name}`,
     steps: { product: 'Product', details: 'Details', advice: 'Advice' },
     stepsAria: 'Setup steps',

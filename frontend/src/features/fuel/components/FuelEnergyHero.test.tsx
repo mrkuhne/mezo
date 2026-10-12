@@ -44,8 +44,9 @@ async function openEq() {
   return screen.getByRole('dialog')
 }
 /** The equation rows in order (the closing „Marad" box last). */
-const rowsOf = (box: HTMLElement) => [...box.querySelectorAll<HTMLElement>('.fa-eqrow, .fa-tot')]
-const titleOf = (row: Element) => row.querySelector('strong')!.textContent
+const rowsOf = (box: HTMLElement) => [...box.querySelectorAll<HTMLElement>('.fa-eqrow, .fx-tot')]
+/** A row's title: the kit row's `strong`; the „Marad" box (shared `Tot`) names itself with the first text of its left side. */
+const titleOf = (row: Element) => (row.querySelector('strong') ?? row.querySelector(':scope > span')!.firstChild)!.textContent
 /** A row's value: the kit row's `.v`, the „Marad" box's own numeral. */
 const valueOf = (row: Element) => (row.querySelector('.v') ?? row.querySelector(':scope > b'))!.textContent
 const right = (c: HTMLElement) => c.querySelector('.fx-bg-n.r')!
@@ -340,7 +341,7 @@ test('múltbeli napon az Alap sor nem gomb, és nem kínál heti tanulást', asy
 test('heti kártyával az Alap sor egy gomb, és a „Heti tanulás” lapot nyitja', async () => {
   inRouter(<FuelEnergyHero vm={vm()} weeklyCard={WEEKLY} />)
   const box = await openEq()
-  const alap = within(box).getByRole('button', { name: /^Alap 2 000 kcal — heti tanulás: \+60 kcal, megnyitás$/ })
+  const alap = within(box).getByRole('button', { name: /^Alap 2 000 kcal, heti tanulás: \+60 kcal, megnyitás$/ })
   expect(alap.className).toContain('is-weekly')
   expect(alap.querySelector('strong [aria-hidden="true"]')).not.toBeNull()
   expect(alap.querySelector('small')!.textContent).toBe('az alapanyagcseréd és az életmódod · heti tanulás ›')
@@ -393,7 +394,7 @@ test('even a small skipped share is named — the line and the bowl say the same
 test('the line names the skipped windows and opens the equation sheet with a „Kihagyva" row before „Marad"', async () => {
   render(<FuelEnergyHero vm={skipVm()} />)
   const line = screen.getByRole('button', { name: /Uzsonna kihagyva · 420 kcal kiesett a napból/ })
-  expect(line.querySelector('b')).toHaveTextContent('Uzsonna kihagyva')
+  expect(line.querySelector('strong')).toHaveTextContent('Uzsonna kihagyva')
   await userEvent.click(line)
   const box = screen.getByRole('dialog')
   expect(within(box).getByText('Kihagyva')).toBeInTheDocument()
@@ -455,7 +456,7 @@ test('a skipped window never flips the hero to „a keret felett" when eaten is 
   expect(container.textContent).not.toMatch(/felett/i)
   const box = await openEq()
   expect(within(box).getByRole('heading', { name: '0 kcal fér még bele ma' })).toBeInTheDocument()
-  expect(valueOf(within(box).getByText('Marad').closest('.fa-tot')!)).toMatch(/^0/)
+  expect(valueOf(within(box).getByText('Marad').closest('.fx-tot')!)).toMatch(/^0/)
   expect(box.textContent).not.toMatch(/felett/)
 })
 

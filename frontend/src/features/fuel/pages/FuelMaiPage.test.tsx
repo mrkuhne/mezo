@@ -22,7 +22,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { fmtDate } from '@/shared/lib/format'
 // Az ablak-kulcsot az app SAJÁT exportált szabálya adja (mezo-bq2t) — egy helyi másolat
 // zölden hagyná a tesztet akkor is, ha a `?w=` szerződés elmozdul.
@@ -81,7 +81,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       const extra: FuelSlot[] = []
       if (hoisted.injectOpenSlot) {
         extra.push({
-          time: '20:00', kind: 'snack', label: 'Esti snack', slotKey: 'snack',
+          time: '20:00', kind: 'snack', label: 'Esti uzsonna', slotKey: 'snack',
           state: 'pending', kcal: 300, p: 20, c: 30, f: 8,
         })
       }
@@ -337,7 +337,8 @@ test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?
     { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
   ]
   const yesterday = addDays(localDateString(), -1)
-  const dateLabel = `${huMonthDay(yesterday).toLowerCase()}.`
+  // the long day of the approved prototype: „október 11. · 2 ablak pótolható"
+  const dateLabel = fmtDate(yesterday, 'long')
   const { container } = renderView()
   const chip = screen.getByRole('button', { name: /pótolható/ })
   expect(chip.textContent).toContain(dateLabel)
@@ -374,7 +375,7 @@ const D3 = addDays(TODAY, -3)
 test('a visszalapozott nap a saját adatával jelenik meg', async () => {
   renderView(`/fuel?d=${D3}`)
   // the pager's two lines: „3 nappal ezelőtt" over the full date
-  expect(await screen.findByText(fmtDate(D3, 'frame'))).toBeInTheDocument()
+  expect(await screen.findByText(fmtDate(D3, 'longWeekday'))).toBeInTheDocument()
   expect(screen.getByText('3 nappal ezelőtt')).toBeInTheDocument()
   // a past day speaks in its own words
   expect(screen.getByRole('heading', { name: /Ezen a napon · \d+ étkezés/ })).toBeInTheDocument()
@@ -398,7 +399,7 @@ test('az ablakon kívüli ?d= MA-ra esik vissza', () => {
   renderView(`/fuel?d=${addDays(TODAY, -9)}`)
   // A mai nap jelzése a címke FÖLÖTTI sorban áll, a címke a teljes dátum.
   expect(screen.getByText('Ma')).toBeInTheDocument()
-  expect(screen.getByText(fmtDate(TODAY, 'frame'))).toBeInTheDocument()
+  expect(screen.getByText(fmtDate(TODAY, 'longWeekday'))).toBeInTheDocument()
   expect(hoisted.dayCalls).toContain(TODAY)
   expect(hoisted.dayCalls).not.toContain(addDays(TODAY, -9))
 })

@@ -83,7 +83,7 @@ export const fuelBeallitasEn: Shape<typeof fuelBeallitasHu> = {
       tier: { low: 'Low', moderate: 'Moderate', high: 'High' },
       proteinNote: 'It adjusts both the body-weight and the lean-mass calculation. The target is the higher of the two, with a cap. After saving, the Macros preview shows the grams for the level you chose.',
       learning: 'Learn from your weight and food',
-      learningSub: 'each week Mezo learns how much energy you really use',
+      learningSub: 'each week I learn how much energy you really use',
     },
   },
   windows: {

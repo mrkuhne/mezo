@@ -22,7 +22,7 @@ import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { FuelScoreSurface } from '@/features/fuel/components/FuelScoreSurface'
-import { MealNotFound, mealSlotLabel } from '@/features/fuel/pages/FuelMealDetailPage'
+import { MealNotFound, useMealPlaceLabel } from '@/features/fuel/pages/FuelMealDetailPage'
 import { Btn, Card, Empty, FrameBack, Page, useFrameTitle } from '@/shared/ui/folyadek'
 
 export function FuelMealScorePage() {
@@ -47,6 +47,7 @@ function MealScore({ meal, day }: { meal: FuelMeal; day: string | null }) {
   const feedback = useFeedback('meal_coach', summary ? [meal.id] : [])
 
   const name = mealDisplayName(meal) ?? M.fuelEtkezes.meal.fallbackTitle
+  const place = useMealPlaceLabel(meal, day)
   useFrameTitle({ title: S.title, eyebrow: name })
   // Back returns where the user came from; this route is only where a direct link goes.
   const backTo = `/fuel/etkezes/${meal.id}${day ? `?d=${day}` : ''}`
@@ -71,7 +72,7 @@ function MealScore({ meal, day }: { meal: FuelMeal; day: string | null }) {
       <FuelScoreSurface
         breakdown={b}
         scorePct={scorePct}
-        label={[mealSlotLabel(meal), time].filter(Boolean).join(' · ')}
+        label={[place, time].filter(Boolean).join(' · ')}
         tagline={verdict?.tagline ?? b.tagline}
         summary={summary}
         coachPending={coachPending}

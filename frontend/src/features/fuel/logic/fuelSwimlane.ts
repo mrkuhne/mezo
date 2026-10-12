@@ -113,7 +113,7 @@ export interface WindowLaneVM {
 }
 
 /**
- * A window's identity, `${time}-${label}`.
+ * A window's identity, `${time}-${label}` (a window-less extra log: `${time}-${label}#${mealId}`).
  *
  * EXPORTED on purpose (mezo-bq2t): this key is the contract two pages agree on ACROSS a URL —
  * /fuel/log puts it in `?w=`, /fuel/log/uj resolves the window (and its plan-recipe prefill)
@@ -121,6 +121,10 @@ export interface WindowLaneVM {
  * that round trip, so both sides — and their tests — must derive the key from this one symbol.
  */
 export function tileKey(slot: FuelSlot): string {
+  // A window-less extra log (`slot.extra`) is titled by its minute alone („Ablakon kívül · 10:05"), so two of them logged
+  // in the same minute would share a key — the meal id tells them apart. An extra is a DONE slot that nothing logs into:
+  // it never travels in `?w=`, so the URL contract (`${time}-${label}` of a WINDOW) is untouched.
+  if (slot.extra && slot.mealId != null) return `${slot.time}-${slot.label}#${slot.mealId}`
   return `${slot.time}-${slot.label}`
 }
 

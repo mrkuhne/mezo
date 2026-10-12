@@ -8,10 +8,11 @@ export default function RecipesSkeleton() {
   const L = M.fuelRecept.list
   return (
     <Page className="fc-page" role="status" aria-label={M.kit.loading}>
-      <Hero className="fc-ghero" label={L.heroLabel} verdict={L.loadingVerdict} sub={L.loadingSub}>
-        <div className="fc-top" aria-hidden="true">
+      <Hero className="fc-ghero" label={L.heroLabel} verdict={L.loadingVerdict} sub={L.loadingSub}
+        graphic={<div className="fc-top" aria-hidden="true">
           {[0, 1, 2].map(i => <span key={i} className="fc-sk"><Level pct={0} height={14} /></span>)}
-        </div>
+        </div>}
+      >
       </Hero>
     </Page>
   )

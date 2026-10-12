@@ -268,6 +268,25 @@ test('a vércukor-chip a vércukor-lapot nyitja ugyanarra az étkezésre', async
 })
 
 // Honest-null: no carbohydrate data → no band, so no chip either — nothing is guessed.
+// The clock box's „A vércukor-válasz részletei" link (prototype `ora` sheet): from a LOGGED block's clock it swaps the
+// clock box for the blood-sugar sheet of the same meal; an unlogged block's clock has no such link.
+test('a logolt blokk órájából a vércukor-válasz részletei a vércukor-lapra visznek', async () => {
+  render(<FuelMealBlocks {...props()} />, { wrapper: QueryWrapper })
+  await userEvent.click(screen.getByRole('button', { name: 'Reggeli · logolva 07:40' }))
+  const clock = await screen.findByRole('dialog')
+  expect(clock).toHaveAccessibleName('Reggeli')
+  await userEvent.click(screen.getByRole('button', { name: 'A vércukor-válasz részletei' }))
+  const sheets = await screen.findAllByRole('dialog')
+  expect(sheets).toHaveLength(1)
+  expect(sheets[0].className).toContain('fe-glu')
+})
+test('a nem logolt blokk órájában nincs vércukor-link', async () => {
+  render(<FuelMealBlocks {...props()} />, { wrapper: QueryWrapper })
+  await userEvent.click(screen.getByRole('button', { name: /^Ebéd.*ajánlott ablak/ }))
+  await screen.findByRole('dialog')
+  expect(screen.queryByRole('button', { name: 'A vércukor-válasz részletei' })).toBeNull()
+})
+
 test('szénhidrát-adat nélkül a vércukor-chip elmarad', () => {
   const rows = [{
     mealId: 'meal-1', name: 'Skyr-bowl zabbal', time: '07:40', kcal: 420,

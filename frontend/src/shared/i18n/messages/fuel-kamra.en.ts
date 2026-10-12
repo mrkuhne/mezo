@@ -24,7 +24,6 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
   },
   items,
   recipes: (n) => `${n} ${plural(n, { one: 'recipe', other: 'recipes' })}`,
-  when: (date, time) => `${date} · ${time}`,
   price: (amount, unit) => `${amount} ${unit}`,
   back: { kitchen: 'Back to the Kitchen', pantry: 'Back to the Pantry' },
 
@@ -59,7 +58,7 @@ export const fuelKamraEn: Shape<typeof fuelKamraHu> = {
     heroLabel: 'Your shelf · by kind',
     verdict: (n, food, extras) =>
       `${items(n)} on your shelf: ${food} ${plural(food, { one: 'food', other: 'foods' })} and ${extras} ${plural(extras, { one: 'supplement', other: 'supplements' })}.`,
-    jarNote: 'items',
+    jarNote: (n) => plural(n, { one: 'item', other: 'items' }),
     add: '+ New item',
     import: 'Import',
     catalogue: 'Shared catalogue',

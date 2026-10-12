@@ -17,9 +17,8 @@
 import { useState, type ChangeEvent } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { useM } from '@/shared/i18n'
-import { fmtGrouped, fmtNum } from '@/shared/lib/format'
 import { Acts, Btn, Bub, Empty, Input, Lab, Lk, Note, Seg, Select, Txt } from '@/shared/ui/folyadek'
-import { MACRO_COLOR, Nutri } from '@/features/fuel/components/folyadek'
+import { MacroTriple, Nutri } from '@/features/fuel/components/folyadek'
 import { KamraSheetHead, KAMRA_SHEET_CLASS } from '@/features/fuel/sheets/KamraSheetHead'
 import { pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 import { pantryProvenance } from '@/features/fuel/logic/pantryProvenance'
@@ -142,8 +141,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
     }
   }
 
-  const errorLine = error && <Note className="fp-bad" role="alert">{T[error]}</Note>
-  const g = (v: number | null | undefined) => (v == null ? '—' : `${fmtNum(v)} g`)
+  const errorLine = error && <Note tone="bad" role="alert">{T[error]}</Note>
 
   return (
     <Sheet onClose={onClose} labelledBy="import-item-title" className={KAMRA_SHEET_CLASS}>
@@ -214,14 +212,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                   <Select id="import-item-category" value={category} onChange={(e) => setCategory(e.target.value)}>
                     {CONTRACT_CATEGORIES.map(c => <option key={c} value={c}>{pantryCategoryLabel(c)}</option>)}
                   </Select>
-                  <span className="fx-lnm fp-lnm">
-                    <span style={{ ['--c' as string]: 'var(--dom)' }}><b>{draft.kcal == null ? '—' : fmtGrouped(draft.kcal)}</b><small>kcal</small></span>
-                    <span style={{ ['--c' as string]: MACRO_COLOR.protein }}><b>{g(draft.proteinG)}</b><small>{M.fuelKozos.macroShort.protein}</small></span>
-                    <span style={{ ['--c' as string]: MACRO_COLOR.carbs }}><b>{g(draft.carbsG)}</b><small>{M.fuelKozos.macroShort.carbs}</small></span>
-                    <span style={{ ['--c' as string]: MACRO_COLOR.fat }}><b>{g(draft.fatG)}</b><small>{M.fuelKozos.macroShort.fat}</small></span>
-                  </span>
+                  <MacroTriple className="fp-lnm" kcal={draft.kcal ?? null} p={draft.proteinG ?? null} c={draft.carbsG ?? null} f={draft.fatG ?? null} />
                   <Nutri fiber={draft.fiberG ?? null} sugar={draft.sugarG ?? null} salt={draft.saltG ?? null} satFat={draft.saturatedFatG ?? null} />
-                  {draft.needsReview && <Note className="fp-warn">{T.unsure}</Note>}
+                  {draft.needsReview && <Note tone="warn">{T.unsure}</Note>}
                   {mode === 'photo' && !photoFile2 && (!name.trim() || draft.needsReview) && (
                     <Acts>
                       <label className="fo-lk fp-addphoto">

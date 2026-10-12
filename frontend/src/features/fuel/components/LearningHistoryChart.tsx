@@ -138,7 +138,7 @@ export function LearningHistoryChart({ weeks, reducedMotion }: {
             />
           ))}
           {xLabels.map(i => (
-            <text key={`x${i}`} x={p(x(i))} y={H - 5} textAnchor="middle">{M.fuelTanulas.shortDay(huShortDate(cal[i].start))}</text>
+            <text key={`x${i}`} x={p(x(i))} y={H - 5} textAnchor="middle">{huShortDate(cal[i].start)}</text>
           ))}
         </svg>
         <div className="ft-hits" style={{ left: `${(L / W) * 100}%`, right: `${(R / W) * 100}%` }}>

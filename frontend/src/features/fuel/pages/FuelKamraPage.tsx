@@ -24,7 +24,7 @@ import { usePantry } from '@/data/hooks'
 import { useM } from '@/shared/i18n'
 import { fmtGrouped, fmtNum } from '@/shared/lib/format'
 import {
-  Acts, Btn, Card, Empty, FrameBack, Hero, HeroGraphic, Lk, Note, Page, Pill, Pills, SearchField, Section, Stat, StatGrid, Vials,
+  Acts, Btn, Card, Empty, FrameBack, Hero, HeroGraphic, Lk, Note, Page, Pill, Pills, RemoveChips, SearchField, Section, Stat, StatGrid, Vials,
   useFrameTitle, type VialItem,
 } from '@/shared/ui/folyadek'
 import { KAMRA_KINDS, KAMRA_KIND_ICON, buildKamraItems, kamraItemIcon, pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
@@ -132,7 +132,7 @@ export function FuelKamraPage() {
 
   const jars: VialItem[] = KAMRA_KINDS.map(k => ({
     label: K.kindCap[k], icon: KAMRA_KIND_ICON[k], pct: total ? ((counts[k] ?? 0) / total) * 100 : 0,
-    value: String(counts[k] ?? 0), note: K.kamra.jarNote,
+    value: String(counts[k] ?? 0), note: K.kamra.jarNote(counts[k] ?? 0),
   }))
   const back = <FrameBack history fallback="/fuel/konyha" className="fo-backpill" label={K.back.kitchen}>‹ {K.kitchen}</FrameBack>
   const tools = (first: boolean) => (
@@ -154,8 +154,9 @@ export function FuelKamraPage() {
     return (
       <Page className="fp-kamra">
         {back}
-        <Hero className="fp-ghero" label={K.kamra.emptyLabel} verdict={K.kamra.emptyVerdict} sub={K.kamra.emptySub} actions={tools(true)}>
-          <HeroGraphic aria-hidden="true"><Vials items={jars} height={84} /></HeroGraphic>
+        <Hero className="fp-ghero" label={K.kamra.emptyLabel} verdict={K.kamra.emptyVerdict} sub={K.kamra.emptySub} actions={tools(true)}
+          graphic={<HeroGraphic aria-hidden="true"><Vials items={jars} height={84} /></HeroGraphic>}
+        >
         </Hero>
         {sheets}
       </Page>
@@ -165,8 +166,9 @@ export function FuelKamraPage() {
   return (
     <Page className="fp-kamra">
       {back}
-      <Hero className="fp-ghero" label={K.kamra.heroLabel} verdict={K.kamra.verdict(total, foods, total - foods)} actions={tools(false)}>
-        <HeroGraphic><Vials items={jars} height={84} /></HeroGraphic>
+      <Hero className="fp-ghero" label={K.kamra.heroLabel} verdict={K.kamra.verdict(total, foods, total - foods)} actions={tools(false)}
+        graphic={<HeroGraphic><Vials items={jars} height={84} /></HeroGraphic>}
+      >
       </Hero>
 
       <Section n={1} title={K.kamra.searchSection} />
@@ -179,17 +181,10 @@ export function FuelKamraPage() {
           ))}
         </Pills>
         {categoryFilter.length > 0 && (
-          <div className="fp-cats">
-            {categoryFilter.map(key => {
-              const label = pantryCategoryLabel(key) ?? key
-              return (
-                <button key={key} type="button" aria-label={K.kamra.removeCat(label)}
-                  onClick={() => setCategoryFilter(cs => cs.filter(c => c !== key))}>
-                  {label}<b aria-hidden="true">×</b>
-                </button>
-              )
-            })}
-          </div>
+          <RemoveChips items={categoryFilter.map(key => {
+            const label = pantryCategoryLabel(key) ?? key
+            return { key, label, ariaLabel: K.kamra.removeCat(label), onRemove: () => setCategoryFilter(cs => cs.filter(c => c !== key)) }
+          })} />
         )}
         <Acts>
           <Lk onClick={() => setFilterOpen(true)}>

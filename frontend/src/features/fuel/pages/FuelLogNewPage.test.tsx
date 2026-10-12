@@ -344,24 +344,32 @@ test('múltbeli nap: a mentés a VÁLASZTOTT napra könyvelődik (logDate)', asy
 })
 
 test('d + w együtt: a pótlás alapból a mentés pillanatának idejére könyvelődik', async () => {
-  hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
-  const y = addDays(localDateString(), -1)
-  const user = userEvent.setup()
-  const { qcWrapper } = renderAtSharedClient(
-    `/fuel/log/uj?d=${y}&w=${encodeURIComponent(keyOf(UZSONNA))}`,
-  )
-  expect(await screen.findByText('Uzsonna')).toBeInTheDocument()
-  await addPantryLine(user)
-  const current = new Date()
-  const currentHHmm = `${String(current.getHours()).padStart(2, '0')}:${String(current.getMinutes()).padStart(2, '0')}`
-  expect(screen.getByRole('button', { name: 'Mikor ettél?' })).toHaveTextContent(`Most · ${currentHHmm}`)
-  await user.click(screen.getByRole('button', { name: /pótlás/i }))
+  // A FIXED clock (only `Date` is faked; timers stay real for user-event and waitFor): the test used to read the wall
+  // clock after rendering and compare it with the minute of the save — across a minute boundary (or midnight) the two
+  // differed and the case failed once in real mode. 14:30:20 on a fixed day is far from both edges.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 9, 7, 14, 30, 20))
+  try {
+    hoisted.plan = { ...baseCtx, slots: TWO_WINDOWS }
+    const y = addDays(localDateString(), -1)
+    expect(y).toBe('2026-10-06')
+    const user = userEvent.setup()
+    const { qcWrapper } = renderAtSharedClient(
+      `/fuel/log/uj?d=${y}&w=${encodeURIComponent(keyOf(UZSONNA))}`,
+    )
+    expect(await screen.findByText('Uzsonna')).toBeInTheDocument()
+    await addPantryLine(user)
+    expect(screen.getByRole('button', { name: 'Mikor ettél?' })).toHaveTextContent('Most · 14:30')
+    await user.click(screen.getByRole('button', { name: /pótlás/i }))
 
-  const probe = renderHook(() => useFuelDay(y), { wrapper: qcWrapper })
-  await waitFor(() => {
-    const meals = probe.result.current.fuel.meals
-    expect(meals.some(m => m.loggedAt?.startsWith(`${y}T${currentHHmm}`))).toBe(true)
-  })
+    const probe = renderHook(() => useFuelDay(y), { wrapper: qcWrapper })
+    await waitFor(() => {
+      const meals = probe.result.current.fuel.meals
+      expect(meals.some(m => m.loggedAt?.startsWith(`${y}T14:30`))).toBe(true)
+    })
+  } finally {
+    vi.useRealTimers()
+  }
 })
 
 test('d + w pótlás: a kézzel beírt reggeli idő a reggeli ablakba kerül', async () => {

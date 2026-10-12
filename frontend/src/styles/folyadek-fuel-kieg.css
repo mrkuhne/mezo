@@ -1,10 +1,7 @@
 /* ── Folyadék · Fuel · kieg (mezo-n4wf5.5, slice F5) ── area E · Kiegészítők (hub, protocol, add wizard, medication + sheets). Rules of this area only, class prefix `.fk-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* a hero whose graphic stands between the label and the verdict (prototype `gHero`) */
-.fk-ghero { display: flex; flex-direction: column; }
-.fk-ghero > .fo-hero-lbl { order: -2; }
-.fk-ghero > .fk-g { order: -1; }
+/* a hero whose graphic stands between the label and the verdict (prototype `gHero`) = the kit Hero's `graphic` slot */
 .fk-ghero > .fo-note { margin-bottom: 4px; }
 
 /* today's doses as capsules, by part of the day (`capsG`): full = taken, ringed = the next one */
@@ -42,7 +39,6 @@
 .fk-band { display: block; width: 100%; height: auto; margin: 12px 0 10px; }
 .fk-band text { font-family: var(--ff-body); font-size: 10.5px; font-weight: 500; fill: var(--fo-sub); }
 .fk-band text.big { font-family: var(--ff-display); font-size: 15px; font-weight: 800; fill: var(--fo-ink); }
-.fo-note.fk-warn { color: var(--fo-warn); font-weight: 600; }
 .fk-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* paired fields, a field with its unit, a field with its button */
@@ -55,9 +51,6 @@
 
 /* the item box and the timing sheet */
 .fk-sheet .fk-tags > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
-.fk-kv > .fx-kv > div:last-child:nth-child(odd) { grid-column: 1 / -1; }
-.fk-why .fx-tip b:empty { display: none; }
-.fk-why .fx-tip small { margin-top: 0; font-size: 13.5px; color: var(--fo-ink); }
 
 /* the medication: the dose beside the route, the cycle as capsules (three heights = three phases), the stop confirm */
 .fk-sc { display: flex; align-items: center; gap: 14px; margin: 10px 0 14px; }

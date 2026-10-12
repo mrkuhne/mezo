@@ -103,14 +103,14 @@ describe('DayLearningMark', () => {
   it('marked_incomplete: says the owner marked it incomplete, offers to undo', () => {
     hooks.day = day('marked_incomplete', 'incomplete')
     renderMark()
-    expect(screen.getByText('Ezt a napot hiányosnak jelölted — kihagyom a tanulásból')).toBeInTheDocument()
+    expect(screen.getByText('Ezt a napot hiányosnak jelölted: kihagyom a tanulásból')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visszavonom' })).toBeInTheDocument()
   })
 
   it('confirmed_complete: says the owner marked it complete, offers to undo', () => {
     hooks.day = day('confirmed_complete', 'complete')
     renderMark()
-    expect(screen.getByText('Ezt a napot teljesnek jelölted — számít a tanulásban')).toBeInTheDocument()
+    expect(screen.getByText('Ezt a napot teljesnek jelölted: számít a tanulásban')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Visszavonom' })).toBeInTheDocument()
   })
 
@@ -150,7 +150,7 @@ describe('DayLearningMark', () => {
     hooks.setMark.mockResolvedValue(result('confirmed_complete', 2150, 2110))
     renderMark()
     await userEvent.click(screen.getByRole('button', { name: 'Teljes volt' }))
-    expect(toasts).toContain('Elmentettem — a tanult érték frissült, a keretet most a képlet adja.')
+    expect(toasts).toContain('Elmentettem: a tanult érték frissült, a keretet most a képlet adja.')
     expect(toasts.some(t => t.includes('kcal-lal változott'))).toBe(false)
   })
 
@@ -160,7 +160,7 @@ describe('DayLearningMark', () => {
     hooks.setMark.mockResolvedValue(result('marked_incomplete', 2200, 2200))
     renderMark()
     await userEvent.click(screen.getByRole('button', { name: 'Hiányos volt' }))
-    expect(toasts).toContain('Elmentettem — amint elég adatom lesz, beleszámolom.')
+    expect(toasts).toContain('Elmentettem: amint elég adatom lesz, beleszámolom.')
   })
 
   it('marking complete calls setMark with complete', async () => {

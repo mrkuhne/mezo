@@ -3,18 +3,9 @@
 
 /* ── page pieces ── */
 .fb-alert { margin: 12px 14px 0; padding: 12px 14px; border-radius: 16px; background: color-mix(in srgb, var(--fo-bad) 10%, #fff); color: var(--fo-bad); font-size: 13.5px; font-weight: 650; line-height: 1.4; }
-.fb-warn { color: var(--fo-warn); font-weight: 600; }
-.fb-bad { color: var(--fo-bad); }
 
 /* ── the hero: label → the day as a tide → the verdict (prototype `gHero`: the graphic stands ABOVE the verdict), the day-type tabs last ── */
-.fb-hero { display: flex; flex-direction: column; }
-.fb-hero > .fo-hero-lbl { order: 0; }
-.fb-hero > .fb-hg { order: 1; }
-.fb-hero > .fo-hero-verdict { order: 2; }
-.fb-hero > .fo-hero-sub { order: 3; }
-.fb-hero > .fb-hd { order: 4; margin-top: 12px; }
-.fb-hero > .fo-hero-acts { order: 8; }
-.fb-hero[data-closed="true"]::after { order: 9; }
+.fb-hero > .fb-hd { margin-top: 12px; }
 .fb-hd > .fo-seg { margin-bottom: 0; }
 .fb-days > button { font-size: 12.5px; padding-left: 4px; padding-right: 4px; white-space: nowrap; }
 

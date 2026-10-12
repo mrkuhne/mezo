@@ -36,7 +36,20 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       waterStore.set = setWater
       return { fuel: { consumed: { water }, targets: { water: 3000 } } }
     },
-    useWaterActions: () => ({ logWater: (ml: number) => waterStore.set?.(n => n + ml) }),
+    // the same contract as the real hook: undo covers only what THIS instance logged (`canUndo` after a log)
+    useWaterActions: () => {
+      const [logged, setLogged] = useState<number[]>([])
+      return {
+        logWater: (ml: number) => { waterStore.set?.(n => n + ml); setLogged(s => [...s, ml]) },
+        undoLastWater: () => {
+          const last = logged[logged.length - 1]
+          if (last == null) return
+          waterStore.set?.(n => n - last)
+          setLogged(s => s.slice(0, -1))
+        },
+        canUndo: logged.length > 0,
+      }
+    },
     useWeight: () => ({
       weightLog: [{ date: '2026-05-22', value: 78.6 }],
       weightTrends: { latestTrendKg: 78.6, weeklyRateKgPerWeek: -0.5, last4wRateKgPerWeek: -0.5 },
@@ -104,7 +117,7 @@ function renderSheet(onClose = () => {}) {
 
 test('renders all nine quick-log tiles', () => {
   renderSheet()
-  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
+  for (const label of ['Étkezés', 'Víz', 'Kiegészítők', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByText(label)).toBeInTheDocument()
 })
 
@@ -120,7 +133,7 @@ test('the 3x3 grid is ordered per spec, with the chat row above it', () => {
   expect(grid).not.toBeNull()
   const labels = Array.from(grid!.querySelectorAll('.nqk-label')).map(el => el.textContent)
   expect(labels).toEqual([
-    'Étkezés', 'Víz', 'Stack',
+    'Étkezés', 'Víz', 'Kiegészítők',
     'Edzés', 'Sport', 'Súly',
     'Check-in', 'Napló', 'Alvás',
   ])
@@ -134,7 +147,7 @@ test('the 3x3 grid is ordered per spec, with the chat row above it', () => {
 test('a navigating tile closes the sheet and routes to its target', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
-  await userEvent.click(screen.getByText('Stack'))
+  await userEvent.click(screen.getByText('Kiegészítők'))
   await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
   expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/stack')
 })
@@ -146,7 +159,7 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 test('each tile carries its own decorative symbol in a chip', () => {
   renderSheet()
   const art: Record<string, string> = {
-    'Étkezés': 't-bowl', 'Víz': 't-water', 'Stack': 't-supps', 'Edzés': 't-dumbbell', 'Sport': 't-volley',
+    'Étkezés': 't-bowl', 'Víz': 't-water', 'Kiegészítők': 't-supps', 'Edzés': 't-dumbbell', 'Sport': 't-volley',
     'Súly': 't-weight', 'Check-in': 't-checkin', 'Napló': 't-journal', 'Alvás': 't-sleep',
   }
   for (const [label, symbol] of Object.entries(art)) {
@@ -164,7 +177,7 @@ test('each tile carries its own decorative symbol in a chip', () => {
 test('the tiles carry their title only, no sublines', () => {
   renderSheet()
   expect(document.querySelector('.quicklog-sub-line')).toBeNull()
-  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
+  for (const label of ['Étkezés', 'Víz', 'Kiegészítők', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
 })
 
@@ -203,6 +216,21 @@ test('the Víz tile opens the amount picker in place and the log lands', async (
   // the still-mounted WaterLogSheet's own "ma eddig" readout — assert the amount actually
   // moved: 1850 + 250 ml -> 2,1 l (WaterLogSheet renders `currentMl / 1000` in litres).
   expect(screen.getByText(/ma eddig 2,1 \/ 3 l/)).toBeInTheDocument()
+})
+
+// „Visszavonom az utolsót" (approved 2026-10-12): the water sheet opened from the quick log gets the quick log's OWN
+// undo (its `useWaterActions` instance) — no link before a log, and the link takes back exactly what was logged here.
+test('the Víz sheet gets the quick log\'s own undo: the last amount can be taken back', async () => {
+  renderSheet(vi.fn())
+  await userEvent.click(screen.getByRole('button', { name: /Víz/ }))
+  expect(await screen.findByText(/ma eddig 1,9 \/ 3 l/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Visszavonom az utolsót' })).toBeNull()
+  await userEvent.click(screen.getByRole('button', { name: '500 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(await screen.findByText(/ma eddig 2,4 \/ 3 l/)).toBeInTheDocument()
+  await userEvent.click(await screen.findByRole('button', { name: 'Visszavonom az utolsót' }))
+  expect(await screen.findByText(/ma eddig 1,9 \/ 3 l/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Visszavonom az utolsót' })).toBeNull()
 })
 
 test('the Súly tile opens the weight log sheet in place', async () => {

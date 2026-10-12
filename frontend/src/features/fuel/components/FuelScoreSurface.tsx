@@ -17,7 +17,7 @@
 // nyelven, amelyen pontozták): úgy jelennek meg, ahogy érkeznek. A logika a stabil `id`-re köt, címkére soha.
 // ============================================================
 import { useId, useState, type ReactNode } from 'react'
-import { fmtNum } from '@/shared/lib/format'
+import { fmtFixed } from '@/shared/lib/format'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -71,7 +71,7 @@ function DimSheet({ dim, low, onClose }: { dim: MealDimension; low: boolean; onC
   const S = M.fuelEtkezes.score
   const titleId = useId()
   const off = isOff(dim)
-  const value = fmtNum(dimTen(dim), 1)
+  const value = fmtFixed(dimTen(dim), 1)
   return (
     <Sheet onClose={onClose} labelledBy={titleId} className="fo-sheet fe-dimsheet">
       {(close) => (
@@ -136,7 +136,7 @@ export function FuelScoreSurface({
   const dims = breakdown.dimensions
   const openDim = openIdx == null ? null : dims[openIdx] ?? null
   const { low, high } = extremes(dims)
-  const score = fmtNum(scorePct / 10, 1)
+  const score = fmtFixed(scorePct / 10, 1)
   const confidence = Math.round(breakdown.confidence * 100)
   // A tárolt címsor mondatként áll a hősben: pontot kap, ha nincs a végén írásjel.
   const verdict = tagline ? (/[.!?…]$/.test(tagline.trim()) ? tagline.trim() : `${tagline.trim()}.`) : S.verdictFallback(score)
@@ -149,7 +149,7 @@ export function FuelScoreSurface({
         onClick: () => setOpenIdx(i), ariaLabel: S.dimAriaOff(d.label),
       }
     }
-    const value = fmtNum(dimTen(d), 1)
+    const value = fmtFixed(dimTen(d), 1)
     return {
       label: short, icon: dimIcon(d), color: i === low ? 'var(--fo-warn)' : 'var(--dom)', pct: dimTen(d) * 10, value,
       note: i === low ? S.weakest : i === high ? S.strongest : S.weight(dimWeightPct(d)),
@@ -160,24 +160,25 @@ export function FuelScoreSurface({
 
   return (
     <>
-      <Hero className="fe-ghero fe-schero" label={label} verdict={verdict}
+      <Hero className="fe-schero" label={label} verdict={verdict}
         sub={summary ? <SafeMarkdown text={summary} /> : coachPending ? S.readingPending : undefined}
-        actions={<Btn onClick={detail.onClick}>{detail.label}</Btn>}>
-        <div className="fe-sc">
+        actions={<Btn onClick={detail.onClick}>{detail.label}</Btn>}
+        graphic={<><div className="fe-sc">
           {/* a szám mellől a „/10" elmarad (owner) */}
           <span className="fo-big" role="img" aria-label={S.heroAria(score)}><span aria-hidden="true">{score}</span></span>
           <span className="c"><Level pct={confidence} height={14} label={S.confidence(confidence)} /></span>
         </div>
         <div className="fe-8">
           {vialRows.map((items, r) => <Vials key={r} items={items} height={92} />)}
-        </div>
+        </div></>}
+      >
       </Hero>
 
       <Section n={1} title={S.madeOf} />
       <Card className="fe-dims">
         {dims.map((d, i) => {
           const off = isOff(d)
-          const value = fmtNum(dimTen(d), 1)
+          const value = fmtFixed(dimTen(d), 1)
           return (
             <ItemRow key={`${d.id}-${i}`} icon={dimIcon(d)} title={d.label} onClick={() => setOpenIdx(i)}
               sub={off ? S.leftOut : d.detail ? <span className="fe-det"><SafeMarkdown text={d.detail} /></span> : undefined}

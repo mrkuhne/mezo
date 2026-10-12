@@ -79,8 +79,8 @@ describe('the shared Fuel logic speaks English', () => {
       water: { currentMl: 1850, targetMl: 2400 }, slots: [], nowHHmm: '12:00', fiberTargetG: 30,
     })
     expect(vm.rings.map(r => r.label)).toEqual(['Protein', 'Carbs', 'Fat', 'Water', 'Fibre'])
-    // English decimal point (Hungarian: „1,9 l")
-    expect(vm.rings.find(r => r.key === 'water')!.value).toBe('1.9 l')
+    // the VM carries numbers; the English decimal point is printed by the vial (FuelMacroRings.test.tsx)
+    expect(vm.rings.find(r => r.key === 'water')).toMatchObject({ amount: 1.85, goal: 2.4, unit: 'l' })
     expect(heroEquationLines(vm, 'cut').map(l => l.label)).toEqual(['Base', 'Movement', 'Your goal', 'Food', 'Left'])
     expect(MEAL_ROLE_LABEL.pre).toBe('BEFORE TRAINING')
     expect(mealMacroShare({ p: 30, c: 40, f: 10 }).map(r => r.label)).toEqual(['Protein', 'Carbs', 'Fat'])
@@ -192,7 +192,7 @@ describe('a runtime switch: hu → en → hu on the same function and the same e
     const HU = {
       skip: 'Nem vagyok éhes', chip: 'Nem vagyok éhes', hit: '+1 ó 35 p később', window: 'Reggeli', band: 'alacsony',
       role: 'Edzés előtt', face: 'Reggeli', zone: 'Ébredés', part: 'Dél', status: 'számít', sure: 'Biztos',
-      week: 'szept. 28–okt. 4.', day: 'Sze, szept. 23.', num: '1,5',
+      week: 'szept. 28. – okt. 4.', day: 'Sze, szept. 23.', num: '1,5',
     }
     const EN = {
       skip: 'Not hungry', chip: 'Not hungry', hit: '+1 h 35 min later', window: 'Breakfast', band: 'low',

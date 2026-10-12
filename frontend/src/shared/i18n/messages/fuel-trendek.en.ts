@@ -3,11 +3,6 @@ import type { fuelTrendekHu } from './fuel-trendek.hu'
 import { plural } from '../plural'
 
 export const fuelTrendekEn: Shape<typeof fuelTrendekHu> = {
-  fixed1: (whole, frac) => `${whole}.${frac}`,
-  range: {
-    sameMonth: (_startMonthDay, startDay, endMonthDay, _endDay) => `${startDay}–${endMonthDay}`,
-    across: (startMonthDay, endMonthDay) => `${startMonthDay} – ${endMonthDay}`,
-  },
   frame: { current: 'Fuel · this week', previous: 'Fuel · last week' },
   nav: {
     prev: 'Last week',
@@ -30,7 +25,6 @@ export const fuelTrendekEn: Shape<typeof fuelTrendekHu> = {
   },
   week: {
     aria: 'The seven days of the week against their budget',
-    dow: (day) => ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][day],
     dayRecovery: (day) => `${day}: gentle day`,
     dayLogged: (day, kcal, target, score) =>
       `${day}: ${kcal} kcal of a ${target} kcal budget, ${score == null ? 'no meal score yet' : `meal score ${score}`}`,

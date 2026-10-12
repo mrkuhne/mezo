@@ -28,7 +28,7 @@ describe('Fuel logging in English', () => {
   it('the log page: frame title, the empty draft hero, the four ways in, the foot', () => {
     mountLog()
     expect(screen.getByTestId('frame-title')).toHaveTextContent('Between meals')
-    expect(screen.getByTestId('frame-eyebrow')).toHaveTextContent(/^Log · \d{1,2} [A-Z][a-z]{2} · today$/)
+    expect(screen.getByTestId('frame-eyebrow')).toHaveTextContent(/^Log · \d{1,2} [A-Z][a-z]+ · today$/)
     expect(screen.getByText('Free entry · you pick the time')).toBeInTheDocument()
     expect(screen.getByText('kcal still fits')).toBeInTheDocument()
     expect(screen.getByText('what you log now goes here')).toBeInTheDocument()

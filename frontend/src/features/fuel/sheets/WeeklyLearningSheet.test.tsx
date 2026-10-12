@@ -87,7 +87,7 @@ describe('WeeklyLearningSheet', () => {
     expect(sheet).toHaveClass('fo-sheet')
     expect(within(sheet).getByRole('heading', { name: 'Alap 2 480 kcal' })).toBeInTheDocument()
     expect(within(sheet).getByText('Heti tanulás · szept. 21–27. · Biztos · ±150 kcal')).toBeInTheDocument()
-    expect(sheet.querySelector('.ft-tot')!.textContent).toBe('a napi keretedben+60kcal')
+    expect(sheet.querySelector('.fx-tot')!.textContent).toBe('a napi keretedben+60kcal')
     expect(within(sheet).getByText('A súlyod lassabban nőtt, mint amit a felírt evés alapján vártam.')).toBeInTheDocument()
     // the base in its ± band, last week's base as the tick (applied − step)
     const band = within(sheet).getByRole('img', { name: 'Az alap 2 420-ról 2 480-ra lépett' })
@@ -99,7 +99,7 @@ describe('WeeklyLearningSheet', () => {
 
   it('lefelé lépésnél a „gyorsabban” okot mondja', () => {
     renderSheet({ ...CARD, stepKcal: -40 })
-    expect(document.querySelector('.ft-tot')!.textContent).toBe('a napi keretedben−40kcal')
+    expect(document.querySelector('.fx-tot')!.textContent).toBe('a napi keretedben−40kcal')
     expect(screen.getByText('A súlyod gyorsabban nőtt, mint amit a felírt evés alapján vártam.')).toBeInTheDocument()
   })
 
@@ -110,8 +110,8 @@ describe('WeeklyLearningSheet', () => {
     expect(within(sheet).getByText('Heti tanulás · szept. 21–27. · Alap 2 420 kcal · Közepesen biztos · ±150 kcal')).toBeInTheDocument()
     expect(sheet.querySelector('.ft-held')!.textContent)
       .toBe('Kevés adat volt: 3 teljes nap, 1 mérlegelés; legalább 4 és 2 kell. A keret nem változott.')
-    expect(within(sheet).getByText('3 teljes nap, 1 mérlegelés').tagName).toBe('B')
-    expect(sheet.querySelector('.ft-tot')).toBeNull()
+    expect(within(sheet).getByText('3 teljes nap, 1 mérlegelés').tagName).toBe('STRONG')
+    expect(sheet.querySelector('.fx-tot')).toBeNull()
     expect(within(sheet).queryByRole('img')).toBeNull()
     expect(sheet).toHaveClass('hold')
   })

@@ -22,16 +22,17 @@
 // Weekly learning (mezo-3n2so): on TODAY, with a weekly card worth showing, a dot sits on the link; inside
 // the sheet the Alap row becomes ONE button that swaps the sheet for „Heti tanulás".
 // ============================================================
-import { Fragment, useId, useState, type ReactNode } from 'react'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
+import { useId, useState, type ReactNode } from 'react'
 import { pct } from '@/shared/lib/pct'
 import { fmtGrouped } from '@/shared/lib/format'
 import { useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Acts, Btn, Bub, Card, FoSheetHead, Hero, Level, Lk, Note, Row, Section } from '@/shared/ui/folyadek'
 import type { Icon3DName } from '@/shared/ui/clay'
-import { BowlGauge } from '@/features/fuel/components/folyadek'
+import { BowlGauge, Tot } from '@/features/fuel/components/folyadek'
 import { deficitDropped, heroEquationLines, type EquationLine, type KeretHeroVM } from '@/features/fuel/logic/keretHero'
-import { FuelMacroRings, ringNumber } from '@/features/fuel/components/FuelMacroRings'
+import { FuelMacroRings } from '@/features/fuel/components/FuelMacroRings'
 import { WeeklyLearningDot } from '@/features/fuel/components/WeeklyLearningDot'
 import { WeeklyLearningSheet } from '@/features/fuel/sheets/WeeklyLearningSheet'
 import { signed } from '@/features/fuel/sheets/learnedBaseFormat'
@@ -43,11 +44,6 @@ type Trajectory = 'cut' | 'bulk' | 'maintain' | null
 /** One glyph per equation row (prototype `eq`). */
 const ROW_ICON: Record<Exclude<EquationLine['key'], 'remaining'>, Icon3DName> = {
   base: 't-flame', activity: 't-dumbbell', goal: 't-ring', eaten: 't-bowl',
-}
-
-/** `a |bold| b` → a, <b>bold</b>, b (a message marks its bold part with bars). */
-export function withBold(text: string): ReactNode {
-  return text.split('|').map((part, i) => (i % 2 ? <b key={i}>{part}</b> : <Fragment key={i}>{part}</Fragment>))
 }
 
 /** Sign + value, honest-null aware: a missing component is „—", and the sign stays so the row
@@ -144,10 +140,7 @@ function EquationSheet({ vm, past, trajectory, mode, onClose, onFull, weekly, on
               <Row className="fa-eqrow is-skipped" data-row="skipped" icon="t-skip" title={E.skipped} sub={E.skippedSub} value={`− ${fmtGrouped(skipped)}`} />
             )}
           </div>
-          <div className="fa-tot" data-row="remaining">
-            <span><strong>{remaining.label}</strong><small>{past ? E.leftSubPast : E.leftSub}</small></span>
-            <b>{rowValue(remaining)}<small>kcal</small></b>
-          </div>
+          <Tot data-row="remaining" label={remaining.label} sub={past ? E.leftSubPast : E.leftSub} value={rowValue(remaining)} unit="kcal" />
           <Note>{past ? E.notePast : vm.chips == null ? E.noteStatic(fmtGrouped(vm.targetKcal)) : E.note}</Note>
           <Acts>
             {/* A15: the detailed, Én-shared energy explanation keeps a quiet door of its own. It swaps the sheets at once
@@ -196,8 +189,8 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
 
   // the verdict: the remaining kcal and the missing protein, two real numbers in one sentence
   const protein = vm.rings.find(r => r.key === 'p')
-  const pValue = protein ? ringNumber(protein.value) : null
-  const pTarget = protein ? ringNumber(protein.target) : null
+  const pValue = protein?.amount ?? null
+  const pTarget = protein?.goal ?? null
   const proteinLeft = pValue != null && pTarget != null ? Math.max(0, Math.round(pTarget - pValue)) : 0
   const verdict = over
     ? (estimate ? H.overEstimate : past ? H.overPast(abs) : H.over(abs))
@@ -218,13 +211,14 @@ export function FuelEnergyHero({ vm, past = false, trajectory = null, onOpenEner
               {weekly && <WeeklyLearningDot hold={weekly.status === 'holding'} />}
             </Lk>
           </>
-        )}>
-        <BowlGauge eaten={vm.consumedKcal} target={vm.targetKcal} rem={vm.remainingKcal} remLabel={remLabel}
-          skipped={vm.skippedKcal} over={over && !estimate} onClick={open} />
+        )}
+        graphic={<BowlGauge eaten={vm.consumedKcal} target={vm.targetKcal} rem={vm.remainingKcal} remLabel={remLabel}
+          skipped={vm.skippedKcal} over={over && !estimate} onClick={open} />}
+      >
         {vm.skippedKcal > 0 && (
           <button type="button" className="fa-skl" onClick={open}>
             <Bub icon="t-skip" size={26} color="var(--fo-faint)" />
-            <span>{withBold(H.skipped(vm.skippedLabels.join(', '), fmtGrouped(vm.skippedKcal)))}</span>
+            <span><SafeMarkdown text={H.skipped(vm.skippedLabels.join(', '), fmtGrouped(vm.skippedKcal))} /></span>
           </button>
         )}
       </Hero>

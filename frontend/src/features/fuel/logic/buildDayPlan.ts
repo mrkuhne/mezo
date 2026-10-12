@@ -426,7 +426,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   //       2. label match — the meal's `slot` string contains the window's label, lowercased (mock
   //          mode stores Hungarian display slots like 'Uzsonna · 16:20'). Prefer the LONGEST
   //          matching label among the free candidates so a short label that is a substring of a
-  //          more specific one ('Snack' inside 'Esti snack') can never steal the more specific
+  //          more specific one ('Snack' inside 'Esti uzsonna') can never steal the more specific
   //          window out from under it.
   //       3. nearest time on the UNWRAPPED wake→bed axis (mezo-9rtw) — comparing raw HH:mm minutes
   //          across a midnight-crossing day misjudges which window is chronologically nearest (a
@@ -606,9 +606,10 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       extraSlots.push({
         time: at,
         kind: k === 'snack' ? 'snack' : 'meal',
-        label: msg().fuelMai.betweenMeals(at),
+        label: msg().fuelLogika.dayPlan.betweenMealsAt(at),
         slotKey: k,
         state: 'done',
+        extra: true,
         mealId: m.id,
         mealName: mealDisplayName(m),
         kcal: m.kcal,

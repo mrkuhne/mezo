@@ -85,24 +85,28 @@ export function FuelStackPage() {
     <Page className="fk-page">
       {total === 0 ? (
         loading
-          ? <Hero className="fk-ghero" data-kalauz-anchor="stack-hero" label={M.hub.label} verdict={M.hub.loading}>{caps}</Hero>
+          ? <Hero className="fk-ghero" data-kalauz-anchor="stack-hero" label={M.hub.label} verdict={M.hub.loading}
+              graphic={caps} />
           : (
             <Hero className="fk-ghero" data-kalauz-anchor="stack-hero" label={M.hub.label} verdict={M.hub.emptyVerdict} sub={M.hub.emptySub}
-              actions={<Btn onClick={() => navigate('/fuel/stack/manage/add')}>{M.common.setUpNew}</Btn>}>
-              {caps}
+              actions={<Btn onClick={() => navigate('/fuel/stack/manage/add')}>{M.common.setUpNew}</Btn>}
+              graphic={caps}
+            >
             </Hero>
           )
       ) : nextRow ? (
         <Hero className="fk-ghero" data-kalauz-anchor="stack-hero" label={M.hub.labelCount(takenCount, total)}
           verdict={M.hub.next(nextRow.name)}
           sub={M.hub.nextSub(doseOf(nextRow), nextRow.zoneLabel, nextRow.entry.reason)}
-          actions={<Btn onClick={() => { void toggleIntake(nextRow.entry) }}>{M.common.markTaken}</Btn>}>
-          {caps}
+          actions={<Btn onClick={() => { void toggleIntake(nextRow.entry) }}>{M.common.markTaken}</Btn>}
+          graphic={caps}
+        >
         </Hero>
       ) : (
         <Hero className="fk-ghero" data-kalauz-anchor="stack-hero" label={M.hub.labelCount(takenCount, total)}
-          verdict={M.hub.doneVerdict} sub={M.hub.doneSub}>
-          {caps}
+          verdict={M.hub.doneVerdict} sub={M.hub.doneSub}
+          graphic={caps}
+        >
         </Hero>
       )}
 

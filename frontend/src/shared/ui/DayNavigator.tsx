@@ -31,7 +31,7 @@ export function DayNavigator({ date, onChange, maxDate = localDateString(), minD
   const canPrev = !minDate || date > minDate
   const canNext = date < maxDate
   // the label is formatted at render (the DatePicker calls it), so it follows the language
-  const label = (iso: string) => (eyebrow ? fmtDate(iso, 'frame') : iso === maxDate ? N.today : fmtDate(iso, 'monthDayWeekday'))
+  const label = (iso: string) => (eyebrow ? fmtDate(iso, 'longWeekday') : iso === maxDate ? N.today : fmtDate(iso, 'shortWeekday'))
   const back = daysBack(date, maxDate)
   return (
     <div className="fa-dn">

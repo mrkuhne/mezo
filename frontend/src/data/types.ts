@@ -117,6 +117,9 @@ export interface FuelSlot {
   /** The skip behind a `skipped` slot (id for undo/reason edit). */
   skip?: { id: string; reasonCategory: SkipReason; reasonText?: string | null }
   mealName?: string
+  /** A meal logged outside every window (buildDayPlan step 3b): its own done slot at the logged time, titled
+   *  „Ablakon kívül · HH:mm" (owner decision 2026-10-12). Never set on a planned window. */
+  extra?: true
   /** A tervezett ablak HH:mm-je egy DONE meal-sloton (mezo-l2gp0): a `time` done állapotban a
    *  logolás ideje, a terv ideje pedig elveszne — az óra-doboz "Terv szerint" sora innen olvas.
    *  Ablak nélküli extra logon nincs (őszinte-null). */
@@ -1991,8 +1994,8 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
     description: '06:30 · 10:00 · 14:00 · 20:00', showLeadChip: false, iconBg: '--wash-run',
   },
   fuel_slot: {
-    label: 'Fuel & stack', section: 'reminder',
-    description: 'Minden fuel/stack slotnál', showLeadChip: false, iconBg: '--wash-sage',
+    label: 'Fuel és kiegészítők', section: 'reminder',
+    description: 'A kiegészítőid minden idősávjánál', showLeadChip: false, iconBg: '--wash-sage',
   },
   evening: {
     label: 'Napzárás', section: 'prose',

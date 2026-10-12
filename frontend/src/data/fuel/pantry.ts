@@ -11,7 +11,9 @@ import type {
   MealBreakdown,
   FuelMeal,
 } from '@/data/types'
+import { getLang } from '@/shared/i18n/lang'
 import { fuelDay } from '@/data/fuel/fuel'
+import { mealSlotKey } from '@/features/fuel/logic/buildDayPlan'
 import { enrichLine, computeRecipeMacros, computeRecipeNutrients } from '@/data/fuel/recipeMacros'
 
 // pantrySources already ported in Task 4 — re-export, do not redefine.
@@ -61,7 +63,7 @@ export const ingredients: Ingredient[] = [
     price: 3290, priceUnit: 'Ft/kg', pkg: '500g tálca',
     micros: [{ name: 'B6', pct: 92 }, { name: 'Niacin', pct: 88 }, { name: 'Se', pct: 76 }],
     nova: 1, stock: { qty: 400, unit: 'g', expires: 'Máj 25' },
-    lastUsed: 'tegnap', usedInRecipes: 7, scrapedAt: 'Máj 20 · 09:14',
+    lastUsed: 'tegnap', usedInRecipes: 7, scrapedAt: '2026-05-20T09:14:00',
   },
   {
     id: 'ing-turo', kind: 'food', name: 'Túró · félzsíros', brand: 'Mizo', source: 'kifli.hu', category: 'dairy', per: 100, unit: 'g',
@@ -70,7 +72,7 @@ export const ingredients: Ingredient[] = [
     price: 2190, priceUnit: 'Ft/kg', pkg: '250g pohár',
     micros: [{ name: 'Ca', pct: 92 }, { name: 'B12', pct: 88 }, { name: 'Casein', pct: 95 }],
     nova: 3, stock: { qty: 250, unit: 'g', expires: 'Máj 26' },
-    lastUsed: 'ma reggel', usedInRecipes: 5, scrapedAt: 'Máj 21 · 14:02',
+    lastUsed: 'ma reggel', usedInRecipes: 5, scrapedAt: '2026-05-21T14:02:00',
   },
   {
     id: 'ing-lazac', kind: 'food', name: 'Lazacfilé · norvég', brand: 'Kifli Premium', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
@@ -79,7 +81,7 @@ export const ingredients: Ingredient[] = [
     price: 14990, priceUnit: 'Ft/kg', pkg: '300g vákuum',
     micros: [{ name: 'Omega-3', pct: 95 }, { name: 'D3', pct: 72 }, { name: 'B12', pct: 88 }],
     nova: 1, stock: { qty: 300, unit: 'g', expires: 'Máj 24', lowExpiry: true },
-    lastUsed: '3 napja', usedInRecipes: 4, scrapedAt: 'Máj 21 · 14:02',
+    lastUsed: '3 napja', usedInRecipes: 4, scrapedAt: '2026-05-21T14:02:00',
   },
   {
     id: 'ing-tojas', kind: 'food', name: 'Tojás · M-es szabadon tartott', brand: 'Erdőker', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
@@ -87,7 +89,7 @@ export const ingredients: Ingredient[] = [
     price: 1890, priceUnit: 'Ft/10db', pkg: '10db doboz',
     micros: [{ name: 'B12', pct: 92 }, { name: 'Kolin', pct: 88 }, { name: 'Se', pct: 64 }],
     nova: 1, stock: { qty: 8, unit: 'db', expires: 'Jún 04' },
-    lastUsed: '2 napja', usedInRecipes: 9, scrapedAt: 'Máj 18 · 11:30',
+    lastUsed: '2 napja', usedInRecipes: 9, scrapedAt: '2026-05-18T11:30:00',
   },
 
   // -- Carbs --
@@ -98,7 +100,7 @@ export const ingredients: Ingredient[] = [
     price: 1490, priceUnit: 'Ft/500g', pkg: '500g',
     micros: [{ name: 'Béta-glükán', pct: 95 }, { name: 'Fiber', pct: 92 }, { name: 'Mg', pct: 38 }],
     nova: 1, stock: { qty: 320, unit: 'g', expires: '2026.09' },
-    lastUsed: 'ma reggel', usedInRecipes: 6, scrapedAt: 'Máj 15 · 08:42',
+    lastUsed: 'ma reggel', usedInRecipes: 6, scrapedAt: '2026-05-15T08:42:00',
   },
   {
     id: 'ing-edesburg', kind: 'food', name: 'Édesburgonya', brand: 'Bio piac', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
@@ -107,7 +109,7 @@ export const ingredients: Ingredient[] = [
     price: 1490, priceUnit: 'Ft/kg', pkg: '1kg',
     micros: [{ name: 'Vit A', pct: 100 }, { name: 'K', pct: 76 }, { name: 'Béta-karotin', pct: 95 }],
     nova: 1, stock: { qty: 600, unit: 'g', expires: 'Jún 05' },
-    lastUsed: 'tegnap', usedInRecipes: 3, scrapedAt: 'Máj 20 · 09:14',
+    lastUsed: 'tegnap', usedInRecipes: 3, scrapedAt: '2026-05-20T09:14:00',
   },
   {
     id: 'ing-rizs', kind: 'food', name: 'Barna rizs · hosszú szemű', brand: 'Lassi Bio', source: 'tesco.hu', category: 'carb', per: 100, unit: 'g',
@@ -116,7 +118,7 @@ export const ingredients: Ingredient[] = [
     price: 990, priceUnit: 'Ft/500g', pkg: '500g',
     micros: [{ name: 'Mg', pct: 62 }, { name: 'B3', pct: 58 }, { name: 'Fiber', pct: 44 }],
     nova: 1, stock: { qty: 480, unit: 'g', expires: '2026.11' },
-    lastUsed: '5 napja', usedInRecipes: 5, scrapedAt: 'Máj 12 · 18:22',
+    lastUsed: '5 napja', usedInRecipes: 5, scrapedAt: '2026-05-12T18:22:00',
   },
   {
     id: 'ing-banan', kind: 'food', name: 'Banán · érett', brand: 'Eco', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
@@ -124,7 +126,7 @@ export const ingredients: Ingredient[] = [
     price: 549, priceUnit: 'Ft/kg', pkg: '5db',
     micros: [{ name: 'K', pct: 88 }, { name: 'B6', pct: 56 }, { name: 'Mg', pct: 28 }],
     nova: 1, stock: { qty: 3, unit: 'db', expires: 'Máj 24' },
-    lastUsed: 'ma délután', usedInRecipes: 8, scrapedAt: 'Máj 20 · 09:14',
+    lastUsed: 'ma délután', usedInRecipes: 8, scrapedAt: '2026-05-20T09:14:00',
   },
 
   // -- Veggies / fats --
@@ -134,7 +136,7 @@ export const ingredients: Ingredient[] = [
     price: 1990, priceUnit: 'Ft/250g', pkg: '250g zacskó',
     micros: [{ name: 'Fe', pct: 78 }, { name: 'Folát', pct: 92 }, { name: 'K1', pct: 100 }],
     nova: 1, stock: { qty: 150, unit: 'g', expires: 'Máj 24', lowExpiry: true },
-    lastUsed: 'tegnap', usedInRecipes: 4, scrapedAt: 'Máj 20 · 09:14',
+    lastUsed: 'tegnap', usedInRecipes: 4, scrapedAt: '2026-05-20T09:14:00',
   },
   {
     id: 'ing-brokkoli', kind: 'food', name: 'Brokkoli', brand: 'Eco', source: 'kifli.hu', category: 'veggie', per: 100, unit: 'g',
@@ -143,7 +145,7 @@ export const ingredients: Ingredient[] = [
     price: 1290, priceUnit: 'Ft/db', pkg: '1db ~400g',
     micros: [{ name: 'Vit C', pct: 96 }, { name: 'Folát', pct: 68 }, { name: 'Sulforaphane', pct: 92 }],
     nova: 1, stock: null,
-    lastUsed: '4 napja', usedInRecipes: 3, scrapedAt: 'Máj 16 · 12:10',
+    lastUsed: '4 napja', usedInRecipes: 3, scrapedAt: '2026-05-16T12:10:00',
   },
   {
     id: 'ing-afonya', kind: 'food', name: 'Áfonya · fagyasztott', brand: 'Frozen', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
@@ -152,7 +154,7 @@ export const ingredients: Ingredient[] = [
     price: 2490, priceUnit: 'Ft/300g', pkg: '300g zacskó',
     micros: [{ name: 'Antocianin', pct: 100 }, { name: 'Vit C', pct: 48 }, { name: 'Fiber', pct: 38 }],
     nova: 1, stock: { qty: 220, unit: 'g', expires: '2027.02' },
-    lastUsed: 'ma reggel', usedInRecipes: 4, scrapedAt: 'Máj 15 · 08:42',
+    lastUsed: 'ma reggel', usedInRecipes: 4, scrapedAt: '2026-05-15T08:42:00',
   },
   {
     id: 'ing-mandulav', kind: 'food', name: 'Mandulavaj · 100%', brand: 'Nutsi', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
@@ -160,7 +162,7 @@ export const ingredients: Ingredient[] = [
     price: 4990, priceUnit: 'Ft/250g', pkg: '250g üveg',
     micros: [{ name: 'Vit E', pct: 88 }, { name: 'Mg', pct: 62 }, { name: 'Fiber', pct: 42 }],
     nova: 2, stock: { qty: 180, unit: 'g', expires: '2026.12' },
-    lastUsed: 'ma délután', usedInRecipes: 6, scrapedAt: 'Máj 12 · 18:22',
+    lastUsed: 'ma délután', usedInRecipes: 6, scrapedAt: '2026-05-12T18:22:00',
   },
   {
     id: 'ing-olivao', kind: 'food', name: 'Olívaolaj · extra szűz', brand: 'Casa Olearia', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
@@ -169,7 +171,7 @@ export const ingredients: Ingredient[] = [
     price: 5490, priceUnit: 'Ft/500ml', pkg: '500ml',
     micros: [{ name: 'Polifenolok', pct: 88 }, { name: 'Vit E', pct: 72 }],
     nova: 2, stock: { qty: 380, unit: 'ml', expires: '2027.01' },
-    lastUsed: 'tegnap', usedInRecipes: 11, scrapedAt: 'Ápr 28 · 16:00',
+    lastUsed: 'tegnap', usedInRecipes: 11, scrapedAt: '2026-04-28T16:00:00',
   },
   {
     id: 'ing-mez', kind: 'food', name: 'Akácméz · hazai', brand: 'Hungaria Méz', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
@@ -178,7 +180,7 @@ export const ingredients: Ingredient[] = [
     price: 3490, priceUnit: 'Ft/500g', pkg: '500g üveg',
     micros: [{ name: 'Antioxidánsok', pct: 42 }],
     nova: 2, stock: { qty: 320, unit: 'g', expires: '2028.03' },
-    lastUsed: 'ma reggel', usedInRecipes: 4, scrapedAt: 'Ápr 28 · 16:00',
+    lastUsed: 'ma reggel', usedInRecipes: 4, scrapedAt: '2026-04-28T16:00:00',
   },
   {
     id: 'ing-mandula', kind: 'food', name: 'Mandula · pörkölt', brand: 'Naturmind', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
@@ -187,7 +189,7 @@ export const ingredients: Ingredient[] = [
     price: 2890, priceUnit: 'Ft/200g', pkg: '200g',
     micros: [{ name: 'Vit E', pct: 100 }, { name: 'Mg', pct: 68 }, { name: 'Fiber', pct: 52 }],
     nova: 1, stock: { qty: 120, unit: 'g', expires: '2026.08' },
-    lastUsed: 'ma reggel', usedInRecipes: 3, scrapedAt: 'Máj 12 · 18:22',
+    lastUsed: 'ma reggel', usedInRecipes: 3, scrapedAt: '2026-05-12T18:22:00',
   },
 
   // -- Supplements (linked from supplementsStash) --
@@ -198,7 +200,7 @@ export const ingredients: Ingredient[] = [
     micros: [{ name: 'BCAA', pct: 95 }, { name: 'Leucin', pct: 92 }],
     nova: 4, stock: { qty: 1400, unit: 'g', expires: '2027.04' },
     lastUsed: 'ma délután', usedInRecipes: 4,
-    stashRefId: 'whey', scrapedAt: 'Máj 02 · 21:15',
+    stashRefId: 'whey', scrapedAt: '2026-05-02T21:15:00',
   },
   {
     id: 'ing-kreatin', kind: 'supplement', name: 'Kreatin Monohidrát', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement', per: 100, unit: 'g',
@@ -207,7 +209,7 @@ export const ingredients: Ingredient[] = [
     micros: [{ name: 'Creatine', pct: 100 }],
     nova: 4, stock: { qty: 430, unit: 'g', expires: '2027.06' },
     lastUsed: 'ma reggel', usedInRecipes: 1,
-    stashRefId: 'kreatin', scrapedAt: 'Máj 02 · 21:15',
+    stashRefId: 'kreatin', scrapedAt: '2026-05-02T21:15:00',
   },
   {
     id: 'ing-aakg', kind: 'stim', name: 'AAKG · L-Arginine', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement-stim', per: 100, unit: 'g',
@@ -216,7 +218,7 @@ export const ingredients: Ingredient[] = [
     micros: [{ name: 'L-Arginine AKG', pct: 100 }],
     nova: 4, stock: { qty: 108, unit: 'g', expires: '2026.11' },
     lastUsed: '5 napja', usedInRecipes: 0,
-    scrapedAt: 'Máj 02 · 21:15', warning: 'stim',
+    scrapedAt: '2026-05-02T21:15:00', warning: 'stim',
   },
 ]
 
@@ -225,8 +227,8 @@ const recipesBase: Recipe[] = [
   {
     id: 'rec-1', name: 'Túrós zabkása · áfonyával',
     slot: 'Reggeli', category: 'breakfast',
-    createdDate: 'Ápr 14', timesLogged: 12, avgScore: 0.92,
-    lastLogged: 'ma 07:15',
+    createdDate: '2026-04-14T08:00:00', timesLogged: 12, avgScore: 0.92,
+    lastLogged: '—',
     servings: 1, prepMins: 5, cookMins: 3,
     tags: ['pre-workout', 'high-protein', 'slow-release'],
     ingredients: [
@@ -247,8 +249,8 @@ const recipesBase: Recipe[] = [
   {
     id: 'rec-2', name: 'Csirke + édesburgonya + spenót',
     slot: 'Ebéd · pre-workout', category: 'lunch',
-    createdDate: 'Már 22', timesLogged: 18, avgScore: 0.88,
-    lastLogged: 'ma 13:30',
+    createdDate: '2026-03-22T08:00:00', timesLogged: 18, avgScore: 0.88,
+    lastLogged: '—',
     servings: 1, prepMins: 8, cookMins: 22,
     tags: ['pre-workout', 'whole-foods'],
     ingredients: [
@@ -266,8 +268,8 @@ const recipesBase: Recipe[] = [
   {
     id: 'rec-3', name: 'Lazac + barna rizs + brokkoli',
     slot: 'Vacsora', category: 'dinner',
-    createdDate: 'Feb 08', timesLogged: 24, avgScore: 0.94,
-    lastLogged: 'tegnap 21:00',
+    createdDate: '2026-02-08T08:00:00', timesLogged: 24, avgScore: 0.94,
+    lastLogged: '—',
     servings: 1, prepMins: 5, cookMins: 18,
     tags: ['post-workout', 'omega-3'],
     ingredients: [
@@ -285,8 +287,8 @@ const recipesBase: Recipe[] = [
   {
     id: 'rec-4', name: 'Whey + banán + mandulavaj',
     slot: 'Snack · pre-workout', category: 'snack',
-    createdDate: 'Ápr 30', timesLogged: 22, avgScore: 0.84,
-    lastLogged: 'ma 16:00',
+    createdDate: '2026-04-30T08:00:00', timesLogged: 22, avgScore: 0.84,
+    lastLogged: '—',
     servings: 1, prepMins: 2, cookMins: 0,
     tags: ['pre-workout', 'fast-digest'],
     ingredients: [
@@ -303,8 +305,8 @@ const recipesBase: Recipe[] = [
   {
     id: 'rec-5', name: 'Tojásrántotta · spenóttal',
     slot: 'Reggeli', category: 'breakfast',
-    createdDate: 'Ápr 02', timesLogged: 8, avgScore: 0.86,
-    lastLogged: '4 napja',
+    createdDate: '2026-04-02T08:00:00', timesLogged: 8, avgScore: 0.86,
+    lastLogged: '—',
     servings: 1, prepMins: 3, cookMins: 5,
     tags: ['high-protein', 'low-carb'],
     ingredients: [
@@ -321,8 +323,8 @@ const recipesBase: Recipe[] = [
   {
     id: 'rec-6', name: 'Túró · áfonya · méz quick',
     slot: 'Snack', category: 'snack',
-    createdDate: 'Ápr 18', timesLogged: 14, avgScore: 0.89,
-    lastLogged: '2 napja',
+    createdDate: '2026-04-18T08:00:00', timesLogged: 14, avgScore: 0.89,
+    lastLogged: '—',
     servings: 1, prepMins: 2, cookMins: 0,
     tags: ['high-protein', 'evening'],
     ingredients: [
@@ -347,10 +349,15 @@ export const pantryImports: PantryImport[] = [
 ]
 
 // === Suggested imports — "ezt is megtaláltuk" feed (pantry-data.js:278–282) ===
+/** A demo „server sentence" in the language of the moment (the real server writes it in the account's language). */
+const said = (hu: string, en: string): string => (getLang() === 'hu' ? hu : en)
+
 export const pantrySuggestions: PantrySuggestion[] = [
-  { name: 'Görög joghurt 10% · 500g', source: 'kifli.hu', price: '1790 Ft', reason: 'Stack-illeszkedés · esti casein +2 recipe' },
-  { name: 'Mogyoróvaj 100% · 500g', source: 'kifli.hu', price: '2490 Ft', reason: 'Olcsóbb fat-source mint mandulavaj' },
-  { name: 'Creapure Kreatin · 500g', source: 'myprotein.hu', price: '7990 Ft', reason: 'Stash → 25 nap múlva fogy ki' },
+  // `reason` is the server's sentence in real mode, written in the account's language. The demo does the same: the
+  // getter answers in the language the app speaks when it is READ (never copy it into a constant or a memo).
+  { name: 'Görög joghurt 10% · 500g', source: 'kifli.hu', price: '1790 Ft', get reason() { return said('Lassú fehérje estére; két receptedben is szerepel.', 'Slow protein for the evening; it is in two of your recipes too.') } },
+  { name: 'Mogyoróvaj 100% · 500g', source: 'kifli.hu', price: '2490 Ft', get reason() { return said('Olcsóbb zsírforrás, mint a mandulavaj.', 'A cheaper source of fat than almond butter.') } },
+  { name: 'Creapure Kreatin · 500g', source: 'myprotein.hu', price: '7990 Ft', get reason() { return said('A mostani kreatinod kb. 25 nap múlva elfogy.', 'Your current creatine runs out in about 25 days.') } },
 ]
 
 // === Mock URL-scrape draft (P8, mezo-8vum) — what the demo Link-mode scrape "extracts" ===
@@ -614,10 +621,6 @@ const recipeLinks: { mealId: string; recipeId: string }[] = [
 // (nulled) display score so nulling the day view does not erase the recipe log history.
 const recentLogScore: Record<string, number> = { m1: 0.92, m2: 0.88 }
 
-// pantry-data.js:310 — loggedAt = "ma · " + (meal.slot.split("· ")[1] || meal.slot)
-function deriveLoggedAt(slot: string): string {
-  return 'ma · ' + (slot.split('· ')[1] || slot)
-}
 
 // Local view of meals with their derived recipeId + loggedAt (does not mutate fuelDay).
 interface LinkedMeal { meal: FuelMeal; recipeId: string; loggedAt: string }
@@ -625,7 +628,8 @@ const linkedMeals: LinkedMeal[] = recipeLinks
   .map(link => {
     const meal = fuelDay.meals.find(m => m.id === link.mealId)
     if (!meal) return null
-    return { meal, recipeId: link.recipeId, loggedAt: deriveLoggedAt(meal.slot) }
+    // the shape real mode returns: the meal's own ISO instant (the screen formats it in the app language)
+    return { meal, recipeId: link.recipeId, loggedAt: meal.loggedAt }
   })
   .filter((x): x is LinkedMeal => x !== null)
 
@@ -636,7 +640,8 @@ export const recipes: Recipe[] = recipesBase.map(r => {
     if (lm.recipeId !== r.id || score == null) return []
     return [{
       mealId: lm.meal.id,
-      slot: lm.meal.slot,
+      // the slot KEY, as the server sends it (the seed meal carries a Hungarian display slot)
+      slot: mealSlotKey(lm.meal) ?? lm.meal.slot,
       score,
       delta: +(score - (r.mezoFit.score ?? 0)).toFixed(2),
       loggedAt: lm.loggedAt,

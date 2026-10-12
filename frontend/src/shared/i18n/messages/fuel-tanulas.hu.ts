@@ -2,7 +2,6 @@
 // Hungarian is the source; wording = the approved prototype's `L(hu, en)` pairs. Owned by the area's builder (ADD keys here only).
 export const fuelTanulasHu = {
   // a short date as the prototype prints it (`dS`): the Hungarian form closes with a dot
-  shortDay: (date: string) => `${date}.`,
   saveFailed: 'Nem sikerült menteni, próbáld újra',
   close: 'Bezárom',
 
@@ -111,9 +110,9 @@ export const fuelTanulasHu = {
       moved: '− amit mozgással égettél',
       movedSub: 'logolt mozgás, napi átlag',
       total: '= ennyit égetsz mozgás nélkül',
-      // `*…*` = bold (see `rich()`)
-      whySure: (applied: string, simple: string, step: number) => `*Miért ${applied} és nem ${simple}?* Mert a keretedet nem ugrasztom ide egyszerre: hetente lépek felé (${step}. pont).`,
-      whyUnsure: (applied: string, simple: string, step: number) => `*Miért ${applied} és nem ${simple}?* Mert még bizonytalan vagyok, a keretedet nem ugrasztom ide egyszerre: hetente lépek felé (${step}. pont).`,
+      // `**…**` = bold (rendered by `SafeMarkdown`)
+      whySure: (applied: string, simple: string, step: number) => `**Miért ${applied} és nem ${simple}?** Mert a keretedet nem ugrasztom ide egyszerre: hetente lépek felé (${step}. pont).`,
+      whyUnsure: (applied: string, simple: string, step: number) => `**Miért ${applied} és nem ${simple}?** Mert még bizonytalan vagyok, a keretedet nem ugrasztom ide egyszerre: hetente lépek felé (${step}. pont).`,
       note: 'A valódi számítás napról napra halad, és minden mérlegelés egy kicsit pontosít rajta. Ez a kerekített, egyszerű változata.',
     },
     filtered: {
@@ -125,9 +124,9 @@ export const fuelTanulasHu = {
       suspicious: (n: number) => `${n} hiányosnak tűnő nap`,
       suspiciousText: 'Jóval a szokásos evésed alatt voltak, ezért nem vettem kevés evésnek; kihagytam őket.',
       marked: (n: number) => `${n} általad hiányosnak jelölt nap`,
-      markedText: (n: number) => (n === 1 ? 'Ezt te jelölted hiányosnak, ezért kihagytam.' : 'Ezeket te jelölted hiányosnak, ezért kihagytam őket.'),
-      dayKcal: (date: string, kcal: string) => `${date}. · ${kcal}`,
-      water: (date: string) => `Víz, nem zsír · ${date}. körül`,
+      markedText: (n: number): string => (n === 1 ? 'Ezt te jelölted hiányosnak, ezért kihagytam.' : 'Ezeket te jelölted hiányosnak, ezért kihagytam őket.'),
+      dayKcal: (date: string, kcal: string) => `${date} · ${kcal}`,
+      water: (date: string) => `Víz, nem zsír · ${date} körül`,
       waterText: (kg: string) => `A súlyod kb. ${kg} kg-ot ugrott. Ez víz és glikogén, ezért nem számoltam hízásnak.`,
       unlogged: (n: number) => `${n} nap felírás nélkül`,
       unloggedText: 'Ezekből a napokból nem tanultam semmit, és nem is tippeltem helyettük.',
@@ -135,10 +134,10 @@ export const fuelTanulasHu = {
     sure: {
       title: 'Mennyire vagyok biztos benne',
       sub: (sd: string, word: string) => `±${sd} kcal · ${word}`,
-      textLow: (sd: string) => `A mostani becslésem *±${sd} kcal* pontos. Ez még a „tanulok” szakasz: a képlettől ezért csak lépésenként távolodom.`,
-      textMedium: (sd: string) => `A mostani becslésem *±${sd} kcal* pontos. Már elég sok adatot láttam, de a keretet továbbra is csak lépésenként igazítom.`,
-      textHigh: (sd: string) => `A mostani becslésem *±${sd} kcal* pontos. Ennyi adatból már magabiztosan tanultam.`,
-      meterAria: (word: string) => `Biztonság: ${word}`,
+      textLow: (sd: string) => `A mostani becslésem **±${sd} kcal** pontos. Ez még a „tanulok” szakasz: a képlettől ezért csak lépésenként távolodom.`,
+      textMedium: (sd: string) => `A mostani becslésem **±${sd} kcal** pontos. Már elég sok adatot láttam, de a keretet továbbra is csak lépésenként igazítom.`,
+      textHigh: (sd: string) => `A mostani becslésem **±${sd} kcal** pontos. Ennyi adatból már magabiztosan tanultam.`,
+      meterAria: (word: string) => `Megbízhatóság: ${word}`,
       more: 'Minél több teljes napot és mérlegelést látok, annál biztosabb leszek.',
     },
     steps: {
@@ -164,7 +163,7 @@ export const fuelTanulasHu = {
     lastWeek: (kcal: string) => `múlt hét ${kcal}`,
     bandAria: (from: string, to: string) => `Az alap ${from}-ról ${to}-ra lépett`,
     held: (days: number, weighIns: number, minDays: number, minWeighIns: number) =>
-      `Kevés adat volt: *${days} teljes nap, ${weighIns} mérlegelés*; legalább ${minDays} és ${minWeighIns} kell. A keret nem változott.`,
+      `Kevés adat volt: **${days} teljes nap, ${weighIns} mérlegelés**; legalább ${minDays} és ${minWeighIns} kell. A keret nem változott.`,
     leftOut: 'Kihagyott napok',
     daySub: (kcal: string, status: string) => `${kcal} kcal · ${status}`,
     undo: 'Visszavonom',
@@ -190,8 +189,8 @@ export const fuelTanulasHu = {
     secFormula: (kcal: string) => `Alap · képlet szerint · ${kcal}`,
     byFormula: 'Képlet szerint · alapanyagcsere × életmód',
     learnedBase: 'Tanult alap',
-    learnedText: 'Ennyit égetsz *edzés nélkül*: a *súlytrendedből és a felírt evésedből* tanultam meg.',
-    learnedTextFormula: (kcal: string) => `Ennyit égetsz *edzés nélkül*: a *súlytrendedből és a felírt evésedből* tanultam meg. A képlet ${kcal} kcal-t mondana.`,
+    learnedText: 'Ennyit égetsz **edzés nélkül**: a **súlytrendedből és a felírt evésedből** tanultam meg.',
+    learnedTextFormula: (kcal: string) => `Ennyit égetsz **edzés nélkül**: a **súlytrendedből és a felírt evésedből** tanultam meg. A képlet ${kcal} kcal-t mondana.`,
     // the row to „Hogy tanultam?": the word and the ± are left out when the server did not send them
     learnedRow: 'Tanult alap',
     learnedRowWord: (word: string) => `Tanult alap · ${word}`,
@@ -201,7 +200,7 @@ export const fuelTanulasHu = {
     resting: (formula: string) => `Alapanyagcsere · ${formula}`,
     lifestyle: (label: string) => `Életmód-szorzó · ${label}`,
     lifestyleDefault: 'életmód',
-    formulaText: (formula: string) => `Az *alapanyagcseréd* (${formula}) szorozva az *életmód-szorzóddal*. Ennyit égetsz el egy átlagos napon *edzés nélkül*.`,
+    formulaText: (formula: string) => `Az **alapanyagcseréd** (${formula}) szorozva az **életmód-szorzóddal**. Ennyit égetsz el egy átlagos napon **edzés nélkül**.`,
     secMovementToday: (kcal: string) => `Mozgás · ma logolva · ${kcal}`,
     secMovementWeekly: (label: string, kcal: string) => `${label} · ${kcal}`,
     scheduled: 'Betáblázott mozgás',

@@ -9,7 +9,7 @@ export default function KamraSkeleton() {
   const M = useM()
   const K = M.fuelKamra
   useFrameTitle({ title: K.kamra.title, eyebrow: K.kamra.eyebrowLoading })
-  const jars: VialItem[] = KAMRA_KINDS.map(k => ({ label: K.kindCap[k], icon: KAMRA_KIND_ICON[k], pct: 0, value: '—', note: K.kamra.jarNote }))
+  const jars: VialItem[] = KAMRA_KINDS.map(k => ({ label: K.kindCap[k], icon: KAMRA_KIND_ICON[k], pct: 0, value: '—', note: K.kamra.jarNote(0) }))
   return (
     <Page className="fp-kamra">
       <Hero role="status" aria-label={K.kamra.loadingVerdict} label={K.kamra.loadingLabel} verdict={K.kamra.loadingVerdict} sub={K.kamra.loadingSub}>

@@ -1,16 +1,6 @@
 /* ── Folyadék · Fuel · tanulas (mezo-n4wf5.5, slice F5) ── area D · Tanulás (learning page) + the energy, weekly-learning and water sheets. Rules of this area only, class prefix `.ft-`; shared pieces live in folyadek-kit.css (`.fo-`) and folyadek-fuel-kozos.css (`.fx-`).
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
-/* ── the hero with its graphic ABOVE the verdict (fuel.js `gHero`: label · graphic · verdict · sub · actions) ── the kit
-   `Hero` renders children after the sub; this area's hero orders them. `::after` is the closing liquid strip of a hero
-   without actions — it must stay last. */
-.ft-hero { display: flex; flex-direction: column; }
-.ft-hero > * { order: 2; }
-.ft-hero > .fo-hero-lbl { order: 0; }
-.ft-hero > .ft-hg { order: 1; }
-.ft-hero > .fo-hero-acts { order: 3; }
-.ft-hero::after { order: 4; }
-
 /* the two conditions of a first learned week, as levels (`.fu-need`) */
 .ft-need { display: grid; gap: 10px; margin: 12px 0 14px; }
 .ft-need > span > small { display: block; margin-bottom: 4px; font-size: 12px; color: var(--fo-sub); }
@@ -19,6 +9,9 @@
 .ft-dot { display: inline-block; width: 8px; height: 10px; margin-left: 7px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: var(--dom);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--dom) 22%, transparent); vertical-align: 1px; }
 .ft-dot.hold { background: none; box-shadow: inset 0 0 0 2px var(--dom); }
+/* on a link that stands on a hero's liquid row (Mai's „Miből jön össze?") the drop is white (fuel.js `.fu-dot`) */
+.fo-hero-acts .fo-lk > .ft-dot { background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
+.fo-hero-acts .fo-lk > .ft-dot.hold { background: none; box-shadow: inset 0 0 0 2px #fff; }
 
 /* ── charts (`.fh-chart`) ── */
 .ft-chart { display: block; width: 100%; height: auto; margin-top: 12px; overflow: visible; }
@@ -54,13 +47,6 @@
 .ft-state { margin-top: 0; }
 
 /* ── sheets ── the tinted result line (`.fx-tot`) */
-.ft-tot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 16px;
-  background: color-mix(in srgb, var(--dom) 10%, #fff); }
-.ft-tot > span { min-width: 0; font-size: 15px; font-weight: 700; color: var(--fo-ink); }
-.ft-tot > span > small { display: block; font-size: 12.5px; font-weight: 500; color: var(--fo-sub); }
-.ft-tot > b { font-family: var(--ff-display); font-size: 26px; font-weight: 800; letter-spacing: -.8px; white-space: nowrap; color: var(--fo-ink); }
-.ft-tot > b > small { margin-left: 4px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); }
-.ft-tot + .fo-txt { margin-top: 10px; }
 
 /* a step of the simple calculation (`.fu-gr`): bubble · label + sub · value, and the running level under them */
 .ft-gr { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 10px; padding: 7px 0; }

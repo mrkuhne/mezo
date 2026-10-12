@@ -3,7 +3,6 @@ import { plural } from '../plural'
 import type { fuelMaiHu } from './fuel-mai.hu'
 
 export const fuelMaiEn: Shape<typeof fuelMaiHu> = {
-  betweenMeals: (time) => `Between meals · ${time}`,
   dayNav: {
     prev: 'Previous day',
     next: 'Next day',
@@ -29,7 +28,7 @@ export const fuelMaiEn: Shape<typeof fuelMaiHu> = {
       over: 'over the budget',
       overEstimate: 'around the budget',
     },
-    skipped: (labels, kcal) => `|${labels} skipped| · ${kcal} kcal dropped out of the day`,
+    skipped: (labels, kcal) => `**${labels} skipped** · ${kcal} kcal dropped out of the day`,
     log: 'Log a meal',
     logPast: 'Add to this day',
     why: 'How does it add up?',
@@ -130,8 +129,6 @@ export const fuelMaiEn: Shape<typeof fuelMaiHu> = {
     skip: 'Skip',
     skipDone: 'I skipped it',
     mealFallback: 'Meal',
-    cellKnown: (name, grams) => `${name} ${grams} g`,
-    cellNone: (name) => `${name} no data`,
     empty: 'There is no planned meal window yet today. Log anything, any time.',
   },
   page: {
@@ -152,7 +149,7 @@ export const fuelMaiEn: Shape<typeof fuelMaiHu> = {
     suspicious: 'This day looked incomplete, so I left it out',
     markedIncomplete: 'You marked this day incomplete: I leave it out of the learning',
     confirmedComplete: 'You marked this day complete: it counts towards the learning',
-    todayNote: 'Today is counted next Monday. Your mark is saved until then.',
+    todayNote: 'I count today in next Monday. I save your mark in the meantime.',
     what: 'What does this mean?',
     undo: 'Undo',
     incomplete: 'It was incomplete',
@@ -173,7 +170,7 @@ export const fuelMaiEn: Shape<typeof fuelMaiHu> = {
     cardAria: 'Gentle mode · no calorie target today',
     noTarget: 'No calorie target today.',
     lead: 'Rest, drink, and eat when you can. We let the numbers go for now.',
-    eaten: (kcal) => `|${kcal} kcal| so far today; we do not measure it against anything.`,
+    eaten: (kcal) => `**${kcal} kcal** so far today; we do not measure it against anything.`,
     eatenNone: 'You can log what you eat. We do not measure it against anything.',
     waterAria: 'Log water',
     waterValue: (now, target) => `${now} / ${target} l`,

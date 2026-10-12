@@ -19,7 +19,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { fmtGrouped } from '@/shared/lib/format'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { Acts, Btn, FoSheetHead, Lab, Lk, Note, St, Txt } from '@/shared/ui/folyadek'
-import { GLY_COLOR, GlyBand, GlyMini, Tip } from '@/features/fuel/components/folyadek'
+import { GLY_COLOR, GlyBand, GlyMini, Lgd, Tip, type LgdKind } from '@/features/fuel/components/folyadek'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { hitOf, hitLabel, durHu, windowReasonCopy } from '@/features/fuel/logic/mealWindow'
 import { mealForecast } from '@/features/fuel/logic/mealForecast'
@@ -139,12 +139,11 @@ export function MealClockBox({ tile, row, day, next, onClose, onOpenGlycemic }: 
           </div>
 
           <DayDial tile={tile} day={day} window={window} loggedAt={row?.time ?? null} hitIn={hit ? hit.kind === 'in' : true} />
-          <div className="fe-lg">
-            <span><i className="liq" />{tile.label}</span>
-            <span><i className="oth" />{C.legend.other}</span>
-            {day.training && <span><i className="trn" />{C.legend.training}</span>}
-            <span><i className="ngt" />{C.legend.sleep}</span>
-          </div>
+          <Lgd center className="fe-lg" items={[
+            ['liq', tile.label], ['oth', C.legend.other],
+            ...(day.training ? [['trn', C.legend.training] as [LgdKind, string]] : []),
+            ['ngt', C.legend.sleep],
+          ]} />
 
           {!row && (
             <>

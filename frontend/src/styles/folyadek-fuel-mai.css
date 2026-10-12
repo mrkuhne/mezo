@@ -13,34 +13,29 @@
 /* the date is the calendar's trigger (shared/ui/DatePicker): here it wears the pager's title */
 .fa-dn-mid .dp-wrap { display: block; }
 .fa-dn-mid .dp-trigger { position: relative; display: inline-block; max-width: 100%; padding: 0; font-family: var(--ff-display); font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--fo-ink); }
-:lang(hu) .fa-dn-mid .dp-trigger::first-letter { text-transform: lowercase; }
 .fa-dn-mid .dp-trigger::after { content: ''; position: absolute; left: -8px; right: -8px; top: 50%; height: 44px; transform: translateY(-50%); }
+/* the calendar popover of the pager: the selected day wears the domain's liquid, today is ringed in it (the shared
+   DatePicker's lavender is the old skin's; the pager is its only consumer) */
+.fa-dn-mid .dp-day.is-sel { color: #fff; background: linear-gradient(135deg, var(--liq1), var(--liq2)); box-shadow: 0 8px 14px -8px var(--liq2); }
+.fa-dn-mid .dp-day.is-today { box-shadow: inset 0 0 0 1.5px var(--dom); }
+.fa-dn-mid .dp-day.is-sel.is-today { box-shadow: 0 8px 14px -8px var(--liq2); }
+.fa-dn-mid .dp-day:focus-visible, .fa-dn-mid .dp-nav:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 1px; }
 
 /* ── the hero: the day's bowl (FuelEnergyHero, and the plain faces of FuelMaiPage) ── fuel.js `bowlHero` (`.fu-bh`)
-   The kit hero draws label → verdict → sub → children; here the graphic stands between the label and the verdict. */
-.fo-hero.fa-hero { display: flex; flex-direction: column; }
-.fa-hero > .fo-hero-lbl { order: -2; }
-.fa-hero > .fx-bg { order: -1; margin: 16px 0 12px; }
+   The bowl is the kit hero's `graphic` (between the label and the verdict). */
+.fa-hero > .fx-bg { margin: 16px 0 12px; }
 .fa-hero > .fo-hero-verdict { margin-top: 0; }
 .fa-hero.est .fx-bg-n > b { color: var(--fo-sub); }
 .fa-skl { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin-top: 12px; padding: 6px 12px 6px 6px; border: 0; border-radius: 999px; cursor: pointer; text-align: left;
   font-family: var(--ff-body); font-size: 12.5px; line-height: 1.3; color: var(--fo-sub); background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
 .fa-skl > span:last-child { flex: 1; min-width: 0; }
-.fa-skl b { color: var(--fo-ink); }
+.fa-skl strong { color: var(--fo-ink); }
 .fa-skl:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
-/* the weekly-learning drop (area D's `WeeklyLearningDot`, `.ft-dot`) on the „Miből jön össze?" link stands on the liquid: white (fuel.js `.fu-dot`) */
-.fa-eql > .ft-dot { background: #fff; box-shadow: 0 0 0 3px rgba(255, 255, 255, .35); }
-.fa-eql > .ft-dot.hold { background: none; box-shadow: inset 0 0 0 2px #fff; }
 
 /* ── the equation sheet ── fuel.js `eq`: `.fu-eqb`, `.fu-eqc`, `.fx-tot`, `.fu-pend` */
 .fa-eqb { margin: 8px 0 12px; }
 .fa-eqc { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11.5px; font-weight: 600; color: var(--fo-sub); }
 .fa-pend { display: block; margin-top: 2px; font-style: normal; font-weight: 650; color: var(--dom); }
-.fa-tot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 14px; border-radius: 16px; background: color-mix(in srgb, var(--dom) 10%, #fff); }
-.fa-tot > span > strong { display: block; font-size: 15px; font-weight: 700; color: var(--fo-ink); }
-.fa-tot > span > small { display: block; font-size: 12.5px; font-weight: 500; color: var(--fo-sub); }
-.fa-tot > b { font-family: var(--ff-display); font-size: 26px; font-weight: 800; letter-spacing: -.8px; white-space: nowrap; color: var(--fo-ink); }
-.fa-tot > b > small { margin-left: 4px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); }
 
 /* ── the five macro vials (FuelMacroRings) ── fuel.js `.fu-mac` */
 .fa-mac > .fo-vials { gap: 8px; }
@@ -92,10 +87,7 @@
 .fa-gl > small { font-size: 11px; font-weight: 700; white-space: nowrap; }
 .fa-gl > small > i { display: block; font-style: normal; font-weight: 500; color: var(--fo-sub); }
 .fa-gl:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
-.fa-gh .fo-hero-sub b { color: var(--fo-ink); white-space: nowrap; }
-.fa-easy.fo-chips > span { padding: 5px 11px; background: color-mix(in srgb, var(--dom) 6%, #fff); box-shadow: none; }
-/* fuel.js `.fu-chips`: plain pills, without the kit chip's leading drop */
-.fa-easy.fo-chips > span::before { content: none; }
+.fa-gh .fo-hero-sub strong { color: var(--fo-ink); white-space: nowrap; }
 
 /* ── „Miért marad ki?" (MealSkipSheet) ── fuel.js `.fu-why` */
 .fa-whyg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 4px 0 6px; }

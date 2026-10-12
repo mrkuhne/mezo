@@ -7,6 +7,7 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { KamraItemDetailPage, inputFromItem } from '@/features/fuel/pages/KamraItemDetailPage'
 import { usePantry } from '@/data/hooks'
 import { ingredients } from '@/data/fuel/pantry'
+import { pantryWhen } from '@/features/fuel/logic/pantryProvenance'
 import type { PantryItem } from '@/data/types'
 
 // KamraItemDetailPage reads usePantry (a dual-mode TanStack query). Pin mock mode.
@@ -111,8 +112,9 @@ test('a kamraelem részletlapja mutatja a forrást és az időt', () => {
   const src = screen.getByRole('region', { name: /Forrás/i })
   expect(within(src).getByText(/fotó|link|katalógus|kézi/i)).toBeInTheDocument()
   expect(within(src).getByText(/^Így került a polcra: (fotó|link|katalógus|kézi)$/)).toBeInTheDocument()
-  // a seed `scrapedAt`-je a felvétel ideje — kitalált dátumot nem gyártunk
-  expect(within(src).getByText(new RegExp(ingredients[0].scrapedAt!.split(' ·')[0]))).toBeInTheDocument()
+  // a seed `scrapedAt`-je (ISO, ahogy a szerver küldi) a felvétel ideje — a lap a nyelv szerint írja ki, kitalált dátum nincs
+  expect(ingredients[0].scrapedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/)
+  expect(within(src).getByText(new RegExp(`· ${pantryWhen(ingredients[0].scrapedAt)!.replace(/\./g, '\\.')}$`))).toBeInTheDocument()
 })
 
 // A szerver ISO-időpontot küld (adat): a dátum és az óra itt készül, a nyelv szerint.
@@ -124,7 +126,7 @@ test('ISO scrapedAt is formatted on the client (month, day, time)', () => {
   })
   renderDetail('iso', qc)
   const src = screen.getByRole('region', { name: /Forrás/i })
-  expect(within(src).getByText(/· Máj 20 · 09:14$/)).toBeInTheDocument()
+  expect(within(src).getByText(/· máj\. 20\. · 09:14$/)).toBeInTheDocument()
 })
 
 test('időpont nélküli tételnél a forrás-kártya megmondja, hogy nincs rögzítve', () => {

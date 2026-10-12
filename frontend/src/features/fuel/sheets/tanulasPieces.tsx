@@ -1,11 +1,7 @@
 // Fuel · Tanulás (area D) — the small local pieces the learning page and its sheets share (Folyadék F5, mezo-n4wf5.5).
 // Prototype: fuel.js `bandG`, `.fx-tot`, `.fu-eq3`. Styles: `styles/folyadek-fuel-tanulas.css` (`.ft-`).
+// A catalog sentence with a bold run is `**…**` rendered by the shared `SafeMarkdown` (one recipe for the whole app).
 import { Fragment, useId, type ReactNode } from 'react'
-
-/** One catalog sentence with its emphasis: `*…*` marks the bold part, so the sentence stays ONE message. */
-export function rich(text: string): ReactNode {
-  return text.split('*').map((part, i) => (i % 2 ? <b key={i}>{part}</b> : <Fragment key={i}>{part}</Fragment>))
-}
 
 /** A value inside its ± band on one horizontal vessel (`bandG`): the band is the liquid, the ring is the value, the dashed
  *  tick is what it is compared with (the formula, last week). The scale is centred on the value, wide enough for the band
@@ -38,16 +34,6 @@ export function BandG({ value, sd, valueLabel, tick, tickLabel, label }: {
       <circle cx={X(value).toFixed(1)} cy="47" r="10" fill="#fff" stroke="var(--liq2)" strokeWidth="4.5" />
       <text className="big" x={X(value).toFixed(1)} y="15" textAnchor="middle">{valueLabel}</text>
     </svg>
-  )
-}
-
-/** The tinted result line (`.fx-tot`): what it is on the left, the big number on the right. */
-export function Tot({ label, sub, value, unit }: { label: ReactNode; sub?: ReactNode; value: ReactNode; unit?: ReactNode }) {
-  return (
-    <div className="ft-tot">
-      <span>{label}{sub != null && <small>{sub}</small>}</span>
-      <b>{value}{unit != null && <small>{unit}</small>}</b>
-    </div>
   )
 }
 

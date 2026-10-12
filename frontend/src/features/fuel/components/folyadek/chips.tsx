@@ -1,7 +1,7 @@
 // Fuel · Folyadék chips and tags (mezo-n4wf5.5). Prototype: fuel.js `scoreChip`, `gluChip`, `gMini`, `gband`, `.fu-tags`.
 import type { ReactNode } from 'react'
 import { useM } from '@/shared/i18n'
-import { fmtNum } from '@/shared/lib/format'
+import { fmtFixed } from '@/shared/lib/format'
 import { Bub } from '@/shared/ui/folyadek'
 import type { GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
 
@@ -57,7 +57,7 @@ export function ScoreChip({ score, onOpen, big }: { score: number | null; onOpen
   const M = useM()
   const S = M.fuelKozos.score
   if (score == null) return <span className={cx('fx-chip sc pend', big && 'big')}><Bub icon="t-other" size={big ? 30 : 24} />{S.pending}</span>
-  const value = fmtNum(score, 1)
+  const value = fmtFixed(score, 1)
   const inner = <><Bub icon="t-score" size={big ? 30 : 24} />{value}</>
   return onOpen
     ? <button type="button" className={cx('fx-chip sc', big && 'big')} onClick={onOpen} aria-label={S.aria(value)}>{inner}</button>

@@ -80,6 +80,7 @@ it('renders every export once with realistic props and logs no console error', (
           <K.Select aria-label="Napszak"><option>Reggel</option></K.Select>
           <K.Big value="7" unit="/ 10" note="energia" left={<K.Jar pct={70} size={66} />} right={<K.Bub icon="t-bolt" size={52} />} />
           <K.Big value="2 060" unit="kcal ma" aria-label="Összkép" onClick={() => {}} />
+          <K.RemoveChips items={[{ key: 'meat', label: 'Hús', ariaLabel: 'Hús szűrő levétele', onRemove: () => {} }]} />
           <K.Pills><K.Pill on icon="t-bolt">Energia</K.Pill><K.Pill>Hangulat <small>· új</small></K.Pill></K.Pills>
           <K.Why icon="t-info">A nap kérdése.</K.Why>
           <K.Txt>Három területről van adat.</K.Txt>
@@ -142,8 +143,8 @@ it('renders every export once with realistic props and logs no console error', (
     'Page', 'Foot', 'TwoBtn', 'Btn', 'Lk', 'Acts', 'Pill', 'Pills', 'Seg', 'St', 'Chips', 'Facts', 'Note', 'Txt', 'Why', 'Lab', 'Empty', 'ErrorRow', 'Head',
     'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big',
     'Tubes', 'Caps', 'LevelMarks', 'Split', 'Pour', 'Legend', 'DropsMeter', 'EmptyTank', 'Skel', 'Box', 'Tags', 'Stepper', 'Slider', 'Pair', 'SheetActs', 'InfoSheet',
-    'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass', 'RowEnd', 'TitleRow',
-    'Stat', 'StatGrid', 'Switch', 'SearchField']
+    'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass', 'useSvgId', 'RowEnd', 'TitleRow',
+    'Stat', 'StatGrid', 'Switch', 'SearchField', 'RemoveChips']
   const known = [...rendered, 'Wave', 'memberLabel', 'memberMeta', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar', 'starState', 'ratioStars', 'CEREMONY_MS']
   expect(Object.keys(K).filter((k) => !known.includes(k))).toEqual([])
   expect(container.querySelector('[data-testid="pg"]')).toHaveClass('fo-page', 'fo-dusk', 'has-foot', 'nonav')

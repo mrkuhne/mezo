@@ -98,7 +98,7 @@ test('no initialSlot: the AI-proposed slot wins (mezo-53su)', async () => {
   vi.setSystemTime(new Date('2026-07-02T22:10:00'))
   try {
     await openAiPanel()
-    expect(screen.getByRole('button', { name: 'Snack' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Uzsonna' })).toHaveAttribute('aria-pressed', 'true')
     await userEvent.type(screen.getByRole('textbox', { name: 'Mit ettél?' }), 'csirkés wrap')
     await userEvent.click(screen.getByRole('button', { name: 'Elemzés' }))
     await screen.findByText('Csirkés wrap')

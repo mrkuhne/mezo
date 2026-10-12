@@ -1,3 +1,4 @@
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -8,7 +9,8 @@ import { Acts, Btn, FoSheetHead, Lab, Lk, Note, Row, Txt } from '@/shared/ui/fol
 import { useDismissWeeklyCard, useIntakeDayMark } from '@/data/fuel/expenditureHooks'
 import type { ExpenditureWeeklyCard, IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
 import { CONFIDENCE_WORD, DAY_STATUS, dayCounts, huWeekRange, huWeekdayDate, markChangeLine, round10, signed } from '@/features/fuel/sheets/learnedBaseFormat'
-import { BandG, Tot, rich } from '@/features/fuel/sheets/tanulasPieces'
+import { BandG } from '@/features/fuel/sheets/tanulasPieces'
+import { Tot } from '@/features/fuel/components/folyadek'
 
 // ============================================================
 // Mezo · WeeklyLearningSheet — „Heti tanulás” (mezo-3n2so, learned expenditure part 2, spec §5.1).
@@ -84,7 +86,7 @@ export function WeeklyLearningSheet({ card, onClose }: { card: ExpenditureWeekly
               />
             </>
           )}
-          {hold && <Txt className="ft-held">{rich(W.held(card.usableDays, card.weighInDays, card.minUsableDays, card.minWeighInDays))}</Txt>}
+          {hold && <Txt className="ft-held"><SafeMarkdown text={W.held(card.usableDays, card.weighInDays, card.minUsableDays, card.minWeighInDays)} /></Txt>}
 
           {days.length > 0 && (
             <>

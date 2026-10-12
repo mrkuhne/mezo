@@ -1,7 +1,7 @@
 // Fuel · Folyadék macro pieces (mezo-n4wf5.5). Prototype: fuel.js `mk`, `macroVials` / `macroV`, `mealCells`, `m3`, `nutri`.
 // One colour per macro everywhere (`MACRO_COLOR`); words from the `fuelKozos` catalog; numbers through format.ts.
 import { useM } from '@/shared/i18n'
-import { fmtNum } from '@/shared/lib/format'
+import { fmtGrouped, fmtNum } from '@/shared/lib/format'
 import { Level, Mini, Vials, type VialItem } from '@/shared/ui/folyadek'
 
 /** The stable category colours of the Fuel domain (tokens in folyadek-fuel-kozos.css). */
@@ -39,12 +39,22 @@ export function MacroVials({ p, c, f, height = 104, onPick }: {
 }
 
 /** A meal's four small capsules (`mealCells`): protein / carbs / fat levels are the shares of the meal's OWN energy, fibre is
- *  the share of the day's fibre amount; the number is the gram. `fiber: null` = no data („—"). */
+ *  the share of the day's fibre amount; the number is the gram. `fiber: null` = no data („—"). A MISSING macro gram is an
+ *  honest „—", and then NO capsule shows a share: a truncated composition has no energy split. */
 export function MealCells({ protein, carbs, fat, fiber, fiberTarget }: {
-  protein: number; carbs: number; fat: number; fiber: number | null; fiberTarget: number
+  protein: number | null; carbs: number | null; fat: number | null; fiber: number | null; fiberTarget: number
 }) {
   const M = useM()
   const K = M.fuelKozos
+  if (protein == null || carbs == null || fat == null) {
+    const cells: Array<['protein' | 'carbs' | 'fat' | 'fiber', number | null]> = [['protein', protein], ['carbs', carbs], ['fat', fat], ['fiber', fiber]]
+    const partial = cells.map(([key, g]) => (g == null ? K.cells.none(K.macroLower[key]) : K.cells.known(K.macroLower[key], fmtNum(g)))).join('; ')
+    return (
+      <span className="fx-cells" role="img" aria-label={partial}>
+        {cells.map(([key, g]) => <Mini key={key} pct={0} color={MACRO_COLOR[key]} value={g == null ? '—' : `${fmtNum(g)} g`} label={K.macroShort[key]} />)}
+      </span>
+    )
+  }
   const sh = energyShares(protein, carbs, fat)
   const fp = fiber == null || !(fiberTarget > 0) ? null : Math.min(100, Math.round((fiber / fiberTarget) * 100))
   const label = K.cells.aria(fmtNum(protein), sh.p, fmtNum(carbs), sh.c, fmtNum(fat), sh.f,
@@ -86,13 +96,15 @@ export function Nutri({ fiber, sugar, salt, satFat }: { fiber: number | null; su
   )
 }
 
-/** A line's three macros in tinted cells (`.fu-lnm`): grams, `null` = „—". */
-export function MacroTriple({ p, c, f }: { p: number | null; c: number | null; f: number | null }) {
+/** A line's three macros in tinted cells (`.fu-lnm`): grams, `null` = „—". With `kcal` (a number, or `null` for „—") a
+ *  fourth cell leads the row in the domain's tint: an imported item's draft, one eaten serving of a recipe. */
+export function MacroTriple({ p, c, f, kcal, className }: { p: number | null; c: number | null; f: number | null; kcal?: number | null; className?: string }) {
   const M = useM()
   const K = M.fuelKozos.macroShort
   const cells: Array<['protein' | 'carbs' | 'fat', number | null]> = [['protein', p], ['carbs', c], ['fat', f]]
   return (
-    <span className="fx-lnm">
+    <span className={className ? `fx-lnm ${className}` : 'fx-lnm'}>
+      {kcal !== undefined && <span style={{ ['--c' as string]: 'var(--dom)' }}><b>{kcal == null ? '—' : fmtGrouped(kcal)}</b><small>kcal</small></span>}
       {cells.map(([key, g]) => <span key={key} style={{ ['--c' as string]: MACRO_COLOR[key] }}><b>{g == null ? '—' : `${fmtNum(g)} g`}</b><small>{K[key]}</small></span>)}
     </span>
   )

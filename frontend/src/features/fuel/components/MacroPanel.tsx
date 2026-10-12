@@ -26,7 +26,7 @@ export function MacroPanel({ dim }: { dim: MacroDimension }) {
       ]} />
       <Note>{S.macroFrame(fmtNum(dim.kcalShareOfDay))}</Note>
       {/* server text (a scoring remark), shown as it arrives */}
-      {dim.notes && <Note className="fe-warn">{dim.notes}</Note>}
+      {dim.notes && <Note tone="warn">{dim.notes}</Note>}
     </>
   )
 }

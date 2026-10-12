@@ -62,8 +62,9 @@ export function FuelStackProtocolPage() {
         <>
           <Hero className="fk-ghero" label={M.protocol.label}
             verdict={pending ? M.protocol.loading : error ? M.protocol.error : M.protocol.empty}
-            actions={empty ? <Btn onClick={addNew}>{M.common.setUpNew}</Btn> : undefined}>
-            <div className="fk-g"><StackCaps bands={[]} /></div>
+            actions={empty ? <Btn onClick={addNew}>{M.common.setUpNew}</Btn> : undefined}
+            graphic={<div className="fk-g"><StackCaps bands={[]} /></div>}
+          >
           </Hero>
           <Card>
             {!empty && <Row icon="t-gear" title={M.common.setUpNew} sub={M.common.setUpNewSub} onClick={addNew} />}
@@ -77,8 +78,8 @@ export function FuelStackProtocolPage() {
               : pinnedCount === rows.length ? M.protocol.verdictAll
                 : pinnedCount === 1 ? M.protocol.verdictOne : M.protocol.verdictSome(pinnedCount)}
             sub={ready ? M.protocol.sub(protocol.version, Math.round(protocol.confidence * 100)) : M.protocol.subPlain}
-            actions={<Btn onClick={addNew}>{M.common.setUpNew}</Btn>}>
-            <div className="fk-g">
+            actions={<Btn onClick={addNew}>{M.common.setUpNew}</Btn>}
+            graphic={<div className="fk-g">
             <div className="fk-zv" role="img" aria-label={M.protocol.vialsAria}>
               <Vials size="sm" height={96} items={slots.map(slot => ({
                 label: slot.label, icon: ZONE_ICON[slot.zone] ?? FALLBACK_ICON,
@@ -88,7 +89,8 @@ export function FuelStackProtocolPage() {
             <Facts items={[
               [rows.length, M.protocol.factItems], [slots.length, M.protocol.factSlots], [pinnedCount, M.protocol.factPinned],
             ]} />
-            </div>
+            </div>}
+          >
           </Hero>
 
           <Section n={1} title={M.protocol.slots} />

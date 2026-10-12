@@ -21,10 +21,10 @@
 import { useState } from 'react'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { useM } from '@/shared/i18n'
-import { fmtGrouped, fmtNum } from '@/shared/lib/format'
-import { Acts, Btn, Bub, Card, Empty, Lk, Mini, St } from '@/shared/ui/folyadek'
+import { fmtGrouped } from '@/shared/lib/format'
+import { Acts, Btn, Bub, Card, Empty, Lk, St } from '@/shared/ui/folyadek'
 import type { Icon3DName } from '@/shared/ui/clay'
-import { Dial, GlyChip, MACRO_COLOR, MealCells, PlainCup, ScoreChip, SlotCup, Tip } from '@/features/fuel/components/folyadek'
+import { Dial, GlyChip, MealCells, PlainCup, ScoreChip, SlotCup, Tip } from '@/features/fuel/components/folyadek'
 import { glycemicBand } from '@/features/fuel/logic/glycemicBand'
 import { GlycemicGlassFor } from '@/features/fuel/components/GlycemicGlass'
 import { durHu } from '@/features/fuel/logic/mealWindow'
@@ -56,36 +56,9 @@ export interface MealSkipActions {
 /** The block's glyph by meal kind (prototype `SLOTS[i].ic`). */
 const SLOT_ICON: Record<MealSlot, Icon3DName> = { breakfast: 't-sun', lunch: 't-bowl', snack: 't-snack', dinner: 't-moon' }
 
-/** @deprecated The old score chip's name, kept ONLY until the meal page (area C) and the recipe page (area H)
- *  switch to the shared `ScoreChip` (plan § „The cuts"); the controller deletes this export then. */
-export function FuelScoreChip({ scorePct, onOpen, size }: {
-  scorePct: number | null; onOpen?: () => void; size?: 'big'; unboxed?: boolean; index?: number
-}) {
-  return <ScoreChip score={scorePct == null ? null : scorePct / 10} onOpen={onOpen} big={size === 'big'} />
-}
-
 /** The row's band from the stored facts — the SAME derivation the meal page's box gets. */
 function bandOf(row: DoneMealRow) {
   return glycemicBand({ c: row.carbsG, sugarG: row.sugarG, fiberG: row.fiberG, p: row.proteinG, f: row.fatG })
-}
-
-/** A meal's four capsules. All three macros known → the shared `MealCells`; a missing gram is an honest „—"
- *  and then NO capsule shows a share (a truncated composition has no energy split). */
-function Cells({ row, fiberTargetG }: { row: DoneMealRow; fiberTargetG: number }) {
-  const M = useM()
-  const { proteinG: p, carbsG: c, fatG: f, fiberG } = row
-  if (p != null && c != null && f != null) {
-    return <MealCells protein={p} carbs={c} fat={f} fiber={fiberG} fiberTarget={fiberTargetG} />
-  }
-  const K = M.fuelKozos
-  const B = M.fuelMai.blocks
-  const cells: Array<['protein' | 'carbs' | 'fat' | 'fiber', number | null]> = [['protein', p], ['carbs', c], ['fat', f], ['fiber', fiberG]]
-  const label = cells.map(([key, g]) => (g == null ? B.cellNone(K.macroLower[key]) : B.cellKnown(K.macroLower[key], fmtNum(g)))).join('; ')
-  return (
-    <span className="fx-cells" role="img" aria-label={label}>
-      {cells.map(([key, g]) => <Mini key={key} pct={0} color={MACRO_COLOR[key]} value={g == null ? '—' : `${fmtNum(g)} g`} label={K.macroShort[key]} />)}
-    </span>
-  )
 }
 
 /** The skipped window's body (Kihagyás S3; prototype `blockCard` skip branch): the reason as an unboxed hint and
@@ -194,7 +167,7 @@ function BlockCard({ tile, rows, nowHHmm, fiberTargetG, skipping, mode, onLogInt
               <strong>{r.name || B.mealFallback}</strong>
             </button>
             <div className="fa-mb">
-              <Cells row={r} fiberTargetG={fiberTargetG} />
+              <MealCells protein={r.proteinG} carbs={r.carbsG} fat={r.fatG} fiber={r.fiberG} fiberTarget={fiberTargetG} />
               {/* the two chips are one group, so at 320 px they wrap TOGETHER under the capsules. A row without
                   carbohydrate data has no band and no chip — nothing is guessed. */}
               <span className="fa-chips">
@@ -257,6 +230,7 @@ export function FuelMealBlocks({ lane, meals, day, fiberTargetG, skipping, fuelM
   const glucoseRow = meals.find(m => m.mealId === glucoseFor) ?? null
   const glucoseBand = glucoseRow ? bandOf(glucoseRow) : null
   const clockTile = lane.tiles.find(t => t.key === clockFor) ?? null
+  const clockRow = clockTile ? meals.find(m => m.mealId === clockTile.mealId) ?? null : null
   // mealCount counts only the REAL windowed tiles (the same set as `windows` below) — a surplus extra log
   // must not distort the „n-th meal of M" number (mezo-6g52f minor a).
   const windowedTiles = lane.tiles.filter(t => t.windowFrom && t.windowTo)
@@ -281,9 +255,12 @@ export function FuelMealBlocks({ lane, meals, day, fiberTargetG, skipping, fuelM
           onOpenGlycemic={setGlucoseFor} />
       ))}
       {clockTile && (
-        <MealClockBox tile={clockTile} row={meals.find(m => m.mealId === clockTile.mealId) ?? null}
+        <MealClockBox tile={clockTile} row={clockRow}
           day={clockDay} next={lane.tiles[lane.tiles.indexOf(clockTile) + 1] ?? null}
-          blockColor="var(--dom)" onClose={() => setClockFor(null)} />
+          blockColor="var(--dom)" onClose={() => setClockFor(null)}
+          // „A vércukor-válasz részletei" (prototype `ora`): the clock box gives way to the blood-sugar sheet of the
+          // same meal — one sheet at a time. Without a band (no carb data, not logged) there is no link.
+          onOpenGlycemic={clockRow && bandOf(clockRow) ? () => { setClockFor(null); setGlucoseFor(clockRow.mealId) } : undefined} />
       )}
       {/* the same sheet the meal page's fourth card opens — one component, one derivation, two doors */}
       {glucoseBand && glucoseRow && (

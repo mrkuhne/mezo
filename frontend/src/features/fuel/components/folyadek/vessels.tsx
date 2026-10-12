@@ -1,15 +1,13 @@
 // Fuel · Folyadék vessels (mezo-n4wf5.5): the day's bowl, the meal poured into it, a window's cup, the pot, the glass and the
 // real clock face. Prototype: docs/design_2.0/prototypes/vilagos/fuel.js (`dayBowl`, `bowlHero`, `pour`, `pk`, `slotCup`,
 // `plainCup`, `potG`, `GLASS`, `dial`). CSS: styles/folyadek-fuel-kozos.css (`.fx-`). Words: the `fuelKozos` catalog.
-import { useId, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useM } from '@/shared/i18n'
 import { fmtGrouped } from '@/shared/lib/format'
-import { Fill } from '@/shared/ui/folyadek'
+import { Fill, useSvgId } from '@/shared/ui/folyadek'
 
 const clampPct = (v: number) => Math.max(0, Math.min(100, Number.isFinite(v) ? v : 0))
 const cx = (...a: (string | false | null | undefined)[]) => a.filter(Boolean).join(' ')
-/** A per-instance id safe inside `url(#…)` (bible trap 2). */
-const useSvgId = (prefix: string) => prefix + useId().replace(/[^a-zA-Z0-9_-]/g, '')
 
 export const BOWL_D = 'M6 4 H194 C194 62 152 100 100 100 C48 100 6 62 6 4Z'
 export const BOWL_VB = '0 0 200 104'

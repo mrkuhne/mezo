@@ -24,9 +24,6 @@ export interface ProtocolView {
   occurrences: ProtocolOccurrence[]
 }
 
-const formatBuiltAt = (iso: string) =>
-  new Date(iso).toLocaleString('hu-HU', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-
 function fromItem(r: ProtocolItemResponse): ProtocolOccurrence {
   return {
     id: r.id, pantryItemId: r.pantryItemId, slotKey: r.slotKey as StackZoneKey,
@@ -46,13 +43,14 @@ export function fromProtocolView(r: ProtocolViewResponse): ProtocolView {
   return {
     protocol: {
       version: a.version,
-      builtAt: formatBuiltAt(a.builtAt),
+      // the ISO instant as the server sent it: a screen formats it through `format.ts` in the app language (F5)
+      builtAt: a.builtAt,
       source: 'Stack builder',
       status: a.status,
       itemCount: occurrences.length,
       confidence: a.confidence ?? 0,
       lastReplanReason: a.lastReplanReason ?? null,
-      history: (r.history ?? []).map(h => ({ v: h.version, when: formatBuiltAt(h.builtAt), reason: h.reason ?? '' })),
+      history: (r.history ?? []).map(h => ({ v: h.version, when: h.builtAt, reason: h.reason ?? '' })),
     },
     occurrences,
   }

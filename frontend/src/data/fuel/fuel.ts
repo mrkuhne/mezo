@@ -824,16 +824,17 @@ function zoneForTiming(timing: string): StackZoneKey | null {
 
 export const protocol: Protocol = {
   version: 3,
-  builtAt: 'ma 06:00',
+  // ISO instants, the shape real mode returns (the data layer no longer formats; a screen would use `format.ts`)
+  builtAt: '2026-05-22T06:00:00',
   source: 'Stack builder',
   status: 'active',
   itemCount: 8,
   confidence: 0.86,
   lastReplanReason: null,
   history: [
-    { v: 3, when: 'ma 06:00', reason: 'Reggeli újraszámolás · stack-poll' },
-    { v: 2, when: 'tegnap 19:30', reason: 'Vb-load alapján vacsora-idő tolva 21:15 → 21:00' },
-    { v: 1, when: 'Máj 19 · 09:00', reason: 'Hét eleji baseline' },
+    { v: 3, when: '2026-05-22T06:00:00', reason: 'Reggeli újraszámolás · stack-poll' },
+    { v: 2, when: '2026-05-21T19:30:00', reason: 'Vb-load alapján vacsora-idő tolva 21:15 → 21:00' },
+    { v: 1, when: '2026-05-19T09:00:00', reason: 'Hét eleji baseline' },
   ],
 }
 

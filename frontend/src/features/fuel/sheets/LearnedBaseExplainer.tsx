@@ -1,3 +1,4 @@
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useState, type ReactNode } from 'react'
 import { useM } from '@/shared/i18n'
 import { fmtGrouped } from '@/shared/lib/format'
@@ -9,7 +10,7 @@ import { useExpenditureExplanation } from '@/data/fuel/expenditureHooks'
 import type { ExpenditureExplanation } from '@/data/fuel/expenditureApi'
 import { LearnedBaseChart } from '@/features/fuel/sheets/LearnedBaseChart'
 import { CONFIDENCE_WORD, dec, huShortDate, huWeekRange, round10, signed } from '@/features/fuel/sheets/learnedBaseFormat'
-import { Tot, rich } from '@/features/fuel/sheets/tanulasPieces'
+import { Tot } from '@/features/fuel/components/folyadek'
 
 // „Hogy tanultam?” (mezo-y72o3) — the learned base's explainer: the „A legutóbbi hét részletei” section
 // of the learning page. Folyadék (mezo-n4wf5.5): build target fuel.js `tanulas()` section 4 + `HWT()` +
@@ -141,7 +142,7 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
             <Tot label={H.calc.total} value={`≈ ${fmtGrouped(round10(simple!))}`} unit="kcal" />
             {showWhy && (
               <Txt className="ft-why">
-                {rich((x.confidence === 'high' ? H.calc.whySure : H.calc.whyUnsure)(fmtGrouped(x.appliedBaseKcal), fmtGrouped(round10(simple!)), stepsNo))}
+                <SafeMarkdown text={(x.confidence === 'high' ? H.calc.whySure : H.calc.whyUnsure)(fmtGrouped(x.appliedBaseKcal), fmtGrouped(round10(simple!)), stepsNo)} />
               </Txt>
             )}
             <Note>{H.calc.note}</Note>
@@ -175,7 +176,7 @@ export function LearnedBaseExplainerBody({ explanation: x, reducedMotion }: {
         const text = x.confidence === 'low' ? H.sure.textLow : x.confidence === 'medium' ? H.sure.textMedium : H.sure.textHigh
         return (
           <>
-            <Txt>{rich(text(sd))}</Txt>
+            <Txt><SafeMarkdown text={text(sd)} /></Txt>
             <div className="ft-meter" role="img" aria-label={H.sure.meterAria(CONFIDENCE_WORD[x.confidence])}>
               <Level pct={meterPosition(x.posteriorSdKcal, x.confidence) * 100} height={22} />
               <div className="ft-gb3">

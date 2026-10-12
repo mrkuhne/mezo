@@ -30,6 +30,8 @@ export const fuelKozosEn: Shape<typeof fuelKozosHu> = {
     aria: (p, ps, c, cs, f, fs, fiber) =>
       `protein ${p} g, ${ps}% of the meal’s energy; carbs ${c} g, ${cs}%; fat ${f} g, ${fs}%; fibre ${fiber}`,
     fiber: (grams, pct) => `${grams} g, ${pct}% of the daily amount`,
+    known: (name, grams) => `${name} ${grams} g`,
+    none: (name) => `${name} no data`,
   },
   score: {
     pending: 'in progress',
@@ -45,8 +47,6 @@ export const fuelKozosEn: Shape<typeof fuelKozosHu> = {
   nova: { n1: 'Whole food', n2: 'Kitchen ingredient', n3: 'Processed', n4: 'Ultra-processed' },
   line: {
     remove: (name) => `Remove ${name}`,
-    less: (name) => `Less ${name}`,
-    more: (name) => `More ${name}`,
     amount: (name) => `Amount of ${name}`,
   },
   gentle: 'Gentle mode',

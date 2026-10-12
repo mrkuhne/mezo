@@ -1,13 +1,6 @@
 // Fuel · Trendek (area F) (Folyadék F5, mezo-n4wf5.5) — the words of this area's screens, sheets, states, aria-labels, placeholders and toasts.
 // Hungarian is the source; wording = the approved prototype's `L(hu, en)` pairs. Owned by the area's builder (ADD keys here only).
 export const fuelTrendekHu = {
-  // one fixed decimal (a score, a weight): „5,0" — `format.ts` drops a zero fraction, so the mark lives here
-  fixed1: (whole: string, frac: string) => `${whole},${frac}`,
-  // the week's range in the navigator: same month „Okt 5–11", across months „Szep 28 – Okt 4"
-  range: {
-    sameMonth: (startMonthDay: string, _startDay: string, _endMonthDay: string, endDay: string) => `${startMonthDay}–${endDay}`,
-    across: (startMonthDay: string, endMonthDay: string) => `${startMonthDay} – ${endMonthDay}`,
-  },
   frame: { current: 'Fuel · ez a hét', previous: 'Fuel · múlt hét' },
   nav: {
     prev: 'Múlt hét',
@@ -23,7 +16,7 @@ export const fuelTrendekHu = {
     some: (n: number) => `${n} naplózott nap van a héten.`,
     someSub: 'A hét többi része még előtted áll; üresen hagyjuk, nem találgatjuk.',
     level: 'A hétköznapok és a hétvége nagyjából egy szinten mozognak.',
-    // `**…**` = a run that never breaks (rendered by the page's `Marked`)
+    // `**…**` = a run that never breaks (rendered by `SafeMarkdown`)
     weekend: (pct: number) => `Hétvégén átlagosan **${pct}%-kal** többet ettél a keretedhez mérve, mint hétköznap.`,
     weekday: (pct: number) => `Hétköznap átlagosan **${pct}%-kal** többet ettél a keretedhez mérve, mint hétvégén.`,
     soItWent: 'Így alakult, és most már látod.',
@@ -31,8 +24,6 @@ export const fuelTrendekHu = {
   },
   week: {
     aria: 'A hét hét napja a keretéhez mérve',
-    // short weekday on a vessel, 0 = Sunday (Date#getDay)
-    dow: (day: number) => ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo'][day],
     dayRecovery: (day: string) => `${day}: kímélő nap`,
     dayLogged: (day: string, kcal: string, target: string, score: string | null) =>
       `${day}: ${kcal} kcal a ${target} kcal-os keretből, ${score == null ? 'étkezés-pont még nincs' : `étkezés-pont ${score}`}`,

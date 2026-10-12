@@ -151,8 +151,9 @@ export function FuelMaiPage() {
         {pager}
         <Hero className="fa-hero" role={isError ? 'alert' : 'status'} label={H.loadingLabel}
           verdict={isError ? H.error : H.loading} sub={isError ? H.errorSub : H.loadingSub}
-          actions={isError ? <Btn onClick={() => refetch()}>{H.retry}</Btn> : undefined}>
-          <BowlGauge plain />
+          actions={isError ? <Btn onClick={() => refetch()}>{H.retry}</Btn> : undefined}
+          graphic={<BowlGauge plain />}
+        >
         </Hero>
       </Page>
     )
@@ -180,8 +181,9 @@ export function FuelMaiPage() {
 
       {emptyPast ? (
         <Hero className="fa-hero fa-nodata" label={H.labelPast} verdict={H.noData} sub={H.pastSub}
-          actions={firstOpen ? <Btn onClick={() => logInto(firstOpen)}>{P.backfillFirst(firstOpen.label)}</Btn> : undefined}>
-          <BowlGauge plain />
+          actions={firstOpen ? <Btn onClick={() => logInto(firstOpen)}>{P.backfillFirst(firstOpen.label)}</Btn> : undefined}
+          graphic={<BowlGauge plain />}
+        >
         </Hero>
       ) : mode === 'GUIDANCE' ? (
         // GUIDANCE: no calorie target — the guidance face replaces the bowl, „Miből jön össze?" and the macros.
@@ -243,8 +245,8 @@ export function FuelMaiPage() {
       <Card className="fa-outside">
         <Row className="fa-loggeneric" icon="t-bowl" title={P.logAnything} sub={P.logAnythingSub} aria-label={P.logAnythingAria} onClick={logGeneric} />
         {!past && !yPending && yMissed > 0 && fuelY.fuelMode == null && (
-          <Row className="fa-bait" icon="t-history" title={P.bait(fmtDate(yesterday, 'monthDay'), yMissed)} sub={P.baitSub}
-            aria-label={P.baitAria(fmtDate(yesterday, 'monthDay'), yMissed)} onClick={() => navigate(`/fuel?d=${yesterday}`)} />
+          <Row className="fa-bait" icon="t-history" title={P.bait(fmtDate(yesterday, 'long'), yMissed)} sub={P.baitSub}
+            aria-label={P.baitAria(fmtDate(yesterday, 'long'), yMissed)} onClick={() => navigate(`/fuel?d=${yesterday}`)} />
         )}
       </Card>
 

@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom'
 import type { Recipe, RecipeCategory } from '@/data/types'
 import { useRecipes } from '@/data/hooks'
 import { useM } from '@/shared/i18n'
-import { fmtGrouped, fmtNum } from '@/shared/lib/format'
+import { fmtFixed, fmtGrouped } from '@/shared/lib/format'
 import type { Icon3DName } from '@/shared/ui/clay'
 import {
   Btn, Card, Empty, FrameBack, Hero, Level, Lk, Note, Page, Pill, Pills, Section, St, useFrameTitle,
@@ -85,7 +85,7 @@ function RecipeRow({ recipe, onOpen }: { recipe: Recipe; onOpen: () => void }) {
         {recipe.starred && <St tone="plan">{L.starred}</St>}
         {score == null
           ? <St tone="q">{L.scoring}</St>
-          : <St tone="ok">{L.points(fmtNum(Math.round(score * 100) / 10, 1))}</St>}
+          : <St tone="ok">{L.points(fmtFixed(Math.round(score * 100) / 10, 1))}</St>}
       </span>
     </ItemRow>
   )
@@ -123,8 +123,7 @@ export function FuelRecipesPage() {
         verdict={recipes.length === 0 ? L.verdictNone : eaten ? L.verdictFav(recipes.length, fav.timesLogged) : L.verdictNotEaten}
         sub={recipes.length === 0 ? L.subNone : eaten ? (hasLastLogged(fav) ? L.subFav(fav.name, fav.lastLogged) : fav.name) : undefined}
         actions={<Btn onClick={newRecipe}>{L.newRecipe}</Btn>}
-      >
-        {eaten ? (
+        graphic={eaten ? (
           <div className="fc-top">
             {top.slice(0, 4).map(r => (
               <button key={r.id} type="button" onClick={() => navigate(`/fuel/recipes/${r.id}`)} aria-label={L.openAria(r.name, r.timesLogged)}>
@@ -136,6 +135,7 @@ export function FuelRecipesPage() {
         ) : (
           <div className="fc-potc" aria-hidden="true"><Pot pct={0} size={120} /></div>
         )}
+      >
       </Hero>
 
       <Section n={1} title={L.filterSection} />

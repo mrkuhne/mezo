@@ -93,11 +93,10 @@ describe('LogFlowPage', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Vacsora' }))
     fireEvent.click(screen.getByRole('button', { name: /logolás · \+10 XP/i }))
-    // The flow sends the 'dinner' enum in MealInput.slot; the (shipped, frozen) data
-    // layer stores FuelMeal.slot as its Hungarian display label ('Vacsora') — so that
-    // is what surfaces on the logged meal.
+    // The flow sends the 'dinner' enum in MealInput.slot, and the mock stores it as the server does (the KEY, not a
+    // Hungarian display label — Folyadék F5): every screen names the slot from the catalog, in the app language.
     await waitFor(() => {
-      expect(day.result.current.fuel.meals.some(m => m.slot === 'Vacsora')).toBe(true)
+      expect(day.result.current.fuel.meals.some(m => m.slot === 'dinner')).toBe(true)
     })
   })
 

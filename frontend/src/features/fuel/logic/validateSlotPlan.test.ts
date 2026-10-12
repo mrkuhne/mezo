@@ -89,7 +89,7 @@ test('label_length: a label over 40 characters is an error naming the offending 
     row({ label: 'Vacsora', anchor: fixed('19:00'), budgetPct: 30 }),
   ]
   const { errors, warnings } = validateSlotPlan(rows, validCompiled, baseCtx)
-  expect(errors).toEqual([{ code: 'label_length', text: `„${longLabel}" neve túl hosszú — legfeljebb 40 karakter lehet.` }])
+  expect(errors).toEqual([{ code: 'label_length', text: `„${longLabel}" neve túl hosszú: legfeljebb 40 karakter lehet.` }])
   expect(warnings).toEqual([])
 })
 

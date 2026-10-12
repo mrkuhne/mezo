@@ -16,7 +16,7 @@ import type { PantryItem } from '@/data/types'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import type { Icon3DName } from '@/shared/ui/clay'
 import { m } from '@/shared/i18n'
-import { fmtDate } from '@/shared/lib/format'
+import { fmtDate, fmtDateTime } from '@/shared/lib/format'
 
 /** A felvétel MÓDJA, a forrás-kulcsból: fotó · link · katalógus (minden nevesített bolt) · kézi. */
 export type PantryCaptureKind = 'photo' | 'link' | 'catalogue' | 'manual'
@@ -64,17 +64,15 @@ export function pantrySourceLabel(source: PantrySourceKey | null | undefined): s
   return pantrySources[key].label
 }
 
-const ISO_MOMENT = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2}))?/
+const ISO_MOMENT = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2})?/
 
-/** Az ISO-időpont a nyelv szerinti dátummal és az órával („Máj 20 · 09:14" / "20 May · 09:14"). Az óra-perc a szerver
- *  által küldött falióra, nem számoljuk át. Ami nem ISO (a mock magja kész szöveget hordoz), az változatlanul megy ki. */
+/** Az ISO-időpont a nyelv szerinti dátummal és az órával („máj. 20. · 09:14" / "20 May · 09:14", `format.ts`). Zóna nélküli
+ *  falióra a saját számjegyeit írja ki. Ami nem ISO, az változatlanul megy ki (régi, kész szöveget hordozó sor). */
 export function pantryWhen(scrapedAt: string | null | undefined): string | null {
   const raw = scrapedAt?.trim()
   if (!raw) return null
-  const iso = ISO_MOMENT.exec(raw)
-  if (!iso) return raw
-  const date = fmtDate(iso[1], 'monthDay')
-  return iso[2] != null ? m().fuelKamra.when(date, `${iso[2]}:${iso[3]}`) : date
+  if (!ISO_MOMENT.test(raw)) return raw
+  return raw.length > 10 ? fmtDateTime(raw) : fmtDate(raw, 'short')
 }
 
 export function pantryProvenance(item: Pick<PantryItem, 'source' | 'scrapedAt'>): PantryProvenance {

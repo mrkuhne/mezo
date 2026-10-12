@@ -34,9 +34,14 @@ const FOOD_ICON: Partial<Record<CatKey, Icon3DName>> = {
 export const KAMRA_KINDS: PantryItemKind[] = ['food', 'supplement', 'stim', 'med']
 export const KAMRA_KIND_ICON: Record<PantryItemKind, Icon3DName> = { food: 't-carb', supplement: 't-supps', stim: 't-bolt', med: 't-syringe' }
 
+/** Egy ÉTEL jele a kategóriájából (prototípus `KIC`): a kamra-választó sorai és a logoló piszkozat-sorai is ezt kérik. */
+export function pantryCategoryIcon(category: string | null | undefined): Icon3DName {
+  return FOOD_ICON[(category ?? '') as CatKey] ?? 't-carb'
+}
+
 /** Egy tétel jele (prototípus `kic`): ételnél a kategória, minden másnál a fajta. */
 export function kamraItemIcon(item: { kind: PantryItemKind | string; category?: string | null }): Icon3DName {
-  if (item.kind === 'food') return FOOD_ICON[(item.category ?? '') as CatKey] ?? 't-carb'
+  if (item.kind === 'food') return pantryCategoryIcon(item.category)
   return KAMRA_KIND_ICON[item.kind as PantryItemKind] ?? 't-stack'
 }
 

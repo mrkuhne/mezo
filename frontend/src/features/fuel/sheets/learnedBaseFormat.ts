@@ -1,20 +1,14 @@
 // Formatting helpers for the „Hogy tanultam?” explainer (mezo-y72o3).
 // The words live in the catalog (`fuelLogika.learned`) and are read when CALLED / READ (the exported
 // label maps are getter-backed), so every importer follows a language switch without an edit.
-// Dates: English goes through `format.ts`; Hungarian keeps this sheet's own short forms („szept. 14",
-// „Sze, szept. 23.") — `format.ts` has no dotted lower-case month / one-letter weekday style.
+// Dates and decimals go through `format.ts` (F5): the short day is „szept. 14." / "14 Sep", a reviewed week „szept. 21–27." /
+// "21–27 Sep", one of its days „Sze, szept. 23." / "Wed, 23 Sep". The names below are kept for their importers.
 import type { ExpenditureHistory, IntakeDayMarkResult, IntakeDayStatus } from '@/data/fuel/expenditureApi'
-import { fmtDate, locale } from '@/shared/lib/format'
-import { getLang, m } from '@/shared/i18n'
+import { fmtDate, fmtFixed, fmtRange } from '@/shared/lib/format'
+import { m } from '@/shared/i18n'
 
-const HU_MONTHS_SHORT = ['jan.', 'febr.', 'márc.', 'ápr.', 'máj.', 'jún.', 'júl.', 'aug.', 'szept.', 'okt.', 'nov.', 'dec.']
-
-/** '2026-09-14' → 'szept. 14' (HU short month, no trailing dot after the day) · '14 Sep'. */
-export function huShortDate(iso: string): string {
-  if (getLang() !== 'hu') return fmtDate(iso.slice(0, 10), 'monthDay')
-  const [, month, day] = iso.split('-').map(Number)
-  return `${HU_MONTHS_SHORT[month - 1]} ${day}`
-}
+/** '2026-09-14' → 'szept. 14.' · '14 Sep'. */
+export const huShortDate = (iso: string): string => fmtDate(iso.slice(0, 10), 'short')
 
 /** Plain rounded kcal, no thousands grouping (matches the energy sheet). */
 export const nf = (n: number) => String(Math.round(n))
@@ -22,11 +16,8 @@ export const nf = (n: number) => String(Math.round(n))
 export const signed = (n: number) => (Math.round(n) < 0 ? `−${nf(Math.abs(n))}` : `+${nf(n)}`)
 /** The uncertainty is not that precise — nearest 10 kcal. */
 export const round10 = (n: number) => Math.round(n / 10) * 10
-/** Fixed fraction digits in the app language's format (HU decimal comma · EN point). `format.ts` has
- *  no fixed-digit style (`fmtNum` drops a zero fraction), so this stays a `toLocaleString` — but on
- *  `locale()`, never a hard-coded `hu-HU`. */
-export const dec = (n: number, digits: number) =>
-  n.toLocaleString(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits })
+/** Fixed fraction digits in the app language's format (HU decimal comma · EN point). */
+export const dec = (n: number, digits: 1 | 2) => fmtFixed(n, digits)
 
 /** Learned-base confidence words (mezo-zz91i), verbatim per the spec. Getter-backed. */
 export const CONFIDENCE_WORD: Record<'low' | 'medium' | 'high', string> = {
@@ -35,27 +26,12 @@ export const CONFIDENCE_WORD: Record<'low' | 'medium' | 'high', string> = {
   get high() { return m().fuelLogika.learned.confidence.high },
 }
 
-/** A reviewed week, Monday–Sunday: 'szept. 21–27.' — the month repeats only when the week
- *  crosses one ('szept. 28–okt. 4.'). English: '21–27 Sep' · '28 Sep – 4 Oct'. */
-export function huWeekRange(startIso: string, endIso: string): string {
-  const sameMonth = startIso.slice(0, 7) === endIso.slice(0, 7)
-  if (getLang() !== 'hu') {
-    return sameMonth
-      ? `${Number(startIso.slice(8, 10))}–${huShortDate(endIso)}`
-      : `${huShortDate(startIso)} – ${huShortDate(endIso)}`
-  }
-  return `${huShortDate(startIso)}–${sameMonth ? Number(endIso.slice(8, 10)) : huShortDate(endIso)}.`
-}
-
-// The prototype's short weekday set (elo/fuel.html `WDS`), Sunday first.
-const HU_WD_SHORT = ['V', 'H', 'K', 'Sze', 'Cs', 'P', 'Szo']
+/** A reviewed week, Monday–Sunday: 'szept. 21–27.' — the month repeats only when the week crosses one
+ *  ('szept. 28. – okt. 4.'). English: '21–27 Sep' · '28 Sep – 4 Oct'. */
+export const huWeekRange = (startIso: string, endIso: string): string => fmtRange(startIso.slice(0, 10), endIso.slice(0, 10))
 
 /** '2026-09-23' → 'Sze, szept. 23.' · 'Wed, 23 Sep' — one day of a reviewed week. */
-export function huWeekdayDate(iso: string): string {
-  if (getLang() !== 'hu') return `${fmtDate(iso.slice(0, 10), 'weekdayShort')}, ${huShortDate(iso)}`
-  const [year, month, day] = iso.split('-').map(Number)
-  return `${HU_WD_SHORT[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]}, ${huShortDate(iso)}.`
-}
+export const huWeekdayDate = (iso: string): string => fmtDate(iso.slice(0, 10), 'shortWeekday')
 
 /** The line after a day mark re-chains the base (mezo-3n2so, elo/fuel.html `changeMsg`): how much
  *  the frame moved — shared by the „Heti tanulás” sheet and the „Hogy tanultam?” page's day list. */

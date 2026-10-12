@@ -200,11 +200,11 @@ export function RecipeEditorPage() {
         label={whole ? E.heroWhole : E.heroServing}
         verdict={!has ? E.verdictEmpty : servings === 1 ? E.verdictSingle : whole ? E.verdictWhole(servings) : E.verdictShare(servings)}
         sub={!has ? E.subEmpty : E.subOther(!whole, fmtGrouped(otherTotal.kcal), otherTotal.p, otherTotal.c, otherTotal.f)}
-      >
-        <NumG graphic={<Pot pct={has ? (whole ? 100 : 100 / Math.max(1, servings)) : 0} size={96} />}
+        graphic={<NumG graphic={<Pot pct={has ? (whole ? 100 : 100 / Math.max(1, servings)) : 0} size={96} />}
           value={has ? fmtGrouped(shownTotal.kcal) : '0'} unit={whole ? C.kcalWhole : C.kcalPerServing}>
           <M3 p={shownTotal.p} c={shownTotal.c} f={shownTotal.f} />
-        </NumG>
+        </NumG>}
+      >
         {has && <div className="fc-basis"><ServingToggle value={basis} servings={servings} onChange={setBasis} /></div>}
       </Hero>
 

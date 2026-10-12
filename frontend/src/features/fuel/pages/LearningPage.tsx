@@ -57,12 +57,12 @@ export function LearningPage() {
       <Page className="ft-page">
         {back}
         <Hero
-          className="ft-hero" label={T.heroLabel}
+          label={T.heroLabel}
           verdict={failed ? T.error : T.loading}
           role={failed ? 'alert' : 'status'}
           actions={failed ? <Btn sm onClick={() => qc.invalidateQueries({ queryKey: EXPENDITURE_HISTORY_KEY })}>{T.retry}</Btn> : undefined}
+          graphic={<div className="ft-need ft-hg"><span><Level pct={0} height={18} /></span></div>}
         >
-          <div className="ft-need ft-hg"><span><Level pct={0} height={18} /></span></div>
         </Hero>
       </Page>
     )
@@ -77,14 +77,13 @@ export function LearningPage() {
       {back}
       {!last ? (
         <Hero
-          className="ft-hero" label={T.heroLabel} verdict={T.emptyVerdict} sub={T.emptySub}
+          label={T.heroLabel} verdict={T.emptyVerdict} sub={T.emptySub}
           actions={<Btn sm onClick={() => navigate('/fuel/log/uj')}>{T.logMeal}</Btn>}
+          graphic={<EmptyNeed />}
         >
-          <EmptyNeed />
         </Hero>
       ) : on ? (
         <Hero
-          className="ft-hero"
           label={T.heroLabelSure(CONFIDENCE_WORD[last.confidence], String(sd))}
           verdict={T.verdict(fmtGrouped(last.appliedBaseKcal))}
           sub={(last.status === 'holding' ? T.formulaSaysHeld : T.formulaSays)(fmtGrouped(last.formulaBaseKcal))}
@@ -93,29 +92,29 @@ export function LearningPage() {
               {T.weekly}<WeeklyLearningDot hold={hold} />
             </Btn>
           ) : undefined}
-        >
-          <div className="ft-hg">
+          graphic={<div className="ft-hg">
             <BandG
               value={last.appliedBaseKcal} sd={sd} valueLabel={M.fuelTanulas.chart.kcal(fmtGrouped(last.appliedBaseKcal))}
               tick={last.formulaBaseKcal} tickLabel={T.bandFormula(fmtGrouped(last.formulaBaseKcal))}
               label={T.bandAria(fmtGrouped(last.appliedBaseKcal), String(sd), fmtGrouped(last.formulaBaseKcal))}
             />
-          </div>
+          </div>}
+        >
         </Hero>
       ) : (
         <Hero
-          className="ft-hero" label={T.offLabel}
+          label={T.offLabel}
           verdict={T.offVerdict(fmtGrouped(last.formulaBaseKcal))}
           sub={T.offSub(fmtGrouped(last.posteriorBaseKcal), String(sd))}
           actions={<Btn onClick={() => navigate('/settings/fuel')}>{T.turnOn}</Btn>}
-        >
-          <div className="ft-hg">
+          graphic={<div className="ft-hg">
             <BandG
               value={last.posteriorBaseKcal} sd={sd} valueLabel={M.fuelTanulas.chart.kcal(fmtGrouped(last.posteriorBaseKcal))}
               tick={last.formulaBaseKcal} tickLabel={T.bandFormula(fmtGrouped(last.formulaBaseKcal))}
               label={T.bandAria(fmtGrouped(last.posteriorBaseKcal), String(sd), fmtGrouped(last.formulaBaseKcal))}
             />
-          </div>
+          </div>}
+        >
         </Hero>
       )}
 

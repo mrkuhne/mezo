@@ -9,7 +9,6 @@
 // Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2-1.4.
 
 import { pct } from '@/shared/lib/pct'
-import { locale } from '@/shared/lib/format'
 import { m } from '@/shared/i18n'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { isMealSlot } from '@/features/fuel/logic/dayZones'
@@ -40,7 +39,10 @@ export function deficitDropped(
   return mode === 'MAINTENANCE' && trajectory === 'cut' && vm.chips != null && vm.chips.balance === 0
 }
 
-export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: string; pct: number; value: string; target: string; color: string }
+/** One macro of the day: the AMOUNT so far against its GOAL, as numbers (grams; water in litres) — the component formats
+ *  them through `format.ts` at render (F5: the VM no longer hands over formatted strings that had to be parsed back).
+ *  `null` = unknown (honest-null: a dry vial with „—", never a fabricated 0). */
+export interface RingVM { key: 'p' | 'c' | 'f' | 'fiber' | 'water'; label: string; pct: number; amount: number | null; goal: number | null; unit: 'g' | 'l'; color: string }
 export interface DaySegVM { widthPct: number; toneAlt: boolean }
 export interface KeretHeroVM {
   remainingKcal: number
@@ -67,24 +69,8 @@ export interface KeretHeroVM {
   rings: RingVM[]
 }
 
-
-/** A gyűrűk számai FIX tizedesjeggyel („4,0 l" / "4.0 l"), az app nyelvének formátumában (`locale()`).
- *  A `format.ts`-ben nincs fix tizedesjegyű stílus (a `fmtNum` a záró nullát eldobja), ezért marad a
- *  `toLocaleString` — a nyelvet viszont már a format.ts adja, nem egy beégetett `hu-HU`. */
-function huNum(n: number, decimals: number): string {
-  return n.toLocaleString(locale(), { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-}
-
-function ring(key: RingVM['key'], label: string, value: number, target: number, color: string, unit: string): RingVM {
-  return {
-    key,
-    label,
-    pct: Math.round(pct(value, target)),
-    // A liter tizedessel olvasható (1,9 l), a gramm egészben (148 g).
-    value: `${huNum(value, unit === ' l' ? 1 : 0)}${unit}`,
-    target: `${huNum(target, unit === ' l' ? 1 : 0)}${unit}`,
-    color,
-  }
+function ring(key: RingVM['key'], label: string, value: number, target: number, color: string, unit: RingVM['unit']): RingVM {
+  return { key, label, pct: Math.round(pct(value, target)), amount: value, goal: target, unit, color }
 }
 
 export function buildKeretHero(input: {
@@ -140,14 +126,14 @@ export function buildKeretHero(input: {
   // the ring names, read at call time (a module constant would go stale on a language switch)
   const macro = m().fuelKozos.macro
   const rings: RingVM[] = [
-    ring('p', macro.protein, consumed.p, budget.p, 'var(--macro-protein)', ' g'),
-    ring('c', macro.carbs, consumed.c, budget.c, 'var(--macro-carbs)', ' g'),
-    ring('f', macro.fat, consumed.f, budget.f, 'var(--macro-fat)', ' g'),
+    ring('p', macro.protein, consumed.p, budget.p, 'var(--macro-protein)', 'g'),
+    ring('c', macro.carbs, consumed.c, budget.c, 'var(--macro-carbs)', 'g'),
+    ring('f', macro.fat, consumed.f, budget.f, 'var(--macro-fat)', 'g'),
     // A jóváhagyott prototípus sorrendje: a VÍZ a negyedik, a rost zárja a sort
     // (fuel-dashboard.js `fuel-rings`). A víz literben áll — a `1,9 / 4 l` olvasható,
     // az `1 850 / 4 000 ml` csak pontosabbnak látszik.
-    ring('water', macro.water, water.currentMl / 1000, water.targetMl / 1000, 'var(--sky)', ' l'),
-    ring('fiber', macro.fiber, fiberG, fiberTargetG, 'var(--macro-fiber)', ' g'),
+    ring('water', macro.water, water.currentMl / 1000, water.targetMl / 1000, 'var(--sky)', 'l'),
+    ring('fiber', macro.fiber, fiberG, fiberTargetG, 'var(--macro-fiber)', 'g'),
   ]
 
   return {

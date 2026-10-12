@@ -1,3 +1,4 @@
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -6,7 +7,7 @@ import { fmtGrouped } from '@/shared/lib/format'
 import { Acts, FoSheetHead, Lab, Lk, Note, Row, Txt } from '@/shared/ui/folyadek'
 import { Kv, SplitBar } from '@/features/fuel/components/folyadek'
 import { CONFIDENCE_WORD, dec, round10 } from '@/features/fuel/sheets/learnedBaseFormat'
-import { Eq3, rich } from '@/features/fuel/sheets/tanulasPieces'
+import { Eq3 } from '@/features/fuel/sheets/tanulasPieces'
 
 // Shared, presentational explanation of a composed daily-energy number (base + movement ± deficit).
 // Opened from the Fuel Mai equation sheet („Részletesen, honnan jön a keret") and the Én settings' Alap-TDEE row; both build
@@ -124,7 +125,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                   terms={base.formulaKcal != null ? [[kc(base.formulaKcal), E.byFormula]] : []} arrow="→"
                   result={[kc(base.kcal), E.learnedBase]}
                 />
-                <Txt>{rich(base.formulaKcal != null ? E.learnedTextFormula(kc(base.formulaKcal)) : E.learnedText)}</Txt>
+                <Txt><SafeMarkdown text={base.formulaKcal != null ? E.learnedTextFormula(kc(base.formulaKcal)) : E.learnedText} /></Txt>
                 <LearnedRow onClose={onClose} title={learnedTitle} sub={E.learnedRowSub} />
               </>
             ) : (
@@ -134,7 +135,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                   terms={[[kc(base.bmr), E.resting(FORMULA_LABEL[base.formula])], [dec(base.neat, 2), E.lifestyle(base.neatLabel || E.lifestyleDefault)]]} op="×"
                   result={[kc(base.kcal), E.base]}
                 />
-                <Txt>{rich(E.formulaText(FORMULA_LABEL[base.formula]))}</Txt>
+                <Txt><SafeMarkdown text={E.formulaText(FORMULA_LABEL[base.formula])} /></Txt>
               </>
             )}
           </Seg>

@@ -129,11 +129,11 @@ describe('LearningDaysList', () => {
     hooks.setMark.mockResolvedValue(result('2026-09-23', 'confirmed_complete', 2480, 2440))
     const { unmount } = render(<LearningDaysList mode="off" />)
     await userEvent.click(toggle('Sze, szept. 23.'))
-    expect(toasts).toContain('Elmentettem — a tanult érték frissült, a keretet most a képlet adja.')
+    expect(toasts).toContain('Elmentettem: a tanult érték frissült, a keretet most a képlet adja.')
     unmount()
     render(<LearningDaysList mode="empty" />)
     await userEvent.click(toggle('Sze, szept. 23.'))
-    expect(toasts).toContain('Elmentettem — amint elég adatom lesz, beleszámolom.')
+    expect(toasts).toContain('Elmentettem: amint elég adatom lesz, beleszámolom.')
   })
 
   it('a failed save toasts an error and leaves the switch as it was', async () => {

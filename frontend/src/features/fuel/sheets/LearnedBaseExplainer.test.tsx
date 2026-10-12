@@ -56,10 +56,10 @@ describe('LearnedBaseExplainerBody — the fixture numbers', () => {
     body()
     const sheet = await open('A számítás, egyszerűen')
     expect([...sheet.querySelectorAll('.ft-gr > em')].map(r => r.textContent)).toEqual(['2 780', '−352', '−426'])
-    expect(sheet.querySelector('.ft-tot b')!.textContent).toBe('≈ 2 000kcal')
+    expect(sheet.querySelector('.fx-tot b')!.textContent).toBe('≈ 2 000kcal')
     expect(within(sheet).getByText(/\+0,32 kg\/hét valódi gyarapodás/)).toBeInTheDocument()
     expect(within(sheet).getByText('logolt mozgás, napi átlag')).toBeInTheDocument()
-    expect(within(sheet).getByText('Miért 2 159 és nem 2 000?').tagName).toBe('B')
+    expect(within(sheet).getByText('Miért 2 159 és nem 2 000?').tagName).toBe('STRONG')
     expect(within(sheet).getByText(/Mert még bizonytalan vagyok.*\(6\. pont\)/)).toBeInTheDocument()
     // the levels run down from what was eaten: 100 % → after the tissue → after the movement
     const levels = [...sheet.querySelectorAll('.ft-gr .fo-level > i')].map(i => parseFloat((i as HTMLElement).style.width))
@@ -82,7 +82,7 @@ describe('LearnedBaseExplainerBody — the fixture numbers', () => {
   it('steps 5 and 6: how sure, and how the frame stepped; „Előző / Következő lépés" walk the steps', async () => {
     body()
     const sheet = await open('Mennyire vagyok biztos benne')
-    expect(within(sheet).getByText('±200 kcal').tagName).toBe('B')
+    expect(within(sheet).getByText('±200 kcal').tagName).toBe('STRONG')
     expect(sheet.querySelector('.ft-gb3 .on')!.textContent).toBe('Még tanulok')
     expect(within(sheet).getByText(/Minél több teljes napot/)).toBeInTheDocument()
     await userEvent.click(within(sheet).getByRole('button', { name: 'Következő lépés' }))
@@ -127,7 +127,7 @@ describe('LearnedBaseExplainerBody — the fixture numbers', () => {
   it('the meter level renders in the fixture zone (low, ±200 → the low zone edge)', async () => {
     body()
     const sheet = await open('Mennyire vagyok biztos benne')
-    const meter = within(sheet).getByRole('img', { name: 'Biztonság: Még tanulok' })
+    const meter = within(sheet).getByRole('img', { name: 'Megbízhatóság: Még tanulok' })
     expect(parseFloat((meter.querySelector('.fo-level > i') as HTMLElement).style.width)).toBeCloseTo(100 / 3)
     expect(within(sheet).queryByText(/150 kcal/)).not.toBeInTheDocument()
   })

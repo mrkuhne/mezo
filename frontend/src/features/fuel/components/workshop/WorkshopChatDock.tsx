@@ -16,7 +16,7 @@ import { useCallback, useRef, useState } from 'react'
 import { useM } from '@/shared/i18n'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
-import { Acts, Btn, Bub, Chev, FoSheetHead, Lk, Pill, Pills } from '@/shared/ui/folyadek'
+import { Acts, Btn, Bub, Chev, FoSheetHead, Lk, Pill, Pills, RemoveChips } from '@/shared/ui/folyadek'
 import type { WorkshopGoal } from '@/data/types'
 import { appendDictation, useVoiceInput } from '@/shared/lib/voice/useVoiceInput'
 import { MicTile } from '@/shared/ui/voice/VoiceField'
@@ -78,13 +78,7 @@ export function WorkshopChatDock({
       </Pills>
 
       {contextNames.length > 0 && (
-        <div className="fc-cats">
-          {contextNames.map(n => (
-            <button key={n} type="button" onClick={() => onDropContext(n)} aria-label={W.dropContext(n)}>
-              {n}<b aria-hidden="true">×</b>
-            </button>
-          ))}
-        </div>
+        <RemoveChips items={contextNames.map(n => ({ key: n, label: n, ariaLabel: W.dropContext(n), onRemove: () => onDropContext(n) }))} />
       )}
 
       {busy && (

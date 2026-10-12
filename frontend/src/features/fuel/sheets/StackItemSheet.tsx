@@ -43,7 +43,7 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
               <Acts><Btn sm ghost onClick={() => { unpinItem(entry.occurrenceId); close() }}>{M.timing.backToAuto}</Btn></Acts>
             </>
           ) : (
-            <div className="fk-why"><Tip icon="t-bolt" title="">{entry.reason ?? M.timing.auto}</Tip></div>
+            <Tip icon="t-bolt">{entry.reason ?? M.timing.auto}</Tip>
           )}
 
           {/* Move to another slot */}

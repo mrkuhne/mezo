@@ -1,6 +1,7 @@
 // Fuel · Folyadék rows and second-level pieces (mezo-n4wf5.5; bible F3.6). Prototype: fuel.js `irow`, `lineCard` / `cLine`,
 // `kv`, `tip`, `lgd`, `numG`, `.fu-kms`, `split`.
-import type { CSSProperties, InputHTMLAttributes, ReactNode } from 'react'
+import type { CSSProperties, HTMLAttributes, InputHTMLAttributes, ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useM } from '@/shared/i18n'
 import { fmtGrouped } from '@/shared/lib/format'
 import { Bub, Chev, Row, Stepper } from '@/shared/ui/folyadek'
@@ -52,21 +53,45 @@ export function EditLine({ icon, name, tags, onRemove, amount, unit, onDec, onIn
   )
 }
 
-/** Label–value tiles, two a row (`kv`). */
-export function Kv({ items }: { items: Array<[label: ReactNode, value: ReactNode]> }) {
-  return <div className="fx-kv">{items.map(([k, v], i) => <div key={i}><small>{k}</small><b>{v}</b></div>)}</div>
+/** Label–value tiles, two a row (`kv`). `spanLast`: an odd last tile takes the whole row. */
+export function Kv({ items, spanLast, className }: { items: Array<[label: ReactNode, value: ReactNode]>; spanLast?: boolean; className?: string }) {
+  return <div className={cx('fx-kv', spanLast && 'span-last', className)}>{items.map(([k, v], i) => <div key={i}><small>{k}</small><b>{v}</b></div>)}</div>
 }
 
-/** An unboxed hint (`tip`): a bubble icon, a bold line and the quiet sentence under it. (A tinted box is the kit `Box`.) */
-export function Tip({ icon, title, color, children }: { icon: Icon3DName; title: ReactNode; color?: string; children?: ReactNode }) {
-  return <div className="fx-tip"><Bub icon={icon} size={38} color={color} /><span><b>{title}</b>{children != null && <small>{children}</small>}</span></div>
+/** An unboxed hint (`tip`): a bubble icon, a bold line and the quiet sentence under it. (A tinted box is the kit `Box`.)
+ *  Without a `title` the sentence stands alone beside the bubble, in ink (a stored reason, a one-line explanation). */
+export function Tip({ icon, title, color, children }: { icon: Icon3DName; title?: ReactNode; color?: string; children?: ReactNode }) {
+  const bare = title == null || title === ''
+  return (
+    <div className={cx('fx-tip', bare && 'bare')}>
+      <Bub icon={icon} size={38} color={color} />
+      <span>{!bare && <b>{title}</b>}{children != null && <small>{children}</small>}</span>
+    </div>
+  )
 }
 
 export type LgdKind = 'liq' | 'over' | 'hatch' | 'line' | 'dash' | 'gap' | 'dot' | 'band' | 'ring' | 'tr' | 'water'
+  // the meal clock (`ora`): the other windows, the training arc, the night
+  | 'oth' | 'trn' | 'ngt'
+  // the week (`trendek`): a weekend day's ground, a gentle-mode day, the training dot
+  | 'we' | 'rec' | 'trd'
 /** The key under a Fuel chart (`lgd`): square swatches that repeat the chart's own marks (liquid, over the budget, a dashed
- *  target, an unlogged day, a band, a point…). The kit `Legend` (drops) stays for everything that is a level. */
-export function Lgd({ items }: { items: Array<[kind: LgdKind, label: ReactNode]> }) {
-  return <div className="fx-lg">{items.map(([k, l], i) => <span key={i}><i className={k} />{l}</span>)}</div>
+ *  target, an unlogged day, a band, a point…). The kit `Legend` (drops) stays for everything that is a level.
+ *  `center` = under a graphic that stands in the middle (a hero, a dial). */
+export function Lgd({ items, center, className }: { items: Array<[kind: LgdKind, label: ReactNode]>; center?: boolean; className?: string }) {
+  return <div className={cx('fx-lg', center && 'center', className)}>{items.map(([k, l], i) => <span key={i}><i className={k} />{l}</span>)}</div>
+}
+
+/** The tinted result line (`.fx-tot`): what it is on the left (+ a quiet line under it), the big number on the right. */
+export function Tot({ label, sub, value, unit, className, ...rest }: Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
+  label: ReactNode; sub?: ReactNode; value: ReactNode; unit?: ReactNode
+}) {
+  return (
+    <div className={cx('fx-tot', className)} {...rest}>
+      <span>{label}{sub != null && <small>{sub}</small>}</span>
+      <b>{value}{unit != null && <small>{unit}</small>}</b>
+    </div>
+  )
 }
 
 /** A graphic on the left, the big numeral and two or three facts on the right (`numG`) — the inside of a detail hero. */
@@ -80,14 +105,16 @@ export function NumG({ graphic, value, unit, children }: { graphic: ReactNode; v
 }
 
 /** The pill strip under the tabs (`.fu-kms`): gentle mode, a waiting diet suggestion, the „this is booked to another day"
- *  note. A button with a chevron when `onClick` is given, a plain rounded note otherwise. */
-export function Strip({ icon, color, warn, onClick, ariaLabel, children }: {
-  icon: Icon3DName; color?: string; warn?: boolean; onClick?: () => void; ariaLabel?: string; children: ReactNode
+ *  note. A link with a chevron when `to` is given, a button with a chevron with `onClick`, a plain rounded note otherwise. */
+export function Strip({ icon, color, warn, onClick, to, ariaLabel, className, children }: {
+  icon: Icon3DName; color?: string; warn?: boolean; onClick?: () => void; to?: string; ariaLabel?: string; className?: string; children: ReactNode
 }) {
   const inner = <><Bub icon={icon} size={30} color={color ?? (warn ? 'var(--fo-warn)' : undefined)} /><span>{children}</span></>
+  const cls = cx('fx-kms', warn && 'warn', className)
+  if (to != null) return <Link to={to} className={cls} aria-label={ariaLabel}>{inner}<Chev /></Link>
   return onClick
-    ? <button type="button" className={cx('fx-kms', warn && 'warn')} onClick={onClick} aria-label={ariaLabel}>{inner}<Chev /></button>
-    : <div className={cx('fx-kms', warn && 'warn')}>{inner}</div>
+    ? <button type="button" className={cls} onClick={onClick} aria-label={ariaLabel}>{inner}<Chev /></button>
+    : <div className={cls}>{inner}</div>
 }
 
 export interface SplitPart { label: ReactNode; pct: number; color: string; value?: ReactNode }

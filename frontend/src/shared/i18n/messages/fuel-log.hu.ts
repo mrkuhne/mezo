@@ -16,7 +16,6 @@ export const fuelLogHu = {
     // the overlay's context line: „Logolás · ma · 14:10"
     eyebrowNow: (kind: string, rel: string, time: string) => `${kind} · ${rel} · ${time}`,
     // a calendar day inside a sentence, from `fmtDate(…, 'monthDay')`
-    day: (monthDay: string) => `${monthDay.toLowerCase()}.`,
     windowLabel: (label: string, span: string) => `${label} · ${span} · ablak`,
     free: 'Szabad tétel · te választod a mikort',
     // `**…**` = bold
@@ -26,7 +25,7 @@ export const fuelLogHu = {
   // MealComposer
   composer: {
     when: 'Mikor',
-    slot: { breakfast: 'Reggeli', lunch: 'Ebéd', dinner: 'Vacsora', snack: 'Snack' },
+    slot: { breakfast: 'Reggeli', lunch: 'Ebéd', dinner: 'Vacsora', snack: 'Uzsonna' },
     from: 'Honnan adod hozzá?',
     src: {
       pantry: 'Kamra', pantrySub: 'polcról, grammra', pantryAria: 'Kamra · hozzáadás',
@@ -63,7 +62,7 @@ export const fuelLogHu = {
       left: (kcal: string) => `Ezzel ${kcal} kcal marad a keretből.`,
       over: (kcal: string) => `Ezzel ${kcal} kcal-lal a keret fölé mész.`,
       todaySoFar: 'Mai nap eddig',
-      daySoFar: (day: string) => `${day} eddig`,
+      daySoFar: (day: string) => `${day.charAt(0).toUpperCase()}${day.slice(1)} eddig`,
       sub: (dayLabel: string, eaten: string, add: string, sum: string, goal: string, items: string) =>
         `${dayLabel} ${eaten} + ${add} = ${sum} · cél ${goal} kcal · ${items}`,
       items: { one: 'tétel', other: 'tétel' },

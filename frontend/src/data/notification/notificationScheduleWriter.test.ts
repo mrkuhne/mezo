@@ -67,7 +67,8 @@ describe('buildScheduleEntries (pure)', () => {
     expect(entry.deeplink).toBe('/fuel/stack')
     expect(entry.source).toBe('projectStackDay')
     expect(entry.time).toBe('17:00')
-    expect(entry.title).toContain('Stack')
+    // Folyadék F5 wording: „Kiegészítők · <idősáv>" (no „Stack", no „slot")
+    expect(entry.title).toBe('Kiegészítők · Edzés előtt')
     expect(entry.body).toContain('Kreatin')
   })
 
@@ -366,7 +367,7 @@ describe('useScheduleSnapshotWriter', () => {
     const { entries } = putSchedule.mock.calls[0][0]
     const preWorkout = entries.find((e: { time: string }) => e.time === '16:20')
     expect(preWorkout).toBeDefined() // 17:00 gym − 40min — the canonical PRE_WORKOUT_STACK_LEAD_MIN offset
-    expect(preWorkout.title).toContain('edzés előtti')
+    expect(preWorkout.title).toContain('Edzés előtt')
     expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(false) // the wake+60 bug this pins
   })
 
@@ -382,6 +383,6 @@ describe('useScheduleSnapshotWriter', () => {
 
     const { entries } = putSchedule.mock.calls[0][0]
     expect(entries.some((e: { time: string }) => e.time === '07:30')).toBe(false) // no fabricated wake+60 fallback
-    expect(entries.some((e: { title: string }) => e.title.includes('edzés előtti'))).toBe(false) // PWO zone is absent
+    expect(entries.some((e: { title: string }) => e.title.includes('Edzés előtt'))).toBe(false) // PWO zone is absent
   })
 })

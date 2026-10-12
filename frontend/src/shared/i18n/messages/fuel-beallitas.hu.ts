@@ -165,7 +165,7 @@ export const fuelBeallitasHu = {
     tooFew: 'Legalább 2 étkezési ablak kell a tervhez.',
     tooMany: (max: number) => `Legfeljebb ${max} étkezési ablak lehet egy tervben.`,
     unnamed: 'Van egy névtelen étkezési ablak: adj neki nevet.',
-    nameTooLong: (name: string) => `„${name}" neve túl hosszú — legfeljebb 40 karakter lehet.`,
+    nameTooLong: (name: string) => `„${name}" neve túl hosszú: legfeljebb 40 karakter lehet.`,
     outOfSpan: 'Van olyan ablak, ami az ébredés–lefekvés időszakon kívülre esik.',
     restTrainingAnchor: 'Pihenőnapon nem lehet edzéshez kötött időzítést használni.',
     gap: (a: string, b: string, minutes: number) => `„${a}" és „${b}" között ${minutes} percnél kisebb a rés.`,

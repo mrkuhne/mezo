@@ -61,15 +61,16 @@ export const FOGALMAK: Record<FogalomKey, Fogalom> = {
   // Forrás: docs/features/fuel.md §2 „Stack" + FuelStackPage (occurrence-alapú zóna-idővonal,
   // mezo-vx9v): a stack MAGA az élő protokoll, nincs külön bekapcsolás — az edzésnap
   // átköltözteti a zónákat. A definíció ezt a két tényt tartja, semmi többet.
+  // Folyadék F5: a felület szava „kiegészítők" és „idősáv" (a `stack` kulcs a bejegyzések hivatkozása, nem kiírt szó).
   stack: {
-    term: 'stack',
-    def: 'A napi kiegészítőid protokollja: mi, mennyi, és a nap melyik zónájában. A zónák az edzésnapodhoz igazodnak.',
+    term: 'protokoll',
+    def: 'A napi kiegészítőid rendje: mi, mennyi, és a nap melyik idősávjában. Az idősávok az edzésnapodhoz igazodnak.',
   },
-  // Forrás: features/fuel/components/FuelScoreSurface.tsx — a bontás 0–100 skálán, „pont"
+  // Forrás: features/fuel/components/FuelScoreSurface.tsx — Folyadék F5 óta a pont a TÍZES skálán áll („8,4"), „pont"
   // egységgel jelenik meg; a hangnem sose büntető (nincs piros). Az „ítélet helyett visszajelzés" tagmondat ezt tartja copy-szinten.
   pontszam: {
     term: 'étkezés-pontszám',
-    def: 'Minden logolt étkezés kap egy 0–100 közötti értéket: mennyire illett a napodhoz. Visszajelzés, nem osztályzat.',
+    def: 'Minden logolt étkezés kap egy 0 és 10 közötti pontot: mennyire illett a napodhoz. Visszajelzés, nem osztályzat.',
   },
   // Forrás: docs/features/growth.md + ADR 0010 (XP = visszajelzés, nem fizetség).
   // A „semmit nem nyit meg" tagmondat az ADR betartatása copy-szinten.

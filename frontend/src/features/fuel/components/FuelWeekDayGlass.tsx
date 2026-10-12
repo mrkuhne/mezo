@@ -17,6 +17,7 @@
 //
 // C5: a felület CSAK a már kiszámolt napi értékelést OLVASSA. Étkezés-coach előzményt NEM kér és nem generál.
 // ============================================================
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useId } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -32,9 +33,6 @@ import { dayTitle, fixed1, type WeekDayVM } from '@/features/fuel/logic/fuelWeek
 export interface DimFactRow { label: string; value: string }
 
 /** A `**félkövér**` jelölés kirajzolása (a katalógus egy mondata, benne egy kiemelt értékkel). */
-export function Marked({ text }: { text: string }) {
-  return <>{text.split('**').map((part, i) => (i % 2 === 1 ? <b key={i}>{part}</b> : part))}</>
-}
 
 const pct = (value: number, target: number | null): number =>
   target != null && target > 0 ? Math.max(0, Math.min(100, Math.round((value / target) * 100))) : 0
@@ -151,7 +149,7 @@ export function FuelWeekDayGlass({ day, rollup, subscores, onClose, children }: 
         <Txt className="fr-fact">
           {target == null
             ? D.budgetUnknown
-            : <><Marked text={(day.training ? D.budgetTraining : D.budget)(fmtGrouped(target))} />{' '}{overBy != null ? D.over(fmtGrouped(overBy)) : D.within}</>}
+            : <><SafeMarkdown text={(day.training ? D.budgetTraining : D.budget)(fmtGrouped(target))} />{' '}{overBy != null ? D.over(fmtGrouped(overBy)) : D.within}</>}
         </Txt>
 
         {dim(D.nutrition, 30, subscores.nutrition)}

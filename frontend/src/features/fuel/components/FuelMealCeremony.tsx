@@ -19,7 +19,7 @@
 import { useEffect, useId, useRef } from 'react'
 import type { CSSProperties } from 'react'
 import { useM } from '@/shared/i18n'
-import { fmtNum } from '@/shared/lib/format'
+import { fmtFixed } from '@/shared/lib/format'
 import { Icon3D } from '@/shared/ui/clay'
 import {
   Btn, Card, CeremonyCount, CeremonyReveal, CeremonyRoot, Facts, Page, Section, TitleRow, useCeremonyPass,
@@ -62,7 +62,7 @@ export function FuelMealCeremony({
   // The cup fills to the score itself (8,3 → 83%), while the pass runs to the lit stars' share.
   const level = Math.max(0, Math.min(1, scoreOutOfTen / 10))
   const y = 122 - 108 * level
-  const score = fmtNum(scoreOutOfTen, 1)
+  const score = fmtFixed(scoreOutOfTen, 1)
 
   // A bejelentés a képernyő kezdete — képernyőolvasónak és billentyűzetnek egyaránt.
   useEffect(() => { headingRef.current?.focus({ preventScroll: true }) }, [])

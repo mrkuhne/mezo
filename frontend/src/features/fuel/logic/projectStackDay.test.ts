@@ -92,7 +92,7 @@ describe('training day zone times', () => {
       post_workout: 'edzés +30p',
       lunch: 'étkezéshez kötve',
       dinner: 'étkezéshez kötve',
-      evening: 'lefekvés −2h',
+      evening: 'lefekvés −2 ó',
       bedtime: 'lefekvés −30p',
     })
     for (const s of result) expect(s.label).toBe(STACK_ZONE_LABEL[s.zone])
@@ -438,7 +438,7 @@ describe('dose fallback', () => {
     })
     const entry = result.find(s => s.zone === 'wake')?.entries[0]
     expect(entry?.dose).toBeNull()
-    expect(entry?.name).toBe('(törölt Kamra-item)')
+    expect(entry?.name).toBe('(törölt kamra-tétel)')
   })
 })
 

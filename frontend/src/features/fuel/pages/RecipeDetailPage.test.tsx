@@ -12,6 +12,7 @@ import { RECIPES_KEY } from '@/data/fuel/queryKeys'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { Recipe } from '@/data/types'
+import { fmtDate } from '@/shared/lib/format'
 import { FrameProvider, useFrame } from '@/shared/ui/folyadek'
 
 // The id of the single recipe the MSW GET /api/recipe fixture returns — the real-mode
@@ -162,7 +163,9 @@ test('a meta-sor viszi a NOVA-értéket és a létrehozás dátumát (mezo-n3xa)
   renderDetail(r.id, qc)
   await screen.findByText(r.name)
   expect(document.querySelector('.fo-hero .fc-meta')!.textContent).toContain(`NOVA ${r.novaDominant}`)
-  expect(screen.getByText(`létrehozva ${r.createdDate}`)).toBeInTheDocument()
+  // the seed carries an ISO instant (the server's shape); the page prints the short day of the app language
+  expect(r.createdDate).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  expect(screen.getByText(`létrehozva ${fmtDate(new Date(r.createdDate), 'short')}`)).toBeInTheDocument()
   // a régi négy-cellás meta-csík nem tért vissza
   expect(screen.queryByText('Idő')).toBeNull()
   expect(screen.queryByText('Hozzáv.')).toBeNull()

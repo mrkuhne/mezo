@@ -75,7 +75,7 @@ describe('FuelStackProtocolPage', () => {
     expect(within(row).getByText(/4000 IU · automatikus/)).toBeInTheDocument()
     expect(within(row).getByText(/zsíros étkezéssel/i)).toBeInTheDocument()
     expect(screen.getByText('Minden elemet én időzítettem.')).toBeInTheDocument()
-    expect(screen.getByText(/3\. változat · 86%-os bizalom\./)).toBeInTheDocument()
+    expect(screen.getByText(/3\. változat · 86%-os megbízhatóság\./)).toBeInTheDocument()
   })
 
   // D2: az elhelyezés INDOKA a motorból jön — nem a felület találja ki.
@@ -143,7 +143,7 @@ describe('FuelStackProtocolPage — mock', () => {
     // the three facts of the hero: items · time slots · placed by hand
     const facts = container.querySelector('.fo-facts')!
     expect(facts).toHaveTextContent(/^8elem\didősáv\dkézzel elhelyezve$/)
-    expect(screen.getByText(/3\. változat · 86%-os bizalom\./)).toBeInTheDocument()
+    expect(screen.getByText(/3\. változat · 86%-os megbízhatóság\./)).toBeInTheDocument()
     expect(screen.getByRole('listitem', { name: /Kreatin monohidrát/ })).toBeInTheDocument()
     expect(screen.getAllByText(/· automatikus/).length).toBeGreaterThan(0)
     // one vial per time slot in the hero; every slot is a white card with its head — no glass

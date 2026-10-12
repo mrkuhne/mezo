@@ -66,7 +66,7 @@ export const fuelLogikaHu = {
         // `meal` = the earlier meal's name in lower case, with its article in Hungarian (`az ebéd`), bare in English (`lunch`)
         titleAfter: (meal: string, at: string) => `Eltolva: ${meal} később volt (${at})`,
         title: 'Eltolva az előző ablak után',
-        body: 'Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.',
+        body: 'Így nagyjából másfél óra jut a két étkezés közé; a nap többi ablaka ehhez igazodik.',
       },
     },
   },
@@ -74,10 +74,15 @@ export const fuelLogikaHu = {
   dayPlan: {
     window: {
       morningSnack: 'Tízórai',
-      eveningSnack: 'Esti snack',
-      preWorkoutSnack: 'Pre-workout snack',
+      eveningSnack: 'Esti uzsonna',
+      preWorkoutSnack: 'Edzés előtti uzsonna',
     },
-    stack: (zone: string) => `${zone} stack`,
+    // behaviour change 1 (owner 2026-10-12): a meal logged outside every window — the block's title on Mai (step 3b)
+    // and the bare name the meal page / Mezo's rating print (they add the time themselves, once)
+    betweenMeals: 'Ablakon kívül',
+    betweenMealsAt: (time: string) => `Ablakon kívül · ${time}`,
+    // a supplement time on the day's line, and the title of its reminder (data/notification/notificationScheduleWriter)
+    stack: (zone: string) => `Kiegészítők · ${zone}`,
   },
   // logic/keretHero.ts — the meal's role word and the rows of the day's equation
   keretHero: {
@@ -88,59 +93,59 @@ export const fuelLogikaHu = {
   glycemic: {
     expect: {
       low: {
-        energy: 'Egyenletes energia 3-4 órára',
+        energy: 'Egyenletes energia 3–4 órára',
         back: 'Kb. 2 óra múlva ér vissza az alapszintre, finoman',
         hunger: 'Az éhség későn, fokozatosan tér vissza',
       },
       mid: {
-        energy: 'Stabil energia 2-3 órára',
+        energy: 'Stabil energia 2–3 órára',
         back: 'Kb. 2 óra múlva újra alapszinten',
-        hunger: 'Az éhség 2-3 óra múlva jelentkezik',
+        hunger: 'Az éhség 2–3 óra múlva jelentkezik',
       },
       high: {
         energy: 'Gyors löket, majd visszaesés',
-        back: 'Kb. 1,5 óra múlva zuhan — az alapszint alá is eshet',
-        hunger: 'A visszaesés után korán, akár 1-1,5 óra múlva újra megéhezhetsz',
+        back: 'Kb. 1,5 óra múlva zuhan, az alapszint alá is eshet',
+        hunger: 'A visszaesés után korán, akár 1–1,5 óra múlva újra megéhezhetsz',
       },
     },
     tip: {
       balance: {
         title: 'Szép egyensúly',
-        body: 'A fehérje és a rost lassan engedi fel a vércukrot — ez a tányér magától simít.',
+        body: 'A fehérje és a rost lassan engedi fel a vércukrot: ez a tányér magától simít.',
       },
       dress: {
         title: 'Öltöztesd fel a szénhidrátot',
-        body: 'Az édes rész magában gyorsan felszív. Egy kis fehérje vagy zsír mellé — joghurt, dió — sokat lapít a csúcson.',
+        body: 'Az édes rész magában gyorsan felszívódik. Egy kis fehérje vagy zsír mellé (joghurt, dió) sokat lapít a csúcson.',
       },
       walk: {
         title: 'Egy séta most sokat ér',
-        body: '10-15 perc mozgás evés után az izmok azonnal elhasználják a glükóz egy részét — a csúcs láthatóan kisebb lesz.',
+        body: '10–15 perc mozgás evés után: az izmok azonnal elhasználják a glükóz egy részét, a csúcs láthatóan kisebb lesz.',
       },
       fiberFirst: {
         title: 'Rost előre',
-        body: 'Pár falat zöldség vagy saláta a szénhidrát előtt lassítja a felszívódást — a domb így laposabb.',
+        body: 'Pár falat zöldség vagy saláta a szénhidrát előtt lassítja a felszívódást, a domb így laposabb.',
       },
       order: {
         title: 'Jó irány, egy aprósággal',
-        body: 'Ha teheted, a zöldséget és a fehérjét edd előre, a szénhidrátot utoljára — a sorrend önmagában simít a görbén.',
+        body: 'Ha teheted, a zöldséget és a fehérjét edd előre, a szénhidrátot utoljára: a sorrend önmagában simít a görbén.',
       },
     },
     step: {
       halfSweet: {
         title: 'Feleannyi édes rész',
-        body: 'Az édes összetevőből (méz, lekvár, gyümölcslé, cukros öntet) elég a fele — ez a leggyorsabban felszívódó rész.',
+        body: 'Az édes összetevőből (méz, lekvár, gyümölcslé, cukros öntet) elég a fele: ez a leggyorsabban felszívódó rész.',
       },
       smallerSide: {
         title: 'Negyeddel kisebb köret',
-        body: 'A kenyérből, tésztából, rizsből vagy krumpliból negyeddel kevesebb — a helyére jöhet zöldség.',
+        body: 'A kenyérből, tésztából, rizsből vagy krumpliból negyeddel kevesebb; a helyére jöhet zöldség.',
       },
       addFiber: {
         title: 'Rost mellé',
-        body: 'Egy marék zöldség, saláta vagy egy evőkanál chiamag a tányér mellé — a rost fékezi a felszívódást.',
+        body: 'Egy marék zöldség, saláta vagy egy evőkanál chiamag a tányér mellé: a rost fékezi a felszívódást.',
       },
       addProtein: {
         title: 'Fehérje mellé',
-        body: '150 g túró, görög joghurt vagy két tojás mellé — a fehérje lassítja a csúcsot.',
+        body: '150 g túró, görög joghurt vagy két tojás mellé: a fehérje lassítja a csúcsot.',
       },
     },
     facts: { ofWhichSugar: 'ebből cukor', estimated: 'becsült' },
@@ -153,7 +158,8 @@ export const fuelLogikaHu = {
   // logic/recipeSlotFace.ts — a recipe without a known block
   recipeSlotFace: { fallback: 'Étkezés' },
   // logic/buildEnergyBreakdown.ts — the two summands of the day's movement
-  energyBreakdown: { plannedLogged: 'Tervezett edzés · logolva', unplanned: 'Terven kívüli mozgás' },
+  // (+ features/me/logic/buildTdeeBreakdown.ts: the weekly-average movement row of the Én energy sheet)
+  energyBreakdown: { plannedLogged: 'Tervezett edzés · logolva', unplanned: 'Terven kívüli mozgás', plannedWeeklyAvg: 'Tervezett mozgás · heti átlag' },
   // data/fuel/stackZones.ts (`STACK_ZONE_LABEL`) + logic/projectStackDay.ts — the stack's zones and what anchors each
   stack: {
     zone: {
@@ -170,11 +176,11 @@ export const fuelLogikaHu = {
       meal: 'étkezéshez kötve',
       preWorkout: (min: number) => `edzés −${min}p`,
       postWorkout: 'edzés +30p',
-      evening: 'lefekvés −2h',
+      evening: 'lefekvés −2 ó',
       bedtime: 'lefekvés −30p',
       block: (label: string, min: number) => `${label} · edzés −${min}p`,
     },
-    deletedItem: '(törölt Kamra-item)',
+    deletedItem: '(törölt kamra-tétel)',
   },
   // data/fuel/fuelConfig.ts (`ZONE_LABELS`) — the four parts of the day
   dayPart: { morning: 'Reggel', midday: 'Dél', afternoon: 'Délután', evening: 'Este' },
@@ -191,8 +197,8 @@ export const fuelLogikaHu = {
     changed: (delta: string) => `A keret ${delta} kcal-lal változott`,
     unchanged: 'A keret nem változott',
     savedOnly: {
-      off: 'Elmentettem — a tanult érték frissült, a keretet most a képlet adja.',
-      empty: 'Elmentettem — amint elég adatom lesz, beleszámolom.',
+      off: 'Elmentettem: a tanult érték frissült, a keretet most a képlet adja.',
+      empty: 'Elmentettem: amint elég adatom lesz, beleszámolom.',
     },
   },
 }

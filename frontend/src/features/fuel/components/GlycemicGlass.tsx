@@ -22,7 +22,7 @@ import { useM } from '@/shared/i18n'
 import { Acts, FoSheetHead, Lab, Lk, Note, Txt } from '@/shared/ui/folyadek'
 import { useMealCoachFor } from '@/data/hooks'
 import type { GlycemicBand, GlycemicLevel } from '@/features/fuel/logic/glycemicBand'
-import { GLY_COLOR, GLY_CURVE, GlyBand, GlyMini, Kv, Tip } from '@/features/fuel/components/folyadek'
+import { GLY_COLOR, GLY_CURVE, GlyBand, Kv, Tip } from '@/features/fuel/components/folyadek'
 
 /** A három válasz-alak — a közös `GLY_CURVE` (a Mai sor chipje ugyanezt hordja kicsiben). A `note` a régi felirat volt;
  *  a felirat már a katalógusból jön (`fuelEtkezes.glu.shape`), az export a régi hívók kedvéért marad. */
@@ -35,14 +35,6 @@ export const CURVE: Record<GlycemicLevel, { path: string; peak: [number, number]
 const AXIS: Array<[x: number, key: 'meal' | 'h1' | 'h2' | 'h3', anchor: 'start' | 'middle' | 'end']> = [
   [8, 'meal', 'start'], [82, 'h1', 'middle'], [157, 'h2', 'middle'], [232, 'h3', 'end'],
 ]
-
-/**
- * A görbe ikon-méretben (mezo-ya2wp). A Folyadék felületek a közös `GlyMini`-t rajzolják; ez az export addig marad, amíg a
- * vezérlő ki nem veszi (a Mai blokkjai már nem használják), és ugyanazt a darabot adja vissza.
- */
-export function GlycemicMiniCurve({ level, lateGhost = false }: { level: GlycemicLevel; lateGhost?: boolean }) {
-  return <GlyMini level={level} late={lateGhost} />
-}
 
 /** A várható válasz alakja három órán át (prototípus `gCurve`): folyadék-felszín a sáv színében, az alapszint szaggatott
  *  vonala, a csúcs pontja a nevével; a tengelyen csak idő áll. */
@@ -117,7 +109,7 @@ export function GlycemicGlass({ band, onClose, aiTips = null }: {
           <ResponseCurve level={band.level} />
           <Kv items={band.facts.map(f => [f.label, f.value] as [string, string])} />
 
-          {band.sugarEstimated && <Note className="fe-warn">{G.estimated}</Note>}
+          {band.sugarEstimated && <Note tone="warn">{G.estimated}</Note>}
 
           <Lab>{G.feel}</Lab>
           <Tip icon="t-bolt" title={G.energy}>{band.expect.energy}</Tip>

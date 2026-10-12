@@ -11,11 +11,11 @@ import type { RingVM } from '@/features/fuel/logic/keretHero'
 import { FuelMacroRings } from '@/features/fuel/components/FuelMacroRings'
 
 const RINGS: RingVM[] = [
-  { key: 'p', label: 'fehérje', pct: 95, value: '148 g', target: '155 g', color: '#e0796a' },
-  { key: 'c', label: 'szénhidrát', pct: 71, value: '224 g', target: '316 g', color: '#d8a44a' },
-  { key: 'f', label: 'zsír', pct: 79, value: '58 g', target: '73 g', color: '#d8c14a' },
-  { key: 'fiber', label: 'rost', pct: 73, value: '22 g', target: '30 g', color: '#7fc36b' },
-  { key: 'water', label: 'víz', pct: 46, value: '1,9 l', target: '4 l', color: '#6fb6d8' },
+  { key: 'p', label: 'fehérje', pct: 95, amount: 148, goal: 155, unit: 'g', color: '#e0796a' },
+  { key: 'c', label: 'szénhidrát', pct: 71, amount: 224, goal: 316, unit: 'g', color: '#d8a44a' },
+  { key: 'f', label: 'zsír', pct: 79, amount: 58, goal: 73, unit: 'g', color: '#d8c14a' },
+  { key: 'fiber', label: 'rost', pct: 73, amount: 22, goal: 30, unit: 'g', color: '#7fc36b' },
+  { key: 'water', label: 'víz', pct: 46, amount: 1.85, goal: 4, unit: 'l', color: '#6fb6d8' },
 ]
 
 // A2: the owner's macro identity — one glyph per vial, standing in its tube, each vial in its own colour.
@@ -47,7 +47,7 @@ test('minden kémcső a cél arányáig telik, a szám a mennyiség, alatta a c�
 // Honest-null: without a target there is no level and no fabricated zero.
 test('ismeretlen célnál a kémcső száraz marad, nem nullát mutat', () => {
   const { container } = render(
-    <FuelMacroRings rings={[{ ...RINGS[0], pct: 0, value: '—', target: '—' }]} />,
+    <FuelMacroRings rings={[{ ...RINGS[0], pct: 0, amount: null, goal: null }]} />,
   )
   expect(container.querySelector('.fo-vial b')).toHaveTextContent('—')
   expect((container.querySelector('.fo-tube .l') as HTMLElement).style.getPropertyValue('--p')).toBe('0%')
@@ -84,4 +84,17 @@ test('onWater-rel a víz kémcsöve gomb, és koppintásra hív', async () => {
   expect(screen.getAllByRole('button')).toHaveLength(1)
   await userEvent.click(screen.getByRole('button', { name: 'Víz logolása · 1,9 l / 4 l' }))
   expect(onWater).toHaveBeenCalledTimes(1)
+})
+
+// The VM hands over numbers (F5): the vial prints them in the app language — English gets the decimal point.
+test('angolul a tizedespont és az angol szavak állnak a kémcsövön', async () => {
+  const { setLang } = await import('@/shared/i18n')
+  setLang('en', { persist: false })
+  try {
+    const { container } = render(<FuelMacroRings rings={[{ ...RINGS[4], label: 'Water', goal: 2.5 }]} onWater={() => {}} />)
+    expect(container.querySelector('.fo-vial b')).toHaveTextContent('1.9')
+    expect(screen.getByRole('button', { name: 'Log water · 1.9 l / 2.5 l' })).toBeInTheDocument()
+  } finally {
+    setLang('hu', { persist: false })
+  }
 })

@@ -343,8 +343,9 @@ export function FuelSlotsPage() {
       <Page nonav className="fb-page">
         <UnsavedChangesGuard dirty={dirty} />
         {back}
-        <Hero className="fb-hero" label={W.loadingLabel} verdict={<span role="status">{T.loading}</span>} sub={W.loadingSub}>
-          <div className="fb-hg"><FuelWindowTide windows={evenWindows(4)} bare /></div>
+        <Hero className="fb-hero" label={W.loadingLabel} verdict={<span role="status">{T.loading}</span>} sub={W.loadingSub}
+          graphic={<div className="fb-hg"><FuelWindowTide windows={evenWindows(4)} bare /></div>}
+        >
         </Hero>
       </Page>
     )
@@ -376,10 +377,10 @@ export function FuelSlotsPage() {
           verdict={W.recommended.verdict(W.dayType[dayType], recommendedWindows.length)}
           sub={why}
           actions={<Btn onClick={fork} disabled={templatesPending}>{W.recommended.customise}</Btn>}
-        >
-          <div className="fb-hg">
+          graphic={<div className="fb-hg">
             <FuelWindowTide windows={recommendedWindows.map((w, i) => ({ time: w.time, label: w.label, kcal: recommendedBudgets[i]?.kcal ?? 0 }))} />
-          </div>
+          </div>}
+        >
           <div className="fb-hd">{days}</div>
         </Hero>
 
@@ -424,10 +425,10 @@ export function FuelSlotsPage() {
         label={(existing ? E.labelOwn : E.labelCustomising)(sumText)}
         verdict={verdictText}
         sub={existing || blocked ? E.sub : `${E.subChange} ${E.sub}`}
-      >
-        <div className="fb-hg">
+        graphic={<div className="fb-hg">
           <FuelWindowTide windows={compiled.map((w, i) => ({ time: w.time, label: w.label, kcal: compiledBudgets[i]?.kcal ?? 0 }))} />
-        </div>
+        </div>}
+      >
         <div className="fb-hd">{days}</div>
       </Hero>
 
@@ -508,10 +509,10 @@ export function FuelSlotsPage() {
             `gap`, or `pre_workout_big` fire more than once for the same plan. */}
         {/* Tier-1 errors block saving; warnings are advisory and never block. */}
         {errors.map((e, i) => (
-          <Note key={`${e.code}-${i}`} role="alert" className="fb-bad">{e.text}</Note>
+          <Note key={`${e.code}-${i}`} role="alert" tone="bad">{e.text}</Note>
         ))}
         {warnings.map((w, i) => (
-          <Note key={`${w.code}-${i}`} className="fb-warn">{w.text}</Note>
+          <Note key={`${w.code}-${i}`} tone="warn">{w.text}</Note>
         ))}
       </Card>
 
@@ -534,7 +535,7 @@ export function FuelSlotsPage() {
             ))}
           </div>
         )}
-        {!evalPending && evalDegraded && <Note className="fb-warn">{W.mezo.degraded}</Note>}
+        {!evalPending && evalDegraded && <Note tone="warn">{W.mezo.degraded}</Note>}
         <Acts><Btn sm ghost onClick={runEvaluate} disabled={blocked || evalPending}>{W.mezo.ask}</Btn></Acts>
         <Note>{W.mezo.note}</Note>
         {existing && <Acts><Lk onClick={resetToRecommended}>{W.mezo.reset}</Lk></Acts>}

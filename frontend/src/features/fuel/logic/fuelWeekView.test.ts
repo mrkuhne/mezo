@@ -250,8 +250,8 @@ describe('kiírási formák', () => {
   })
 
   test('a hét címe: egy hónapon belül összevonva, hónaphatáron mindkét hónappal', () => {
-    expect(weekRangeTitle('2026-10-05')).toBe('Okt 5–11')
-    expect(weekRangeTitle('2026-09-28')).toBe('Szep 28 – Okt 4')
+    expect(weekRangeTitle('2026-10-05')).toBe('okt. 5–11.')
+    expect(weekRangeTitle('2026-09-28')).toBe('szept. 28. – okt. 4.')
     setLang('en', { persist: false })
     expect(weekRangeTitle('2026-10-05')).toBe('5–11 Oct')
     expect(weekRangeTitle('2026-09-28')).toBe('28 Sep – 4 Oct')

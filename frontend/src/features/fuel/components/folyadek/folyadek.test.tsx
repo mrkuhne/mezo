@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { act, fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { setLang } from '@/shared/i18n'
 import { Level, St } from '@/shared/ui/folyadek'
 import {
   BowlGauge, DayBowl, Dial, EditLine, Glass, GlyBand, GlyChip, GlyMini, ItemRow, Kv, Lgd, LineTags, M3, MacroVials, MealCells, NumG, Nutri,
-  PlainCup, Pot, PourBowl, PourKey, ScoreChip, SlotCup, SplitBar, Strip, Tip, energyShares,
+  MacroTriple, PlainCup, Pot, PourBowl, PourKey, ScoreChip, SlotCup, SplitBar, Strip, Tip, Tot, energyShares,
 } from './index'
 
 const CSS = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../../../../styles/folyadek-fuel-kozos.css'), 'utf8')
@@ -131,8 +132,9 @@ describe('Fuel · Folyadék shared pieces (mezo-n4wf5.5)', () => {
     rerender(<ScoreChip score={null} onOpen={onOpen} />)
     expect(container.querySelector('button')).toBeNull()
     expect(container.querySelector('.fx-chip.sc.pend')).toHaveTextContent('folyamatban')
+    // a whole score keeps its decimal („8,0"): the chip, the week's vessels and Mezo's rating all print the same number
     rerender(<ScoreChip score={8} big />)
-    expect(screen.getByRole('img', { name: 'Mezo értékelése: 8' })).toHaveClass('big')
+    expect(screen.getByRole('img', { name: 'Mezo értékelése: 8,0' })).toHaveClass('big')
   })
 
   it('GlyChip / GlyBand / GlyMini: a band word, never a number', () => {
@@ -227,6 +229,45 @@ describe('Fuel · Folyadék shared pieces (mezo-n4wf5.5)', () => {
     fireEvent.click(strip)
     expect(onClick).toHaveBeenCalled()
     expect(container.querySelectorAll('div.fx-kms')).toHaveLength(1)
+  })
+
+  // The pieces the areas had built beside the shared ones, folded in by the integration step (bible F2.4 / F3.6).
+  it('folded twins: a bare Tip, Kv options, the clock / week swatches, Tot, a link Strip, MacroTriple with kcal, MealCells with a missing gram', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <Tip icon="t-bolt">Reggelire időzítve, mert éhgyomorra szívódik fel.</Tip>
+        <Kv spanLast className="x" items={[['a', '1'], ['b', '2'], ['c', '3']]} />
+        <Lgd center className="y" items={[['oth', 'többi ablak'], ['trn', 'edzés'], ['ngt', 'alvás'], ['we', 'hétvége'], ['rec', 'kímélő nap'], ['trd', 'edzésnap']]} />
+        <Tot data-row="remaining" label="Marad" sub="a mai keretből" value="742" unit="kcal" />
+        <Strip icon="t-ring" warn to="/me/goals/weight" className="z"><b>Javaslat vár</b></Strip>
+        <MacroTriple kcal={356} p={29} c={31} f={13} />
+        <MacroTriple className="w" kcal={null} p={null} c={2} f={3} />
+        <MealCells protein={36} carbs={null} fat={null} fiber={null} fiberTarget={30} />
+      </MemoryRouter>,
+    )
+    const tip = container.querySelector('.fx-tip')!
+    expect(tip).toHaveClass('bare')
+    expect(tip.querySelector('b')).toBeNull()
+    expect(tip.querySelector('small')).toHaveTextContent('Reggelire időzítve')
+    expect(container.querySelector('.fx-kv')).toHaveClass('span-last', 'x')
+    expect(container.querySelector('.fx-lg')).toHaveClass('center', 'y')
+    expect([...container.querySelectorAll('.fx-lg > span > i')].map((e) => e.className)).toEqual(['oth', 'trn', 'ngt', 'we', 'rec', 'trd'])
+    for (const kind of ['oth', 'trn', 'ngt', 'we', 'rec', 'trd']) expect(CSS, kind).toContain(`.fx-lg > span > i.${kind} {`)
+    const tot = container.querySelector('.fx-tot')!
+    expect(tot).toHaveAttribute('data-row', 'remaining')
+    expect(tot.querySelector(':scope > span')!.textContent).toBe('Marada mai keretből')
+    expect(tot.querySelector(':scope > b')!.textContent).toBe('742kcal')
+    const link = screen.getByRole('link', { name: 'Javaslat vár' })
+    expect(link).toHaveAttribute('href', '/me/goals/weight')
+    expect(link).toHaveClass('fx-kms', 'warn', 'z')
+    const [withKcal, unknown] = [...container.querySelectorAll('.fx-lnm')]
+    expect([...withKcal.children].map((e) => e.textContent)).toEqual(['356kcal', '29 gfeh.', '31 gszénh.', '13 gzsír'])
+    expect(unknown).toHaveClass('w')
+    expect([...unknown.querySelectorAll('b')].map((e) => e.textContent)).toEqual(['—', '—', '2 g', '3 g'])
+    // a missing gram: every capsule is empty (no energy split from a truncated composition), and the name says what is known
+    const cells = container.querySelector('.fx-cells')!
+    expect(cells).toHaveAccessibleName('fehérje 36 g; szénhidrát nincs adat; zsír nincs adat; rost nincs adat')
+    expect([...cells.querySelectorAll('.fo-mini b')].map((e) => e.textContent)).toEqual(['36 g', '—', '—', '—'])
   })
 
   it('speaks English and follows a runtime switch on the same node', () => {

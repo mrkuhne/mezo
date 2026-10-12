@@ -74,7 +74,9 @@ export const fuelLogikaEn: Shape<typeof fuelLogikaHu> = {
       eveningSnack: 'Evening snack',
       preWorkoutSnack: 'Pre-workout snack',
     },
-    stack: (zone) => `${zone} stack`,
+    betweenMeals: 'Between meals',
+    betweenMealsAt: (time) => `Between meals · ${time}`,
+    stack: (zone) => `Supplements · ${zone}`,
   },
   keretHero: {
     role: { pre: 'BEFORE TRAINING', post: 'AFTER TRAINING', standard: 'STANDARD' },
@@ -145,7 +147,7 @@ export const fuelLogikaEn: Shape<typeof fuelLogikaHu> = {
     rubric: { standard: 'general', pre_workout: 'before training', post_workout: 'after training' },
   },
   recipeSlotFace: { fallback: 'Meal' },
-  energyBreakdown: { plannedLogged: 'Planned workout · logged', unplanned: 'Unplanned movement' },
+  energyBreakdown: { plannedLogged: 'Planned workout · logged', unplanned: 'Unplanned movement', plannedWeeklyAvg: 'Planned movement · weekly average' },
   stack: {
     zone: {
       wake: 'Wake-up',

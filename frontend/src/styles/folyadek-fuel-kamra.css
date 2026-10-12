@@ -2,19 +2,14 @@
    Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js. Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference). */
 
 /* ── second-level pieces built locally (reported to the controller as kit gaps) ── */
-/* `gHero`: label → graphic → verdict → sub. The kit Hero draws its children after the text, so the graphic is moved up by order. */
-.fp-ghero { display: flex; flex-direction: column; }
-.fp-ghero > .fo-hero-lbl { order: -2; }
-.fp-ghero > .fo-hero-g { order: -1; margin: 12px 0 14px; }
+/* `gHero`: label → graphic → verdict → sub — the kit Hero's `graphic` slot; here only the jars' own margin. */
+.fp-ghero > .fo-hero-g { margin: 12px 0 14px; }
 /* `nh`: the big numeral with its unit on a line of its own, above the verdict sentence (`.fx-n`) */
 .fo-hero-verdict > .fp-n { display: block; white-space: nowrap; margin: 4px 0 12px; }
 .fo-hero-verdict > .fp-n > small { display: block; white-space: normal; margin: 6px 0 0; line-height: 1.3; }
 .fo-hero.has-art .fo-hero-verdict > .fp-n { min-height: 74px; }
 .fp-item > .fo-hero.has-art > .fo-hero-lbl { min-height: 33px; }
 .fp-n > .fp-dn { display: block; font-size: 24px; line-height: 1.15; white-space: normal; letter-spacing: 0; }
-/* a note in a state tone (`.fx-warn`, `.fx-bad`) */
-.fo-note.fp-warn { color: var(--fo-warn); font-weight: 600; }
-.fo-note.fp-bad { color: var(--fo-bad); }
 
 /* ── Konyha hub ── */
 .fp-pot { display: block; }
@@ -28,11 +23,6 @@
 /* ── Kamra ── */
 .fp-kinds { margin-top: 10px; }
 .fo-sheet .fp-kinds { margin: 10px 0 10px; }
-.fp-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.fp-cats > button { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 6px 10px 6px 12px; border: 0; border-radius: 999px; cursor: pointer; background: color-mix(in srgb, var(--dom) 10%, #fff); font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; color: var(--fo-ink); }
-.fp-cats > button::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
-.fp-cats > button > b { font-size: 15px; line-height: 1; color: var(--fo-sub); }
-.fp-cats > button:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
 /* the shelf tiles: long names wrap, a long dose wraps at „ + " in a smaller numeral */
 .fp-shelf .fo-stat > .fo-stat-k { padding-right: 40px; min-height: 34px; white-space: normal; overflow: visible; overflow-wrap: anywhere; hyphens: auto; }
 .fp-shelf .fo-stat > .fo-stat-n > em { display: block; font-style: normal; font-size: 19px; line-height: 1.2; letter-spacing: -.4px; }
@@ -71,7 +61,7 @@
 .fp-busy { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 28px 0 20px; text-align: center; font-size: 14px; font-weight: 600; color: var(--fo-sub); }
 .fp-busy > strong { font-family: var(--ff-display); font-size: 18px; color: var(--fo-ink); }
 .fp-busy > small { font-size: 12px; }
-.fp-lnm { margin: 10px 0 6px; }
+.fx-lnm.fp-lnm { margin: 10px 0 6px; }
 .fp-hit > .g > small { line-height: 1.4; }
 
 @media (max-width: 360px) {

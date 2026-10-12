@@ -15,18 +15,16 @@
 //
 // SZÉGYENMENTES: a felület LEÍR, nem értékel, és nem állít okozatiságot — „egyik sem ok, csak együttjárás".
 // ============================================================
-import { useId } from 'react'
-import { Card, Empty, Head, Lab, Note } from '@/shared/ui/folyadek'
+import { Card, Empty, Head, Lab, Note, useSvgId } from '@/shared/ui/folyadek'
 import { Lgd, type LgdKind } from '@/features/fuel/components/folyadek'
 import { useM } from '@/shared/i18n'
 import { fixed1 } from '@/features/fuel/logic/fuelWeekView'
 import { addDays } from '@/shared/lib/dates'
+import { fmtDate } from '@/shared/lib/format'
 
 export interface HorizonWeek {
   /** A hét ISO hétfője — a sorrend hitelforrása. */
   startIso: string
-  /** Rövid, kiírható hét-felirat (pl. „Szep 7"). */
-  label: string
   /** A hét kalória-átlaga — NULL, ha a héten nincs naplózott nap. */
   kcal: number | null
   /** A hét súlyátlaga kg-ban — NULL, ha a héten nincs mérés (valódi szakadás). */
@@ -40,7 +38,6 @@ const nonEmptyWeeks = (weeks: HorizonWeek[]): number => weeks.filter((w) => w.kc
 export const horizonNeedsMoreWeeks = (weeks: HorizonWeek[]): boolean => nonEmptyWeeks(weeks) < 2
 
 /** A per-instance id that is safe inside `url(#…)` (bible trap 2). */
-const useSvgId = (prefix: string) => prefix + useId().replace(/[^a-zA-Z0-9_-]/g, '')
 
 type Pt = [x: number, y: number]
 
@@ -159,7 +156,9 @@ export function FuelHorizon({ weeks, weightLog, goalKg, pending }: {
   const nKg = kgs.filter((v) => v != null).length
   const goal = goalKg != null && goalKg > 0 ? goalKg : null
   const goalText = goal == null ? '' : H.goal(fixed1(goal))
-  const first = weeks[0]?.label ?? '', last = weeks[weeks.length - 1]?.label ?? ''
+  // the axis ends: the first and the last week's Monday (prototype `dS`)
+  const day = (w: HorizonWeek | undefined) => (w ? fmtDate(w.startIso, 'short') : '')
+  const first = day(weeks[0]), last = day(weeks[weeks.length - 1])
   const legend: Array<[LgdKind, string]> = [
     ['liq', H.weightKey],
     ...(weightLog && weightLog.length > 0 ? [['dot', H.dailyKey] as [LgdKind, string]] : []),

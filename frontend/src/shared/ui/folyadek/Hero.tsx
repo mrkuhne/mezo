@@ -8,22 +8,28 @@ export interface HeroProps extends Omit<HTMLAttributes<HTMLElement>, 'children'>
   left?: ReactNode
   /** The big tilted glyph in the top right corner of a hero that has no graphic of its own (prototype `hero({art})`, `.fh-art`). */
   art?: Icon3DName
+  /** The hero's graphic BETWEEN the label and the verdict (prototype `gHero({lbl, g, verdict})`: a bowl, vials, a week of
+   *  vessels, a big number beside its vessel). The node is placed as it is — it keeps its own class and margins — so the
+   *  DOM reads label → graphic → verdict; `children` stay the body under the text. A fragment may hold several. */
+  graphic?: ReactNode
   /** The verdict one size up — a session's or a plan's name is the verdict (prototype `hero({big:true})`). */
   big?: boolean
 }
 
 /** The ONE thing to look at: a vessel whose action row (or closing strip) is the liquid. Passes `id`, `role`, `data-*`, `aria-*` through.
  *  A `Note` among the `actions` is the quiet white line on the liquid, under the buttons. */
-export function Hero({ label, verdict, sub, warn, left, art, big, children, actions, className, ...rest }: HeroProps) {
+export function Hero({ label, verdict, sub, warn, left, art, big, graphic, children, actions, className, ...rest }: HeroProps) {
+  const hasG = graphic != null && graphic !== false
   const text = (
     <>
       {label != null && label !== '' && <span className="fo-hero-lbl">{label}</span>}
+      {hasG && graphic}
       <p className="fo-hero-verdict">{verdict}</p>
       {sub != null && sub !== false && sub !== '' && <p className="fo-hero-sub">{sub}</p>}
     </>
   )
   return (
-    <section className={cx('fo-card fo-hero', warn && 'warn', big && 'big', art && 'has-art', className)} data-closed={actions ? 'false' : 'true'} {...rest}>
+    <section className={cx('fo-card fo-hero', warn && 'warn', big && 'big', art && 'has-art', hasG && 'has-g', className)} data-closed={actions ? 'false' : 'true'} {...rest}>
       {art && <span className="fo-hero-art" aria-hidden="true"><Icon3D name={art} size={96} /></span>}
       {left != null && left !== false
         ? <div className="fo-hero-row"><span className="fo-hero-left">{left}</span><div className="fo-hero-tx">{text}</div></div>

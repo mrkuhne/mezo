@@ -151,7 +151,7 @@ describe('EnergyBreakdownSheet', () => {
     render(<EnergyBreakdownSheet breakdown={learnedBreakdown} initial="base" onClose={vi.fn()} />, { wrapper: Router })
     expect(screen.getByText('Tanult alap · Közepesen biztos · ±140 kcal')).toBeInTheDocument()
     expect(eq(seg(/^Alap · tanult/))).toEqual(['2 880Képlet szerint · alapanyagcsere × életmód', '→', '2 272Tanult alap'])
-    expect(screen.getByText('edzés nélkül').tagName).toBe('B')
+    expect(screen.getByText('edzés nélkül').tagName).toBe('STRONG')
     expect(screen.getByText(/A képlet 2 880 kcal-t mondana\./)).toBeInTheDocument()
     // The false equation (BMR × formula = learned) is gone — no separate "Alapanyagcsere" tile.
     expect(screen.queryByText(/^Alapanyagcsere ·/)).not.toBeInTheDocument()
@@ -211,7 +211,7 @@ describe('EnergyBreakdownSheet', () => {
   it('the formula base path: resting burn × lifestyle factor = base, in the new words', () => {
     render(<EnergyBreakdownSheet breakdown={fuelBreakdown} initial="base" onClose={vi.fn()} />, { wrapper: Router })
     expect(eq(seg(/^Alap · képlet szerint/))).toEqual(['1 893Alapanyagcsere · Katch-McArdle', '×', '1,20Életmód-szorzó · Ülő', '=', '2 272Alap'])
-    expect(screen.getByText('életmód-szorzóddal').tagName).toBe('B')
+    expect(screen.getByText('életmód-szorzóddal').tagName).toBe('STRONG')
     expect(screen.queryByText(/Tanult alap/)).not.toBeInTheDocument()
     expect(screen.queryByText(/BMR|NEAT|Alaphő/)).not.toBeInTheDocument()
   })

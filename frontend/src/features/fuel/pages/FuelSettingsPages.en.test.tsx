@@ -52,7 +52,7 @@ describe('Fuel settings in English', () => {
     expect(screen.getByLabelText('Fibre target (g)')).toBeInTheDocument()
     expect(screen.getByRole('group', { name: 'Protein level' })).toHaveTextContent('LowModerateHigh')
     expect(screen.getByRole('switch', { name: 'Learn from your weight and food' })).toHaveAttribute('aria-checked', 'true')
-    expect(screen.getByText('each week Mezo learns how much energy you really use')).toBeInTheDocument()
+    expect(screen.getByText('each week I learn how much energy you really use')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
   })
 

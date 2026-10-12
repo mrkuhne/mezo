@@ -39,15 +39,16 @@ import type { FuelMeal, FuelSlot, Ingredient, MealInput, MealItemInput, MealSlot
 import { useDietSettings, useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { useMealCeremony } from '@/features/fuel/MealCeremonyProvider'
 import { reportDraftOutcome } from '@/data/aidraft/outcomeClient'
-import { nowOffsetIso, offsetIso, localDateString, huMonthDay } from '@/shared/lib/dates'
+import { nowOffsetIso, offsetIso, localDateString } from '@/shared/lib/dates'
 import { resizeImage } from '@/shared/lib/resizeImage'
 import { plural, useM } from '@/shared/i18n'
-import { fmtGrouped } from '@/shared/lib/format'
+import { fmtDate, fmtGrouped } from '@/shared/lib/format'
 import { Icon3D, type Icon3DName } from '@/shared/ui/clay'
 import { Acts, Btn, Bub, Card, Empty, Hero, Input, Lk, Note, Page, Row, Section, Seg, TextArea, Txt } from '@/shared/ui/folyadek'
 import { EditLine, LineTags, MealCells, NumG, PourBowl, PourKey } from '@/features/fuel/components/folyadek'
 import { NutrientCells } from '@/features/fuel/components/NutrientCells'
-import { KamraPickSheet, pantryGlyph } from '@/features/fuel/sheets/KamraPickSheet'
+import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
+import { pantryCategoryIcon } from '@/features/fuel/logic/kamraItems'
 import { ReceptPickSheet } from '@/features/fuel/sheets/ReceptPickSheet'
 import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 import { defaultMealSlot } from '@/features/fuel/logic/defaultMealSlot'
@@ -77,7 +78,7 @@ const zero = { kcal: 0, p: 0, c: 0, f: 0 }
  *  becsült sornál az energiájának uralkodó makrója — pusztán vizuális. */
 function lineGlyph(l: { source: 'recipe' | 'pantry' | 'estimate'; refId?: string }, c: { p: number; c: number; f: number }, ingredients: Ingredient[]): Icon3DName {
   if (l.source === 'recipe') return 't-book'
-  if (l.source === 'pantry') return pantryGlyph(ingredients.find(x => x.id === l.refId)?.category)
+  if (l.source === 'pantry') return pantryCategoryIcon(ingredients.find(x => x.id === l.refId)?.category)
   const shares: [Icon3DName, number][] = [['t-protein', c.p * 4], ['t-carb', c.c * 4], ['t-avocado', c.f * 9]]
   const top = shares.reduce((a, b) => (b[1] > a[1] ? b : a))
   return top[1] > 0 ? top[0] : 't-plate'
@@ -656,7 +657,7 @@ export function MealComposer({
   const afterDay = dayBefore + total.kcal
   const itemsWord = `${lines.length} ${plural(lines.length, L.total.items)}`
   const totalsDayLabel = logDate != null && logDate !== localDateString()
-    ? L.total.daySoFar(M.fuelLog.page.day(huMonthDay(logDate)))
+    ? L.total.daySoFar(fmtDate(logDate, 'long'))
     : L.total.todaySoFar
   const placedText = timePlacement?.label != null && timePlacement.window != null
     ? L.time.placed(timePlacement.label, timePlacement.window.from, timePlacement.window.to)
@@ -674,7 +675,7 @@ export function MealComposer({
         aria-label={L.field} placeholder={L.placeholder} rows={2} />
     </VoiceField>
   )
-  const aiErr = aiError && <Note className="fg-bad" role="alert">{L.aiError}</Note>
+  const aiErr = aiError && <Note tone="bad" role="alert">{L.aiError}</Note>
 
   const linesBlock = showConfirm ? (num: number) => (
     <>
@@ -695,7 +696,7 @@ export function MealComposer({
             macros={meta.contribution}
           >
             {l.source !== 'estimate' && <NutrientCells nutrients={meta.nutrients} />}
-            {l.needsReview && <Note className="fg-warn">{l.source === 'pantry' ? L.reviewPantry : L.reviewOther}</Note>}
+            {l.needsReview && <Note tone="warn">{l.source === 'pantry' ? L.reviewPantry : L.reviewOther}</Note>}
             {l.source === 'recipe' && (() => {
               const r = recipes.find(x => x.id === l.refId)
               if (!r || r.ingredients.length === 0) return null
@@ -785,7 +786,7 @@ export function MealComposer({
                 <span className="fg-aiphoto">
                   {photoUrl && <img src={photoUrl} alt={L.photoAlt} />}
                   <span>{aiPhoto.name}</span>
-                  <button type="button" className="fg-x" aria-label={L.removePhoto} onClick={() => setAiPhoto(null)}>×</button>
+                  <button type="button" className="fx-x" aria-label={L.removePhoto} onClick={() => setAiPhoto(null)}>×</button>
                 </span>
               ) : (
                 <label className="fo-btn sm ghost fg-photo">
@@ -819,10 +820,10 @@ export function MealComposer({
         ? L.total.over(fmtGrouped(afterDay - dayTarget))
         : L.total.left(fmtGrouped(dayTarget - afterDay))}
       sub={L.total.sub(totalsDayLabel, fmtGrouped(dayBefore), fmtGrouped(total.kcal), fmtGrouped(afterDay), fmtGrouped(dayTarget), itemsWord)}
-    >
-      <NumG graphic={<PourBowl before={bowlPct(dayBefore)} add={bowlPct(total.kcal)} />} value={fmtGrouped(total.kcal)} unit="kcal">
+      graphic={<NumG graphic={<PourBowl before={bowlPct(dayBefore)} add={bowlPct(total.kcal)} />} value={fmtGrouped(total.kcal)} unit="kcal">
         <MealCells protein={total.p} carbs={total.c} fat={total.f} fiber={totalNutrients.fiberG == null ? null : Math.round(totalNutrients.fiberG)} fiberTarget={dietSettings.fiberG} />
-      </NumG>
+      </NumG>}
+    >
       <PourKey before={L.total.soFar(fmtGrouped(dayBefore))} add={L.total.thisMeal} />
       <NutrientCells nutrients={totalNutrients} size="md" />
     </Hero>
@@ -838,12 +839,12 @@ export function MealComposer({
       actions={aiPanelVisible && !aiBusy
         ? <Btn disabled={!canRunAi} onClick={() => void runAi()}>{L.analyse}</Btn>
         : undefined}
-    >
-      <NumG graphic={<PourBowl before={bowlPct(dayBefore)} add={bowlPct(roomKcal)} ghost />}
+      graphic={<NumG graphic={<PourBowl before={bowlPct(dayBefore)} add={bowlPct(roomKcal)} ghost />}
         value={fmtGrouped(Math.max(0, dayTarget - dayBefore))} unit={L.room.fits}>
         <PourKey before={L.total.soFar(fmtGrouped(dayBefore))}
           add={room?.windowName != null && room.budgetKcal != null ? L.room.windowBudget(room.windowName, fmtGrouped(room.budgetKcal)) : L.room.goesHere} />
-      </NumG>
+      </NumG>}
+    >
       {aiPanelVisible && aiField}
       {aiErr}
     </Hero>
@@ -877,11 +878,11 @@ export function MealComposer({
                   <Btn sm ghost onClick={() => { setTimeOverride(null); setNowHHmm(localHHmm()); setTimeSaveError(null) }}>{L.time.nowBtn}</Btn>
                 </div>
                 <Note>{placedText}</Note>
-                {invalidTime && <Note role="alert" className="fg-bad">{L.time.invalid}</Note>}
-                {isFutureTime && <Note role="alert" className="fg-bad">{L.time.future}</Note>}
+                {invalidTime && <Note tone="bad" role="alert">{L.time.invalid}</Note>}
+                {isFutureTime && <Note tone="bad" role="alert">{L.time.future}</Note>}
               </>
             )}
-            {timeSaveError && <Note role="alert" className="fg-bad">{L.time.saveError}</Note>}
+            {timeSaveError && <Note tone="bad" role="alert">{L.time.saveError}</Note>}
           </>
         )}
       </Card>

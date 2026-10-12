@@ -107,12 +107,12 @@ function renderPage() {
 
 test('renders all nine quick-log tiles and the Mondd el Mezónak row', () => {
   renderPage()
-  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
+  for (const label of ['Étkezés', 'Víz', 'Kiegészítők', 'Edzés', 'Sport', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByText(label)).toBeInTheDocument()
   expect(screen.getByText('Mondd el Mezónak')).toBeInTheDocument()
 })
 
-test('the Stack tile navigates to /fuel/stack without also invoking the page onDone (mezo-mhum)', async () => {
+test('the Kiegészítők tile navigates to /fuel/stack without also invoking the page onDone (mezo-mhum)', async () => {
   // MemoryRouter applies `go(-1)` and the subsequent `push(target)` in the same synchronous
   // tick, so both a correct and a buggy `close` land on the same final `location.pathname`
   // (real browsers differ: `history.go(-1)` is genuinely async there, so a `navigate(-1)`
@@ -120,7 +120,7 @@ test('the Stack tile navigates to /fuel/stack without also invoking the page onD
   // bug). Asserting on `navigateCalls` catches the ordering directly: the page variant's grid
   // must never call `navigate(-1)` for a navigating tile, whatever jsdom's history does with it.
   renderPage()
-  await userEvent.click(screen.getByRole('button', { name: /Stack/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Kiegészítők/ }))
   await vi.waitFor(() => expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/stack'))
   expect(navigateCalls).not.toContain(-1)
   expect(navigateCalls).toContain('/fuel/stack')

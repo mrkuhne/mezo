@@ -34,6 +34,7 @@
 // (Makrók / Minőség / Mikrotápanyagok), Elkészítés, and „Kérj módosítást" — the dock as a card of
 // the page (no floating bar). Words in `fuelRecept.workshop`.
 // ============================================================
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLeaveAfterMutation } from '@/shared/hooks/useBackNav'
@@ -82,10 +83,6 @@ const DEFAULT_META: BaseMeta = { slot: null, tags: [], starred: false, prepMins:
 const FLASH_MS = 2600
 
 /** `**…**` in a catalog sentence marks its bold part. */
-function Marked({ text }: { text: string }) {
-  return <>{text.split('**').map((part, i) => (i % 2 ? <b key={i}>{part}</b> : part))}</>
-}
-
 export function RecipeWorkshopPage() {
   const M = useM()
   const C = M.fuelRecept.common
@@ -367,8 +364,9 @@ export function RecipeWorkshopPage() {
     return (
       <Page className="fc-page">
         {back}
-        <Hero className="fc-ghero" label={W.emptyLabel} verdict={busy ? W.emptyVerdictBusy : W.emptyVerdict} sub={W.emptySub}>
-          <div className="fc-potc" aria-hidden="true"><Pot pct={0} size={150} /></div>
+        <Hero className="fc-ghero" label={W.emptyLabel} verdict={busy ? W.emptyVerdictBusy : W.emptyVerdict} sub={W.emptySub}
+          graphic={<div className="fc-potc" aria-hidden="true"><Pot pct={0} size={150} /></div>}
+        >
           {dock}
         </Hero>
         <Section n={1} title={W.howSection} />
@@ -400,13 +398,13 @@ export function RecipeWorkshopPage() {
               : sourceRecipeId ? W.verdictUpdate : W.verdictReady}
         sub={nEst > 0 ? W.subEstimate : fromMealId ? W.subFromMeal : undefined}
         actions={<Btn disabled={!canSave} onClick={save}>{saveLabel}</Btn>}
-      >
-        <Input className="fc-name" value={draft.name} aria-label={W.nameAria} placeholder={W.nameAria}
+        graphic={<><Input className="fc-name" value={draft.name} aria-label={W.nameAria} placeholder={W.nameAria}
           onChange={e => setDraft(d => (d ? { ...d, name: e.target.value } : d))} />
         <NumG graphic={<Pot pct={lineCount ? Math.max(8, (nOk / lineCount) * 100) : 0} size={104} />}
           value={fmtGrouped(shown.kcal)} unit={whole ? C.kcalWhole : C.kcalPerServing}>
-          <p>{lineCount === 0 ? W.potEmpty : nEst > 0 ? <Marked text={W.potMixed(lineCount, nOk, nEst)} /> : W.potAll(lineCount)}</p>
-        </NumG>
+          <p>{lineCount === 0 ? W.potEmpty : nEst > 0 ? <SafeMarkdown text={W.potMixed(lineCount, nOk, nEst)} /> : W.potAll(lineCount)}</p>
+        </NumG></>}
+      >
         <TwoBtn className="fc-ws">
           <div>
             <Stepper className="fc-stp" name={C.servingsName} n={draft.servings} min={1} max={12}
@@ -433,7 +431,7 @@ export function RecipeWorkshopPage() {
         ))}
         {lineCount === 0 && <Empty icon="t-stack">{W.linesEmpty}</Empty>}
         {/* Őszinte-null: ha egy sor makrója nem oldható fel, azt MEGMONDJUK, nem pótoljuk. */}
-        {unresolved > 0 && <Note className="fc-warn">{W.unresolved(unresolved)}</Note>}
+        {unresolved > 0 && <Note tone="warn">{W.unresolved(unresolved)}</Note>}
       </Card>
 
       {/* UGYANAZOK a blokkok, amiket a recept- és az étkezés-részletlap rajzol. A számaik

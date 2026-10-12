@@ -9,7 +9,6 @@ const PATTERN = /hu-HU|toLocale(Date|Time)?String\(|new Intl\./
 const HOME = 'shared/lib/format.ts'
 
 const ALLOWLIST: string[] = [
-  'data/fuel/fuelApi.ts',
   'data/insights/chatApi.ts',
   'data/insights/chatHooks.ts',
   'data/insights/predictionsApi.ts',
@@ -27,8 +26,6 @@ const ALLOWLIST: string[] = [
   'features/character/pages/KonziliumPage.tsx',
   'features/character/sheets/CharacterEvidenceSheet.tsx',
   'features/character/sheets/CharacterRevisionSheet.tsx',
-  'features/fuel/logic/keretHero.ts',
-  'features/fuel/sheets/learnedBaseFormat.ts',
   'features/insights/components/MemoryJournalPanel.tsx',
   'features/insights/logic/chatRefs.ts',
   'features/insights/logic/memoirArchive.ts',

@@ -87,7 +87,7 @@ export function FuelLogModes({ mode, onMode, onSource, photo, onPhoto, onRemoveP
         <span className="fg-pcap">
           <span><strong>{L.attached}</strong><small>{photo.name}</small></span>
           <Lk onClick={openPhoto}>{L.replace}</Lk>
-          <button type="button" className="fg-x" aria-label={L.remove} onClick={onRemovePhoto}>×</button>
+          <button type="button" className="fx-x" aria-label={L.remove} onClick={onRemovePhoto}>×</button>
         </span>
       </div>
     ) : compact ? null : (

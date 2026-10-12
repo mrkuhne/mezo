@@ -1,8 +1,6 @@
 // Fuel · Mai (area A) (Folyadék F5, mezo-n4wf5.5) — the words of this area's screens, sheets, states, aria-labels, placeholders and toasts.
 // Hungarian is the source; wording = the approved prototype's `L(hu, en)` pairs. Owned by the area's builder (ADD keys here only).
 export const fuelMaiHu = {
-  // behaviour change 1 (owner 2026-10-12): the title of a meal logged outside every window (logic/buildDayPlan, step 3b)
-  betweenMeals: (time: string) => `Ablakon kívül · ${time}`,
   // the day pager (shared/ui/DayNavigator)
   dayNav: {
     prev: 'Előző nap',
@@ -30,8 +28,8 @@ export const fuelMaiHu = {
       over: 'a keret felett',
       overEstimate: 'a keret körül',
     },
-    // `|…|` marks the bold part (the component splits on it)
-    skipped: (labels: string, kcal: string) => `|${labels} kihagyva| · ${kcal} kcal kiesett a napból`,
+    // `**…**` marks the bold part (rendered by `SafeMarkdown`)
+    skipped: (labels: string, kcal: string) => `**${labels} kihagyva** · ${kcal} kcal kiesett a napból`,
     log: 'Étkezés logolása',
     logPast: 'Pótlás erre a napra',
     why: 'Miből jön össze?',
@@ -60,7 +58,7 @@ export const fuelMaiHu = {
     baseLearned: 'a súlytrendedből és az evésedből tanulva',
     baseFormula: 'az alapanyagcseréd és az életmódod',
     weeklyTail: (sub: string) => `${sub} · heti tanulás ›`,
-    weeklyAria: (value: string, word: string) => `Alap ${value} kcal — heti tanulás: ${word}, megnyitás`,
+    weeklyAria: (value: string, word: string) => `Alap ${value} kcal, heti tanulás: ${word}, megnyitás`,
     weeklyWord: {
       holding: 'ezen a héten vártam',
       step: (kcal: string) => `${kcal} kcal`,
@@ -136,8 +134,6 @@ export const fuelMaiHu = {
     skip: 'Kihagyom',
     skipDone: 'Kihagytam',
     mealFallback: 'Étkezés',
-    cellKnown: (name: string, grams: string) => `${name} ${grams} g`,
-    cellNone: (name: string) => `${name} nincs adat`,
     empty: 'Ma még nincs tervezett étkezési ablak. Logolj bármit, bármikor.',
   },
   // the page (FuelMaiPage): the strip toast, the „between meals" section, the toasts
@@ -148,9 +144,9 @@ export const fuelMaiHu = {
     logAnything: 'Logolj bármit',
     logAnythingSub: 'ablakon kívül is',
     logAnythingAria: 'Logolás ablakon kívül',
-    bait: (date: string, n: number) => `${date.toLowerCase()}. · ${n} ablak pótolható`,
+    bait: (date: string, n: number) => `${date} · ${n} ablak pótolható`,
     baitSub: 'tegnap',
-    baitAria: (date: string, n: number) => `Pótlás · ${date.toLowerCase()}. · ${n} ablak pótolható`,
+    baitAria: (date: string, n: number) => `Pótlás · ${date} · ${n} ablak pótolható`,
     backfillFirst: (label: string) => `${label} pótlása`,
   },
   // the day's mark in the learning (DayLearningMark)
@@ -158,8 +154,8 @@ export const fuelMaiHu = {
     section: 'A nap a tanulásban',
     usable: 'Ez a nap számít a tanulásban',
     suspicious: 'Ez a nap hiányosnak tűnt, kihagytam',
-    markedIncomplete: 'Ezt a napot hiányosnak jelölted — kihagyom a tanulásból',
-    confirmedComplete: 'Ezt a napot teljesnek jelölted — számít a tanulásban',
+    markedIncomplete: 'Ezt a napot hiányosnak jelölted: kihagyom a tanulásból',
+    confirmedComplete: 'Ezt a napot teljesnek jelölted: számít a tanulásban',
     todayNote: 'A mai napot jövő hétfőn számolom bele. A jelölést addig is elmentem.',
     what: 'Mit jelent ez?',
     undo: 'Visszavonom',
@@ -183,8 +179,8 @@ export const fuelMaiHu = {
     cardAria: 'Kímélő mód · ma nincs kalóriacél',
     noTarget: 'Ma nincs kalóriacél.',
     lead: 'Pihenj, igyál, és egyél, amikor megy. A számokat most elengedjük.',
-    // `|…|` marks the bold part
-    eaten: (kcal: string) => `Ma eddig |${kcal} kcal|; nem mérjük semmihez.`,
+    // `**…**` marks the bold part (rendered by `SafeMarkdown`)
+    eaten: (kcal: string) => `Ma eddig **${kcal} kcal**; nem mérjük semmihez.`,
     eatenNone: 'Amit megeszel, beírhatod. Nem mérjük semmihez.',
     waterAria: 'Víz logolása',
     waterValue: (now: string, target: string) => `${now} / ${target} l`,

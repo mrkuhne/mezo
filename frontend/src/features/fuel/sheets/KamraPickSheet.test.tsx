@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, afterEach, expect, test, vi } from 'vitest'
 import { KamraPickSheet } from '@/features/fuel/sheets/KamraPickSheet'
 import { usePantry } from '@/data/hooks'
+import { pantryCategoryLabel } from '@/features/fuel/logic/kamraItems'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -44,7 +45,7 @@ test('a category chip narrows the list to its own items; tapping it again restor
   const cat = cats.find(c => pantry.ingredients.some(i => i.category !== c))!
   const inCat = pantry.ingredients.filter(i => i.category === cat)
   const outOfCat = pantry.ingredients.find(i => i.category !== cat)!
-  const label = pantry.categoryMeta[cat]?.label ?? cat
+  const label = pantryCategoryLabel(cat) ?? cat
 
   const group = screen.getByRole('group', { name: 'Kategória-szűrő' })
   await userEvent.click(within(group).getByRole('button', { name: label }))
@@ -62,7 +63,7 @@ test('search and category chip compose; an empty intersection says so honestly',
   const cats = [...new Set(pantry.ingredients.map(i => i.category))].filter(Boolean)
   const cat = cats.find(c => pantry.ingredients.some(i => i.category !== c))!
   const outOfCat = pantry.ingredients.find(i => i.category !== cat)!
-  const label = pantry.categoryMeta[cat]?.label ?? cat
+  const label = pantryCategoryLabel(cat) ?? cat
 
   const group = screen.getByRole('group', { name: 'Kategória-szűrő' })
   await userEvent.click(within(group).getByRole('button', { name: label }))

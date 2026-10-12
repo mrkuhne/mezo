@@ -26,6 +26,7 @@
 //   • a napi súlymérések: `useWeight().weightLog`; a súlycél: `useGoal()` (cél nélkül nincs vízvonal).
 // C5: a coach-történet cache-only — ez a lap csak OLVAS, étkezés-coach generálást nem indít.
 // ============================================================
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useId, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useFuelWeek, useFuelWeekRollup, mondayIso } from '@/data/fuel/fuelWeekHooks'
@@ -41,9 +42,9 @@ import { fmtGrouped } from '@/shared/lib/format'
 import { useM } from '@/shared/i18n'
 import { Icon3D } from '@/shared/ui/clay'
 import { Card, Hero, Lab, Note, Page, Row, Section, Stat, StatGrid, Txt, useFrameTitle } from '@/shared/ui/folyadek'
-import { MACRO_COLOR } from '@/features/fuel/components/folyadek'
+import { Lgd, MACRO_COLOR, type LgdKind } from '@/features/fuel/components/folyadek'
 import { FuelHorizon, horizonNeedsMoreWeeks } from '@/features/fuel/components/FuelHorizon'
-import { FuelWeekDayGlass, Marked } from '@/features/fuel/components/FuelWeekDayGlass'
+import { FuelWeekDayGlass } from '@/features/fuel/components/FuelWeekDayGlass'
 import { fuelPatternRefs } from '@/features/fuel/logic/fuelPatternRefs'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { hhmmFromLoggedAt } from '@/features/fuel/logic/buildDayPlan'
@@ -94,20 +95,20 @@ function WeekVessels({ days, max, disabled, onOpen }: { days: WeekDayVM[]; max: 
   )
 }
 
-/** A hős jelmagyarázata (prototípus `lgd` a B terület `we` / `rec` / `tr` jeleivel — a közös `Lgd` ezeket nem ismeri). */
+/** A hős jelmagyarázata (prototípus `lgd`): a közös `Lgd`, a hét saját jeleivel (`we` / `rec` / `trd`). */
 function WeekLegend({ days }: { days: WeekDayVM[] }) {
   const L = useM().fuelTrendek.legend
   const any = (f: (d: WeekDayVM) => boolean) => days.some(f)
-  const items: Array<[string, string]> = [
+  const items: Array<[LgdKind, string]> = [
     ['liq', L.eaten],
     ['line', L.budget],
-    ...(any((d) => d.over) ? [['over', L.over] as [string, string]] : []),
-    ...(any((d) => !d.logged && !d.recovery) ? [['gap', L.noData] as [string, string]] : []),
-    ...(any((d) => d.recovery) ? [['rec', L.recovery] as [string, string]] : []),
+    ...(any((d) => d.over) ? [['over', L.over] as [LgdKind, string]] : []),
+    ...(any((d) => !d.logged && !d.recovery) ? [['gap', L.noData] as [LgdKind, string]] : []),
+    ...(any((d) => d.recovery) ? [['rec', L.recovery] as [LgdKind, string]] : []),
     ['we', L.weekend],
-    ...(any((d) => d.training) ? [['tr', L.training] as [string, string]] : []),
+    ...(any((d) => d.training) ? [['trd', L.training] as [LgdKind, string]] : []),
   ]
-  return <div className="fr-lg">{items.map(([kind, label]) => <span key={kind}><i className={kind} />{label}</span>)}</div>
+  return <Lgd center className="fr-lg" items={items} />
 }
 
 /** Két közlekedőedény (prototípus `linked` + a keret vonala): a naplózott, nem kímélő napok kerethez mért átlaga
@@ -341,13 +342,13 @@ export function FuelTrendekPage() {
       <Hero
         className="fr-hero"
         label={loading ? T.hero.labelLoading : T.hero.label(vm.loggedCount)}
-        verdict={<span className="fr-read"><Marked text={verdict} /></span>}
+        verdict={<span className="fr-read"><SafeMarkdown text={verdict} /></span>}
         sub={sub ? `${sub} ${T.hero.hint}` : T.hero.hint}
-      >
-        <div className="fr-hg">
+        graphic={<div className="fr-hg">
           <WeekVessels days={vm.days} max={max} disabled={loading} onOpen={setOpenDate} />
           <WeekLegend days={vm.days} />
-        </div>
+        </div>}
+      >
       </Hero>
 
       <Section n={1} title={T.numbers.title} />
@@ -372,7 +373,7 @@ export function FuelTrendekPage() {
         <Note className="fr-split-note">
           {delta == null
             ? T.split.needBoth
-            : <Marked text={(delta > 0 ? T.split.gapWeekend : T.split.gapWeekdays)(gap!)} />}
+            : <SafeMarkdown text={(delta > 0 ? T.split.gapWeekend : T.split.gapWeekdays)(gap!)} />}
         </Note>
       </Card>
 

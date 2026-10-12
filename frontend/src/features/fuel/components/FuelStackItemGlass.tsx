@@ -56,7 +56,7 @@ export function FuelStackItemGlass({ row, onClose, onToggle }: {
           {row.dose || stock ? (
             <>
               <Lab>{M.item.fromProduct}</Lab>
-              <div className="fk-kv"><Kv items={facts} /></div>
+              <Kv spanLast items={facts} />
             </>
           ) : (
             <>

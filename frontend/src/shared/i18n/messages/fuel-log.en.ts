@@ -1,4 +1,5 @@
 import type { Shape } from '../shape'
+import { plural } from '../plural'
 import type { fuelLogHu } from './fuel-log.hu'
 
 export const fuelLogEn: Shape<typeof fuelLogHu> = {
@@ -13,7 +14,6 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
     back: 'Back',
     eyebrow: (kind, day, rel) => `${kind} · ${day} · ${rel}`,
     eyebrowNow: (kind, rel, time) => `${kind} · ${rel} · ${time}`,
-    day: (monthDay) => monthDay,
     windowLabel: (label, span) => `${label} · ${span} · window`,
     free: 'Free entry · you pick the time',
     pastNote: (day) => `What you log here is booked to **${day}**; it gets a score too.`,
@@ -49,7 +49,7 @@ export const fuelLogEn: Shape<typeof fuelLogHu> = {
       headChanged: (n, changed) => `Ingredients · ${n} · ${changed} changed`,
       open: 'fine-tune',
       close: 'collapse',
-      whole: (servings) => `for the whole recipe (${servings} servings)`,
+      whole: (servings) => `for the whole recipe (${servings} ${plural(servings, { one: 'serving', other: 'servings' })})`,
       resetAll: 'Reset all',
     },
     total: {

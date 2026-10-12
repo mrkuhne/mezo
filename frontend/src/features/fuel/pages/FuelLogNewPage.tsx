@@ -22,7 +22,8 @@ import { buildWindowLane, asPastDayLane, tileKey, type WindowTileVM } from '@/fe
 import { backfillOffset } from '@/features/fuel/logic/backfillWindow'
 import { rankUsualMeals } from '@/features/fuel/logic/usualMeals'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
-import { addDays, huMonthDay, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
+import { fmtDate } from '@/shared/lib/format'
 import { useM } from '@/shared/i18n'
 import { FrameBack, useFrameTitle } from '@/shared/ui/folyadek'
 import { Strip } from '@/features/fuel/components/folyadek'
@@ -71,7 +72,8 @@ export function FuelLogNewPage() {
   // belső navigáció nem futhat bele a redirectjébe.
   const back = () => navigate(`/fuel${past ? `?d=${date}` : ''}`, { replace: true })
 
-  const dayLabel = P.day(huMonthDay(date))
+  // the long day (prototype `dL`); the late-entry button carries the short form (`dS`)
+  const dayLabel = fmtDate(date, 'long')
 
   // A kamera az alapnézet; a szöveg és mikrofon a héj alatt végig elérhető. A héj állapotai itt
   // élnek, a felismerés pedig a composer egyetlen AI-hívóhelyén fut.
@@ -100,7 +102,7 @@ export function FuelLogNewPage() {
     title: editing ? P.edit : tile ? tile.label : P.outside,
     eyebrow: editing
       ? (editMeal != null ? mealDisplayName(editMeal) ?? P.meal : P.meal)
-      : P.eyebrow(past ? P.late : P.log, dayLabel, past ? huWeekdayFullIso(date).toLowerCase() : P.today),
+      : P.eyebrow(past ? P.late : P.log, dayLabel, past ? fmtDate(date, 'weekdayLower') : P.today),
   })
 
   const modes = (compact: boolean) => (
@@ -147,7 +149,7 @@ export function FuelLogNewPage() {
       editMealId={editMealId}
       eatingTimeWindows={!editing ? plan.slots : undefined}
       logDate={past ? date : undefined}
-      saveLabel={past ? P.saveLate(dayLabel) : undefined}
+      saveLabel={past ? P.saveLate(fmtDate(date, 'short')) : undefined}
       onSaved={back}
       onCancel={back}
     />

@@ -9,6 +9,7 @@
 // Calm, never graded: nothing here compares, counts down or turns red. The copy is guidance, not medicine —
 // and says so.
 // ============================================================
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { useState } from 'react'
 import { useM } from '@/shared/i18n'
 import { fmtGrouped, fmtNum } from '@/shared/lib/format'
@@ -16,7 +17,6 @@ import { Btn, Card, Chips, Hero, Lab, Lk, Note, Section } from '@/shared/ui/foly
 import type { Icon3DName } from '@/shared/ui/clay'
 import { Glass, MACRO_COLOR, Tip } from '@/features/fuel/components/folyadek'
 import { DoctorSheet, type DoctorCategory } from '@/features/fuel/sheets/DoctorSheet'
-import { withBold } from '@/features/fuel/components/FuelEnergyHero'
 
 /** The glyph and colour of each tip, in the order of the catalog's `gentle.tips` lists. */
 const TIP_ART: Record<DoctorCategory, readonly { icon: Icon3DName; color?: string }[]> = {
@@ -44,7 +44,7 @@ export function FuelGuidanceCard({ category, day, waterMl, waterTargetMl, eatenK
   return (
     <>
       <Hero warn className="fa-gh" aria-label={G.cardAria} label={label} verdict={G.noTarget}
-        sub={<>{G.lead} {eatenKcal > 0 ? withBold(G.eaten(fmtGrouped(eatenKcal))) : G.eatenNone}</>}
+        sub={<>{G.lead} {eatenKcal > 0 ? <SafeMarkdown text={G.eaten(fmtGrouped(eatenKcal))} /> : G.eatenNone}</>}
         left={(
           <button type="button" className="fa-gl" onClick={onWater} aria-label={G.waterAria}>
             <Glass pct={pct} size={74} />
@@ -65,7 +65,7 @@ export function FuelGuidanceCard({ category, day, waterMl, waterTargetMl, eatenK
         {stomach && (
           <>
             <Lab>{G.easyLabel}</Lab>
-            <Chips className="fa-easy" items={[...G.easy]} />
+            <Chips plain className="fa-easy" items={[...G.easy]} />
             <Note>{G.easyNote}</Note>
           </>
         )}

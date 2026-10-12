@@ -35,6 +35,9 @@ export const fuelKozosHu = {
     aria: (p: string, ps: number, c: string, cs: number, f: string, fs: number, fiber: string) =>
       `fehérje ${p} g, az étkezés energiájának ${ps}%-a; szénhidrát ${c} g, ${cs}%; zsír ${f} g, ${fs}%; rost ${fiber}`,
     fiber: (grams: string, pct: number) => `${grams} g, a napi adag ${pct}%-a`,
+    // a meal with a missing macro gram: each capsule names what it knows
+    known: (name: string, grams: string) => `${name} ${grams} g`,
+    none: (name: string) => `${name} nincs adat`,
   },
   score: {
     pending: 'folyamatban',
@@ -54,8 +57,6 @@ export const fuelKozosHu = {
   // an editable line (`lineCard` / `cLine`)
   line: {
     remove: (name: string) => `${name} eltávolítása`,
-    less: (name: string) => `${name} csökkentés`,
-    more: (name: string) => `${name} növelés`,
     amount: (name: string) => `${name} mennyisége`,
   },
   gentle: 'Kímélő mód',

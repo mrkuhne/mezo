@@ -194,8 +194,9 @@ export function FuelSettingsPage() {
       <Page nonav className="fb-page">
         <UnsavedChangesGuard dirty={dirty} />
         {back}
-        <Hero className="fb-hero" label={S.hero.label} verdict={<span role="status">{T.loading}</span>} sub={S.loadingSub}>
-          <div className="fb-hg"><FuelWindowTide windows={evenWindows(4)} bare /></div>
+        <Hero className="fb-hero" label={S.hero.label} verdict={<span role="status">{T.loading}</span>} sub={S.loadingSub}
+          graphic={<div className="fb-hg"><FuelWindowTide windows={evenWindows(4)} bare /></div>}
+        >
         </Hero>
       </Page>
     )
@@ -219,12 +220,12 @@ export function FuelSettingsPage() {
         label={S.hero.labelMeals(mealCount)}
         verdict={timeline.budget.kcal > 0 ? S.hero.verdict(fmtGrouped(timeline.budget.kcal), mealCount) : S.hero.verdictNoBudget(mealCount)}
         sub={windowsKnown ? S.hero.sub : `${S.hero.windowsLoading} ${S.hero.sub}`}
-      >
-        <div className={windowsKnown ? 'fb-hg' : 'fb-hg is-bare'}>
+        graphic={<div className={windowsKnown ? 'fb-hg' : 'fb-hg is-bare'}>
           <FuelWindowTide windows={heroWindows} cutoff={caffeineCutoff} bare={!windowsKnown} />
           {/* a rajz olvasata a képernyőolvasónak: a piszkozat két értéke egy mondatban */}
           <p className="sr-only">{S.hero.summary(mealsPerDay, caffeineCutoff)}</p>
-        </div>
+        </div>}
+      >
       </Hero>
 
       <Section n={1} title={S.rhythm.title} />
@@ -265,7 +266,7 @@ export function FuelSettingsPage() {
 
         {previewError || dayError ? (
           <>
-            <Note className="fb-warn" role="alert">{S.macros.previewError}</Note>
+            <Note tone="warn" role="alert">{S.macros.previewError}</Note>
             <Acts><Btn sm ghost onClick={() => { retryPreview(); retryDay() }}>{S.macros.previewRetry}</Btn></Acts>
           </>
         ) : previewPending || dayPending ? (
@@ -295,7 +296,7 @@ export function FuelSettingsPage() {
                 </div>
               ))}
             </div>
-            {!customSumOk && <Note className="fb-bad" role="alert">{S.macros.sumError}</Note>}
+            {!customSumOk && <Note tone="bad" role="alert">{S.macros.sumError}</Note>}
             <Note>{S.macros.customNote}</Note>
           </>
         )}

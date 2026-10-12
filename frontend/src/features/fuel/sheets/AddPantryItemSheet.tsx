@@ -199,7 +199,7 @@ export function AddPantryItemSheet({
             )}
           </Field>
           {legacyPer != null && <Note>{A.legacyBasis(legacyPer, initial?.unit ?? 'g')}</Note>}
-          {lock && <Note className="fp-warn">{A.locked}</Note>}
+          {lock && <Note tone="warn">{A.locked}</Note>}
 
           {isFood ? (
             <>
