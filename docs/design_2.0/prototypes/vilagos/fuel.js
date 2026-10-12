@@ -39,26 +39,26 @@ const toMin=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};
 /* ── adatok (az élő mock alapján, mai nap: szerda, október 7.) ─────────── */
 /* a mai nap: szerda, 2026. október 7., 14:10. EGY forrás: a keret = Alap + Mozgás − Deficit (2 480 + 950 − 330 = 3 100); az ablakok kerete (SLOTS.b) összesen a napi keret;
    a makró-célok grammja kiadja a keretet (220×4 + 348×4 + 92×9 = 3 100). A B és a C terület is ebből olvas. */
-const DAY={eaten:2060,target:3100,p:[148,220],c:[224,348],f:[58,92],fib:[18,30],water:[1.3,2.5],now:'14:10',wake:'06:30',bed:'23:00',
+const DAY={eaten:2060,target:3100,p:[164,220],c:[197,348],f:[64,92],fib:[18,30],water:[1.3,2.5],now:'14:10',wake:'06:30',bed:'23:00',
   train:{start:'08:30',end:'09:28',label:'Felsőtest A'},
   /* budget.energy (a szerver adja): base = tanult alap (formula = a képlet), planned = tervezett és LOGOLT edzés, extra = terven kívüli logolt mozgás, pending = még meg nem csinált tervezett edzés, balance = a cél napi része */
   energy:{base:2480,formula:2400,sd:150,conf:1,planned:420,extra:530,pending:0,balance:-330,rate:.3,blocks:[['Felsőtest A','t-dumbbell',58,420,1]]}};
 /* b = az ablak saját kerete (Σ = DAY.target); why = a szerver ablak-okai (windowReasons) */
 const SLOTS=[{k:'reggeli',l:'Reggeli',e:'Breakfast',ic:'t-sun',from:'07:00',to:'10:00',b:775,why:['after-wake','protein-start']},{k:'ebed',l:'Ebéd',e:'Lunch',ic:'t-bowl',from:'12:00',to:'14:30',b:1005,why:['protein-spacing']},{k:'uzsonna',l:'Uzsonna',e:'Snack',ic:'t-snack',from:'16:00',to:'17:30',b:390,why:['bridge']},{k:'vacsora',l:'Vacsora',e:'Dinner',ic:'t-moon',from:'19:00',to:'21:00',b:930,why:['protein-spacing','before-bed']}];
 /* étkezés: w = ablak-index (−1 = ablak nélküli extra log); macro = [fehérje, szénhidrát, zsír] g; sugar null = a forrás nem adta meg (a vércukor-sáv ilyenkor becsül, és kimondja);
-   ings = [név, ikon, kamra-azonosító, forrás (kamra | recept | becslés), kcal, mennyiség, NOVA 1–4]; q = a Minőség három ténye a bontásból (mealQualityTruth), null = nincs adat;
+   ings = [név, ikon, kamra-azonosító, forrás (kamra | recept | becslés), kcal, mennyiség, NOVA 1–4, [fehérje, szénhidrát, zsír] g — a sor SAJÁT makrói a Kamra 100 g-os értékeiből]; az étkezés macro-ja a sorok összege, a DAY.eaten és a DAY.p/c/f elfogyasztott része az étkezések összege; q = a Minőség három ténye a bontásból (mealQualityTruth), null = nincs adat;
    headline / lead = az értékelés címsora és összegzése (régi AI-szöveg: angol módban is magyar marad); dims = a nyolc szempont pontja (DIMS sorrendjében) */
 const MEALS={
-  reggeli:{slot:'Reggeli',se:'Breakfast',w:0,name:'Túrós zabkása · áfonyával',time:'07:20',kcal:689,score:8.4,macro:[49,74,22],fib:7,sugar:24,salt:.3,sat:6.2,ctx:'pre',
-    ings:[['Zabpehely · gluténmentes','t-carb','zab','kamra',223,'60 g',1],['Túró · félzsíros','t-meat','turo','kamra',325,'250 g',1],['Áfonya · fagyasztott','t-fiber',null,'becslés',57,'100 g',1],['Akácméz','t-sugar',null,'becslés',84,'25 g',2]],
+  reggeli:{slot:'Reggeli',se:'Breakfast',w:0,name:'Túrós zabkása · áfonyával',time:'07:20',kcal:689,score:8.4,macro:[54,79,15],fib:7,sugar:24,salt:.3,sat:6.2,ctx:'pre',
+    ings:[['Zabpehely · gluténmentes','t-carb','zab','kamra',223,'60 g',1,[8,35,4]],['Túró · félzsíros','t-meat','turo','kamra',325,'250 g',1,[45,9,11]],['Áfonya · fagyasztott','t-fiber',null,'becslés',57,'100 g',1,[1,14,0]],['Akácméz','t-sugar',null,'becslés',84,'25 g',2,[0,21,0]]],
     q:{base:88,dens:158,ultra:0},
     headline:'Fehérjében erős, tiszta tányér',lead:'A fehérje és a feldolgozottság viszi. Ezt nyugodtan ismételheted.',cert:98,dims:[8.6,7.6,8.3,8.4,9.1,8.2,8.7,8.5]},
-  tizorai:{slot:'Reggeli',se:'Breakfast',w:-1,name:'Whey + banán + mandulavaj',time:'10:05',kcal:356,score:7.2,macro:[36,30,11],fib:3,sugar:null,salt:.3,sat:2.1,ctx:'post',
-    ings:[['Impact Whey · csoki','t-supps','whey','kamra',120,'30 g',4],['Banán','t-carb',null,'becslés',105,'120 g',1],['Mandulavaj · 100%','t-fat','mandula','kamra',131,'20 g',2]],
+  tizorai:{slot:'Reggeli',se:'Breakfast',w:-1,name:'Whey + banán + mandulavaj',time:'10:05',kcal:356,score:7.2,macro:[29,31,13],fib:3,sugar:null,salt:.3,sat:2.1,ctx:'post',
+    ings:[['Impact Whey · csoki','t-supps','whey','kamra',120,'30 g',4,[24,2,2]],['Banán','t-carb',null,'becslés',105,'120 g',1,[1,28,0]],['Mandulavaj · 100%','t-fat','mandula','kamra',131,'20 g',2,[4,1,11]]],
     q:{base:29,dens:209,ultra:1},
     headline:'Gyors, célzott, de feldolgozott',lead:'A whey viszi a pontot, a feldolgozottság húzza le.',cert:91,dims:[8.1,6.4,8.8,7.0,5.2,6.1,7.4,8.6]},
-  ebed:{slot:'Ebéd',se:'Lunch',w:1,name:'Csirke + édesburgonya + spenót',time:'12:40',kcal:1015,score:8.1,macro:[63,120,25],fib:8,sugar:17,salt:null,sat:5.4,
-    ings:[['Csirkemell · friss','t-meat','csirke','kamra',330,'300 g',1],['Édesburgonya','t-carb',null,'kamra',344,'400 g',1],['Spenót · friss','t-fiber',null,'becslés',46,'200 g',1],['Olívaolaj · extra szűz','t-avocado',null,'becslés',295,'33 ml',2]],
+  ebed:{slot:'Ebéd',se:'Lunch',w:1,name:'Csirke + édesburgonya + spenót',time:'12:40',kcal:1015,score:8.1,macro:[81,87,36],fib:8,sugar:17,salt:null,sat:5.4,
+    ings:[['Csirkemell · friss','t-meat','csirke','kamra',330,'300 g',1,[69,0,5]],['Édesburgonya','t-carb','edesburgonya','kamra',344,'400 g',1,[6,80,0]],['Spenót · friss','t-fiber',null,'becslés',46,'200 g',1,[6,7,1]],['Olívaolaj · extra szűz','t-avocado',null,'becslés',295,'33 ml',2,[0,0,30]]],
     q:{base:71,dens:null,ultra:0},
     headline:'Kiegyensúlyozott, edzés utánra ideális',lead:'Minden makró a helyén; a zsír is mértékkel.',cert:95,dims:[9.0,7.9,8.1,8.8,8.4,7.8,8.2,8.9]}
 };
@@ -203,17 +203,17 @@ const skLabel=sk=>sk.c==null?L('ok nélkül','no reason given'):sk.c===5?(sk.t?L
 const sl=s=>L(s.l,s.e);
 /* a nap további étkezései az „kesz” / „felett” archoz; a vacsora friss log: az értékelése még készül (score null → „folyamatban”) */
 const MX={
-  uzsonna:{slot:'Uzsonna',se:'Snack',w:2,name:'Túró · áfonya · méz quick',time:'16:10',kcal:324,score:7.8,macro:[36,24,10],fib:2,sugar:19,salt:.2,sat:4.1,rec:'r6',
-    ings:[['Túró · áfonya · méz quick','t-book',null,'recept',324,'1 adag',null]],q:{base:68,dens:185,ultra:0},
+  uzsonna:{slot:'Uzsonna',se:'Snack',w:2,name:'Túró · áfonya · méz quick',time:'16:10',kcal:324,score:7.8,macro:[36,22,9],fib:2,sugar:17,salt:.2,sat:3.9,rec:'r6',
+    ings:[['Túró · áfonya · méz quick','t-book',null,'recept',324,'1 adag',null,[36,22,9]]],q:{base:68,dens:185,ultra:0},
     headline:'Gyors fehérje edzés előttre',lead:'Könnyű és fehérjedús; a méz adja a gyors energiát.',cert:84,dims:[8.2,6.9,7.4,7.8,7.0,5.5,8.8,9.0]},
-  vacsora:{slot:'Vacsora',se:'Dinner',w:3,name:'Lazac + barna rizs + brokkoli',time:'19:40',kcal:636,score:null,macro:[38,58,29],fib:6,sugar:4,salt:.9,sat:5.2,
-    ings:[['Lazacfilé · norvég','t-meat','lazac','kamra',312,'150 g',1],['Barna rizs · főtt','t-carb',null,'becslés',276,'240 g',1],['Brokkoli · párolt','t-fiber',null,'becslés',48,'140 g',1]],q:{base:100,dens:120,ultra:0}}
+  vacsora:{slot:'Vacsora',se:'Dinner',w:3,name:'Lazac + barna rizs + brokkoli',time:'19:40',kcal:636,score:null,macro:[41,68,23],fib:6,sugar:4,salt:.9,sat:5.2,
+    ings:[['Lazacfilé · norvég','t-meat','lazac','kamra',312,'150 g',1,[31,0,20]],['Barna rizs · főtt','t-carb',null,'becslés',276,'240 g',1,[6,58,2]],['Brokkoli · párolt','t-fiber',null,'becslés',48,'140 g',1,[4,10,1]]],q:{base:100,dens:120,ultra:0}}
 };
 /* tegnap (kedd, okt. 6.) két felírt étkezése — a lezárt nap arcához és a nap-lapozóhoz */
-const YM={y1:{slot:'Reggeli',se:'Breakfast',w:0,past:1,name:'Kávé és vajas kifli',time:'09:20',kcal:330,score:6.1,macro:[8,38,16],fib:2,sugar:6,salt:.9,sat:8.2,
-    ings:[['Vajas kifli','t-carb',null,'becslés',290,'2 db',3],['Tejeskávé','t-tea',null,'becslés',40,'200 ml',1]],q:{base:12,dens:null,ultra:0},headline:'Gyors reggeli, kevés fehérjével',lead:'A fehérje és a rost hiányzik belőle.',cert:72,dims:[5.2,4.8,6.9,5.0,6.0,3.5,6.4,7.8]},
-  y2:{slot:'Ebéd',se:'Lunch',w:1,past:1,name:'Gulyásleves',time:'13:10',kcal:690,score:7.4,macro:[62,82,24],fib:7,sugar:9,salt:2.4,sat:7.1,
-    ings:[['Gulyásleves','t-pot',null,'becslés',560,'500 g',1],['Fehér kenyér','t-carb',null,'becslés',130,'50 g',3]],q:{base:81,dens:125,ultra:0},headline:'Laktató, fehérjében erős',lead:'A só az étkezés keretének felső szélén van.',cert:78,dims:[7.8,7.0,5.9,6.8,7.6,6.5,8.4,8.0]}};
+const YM={y1:{slot:'Reggeli',se:'Breakfast',w:0,past:1,name:'Kávé és vajas kifli',time:'09:20',kcal:330,score:6.1,macro:[9,39,17],fib:2,sugar:6,salt:.9,sat:6.8,
+    ings:[['Vajas kifli','t-carb',null,'becslés',290,'2 db',3,[7,36,15]],['Tejeskávé','t-tea',null,'becslés',40,'200 ml',1,[2,3,2]]],q:{base:12,dens:null,ultra:0},headline:'Gyors reggeli, kevés fehérjével',lead:'A fehérje és a rost hiányzik belőle.',cert:72,dims:[5.2,4.8,6.9,5.0,6.0,3.5,6.4,7.8]},
+  y2:{slot:'Ebéd',se:'Lunch',w:1,past:1,name:'Gulyásleves',time:'13:10',kcal:690,score:7.4,macro:[42,65,27],fib:7,sugar:9,salt:1.6,sat:6.4,
+    ings:[['Gulyásleves','t-pot',null,'becslés',560,'500 g',1,[38,40,26]],['Fehér kenyér','t-carb',null,'becslés',130,'50 g',3,[4,25,1]]],q:{base:81,dens:125,ultra:0},headline:'Laktató, fehérjében erős',lead:'A só az étkezés keretének felső szélén van.',cert:78,dims:[7.8,7.0,5.9,6.8,7.6,6.5,8.4,8.0]}};
 /* SCREC: ide regisztrálhat más terület értékelhető rekordot (pl. recept: SCREC['r-r1']={…}), hogy a scoreSurface és a „dim” lap megtalálja */
 const SCREC={};
 const mealOf=id=>MEALS[id]||MX[id]||YM[id]||SCREC[id]||null;
@@ -249,11 +249,11 @@ const GCV=[{d:'M8 78C56 76 92 62 128 60 166 60 200 72 232 78',pk:[128,60],n:['la
 const GCOL=['var(--ok)','var(--warn)','var(--lilac)'];
 const gMini=(l,late)=>`<svg class="fu-gmini" viewBox="0 0 240 108" aria-hidden="true"><path d="M8 78H232" stroke="currentColor" stroke-width="3" stroke-dasharray="6 10" opacity=".35"/>${late?`<path d="${GCV[l].d}" transform="translate(8 78) scale(1.12 1.13) translate(-8 -78)" fill="none" stroke="currentColor" stroke-width="5" stroke-dasharray="8 9" opacity=".5"/>`:''}<path d="${GCV[l].d} L232 108 8 108Z" fill="currentColor" opacity=".22"/><path d="${GCV[l].d}" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"/></svg>`;
 const gCurve=l=>{const id=F.uid('gc'),c=GCV[l],AX=[[8,L('evés','meal'),'start'],[82,L('+1 ó','+1 h'),'middle'],[157,L('+2 ó','+2 h'),'middle'],[232,L('+3 ó','+3 h'),'end']];
-  return `<svg class="fh-chart fu-gcv" viewBox="0 0 240 124" role="img" aria-label="${L('A várható vércukor-válasz alakja három órán át: ','The expected shape of the blood sugar response over three hours: ')}${L(...c.n)}" style="--gc:${GCOL[l]}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gc)" stop-opacity=".75"/><stop offset="1" stop-color="var(--gc)" stop-opacity=".12"/></linearGradient></defs>
-    <path d="${c.d} L232 108 8 108Z" fill="url(#${id})"/><path d="M8 78H232" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 5" opacity=".45"/><text x="8" y="72">${L('alapszint','baseline')}</text>
+  return `<svg class="fh-chart fu-gcv" viewBox="0 0 240 128" role="img" aria-label="${L('A várható vércukor-válasz alakja három órán át: ','The expected shape of the blood sugar response over three hours: ')}${L(...c.n)}" style="--gc:${GCOL[l]}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gc)" stop-opacity=".75"/><stop offset="1" stop-color="var(--gc)" stop-opacity=".12"/></linearGradient></defs>
+    <path d="${c.d} L232 78 8 78Z" fill="url(#${id})"/><path d="M8 78H232" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 5" opacity=".45"/><text x="8" y="91">${L('alapszint','baseline')}</text>
     <path d="${c.d}" fill="none" stroke="var(--gc)" stroke-width="2.8" stroke-linecap="round"/><circle cx="${c.pk[0]}" cy="${c.pk[1]}" r="4.5" fill="#fff" stroke="var(--gc)" stroke-width="2.6"/>
-    <text x="${c.pk[0]+10}" y="${Math.max(14,c.pk[1]-2)}" class="val">${L(...c.n)}</text>${l===2?`<text x="150" y="120" class="val">${L('visszaesés','dip')}</text>`:''}
-    ${AX.map(([x,t,a])=>`<path d="M${x===8?9:x===232?231:x} 76v5" stroke="var(--faint)" stroke-width="1.2"/><text x="${x}" y="94" text-anchor="${a}">${t}</text>`).join('')}</svg>`};
+    <text x="${c.pk[0]+10}" y="${Math.max(14,c.pk[1]-2)}" class="val">${L(...c.n)}</text>${l===2?`<text x="176" y="70" class="val">${L('visszaesés','dip')}</text>`:''}
+    ${AX.map(([x,t,a])=>`<path d="M${x===8?9:x===232?231:x} 110v5" stroke="var(--faint)" stroke-width="1.2"/><text x="${x}" y="125" text-anchor="${a}">${t}</text>`).join('')}</svg>`};
 const gband=g=>`<div class="fu-gb" role="img" aria-label="${L('Vércukor-válasz sávja','Blood sugar response band')}: ${glw(g)}">${[0,1,2].map(i=>`<span class="${i===g?'on':''} b${i}">${glw(i,1)}</span>`).join('')}</div>`;
 /* a nap tálja: amit ettél (folyadék) + a kihagyott ablakok része (halvány, szaggatott sáv a szint fölött — nem „még belefér”, de nem is mulasztás) */
 const dayBowl=(eatP,skipP,{s=152,over=false}={})=>{const id=F.uid('db'),Y=p=>4+96*(1-Math.max(0,Math.min(100,p))/100),ya=Y(eatP),yb=Y(Math.min(100,eatP+skipP));
@@ -271,12 +271,12 @@ const bowlHero=(o,i=0)=>`<section class="fh-card fh-hero fu-bh ${o.est?'est':''}
 const dayNav=(eb,title,prev,next)=>`<div class="fx-dn rise"><button ${prev?F.act(prev).trim():'disabled'} aria-label="${L('Előző nap','Previous day')}">‹</button><button class="mid" data-toast="${L('Naptár: az elmúlt 7 nap közül választhatsz','Calendar: pick one of the last 7 days')}"><small>${eb}</small><b>${title}</b></button><button ${next?F.act(next).trim():'disabled'} aria-label="${L('Következő nap','Next day')}">›</button></div>`;
 /* a nap nézet-modellje: egy adatszerkezetből jön a hős, a makrók, a blokkok és a lapok minden száma (F3.2) */
 const KM={kimelo:['GUIDANCE','STOMACH',2],beteg:['GUIDANCE','ILLNESS',1],serules:['MAINTENANCE','INJURY',2],'serules-tartas':['MAINTENANCE','INJURY',2],uton:['ESTIMATE','TRAVEL',3]};
-const KWHO={STOMACH:['Gyomorrontás','Stomach bug'],ILLNESS:['Beteg vagy','You are ill'],INJURY:['Sérülés','Injury'],TRAVEL:['Úton vagy','Travelling']};
+const KWHO={STOMACH:['Gyomorrontás','stomach bug'],ILLNESS:['Beteg vagy','illness'],INJURY:['Sérülés','injury'],TRAVEL:['Úton vagy','travelling']};
 function dayVM(arg){
   const past=arg==='tegnap'||arg==='ures', km=KM[arg]||null, mode=km&&km[0];
   if(arg==='kihagyva') SKIP={2:{}}; else if(arg==='kihagyva-ok') SKIP={2:{c:1}}; else if(arg&&arg!=='javaslat') SKIP={};
   const all=arg==='kesz'||arg==='felett';
-  const meals=arg==='ures'||arg==='tolt'||arg==='hiba'?{}:arg==='tegnap'?YM:all?{...MEALS,uzsonna:MX.uzsonna,vacsora:arg==='felett'?{...MX.vacsora,kcal:954,macro:[57,87,43],fib:9,sugar:6}:MX.vacsora}:MEALS;
+  const meals=arg==='ures'||arg==='tolt'||arg==='hiba'||arg==='nincs-ablak'?{}:arg==='tegnap'?YM:all?{...MEALS,uzsonna:MX.uzsonna,vacsora:arg==='felett'?{...MX.vacsora,kcal:1018,macro:[66,109,37],fib:10,sugar:6}:MX.vacsora}:MEALS;
   const sum=k=>Object.values(meals).reduce((a,m)=>a+(k==='kcal'?m.kcal:k==='fib'?m.fib:m.macro[k]),0);
   const en=arg==='nincs-cel'||past?null:arg==='serules'?{...DAY.energy,balance:0}:arg==='jon'?{...DAY.energy,pending:460,blocks:[...DAY.energy.blocks,['Röpi edzés','t-volley',95,460,0]]}:DAY.energy;
   /* a keret: Alap + Mozgás ± Célod (a szerver adja, budget.energy); sérülésnél a hiány kikapcsolva; statikus napon a beállított cél, bontás nélkül */
@@ -312,33 +312,33 @@ function blockCard(V,s,i){const G=V.mode==='GUIDANCE', row=s.meal, k=row?row[1].
     :s.skip?`<div class="fm-meal">${tip(s.skip.c!=null?MCATS[s.skip.c][0]:'t-skip',L(`Kihagyva · ${skLabel(s.skip)}`,`Skipped · ${skLabel(s.skip)}`),L(`${kc(s.b)} kcal kiesett a napból. A többi étkezésed nem lett nagyobb.`,`${kc(s.b)} kcal dropped out of the day. Your other meals did not get bigger.`),'var(--faint)')}
       <div class="fh-acts fm-ska">${btn(s.skip.c!=null?L('Másik ok','Change reason'):L('Okot adok','Add a reason'),{sheet:'mealwhy',arg:s.i},'sm ghost')}<button class="fh-lk" data-fundo="${s.i}">${L('Visszavonom','Undo')}</button><button class="fh-lk" data-fate="${s.i}">${L('Mégis ettem','I did eat')}</button></div></div>`
     :`<p class="fm-when">${G?L('Ha megy, egyél. Nincs mihez mérni.','Eat if you can. There is nothing to measure against.'):`${L('Ajánlott','Suggested')} <b>${s.from}–${s.to}</b>${V.mode&&closed?'':` · <span class="${nowIn?'now':''}">${wc}</span>`}`}</p>
-      <div class="fh-acts fm-la"><button class="btn sm fm-log" data-go="log.${V.arg==='tegnap'||V.arg==='ures'?'potlas-w':'w'}${s.i}" aria-label="${sl(s)} · ${L('logolás ide','log here')}"><span>+ ${L('Logolás ide','Log here')}</span><small>${logSub(s,V.now,V.mode)}</small></button>${G?'':`<button class="fh-lk" data-fskip="${s.i}" aria-label="${L(`${sl(s)} kihagyása`,`Skip ${sl(s).toLowerCase()}`)}">${closed?L('Kihagytam','I skipped it'):L('Kihagyom','Skip')}</button>`}</div>`}</section>`}
+      <div class="fh-acts fm-la"><button class="btn sm fm-log ${nowIn?'':'ghost'}" data-go="log.${V.arg==='tegnap'||V.arg==='ures'?'potlas-w':'w'}${s.i}" aria-label="${sl(s)} · ${L('logolás ide','log here')}"><span>+ ${L('Logolás ide','Log here')}</span><small>${logSub(s,V.now,V.mode)}</small></button>${G?'':`<button class="fh-lk" data-fskip="${s.i}" aria-label="${L(`${sl(s)} kihagyása`,`Skip ${sl(s).toLowerCase()}`)}">${closed?L('Kihagytam','I skipped it'):L('Kihagyom','Skip')}</button>`}</div>`}</section>`}
 /* ablak nélküli extra log (buildDayPlan 3b): saját blokk a logolás idejénél, keret és ablak nélkül — a napszak nevét viseli */
 const extraCard=(id,m,i)=>`<section class="fh-card fm-blk rise" style="--i:${i+3}"><div class="fm-bh">${bub(MIC[id]||'t-snack',{s:44})}<span class="g"><strong>${L(m.slot,m.se||m.slot)}</strong></span><button class="fm-clock" data-sheet="ora" data-arg="x|${id}" aria-label="${L(m.slot,m.se||m.slot)} · ${L(`logolva ${m.time}`,`logged ${m.time}`)}">${dial(null,m.time)}</button>${plainCup(m.kcal)}</div>${mealRow(id,m)}</section>`;
 /* a nap jelölése a tanulásban (DayLearningMark): usable · suspicious · marked_incomplete · confirmed_complete; felírás nélküli napon és a lekérdezés alatt semmi */
 function learnMark(V){
   const st0=V.arg==='tegnap'?'suspicious':Object.keys(V.meals).length?'usable':'unlogged'; if(st0==='unlogged') return '';
-  const COPY={usable:L('Ez a nap számít a tanulásban','This day counts in the learning'),suspicious:L('Ez a nap hiányosnak tűnt, kihagytam','This day looked incomplete, so I left it out')};
+  const COPY={usable:L('Ez a nap számít a tanulásban','This day counts towards the learning'),suspicious:L('Ez a nap hiányosnak tűnt, kihagytam','This day looked incomplete, so I left it out')};
   return `<div class="fu-mark">${bub(st0==='usable'?'t-tick':'t-shield',{s:38,c:st0==='usable'?'var(--dom)':'var(--warn)'})}<span><b>${COPY[st0]}</b>${V.past?'':`<small>${L('A mai napot jövő hétfőn számolom bele. A jelölést addig is elmentem.','Today is counted next Monday. Your mark is saved until then.')}</small>`}<button class="fh-lk" data-go="tanulas">${L('Mit jelent ez?','What does this mean?')}</button></span>
-    ${st0==='usable'?btn(L('Hiányos volt','It was incomplete'),{toast:L('A keret nem változott','The budget did not change')},'sm ghost'):btn(L('Teljes volt','It was complete'),{toast:L('A keret +20 kcal-lal változott','The budget changed by +20 kcal')},'sm')}</div>`}
+    ${st0==='usable'?btn(L('Hiányos volt','It was incomplete'),{toast:L('A keret nem változott','The budget did not change')},'sm ghost'):btn(L('Teljes volt','It was complete'),{toast:L('A keret +20 kcal-lal változott','The budget changed by +20 kcal')},'sm ghost')}</div>`}
 function mai(arg){
   arg={'d-10-07':'','d-10-06':'tegnap','d-10-05':'ures'}[arg]??arg;
   const V=dayVM(arg), {past,mode,meals,slots}=V, G=mode==='GUIDANCE', nMeals=Object.keys(meals).length, nSkip=slots.filter(s=>s.skip).length;
   const pRing=V.rings[0], pLeft=Math.max(0,pRing[6]-pRing[5]);
   /* a hős ítélet-mondata: a maradék kcal (vm.remainingKcal) és a hiányzó fehérje (rings.p) — két valódi szám egy mondatban; a kímélő arcok saját mondatot kapnak */
   const verdict=V.rem<0?(mode==='ESTIMATE'?L('Ma nagyjából a keret körül jársz.','Today you are roughly around your budget.'):L(`Ma ${kc(-V.rem)} kcal-lal a keret felett vagy.`,`Today you are ${kc(-V.rem)} kcal over your budget.`))
-    :past?L(`${nMeals} étkezés van felírva erre a napra.`,`${nMeals} meals are logged for this day.`)
+    :past?L(`${kc(V.rem)}\u00a0kcal maradt a nap keretéből.`,`${kc(V.rem)}\u00a0kcal of the day’s budget was left.`)
     :mode==='ESTIMATE'?L(`Kb. ${kc(V.rem)} kcal fér még bele ma.`,`About ${kc(V.rem)} kcal still fits today.`)
-    :pLeft>0?L(`Még ${kc(V.rem)} kcal fér bele, ${pLeft} g fehérje hiányzik.`,`${kc(V.rem)} kcal still fits, ${pLeft} g of protein to go.`):L(`Még ${kc(V.rem)} kcal fér bele, a fehérje megvan.`,`${kc(V.rem)} kcal still fits, and your protein is done.`);
-  const remLbl=V.rem<0?(mode==='ESTIMATE'?L('a keret körül','around the budget'):L('a keret felett','over the budget')):past?L('fért még bele','still fitted'):mode==='ESTIMATE'?L('kb. ennyi fér még','about this much fits'):L('még belefér','still fits');
+    :pLeft>0?L(`Még ${kc(V.rem)}\u00a0kcal fér bele, ${pLeft}\u00a0g fehérje hiányzik.`,`${kc(V.rem)}\u00a0kcal still fits, ${pLeft}\u00a0g of protein to go.`):L(`Még ${kc(V.rem)}\u00a0kcal fér bele, a fehérje megvan.`,`${kc(V.rem)}\u00a0kcal still fits, and your protein is done.`);
+  const remLbl=V.rem<0?(mode==='ESTIMATE'?L('a keret körül','around the budget'):L('a keret felett','over the budget')):past?L('fért még bele','was still left'):mode==='ESTIMATE'?L('kb. ennyi fér még','about this much fits'):L('még belefér','still fits');
   const skl=V.skipped?`<button class="fu-skl" data-sheet="eq">${bub('t-skip',{s:26,c:'var(--faint)'})}<span>${L(`<b>${slots.filter(s=>s.skip).map(sl).join(', ')} kihagyva</b> · ${kc(V.skipped)} kcal kiesett a napból`,`<b>${slots.filter(s=>s.skip).map(sl).join(', ')} skipped</b> · ${kc(V.skipped)} kcal dropped out of the day`)}</span></button>`:'';
   /* sérülés / utazás: a kímélő megjegyzés a „Miből jön össze?” és a makrók között (FuelRecoveryNote) */
   const kmNote=mode==='MAINTENANCE'?tip('t-pain',V.dropped?L('Sérülés alatt nem fogyókúrázunk','No dieting while you are injured'):L('Sérülés alatt a fehérje a legfontosabb','Protein matters most while you are injured'),(V.dropped?L('A hiányt kikapcsoltam: szinten tartó keretet látsz. A fehérje most a legfontosabb, abból épül vissza a szövet.','I switched the deficit off: you see a maintenance budget. Protein matters most now; tissue rebuilds from it.'):L('Egyél eleget, és figyelj a fehérjére: abból épül vissza a szövet.','Eat enough and watch your protein: tissue rebuilds from it.'))+' '+L('Ez nem orvosi tanács.','This is not medical advice.'),'var(--warn)')
-    :mode==='ESTIMATE'?tip('t-travel',L('Úton vagy, becsülj nyugodtan','You are travelling, estimating is fine'),L('Elég nagyjából beírni, a keret most csak tájékoztat. Ha egy dologra figyelsz, a fehérje legyen.','Rough entries are enough; the budget only informs you now. If you watch one thing, make it protein.')):'';
+    :mode==='ESTIMATE'?tip('t-travel',L('Úton vagy, becsülj nyugodtan','You are travelling, estimating is fine'),L('Elég nagyjából beírni, a keret most csak tájékoztat. Ha egy dologra figyelsz, a fehérje legyen.','Rough entries are enough; the budget is only a guide for now. If you watch one thing, make it protein.')):'';
   const strip=mode&&!G?`<button class="fu-kms rise" data-toast="${L('A kímélő módot a Nap oldalon zárod le: Hogy vagy? → Jobban','You end gentle mode on the Today page: How are you? → Better')}" aria-label="${L('Kímélő mód','Gentle mode')}, ${L(...KWHO[V.cat])}, ${L(`${V.kday}. nap`,`day ${V.kday}`)}">${bub('t-kimelo',{s:30})}<span><b>${L('Kímélő mód','Gentle mode')}</b> · ${L(...KWHO[V.cat])} · ${L(`${V.kday}. nap`,`day ${V.kday}`)}</span>${chev()}</button>`:'';
   const banner=arg==='javaslat'?`<button class="fu-kms warn rise" data-dom="en" data-toast="${L('Én · Célok · Súlycél','Me · Goals · Weight goal')}">${bub('t-ring',{s:30,c:'var(--warn)'})}<span><b>${L('Diéta-javaslat vár a Cél oldalon','A diet suggestion is waiting on the Goal page')}</b></span>${chev()}</button>`:'';
   const nav=arg==='tegnap'?dayNav(L('Tegnap','Yesterday'),dF(1,10,6),'mai.ures','mai'):arg==='ures'?dayNav(L('2 nappal ezelőtt','2 days ago'),dF(0,10,5),{toast:L('Előző nap · október 4.','Previous day · 4 October')},'mai.tegnap'):dayNav(L('Ma','Today'),dF(2,10,7),'mai.tegnap',null);
-  const macros=card(vials(V.rings.map(([k,hu,en,ic,c,v,t,u])=>({l:k==='c'?lS(L(hu,en),L('Szénh.','Carbs')):L(hu,en),ic,c,p:Math.max(5,v/t*100),v:fmt(u==='l'?v.toFixed(1):v),s:`/ ${fmt(t)} ${u}`,mark:mode==='MAINTENANCE'&&k==='p'?L('fő cél','main goal'):'',on:k==='water'?{sheet:'water'}:{toast:`${L(hu,en)}: ${fmt(u==='l'?v.toFixed(1):v)} / ${fmt(t)} ${u}`}})),{h:118})
+  const macros=card(vials(V.rings.map(([k,hu,en,ic,c,v,t,u])=>({l:k==='c'?lS(L(hu,en),L('Szénh.','Carbs')):L(hu,en),ic,c,p:Math.max(5,v/t*100),v:fmt(u==='l'?v.toFixed(1):v),s:`/ ${fmt(t)} ${u}`,mark:mode==='MAINTENANCE'&&k==='p'?L('fő cél','focus'):'',on:k==='water'?{sheet:'water'}:{toast:`${L(hu,en)}: ${fmt(u==='l'?v.toFixed(1):v)} / ${fmt(t)} ${u}`}})),{h:118})
     +(V.past?'':note(L('A Víz koppintható: onnan logolsz.','Tap Water to log a drink.'))),{cls:'fu-mac'+(mode==='MAINTENANCE'?' lead':''),i:1});
   /* fő arc */
   let top;
@@ -365,11 +365,11 @@ function mai(arg){
   ${sec(++n,`${past?L('Ezen a napon','On this day'):L('A mai blokkjaid','Today’s blocks')} · ${L(`${nMeals} étkezés`,nMeals===1?'1 meal':`${nMeals} meals`)}${nSkip?L(` · ${nSkip} kihagyva`,` · ${nSkip} skipped`):''}`,2)}
   ${slots.length?[...slots.map((s,i)=>[toMin(s.meal?s.meal[1].time:s.from),blockCard(V,s,i)]),...V.extra.map(([id,m],i)=>[toMin(m.time),extraCard(id,m,i)])].sort((a,b)=>a[0]-b[0]).map(x=>x[1]).join('')
     :card(empty('t-plate',L('Ma még nincs tervezett étkezési ablak. Logolj bármit, bármikor.','There is no planned meal window yet today. Log anything, any time.')),{i:3})}
-  ${sec(++n,L('Ablakon kívül','Outside the windows'),7)}
-  ${card(row({icon:'t-bowl',title:L('Logolj bármit','Log anything'),sub:L('ablakon kívül is','outside the windows too'),on:past?'log.potlas':'log'})
+  ${sec(++n,L('Ablakon kívül','Between meals'),7)}
+  ${card(row({icon:'t-bowl',title:L('Logolj bármit','Log anything'),sub:L('ablakon kívül is','between meals too'),on:past?'log.potlas':'log'})
     /* a tegnapi pótolható ablakok csalija: csak a mai nézetben, ha tegnap maradt üres ablak és nem kímélő nap volt */
     +(!past&&!mode?row({icon:'t-history',title:L(`${dL(10,6)} · 2 ablak pótolható`,`${dL(10,6)} · 2 windows can still be added`),sub:L('tegnap','yesterday'),on:'mai.tegnap'}):''),{i:7})}
-  ${learnMark(V)?sec(++n,L('A nap a tanulásban','Today and the learning'),8)+card(learnMark(V),{i:8}):''}`);
+  ${learnMark(V)?sec(++n,L('A nap a tanulásban','Does this day count?'),8)+card(learnMark(V),{i:8}):''}`);
 }
 
 /* gHero: hős saját grafikával — címke → grafika → ítélet-mondat → gomb */
@@ -377,7 +377,7 @@ function gHero(o,i=0){return `<section class="fh-card fh-hero ${o.warn?'warn':''
 /* numG: grafika balra, nagy szám és két-három tény jobbra */
 const numG=(g,n,unit,lines='')=>`<div class="fu-ng"><span class="gg">${g}</span><div class="nn"><span class="fh-big">${n}${unit?`<small>${unit}</small>`:''}</span>${lines}</div></div>`;
 const pk=(a,b)=>`<p class="fu-pk"><span><i class="a"></i>${a}</span><span><i class="b"></i>${b}</span></p>`;
-const notFound=(back)=>page('fuel',{title:L('Ez az étkezés nincs meg','This meal is not here'),sub:'Fuel',back},`${card(empty('t-plate',L('Lehet, hogy egy másik napon logoltad, vagy közben törölted. A Mai oldalon minden mai étkezésed ott van.','You may have logged it on another day, or deleted it since. All of today’s meals are on the Today page.'),btn(L('Vissza a Mai oldalra','Back to Today'),'mai','sm')),{i:1})}`);
+const notFound=(back)=>page('fuel',{title:L('Nincs meg','Not found'),sub:'Fuel',back},`${card(empty('t-plate',L('Ez az étkezés nincs meg. Lehet, hogy egy másik napon logoltad, vagy közben törölted. A Mai oldalon minden mai étkezésed ott van.','This meal is not here. You may have logged it on another day, or deleted it since. All of today’s meals are on the Today page.'),btn(L('Vissza a Mai oldalra','Back to Today'),'mai','sm')),{i:1})}`);
 
 /* ═══ ÉTKEZÉS (FuelMealDetailPage + FuelQualityBlocks) ═══ állapotok: meal.<id> · meal.vacsora (értékelés folyamatban) · meal.uzsonna (egyetlen recept-sor → „Megnyitom a receptet”) · meal.nincs */
 const NOVA=[null,['Alapanyag','Whole food','var(--ok)'],['Konyhai összetevő','Kitchen ingredient','var(--water)'],['Feldolgozott','Processed','var(--warn)'],['Ultra-feldolgozott','Ultra-processed','var(--lilac)']];
@@ -393,11 +393,11 @@ function meal(id){
   const MICRO=[[L('Rost','Fibre'),m.fib,7,'t-fiber','var(--fiber)',v=>v>=6?0:1,L('cél','goal')],[L('Cukor','Sugar'),m.sugar,25,'t-sugar','var(--lilac)',v=>v<=12?0:v<=22?1:2,L('keret','allowance')],[L('Só','Salt'),m.salt,1.7,'t-salt','var(--water)',v=>v<=1?0:1,L('keret','allowance')],[L('Telített zsír','Saturated fat'),m.sat,7,'t-avocado','var(--carb)',v=>v<=5?0:v<=9?1:2,L('keret','allowance')]];
   const STL=[L('rendben','fine'),L('oké','okay'),L('figyeld','watch it')];
   const q=m.q||{}, tile=(k,ic,n,unit,pct,c2,on)=>stat({k,icon:ic,n:n==null?'—':n,unit:n==null?'':unit,pct:n==null?null:pct,c:c2,s:n==null?L('nincs adat','no data'):'',on});
-  return page('fuel',{title:mealTitle(m),sub:`Fuel · ${m.time}${m.ctx?' · '+L(...CTXL[m.ctx]):''}`,back:bk},`
+  return page('fuel',{title:mealTitle(m),sub:`Fuel · ${m.past?dS(10,6)+' · ':''}${m.time}${m.ctx?' · '+L(...CTXL[m.ctx]):''}`,back:bk},`
   ${gHero({lbl:m.name,g:numG(pour(before/DT*94,m.kcal/DT*94),kc(m.kcal),'kcal',`<p>${L(`a napod <b>${share}%-a</b> a ${kc(DT)} kcal-os keretből · ${m.time}-kor logoltad`,`<b>${share}%</b> of your day’s ${kc(DT)} kcal budget · logged at ${m.time}`)}</p>`+pk(before?L(`előtte ${kc(before)} kcal`,`${kc(before)} kcal before it`):L('előtte üres volt a tál','the bowl was empty before it'),L('ez az étkezés','this meal'))),
     /* az ítélet az értékelés címsora (meal.breakdown.tagline / summary — a lap már betölti); értékelés nélkül a nap-rész mondata */
-    verdict:m.headline?m.headline+'.':L(`Ez az étkezés a napod ${share}%-a.`,`This meal is ${share}% of your day.`),sub:m.lead||'',
-    acts:(m.score==null?`<button class="btn" disabled>${L('Az értékelés folyamatban','Rating in progress')}</button>`:btn(`${L('Mezo értékelése','Mezo’s rating')} ${fmt(m.score)}`,'score.'+id))+(band?lk(`${L('Vércukor','Blood sugar')} · ${glw(band.lvl)}`,{sheet:'glu',arg:id}):'')},1)}
+    verdict:m.headline?m.headline+'.':L('Rögzítve; az értékelés készül.','Logged; the rating is on its way.'),sub:m.lead||'',
+    acts:(m.score==null?`<span class="fu-pendl">${L('Az értékelés folyamatban','Rating in progress')}</span>`:btn(`${L('Mezo értékelése','Mezo’s rating')} ${fmt(m.score)}`,'score.'+id))+(band?lk(`${L('Vércukor','Blood sugar')} · ${glw(band.lvl)}`,{sheet:'glu',arg:id}):'')},1)}
   ${sec(1,L('Makrók','Macros'),2)}
   ${card(macroVials(p,c,f)+note(L(`A szint az étkezés energiájának megoszlása: ${kc(p*4)} kcal fehérjéből, ${kc(c*4)} szénhidrátból, ${kc(f*9)} zsírból.`,`The level is the split of the meal’s energy: ${kc(p*4)} kcal from protein, ${kc(c*4)} from carbs, ${kc(f*9)} from fat.`)),{cls:'fu-mac',i:2})}
   ${sec(2,`${L('Hozzávalók','Ingredients')} · ${m.ings.length}`,3)}
@@ -406,13 +406,13 @@ function meal(id){
   ${sec(3,L('Minőség','Quality'),4)}
   ${card(grid([tile(L('Alapanyag-arány','Whole-food share'),'t-processing',q.base,'%',q.base,'var(--carb)'),tile(L('Energiasűrűség','Energy density'),'t-bolt',q.dens,'kcal/100 g',q.dens==null?null:Math.min(100,q.dens/4),'var(--protein)'),
       tile(L('Ultra-feldolgozott','Ultra-processed'),'t-ultra',q.ultra,L('tétel',q.ultra===1?'item':'items'),q.ultra==null?null:Math.min(100,q.ultra*34),q.ultra?'var(--lilac)':'var(--water)'),
-      band?stat({k:L('Vércukor-válasz','Blood sugar response'),icon:'t-glucose',n:glw(band.lvl),unit:band.est?L('becsült','estimated'):'',pct:[26,55,84][band.lvl],c:GCOL[band.lvl],s:L('részletek ›','details ›'),on:{sheet:'glu',arg:id}}):tile(L('Vércukor-válasz','Blood sugar response'),'t-glucose',null)]),{cls:'fu-q',i:4})}
+      band?stat({k:L('Vércukor-válasz','Blood sugar response'),icon:'t-glucose',n:glw(band.lvl),pct:[26,55,84][band.lvl],c:GCOL[band.lvl],s:(band.est?L('becsült · ','estimated · '):'')+L('részletek ›','details ›'),on:{sheet:'glu',arg:id}}):tile(L('Vércukor-válasz','Blood sugar response'),'t-glucose',null)]),{cls:'fu-q',i:4})}
   ${sec(4,L('Mikrotápanyagok','Micronutrients'),5)}
   ${card(MICRO.map(([l,v,al,ic,col,stf,kind])=>v==null?row({left:bub(ic,{s:40,c:'var(--faint)'}),title:l,sub:L('a forrás nem adott értéket','the source gave no value'),v:'—',right:st(L('nincs adat','no data'),'q')})
       :irow({icon:ic,title:l,v:`${fmt(v)}<small>g</small>`,sub:L(`az étkezés-${kind} ${Math.round(v/al*100)}%-a`,`${Math.round(v/al*100)}% of the meal ${kind}`),l2:`<span class="fu-sh">${level(Math.min(100,v/al*100),{h:8,c:col})}</span>${st(STL[stf(v)],stf(v)===2?'warn':stf(v)?'q':'ok')}`})).join('')
     +note(L('Ezt tároljuk ma. A vitaminok és ásványi anyagok még úton vannak.','This is what we store today. Vitamins and minerals are still on the way.')),{i:5})}
-  ${sec(5,L('Javítás és recept','Fix and recipe'),6)}
-  ${card(row({icon:'t-pencil',title:L('Javítom ezt az étkezést','Fix this meal'),sub:L('a tételeket és az időt is átírhatod','you can change the items and the time'),on:'log.javitas.'+id})
+  ${sec(5,L('Javítás és recept','Edit and recipe'),6)}
+  ${card(row({icon:'t-pencil',title:L('Javítom ezt az étkezést','Edit this meal'),sub:L('a tételeket és az időt is átírhatod','you can change the items and the time'),on:'log.javitas.'+id})
     +(m.ings.length?row({icon:'t-book',title:one?L('Megnyitom a receptet','Open the recipe'):L('Mentsük receptként','Save it as a recipe'),sub:one?m.ings[0][0]:L('a Műhely ezzel az étkezéssel nyílik','the Workshop opens with this meal'),on:one?'recept.'+m.rec:'muhely.etkezesbol-'+id}):''),{i:6})}`);
 }
 
@@ -425,13 +425,13 @@ const DIMS=[['macro',['Kcal és makróarány','Calories and macro ratio'],'t-mac
   ['who',['Ajánlások · WHO','Guidelines · WHO'],'t-shield',14,()=>L('A cukor és a só az ajánlott napi határ étkezésre jutó része alatt van.','Sugar and salt are under this meal’s share of the recommended daily limit.'),m=>[[L('Cukor','Sugar'),m.sugar==null?'—':`${m.sugar} g · ${L('keret','allowance')} 25 g`],[L('Só','Salt'),m.salt==null?'—':`${fmt(m.salt)} g · ${L('keret','allowance')} ${fmt(1.7)} g`]]],
   ['fat_quality',['Zsírminőség','Fat quality'],'t-avocado',10,m=>{const e=Math.round(m.sat*9/m.kcal*100),t=Math.round(m.sat/m.macro[2]*100);return L(`Telített zsír az energia ${e}%-a · az összzsír ${t}%-a.`,`Saturated fat is ${e}% of the energy · ${t}% of total fat.`)},m=>[[L('Telített zsír','Saturated fat'),`${fmt(m.sat)} g`],[L('Összes zsír','Total fat'),`${m.macro[2]} g`]]],
   ['nova',['Feldolgozottság','Processing'],'t-processing',18,m=>m.q.base==null?L('A tételekről nincs elég adat.','There is not enough data about the items.'):L(`A kalória ${m.q.base}%-a alapanyagból jön; ${m.q.ultra} ultra-feldolgozott tétel.`,`${m.q.base}% of the calories come from whole foods; ${m.q.ultra} ultra-processed ${m.q.ultra===1?'item':'items'}.`),m=>[[L('Alapanyag','Whole food'),m.q.base==null?'—':`${m.q.base}%`],[L('Ultra-feldolgozott','Ultra-processed'),String(m.q.ultra)]]],
-  ['plant_diversity',['Növényi változatosság','Plant variety'],'t-sprout',8,m=>{const n=m.ings.filter(x=>/t-carb|t-fiber|t-avocado/.test(x[1])).length;return L(`${n} különböző növényi kategória a 3-as célhoz.`,`${n} different plant categories towards the goal of 3.`)},m=>[[L('Növényi kategória','Plant categories'),`${m.ings.filter(x=>/t-carb|t-fiber|t-avocado/.test(x[1])).length} / 3`]]],
+  ['plant_diversity',['Növényi változatosság','Plant variety'],'t-sprout',8,m=>{const n=m.ings.filter(x=>/t-carb|t-fiber|t-avocado/.test(x[1])).length;return L(`${n} különböző növényi kategória a 3-as célhoz.`,`${n} plant ${n===1?'category':'categories'} of the 3 aimed for.`)},m=>[[L('Növényi kategória','Plant categories'),`${m.ings.filter(x=>/t-carb|t-fiber|t-avocado/.test(x[1])).length} / 3`]]],
   ['energy_density',['Energiasűrűség','Energy density'],'t-bolt',6,m=>m.q.dens==null?L('Nem minden tétel grammban van megadva, ezért a sűrűség nem számolható.','Not every item is given in grams, so density cannot be calculated.'):L(`${m.q.dens} kcal/100 g (150 alatt teljes pont, 400 felett nulla).`,`${m.q.dens} kcal/100 g (full points under 150, none over 400).`),m=>[[L('Sűrűség','Density'),m.q.dens==null?'—':`${m.q.dens} kcal/100 g`]]],
   ['context',['Időzítés és kontextus','Timing and context'],'t-clock',12,m=>{const s=SLOTS[m.w];if(m.tpl)return L(`Sablon: nincs időpontja. Az adagot ${s?azA(s.l.toLowerCase())+' ablak keretéhez':'egy étkezés keretéhez'} mérjük.`,`A template has no time. The serving is measured against ${s?'the '+s.e.toLowerCase()+' window’s budget':'one meal’s budget'}.`);return s?L(`${m.time}-kor logoltad; az ajánlott ablak ${s.from}–${s.to}.`,`Logged at ${m.time}; the suggested window is ${s.from}–${s.to}.`):L(`${m.time}-kor logoltad; nem tartozott ablakhoz.`,`Logged at ${m.time}; it did not belong to a window.`)},m=>{const s=SLOTS[m.w];return [[L('Szerep','Role'),m.ctx?L(...CTXL[m.ctx]):L('standard','standard')],[L('Ablak','Window'),s?`${s.from}–${s.to}`:'—'],...(m.tpl?[]:[[L('Logolva','Logged'),m.time]])]}]];
 /* a „Rost és mikro” a tízórainál kimarad (súly 0): becsült sorból nincs mire pontot adni */
-const dimOff=(id,i)=>id==='tizorai'&&i===1;
+const dimOff=(id,i)=>(id==='tizorai'&&i===1)||(i===6&&(mealOf(id)||{q:{dens:1}}).q.dens==null);
 function score(arg){const [id,st2]=String(arg||'reggeli').split('.'); if(/^r-/.test(id)) return recScore(id.slice(2),st2); const m=mealOf(id); if(!m||SCREC[id]) return notFound('mai');
-  return scoreSurface(id,m,st2,{back:'meal.'+id,lbl:`${mealTitle(m)} · ${m.time}`,sub:`${m.name} · ${m.time} · ${kc(m.kcal)} kcal`,detail:[L('Az étkezés részletei','Meal details'),'meal.'+id],imp:IMPM[id]||[]})}
+  return scoreSurface(id,m,st2,{back:'meal.'+id,lbl:`${mealTitle(m)} · ${m.time}`,sub:m.name,detail:[L('Az étkezés részletei','Meal details'),'meal.'+id],imp:IMPM[id]||[]})}
 /* scoreSurface(id, rec, state, {back, lbl, sub, detail:[felirat, útvonal], imp:[[szöveg, +pont]]}) — a közös értékelő felület (FuelScoreSurface): étkezés és recept is ezt használja.
    rec: {name, score|null, cert, headline, lead, dims[8], macro[3], fib, sugar, salt, sat, q:{base,dens,ultra}, ings, time, w}; state 'keszul' = Mezo olvasata készül. A „dim” lap a rekordot mealOf(id)-n át éri el (SCREC). */
 const IMPM={reggeli:[['Egy marék dió vagy tökmag a tetejére: a zsírok aránya a célhoz közelebb kerül.',.2],['A méz fele is elég; a cukor így az étkezés keretén belül marad.',.1]],tizorai:[['Whey helyett egy pohár görög joghurt: a feldolgozottság pontja ugrana.',.4]],ebed:[['Egy marék hüvelyes a tányérra: a rost és a növényi változatosság is nő.',.2]],uzsonna:[['Egy marék bogyós gyümölcs mellé: a rost a duplájára nő.',.3]]};
@@ -474,7 +474,7 @@ function cer(id){
     <p class="verdict">${mealVerdict(n)}</p></section>
   ${sec(1,L('Ez került a napodba','This went into your day'),2)}
   ${card(facts([[kc(m.kcal),'kcal'],[m.macro[0],L('g fehérje','g protein')],[m.macro[1],L('g szénh.','g carbs')],[m.macro[2],L('g zsír','g fat')]]),{cls:'fu-cfc',i:2})}`,
-  {nonav:true,foot:`<button class="btn ghost" data-go="mai">${L('Vissza a naphoz','Back to the day')}</button><button class="btn" data-go="score.${id}">${L('Részletek','Details')}</button>`});
+  {nonav:true,foot:`<button class="btn ghost" data-go="mai">${L('Vissza a naphoz','Back to today')}</button><button class="btn" data-go="score.${id}">${L('Részletek','Details')}</button>`});
 }
 
 /* ═══ LOGOLÁS (FuelLogNewPage + FuelLogModes + MealComposer; a „Mit ettél?” lap: LogFlowPage) ═══
@@ -501,7 +501,7 @@ function log(arg){
   const mode=a0==='szokasos'||a0==='szokasos-ures'?'szokasos':'foto';
   const hasLines=['tetelek','finom','ido','jovo'].includes(a0)||edit||pre;
   /* a piszkozat sorai — az elemzés (draftMealFromAi) kamra-, recept- vagy becsült sort ad; a javítás a logolt étkezés sorait tölti be */
-  const LN=edit?em.ings.map(([n,ic,,src,k,amt])=>({n,ic,tag:src,a:parseFloat(amt),u:amt.replace(/^[\d.,]+\s*/,''),step:src==='recept'?1:10,k,m:[Math.round(em.macro[0]*k/em.kcal),Math.round(em.macro[1]*k/em.kcal),Math.round(em.macro[2]*k/em.kcal)],nut:src==='becslés'?null:[1,2,.1,.6]}))
+  const LN=edit?em.ings.map(([n,ic,kid,src,k,amt,,mm])=>{const a=parseFloat(amt),K=kid&&KAM.find(x=>x.id===kid),nf=x=>Math.round(parseFloat(String(x).replace(',','.'))*a/100*10)/10;return {n,ic,tag:src,a,u:amt.replace(/^[\d.,]+\s*/,''),step:src==='recept'?1:10,k,m:mm,nut:src==='becslés'?null:K?[null,nf(K.sug),nf(K.salt),nf(K.sat)]:[em.fib,em.sugar,em.salt,em.sat]}})
     :preK?[{n:preK.n,ic:kic(preK),tag:'kamra',a:100,u:'g',step:10,k:preK.kcal,m:[Math.round(preK.p),Math.round(preK.c),Math.round(preK.f)],nut:[0,parseFloat(String(preK.sug).replace(',','.')),parseFloat(String(preK.salt).replace(',','.')),parseFloat(String(preK.sat).replace(',','.'))]}]
     :preR?[{n:preR.n,ic:'t-book',tag:'recept',a:1,u:'adag',step:1,k:Math.round(preR.kcal/preR.serv),m:[Math.round(preR.p/preR.serv),Math.round(preR.c/preR.serv),Math.round(preR.f/preR.serv)],nut:[7,24,.3,6.2],rec:preR}]
     :[{n:'Zabpehely · gluténmentes',ic:'t-carb',tag:'kamra',ai:1,review:a0!=='finom',a:60,u:'g',step:10,k:223,m:[8,35,4],nut:[6,.7,0,.8]},
@@ -510,15 +510,15 @@ function log(arg){
   /* recept-sor finomhangolása (mezo-ormb): a hozzávalók mennyisége erre az egy alkalomra írható át; a módosított sor jelölve, „Alaphelyzet” visszaállít */
   const tune=l=>!l.rec?'':`<div class="fu-tune"><button class="fu-tuh" data-go="log.${l.open?'tetelek':'finom'}" aria-expanded="${!!l.open}" aria-label="${L('Hozzávalók finomhangolása','Fine-tune the ingredients')}"><b>${L('Hozzávalók','Ingredients')} · 3${l.open?L(' · 1 módosítva',' · 1 changed'):''}</b><span>${l.open?L('összecsuk','collapse')+' ▴':L('finomhangolás','fine-tune')+' ▾'}</span></button>
       ${l.open?[['Túró · félzsíros',200,'g',260,250],['Áfonya · fagyasztott',50,'g',29,null],['Akácméz',5,'g',17,null]].map(([n,a,u,k,orig])=>`<div class="fu-tur ${orig?'ch':''}"><span class="g"><strong>${n}</strong><small>${kc(k)} kcal${orig?L(` · eredetileg ${orig} ${u}`,` · originally ${orig} ${u}`):''}</small></span>${stp(a,u,n)}${orig?`<button class="fh-lk" data-toast="${L('Visszaállítva','Reset')}: ${n}" aria-label="${L('Visszaállítás','Reset')}">↺</button>`:''}</div>`).join('')+acts(`<button class="fh-lk" data-toast="${L('Minden hozzávaló az eredeti mennyiségen','Every ingredient is back to the original amount')}">${L('Alaphelyzet','Reset all')}</button>`):''}</div>`;
-  const tot=LN.reduce((a,l)=>({k:a.k+l.k,p:a.p+l.m[0],c:a.c+l.m[1],f:a.f+l.m[2]}),{k:0,p:0,c:0,f:0});
+  const tot=edit?{k:em.kcal,p:em.macro[0],c:em.macro[1],f:em.macro[2]}:LN.reduce((a,l)=>({k:a.k+l.k,p:a.p+l.m[0],c:a.c+l.m[1],f:a.f+l.m[2]}),{k:0,p:0,c:0,f:0});
   const dayEaten=past?1020:edit?DAY.eaten-em.kcal:DAY.eaten, dayT=past?2870:DAY.target, dayP=dayEaten/dayT*94;
-  const title=edit?em.name:win?sl(win):pre?L('Mit ettél?','What did you eat?'):L('Ablakon kívül','Outside the windows');
-  const top={title,sub:`${edit?L('Javítás','Fix'):past?L('Pótlás','Backfill'):L('Logolás','Log')} · ${pre?`${L('ma','today')} · ${DAY.now}`:dayChip}`,back:edit?'meal.'+eid:pre?(preK?'kamra.'+preK.id:'recept.'+preR.id):back};
-  const saveLbl=edit?L('Mentem a javítást','Save the fix'):past?`${L('Pótlás','Backfill')} · ${dS(10,6)}`:`${L('Logolás','Log')} · +10 XP`;
+  const title=edit?L('Javítás','Edit'):win?sl(win):pre?L('Mit ettél?','What did you eat?'):L('Ablakon kívül','Between meals');
+  const top={title,sub:edit?em.name:`${past?L('Pótlás','Late entry'):L('Logolás','Log')} · ${pre?`${L('ma','today')} · ${DAY.now}`:dayChip}`,back:edit?'meal.'+eid:pre?(preK?'kamra.'+preK.id:'recept.'+preR.id):back};
+  const saveLbl=edit?L('Mentem a javítást','Save changes'):past?`${L('Pótlás','Late entry')} · ${dS(10,6)}`:`${L('Logolás','Log')} · +10 XP`;
   /* „Mikor ettél?” (csak új logolásnál, ablakos napon): alapból a mostani idő; a kézi idő abba az ablakba teszi az étkezést, amelyikbe esik (resolveEatingTimePlacement) */
-  const tOpen=a0==='ido'||a0==='jovo', tVal=a0==='jovo'?'18:30':a0==='ido'?'12:50':null, place=tVal==='12:50'?`${sl(SLOTS[1])} · ${SLOTS[1].from}–${SLOTS[1].to}`:L('Ablakon kívül','Outside the windows');
-  const timeCard=edit?card(lab(L('Mikor ettél?','When did you eat?'))+`<div class="fx-time"><input class="fh-in" type="time" value="${em.time}" aria-label="${L('Mikor ettél?','When did you eat?')}"></div>`,{i:4})
-    :card(`<button class="fh-row fu-twt" data-go="log.${tOpen?'tetelek':'ido'}" aria-expanded="${tOpen}">${bub('t-clock',{s:40})}<span class="g"><strong>${L('Mikor ettél?','When did you eat?')}</strong><small>${tVal?`${tVal} · ${place}`:`${L('Most','Now')} · ${DAY.now}`}</small></span><span class="fu-car">${tOpen?'▴':'▾'}</span></button>`
+  const tOpen=a0==='ido'||a0==='jovo', tVal=a0==='jovo'?'18:30':a0==='ido'?'12:50':null, place=tVal==='12:50'?`${sl(SLOTS[1])} · ${SLOTS[1].from}–${SLOTS[1].to}`:L('Ablakon kívül','Between meals');
+  const timeCard=edit?card(`<div class="fx-time"><input class="fh-in" type="time" value="${em.time}" aria-label="${L('Mikor ettél?','When did you eat?')}"></div>`,{i:4})
+    :card(`<button class="fh-row fu-twt" data-go="log.${tOpen?'tetelek':'ido'}" aria-expanded="${tOpen}">${bub('t-clock',{s:40})}<span class="g"><strong>${tVal?tVal:`${L('Most','Now')} · ${DAY.now}`}</strong><small>${tVal?place:L('koppints, ha máskor ettél','tap if you ate at another time')}</small></span><span class="fu-car">${tOpen?'▴':'▾'}</span></button>`
       +(tOpen?`<div class="fx-time"><input class="fh-in" type="time" value="${tVal}" aria-label="${L('Evés időpontja','Time of the meal')}">${btn(L('Most','Now'),'log.tetelek','sm ghost')}</div><p class="fh-note">${place}</p>${a0==='jovo'?`<p class="fh-note fx-bad" role="alert">${L('Jövőbeli időpontot nem lehet menteni.','A time in the future cannot be saved.')}</p>`:''}`:''),{i:4});
   const modes=`<div class="fu-modes" role="group" aria-label="${L('Hozzáadás','Add')}">${LMODES.map(([k,hu,en,ic])=>`<button class="${k===mode&&!hasLines?'on':''}" ${k==='kamra'?'data-sheet="kamrapick"':k==='recept'?'data-sheet="receptpick"':k==='foto'?(hasLines?`data-toast="${L('Kamera · fotózd le a tányért','Camera · take a photo of the plate')}"`:`data-go="log.${win?a0:past?'potlas':''}"`):`data-go="log.szokasos"`} aria-pressed="${k===mode&&!hasLines}">${bub(ic,{s:34})}<span>${L(hu,en)}</span></button>`).join('')}</div>`;
   /* az AI-mező: szöveg, hang (a mikrofon a mező saját csempéje, ugyanebbe a szövegbe ír) és a fent csatolt fotó egy piszkozatba kerül */
@@ -532,16 +532,17 @@ function log(arg){
   const foot={foot:`<button class="btn ghost" data-go="${top.back}">${L('Mégse','Cancel')}</button>${hasLines?`<button class="btn" ${a0==='jovo'?'disabled':`data-go="${edit?'meal.'+eid:past?back:'cer.reggeli'}"`}>${saveLbl}</button>`:''}`,nonav:pre};
   const linesSec=`${sec(1,`${L('Tételek','Items')} · ${LN.length}`,2)}
   ${card(LN.map(l=>lineCard({...l,tune:tune(l)})).join(''),{cls:'fu-lns0',i:2})}`;
-  const totalHero=gHero({lbl:`${L('Ez az étkezés','This meal')} · ${L(`${LN.length} tétel`,LN.length===1?'1 item':`${LN.length} items`)}`,g:numG(pour(dayP,tot.k/dayT*94),kc(tot.k),'kcal',mealCells({macro:[tot.p,tot.c,tot.f],fib:edit?em.fib:pre?(preK?0:7):6})),
-    /* a név a sorokból áll össze (deriveMealName); javításnál a logolt étkezés saját címe marad */
-    verdict:edit?em.name:preR?preR.n:preK?preK.n:a0==='finom'?'Zabpehely + Túró · áfonya · méz quick':'Zabpehely + Görög joghurt + Erdei gyümölcs',
-    sub:L(`${past?cap(dL(10,6))+' eddig':'Mai nap eddig'} ${kc(dayEaten)} + ${kc(tot.k)} = ${kc(dayEaten+tot.k)} · cél ${kc(dayT)} kcal`,`${past?dL(10,6):'Today'} so far ${kc(dayEaten)} + ${kc(tot.k)} = ${kc(dayEaten+tot.k)} · goal ${kc(dayT)} kcal`),
+  const mName=edit?em.name:preR?preR.n:preK?preK.n:a0==='finom'?'Zabpehely + Túró · áfonya · méz quick':'Zabpehely + Görög joghurt + Erdei gyümölcs';
+  const totalHero=gHero({cls:'fu-lh',lbl:mName,g:numG(pour(dayP,tot.k/dayT*94),kc(tot.k),'kcal',mealCells({macro:[tot.p,tot.c,tot.f],fib:edit?em.fib:pre?(preK?0:7):6})),
+    /* a név (a címke) a sorokból áll össze (deriveMealName); javításnál a logolt étkezés saját címe marad. Az ítélet: hol tart ezzel a nap (fuel.consumed + ez az étkezés a kerethez) */
+    verdict:dayEaten+tot.k>dayT?L(`Ezzel ${kc(dayEaten+tot.k-dayT)}\u00a0kcal-lal a keret fölé mész.`,`This takes you ${kc(dayEaten+tot.k-dayT)}\u00a0kcal over the budget.`):L(`Ezzel ${kc(dayT-dayEaten-tot.k)}\u00a0kcal marad a keretből.`,`This leaves ${kc(dayT-dayEaten-tot.k)}\u00a0kcal of the budget.`),
+    sub:L(`${past?cap(dL(10,6))+' eddig':'Mai nap eddig'} ${kc(dayEaten)} + ${kc(tot.k)} = ${kc(dayEaten+tot.k)} · cél ${kc(dayT)} kcal · ${pl(LN.length,'tétel','item','items')}`,`${past?dL(10,6):'Today'} so far ${kc(dayEaten)} + ${kc(tot.k)} = ${kc(dayEaten+tot.k)} · goal ${kc(dayT)} kcal · ${pl(LN.length,'tétel','item','items')}`),
     body:pk(L(`eddig ${kc(dayEaten)} kcal`,`${kc(dayEaten)} kcal so far`),L('ez az étkezés','this meal'))},1);
   /* JAVÍTÁS: a négy rögzítő út nem jelenik meg; a törlés két lépés (élesítés → megerősítés) */
   if(edit) return page('fuel',top,`${totalHero}${linesSec}
   ${sec(2,L('Mikor ettél?','When did you eat?'),4)}${timeCard}
   ${sec(3,L('Törlés','Delete'),5)}
-  ${card(a0==='torles'?`<p class="fh-txt">${L('Biztosan törlöd? A nap összegéből is kikerül.','Are you sure? It also leaves the day’s total.')}</p>`+acts(`<button class="btn sm fu-del" data-go="mai" data-toast="${L('Törölve','Deleted')}">${L('Biztosan törlöm','Yes, delete it')}</button>`+lk(L('Inkább megtartom','Keep it'),'log.javitas.'+eid))
+  ${card(a0==='torles'?`<p class="fh-txt">${L('Biztosan törlöd? A nap összegéből is kikerül.','Delete it? It also comes off the day’s total.')}</p>`+acts(`<button class="btn sm fu-del" data-go="mai" data-toast="${L('Törölve','Deleted')}">${L('Biztosan törlöm','Yes, delete it')}</button>`+lk(L('Inkább megtartom','Keep it'),'log.javitas.'+eid))
     :acts(`<button class="fh-lk fx-bad" data-go="log.torles.${eid}">${L('Törlöm','Delete')}</button>`),{i:5})}`,foot);
   /* „MIT ETTÉL?” — a Kamra-tételről / receptről nyitott lap (LogFlowPage): napszak-választó + három forrás (Kamra · Recept · AI) + az előtöltött sor */
   if(pre) return page('fuel',top,`${totalHero}
@@ -554,7 +555,7 @@ function log(arg){
   ${sec(3,L('Adj hozzá még','Add more'),5)}${card(modes+field()+acts(btn(L('Elemzés','Analyse'),{toast:L('Elemzem az étkezést…','Analysing the meal…')},'sm ghost')),{i:5})}`,foot);
   const busy=a0==='elemez';
   return page('fuel',top,`${past?pastNote():''}
-  ${gHero({lbl:win?`${sl(win)} · ${win.from}–${win.to} · ${L('ablak','window')}`:L('Szabad tétel · te választod a mikort','Free item · you choose the when'),
+  ${gHero({lbl:win?`${sl(win)} · ${win.from}–${win.to} · ${L('ablak','window')}`:L('Szabad tétel · te választod a mikort','Free entry · you pick the time'),
     g:numG(pour(dayP,(win?win.b:400)/dayT*94,{ghost:true}),kc(dayT-dayEaten),L('kcal fér még bele','kcal still fits'),pk(L(`eddig ${kc(dayEaten)} kcal`,`${kc(dayEaten)} kcal so far`),win?L(`${sl(win).toLowerCase()} · ${kc(win.b)} kcal keret`,`${sl(win).toLowerCase()} · ${kc(win.b)} kcal budget`):L('ide kerül, amit most logolsz','what you log now goes here'))),
     verdict:busy?L('Elemzem az étkezést…','Analysing the meal…'):L('Mit ettél?','What did you eat?'),sub:L('Szöveg, hang és fotó egy piszkozatban. Elemzés után a felismert tételeket még átírhatod.','Text, voice and photo in one draft. After the analysis you can still change the recognised items.'),
     body:(busy?'':field(a0==='foto-kesz'||a0==='ai-hiba'?'zabkása joghurttal és gyümölccsel':''))+(a0==='ai-hiba'?`<p class="fh-note fx-bad" role="alert">${L('Nem sikerült az elemzés. Próbáld újra, vagy add hozzá kézzel.','The analysis did not work. Try again, or add it by hand.')}</p>`:''),
@@ -1100,7 +1101,7 @@ const WEEKS={
     {m:10,d:4,kcal:3120,t:2450,mac:[148,352,124],nut:62,q:46,wo:0,meals:[['Tojásrántotta · spenóttal','09:10',318,7.6],['Rántott csirke rizzsel','13:30',1180,5.4],['Somlói galuska','14:10',520,3.2],['Lazac + barna rizs + brokkoli','19:20',818,7.9],['Pattogatott kukorica','21:00',284,4.4]]}]},
   cur:{days:[
     {m:10,d:5,kcal:null,t:2450,wo:0,go:'mai.d-10-05'},
-    {m:10,d:6,kcal:1020,t:2870,mac:[70,120,40],nut:41,q:68,wo:1,ids:['y1','y2'],go:'mai.d-10-06'},
+    {m:10,d:6,kcal:1020,t:2870,mac:[51,104,44],nut:41,q:68,wo:1,ids:['y1','y2'],go:'mai.d-10-06'},
     {m:10,d:7,kcal:DAY.eaten,t:DAY.target,mac:[DAY.p[0],DAY.c[0],DAY.f[0]],nut:null,q:null,wo:1,ids:['reggeli','tizorai','ebed'],go:'mai',today:1},
     {m:10,d:8,kcal:null,t:2450,wo:0},{m:10,d:9,kcal:null,t:3100,wo:0},{m:10,d:10,kcal:null,t:2870,wo:0},{m:10,d:11,kcal:null,t:2450,wo:0}]}};
 /* a hosszabb táv: useFuelHorizon(start) — hét hét a megnyitott hétig: heti átlag kcal (meWeek.weekly.avgKcal) + a súlynapló heti átlaga. A heti súly az Én „Hol tartok” vonalával egyezik (… 78,9 → 78,4).
@@ -1411,8 +1412,10 @@ function learnSvg(){
     ${[0,4,8,11].map(i=>`<text x="${x(i).toFixed(1)}" y="${H-5}" text-anchor="middle">${WK[i]?wl(WK[i]):dS(7,27)}</text>`).join('')}
     ${WK.map((w,i)=>`<rect x="${(x(i)-cw/2).toFixed(1)}" y="0" width="${cw.toFixed(1)}" height="${H}" fill="transparent" style="cursor:pointer" data-toast="${w?L(`${wl(w)} hete: képlet ${kc(w[1])} · tanult ${kc(w[2])} ± ${w[3]} · a keret alapja ${kc(w[4])}${w[5]?' · ezen a héten vártam':''}`,`Week of ${wl(w)}: formula ${kc(w[1])} · learned ${kc(w[2])} ± ${w[3]} · base of the budget ${kc(w[4])}${w[5]?' · I waited this week':''}`):L('Erről a hétről nincs sorom: kevés volt a felírás és a mérlegelés, ezért nem tippelek számot.','I have no row for this week: there were too few logs and weigh-ins, so I do not guess a number.')}"/>`).join('')}</svg>`;
 }
+/* az állapot napjai: „var” = a legutóbbi héten csak 3 teljes nap; „ures” = 6 felírt nap (a 10-ből), a többi felírás nélkül */
+const ldFor=a=>a==='var'?LD.map(d=>d[1]===1003?[d[0],d[1],null,'unlogged']:d[1]===929?[d[0],d[1],1210,'suspicious']:d):a==='ures'?LD.map(d=>[1006,1004,1002,930,927,924].includes(d[1])?d:[d[0],d[1],null,'unlogged']):LD;
 function tanulas(arg){
-  const emp=arg==='ures', off=arg==='ki', hold=arg==='var';
+  const emp=arg==='ures', off=arg==='ki', hold=arg==='var', LDX=ldFor(arg);
   const ttl={title:L('Hogy tanultam?','How I learned'),sub:L('Fuel · energiaigény','Fuel · energy need'),back:'mai'};
   if(arg==='tolt'||arg==='hiba') return page('fuel',ttl,`${gHero({lbl:L('Tanult alap','Learned base'),g:`<div class="fu-need"><span>${level(0,{h:18})}</span></div>`,verdict:arg==='tolt'?L('Betöltöm, hogyan tanultam…','Loading how I learned…'):L('Most nem sikerült betölteni, hogyan tanultam.','How I learned could not be loaded just now.'),acts:arg==='hiba'?btn(L('Újrapróbálom','Try again'),'tanulas','sm'):''},1)}`);
   const cert=`${L(...CONF[LW.conf])} · ±${LW.sd} kcal`;
@@ -1428,16 +1431,16 @@ function tanulas(arg){
   ${emp?'':`${sec(++n,`${L('Hétről hétre','Week by week')} · ${L('12 hét','12 weeks')}`,2)}
   ${card(learnSvg()+lgd([['dash',L('képlet','formula')],['liq',L('a keret alapja','base of the budget')],['band',L('bizonytalanság (±)','uncertainty (±)')],['ring',L('vártam','I waited')]])
     +note(L('Koppints egy hétre a számaiért. Ahol nincs sor, ott a vonal megszakad; nem töltöm ki.','Tap a week for its numbers. Where there is no row the line breaks; I do not fill it in.'))
-    +lab(`${dR(...LW.r)}${hold?L(' · ezen a héten vártam',' · I waited this week'):''}`)+kv([[L('Képlet szerint','By the formula'),`${kc(LW.formula)} kcal`],[L('Tanult','Learned'),`${kc(LW.base)} ± ${LW.sd} kcal`],[L('A keret alapja','Base of the budget'),`${kc(LW.base)} kcal`],[L('Lépés','Step'),hold?L('nem léptem','no step'):`+${LW.step} kcal`],[L('Teljes nap','Complete days'),String(hold?3:LW.usable)],[L('Mérlegelés','Weigh-ins'),String(hold?1:LW.weigh)]])
+    +lab(`${dR(...LW.r)}${hold?L(' · ezen a héten vártam',' · I waited this week'):''}`)+kv([[L('Képlet szerint','By the formula'),`${kc(LW.formula)} kcal`],[L('Tanult','Learned'),`${kc(LW.base)} ± ${LW.sd} kcal`],[L('A keret alapja','Base of the budget'),`${kc(off?LW.formula:LW.base)} kcal`],[L('Lépés','Change'),hold||off?L('nem léptem','no change'):`+${LW.step} kcal`],[L('Teljes nap','Complete days'),String(hold?3:LW.usable)],[L('Mérlegelés','Weigh-ins'),String(hold?1:LW.weigh)]])
     +(hold?note(L('Kevés adat volt (legalább 4 teljes nap és 2 mérlegelés kell), ezért a keret nem mozdult.','There was too little data (at least 4 complete days and 2 weigh-ins are needed), so the budget did not move.')):''),{i:2})}`}
   ${sec(++n,L('Az utolsó 14 nap','The last 14 days'),3)}
-  ${card(LD.map(d=>row({icon:dCounts(d[3])?'t-tick':'t-shield',title:ldDate(d),sub:`${d[2]==null?'':kc(d[2])+' kcal · '}${L(...DST[d[3]])}`,right:d[3]==='unlogged'?'<span class="fx-dash">—</span>':sw(dCounts(d[3]),L(`${ldDate(d)} számít`,`${ldDate(d)} counts`))})).join('')
-    +note(L('A mai nem számít. A kapcsolóval megmondod, hogy egy nap teljes volt-e; azonnal újraszámolom. Felírás nélküli napot nem lehet jelölni: ott nincs mit számolni.','Today does not count. With the switch you tell me whether a day was complete; I recalculate at once. A day with no log cannot be marked: there is nothing to count.')),{i:3})}
+  ${card(LDX.map(d=>row({left:bub(dCounts(d[3])?'t-tick':d[3]==='unlogged'?'t-calendar':'t-shield',{s:40,c:dCounts(d[3])?'var(--dom)':d[3]==='unlogged'?'var(--faint)':'var(--warn)'}),title:ldDate(d),sub:`${d[2]==null?'':kc(d[2])+' kcal · '}${L(...DST[d[3]])}`,right:d[3]==='unlogged'?'<span class="fx-dash">—</span>':sw(dCounts(d[3]),L(`${ldDate(d)} számít`,`${ldDate(d)} counts`))})).join('')
+    +note(L('A mai nap még tart: jövő hétfőn számolom bele. A kapcsolóval megmondod, hogy egy nap teljes volt-e; azonnal újraszámolom. Felírás nélküli napot nem lehet jelölni: ott nincs mit számolni.','Today is still going: I count it in next Monday. With the switch you tell me whether a day was complete; I recalculate at once. A day with no log cannot be marked: there is nothing to count.')),{i:3})}
   ${emp?'':`${sec(++n,L('A legutóbbi hét részletei','Details of the latest week'),4)}
   ${card(HWT().map(([t,s],i)=>row({left:`<span class="fx-dd">${i+1}</span>`,title:t,sub:s,on:{sheet:'hw',arg:i}})).join(''),{i:4})}`}`);
 }
 /* a hat lépés címe és egy soros kivonata (LearnedBaseExplainerBody cellái) */
-const HWT=()=>[[L('Mit néztem meg','What I looked at'),L('47 teljes nap · 52 mérlegelés · 8 hét','47 complete days · 52 weigh-ins · 8 weeks')],[L('A súlyod és az evésed együtt','Your weight and your eating together'),L('evés-oszlopok, súlypontok, trend, víz-sáv','eating bars, weight points, trend, water band')],[L('A számítás, egyszerűen','The calculation, simply'),`${kc(2930)} − 132 − 330 ≈ ${kc(2470)}`],[L('Amit kiszűrtem, hogy ne tévesszen meg','What I filtered out so it would not mislead me'),L('4 + 1 kihagyott nap · víz · 9 nap felírás nélkül','4 + 1 days left out · water · 9 days with no log')],[L('Mennyire vagyok biztos benne','How sure I am'),`±${LW.sd} kcal · ${L(...CONF[LW.conf]).toLowerCase()}`],[L('Hogyan léptem','How I stepped'),`${kc(LW.formula)} → ${kc(LW.start)} → +${LW.step} → ${kc(LW.base)}`]];
+const HWT=()=>[[L('Mit néztem meg','What I looked at'),L('47 teljes nap · 52 mérlegelés · 8 hét','47 complete days · 52 weigh-ins · 8 weeks')],[L('A súlyod és az evésed együtt','Your weight and your eating together'),L('evés-oszlopok, súlypontok, trend, víz-sáv','eating bars, weight points, trend, water band')],[L('A számítás, egyszerűen','The calculation, simply'),`${kc(2930)} − 132 − 330 ≈ ${kc(2470)} ${L('(kerekítve)','(rounded)')}`],[L('Amit kiszűrtem, hogy ne tévesszen meg','What I filtered out so it would not mislead me'),L('4 + 1 kihagyott nap · víz · 9 nap felírás nélkül','4 + 1 days left out · water · 9 days with no log')],[L('Mennyire vagyok biztos benne','How sure I am'),`±${LW.sd} kcal · ${L(...CONF[LW.conf]).toLowerCase()}`],[L('Hogyan léptem','How it changed'),`${kc(LW.formula)} → ${kc(LW.start)} → +${LW.step} → ${kc(LW.base)}`]];
 
 /* ═══ LAPOK (alulról) — A terület ═════════════════════════════ */
 const howSvg=()=>{const N=56;let seed=7;const rnd=()=>(seed=(seed*9301+49297)%233280)/233280;
@@ -1453,7 +1456,7 @@ const howSvg=()=>{const N=56;let seed=7;const rnd=()=>(seed=(seed*9301+49297)%23
 const waterSheet=()=>{const T=2500,cur=WAT,nx=Math.min(T*1.05,cur+(WSEL||0)),Y=p=>126-Math.min(1,p)*112;
   return `${sh('t-water',L('Mennyit ittál?','How much did you drink?'),L('Egy korty szünet.','A sip of a break.'))}
     <div class="fu-wat"><span class="fu-glass" role="img" aria-label="${L(`Ma eddig ${fmt((cur/1000).toFixed(1))} / ${fmt(2.5)} liter`,`${fmt((cur/1000).toFixed(1))} of ${fmt(2.5)} litres so far today`)}">${fill(GLASS,{vb:GLASSVB,p:pc(cur,T)*.92,s:104,c:'color-mix(in srgb,var(--water) 50%,#fff)',c2:'var(--water)',inner:`<path d="M14 14H86" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 4" opacity=".4"/>${WSEL?`<path d="M20 ${Y(nx/T*.92).toFixed(1)}H80" stroke="var(--water)" stroke-width="2.5" stroke-dasharray="5 4" stroke-linecap="round"/>`:''}`})}</span>
-      <div><output class="fh-big" aria-label="${L('Rögzítendő vízmennyiség','Amount of water to log')}">${WSEL||'—'}<small>ml</small></output><p>${L(`ma eddig ${fmt((cur/1000).toFixed(1))} / ${fmt(2.5)} l`,`${fmt((cur/1000).toFixed(1))} / ${fmt(2.5)} l so far today`)}</p></div></div>
+      <div><output class="fh-big" aria-label="${L('Rögzítendő vízmennyiség','Amount of water to log')}">${WSEL||0}<small>ml</small></output><p>${L(`ma eddig ${fmt((cur/1000).toFixed(1))} / ${fmt(2.5)} l`,`${fmt((cur/1000).toFixed(1))} / ${fmt(2.5)} l so far today`)}</p></div></div>
     <div class="fh-pills fu-wch">${[250,400,500].map(v=>`<button class="fh-pill ${v===WSEL?'on':''}" data-fwsel="${v}" aria-pressed="${v===WSEL}">${v} ml</button>`).join('')}</div>
     <div class="fu-wman"><input class="fh-in" type="number" inputmode="numeric" min="1" placeholder="${L('pl. 330','e.g. 330')}" aria-label="${L('Víz mennyisége kézzel (ml)','Amount of water by hand (ml)')}"><span>${L('ml kézzel','ml by hand')}</span></div>
     ${acts(`<button class="btn" style="flex:1" data-fwsave ${WSEL?'':'disabled'}>${L('Mentés','Save')}</button>`
@@ -1484,18 +1487,18 @@ const sRow=(ic,t,b,v)=>`<div class="fu-tip">${bub(ic,{s:38})}<span><b>${t}</b><s
 const sheetsA={
   /* MIBŐL JÖN ÖSSZE? (FuelEnergyHero EquationBox): Alap + Mozgás ± Célod − Étel [− Kihagyva] = Marad; hiányzó tag „—”, sosem 0 */
   eq:()=>{const V=CUR||dayVM(''),E=V.energy,over=V.rem<0,mv=E?E.planned+E.extra:null,paused=V.dropped;
-    const big=over?(V.mode==='ESTIMATE'?L('kcal a keret körül','kcal around the budget'):L('kcal a keret felett','kcal over the budget')):V.past?L('kcal fért még bele','kcal still fitted'):L('kcal fér még bele ma','kcal still fits today');
+    const big=over?(V.mode==='ESTIMATE'?L('kcal a keret körül','kcal around the budget'):L('kcal a keret felett','kcal over the budget')):V.past?L('kcal fért még bele','kcal was still left'):L('kcal fér még bele ma','kcal still fits today');
     const goalSub=paused?L('szünetel, amíg a sérülés tart','paused while the injury lasts'):L('a fogyási célod napi része','the daily share of your weight-loss goal');
     const rows=[[L('Alap','Base'),'t-flame',V.weekly?L('a súlytrendedből és az evésedből tanulva · heti tanulás ›','learned from your weight trend and your eating · weekly learning ›'):E?L('a súlytrendedből és az evésedből tanulva','learned from your weight trend and your eating'):'',E?kc(E.base):'—',V.weekly?{sheet:'weekly'}:null],
-      [L('Mozgás','Movement'),'t-dumbbell',L('ma logolt mozgásod','your logged movement today')+(E&&E.extra?L(' + terven kívüli',' + unplanned'):'')+(E&&E.pending&&!V.past?`<i class="fu-pend">${L(`még jön +${kc(E.pending)}, ha megcsinálod`,`+${kc(E.pending)} more if you do it`)}</i>`:''),E?'+ '+kc(mv):'+ —'],
+      [L('Mozgás','Movement'),'t-dumbbell',(V.past?L('aznap logolt mozgásod','the movement you logged that day'):L('ma logolt mozgásod','your logged movement today'))+(E&&E.extra?L(' + terven kívüli',' + unplanned'):'')+(E&&E.pending&&!V.past?`<i class="fu-pend">${L(`még jön +${kc(E.pending)}, ha megcsinálod`,`+${kc(E.pending)} more if you do it`)}</i>`:''),E?'+ '+kc(mv):'—'],
       ...(E||V.arg==='nincs-cel'?[]:[]),...(V.arg==='nincs-cel'?[]:[[L('Célod','Your goal'),'t-ring',goalSub,E?(E.balance===0?'0':(E.balance<0?'− ':'+ ')+kc(Math.abs(E.balance))):'—']]),
       [L('Étel','Food'),'t-bowl',V.past?L('amit aznap logoltál','what you logged that day'):L('amit ma eddig logoltál','what you have logged so far today'),'− '+kc(V.eaten)],
       ...(V.skipped?[[L('Kihagyva','Skipped'),'t-skip',L('kihagyott étkezés · nem kerül át máshová','skipped meal · it does not move elsewhere'),'− '+kc(V.skipped)]]:[])];
     return `${sh('t-bowl',`${kc(Math.abs(V.rem))} ${big}`,L('Miből jön össze?','How does it add up?'))}
-    <div class="fu-eqb" role="img" aria-label="${L(`A napi keretedből ${kc(V.eaten)} kcal fogyott el`,`${kc(V.eaten)} kcal of your daily budget is used`)}">${level(pc(V.eaten,V.target),{h:22})}<p class="fu-eqc"><span>${L('ettél','eaten')}</span><span>${L('még szabad','still free')}</span></p></div>
+    <div class="fu-eqb" role="img" aria-label="${L(`A napi keretedből ${kc(V.eaten)} kcal fogyott el`,`${kc(V.eaten)} kcal of your daily budget is used`)}">${level(pc(V.eaten,V.target),{h:22})}<p class="fu-eqc"><span>${L('ettél','eaten')}</span><span>${over?L(`${kc(-V.rem)} felett`,`${kc(-V.rem)} over`):L('még szabad','still free')}</span></p></div>
     ${rows.map(([l,ic,s,v,on])=>row({icon:ic,title:l,sub:s,v,on:on||null})).join('')}
-    <div class="fx-tot"><span>${L('Marad','Left')}<small>${L('a mai kereted maradéka','what is left of today’s budget')}</small></span><b>${(over?'−':'')+kc(Math.abs(V.rem))}<small>kcal</small></b></div>
-    ${note(L('A keretet az alapigényed, a súlycélod és a mai mozgásod együtt adja; a keret akkor nő, amikor logolod az edzést.','Your budget comes from your base need, your weight goal and today’s movement together; it grows when you log the workout.'))}
+    <div class="fx-tot"><span>${L('Marad','Left')}<small>${V.past?L('a nap keretének maradéka','what was left of the day’s budget'):L('a mai kereted maradéka','what is left of today’s budget')}</small></span><b>${(over?'−':'')+kc(Math.abs(V.rem))}<small>kcal</small></b></div>
+    ${note(V.past?L('Egy lezárt napnál csak az étel és a nap kerete ismert; az Alap, a Mozgás és a Célod a mai napot írná le, ezért ott gondolatjel áll.','For a closed day only the food and the day’s budget are known; Base, Movement and Your goal would describe today, so they show a dash.'):!E?L(`Nincs aktív célod vagy friss testadatod, ezért a keret a beállított napi kereted: ${kc(V.target)} kcal. Bontás ilyenkor nincs.`,`You have no active goal or recent body data, so the budget is the daily budget you set: ${kc(V.target)} kcal. There is no breakdown in this case.`):L('A keretet az alapigényed, a súlycélod és a mai mozgásod együtt adja; a keret akkor nő, amikor logolod az edzést.','Your budget comes from your base need, your weight goal and today’s movement together; it grows when you log the workout.'))}
     ${acts((E&&!V.past?btn(L('Részletesen, honnan jön a keret','In detail: where the budget comes from'),{sheet:'energy'},'sm'):'')+closeLk(L('Bezárom','Close')))}`},
   /* HONNAN JÖN A KERET? (EnergyBreakdownSheet, az Én oldallal közös): Alap + Mozgás − Deficit = Mai cél */
   energy:()=>{const V=CUR&&CUR.energy?CUR:dayVM(''),E=V.energy,mv=E.planned+E.extra,def=E.balance;
@@ -1503,7 +1506,7 @@ const sheetsA={
     return `${sh('t-ring',L(`Honnan jön a ${kc(V.target)} kcal?`,`Where do the ${kc(V.target)} kcal come from?`),L('A napi cél nem statikus: az alapigényedből, a ma logolt mozgásodból és a célodból áll össze.','The daily goal is not fixed: it is built from your base need, the movement you logged today and your goal.'))}
     ${split([[L('Alap','Base'),E.base,'var(--dom)',kc(E.base)],[L('Mozgás','Movement'),mv,'var(--water)','+'+kc(mv)],...(def?[[L('Deficit','Deficit'),Math.abs(def),'var(--faint)','−'+kc(Math.abs(def))]]:[])],{h:30})}
     <div class="fx-sum"><span class="fh-big">${kc(E.base)} + ${kc(mv)}${def?' − '+kc(Math.abs(def)):''}</span><b>= ${kc(V.target)}</b></div>
-    ${lab(`${L('Alap · tanult','Base · learned')} · ${kc(E.base)}`)}${t3([kc(E.formula),L('Képlet szerint · BMR × NEAT','By the formula · BMR × NEAT')],'→',null,[kc(E.base),L('Tanult alap','Learned base')])}
+    ${lab(`${L('Alap · tanult','Base · learned')} · ${kc(E.base)}`)}${t3([kc(E.formula),L('Képlet szerint · alapanyagcsere × életmód','By the formula · resting burn × lifestyle')],'→',null,[kc(E.base),L('Tanult alap','Learned base')])}
     ${txt(L(`Ennyit égetsz <b>edzés nélkül</b>: a <b>súlytrendedből és a felírt evésedből</b> tanultam meg. A képlet ${kc(E.formula)} kcal-t mondana.`,`This is what you burn <b>without training</b>: I learned it from <b>your weight trend and the eating you logged</b>. The formula would say ${kc(E.formula)} kcal.`))}
     ${row({icon:'t-lens',title:`${L('Tanult alap','Learned base')} · ${L(...CONF[E.conf])} · ±${E.sd} kcal`,sub:L('Hogy tanultam? Hétről hétre, és a napjaid','How I learned: week by week, and your days'),on:'tanulas'})}
     ${lab(`${L('Mozgás · ma logolva','Movement · logged today')} · +${kc(mv)}`)}${t3([kc(E.planned),L('Tervezett edzés · logolva','Planned workout · logged')],'+',[kc(E.extra),L('Terven kívüli mozgás','Unplanned movement')],['+'+kc(mv),L('Mai mozgás','Today’s movement')])}
@@ -1521,7 +1524,7 @@ const sheetsA={
       :`<div class="fx-tot"><span>${L('a napi keretedben','in your daily budget')}</span><b>+${LW.step}<small>kcal</small></b></div>${txt(L('A súlyod lassabban nőtt, mint amit a felírt evés alapján vártam.','Your weight rose more slowly than I expected from the eating you logged.'))}
       ${bandG({lo:2200,hi:2760,a:LW.base-LW.sd,b:LW.base+LW.sd,v:LW.base,vl:kc(LW.base),tick:LW.start,tl:L(`múlt hét ${kc(LW.start)}`,`last week ${kc(LW.start)}`),al:'−'+LW.sd,bl:'+'+LW.sd,label:L(`Az alap ${kc(LW.start)}-ról ${kc(LW.base)}-ra lépett`,`The base stepped from ${kc(LW.start)} to ${kc(LW.base)}`)})}`}
     ${lab(L('Kihagyott napok','Days left out'))}
-    ${LW.excluded.map(d=>row({icon:'t-shield',title:ldDate(d),sub:`${kc(d[2])} kcal · ${L(...DST[d[3]])}`,right:d[3]==='marked_incomplete'?btn(L('Visszavonom','Undo'),{toast:L('A keret nem változott','The budget did not change')},'sm ghost'):btn(L('Teljes volt','It was complete'),{toast:L('A keret +20 kcal-lal változott','The budget changed by +20 kcal')},'sm ghost')})).join('')}
+    ${(hold?ldFor('var').filter(d=>d[1]>=928&&d[1]<=1004&&(d[3]==='suspicious'||d[3]==='marked_incomplete')):LW.excluded).map(d=>row({icon:'t-shield',title:ldDate(d),sub:`${kc(d[2])} kcal · ${L(...DST[d[3]])}`,right:d[3]==='marked_incomplete'?btn(L('Visszavonom','Undo'),{toast:L('A keret nem változott','The budget did not change')},'sm ghost'):btn(L('Teljes volt','It was complete'),{toast:L('A keret +20 kcal-lal változott','The budget changed by +20 kcal')},'sm ghost')})).join('')}
     ${note(L('Ha nem nyúlsz hozzá, ezeket a napokat kihagyva hagyom.','If you leave them alone, I keep these days left out.'))}
     ${acts(btn(L('Részletek','Details'),'tanulas','sm')+`<button class="fh-lk" data-close data-toast="${L('Elrejtettem; ezt a hetet nem mutatom újra','Hidden; I will not show this week again')}">${L('Bezárom','Close')}</button>`)}`},
   /* EGY SZEMPONT (FuelScoreSurface DimGlass); arg: <étkezés vagy recept kulcs>|<index> */
@@ -1572,7 +1575,7 @@ const sheetsA={
     ${m?`${B?`${lab(L('Vércukor-válasz','Blood sugar response'))}<div class="fu-ogl" style="--gc:${GCOL[B.lvl]}">${gMini(B.lvl,late)}<b>${glw(B.lvl,1)}${late?L(' · késő este',' · late evening'):''}</b></div>${gband(B.lvl)}<p class="fh-txt"><b>${B.tip[0]}.</b> ${B.tip[1]}${late?' '+L('Késő este ugyanez általában magasabbra és tovább emelkedik (szaggatott vonal).','Late in the evening the same usually rises higher and for longer (dashed line).'):''}</p>${acts(lk(L('A vércukor-válasz részletei','Details of the blood sugar response'),{sheet:'glu',arg:ex?String(a).slice(2):s.meal[0]}))}`:''}
       ${lab(L('Mire számíts','What to expect'))}${fc().map(r=>sRow(...r)).join('')}`
     :`${lab(L('Miért ekkor?','Why then?'))}${s.why.map(c=>sRow(...WHYC(c))).join('')}
-      ${lab(L('Hogyan illik a napodba','How it fits your day'))}${T?sRow('t-dumbbell',L('Mozgás ma','Movement today'),`${T.label} ${T.start}–${T.end}`):''}${sRow('t-plate',L('Étkezési terv','Meal plan'),L(`${i+1}. étkezés 4 közül. Erre kb. ${kc(s.b)} kcal jut a napi keretből.`,`Meal ${i+1} of 4. About ${kc(s.b)} kcal of the daily budget goes to it.`),`${kc(s.b)} kcal`)}
+      ${lab(L('Hogyan illik a napodba','How it fits your day'))}${T?sRow('t-dumbbell',L('Mozgás ma','Movement today'),`${T.label} ${T.start}–${T.end}`):''}${sRow('t-plate',L('Étkezési terv','Meal plan'),L(`${i+1}. étkezés 4 közül. A terv szerint erre kb. ${kc(s.b)} kcal jut a napi keretből.`,`Meal ${i+1} of 4. By the plan, about ${kc(s.b)} kcal of the daily budget goes to it.`),`${kc(s.b)} kcal`)}
       ${note(L('Az ablak iránymutatás. A napi összes fehérje és kalória többet számít, mint az, hogy percre pontosan mikor eszel.','The window is a guide. Your total protein and calories for the day matter more than eating at the exact minute.'))}`}
     ${acts(`<button class="btn sm" style="flex:1" data-close>${L('Rendben','OK')}</button>`)}`},
   /* MIÉRT MARAD KI? (MealSkipSheet): hat ok, az „Egyéb”-hez szöveg; komoly oknál „Meddig tarthat?” → kímélő mód */
@@ -1581,7 +1584,7 @@ const sheetsA={
       :c==null?tip('t-info',L('Nem kötelező','Optional'),L('Ha megmondod, miért, Mezo érteni fogja a mintát.','If you say why, Mezo will understand the pattern.'))
       :ser?tip('t-heart',[L('Jobbulást!','Get well soon.'),L('Jobbulást!','Get well soon.'),L('Jó utat!','Safe travels.')][c-2],L('Ha több napig tarthat, válaszd ki, meddig. A kímélő mód a Fuelt is átállítja.','If it may last several days, choose how long. Gentle mode changes Fuel too.'))
       :tip('t-info',L('Nem számít mulasztásnak.','It does not count as a miss.'),L('A mai kereted nem változik, és a többi étkezésed sem lesz nagyobb.','Today’s budget does not change, and your other meals do not get bigger.'));
-    return `${sh('t-skip',L('Miért marad ki?','Why is it skipped?'),`${L('Kihagyva','Skipped')} · ${sl(s)} · ${L('nem kötelező; segít, hogy Mezo értse a mintát','optional; it helps Mezo understand the pattern')}`)}
+    return `${sh('t-skip',L('Miért marad ki?','Why are you skipping it?'),`${L('Kihagyva','Skipped')} · ${sl(s)} · ${L('nem kötelező; segít, hogy Mezo értse a mintát','optional; it helps Mezo understand the pattern')}`)}
     <div class="fu-why" role="group" aria-label="${L('A kihagyás oka','Reason for skipping')}">${MCATS.map(([ic],k)=>`<button class="${c===k?'on':''}" data-fwhy="${i}|${k}" aria-pressed="${c===k}">${bub(ic,{s:40})}<span>${mcl(k)}</span></button>`).join('')}</div>
     ${c===5?lab(L('Mi történt? · saját szavakkal','What happened? · in your own words'))+`<div class="fx-cmp"><textarea aria-label="${L('Mi történt?','What happened?')}" placeholder="${L('pl. elhúzódott a megbeszélés','e.g. the meeting ran long')}">${cur.t||''}</textarea><button data-toast="${L('Diktálás','Dictate')}" aria-label="${L('Diktálás','Dictate')}">${I('t-mic')}</button></div>`:''}
     ${ser?lab(L('Meddig tarthat?','How long may it last?'))+`<div class="fh-pills">${[L('Csak ma','Just today'),L('2–3 nap','2–3 days'),L('Kb. egy hét','About a week'),L('Nem tudom','I don’t know')].map((l,k)=>`<button class="fh-pill ${cur.km===k?'on':''}" data-fkm="${i}|${k}" ${cur.km!=null?'disabled':''}>${l}</button>`).join('')}</div>`:''}
@@ -1593,8 +1596,8 @@ const sheetsA={
       :[L('A magas láz 3 napnál tovább tart','A high fever lasts more than 3 days'),L('Nehezen kapsz levegőt, vagy mellkasi fájdalmad van','You struggle to breathe, or you have chest pain'),L('Néhány nap javulás után megint romlik az állapotod','After a few better days you get worse again'),L('Nem tudsz inni, vagy a kiszáradás jeleit érzed','You cannot drink, or you feel signs of dehydration')]).map(t=>`<div class="fu-li"><i></i><span>${t}</span></div>`).join('')}
     ${tip('t-info',L('Ez nem orvosi tanács.','This is not medical advice.'),L('Ha bizonytalan vagy, hívd a háziorvosodat vagy az ügyeletet.','If you are unsure, call your GP or the out-of-hours service.'))}${acts(closeLk(L('Bezárom','Close')))}`},
   /* VÁLASSZ A POLCRÓL (KamraPickSheet) — a naplózó Kamra-útja; több tétel is felvehető, a lap nyitva marad. arg „ures” = nincs találat */
-  kamrapick:a=>`${sh('t-stack',L('Válassz a polcról','Pick from the shelf'),L('Kamra · hozzáadás','Pantry · add'))}<div class="fx-srch" data-toast="${L('Keresés a kamrában','Search the pantry')}">${bub('t-lens',{s:28})}${L('Keress a Kamrában…','Search the Pantry…')}</div>
-    <div class="fh-pills" data-fpick style="margin:10px 0 4px" role="group" aria-label="${L('Kategória-szűrő','Category filter')}">${[L('Mind','All'),...[...new Set(KAM.filter(k=>k.k==='food').map(k=>k.cat))].map(catL)].map((l,i)=>`<button class="fh-pill ${a==='ures'?(i===3?'on':''):i?'':'on'}" data-toast="${esc(l)}">${l}</button>`).join('')}</div>
+  kamrapick:a=>`${sh('t-stack',L('Válassz a polcról','Pick from the shelf'),L('Kamra · hozzáadás','Pantry · add'))}<div class="fx-srch" data-toast="${L('Keresés a kamrában','Search the pantry')}">${bub('t-lens',{s:28})}${a==='ures'?'<span>lazac</span><i>×</i>':L('Keress a Kamrában…','Search the Pantry…')}</div>
+    <div class="fh-pills" data-fpick style="margin:10px 0 4px" role="group" aria-label="${L('Kategória-szűrő','Category filter')}">${[L('Mind','All'),...[...new Set(KAM.filter(k=>k.k==='food').map(k=>k.cat))].map(catL)].map((l,i)=>`<button class="fh-pill ${a==='ures'?(l===catL('Gabona')?'on':''):i?'':'on'}" data-toast="${esc(l)}">${l}</button>`).join('')}</div>
     ${a==='ures'?empty('',L('Nincs találat ebben a kategóriában.','Nothing found in this category.')):KAM.filter(k=>k.k==='food').map((k,i)=>irow({icon:kic(k),title:k.n,sub:`${k.b} · ${L(NOVA[k.nova==='Alapanyag'?1:2][0],NOVA[k.nova==='Alapanyag'?1:2][1])}`,v:`<span class="fu-pk2"><span>${k.kcal}<small>kcal /100 g</small></span><button class="fx-add ${i===3?'on':''}" ${i===3?'disabled':''} data-toast="${L('Hozzáadva','Added')}: ${esc(k.n)}" aria-label="${i===3?L(`${esc(k.n)} hozzáadva`,`${esc(k.n)} added`):L(`${esc(k.n)} hozzáadása`,`Add ${esc(k.n)}`)}">${i===3?I('i-check'):'+'}</button></span>`,l2:m3(k.p,k.c,k.f)})).join('')}`,
   /* VÁLASSZ RECEPTET (ReceptPickSheet) — a naplózó Recept-útja; választás után bezár. arg „ures” = nincs ilyen recept */
   receptpick:a=>`${sh('t-book',L('Válassz receptet','Pick a recipe'),L('Recept · hozzáadás','Recipe · add'))}<div class="fu-srow"><div class="fx-srch" data-toast="${L('Keresés a receptek között','Search the recipes')}">${bub('t-book',{s:28})}${L('Keress receptet…','Search recipes…')}</div><button class="fh-pill" data-ftog aria-pressed="false">${bub('t-star',{s:24})}${L('csillagos','starred')}</button></div>
@@ -1605,7 +1608,7 @@ const sheetsA={
       ()=>facts([['47',L('teljes nap felírt evéssel','complete days with eating logged')],['52',L('mérlegelés','weigh-ins')],['8',L('hét előzmény','weeks of history')]])+txt(L('Csak azokat a napokat számoltam, amikor az evésed teljesnek tűnt. A mai napot soha nem nézem, mert még tart.','I only counted the days when your eating looked complete. I never look at today, because it is still going.')),
       ()=>howSvg()+lgd([['liq',L('számít','counts')],['hatch',L('hiányosnak tűnt','looked incomplete')],['tr',L('súlytrend','weight trend')],['water',L('ebből víz','of which water')]]),
       ()=>[[L('Átlagosan ennyit ettél','On average you ate'),L('a 47 teljes napon','over the 47 complete days'),kc(2930),100,'t-bowl'],[L('− ami súlyként megmaradt','− what stayed as weight'),L(`+${fmt('0.12')} kg/hét valódi gyarapodás (víz nélkül)`,`+${fmt('0.12')} kg/week real gain (without water)`),'−132',95.5,'t-weight'],[L('− amit mozgással égettél','− what you burned by moving'),L('logolt mozgás, napi átlag','logged movement, daily average'),'−330',84.3,'t-steps']].map(([l,s,v,p,ic])=>`<div class="fu-gr">${bub(ic,{s:30})}<span><b>${l}</b><small>${s}</small></span><em>${v}</em>${level(p,{h:12})}</div>`).join('')+`<div class="fx-tot"><span>${L('= ennyit égetsz mozgás nélkül','= what you burn without movement')}</span><b>≈ ${kc(2470)}<small>kcal</small></b></div>`+note(L('A valódi számítás napról napra halad, és minden mérlegelés egy kicsit pontosít rajta. Ez a kerekített, egyszerű változata.','The real calculation moves day by day, and every weigh-in sharpens it a little. This is the rounded, simple version.')),
-      ()=>tip('t-shield',L('4 hiányosnak tűnő nap','4 days that looked incomplete'),L('Jóval a szokásos evésed alatt voltak, ezért nem vettem kevés evésnek; kihagytam őket.','They were far below your usual eating, so I did not take them as eating little; I left them out.'),'var(--warn)')+`<div class="fh-chips fu-chips">${[[8,30,604],[9,5,929],[9,25,1340],[10,2,1180]].map(([m,d,k])=>`<span>${dS(m,d)} · ${kc(k)}</span>`).join('')}</div>`
+      ()=>tip('t-shield',L('4 hiányosnak tűnő nap','4 days that looked incomplete'),L('Jóval a szokásos evésed alatt voltak, ezért nem vettem kevés evésnek; kihagytam őket.','They were far below your usual eating, so I did not read them as light days; I left them out.'),'var(--warn)')+`<div class="fh-chips fu-chips">${[[8,30,604],[9,5,929],[9,25,1340],[10,2,1180]].map(([m,d,k])=>`<span>${dS(m,d)} · ${kc(k)}</span>`).join('')}</div>`
         +tip('t-shield',L('1 általad hiányosnak jelölt nap','1 day you marked incomplete'),L('Ezt te jelölted hiányosnak, ezért kihagytam.','You marked this one incomplete, so I left it out.'),'var(--warn)')+`<div class="fh-chips fu-chips"><span>${dS(9,28)} · ${kc(2150)}</span></div>`
         +tip('t-water',L(`Víz, nem zsír · ${dS(9,7)} körül`,`Water, not fat · around ${dS(9,7)}`),L(`A súlyod kb. ${fmt('1.2')} kg-ot ugrott. Ez víz és glikogén, ezért nem számoltam hízásnak.`,`Your weight jumped by about ${fmt('1.2')} kg. That is water and glycogen, so I did not count it as gaining.`),'var(--water)')
         +tip('t-calendar',L('9 nap felírás nélkül','9 days with no log'),L('Ezekből a napokból nem tanultam semmit, és nem is tippeltem helyettük.','I learned nothing from these days, and I did not guess in their place.'),'var(--faint)'),
@@ -2074,7 +2077,7 @@ ${QA} .fm-mn strong{font-size:15.5px;line-height:1.3}
 ${QA} .fm-when .now{color:var(--dom);font-weight:700}
 ${QA} .fm-la{flex-wrap:nowrap;margin-top:12px}
 ${QA} .fm-log{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 18px;text-align:left;white-space:normal}
-${QA} .fm-log span{font-weight:700}${QA} .fm-log small{font-size:11px;font-weight:500;opacity:.9}
+${QA} .fm-log span{font-weight:700}${QA} .fm-log small{font-size:11px;font-weight:500;opacity:.9}${QA} .fm-log.ghost small{color:var(--sub);opacity:1}
 ${QA} .fm-ska{gap:8px 14px;margin-top:10px}
 ${QA} .fm-clock.live{box-shadow:0 0 0 3px color-mix(in srgb,var(--liq1) 45%,transparent),0 8px 12px -8px rgba(10,42,60,.45)}
 ${QA} .fu-mac.lead .k2-vial:first-child .k2-tube{box-shadow:inset 0 0 0 2.5px var(--protein),0 12px 16px -12px var(--protein)}
@@ -2085,6 +2088,10 @@ ${QA} .fu-tags em{display:inline-flex;align-items:center;gap:5px;font-style:norm
 ${QA} .fu-tags em i{width:7px;height:7px;border-radius:50%;background:var(--c)}
 ${QA} .fu-tags em.w{color:var(--warn);background:color-mix(in srgb,var(--warn) 12%,#fff)}
 ${QA} .fu-q .fh-stat{min-height:118px}${QA} .fu-q .fh-stat .n{font-size:24px}${QA} .fu-q .fh-stat .n small{display:block;margin:3px 0 0}
+${QA} .fu-8 .k2-vial small i{white-space:nowrap}
+${QA} .fu-pendl{color:#fff;font-weight:700;font-size:15px}
+${QA} .fu-mac .k2-tube em{letter-spacing:0}
+@media(max-width:360px){${QA} .fh-hero.warn .fh-hrow{flex-direction:column;align-items:flex-start;gap:8px}${QA} .fu-8 .k2-vial small i{font-size:9px;letter-spacing:-.2px}}
 ${QA} .fu-imp{color:var(--ok)}
 ${QA} .fu-impc .fh-row strong{font-weight:500;line-height:1.4}
 ${QA} .fu-fb{display:flex;align-items:center;gap:10px}${QA} .fu-fb>span{flex:1;font-size:14px;color:var(--sub)}
@@ -2123,7 +2130,8 @@ ${QA} .fu-star{display:inline-block;width:15px;height:15px;vertical-align:-2px}$
 /* logolás */
 ${QA} .fu-modes{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 ${QA} .fu-modes.three{grid-template-columns:repeat(3,1fr)}
-${QA} .fu-modes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 10px;border-radius:22px;background:color-mix(in srgb,var(--dom) 5%,#fff);font-size:11.5px;letter-spacing:-.2px;font-weight:650;text-align:center;line-height:1.15;min-width:0;overflow:hidden}
+${QA} .fu-modes button{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 2px 10px;border-radius:22px;background:color-mix(in srgb,var(--dom) 5%,#fff);font-size:11px;letter-spacing:-.3px;font-weight:650;text-align:center;line-height:1.15;min-width:0;overflow:hidden}
+${QA} .fu-modes button>span:not(.fb){max-width:100%;padding:0 4px;overflow:hidden;text-overflow:ellipsis}
 ${QA} .fu-modes button.on{box-shadow:inset 0 0 0 2.5px var(--liq2)}
 ${QA} .fu-modes small{font-size:10.5px;font-weight:500;color:var(--sub);line-height:1.2}
 ${QA} .fu-modes + .fx-cmp{margin-top:12px}
@@ -2153,6 +2161,7 @@ ${QA} .fu-tuh b{font-weight:700}${QA} .fu-tuh span{color:var(--dom);font-weight:
 ${QA} .fu-tur{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--hair);flex-wrap:wrap}
 ${QA} .fu-tur .g{flex:1;min-width:110px}${QA} .fu-tur strong{display:block;font-size:13.5px;font-weight:600}${QA} .fu-tur small{display:block;font-size:11.5px;color:var(--sub)}
 ${QA} .fu-tur.ch strong{color:var(--dom)}${QA} .fu-tur .fx-stp button{background:#fff}
+${QA} .fh-foot .btn.ghost:only-child{flex:1 1 auto}
 ${QA} .fu-twt{padding:0!important}${QA} .fu-car{color:var(--faint);font-size:13px}
 ${QA} .fu-twt + .fx-time{margin-top:12px}
 ${QA} .fu-del{background:var(--bad)!important;box-shadow:0 10px 20px -10px var(--bad)!important}
@@ -2171,7 +2180,8 @@ ${QA} .fu-cfc .fh-facts{margin:0}
 @media (prefers-reduced-motion:no-preference){body:not(.still) ${QA} .fu-ccup .lq{animation:fucr 1.5s cubic-bezier(.2,.8,.2,1) both .2s}}
 @keyframes fucr{from{transform:translateY(110px)}}
 @media(max-width:360px){
-  ${QA} .fu-modes button{font-size:11px;padding:10px 0 8px}${QA} .fu-modes .fb{--s:30px!important}
+  ${QA} .fu-ng .nn .fm-cells{gap:4px}${QA} .fu-ng .nn .fm-cells .fl-mini{min-width:26px}${QA} .fu-lh .fu-pour{width:98px!important}${QA} .fu-lh .verdict{hyphens:manual;font-size:20px}
+  ${QA} .fu-modes button{font-size:10.5px;padding:10px 0 8px}${QA} .fu-modes .fb{--s:30px!important}
   ${QA} .fu-sc .fh-big{font-size:44px}
   ${QA} .fm-la{flex-wrap:wrap}
   ${QA} .fu-eq3 b{font-size:15px}${QA} .fu-eq3>span{padding:8px 7px}
