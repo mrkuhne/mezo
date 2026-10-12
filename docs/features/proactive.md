@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-10-11
+updated: 2026-10-12
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,6 +13,8 @@ related: [companion, today, insights, train, me, character, _platform-api-backen
 ---
 
 # Proactive layer (companion feed, weekly prose, predictions) — Feature Documentation
+
+> **2026-10-12 — reviewed after N1 (`mezo-n4wf5.11`).** `NapMezoPage` reads the team field names through the kit's `memberLabel()` (the `kit` message catalog, so they follow the app language) instead of the `MEMBER_LABEL` constant. Nudge logic and surfaces as described below.
 
 > **2026-10-11 — reviewed after Folyadék F3 (`mezo-n4wf5.3`).** `NapMezoPage` changed in one line: its standalone back pill is the kit's `.fo-backpill`. Nudge logic and surfaces as described below.
 

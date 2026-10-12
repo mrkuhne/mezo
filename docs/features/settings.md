@@ -2,7 +2,7 @@
 title: Central settings and personal context
 type: feature-platform
 status: done
-updated: 2026-10-11
+updated: 2026-10-12
 tags: [frontend, platform, ai]
 key_files:
   - frontend/src/features/settings
@@ -15,6 +15,15 @@ related: [_platform-design-system, _platform-language, companion, me, fuel, trai
 ---
 
 # Central settings
+
+> **2026-10-12 — Folyadék F5 · Fuel (`mezo-n4wf5.5`).** The two Fuel settings pages (`/settings/fuel`, `/settings/fuel/slots` —
+> `features/fuel/pages/FuelSettingsPage.tsx`, `FuelSlotsPage.tsx`, mounted by `settingsRoutes.tsx`) are built from the Folyadék
+> kit and speak both languages (`FuelSettingsPages.en.test.tsx`; rules in `styles/folyadek-fuel-beallitas.css`, `.fb-`). The
+> Settings shell around them is not converted yet, so they still sit inside its frame and take its Fuel tint
+> (`.settings-fuel`, `settings.css`) until the Settings slice. What the pages hold is unchanged — see [`fuel.md`](fuel.md).
+> The energy-breakdown sheet opened from the biometrics editor is Fuel's Folyadék sheet too (title with a grouped number:
+> „Honnan jön a 2 200 kcal?"). The notification row for `fuel_slot` reads „Fuel és kiegészítők / A kiegészítőid minden
+> idősávjánál" (EN "Fuel & supplements / At each of your supplement times").
 
 > **2026-10-11 — two languages (`mezo-n4wf5.11`, slice N1).** Every Settings page (hub, Train / Me / Mezo / Nap, account, the
 > personal-context editors, `/settings/general`, `/settings/notifications`) reads its words from the `settings` area of the
@@ -30,8 +39,8 @@ related: [_platform-design-system, _platform-language, companion, me, fuel, trai
 > (`.settings-lang`, `-options`, `-choice`, `-body`, `-note`) live in the `uveg en2 beallitasok` block of
 > `frontend/src/styles/prototype.css` (search the marker, not a line number). Notification category names live in the catalog
 > (`settings.notifications.categories`); `NOTIFICATION_CATEGORY_META` keeps only section / lead-chip data for rendering.
-> **Still Hungarian in English mode** (other slices own them): Fuel settings, the goal settings page, the gym / sport /
-> biometric / energy-breakdown / sleep-goal / change-password sheets, the learned-profile card, and server-provided text
+> **Still Hungarian in English mode** (other slices own them): the goal settings page, the gym / sport /
+> biometric / sleep-goal / change-password sheets, the learned-profile card, and server-provided text
 > (the assembled context, what the user wrote).
 
 > **2026-09-23 — Üveg U3 (`mezo-me75u.3`).** The header notification panel's chip and row icons are the 3D set (call-site: forecast → t-orb, experiment → t-flask, habit formation → t-harvest, and since `mezo-a9bo7.13` the esti kiadás' Mezo glyph → t-chat); the deprecated notification `emoji` field is gone. Behavior unchanged. Look: [`uveg-style-bible`](../design_2.0/2026-09-23-uveg-style-bible.md), parity reference [`uveg-nap.html`](../design_2.0/prototypes/uveg-nap.html).
