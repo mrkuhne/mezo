@@ -296,7 +296,8 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
     {key:'drop',t:'14:00',title:'Délutáni check-in',sub:'9 koppintás, kb. fél perc',go:'Kitöltöm',v:{ic:'t-checkin'},attr:'data-n="ck:open"',now:true},
     {key:'training',t:'ma',title:'Pull Day',sub:'a mai edzés még hátravan',go:'Megnézem',v:{p:0,g:'warn'},attr:'data-dom="edzes"'},
     {key:'nutrition',t:'19:30',title:'Vacsora',sub:'722 kcal van még · 18 g fehérje hiányzik',go:'Logolom',v:{p:74,prot:89,g:'dom'},attr:'data-dom="fuel"'}];
-  const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"']];
+  const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
+    [I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
   <section class="bd"><div class="pg-lead"><small>Mai állapot · 14:20</small><h2>Most a délutáni check‑in jön, utána a Pull&nbsp;Day.</h2></div>
   ${dayArc()}</section>
@@ -305,13 +306,12 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   </section><section class="bd">${KH('Mai szintek')}${lv}</section>
   <section class="bd w">${KH('Észrevétel')}
   <div data-rr="mo">${RR.mo()}</div></section>
-  <section class="bd">${KH('Mai napló','',`<button class="btn sm" data-go="gyors">+ Új bejegyzés</button>`)}
+  <section class="bd">${KH('Mai napló')}
   <div class="jr"><div class="jr-in"><p class="jr-air" aria-hidden="true"></p>
     <div data-rr="jar">${RR.jar()}</div></div></div>
   </section><section class="bd w last">${KH('Továbbiak')}
   <div class="mt-more">${MORE.map(([ic,t,sub,attr])=>`<button ${attr}><span class="mt-bub">${ic}</span><b>${t}</b></button>`).join('')}</div>
-  <div class="mt-acts"><button class="btn sm ghost" data-sheet="naplopick">Napló</button><button class="fh-lk" data-sheet="tobb">Több</button></div>
-  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section>`)}
+  <button class="mt-km" data-n="km:open">${I('t-kimelo')}<span><b>Nem vagyok jól</b></span></button></section>`).replace('<div class="toast"','<a class="fh-fab" href="#w-nap-gyors" aria-label="Gyors logolás"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a><div class="toast"')}
 
 /* ═══ NAPI KÜLDETÉSEK · three flasks on offer; what a finished one holds is poured into the day's XP collector ═══ */
 const QS=[
@@ -353,8 +353,8 @@ const rAttr=(r,i,g)=>r[6]==='reflect'?'data-sheet="reflect"':r[6]==='intention'?
 const rVerb=r=>r[6]==='reflect'?'Válaszolok':r[6]==='intention'?'Leírom':r[6]==='ritual'?'Napzárás indítása':'Megvan, pipálom';
 function chain(k,n,nx){const G=RUT[k],N=G.rows.length,dn=G.rows.filter(r=>r[4]).length;
   return `<section class="bd ${n%2?'w':''}"><p class="fh-n"><b>${n}</b>${G.title} · ${dn}/${N}${G.stat?`<span class="rt-perf"><strong>${G.stat[0]}</strong>${G.stat[1]}</span>`:''}</p><div class="rt-chain">${G.rows.map((r,i)=>{const [nm,s,ic,str,d]=r,row=Math.floor(i/3),c=i%3,col=c+1,dir=i===N-1?'':c===2?'wrap':'rt';
-    return `<button class="rt-b ${d?'done':''} ${i===nx?'now':''} ${dir} ${str==null?'ns':''}" style="grid-column:${col};grid-row:${row+1};--p:${str??0}%" ${rAttr(r,i,k)} aria-label="${nm}${d?' · kész':''}">
-      <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b><small>${i===nx?'<em>Most jön</em>':str!=null?'erő '+str+'%':s}</small></button>`}).join('')}</div></section>`}
+    return `<button class="rt-b ${d?'done':''} ${i===nx?'now':''} ${dir} ${str==null?'ns':''}" style="grid-column:${col};grid-row:${row+1};--p:0%" ${rAttr(r,i,k)} aria-label="${nm}${d?' · kész':''}">
+      <span class="rt-v">${I(ic)}${d?'<i class="rt-ok"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5L6.8 11.5L12.5 5"/></svg></i>':''}</span><b>${nm}</b>${i===nx?'<small><em>Most jön</em></small>':''}</button>`}).join('')}</div></section>`}
 function rutinBody(){const R=RUT[face],done=R.rows.filter(r=>r[4]).length,nx=R.rows.findIndex(r=>!r[4]),all=nx<0;
   const order=[face,...Object.keys(RUT).filter(k=>k!==face)];
   return `<div class="rt-lead"><small>${R.title} · ${done}/${R.rows.length} kész</small><h2>${all?'Mind megvan. Szép munka.':`Most jön: ${R.rows[nx][0]}.`}</h2>
@@ -470,7 +470,7 @@ ${P} .ng-lead.first{padding-top:16px}${P} .ng-lead.first::before{top:10px;border
 ${P} .ng-lead .btn{margin-top:4px}
 ${P} .bd .k2-vial small i{display:none}
 ${P} text.ng-go[data-go]{cursor:pointer}
-${P} .mt-more{display:grid;grid-template-columns:repeat(4,1fr);margin:0 14px}
+${P} .mt-more{display:grid;grid-template-columns:repeat(4,1fr);row-gap:18px;margin:0 14px}
 ${P} .mt-more button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 3px;text-align:center;min-width:0}
 ${P} .mt-bub{display:grid;place-items:center;width:58px;height:58px;border-radius:50% 50% 50% 50%/42% 42% 58% 58%;background:#fff;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--liq1) 45%,#fff),0 10px 14px -10px var(--liq2)}
 ${P} .mt-bub>svg.ic{width:28px;height:28px}
@@ -524,7 +524,7 @@ ${P} .bd.w::before,${P} .bd.w::after{content:"";position:absolute;left:0;right:0
 ${P} .bd.w::before{top:-11.5px}${P} .bd.w::after{bottom:-11.5px;transform:scaleY(-1);-webkit-mask-position:-45px 0;mask-position:-45px 0}
 ${P} .bd.w.last{padding-bottom:150px;margin-bottom:-118px}${P} .bd.w.last::after{display:none}
 ${P} .bd .mx-h{margin-top:16px}
-${P} .bd>.fh-n{margin-top:18px}${P} .bd>.rt-chain{margin-top:18px}${P} .bd .rt-b:not(.wrap):nth-last-child(-n+3){height:118px}
+${P} .bd>.fh-n{margin-top:18px}${P} .bd>.rt-chain{margin-top:18px}${P} .bd .rt-b:not(.wrap):nth-last-child(-n+3){height:100px}
 ${P} .bd.last:not(.w){padding-bottom:10px}
 ${P} .bd.w .rt-ok{box-shadow:0 0 0 2px #fff}
 ${P} .ng-band{fill:rgba(255,255,255,.72)}
@@ -653,16 +653,16 @@ ${P} .rt-b.rt::after{top:21px;height:18px;width:calc(100% - 58px);background:url
 ${P} .rt-b.rt::after{left:calc(50% + 29px)}
 ${P} .rt-b.done.rt::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 18'%3E%3Cellipse cx='10' cy='9' rx='8.5' ry='5.6' fill='none' stroke='%231A8FE0' stroke-width='3.2'/%3E%3Crect x='17' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3Crect x='-13' y='7.2' width='16' height='3.6' rx='1.8' fill='%2319B9C6'/%3E%3C/svg%3E")}
 /* at a row's end: one long link — out to the right, down, back under the labels, and into the next row's first vessel */
-${P} .rt-b.wrap{height:152px}
-${P} .rt-b.wrap::after{left:calc(50% + 24px);right:-8px;top:26px;height:118px;border:4px solid #B5C7D3;border-left:0;border-radius:0 26px 26px 0}
-${P} .rt-b.wrap::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc(-150% - 2px);right:14px;top:140px;height:16px;border:4px solid #B5C7D3;border-right:0;border-bottom:0;border-radius:14px 0 0 0}
+${P} .rt-b{height:112px}${P} .rt-b.wrap{height:132px}
+${P} .rt-b.wrap::after{left:calc(50% + 24px);right:-8px;top:26px;height:98px;border:4px solid #B5C7D3;border-left:0;border-radius:0 26px 26px 0}
+${P} .rt-b.wrap::before{content:"";position:absolute;z-index:0;pointer-events:none;left:calc(-150% - 2px);right:14px;top:120px;height:16px;border:4px solid #B5C7D3;border-right:0;border-bottom:0;border-radius:14px 0 0 0}
 ${P} .rt-b.done.wrap::after,${P} .rt-b.done.wrap::before{border-color:#1A8FE0}
 ${P} .rt-v{position:relative;z-index:1;display:grid;place-items:center;width:60px;height:60px;flex:none;border-radius:50%;
   background:linear-gradient(to top,color-mix(in srgb,var(--liq1) 38%,#fff) 0 var(--p),color-mix(in srgb,var(--liq1) 75%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px));
   box-shadow:inset 0 0 0 2px rgba(10,42,60,.14),0 8px 12px -8px rgba(24,119,242,.5)}
 ${P} .rt-b.ns .rt-v{background:#fff;box-shadow:inset 0 0 0 2px rgba(10,42,60,.14)}
 ${P} .rt-v>svg.ic{width:26px;height:26px}
-${P} .rt-b.done .rt-v{background:linear-gradient(to top,color-mix(in srgb,var(--ok) 34%,#fff) 0 var(--p),color-mix(in srgb,var(--ok) 70%,#fff) var(--p) calc(var(--p) + 2px),#fff calc(var(--p) + 2px));box-shadow:inset 0 0 0 2.5px var(--ok),0 8px 12px -8px var(--ok)}
+${P} .rt-b.done .rt-v{background:color-mix(in srgb,var(--ok) 22%,#fff);box-shadow:inset 0 0 0 2.5px var(--ok),0 8px 12px -8px var(--ok)}
 ${P} .rt-b.done.ns .rt-v{background:color-mix(in srgb,var(--ok) 20%,#fff)}
 ${P} .rt-b.done .rt-v>svg.ic{--ic:#0E7A55;--ic2:var(--ok)}
 ${P} .rt-ok{position:absolute;right:-4px;bottom:-3px;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 2px #F3F8FB}
