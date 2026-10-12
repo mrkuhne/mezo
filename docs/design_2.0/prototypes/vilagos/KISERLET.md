@@ -53,7 +53,7 @@ plans or "which direction wins" decisions until he asks.
 
 | Page | Graphic | State |
 |---|---|---|
-| Nap · Mai | the day's arc (06–22) filled to now · tubes · next three vessels · the day's jar of log layers | shown; special faces (üres, hiba, kímélő, este) not drawn |
+| Nap · Mai | the day as a flat line (06–22) filled to now, the number beside the sentence (the arc, a liquid layer and a plain level were shown and not picked) · next three vessels · tubes · observation (sheet) · the day's jar · seven icon links | shown; special faces (üres, hiba, kímélő, este) not drawn |
 | Nap · Mai · Napi küldetések | three flasks; a finished one pours into the day's XP collector | shown 2026-10-12, waiting for feedback |
 | Nap · Mai · Check-in, Gyors logolás, Életjelek (detail) | — | to do |
 | Nap · A napom (today, closed day, sparse day) | the pipe through six vessels | liked |

@@ -4,7 +4,7 @@
    Every page gets its OWN graphic, the one its content asks for (owner, round 5: the pipe is right for A napom
    and wrong everywhere else — do not reuse one device across pages):
      napom (+ nap.<date>)   the pipe: the day's liquid runs through six vessels, one per area
-     mai                    the day's arc, filled up to now, with what is behind and ahead on it; the four
+     mai                    the day as a flat line, filled up to now, with what is behind and ahead on it; the four
                             "Mai szintek" tubes (kept as they are); the day's jar, one layer per log entry
      uzenetek               depth: the newest message floats at the surface, older ones sink and fade
      uzenetek.eletjelek     the rack of six tubes; the team's remark hangs as a tag on the tube it is about
@@ -261,7 +261,7 @@ function vitalsBody(){const v=cutOut(O.uzenetek('eletjelek'),'<div class="np-vh 
     <p class="nb-t"><b>Ma még alig mozdultál.</b> Egy 10 perces séta ebéd után elég, hogy a szint megmozduljon. Nem kell edzés.</p>
     <div class="nb-a"><button class="btn sm ghost" data-toast="Edzés · Mai">Megnézem</button></div></div>`}
 const LOG=[['13:40','Napló','Ebéd után nyugodtabb vagyok, mint reggel.','↗','data-toast="Én · Napló"','en'],['13:00','Ebéd','Csirke · édesburgonya · spenót','760 kcal','data-dom="fuel"','fuel'],['11:20','Aktivitás','Olvastam fél órát','+15 XP','data-toast="Én · Fejlődés"','en'],['10:00','Délelőtti check-in','Most csak ennyi · az alap megvan','kész','data-go="checkin"','nap'],['09:15','Reggeli','Túrós zabkása áfonyával','420 kcal','data-dom="fuel"','fuel'],['07:10','Reggeli check-in','Nyugodt ébredés, pihenve','kész','data-go="checkin"','nap']];
-const RR={top:()=>maiTop(),jar:()=>(BS.jar?LOG:LOG.slice(0,3)).map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r==='↗'?'':r} ›</em></button>`).join('')+`<button class="jr-more" data-nb="jar">${BS.jar?'Csak a legutóbbi három':`Még ${LOG.length-3} korábbi bejegyzés`} ›</button>`,nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
+const RR={jar:()=>(BS.jar?LOG:LOG.slice(0,3)).map(([t,ti,sub,r,attr,k])=>`<button class="jr-l k-${k}" ${attr}><time>${t}</time><span><b>${ti}</b><small>${sub}</small></span><em>${r==='↗'?'':r} ›</em></button>`).join('')+`<button class="jr-more" data-nb="jar">${BS.jar?'Csak a legutóbbi három':`Még ${LOG.length-3} korábbi bejegyzés`} ›</button>`,nb:()=>streamBody(),ob:()=>obsBody(),mo:()=>obsLinked(OBS[0],true)};
 function uzenetek(tab){tab=tab||'uzenetek';
   const TABS=[['uzenetek','Üzenetek'],['eletjelek','Életjelek'],['eszrevetelek','Észrevételek']];if(!TABS.some(t=>t[0]===tab))return O.uzenetek(tab);
   return page('nap',{title:'Beszélgetés',sub:'Mezo · ma · 4 üzenet',tab:'uzenetek'},`${DEFS}<div class="np-pre"><div class="fh-seg">${TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" data-go="uzenetek${k==='uzenetek'?'':'.'+k}">${l}${k==='eletjelek'&&k!==tab?'<i class="np-dot"></i>':''}</button>`).join('')}</div></div>
@@ -269,7 +269,7 @@ function uzenetek(tab){tab=tab||'uzenetek';
 document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!b)return;const a=b.dataset.nb,[k,x]=a.split(':');
   if(k==='msg'){F.openSheet(msgSheet(+x));return}
   if(k==='qs'){const q=QS[+x];F.openSheet(`<h2 class="ng-sh">${q.s}<small>+${q.xp} XP</small></h2><p class="ng-pr"><b>${q.t}</b></p>${q.why?`<p class="ng-pr">${q.why}</p>`:''}<p class="ng-pr">${q.foot||''}</p><p class="ng-pr">A küldetés ajánlat: ha kimarad, csendben lejár, bukás nincs.</p><div class="nb-a">${q.cta?`<button class="btn sm" data-toast="${q.cta} · Mai">${q.cta}</button>`:''}<button class="btn sm ghost" data-toast="Csere: új ajánlat érkezik a helyére · ma már nincs több">Csere · 1 maradt</button></div>`);return}
-  if(k==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok');F.openSheet(msgSheet(+x))}else if(k==='fb'){BS.fb=!BS.fb;F.openSheet(msgSheet(+x))}else if(a==='jar')BS.jar=!BS.jar;else if(k==='top')BS.top=x;else if(k==='exp')BS.exp[x]=!BS.exp[x];
+  if(k==='adv'){BS.adv=true;F.toast('Beállítva: az ebédnél szólok');F.openSheet(msgSheet(+x))}else if(k==='fb'){BS.fb=!BS.fb;F.openSheet(msgSheet(+x))}else if(a==='jar')BS.jar=!BS.jar;else if(k==='exp')BS.exp[x]=!BS.exp[x];
   else if(k==='obs'){OS.done[x]=true;F.closeSheet();F.toast('Megjegyeztem a válaszod')}else if(k==='ev'){OS.ev[x]=!OS.ev[x];F.openSheet(obsSheet(OBS.find(o=>o.k===x)))}
   else if(k==='osh'){F.openSheet(obsSheet(OBS.find(o=>o.k===x)));return}
   document.querySelectorAll('[data-rr]').forEach(r=>{r.innerHTML=RR[r.dataset.rr]()})});
@@ -277,34 +277,15 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-nb]');if(!
 /* ═══ MAI · the day's arc (06–22), filled up to now; behind it what you logged, ahead what is left.
        Then the four tubes the owner likes (as they are), the next three as three vessels in time order,
        and the day's jar: one layer per log entry, newest on top. ═══ */
-function dayArc(){const T0=6,T1=22,now=14+20/60,pt=h=>{const t=(h-T0)/(T1-T0);return [20+320*t,150-118*Math.sin(Math.PI*t)]};
-  const N=96,P=Array.from({length:N+1},(_,i)=>pt(T0+(T1-T0)*i/N)),d='M'+P.map(q=>q.map(n=>n.toFixed(1)).join(' ')).join('L');
-  let tot=0,upto=0;for(let i=1;i<=N;i++){const l=Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]);tot+=l;if(T0+(T1-T0)*i/N<=now)upto=tot}
-  const past=[7+10/60,9.25,10,11+1/3,13,13+2/3],[nx,ny]=pt(now),[fx,fy]=pt(19.5);
-  return `<svg class="ng ar" viewBox="0 0 360 184" role="img" aria-label="A mai nap íve reggel hattól este tízig: 14:20-nál tartasz, hat bejegyzés van mögötted, három teendő előtted">
-    <path class="ar-base" d="M10 150H350"/><path class="ar-a" d="${d}"/><path class="ar-b" d="${d}"/><path class="ar-c" pathLength="100" stroke-dasharray="${(upto/tot*100).toFixed(1)} 100" d="${d}"/>
-    ${past.map(h=>{const [x,y]=pt(h);return `<circle class="ar-p" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.4"/>`}).join('')}
-    <circle class="ar-f" cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="4.6"/><text class="ar-t" x="${(fx+12).toFixed(1)}" y="${(fy+4).toFixed(1)}">19:30</text>
-    <circle class="ar-now" cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="12"/><circle class="ar-now2" cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="5"/>
-    <text class="ar-nl" x="${nx.toFixed(1)}" y="${(ny-20).toFixed(1)}" text-anchor="middle">most · 14:20</text>
-    <text class="ar-big" x="180" y="128" text-anchor="middle">60</text>
-    <text class="ar-t" x="20" y="170" text-anchor="middle">06:00</text><text class="ar-t" x="340" y="170" text-anchor="middle">22:00</text>
-</svg>`}
-/* The top of Mai — the owner did not like the arc (2026-10-13). Options side by side, switched on the page until he picks:
-   foly = the old hero's idea without the card (the first layer of the page IS the vessel, filled to the number),
-   szint = the number and one horizontal level, vonal = the day as a flat line, iv = the arc. */
-const TOPS=[['foly','Folyadék'],['szint','Szint'],['vonal','Vonal'],['iv','Ív']];
-function maiTop(){const v=BS.top||'foly',H=`<small>Mai állapot · 14:20</small><h2>Most a délutáni check‑in jön, utána a Pull&nbsp;Day.</h2>`;
-  const sw=`<div class="hv-sw"><small>Kísérlet · fejléc</small>${TOPS.map(([k,l])=>`<button class="${k===v?'on':''}" data-nb="top:${k}">${l}</button>`).join('')}</div>`;
-  if(v==='iv')return sw+`<div class="pg-lead">${H}</div>${dayArc()}`;
-  if(v==='szint')return sw+`<div class="pg-lead">${H}</div><div class="hv-b"><b>60</b><span class="hv-lv" style="--p:60%"><i></i><em>100</em></span></div>`;
-  if(v==='vonal'){const T0=6,T1=22,x=h=>20+320*(h-T0)/(T1-T0),past=[7+10/60,9.25,10,11+1/3,13,13+2/3],nx=x(14+20/60);
-    return sw+`<div class="pg-lead hv-c">${H}<b class="hv-n">60</b></div><svg class="ng" viewBox="0 0 360 74" role="img" aria-label="A mai nap vonala reggel hattól este tízig: 14:20-nál tartasz">
+/* The top of Mai: the day as a flat line (06–22), filled up to now, with what is behind and ahead on it, and the
+   day's number beside the sentence. The owner picked this over the arc, a liquid layer and a plain level (2026-10-13). */
+function maiTop(){const T0=6,T1=22,x=h=>20+320*(h-T0)/(T1-T0),past=[7+10/60,9.25,10,11+1/3,13,13+2/3],nx=x(14+20/60);
+  return `<div class="pg-lead hv-c"><small>Mai állapot · 14:20</small><h2>Most a délutáni check‑in jön, utána a Pull&nbsp;Day.</h2><b class="hv-n">60</b></div>
+    <svg class="ng" viewBox="0 0 360 74" role="img" aria-label="A mai nap vonala reggel hattól este tízig: 14:20-nál tartasz, hat bejegyzés van mögötted">
       <path class="ar-a" d="M20 34H340"/><path class="ar-b" d="M20 34H340"/><path class="ar-c" d="M20 34H${nx.toFixed(1)}"/>
       ${past.map(h=>`<circle class="ar-p" cx="${x(h).toFixed(1)}" cy="34" r="3.4"/>`).join('')}<circle class="ar-f" cx="${x(19.5).toFixed(1)}" cy="34" r="4.6"/><text class="ar-t" x="${x(19.5).toFixed(1)}" y="64" text-anchor="middle">19:30</text>
       <circle class="ar-now" cx="${nx.toFixed(1)}" cy="34" r="12"/><circle class="ar-now2" cx="${nx.toFixed(1)}" cy="34" r="5"/><text class="ar-nl" x="${nx.toFixed(1)}" y="12" text-anchor="middle">most · 14:20</text>
       <text class="ar-t" x="20" y="64" text-anchor="middle">06:00</text><text class="ar-t" x="340" y="64" text-anchor="middle">22:00</text></svg>`}
-  return sw+`<div class="hv-a"><div class="pg-lead">${H}</div><div class="hv-liq"><i class="pl-wave"></i><b>60</b></div></div>`}
 const KH=(t,sub='',link='')=>`<div class="mx-h"><b>${t}</b>${link||(sub?`<span>${sub}</span>`:'')}</div>`;
 function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" style="--i:1">','<div class="k2-h rise" style="--i:2">');
   const NX=[
@@ -314,7 +295,7 @@ function mai2(){const base=O.mai(''),lv=cutOut(base,'<div class="np-pad rise" st
   const MORE=[[I('t-macro'),'A napod üzemanyaga','kalória és makrók','data-sheet="uzemanyag"'],[I('t-heart'),'Életjelek','átlag 60 · a mozgás kér figyelmet','data-go="eletjel"'],[I('t-pattern'),'Összes észrevétel',`${OBS.filter(o=>!OS.done[o.k]).length} vár a válaszodra`,'data-go="uzenetek.eszrevetelek"'],[badge('mezo',{s:30}),'Valami nem stimmel ma?','a csapat utánanéz','data-toast="Mezo · Kérdezd a csapatot"'],
     [I('t-steps'),'Aktivitás','','data-sheet="activity"'],[I('t-chat'),'Chat','','data-toast="Mezo · Chat"'],[I('t-quest'),'Napi küldetések','','data-go="kuldetesek"']];
   return page('nap',{title:'Ma',sub:'Szerda, október 7.',tab:'mai'},`${DEFS}
-  <section class="bd" data-rr="top">${RR.top()}</section>
+  <section class="bd">${maiTop()}</section>
   <section class="bd w">${KH('Most következik')}
   <div class="mx-next">${NX.map(x=>`<button class="${x.now?'now':''}" ${x.attr}><svg class="ng" viewBox="0 0 104 104" aria-hidden="true">${V[x.key](x.v)}</svg><em>${x.t}</em><b>${x.title}</b><span class="fh-lk">${x.go} ›</span></button>`).join('')}</div>
   </section><section class="bd">${KH('Mai szintek')}${lv}</section>
@@ -546,25 +527,11 @@ ${P} .ng-lead.w{background:rgba(255,255,255,.72)}
 ${P} .rt-lead{padding-bottom:18px}
 ${P} .bd .mx-h b{display:flex;align-items:center;gap:10px}
 ${P} .bd .mx-h b::before{content:"";flex:none;width:12px;height:16px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(160deg,var(--liq1),var(--liq2))}
-/* Mai · the top, options */
-${P} .hv-sw{display:flex;align-items:center;gap:4px;margin:10px 14px 0;padding:4px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1.5px rgba(10,42,60,.1)}
-${P} .hv-sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-radius:22px}${P} .hv-sw button{text-align:center;padding:0 2px}${P} .hv-sw small{grid-column:1/-1;padding:4px 12px 2px;font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--sub)}
-${P} .hv-sw button{flex:1;min-height:40px;border-radius:999px;font-size:13px;font-weight:700;color:var(--sub)}
-${P} .hv-sw button.on{background:linear-gradient(160deg,var(--liq1),var(--liq2));color:#fff}
-${P} .bd[data-rr="top"]:has(.hv-a){padding-bottom:0}
-${P} .hv-a{margin-bottom:-12px}
-${P} .hv-liq{position:relative;margin-top:46px;height:170px;background:linear-gradient(180deg,var(--liq1),var(--liq2));display:flex;align-items:center;padding:0 22px 14px}
-${P} .hv-liq .pl-wave{background:var(--liq1)}
-${P} .hv-liq b{font:800 104px/1 var(--disp,inherit);letter-spacing:-.06em;color:#fff;text-shadow:0 6px 18px rgba(10,60,140,.25)}
-${P} .hv-b{display:flex;align-items:center;gap:16px;margin:18px 22px 6px}
-${P} .hv-b b,${P} .hv-n{font:800 64px/1 var(--disp,inherit);letter-spacing:-.05em;color:var(--ink)}
-${P} .hv-lv{position:relative;flex:1;height:26px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 2px rgba(10,42,60,.16);overflow:hidden}
-${P} .hv-lv i{position:absolute;left:0;top:0;bottom:0;width:var(--p);border-radius:999px 10px 10px 999px;background:linear-gradient(90deg,var(--liq2),var(--liq1))}
-${P} .hv-lv em{position:absolute;right:10px;top:50%;translate:0 -50%;font:600 12px var(--mono,ui-monospace,monospace);font-style:normal;color:var(--sub)}
+/* Mai · the top: the day line */
+${P} .hv-n{font:800 64px/1 var(--disp,inherit);letter-spacing:-.05em;color:var(--ink)}
 ${P} .hv-c{display:grid;grid-template-columns:1fr auto;column-gap:14px;align-items:end}${P} .hv-c small{grid-column:1/-1}${P} .hv-c h2{margin-bottom:2px}
 ${P} svg.ng:has(.ar-now){margin-top:12px}
 /* Mai · the arc */
-${P} svg.ar{margin-top:14px}
 ${P} .ar-base{fill:none;stroke:rgba(10,42,60,.2);stroke-width:1.4;stroke-dasharray:2 5}
 ${P} .ar-a,${P} .ar-b,${P} .ar-c{fill:none;stroke-linecap:round}
 ${P} .ar-a{stroke:rgba(10,42,60,.18);stroke-width:19}${P} .ar-b{stroke:#fff;stroke-width:15.5}${P} .ar-c{stroke:url(#ng-g-arc);stroke-width:15.5}
@@ -572,7 +539,6 @@ ${P} .ar-p{fill:#fff}${P} .ar-f{fill:#fff;stroke:rgba(10,42,60,.35);stroke-width
 ${P} .ar-now{fill:#fff;stroke:var(--dom);stroke-width:3.5;filter:drop-shadow(0 4px 5px rgba(24,119,242,.4))}${P} .ar-now2{fill:var(--dom)}
 ${P} .ar-nl{font-size:13px;font-weight:800;fill:var(--dom)}
 ${P} .ar-t{font:500 13px var(--mono,ui-monospace,monospace);fill:var(--sub)}
-${P} .ar-big{font:800 54px var(--disp,inherit);letter-spacing:-.05em;fill:var(--ink)}
 /* Mai · the next three */
 ${P} .mx-next{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:0 12px}
 ${P} .mx-next button{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0;padding:0 2px;text-align:center}
@@ -722,7 +688,7 @@ ${P} .rt-edit>svg.ic{width:34px;height:34px;flex:none}${P} .rt-edit span{flex:1}
 @keyframes rt-now{50%{transform:scale(1.06)}}
 `);
 window.FNOTES_FOLY=`<h2>Kísérlet · a Nap rajzolva</h2><p>Nincs nagy edény, nincs kártya, nincs lista. Minden oldal saját rajzot kapott, azt, ami a tartalmából következik:</p>
-<ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap íve: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
+<ul><li><a href="#w-nap-mai"><b>Mai</b></a> — a nap vonala: reggeltől estig, a mostani időpontig feltöltve. Alatta a négy kémcső (változatlan), a három következő teendő három edényként, és a nap befőttesüvege, rétegenként a bejegyzésekkel.</li>
 <li><a href="#w-nap-kuldetesek"><b>Napi küldetések</b></a> (a Mai aloldala) — három lombik: ami elkészül, annak a tartalma a nap XP-gyűjtőjébe kerül.</li>
 <li><a href="#w-nap-napom"><b>A napom</b></a> — a cső: a nap folyadéka hat edényen fut át. Lezárt napok: <a href="#w-nap-nap.2026-09-23">szerda</a>, <a href="#w-nap-nap.2026-09-22">kedd</a>; kevés adat: <a href="#w-nap-nap.2026-09-21">hétfő</a>.</li>
 <li><a href="#w-nap-uzenetek"><b>Beszélgetés</b></a> — vízmélység: a legfrissebb üzenet a felszínen, a régiek lejjebb. <a href="#w-nap-uzenetek.eletjelek">Életjelek</a>: kémcsőállvány, a megjegyzés címkeként lóg a kémcsövén. <a href="#w-nap-uzenetek.eszrevetelek">Észrevételek</a>: közlekedőedény, a cső a bizonyíték napjaival telik.</li>
