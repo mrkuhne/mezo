@@ -871,31 +871,35 @@ const bandOf=t=>{const f=(toMin(t)-toMin(DAY.wake))/(toMin(DAY.bed)-toMin(DAY.wa
 /* a Kamra-tétel készlet-adatai (SupplementStashItem.form / stock / stockUnit) — a KAM kiegészítő-sorai ezt még nem hordozzák; a kiszerelés és az egység a felhasználó beírt szövege, angolul is marad */
 const SUPX={kreatin:{form:'por',stock:420,su:'g'},gomba:{form:'por',stock:160,su:'g'},whey:{form:'por',stock:1800,su:'g'},aakg:{form:'por',stock:250,su:'g'},pwo:{},d3k2:{form:'kapszula',stock:74,su:'db'},omega:{form:'kapszula',stock:48,su:'db'},magn:{form:'kapszula',stock:120,su:'db'},cink:{form:'kapszula',stock:90,su:'db'}};
 /* a protokoll: useProtocol().occurrences + useStackDay().slots. id = KAM-tétel · dose = az előfordulás adagja (null = nincs megadva) · z = zóna · pin = kézzel elhelyezve
-   src = placementSource (rule | llm | user | fallback) · why = placementReason (a motor TÁROLT magyar szövege; null = nincs indok) · hint = dailyTotalHint · at = mai bevétel ideje (useIntakes) */
+   src = placementSource (rule | llm | user | fallback) · why = placementReason (a motor TÁROLT magyar szövege; null = nincs indok) · hint = dailyTotalHint (a szabálytábla szövege, ezért két nyelven) · at = mai bevétel ideje (useIntakes) */
 const PV={v:3,conf:86};
 const PROTO=[
-  {id:'kreatin',dose:'5 g',z:'wake',src:'rule',why:'Étkezéstől független: a napi rendszeresség számít, nem az időpont.',hint:'3–5 g/nap',at:'06:35'},
+  {id:'kreatin',dose:'5 g',z:'wake',src:'rule',why:'Étkezéstől független: a napi rendszeresség számít, nem az időpont.',hint:['3–5 g/nap','3–5 g a day'],at:'06:35'},
   {id:'gomba',dose:'8 g',z:'wake',pin:1,src:'user',why:null,at:'06:40'},
   {id:'whey',dose:'30 g',z:'breakfast',src:'rule',why:'Fehérjés reggelihez: a reggeli fehérjéjét egészíti ki.',at:'07:25'},
   {id:'aakg',dose:'6 g',z:'pre_workout',src:'fallback',why:null,at:'08:02'},
   {id:'pwo',dose:null,z:'pre_workout',src:'llm',why:'Edzés előtt 20–30 perccel hat a legjobban.',at:'08:02'},
   {id:'d3k2',dose:'4000 NE + 100 µg',z:'lunch',src:'rule',why:'Zsírban oldódik: zsíros étkezéssel szívódik fel jól.',at:'12:45'},
-  {id:'omega',dose:'2 g EPA+DHA',z:'lunch',src:'rule',why:'Zsírban oldódik: az ebéd a nap legzsírosabb étkezése.',at:null},
-  {id:'magn',dose:'300 mg',z:'evening',src:'rule',why:'Este nyugtat; lefekvés előtt kb. 2 órával.',hint:'ajánlott napi összmennyiség 300–400 mg',at:null}];
+  {id:'omega',dose:'2 g EPA+DHA',z:'lunch',src:'rule',why:'Zsírban oldódik: az ebéd a nap legzsírosabb étkezése.',at:null,late:'12:50'},
+  {id:'magn',dose:'300 mg',z:'evening',src:'rule',why:'Este nyugtat; lefekvés előtt kb. 2 órával.',hint:['ajánlott napi összmennyiség 300–400 mg','recommended daily total 300–400 mg'],at:null,late:'21:05'}];
 let TKN={}, SARG=null;  /* a mai pipák felülírása (koppintásra vált), és az utolsó állapot-arg */
 function stackVM(arg){
   const rows=(arg==='ures'||arg==='tolt'?[]:PROTO).map((o,i)=>{const k=KAM.find(x=>x.id===o.id)||{n:o.id},x=SUPX[o.id]||{},taken=TKN[i]??!!o.at;
-    return {...o,i,n:k.n,form:x.form||null,stock:x.stock??null,su:x.su||null,time:ZT[o.z],taken,at:taken?(o.at||DAY.now):null}});
+    return {...o,i,n:k.n,hint:o.hint?L(...o.hint):null,form:x.form||null,stock:x.stock??null,su:x.su||null,time:ZT[o.z],taken,at:taken?(o.at||(SARG==='kesz'&&o.late)||DAY.now):null}});
   const bands=BANDS.map(([key,hu,en,ic])=>({key,l:L(hu,en),ic,rows:rows.filter(r=>bandOf(r.time)===key)})).filter(b=>b.rows.length).map(b=>({...b,done:b.rows.filter(r=>r.taken).length}));
   const due=bands.find(b=>b.done<b.rows.length)||null;
   return {arg,rows,bands,due,next:due?due.rows.find(r=>!r.taken):null,taken:rows.filter(r=>r.taken).length,pinned:rows.filter(r=>r.pin).length,
     slots:ZO.map(z=>({z,time:ZT[z],rows:rows.filter(r=>r.z===z)})).filter(s=>s.rows.length)}}
+/* a kiszerelés és a darab-egység felsorolás (enum), ezért angolul megszólal; az adag-szöveg (dose) a felhasználóé, az marad */
+const FORMS={kapszula:['capsule','capsules'],tabletta:['tablet','tablets'],por:['powder','powder'],csepp:['drop','drops']};
+const formT=(f,n=1)=>!f||!EN()||!FORMS[f]?f:FORMS[f][n===1?0:1];
+const suT=u=>EN()&&u==='db'?'pcs':u;
 const doseT=r=>r.dose??L('adag nincs megadva','no dose set');
-const stockT=r=>r.stock==null?null:`${kc(r.stock)}${r.su?' '+r.su:''}`;
+const stockT=r=>r.stock==null?null:`${kc(r.stock)}${r.su?' '+suT(r.su):''}`;
 const NOTE1=()=>L('Tájékoztatás, nem orvosi tanács.','For information, not medical advice.');
 /* capsG: a nap adagjai kapszulákban, napszakonként — a tele kapszula bevéve, a keretes a következő */
 const capsG=V=>{const nx=V.next;return V.rows.length?`<div class="fu-caps" role="img" aria-label="${L(`A mai adagok napszakonként: ${V.taken} / ${V.rows.length} bevéve`,`Today’s doses by time of day: ${V.taken} of ${V.rows.length} taken`)}">${V.bands.map(b=>`<span class="g"><span class="r">${b.rows.map(r=>`<i class="${r.taken?'on':''} ${nx&&nx.i===r.i?'nx':''}"></i>`).join('')}</span><small>${b.l}</small></span>`).join('')}</div>`
-  :`<div class="fu-caps fb-ghost" aria-hidden="true">${BANDS.map(b=>`<span class="g"><span class="r"><i></i><i></i></span><small>${L(b[1],b[2])}</small></span>`).join('')}</div>`};
+  :`<div class="fu-caps fb-ghost" aria-hidden="true">${BANDS.map(b=>`<span class="g"><span class="r"><i></i><i></i></span></span>`).join('')}</div>`};
 
 /* ═══ KIEGÉSZÍTŐK (FuelStackPage + logic/stackBands + useStackIntakeToggle) ═══ állapotok: stack · stack.kesz (mára minden megvan) · stack.ures (üres protokoll) · stack.tolt (betöltés)
    Az élő oldalnak nincs hiba-arca (a hookok üresre esnek vissza). A pipa: „{név} bevéve” üzenet „Visszavonás” gombbal (a létrejött bevétel azonosítójához kötve); a visszavonás néma. */
@@ -903,13 +907,13 @@ function stack(arg){
   if(arg!==SARG){SARG=arg;TKN=arg==='kesz'?Object.fromEntries(PROTO.map((_,i)=>[i,true])):{}}
   const V=stackVM(arg), n=V.rows.length, nx=V.next, load=arg==='tolt';
   const lbl=L('Mit veszek be ma?','What do I take today?');
-  const top={title:L('Kiegészítők','Supplements'),sub:n?L(`Fuel · ma · ${V.taken} / ${n} bevéve`,`Fuel · today · ${V.taken} of ${n} taken`):L('Fuel · ma','Fuel · today'),tab:'stack'};
-  /* a hős: a következő adag (a legkorábbi be nem fejezett sáv első be nem vett tétele) — az indok a motor mondata (entry.reason; SZÁMOLHATÓ: az oldal betölti, ma csak a dobozban írja ki; ha nincs, a mondat elmarad) */
+  const top={title:L('Kiegészítők','Supplements'),sub:n?L(`Fuel · ma · ${V.taken} / ${n}`,`Fuel · today · ${V.taken} / ${n}`):L('Fuel · ma','Fuel · today'),tab:'stack'};
+  /* a hős: a következő adag (a legkorábbi be nem fejezett sáv első be nem vett tétele) — az indok a motor mondata (entry.reason; SZÁMOLHATÓ: az oldal betölti, ma csak a dobozban írja ki; ha nincs, a mondat elmarad; angol módban sem áll itt, mert a tárolt magyar mondat egy angol mondat-félhez ragadna — a dobozban ott van) */
   const h=load?gHero({lbl,g:capsG(V),verdict:L('Protokoll betöltése…','Loading your protocol…')},1)
     :!n?gHero({lbl,g:capsG(V),verdict:L('A protokollod még üres.','Your protocol is still empty.'),sub:L('Vedd fel az első kiegészítőt, és megmondom, mennyit vegyél be belőle, mikor és miért.','Add your first supplement and I’ll tell you how much to take, when and why.'),acts:btn(L('Új elem beállítása','Set up a new item'),'stack-uj.1')},1)
     :!nx?gHero({lbl:`${lbl} · ${L(`${V.taken} / ${n} bevéve`,`${V.taken} of ${n} taken`)}`,g:capsG(V),verdict:L('Mára minden megvan.','All done for today.'),sub:L('Ha félrement valami, a pipát bármikor visszavonhatod.','If you ticked one by mistake, you can undo it any time.')},1)
-    :gHero({lbl:`${lbl} · ${L(`${V.taken} / ${n} bevéve`,`${V.taken} of ${n} taken`)}`,g:capsG(V),verdict:L(`Következik: ${nx.n}.`,`Next: ${nx.n}.`),sub:`${doseT(nx)} · ${zl(nx.z)}${nx.why?`. ${nx.why}`:''}`,
-      acts:`<button class="btn" data-fbtk="${nx.i}">${L('Bevettem','Taken')}</button>`},1);
+    :gHero({lbl:`${lbl} · ${L(`${V.taken} / ${n} bevéve`,`${V.taken} of ${n} taken`)}`,g:capsG(V),verdict:L(`Következik: ${nx.n}.`,`Next: ${nx.n}.`),sub:`${doseT(nx)} · ${zl(nx.z)}${nx.why&&!EN()?`. ${nx.why}`:''}`,
+      acts:`<button class="btn" data-fbtk="${nx.i}">${L('Bevettem','Mark as taken')}</button>`},1);
   const k=V.bands.length;
   return page('fuel',top,`${h}
   ${V.bands.map((b,i)=>sec(i+1,`${b.l} · ${b.done} / ${b.rows.length}${V.due&&V.due.key===b.key?` ${st(L('most esedékes','due now'),'plan')}`:''}`,i+2)
@@ -934,20 +938,20 @@ function mealMatch(arg){
   return {sug,ver}}
 function protokoll(arg){
   const off=arg==='tolt'||arg==='hiba'||arg==='ures', V=stackVM(off?'ures':''), n=V.rows.length, ns=V.slots.length;
-  const top={title:L('Protokoll','Protocol'),sub:off?L('Kiegészítők','Supplements'):L(`Kiegészítők · v${PV.v} · ${PV.conf}% bizalom`,`Supplements · v${PV.v} · ${PV.conf}% confidence`),back:'stack'};
+  const top={title:L('Protokoll','Protocol'),sub:L('Kiegészítők','Supplements'),back:'stack'};
   const door=card(row({icon:'t-gear',title:L('Új elem beállítása','Set up a new item'),sub:L('Megmondom, mennyit vegyél be belőle, mikor és miért.','I’ll tell you how much to take, when and why.'),on:'stack-uj.1'})
     +note(L('Tájékoztatás, nem orvosi tanács. Gyógyszer mellé mindig kérdezd meg a kezelőorvosod.','For information, not medical advice. If you take medication, always ask your doctor.')),{i:2});
-  if(off) return page('fuel',top,`${gHero({lbl:L('A napi rended','Your daily order'),g:capsG(V),verdict:arg==='tolt'?L('Protokoll betöltése…','Loading your protocol…'):arg==='hiba'?L('A protokoll most nem tölthető be.','Your protocol can’t be loaded right now.'):L('Még nincs protokolltétel.','No protocol items yet.')},1)}${door}`);
+  if(off) return page('fuel',top,`${gHero({lbl:L('A napi rended','Your daily order'),g:capsG(V),verdict:arg==='tolt'?L('Protokoll betöltése…','Loading your protocol…'):arg==='hiba'?L('A protokoll most nem tölthető be.','Your protocol can’t be loaded right now.'):L('Még nincs protokolltétel.','No protocol items yet.'),acts:arg==='ures'?btn(L('Új elem beállítása','Set up a new item'),'stack-uj.1'):''},1)}${arg==='ures'?card(note(L('Tájékoztatás, nem orvosi tanács. Gyógyszer mellé mindig kérdezd meg a kezelőorvosod.','For information, not medical advice. If you take medication, always ask your doctor.')),{i:2}):door}`);
   const mx=Math.max(...V.slots.map(s=>s.rows.length)), M=mealMatch(arg), nm=M.sug.length+M.ver.length, p=V.pinned;
   const verdict=p===0?L('Minden elemet én időzítettem.','I timed every item.'):p===n?L('Minden elemet te tettél a helyére.','You placed every item yourself.')
     :p===1?L('Egy elemet kézzel tettél a helyére, a többit én időzítettem.','You placed one item yourself; I timed the rest.'):L(`${p} elemet kézzel tettél a helyére, a többit én időzítettem.`,`You placed ${p} items yourself; I timed the rest.`);
   return page('fuel',top,`
   ${gHero({lbl:`${L('A napi rended','Your daily order')} · ${pl(ns,'idősáv','time slot','time slots')}`,
-    g:`<div class="fb-zv">${vials(V.slots.map(s=>({l:zl(s.z,1),ic:ZN[s.z][2],p:s.rows.length/mx*74,v:String(s.rows.length),mark:s.time,on:{toast:`${zl(s.z)} · ${s.time} · ${pl(s.rows.length,'elem','item','items')}`}})),{h:96})}</div>`
+    g:`<div class="fb-zv">${vials(V.slots.map(s=>({l:zl(s.z),ic:ZN[s.z][2],p:s.rows.length/mx*56,v:String(s.rows.length),mark:s.time,on:{toast:`${zl(s.z)} · ${s.time} · ${pl(s.rows.length,'elem','item','items')}`}})),{h:96})}</div>`
       +facts([[n,L('elem','items')],[ns,L('idősáv','time slots')],[p,L('kézzel elhelyezve','placed by hand')]]),
-    verdict,sub:L('Koppints egy elemre: ott állítod a zónát és a dózist.','Tap an item to change its slot and dose.'),acts:btn(L('Új elem beállítása','Set up a new item'),'stack-uj.1')},1)}
+    verdict,sub:L(`Koppints egy elemre: ott állítod az idősávot és a dózist. ${PV.v}. változat · ${PV.conf}%-os bizalom.`,`Tap an item to change its time slot and dose. Version ${PV.v} · ${PV.conf}% confidence.`),acts:btn(L('Új elem beállítása','Set up a new item'),'stack-uj.1')},1)}
   ${sec(1,L('Idősávok','Time slots'),2)}
-  ${V.slots.map((s,i)=>card(head(ZN[s.z][2],`${zl(s.z)} · ${s.time} · ${s.rows.length}`)+s.rows.map(r=>row({icon:'t-supps',title:r.n,sub:`${r.dose??'—'} · ${r.pin?L('kézi','manual'):'auto'}${r.why?`<br>${r.why}`:''}`,on:{sheet:'stackitem',arg:r.i}})).join(''),{i:i+2})).join('')}
+  ${V.slots.map((s,i)=>card(head(ZN[s.z][2],`${zl(s.z)} · ${s.time} · ${s.rows.length}`)+s.rows.map(r=>row({icon:'t-supps',title:r.n,sub:`${r.dose??'—'} · ${r.pin?L('kézi','manual'):L('automatikus','automatic')}${r.why?`<br>${r.why}`:''}`,on:{sheet:'stackitem',arg:r.i}})).join(''),{i:i+2})).join('')}
   ${sec(2,`${L('Étkezéshez','With meals')} · ${nm}`,7)}
   ${card((nm?lab(L('Étkezés-egyeztetés · makró és mikro','Meal match · macros and micros'))
       +M.sug.map(x=>row({icon:'t-bowl',title:`${zl(x.s.z)} · ${x.s.time}`,sub:`${x.rec.n}<br>${L(`${x.g} g zsír / adag · ${cap(azA(x.by))} zsíros étkezést kér.`,`${x.g} g fat per serving · ${x.by} wants a meal with fat.`)}`,on:'recept.'+x.rec.id})).join('')
@@ -983,16 +987,16 @@ const RERR={'link-ures':['Az oldalról nem tudtam kiolvasni a termék adatait. �
 function stackUj(a){
   const [n0,...ff]=String(a||'1').split('-'), s=Math.min(3,Math.max(1,parseInt(n0)||1)), face=ff.join('-');
   const names=[L('Termék','Product'),L('Adatok','Details'),L('Javaslat','Advice')];
-  const top={title:L('Új elem beállítása','Set up a new item'),sub:L(`Kiegészítők · ${s} / 3 · ${names[s-1]}`,`Supplements · ${s} of 3 · ${names[s-1]}`),back:s===1?'stack':'protokoll'};
+  const top={title:L('Új elem beállítása','New item'),sub:L(`Kiegészítők · ${s} / 3 · ${names[s-1]}`,`Supplements · ${s} of 3 · ${names[s-1]}`),back:s===1?'stack':'protokoll'};
   const pb=`<div class="fx-pb rise" role="list" aria-label="${L('A beállítás lépései','Setup steps')}">${[1,2,3].map(n=>`<span role="listitem" class="${n<s?'done':n===s?'on':''}"><i></i><small>${n}. ${names[n-1]}</small></span>`).join('')}</div>`;
   const NOTE3=note(L('Tájékoztatás, nem orvosi tanács. Gyógyszer vagy krónikus betegség mellett kérdezd meg a kezelőorvosod.','For information, not medical advice. If you take medication or have a chronic condition, ask your doctor.'));
   if(s===1){
     /* a lista: useStack().stash (a Kamra kiegészítői és stimulánsai), a keresőre szűrve; „a kiegészítőid között” = már van előfordulása a protokollban */
     const none=face==='nincs', inP=new Set(PROTO.map(o=>o.id)), list=none?[]:KAM.filter(k=>k.k==='supp'||k.k==='stim');
     return page('fuel',top,`${pb}
-    ${hero({lbl:L('1. lépés · termék','Step 1 · product'),verdict:L('Melyik terméket állítsuk be?','Which product shall we set up?'),sub:L('A címkéjéről kiolvasom, mennyi van benne, és megmondom, ez mennyi az ajánlott napi mennyiségből.','I read the amount from its label and tell you how it compares with the recommended daily amount.'),left:hi('t-supps'),
+    ${hero({lbl:L('1. lépés · termék','Step 1 · product'),verdict:L('Melyik terméket állítsuk be?','Which product are we setting up?'),sub:L('A címkéjéről kiolvasom, mennyi van benne, és megmondom, ez mennyi az ajánlott napi mennyiségből.','I read the amount from its label and tell you how it compares with the recommended daily amount.'),left:hi('t-supps'),
       body:`<div style="margin-top:12px" role="search" aria-label="${L('Keresés a Kamrában','Search your pantry')}">${srch(L('Név vagy márka…','Name or brand…'),none?'ashwagandha':'')}</div>`},1)}
-    ${sec(1,L('A polcodról','From your shelf'),2)}
+    ${sec(1,L('A Kamrádból','From your pantry'),2)}
     ${card(none?txt(L('Nincs ilyen tétel a Kamrában.','Nothing like that in your pantry.')):list.map(k=>row({icon:'t-supps',title:k.n,sub:`${k.b?k.b+' · ':''}${k.dose}${inP.has(k.id)?`<br>${L('már a kiegészítőid között van','already among your supplements')}`:''}`,on:'stack-uj.2'})).join(''),{i:2})}
     ${sec(2,L('Vagy új termék','Or a new product'),3)}
     ${card(row({icon:'t-link',title:L('Termék linkje','Product link'),sub:L('Bemásolod a webshop oldalát, kiolvasom a termék adatait','Paste the shop page and I’ll read the product details'),on:'stack-uj.2-link'})
@@ -1005,44 +1009,44 @@ function stackUj(a){
     const P0=arm||face==='kezi'?{name:scanned?UJP.hianyzik.name:'',per:'',unit:'',form:'kapszula',cont:''}:UJP[''];
     const next=arm?'stack-uj.3-hianyzik':face==='kezi'?'stack-uj.3-nincspolcon':'stack-uj.3';
     const armCard=arm==='link'?sec(1,L('Termék linkje','Product link'),2)+card(inp(L('Termék linkje','Product link'),busy||scanned||err?'https://webshop.hu/d3-vitamin-2000':'','https://…','url')
-        +acts(`<button class="btn sm" ${busy?'disabled':`data-go="stack-uj.2-link-olvas"`}>${busy?L('Beolvasom…','Reading…'):L('Beolvasom','Read it')}</button>`)+(err?`<p class="fh-note fx-warn">${L(...err)}</p>`:''),{i:2})
+        +acts(`<button class="btn sm ghost" ${busy?'disabled':`data-go="stack-uj.2-link-olvas"`}>${busy?L('Beolvasom…','Reading…'):L('Beolvasom','Read it')}</button>`)+(err?`<p class="fh-note fx-warn">${L(...err)}</p>`:'')+(scanned?note(L('A nevet kiolvastam; a többit írd be.','I read the name; please fill in the rest.')):''),{i:2})
       :arm==='foto'?sec(1,L('Címkefotó','Label photo'),2)+card((busy?txt(L('Olvasom a címkét…','Reading the label…')):acts(btn(L('Fotó választása','Choose a photo'),{toast:L('Kamera vagy galéria','Camera or gallery')},'sm ghost')))+(err?`<p class="fh-note fx-warn">${L(...err)}</p>`:''),{i:2}):'';
     const k=arm?2:1;
     return page('fuel',top,`${pb}
     ${hero({lbl:L('2. lépés · adatok','Step 2 · details'),verdict:L('Ezek a termék saját adatai.','These are the product’s own details.'),sub:L('Ebből számolom ki, hány egység kell naponta. Amit nem tudok, azt inkább megkérdezem, mint hogy kitaláljam.','I use them to work out how many units you need a day. What I don’t know I’d rather ask than guess.'),left:hi('t-supps')},1)}
     ${armCard}
     ${sec(k,L('A termék','The product'),k+1)}
-    ${card(fld(L('Termék neve','Product name'),P0.name,L('Pl. D3-vitamin','e.g. Vitamin D3'))+`<div class="fx-two">${[[L('Egy egységben','Per unit'),P0.per,'2000'],[L('Mértékegység','Unit'),P0.unit,L('NE','IU')],[L('Kiszerelés','Form'),P0.form,L('kapszula','capsule')],[L('Dobozban','In the box'),P0.cont,'90']].map(([l,v,ph])=>`<div>${fld(l,v,ph)}</div>`).join('')}</div>`
+    ${card(fld(L('Termék neve','Product name'),P0.name,L('Pl. D3-vitamin','e.g. Vitamin D3'))+`<div class="fx-two">${[[L('Egy egységben','Per unit'),P0.per,'2000'],[L('Mértékegység','Unit'),P0.unit,L('NE','IU')],[L('Kiszerelés','Form'),formT(P0.form),L('kapszula','capsule')],[L('Dobozban','Units per box'),P0.cont,'90']].map(([l,v,ph])=>`<div>${fld(l,v,ph)}</div>`).join('')}</div>`
       +acts(lk(L('Másik terméket választok','Choose another product'),'stack-uj.1')),{i:k+1})}`,
-    {foot:btn(L('Tovább a javaslathoz','On to the advice'),next)});
+    {foot:btn(L('Tovább a javaslathoz','Continue to advice'),next)});
   }
   const X=UJP[face]||UJP[''], A=advise(X.name,X.per,X.form,X.cont), zone=A?A.zone:ZO[0];
-  const shelf=X.shelf?'':card(tip('t-stack',L('Egy lépés még','One more step'),L('A protokoll a Kamrádban lévő termékeket követi, ez pedig még nincs a polcon. Vedd fel a Kamrába, és innen egy koppintással a protokollba tehetjük.','The protocol follows products in your pantry, and this one isn’t on your shelf yet. Add it to the pantry and we can put it in the protocol with one tap.')),{i:4});
+  const shelf=X.shelf?'':card(tip('t-stack',L('Egy lépés még','One more step'),L('A protokoll a Kamrádban lévő termékeket követi, ez pedig még nincs ott. Vedd fel a Kamrába, és innen egy koppintással a protokollba tehetjük.','The protocol follows products in your pantry, and this one isn’t there yet. Add it to the pantry and we can put it in the protocol with one tap.')),{i:2});
   const back=acts(lk(L('Vissza az adatokhoz','Back to details'),'stack-uj.'+X.b2));
   const foot={foot:X.shelf?btn(L(`Felveszem a protokollba · ${zl(zone)}`,`Add to protocol · ${zl(zone)}`),'protokoll'):btn(L('Felveszem a Kamrába','Add to pantry'),'kamra')};
   /* 3b · nem ismert hatóanyag: nincs sáv, nincs grafika — csak az, amit a címke mond */
   if(!A) return page('fuel',top,`${pb}
-    ${hero({lbl:`${X.name} · ${L('javaslat','advice')}`,verdict:L('Ezt a hatóanyagot még nem ismerem.','I don’t know this ingredient yet.'),sub:L('Ezért nem találok ki hozzá adagot. Írd be, amit a termék címkéje javasol, és úgy veszem fel.','So I won’t make up a dose. Enter what the label recommends and I’ll add it that way.'),left:hi('t-supps')},1)}
+    ${hero({lbl:`${X.name} · ${L('javaslat','advice')}`,verdict:L('Ezt a hatóanyagot még nem ismerem.','I don’t know this ingredient yet.'),sub:L('Ezért nem találok ki hozzá adagot. Írd be, amit a termék címkéje javasol, és úgy veszem fel.','So I won’t make up a dose. Enter what the label recommends and I’ll add it that way.'),left:hi('t-supps')},1)}${shelf}
     ${sec(1,L('Az adagod','Your dose'),2)}
-    ${card(fld(L('Adag (ahogy szeded)','Dose (as you take it)'),X.dose||'',L('Pl. 1 kapszula','e.g. 1 capsule'))+back+NOTE3,{i:2})}${shelf}`,foot);
+    ${card(fld(L('Adag (ahogy szeded)','Dose (as you take it)'),X.dose||'',L('Pl. 1 kapszula','e.g. 1 capsule'))+back+NOTE3,{i:2})}`,foot);
   const [lo,hi2]=A.rng, rT=`${kc(lo)}–${kc(hi2)} ${A.unit}`;
   /* 3c · ismert anyag, de nem tudni, mennyi van egy egységben: a sáv megvan, darabszám nincs */
   if(A.unknown) return page('fuel',top,`${pb}
     ${gHero({lbl:`${X.name} · ${L('javaslat','advice')}`,g:bandG({lo:0,hi:hi2*2,a:lo,b:hi2,v:null,al:kc(lo),bl:kc(hi2),label:L(`Az ajánlott napi sáv: ${rT}`,`The recommended daily range: ${rT}`)}),
       verdict:L('Hiányzik egy adat: mennyi van egy egységben.','One detail is missing: how much is in one unit.'),
-      sub:L(`Erre az anyagra (${A.sub}) ismerem az ajánlott napi ${rT} sávot, de darabszámot így nem mondok. Írd be az adatoknál, és megmondom, hány kell belőle.`,`For ${A.sub} I know the recommended ${rT} a day, but I won’t give a count like this. Enter it under details and I’ll tell you how many you need.`)},1)}
-    ${card(back+NOTE3,{i:2})}${shelf}`,foot);
+      sub:L(`Erre az anyagra (${A.sub}) ismerem az ajánlott napi ${rT} sávot, de darabszámot így nem mondok. Írd be az adatoknál, és megmondom, hány kell belőle.`,`For ${A.sub} I know the recommended ${rT} a day, but I can’t say how many without the amount per unit. Enter it under details and I’ll tell you how many you need.`)},1)}${shelf}
+    ${card(back+NOTE3,{i:3})}`,foot);
   const dT=`${kc(A.daily)} ${A.unit}`;
   return page('fuel',top,`${pb}
-  ${gHero({lbl:`${X.name} · ${L('javaslat','advice')}`,g:bandG({lo:0,hi:hi2*2,a:lo,b:hi2,v:A.daily,vl:dT,al:kc(lo),bl:kc(hi2),label:L(`A napi ${dT} az ajánlott ${rT} sávban`,`${dT} a day, within the recommended ${rT} range`)}),
-    verdict:L(`Napi ${A.units} ${A.form}, azaz ${dT}.`,`${A.units} ${A.form} a day, that is ${dT}.`),
+  ${gHero({lbl:`${X.name} · ${L('javaslat','advice')}`,g:bandG({lo:0,hi:hi2*2,a:lo,b:hi2,v:A.daily,vl:dT,al:A.daily===lo?'':kc(lo),bl:A.daily===hi2?'':kc(hi2),label:L(`A napi ${dT} az ajánlott ${rT} sávban`,`${dT} a day, within the recommended ${rT} range`)}),
+    verdict:L(`Napi ${A.units} ${A.form}, azaz ${dT}.`,`${A.units} ${formT(A.form,A.units)} a day, that is ${dT}.`),
     sub:(A.match?L(`Ez az ajánlott ${rT} sávban van.`,`That sits in the recommended ${rT} range.`):L(`Ez az ajánlott ${rT} sávban van (a termék adagja miatt kerekítve).`,`That sits in the recommended ${rT} range (rounded to the product’s dose).`))
-      +(A.days!=null?' '+L(`A doboz kb. ${A.days} napra elég.`,`The box lasts about ${A.days} days.`):'')},1)}
+      +(A.days!=null?' '+L(`A doboz kb. ${A.days} napra elég.`,`The box lasts about ${A.days} days.`):'')},1)}${shelf}
   ${sec(1,L('Miért így','Why this way'),2)}
   ${card(tip('t-bolt',zl(A.zone),A.why),{i:2})}
   ${sec(2,L('Finomítás','Fine-tune'),3)}
   ${card(lab(L('Napi mennyiség','Daily amount'))+stp(kc(A.daily),A.unit,L('Napi mennyiség','Daily amount'))+lab(L('Mikor','When'))+pick(ZO.map(z=>zl(z)),zl(A.zone),L('Mikor','When'))
-    +(A.cau?`<p class="fh-note fx-warn"><b>${L('Amire figyelj:','Watch out:')}</b> ${A.cau}</p>`:'')+back+NOTE3,{i:3})}${shelf}`,foot);
+    +(A.cau?`<p class="fh-note fx-warn"><b>${L('Amire figyelj:','Watch out:')}</b> ${A.cau}</p>`:'')+back+NOTE3,{i:3})}`,foot);
 }
 /* ═══ GYÓGYSZER (FuelMedicationPage + MedicationCycleBar; lapok: LogDoseSheet, MedicationFormSheet) ═══
    állapotok: gyogyszer (nincs követett gyógyszer — a tulajdonos ma nem követ) · .aktiv · .ujonnan (felvéve, még nincs beadás) · .leallitas (a megerősítő kártya nyitva)
@@ -1051,7 +1055,7 @@ const MED={name:'Retatrutid',ing:'retatrutid',route:'subQ',cad:'weekly-monday',d
   doses:[[0,10,5,'Hétfő reggel · subQ has'],[0,9,28,null],[0,9,21,null]]};  /* a jegyzet a felhasználó szövege: angolul is marad */
 /* a három magasság a három FÁZIS jele (cycle.week[].phaseKey), nem mért vagy becsült szint */
 const PHN={peak:['csúcs','peak',96],stable:['stabil','stable',62],trough:['völgy','trough',30]};
-const MROUTE={subQ:['subQ injekció','subQ injection'],IM:['IM injekció','IM injection'],oral:['orális','oral']};
+const MROUTE={subQ:['bőr alá','subQ injection'],IM:['izomba','IM injection'],oral:['szájon át','oral']};
 const WKEY=['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
 const cadT=c=>c==='daily'?L('napi','daily'):`${L('heti','weekly')} · ${wd(WKEY.indexOf(c.slice(7)),1)}`;
 const phOf=d=>(MED.ph.find(x=>d>=x[1]&&d<=x[2])||MED.ph[0])[0];
@@ -1060,22 +1064,21 @@ const cyc=(now,off)=>`<div class="fu-cyc" role="img" aria-label="${off||now<0?L(
 const phDays=()=>MED.ph.map(([k,a,b])=>L(`${b-a+1} nap ${phT(k)}`,`${pl(b-a+1,'','day','days')} ${phT(k)}`)).join(' · ');
 function gyogyszer(arg){
   if(arg!=='aktiv'&&arg!=='ujonnan'&&arg!=='leallitas') return page('fuel',{title:L('Gyógyszer','Medication'),sub:L('Kiegészítők · követés','Supplements · tracking'),back:'stack'},`
-  ${gHero({lbl:L('Követett gyógyszer','Tracked medication'),g:`<div class="fu-off">${cyc(-1,1)}</div>`,verdict:L('Nincs követett gyógyszer.','No medication tracked.'),sub:L('Ha szedsz valamit ciklusban, ide kerül a fázis-térkép és a beadás-napló.','If you take something in cycles, its phase map and dose log will live here.'),
-    acts:btn(L('Gyógyszer felvétele','Add medication'),{sheet:'medform'})},1)}
-  ${card(note(NOTE1()),{i:2})}`);
+  ${gHero({lbl:L('Követett gyógyszer','Tracked medication'),g:`<div class="fu-off">${cyc(-1,1)}</div>`,verdict:L('Nincs követett gyógyszer.','No medication yet.'),sub:L('Ha szedsz valamit ciklusban, ide kerül a fázis-térkép és a beadás-napló.','If you take something in cycles, its phase map and dose log will live here.'),body:note(NOTE1()),
+    acts:btn(L('Gyógyszer felvétele','Add medication'),{sheet:'medform'})},1)}`);
   const fresh=arg==='ujonnan', day=3, ago=2, ph=phOf(day), doses=fresh?[]:MED.doses;
   /* cycle.cycleDay + cycle.phaseKey + lastDoseAt → egy mondat; a „ma / tegnap / N napja” mindhárom alakja megírva */
   const agoT=ago<=0?L('ma volt','was today'):ago===1?L('tegnap volt','was yesterday'):L(`${ago} napja volt`,`was ${ago} days ago`);
   const verdict=fresh?L('Még nincs beadás: a ciklus az első beadás napjától indul.','No dose yet: the cycle starts on the day of your first dose.')
     :L(`${cap(phT(ph))} fázisban vagy, az utolsó beadás ${agoT}.`,`You’re in the ${phT(ph)} phase; your last dose ${agoT}.`);
-  return page('fuel',{title:MED.name,sub:`${L('Gyógyszer','Medication')} · ${L(...MROUTE[MED.route])} · ${cadT(MED.cad)}`,back:'stack'},`
-  ${gHero({lbl:fresh?L('Kinetikus ciklus · még nem indult el','Kinetic cycle · not started yet'):L(`Kinetikus ciklus · ${day}. nap a ${MED.len}-ből`,`Kinetic cycle · day ${day} of ${MED.len}`),
-    g:`<div class="fu-sc"><span class="fh-big">${fmt(MED.dose)}<small>${MED.unit} · ${MED.cad==='daily'?L('naponta','daily'):L('hetente','weekly')}</small></span></div>${fresh?`<div class="fu-off">${cyc(-1,1)}</div>`:cyc(day-1)}`,
+  return page('fuel',{title:MED.name,sub:L('Kiegészítők · gyógyszer','Supplements · medication'),back:'stack'},`
+  ${gHero({lbl:fresh?L('A ciklus · még nem indult el','The cycle · not started yet'):L(`A ciklus · ${day}. nap a ${MED.len}-ből`,`The cycle · day ${day} of ${MED.len}`),
+    g:`<div class="fu-sc"><span class="fh-big">${fmt(MED.dose)}<small>${MED.unit}</small></span><span class="c fb-rc">${L(...MROUTE[MED.route])}<br>${cadT(MED.cad)}</span></div>${fresh?`<div class="fu-off">${cyc(-1,1)}</div>`:cyc(day-1)}`,
     verdict,sub:L(`A három magasság a ciklus három fázisa, a beadás napjától számolva: ${phDays()}. Nem mért szint.`,`The three heights are the three phases of the cycle, counted from the dose day: ${phDays()}. Not a measured level.`),
     acts:btn(L('+ Beadás','+ Dose'),{sheet:'dose'})},1)}
   ${sec(1,doses.length?`${L('Beadások','Doses')} · ${doses.length}`:L('Beadások','Doses'),2)}
   ${card((doses.length?doses.map(([w,m,d,n])=>row({icon:'t-syringe',title:cap(dF(w,m,d)),sub:n?`„${n}”`:'',v:`${fmt(MED.dose)}<small>${MED.unit}</small>`})).join(''):txt(L('Még nincs rögzített beadás.','No doses logged yet.')))
-    +(arg==='leallitas'?`<div class="fb-stop" role="group" aria-label="${L('Leállítás megerősítése','Confirm stopping')}"><p>${L(`${cap(azA(MED.name))} leáll. A beadás-történet megmarad, a Fuel-oldalak nem számolnak vele tovább.`,`${MED.name} will stop. The dose history stays; Fuel pages no longer count with it.`)}</p>${acts(btn(L('Leállítom','Stop it'),'gyogyszer','sm')+lk(L('Mégse','Cancel'),'gyogyszer.aktiv'))}</div>`
+    +(arg==='leallitas'?`<div class="fb-stop" role="group" aria-label="${L('Leállítás megerősítése','Confirm stopping')}"><p>${L(`${cap(azA(MED.name))} leáll. A beadás-történet megmarad, a Fuel-oldalak nem számolnak vele tovább.`,`${MED.name} will stop. The dose history stays; Fuel pages no longer count with it.`)}</p>${acts(btn(L('Leállítom','Stop it'),'gyogyszer','sm ghost')+lk(L('Mégse','Cancel'),'gyogyszer.aktiv'))}</div>`
       :acts(btn(L('Szerkesztés','Edit'),{sheet:'medform',arg:'szerk'},'sm ghost')+lk(L('Leállítás','Stop'),'gyogyszer.leallitas')))
     +note(NOTE1()),{i:2})}`);
 }
@@ -1119,7 +1122,7 @@ function weekVM(arg){
   const pv=['mult','egyszint','hetkoznap'].includes(arg), key=pv?'prev':'cur';
   let days=WEEKS[key].days.map((x,w)=>({...x,w}));
   if(arg==='ures'||arg==='tolt') days=days.map(x=>({...x,kcal:null,nut:null,q:null,ids:null,mac:null}));
-  if(arg==='egyszint') days=days.map(x=>x.w===5?{...x,kcal:2110,meals:null}:x.w===6?{...x,kcal:1800,meals:null}:x);
+  if(arg==='egyszint') days=days.map(x=>x.w===5?{...x,kcal:2180,meals:null}:x.w===6?{...x,kcal:1900,meals:null}:x);
   if(arg==='hetkoznap') days=days.map(x=>x.w===5?{...x,kcal:1500,meals:null}:x.w===6?{...x,kcal:1300,meals:null}:x);
   if(arg==='kimelo') days=days.map(x=>x.w===1||x.w===2?{...x,mode:'GUIDANCE'}:x);
   days=days.map(x=>{const logged=x.kcal>0,rec=!!x.mode;return {...x,logged,rec,pct:logged&&x.t&&!rec?x.kcal/x.t*100:null,score:dayScore(x.nut??null,x.q??null),over:!rec&&logged&&x.kcal>x.t+60,weekend:x.w>=5,train:x.wo>0}});
@@ -1127,8 +1130,8 @@ function weekVM(arg){
   const cnt=days.filter(x=>x.kcal!=null&&!x.rec);
   return {arg,pv,key,days,logged:days.filter(x=>x.logged).length,wdP,weP,delta:wdP!=null&&weP!=null?weP-wdP:null,
     kAvg:avgOf(cnt.map(x=>x.kcal)),tAvg:avgOf(cnt.map(x=>x.t)),        /* loggedKcalAvg: a kímélő nap nincs benne */
-    qAvg:arg==='tolt'?null:avgOf(days.flatMap(x=>x.logged?dayMeals(x).map(m=>m.score).filter(s=>s!=null):[])),   /* week.mealScoreAvg × 10 */
-    kg:arg==='tolt'?null:HKG[pv?6:7], title:dR(days[0].m,days[0].d,days[6].m,days[6].d)}}
+    qAvg:arg==='tolt'?null:avgOf(days.flatMap(x=>x.logged&&!x.rec?dayMeals(x).map(m=>m.score).filter(s=>s!=null):[])),   /* week.mealScoreAvg × 10; a kímélő nap étkezései itt nem számítanak (a nap „a heti értékelésbe sem számít bele”) */
+    kg:arg==='tolt'||arg==='sulynelkul'?null:HKG[pv?6:7], title:dR(days[0].m,days[0].d,days[6].m,days[6].d)}}
 /* a változás a múlt héthez mérve (logic/fuelWeekView.weekDeltas): IRÁNY és MENNYISÉG, semmi más — nincs jó / rossz szín. Nincs: a múlt heti nézetben, betöltés közben, első héten, ha bármelyik oldal hiányzik, vagy ha a kiírt pontosságon egyenlők */
 const wDelta=(now,before,dec)=>{if(now==null||before==null)return null;const s=10**dec,a=Math.round(Math.abs(now-before)*s)/s;return a===0?null:{up:now>before,a}};
 /* weekVes: a hét hét edénye — a szint az evés, a szaggatott vonal a nap kerete, a szám a nap étkezés-pontja; a hétvége két edénye más alapot kap (ők a „hétvége” csoport a lenti összevetésben) */
@@ -1164,22 +1167,23 @@ function trendek(arg){
     :n===0?[L('Ezen a héten még nincs naplózott nap.','No days logged this week yet.'),L('Nem találgatunk helyetted: amit felveszel, az rögtön itt lesz.','We won’t guess for you: whatever you log shows up here right away.')]
     :D==null?[L(`${n} naplózott nap van a héten.`,n===1?'1 day is logged this week.':`${n} days are logged this week.`),L('A hét többi része még előtted áll; üresen hagyjuk, nem találgatjuk.','The rest of the week is still ahead; we leave it empty rather than guess.')]
     :Math.abs(D)<5?[L('A hétköznapok és a hétvége nagyjából egy szinten mozognak.','Weekdays and the weekend run at about the same level.'),'']
-    :D>0?[L(`Hétvégén átlagosan ${dr}%-kal többet ettél a keretedhez mérve, mint hétköznap.`,`At the weekend you ate ${dr}% more against your budget, on average, than on weekdays.`),L('Így alakult, és most már látod.','That’s how it went, and now you can see it.')]
-    :[L(`Hétköznap átlagosan ${dr}%-kal többet ettél a keretedhez mérve, mint hétvégén.`,`On weekdays you ate ${dr}% more against your budget, on average, than at the weekend.`),L('Így alakult, és most már látod.','That’s how it went, and now you can see it.')];
+    :D>0?[L(`Hétvégén átlagosan <span class="fb-nw">${dr}%-kal</span> többet ettél a keretedhez mérve, mint hétköznap.`,`At the weekend you ate ${dr}% more against your budget than on weekdays, on average.`),L('Így alakult, és most már látod.','That’s how it went, and now you can see it.')]
+    :[L(`Hétköznap átlagosan <span class="fb-nw">${dr}%-kal</span> többet ettél a keretedhez mérve, mint hétvégén.`,`On weekdays you ate ${dr}% more against your budget than at the weekend, on average.`),L('Így alakult, és most már látod.','That’s how it went, and now you can see it.')];
   const any=f=>V.days.some(f);
   const leg=lgd([['liq',L('amit ettél','what you ate')],['line',L('a nap kerete','the day’s budget')],...(any(x=>x.over)?[['over',L('a keret fölött','over budget')]]:[]),...(any(x=>!x.logged&&!x.rec)?[['gap',L('nincs adat','no data')]]:[]),...(any(x=>x.rec)?[['rec',L('kímélő nap','gentle day')]]:[]),['we',L('hétvége','weekend')],...(any(x=>x.train)?[['tr',L('edzésnap','training day')]]:[])]);
   const hint=L('A szám a nap étkezés-pontja. Koppints egy edényre a részletekért.','The number is the day’s meal score. Tap a vessel for details.');
-  /* három csempe (STAT_FACE): napi átlag · étkezés-minőség · heti súlyátlag. A szint: átlag ÷ a naplózott napok átlagos kerete, ill. pont ÷ 10; a súlynak NINCS szintje. Üres érték: „—”. */
+  /* három csempe (STAT_FACE): napi átlag · étkezés-minőség · heti súlyátlag. Egyik csempének sincs szintje (a szint a fenti edényeké és a lenti közlekedőedényeké). Üres érték: „—”. */
   const dK=P0&&wDelta(V.kAvg,P0.kAvg,0), dQ=P0&&wDelta(V.qAvg,P0.qAvg,1), dW2=P0&&wDelta(V.kg,P0.kg,1);
   const dT=(d,hu,en)=>d?(d.up?L(`${hu} több`,`${en} more`):L(`${hu} kevesebb`,`${en} less`)):'';
   const tiles=`<div class="fh-grid fb-t3">${[
-    stat({k:L('Napi átlag','Daily average'),icon:'t-plate',n:V.kAvg==null?'—':kc(V.kAvg),unit:V.kAvg==null?'':'kcal',pct:V.kAvg==null?null:pc(V.kAvg,V.tAvg),s:dK?dT(dK,`${kc(dK.a)} kcal-lal`,`${kc(dK.a)} kcal`):'',on:{toast:L('A naplózott napok átlaga; a ki nem töltött nap nem nulla, hanem kimarad','The average of logged days; a day with no log is left out, not counted as zero')}}),
-    stat({k:L('Minőség','Meal quality'),icon:'t-score',n:V.qAvg==null?'—':sc1(V.qAvg),unit:V.qAvg==null?'':'/ 10',pct:V.qAvg==null?null:V.qAvg*10,s:dQ?dT(dQ,`${sc1(dQ.a)} ponttal`,`${sc1(dQ.a)}`):'',on:{toast:L('Étkezés-minőség: a hét étkezéseinek átlagos pontja','Meal quality: the average score of the week’s meals')}}),
+    stat({k:L('Napi átlag','Daily average'),icon:'t-plate',n:V.kAvg==null?'—':kc(V.kAvg),unit:V.kAvg==null?'':'kcal',s:dK?dT(dK,`${kc(dK.a)} kcal-lal`,`${kc(dK.a)} kcal`):'',on:{toast:L('A naplózott napok átlaga; a ki nem töltött nap nem nulla, hanem kimarad','The average of logged days; a day with no log is left out, not counted as zero')}}),
+    stat({k:L('Minőség','Meal quality'),icon:'t-score',n:V.qAvg==null?'—':sc1(V.qAvg),unit:V.qAvg==null?'':'/ 10',s:dQ?dT(dQ,`${sc1(dQ.a)} ponttal`,`${sc1(dQ.a)}`):'',on:{toast:L('Étkezés-minőség: a hét étkezéseinek átlagos pontja','Meal quality: the average score of the week’s meals')}}),
     stat({k:L('Heti súlyátlag','Weekly weight'),icon:'t-weight',c:'var(--water)',n:V.kg==null?'—':sc1(V.kg),unit:V.kg==null?'':'kg',s:dW2?dT(dW2,`${sc1(dW2.a)} kg-mal`,`${sc1(dW2.a)} kg`):'',on:{toast:L('A hét méréseinek átlaga','The average of this week’s weigh-ins')}})].join('')}</div>`
     +(dK||dQ||dW2?note(L('A csempék alsó sora a múlt héthez mért változás: irány és mennyiség, nem ítélet.','The bottom line on each tile is the change from last week: direction and amount, not a verdict.')):'');
   /* két közlekedőedény: a naplózott (nem kímélő) napok kerethez mért átlaga hétköznap és hétvégén (vm.weekdayAvgPct / weekendAvgPct), 130%-os léptékben; a vonal a keret (100%) */
   const pT=v=>v==null?'—':Math.round(v)+'%', yB=(96-100/1.3*.74).toFixed(1);
-  const link=linked((V.wdP||0)/1.3,(V.weP||0)/1.3,{a:`${L('Hétköznap','Weekdays')} · ${pT(V.wdP)}`,b:`${L('Hétvége','Weekend')} · ${pT(V.weP)}`,s:250}).replace('</svg>',`<path d="M8 ${yB}H212" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/><text x="110" y="${(yB-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--sub)">${L('a keret','budget')}</text></svg>`);
+  const link=linked((V.wdP||0)/1.3,(V.weP||0)/1.3,{a:`${L('Hétköznap','Weekdays')} · ${pT(V.wdP)}`,b:`${L('Hétvége','Weekend')} · ${pT(V.weP)}`,s:250}).replace('</svg>',`<path d="M8 ${yB}H212" stroke="var(--ink)" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/><text x="110" y="${(yB-4).toFixed(1)}" text-anchor="middle" font-size="9" fill="var(--sub)">${L('a keret','budget')}</text></svg>`)
+    .replace(/<g clip-path="url\(#[^")]+a\)">.*?<\/g>/,m=>V.wdP==null?'':m).replace(/<g clip-path="url\(#[^")]+b\)">.*?<\/g>/,m=>V.weP==null?'':m);
   const splitNote=D==null?L('A kettő összevetéséhez mindkét oldalon kell legalább egy naplózott nap; amíg nincs, üresen hagyjuk.','Comparing the two needs at least one logged day on each side; until then we leave it empty.')
     :D>0?L(`A különbség <b>${dr} százalékpont</b> a hétvége javára.`,`The gap is <b>${dr} percentage points</b>, towards the weekend.`):L(`A különbség <b>${dr} százalékpont</b> a hétköznapok javára.`,`The gap is <b>${dr} percentage points</b>, towards weekdays.`);
   /* a hosszabb táv: 7 hét a megnyitott hétig */
@@ -1199,15 +1203,15 @@ function trendek(arg){
       +lab(L('Heti átlag kcal','Weekly average kcal'))
       +(kcs.some(v=>v!=null)?seriesG(kcs,{h:84,c:'color-mix(in srgb,var(--carb) 55%,#fff)',c2:'var(--carb)',aria:L('Heti átlag kalória 7 héten át','Weekly average calories over 7 weeks')}):'')
       +note(L('A heti átlagok egymás alatt: fent a súly, lent az evés, ugyanazokon a heteken. Egyik sem ok, csak együttjárás.','Weekly averages one under the other: weight above, eating below, over the same weeks. Neither causes the other; they just move together.')),{i:4});
-  const pats=arg==='mintanelkul'?[]:PATS;
+  const pats=arg==='mintanelkul'||first?[]:PATS;
   return page('fuel',{title:L('Trendek','Trends'),sub:`Fuel · ${['mult','egyszint','hetkoznap'].includes(arg)?L('múlt hét','last week'):L('ez a hét','this week')}`,tab:'trendek'},`
   ${nav}
-  ${gHero({lbl:L(`${n} / 7 naplózott nap · ebből áll a heti kép`,`${n} of 7 days logged · this is what the week is built from`),g:weekVes(V)+leg,verdict,sub:`${sub?sub+' ':''}${hint}`},1)}
+  ${gHero({lbl:load?L('Naplózott napok','Days logged'):L(`${n} / 7 naplózott nap · ebből áll a heti kép`,`${n} of 7 days logged · this is what the week is built from`),g:weekVes(V)+leg,verdict,sub:`${sub?sub+' ':''}${hint}`},1)}
   ${sec(1,L('A hét számai','The week in numbers'),2)}
   ${card(tiles,{i:2})}
   ${sec(2,L('Hétköznap és hétvége','Weekdays and weekend'),3)}
   ${card(`<div class="fu-lk">${link}</div>`+note(splitNote),{i:3})}
-  ${sec(3,wait?L('Hosszabb táv','The longer run'):L('Hosszabb táv · 7 hét','The longer run · 7 weeks'),4)}
+  ${sec(3,wait?L('Hosszabb táv','Longer term'):L('Hosszabb táv · 7 hét','Longer term · 7 weeks'),4)}
   ${horizon}
   ${pats.length?sec(4,`${L('Mintázatok','Patterns')} · ${pats.length}`,5)
     +card(pats.map(([id,t,stt])=>`<a class="fh-row fb-a" href="#w-mezo-minta.${id}"><span class="si">${I('t-pattern')}</span><span class="g"><strong>${t}</strong><small>${L(...PSTAT[stt])}</small></span>${chev()}</a>`).join('')
@@ -1622,19 +1626,19 @@ const sheetsB={
       ${row({icon:'t-journal',title:L('Megnézem a napot','Open the day'),sub:L('Az étkezések a nap lapján','Its meals on the day’s page'),on:goDay})}${bye}`;
     if(!x.logged) return `${sh('t-plate',dn,L('nincs adat','no data'))}
       <div class="fu-ng"><span class="gg">${fill(BOWL,{vb:BOWLVB,p:0,s:120})}</span><div class="nn"><span class="fh-big">—</span></div></div>
-      ${tip('t-info',L('Őszintén','To be honest'),L('Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.','You didn’t log on this day. We don’t fill it with a guess, and it stays out of the weekly average.'))}
+      ${tip('t-info',L('Őszintén','No data for this day'),L('Ezen a napon nem naplóztál. Nem töltjük ki becsléssel, és a heti átlagból is kimarad.','You didn’t log on this day. We don’t fill it with a guess, and it stays out of the weekly average.'))}
       ${row({icon:'t-journal',title:L('Pótolom a napot','Fill in the day'),sub:L('A nap saját lapján bármikor felvehető','You can add it on the day’s own page any time'),on:goDay})}${bye}`;
     const over=x.over?x.kcal-x.t:null, [tp,tc,tf]=tgM(x.t), ms=dayMeals(x);
-    /* a két étkezés-dimenzió a napi értékelésből (0–100): a pont a szint; a tények soronként. A Minőségnek ma nincsenek napi ténysorai: mindig a megjegyzés áll alatta. null = „—”, szint nélkül. */
+    /* a két étkezés-dimenzió a napi értékelésből (0–100): a pont a szint; a tények soronként. A Minőségnek ma nincsenek napi ténysorai: a megjegyzés csak pont nélkül áll alatta (az élő oldal ma pont mellett is kiírja — ez ellentmondás, itt javítva). null = „—”, szint nélkül. */
     const dim=(l,pctW,v)=>`${lab(`${l} · ${L(`a napi értékelés ${pctW}%-a`,`${pctW}% of the day’s rating`)}`)}<div class="fu-eqb">${v==null?level(0,{h:16,val:'—'}):level(v,{h:16,val:String(Math.round(v))})}</div>`;
     return `${sh('t-calendar',dn,L('étkezés-pont','meal score'))}
     <div class="fu-ng"><span class="gg">${fill(BOWL,{vb:BOWLVB,p:Math.min(100,x.kcal/x.t*94),s:120,c:x.over?'color-mix(in srgb,var(--warn) 55%,#fff)':'var(--liq1)',c2:x.over?'var(--warn)':'var(--liq2)'})}</span><div class="nn"><span class="fh-big">${x.score==null?'—':sc1(x.score)}${x.score==null?'':'<small>/ 10</small>'}</span><p>${kc(x.kcal)} / ${kc(x.t)} kcal${x.train?` · ${L('edzésnap','training day')}`:''}${x.score==null?`<br>${L('még nincs étkezés-pont','no meal score yet')}`:''}</p></div></div>
     ${txt((x.train?L(`A kereted ezen a napon <b>${kc(x.t)} kcal</b> volt, edzésnapra igazítva.`,`Your budget that day was <b>${kc(x.t)} kcal</b>, adjusted for a training day.`):L(`A kereted ezen a napon <b>${kc(x.t)} kcal</b> volt.`,`Your budget that day was <b>${kc(x.t)} kcal</b>.`))+' '
-      +(over!=null?L(`${kc(over)} kcal-lal fölé ment; így alakult.`,`It went ${kc(over)} kcal over; that’s how it went.`):L('Belefértél; így alakult.','You stayed within it; that’s how it went.')))}
+      +(over!=null?L(`${kc(over)} kcal-lal fölé ment; így alakult.`,`It went ${kc(over)} kcal over.`):L('Belefértél; így alakult.','You stayed within it.')))}
     ${dim(L('Táplálkozás','Nutrition'),30,x.nut)}
     ${mrow(L('Kalória','Calories'),`<b>${kc(x.kcal)}</b> / ${kc(x.t)} kcal`,pc(x.kcal,x.t),'var(--dom)','t-plate')}${mrow(L('Fehérje','Protein'),`<b>${x.mac[0]}</b> / ${tp} g`,pc(x.mac[0],tp),'var(--protein)','t-meat')}${mrow(L('Szénhidrát','Carbs'),`<b>${x.mac[1]}</b> / ${tc} g`,pc(x.mac[1],tc),'var(--carb)','t-carb')}${mrow(L('Zsír','Fat'),`<b>${x.mac[2]}</b> / ${tf} g`,pc(x.mac[2],tf),'var(--fat)','t-avocado')}
     ${dim(L('Minőség','Quality'),15,x.q)}
-    ${note(L('Ehhez a szemponthoz még nincs elég adat ezen a napon.','Not enough data for this aspect on this day yet.'))}
+    ${x.q==null?note(L('Ehhez a szemponthoz még nincs elég adat ezen a napon.','Not enough data for this aspect on this day yet.')):''}
     ${lab(L('A nap étkezései','The day’s meals'))}
     ${face==='tolt'?txt(L('Töltjük a nap étkezéseit…','Loading the day’s meals…')):face==='tetelnelkul'||!ms.length?txt(L('Erről a napról nincs tételes étkezés mentve.','No itemised meals are saved for this day.'))
       :ms.map(m=>row({icon:'t-plate',title:m.name,sub:`${m.time} · ${kc(m.kcal)} kcal`,v:m.score==null?null:sc1(m.score),on:m.go||{toast:L('Az étkezés oldala nyílik','Opens the meal’s page')}})).join('')}
@@ -1642,14 +1646,14 @@ const sheetsB={
     ${note(L('A napi értékelés hat szempontból áll; itt a két étkezéshez tartozó látszik. A többi (edzés, alvás, naplózás, ritmus) az Én oldal napi nézetén él.','The day’s rating has six aspects; the two about eating are shown here. The rest (training, sleep, logging, rhythm) live in the day view under Me.'))}${bye}`},
   /* item = FuelStackItemGlass — arg: "<sorszám a protokollban>[|nincsadat|nincspolcon]". A dobozban NINCS készlet-szint és „meddig elég”: a Kamra csak a készletet és az egységét tudja. */
   item:a=>{const [ix,face]=String(a??'6').split('|'), V=stackVM(''), r=V.rows[+ix]||V.rows[0], noShelf=face==='nincspolcon', bare=face==='nincsadat', dose=bare?null:r.dose, stock=bare||noShelf?null:stockT(r);
-    const place=r.pin?L('kézi elhelyezés','placed by hand'):L(...{rule:['okos elhelyezés','smart placement'],llm:['okos elhelyezés','smart placement'],user:['saját döntés','your choice'],fallback:['alapértelmezett hely','default slot']}[r.src]);
+    const place=r.pin?L('kézi elhelyezés','placed by hand'):L(...{rule:['okos elhelyezés','smart placement'],llm:['okos elhelyezés','smart placement'],user:['saját döntés','your choice'],fallback:['alapértelmezett hely','default time']}[r.src]);
     return `${sh('t-supps',r.n,`${dose??'—'} · ${L('naponta','daily')}`)}
     <div class="fh-chips fu-chips"><span>${zl(r.z)} · ${r.time}</span><span>${place}</span><span>${r.taken?`${L('bevéve','taken')} ${r.at}`:L('ma még nincs bevéve','not taken yet today')}</span></div>
-    ${acts(`<button class="btn sm" data-fbtk="${r.i}">${r.taken?L('Mégsem vettem be','I didn’t take it'):L('Bevettem','Taken')}</button>`)}
-    ${dose||stock?lab(L('Ebből a termékből','From this product'))+kv([[L('Napi adag','Daily dose'),dose??'—'],...(r.form&&!bare?[[L('Kiszerelés','Form'),r.form]]:[]),...(stock?[[L('Készleten','In stock'),stock]]:[]),...(r.hint?[[L('Napi összmennyiség','Daily total'),r.hint]]:[])])
+    ${acts(`<button class="btn sm" data-fbtk="${r.i}">${r.taken?L('Mégsem vettem be','Undo'):L('Bevettem','Mark as taken')}</button>`)}
+    ${dose||stock?lab(L('Ebből a termékből','From this product'))+kv([[L('Napi adag','Daily dose'),dose??'—'],...(r.form&&!bare?[[L('Kiszerelés','Form'),formT(r.form)]]:[]),...(stock?[[L('Készleten','In stock'),stock]]:[]),...(r.hint?[[L('Napi összmennyiség','Daily total'),r.hint]]:[])]).replace('class="fu-kv"','class="fu-kv fb-kv"')
       :lab(L('Termékadatok','Product details'))+txt(L('Nincs megadva, mennyi van egy egységben. A beállítóban pótolhatod, és megmondom, hány kell belőle.','The amount per unit is missing. Add it in setup and I’ll tell you how many you need.'))+row({icon:'t-gear',title:L('Beállítom','Set it up'),on:'stack-uj.1'})}
     ${lab(L('Miért így','Why this way'))}${txt(r.why??(r.pin?L(`Ide raktad kézzel: ${zl(r.z)}.`,`You placed it here yourself: ${zl(r.z)}.`):L('Az elhelyezéshez nem tartozik indok.','No reason is recorded for this placement.')))}
-    ${noShelf?lab(L('Nincs a kamrádban','Not in your pantry'))+txt(L('A protokollodban ott van, a polcodon nem. Ha felveszed a Konyhában, innen is elérhető lesz.','It’s in your protocol but not on your shelf. Add it in Kitchen and you can open it from here.'))
+    ${noShelf?lab(L('Nincs a kamrádban','Not in your pantry'))+txt(L('A protokollodban ott van, a Kamrádban nem. Ha felveszed a Konyhában, innen is elérhető lesz.','It’s in your protocol but not in your pantry. Add it in Kitchen and you can open it from here.'))
       :row({icon:'t-stack',title:r.n,sub:stock?L(`${stock} a kamrádban`,`${stock} in your pantry`):L('a kamrádban','in your pantry'),on:'kamra.'+r.id})}
     ${note(NOTE1())}${acts(closeLk())}`},
   /* stackitem = StackItemSheet — arg: a tétel sorszáma. A dózis elhagyáskor mentődik; mozgatás, visszaállítás és eltávolítás bezárja a lapot; a „még egy bevétel” nyitva hagyja. */
@@ -1657,9 +1661,9 @@ const sheetsB={
     return `${sh('t-supps',r.n,`${L('Kiegészítők · időzítés','Supplements · timing')}${r.dose?` · ${r.dose}`:''}`)}
     ${r.pin?`<div class="fu-tip">${bub('t-pin',{s:38})}<span><b>${L(`Ide raktad kézzel (${zl(r.z)})`,`You placed it here yourself (${zl(r.z)})`)}</b></span></div>${acts(`<button class="btn sm ghost" data-close>${L('Vissza automatikusra','Back to automatic')}</button>`)}`
       :`<div class="fu-tip">${bub('t-bolt',{s:38})}<span><small class="fb-why">${r.why??L('Automatikusan időzítve.','Timed automatically.')}</small></span></div>`}
-    ${lab(L('Mozgatás másik zónába','Move to another slot'))}<div class="fh-pills">${ZO.map(z=>z===r.z?`<button class="fh-pill on" disabled aria-label="${esc(L(`${zl(z)} (most itt van)`,`${zl(z)} (it is here now)`))}">${zl(z)}</button>`:`<button class="fh-pill" data-close>${zl(z)}</button>`).join('')}</div>
+    ${lab(L('Áthelyezés másik idősávba','Move to another time slot'))}<div class="fh-pills">${ZO.map(z=>z===r.z?`<button class="fh-pill on" disabled aria-label="${esc(L(`${zl(z)} (most itt van)`,`${zl(z)} (it is here now)`))}">${zl(z)}</button>`:`<button class="fh-pill" data-close>${zl(z)}</button>`).join('')}</div>
     ${fld(L('Dózis','Dose'),r.dose||'')}
-    ${lab(L('+ Még egy bevétel','+ One more intake'))}${pick(ZO.map(z=>zl(z)),zl('wake'),L('Zóna','Slot'))}
+    ${lab(L('+ Még egy bevétel','+ One more intake'))}${pick(ZO.map(z=>zl(z)),zl('wake'),L('Idősáv','Time slot'))}
     <div class="fb-add">${inp(L('Új bevétel dózisa','Dose of the new intake'),k.dose||'',L('Dózis','Dose'))}${btn(L('Hozzáadás','Add'),{toast:L('Még egy bevétel hozzáadva','One more intake added')},'sm ghost')}</div>
     ${r.hint?note(r.hint):''}
     ${acts(`<button class="fh-lk" data-close>${L('Eltávolítás a kiegészítőim közül','Remove from my supplements')}</button>`+closeLk())}`},
@@ -1667,15 +1671,15 @@ const sheetsB={
   dose:()=>`${sh('t-syringe',L('Új beadás','New dose'),`${L('Beadás','Dose')} · ${MED.name}`)}
     <div class="fx-two"><div>${fld(L('Dátum','Date'),EN()?'7 Oct 2026':'2026. 10. 07.')}</div><div>${fld(L('Időpont','Time'),'','--:--')}</div></div>
     ${lab(L('Dózis','Dose'))}<div class="fb-unit">${inp(L('Dózis','Dose'),fmt(MED.dose),fmt(MED.dose))}<span>${MED.unit}</span></div>
-    ${lab(L('Jegyzet','Note'))}<div class="fb-unit">${inp(L('Jegyzet','Note'),'',L('pl. hétfő reggel · subQ has','e.g. Monday morning · subQ abdomen'))}<button class="fb-mic" data-toast="${L('Diktálás','Dictate')}" aria-label="${L('Diktálás','Dictate')}">${I('t-mic')}</button></div>
-    ${acts(`<button class="btn sm" data-close>${L('Beadás','Log dose')}</button>`+closeLk(L('Mégse','Cancel')))}`,
+    ${lab(L('Jegyzet','Note'))}<div class="fb-unit">${inp(L('Jegyzet','Note'),'',L('pl. hétfő reggel, has','e.g. Monday, abdomen'))}<button class="fb-mic" data-toast="${L('Diktálás','Dictate')}" aria-label="${L('Diktálás','Dictate')}">${I('t-mic')}</button></div>
+    ${acts(`<button class="btn sm" data-close>${L('Rögzítem','Log dose')}</button>`+closeLk(L('Mégse','Cancel')))}`,
   /* medform = MedicationFormSheet — arg: szerk = szerkesztés (a ciklus fázis-beosztása változatlan marad). A hét napja csak heti kadenciánál látszik. A mentés addig tiltott, amíg név, hatóanyag, dózis és egység nincs. */
   medform:a=>{const ed=a==='szerk';
     return `${sh('t-syringe',ed?L('Gyógyszer szerkesztése','Edit medication'):L('Gyógyszer felvétele','Add medication'),L('Gyógyszer','Medication'))}
     <div class="fx-two"><div>${fld(L('Név','Name'),ed?MED.name:'',L('pl. Retatrutid','e.g. Retatrutide'))}</div><div>${fld(L('Hatóanyag','Active ingredient'),ed?MED.ing:'',L('retatrutid','retatrutide'))}</div></div>
     ${lab(L('Beviteli út','Route'))}${pick(Object.values(MROUTE).map(x=>L(...x)),L(...MROUTE.subQ),L('Beviteli út','Route'))}
     <div class="fx-two"><div>${fld(L('Dózis','Dose'),ed?fmt(MED.dose):'','4')}</div><div>${fld(L('Egység','Unit'),'mg','mg')}</div></div>
-    ${lab(L('Kadencia','Cadence'))}${pick([L('heti','weekly'),L('napi','daily')],L('heti','weekly'),L('Kadencia','Cadence'))}
+    ${lab(L('Gyakoriság','How often'))}${pick([L('heti','weekly'),L('napi','daily')],L('heti','weekly'),L('Gyakoriság','How often'))}
     ${lab(L('Beadás napja','Dose day'))}${pick([0,1,2,3,4,5,6].map(w=>wd(w)),wd(0),L('Beadás napja','Dose day'))}
     ${lab(L('Ciklus · fázisok','Cycle · phases'))}<div class="fu-off">${cyc(-1,0)}</div>
     ${note(ed?L(`${MED.len} napos ciklus; a fázis-beosztás változatlan marad.`,`${MED.len}-day cycle; the phase layout stays as it is.`):L(`Alap-sablon: ${phDays()}; a beadás napjától számolva.`,`Default template: ${phDays()}, counted from the dose day.`))}
@@ -2183,7 +2187,11 @@ const cssB=`
 ${QA} .fb-dim .fh-row strong{color:var(--sub)}
 ${QA} .fb-ghost i{opacity:.55}
 ${QA} .fh-n .st{margin-left:6px;vertical-align:middle}
-${QA} .fb-zv .k2-vial small{white-space:nowrap}
+${QA} .fb-zv .k2-vial{min-width:0}
+${QA} .fb-zv .k2-vial small{font-size:10.5px;line-height:1.15;overflow-wrap:break-word}
+${QA} .fb-nw{white-space:nowrap}
+${QA} .fb-kv>div:last-child:nth-child(odd){grid-column:1/-1}
+${QA} .fb-rc{font-size:12.5px;line-height:1.35;color:var(--sub);font-weight:600}
 ${QA} .fb-wn{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;margin:12px 14px 0}
 ${QA} .fb-wn button{height:38px;padding:0 12px;border-radius:13px;background:rgba(255,255,255,.85);box-shadow:0 4px 10px -6px rgba(15,30,51,.3),inset 0 0 0 1px rgba(15,30,51,.05);font-size:13px;font-weight:650;white-space:nowrap;color:var(--ink)}
 ${QA} .fb-wn button[disabled]{opacity:.4}
@@ -2222,6 +2230,8 @@ ${QA} .fb-why{font-size:13.5px!important;color:var(--ink)!important}
 ${QA} .fb-ser{display:block;width:100%;height:auto;margin:6px 0 2px}
 ${QA} .fu-cyc b{white-space:nowrap}
 @media(max-width:360px){
+  ${QA} .fb-zv .k2-vials{gap:4px}
+  ${QA} .fb-zv .k2-vial small{font-size:8.5px;letter-spacing:-.2px}
   ${QA} .fb-wn{gap:5px;margin:12px 10px 0}
   ${QA} .fb-wn button{padding:0 8px;font-size:12px}
   ${QA} .fb-wn b{font-size:12.5px}
