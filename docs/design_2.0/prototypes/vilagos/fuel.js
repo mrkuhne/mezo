@@ -447,7 +447,7 @@ function scoreSurface(id,m,st2,o){
     verdict:m.headline+'.',sub:pend?L('Mezo olvasata készül…','Mezo’s reading is on the way…'):m.lead,
     acts:btn(o.detail[0],o.detail[1])},1)}
   ${sec(1,L('Miből áll össze?','What is it made of?'),2)}
-  ${card(DIMS.map(([,l,ic,w,det],i)=>live[i]==null?irow({icon:ic,title:L(...l),sub:L('Ehhez az étkezéshez nem volt elég adat, ezért ez a szempont kimaradt.','There was not enough data for this meal, so this aspect was left out.'),v:'—',l2:`<span class="fu-sh">${level(0,{h:8})}</span><small class="fu-shn">${L('még tanulom · kevés adat','still learning · little data')}</small>`,on:{sheet:'dim',arg:id+'|'+i}})
+  ${card(DIMS.map(([,l,ic,w,det],i)=>live[i]==null?irow({icon:ic,title:L(...l),sub:L('Ehhez nem volt elég adat, ezért ez a szempont kimaradt.','There was not enough data for this, so this aspect was left out.'),v:'—',l2:`<span class="fu-sh">${level(0,{h:8})}</span><small class="fu-shn">${L('még tanulom · kevés adat','still learning · little data')}</small>`,on:{sheet:'dim',arg:id+'|'+i}})
       :irow({icon:ic,title:L(...l),sub:det(m),v:fmt(live[i]),l2:`<span class="fu-sh">${level(live[i]*10,{h:8,c:i===low?'var(--warn)':'var(--dom)'})}</span><small class="fu-shn">${L(`súly ${w}%`,`weight ${w}%`)}${i===low?L(' · leggyengébb',' · weakest'):''}</small>`,on:{sheet:'dim',arg:id+'|'+i}})).join('')
     +note(L('Koppints egy sorra a részletekért.','Tap a row for details.')),{i:2})}
   ${IMP.length?`${sec(2,L('Ha feljebb vinnéd','If you want to raise it'),3)}
@@ -2410,9 +2410,8 @@ Műhely: <a href="#w-fuel-muhely">üres vászon</a> · <a href="#w-fuel-muhely.d
 Beállítások: <a href="#w-fuel-beallitas.modositva">módosítva, előnézet</a> · <a href="#w-fuel-beallitas.egyeni">egyéni arányok</a> · <a href="#w-fuel-beallitas.egyeni-hiba">nem 100%</a> · <a href="#w-fuel-beallitas.elonezet-tolt">előnézet számol</a> · <a href="#w-fuel-beallitas.elonezet-hiba">előnézet hiba</a> · <a href="#w-fuel-beallitas.ablak-nelkul">ablakok még töltenek</a> · <a href="#w-fuel-beallitas.tolt">betöltés</a> · <a href="#w-fuel-beallitas.hiba">hiba</a> · <a href="#w-fuel-beallitas.mentes-hiba">mentés nem sikerült</a><br>
 Ablakok: <a href="#w-fuel-ablakok">pihenőnap</a> · <a href="#w-fuel-ablakok.reggeli">reggeli edzés (a mai nap)</a> · <a href="#w-fuel-ablakok.esti">esti edzés (mintanap)</a> · <a href="#w-fuel-ablakok.szerk">testreszabás</a> · <a href="#w-fuel-ablakok.mentett">saját felosztás</a> · <a href="#w-fuel-ablakok.hiba">hibás</a> · <a href="#w-fuel-ablakok.figyel">figyelmeztetés</a> · <a href="#w-fuel-ablakok.ertekel">Mezo értékeli</a> · <a href="#w-fuel-ablakok.olvasat">olvasat: rendben</a> · <a href="#w-fuel-ablakok.olvasat-igazit">olvasat: igazítanál</a> · <a href="#w-fuel-ablakok.olvasat-nincs">olvasat nem elérhető</a> · <a href="#w-fuel-ablakok.tolt">betöltés</a> · <a href="#w-fuel-ablakok.betolt-hiba">hiba</a> · <a href="#w-fuel-ablakok.mentes-hiba">mentés nem sikerült</a><br>
 A lapok állapotai (új tétel, import, közös katalógus, szűrő, recept-logok) a lapon belül váltanak; az import lépései: fotó → keresés → vázlat.</p>
-<p>Angolul: a tételek, receptek, márkák neve, a címkéid, a protokoll-szöveged és a korábban megírt recept-jegyzet magyar marad; a dátumok és a „legutóbb” sorok angolul jelennek meg.</p>
-<p>Angolul a kiegészítők és termékek neve, a kiszerelés, a te jegyzeted és a korábban elmentett indok-mondat magyar marad.</p>
-<p>Angolul: az étkezések, receptek, hozzávalók neve és a korábban megírt értékelő szöveg magyar marad; minden más angol.</p>
+<h2>Angolul</h2>
+<p>Az oldalsáv „English” kapcsolójával a Fuel minden oldala, lapja és állapota angolul olvasható. Magyar marad, amit te írtál vagy ami korábban már elkészült: az étkezések, receptek, hozzávalók, termékek és márkák neve, a címkéid és jegyzeteid, a korábban megírt értékelő szöveg és recept-jegyzet, a kiegészítőkhöz elmentett indok-mondat. Minden más angol: a feliratok, a mondatok, a dátumok és a számok formája is.</p>
 <p>A fotó, a kamera, a hang és a +/− gombok koppintásra csak visszajeleznek; a pipák, kapcsolók, választó-gombok, a víz és a kihagyás átváltanak.</p>`
 });
 })();
