@@ -479,7 +479,7 @@ ${P} .mt-bub{display:grid;place-items:center;width:58px;height:58px;border-radiu
 ${P} .mt-bub>svg.ic{width:28px;height:28px}
 ${P} .mt-more b{margin-top:5px;font-size:12px;font-weight:700;line-height:1.2;color:var(--ink)}${P} .mt-more small{font-size:12px;line-height:1.25;color:var(--sub)}
 ${P} .mt-acts{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px 14px;margin:20px 16px 0}
-${P} .mt-km{display:flex;align-items:center;gap:12px;width:calc(100% - 44px);margin:18px 22px 0;text-align:left}
+${P} .mt-km{display:flex;align-items:center;gap:12px;min-height:48px;width:calc(100% - 44px);margin:18px 22px 0;text-align:left}
 ${P} .mt-km>svg.ic{width:32px;height:32px;flex:none}${P} .mt-km b{display:block;font-size:14.5px;font-weight:700;color:var(--ink)}${P} .mt-km small{font-size:12px;color:var(--sub)}
 ${P} .nb-lead{position:relative;padding:8px 22px 14px calc(var(--rail) + 22px)}
 ${P} .nb-lead small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--sub)}
