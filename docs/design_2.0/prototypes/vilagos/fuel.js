@@ -659,7 +659,7 @@ function kamra(arg){
   /* a három tengely ÉS-elve szűr: fajta ÉS kategória ÉS keresés */
   const list=none?[]:flt?KALL.filter(k=>k.k==='food'&&(k.cat==='Fehérje'||k.cat==='Tejtermék')):KALL;
   const tile=k=>k.k==='food'?stat({k:k.n,icon:kic(k),n:k.kcal==null?'—':k.kcal,unit:k.kcal==null?'':`kcal / 100 ${k.u||'g'}`,pct:k.p==null?null:Math.max(6,Math.min(100,k.p/25*100)),c:'var(--protein)',s:[k.kcal==null?L('nincs adat','no data'):k.p==null?null:L(`${fmt(k.p)} g fehérje`,`${fmt(k.p)} g protein`),k.b,srcM(k)].filter(Boolean).join(' · '),on:'kamra.'+k.id})
-    :stat({k:k.n,icon:kic(k),n:`<span class="fc-dose">${k.dose||'—'}</span>`,unit:L('adag','dose'),s:[kindL(k.k),k.b,srcM(k)].join(' · '),c:'var(--water)',on:'kamra.'+k.id});
+    :stat({k:k.n,icon:kic(k),n:`<em>${(k.dose||'—').replace(/ \+ /,' +<wbr>')}</em>`/* <em>, not a classed span: the kit's stat() turns every space of n into a no-break space, attributes included */,unit:L('adag','dose'),s:[kindL(k.k),k.b,srcM(k)].join(' · '),c:'var(--water)',on:'kamra.'+k.id});
   return page('fuel',top,`
   ${gHero({lbl:L('A polcod · fajtánként','Your shelf · by kind'),g:jars(0),verdict:L(`${N} tétel van a polcodon: ${n('food')} étel és ${N-n('food')} kiegészítő.`,`${nItem(N)} on your shelf: ${pl(n('food'),'','food','foods')} and ${pl(N-n('food'),'','supplement','supplements')}.`),acts:tools},1)}
   ${sec(1,L('Keresés és szűrés','Search and filter'),2)}
@@ -2316,7 +2316,8 @@ ${QA} .fc-bub small{display:block;font-size:10.5px;font-weight:700;letter-spacin
 ${QA} .fu-bubs{pointer-events:none}
 ${QA} .fh-pill.on .fb{background:rgba(255,255,255,.2);box-shadow:none;--ic:#fff;--ic2:rgba(255,255,255,.75);color:#fff}
 ${QA} .fu-shelf .fh-stat .k{padding-right:40px;white-space:normal;overflow:visible;overflow-wrap:anywhere;hyphens:auto}
-${QA} .fu-shelf .fh-stat .n .fc-dose{display:block;font-size:16px;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
+${QA} .fu-shelf .fh-stat .n em{display:block;font-style:normal;font-size:19px;line-height:1.2;letter-spacing:-.4px}
+@media(max-width:360px){${QA} .fu-shelf .fh-stat .n em{font-size:15px;letter-spacing:-.3px}}
 ${QA} .fx-n .fc-dn{display:block;font-size:24px;line-height:1.15;white-space:normal;letter-spacing:0}
 ${QA} .fx-two.fc-ws{align-items:start}
 ${QA} .fu-q .fh-grid>:nth-child(3):last-child{grid-column:1 / -1}
