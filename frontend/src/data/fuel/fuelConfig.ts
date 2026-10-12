@@ -1,6 +1,7 @@
 // Fuel day-planner constants (Fuel P5). Pinned Global Constraints from the planner spec —
 // the single source of truth for slot placement, snapping, weighting and recipe-fit math.
 // Time helpers convert between 'HH:mm' wall-clock strings and minutes-since-midnight.
+import { m } from '@/shared/i18n/catalog'
 
 // Meal cadence + caffeine cutoff now live on Fuel settings (mezo-53su); the wake/bed day-anchor
 // moved to the sleep goal (mezo-dbsr). What stays here are the pure placement/snapping constants.
@@ -121,6 +122,11 @@ export type ZoneKeyName = (typeof ZONE_KEYS)[number]
 export const ZONE_FRACTIONS: Record<ZoneKeyName, number> = {
   morning: 0, midday: 0.30, afternoon: 0.52, evening: 0.72,
 }
+/** Getter-backed: `ZONE_LABELS[key]` reads the catalog (`fuelLogika.dayPart`) when it is READ, so the
+ *  importers (`dayZones.ts`, `stackBands.ts`) follow a language switch without an edit. */
 export const ZONE_LABELS: Record<ZoneKeyName, string> = {
-  morning: 'Reggel', midday: 'Dél', afternoon: 'Délután', evening: 'Este',
+  get morning() { return m().fuelLogika.dayPart.morning },
+  get midday() { return m().fuelLogika.dayPart.midday },
+  get afternoon() { return m().fuelLogika.dayPart.afternoon },
+  get evening() { return m().fuelLogika.dayPart.evening },
 }

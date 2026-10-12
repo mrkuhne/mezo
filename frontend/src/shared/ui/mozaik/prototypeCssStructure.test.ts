@@ -16,6 +16,16 @@ import edzesKozbenCss from '@/styles/folyadek-edzes-kozben.css?raw'
 import edzesKozbenLapokCss from '@/styles/folyadek-edzes-kozben-lapok.css?raw'
 import edzesLezarasCss from '@/styles/folyadek-edzes-lezaras.css?raw'
 import edzesOsszegzesCss from '@/styles/folyadek-edzes-osszegzes.css?raw'
+import fuelKozosCss from '@/styles/folyadek-fuel-kozos.css?raw'
+import fuelMaiCss from '@/styles/folyadek-fuel-mai.css?raw'
+import fuelLogCss from '@/styles/folyadek-fuel-log.css?raw'
+import fuelEtkezesCss from '@/styles/folyadek-fuel-etkezes.css?raw'
+import fuelTanulasCss from '@/styles/folyadek-fuel-tanulas.css?raw'
+import fuelKiegCss from '@/styles/folyadek-fuel-kieg.css?raw'
+import fuelTrendekCss from '@/styles/folyadek-fuel-trendek.css?raw'
+import fuelKamraCss from '@/styles/folyadek-fuel-kamra.css?raw'
+import fuelReceptCss from '@/styles/folyadek-fuel-recept.css?raw'
+import fuelBeallitasCss from '@/styles/folyadek-fuel-beallitas.css?raw'
 
 /**
  * Structural guard for `styles/prototype.css` (mezo-d20.9.1).
@@ -744,6 +754,64 @@ describe.each(EDZES_SHEETS)('the Folyadék Edzés sheet folyadek-edzes-%s.css (%
     const back = local.filter((sel) => css.includes(sel))
     expect(back, `folded pieces are local again: ${back.join(', ')}`).toEqual([])
   })
+})
+
+/**
+ * Folyadék F5 · Fuel (mezo-n4wf5.5): one stylesheet per build area, each speaking its own prefix (bible F2.3), planted by the
+ * foundation step before the parallel builders. An area sheet may still be empty (only its marker comment) while its builder
+ * works — the prefix rule holds from its first rule on. `kozos` is the home of the Fuel-shared pieces (`.fx-`).
+ */
+const FUEL_SHEETS: Array<[string, string, string]> = [
+  ['kozos', '.fx-', fuelKozosCss], ['mai', '.fa-', fuelMaiCss], ['log', '.fg-', fuelLogCss], ['etkezes', '.fe-', fuelEtkezesCss], ['tanulas', '.ft-', fuelTanulasCss],
+  ['kieg', '.fk-', fuelKiegCss], ['trendek', '.fr-', fuelTrendekCss], ['kamra', '.fp-', fuelKamraCss], ['recept', '.fc-', fuelReceptCss], ['beallitas', '.fb-', fuelBeallitasCss],
+]
+
+describe.each(FUEL_SHEETS)('the Folyadék Fuel sheet folyadek-fuel-%s.css (%s) (mezo-n4wf5.5)', (name, prefix, raw) => {
+  const css = stripComments(raw)
+
+  test('opens with its block marker and scans clean', () => {
+    expect(raw.startsWith(`/* ── Folyadék · Fuel · ${name} (mezo-n4wf5.5, slice F5) ──`)).toBe(true)
+    expect(raw).toContain(`\`${prefix}\``)
+    const scan = scanCss(raw)
+    expect(scan.unclosedBraces).toEqual([])
+    expect(scan.strayCloseBraces).toEqual([])
+    expect(scan.unterminatedComment).toBeNull()
+    expect(scan.strayCommentEnds).toEqual([])
+  })
+
+  test('speaks its own prefix once it carries rules', () => {
+    if (css.trim() === '') return // planted, not built yet
+    expect(css).toContain(prefix)
+    // no other Fuel area's prefix is DEFINED here (a rule may still dress `.fo-` / `.fx-` pieces inside its own classes)
+    const foreign = FUEL_SHEETS.map(([, p]) => p).filter((p) => p !== prefix && p !== '.fx-')
+      .filter((p) => new RegExp(`(^|[\\s,}])\\${p}[a-z]`, 'm').test(css.replace(/\{[^{}]*\}/g, '{}')))
+    expect(foreign, `rules of another area's prefix in folyadek-fuel-${name}.css`).toEqual([])
+  })
+
+  test('wears the light kit: no glass, no Titanium accent, no dark-skin halo', () => {
+    expect(css).not.toMatch(/\.glass\b/)
+    expect(css).not.toContain('--tag-fuel')
+    expect(css).not.toMatch(/\.uv-(halo|empty|flat|sheet)\b/)
+  })
+
+  test('motion lives only in a prefers-reduced-motion branch', () => {
+    const still = css.replace(/@media\s*\(prefers-reduced-motion:\s*(?:no-preference|reduce)\)\s*\{(?:[^{}]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\})*[^{}]*\}/g, '')
+    expect(still).not.toMatch(/animation\s*:\s*(?!none)[a-z]/)
+  })
+})
+
+test('the kit and the Fuel-shared sheet own the pieces the Fuel areas share (mezo-n4wf5.5)', () => {
+  const kit = stripComments(kitCss)
+  for (const sel of ['.fo-stat {', '.fo-stats {', '.fo-sw {', '.fo-sw::before {', '.fo-srch {', '.fo-srch > input {']) {
+    expect(kit, `${sel} missing from folyadek-kit.css`).toContain(sel)
+  }
+  const kozos = stripComments(fuelKozosCss)
+  for (const sel of ['.fx-bg {', '.fx-cup {', '.fx-cells {', '.fx-m3 {', '.fx-chip {', 'button.fx-chip::after {', '.fx-gb {', '.fx-tags > em {',
+    '.fx-it > .fx-l2 {', '.fx-ln {', '.fx-x::after {', '.fx-kv {', '.fx-tip {', '.fx-lg {', '.fx-ng {', '.fx-kms {', '.fx-split {']) {
+    expect(kozos, `${sel} missing from folyadek-fuel-kozos.css`).toContain(sel)
+  }
+  // the Fuel macro colours are tokens of the shared sheet, on :root (the log flow and the water sheet open outside Fuel)
+  expect(kozos).toMatch(/:root\s*\{[^}]*--fx-protein:[^}]*--fx-carb:[^}]*--fx-fat:[^}]*--fx-fiber:[^}]*--fx-water:/)
 })
 
 test('the kit owns the pieces the Edzés areas shared (mezo-n4wf5.3)', () => {

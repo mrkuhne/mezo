@@ -1,0 +1,182 @@
+/* ── Folyadék · Fuel · kozos (mezo-n4wf5.5, slice F5) ── the Fuel-shared pieces (`features/fuel/components/folyadek`), class prefix `.fx-`; generic pieces live in folyadek-kit.css (`.fo-`).
+   Ported in values from docs/design_2.0/prototypes/vilagos/fuel.js (`css` + `cssA`). Base rules are the final frame; motion only inside @media (prefers-reduced-motion: no-preference).
+   An area builder never edits this file: a piece missing here is built in the area's own sheet and reported. */
+
+/* the stable category colours of Fuel (macros, water, the „high" glycemic band). On :root: a Fuel piece also renders outside
+   the Fuel domain (the log flow and the water sheet open from Nap and from the quick input). */
+:root { --fx-protein: #D9605A; --fx-carb: #D99A2B; --fx-fat: #7C8F2A; --fx-fiber: #5FA05A; --fx-water: #3F8FD6; --fx-lilac: #8A6FD1; }
+
+/* ── the bowl (`DayBowl`, `PourBowl`) and the Mai hero's graphic row (`BowlGauge`) ── fuel.js `.fm-g`, `.fm-n`, `.fu-bowl` */
+.fx-bowl-svg { display: block; height: auto; overflow: visible; filter: drop-shadow(0 14px 16px color-mix(in srgb, var(--liq2) 35%, transparent)); }
+.fx-bg { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 6px; margin: 16px 0; }
+.fx-bg.plain { grid-template-columns: 1fr; justify-items: center; }
+.fx-bg-n > b { display: block; font-family: var(--ff-display); font-size: 30px; font-weight: 800; letter-spacing: -1.2px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.fx-bg-n > small { display: block; margin-top: 5px; font-size: 11px; font-weight: 650; letter-spacing: .4px; text-transform: uppercase; color: var(--fo-sub); }
+.fx-bg-n.r { text-align: right; }
+.fx-bg-bowl { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; border: 0; background: none; color: inherit; font-family: var(--ff-body); }
+button.fx-bg-bowl { cursor: pointer; }
+.fx-bg-bowl > small { font-size: 10.5px; font-weight: 650; color: var(--fo-sub); white-space: nowrap; }
+.fx-pk { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; font-size: 11.5px; color: var(--fo-sub); }
+.fx-pk > span { display: inline-flex; align-items: center; gap: 5px; }
+.fx-pk > span > i { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.fx-pk > span > i.a { background: color-mix(in srgb, var(--liq2) 42%, #fff); box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fx-pk > span > i.b { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+
+/* ── a window's cup (`SlotCup`, `PlainCup`) ── fuel.js `.fu-cup` */
+.fx-cup { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.fx-cup > .fo-fill { filter: drop-shadow(0 6px 6px color-mix(in srgb, var(--liq2) 30%, transparent)); }
+.fx-cup > span > b { display: block; font-family: var(--ff-display); font-size: 15px; font-weight: 800; letter-spacing: -.4px; line-height: 1.1; color: var(--fo-ink); }
+.fx-cup > span > small { display: block; font-size: 10.5px; color: var(--fo-sub); white-space: nowrap; }
+.fx-cup.over > span > small { font-weight: 700; color: var(--fo-ink); }
+
+/* ── the pot, the glass, the clock face ── */
+.fx-pot { display: block; }
+.fx-glass { display: block; flex: 0 0 auto; }
+.fx-dial { display: block; flex: 0 0 auto; border-radius: 50%; box-shadow: 0 8px 12px -8px rgba(10, 42, 60, .45); }
+
+/* ── macros ── `MacroVials` (`.fu-mac` on the kit vials), `MealCells` (`.fm-cells`), `M3` (`.fu-m3`), `Nutri` / `MacroTriple` (`.fu-nut`, `.fu-lnm`) */
+.fx-mv { gap: 8px; }
+.fx-mv > .fo-vial > b { white-space: nowrap; }
+.fx-mv > .fo-vial > small { font-size: 11px; }
+.fx-mv > .fo-vial > .fo-tube { max-width: 74px; }
+.fx-cells { display: flex; gap: 10px; }
+.fx-m3 { display: flex; gap: 8px; flex: 1 1 100%; min-width: 0; }
+.fx-m3 > span { flex: 1; min-width: 0; }
+.fx-m3 > span > small { display: block; margin-top: 3px; font-size: 10.5px; color: var(--fo-sub); white-space: nowrap; }
+.fx-m3 > span > small > b { display: inline; color: var(--fo-ink); font-weight: 700; }
+.fx-lnm, .fx-nut { display: flex; gap: 6px; }
+.fx-lnm > span, .fx-nut > span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 12px; background: color-mix(in srgb, var(--c, var(--dom)) 8%, #fff); }
+.fx-lnm > span > b, .fx-nut > span > b { font-size: 13px; font-weight: 700; white-space: nowrap; color: var(--fo-ink); }
+.fx-lnm > span > small, .fx-nut > span > small { font-size: 10.5px; color: var(--fo-sub); white-space: nowrap; }
+.fx-nut { margin-top: 6px; }
+.fx-nut > span { background: var(--fo-page); }
+
+/* ── chips ── `GlyChip` / `ScoreChip` (`.fm-chip`), `GlyMini` (`.fu-gmini`), `GlyBand` (`.fu-gb`) */
+.fx-chip { position: relative; display: inline-flex; align-items: center; gap: 6px; padding: 7px 11px; border: 0; border-radius: 999px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 650; white-space: nowrap;
+  color: var(--fo-ok); background: color-mix(in srgb, var(--fo-ok) 10%, #fff); }
+button.fx-chip { cursor: pointer; }
+/* the 44 px touch area of a chip that is a button (bible F2.5): the drawn pill is ~30 tall */
+button.fx-chip::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fx-chip.mid { color: var(--fo-warn); background: color-mix(in srgb, var(--fo-warn) 12%, #fff); }
+.fx-chip.high { color: var(--fx-lilac); background: color-mix(in srgb, var(--fx-lilac) 11%, #fff); }
+.fx-chip > .fx-gmini { width: 26px; height: 12px; flex: 0 0 auto; }
+.fx-chip.sc { padding: 3px 11px 3px 3px; color: var(--fo-ink); background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); font-family: var(--ff-display); font-size: 14px; font-weight: 800; }
+.fx-chip.sc.pend { color: var(--fo-sub); font-family: var(--ff-body); font-size: 12.5px; font-weight: 600; }
+.fx-chip.sc.big { padding: 4px 14px 4px 4px; font-size: 17px; }
+.fx-chip.sc.big.pend { font-size: 13.5px; }
+.fx-chip:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+.fx-gmini { display: block; }
+.fx-gb { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin: 4px 0 12px; padding: 4px; border-radius: 999px; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fx-gb > span { text-align: center; padding: 7px 2px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--fo-faint); }
+.fx-gb > span.on { color: #fff; font-weight: 700; }
+.fx-gb > span.on.low { background: var(--fo-ok); }
+.fx-gb > span.on.mid { background: var(--fo-warn); }
+.fx-gb > span.on.high { background: var(--fx-lilac); }
+
+/* ── tags under a line's name (`LineTags`) ── fuel.js `.fu-tags` */
+.fx-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.fx-tags > em { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px; font-style: normal; font-size: 11px; font-weight: 650; color: var(--fo-sub); background: color-mix(in srgb, var(--dom) 7%, #fff); }
+.fx-tags > em > i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.fx-tags > em.w { color: var(--fo-warn); background: color-mix(in srgb, var(--fo-warn) 12%, #fff); }
+
+/* ── the two-storey row (`ItemRow`) ── fuel.js `.fx-it` + `.fx-l2`: the kit row, wrapped, with a full-width second line */
+.fo-row.fx-it { flex-wrap: wrap; }
+.fx-it > .fx-l2 { flex: 0 0 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; padding-left: 50px; margin-top: 2px; }
+.fx-it > .fx-l2.flush { padding-left: 0; }
+.fx-it > .fx-l2:empty { display: none; }
+.fx-it > .fx-l2 > .fo-level { flex: 1; min-width: 0; }
+
+/* ── an editable line (`EditLine`) ── fuel.js `.fu-ln`, `.fu-lnt`, `.fu-lns`, `.fu-lnk`, `.fu-x` */
+.fx-ln { padding: 14px 0; border-top: 1px solid var(--fo-hair); }
+.fx-ln:first-child { border-top: 0; }
+.fx-lnt { display: flex; align-items: flex-start; gap: 10px; }
+.fx-lnt > .g { flex: 1; min-width: 0; }
+.fx-lnt > .g > strong { display: block; font-size: 15px; font-weight: 650; line-height: 1.3; color: var(--fo-ink); }
+.fx-x { position: relative; flex: 0 0 auto; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; display: grid; place-items: center; background: var(--fo-page); cursor: pointer; font-size: 18px; line-height: 1; color: var(--fo-sub); }
+.fx-x::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+.fx-lns { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0 8px; }
+.fx-amt { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.fx-amt > small { font-size: 12px; color: var(--fo-sub); }
+.fx-amt > .fo-stp > input { width: 64px; }
+.fx-lnk > b { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--fo-ink); }
+.fx-lnk > small { margin-left: 3px; font-size: 11.5px; color: var(--fo-sub); }
+
+/* ── label–value tiles (`Kv`), the unboxed hint (`Tip`), the chart key (`Lgd`) ── fuel.js `.fu-kv`, `.fu-tip`, `.fu-lg` */
+.fx-kv { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+.fx-kv > div { min-width: 0; padding: 10px 12px; border-radius: 18px; background: color-mix(in srgb, var(--dom) 6%, #fff); }
+.fx-kv > div > small { display: block; font-size: 11px; color: var(--fo-sub); line-height: 1.25; }
+.fx-kv > div > b { display: block; margin-top: 2px; font-family: var(--ff-display); font-size: 15px; font-weight: 700; color: var(--fo-ink); }
+.fx-tip { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
+.fx-tip > span:last-child { flex: 1; min-width: 0; }
+.fx-tip > span > b { display: block; font-size: 14px; font-weight: 650; color: var(--fo-ink); }
+.fx-tip > span > small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--fo-sub); }
+.fx-lg { display: flex; flex-wrap: wrap; gap: 5px 12px; margin: 8px 0 12px; font-size: 11.5px; color: var(--fo-sub); }
+.fx-lg > span { display: inline-flex; align-items: center; gap: 5px; }
+.fx-lg > span > i { width: 12px; height: 10px; border-radius: 3px; flex: 0 0 auto; }
+.fx-lg > span > i.liq { background: linear-gradient(180deg, var(--liq1), var(--liq2)); }
+.fx-lg > span > i.over, .fx-lg > span > i.hatch { background: color-mix(in srgb, var(--fo-warn) 70%, #fff); }
+.fx-lg > span > i.line, .fx-lg > span > i.dash { width: 14px; height: 0; border-radius: 0; border-top: 2px dashed color-mix(in srgb, var(--fo-ink) 60%, transparent); }
+.fx-lg > span > i.gap { background: none; outline: 1.5px dashed var(--fo-faint); outline-offset: -1.5px; }
+.fx-lg > span > i.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--fo-faint); }
+.fx-lg > span > i.band { background: color-mix(in srgb, var(--dom) 18%, #fff); }
+.fx-lg > span > i.ring { width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px var(--dom); }
+.fx-lg > span > i.tr { height: 3px; background: var(--dom); }
+.fx-lg > span > i.water { background: color-mix(in srgb, var(--fx-water) 40%, #fff); }
+
+/* ── graphic + big numeral (`NumG`) ── fuel.js `.fu-ng` */
+.fx-ng { display: flex; align-items: center; gap: 14px; margin: 12px 0 14px; }
+.fx-ng > .gg { flex: 0 0 auto; }
+.fx-ng > .nn { flex: 1; min-width: 0; }
+.fx-ng-n { display: block; font-family: var(--ff-display); font-size: 36px; font-weight: 800; letter-spacing: -1.6px; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--fo-ink); }
+.fx-ng-n > small { display: block; margin: 5px 0 0; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; line-height: 1.3; white-space: normal; color: var(--fo-sub); }
+.fx-ng > .nn > p { margin-top: 6px; font-size: 12.5px; line-height: 1.4; color: var(--fo-sub); }
+.fx-ng > .nn > p b { color: var(--fo-ink); }
+.fx-ng > .nn > .fx-cells, .fx-ng > .nn > .fx-m3 { margin-top: 10px; }
+
+/* ── the pill strip under the tabs (`Strip`) ── fuel.js `.fu-kms` */
+.fx-kms { display: flex; align-items: center; gap: 10px; width: auto; min-height: 46px; margin: 12px 14px 0; padding: 8px 14px 8px 8px; border: 0; border-radius: 999px; text-align: left;
+  font-family: var(--ff-body); font-size: 13px; line-height: 1.3; color: var(--fo-sub); background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09), 0 10px 16px -14px var(--liq2); }
+button.fx-kms { cursor: pointer; }
+.fx-kms > span:not(.fo-bub) { flex: 1; min-width: 0; }
+.fx-kms > span b { color: var(--fo-ink); }
+.fx-kms > svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--fo-faint); }
+.fx-kms.warn { background: color-mix(in srgb, var(--fo-warn) 9%, #fff); }
+div.fx-kms { border-radius: 24px; }
+.fx-kms:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+/* ── one vessel, several liquids (`SplitBar`) ── fuel.js `.fu-split`, `.fu-leg` */
+.fx-split { display: flex; gap: 2px; padding: 2px; border-radius: 999px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 42, 60, .09); }
+.fx-split > i { min-width: 5px; border-radius: 5px; background: linear-gradient(180deg, color-mix(in srgb, var(--c) 62%, #fff), var(--c)); }
+.fx-split > i:first-child { border-radius: 999px 5px 5px 999px; }
+.fx-split > i:last-child { border-radius: 5px 999px 999px 5px; }
+.fx-split > i:only-child { border-radius: 999px; }
+.fx-leg { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 12px; color: var(--fo-sub); }
+.fx-leg > span { display: inline-flex; align-items: center; gap: 6px; }
+.fx-leg > span > i { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; background: var(--c); }
+.fx-leg > span > b { color: var(--fo-ink); font-weight: 700; }
+
+@media (max-width: 360px) {
+  .fx-bg { gap: 4px; }
+  .fx-bg-bowl > .fx-bowl-svg { width: 100px !important; }
+  .fx-bg-n > b { font-size: 22px; letter-spacing: -.8px; }
+  .fx-bg-n > small { font-size: 9.5px; }
+  .fx-mv { gap: 5px; }
+  .fx-mv > .fo-vial > b { font-size: 16px; }
+  .fx-mv > .fo-vial > small { font-size: 10px; }
+  .fx-ng { gap: 10px; }
+  .fx-ng > .gg > .fx-pour { width: 118px !important; }
+  .fx-ng > .gg > .fx-pot { width: 84px !important; }
+  .fx-ng-n { font-size: 30px; }
+  .fx-glass > .fo-fill { width: 92px !important; }
+  .fx-lnm > span, .fx-nut > span { padding: 5px; }
+  .fx-nut > span > small { font-size: 9.5px; }
+  .fx-amt > .fo-stp > input { width: 54px; }
+  .fx-dial { width: 34px !important; height: 34px !important; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* the bowl's own surface drifts like every kit liquid */
+  .fx-wv { animation: fx-wv 6s linear infinite; }
+}
+/* two wave periods (2 × 25 units of the bowl's viewBox): the loop is seamless */
+@keyframes fx-wv { to { transform: translateX(50px); } }

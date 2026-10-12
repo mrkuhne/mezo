@@ -1,6 +1,7 @@
 import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import { blockEnergyKind, DEFAULT_GYM_MIN, DEFAULT_RUN_MIN, netKcal, restKcalPerHour } from '@/data/train/activityEnergy'
 import type { EnergyBlock, EnergyBreakdown } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import { m } from '@/shared/i18n'
 
 const KG_KCAL = 7700 // kcal per kg body fat — fallback rate ↔ daily-deficit relationship
 
@@ -42,6 +43,7 @@ export function buildEnergyBreakdown(input: {
   const { energy, blocks, weightKg, tdeeBootstrap: tb, segment, activityLabel, goalLabel } = input
   if (!tb) return null
   const restPerHour = restKcalPerHour(tb.bmr, weightKg)
+  const words = m().fuelLogika.energyBreakdown
 
   const deficit = energy.balance !== 0
     ? {
@@ -67,8 +69,8 @@ export function buildEnergyBreakdown(input: {
       pending: energy.pending ?? 0,
       // The summands ARE the served parts, so the sheet's `+ … =` row closes on the total.
       parts: [
-        { key: 'planned', label: 'Tervezett edzés · logolva', kcal: energy.planned },
-        ...(energy.extra > 0 ? [{ key: 'extra' as const, label: 'Terven kívüli mozgás', kcal: energy.extra }] : []),
+        { key: 'planned', label: words.plannedLogged, kcal: energy.planned },
+        ...(energy.extra > 0 ? [{ key: 'extra' as const, label: words.unplanned, kcal: energy.extra }] : []),
       ],
       // Per-session previews — informational, not summands. `done` (mezo-tb3s2) marks a block that
       // was actually logged vs. still-scheduled and not yet logged, so the sheet can preview the

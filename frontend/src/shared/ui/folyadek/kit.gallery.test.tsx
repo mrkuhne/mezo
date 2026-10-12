@@ -120,6 +120,9 @@ it('renders every export once with realistic props and logs no console error', (
           <K.Area values={[52, 61, 75, 75, 84, 38]} min={20} max={92} marks={[{ i: 2, label: 'most · 75', kind: 'now' }, { i: 4, label: 'csúcs · 84', kind: 'pr' }]} />
         </K.Card>
         <K.InfoSheet eyebrow="Izomcsoportok" title="Mit mutat a sáv?" copy="A színes rész az elvégzett szett, a halvány a hét teljes kérése." onClose={() => {}} />
+        <K.StatGrid><K.Stat label="Alapanyag-arány" value="88" unit="%" pct={88} icon="t-processing" /><K.Stat label="Energiasűrűség" value="—" note="nincs adat" /></K.StatGrid>
+        <K.Row as="div" title="Tanulás" onClick={() => {}} right={<K.Switch on onChange={() => {}} label="Tanulás" />} />
+        <K.SearchField value="túró" onChange={() => {}} placeholder="Keress a kamrában" />
         <K.Hero verdict="Húzódzkodás"><K.DotsBtn aria-label="Húzódzkodás · további műveletek" /><K.RangeBand lo={60} hi={70} unit="perc" /></K.Hero>
         <K.Card gold>
           <K.SheetGraphic note="2 / 4 szett kész"><K.Caps n={4} done={2} size="big" /></K.SheetGraphic>
@@ -139,7 +142,8 @@ it('renders every export once with realistic props and logs no console error', (
     'Page', 'Foot', 'TwoBtn', 'Btn', 'Lk', 'Acts', 'Pill', 'Pills', 'Seg', 'St', 'Chips', 'Facts', 'Note', 'Txt', 'Why', 'Lab', 'Empty', 'ErrorRow', 'Head',
     'Msg', 'Step', 'Jar', 'DropChain', 'Scale', 'Ends', 'Dots', 'Tick', 'Mark', 'FoSheetHead', 'FrameProvider', 'Chev', 'Input', 'TextArea', 'Select', 'Big',
     'Tubes', 'Caps', 'LevelMarks', 'Split', 'Pour', 'Legend', 'DropsMeter', 'EmptyTank', 'Skel', 'Box', 'Tags', 'Stepper', 'Slider', 'Pair', 'SheetActs', 'InfoSheet',
-    'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass', 'RowEnd', 'TitleRow']
+    'DotsBtn', 'RangeBand', 'SheetGraphic', 'OptionVessels', 'FootCol', 'CeremonyRoot', 'CupStage', 'CeremonyReveal', 'CeremonyCount', 'useCeremonyPass', 'RowEnd', 'TitleRow',
+    'Stat', 'StatGrid', 'Switch', 'SearchField']
   const known = [...rendered, 'Wave', 'memberLabel', 'memberMeta', 'FrameBack', 'HistoryBackButton', 'useFrameFallback', 'useFrame', 'useFrameTitle', 'useFrameBack', 'useTitleBarMounted', 'useHasTitleBar', 'starState', 'ratioStars', 'CEREMONY_MS']
   expect(Object.keys(K).filter((k) => !known.includes(k))).toEqual([])
   expect(container.querySelector('[data-testid="pg"]')).toHaveClass('fo-page', 'fo-dusk', 'has-foot', 'nonav')

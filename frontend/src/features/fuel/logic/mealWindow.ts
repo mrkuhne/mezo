@@ -10,6 +10,7 @@
 // mindig borostyán, soha piros; a szöveg „segít / általában", sosem „kell".
 // ============================================================
 import type { WindowReason } from '@/data/types'
+import { getLang, m } from '@/shared/i18n'
 import { WINDOW_OFFSETS, WINDOW_MIN_WIDTH_MIN, BEFORE_BED_MIN, HIT_NEAR_MIN, DEFAULT_BLOCK_MIN, toMin, toHHmm } from '@/data/fuel/fuelConfig'
 
 export type WindowRule =
@@ -97,18 +98,21 @@ export function hitOf(from: string, to: string, at: string): Hit {
 }
 
 export function durHu(min: number): string {
-  const m = Math.abs(Math.round(min))
-  const h = Math.floor(m / 60), r = m % 60
-  if (h && r) return `${h} ó ${r} p`
-  return h ? `${h} ó` : `${r} p`
+  const total = Math.abs(Math.round(min))
+  const h = Math.floor(total / 60), r = total % 60
+  const M = m().fuelLogika.mealWindow
+  if (h && r) return M.durHM(h, r)
+  return h ? M.durH(h) : M.durM(r)
 }
 
 export function hitLabel(h: Hit): string {
-  if (h.kind === 'in') return 'Az ablakban'
-  return h.offsetMin > 0 ? `+${durHu(h.offsetMin)} később` : `−${durHu(h.offsetMin)} korábban`
+  const M = m().fuelLogika.mealWindow
+  if (h.kind === 'in') return M.inWindow
+  return h.offsetMin > 0 ? M.later(durHu(h.offsetMin)) : M.earlier(durHu(h.offsetMin))
 }
 
-export const az = (label: string) => (/^[AÁEÉIÍOÓÖŐUÚÜŰ]/i.test(label) ? 'az ' : 'a ') + label
+/** The Hungarian definite article before a label („az ebéd” / „a vacsora”). English has no such agreement: the bare label. */
+export const az = (label: string) => (getLang() !== 'hu' ? label : (/^[AÁEÉIÍOÓÖŐUÚÜŰ]/i.test(label) ? 'az ' : 'a ') + label)
 export const Az = (label: string) => { const t = az(label); return t[0].toUpperCase() + t.slice(1) }
 
 export interface ReasonCtx {
@@ -129,22 +133,21 @@ export function trainingSpan(blocks: { time: string; durationMin: number | null;
 }
 
 export function windowReasonCopy(code: WindowReason, c: ReasonCtx): ReasonCopy {
-  const ts = c.trainingStart ? ` (${c.trainingStart})` : ''
-  const te = c.trainingEnd ? ` (${c.trainingEnd})` : ''
+  const R = m().fuelLogika.mealWindow.reason
   switch (code) {
-    case 'after-wake': return { icon: 't-sun', title: `Ébredés (${c.wake}) után nem sokkal`, body: 'Az éjszakai böjt után itt töltöd fel a raktárakat.' }
-    case 'protein-start': return { icon: 't-protein', title: 'A nap első fehérjeadagja', body: 'Ez indítja a napi fehérje-sort, nagyjából 3–4 órás lépésközzel.' }
-    case 'protein-spacing': return { icon: 't-protein', title: 'Nagyjából 3–4 órára az előzőtől', body: 'A fehérje egyenletes elosztása segíti az izomépítést, és kordában tartja az éhséget.' }
-    case 'bridge': return { icon: 't-clock', title: 'Két fő étkezés között', body: 'Áthidalja a hosszabb szünetet, így nem esel be éhesen a következő étkezésbe.' }
-    case 'pre-training-main': return { icon: 't-dumbbell', title: `Néhány órával az edzés${ts} előtt`, body: 'Itt jön a nap fő szénhidrátos étkezése: tele raktárral indulsz, és addigra meg is emészted.' }
-    case 'pre-training-snack': return { icon: 't-dumbbell', title: `45–90 perccel az edzés${ts} előtt`, body: 'Könnyű, gyorsan hasznosuló szénhidrát: ne üres gyomorral, de ne is tele hassal edzz.' }
-    case 'post-training': return { icon: 't-dumbbell', title: `Az edzés${te} után fél–másfél órával`, body: 'Fehérje és szénhidrát segíti a regenerációt és a raktárak visszatöltését.' }
-    case 'before-bed': return { icon: 't-moon', title: `Lefekvés (${c.bed}) előtt legalább 2,5 órával`, body: 'Késő este ugyanaz az étel általában nagyobb vércukor-emelkedést okoz, és ronthatja az alvást.' }
-    case 'template-fixed': return { icon: 't-clock', title: 'A saját napi sablonod szerint', body: 'Ezt az időpontot a napi sablonodban rögzítetted.' }
+    case 'after-wake': return { icon: 't-sun', title: R.afterWake.title(c.wake), body: R.afterWake.body }
+    case 'protein-start': return { icon: 't-protein', title: R.proteinStart.title, body: R.proteinStart.body }
+    case 'protein-spacing': return { icon: 't-protein', title: R.proteinSpacing.title, body: R.proteinSpacing.body }
+    case 'bridge': return { icon: 't-clock', title: R.bridge.title, body: R.bridge.body }
+    case 'pre-training-main': return { icon: 't-dumbbell', title: R.preTrainingMain.title(c.trainingStart), body: R.preTrainingMain.body }
+    case 'pre-training-snack': return { icon: 't-dumbbell', title: R.preTrainingSnack.title(c.trainingStart), body: R.preTrainingSnack.body }
+    case 'post-training': return { icon: 't-dumbbell', title: R.postTraining.title(c.trainingEnd), body: R.postTraining.body }
+    case 'before-bed': return { icon: 't-moon', title: R.beforeBed.title(c.bed), body: R.beforeBed.body }
+    case 'template-fixed': return { icon: 't-clock', title: R.templateFixed.title, body: R.templateFixed.body }
     case 'shifted': return {
       icon: 't-clock',
-      title: c.shiftedAfter ? `Eltolva: ${az(c.shiftedAfter.label.toLowerCase())} később volt (${c.shiftedAfter.at})` : 'Eltolva az előző ablak után',
-      body: 'Így nagyjából másfél óra jut a két étkezés közé — a nap többi ablaka ehhez igazodik.',
+      title: c.shiftedAfter ? R.shifted.titleAfter(az(c.shiftedAfter.label.toLowerCase()), c.shiftedAfter.at) : R.shifted.title,
+      body: R.shifted.body,
     }
   }
 }

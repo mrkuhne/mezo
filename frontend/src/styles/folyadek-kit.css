@@ -821,3 +821,48 @@ button.fo-row:disabled, .fo-row-main:disabled { opacity: .5; cursor: default; }
    it moves from the frame's bottom padding into the scroller (22 px in all, as before): nothing moves on screen. */
 .sheet.fo-sheet { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
 .sheet.fo-sheet > .sheet-scroll { padding-bottom: 14px; }
+
+/* ── Folyadék F5 (mezo-n4wf5.5) — pieces the Fuel prototype repeats on several screens (bible F2.4): the number tile that is
+   a vessel (`Stat`, kit.js `stat` + foly.js `.fh-stat`), the tile grid (`StatGrid`, `.fh-grid`), the on / off switch (`Switch`,
+   fuel.js `.fx-sw`) and the search field (`SearchField`, fuel.js `.fx-srch`). Every rule addresses its own children (F3.9). ── */
+.fo-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.fo-stats.three { grid-template-columns: repeat(3, 1fr); }
+.fo-stat { --c: var(--dom); position: relative; isolation: isolate; overflow: hidden; display: block; width: 100%; min-width: 0; min-height: 118px; padding: 14px; border: 0; border-radius: 26px; text-align: left;
+  font-family: var(--ff-body); color: var(--fo-ink); background: linear-gradient(180deg, #fff, #F4FAFC); box-shadow: inset 0 0 0 2px rgba(10, 42, 60, .06), 0 14px 22px -18px var(--c); }
+button.fo-stat { cursor: pointer; }
+.fo-stat.lv::before { content: ''; position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; height: var(--p, 0%); background: linear-gradient(180deg, color-mix(in srgb, var(--c) 36%, #fff), color-mix(in srgb, var(--c) 58%, #fff)); }
+.fo-stat.lv::after { content: ''; position: absolute; z-index: -1; left: 0; right: 0; bottom: calc(var(--p, 0%) - 1px); height: 9px; background: color-mix(in srgb, var(--c) 36%, #fff);
+  -webkit-mask: var(--fo-wave-mask) repeat-x 0 0 / 60px 9px; mask: var(--fo-wave-mask) repeat-x 0 0 / 60px 9px; }
+.fo-stat > .fo-stat-ic { position: absolute; right: 8px; top: 8px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 30% 24%, #fff 0 16%, rgba(255, 255, 255, .75) 60%, rgba(255, 255, 255, .35)); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .95), 0 8px 12px -8px rgba(10, 42, 60, .45); }
+.fo-stat > .fo-stat-ic > .t-ico { --ic: var(--c); --ic2: color-mix(in srgb, var(--c) 45%, #fff); }
+.fo-stat > .fo-stat-k { display: block; padding-right: 42px; font-size: 12px; font-weight: 650; line-height: 1.25; color: var(--fo-ink); }
+.fo-stat > .fo-stat-n { display: block; margin-top: 10px; font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.fo-stat > .fo-stat-n > small { display: block; margin-top: 2px; font-family: var(--ff-body); font-size: 12.5px; font-weight: 500; letter-spacing: 0; color: var(--fo-sub); }
+.fo-stat > .fo-stat-s { display: block; margin-top: 8px; font-size: 12px; font-weight: 600; color: var(--fo-ink); opacity: .8; }
+.fo-stat:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+.fo-sw { position: relative; flex: 0 0 auto; width: 46px; height: 28px; padding: 0; border: 0; border-radius: 14px; background: rgba(15, 30, 51, .14); cursor: pointer; }
+.fo-sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(15, 30, 51, .3); }
+/* the 44 px touch area (bible F2.5): the track is 28 tall */
+.fo-sw::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+.fo-sw.on { background: var(--dom); }
+.fo-sw.on::after { left: 21px; }
+.fo-sw:disabled { opacity: .45; cursor: default; }
+.fo-sw:focus-visible { outline: 2px solid var(--fo-ink); outline-offset: 2px; }
+
+.fo-srch { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 6px 8px 6px 9px; border-radius: 13px; background: #fff; box-shadow: inset 0 0 0 1px var(--fo-hair); }
+.fo-card:not(.fo-hero) .fo-srch, .fo-sheet .fo-srch { background: var(--fo-page); box-shadow: none; }
+.fo-srch > input { flex: 1; min-width: 0; height: 34px; padding: 0; border: 0; background: none; outline: none; font-family: var(--ff-body); font-size: 16px; color: var(--fo-ink); -webkit-appearance: none; appearance: none; }
+.fo-srch > input::placeholder { color: var(--fo-faint); }
+.fo-srch > input::-webkit-search-cancel-button { display: none; }
+.fo-srch:focus-within { box-shadow: inset 0 0 0 2px var(--dom); }
+.fo-srch > button { position: relative; flex: 0 0 auto; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; font-size: 18px; line-height: 1; color: var(--fo-sub); }
+.fo-srch > button::after { content: ''; position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .fo-stat.lv::before { animation: fo-statlv 1.2s cubic-bezier(.2, .8, .2, 1) both .15s; }
+  .fo-sw { transition: background .2s; }
+  .fo-sw::after { transition: left .2s; }
+}
+@keyframes fo-statlv { from { height: 0; } }

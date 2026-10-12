@@ -37,3 +37,6 @@ export type { PassProps } from './util'
 export { RangeBand } from './Range'
 export { OptionVessels, type OptionVessel } from './Options'
 export { useCeremonyPass, CeremonyRoot, CeremonyReveal, CeremonyCount, CupStage, starState, ratioStars, CEREMONY_MS, type CeremonyPass } from './Ceremony'
+// Folyadék F5 (mezo-n4wf5.5): the number tile that is a vessel, the on / off switch, the search field
+export { Stat, StatGrid } from './Stat'
+export { Switch, SearchField } from './Switch'

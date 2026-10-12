@@ -26,11 +26,13 @@
 // kér `role`-t). Ha az edzés-közeli hang kell, az külön szelet.
 // ============================================================
 
+import { m } from '@/shared/i18n'
+
 export type GlycemicLevel = 'low' | 'mid' | 'high'
 
 export interface GlycemicBand {
   level: GlycemicLevel
-  /** A sáv magyar szava — ez kerül a kártyára szám helyett. */
+  /** A sáv szava (az app nyelvén) — ez kerül a kártyára szám helyett. */
   label: string
   /** Igaz, ha a cukor nem volt ismert, és a finomított részt feltettük. */
   sugarEstimated: boolean
@@ -62,29 +64,8 @@ export interface GlycemicInput {
 /** A prototípus feltevése: cukor nélkül a szénhidrát 30%-át tekintjük finomítottnak. */
 const ASSUMED_SUGAR_SHARE = 0.3
 
-const LABELS: Record<GlycemicLevel, string> = {
-  low: 'alacsony',
-  mid: 'közepes',
-  high: 'magas',
-}
-
-const EXPECT: Record<GlycemicLevel, GlycemicBand['expect']> = {
-  low: {
-    energy: 'Egyenletes energia 3-4 órára',
-    back: 'Kb. 2 óra múlva ér vissza az alapszintre, finoman',
-    hunger: 'Az éhség későn, fokozatosan tér vissza',
-  },
-  mid: {
-    energy: 'Stabil energia 2-3 órára',
-    back: 'Kb. 2 óra múlva újra alapszinten',
-    hunger: 'Az éhség 2-3 óra múlva jelentkezik',
-  },
-  high: {
-    energy: 'Gyors löket, majd visszaesés',
-    back: 'Kb. 1,5 óra múlva zuhan — az alapszint alá is eshet',
-    hunger: 'A visszaesés után korán, akár 1-1,5 óra múlva újra megéhezhetsz',
-  },
-}
+// A SZÖVEGEK a katalógusban élnek (`fuelLogika.glycemic`, a sáv szava: `fuelKozos.gly.level`), és
+// HÍVÁSKOR olvassuk ki őket — egy modul-konstans nyelvváltáskor beragadna.
 
 /** A sáv belső mértéke — SOHA nem kerül a felületre (lásd fent, 1. pont). */
 function indexOf(carbs: number, sugar: number, fiber: number, protein: number, fat: number): number {
@@ -104,30 +85,27 @@ interface Plate { carbs: number; sugar: number; fiber: number; protein: number; 
  */
 function candidates(plate: Plate, sugarEstimated: boolean) {
   const starch = plate.carbs - plate.sugar
+  const S = m().fuelLogika.glycemic.step
   const list: { title: string; body: string; apply: (p: Plate) => Plate }[] = []
   if (!sugarEstimated && plate.sugar >= 10) {
     list.push({
-      title: 'Feleannyi édes rész',
-      body: 'Az édes összetevőből (méz, lekvár, gyümölcslé, cukros öntet) elég a fele — ez a leggyorsabban felszívódó rész.',
+      ...S.halfSweet,
       apply: p => ({ ...p, carbs: p.carbs - p.sugar / 2, sugar: p.sugar / 2 }),
     })
   }
   if (starch >= 40) {
     list.push({
-      title: 'Negyeddel kisebb köret',
-      body: 'A kenyérből, tésztából, rizsből vagy krumpliból negyeddel kevesebb — a helyére jöhet zöldség.',
+      ...S.smallerSide,
       apply: p => ({ ...p, carbs: p.carbs - (p.carbs - p.sugar) * 0.25 }),
     })
   }
   list.push({
-    title: 'Rost mellé',
-    body: 'Egy marék zöldség, saláta vagy egy evőkanál chiamag a tányér mellé — a rost fékezi a felszívódást.',
+    ...S.addFiber,
     apply: p => ({ ...p, fiber: p.fiber + 5 }),
   })
   if (plate.protein < 30) {
     list.push({
-      title: 'Fehérje mellé',
-      body: '150 g túró, görög joghurt vagy két tojás mellé — a fehérje lassítja a csúcsot.',
+      ...S.addProtein,
       apply: p => ({ ...p, protein: p.protein + 18 }),
     })
   }
@@ -173,47 +151,28 @@ export function glycemicBand({ c, sugarG, fiberG, p, f }: GlycemicInput): Glycem
   // A „csupasz" ág: nincs mellette se rost, se érdemi fehérje, ami lassítson.
   const bare = fiber < 4 && protein < 15
 
-  const tip = level === 'low'
-    ? {
-        title: 'Szép egyensúly',
-        body: 'A fehérje és a rost lassan engedi fel a vércukrot — ez a tányér magától simít.',
-      }
+  const G = m().fuelLogika.glycemic
+  const K = m().fuelKozos
+  const pick = (t: { title: string; body: string }) => ({ title: t.title, body: t.body })
+  const tip = pick(level === 'low'
+    ? G.tip.balance
     : level === 'high'
-      ? (sugary
-          ? {
-              title: 'Öltöztesd fel a szénhidrátot',
-              body: 'Az édes rész magában gyorsan felszív. Egy kis fehérje vagy zsír mellé — '
-                + 'joghurt, dió — sokat lapít a csúcson.',
-            }
-          : {
-              title: 'Egy séta most sokat ér',
-              body: '10-15 perc mozgás evés után az izmok azonnal elhasználják a glükóz egy '
-                + 'részét — a csúcs láthatóan kisebb lesz.',
-            })
-      : (bare
-          ? {
-              title: 'Rost előre',
-              body: 'Pár falat zöldség vagy saláta a szénhidrát előtt lassítja a felszívódást — '
-                + 'a domb így laposabb.',
-            }
-          : {
-              title: 'Jó irány, egy aprósággal',
-              body: 'Ha teheted, a zöldséget és a fehérjét edd előre, a szénhidrátot utoljára — '
-                + 'a sorrend önmagában simít a görbén.',
-            })
+      ? (sugary ? G.tip.dress : G.tip.walk)
+      : (bare ? G.tip.fiberFirst : G.tip.order))
+  const expect = G.expect[level]
 
   return {
     level,
-    label: LABELS[level],
+    label: K.gly.level[level],
     sugarEstimated,
     tip,
-    expect: EXPECT[level],
+    expect: { energy: expect.energy, back: expect.back, hunger: expect.hunger },
     improve: improveFor({ carbs, sugar, fiber, protein, fat }, sugarEstimated),
     facts: [
-      { label: 'szénhidrát', value: `${Math.round(carbs)} g` },
-      { label: 'ebből cukor', value: sugarEstimated ? 'becsült' : `${Math.round(sugar)} g` },
-      { label: 'rost', value: `${Math.round(fiber)} g` },
-      { label: 'fehérje', value: `${Math.round(protein)} g` },
+      { label: K.macroLower.carbs, value: `${Math.round(carbs)} g` },
+      { label: G.facts.ofWhichSugar, value: sugarEstimated ? G.facts.estimated : `${Math.round(sugar)} g` },
+      { label: K.macroLower.fiber, value: `${Math.round(fiber)} g` },
+      { label: K.macroLower.protein, value: `${Math.round(protein)} g` },
     ],
   }
 }

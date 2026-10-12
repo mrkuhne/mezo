@@ -21,6 +21,7 @@ import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import type { Intake } from '@/data/fuel/fuelApi'
 import type { ProtocolOccurrence, StackPlacementSource, StackZoneKey, SupplementStashItem } from '@/data/types'
 import { restKcalPerHour } from '@/data/train/activityEnergy'
+import { m } from '@/shared/i18n'
 
 export interface StackDayEntry {
   occurrenceId: string
@@ -122,15 +123,17 @@ export function projectStackDay(input: StackDayInput): StackDaySlot[] {
     evening: toHHmm(toMin(bed) - 120),
     bedtime: toHHmm(toMin(bed) - 30),
   }
+  // the words of this projection, read at call time (a module constant would go stale on a language switch)
+  const words = m().fuelLogika.stack
   const anchorNote: Record<StackZoneKey, string | null> = {
     wake: null,
-    breakfast: 'étkezéshez kötve',
-    pre_workout: `edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`,
-    post_workout: 'edzés +30p',
-    lunch: 'étkezéshez kötve',
-    dinner: 'étkezéshez kötve',
-    evening: 'lefekvés −2h',
-    bedtime: 'lefekvés −30p',
+    breakfast: words.anchor.meal,
+    pre_workout: words.anchor.preWorkout(PRE_WORKOUT_STACK_LEAD_MIN),
+    post_workout: words.anchor.postWorkout,
+    lunch: words.anchor.meal,
+    dinner: words.anchor.meal,
+    evening: words.anchor.evening,
+    bedtime: words.anchor.bedtime,
   }
   const takenKeys = resolveTakenKeys(intakes, occurrences)
   const byZone = new Map<StackZoneKey, StackDayEntry[]>()
@@ -154,7 +157,7 @@ export function projectStackDay(input: StackDayInput): StackDaySlot[] {
       occurrenceId: o.id,
       pantryItemId: o.pantryItemId,
       persistedZone: o.slotKey,
-      name: item?.name ?? '(törölt Kamra-item)',
+      name: item?.name ?? words.deletedItem,
       dose: o.dose ?? item?.dose ?? null,
       pinned: o.pinned,
       placementSource: o.placementSource,
@@ -176,7 +179,7 @@ export function projectStackDay(input: StackDayInput): StackDaySlot[] {
     // Stim-aware split (mezo-j6c9): stim-free-named entries → the LAST block, the rest keeps the
     // FIRST (= the zone's own anchored time). Sub-slots emit adjacently, first-block slot first;
     // an empty partition emits nothing (never a blank card). Zone key stays pre_workout on both.
-    const blockNote = (b: PlannerBlock) => `${b.label} · edzés −${PRE_WORKOUT_STACK_LEAD_MIN}p`
+    const blockNote = (b: PlannerBlock) => words.anchor.block(b.label, PRE_WORKOUT_STACK_LEAD_MIN)
     const early = entries.filter(e => !isStimFreeName(e.name))
     const late = entries.filter(e => isStimFreeName(e.name))
     const out: StackDaySlot[] = []
